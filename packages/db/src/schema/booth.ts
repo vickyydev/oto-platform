@@ -6,6 +6,7 @@ import {
   index,
   integer,
   jsonb,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -230,6 +231,27 @@ export const boothSettings = booth.table(
     voucherFooterText: text('voucher_footer_text'),
     voucherShowStaff: boolean('voucher_show_staff').notNull().default(true),
     voucherShowTerms: boolean('voucher_show_terms').notNull().default(true),
+    /**
+     * Who is on this booth today, as the OTO App's scheduling says (SCRUM-473,
+     * migration 0040, plan decision D4). Two pieces of free text, compared
+     * case-insensitively with the surrounding spaces trimmed, because that is
+     * what the park's real rows look like ("Sales booth ", "Sale Booth"):
+     *
+     *   - `duty_group_text` — a shift assignment counts when its shift row's
+     *     GROUP, its DEPARTMENT or one of its ROLES contains this text. The
+     *     park schedules the booth under the shift group named "Sale Booth".
+     *   - `duty_match_text` — a duty block counts when its `duty_name`
+     *     contains this text ("Sales booth").
+     *
+     * **The defaults ARE the recommended rule**, so a booth nobody has touched
+     * matches every real row in the dump; an administrator can narrow either
+     * per booth in Console → Booths → Today's staff. Neither is published to
+     * the box — the rule runs on the platform, and the box only ever receives
+     * the roster it produced. An empty text matches nothing, which is how a
+     * booth opts out of one half of the rule.
+     */
+    dutyGroupText: text('duty_group_text').notNull().default('Sale Booth'),
+    dutyMatchText: text('duty_match_text').notNull().default('booth'),
     ...timestamps,
   },
   (t) => [
@@ -260,6 +282,14 @@ export const boothSettings = booth.table(
     check(
       'booth_settings_voucher_footer_text_check',
       sql`${t.voucherFooterText} is null or char_length(${t.voucherFooterText}) <= 400`,
+    ),
+    check(
+      'booth_settings_duty_group_text_check',
+      sql`char_length(${t.dutyGroupText}) <= 100`,
+    ),
+    check(
+      'booth_settings_duty_match_text_check',
+      sql`char_length(${t.dutyMatchText}) <= 100`,
     ),
   ],
 );
@@ -480,6 +510,167 @@ export const boothStaffAssignment = booth.table(
     /** "Which booths may this person work?" — the booth's own sign-in check. */
     index('booth_staff_assignment_account_idx').on(t.accountId),
     index('booth_staff_assignment_added_by_idx').on(t.addedBy),
+  ],
+);
+
+/**
+ * How a person came to be on a booth's roster for one day (SCRUM-473):
+ *
+ *   - `app_schedule` — a shift assignment in the OTO App whose shift row's
+ *     group, department or role matches the booth's rule;
+ *   - `app_duty_block` — a duty block in the OTO App whose name matches it;
+ *   - `manual` — an administrator added them in the Console;
+ *   - `self_assigned` — they were not on the roster, signed in at the booth
+ *     anyway through the standing list, and so joined the day's label.
+ *
+ * The two `app_*` sources belong to the sync, which adds and removes them to
+ * match the app; `manual` and `self_assigned` belong to people, and a sync
+ * never removes them.
+ */
+export const BOOTH_DUTY_SOURCES = ['app_schedule', 'app_duty_block', 'manual', 'self_assigned'] as const;
+export type BoothDutySource = (typeof BOOTH_DUTY_SOURCES)[number];
+
+/**
+ * Who is on a booth on one trading day — the dated roster (SCRUM-473, plan
+ * decisions D4-D6, migration 0040).
+ *
+ * Distinct from `booth_staff_assignment`, which is the STANDING list of who
+ * may ever sign in at a booth. This is the day's: the people whose names print
+ * together on every voucher the booth gives out that day ("Tom and Jerry"),
+ * and who may sign in on that day as well as the standing list.
+ *
+ * **`account_id` is nullable on purpose.** A casual worker in the OTO App has
+ * no user and never will, and an employee the sync cannot follow to a platform
+ * account (no app user, or a user with no linked account) has none either. The
+ * owner's decision is that a casual appears in the printed label and can never
+ * sign in — a row with a name and no account is exactly that. An employee with
+ * no account is NOT written here: the sync lists them as unmatched instead
+ * (`booth_duty_sync.unmatched`), so somebody fixes the link rather than the
+ * label quietly carrying a name nobody can attribute.
+ *
+ * **One row per person per booth per day**, enforced by the unique index over
+ * the account when there is one and the lower-cased name when there is not:
+ * somebody with a shift AND a duty block naming the booth is on the roster
+ * once, under the source the sync saw first.
+ *
+ * Removal is a plain delete with an audit row (`booth_duty.unassign`), as on
+ * `booth_staff_assignment`: the Activity log is where "who was on the booth on
+ * the 3rd, and who took them off" is asked.
+ */
+export const boothDutyAssignment = booth.table(
+  'booth_duty_assignment',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    stationId: uuid('station_id')
+      .notNull()
+      .references(() => station.id, { onDelete: 'restrict' }),
+    /** The branch's trading day (`businessDate` in `@oto/shared`), not a calendar date. */
+    businessDate: date('business_date').notNull(),
+    /** Null for a casual worker: named on the slip, never signs in. */
+    accountId: uuid('account_id').references(() => account.id, { onDelete: 'restrict' }),
+    /** The nickname the slip prints. Required: a roster row is, above all, a name. */
+    displayName: text('display_name').notNull(),
+    /**
+     * The OTO App's `casual_workers.id` for a casual the rota named, so two
+     * different casuals who share a nickname ("Nok", "nok") are two rows, not
+     * one. Text, not uuid, because the app's ids are `varchar` — every real
+     * one is a `gen_random_uuid()`, but the column must hold whatever shape
+     * the app gives an id, or one odd id would fail the whole booth's sync.
+     * No foreign key: the app's tables are read-only and outside this schema.
+     * Null for every row that is not an app casual.
+     */
+    casualWorkerId: text('casual_worker_id'),
+    source: text('source').$type<BoothDutySource>().notNull(),
+    /** When the sync last confirmed this row. Null for rows people made. */
+    syncedAt: timestamp('synced_at', { withTimezone: true, mode: 'date' }),
+    /** Who added a `manual` row. Null for every other source. */
+    addedByAccountId: uuid('added_by_account_id').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('booth_duty_assignment_person_unique').on(
+      t.stationId,
+      t.businessDate,
+      sql`coalesce(${t.accountId}::text, ${t.casualWorkerId}, lower(${t.displayName}))`,
+    ),
+    /** The roster's own read: one booth, one day. */
+    index('booth_duty_assignment_station_date_idx').on(t.stationId, t.businessDate),
+    index('booth_duty_assignment_operator_idx').on(t.operatorId),
+    index('booth_duty_assignment_branch_idx').on(t.branchId),
+    index('booth_duty_assignment_account_idx').on(t.accountId),
+    index('booth_duty_assignment_added_by_idx').on(t.addedByAccountId),
+    check(
+      'booth_duty_assignment_source_check',
+      sql`${t.source} in ('app_schedule','app_duty_block','manual','self_assigned')`,
+    ),
+    check(
+      'booth_duty_assignment_display_name_check',
+      sql`char_length(btrim(${t.displayName})) between 1 and 100`,
+    ),
+    /** A person is either an account or an app casual, never both. */
+    check(
+      'booth_duty_assignment_casual_check',
+      sql`${t.accountId} is null or ${t.casualWorkerId} is null`,
+    ),
+  ],
+);
+
+/**
+ * The last sync of one booth's roster for one day (SCRUM-473).
+ *
+ * Two jobs. The morning job reads it to know a booth has already been synced
+ * for today — so it syncs once at the branch's open and not on every tick. And
+ * the Console reads `unmatched` from it: the people the sync found on the
+ * booth in the app and could not follow to an account, listed by name so they
+ * are never silently dropped (D5). Written by the day's first sync, and
+ * rewritten only by a sync that changed something (the roster, the app state or
+ * the unmatched list): a re-run with nothing changed writes nothing.
+ */
+export const boothDutySync = booth.table(
+  'booth_duty_sync',
+  {
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    stationId: uuid('station_id')
+      .notNull()
+      .references(() => station.id, { onDelete: 'restrict' }),
+    businessDate: date('business_date').notNull(),
+    syncedAt: timestamp('synced_at', { withTimezone: true, mode: 'date' }).notNull(),
+    /**
+     * What the read found about the app itself: `ok`, `app_not_installed` (a
+     * platform-only deployment), `no_app_branch` (the booth's branch has no
+     * row in the app) or `ambiguous_app_branch`.
+     */
+    appState: text('app_state').notNull(),
+    /** `[{ name, reason }]`, where reason is `no_app_user` or `no_platform_account`. */
+    unmatched: jsonb('unmatched').notNull().default([]),
+    /** Null for the morning job; the person who pressed "Sync now" otherwise. */
+    syncedByAccountId: uuid('synced_by_account_id').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.stationId, t.businessDate] }),
+    index('booth_duty_sync_operator_idx').on(t.operatorId),
+    index('booth_duty_sync_branch_idx').on(t.branchId),
+    index('booth_duty_sync_synced_by_idx').on(t.syncedByAccountId),
+    check(
+      'booth_duty_sync_app_state_check',
+      sql`${t.appState} in ('ok','app_not_installed','no_app_branch','ambiguous_app_branch')`,
+    ),
   ],
 );
 

@@ -12,6 +12,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { AppError } from '../lib/errors';
 import { phoneHash } from '../lib/scrub';
 import { audit } from './audit';
+import { boothBusinessDate, isOnBoothDuty, selfAssignBoothDuty } from './booth-duty';
 import { findAccountByPhone, throttleClear, throttleFail } from './auth';
 import type { BoxAuth } from './box';
 import { hasPermission, resolveEffectivePermissions } from './permissions';
@@ -36,7 +37,12 @@ import { hasPermission, resolveEffectivePermissions } from './permissions';
  *     all four checks empties;
  *  2. the password is not a temporary one waiting to be changed;
  *  3. the account's role carries `booth:staff:sign_in` at this booth's branch;
- *  4. an administrator has put the account on this booth's staff list.
+ *  4. an administrator has put the account on this booth's staff list, OR
+ *     the account is on this booth's roster for today (SCRUM-473, D5.2) —
+ *     sign-in is the union of the two. Somebody let in by the standing list
+ *     who is not on today's roster is a stand-in, and joins the day's roster
+ *     as `self_assigned` here, with its own log line, so the label every
+ *     voucher prints stays truthful.
  *
  * What comes back is who it is, as the slip prints it: the account id, the
  * nickname or name, and the staff code. The session is the box's to keep — it
@@ -249,7 +255,9 @@ export async function verifyBoothStaff(
       and(eq(boothStaffAssignment.stationId, booth.id), eq(boothStaffAssignment.accountId, acc.id)),
     )
     .limit(1);
-  if (!assigned) {
+  const today = await boothBusinessDate(db, booth.branchId);
+  const onDuty = await isOnBoothDuty(db, booth.id, today, acc.id);
+  if (!assigned && !onDuty) {
     await record('booth.staff_sign_in_refused', acc.id, { reason: 'not_assigned' });
     throw new AppError(
       403,
@@ -268,6 +276,29 @@ export async function verifyBoothStaff(
         .limit(1)
     : [];
   await record('booth.staff_sign_in', acc.id, { method: 'account' });
+  const signedInId = acc.id;
+  if (!onDuty) {
+    // A stand-in (D5.2). Its own small transaction — the roster row and its
+    // log line together — and never allowed to fail the sign-in it
+    // describes: the spin's arrival adds the same row if this one could not
+    // be written.
+    try {
+      await db.transaction((tx) =>
+        selfAssignBoothDuty(tx, {
+          stationId: booth.id,
+          operatorId: auth.operatorId,
+          branchId: booth.branchId,
+          businessDate: today,
+          accountId: signedInId,
+          displayName: person?.nickname ?? person?.name ?? null,
+          via: 'sign_in',
+          requestId: opts.requestId ?? null,
+        }),
+      );
+    } catch (err) {
+      opts.log?.error({ err: String(err) }, 'a stand-in could not be added to the booth roster');
+    }
+  }
   return {
     accountId: acc.id,
     displayName: person?.nickname ?? person?.name ?? null,

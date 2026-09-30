@@ -640,4 +640,93 @@ export const boothApi = {
       `${at(id)}/staff/${encodeURIComponent(accountId)}/pin?reason=${encodeURIComponent(reason)}`,
       { idempotencyKey: idemKey() },
     ),
+
+  // --- The day's booth staff (SCRUM-473) -------------------------------------
+
+  duty: (id: string) => api.get<BoothDutyView>(`${at(id)}/duty`),
+
+  /** Read the OTO App's schedule now and write the difference into today's roster. */
+  syncDuty: (id: string) =>
+    api.post<BoothDutySyncResult>(`${at(id)}/duty/sync`, undefined, { idempotencyKey: idemKey() }),
+
+  /** An account of the branch's staff, or a name alone for somebody with none. */
+  addDuty: (id: string, input: { accountId?: string | null; displayName?: string | null }) =>
+    api.post<{ roster: BoothDutyAssignment[] }>(`${at(id)}/duty`, input, {
+      idempotencyKey: idemKey(),
+    }),
+
+  removeDuty: (id: string, assignmentId: string) =>
+    api.delete<{ roster: BoothDutyAssignment[] }>(
+      `${at(id)}/duty/${encodeURIComponent(assignmentId)}`,
+      { idempotencyKey: idemKey() },
+    ),
+
+  saveDutyRule: (id: string, rule: Partial<BoothDutyRule>) =>
+    api.patch<BoothDutyRule>(`${at(id)}/duty/rule`, rule, { idempotencyKey: idemKey() }),
 };
+
+// ---------------------------------------------------------------------------
+// The day's booth staff (SCRUM-473) — `BoothDutyView` and friends in
+// `apps/api/src/services/booth-duty.ts`
+// ---------------------------------------------------------------------------
+
+/** How somebody came to be on the day's roster. */
+export type BoothDutySource = 'app_schedule' | 'app_duty_block' | 'manual' | 'self_assigned';
+
+/** What the last sync found about the OTO App itself. */
+export type BoothDutyAppState = 'ok' | 'app_not_installed' | 'no_app_branch' | 'ambiguous_app_branch';
+
+export interface BoothDutyAssignment {
+  id: string;
+  /** Null for a casual worker: named on the voucher, never signs in. */
+  accountId: string | null;
+  displayName: string;
+  source: BoothDutySource;
+  syncedAt: string | null;
+  addedByAccountId: string | null;
+  createdAt: string;
+}
+
+export interface BoothDutyUnmatched {
+  name: string;
+  /** `no_app_user`: the employee has no app login. `no_platform_account`: the login is not linked. */
+  reason: 'no_app_user' | 'no_platform_account';
+}
+
+export interface BoothDutyRule {
+  /** Matched inside a shift row's group, department or role name. */
+  groupText: string;
+  /** Matched inside a duty block's name. */
+  dutyText: string;
+}
+
+export interface BoothDutyLogLine {
+  at: string;
+  action: string;
+  actorAccountId: string | null;
+  detail: Record<string, unknown> | null;
+}
+
+export interface BoothDutyView {
+  businessDate: string;
+  rule: BoothDutyRule;
+  roster: BoothDutyAssignment[];
+  /** What prints on every voucher today; null prints "unattributed". */
+  label: string | null;
+  lastSync: {
+    syncedAt: string;
+    appState: BoothDutyAppState;
+    unmatched: BoothDutyUnmatched[];
+    syncedByAccountId: string | null;
+  } | null;
+  log: BoothDutyLogLine[];
+}
+
+export interface BoothDutySyncResult {
+  businessDate: string;
+  appState: BoothDutyAppState;
+  added: number;
+  removed: number;
+  unmatched: BoothDutyUnmatched[];
+  roster: BoothDutyAssignment[];
+}

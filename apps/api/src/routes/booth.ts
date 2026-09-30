@@ -46,6 +46,15 @@ import {
   updateBoothPrize,
   updateBoothSettings,
 } from '../services/booth-admin';
+import {
+  BOOTH_DUTY_NAME_MAX_CHARS,
+  BOOTH_DUTY_RULE_MAX_CHARS,
+  addManualBoothDuty,
+  boothDutyView,
+  removeBoothDuty,
+  syncBoothDuty,
+  updateBoothDutyRule,
+} from '../services/booth-duty';
 import { loadBranchForOperator } from '../services/fleet';
 import { opCtx } from '../services/tx';
 import { listBoothSpins } from '../services/voucher-ledger';
@@ -883,6 +892,182 @@ export async function boothRoutes(app: App): Promise<void> {
         row,
         req.body,
       );
+    },
+  );
+
+  // --- The day's booth staff (SCRUM-473) -------------------------------------
+
+  const DutySource = z.enum(['app_schedule', 'app_duty_block', 'manual', 'self_assigned']);
+  const DutyAppState = z.enum(['ok', 'app_not_installed', 'no_app_branch', 'ambiguous_app_branch']);
+  const DutyUnmatched = z.object({
+    name: z.string(),
+    reason: z.enum(['no_app_user', 'no_platform_account']),
+  });
+  const DutyAssignment = z.object({
+    id: z.string().uuid(),
+    accountId: z.string().uuid().nullable(),
+    displayName: z.string(),
+    source: DutySource,
+    syncedAt: z.string().nullable(),
+    addedByAccountId: z.string().uuid().nullable(),
+    createdAt: z.string(),
+  });
+  const DutyRule = z.object({
+    groupText: z.string().max(BOOTH_DUTY_RULE_MAX_CHARS),
+    dutyText: z.string().max(BOOTH_DUTY_RULE_MAX_CHARS),
+  });
+  const DutyView = z.object({
+    businessDate: z.string(),
+    rule: DutyRule,
+    roster: z.array(DutyAssignment),
+    label: z.string().nullable(),
+    lastSync: z
+      .object({
+        syncedAt: z.string(),
+        appState: DutyAppState,
+        unmatched: z.array(DutyUnmatched),
+        syncedByAccountId: z.string().uuid().nullable(),
+      })
+      .nullable(),
+    log: z.array(
+      z.object({
+        at: z.string(),
+        action: z.string(),
+        actorAccountId: z.string().uuid().nullable(),
+        detail: z.record(z.string(), z.unknown()).nullable(),
+      }),
+    ),
+  });
+  const DutyDateQuery = z.object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+  });
+
+  app.get(
+    '/booths/:id/duty',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The day’s staff of this booth (SCRUM-473): the dated roster with where each person came from (the OTO App’s shift schedule, a duty block, a manual add, or a stand-in who signed in), the merged label every voucher prints that day, the last sync and the names it could not match to an account, the booth’s match rule, and the day’s log lines. `date` defaults to the branch’s trading day now.',
+        params: BoothIdParams,
+        querystring: DutyDateQuery,
+        response: { 200: DutyView },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:read', { branchId: row.branchId });
+      return boothDutyView(app.db, row, { date: req.query.date });
+    },
+  );
+
+  app.post(
+    '/booths/:id/duty/sync',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Sync now: read the OTO App’s schedule for this booth’s branch and today’s trading day, and write the difference into the roster — each new person audited `booth_duty.assign`, each person the app no longer names `booth_duty.unassign`. A re-run with nothing changed writes nothing. Manual and self-assigned rows are never removed by a sync, and nothing is removed when the app cannot be read. People the app names who have no platform account come back in `unmatched`, by name.',
+        params: BoothIdParams,
+        response: {
+          200: z.object({
+            businessDate: z.string(),
+            appState: DutyAppState,
+            added: z.number().int(),
+            removed: z.number().int(),
+            unmatched: z.array(DutyUnmatched),
+            roster: z.array(DutyAssignment),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return syncBoothDuty(app.db, opCtx(req), { row, actorAccountId: auth.accountId });
+    },
+  );
+
+  app.post(
+    '/booths/:id/duty',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Put somebody on today’s roster by hand (audited `booth_duty.assign`, source `manual`): an account of the booth’s branch staff — refused 400 `STAFF_NOT_AT_BRANCH` otherwise — or a name alone for somebody with no account, who is named on the voucher and can never sign in. Adding somebody already on the roster changes nothing.',
+        params: BoothIdParams,
+        body: z
+          .object({
+            accountId: z.string().uuid().nullish(),
+            displayName: z.string().max(BOOTH_DUTY_NAME_MAX_CHARS).nullish(),
+          })
+          .refine((b) => Boolean(b.accountId) || Boolean(b.displayName?.trim()), {
+            message: 'An account or a name is required',
+          }),
+        response: { 200: z.object({ roster: z.array(DutyAssignment) }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return addManualBoothDuty(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        { accountId: req.body.accountId ?? null, displayName: req.body.displayName ?? null },
+      );
+    },
+  );
+
+  app.delete(
+    '/booths/:id/duty/:assignmentId',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Take somebody off this booth’s roster, whatever put them there (audited `booth_duty.unassign`). A row the OTO App put there comes back at the next sync while the app still names the person — the rota is the staff app’s, and a wrong shift is fixed there.',
+        params: z.object({ id: z.string().uuid(), assignmentId: z.string().uuid() }),
+        response: { 200: z.object({ roster: z.array(DutyAssignment) }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return removeBoothDuty(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId },
+        row,
+        req.params.assignmentId,
+      );
+    },
+  );
+
+  app.patch(
+    '/booths/:id/duty/rule',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Change how this booth’s staff are found in the OTO App: `groupText` is matched inside a shift row’s group, department or role name, `dutyText` inside a duty block’s name — case-insensitive, surrounding spaces trimmed. The defaults (“Sale Booth”, “booth”) are the recommended rule; an empty text matches nothing. Not published to the box, so no bundle changes. Audited `booth_duty.rule`.',
+        params: BoothIdParams,
+        body: DutyRule.partial(),
+        response: { 200: DutyRule },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return updateBoothDutyRule(app.db, opCtx(req), { accountId: auth.accountId }, row, req.body);
     },
   );
 

@@ -1,0 +1,311 @@
+import { useCallback, useEffect, useState } from 'react';
+import { RefreshCw, Ticket, UserPlus, Users, X } from 'lucide-react';
+import { staffCandidates, type BranchStaffMember } from '@/api/fleet';
+import { ErrorNote, Loading, Panel, RouteUnavailable } from '@/components/Panel';
+import { Field, Select, TextInput } from '@/components/Form';
+import { StatusPill } from '@/components/Status';
+import { Button } from '@/components/ui/button';
+import { ApiError, boothApi, isMissingRoute, type BoothDutyRule, type BoothDutyView } from './boothApi';
+import {
+  APP_STATE_NOTE,
+  DUTY_SOURCE,
+  UNMATCHED_REASON,
+  initialOf,
+  labelLine,
+  logLineText,
+  logTime,
+} from './todayStaff';
+
+/**
+ * Today's staff (SCRUM-473, plan D4-D6): who works this booth today, as the
+ * OTO App's rota says, merged into the one label every voucher prints.
+ *
+ * The roster with where each person came from, the label preview, "Sync now",
+ * the names the sync could not match (said plainly, never dropped), manual add
+ * and remove, and the day's log lines in quiet mono — the approved "Today's
+ * staff" artboard, in this page's design language. The card reads and writes
+ * its own routes, so the rest of the page is not re-read on every change here.
+ */
+export function TodayStaffPanel({
+  boothId,
+  branchId,
+  timezone,
+  readOnly,
+}: {
+  boothId: string;
+  branchId: string;
+  timezone: string | null | undefined;
+  /** The caller may read the roster but not change it (`admin:booth:staff_assign`). */
+  readOnly: boolean;
+}) {
+  const [view, setView] = useState<BoothDutyView | null>(null);
+  const [missing, setMissing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [candidates, setCandidates] = useState<BranchStaffMember[] | null>(null);
+  const [adding, setAdding] = useState('');
+  const [name, setName] = useState('');
+  const [ruleOpen, setRuleOpen] = useState(false);
+  const [rule, setRule] = useState<BoothDutyRule | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const next = await boothApi.duty(boothId);
+      setView(next);
+      setRule(next.rule);
+      setError(null);
+    } catch (err) {
+      if (isMissingRoute(err)) setMissing(true);
+      else setError(err instanceof ApiError ? err.message : 'Today’s staff could not be read');
+    }
+  }, [boothId]);
+
+  useEffect(() => {
+    setView(null);
+    setMissing(false);
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    if (readOnly) return;
+    let cancelled = false;
+    void staffCandidates(branchId)
+      .then((r) => !cancelled && setCandidates(r.staff))
+      .catch(() => !cancelled && setCandidates([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [branchId, readOnly]);
+
+  const act = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    try {
+      await fn();
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'That could not be saved');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const syncButton = !readOnly && view && (
+    <Button size="sm" variant="outline" disabled={busy} onClick={() => void act(() => boothApi.syncDuty(boothId))}>
+      <RefreshCw className={busy ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
+      Sync now
+    </Button>
+  );
+
+  if (missing) {
+    return (
+      <Panel title="Today’s staff">
+        <RouteUnavailable what="Today’s staff" detail="This deployment does not sync the booth’s roster yet." />
+      </Panel>
+    );
+  }
+
+  const onRoster = new Set(view?.roster.flatMap((r) => (r.accountId ? [r.accountId] : [])) ?? []);
+  const note = view?.lastSync ? APP_STATE_NOTE[view.lastSync.appState] : null;
+  const unmatched = view?.lastSync?.unmatched ?? [];
+
+  return (
+    <Panel
+      title="Today’s staff"
+      description={
+        view
+          ? `Who works this booth on ${view.businessDate}, from the OTO App’s rota. Their names print together on every voucher.`
+          : 'Who works this booth today, from the OTO App’s rota.'
+      }
+      actions={syncButton}
+    >
+      {error && <ErrorNote message={error} onRetry={() => void load()} />}
+      {!view ? (
+        !error && <Loading what="today’s staff" />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {view.roster.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nobody is assigned for today.{' '}
+              {view.lastSync
+                ? `The rota has named nobody for this booth since ${logTime(view.lastSync.syncedAt, timezone)}.`
+                : 'The rota has not been read yet today — it is read when the park opens, or now with Sync now.'}
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {view.roster.map((person) => (
+                <li key={person.id} className="flex items-center gap-3 rounded-xl bg-muted/30 px-3 py-2.5">
+                  <span
+                    aria-hidden="true"
+                    className="flex w-9 h-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary"
+                  >
+                    {initialOf(person.displayName)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold truncate">{person.displayName}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {person.accountId ? 'May sign in today' : 'No login — named on the voucher only'}
+                    </div>
+                  </div>
+                  <StatusPill tone={DUTY_SOURCE[person.source].tone}>{DUTY_SOURCE[person.source].label}</StatusPill>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      aria-label={`Take ${person.displayName} off today’s roster`}
+                      disabled={busy}
+                      onClick={() => void act(() => boothApi.removeDuty(boothId, person.id))}
+                      className="rounded-full p-1 text-muted-foreground hover:bg-muted disabled:opacity-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm">
+            <Ticket className="w-4 h-4 shrink-0 text-primary" aria-hidden="true" />
+            <span>
+              {view.label ? (
+                <>
+                  On every voucher today: <strong>{view.label}</strong>
+                </>
+              ) : (
+                labelLine(null)
+              )}
+            </span>
+          </div>
+
+          {note && <p className="text-sm" style={{ color: 'hsl(var(--status-warn))' }}>{note}</p>}
+
+          {unmatched.length > 0 && (
+            <div className="rounded-xl border px-3.5 py-2.5 text-sm">
+              <p className="font-semibold">On the rota, but not matched to an account</p>
+              <ul className="mt-1 flex flex-col gap-0.5 text-muted-foreground">
+                {unmatched.map((u) => (
+                  <li key={`${u.name}-${u.reason}`}>
+                    {u.name} — {UNMATCHED_REASON[u.reason]}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Not on the voucher until linked, or added here by hand.
+              </p>
+            </div>
+          )}
+
+          {!readOnly && (
+            <div className="rounded-xl border p-3 flex flex-col gap-3">
+              <p className="text-sm font-semibold">Add somebody for today</p>
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                <Field label="A member of staff">
+                  <Select
+                    value={adding}
+                    onChange={setAdding}
+                    disabled={busy || candidates === null}
+                    placeholder={candidates === null ? 'Loading staff…' : '— choose somebody —'}
+                    options={(candidates ?? [])
+                      .filter((c) => !onRoster.has(c.accountId))
+                      .map((c) => ({ value: c.accountId, label: c.name ?? c.phone ?? c.accountId }))}
+                  />
+                </Field>
+                <Button
+                  size="sm"
+                  disabled={busy || adding === ''}
+                  onClick={() => {
+                    const accountId = adding;
+                    setAdding('');
+                    void act(() => boothApi.addDuty(boothId, { accountId }));
+                  }}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Add
+                </Button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                <Field label="Or a name alone" hint="Somebody with no login — named on the voucher, never signs in.">
+                  <TextInput value={name} onChange={setName} placeholder="e.g. Nok" disabled={busy} />
+                </Field>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || name.trim() === ''}
+                  onClick={() => {
+                    const displayName = name.trim();
+                    setName('');
+                    void act(() => boothApi.addDuty(boothId, { displayName }));
+                  }}
+                >
+                  <Users className="w-4 h-4" />
+                  Add name
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <button
+              type="button"
+              className="text-xs font-semibold text-muted-foreground underline"
+              onClick={() => setRuleOpen((o) => !o)}
+            >
+              {ruleOpen ? 'Hide how staff are found' : 'How staff are found'}
+            </button>
+            {ruleOpen && rule && (
+              <div className="mt-2 flex flex-col gap-3 rounded-xl border p-3">
+                <Field
+                  label="Shift group, department or role contains"
+                  hint="The park schedules the booth under “Sale Booth”. Upper or lower case and trailing spaces do not matter."
+                >
+                  <TextInput
+                    value={rule.groupText}
+                    disabled={readOnly || busy}
+                    onChange={(groupText) => setRule({ ...rule, groupText })}
+                  />
+                </Field>
+                <Field label="Duty block name contains" hint="Matches duties such as “Sales booth”. Empty matches nothing.">
+                  <TextInput
+                    value={rule.dutyText}
+                    disabled={readOnly || busy}
+                    onChange={(dutyText) => setRule({ ...rule, dutyText })}
+                  />
+                </Field>
+                {!readOnly && (
+                  <div>
+                    <Button
+                      size="sm"
+                      disabled={
+                        busy || (rule.groupText === view.rule.groupText && rule.dutyText === view.rule.dutyText)
+                      }
+                      onClick={() => void act(() => boothApi.saveDutyRule(boothId, rule))}
+                    >
+                      Save rule
+                    </Button>
+                    <p className="mt-1 text-xs text-muted-foreground">Takes effect at the next sync.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {view.log.length > 0 && (
+            <ul className="flex flex-col gap-1 border-t pt-3 text-xs text-muted-foreground">
+              {view.log.map((line, i) => (
+                <li key={`${line.at}-${i}`} className="flex gap-2.5">
+                  <span className="font-mono text-[11px] text-foreground/45">{logTime(line.at, timezone)}</span>
+                  <span>{logLineText(line)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {readOnly && (
+            <p className="text-xs text-muted-foreground">
+              Changing today’s staff needs <code className="font-mono">admin:booth:staff_assign</code>.
+            </p>
+          )}
+        </div>
+      )}
+    </Panel>
+  );
+}

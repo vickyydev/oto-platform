@@ -43,7 +43,9 @@ import {
   BOOTH_CODE_MINT_ATTEMPTS,
   BOOTH_CODE_PREFIX_LENGTH,
   BoothConfigBundleSchema,
+  BoothDutyRosterSchema,
   addDaysToIsoDate,
+  boothDutyLabel,
   boothStaffLabel,
   boothStaffSessionMinutes,
   boothVoucherSlip,
@@ -53,6 +55,7 @@ import {
   parseDayStart,
   type BoothConfigBundle,
   type BoothConfigPrize,
+  type BoothDutyRoster,
   type BoothPrintState,
   type BoothReprintResponse,
   type BoothSignInMethod,
@@ -99,6 +102,13 @@ import { silentLog, type AgentLog } from './transport';
  *  - `allowedStaff` — who may sign in at this booth
  *    (`booth.booth_staff_assignment`). The `staff` cache scope says who may
  *    work at the branch, which is a different and much wider question.
+ *  - `dutyRoster` — the day's booth staff (SCRUM-473): the trading day it is
+ *    for, and every name on the booth that day with the account that may
+ *    sign in, when there is one. The voucher's Staff row prints the names
+ *    merged into one label, and the accounts may sign in that day beside
+ *    `allowedStaff`. Optional: a cloud older than this field serves none, and
+ *    a roster that cannot be read is dropped rather than taking the booth off
+ *    the air — the slip then prints the signed-in person, as it always did.
  *  - `voucherDefinitions` — the terms and the expiry of the types the
  *    bundle's prizes point at, as they are now, refreshed at every pull. The
  *    bundle carries no type's expiry, so `resolveExpiry` reads it here when a
@@ -128,6 +138,8 @@ export const BoothCacheEntrySchema = z.object({
   bundle: BoothConfigBundleSchema,
   /** `core.account.id` of everybody on this booth's staff list. */
   allowedStaff: z.array(z.string().uuid()).default([]),
+  /** See above. `.catch(null)`: a malformed roster is no roster, never a booth off the air. */
+  dutyRoster: BoothDutyRosterSchema.nullable().default(null).catch(null),
   voucherDefinitions: z.array(BoothVoucherDefinitionSchema).default([]),
 });
 export type BoothCacheEntry = z.infer<typeof BoothCacheEntrySchema>;
@@ -962,6 +974,7 @@ export function createBooth(options: BoothOptions): BoothModule {
   function sameSideData(a: BoothCacheEntry, b: BoothCacheEntry): boolean {
     return (
       JSON.stringify([...a.allowedStaff].sort()) === JSON.stringify([...b.allowedStaff].sort()) &&
+      JSON.stringify(a.dutyRoster) === JSON.stringify(b.dutyRoster) &&
       JSON.stringify(a.voucherDefinitions) === JSON.stringify(b.voucherDefinitions)
     );
   }
@@ -1001,8 +1014,13 @@ export function createBooth(options: BoothOptions): BoothModule {
       return Number.isFinite(ms) && Number.isFinite(signedInMs) && ms > signedInMs;
     };
     let reason: string | null = null;
-    if (applied && newer(boothAppliedAt) && !applied.allowedStaff.includes(holder)) {
-      reason = 'no longer on the staff list of this booth';
+    if (
+      applied &&
+      newer(boothAppliedAt) &&
+      !applied.allowedStaff.includes(holder) &&
+      !todaysRoster().some((p) => p.accountId === holder)
+    ) {
+      reason = 'no longer on the staff list or today’s roster of this booth';
     }
     if (reason === null) {
       const list = options.staff?.() ?? [];
@@ -1020,6 +1038,32 @@ export function createBooth(options: BoothOptions): BoothModule {
       return;
     }
     note('warn', `a staff session was ended: ${reason}`, { accountId: holder });
+  }
+
+  /**
+   * The trading day by the box's corrected clock, for reading the roster — or
+   * null when the branch is not known. A lighter read than `resolveClock`,
+   * which a press uses: this one decides only whose names are today's, and a
+   * clock read here is never stamped on anything.
+   */
+  function todayForRoster(): string | null {
+    const branch = options.branch();
+    if (!branch) return null;
+    try {
+      return businessDateFor(clock(), branch.timezone, parseDayStart(branch.businessDayStart));
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Today's roster (SCRUM-473), or nobody: a roster for any other trading day
+   * — a box offline since yesterday — names nobody today.
+   */
+  function todaysRoster(today: string | null = todayForRoster()): BoothDutyRoster['people'] {
+    const roster = applied?.dutyRoster ?? null;
+    if (!roster || today === null || roster.date !== today) return [];
+    return roster.people;
   }
 
   function readStationId(raw: unknown): string | null {
@@ -1128,12 +1172,13 @@ export function createBooth(options: BoothOptions): BoothModule {
    */
   async function staffOnDutyQuietly(
     stationId: string,
-  ): Promise<{ accountId: string; label: string | null } | null> {
+  ): Promise<{ accountId: string; name: string | null; label: string | null } | null> {
     try {
       const held = await onDuty(stationId);
       if (!held) return null;
       return {
         accountId: held.session.accountId,
+        name: held.duty.name,
         label: boothStaffLabel(held.duty.name, held.duty.code),
       };
     } catch (err) {
@@ -1526,9 +1571,21 @@ export function createBooth(options: BoothOptions): BoothModule {
     return { ok: true, accountId: person.accountId };
   }
 
-  /** The branch's staff, narrowed to this booth's list and to active accounts. */
+  /**
+   * The branch's staff, narrowed to who may sign in at this booth today and to
+   * active accounts: the standing list and today's roster together (SCRUM-473,
+   * D5.2). A casual on the roster has no account and so is never here.
+   *
+   * Somebody on the roster only is here only if the `staff` scope carries
+   * them, which is what holds their PIN hash; a person the scope does not
+   * carry signs in with their phone and password, which the platform checks
+   * against the same union.
+   */
   function eligibleStaff(): BoothStaffRecord[] {
-    const allowed = new Set(applied?.allowedStaff ?? []);
+    const allowed = new Set([
+      ...(applied?.allowedStaff ?? []),
+      ...todaysRoster().flatMap((p) => (p.accountId ? [p.accountId] : [])),
+    ]);
     if (allowed.size === 0) return [];
     return (options.staff?.() ?? []).filter(
       (record) => allowed.has(record.accountId) && record.status === 'active',
@@ -1813,7 +1870,24 @@ export function createBooth(options: BoothOptions): BoothModule {
       voucherCode,
       expiresAt,
       issuedAtMs: timing.stampMs,
-      staffLabel: onDutyNow?.label ?? null,
+      /**
+       * The day's merged label (SCRUM-473, D6): every name on today's roster
+       * — plus the signed-in person when they are a stand-in not on it — or,
+       * before anyone is attributed today (no roster, or an empty one),
+       * exactly the signed-in "Nok (S-7KMQ)" of before, or null
+       * ("unattributed") when nobody is. Once the day's roster holds anyone
+       * — the rota's people, or a stand-in the cloud self-assigned at their
+       * first sign-in — the label is names only for the rest of the day (the
+       * owner's format ruling). The spin itself still records the one
+       * signed-in account (`staffAccountId`), as it always did.
+       */
+      staffLabel: boothDutyLabel({
+        roster: applied?.dutyRoster ?? null,
+        today: timing.businessDate,
+        signedIn: onDutyNow
+          ? { accountId: onDutyNow.accountId, name: onDutyNow.name, label: onDutyNow.label }
+          : null,
+      }),
     });
     const heldUntil = new Date(Date.parse(timing.occurredAt) + BOOTH_PRINT_HOLD_MS);
     const printJob = options.print ? { ...slip, nextAttemptAt: heldUntil.toISOString() } : null;

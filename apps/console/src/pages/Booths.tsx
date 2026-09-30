@@ -46,6 +46,7 @@ import { BoothStaffPanel } from '@/components/booth/BoothStaffPanel';
 import { PrizeEditor } from '@/components/booth/PrizeEditor';
 import { ArchivedPrizes, PrizeTable } from '@/components/booth/PrizeTable';
 import { PublishPanel } from '@/components/booth/PublishPanel';
+import { TodayStaffPanel } from '@/components/booth/TodayStaffPanel';
 import { VoucherSlipPanel } from '@/components/booth/VoucherSlipPanel';
 import { WheelPreview } from '@/components/booth/WheelPreview';
 import {
@@ -647,6 +648,21 @@ export function Booths() {
           </Group>
 
           <Group title="Staff and screens">
+            {/*
+              Today's staff (SCRUM-473): the day's roster from the OTO App's
+              rota and the one label every voucher prints. It reads and writes
+              its own routes; the standing list below is who may ever sign in.
+            */}
+            <div id="booth-today-staff" className="scroll-mt-24">
+              <TodayStaffPanel
+                key={'duty-' + selected.booth.id}
+                boothId={selected.booth.id}
+                branchId={selected.booth.branchId}
+                timezone={timezone}
+                readOnly={!canAssignStaff}
+              />
+            </div>
+
             <div id="booth-staff" className="scroll-mt-24">
               <BoothStaffPanel
                 // The PIN form holds digits for one booth; another booth is another panel.

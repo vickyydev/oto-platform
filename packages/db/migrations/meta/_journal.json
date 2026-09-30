@@ -281,6 +281,20 @@
       "when": 1790784663687,
       "tag": "0039_booth_voucher_slip",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1790798322896,
+      "tag": "0040_booth_duty",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1790801790681,
+      "tag": "0041_band_event_gate_kinds",
+      "breakpoints": true
     }
   ]
 }

@@ -89,6 +89,7 @@ const CACHED: BoothCacheEntry = {
   version: 3,
   bundleHash: 'a'.repeat(64),
   allowedStaff: [],
+  dutyRoster: null,
   voucherDefinitions: [],
   bundle: {
     schemaVersion: 1,

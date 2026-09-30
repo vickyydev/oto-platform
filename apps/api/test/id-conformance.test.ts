@@ -248,9 +248,12 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /admin/apps/:app/users': NEXT_PASS,
   // A session is the platform's own: the cookie carries a token, never the id.
   'POST /auth/sign-in': 'the session a sign-in opens; nothing outside the platform refers to its id',
+  'POST /bookings/:id/redeem': 'derived: the sale and its bands come from the paid booking, which names the work; one redemption row per booking is the uniqueness',
   'POST /booth-layouts': NEXT_PASS,
   'POST /booths/:id/pairing-codes': 'a one-time code, answered once (`secretResponse`); a second press revokes the first',
   'POST /booths/:id/prizes': NEXT_PASS,
+  'POST /booths/:id/duty': NEXT_PASS,
+  'POST /booths/:id/duty/sync': 'derived: the dated roster is keyed by booth and day, never by a client id',
   'POST /booths/:id/publish': 'derived: a published version of the booth’s own setup',
   'POST /boxes/:id/commands': ACTION_KEYED,
   'POST /boxes/:id/simulate': ACTION_KEYED,

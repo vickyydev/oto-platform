@@ -90,6 +90,7 @@ function entry(over: Partial<BoothCacheEntry> = {}): BoothCacheEntry {
     version: 1,
     bundleHash: 'a'.repeat(64),
     allowedStaff: [],
+    dutyRoster: null,
     voucherDefinitions: [],
     bundle: {
       schemaVersion: 1,

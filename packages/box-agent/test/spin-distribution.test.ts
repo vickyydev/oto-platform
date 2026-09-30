@@ -271,6 +271,7 @@ test('the debug table draws through the same code a real press draws through (D1
     version: 1,
     bundleHash: 'a'.repeat(64),
     allowedStaff: [],
+    dutyRoster: null,
     voucherDefinitions: [],
     bundle: {
       schemaVersion: 1,

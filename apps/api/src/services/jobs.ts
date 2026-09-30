@@ -4,7 +4,13 @@ import type { FastifyBaseLogger } from 'fastify';
 import { opsExpectation, opsLast, type AlertSeverity, type Db } from '@oto/db';
 import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
-import { expireStaleCommands, markSilentBoxesOffline, purgeOldBoxHeartbeats } from './box';
+import { BOOTH_DUTY_JOB, runMorningBoothDutySync } from './booth-duty';
+import {
+  expireStaleCommands,
+  markSilentBoxesOffline,
+  purgeOldBoxHeartbeats,
+  withinOpeningHours,
+} from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
@@ -473,6 +479,26 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       description: 'Flags payment attempts with no outcome on the Failures page, clears the flag when they are answered, and ends unpaid booking holds that have run out',
       intervalSeconds: 60,
       run: async ({ db, env, log, now }) => ({ detail: await flagPendingPayments(db, env, now, log) }),
+    },
+    /**
+     * `job:booth.duty_sync` — THE DAY'S BOOTH STAFF, AT THE BRANCH'S OPEN
+     * (SCRUM-473, plan D4).
+     *
+     * A five-minute tick that does the work once per booth per trading day:
+     * the first tick at which the branch is open and the booth has no sync
+     * recorded for today reads the OTO App's schedule and writes the day's
+     * roster (`runMorningBoothDutySync` in `services/booth-duty.ts`). Every
+     * other tick finds nothing due and costs one query per booth. "Sync now"
+     * in the Console is the same sync on demand, and a booth synced that way
+     * is not synced again by this job the same day.
+     */
+    {
+      name: BOOTH_DUTY_JOB,
+      description: "Reads the OTO App's schedule at each branch's open and writes the day's booth staff",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({
+        detail: await runMorningBoothDutySync(db, now, withinOpeningHours),
+      }),
     },
   ];
 }

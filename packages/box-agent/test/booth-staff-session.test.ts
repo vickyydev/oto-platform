@@ -71,6 +71,7 @@ function entry(over: Partial<BoothCacheEntry> & { staffSessionMinutes?: number }
     version: 1,
     bundleHash: 'a'.repeat(64),
     allowedStaff: [ACCOUNT],
+    dutyRoster: null,
     voucherDefinitions: [
       {
         id: '018f1d2c-0000-7000-8000-00000000fd21',

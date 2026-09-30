@@ -1886,7 +1886,7 @@ async function requireStaffAccount(exec: Exec, operatorId: string, accountId: st
  * deactivated account. The join to `employee` is required: the predicate
  * reads the employee's branch.
  */
-async function isBranchStaff(
+export async function isBranchStaff(
   exec: Exec,
   operatorId: string,
   branchId: string,

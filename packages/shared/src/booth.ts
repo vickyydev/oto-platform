@@ -586,6 +586,113 @@ export function boothStaffLabel(
   return null;
 }
 
+// --- The day's booth staff (SCRUM-473) --------------------------------------
+
+/**
+ * The day's roster of one booth, as the box receives it on the `booth` cache
+ * scope beside `allowedStaff` (SCRUM-473, plan decisions D4-D6).
+ *
+ * `date` is the branch's trading day the roster is for; a box compares it with
+ * its own trading day and treats a roster for any other day as empty, so a box
+ * that has been offline since yesterday does not print yesterday's names.
+ *
+ * Each person carries the name the slip prints and, when they have one, the
+ * account that may sign in. A casual worker has no account and never will:
+ * named on the slip, never signed in (the owner's decision). The account ids
+ * are ALSO sign-in eligibility on that day — the union of the roster and the
+ * standing `allowedStaff` list (D5.2).
+ *
+ * **Optional on the entry, and old boxes ignore it**: the box's cache entry
+ * schema is a plain (non-strict) zod object, so a box built before this field
+ * strips it and goes on printing the signed-in person, exactly as before.
+ */
+export const BoothDutyRosterSchema = z.object({
+  /** `YYYY-MM-DD`, the branch's trading day. */
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  people: z
+    .array(
+      z.object({
+        /** Null for a casual worker. */
+        accountId: z.string().uuid().nullable(),
+        displayName: z.string().min(1),
+      }),
+    )
+    .default([]),
+});
+export type BoothDutyRoster = z.infer<typeof BoothDutyRosterSchema>;
+
+/**
+ * Names joined as a person would say them: "Tom", "Tom and Jerry",
+ * "Tom, Jerry and Nok". No Oxford comma — the slip is printed in the park's
+ * English, which does not use one, and the line is narrow.
+ *
+ * Blank names are dropped and a name repeated (case-insensitively, trimmed) is
+ * said once, so one person reaching the label two ways never prints twice.
+ * Null when nobody is left.
+ */
+export function joinBoothStaffNames(names: readonly (string | null | undefined)[]): string | null {
+  const seen = new Set<string>();
+  const kept: string[] = [];
+  for (const raw of names) {
+    const name = typeof raw === 'string' ? raw.trim() : '';
+    if (name === '') continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.push(name);
+  }
+  if (kept.length === 0) return null;
+  if (kept.length === 1) return kept[0]!;
+  return `${kept.slice(0, -1).join(', ')} and ${kept[kept.length - 1]}`;
+}
+
+/**
+ * The Staff row of a booth voucher, merged for the day (SCRUM-473, D6).
+ *
+ * The ladder, in order:
+ *
+ *  1. **A roster for today** — every name on it, joined naturally, plus the
+ *     person signed in when they are not already on it (a stand-in who signed
+ *     in through the standing list joins the day's label: D5.2). The signed-in
+ *     person is added by NAME only; the roster is names, and "Tom, Jerry and
+ *     Nok (S-7KMQ)" would print one person's code as though it were all three.
+ *     A stand-in with no name on record prints their code instead.
+ *  2. **Nobody attributed today** (no roster, or an empty one) and somebody
+ *     signed in — exactly today's slip: `signedInLabel` ("Nok (S-7KMQ)")
+ *     unchanged, byte for byte.
+ *  3. **Neither** — null, which the template prints as "unattributed", as today.
+ *
+ * The untouched-slip guarantee of step 2 is scoped to BEFORE anyone is
+ * attributed today. The moment the day's roster holds anyone — the rota's
+ * people, a manual add, or a stand-in self-assigned at their first sign-in at
+ * a booth with no rota — step 1 applies and the label is names only for the
+ * rest of the day: "Nok" replacing "Nok (S-7KMQ)" after the first attribution
+ * of the day is the owner's format ruling, not a regression.
+ *
+ * `roster` is taken only when its `date` is `today`; any other day's roster is
+ * treated as absent.
+ */
+export function boothDutyLabel(input: {
+  roster: BoothDutyRoster | null | undefined;
+  today: string;
+  signedIn: {
+    accountId: string;
+    name: string | null;
+    /** `boothStaffLabel(name, code)` — what the slip prints today. */
+    label: string | null;
+  } | null;
+}): string | null {
+  const people =
+    input.roster && input.roster.date === input.today ? input.roster.people : [];
+  if (people.length === 0) return input.signedIn?.label ?? null;
+  const names: (string | null)[] = people.map((p) => p.displayName);
+  const who = input.signedIn;
+  if (who && !people.some((p) => p.accountId === who.accountId)) {
+    names.push(who.name ?? who.label);
+  }
+  return joinBoothStaffNames(names);
+}
+
 // --- Signing in at the booth (SCRUM-223) ------------------------------------
 
 /**
