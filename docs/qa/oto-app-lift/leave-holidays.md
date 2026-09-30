@@ -1,0 +1,11 @@
+# SCRUM-193: leave and holidays staging acceptance
+
+On 1 October 2026, a launcher-signed administrator used one clearly labelled synthetic employee on the staging OTO App. The 820 × 1180 screenshots were captured from the live browser and visually reviewed.
+
+An annual leave record for 3 October was created through `/api/time-off` (201) and read from the employee time-off route (200, one matching record). A second request for the same employee and date was refused with 409. The My Shifts day view rendered the **Annual Leave** card and synthetic note in `scrum-193-staging-my-leave.png`. A labelled 6 October public holiday was created (201), appeared in the 2026 holiday read (200), and is visible in `scrum-193-staging-public-holiday.png`. Anonymous time-off and public-holiday reads each returned 401.
+
+The holiday, leave record and employee were removed with 204. Final searches found zero matching synthetic employees, public holidays or employee time-off records. The screenshot is evidence of the transient staging state, not a record left active.
+
+One date bug was reproduced before the successful leave submission. With an existing synthetic 2 October shift, submitting leave for `2026-10-03T00:00:00+07:00` returned 409 as if it conflicted with that 2 October shift; submitting 3 October at 12:00 Bangkok time returned 201. The `/api/time-off` create route converts the supplied string to a `Date`, then derives `yyyy-MM-dd` using the server-local formatter near `apps/oto-app/server/routes.ts:12124`. The UTC instant for Bangkok midnight falls on 2 October, explaining the observed conflict. The route needs a park-date interpretation before checking shifts and existing leave. This is an observed staging defect, not a claimed fix.
+
+The API creates time off without a persisted approval state in the current `employee_time_off` schema; this probe therefore verified submit and duplicate conflict, not an approval transition. A restricted role or branch-refusal check remains staging-unverified because no safe restricted login was available without the platform's SMS setup path. The tablet header overlap described in `scheduling.md` is also visible here, though the My Shifts leave card and Public Holidays list remained usable.
