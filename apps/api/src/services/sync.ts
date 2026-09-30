@@ -4,6 +4,7 @@ import {
   account,
   employee,
   band,
+  bandEvent,
   boothStaffAssignment,
   booking,
   box,
@@ -52,6 +53,8 @@ import {
   type SyncQuarantineStatus,
 } from '@oto/db';
 import {
+  GATE_EVENT_TYPE,
+  GateEventPayloadSchema,
   OFFLINE_POLICY,
   OfflineChildCreatedSchema,
   OfflineChildUpdatedSchema,
@@ -1687,6 +1690,109 @@ const HANDLERS: Record<string, EventHandler> = {
       const replay = replayScope(scope, event);
       const outcome = await replayOfflineTender(tx, replay, payload);
       return saleApplied(outcome);
+    },
+  },
+
+  /**
+   * THE GATE'S JOURNAL (S2-12 round 2; plan §2.5): one fact per outcome a
+   * gate box reached about a band — a credited passage in or out, a refusal
+   * at the reader, an open nobody passed, an alarm after an open.
+   *
+   * IDEMPOTENT ON THE BOX'S OWN ID. `eventId` is minted on the box and IS the
+   * `pos.band_event` row's id, so a replay (the same fact again after an
+   * unacknowledged push, a store restored, the Console's "Replay last batch")
+   * writes nothing the second time and answers as the first did. The ledger
+   * drops a repeated envelope already; this is the net under it for a fact
+   * that arrives under a new envelope.
+   *
+   * The band must be ours: a band at another operator is poison, and a band
+   * not here YET — minted on a box whose sale has not arrived — is held in
+   * quarantine to replay, as a member edit ahead of its create is.
+   *
+   * No change is published: the occupancy projection that reads these rows
+   * is round 4's. Reverse and tailgating raise an alert per gate station.
+   */
+  [GATE_EVENT_TYPE]: {
+    schema: GateEventPayloadSchema,
+    async apply(tx, scope, event, payload: z.infer<typeof GateEventPayloadSchema>) {
+      const stationId = event.envelope.stationId;
+      if (!stationId) {
+        throw new RefuseEvent('poison', 'SYNC_STATION_MISSING', 'A gate event names no station');
+      }
+      const [existing] = await tx
+        .select({ id: bandEvent.id, bandId: bandEvent.bandId })
+        .from(bandEvent)
+        .where(eq(bandEvent.id, payload.eventId))
+        .limit(1);
+      if (existing) {
+        if (existing.bandId !== payload.bandId) {
+          throw new RefuseEvent('conflict', 'SYNC_GATE_EVENT_ID_TAKEN', 'That gate event id names another band');
+        }
+        return { entityType: 'band', entityId: payload.bandId };
+      }
+      const [row] = await tx
+        .select({ id: band.id, operatorId: band.operatorId, branchId: band.branchId })
+        .from(band)
+        .where(eq(band.id, payload.bandId))
+        .limit(1);
+      if (!row) {
+        throw new RefuseEvent('apply_failed', 'SYNC_BAND_ABSENT', 'No such band here yet');
+      }
+      if (row.operatorId !== scope.auth.operatorId) {
+        throw new RefuseEvent('poison', 'SYNC_BAND_NOT_OURS', 'That band belongs to another operator');
+      }
+      const detail: Record<string, unknown> = {
+        direction: payload.direction,
+        side: payload.side,
+        occurredAt: payload.occurredAt,
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        ...(payload.alarm ? { alarm: payload.alarm } : {}),
+        ...(payload.exitWithoutEntry ? { exitWithoutEntry: true } : {}),
+        ...(payload.revoked ? { revoked: true } : {}),
+        ...(payload.inferred ? { inferred: true } : {}),
+        ...(payload.personInLane ? { personInLane: true } : {}),
+        ...(payload.offline ? { offline: true } : {}),
+        ...(row.branchId !== scope.auth.branchId ? { otherBranch: true } : {}),
+        sourceEventId: event.envelope.eventId,
+      };
+      await tx
+        .insert(bandEvent)
+        .values({
+          id: payload.eventId,
+          bandId: payload.bandId,
+          kind: payload.kind,
+          stationId,
+          boxId: scope.auth.boxId,
+          detail,
+          createdAt: event.occurredAt,
+        })
+        .onConflictDoNothing({ target: bandEvent.id });
+      await audit.record(tx, {
+        actorAccountId: null,
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+        action: `gate.${payload.kind}`,
+        entityType: 'band',
+        entityId: payload.bandId,
+        before: null,
+        after: { ...detail, stationId, boxId: scope.auth.boxId, bandEventId: payload.eventId },
+        requestId: null,
+        actionId: event.envelope.actionId ?? null,
+        sourceEventId: event.envelope.eventId,
+      });
+      if (payload.kind === 'alarm' && payload.alarm) {
+        await raiseSaleAlert(scope, {
+          key: `gate.${payload.alarm}:${stationId}`,
+          category: `gate.${payload.alarm}`,
+          subject: stationId,
+          summary:
+            payload.alarm === 'reverse'
+              ? 'Someone went the wrong way through the gate after it opened'
+              : 'Someone followed a guest through the gate',
+          detail: { stationId, boxId: scope.auth.boxId, direction: payload.direction, side: payload.side },
+        });
+      }
+      return { entityType: 'band', entityId: payload.bandId };
     },
   },
 
@@ -4326,12 +4432,35 @@ export async function cacheBundle(
        * stays offline. That is a property of offline working rather than a
        * defect: it is why a token's expiry is hours and not days.
        */
+      /**
+       * Bands stopped on purpose, NAMED (S2-12 round 2). The `bands` scope
+       * carries active bands only, so a gate cannot read absence as revoked —
+       * a band printed after its last pull is absent too. This list is what
+       * lets it refuse a revoked band with no internet. `replaced` is a stop
+       * as well: the lost band a new one took over from. Bounded by the
+       * `bands` scope's own window: a band older than that is unknown to the
+       * gate's copy anyway, and refused as such offline (OD-A5). The kind
+       * rides along so the gate can tell a refunded adult leaving (let out,
+       * OD-A4) from a kid's band (never operates the gate).
+       */
+      const stoppedBands = await db
+        .select({ id: band.id, kind: band.kind })
+        .from(band)
+        .where(
+          and(
+            eq(band.branchId, branchId),
+            inArray(band.status, ['revoked', 'replaced']),
+            sql`${band.createdAt} >= now() - interval '36 hours'`,
+          ),
+        )
+        .orderBy(asc(band.id));
       put(
         'deny_list',
         [
           {
             revokedAccountIds: rows.map((r) => r.id),
             revokedTokenIds: await revokedStaffTokenIds(db, operatorId),
+            revokedBands: stoppedBands,
           },
         ],
         /**

@@ -1281,8 +1281,23 @@ export type BandStatus = (typeof BAND_STATUSES)[number];
  * What can happen to a band, as `band_event.kind` records it. `minted` and
  * `reprinted` are written by S2-11; `scanned` by the box's band handler;
  * `replaced` and `revoked` by the tickets that re-issue and stop bands.
+ * `entry`, `exit`, `denied`, `timeout` and `alarm` are the gate box's journal
+ * (S2-12 round 2, `band.gate_event`): a passage credited to the band, a
+ * refusal at the reader, an open nobody passed, reverse or tailgating after an
+ * open — with station, box and reason in `detail`.
  */
-export const BAND_EVENT_KINDS = ['minted', 'reprinted', 'replaced', 'revoked', 'scanned'] as const;
+export const BAND_EVENT_KINDS = [
+  'minted',
+  'reprinted',
+  'replaced',
+  'revoked',
+  'scanned',
+  'entry',
+  'exit',
+  'denied',
+  'timeout',
+  'alarm',
+] as const;
 export type BandEventKind = (typeof BAND_EVENT_KINDS)[number];
 
 /**
@@ -1383,7 +1398,7 @@ export const bandEvent = pos.table(
     index('band_event_box_idx').on(t.boxId),
     check(
       'band_event_kind_check',
-      sql`${t.kind} in ('minted','reprinted','replaced','revoked','scanned')`,
+      sql`${t.kind} in ('minted','reprinted','replaced','revoked','scanned','entry','exit','denied','timeout','alarm')`,
     ),
   ],
 );

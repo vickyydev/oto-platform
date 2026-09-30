@@ -15,7 +15,16 @@ import type { CredentialStore } from './credentials';
 import { createOutbox, type Outbox } from './outbox';
 import { createSaleQueue, type FinaliseCrashPoint, type SaleQueue } from './sale-queue';
 import { createRefusalBackOff } from './reregister';
-import { generateSyncKeyPair, publicKeyFor, sealEnvelope } from './signing';
+import { generateSyncKeyPair, publicKeyFor, sealEnvelope, uuidv7 } from './signing';
+import {
+  GATE_READER_DEFAULT_PORT,
+  createGateHost,
+  gateSignature,
+  gateStationsOf,
+  gpiosetRelayDriver,
+  type GateHost,
+  type RelayDriver,
+} from './gate/index';
 import { StationBridge, type StationBridgeOptions } from './station-bridge';
 import { BAND_CODE_HANDLER, ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
@@ -347,6 +356,26 @@ export interface BoxAgentOptions {
      */
     stationId?: () => string | null;
   };
+  /**
+   * The gate box (S2-12 round 2): the reader's HTTP calls, the controller's
+   * serial line, the access decision and its journal (`gate/host.ts`).
+   *
+   * Built ONLY when the bundle names a station of kind `gate`; a till or a
+   * booth box never constructs it. On a Raspberry Pi (a box with a
+   * `configCache`) it listens for the reader on `GATE_READER_DEFAULT_PORT` and
+   * pulses its relay HAT through `gpioset`; the virtual box does neither
+   * unless told to here.
+   */
+  gate?: {
+    /** Off only for a test that wants the agent without it. */
+    enabled?: boolean;
+    /** Where the reader's calls are served; null serves nothing. */
+    listen?: { port: number; host?: string } | null;
+    /** The controller's serial line. Defaults to `terminal.openSerial`. */
+    openSerial?: SerialOpener;
+    /** The relay HAT. Null refuses a relay open by name. */
+    relayDriver?: RelayDriver | null;
+  };
 }
 
 export interface BoxAgentState {
@@ -487,6 +516,8 @@ export interface BoxAgent {
    * `createBoothHttp` to this.
    */
   booth(): Booth | null;
+  /** The gate box, or null on a box whose bundle names no gate station (S2-12). */
+  gate(): GateHost | null;
   /**
    * Sales taken with no internet, or null on a box with no store (S2-10a).
    *
@@ -834,6 +865,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let sessions: StationSessionManager | null = null;
   let scanner: ScanRouter | null = null;
   let booth: Booth | null = null;
+  /** The gate host, built only for a bundle with a gate station (S2-12). */
+  let gateHost: GateHost | null = null;
+  /** Whether `prepare` has run since the last `stop`: the gate follows config only then. */
+  let gateArmed = false;
   let bridge: StationBridge | null = null;
   /**
    * The `staff` cache scope, as the booth's sign-in reads it.
@@ -2252,6 +2287,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      * through to `unknown` below.
      */
     const printerHealth = printing?.jobs.health() ?? {};
+    // The gate's controller and readers, as the gate host last saw them (S2-12).
+    const gateHealth = gateHost?.deviceHealth() ?? {};
     for (const device of devices) {
       // One device can serve two roles on one station; it is still one device.
       if (seen.has(device.id)) continue;
@@ -2264,14 +2301,15 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
        */
       const fault = options.faults?.[device.id] ?? options.faults?.[device.label];
       const health = printerHealth[device.id];
+      const gate = gateHealth[device.id];
       reports.push({
         id: device.id,
         address: device.address ?? undefined,
         kind: device.kind,
         model: device.model ?? undefined,
-        reachability: fault?.reachability ?? health?.reachability ?? 'unknown',
+        reachability: fault?.reachability ?? health?.reachability ?? gate?.reachability ?? 'unknown',
         paperStatus: fault?.paperStatus ?? health?.paperStatus ?? 'unknown',
-        lastError: fault?.lastError ?? health?.lastError ?? undefined,
+        lastError: fault?.lastError ?? health?.lastError ?? gate?.lastError ?? undefined,
       });
     }
     return reports;
@@ -2340,6 +2378,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         agentVersion: BOX_AGENT_VERSION,
         minSupportedAgentVersion: body.minSupportedAgentVersion,
       });
+    }
+    if (changed) {
+      await syncGate().catch((err) => note('error', 'the gate host could not follow the config', { err: String(err) }));
     }
     return changed;
   }
@@ -2672,6 +2713,105 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
   }
 
+  // --- The gate box (S2-12 round 2) -------------------------------------------
+
+  /**
+   * The day's bands, read on their own (S2-12 round 2).
+   *
+   * `bands` is volatile — every ticket sale moves it — so the bundle's version
+   * does not stand for it, and a 304 says nothing about it. Only a gate needs
+   * it current, so only the gate host asks: on its own timer and before it
+   * sends an unknown band to reception (OD-A5). Paged to the end, written
+   * whole, and never moves `cacheCursorSeq`, for `pullReceiptSeries`'s reason.
+   */
+  async function pullBandsScope(boxId: string): Promise<boolean> {
+    if (!store || !credential || state.offline) return false;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=bands`, { method: 'GET' });
+    if (status !== 200 || !body) return false;
+    await completeTruncatedScopes(body);
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const held = plan.apply.includes('bands') ? body.scopes.bands : undefined;
+    if (!held) return false;
+    await store.writeBundle(boxId, {
+      scope: 'bands',
+      schemaVersion: body.schemaVersion,
+      cursorSeq: cacheCursorSeq,
+      payload: { items: held.items },
+      appliedAt: new Date(clock()).toISOString(),
+    });
+    cacheScopesHeld.add('bands');
+    return true;
+  }
+
+  /**
+   * Build, rebuild or drop the gate host to match the bundle. A no-op on a box
+   * whose bundle names no gate station — which is every till and booth box —
+   * and on one whose gate configuration has not changed.
+   */
+  async function syncGate(): Promise<void> {
+    if (!gateArmed || options.gate?.enabled === false) return;
+    const stations = gateStationsOf(bundle?.stations);
+    const boxId = state.boxId;
+    const wanted = stations.length > 0 && store && outbox && boxId;
+    if (!wanted) {
+      if (gateHost) {
+        await gateHost.stop().catch(() => undefined);
+        gateHost = null;
+        note('info', 'gate host stopped: this box runs no gate station now');
+      }
+      return;
+    }
+    if (gateHost && gateHost.signature === gateSignature(stations)) return;
+    if (gateHost) await gateHost.stop().catch(() => undefined);
+    const heldStore = store!;
+    const heldOutbox = outbox!;
+    const onPi = Boolean(options.configCache);
+    gateHost = createGateHost({
+      boxId: boxId!,
+      stations,
+      now: clock,
+      bandKey: bandKeyNow,
+      readCopy: async () => {
+        const [bands, deny] = await Promise.all([
+          heldStore.readBundle(boxId!, 'bands').catch(() => null),
+          heldStore.readBundle(boxId!, 'deny_list').catch(() => null),
+        ]);
+        const items = (b: CachedBundle | null): unknown[] => {
+          const list = (b?.payload as { items?: unknown } | undefined)?.items;
+          return Array.isArray(list) ? list : [];
+        };
+        return { bands: items(bands), deny: items(deny) };
+      },
+      isOnline: () => !state.offline && state.linkUp,
+      refreshBands: () => pullBandsScope(boxId!),
+      journal: (fact) => heldOutbox.queue(fact),
+      state: {
+        read: (key) => heldStore.readRuntimeValue(boxId!, key),
+        write: (key, value) => heldStore.writeRuntimeValue(boxId!, key, value),
+      },
+      mintId: () => uuidv7(clock()),
+      openSerial: options.gate?.openSerial ?? options.terminal?.openSerial ?? null,
+      relayDriver:
+        options.gate?.relayDriver !== undefined ? options.gate.relayDriver : onPi ? gpiosetRelayDriver() : null,
+      listen:
+        options.gate?.listen !== undefined
+          ? options.gate.listen
+          : onPi
+            ? { port: GATE_READER_DEFAULT_PORT }
+            : null,
+      note: (level, message, detail) => note(level, message, detail),
+    });
+    await gateHost.start().catch((err) => {
+      note('error', 'the gate host could not start', { err: String(err) });
+    });
+    note('info', 'gate host running', { stations: stations.map((s) => s.id) });
+  }
+
   // --- Sales taken with no internet (S2-10a; offline plan Round 4) -----------
 
   /**
@@ -2769,7 +2909,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
        * whose journal waits for a new epoch (SCRUM-403): somebody has to
        * press Reset the store for it, and this is how they learn so.
        */
-      errors: [...cacheFaultReports(), ...journalFaultReports()].slice(0, 32),
+      errors: [...cacheFaultReports(), ...journalFaultReports(), ...(gateHost?.errorReports() ?? [])].slice(0, 32),
     };
     /**
      * What this box is holding offline (SCRUM-323).
@@ -3712,6 +3852,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         note('error', 'the booth could not start', { err: String(err) });
       });
     }
+    // A gate, like a booth, runs from the config this box holds (S2-12).
+    gateArmed = true;
+    await syncGate().catch((err) => note('error', 'the gate host could not be set up', { err: String(err) }));
     return true;
   }
 
@@ -3824,6 +3967,12 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     // A `restart` command is `stop` then `start`: the booth's own timer went
     // with it, so the next `prepare` starts the booth again.
     boothStarted = false;
+    // The gate likewise: its port and serial line are let go, and the next
+    // `prepare` builds it again from the config.
+    gateArmed = false;
+    const stopping = gateHost;
+    gateHost = null;
+    void stopping?.stop().catch(() => undefined);
   }
 
   return {
@@ -3845,6 +3994,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     printing: () => printing,
     terminal: () => terminals,
     booth: () => booth,
+    gate: () => gateHost,
     sales: saleQueue,
     bridge: () => bridge,
     sealer: () => {
