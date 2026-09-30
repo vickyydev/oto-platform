@@ -1313,22 +1313,36 @@ export async function registerRoutes(
     }
   });
 
-  // Branches routes - filter by user's allowed branches
+  const canAccessBranchRecord = async (
+    user: UserWithBranchAccess | undefined,
+    branch: { id: string; tenantId: string },
+  ): Promise<boolean> => {
+    if (!user?.tenantId || branch.tenantId !== user.tenantId) return false;
+    if (canUserAccessBranch(user, branch.id)) return true;
+    const [linkedEmployee] = await db.select({ branchId: employees.branchId })
+      .from(employees).where(eq(employees.userId, user.id)).limit(1);
+    return linkedEmployee?.branchId === branch.id;
+  };
+
+  // Branches routes - filter by the signed-in tenant and allowed branches.
   app.get("/api/branches", requireAuth, async (req, res, next) => {
     try {
-      const branches = await storage.getBranches();
       const userWithAccess = req.userWithAccess;
-      if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
+      if (!userWithAccess?.tenantId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      const tenantBranches = (await storage.getBranches()).filter(b => b.tenantId === userWithAccess.tenantId);
+      if (!userWithAccess.hasAllBranchesAccess) {
         const allowedIds = new Set(userWithAccess.allowedBranchIds);
-        const user = req.user as any;
-        const linkedEmp = await db.select({ branchId: employees.branchId }).from(employees).where(eq(employees.userId, user.id)).limit(1);
+        const linkedEmp = await db.select({ branchId: employees.branchId }).from(employees)
+          .where(eq(employees.userId, userWithAccess.id)).limit(1);
         if (linkedEmp.length && linkedEmp[0].branchId) {
           allowedIds.add(linkedEmp[0].branchId);
         }
-        const filteredBranches = branches.filter(b => allowedIds.has(b.id));
+        const filteredBranches = tenantBranches.filter(b => allowedIds.has(b.id));
         return res.json(filteredBranches);
       }
-      res.json(branches);
+      res.json(tenantBranches);
     } catch (error) {
       next(error);
     }
@@ -1337,7 +1351,7 @@ export async function registerRoutes(
   app.get("/api/branches/:id", requireAuth, async (req, res, next) => {
     try {
       const branch = await storage.getBranch(req.params.id);
-      if (!branch) {
+      if (!branch || !(await canAccessBranchRecord(req.userWithAccess, branch))) {
         return res.status(404).json({ message: "Branch not found" });
       }
       res.json(branch);
@@ -1366,9 +1380,12 @@ export async function registerRoutes(
 
   app.post("/api/branches", requireAdmin, async (req, res, next) => {
     try {
-      // Add tenantId from authenticated user with fallbacks
-      const tenantId = await resolveTenantId(req.user?.tenantId);
-      const { calendarColor: _ignoredCalendarColor, ...branchBody } = req.body;
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Invalid branch data" });
+      }
+      const { calendarColor: _ignoredCalendarColor, tenantId: _ignoredTenantId, ...branchBody } = req.body;
       const bodyWithTenant = { ...branchBody, tenantId };
       const parsed = insertBranchSchema.safeParse(bodyWithTenant);
       if (!parsed.success) {
@@ -1384,7 +1401,17 @@ export async function registerRoutes(
 
   app.patch("/api/branches/:id", requireAdmin, async (req, res, next) => {
     try {
-      const { calendarColor: _ignoredCalendarColor, ...branchUpdates } = req.body;
+      const existing = await storage.getBranch(req.params.id);
+      if (!existing || !(await canAccessBranchRecord(req.userWithAccess, existing))) {
+        return res.status(404).json({ message: "Branch not found" });
+      }
+      if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Invalid branch data" });
+      }
+      if ("tenantId" in req.body && req.body.tenantId !== existing.tenantId) {
+        return res.status(400).json({ message: "Branch tenant cannot be changed" });
+      }
+      const { calendarColor: _ignoredCalendarColor, tenantId: _ignoredTenantId, ...branchUpdates } = req.body;
       const branch = await storage.updateBranch(req.params.id, branchUpdates);
       
       res.json(branch);
@@ -1395,6 +1422,10 @@ export async function registerRoutes(
 
   app.delete("/api/branches/:id", requireAdmin, async (req, res, next) => {
     try {
+      const branch = await storage.getBranch(req.params.id);
+      if (!branch || !(await canAccessBranchRecord(req.userWithAccess, branch))) {
+        return res.status(404).json({ message: "Branch not found" });
+      }
       await storage.deleteBranch(req.params.id);
       res.sendStatus(204);
     } catch (error) {
@@ -1410,7 +1441,7 @@ export async function registerRoutes(
       }
 
       const branch = await storage.getBranch(req.params.id);
-      if (!branch) {
+      if (!branch || !(await canAccessBranchRecord(req.userWithAccess, branch))) {
         return res.status(404).json({ message: "Branch not found" });
       }
 
@@ -1436,7 +1467,7 @@ export async function registerRoutes(
   app.delete("/api/branches/:id/logo", requireAdmin, async (req, res, next) => {
     try {
       const branch = await storage.getBranch(req.params.id);
-      if (!branch) {
+      if (!branch || !(await canAccessBranchRecord(req.userWithAccess, branch))) {
         return res.status(404).json({ message: "Branch not found" });
       }
 
@@ -16928,7 +16959,13 @@ OTO Company Limited`,
   app.patch("/api/events/:eventId/camp-registrations/:registrationId/attendance-days", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { eventId, registrationId } = req.params;
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = user.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const event = await campEventById(eventId);
+      if (!event || event.tenantId !== tenantId || !canUserAccessBranch(user, event.branchId)) {
+        return res.status(404).json({ message: "Camp event not found" });
+      }
       const userId = (req.user as any)?.id;
 
       const { addDates, removeDates } = req.body as { addDates?: string[]; removeDates?: string[] };
@@ -16978,7 +17015,11 @@ OTO Company Limited`,
       await db
         .update(campRegistrations)
         .set({ attendanceDays: afterAdd, updatedAt: new Date() })
-        .where(eq(campRegistrations.id, registrationId));
+        .where(and(
+          eq(campRegistrations.id, registrationId),
+          eq(campRegistrations.eventId, eventId),
+          eq(campRegistrations.tenantId, tenantId),
+        ));
 
       // Create camp_attendance rows for added dates (status=waiting), skip if already exists
       if (toAdd.length > 0) {
@@ -17155,8 +17196,14 @@ OTO Company Limited`,
   // DELETE /api/events/:eventId/camp-registrations/:regId - Remove a child from a camp (manager/admin only)
   app.delete("/api/events/:eventId/camp-registrations/:regId", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const { eventId, regId } = req.params;
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = user.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const event = await campEventById(eventId);
+      if (!event || event.tenantId !== tenantId || !canUserAccessBranch(user, event.branchId)) {
+        return res.status(404).json({ message: "Camp event not found" });
+      }
 
       const [existing] = await db
         .select({ id: campRegistrations.id, childFullName: campRegistrations.childFullName, tenantId: campRegistrations.tenantId })
