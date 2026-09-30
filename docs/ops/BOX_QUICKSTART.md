@@ -32,9 +32,23 @@ oto-kiosk` shows it (network icon top right), and `sudo systemctl start oto-kios
 brings the wheel back. The box keeps selling nothing meanwhile — stopping the kiosk
 only hides the picture, it does not stop the box.
 
-No screen handy? Make your phone's hotspot with the SAME name and password as the home
-Wi-Fi the card was imaged with: the Pi joins it by itself, SSH in over the hotspot, add
-the park Wi-Fi with the nmcli line above, then switch off the hotspot.
+**Before leaving, the zero-effort route:** while the Pi is still on the old Wi-Fi, add
+the destination's Wi-Fi in advance over SSH — it joins by itself on arrival:
+
+```
+sudo nmcli connection add type wifi ifname wlan0 con-name park ssid "PARK-WIFI-NAME" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "PARK-WIFI-PASSWORD"
+```
+
+**No keyboard or screen at all?** Rename your phone's hotspot to EXACTLY the old
+Wi-Fi's name with the same password: the Pi joins it by itself, believing it is home.
+Put the Mac on the same hotspot, SSH in, add the real Wi-Fi with the nmcli line, switch
+the hotspot off. (iPhone: the hotspot's name is the device name under Settings →
+General → About → Name; switch on Maximize Compatibility. Android: name and password
+are set directly on the hotspot screen.)
+
+**Do not** cable the Pi to a router to get internet: its Ethernet socket is reserved
+for the printer, with a fixed address and no internet route, so the cable gets nothing
+and confuses the printer link.
 
 ## B. The printer — nothing to set, ever
 
