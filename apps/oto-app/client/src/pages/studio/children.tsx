@@ -204,7 +204,8 @@ export default function ChildrenDatabasePage() {
     try {
       const fd = new FormData();
       fd.append("photo", file);
-      const res = await fetch("/api/public/camp-photos", { method: "POST", body: fd, credentials: "include" });
+      if (selectedChild?.id) fd.append("registrationId", selectedChild.id);
+      const res = await fetch("/api/admin/camp-photos", { method: "POST", body: fd, credentials: "include" });
       if (!res.ok) throw new Error();
       const { url } = await res.json();
       setProfileForm((p) => ({ ...p, childPhotoUrl: url }));
@@ -224,6 +225,7 @@ export default function ChildrenDatabasePage() {
       qc.invalidateQueries({ queryKey: ["/api/admin/children"] });
       // Update selected child in state so the form reflects new values
       setSelectedChild((prev: any) => prev ? { ...prev, ...updated } : prev);
+      setProfileForm((prev) => ({ ...prev, childPhotoUrl: updated.childPhotoUrl || "" }));
       toast({ title: "Profile saved", description: "Changes synced across all camps." });
     },
     onError: () => {

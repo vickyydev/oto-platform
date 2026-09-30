@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import { db } from "../server/db";
 import { tenants, branches, kioskDevices, kioskSessions, DEFAULT_TENANT_SLUG } from "../shared/schema";
-import { coreEvents, campRegistrations, serviceCheckins } from "../server/db/coreSchema";
+import { coreEvents, campRegistrations, campAttendance, serviceCheckins } from "../server/db/coreSchema";
 import { createHash } from "crypto";
 import { deleteFromObjectStorage, uploadToObjectStorage } from "../server/file-storage";
 
@@ -31,12 +31,12 @@ test("reception kiosk can load today's camp registrations with its kiosk token",
     isActive: true,
   }).returning();
 
-  await db.insert(kioskSessions).values({
+  const [session] = await db.insert(kioskSessions).values({
     tenantId: tenant.id,
     kioskDeviceId: device.id,
     sessionTokenHash: hashSessionToken(token),
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-  });
+  }).returning();
 
   const today = bangkokToday();
   const [camp] = await db.insert(coreEvents).values({
@@ -52,7 +52,7 @@ test("reception kiosk can load today's camp registrations with its kiosk token",
     isArchived: false,
   } as any).returning();
 
-  await db.insert(campRegistrations).values({
+  const [registration] = await db.insert(campRegistrations).values({
     tenantId: tenant.id,
     eventId: camp.id,
     childFullName: "Playwright Camp Child",
@@ -64,15 +64,108 @@ test("reception kiosk can load today's camp registrations with its kiosk token",
     agreedChildHealthy: true,
     parentSignature: "Playwright Parent",
     signatureDate: today,
-  });
+  }).returning();
 
-  const response = await request.get(`/api/core/camp-checkins/today?branchId=${branch.id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  try {
+    const response = await request.get(`/api/core/camp-checkins/today?branchId=${branch.id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.registrations.map((r: any) => r.childFullName)).toContain("Playwright Camp Child");
+  } finally {
+    await db.delete(campAttendance).where(eq(campAttendance.campRegistrationId, registration.id));
+    await db.delete(campRegistrations).where(eq(campRegistrations.id, registration.id));
+    await db.delete(kioskSessions).where(eq(kioskSessions.id, session.id));
+    await db.delete(kioskDevices).where(eq(kioskDevices.id, device.id));
+    await db.delete(coreEvents).where(eq(coreEvents.id, camp.id));
+  }
+});
 
-  expect(response.status()).toBe(200);
-  const body = await response.json();
-  expect(body.registrations.map((r: any) => r.childFullName)).toContain("Playwright Camp Child");
+test("camp photos attach only to their event and open through scoped or signed reads", async ({ request }) => {
+  const [tenant] = await db.select().from(tenants).where(eq(tenants.slug, DEFAULT_TENANT_SLUG)).limit(1);
+  const [sourceBranch] = await db.select().from(branches).where(eq(branches.tenantId, tenant.id)).limit(1);
+  const [otherBranch] = await db.insert(branches).values({ tenantId: tenant.id, name: `Camp photo other ${Date.now()}`, address: "Test only" }).returning();
+  const today = bangkokToday();
+  const [sourceCamp, otherCamp] = await db.insert(coreEvents).values([sourceBranch, otherBranch].map((branch, index) => ({
+    tenantId: tenant.id, branchId: branch.id, eventType: "camp", title: `Photo test camp ${index}`,
+    eventDate: today, campEndDate: today, startTime: "09:00", endTime: "15:00", status: "confirmed", isArchived: false,
+  })) as any).returning();
+  const [sourceDevice, otherDevice] = await db.insert(kioskDevices).values([sourceBranch, otherBranch].map((branch, index) => ({
+    tenantId: tenant.id, branchId: branch.id, name: `Camp photo kiosk ${index}`, kioskType: "reception",
+  }))).returning();
+  const sourceToken = `camp-source-${Date.now()}`;
+  const otherToken = `camp-other-${Date.now()}`;
+  const [sourceSession, otherSession] = await db.insert(kioskSessions).values([
+    { tenantId: tenant.id, kioskDeviceId: sourceDevice.id, sessionTokenHash: hashSessionToken(sourceToken), expiresAt: new Date(Date.now() + 60_000) },
+    { tenantId: tenant.id, kioskDeviceId: otherDevice.id, sessionTokenHash: hashSessionToken(otherToken), expiresAt: new Date(Date.now() + 60_000) },
+  ]).returning();
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
+  const uploadedFiles: Array<{ folder: string; filename: string }> = [];
+  let registrationId: string | undefined;
+  try {
+    const unsafe = await request.post("/api/public/camp-photos", {
+      multipart: { eventId: sourceCamp.id, photo: { name: "photo.svg", mimeType: "image/svg+xml", buffer: Buffer.from("<svg/>") } },
+    });
+    expect(unsafe.status()).toBe(400);
+    const upload = await request.post("/api/public/camp-photos", {
+      multipart: { eventId: sourceCamp.id, photo: { name: "child.png", mimeType: "image/png", buffer: png } },
+    });
+    expect(upload.status()).toBe(200);
+    const { url, canonicalUrl } = await upload.json();
+    uploadedFiles.push({ folder: "camp-photos-private", filename: canonicalUrl.split("/").pop()! });
+    expect((await request.get(canonicalUrl)).status()).toBe(401);
+    expect((await request.get(url)).status()).toBe(200);
+
+    const payload = {
+      childFullName: "Camp Photo Test Child", dateOfBirth: "2018-01-01", parentGuardianName: "Camp Test Parent",
+      emergencyContactNumber: "+66800001111", attendanceDays: [today], agreedCampRules: true,
+      agreedChildHealthy: true, parentSignature: "Camp Test Parent", signatureDate: today, childPhotoUrl: url,
+    };
+    expect((await request.post("/api/public/camp-registrations", { data: { ...payload, eventId: otherCamp.id } })).status()).toBe(400);
+    const submitted = await request.post("/api/public/camp-registrations", { data: { ...payload, eventId: sourceCamp.id } });
+    expect(submitted.status()).toBe(201);
+    const registration = await submitted.json();
+    registrationId = registration.id;
+    expect(registration.childPhotoUrl).toBe(canonicalUrl);
+    expect((await request.get(canonicalUrl, { headers: { Authorization: `Bearer ${sourceToken}` } })).status()).toBe(200);
+    expect((await request.get(canonicalUrl, { headers: { Authorization: `Bearer ${otherToken}` } })).status()).toBe(404);
+    expect((await request.get(canonicalUrl)).status()).toBe(401);
+
+    const lookup = await request.get(`/api/public/camp-registrations/lookup?eventId=${sourceCamp.id}&phone=${encodeURIComponent(payload.emergencyContactNumber)}`);
+    expect(lookup.status()).toBe(200);
+    const found = await lookup.json();
+    expect(found.children[0].childPhotoUrl).toBe(canonicalUrl);
+    const preview = found.children[0].childPhotoPreviewUrl;
+    expect(preview).toContain(`/api/public/camp-photo/${registrationId}/childPhotoUrl?`);
+    const previewRead = await request.get(preview);
+    expect(previewRead.status()).toBe(200);
+    expect(previewRead.headers()["cache-control"]).toBe("private, no-store");
+    expect(previewRead.headers()["referrer-policy"]).toBe("no-referrer");
+    expect(await previewRead.body()).toEqual(png);
+    expect((await request.get(`${preview}x`)).status()).toBe(404);
+
+    const roster = await request.get(`/api/core/camp-checkins/today?branchId=${sourceBranch.id}`, {
+      headers: { Authorization: `Bearer ${sourceToken}` },
+    });
+    expect(roster.status()).toBe(200);
+    const row = (await roster.json()).registrations.find((item: any) => item.id === registrationId);
+    expect(row.childPhotoUrl).toContain(`/api/public/camp-photo/${registrationId}/childPhotoUrl?`);
+    expect((await request.get(row.childPhotoUrl)).status()).toBe(200);
+  } finally {
+    if (registrationId) {
+      await db.delete(campAttendance).where(eq(campAttendance.campRegistrationId, registrationId));
+      await db.delete(campRegistrations).where(eq(campRegistrations.id, registrationId));
+    }
+    for (const file of uploadedFiles) await deleteFromObjectStorage(file.folder, file.filename);
+    await db.delete(kioskSessions).where(eq(kioskSessions.id, sourceSession.id));
+    await db.delete(kioskSessions).where(eq(kioskSessions.id, otherSession.id));
+    await db.delete(kioskDevices).where(eq(kioskDevices.id, sourceDevice.id));
+    await db.delete(kioskDevices).where(eq(kioskDevices.id, otherDevice.id));
+    await db.delete(coreEvents).where(eq(coreEvents.id, sourceCamp.id));
+    await db.delete(coreEvents).where(eq(coreEvents.id, otherCamp.id));
+    await db.delete(branches).where(eq(branches.id, otherBranch.id));
+  }
 });
 
 test("checkout photo is readable only by its check-in branch", async ({ request }) => {

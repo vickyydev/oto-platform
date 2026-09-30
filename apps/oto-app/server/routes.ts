@@ -1483,7 +1483,7 @@ export async function registerRoutes(
   // Legacy public paths only; private uploads use their record-scoped routes.
   app.use("/uploads", (req, res, next) => {
     const match = /^\/([a-z0-9-]+)\/([a-zA-Z0-9._-]+)$/.exec(req.path);
-    if (["pin-photos", "checkin-photos", "checker-photos", "task-photos"].includes(match?.[1] || "")) return next();
+    if (["pin-photos", "checkin-photos", "checker-photos", "task-photos", "camp-photos", "camp-photos-private"].includes(match?.[1] || "")) return next();
     const publicFolders = new Set(["branch-logos", "dropoff-photos", "invitations"]);
     if (!match || !publicFolders.has(match[1]) || match[2] === "." || match[2] === "..") {
       return res.status(404).json({ message: "File not found" });
@@ -16183,6 +16183,117 @@ OTO Company Limited`,
   // CAMP REGISTRATIONS
   // ============================================
 
+  type CampPhotoField = "childPhotoUrl" | "parentPhotoUrl" | "pickupPhotoUrl";
+  const campPhotoFields: CampPhotoField[] = ["childPhotoUrl", "parentPhotoUrl", "pickupPhotoUrl"];
+  const CAMP_ATTACH_MS = 30 * 60_000;
+  const CAMP_PREVIEW_MS = 15 * 60_000;
+  const campPhotoPath = (value: string) => {
+    const match = /^\/(?:api\/files\/|uploads\/)(camp-photos|camp-photos-private)\/([a-zA-Z0-9._-]+)$/.exec(value);
+    return match && match[2] !== "." && match[2] !== ".."
+      ? { folder: match[1] as "camp-photos" | "camp-photos-private", filename: match[2] }
+      : null;
+  };
+  const campPhotoSignature = (payload: string) => {
+    const secret = process.env.SESSION_SECRET;
+    if (!secret) throw new Error("SESSION_SECRET is required for camp photo links");
+    return crypto.createHmac("sha256", secret).update(`camp-photo:${payload}`).digest("hex");
+  };
+  const sameCampPhotoSignature = (actual: string, expected: string) =>
+    /^[a-f0-9]{64}$/.test(actual) && crypto.timingSafeEqual(Buffer.from(actual, "hex"), Buffer.from(expected, "hex"));
+  const campPhotoClaim = (url: string, event: { id: string; tenantId: string; branchId: string | null }, actor: string) => {
+    const expiresAt = Date.now() + CAMP_ATTACH_MS;
+    const signature = campPhotoSignature(`${url}:${event.id}:${event.tenantId}:${event.branchId}:${actor}:${expiresAt}`);
+    return `${url}?claim=${event.id}.${expiresAt}.${actor}.${signature}`;
+  };
+  const verifyCampPhotoClaim = (supplied: string, event: { id: string; tenantId: string; branchId: string | null }, actor: string) => {
+    const match = /^(\/api\/files\/camp-photos-private\/[a-zA-Z0-9._-]+)\?claim=([a-f0-9-]{36})\.(\d{13})\.([a-zA-Z0-9-]+)\.([a-f0-9]{64})$/.exec(supplied);
+    if (!match || match[2] !== event.id || match[4] !== actor) return null;
+    const expiresAt = Number(match[3]);
+    if (expiresAt < Date.now() || expiresAt > Date.now() + CAMP_ATTACH_MS) return null;
+    const expected = campPhotoSignature(`${match[1]}:${event.id}:${event.tenantId}:${event.branchId}:${actor}:${expiresAt}`);
+    return sameCampPhotoSignature(match[5], expected) ? match[1] : null;
+  };
+  const campPhotoCandidates = (folder: string, filename: string) => [
+    `/api/files/${folder}/${filename}`, `/uploads/${folder}/${filename}`,
+  ];
+  const campEventById = async (id: string) => {
+    const [event] = await db.select({ id: coreEventsTable.id, tenantId: coreEventsTable.tenantId, branchId: coreEventsTable.branchId })
+      .from(coreEventsTable).where(and(eq(coreEventsTable.id, id), eq(coreEventsTable.eventType, "camp"))).limit(1);
+    return event || null;
+  };
+  const campPreviewUrl = (registration: { id: string; eventId: string; tenantId: string; [key: string]: any }, field: CampPhotoField, eventBranchId: string | null) => {
+    const url = registration[field];
+    if (typeof url !== "string" || !campPhotoPath(url)) return null;
+    const expiresAt = Date.now() + CAMP_PREVIEW_MS;
+    const signature = campPhotoSignature(`${registration.id}:${field}:${url}:${registration.eventId}:${registration.tenantId}:${eventBranchId}:${expiresAt}`);
+    return `/api/public/camp-photo/${registration.id}/${field}?exp=${expiresAt}&sig=${signature}`;
+  };
+  const sendCampPhoto = async (res: Response, folder: string, filename: string) => {
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    const file = await getFileFromObjectStorage(folder, filename);
+    if (file) {
+      res.setHeader("Content-Type", file.contentType);
+      file.stream.pipe(res);
+      return;
+    }
+    for (const localPath of [path.join(process.cwd(), folder, filename), path.join(process.cwd(), "uploads", folder, filename)]) {
+      if (fs.existsSync(localPath)) return res.sendFile(localPath);
+    }
+    res.status(404).json({ message: "Photo not found" });
+  };
+  const findCampPhotoOwner = async (folder: string, filename: string, tenantId: string, allowedBranches?: string[]) => {
+    const candidates = campPhotoCandidates(folder, filename);
+    const [row] = await db.select({ id: campRegistrations.id, branchId: coreEventsTable.branchId })
+      .from(campRegistrations)
+      .innerJoin(coreEventsTable, eq(campRegistrations.eventId, coreEventsTable.id))
+      .where(and(
+        eq(campRegistrations.tenantId, tenantId), eq(coreEventsTable.tenantId, tenantId),
+        allowedBranches ? inArray(coreEventsTable.branchId, allowedBranches) : undefined,
+        or(...campPhotoFields.map(field => inArray(campRegistrations[field], candidates))),
+      )).limit(1);
+    return row || null;
+  };
+  const resolveCampAttachment = async (
+    supplied: unknown, field: CampPhotoField,
+    event: { id: string; tenantId: string; branchId: string | null }, actor: string,
+    identity: { childName?: string; phone?: string; current?: string | null; allowedBranches?: string[] },
+  ): Promise<string | null | false> => {
+    if (supplied === null || supplied === "") return null;
+    if (typeof supplied !== "string") return false;
+    const claimed = verifyCampPhotoClaim(supplied, event, actor);
+    if (claimed) return claimed;
+    const parsed = campPhotoPath(supplied);
+    if (!parsed) return false;
+    if (supplied === identity.current) return supplied;
+    if (!identity.phone) return false;
+    const [existing] = await db.select({ id: campRegistrations.id })
+      .from(campRegistrations)
+      .innerJoin(coreEventsTable, eq(campRegistrations.eventId, coreEventsTable.id))
+      .where(and(
+        eq(campRegistrations.tenantId, event.tenantId), eq(coreEventsTable.tenantId, event.tenantId),
+        eq(campRegistrations[field], supplied),
+        identity.allowedBranches ? inArray(coreEventsTable.branchId, identity.allowedBranches) : undefined,
+        identity.phone ? or(
+          eq(campRegistrations.emergencyContactNumber, identity.phone),
+          sql`${campRegistrations.parentContacts} IS NOT NULL AND EXISTS (SELECT 1 FROM jsonb_array_elements(${campRegistrations.parentContacts}) AS e WHERE e->>'phone' = ${identity.phone})`,
+          sql`${campRegistrations.authorizedPickupPersons} ilike ${'%' + identity.phone + '%'}`,
+        ) : undefined,
+        field === "childPhotoUrl" && identity.childName
+          ? sql`lower(trim(${campRegistrations.childFullName})) = ${identity.childName.trim().toLowerCase()}` : undefined,
+      )).limit(1);
+    return existing ? supplied : false;
+  };
+  const campPhotoTypes: Record<string, string> = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
+  const validCampPhoto = (file: Express.Multer.File) => {
+    const bytes = file.buffer;
+    if (file.mimetype === "image/jpeg") return bytes.length >= 3 && bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]));
+    if (file.mimetype === "image/png") return bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    if (file.mimetype === "image/webp") return bytes.length >= 12 && bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP";
+    return false;
+  };
+
   // Public: get camp event info (for registration form - no auth required)
   app.get("/api/public/camp-events/:id", async (req, res, next) => {
     try {
@@ -16217,18 +16328,104 @@ OTO Company Limited`,
   const campPhotoUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-      if (file.mimetype.startsWith("image/")) cb(null, true);
-      else cb(new Error("Only image files are allowed"));
-    },
   });
-  app.post("/api/public/camp-photos", campPhotoUpload.single("photo"), async (req, res, next) => {
+  app.post("/api/public/camp-photos", (req, res, next) => {
+    if (!takeKioskAttempt(`camp-photo-ip:${req.ip}`, 30, 10 * 60_000)) {
+      return res.status(429).json({ message: "Too many photo uploads. Please try again shortly." });
+    }
+    next();
+  }, campPhotoUpload.single("photo"), async (req, res, next) => {
     try {
-      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-      const ext = req.file.mimetype === "image/png" ? "png" : "jpg";
-      const filename = `camp-photo-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const url = await uploadToObjectStorage(req.file.buffer, "camp-photos", filename, req.file.mimetype);
-      res.json({ url });
+      if (typeof req.body.eventId !== "string") return res.status(400).json({ message: "Camp event is required" });
+      const event = await campEventById(req.body.eventId);
+      if (!event) return res.status(404).json({ message: "Camp event not found" });
+      if (!req.file || !campPhotoTypes[req.file.mimetype] || !validCampPhoto(req.file)) {
+        return res.status(400).json({ message: "A JPEG, PNG or WebP photo is required" });
+      }
+      const filename = `camp_${crypto.randomUUID()}${campPhotoTypes[req.file.mimetype]}`;
+      const url = await uploadToObjectStorage(req.file.buffer, "camp-photos-private", filename, req.file.mimetype);
+      res.json({ url: campPhotoClaim(url, event, "public"), canonicalUrl: url });
+    } catch (error) {
+      next(error);
+    }
+  });
+  app.post("/api/admin/camp-photos", requireAuth, requireManager, campPhotoUpload.single("photo"), async (req, res, next) => {
+    try {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      let eventId = typeof req.body.eventId === "string" ? req.body.eventId : "";
+      if (!eventId && typeof req.body.registrationId === "string") {
+        const [registration] = await db.select({ eventId: campRegistrations.eventId })
+          .from(campRegistrations).where(and(eq(campRegistrations.id, req.body.registrationId), eq(campRegistrations.tenantId, tenantId))).limit(1);
+        eventId = registration?.eventId || "";
+      }
+      const event = eventId ? await campEventById(eventId) : null;
+      if (!event || event.tenantId !== tenantId || !canUserAccessBranch(user, event.branchId)) {
+        return res.status(404).json({ message: "Camp event not found" });
+      }
+      if (!req.file || !campPhotoTypes[req.file.mimetype] || !validCampPhoto(req.file)) {
+        return res.status(400).json({ message: "A JPEG, PNG or WebP photo is required" });
+      }
+      const filename = `camp_${crypto.randomUUID()}${campPhotoTypes[req.file.mimetype]}`;
+      const url = await uploadToObjectStorage(req.file.buffer, "camp-photos-private", filename, req.file.mimetype);
+      res.json({ url: campPhotoClaim(url, event, user.id), canonicalUrl: url });
+    } catch (error) {
+      next(error);
+    }
+  });
+  const serveCampPhoto = (folder: "camp-photos" | "camp-photos-private") => async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { filename } = req.params;
+      if (!/^[a-zA-Z0-9._-]+$/.test(filename) || filename === "." || filename === "..") {
+        return res.status(404).json({ message: "Photo not found" });
+      }
+      if (folder === "camp-photos-private" && typeof req.query.claim === "string") {
+        const claimedUrl = `/api/files/${folder}/${filename}?claim=${req.query.claim}`;
+        const match = /^([a-f0-9-]{36})\./.exec(req.query.claim);
+        const event = match ? await campEventById(match[1]) : null;
+        if (event) {
+          const actor = req.query.claim.split(".")[2];
+          if (actor && verifyCampPhotoClaim(claimedUrl, event, actor)) return sendCampPhoto(res, folder, filename);
+        }
+      }
+      if (!req.isAuthenticated?.() && !req.kioskSession) return res.status(401).json({ message: "Authentication required" });
+      const user = req.user as UserWithBranchAccess | undefined;
+      const tenantId = req.kioskSession?.tenantId || (user ? await resolveTenantId(user.tenantId) : null);
+      if (!tenantId) return res.status(401).json({ message: "Authentication required" });
+      const branches = req.kioskSession ? [req.kioskSession.branchId]
+        : user?.hasAllBranchesAccess ? undefined : user?.allowedBranchIds || [];
+      if (branches && branches.length === 0) return res.status(404).json({ message: "Photo not found" });
+      const owner = await findCampPhotoOwner(folder, filename, tenantId, branches);
+      if (!owner) return res.status(404).json({ message: "Photo not found" });
+      return sendCampPhoto(res, folder, filename);
+    } catch (error) {
+      next(error);
+    }
+  };
+  app.get("/api/files/camp-photos/:filename", requireAuthOrKiosk, serveCampPhoto("camp-photos"));
+  app.get("/uploads/camp-photos/:filename", requireAuthOrKiosk, serveCampPhoto("camp-photos"));
+  const campPrivateAuth = (req: Request, res: Response, next: NextFunction) =>
+    typeof req.query.claim === "string" ? next() : requireAuthOrKiosk(req, res, next);
+  app.get("/api/files/camp-photos-private/:filename", campPrivateAuth, serveCampPhoto("camp-photos-private"));
+  app.get("/uploads/camp-photos-private/:filename", campPrivateAuth, serveCampPhoto("camp-photos-private"));
+  app.get("/api/public/camp-photo/:registrationId/:field", async (req, res, next) => {
+    try {
+      const field = req.params.field as CampPhotoField;
+      if (!campPhotoFields.includes(field)) return res.status(404).json({ message: "Photo not found" });
+      const [registration] = await db.select().from(campRegistrations)
+        .where(eq(campRegistrations.id, req.params.registrationId)).limit(1);
+      if (!registration) return res.status(404).json({ message: "Photo not found" });
+      const event = await campEventById(registration.eventId);
+      if (!event || event.tenantId !== registration.tenantId) return res.status(404).json({ message: "Photo not found" });
+      const url = registration[field];
+      const parsed = typeof url === "string" ? campPhotoPath(url) : null;
+      const expiresAt = Number(req.query.exp);
+      if (!parsed || !Number.isSafeInteger(expiresAt) || expiresAt < Date.now() || expiresAt > Date.now() + CAMP_PREVIEW_MS || typeof req.query.sig !== "string") {
+        return res.status(404).json({ message: "Photo not found" });
+      }
+      const expected = campPhotoSignature(`${registration.id}:${field}:${url}:${event.id}:${event.tenantId}:${event.branchId}:${expiresAt}`);
+      if (!sameCampPhotoSignature(req.query.sig, expected)) return res.status(404).json({ message: "Photo not found" });
+      return sendCampPhoto(res, parsed.folder, parsed.filename);
     } catch (error) {
       next(error);
     }
@@ -16253,6 +16450,7 @@ OTO Company Limited`,
       const regs = await db
         .select({
           id: campRegistrations.id,
+          tenantId: campRegistrations.tenantId,
           eventId: campRegistrations.eventId,
           childFullName: campRegistrations.childFullName,
           dateOfBirth: campRegistrations.dateOfBirth,
@@ -16282,6 +16480,12 @@ OTO Company Limited`,
         .orderBy(desc(campRegistrations.createdAt));
 
       if (!regs.length) return res.json({ found: false });
+      const photoEvents = await db.select({ id: coreEventsTable.id, branchId: coreEventsTable.branchId })
+        .from(coreEventsTable).where(and(
+          eq(coreEventsTable.tenantId, event[0].tenantId),
+          inArray(coreEventsTable.id, [...new Set(regs.map(reg => reg.eventId))]),
+        ));
+      const photoBranchByEvent = new Map(photoEvents.map(row => [row.id, row.branchId]));
 
       // Determine if the phone matched the primary number or only as a secondary/pickup number
       const matchedPrimary = regs.some(r => r.emergencyContactNumber.trim() === phoneTrimmed);
@@ -16294,6 +16498,7 @@ OTO Company Limited`,
         dateOfBirth: string | null;
         primaryLanguage: string | null;
         childPhotoUrl: string | null;
+        childPhotoPreviewUrl: string | null;
         allergies: string | null;
         behavioralNotes: string | null;
         alreadyRegisteredForThisCamp: boolean;
@@ -16314,6 +16519,7 @@ OTO Company Limited`,
             dateOfBirth: reg.dateOfBirth,
             primaryLanguage: reg.primaryLanguage,
             childPhotoUrl: reg.childPhotoUrl,
+            childPhotoPreviewUrl: campPreviewUrl(reg, "childPhotoUrl", photoBranchByEvent.get(reg.eventId) ?? null),
             allergies: reg.allergies || reg.foodRestrictions || null,
             behavioralNotes: reg.behavioralNotes,
             alreadyRegisteredForThisCamp: !!currentCampReg,
@@ -16367,6 +16573,7 @@ OTO Company Limited`,
         parentContacts,
         authorizedPickupPersons: latest.authorizedPickupPersons,
         pickupPhotoUrl: latest.pickupPhotoUrl,
+        pickupPhotoPreviewUrl: campPreviewUrl(latest, "pickupPhotoUrl", photoBranchByEvent.get(latest.eventId) ?? null),
         foodRestrictions: latest.foodRestrictions,
         agreedCampRulesDate: validRulesDate,
         children: uniqueChildren,
@@ -16427,7 +16634,7 @@ OTO Company Limited`,
 
       // Verify the event exists and is a camp
       const event = await db
-        .select({ id: coreEventsTable.id, tenantId: coreEventsTable.tenantId, eventType: coreEventsTable.eventType })
+        .select({ id: coreEventsTable.id, tenantId: coreEventsTable.tenantId, branchId: coreEventsTable.branchId, eventType: coreEventsTable.eventType })
         .from(coreEventsTable)
         .where(and(eq(coreEventsTable.id, eventId), eq(coreEventsTable.eventType, "camp")))
         .limit(1);
@@ -16436,6 +16643,16 @@ OTO Company Limited`,
       const tenantId = event[0].tenantId;
       const normalizedPhone = emergencyContactNumber.trim();
       const normalizedName = childFullName.trim().toLowerCase();
+      const photoIdentity = { childName: childFullName, phone: normalizedPhone };
+      const submittedChildPhoto = childPhotoUrl === undefined ? undefined
+        : await resolveCampAttachment(childPhotoUrl, "childPhotoUrl", event[0], "public", photoIdentity);
+      const submittedParentPhoto = parentPhotoUrl === undefined ? undefined
+        : await resolveCampAttachment(parentPhotoUrl, "parentPhotoUrl", event[0], "public", photoIdentity);
+      const submittedPickupPhoto = pickupPhotoUrl === undefined ? undefined
+        : await resolveCampAttachment(pickupPhotoUrl, "pickupPhotoUrl", event[0], "public", photoIdentity);
+      if (submittedChildPhoto === false || submittedParentPhoto === false || submittedPickupPhoto === false) {
+        return res.status(400).json({ message: "Invalid camp photo attachment" });
+      }
       const newDays: string[] = Array.isArray(attendanceDays) ? attendanceDays : [];
       const now = new Date();
       // Only stamp a new agreement date/history when the parent is actively re-signing.
@@ -16454,7 +16671,7 @@ OTO Company Limited`,
         behavioralNotes: behavioralNotes?.trim() || null,
         specialNotes: specialNotes?.trim() || null,
         primaryLanguage: primaryLanguage?.trim() || null,
-        childPhotoUrl: childPhotoUrl || null,
+        ...(submittedChildPhoto !== undefined ? { childPhotoUrl: submittedChildPhoto } : {}),
       };
 
       // Check for an existing registration in this specific camp:
@@ -16525,8 +16742,8 @@ OTO Company Limited`,
             ...profileUpdate,
             ...signatureFields,
             authorizedPickupPersons: authorizedPickupPersons?.trim() || null,
-            parentPhotoUrl: parentPhotoUrl || null,
-            pickupPhotoUrl: pickupPhotoUrl || null,
+            ...(submittedParentPhoto !== undefined ? { parentPhotoUrl: submittedParentPhoto } : {}),
+            ...(submittedPickupPhoto !== undefined ? { pickupPhotoUrl: submittedPickupPhoto } : {}),
             parentContacts: parentContactsArr,
             attendanceDays: mergedDays,
             agreedCampRules: Boolean(agreedCampRules),
@@ -16614,9 +16831,9 @@ OTO Company Limited`,
         specialNotes: specialNotes?.trim() || null,
         authorizedPickupPersons: authorizedPickupPersons?.trim() || null,
         primaryLanguage: primaryLanguage?.trim() || null,
-        childPhotoUrl: childPhotoUrl || null,
-        parentPhotoUrl: parentPhotoUrl || null,
-        pickupPhotoUrl: pickupPhotoUrl || null,
+        childPhotoUrl: submittedChildPhoto || null,
+        parentPhotoUrl: submittedParentPhoto || null,
+        pickupPhotoUrl: submittedPickupPhoto || null,
         attendanceDays: newDays,
         agreedCampRules: Boolean(agreedCampRules),
         agreedChildHealthy: Boolean(agreedChildHealthy),
@@ -16652,10 +16869,16 @@ OTO Company Limited`,
   app.get("/api/admin/events/:id/registrations", requireAuth, async (req, res, next) => {
     try {
       const { id } = req.params;
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const event = await campEventById(id);
+      if (!event || event.tenantId !== tenantId || !canUserAccessBranch(user, event.branchId)) {
+        return res.status(404).json({ message: "Camp event not found" });
+      }
       const regs = await db
         .select()
         .from(campRegistrations)
-        .where(eq(campRegistrations.eventId, id))
+        .where(and(eq(campRegistrations.eventId, id), eq(campRegistrations.tenantId, tenantId)))
         .orderBy(asc(campRegistrations.createdAt));
       res.json(regs);
     } catch (error) {
@@ -16768,8 +16991,13 @@ OTO Company Limited`,
   app.patch("/api/events/:eventId/camp-registrations/:regId", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { eventId, regId } = req.params;
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       const userId = (req.user as any)?.id;
+      const event = await campEventById(eventId);
+      if (!event || event.tenantId !== tenantId || !canUserAccessBranch(user, event.branchId)) {
+        return res.status(404).json({ message: "Camp event not found" });
+      }
 
       const profileSchema = z.object({
         childFullName: z.string().min(1).optional(),
@@ -16797,6 +17025,7 @@ OTO Company Limited`,
           tenantId: campRegistrations.tenantId,
           childFullName: campRegistrations.childFullName,
           emergencyContactNumber: campRegistrations.emergencyContactNumber,
+          childPhotoUrl: campRegistrations.childPhotoUrl,
         })
         .from(campRegistrations)
         .where(and(
@@ -16821,7 +17050,14 @@ OTO Company Limited`,
       if (fields.authorizedPickupPersons !== undefined) updatePayload.authorizedPickupPersons = fields.authorizedPickupPersons?.trim() || null;
       if (fields.parentGuardianName !== undefined) updatePayload.parentGuardianName = fields.parentGuardianName.trim();
       if (fields.emergencyContactNumber !== undefined) updatePayload.emergencyContactNumber = fields.emergencyContactNumber.trim();
-      if (fields.childPhotoUrl !== undefined) updatePayload.childPhotoUrl = fields.childPhotoUrl || null;
+      if (fields.childPhotoUrl !== undefined) {
+        const photo = await resolveCampAttachment(fields.childPhotoUrl, "childPhotoUrl", event, user.id, {
+          current: reg.childPhotoUrl, childName: reg.childFullName, phone: reg.emergencyContactNumber,
+          allowedBranches: user.hasAllBranchesAccess ? undefined : user.allowedBranchIds,
+        });
+        if (photo === false) return res.status(400).json({ message: "Invalid camp photo attachment" });
+        updatePayload.childPhotoUrl = photo;
+      }
 
       // Update the primary registration
       const [updated] = await db
@@ -17314,7 +17550,8 @@ OTO Company Limited`,
   // PATCH /api/admin/children/:id — update child profile globally (syncs all registrations)
   app.patch("/api/admin/children/:id", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       const { id } = req.params;
       const userId = (req.user as any)?.id;
 
@@ -17342,13 +17579,19 @@ OTO Company Limited`,
       const [rep] = await db
         .select({
           id: campRegistrations.id,
+          eventId: campRegistrations.eventId,
           childFullName: campRegistrations.childFullName,
           emergencyContactNumber: campRegistrations.emergencyContactNumber,
+          childPhotoUrl: campRegistrations.childPhotoUrl,
         })
         .from(campRegistrations)
         .where(and(eq(campRegistrations.id, id), eq(campRegistrations.tenantId, tenantId)));
 
       if (!rep) return res.status(404).json({ message: "Child not found" });
+      const event = await campEventById(rep.eventId);
+      if (!event || event.tenantId !== tenantId || !canUserAccessBranch(user, event.branchId)) {
+        return res.status(404).json({ message: "Child not found" });
+      }
 
       const now = new Date();
       const updatePayload: Record<string, any> = { updatedAt: now };
@@ -17371,7 +17614,14 @@ OTO Company Limited`,
         if (fields.parentGuardianName !== undefined) updatePayload.parentGuardianName = fields.parentGuardianName.trim();
         if (fields.emergencyContactNumber !== undefined) updatePayload.emergencyContactNumber = fields.emergencyContactNumber.trim();
       }
-      if (fields.childPhotoUrl !== undefined) updatePayload.childPhotoUrl = fields.childPhotoUrl || null;
+      if (fields.childPhotoUrl !== undefined) {
+        const photo = await resolveCampAttachment(fields.childPhotoUrl, "childPhotoUrl", event, user.id, {
+          current: rep.childPhotoUrl, childName: rep.childFullName, phone: rep.emergencyContactNumber,
+          allowedBranches: user.hasAllBranchesAccess ? undefined : user.allowedBranchIds,
+        });
+        if (photo === false) return res.status(400).json({ message: "Invalid camp photo attachment" });
+        updatePayload.childPhotoUrl = photo;
+      }
 
       // Update ALL registrations for this child (matched by pre-update name + phone)
       const matchName = rep.childFullName.trim().toLowerCase();
@@ -17410,7 +17660,8 @@ OTO Company Limited`,
   app.post("/api/admin/events/:eventId/camp-registrations/manager", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { eventId } = req.params;
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       const userId = (req.user as any)?.id;
       const staffUser = req.user as any;
       const staffName = staffUser?.fullName || staffUser?.email || "Staff";
@@ -17440,13 +17691,19 @@ OTO Company Limited`,
 
       // Verify event exists
       const [ev] = await db
-        .select({ id: coreEventsTable.id, tenantId: coreEventsTable.tenantId, eventDate: coreEventsTable.eventDate })
+        .select({ id: coreEventsTable.id, tenantId: coreEventsTable.tenantId, branchId: coreEventsTable.branchId, eventDate: coreEventsTable.eventDate })
         .from(coreEventsTable)
         .where(and(eq(coreEventsTable.id, eventId), eq(coreEventsTable.tenantId, tenantId)));
-      if (!ev) return res.status(404).json({ message: "Event not found" });
+      if (!ev || !canUserAccessBranch(user, ev.branchId)) return res.status(404).json({ message: "Event not found" });
 
       const normalizedName = data.childFullName.trim().toLowerCase();
       const rawPhone = data.emergencyContactNumber?.trim() || "";
+      const submittedPhoto = data.childPhotoUrl === undefined ? null
+        : await resolveCampAttachment(data.childPhotoUrl, "childPhotoUrl", ev, user.id, {
+          childName: data.childFullName, phone: rawPhone,
+          allowedBranches: user.hasAllBranchesAccess ? undefined : user.allowedBranchIds,
+        });
+      if (submittedPhoto === false) return res.status(400).json({ message: "Invalid camp photo attachment" });
       // Only attempt dedup when a real phone is supplied.
       // An absent phone cannot reliably identify the same child, so we never
       // collapse multiple "no-phone" children together — each gets its own row.
@@ -17508,7 +17765,7 @@ OTO Company Limited`,
         specialNotes: isOneTime ? (data.approximateAge ? `Age: ${data.approximateAge}` : null) : (data.specialNotes?.trim() || null),
         authorizedPickupPersons: data.authorizedPickupPersons?.trim() || null,
         primaryLanguage: data.primaryLanguage?.trim() || null,
-        childPhotoUrl: data.childPhotoUrl || null,
+        childPhotoUrl: submittedPhoto,
         attendanceDays: data.attendanceDays,
         agreedCampRules: true,
         agreedChildHealthy: true,
@@ -17546,7 +17803,12 @@ OTO Company Limited`,
   app.post("/api/admin/events/:eventId/camp-registrations/:regId/convert", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { eventId, regId } = req.params;
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const event = await campEventById(eventId);
+      if (!event || event.tenantId !== tenantId || !canUserAccessBranch(user, event.branchId)) {
+        return res.status(404).json({ message: "Camp event not found" });
+      }
 
       const bodySchema = z.object({
         childFullName: z.string().min(1).optional(),
@@ -17567,7 +17829,7 @@ OTO Company Limited`,
       const data = parsed.data;
 
       const [reg] = await db
-        .select({ id: campRegistrations.id, tenantId: campRegistrations.tenantId, isOneTime: campRegistrations.isOneTime })
+        .select({ id: campRegistrations.id, tenantId: campRegistrations.tenantId, isOneTime: campRegistrations.isOneTime, childPhotoUrl: campRegistrations.childPhotoUrl, childFullName: campRegistrations.childFullName, emergencyContactNumber: campRegistrations.emergencyContactNumber })
         .from(campRegistrations)
         .where(and(
           eq(campRegistrations.id, regId),
@@ -17581,7 +17843,14 @@ OTO Company Limited`,
       if (data.childFullName) updatePayload.childFullName = data.childFullName.trim();
       if (data.dateOfBirth !== undefined) updatePayload.dateOfBirth = data.dateOfBirth || undefined;
       if (data.primaryLanguage !== undefined) updatePayload.primaryLanguage = data.primaryLanguage?.trim() || null;
-      if (data.childPhotoUrl !== undefined) updatePayload.childPhotoUrl = data.childPhotoUrl || null;
+      if (data.childPhotoUrl !== undefined) {
+        const photo = await resolveCampAttachment(data.childPhotoUrl, "childPhotoUrl", event, user.id, {
+          current: reg.childPhotoUrl, childName: reg.childFullName, phone: reg.emergencyContactNumber,
+          allowedBranches: user.hasAllBranchesAccess ? undefined : user.allowedBranchIds,
+        });
+        if (photo === false) return res.status(400).json({ message: "Invalid camp photo attachment" });
+        updatePayload.childPhotoUrl = photo;
+      }
       if (data.allergies !== undefined) updatePayload.allergies = data.allergies?.trim() || null;
       if (data.foodRestrictions !== undefined) updatePayload.foodRestrictions = data.foodRestrictions?.trim() || null;
       if (data.behavioralNotes !== undefined) updatePayload.behavioralNotes = data.behavioralNotes?.trim() || null;
@@ -17609,13 +17878,16 @@ OTO Company Limited`,
   // Get today's camp registrations (children attending today's active camp)
   app.get("/api/core/camp-checkins/today", requireAuthOrKiosk, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess | undefined;
+      const tenantId = req.kioskSession?.tenantId || await resolveTenantId(user?.tenantId);
       let { branchId } = req.query as { branchId?: string };
       if (req.kioskSession) {
         if (branchId && branchId !== req.kioskSession.branchId) {
           return res.status(403).json({ message: "Kiosk cannot access another branch" });
         }
         branchId = req.kioskSession.branchId;
+      } else if (user && branchId && !canUserAccessBranch(user, branchId)) {
+        return res.status(403).json({ message: "Access denied to this branch" });
       }
       // Use Bangkok timezone for date comparison (consistent with rest of app)
       const todayStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
@@ -17627,6 +17899,10 @@ OTO Company Limited`,
         lte(coreEventsTable.eventDate, todayStr),
       ];
       if (branchId) campConditions.push(eq(coreEventsTable.branchId, branchId));
+      else if (user && !user.hasAllBranchesAccess) {
+        if (user.allowedBranchIds.length === 0) return res.json({ camps: [], registrations: [] });
+        campConditions.push(inArray(coreEventsTable.branchId, user.allowedBranchIds));
+      }
 
       const activeCamps = await db
         .select()
@@ -17696,10 +17972,13 @@ OTO Company Limited`,
       );
 
       // Merge daily attendance status into each registration
+      const branchByCamp = new Map(todayCamps.map(camp => [camp.id, camp.branchId]));
       const registrations = regs.map((r) => {
         const att = attendanceByRegId.get(r.id);
         return {
           ...r,
+          childPhotoUrl: campPreviewUrl(r, "childPhotoUrl", branchByCamp.get(r.eventId) ?? null) || r.childPhotoUrl,
+          pickupPhotoUrl: campPreviewUrl(r, "pickupPhotoUrl", branchByCamp.get(r.eventId) ?? null) || r.pickupPhotoUrl,
           attendanceStatus: att?.status ?? "waiting",
           attendanceCheckedInAt: att?.checkedInAt?.toISOString() ?? null,
           attendanceCheckedOutAt: att?.checkedOutAt?.toISOString() ?? null,
@@ -23105,7 +23384,7 @@ ${context}`;
       }
       // Private documents have their own record-scoped routes; this generic
       // file route cannot decide who may read a contract or employee record.
-      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private", "knowledge-files", "test-uploads", "pin-photos", "checkin-photos", "checker-photos", "task-photos"].includes(folder)) {
+      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private", "knowledge-files", "test-uploads", "pin-photos", "checkin-photos", "checker-photos", "task-photos", "camp-photos", "camp-photos-private"].includes(folder)) {
         return res.status(404).json({ message: "File not found" });
       }
       

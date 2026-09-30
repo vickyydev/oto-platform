@@ -36,6 +36,7 @@ interface ChildEntry {
   dateOfBirth: string;
   primaryLanguage: string;
   photoUrl: string | null;
+  photoPreviewUrl?: string | null;
   attendanceDays: string[];
   allergies: string;
   behavioralNotes: string;
@@ -49,6 +50,7 @@ interface LookupChild {
   dateOfBirth: string | null;
   primaryLanguage: string | null;
   childPhotoUrl: string | null;
+  childPhotoPreviewUrl?: string | null;
   allergies: string | null;
   behavioralNotes: string | null;
   alreadyRegisteredForThisCamp: boolean;
@@ -258,12 +260,14 @@ function PhotoUploader({
   onUploaded,
   prefillUrl,
   required = false,
+  eventId,
 }: {
   label: string;
   icon: React.ReactNode;
   onUploaded: (url: string | null) => void;
   prefillUrl?: string | null;
   required?: boolean;
+  eventId?: string;
 }) {
   const [preview, setPreview] = useState<string | null>(prefillUrl ?? null);
   const [uploading, setUploading] = useState(false);
@@ -283,6 +287,7 @@ function PhotoUploader({
     try {
       const fd = new FormData();
       fd.append("photo", file);
+      if (eventId) fd.append("eventId", eventId);
       const res = await fetch("/api/public/camp-photos", { method: "POST", body: fd });
       if (!res.ok) throw new Error("Upload failed");
       const { url } = await res.json();
@@ -364,6 +369,7 @@ export default function CampRegisterPage() {
     { id: "pc-0", name: "", phone: "" },
   ]);
   const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string | null>(null);
+  const [pickupPhotoPreviewUrl, setPickupPhotoPreviewUrl] = useState<string | null>(null);
   const [prefillBanner, setPrefillBanner] = useState(false);
   const [agreedCampRulesDate, setAgreedCampRulesDate] = useState<string | null>(null);
   const [rulesConfirmedCollapsed, setRulesConfirmedCollapsed] = useState(false);
@@ -382,7 +388,8 @@ export default function CampRegisterPage() {
   });
   const [children, setChildren] = useState<ChildEntry[]>([newChild()]);
   const updateChild = (id: string, field: keyof Omit<ChildEntry, "id">, value: any) =>
-    setChildren(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+    setChildren(prev => prev.map(c => c.id === id
+      ? { ...c, [field]: value, ...(field === "photoUrl" ? { photoPreviewUrl: null } : {}) } : c));
 
   const { data: campEvent, isLoading: campLoading, isError: campError } = useQuery<any>({
     queryKey: [`/api/public/camp-events/${eventId}`],
@@ -455,6 +462,7 @@ export default function CampRegisterPage() {
       }
       setValue("authorizedPickupPersons", data.authorizedPickupPersons || "");
       if (data.pickupPhotoUrl) { setPickupPhotoUrl(data.pickupPhotoUrl); }
+      setPickupPhotoPreviewUrl(data.pickupPhotoPreviewUrl || null);
       if (data.agreedCampRulesDate) {
         setAgreedCampRulesDate(data.agreedCampRulesDate);
         setAgreedRules(true);
@@ -478,6 +486,7 @@ export default function CampRegisterPage() {
           dateOfBirth: c.dateOfBirth || "",
           primaryLanguage: c.primaryLanguage || "",
           photoUrl: c.childPhotoUrl || null,
+          photoPreviewUrl: c.childPhotoPreviewUrl || null,
           attendanceDays: [],
           allergies: c.allergies || "",
           behavioralNotes: c.behavioralNotes || "",
@@ -919,7 +928,8 @@ export default function CampRegisterPage() {
                   label="Child Photo"
                   icon={<Camera className="h-4 w-4" />}
                   onUploaded={url => updateChild(child.id, "photoUrl", url)}
-                  prefillUrl={child.photoUrl}
+                  prefillUrl={child.photoPreviewUrl || child.photoUrl}
+                  eventId={eventId}
                   required
                 />
 
@@ -1048,8 +1058,9 @@ export default function CampRegisterPage() {
               <PhotoUploader
                 label="Photo of Pickup Person"
                 icon={<User className="h-5 w-5 text-gray-400" />}
-                onUploaded={setPickupPhotoUrl}
-                prefillUrl={pickupPhotoUrl}
+                onUploaded={url => { setPickupPhotoUrl(url); setPickupPhotoPreviewUrl(null); }}
+                prefillUrl={pickupPhotoPreviewUrl || pickupPhotoUrl}
+                eventId={eventId}
                 required
               />
             </div>

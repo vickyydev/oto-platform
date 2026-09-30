@@ -450,7 +450,8 @@ export default function CampDetailPage() {
     try {
       const fd = new FormData();
       fd.append("photo", file);
-      const res = await fetch("/api/public/camp-photos", { method: "POST", body: fd, credentials: "include" });
+      if (id) fd.append("eventId", id);
+      const res = await fetch("/api/admin/camp-photos", { method: "POST", body: fd, credentials: "include" });
       if (!res.ok) throw new Error();
       const { url } = await res.json();
       setNewChildForm((p) => ({ ...p, childPhotoUrl: url }));
@@ -485,7 +486,8 @@ export default function CampDetailPage() {
     try {
       const formData = new FormData();
       formData.append("photo", file);
-      const res = await fetch("/api/public/camp-photos", { method: "POST", body: formData, credentials: "include" });
+      if (childProfileReg?.id) formData.append("registrationId", childProfileReg.id);
+      const res = await fetch("/api/admin/camp-photos", { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) throw new Error("Upload failed");
       const { url } = await res.json();
       setProfileForm((prev) => ({ ...prev, childPhotoUrl: url }));
@@ -2192,7 +2194,8 @@ export default function CampDetailPage() {
                       try {
                         const fd = new FormData();
                         fd.append("photo", file);
-                        const r = await fetch("/api/public/camp-photos", { method: "POST", body: fd, credentials: "include" });
+                        if (convertReg?.id) fd.append("registrationId", convertReg.id);
+                        const r = await fetch("/api/admin/camp-photos", { method: "POST", body: fd, credentials: "include" });
                         if (r.ok) {
                           const d = await r.json();
                           setConvertForm((p) => ({ ...p, childPhotoUrl: d.url }));
