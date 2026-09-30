@@ -950,16 +950,19 @@ function LiveStatus({
  * here led to it.
  *
  * The receipt and slip templates are the till's back office's Print
- * Templates panel (`apps/pos`, Operations › Print Templates), so this links to
- * that back office and names the panel. It cannot land ON the panel, or with
- * this booth's printer chosen: the back office opens on its first panel and
- * takes no address for one yet, and a template is the branch's, not a
- * device's. With no till origin configured (`VITE_POS_URL`) the words stay and
- * the link does not — a dead address is worse than a sentence.
+ * Templates panel (`apps/pos`, Operations › Print Templates). The back office
+ * gives each panel an address (`/admin?panel=…`, SCRUM-470), so this lands on
+ * that panel directly — and still does for a person who is signed out there:
+ * the sign-in wall renders in place and keeps the query string. It does not
+ * open with this booth's printer chosen: a template is the branch's, not a
+ * device's, and the panel is the list of them. With no till origin configured
+ * (`VITE_POS_URL`) the words stay and the link does not — a dead address is
+ * worse than a sentence.
  *
  * The booth's own voucher slip is laid out by the platform and has no
  * template there; its words are its voucher type's, which the prize editor
- * links to.
+ * links to. That is why the link names the panel and not a template: the
+ * slip's words are in none of them.
  */
 function TemplatesLink() {
   const label = (
@@ -972,7 +975,7 @@ function TemplatesLink() {
     <span className="mt-2 flex flex-col gap-0.5 text-xs font-normal">
       {POS_URL ? (
         <a
-          href={`${POS_URL}/admin`}
+          href={`${POS_URL}/admin?panel=templates`}
           className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-4"
         >
           {label}
@@ -982,8 +985,10 @@ function TemplatesLink() {
         <span className="inline-flex items-center gap-1.5 font-semibold">{label}</span>
       )}
       <span className="text-muted-foreground">
-        In the till’s back office, under Operations › Print Templates. The booth’s voucher slip takes
-        its words from its voucher type.
+        {POS_URL
+          ? 'Opens the till’s back office on its Print Templates screen (Operations › Print Templates). '
+          : 'In the till’s back office, under Operations › Print Templates. '}
+        The booth’s voucher slip takes its words from its voucher type.
       </span>
     </span>
   );

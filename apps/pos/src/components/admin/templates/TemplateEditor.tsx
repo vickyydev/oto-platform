@@ -135,7 +135,11 @@ export function TemplateEditor({
         </div>
       )}
 
-      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+      {/* The preview column takes half the width, never under the 300px it
+          had nor over 460px (SCRUM-470): the printout is now drawn at half a
+          dot per pixel or larger and wants the room, while a fixed 460px would
+          leave the form 140px on a laptop with the sidebar open. */}
+      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_clamp(300px,50%,460px)]">
         {/* Form */}
         <div className="flex flex-col gap-4">
           <Field label="Template name" htmlFor="tpl-name" error={nameError}>

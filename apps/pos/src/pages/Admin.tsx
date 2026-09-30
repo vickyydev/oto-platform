@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useLocation, useSearch } from 'wouter';
 import { Construction, ShieldAlert } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import {
   adminPanelsById,
+  allAdminPanels,
   DEFAULT_ADMIN_PANEL,
   firstUsableAdminPanel,
 } from '@/components/admin/adminSections';
@@ -34,6 +36,8 @@ import { useOperator } from '@/auth/OperatorContext';
 
 export default function Admin() {
   const { can } = useOperator();
+  const search = useSearch();
+  const [, navigate] = useLocation();
   /**
    * Land on something this account can use. Tickets is the console's front
    * page and needs `catalog:package:update`, which an account here to manage
@@ -41,19 +45,32 @@ export default function Admin() {
    * welcome and would read as a fault. Computed once, because it answers
    * "where does this person start", not "what may they do now".
    */
-  const [activeId, setActiveId] = useState<string>(() => firstUsableAdminPanel(can));
-  const panel = adminPanelsById[activeId] ?? adminPanelsById[DEFAULT_ADMIN_PANEL];
+  const [landingId] = useState<string>(() => firstUsableAdminPanel(can));
   /**
-   * A panel the nav did not offer, opened anyway — a state edit today, a deep
-   * link when panels get addresses. It gets a refusal that names the
-   * permission rather than a form that will 403 on save: the same choice
-   * App.tsx makes for the station-setup routes, so a person can be shown why
-   * and can screenshot it.
+   * Every panel has an address: `/admin?panel=templates` (SCRUM-470). The
+   * address IS the state — choosing a panel writes it and the active panel is
+   * read back from it — so a panel can be bookmarked, linked to from the
+   * Console (the booth page points its printer at Print Templates) and
+   * returned to with the back button. A person who arrives signed out lands
+   * where the link pointed: the sign-in wall renders in place, and the
+   * launcher hand-off strips only the fragment and keeps the query string. A
+   * name the console does not know is ignored rather than refused, and the
+   * landing panel stands.
+   */
+  const askedId = panelFromSearch(search);
+  const activeId = askedId ?? landingId;
+  const panel = adminPanelsById[activeId] ?? adminPanelsById[DEFAULT_ADMIN_PANEL];
+  const selectPanel = (id: string) => navigate(`/admin?${new URLSearchParams({ panel: id })}`);
+  /**
+   * A panel the nav did not offer, opened anyway — a deep link to one this
+   * account does not hold. It gets a refusal that names the permission rather
+   * than a form that will 403 on save: the same choice App.tsx makes for the
+   * station-setup routes, so a person can be shown why and can screenshot it.
    */
   const refusedPermission = panel.permission && !can(panel.permission) ? panel.permission : null;
 
   return (
-    <AdminLayout activeId={activeId} onSelect={setActiveId}>
+    <AdminLayout activeId={activeId} onSelect={selectPanel}>
       <div className="mx-auto max-w-4xl flex flex-col gap-6">
         <div className="flex items-center gap-3">
           <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-foreground/5 text-foreground/80">
@@ -121,6 +138,12 @@ export default function Admin() {
       </div>
     </AdminLayout>
   );
+}
+
+/** The panel the address names, when the console has one by that id. */
+function panelFromSearch(search: string): string | null {
+  const asked = new URLSearchParams(search).get('panel');
+  return asked && allAdminPanels.some((p) => p.id === asked) ? asked : null;
 }
 
 function PermissionRefused({ label, permission }: { label: string; permission: string }) {

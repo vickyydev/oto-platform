@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useSearch } from 'wouter';
 import { Pencil, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { PrintTemplate, PrintTemplateType } from '@/types';
@@ -41,11 +42,14 @@ export function TemplatesPanel() {
 
   const [templates, setTemplates] = useState<PrintTemplate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** True once the first read has answered, one way or the other. */
+  const [settled, setSettled] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!branchId) {
       setTemplates(null);
+      setSettled(true);
       return;
     }
     try {
@@ -59,6 +63,8 @@ export function TemplatesPanel() {
           ? null
           : 'Could not read this branch’s print templates. Showing the built-in set.',
       );
+    } finally {
+      setSettled(true);
     }
   }, [branchId]);
 
@@ -70,6 +76,34 @@ export function TemplatesPanel() {
   const rows = templates ?? mockTemplates;
   const live = templates !== null;
   const editing = rows.find((t) => t.id === editingId) ?? null;
+
+  /**
+   * The printout the address asks to open —
+   * `/admin?panel=templates&template=receipt` (SCRUM-470) — named by type,
+   * because a type means the same on every branch and deployment where a row
+   * id does not. It waits for the first read to settle rather than opening the
+   * built-in row of that type: a mock row's id is nobody's on the platform,
+   * and the editor would close under the person the moment the live rows
+   * arrived. Once only, so closing the editor does not reopen it; the address
+   * is put back to the list at that point so a reload does not either.
+   */
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const askedType = new URLSearchParams(search).get('template');
+  const openedFromAddress = useRef(false);
+  useEffect(() => {
+    if (!settled || !askedType || openedFromAddress.current) return;
+    openedFromAddress.current = true;
+    const match = rows.find((t) => t.type === askedType);
+    if (match) setEditingId(match.id);
+  }, [settled, askedType, rows]);
+
+  const closeEditor = () => {
+    setEditingId(null);
+    // The panel id is Admin's (`adminSections`): with the editor closed, the
+    // address says the list, and a reload shows the list.
+    if (askedType) navigate('/admin?panel=templates', { replace: true });
+  };
 
   const ordered = [...rows].sort(
     (a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type)
@@ -83,7 +117,7 @@ export function TemplatesPanel() {
         onSaved={() => {
           void load();
         }}
-        onClose={() => setEditingId(null)}
+        onClose={closeEditor}
       />
     );
   }
