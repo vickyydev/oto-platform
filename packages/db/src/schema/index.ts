@@ -18,3 +18,5 @@ export * from './sales';
 // `promo` is the voucher a prize turns into, `booth` is the wheel that draws it.
 export * from './promo';
 export * from './booth';
+// The facts (S2-12 round 4): read from everything above, written by jobs.
+export * from './analytics';

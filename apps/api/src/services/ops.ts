@@ -40,6 +40,7 @@ import { AppError } from '../lib/errors';
 import { isPgError, scrubPgError } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { boxSettings, withinOpeningHours } from './box';
+import { occupancyHealthCheck } from './occupancy';
 import { syncSettings } from './sync';
 import type { Exec } from './tx';
 
@@ -934,6 +935,24 @@ export async function healthChecks(deps: HealthDeps, now = Date.now()): Promise<
           ? 'the job runner has never reported here'
           : `late after ${staleAfterS}s`,
   });
+
+  /**
+   * S2-12 round 4 — the live head count and whether the gate behind it is
+   * current, per gate branch in the caller's reach (`services/occupancy.ts`).
+   * Probed like the others: a slow count must not hold the whole page.
+   */
+  checks.push(
+    await probe(
+      () => occupancyHealthCheck(deps.db, deps.operatorId, deps.reach, new Date(now)),
+      {
+        key: 'occupancy',
+        label: 'Live occupancy',
+        status: 'unknown',
+        value: null,
+        detail: 'the count did not answer',
+      } as HealthCheck,
+    ),
+  );
 
   return checks;
 }

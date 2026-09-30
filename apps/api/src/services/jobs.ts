@@ -12,6 +12,7 @@ import {
   withinOpeningHours,
 } from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
+import { OCCUPANCY_JOB, runOccupancyJob } from './occupancy';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import {
@@ -499,6 +500,26 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       run: async ({ db, now }) => ({
         detail: await runMorningBoothDutySync(db, now, withinOpeningHours),
       }),
+    },
+    /**
+     * `job:occupancy.facts` — THE HEAD COUNT, KEPT (S2-12 round 4).
+     *
+     * Every five minutes, for each branch with a gate: the live occupancy
+     * projection at the current quarter-hour and the two hours before it,
+     * upserted into `analytics.fact_occupancy_15min` (recomputed rather than
+     * appended, so a passage from a gate box that was offline corrects the
+     * buckets it belongs to); then the day-end clear of the trading days that
+     * have ended — a week back, so a job that was down across a boundary still
+     * closes the days it missed — which audits any group the gate still
+     * counted inside at the boundary (`services/occupancy.ts`). Five minutes
+     * so every quarter-hour is sampled at least twice.
+     */
+    {
+      name: OCCUPANCY_JOB,
+      description:
+        "Writes each gate branch's head count per quarter-hour and records the groups still counted inside when a trading day ends",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runOccupancyJob(db, now) }),
     },
   ];
 }

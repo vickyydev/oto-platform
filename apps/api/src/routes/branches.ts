@@ -12,7 +12,9 @@ import {
   syncBranchRenameToApp,
   syncNewBranchToApp,
 } from '../services/oto-app-branches';
+import { liveOccupancy } from '../services/occupancy';
 import { opCtx, withTx } from '../services/tx';
+import { LiveOccupancyViewSchema } from '@oto/shared';
 
 /** SCRUM-27 — branches (with timezone) under the caller's operator. */
 export async function branchRoutes(app: App): Promise<void> {
@@ -255,6 +257,32 @@ export async function branchRoutes(app: App): Promise<void> {
         });
         return { ok: true, otoApp };
       });
+    },
+  );
+
+  app.get(
+    '/:id/occupancy',
+    {
+      /**
+       * S2-12 round 4 — the till's occupancy chip. `pos:checkin:read` because
+       * who is in the park is the floor's question (S2-13's permission family),
+       * and every counter role holds it through `READ_COUNTER`; the target is
+       * the branch in the path, so a branch-scoped account reads its own park
+       * and is refused another's.
+       */
+      config: { permission: 'pos:checkin:read', target: { branchId: 'params.id' } },
+      schema: {
+        description:
+          'Live occupancy at a branch: adults counted from committed gate passages since the trading day started, ' +
+          'children on regular tickets while an adult of the same sale is inside, and whether the gate behind the ' +
+          'count has been heard from recently enough to believe it (stale, with asOf).',
+        params: z.object({ id: z.string().uuid() }),
+        response: { 200: LiveOccupancyViewSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return liveOccupancy(app.db, { operatorId: auth.operatorId, branchId: req.params.id });
     },
   );
 }

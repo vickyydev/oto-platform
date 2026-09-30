@@ -214,7 +214,8 @@ describe('tenancy columns (SCRUM-292)', () => {
     // pass by finding nothing to check.
     expect(TABLES.length).toBeGreaterThan(80);
     expect(new Set(TABLES.map((t) => t.cfg.schema))).toEqual(
-      new Set(['core', 'crm', 'pos', 'promo', 'booth', 'edge']),
+      // `analytics` since S2-12 round 4: `fact_occupancy_15min`, the first fact table.
+      new Set(['core', 'crm', 'pos', 'promo', 'booth', 'edge', 'analytics']),
     );
   });
 

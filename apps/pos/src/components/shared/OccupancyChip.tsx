@@ -1,21 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import { Users, Baby, User } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { getLiveOccupancy } from '@/mockApi';
+import { fetchLiveOccupancy } from '@/api/occupancy';
 
 /**
  * Persistent top-bar occupancy chip: an always-visible best-effort count of
  * people currently inside the park, tappable to reveal the adults/kids split.
  *
- * Reactivity: the mock store is in-memory with no global change events, so we
- * poll getLiveOccupancy via React Query (short interval + refetch on focus) so
- * the count follows new sales and drop-off check-ins/check-outs without each
- * page having to push updates. Swappable for a real backend at the getter seam.
+ * Reactivity: polled via React Query (short interval + refetch on focus).
+ *
+ * S2-12 round 4: the getter seam reads the platform's count, built from the
+ * gate box's committed passages (`GET /branches/:id/occupancy` through
+ * `api/occupancy.ts`). When the gate behind it is not current — or the read
+ * itself failed — the chip says "stale since" instead of presenting the last
+ * number as live.
  */
 export function OccupancyChip() {
-  const { data } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: ['liveOccupancy'],
-    queryFn: getLiveOccupancy,
+    queryFn: fetchLiveOccupancy,
     refetchInterval: 5_000,
     refetchOnWindowFocus: true,
   });
@@ -23,20 +26,32 @@ export function OccupancyChip() {
   const adults = data?.adults ?? 0;
   const kids = data?.kids ?? 0;
   const total = data?.total ?? 0;
+  const stale = isError || !data || data.stale;
+  const since = data?.asOf
+    ? new Date(data.asOf).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+  const staleLine =
+    data && data.gates === 0
+      ? 'No gate is reporting at this branch.'
+      : since
+        ? `Stale since ${since}: the gate has not reported since.`
+        : 'Stale: the gate has not reported.';
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button
           type="button"
-          title="People in park now"
-          aria-label={`${total} people in park now`}
+          title={stale ? staleLine : 'People in park now'}
+          aria-label={stale ? `${total} people in park. ${staleLine}` : `${total} people in park now`}
           className="rounded-md h-9 px-3 flex items-center gap-2 bg-muted hover:bg-muted/80 text-sm font-semibold transition-colors shrink-0"
         >
           <Users className="w-4 h-4 text-primary" />
           <span className="tabular-nums">{total.toLocaleString()}</span>
           {/* Hide the word on the tightest widths; the icon + number stay legible. */}
           <span className="hidden md:inline text-muted-foreground font-normal">in park</span>
+          {/* S2-12 round 4: an honest mark on the chip itself when the count is not current. */}
+          {stale && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56">
@@ -66,7 +81,7 @@ export function OccupancyChip() {
           </div>
         </div>
         <p className="text-[11px] leading-snug text-muted-foreground mt-3">
-          Best-effort live count from today's wristbands.
+          {stale ? staleLine : "Best-effort live count from today's wristbands."}
         </p>
       </PopoverContent>
     </Popover>
