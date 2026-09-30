@@ -119,7 +119,7 @@ import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db } from "./db";
-import { tenants, quizQuestions, moduleCompletions, quizAttempts, employees, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, insertStaffCostAllocationSchema, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, session as sessionTable } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { tasks, taskQuestions, taskAssignments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -23470,46 +23470,35 @@ ${context}`;
   // TRAINING MODULES (franchise-ready scoping)
   // ============================================
 
+  const canReadTrainingModule = (user: UserWithBranchAccess, module: typeof trainingModules.$inferSelect, tenantId: string) => {
+    if (module.tenantId !== tenantId) return false;
+    if (user.hasAllBranchesAccess || ['admin', 'global_admin', 'operator_admin'].includes(user.role)) return true;
+    if (!module.isActive) return false;
+    return module.scope === 'GLOBAL' || module.branchIds.some(id => user.allowedBranchIds.includes(id));
+  };
+
   // List training modules with branch filtering
   app.get("/api/training/modules", requireAuth, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
-      const requestedBranchId = req.query.branchId as string | undefined;
-      
-      // Determine effective branch filter:
-      // - 'all' is only allowed for users with all_branches access (admins)
-      // - Non-admins MUST have a valid branch ID to view content
-      let effectiveBranchId: string | null = null;
-      
-      if (user.hasAllBranchesAccess) {
-        // Admin can view all branches or specific branch
-        if (requestedBranchId === 'all' || !requestedBranchId) {
-          effectiveBranchId = null; // Admin viewing all
-        } else {
-          effectiveBranchId = requestedBranchId;
-        }
-      } else {
-        // Non-admin: Must have branch access and use a valid branch
-        if (!user.branchAccess || user.branchAccess.length === 0) {
-          return res.status(403).json({ message: "No branch access configured" });
-        }
-        
-        if (requestedBranchId && requestedBranchId !== 'all') {
-          // Validate user has access to requested branch
-          const hasAccess = user.branchAccess.some(ba => ba.branchId === requestedBranchId);
-          if (!hasAccess) {
-            return res.status(403).json({ message: "Access denied to this branch" });
-          }
-          effectiveBranchId = requestedBranchId;
-        } else {
-          // Default to first accessible branch for non-admins
-          effectiveBranchId = user.branchAccess[0].branchId;
-        }
+      const tenantId = await resolveTenantId(user.tenantId);
+      const requestedBranchId = req.query.branchId;
+      if (requestedBranchId != null && typeof requestedBranchId !== 'string') {
+        return res.status(400).json({ message: "Invalid branch" });
       }
-      
-      const modules = await storage.getTrainingModules(tenantId, effectiveBranchId);
-      
+      const canSeeAllBranches = user.hasAllBranchesAccess || ['admin', 'global_admin', 'operator_admin'].includes(user.role);
+      if (requestedBranchId === 'all' && !canSeeAllBranches) {
+        return res.status(403).json({ message: "All-branch access is not available" });
+      }
+      if (requestedBranchId && requestedBranchId !== 'all' && !canUserAccessBranch(user, requestedBranchId)) {
+        return res.status(403).json({ message: "Access denied to this branch" });
+      }
+
+      const modules = (await storage.getTrainingModules(tenantId)).filter(module =>
+        canReadTrainingModule(user, module, tenantId) &&
+        (!requestedBranchId || requestedBranchId === 'all' || module.scope === 'GLOBAL' || module.branchIds.includes(requestedBranchId))
+      );
+
       // Attach completion status and question count for current user
       const modulesWithProgress = await Promise.all(modules.map(async (module) => {
         // Get question count
@@ -23523,12 +23512,11 @@ ${context}`;
             eq(moduleCompletions.userId, user.id)
           ));
         
-        // Get user's best quiz attempt
+        // Get user's best quiz attempt, including a failed try so Learn can show progress.
         const [bestAttempt] = await db.select().from(quizAttempts)
           .where(and(
             eq(quizAttempts.moduleId, module.id),
-            eq(quizAttempts.userId, user.id),
-            eq(quizAttempts.passed, true)
+            eq(quizAttempts.userId, user.id)
           ))
           .orderBy(desc(quizAttempts.score))
           .limit(1);
@@ -23555,7 +23543,107 @@ ${context}`;
       if (!module) {
         return res.status(404).json({ message: "Training module not found" });
       }
-      res.json(module);
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      if (!canReadTrainingModule(user, module, tenantId)) {
+        return res.status(404).json({ message: "Training module not found" });
+      }
+      const questions = await db.select({
+        id: quizQuestions.id,
+        question: quizQuestions.question,
+        options: quizQuestions.options,
+        sortOrder: quizQuestions.sortOrder,
+      }).from(quizQuestions).where(and(
+        eq(quizQuestions.tenantId, tenantId),
+        eq(quizQuestions.moduleId, module.id),
+      )).orderBy(quizQuestions.sortOrder);
+      res.json({ ...module, questions });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/training/modules/:id/quiz", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = z.object({ answers: z.record(z.number().int().nonnegative()) }).safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid quiz answers" });
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const module = await storage.getTrainingModule(req.params.id);
+      if (!module || !canReadTrainingModule(user, module, tenantId)) {
+        return res.status(404).json({ message: "Training module not found" });
+      }
+      const questions = await db.select().from(quizQuestions).where(and(
+        eq(quizQuestions.tenantId, tenantId), eq(quizQuestions.moduleId, module.id),
+      ));
+      const answers = parsed.data.answers;
+      if (Object.keys(answers).length !== questions.length || questions.some(question =>
+        answers[question.id] === undefined || answers[question.id] >= question.options.length
+      )) {
+        return res.status(400).json({ message: "Answer every question with a valid option" });
+      }
+      const score = questions.filter(question => answers[question.id] === question.correctAnswer).length;
+      const total = questions.length;
+      const percent = total ? Math.round(score / total * 100) : 100;
+      const passed = percent >= (module.passingScore ?? 70);
+      await db.transaction(async tx => {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${module.id}), hashtext(${user.id}))`);
+        const [attempt] = await tx.insert(quizAttempts).values({
+          tenantId, moduleId: module.id, userId: user.id, responses: answers,
+          score: percent, passed, completedAt: new Date(),
+        }).returning({ id: quizAttempts.id });
+        if (passed) {
+          const [completion] = await tx.select({ id: moduleCompletions.id }).from(moduleCompletions).where(and(
+            eq(moduleCompletions.moduleId, module.id), eq(moduleCompletions.userId, user.id),
+          )).limit(1);
+          if (!completion) {
+            await tx.insert(moduleCompletions).values({
+              tenantId, moduleId: module.id, userId: user.id, quizAttemptId: attempt.id,
+            });
+          }
+        }
+      });
+      res.json({ score, total, percent, passed });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const trainingQuestionInput = z.object({
+    question: z.string().trim().min(1).max(1000),
+    options: z.array(z.string().trim().min(1).max(300)).min(2).max(6),
+    correctAnswer: z.number().int().nonnegative(),
+  }).refine(question => question.correctAnswer < question.options.length);
+  const trainingModuleInput = z.object({
+    title: z.string().trim().min(1).max(200),
+    description: z.string().max(2000).nullable().optional(),
+    content: z.string().max(50000).nullable().optional(),
+    passingScore: z.number().min(0).max(100).default(70),
+    isActive: z.boolean().default(true),
+    scope: z.enum(['GLOBAL', 'BRANCHES']).default('GLOBAL'),
+    branchIds: z.array(z.string().min(1)).max(30).default([]),
+    questions: z.array(trainingQuestionInput).max(50).default([]),
+  });
+  const trainingBranchesAreValid = async (tenantId: string, scope: string, branchIds: string[]) => {
+    if (scope === 'GLOBAL') return true;
+    if (branchIds.length === 0) return false;
+    const known = new Set((await storage.getBranches())
+      .filter(branch => branch.tenantId === tenantId).map(branch => branch.id));
+    return branchIds.every(id => known.has(id));
+  };
+
+  app.get("/api/training/modules/:id/edit", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const module = await storage.getTrainingModule(req.params.id);
+      if (!module || module.tenantId !== tenantId) {
+        return res.status(404).json({ message: "Training module not found" });
+      }
+      const questions = await db.select().from(quizQuestions).where(and(
+        eq(quizQuestions.tenantId, tenantId), eq(quizQuestions.moduleId, module.id),
+      )).orderBy(quizQuestions.sortOrder);
+      res.json({ ...module, questions });
     } catch (error) {
       next(error);
     }
@@ -23564,16 +23652,29 @@ ${context}`;
   // Create training module (admin only)
   app.post("/api/training/modules", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
-      const moduleData = {
-        ...req.body,
-        tenantId,
-        createdBy: user.id,
-        scope: req.body.scope || 'GLOBAL',
-        branchIds: req.body.branchIds || [],
-      };
-      const module = await storage.createTrainingModule(moduleData);
+      const tenantId = await resolveTenantId(user.tenantId);
+      const parsed = trainingModuleInput.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid training module" });
+      const input = parsed.data;
+      if (!(await trainingBranchesAreValid(tenantId, input.scope, input.branchIds))) {
+        return res.status(400).json({ message: "Select branches in this tenant" });
+      }
+      const module = await db.transaction(async tx => {
+        const [created] = await tx.insert(trainingModules).values({
+          tenantId, createdBy: user.id, title: input.title,
+          description: input.description ?? null, content: input.content ?? null,
+          passingScore: input.passingScore, isActive: input.isActive,
+          scope: input.scope, branchIds: input.scope === 'GLOBAL' ? [] : [...new Set(input.branchIds)],
+        }).returning();
+        if (input.questions.length) {
+          await tx.insert(quizQuestions).values(input.questions.map((question, sortOrder) => ({
+            tenantId, moduleId: created.id, question: question.question,
+            options: question.options, correctAnswer: question.correctAnswer, sortOrder,
+          })));
+        }
+        return created;
+      });
       res.status(201).json(module);
     } catch (error) {
       next(error);
@@ -23583,12 +23684,37 @@ ${context}`;
   // Update training module (admin only)
   app.patch("/api/training/modules/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const existing = await storage.getTrainingModule(id);
-      if (!existing) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getTrainingModule(req.params.id);
+      if (!existing || existing.tenantId !== tenantId) {
         return res.status(404).json({ message: "Training module not found" });
       }
-      const module = await storage.updateTrainingModule(id, req.body);
+      const parsed = trainingModuleInput.safeParse({ ...existing, ...req.body });
+      if (!parsed.success) return res.status(400).json({ message: "Invalid training module" });
+      const input = parsed.data;
+      if (!(await trainingBranchesAreValid(tenantId, input.scope, input.branchIds))) {
+        return res.status(400).json({ message: "Select branches in this tenant" });
+      }
+      const module = await db.transaction(async tx => {
+        const [updated] = await tx.update(trainingModules).set({
+          title: input.title, description: input.description ?? null,
+          content: input.content ?? null, passingScore: input.passingScore,
+          isActive: input.isActive, scope: input.scope,
+          branchIds: input.scope === 'GLOBAL' ? [] : [...new Set(input.branchIds)],
+          updatedAt: new Date(),
+        }).where(eq(trainingModules.id, existing.id)).returning();
+        if (req.body.questions !== undefined) {
+          await tx.delete(quizQuestions).where(eq(quizQuestions.moduleId, existing.id));
+          if (input.questions.length) {
+            await tx.insert(quizQuestions).values(input.questions.map((question, sortOrder) => ({
+              tenantId, moduleId: existing.id, question: question.question,
+              options: question.options, correctAnswer: question.correctAnswer, sortOrder,
+            })));
+          }
+        }
+        return updated;
+      });
       res.json(module);
     } catch (error) {
       next(error);
@@ -23598,12 +23724,13 @@ ${context}`;
   // Delete training module (admin only)
   app.delete("/api/training/modules/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const existing = await storage.getTrainingModule(id);
-      if (!existing) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getTrainingModule(req.params.id);
+      if (!existing || existing.tenantId !== tenantId) {
         return res.status(404).json({ message: "Training module not found" });
       }
-      await storage.deleteTrainingModule(id);
+      await storage.deleteTrainingModule(existing.id);
       res.status(204).send();
     } catch (error) {
       next(error);
