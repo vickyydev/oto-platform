@@ -1,0 +1,26 @@
+# SCRUM-193 — S2-17b closure plan (30 September 2026)
+
+SCRUM-193 is In Progress. Its 15 signed-in staging screenshots prove page entry, not the full lift. SCRUM-466 is Deployed for its specific credential-model exclusion. The remaining module tickets stay Testing or In Progress until their required action and access cases pass. The acceptance contract is `docs/progress/SPRINT_2_PLAN.md` S2-17b; the current screenshot limits are in `staging-screenshots-2026-09-30.md`.
+
+## Release gates
+
+1. **App-owned file access first (SCRUM-465).** Apply one tenant/branch/reader policy to Fix report details, comments, updates, media and thumbnails. Close the broad generic and legacy upload paths for private files. Preserve the current public check-in message workflow by issuing a scoped, expiring photo-share link before making direct drop-off photos private; signatures never need a public link. Verify legacy sent-link compatibility before changing its existing access. Use synthetic users, reports, media and branches in an isolated database; run the existing affected Fix checks and a direct media probe. Deploy and attach named staging proof. Do not close SCRUM-465 from a sign-in-only check.
+2. **Positive module walkthroughs.** Create the required `docs/qa/SPRINT_2_ACCEPTANCE.md` index and a one-page check for each S2-17b module. Record its entry screen, one real write/action with the resulting state, one relevant denied role/branch/tenant case, and any empty, error, mobile or loading state that affects the workflow. Use temporary staging records where needed and remove them after evidence is captured. Record defects and small fixes on the owning child ticket, with progress comments in the same turn as each push. A module with an external dependency must state the exact disabled-on-staging reason rather than being called verified.
+3. **PDF and storage gate.** Sign a contract and a letter on staging, open their generated PDFs through scoped short-lived access, generate a BEO PDF, and verify an unauthorized session cannot fetch any of them. Check employee-document upload/download, payroll export/payslip, and private media through the rendered UI and object store.
+4. **Platform integration gate.** The platform lane must supply `otoapp_v.events`, `otoapp_v.employees` and `otoapp_v.children` plus the POS read test; a tenant-bearing Directory API identity; an additive tenant-scoped settings migration with a legacy-key cutover; OTO App job-run/advisory-lock ownership with Health/Failures visibility; and the CI structure-only restore rehearsal. A persisted Ask OTO thread title needs an additive column only if titles are required. These are source-verified gaps at main `f3f4cd6d`, not staging claims.
+5. **End-to-end closure.** Run the per-module staging walkthrough and visual/interaction pass at desktop and park tablet widths. Fix any blocking UX/UI defect, rerun the affected existing tests, app build, scoped typecheck and lint. After app and platform deployments, capture named staging screenshots of the action outcomes, PDFs, two Health job successes, one forced Failure, and POS seam behavior. Update `docs/features/oto-app.md` to working, working with caveats or disabled on staging for every module. Verify Jira attachments and statuses; move SCRUM-193 to Deployed only after every S2-17b acceptance item has evidence. Do not claim CI green without a completed CI run.
+
+## Walkthrough batches
+
+| Batch | Modules and positive staging outcome |
+| --- | --- |
+| Identity and people | Launcher sign-on, users/permissions, organization, HR employees, contracts, letters, templates, policies, employee documents, assets, offboarding, org chart, activity log |
+| Attendance and operations | Kiosk/reception, face/PIN/phone clock policy, timekeeping, scheduling, leave/holidays, tasks/ops board, checklists/media, announcements/notifications, attention engine |
+| Park and events | Events, BEO/packages/menus, camps/children, parent portal/RSVP, public drop-off, nanny booking, staff check-ins, form builder, staff vouchers through the central Console contract |
+| Knowledge and administration | SOP, KB, training/quizzes, Ask OTO/AI helpers, Fix reports/supplier portal, casual workers, payroll, Xero sandbox, vault, Directory API, Data Admin, files/settings |
+
+## Test environment and open decisions
+
+An isolated local database `oto_app_lift_acceptance_0930` was created and migrated through the app's three current migrations. The repository's sample seed populated it, a synthetic administrator was added, and the existing `fix-checklist-scope.spec.ts` passed 1/1 against its local server. The full seed cannot start because its imported `fixtures/users.json` is absent; use surgical fixtures or restore that fixture temporarily, without committing it. No staging data or live secret was used for this local setup.
+
+Continue independent modules while these decisions are pending: how long already-sent raw drop-off photo links must keep working; whether face clock enrolment is retained on the new infrastructure; whether Ask OTO titles must persist; and when a Xero sandbox connection is available for the required positive exchange. Keep their exact answers under SCRUM-193 before changing behavior.
