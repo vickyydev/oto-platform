@@ -8,7 +8,6 @@ import { z } from "zod";
 import { requireAuth } from "../auth";
 import { requireManager } from "../auth-middleware";
 import { checklistAttachments, checklistTemplates, checklistTemplateItems } from "../db/coreSchema";
-import { tenants, DEFAULT_TENANT_SLUG } from "../../shared/schema";
 import multer from "multer";
 import { fixMulterFilenames } from "../middleware/fixMulterFilenames";
 import { randomUUID } from "crypto";
@@ -26,16 +25,6 @@ const upload = multer({
   limits: { fileSize: MAX_VIDEO_SIZE },
 });
 const PRESIGN_EXPIRY = 3600; // 1 hour for upload/download URLs
-
-async function getDefaultTenantId(): Promise<string> {
-  const result = await db
-    .select({ id: tenants.id })
-    .from(tenants)
-    .where(eq(tenants.slug, DEFAULT_TENANT_SLUG))
-    .limit(1);
-  if (!result.length) throw new Error("Default tenant not found");
-  return result[0].id;
-}
 
 /**
  * Checklist media used to address a bucket of its own — AWS_S3_BUCKET,
@@ -144,7 +133,8 @@ router.post("/presign", requireAuth, requireManager, async (req: Request, res: R
       }
     }
 
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
 
     // Only verify access for non-pending uploads
     if (!isPending) {
@@ -227,7 +217,8 @@ router.post("/confirm", requireAuth, requireManager, async (req: Request, res: R
   try {
     const body = confirmSchema.parse(req.body);
     const userId = req.user?.id;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
 
     const isPending = !!body.pendingChecklistId;
 
@@ -347,7 +338,8 @@ const associatePendingSchema = z.object({
 router.post("/associate-pending", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
     const body = associatePendingSchema.parse(req.body);
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
     
     // Verify the new checklist exists
     const hasAccess = await verifyTemplateAccess(req, body.checklistTemplateId, tenantId);
@@ -416,7 +408,8 @@ router.post("/associate-pending", requireAuth, requireManager, async (req: Reque
 
 router.get("/url", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
     const s3Key = req.query.s3Key as string;
     if (!s3Key) {
       return res.status(400).json({ error: "s3Key query parameter required" });
@@ -466,7 +459,8 @@ router.get("/url", requireAuth, async (req: Request, res: Response) => {
 router.get("/by-template/:templateId", requireAuth, async (req: Request, res: Response) => {
   try {
     const { templateId } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
     if (!await getAuthorizedTemplate(req, templateId, tenantId)) {
       return res.status(404).json({ error: "Checklist template not found or access denied" });
     }
@@ -487,7 +481,8 @@ router.get("/by-template/:templateId", requireAuth, async (req: Request, res: Re
 router.get("/by-item/:itemId", requireAuth, async (req: Request, res: Response) => {
   try {
     const { itemId } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
     const [item] = await db.select({ templateId: checklistTemplateItems.templateId })
       .from(checklistTemplateItems)
       .where(and(eq(checklistTemplateItems.id, itemId), eq(checklistTemplateItems.tenantId, tenantId)))
@@ -512,7 +507,8 @@ router.get("/by-item/:itemId", requireAuth, async (req: Request, res: Response) 
 router.get("/items-by-template/:templateId", requireAuth, async (req: Request, res: Response) => {
   try {
     const { templateId } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
     if (!await getAuthorizedTemplate(req, templateId, tenantId)) {
       return res.status(404).json({ error: "Checklist template not found or access denied" });
     }
@@ -556,7 +552,8 @@ router.get("/items-by-template/:templateId", requireAuth, async (req: Request, r
 router.delete("/:id", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
     
     const attachment = await db
       .select()
@@ -657,7 +654,8 @@ router.post("/upload", requireAuth, requireManager, upload.single("file"), fixMu
       return res.status(400).json({ error: "checklistTemplateItemId required for item target" });
     }
 
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
 
     if (target === "checklist" && checklistTemplateId) {
       const hasAccess = await verifyTemplateAccess(req, checklistTemplateId, tenantId);

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { requireAuth } from "../auth";
 import { canUserAccessBranch } from "../auth-middleware";
 import { STORAGE_ENV_PREFIX } from "../config/env";
-import { uploadToObjectStorage, fileExistsInObjectStorage } from "../file-storage";
+import { uploadToObjectStorage, fileExistsInObjectStorage, deleteFromObjectStorage } from "../file-storage";
 import { presignedUploadUrl } from "../storage/presignedUpload";
 import { fixMulterFilenames } from "../middleware/fixMulterFilenames";
 import { tenants, users, files, employees, accessPolicies, people, branches, operators, employeeRoles as employeeRolesTable, DEFAULT_TENANT_SLUG } from "../../shared/schema";
@@ -1206,7 +1206,7 @@ router.delete("/:id/attachments/:attachmentId", requireAuth, async (req: Request
       return res.status(404).json({ message: "Task not found" });
     }
 
-    const [att] = await db.select({ fileName: taskAttachments.fileName }).from(taskAttachments)
+    const [att] = await db.select({ fileName: taskAttachments.fileName, fileUrl: taskAttachments.fileUrl }).from(taskAttachments)
       .where(and(eq(taskAttachments.id, attachmentId), eq(taskAttachments.taskId, taskId), eq(taskAttachments.tenantId, tenantId)));
     if (!att) return res.status(404).json({ message: "Attachment not found" });
 
@@ -1215,6 +1215,21 @@ router.delete("/:id/attachments/:attachmentId", requireAuth, async (req: Request
       eq(taskAttachments.taskId, taskId),
       eq(taskAttachments.tenantId, tenantId)
     ));
+
+    // Older attachments can share a storage URL. Remove the object only after
+    // its final owning record is gone; the file route is already closed now.
+    if (att.fileUrl.startsWith("/api/files/task-attachments/")) {
+      const [remaining] = await db.select({ id: taskAttachments.id }).from(taskAttachments)
+        .where(eq(taskAttachments.fileUrl, att.fileUrl)).limit(1);
+      if (!remaining) {
+        const filename = att.fileUrl.slice("/api/files/task-attachments/".length);
+        if (filename && filename !== "." && filename !== ".." && !/[/\\\0]/.test(filename)) {
+          await deleteFromObjectStorage("task-attachments", filename).catch(error => {
+            console.error("[Core Tasks] Failed to delete attachment object:", error);
+          });
+        }
+      }
+    }
 
     const removerName = await getUserDisplayName(userId);
     await logTaskActivity(

@@ -4944,7 +4944,7 @@ export async function registerRoutes(
   // Employee documents routes
   app.get("/api/employees/:employeeId/documents", requireAuth, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.employeeId);
+      const employee = await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess?.tenantId ?? "");
       if (!employee) return res.status(404).json({ message: "Employee not found" });
       if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
         return res.status(403).json({ message: "Access denied to these documents" });
@@ -4967,7 +4967,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid document type" });
       }
 
-      const employee = await storage.getEmployee(req.params.employeeId);
+      const employee = await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess?.tenantId ?? "");
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -5023,7 +5023,7 @@ export async function registerRoutes(
 
   app.delete("/api/employees/:employeeId/documents/:docId", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.employeeId);
+      const employee = await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess?.tenantId ?? "");
       if (!employee) return res.status(404).json({ message: "Employee not found" });
       if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
         return res.status(403).json({ message: "Access denied to these documents" });
@@ -5043,13 +5043,14 @@ export async function registerRoutes(
   // Serve uploaded document files
   app.get("/api/employees/:employeeId/documents/:docId/file", requireAuth, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.employeeId);
+      const employee = await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess?.tenantId ?? "");
       if (!employee) return res.status(404).json({ message: "Employee not found" });
       if (!req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
         return res.status(403).json({ message: "Access denied to these documents" });
       }
       const doc = await storage.getEmployeeDocument(req.params.docId);
       if (!doc || doc.employeeId !== employee.id) return res.status(404).json({ message: "Document not found" });
+      res.setHeader("Cache-Control", "private, no-store");
       if (doc.filePath.startsWith("/api/files/employee-documents/")) {
         const file = await getFileFromObjectStorage("employee-documents", path.basename(doc.filePath));
         if (!file) return res.status(404).json({ message: "File not found" });
@@ -5928,7 +5929,7 @@ export async function registerRoutes(
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
-      const employee = await storage.getEmployee(contract.employeeId);
+      const employee = await storage.getEmployeeInTenant(contract.employeeId, req.userWithAccess?.tenantId ?? "");
       if (!employee || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
         return res.status(403).json({ message: "Access denied to this contract" });
       }
@@ -5945,6 +5946,7 @@ export async function registerRoutes(
         ? path.join(process.cwd(), contract.pdfPath.slice(1))
         : contract.pdfPath;
       if (!fs.existsSync(localPath)) return res.status(404).json({ message: "PDF not found" });
+      res.setHeader("Cache-Control", "private, no-store");
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename=contract_${contract.id}.pdf`);
       fs.createReadStream(localPath).pipe(res);
@@ -6501,7 +6503,7 @@ OTO Company Limited`,
 
       // Check branch access
       const userWithAccess = req.userWithAccess;
-      const employee = await storage.getEmployee(contract.employeeId);
+      const employee = await storage.getEmployeeInTenant(contract.employeeId, userWithAccess?.tenantId ?? "");
       if (!employee || !userWithAccess || !canUserAccessBranch(userWithAccess, employee.branchId)) {
         return res.status(403).json({ message: "Access denied to this contract" });
       }
@@ -6528,6 +6530,7 @@ OTO Company Limited`,
         if (!fs.existsSync(localFilePath)) {
           return res.status(404).json({ message: "PDF file not found" });
         }
+        res.setHeader("Cache-Control", "private, no-store");
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', contentDispositionAuth);
         const fileStream = fs.createReadStream(localFilePath);
@@ -7002,7 +7005,7 @@ OTO Company Limited`,
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
-      const employee = await storage.getEmployee(contract.employeeId);
+      const employee = await storage.getEmployeeInTenant(contract.employeeId, req.userWithAccess?.tenantId ?? "");
       if (!employee || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
         return res.status(403).json({ message: "Access denied to this contract" });
       }
@@ -7020,6 +7023,7 @@ OTO Company Limited`,
         return res.status(404).json({ message: "Signed PDF not found" });
       }
 
+      res.setHeader("Cache-Control", "private, no-store");
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename=signed_contract_${contract.id}.pdf`);
       stream.pipe(res);
@@ -7735,7 +7739,7 @@ OTO Company Limited`,
       }
 
       // Get employee for access check and filename
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await storage.getEmployeeInTenant(employeeId, req.userWithAccess?.tenantId ?? "");
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -7791,6 +7795,7 @@ OTO Company Limited`,
           return res.status(404).json({ message: "PDF file not found" });
         }
         const letterDisposition = `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`;
+        res.setHeader("Cache-Control", "private, no-store");
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", letterDisposition);
         const pdfStream = fs.createReadStream(localFilePath);
