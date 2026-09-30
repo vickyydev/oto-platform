@@ -37,7 +37,7 @@ For each Testing module, record one real staging write or action and resulting s
 | Events core | Testing | [Existing local event checks](oto-app-lift/events-camps.md); create/edit an event on staging, verify branch scope and POS view once supplied. |
 | BEO | Testing | [Local PDF render](oto-app-lift/contracts-pdfs.md); create a BEO and open its stored, scoped PDF on staging. |
 | Packages and menus | Testing | [Existing local set-menu check](oto-app-lift/events-camps.md); save a package/menu and verify the BEO result on staging. |
-| Camps and children | Testing | [Existing local camp checks](oto-app-lift/events-camps.md); register/check attendance on staging and prove child/branch isolation. |
+| Camps and children | Testing | [Existing local camp checks](oto-app-lift/events-camps.md) and [live photo route probe](oto-app-lift/files.md) cover a disposable registration, lookup, kiosk roster and other-branch photo refusal; complete the signed-in camp/children UI and attendance actions with named screenshots. |
 | Parent portal and RSVP | Testing | [Local invitation and concurrent RSVP probe](oto-app-lift/parent-invitation.md); generate a staging invitation, RSVP and verify denied/invalid link. |
 | Drop-off and staff check-ins | Testing | [Local end-to-end check](oto-app-lift/checkins.md), [branch guard](oto-app-lift/branch-checkin-access.md), and a positive staging public submission/photo view in [media notes](oto-app-lift/files.md); capture named result and staging cross-branch refusal. |
 | Nanny booking | Testing | [Local duty/conflict probe](oto-app-lift/nanny-booking.md); assign, reserve and change status on staging, including a conflicting reservation. |
@@ -54,7 +54,7 @@ For each Testing module, record one real staging write or action and resulting s
 | Vault | Testing | [Local seal/reveal and scope probe](oto-app-lift/vault.md), zero-row staging capture; save/reveal an item with audit evidence and deny wrong role/branch. Do not capture credential content. |
 | Directory API | BROKEN | Existing routes lack tenant-bearing identity; [contract review](oto-app-lift/directory-settings.md). Platform contract first, then same-tenant results and cross-tenant refusal. |
 | Data Admin | Testing | The credential-model exclusion is **WORKS** with three named staging screenshots and API checks, [SCRUM-466 evidence](oto-app-lift/data-admin.md); operator-admin denial and wider registry review remain. |
-| General files and private media | Testing | [Object-path, Fix, profile, check-in and KB slices](oto-app-lift/files.md) have local/staging checks. PIN, checklist/checker, checkout, task and camp ownership are locally verified; prove authorized and denied reads for each on staging with named images. Existing raw and new signed check-in photo links remain valid indefinitely. |
+| General files and private media | Testing | [Object-path, Fix, profile, check-in and KB slices](oto-app-lift/files.md) have local/staging checks. Camp photo access has positive and denied live route proof; PIN, checklist/checker, checkout and task ownership still need positive staging reads and named UI images. Existing raw and new signed check-in photo links remain valid indefinitely. |
 | Settings | BROKEN | Global key storage is not tenant-safe; [contract review](oto-app-lift/directory-settings.md). Additive platform migration and legacy-key cutover first, then separate-tenant reads/writes. |
 
 ## Cross-module release gates
