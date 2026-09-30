@@ -101,6 +101,18 @@ const OFFLINE_REFUSAL = {
     'This station is forced offline for testing. Go online before taking payment or changing the sale.',
 };
 
+/**
+ * A voucher is not a payment, so the generic "go online before taking payment"
+ * sentence is the wrong thing to say (offline finding 6). Same refusal code —
+ * the till's lane arbiter reads it — spoken in the voice the refund path uses,
+ * and spoken platform-side so every till says it identically.
+ */
+const VOUCHER_OFFLINE_REFUSAL = {
+  code: 'STATION_FORCED_OFFLINE',
+  message:
+    'Online only — a voucher is checked by the platform, so redeem it when the station is back online.',
+};
+
 const byOperation = (operation: string): Capability => {
   const row = CAPABILITIES.find((c) => c.operation === operation);
   if (!row) throw new Error(`no such capability row: ${operation}`);
@@ -190,9 +202,12 @@ describe('what is refused offline is refused in the platform’s own words', () 
     return id;
   };
 
-  const expectRefusedOffline = (res: { statusCode: number; json: () => unknown; headers: Record<string, unknown> }) => {
+  const expectRefusedOffline = (
+    res: { statusCode: number; json: () => unknown; headers: Record<string, unknown> },
+    expected: { code: string; message: string } = OFFLINE_REFUSAL,
+  ) => {
     expect(res.statusCode).toBe(503);
-    expect((res.json() as { error: unknown }).error).toEqual(OFFLINE_REFUSAL);
+    expect((res.json() as { error: unknown }).error).toEqual(expected);
     expect(res.headers['x-oto-replay']).toBeUndefined();
   };
 
@@ -250,8 +265,12 @@ describe('what is refused offline is refused in the platform’s own words', () 
     const saleId = await rungUp();
     const heldBefore = await ctx.db.select().from(voucherRedemption);
     await offline(true);
-    expectRefusedOffline(await call('GET', '/vouchers/lookup?code=OFFLINE-VOUCHER'));
-    expectRefusedOffline(await call('POST', `/sales/${saleId}/vouchers`, { code: 'OFFLINE-VOUCHER' }));
+    // The voucher path speaks its own offline sentence, not the payment one.
+    expectRefusedOffline(await call('GET', '/vouchers/lookup?code=OFFLINE-VOUCHER'), VOUCHER_OFFLINE_REFUSAL);
+    expectRefusedOffline(
+      await call('POST', `/sales/${saleId}/vouchers`, { code: 'OFFLINE-VOUCHER' }),
+      VOUCHER_OFFLINE_REFUSAL,
+    );
     expect(await ctx.db.select().from(voucherRedemption)).toHaveLength(heldBefore.length);
   });
 

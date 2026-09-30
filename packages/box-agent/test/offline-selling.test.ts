@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import {
   BOX_LANE_REFUSALS,
+  bandShortCode,
   mintBoothCode,
   saleReceiptDocument,
   verifyBandCode,
@@ -345,6 +346,24 @@ test('cash on the box lane: numbered from the mark, banded with the park key, pr
       assert.match(band.code, /^T1/);
     }
 
+    // Offline finding 3: the finalise answer carries the bands' SHORT codes and
+    // the children they name, so the confirmation reads them on the box lane
+    // where the platform's sale read cannot be reached — never the signed code.
+    assert.equal(answer.bands?.length, 3);
+    assert.deepEqual(answer.bands?.map((b) => b.kind), ['kid', 'kid', 'adult']);
+    assert.deepEqual(answer.bands?.map((b) => b.childName), ['Ploy', 'Ton', null]);
+    assert.deepEqual(answer.bands?.map((b) => b.status), ['active', 'active', 'active']);
+    for (const band of answer.bands ?? []) {
+      assert.ok(band.shortCode && /^T1-[0-9A-Z]+$/.test(band.shortCode), 'the short code the guest holds');
+      assert.ok(!('code' in band), 'the signed code is a gate credential and never in a read');
+      assert.ok(band.cartLineId, 'the cart line that places the band on its bracelet row');
+    }
+    assert.deepEqual(
+      answer.bands?.map((b) => b.shortCode),
+      payload.bands.map((b) => bandShortCode(b.code)),
+      'exactly the short code derived from each minted band',
+    );
+
     // The paper, from the box's own queue: receipt and kids bands printed; the
     // adult band has no printer at this counter and says so.
     const kinds = answer.printing.jobs.map((j) => [j.kind, j.status]);
@@ -383,6 +402,13 @@ test('the same sale sent again is answered from the box log: one sale, one numbe
     const again = await send(box, 'sale.finalise', body);
     assert.equal(again.replay, true);
     assert.equal(again.sale.receiptNumber, first.sale.receiptNumber);
+    // Offline finding 3: the replay answers the same bands from the box log, so
+    // the confirmation shows its codes even after the till has moved on.
+    assert.deepEqual(
+      again.bands?.map((b) => b.shortCode),
+      first.bands?.map((b) => b.shortCode),
+    );
+    assert.deepEqual(again.bands?.map((b) => b.childName), ['Ploy', 'Ton', null]);
     assert.equal(again.drawer, 'not_asked', 'a retry does not open the drawer twice');
     assert.equal((await box.agent.outbox()!.depth()).queued, 1);
     assert.equal(receipts(box), 1, 'nor print twice');

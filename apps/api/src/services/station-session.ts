@@ -247,39 +247,72 @@ export async function stationLink(db: Db, stationId: string): Promise<StationLin
   };
   if (!row.boxId) return base;
 
-  const [state] = await db
-    .select()
-    .from(boxState)
-    .where(eq(boxState.boxId, row.boxId))
-    .limit(1);
   /**
-   * The depth as the CLOUD can see it. On a Pi the outbox is a SQLite table
-   * this query cannot reach and the honest answer is the depth the box
-   * reported on its last heartbeat; on the virtual box the store is this
-   * database, which is what makes the number on the banner the same number the
-   * box would give if it were asked.
+   * Reading the box's live state and its outbox can fail on a box that has been
+   * silent for a few minutes — the outbox query on a stale box state throws —
+   * and this route has no permission behind it because reception, who has none
+   * of the fleet's, needs it most. A 500 here is the worst answer of all: the
+   * POS banner and the lane arbiter both read this route, so an error during a
+   * real outage would MASK the outage and leave the till looking connected.
+   * So the read is guarded, and when it cannot be done the honest answer is the
+   * degraded one — the link is down or stale — in the shape the POS already
+   * reads (`linkState` turns a down `boxStatus` into "box_silent").
    */
-  const outbox = await boxOutboxState(db, row.boxId);
-  const now = Date.now();
-  const oldest = outbox.oldestCreatedAt
-    ? Math.max(0, Math.round((now - outbox.oldestCreatedAt.getTime()) / 1000))
-    : null;
-  const cacheAt = state?.lastCacheAppliedAt ?? null;
+  try {
+    const [state] = await db
+      .select()
+      .from(boxState)
+      .where(eq(boxState.boxId, row.boxId))
+      .limit(1);
+    /**
+     * The depth as the CLOUD can see it. On a Pi the outbox is a SQLite table
+     * this query cannot reach and the honest answer is the depth the box
+     * reported on its last heartbeat; on the virtual box the store is this
+     * database, which is what makes the number on the banner the same number the
+     * box would give if it were asked.
+     */
+    const outbox = await boxOutboxState(db, row.boxId);
+    const now = Date.now();
+    const oldest = outbox.oldestCreatedAt
+      ? Math.max(0, Math.round((now - outbox.oldestCreatedAt.getTime()) / 1000))
+      : null;
+    const cacheAt = state?.lastCacheAppliedAt ?? null;
 
+    return {
+      ...base,
+      offline: state?.offline ?? false,
+      offlineSince: state?.offlineSince?.toISOString() ?? null,
+      offlineReason: state?.offlineReason ?? null,
+      outboxDepth: outbox.depth,
+      oldestUnackedSeconds: oldest,
+      // The cloud's own threshold, sent rather than left to the till to guess:
+      // the watchdog raises its alert on this number, and a banner disagreeing
+      // with the page somebody is looking at is worse than no banner.
+      syncStale: oldest !== null && oldest > syncSettings().staleAfterS,
+      cacheAppliedAt: cacheAt?.toISOString() ?? null,
+      cacheAgeSeconds: cacheAt ? Math.max(0, Math.round((now - cacheAt.getTime()) / 1000)) : null,
+      journalEpoch: state?.journalEpoch ?? base.journalEpoch,
+    };
+  } catch {
+    return degradedStationLink(base);
+  }
+}
+
+/**
+ * The truthful answer when a box's state and outbox cannot be read: the link is
+ * degraded. `syncStale` is set, and a box that is not already reported down is
+ * reported down (`offline` status) so the POS shows the outage rather than a
+ * connected-looking till. Everything else stays as the station row gave it, so
+ * a transient failure that clears on the next poll costs nothing.
+ */
+export function degradedStationLink(base: StationLinkView): StationLinkView {
+  const down = base.boxStatus === 'offline' || base.boxStatus === 'disabled';
   return {
     ...base,
-    offline: state?.offline ?? false,
-    offlineSince: state?.offlineSince?.toISOString() ?? null,
-    offlineReason: state?.offlineReason ?? null,
-    outboxDepth: outbox.depth,
-    oldestUnackedSeconds: oldest,
-    // The cloud's own threshold, sent rather than left to the till to guess:
-    // the watchdog raises its alert on this number, and a banner disagreeing
-    // with the page somebody is looking at is worse than no banner.
-    syncStale: oldest !== null && oldest > syncSettings().staleAfterS,
-    cacheAppliedAt: cacheAt?.toISOString() ?? null,
-    cacheAgeSeconds: cacheAt ? Math.max(0, Math.round((now - cacheAt.getTime()) / 1000)) : null,
-    journalEpoch: state?.journalEpoch ?? base.journalEpoch,
+    boxStatus: down ? base.boxStatus : 'offline',
+    outboxDepth: null,
+    oldestUnackedSeconds: null,
+    syncStale: true,
   };
 }
 

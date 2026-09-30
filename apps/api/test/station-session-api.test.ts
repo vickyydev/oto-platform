@@ -38,6 +38,7 @@ import { ADMIN, CHALONG_MANAGER, RECEPTION, SECOND_OPERATOR_ADMIN, createTestCon
 import { provisionVirtualBox } from '../src/services/box';
 import { forcedOfflineStation } from '../src/services/station-offline';
 import { managerForStation } from '../src/services/station-session';
+import * as syncService from '../src/services/sync';
 
 describe('paired display transport uses the redacted station document (SCRUM-201)', () => {
   let proof: TestContext;
@@ -1083,6 +1084,28 @@ describe('what the till’s banner reads (S2-05)', () => {
       .update(boxState)
       .set({ offline: false, offlineSince: null, offlineReason: null })
       .where(eq(boxState.boxId, boxId));
+  });
+
+  it('answers a truthful degraded state, not a 500, when a stale box outbox cannot be read', async () => {
+    // A box silent for a few minutes makes the outbox read throw. The POS banner
+    // and the lane arbiter both read this route, so a 500 here would MASK the
+    // outage; instead the link reads as down/stale in the shape the POS already
+    // reads (offline finding 4).
+    const outbox = vi
+      .spyOn(syncService, 'boxOutboxState')
+      .mockRejectedValueOnce(new Error('box outbox unreadable while the box is stale'));
+    try {
+      const res = await call('GET', '/me/station/link', { cookie: receptionCookie });
+      expect(outbox).toHaveBeenCalled();
+      expect(res.statusCode).toBe(200);
+      expect(res.body.stationId).toBe(tillId);
+      // Not connected-looking: the link is reported down and stale.
+      expect(res.body.syncStale).toBe(true);
+      expect(['offline', 'disabled']).toContain(res.body.boxStatus);
+      expect(res.body.outboxDepth).toBeNull();
+    } finally {
+      outbox.mockRestore();
+    }
   });
 });
 

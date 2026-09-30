@@ -6,6 +6,7 @@ import type { StationCapability } from '@/types';
 import { api, idemKey } from './client';
 import { bridgeApi } from './bridge';
 import { viaLane } from '@/lib/lane';
+import { tierNeedsProof } from '@/lib/membership';
 
 /**
  * A record write on the box lane (offline plan Round 3): the bridge intent
@@ -141,12 +142,43 @@ export interface ApiTierVerificationRecord {
  * minted here once, before either is asked, so a record begun on one lane and
  * finished on the other is the same record (OD-12).
  */
+/**
+ * Read the box's cached tier as the entitlement it is (offline finding 2).
+ *
+ * The box's cached member carries the tier it was pulled at (`tierCode`) but no
+ * evidence rows — the bundle's doctrine leaves `tierVerification` null. The
+ * till's tier gate reads `tierVerification`, so without this it forces a
+ * re-verification the box cannot record and then prices that very tier
+ * unconditionally. The platform moves `member.tier_code` only on a filed
+ * verification, so the cached code IS a verified entitlement: synthesise one for
+ * it (no document — that is the "full verification flow" the box does not run),
+ * so choosing the member's own rate offline skips the dialog while a HIGHER
+ * unverified tier still gates (`isTierVerified`). Online never reaches here.
+ */
+function withCachedTierEntitlement(m: ApiMember): ApiMember {
+  if (m.tierVerification || !tierNeedsProof(m.tierCode)) return m;
+  return {
+    ...m,
+    tierVerification: {
+      tier: m.tierCode,
+      proofType: 'On file',
+      verifiedAt: new Date().toISOString(),
+      verifiedBy: null,
+      expiresAt: null,
+    },
+  };
+}
+
 export const membersApi = {
   lookup: (phone: string) =>
     viaLane(
       () => api.get<{ member: ApiMember | null }>(`/members/lookup?phone=${encodeURIComponent(phone)}`),
-      async (stationId) =>
-        (await bridgeApi.lookup(stationId, phone)) as unknown as { member: ApiMember | null },
+      async (stationId) => {
+        const answer = (await bridgeApi.lookup(stationId, phone)) as unknown as {
+          member: ApiMember | null;
+        };
+        return { member: answer.member ? withCachedTierEntitlement(answer.member) : null };
+      },
     ),
   list: (q?: string) =>
     api.get<{ members: ApiMember[] }>(`/members${q ? `?q=${encodeURIComponent(q)}` : ''}`),

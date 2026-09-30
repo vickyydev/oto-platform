@@ -6,6 +6,7 @@ import {
   type BridgeSaleView,
 } from '@oto/shared';
 import { bridgeApi, bridgeStaffName } from './bridge';
+import type { ApiSaleBand, ApiSaleLine } from './history';
 import type { PaymentAttemptRead, PaymentConfirmationBody, PaymentStartBody, PaymentStartResult } from './payments';
 import type { ApiSale, ApiSaleQuote, SaleCartPayload, SaleTenderPayload } from './sales';
 
@@ -97,6 +98,52 @@ export function apiSaleOfBox(view: BridgeSaleView): ApiSale {
     customerTier: view.customerTier,
     totals: view.totals,
     engineVersion: view.engineVersion,
+  };
+}
+
+/**
+ * What the confirmation screen shows for a sale closed on the box lane, when the
+ * platform's own sale read cannot be reached (offline finding 3). The box's
+ * finalise answer already carries the bands it minted, so the payment-done
+ * screen reads its codes from there — the receipt number, the SHORT codes and
+ * the children they name — and draws them exactly as the online screen does.
+ */
+export interface BoxSaleIssue {
+  receiptNumber: string | null;
+  bands: ApiSaleBand[];
+  /** The ledger lines the bands sit on, so `bandsByCartLine` can place them. */
+  lines: Pick<ApiSaleLine, 'id' | 'cartLineId'>[];
+}
+
+/**
+ * The box-lane confirmation's bands, or null when this sale was not closed on
+ * the box (the online read serves it) or the box answered without bands.
+ */
+export function boxSaleIssue(saleId: string): BoxSaleIssue | null {
+  const answer = sales.get(saleId)?.answer;
+  // An answer exists only when the box answered, so its presence — not the lane
+  // the sale was rung up on — is the "closed on the box" fact. A cash press on a
+  // platform-rung sale that meets a dropped link closes on the box under the
+  // same ids, keeping `lane: 'platform'`; its bands must still show here.
+  if (!answer?.finalised || !answer.bands) return null;
+  const lines = new Map<string, Pick<ApiSaleLine, 'id' | 'cartLineId'>>();
+  for (const band of answer.bands) {
+    if (band.saleLineId) lines.set(band.saleLineId, { id: band.saleLineId, cartLineId: band.cartLineId });
+  }
+  return {
+    receiptNumber: answer.sale.receiptNumber,
+    bands: answer.bands.map((band) => ({
+      id: band.id,
+      kind: band.kind,
+      status: band.status,
+      shortCode: band.shortCode,
+      saleLineId: band.saleLineId,
+      childId: band.childId,
+      childName: band.childName,
+      printedJobId: null,
+      createdAt: answer.sale.occurredAt,
+    })),
+    lines: [...lines.values()],
   };
 }
 

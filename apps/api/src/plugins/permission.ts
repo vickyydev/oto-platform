@@ -81,6 +81,14 @@ export interface PermissionConfig {
   secretResponse?: true;
   /** Cloud trading calls that a station's forced-offline test must refuse. */
   stationTrading?: true;
+  /**
+   * The forced-offline refusal this route speaks, when the generic
+   * "go online before taking payment" is the wrong thing to say — a voucher is
+   * not a payment, so it gets its own offline sentence in the same voice. The
+   * code stays `STATION_FORCED_OFFLINE` so the till's lane arbiter still reads
+   * it; only the message changes. Ignored unless `stationTrading` is set.
+   */
+  stationOfflineMessage?: string;
 }
 
 declare module 'fastify' {

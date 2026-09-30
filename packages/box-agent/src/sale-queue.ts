@@ -172,6 +172,17 @@ export interface SalePrintLogJob {
   copy: boolean;
 }
 
+/**
+ * A band as the box's OWN answer and log carry it: the wire fact plus the
+ * child's name. The name never rides the cloud fact (`OfflineBandFact`), but the
+ * receipt prints it and the till reads it out when a band does not print, so the
+ * box keeps it beside the code it minted. Already in the print snapshot the log
+ * holds, so persisting it here is no new record.
+ */
+export interface OfflineAnswerBand extends OfflineBandFact {
+  childName: string | null;
+}
+
 export interface OfflineSaleAnswer {
   saleId: string;
   /** The number the box printed and the guest holds (OD-4). */
@@ -186,8 +197,8 @@ export interface OfflineSaleAnswer {
   outboxDepth: number;
   /** True when this sale was already on the box and this is its first answer again. */
   replay: boolean;
-  /** The bands minted for it, codes included (OD-13). */
-  bands: OfflineBandFact[];
+  /** The bands minted for it, codes and child names included (OD-13). */
+  bands: OfflineAnswerBand[];
   /** What it put on paper, and what did not print. */
   printing: { jobs: SalePrintLogJob[]; notes: string[] };
   /** The caller's own record, as it was kept (`OfflineSaleRequest.memo`). */
@@ -210,7 +221,7 @@ export interface RecordedSale {
   businessDate: string | null;
   at: string;
   receipt: OfflineReceiptFact;
-  bands: OfflineBandFact[];
+  bands: OfflineAnswerBand[];
   boxSeq: number;
   snapshot: SalePrintSnapshot | null;
   jobs: SalePrintLogJob[];
@@ -787,13 +798,14 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
           businessDate: printout?.businessDate ?? null,
           at,
           receipt,
-          bands: bands.map(({ id, code, kind, cartLineId, saleLineId, childId }) => ({
+          bands: bands.map(({ id, code, kind, cartLineId, saleLineId, childId, childName }) => ({
             id,
             code,
             kind,
             cartLineId,
             saleLineId,
             childId,
+            childName,
           })),
           boxSeq: queued?.envelope.boxSeq ?? 0,
           snapshot,

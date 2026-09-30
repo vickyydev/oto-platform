@@ -52,6 +52,17 @@ import {
 
 const SaleParams = z.object({ id: z.string().uuid() });
 
+/**
+ * What a till says when a voucher is tried on a station that is offline. The
+ * generic forced-offline sentence talks about taking payment, which a voucher
+ * look-up is not; this is the same voice as the refund path's own wording, and
+ * it is spoken here — platform-side — so every till says it identically. The
+ * refusal keeps the `STATION_FORCED_OFFLINE` code (the lane arbiter reads it);
+ * only the sentence changes (offline finding 6).
+ */
+const VOUCHER_OFFLINE_MESSAGE =
+  'Online only — a voucher is checked by the platform, so redeem it when the station is back online.';
+
 /** A trading day, as the ledger filters on it. */
 const IsoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'A date is YYYY-MM-DD');
 
@@ -212,7 +223,11 @@ export async function voucherRoutes(app: App): Promise<void> {
   app.get(
     '/vouchers/lookup',
     {
-      config: { dynamicPermission: true, stationTrading: true },
+      config: {
+        dynamicPermission: true,
+        stationTrading: true,
+        stationOfflineMessage: VOUCHER_OFFLINE_MESSAGE,
+      },
       schema: {
         description:
           'What a scanned or typed voucher code is and what it is worth here, or why it cannot be ' +
@@ -230,7 +245,11 @@ export async function voucherRoutes(app: App): Promise<void> {
   app.post(
     '/sales/:id/vouchers',
     {
-      config: { dynamicPermission: true, stationTrading: true },
+      config: {
+        dynamicPermission: true,
+        stationTrading: true,
+        stationOfflineMessage: VOUCHER_OFFLINE_MESSAGE,
+      },
       schema: {
         description:
           'Hold a voucher for the sale this till is ringing up (the till’s own sale id, usually ' +
@@ -255,7 +274,11 @@ export async function voucherRoutes(app: App): Promise<void> {
   app.delete(
     '/sales/:id/vouchers/:voucherId',
     {
-      config: { dynamicPermission: true, stationTrading: true },
+      config: {
+        dynamicPermission: true,
+        stationTrading: true,
+        stationOfflineMessage: VOUCHER_OFFLINE_MESSAGE,
+      },
       schema: {
         description:
           'Take a voucher off a cart that has not been rung up yet. Answers released: false when ' +

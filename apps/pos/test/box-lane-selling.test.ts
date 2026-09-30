@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { BridgeSaleAnswer } from '@oto/shared';
+import type { BridgeSaleAnswer, BridgeSaleBand } from '@oto/shared';
 import { renderHook } from './support/hooks';
 import { apiSale } from './support/fixtures';
 import { paymentsApi } from '@/api/payments';
 import { setBridgeStaffName } from '@/api/bridge';
-import { laneSale } from '@/api/boxSales';
+import { boxSaleIssue, laneSale } from '@/api/boxSales';
 import type { SaleCartPayload, SaleTenderPayload } from '@/api/sales';
 import { currentLane, setLaneStation } from '@/lib/lane';
 import { useSaleWriter, type SaleWriteInput } from '@/lib/saleWriter';
@@ -185,6 +185,43 @@ describe('the box lane in the sale writer', () => {
     expect(finalise!.payload.actionId).toBe(commitBody.actionId);
     expect(finalise!.payload.occurredAt).toBe(commitBody.occurredAt);
     expect(currentLane()).toBe('box');
+  });
+
+  it('shows the box-minted band codes on the confirmation for a platform-rung sale closed on the box (offline finding 3)', async () => {
+    const lineId = cart().lines[0]!.id;
+    const bandsFor = (): BridgeSaleBand[] => [
+      { id: 'band-kid', kind: 'kid', status: 'active', shortCode: 'T1-7KMQ4X', cartLineId: lineId, saleLineId: 'line-1', childId: 'child-ploy', childName: 'Ploy' },
+      { id: 'band-adult', kind: 'adult', status: 'active', shortCode: 'T1-9Z2PLM', cartLineId: lineId, saleLineId: 'line-1', childId: null, childName: null },
+    ];
+    const seen = stubFetch({
+      platform: (url, body) => {
+        // Rings up online, then the cash press meets a dropped link.
+        if (url === '/api/sales') return reply({ sale: apiSale({ id: String(body!.id), stationId: STATION }), replay: false });
+        throw new TypeError('Failed to fetch');
+      },
+      bridge: (_type, payload) =>
+        reply({ document: {}, result: boxAnswer(String(payload.saleId), { bands: bandsFor() }) }),
+    });
+    const { result } = renderHook(() => useSaleWriter());
+    const rung = await result.current.commit(order());
+    // The sale was rung up on the platform lane, yet it closes on the box.
+    expect(laneSale(rung.saleId)?.lane).toBe('platform');
+    const paid = await result.current.finalise(cash, 'cash-press');
+    expect(paid).toMatchObject({ ok: true, written: true, finalised: true });
+    expect(currentLane()).toBe('box');
+
+    // The confirmation still reads the box's codes though the lane says platform.
+    const issue = boxSaleIssue(rung.saleId);
+    expect(issue).not.toBeNull();
+    expect(issue!.receiptNumber).toBe('T1-000043');
+    expect(issue!.bands).toEqual([
+      { id: 'band-kid', kind: 'kid', status: 'active', shortCode: 'T1-7KMQ4X', saleLineId: 'line-1', childId: 'child-ploy', childName: 'Ploy', printedJobId: null, createdAt: '2026-09-25T04:10:00.000Z' },
+      { id: 'band-adult', kind: 'adult', status: 'active', shortCode: 'T1-9Z2PLM', saleLineId: 'line-1', childId: null, childName: null, printedJobId: null, createdAt: '2026-09-25T04:10:00.000Z' },
+    ]);
+    // The bracelet rows the bands sit on, deduped by ledger line, for `bandsByCartLine`.
+    expect(issue!.lines).toEqual([{ id: 'line-1', cartLineId: lineId }]);
+    // Only the one refused commit ever reached the platform's sale endpoint.
+    expect(seen.filter((s) => s.url === '/api/sales')).toHaveLength(1);
   });
 
   it('after an online sale the till tells its box the number the platform gave it (OD-4)', async () => {

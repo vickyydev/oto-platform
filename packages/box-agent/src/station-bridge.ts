@@ -22,6 +22,7 @@ import {
   OfflineMemberTierChangedSchema,
   OfflineMemberUpdatedSchema,
   OfflineVisitCreatedSchema,
+  bandShortCode,
   bridgeCartOf,
   businessDate,
   catalogueState,
@@ -35,6 +36,7 @@ import {
   type BridgePaymentStart,
   type BridgeRecordIntent,
   type BridgeSaleAnswer,
+  type BridgeSaleBand,
   type BridgeSaleFinalise,
   type BridgeSaleView,
   type BridgeStatus,
@@ -1921,7 +1923,10 @@ export class StationBridge {
 
   /** The till's answer, from what the queue recorded and the memo kept beside it. */
   private answerOf(
-    recorded: Pick<OfflineSaleAnswer, 'receipt' | 'replay' | 'printing' | 'drawer' | 'outboxDepth' | 'memo'>,
+    recorded: Pick<
+      OfflineSaleAnswer,
+      'receipt' | 'replay' | 'printing' | 'drawer' | 'outboxDepth' | 'memo' | 'bands'
+    >,
   ): BridgeSaleAnswer {
     const memo = recorded.memo as unknown as SaleMemo | null;
     if (!memo?.view) {
@@ -1949,6 +1954,20 @@ export class StationBridge {
       },
       drawer: recorded.drawer,
       outboxDepth: recorded.outboxDepth,
+      // The band codes, so the confirmation reads them on the box lane where the
+      // platform's sale read cannot be reached: the SHORT code the guest holds,
+      // never the signed one, with the child it names and the cart line that
+      // places it on its bracelet row.
+      bands: (recorded.bands ?? []).map((band): BridgeSaleBand => ({
+        id: band.id,
+        kind: band.kind,
+        status: 'active',
+        shortCode: bandShortCode(band.code),
+        cartLineId: band.cartLineId,
+        saleLineId: band.saleLineId,
+        childId: band.childId,
+        childName: band.childName ?? null,
+      })),
     };
   }
 
@@ -1966,6 +1985,7 @@ export class StationBridge {
       drawer: 'not_asked',
       outboxDepth: depth.queued,
       memo: held.memo,
+      bands: held.bands,
     });
   }
 

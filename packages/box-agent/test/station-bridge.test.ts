@@ -520,6 +520,68 @@ test('a cart is priced from the cached catalogue; after seven days the box refus
   r.t.close();
 });
 
+test('offline finding 1: the box prices a member at the tier the till sent, both ways', async () => {
+  const r = await rig();
+  const { caller } = await r.bridge.unlock(STATION_ID, {
+    token: token(r.now.at),
+    password: 'open-sesame',
+  });
+  const lineId = '018f0000-0000-7000-8000-0000000001c1';
+  const member = '018f0000-0000-7000-8000-00000000d001'; // cached at the Thai rate
+
+  // The till rang the Thai member up at the staff-picked Tourist rate: the box
+  // honours it and the till's own line total agrees, so the pay press is not
+  // refused as SALE_LINE_PRICE_MISMATCH — the sale the platform allows online.
+  const atTourist = await r.bridge.intent(
+    STATION_ID,
+    caller,
+    intent('cart.quote', {
+      memberId: member,
+      tier: 'tourist',
+      lines: [{ id: lineId, packageId: PACKAGE, kids: 2, adults: 0, lineTotalSatang: 2 * 35000 }],
+    }),
+  );
+  const touristQuote = atTourist.result?.quote as {
+    tier: string;
+    tierSource: string;
+    lineTotals: Record<string, number>;
+  };
+  assert.equal(touristQuote.tier, 'tourist', 'the tier the till sent prices the member');
+  assert.equal(touristQuote.tierSource, 'member', 'still the member paying, at the rate on their cart');
+  assert.equal(touristQuote.lineTotals[lineId], 2 * 35000);
+
+  // The other way: the same member at their own Thai rate is still priced Thai.
+  const atThai = await r.bridge.intent(
+    STATION_ID,
+    caller,
+    intent('cart.quote', {
+      memberId: member,
+      tier: 'thai',
+      lines: [{ id: lineId, packageId: PACKAGE, kids: 2, adults: 0, lineTotalSatang: 2 * 25000 }],
+    }),
+  );
+  const thaiQuote = atThai.result?.quote as { tier: string; lineTotals: Record<string, number> };
+  assert.equal(thaiQuote.tier, 'thai');
+  assert.equal(thaiQuote.lineTotals[lineId], 2 * 25000);
+
+  // The box prices the SENT tier, so a Tourist cart carrying a Thai line total is
+  // a real disagreement and is still refused — proof it is not quietly pricing
+  // the member's own tier under the covers.
+  await assert.rejects(
+    r.bridge.intent(
+      STATION_ID,
+      caller,
+      intent('cart.quote', {
+        memberId: member,
+        tier: 'tourist',
+        lines: [{ id: lineId, packageId: PACKAGE, kids: 2, adults: 0, lineTotalSatang: 2 * 25000 }],
+      }),
+    ),
+    (err: unknown) => err instanceof BridgeError && err.code === 'SALE_LINE_PRICE_MISMATCH',
+  );
+  r.t.close();
+});
+
 test('what the capability list refuses on the box lane says why; money with nowhere to write it is refused politely', async () => {
   const r = await rig();
   const { caller } = await r.bridge.unlock(STATION_ID, {

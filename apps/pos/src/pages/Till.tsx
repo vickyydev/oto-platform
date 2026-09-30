@@ -47,6 +47,7 @@ import {
   type RedeemOutcome,
 } from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { boxSaleIssue } from '@/api/boxSales';
 import {
   buildCartPayload,
   claimVerifiedTier,
@@ -3013,6 +3014,7 @@ export default function Till() {
                   sale={saleResult}
                   onNewSale={resetSale}
                   note={voucherUsed ? <VoucherUsedNote held={voucherUsed} /> : undefined}
+                  boxIssue={boxSaleIssue(saleResult.id)}
                 />
               </div>
             </div>

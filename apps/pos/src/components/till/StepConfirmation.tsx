@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { getPrintTemplate } from '@/mockApi';
 import { paymentMethodLabel } from '@/lib/payments';
 import { bandsByCartLine, getSale, type ApiSaleBand, type ApiSaleLine, type ApiSalePrintJob } from '@/api/history';
+import type { BoxSaleIssue } from '@/api/boxSales';
 import { reportsCreditVoucher } from '@/lib/salePrinting';
 import { platformId, shownBaht, taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { QrCode } from './QrCode';
@@ -62,11 +63,14 @@ export interface SaleIssue {
   printJobs: ApiSalePrintJob[] | null;
 }
 
-export function useSaleIssue(saleId: string, given?: SaleNumber): SaleIssue {
+export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIssue | null): SaleIssue {
   const [asked, setAsked] = useState<SaleIssue>({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null });
 
   useEffect(() => {
-    if (!PLATFORM_SALE_ID.test(saleId)) return;
+    // The box lane already answered with its bands (offline finding 3): the
+    // platform's read is unreachable, so nothing is asked and the codes come
+    // from the finalise answer instead, drawn by the same rows below.
+    if (box || !PLATFORM_SALE_ID.test(saleId)) return;
     let live = true;
     setAsked({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null });
     void getSale(saleId)
@@ -87,7 +91,19 @@ export function useSaleIssue(saleId: string, given?: SaleNumber): SaleIssue {
     return () => {
       live = false;
     };
-  }, [saleId]);
+  }, [saleId, box]);
+
+  if (box) {
+    const fromBox: SaleIssue = {
+      number: box.receiptNumber ? { kind: 'receipt', number: box.receiptNumber } : { kind: 'recorded' },
+      bands: box.bands,
+      lines: box.lines,
+      // The platform's print-job read is what shows the credit-voucher block;
+      // the box lane does not carry it, so nothing pretends it did.
+      printJobs: null,
+    };
+    return given ? { ...fromBox, number: given } : fromBox;
+  }
 
   return given ? { ...asked, number: given } : asked;
 }
@@ -112,6 +128,12 @@ interface StepConfirmationProps {
    * Lucky Wheel voucher it used up (`components/till/RedeemVoucher`).
    */
   note?: ReactNode;
+  /**
+   * The bands a sale closed on the box lane minted (offline finding 3). When
+   * present, the screen reads its codes from here rather than the platform's
+   * sale read, which is unreachable offline.
+   */
+  boxIssue?: BoxSaleIssue | null;
 }
 
 /**
@@ -162,8 +184,8 @@ function CreditGrantRow({ voucher: grant, index }: { voucher: CreditGrant; index
   );
 }
 
-export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConfirmationProps) {
-  const issue = useSaleIssue(sale.id, saleNumber);
+export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }: StepConfirmationProps) {
+  const issue = useSaleIssue(sale.id, saleNumber, boxIssue);
   const numberLabel = saleNumberLabel(issue.number);
   // S2-11 — the codes the platform minted, on the rows they belong to, so a
   // band that fails to print can be read out and reprinted from History. The

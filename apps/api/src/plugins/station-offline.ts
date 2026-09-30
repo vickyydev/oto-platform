@@ -19,7 +19,8 @@ export const stationOfflinePlugin = fp(async (app: FastifyInstance) => {
     throw new AppError(
       503,
       'STATION_FORCED_OFFLINE',
-      'This station is forced offline for testing. Go online before taking payment or changing the sale.',
+      req.routeOptions.config.stationOfflineMessage ??
+        'This station is forced offline for testing. Go online before taking payment or changing the sale.',
     );
   });
 });
