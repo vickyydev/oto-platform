@@ -22863,7 +22863,9 @@ ${context}`;
   app.get("/api/files/:folder/:filename", async (req, res, next) => {
     try {
       const { folder, filename } = req.params;
-      const sanitizedFilename = path.basename(filename);
+      if (!/^[a-z0-9-]+$/i.test(folder) || !filename || filename === '.' || filename === '..' || /[/\\\0]/.test(filename)) {
+        return res.status(404).json({ message: "File not found" });
+      }
       // Private documents have their own record-scoped routes; this generic
       // file route cannot decide who may read a contract or employee record.
       if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips"].includes(folder)) {
@@ -22877,20 +22879,23 @@ ${context}`;
           return res.status(401).json({ message: "Authentication required" });
         }
       }
+      res.setHeader("Cache-Control", publicFileFolders.includes(folder)
+        ? "public, max-age=86400, stale-while-revalidate=604800"
+        : "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
       
       // Try object storage first
-      const file = await getFileFromObjectStorage(folder, sanitizedFilename);
+      const file = await getFileFromObjectStorage(folder, filename);
       if (file) {
         res.setHeader("Content-Type", file.contentType);
-        res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
         file.stream.pipe(res);
         return;
       }
       
       // Fallback to local storage for legacy files
       const possiblePaths = [
-        path.join(process.cwd(), folder, sanitizedFilename),
-        path.join(process.cwd(), "uploads", folder, sanitizedFilename),
+        path.join(process.cwd(), folder, filename),
+        path.join(process.cwd(), "uploads", folder, filename),
       ];
       
       for (const localPath of possiblePaths) {
