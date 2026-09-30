@@ -5,6 +5,24 @@ import { newId } from '@oto/shared';
 import { createTestContext, teardownAll, type TestContext } from './helpers';
 
 /**
+ * A plain weekday inside the bookable window (the server refuses a visit date
+ * before the branch's trading day or past sixty days out since SCRUM-209),
+ * computed so this file never goes stale. Seven days out, skipping weekends
+ * and the seeded Loy Krathong range.
+ */
+const BOOKABLE_WEEKDAY = (() => {
+  const day = new Date(Date.now() + 7 * 86_400_000);
+  for (;;) {
+    const iso = new Date(day.getTime() + 7 * 3_600_000).toISOString().slice(0, 10);
+    const dow = new Date(`${iso}T00:00:00Z`).getUTCDay();
+    const nearHoliday = iso >= '2026-11-23' && iso <= '2026-11-25';
+    if (dow !== 0 && dow !== 6 && !nearHoliday) return iso;
+    day.setUTCDate(day.getUTCDate() + 1);
+  }
+})();
+
+
+/**
  * SCRUM-335 — what a caller past a rate limit is actually told.
  *
  * `POST /public/bookings` is capped at 20 per minute per address
@@ -65,7 +83,7 @@ describe('the cap on public bookings answers "wait a minute" (SCRUM-335)', () =>
       branchCode: 'hkt-central',
       parentName: 'Double Tap',
       tier: 'tourist',
-      visitDate: '2026-09-09',
+      visitDate: BOOKABLE_WEEKDAY,
       lines: [{ packageId, kids: 1, adults: 1 }],
     };
     const submit = () => ctx.app.inject({ method: 'POST', url: '/public/bookings', payload });

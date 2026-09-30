@@ -5,6 +5,24 @@ import { newId } from '@oto/shared';
 import { createTestContext, teardownAll, type TestContext } from './helpers';
 
 /**
+ * A plain weekday inside the bookable window (the server refuses a visit date
+ * before the branch's trading day or past sixty days out since SCRUM-209),
+ * computed so this file never goes stale. Seven days out, skipping weekends
+ * and the seeded Loy Krathong range.
+ */
+const BOOKABLE_WEEKDAY = (() => {
+  const day = new Date(Date.now() + 7 * 86_400_000);
+  for (;;) {
+    const iso = new Date(day.getTime() + 7 * 3_600_000).toISOString().slice(0, 10);
+    const dow = new Date(`${iso}T00:00:00Z`).getUTCDay();
+    const nearHoliday = iso >= '2026-11-23' && iso <= '2026-11-25';
+    if (dow !== 0 && dow !== 6 && !nearHoliday) return iso;
+    day.setUTCDate(day.getUTCDate() + 1);
+  }
+})();
+
+
+/**
  * BUDGET: `POST /public/bookings` is capped at 20 a minute per address
  * (routes/public.ts), and `inject` always arrives from 127.0.0.1, so every
  * booking in this file shares one bucket. This file spends 12 of them — five
@@ -230,7 +248,7 @@ describe('public booking creation — server-side pricing', () => {
         phone: '0811111111',
         parentName: 'Mali',
         tier: 'thai',
-        visitDate: '2026-09-09', // Wednesday → weekday
+        visitDate: BOOKABLE_WEEKDAY, // a computed in-window weekday
         lines: [{ packageId: fullDay.id, kids: 2, adults: 2 }],
       },
     });
@@ -346,7 +364,7 @@ describe('a booking submitted twice is one booking (SCRUM-298)', () => {
       branchCode: 'hkt-central',
       parentName: 'Double Tap',
       tier: 'tourist',
-      visitDate: '2026-09-09',
+      visitDate: BOOKABLE_WEEKDAY,
       lines: [{ packageId, kids: 1, adults: 1 }],
     };
   };
@@ -401,7 +419,7 @@ describe('a booking submitted twice is one booking (SCRUM-298)', () => {
       branchCode: 'hkt-central',
       parentName: 'No Id At All',
       tier: 'tourist',
-      visitDate: '2026-09-09',
+      visitDate: BOOKABLE_WEEKDAY,
       lines: [{ packageId, kids: 1, adults: 0 }],
     };
 
