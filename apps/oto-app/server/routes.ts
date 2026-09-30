@@ -11,7 +11,7 @@ import { getOrCreateFixMediaThumbnail } from "./fix-media-thumbnails";
 import { sendEmail } from "./email";
 
 import { generateBreaksForShiftRow, generateBreaksForWeekPlan, generateAllBreaksForTenant } from "./break-generator";
-import { getTimezoneInfo, getLocalDateString, createDateTimeInTimezone, getMidnightInTimezone, getLocalTimeString } from "./timezone-utils";
+import { getTimezoneInfo, getLocalDateString, createDateTimeInTimezone, getMidnightInTimezone, getLocalTimeString, formatParkSignedDate } from "./timezone-utils";
 import Handlebars from "handlebars";
 import { z } from "zod";
 import { format, addDays } from "date-fns";
@@ -6311,14 +6311,7 @@ OTO Company Limited`,
       const signerName = employee?.fullName || "Employee";
       const signedAt = new Date();
       
-      // Format date as DD/MM/YYYY
-      const formatDateDDMMYYYY = (date: Date): string => {
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-      };
-      const signedDateStr = formatDateDDMMYYYY(signedAt);
+      const signedDateStr = formatParkSignedDate(signedAt);
       
       // Get employer (MD) signature from settings
       const settings = await storage.getSettings();
@@ -7700,7 +7693,7 @@ OTO Company Limited`,
       const { signatureImage, signedName } = validationResult.data;
 
       const signedAt = new Date();
-      const signedDate = signedAt.toLocaleDateString("en-GB");
+      const signedDate = formatParkSignedDate(signedAt);
 
       // Get employee and branch for PDF generation
       const employee = await storage.getEmployee(letter.employeeId);

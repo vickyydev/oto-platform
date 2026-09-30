@@ -110,9 +110,9 @@ export default function LetterSigningPage() {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSigned(true);
-      setSignedAt(new Date());
+      setSignedAt(new Date(data.signedAt));
     },
   });
 
@@ -180,8 +180,8 @@ export default function LetterSigningPage() {
             Thank you, {letterData?.employee?.fullName}! Your {letterData?.letter.letterType} letter has been signed.
           </p>
           <p className="text-sm mb-6" style={{ color: otoTheme.textMuted }}>
-            Signed on {signedAt ? formatDateDDMMYYYY(signedAt.toISOString()) : ""}
-            {signedAt && ` at ${signedAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`}
+            Signed on {signedAt ? signedAt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }) : ""}
+            {signedAt && ` at ${signedAt.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" })}`}
           </p>
           <p className="text-sm" style={{ color: otoTheme.textMuted }}>
             A copy of this letter will be kept in your HR records.

@@ -219,8 +219,8 @@ export default function SigningPage() {
             Thank you, {contractData?.employeeName}! Your contract has been signed.
           </p>
           <p className="text-sm mb-6" style={{ color: otoTheme.textMuted }}>
-            Signed on {signedAt ? formatDateDDMMYYYY(signedAt.toISOString()) : ""}
-            {signedAt && ` at ${signedAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`}
+            Signed on {signedAt ? signedAt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }) : ""}
+            {signedAt && ` at ${signedAt.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" })}`}
           </p>
           <Button 
             onClick={handleDownloadPdf}

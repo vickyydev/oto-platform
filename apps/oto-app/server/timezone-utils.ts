@@ -85,6 +85,11 @@ export function getLocalDateString(utcDate: Date, timezone: string): string {
   }
 }
 
+export function formatParkSignedDate(date: Date): string {
+  const [year, month, day] = getLocalDateString(date, 'Asia/Bangkok').split('-');
+  return `${day}/${month}/${year}`;
+}
+
 /**
  * Get the local time string (HH:MM:SS) for a given UTC date in the specified timezone
  */

@@ -4,6 +4,7 @@ import fs from "fs";
 import DOMPurify from "isomorphic-dompurify";
 import { Readable } from "stream";
 import { getFileFromObjectStorage } from "./file-storage";
+import { formatParkSignedDate } from "./timezone-utils";
 
 // Resolve a stored branch logo before Chromium renders. Remote object storage
 // is the normal deployment path; the local file is kept for older dev uploads.
@@ -261,13 +262,6 @@ interface SignatureData {
   employerSignedDate?: string;
 }
 
-function formatDateDDMMYYYY(date: Date): string {
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
 export function createSignatureBlockHtml(signatureData: SignatureData): string {
   return `
     <div class="signatures-section" style="margin-top: 60px; page-break-inside: avoid;">
@@ -350,7 +344,7 @@ export async function generateSignedPdf(
   signatureImage?: string,
   employerSignatureData?: { name: string; title: string; image: string; date: string }
 ): Promise<Buffer> {
-  const signedDateStr = formatDateDDMMYYYY(signedAt);
+  const signedDateStr = formatParkSignedDate(signedAt);
   
   // Build signature data
   const signatureData: SignatureData = {
@@ -414,7 +408,7 @@ export async function generateSignedLetterPdf(
   signatureImage: string,
   branchHeader?: { name: string; address: string; logoUrl?: string }
 ): Promise<Buffer> {
-  const signedDateStr = formatDateDDMMYYYY(signedAt);
+  const signedDateStr = formatParkSignedDate(signedAt);
   
   // Create employee-only signature block (letters typically only need employee signature)
   const signatureBlockHtml = `
@@ -932,7 +926,7 @@ export async function generateBeoPdf(data: BeoPdfData): Promise<Buffer> {
   ${notesHtml}
 
   <div class="footer">
-    Generated ${new Date().toLocaleDateString()} &bull; Banquet Event Order
+    Generated ${formatParkSignedDate(new Date())} &bull; Banquet Event Order
   </div>
 </body>
 </html>`;
