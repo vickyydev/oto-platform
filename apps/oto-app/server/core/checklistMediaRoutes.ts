@@ -83,6 +83,21 @@ async function verifyItemAccess(req: Request, itemId: string, userTenantId: stri
   return !!item && !!await getAuthorizedTemplate(req, item.templateId, userTenantId);
 }
 
+async function canAccessAttachment(
+  req: Request,
+  attachment: typeof checklistAttachments.$inferSelect,
+  tenantId: string,
+): Promise<boolean> {
+  if (attachment.tenantId !== tenantId) return false;
+  if (attachment.checklistTemplateId) {
+    return !!await getAuthorizedTemplate(req, attachment.checklistTemplateId, tenantId);
+  }
+  if (attachment.checklistTemplateItemId) {
+    return verifyItemAccess(req, attachment.checklistTemplateItemId, tenantId);
+  }
+  return !!attachment.pendingChecklistId && attachment.createdByUserId === req.user?.id;
+}
+
 const presignRequestSchema = z.object({
   fileName: z.string().min(1),
   mimeType: z.string().min(1),
@@ -312,11 +327,18 @@ router.post("/confirm", requireAuth, requireManager, async (req: Request, res: R
 router.get("/pending/:pendingChecklistId", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
     const { pendingChecklistId } = req.params;
+    const tenantId = req.userWithAccess?.tenantId;
+    const userId = req.user?.id;
+    if (!tenantId || !userId) return res.status(403).json({ error: "Tenant access denied" });
     
     const attachments = await db
       .select()
       .from(checklistAttachments)
-      .where(eq(checklistAttachments.pendingChecklistId, pendingChecklistId));
+      .where(and(
+        eq(checklistAttachments.pendingChecklistId, pendingChecklistId),
+        eq(checklistAttachments.tenantId, tenantId),
+        eq(checklistAttachments.createdByUserId, userId),
+      ));
     
     res.json({ attachments });
   } catch (error: any) {
@@ -339,7 +361,8 @@ router.post("/associate-pending", requireAuth, requireManager, async (req: Reque
   try {
     const body = associatePendingSchema.parse(req.body);
     const tenantId = req.userWithAccess?.tenantId;
-    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
+    const userId = req.user?.id;
+    if (!tenantId || !userId) return res.status(403).json({ error: "Tenant access denied" });
     
     // Verify the new checklist exists
     const hasAccess = await verifyTemplateAccess(req, body.checklistTemplateId, tenantId);
@@ -351,7 +374,11 @@ router.post("/associate-pending", requireAuth, requireManager, async (req: Reque
     const pendingAttachments = await db
       .select()
       .from(checklistAttachments)
-      .where(eq(checklistAttachments.pendingChecklistId, body.pendingChecklistId));
+      .where(and(
+        eq(checklistAttachments.pendingChecklistId, body.pendingChecklistId),
+        eq(checklistAttachments.tenantId, tenantId),
+        eq(checklistAttachments.createdByUserId, userId),
+      ));
     
     if (pendingAttachments.length === 0) {
       return res.json({ message: "No pending attachments to associate", updated: 0 });
@@ -361,6 +388,14 @@ router.post("/associate-pending", requireAuth, requireManager, async (req: Reque
     const itemIdMap = new Map<number, string>();
     if (body.itemIdMappings) {
       for (const mapping of body.itemIdMappings) {
+        const [item] = await db.select({ id: checklistTemplateItems.id })
+          .from(checklistTemplateItems)
+          .where(and(
+            eq(checklistTemplateItems.id, mapping.checklistTemplateItemId),
+            eq(checklistTemplateItems.templateId, body.checklistTemplateId),
+            eq(checklistTemplateItems.tenantId, tenantId),
+          )).limit(1);
+        if (!item) return res.status(404).json({ error: "Checklist item not found or access denied" });
         itemIdMap.set(mapping.pendingItemIndex, mapping.checklistTemplateItemId);
       }
     }
@@ -379,7 +414,7 @@ router.post("/associate-pending", requireAuth, requireManager, async (req: Reque
               pendingChecklistId: null,
               pendingItemIndex: null,
             })
-            .where(eq(checklistAttachments.id, attachment.id));
+            .where(and(eq(checklistAttachments.id, attachment.id), eq(checklistAttachments.tenantId, tenantId)));
           updated++;
         }
       } else {
@@ -391,7 +426,7 @@ router.post("/associate-pending", requireAuth, requireManager, async (req: Reque
             pendingChecklistId: null,
             pendingItemIndex: null,
           })
-          .where(eq(checklistAttachments.id, attachment.id));
+          .where(and(eq(checklistAttachments.id, attachment.id), eq(checklistAttachments.tenantId, tenantId)));
         updated++;
       }
     }
@@ -421,7 +456,7 @@ router.get("/url", requireAuth, async (req: Request, res: Response) => {
       .where(and(eq(checklistAttachments.s3Key, s3Key), eq(checklistAttachments.tenantId, tenantId)))
       .limit(1);
 
-    if (!attachment.length) {
+    if (!attachment.length || !await canAccessAttachment(req, attachment[0], tenantId)) {
       return res.status(404).json({ error: "Attachment not found" });
     }
     let linkedTemplateId = attachment[0].checklistTemplateId;
@@ -561,7 +596,7 @@ router.delete("/:id", requireAuth, requireManager, async (req: Request, res: Res
       .where(and(eq(checklistAttachments.id, id), eq(checklistAttachments.tenantId, tenantId)))
       .limit(1);
 
-    if (!attachment.length) {
+    if (!attachment.length || !await canAccessAttachment(req, attachment[0], tenantId)) {
       return res.status(404).json({ error: "Attachment not found or access denied" });
     }
 
@@ -581,7 +616,10 @@ router.delete("/:id", requireAuth, requireManager, async (req: Request, res: Res
       console.error("[ChecklistMedia] S3 delete error (continuing):", s3Error);
     }
 
-    await db.delete(checklistAttachments).where(eq(checklistAttachments.id, id));
+    await db.delete(checklistAttachments).where(and(
+      eq(checklistAttachments.id, id),
+      eq(checklistAttachments.tenantId, tenantId),
+    ));
 
     res.json({ success: true });
   } catch (error: any) {
@@ -593,16 +631,33 @@ router.delete("/:id", requireAuth, requireManager, async (req: Request, res: Res
 router.patch("/reorder", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
     const { attachmentIds } = req.body as { attachmentIds: string[] };
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return res.status(403).json({ error: "Tenant access denied" });
     
-    if (!Array.isArray(attachmentIds)) {
+    if (!Array.isArray(attachmentIds) || attachmentIds.length > 100 ||
+        attachmentIds.some(id => typeof id !== "string") || new Set(attachmentIds).size !== attachmentIds.length) {
       return res.status(400).json({ error: "attachmentIds must be an array" });
+    }
+    if (attachmentIds.length === 0) return res.json({ success: true });
+
+    const attachments = await db.select().from(checklistAttachments).where(and(
+      eq(checklistAttachments.tenantId, tenantId),
+      inArray(checklistAttachments.id, attachmentIds),
+    ));
+    if (attachments.length !== attachmentIds.length) {
+      return res.status(404).json({ error: "Attachment not found or access denied" });
+    }
+    for (const attachment of attachments) {
+      if (!await canAccessAttachment(req, attachment, tenantId)) {
+        return res.status(404).json({ error: "Attachment not found or access denied" });
+      }
     }
 
     for (let i = 0; i < attachmentIds.length; i++) {
       await db
         .update(checklistAttachments)
         .set({ sortOrder: i })
-        .where(eq(checklistAttachments.id, attachmentIds[i]));
+        .where(and(eq(checklistAttachments.id, attachmentIds[i]), eq(checklistAttachments.tenantId, tenantId)));
     }
 
     res.json({ success: true });
