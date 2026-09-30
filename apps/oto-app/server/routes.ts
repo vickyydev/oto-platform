@@ -15,7 +15,7 @@ import { getTimezoneInfo, getLocalDateString, createDateTimeInTimezone, getMidni
 import Handlebars from "handlebars";
 import { z } from "zod";
 import { format, addDays } from "date-fns";
-import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema, MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
+import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema, MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertSopArticleSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
 import { getEffectivePermissions, resolveAdvisorRole, type PermissionUserContext } from "../shared/permissions";
 import { isHexCalendarColor, isOtherEventColor } from "@shared/event-colors";
 
@@ -20905,45 +20905,39 @@ OTO Company Limited`,
   // SOP ARTICLES (franchise-ready scoping)
   // ============================================
 
+  const canReadSopArticle = (user: UserWithBranchAccess, article: Awaited<ReturnType<typeof storage.getSopArticle>>, tenantId: string) => {
+    if (!article || article.tenantId !== tenantId) return false;
+    const canSeeBranch = user.hasAllBranchesAccess || article.scope === 'GLOBAL' ||
+      (article.branchIds || []).some(id => user.allowedBranchIds.includes(id));
+    if (!canSeeBranch) return false;
+    return ['admin', 'global_admin', 'operator_admin', 'manager'].includes(user.role) || article.status === 'published';
+  };
+
   // List SOP articles with branch filtering
   app.get("/api/sops", requireAuth, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
-      const requestedBranchId = req.query.branchId as string | undefined;
-      
-      // Determine effective branch filter:
-      // - 'all' is only allowed for users with all_branches access (admins)
-      // - Non-admins MUST have a valid branch ID to view content
-      let effectiveBranchId: string | null = null;
-      
-      if (user.hasAllBranchesAccess) {
-        // Admin can view all branches or specific branch
-        if (requestedBranchId === 'all' || !requestedBranchId) {
-          effectiveBranchId = null; // Admin viewing all
-        } else {
-          effectiveBranchId = requestedBranchId;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const requestedBranchId = req.query.branchId;
+      if (requestedBranchId != null && typeof requestedBranchId !== 'string') {
+        return res.status(400).json({ message: "Invalid branch" });
+      }
+      if (requestedBranchId === 'all' && !user.hasAllBranchesAccess) {
+        return res.status(403).json({ message: "All-branch access is not available" });
+      }
+      if (requestedBranchId && requestedBranchId !== 'all') {
+        if (!canUserAccessBranch(user, requestedBranchId)) {
+          return res.status(403).json({ message: "Access denied to this branch" });
         }
-      } else {
-        // Non-admin: Must have branch access and use a valid branch
-        if (!user.branchAccess || user.branchAccess.length === 0) {
-          return res.status(403).json({ message: "No branch access configured" });
-        }
-        
-        if (requestedBranchId && requestedBranchId !== 'all') {
-          // Validate user has access to requested branch
-          const hasAccess = user.branchAccess.some(ba => ba.branchId === requestedBranchId);
-          if (!hasAccess) {
-            return res.status(403).json({ message: "Access denied to this branch" });
-          }
-          effectiveBranchId = requestedBranchId;
-        } else {
-          // Default to first accessible branch for non-admins
-          effectiveBranchId = user.branchAccess[0].branchId;
+        const branch = await storage.getBranch(requestedBranchId);
+        if (!branch || branch.tenantId !== tenantId) {
+          return res.status(404).json({ message: "Branch not found" });
         }
       }
-      
-      const articles = await storage.getSopArticles(tenantId, effectiveBranchId);
+      const articles = (await storage.getSopArticles(tenantId)).filter(article =>
+        canReadSopArticle(user, article, tenantId) &&
+        (!requestedBranchId || requestedBranchId === 'all' || article.scope === 'GLOBAL' || (article.branchIds || []).includes(requestedBranchId))
+      );
       res.json(articles);
     } catch (error) {
       next(error);
@@ -20958,6 +20952,11 @@ OTO Company Limited`,
       if (!article) {
         return res.status(404).json({ message: "SOP article not found" });
       }
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      if (!canReadSopArticle(user, article, tenantId)) {
+        return res.status(404).json({ message: "SOP article not found" });
+      }
       res.json(article);
     } catch (error) {
       next(error);
@@ -20966,7 +20965,8 @@ OTO Company Limited`,
 
   // Server-side validation for structuredSteps to prevent DoS via oversized base64 payloads
   const validateStructuredSteps = (steps: unknown): { valid: boolean; error?: string } => {
-    if (!steps || !Array.isArray(steps)) return { valid: true };
+    if (steps == null) return { valid: true };
+    if (!Array.isArray(steps)) return { valid: false, error: 'Steps must be a list' };
     
     const maxImageSizeBytes = 3 * 1024 * 1024; // 3MB max per image (base64 is ~33% larger than binary)
     const maxSteps = 50; // Reasonable limit on number of steps
@@ -20977,6 +20977,10 @@ OTO Company Limited`,
     
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i] as { imageUrl?: string; title?: string };
+      if (!step || typeof step !== 'object' || (step.title != null && typeof step.title !== 'string') ||
+          (step.imageUrl != null && typeof step.imageUrl !== 'string')) {
+        return { valid: false, error: `Step ${i + 1} is invalid` };
+      }
       
       // Validate step title length
       if (step.title && step.title.length > 500) {
@@ -20989,7 +20993,7 @@ OTO Company Limited`,
         const estimatedBytes = (base64Length * 3) / 4;
         
         if (estimatedBytes > maxImageSizeBytes) {
-          return { valid: false, error: `Step ${i + 1} image exceeds 2MB limit` };
+          return { valid: false, error: `Step ${i + 1} image exceeds 3MB limit` };
         }
         
         // Validate image type
@@ -21003,24 +21007,37 @@ OTO Company Limited`,
     return { valid: true };
   };
 
+  const validSopBranches = async (user: UserWithBranchAccess, tenantId: string, scope: string, branchIds: string[]) => {
+    if (scope === 'GLOBAL') return branchIds.length === 0;
+    if (scope !== 'BRANCHES' || branchIds.length === 0 || new Set(branchIds).size !== branchIds.length ||
+        branchIds.some(id => !canUserAccessBranch(user, id))) return false;
+    const branches = await Promise.all(branchIds.map(id => storage.getBranch(id)));
+    return branches.every(branch => branch?.tenantId === tenantId);
+  };
+
   // Create SOP article (admin only)
   app.post("/api/sops", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
-      
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+
       // Server-side validation for structuredSteps
       const stepsValidation = validateStructuredSteps(req.body.structuredSteps);
       if (!stepsValidation.valid) {
         return res.status(400).json({ message: stepsValidation.error });
       }
       
-      const articleData = {
+      const parsed = insertSopArticleSchema.safeParse({
         ...req.body,
         tenantId,
         scope: req.body.scope || 'GLOBAL',
         branchIds: req.body.branchIds || [],
-      };
-      const article = await storage.createSopArticle(articleData);
+      });
+      if (!parsed.success || !Array.isArray(parsed.data.branchIds) ||
+          !(await validSopBranches(user, tenantId, parsed.data.scope || 'GLOBAL', parsed.data.branchIds))) {
+        return res.status(400).json({ message: 'Invalid SOP article or branch scope' });
+      }
+      const article = await storage.createSopArticle(parsed.data);
       res.status(201).json(article);
     } catch (error) {
       next(error);
@@ -21032,19 +21049,32 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       const existing = await storage.getSopArticle(id);
-      if (!existing) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      if (!existing || existing.tenantId !== tenantId) {
         return res.status(404).json({ message: "SOP article not found" });
       }
-      
+
       // Server-side validation for structuredSteps
-      if (req.body.structuredSteps) {
+      if (req.body.structuredSteps !== undefined) {
         const stepsValidation = validateStructuredSteps(req.body.structuredSteps);
         if (!stepsValidation.valid) {
           return res.status(400).json({ message: stepsValidation.error });
         }
       }
       
-      const article = await storage.updateSopArticle(id, req.body);
+      const parsed = insertSopArticleSchema.partial().safeParse(req.body);
+      if (!parsed.success || (parsed.data.tenantId && parsed.data.tenantId !== tenantId)) {
+        return res.status(400).json({ message: 'Invalid SOP article' });
+      }
+      const changes = { ...parsed.data };
+      delete changes.tenantId;
+      const scope = changes.scope || existing.scope;
+      const branchIds = changes.branchIds || existing.branchIds || [];
+      if (!Array.isArray(branchIds) || !(await validSopBranches(user, tenantId, scope, branchIds))) {
+        return res.status(400).json({ message: 'Invalid SOP branch scope' });
+      }
+      const article = await storage.updateSopArticle(id, changes);
       res.json(article);
     } catch (error) {
       next(error);
@@ -21056,7 +21086,9 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       const existing = await storage.getSopArticle(id);
-      if (!existing) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      if (!existing || existing.tenantId !== tenantId) {
         return res.status(404).json({ message: "SOP article not found" });
       }
       await storage.deleteSopArticle(id);
@@ -21488,14 +21520,15 @@ OTO Company Limited`,
   app.post("/api/knowledge-files/:id/generate-sop", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const tenantId = await resolveTenantId(req.user?.tenantId);
-      const user = req.user!;
-      
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+
       const knowledgeFile = await storage.getKnowledgeFile(id);
-      if (!knowledgeFile || knowledgeFile.tenantId !== tenantId) {
+      if (!knowledgeFile || knowledgeFile.tenantId !== tenantId ||
+          (knowledgeFile.branchId && !canUserAccessBranch(user, knowledgeFile.branchId))) {
         return res.status(404).json({ message: "File not found" });
       }
-      
+
       // Get the text chunks from this file
       const chunks = await storage.getKnowledgeChunks(id);
       if (chunks.length === 0) {
@@ -21546,8 +21579,8 @@ Return ONLY valid JSON, no markdown or explanation.`
         // Remove markdown code blocks if present
         const cleanJson = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
         parsedSteps = JSON.parse(cleanJson);
-      } catch (parseError) {
-        console.error("[GenerateSOP] Failed to parse AI response:", aiResponse);
+      } catch {
+        console.error("[GenerateSOP] Failed to parse AI response");
         return res.status(500).json({ message: "Failed to parse AI response" });
       }
       
@@ -21568,6 +21601,8 @@ Return ONLY valid JSON, no markdown or explanation.`
         title: parsedSteps.title || knowledgeFile.title || "Generated SOP",
         body: `Generated from: ${knowledgeFile.filename}`,
         departments: ["general"],
+        scope: knowledgeFile.branchId ? "BRANCHES" : "GLOBAL",
+        branchIds: knowledgeFile.branchId ? [knowledgeFile.branchId] : [],
         structuredSteps,
         steps: structuredSteps.map((s: any) => s.title),
       };
@@ -21752,20 +21787,20 @@ Return ONLY valid JSON, no markdown or explanation.`
         return res.status(400).json({ message: "Question is required" });
       }
 
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
-      const { allowedBranchIds } = getAllowedOperatorAndBranchIds(user);
+      const tenantId = await resolveTenantId(user.tenantId);
+      const { branchIds: allowedBranchIds } = await getAllowedOperatorAndBranchIds(user);
 
       // Retrieve published Knowledge Base articles with branch scoping
       const articles = await storage.getKbArticles(tenantId, {
         status: "published",
-        allowedBranchIds: isGlobalAdmin(user) ? undefined : allowedBranchIds,
+        allowedBranchIds: allowedBranchIds ?? undefined,
       });
 
       // Also retrieve PUBLISHED SOP articles only (security: draft SOPs should not appear)
-      const sops = await storage.getSopArticles(tenantId, user.activeBranchId || null, {
+      const sops = (await storage.getSopArticles(tenantId, null, {
         status: "published",
-      });
+      })).filter(article => canReadSopArticle(user, article, tenantId));
 
       // Retrieve indexed knowledge files and their chunks
       const knowledgeFiles = await storage.getKnowledgeFiles(tenantId, {

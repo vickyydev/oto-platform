@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { StudioLayout } from "@/components/layout/studio-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ import {
   X, 
   Check, 
   Trash2, 
-  GripVertical, 
   Image as ImageIcon,
   Eye,
   Edit,
@@ -165,7 +164,7 @@ function StepBuilder({
         ));
       };
       reader.readAsDataURL(file);
-    } catch (error) {
+    } catch {
       toast({ title: "Failed to upload image", variant: "destructive" });
       onStepsChange(steps.map(s => 
         s.id === stepId ? { ...s, isUploading: false } : s
@@ -439,7 +438,7 @@ export default function StudioSopsPage() {
   const { user } = useAuth();
   const { activeBranchId, isAllBranches, branches } = useBranchContext();
   const { toast } = useToast();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = ["admin", "global_admin", "operator_admin"].includes(user?.role || "");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSop, setEditingSop] = useState<SopArticle | null>(null);
@@ -685,7 +684,7 @@ export default function StudioSopsPage() {
                           {(sop as any).structuredSteps?.length || sop.steps?.length || 0} steps
                         </Badge>
                       )}
-                      {sop.departments.slice(0, 3).map((dept) => (
+                      {(sop.departments || []).slice(0, 3).map((dept) => (
                         <Badge key={dept} variant="secondary" className="text-xs capitalize">
                           {dept.replace("_", "/")}
                         </Badge>

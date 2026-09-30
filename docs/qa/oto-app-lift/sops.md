@@ -1,0 +1,7 @@
+# SCRUM-460: SOP access and Find navigation
+
+The SOP list and detail routes now apply the signed-in tenant, permitted branches and publication status. Staff can read published articles in their allowed branches; managers and administrators can also read drafts in their scope. An unknown, foreign-tenant or inaccessible article returns 404. An explicit list branch must exist in the tenant and be accessible to the user. Administrator create, edit and delete are tenant-bound; branch-scoped writes require distinct, accessible branch IDs in that tenant. Generated SOPs inherit a source knowledge file's branch rather than becoming global by default.
+
+Find links now use the registered article route, and the article's Back link returns to Find. Nullable body and departments no longer break the cards or search. The article page shows an unavailable state after a failed read and sanitizes stored HTML before rendering it. Studio permits all three administrator roles supported by the API.
+
+The production build passed. App typecheck remains at 554 inherited errors, with none in the edited SOP areas. Scoped ESLint diagnostics in the touched SOP areas and pages were cleared. There is no existing SOP test file. A local signed-in route probe did not run because the command environment rejected test-server startup. Staging anonymous guards and a signed-in staff/admin walkthrough are still required; no Deployed claim is made from build checks alone. Ask OTO's knowledge-file and chunk scope is a separate follow-up in the KB/Ask OTO module.
