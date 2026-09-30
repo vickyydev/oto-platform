@@ -26,15 +26,15 @@ still runs `SMS_ADAPTER=console` until the owner flips a service and sets the th
 TWILIO_ variables there. CI was trimmed the same day (cancel-in-progress plus
 what-changed gates).
 
-**Testing queue swept 13 → 6.** SCRUM-456, 457, 458 and 463 closed whole on staging
-evidence. SCRUM-453, 454, 460, 461, 462 and 464 carry commented positive halves;
-their shared blocker is that staging has no signable non-admin OTO App user. A
-refusal-proofs driver (workflow `wf_ed7144dd-478`, Opus 4.8) is provisioning a
-ZZ TEST staff account and capturing the six refusals now. **If it is still running
-when a session resumes: read its report first** — closable tickets close on its
-captures; any refusal that fails is a live security defect and is reported
-straight, not softened. SCRUM-461 also waits on the owner's OPENAI_API_KEY, and
-SCRUM-453's Xero half on the owner connecting Xero.
+**Testing queue cleared.** SCRUM-456, 457, 458 and 463 closed whole; then the
+refusal-proofs driver provisioned a ZZ TEST staff user on staging (created,
+captured, then deactivated and verified un-signable) and every refusal fired:
+SCRUM-453, 454, 460, 462 and 464 closed on those captures and 463's open sub-check
+completed. No security leak was found. Only SCRUM-461 stays Testing, on the
+owner's OPENAI_API_KEY; SCRUM-453's positive Xero exchange also waits on the
+owner. The drive's findings became SCRUM-469 (branch-scoped OTO App provisioning
+is API-only, and staging setup codes answer SMS_DELIVERY_FAILED) and a comment on
+SCRUM-193 (user delete answers a bare 500 when referenced).
 
 **The park thread:** the owner ran the wheel demo with `docs/ops/BOX_QUICKSTART.md`;
 the sleep/Wi-Fi engineering record is in `docs/ops/PI_BOOTH.md` §7. SCRUM-467 (the

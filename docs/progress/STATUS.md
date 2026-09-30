@@ -5,10 +5,10 @@ five rounds plus the polish are landed and proven on staging (SCRUM-269, 270, 27
 295, 206 and story 205 all Deployed — the park sells cash and card with the
 internet down, and every sale lands exactly once after reconnect). The booth
 dashboard (SCRUM-468) and the Twilio Verify adapter (SCRUM-455, adapters still on
-console until the owner flips one) are Deployed. The Testing queue went 13 → 6:
-four OTO App tickets closed whole; the six remaining wait on a refusal-proofs
-driver (`wf_ed7144dd-478`) provisioning a non-admin staging user — read its report
-before touching those tickets. Next build: arrival, SCRUM-209 / S2-12, from
+console until the owner flips one) are Deployed. The Testing queue is cleared:
+ten OTO App tickets closed on staging evidence, with only SCRUM-461 left waiting
+on the owner's AI key; the staff-refusal proofs rode a provisioned non-admin user,
+and the provisioning gap they exposed is SCRUM-469. Next build: arrival, SCRUM-209 / S2-12, from
 `docs/progress/plans/arrival/PLAN.md`. The newest STOP POINT block in
 SESSION_HANDOVER.md carries the detail._
 
