@@ -1,5 +1,51 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT — 1 October 2026, evening — M2 complete: offline selling Deployed; booth dashboard live; Testing queue swept
+
+**The offline cluster and the payments story are closed.** Round 5 proved it on
+staging with the box forced offline: cash sale T1-000033 and terminal sale
+T1-000034, receipts and wristbands printed from the box's own queue, refusals in
+counter words, and after reconnect each sale exactly once in History under its
+printed number. The polish round landed the five refinements the drive surfaced
+(`6c6161b8` + `ecc1f059`: tier honoured as the till chose it, band codes shown on
+both box-closed paths, truthful degraded station link, counter wording). SCRUM-269,
+270, 271, 295, 206 and story SCRUM-205 are all Deployed with attached evidence.
+M2's last promise — the park keeps selling when the internet dies — is delivered.
+
+**The booth dashboard (SCRUM-468) is Deployed.** `8a37b8a9` regrouped the Booths
+page (header chips, six-of-six checklist, five titled sections, settings in a side
+drawer, no sideways scroll 390–1440 px), added prize unarchive with its audit and
+the 409 guard, the show-archived listing, and the receipt-templates link to the
+till back office. Four staging captures landed (`1f15b14f`) and closed the ticket.
+The owner's booth FWBooth1 was never touched; archived-restore was proven on the
+proof booth with a ZZ TEST prize.
+
+**Twilio Verify (SCRUM-455) is Deployed** (`3c7a4fdf`): the `twilio_verify` adapter
+with the anchor-first ordering that closed the enumeration leak. Every environment
+still runs `SMS_ADAPTER=console` until the owner flips a service and sets the three
+TWILIO_ variables there. CI was trimmed the same day (cancel-in-progress plus
+what-changed gates).
+
+**Testing queue swept 13 → 6.** SCRUM-456, 457, 458 and 463 closed whole on staging
+evidence. SCRUM-453, 454, 460, 461, 462 and 464 carry commented positive halves;
+their shared blocker is that staging has no signable non-admin OTO App user. A
+refusal-proofs driver (workflow `wf_ed7144dd-478`, Opus 4.8) is provisioning a
+ZZ TEST staff account and capturing the six refusals now. **If it is still running
+when a session resumes: read its report first** — closable tickets close on its
+captures; any refusal that fails is a live security defect and is reported
+straight, not softened. SCRUM-461 also waits on the owner's OPENAI_API_KEY, and
+SCRUM-453's Xero half on the owner connecting Xero.
+
+**The park thread:** the owner ran the wheel demo with `docs/ops/BOX_QUICKSTART.md`;
+the sleep/Wi-Fi engineering record is in `docs/ops/PI_BOOTH.md` §7. SCRUM-467 (the
+installer's awake pins and the button observations) waits on his answers from the
+park. The second button is programmed at this Windows PC when he is back.
+
+**Next build:** the arrival story, SCRUM-209 / S2-12, from
+`docs/progress/plans/arrival/PLAN.md` — its OD-A defaults hold unless the owner
+objects. Waiting on the owner besides the above: the card-refund-after-window
+default and the pricing rulings in `docs/progress/OPEN_QUESTIONS.md`.
+
 ## STOP POINT — 1 October 2026, 15:32 — S2-11 Deployed; offline rounds 1–4 landed; round 5 (proof) is next
 
 **Closed on evidence:** SCRUM-208 (S2-11, 23 staging proofs; the honest negative became

@@ -1,12 +1,15 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-10-01, 15:32 Bangkok. S2-11 is Deployed on staging proof
-(SCRUM-208; the F&B tab gap is SCRUM-459). The offline cluster's rounds 1–4 are
-landed (`2026836a`, `0f0ee0c9`, `d10d78fa`, `75ad7c76`): the till mints ids, one
-satang-exact calculator, the station bridge, and the box selling cash and terminal
-offline with proven power-cut recovery. Round 5 (staging proof) closes SCRUM-269,
-295, 270, 271, 206 and story 205. The owner is at the park demoing the wheel with
-BOX_QUICKSTART.md and release d10d78f. The newest STOP POINT block in
+_Last updated: 2026-10-01, evening Bangkok. M2 is complete: the offline cluster's
+five rounds plus the polish are landed and proven on staging (SCRUM-269, 270, 271,
+295, 206 and story 205 all Deployed — the park sells cash and card with the
+internet down, and every sale lands exactly once after reconnect). The booth
+dashboard (SCRUM-468) and the Twilio Verify adapter (SCRUM-455, adapters still on
+console until the owner flips one) are Deployed. The Testing queue went 13 → 6:
+four OTO App tickets closed whole; the six remaining wait on a refusal-proofs
+driver (`wf_ed7144dd-478`) provisioning a non-admin staging user — read its report
+before touching those tickets. Next build: arrival, SCRUM-209 / S2-12, from
+`docs/progress/plans/arrival/PLAN.md`. The newest STOP POINT block in
 SESSION_HANDOVER.md carries the detail._
 
 
