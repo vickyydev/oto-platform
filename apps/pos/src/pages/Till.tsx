@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
 import { useStation } from '@/station/StationContext';
-import { announceSalePrinting, braceletPrintJobs, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
+import { announceSalePrinting, braceletPrintJobs, dispatchPlatformPrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
@@ -21,7 +21,7 @@ import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
 import { getInventoryItem, getAddOns } from '@/store/catalogStore';
-import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, markCheckInsBooked, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, markCheckInsBooked, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
@@ -42,8 +42,13 @@ import { childrenApi, lookupMember } from '@/api/members';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import {
   bookingsApi,
+  looksLikeBookingQr,
+  typedBookingQr,
+  readBookingScan,
   redemptionFromConflict,
+  type BookingRedeemResult,
   type PlatformBooking,
+  type ScannedBooking,
   type RedeemOutcome,
 } from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
@@ -346,6 +351,18 @@ export default function Till() {
 
   // Booking redemption flow
   const [showRedeemModal, setShowRedeemModal] = useState(false);
+  // S2-12 round 3 — the booking a scanned QR named: the id a box vouched for,
+  // or the raw code this device read, which the platform checks before the
+  // dialog shows anything.
+  const [scannedBooking, setScannedBooking] = useState<ScannedBooking | null>(null);
+  const openScannedBooking = (scan: ScannedBooking) => {
+    setScannedBooking(scan);
+    setShowRedeemModal(true);
+  };
+  // One idempotency key per booking per open dialog: a retry after a dropped
+  // answer replays the platform's stored redemption instead of being told the
+  // booking was already redeemed by this very press.
+  const redeemKeyRef = useRef<{ bookingId: string; key: string } | null>(null);
   // Holds a booking's registrationId after the regular guest sale is issued,
   // while waiting for the staff to confirm or skip the drop-off check-in.
   const [pendingDropOffRegistration, setPendingDropOffRegistration] = useState<{
@@ -780,18 +797,26 @@ export default function Till() {
       .finally(() => setCaptureNameBusy(false));
   };
 
-  // Staff confirmed a paid booking in the RedeemBookingModal. Claim the booking
-  // on the platform, then build + record the regular-guest sale (drop-off lines
-  // are excluded — they get their own check-in flow), issue wristbands, dispatch
-  // print jobs, then offer to check in any drop-off children via the existing
+  // Staff confirmed a paid booking in the RedeemBookingModal. The platform
+  // does the rest in ONE transaction (S2-12 round 3, `POST /bookings/:id/
+  // redeem`): claims the booking, records the regular-guest sale from what the
+  // family PAID (drop-off lines are excluded — they get their own check-in
+  // flow) with the booking's paid-online tender, mints the wristbands and queues
+  // the print jobs. The till then announces the paper exactly as a walk-in sale
+  // does, and offers to check in any drop-off children via the existing
   // registration flow.
   //
-  // THE CLAIM COMES FIRST — SCRUM-234. The prototype minted the bands and then
-  // asked its in-memory store whether the booking was still unredeemed, which
-  // left a losing race holding printed wristbands. `pos.booking` is now the
-  // thing that decides, and it is asked before anything is minted or printed, so
-  // the second counter to scan the same QR is told who redeemed it and when, and
-  // has issued nothing.
+  // THE CLAIM COMES FIRST, on the server — SCRUM-234. The prototype minted the
+  // bands and then asked its in-memory store whether the booking was still
+  // unredeemed, which left a losing race holding printed wristbands. The second
+  // counter to confirm the same booking is told who redeemed it and when, and
+  // nothing has been issued for it.
+  const redeemKeyFor = (bookingId: string): string => {
+    if (redeemKeyRef.current?.bookingId !== bookingId) {
+      redeemKeyRef.current = { bookingId, key: bookingsApi.newRedeemKey() };
+    }
+    return redeemKeyRef.current.key;
+  };
   const handleRedeemConfirm = async (
     booking: Booking,
     platform: PlatformBooking,
@@ -809,27 +834,22 @@ export default function Till() {
       };
     }
 
-    const sale = buildSale({
-      operatorId: operator.id,
-      operatorName: operator.name,
-      tier: booking.tier,
-      lines: regularLines,
-      discounts: booking.promoDiscount ? [booking.promoDiscount] : [],
-      manualDiscounts: [],
-      memberId: booking.memberId,
-      customerPhone: '',
-      customerNickname: '',
-      paymentMethod: booking.paymentMethod,
-      bookingReference: booking.reference,
-    });
+    // The visit reception confirmed for this family names the children on the
+    // kids' bands, allergy line included — exactly as a walk-in sale's does.
+    const visitId =
+      confirmedVisitId && platform.memberId && member?.id === platform.memberId ? confirmedVisitId : undefined;
 
+    let redeemed: BookingRedeemResult;
     try {
-      await bookingsApi.redeem(
+      redeemed = await bookingsApi.redeem(
         platform.id,
-        { stationId: station?.stationId },
-        bookingsApi.newRedeemKey(),
+        { ...(station?.stationId ? { stationId: station.stationId } : {}), ...(visitId ? { visitId } : {}) },
+        redeemKeyFor(platform.id),
       );
     } catch (err) {
+      // Only a lost answer is retried under the same key; a definite refusal
+      // leaves the next press free to ask again fresh.
+      if (!(err instanceof NetworkError)) redeemKeyRef.current = null;
       const first = redemptionFromConflict(err);
       if (first) return { ok: false, redemption: first };
       if (err instanceof NetworkError) {
@@ -850,25 +870,21 @@ export default function Till() {
       };
     }
 
-    recordSale(sale);
-    // Track usage for promo codes embedded in the booking at redemption time.
-    if (booking.promoDiscount) {
-      incrementPromoUsage(booking.promoDiscount.code, customerPhone || member?.phone || undefined);
-    }
-
-    // Mint every wristband for the booking from each ticket's own package:
-    // credit-earning persons (adults and/or kids per the ticket's credit rule)
-    // get a scannable wallet band; everyone else gets a 0-balance gate/plain
-    // band. Gate access comes purely from the ticket — not a park-wide config.
-    const mintedCodes = issueBookingBands(sale, operator?.name);
-
-    if (station) {
-      dispatchPrintJobs(ticketPrintJobs(station, sale));
+    // The platform printed the sale when it closed it — the receipt and the
+    // signed bands — so the till announces what was queued and where, and what
+    // was not printed, as it does for a walk-in sale.
+    const printing = redeemed.printing;
+    if (printing) {
+      dispatchPlatformPrinting(
+        printing.jobs.filter((job) => job.reprintOf === null),
+        printing.failed ? [...printing.notes, printing.failed.message] : printing.notes,
+      );
     }
 
     toast({
       title: 'Booking redeemed',
-      description: `${booking.reference} — ${mintedCodes.length} wristband(s) issued.`,
+      // A deployment from before round 3 answers the claim alone, with no bands.
+      description: `${booking.reference} — ${(redeemed.bands ?? []).length} wristband(s) issued.`,
     });
 
     // Event passes sold online are registered (not checked in) attendees. On
@@ -1212,8 +1228,24 @@ export default function Till() {
   useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
     const code = readVoucherScan(event);
     if (code) redeemScannedVoucher(code);
+    // S2-12 round 3 — a family's booking QR, checked on the box: open the
+    // redeem flow on that booking. A QR the box refused says why.
+    const bookingScan = readBookingScan(event);
+    if (bookingScan && 'bookingId' in bookingScan) openScannedBooking({ bookingId: bookingScan.bookingId });
+    else if (bookingScan) {
+      toast({ title: 'Booking QR not accepted', description: bookingScan.refused, variant: 'destructive' });
+    }
   });
   useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode, enabled: !locked });
+  // A booking QR read by a scanner on this device rather than the box's.
+  useScannerBurst(
+    (code) => {
+      // Sent whole: only the platform can check this code's signature.
+      const qr = typedBookingQr(code);
+      if (qr) openScannedBooking({ qr });
+    },
+    { accept: looksLikeBookingQr, enabled: !locked && !showRedeemModal },
+  );
 
   /**
    * S2-10b — THE ORDER PANEL'S CANCEL.
@@ -2884,7 +2916,10 @@ export default function Till() {
               nickname={customerNickname}
               member={member}
               onSkip={handleSkipIdentify}
-              onRedeemBooking={() => setShowRedeemModal(true)}
+              onRedeemBooking={() => {
+                setScannedBooking(null);
+                setShowRedeemModal(true);
+              }}
               eventPasses={activeEventPasses}
               onSellEventPass={handleSellEventPassFromStep1}
             />
@@ -3275,9 +3310,16 @@ export default function Till() {
 
       <RedeemBookingModal
         open={showRedeemModal}
-        onOpenChange={setShowRedeemModal}
+        onOpenChange={(next) => {
+          setShowRedeemModal(next);
+          if (!next) {
+            setScannedBooking(null);
+            redeemKeyRef.current = null;
+          }
+        }}
         branchId={apiBranchIdForSlug(branch.id)}
         onConfirm={handleRedeemConfirm}
+        scannedBooking={scannedBooking}
       />
 
       {/* Event-pass sell flow — flat-priced camp/event entry (non-party). */}

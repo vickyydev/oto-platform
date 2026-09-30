@@ -45,6 +45,8 @@ import {
   ledgerUnitLabel,
   newId,
   isPaymentReversalPending,
+  PAID_ONLINE_TENDER_CODE,
+  PAID_ONLINE_TENDER_METHOD,
   parseDayStart,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
@@ -378,6 +380,16 @@ export interface CommitSaleInput extends CartInput {
    * with what is left to take: see the seam described on `commitSale`.
    */
   finalise?: boolean;
+  /**
+   * S2-12 (SCRUM-209 round 3) — the online booking this sale redeems.
+   *
+   * Set ONLY by `services/booking-redemption.ts`, inside the transaction that
+   * holds the booking's row lock; the sales route's body schema does not carry
+   * it, so a till cannot file an ordinary cart against somebody's booking. A
+   * sale carrying it is recorded under the `booking` channel whatever the cart
+   * claims (`resolveSalesChannel` refuses that channel to a sale without one).
+   */
+  bookingId?: string | null;
 }
 
 export interface ActorContext {
@@ -2616,7 +2628,33 @@ export async function commitSale(
   // SCRUM-343 — before anything is priced or written: a till claiming a lane it
   // is not set up for is a misconfigured till, and nothing about it is fixed by
   // writing the sale first.
-  const salesChannel = resolveSalesChannel(st, input.channel);
+  /**
+   * S2-12 — a booking's redemption sale is the booking channel, and only a
+   * sale that names its booking may claim it: the channel is how a report
+   * tells money paid online from money taken at the counter.
+   */
+  if (input.bookingId && st.kind !== 'till') {
+    throw errors.conflict(
+      'SALE_CHANNEL_MISMATCH',
+      `A ${st.kind} station cannot redeem an online booking`,
+      { stationKind: st.kind, claimedChannel: 'booking' },
+    );
+  }
+  if (input.bookingId && (st.capabilities ?? []).length > 0 && !(st.capabilities ?? []).includes('tickets')) {
+    throw errors.conflict(
+      'SALE_CHANNEL_MISMATCH',
+      `"${st.name}" is not set up to sell tickets, so a booking cannot be redeemed here`,
+      { stationKind: st.kind, claimedChannel: 'booking', capabilities: [...(st.capabilities ?? [])] },
+    );
+  }
+  if (!input.bookingId && input.channel === 'booking') {
+    throw errors.conflict(
+      'SALE_CHANNEL_MISMATCH',
+      'Only the redemption of an online booking is recorded under the booking channel',
+      { stationKind: st.kind, claimedChannel: 'booking' },
+    );
+  }
+  const salesChannel: SalesChannel = input.bookingId ? 'booking' : resolveSalesChannel(st, input.channel);
 
   const clock = resolveOccurredAt(input.occurredAt, now);
   /**
@@ -2760,6 +2798,7 @@ export async function commitSale(
     createdByAccountId: actor.accountId,
     memberId: input.memberId ?? null,
     visitId: input.visitId ?? null,
+    bookingId: input.bookingId ?? null,
     pricingMode: priced.scope.pricingMode,
     pricingModeReason: priced.scope.pricingModeReason,
     holidayId: priced.scope.holidayId,
@@ -3105,6 +3144,15 @@ export interface FinaliseSaleInput {
    * next free number and the answer names both. Only the offline replay sets it.
    */
   adoptReceipt?: { series: string; seq: number; number: string } | null;
+  /**
+   * S2-12 (SCRUM-209 round 3) — settle the whole balance with the paid-online
+   * tender. Set ONLY by `services/booking-redemption.ts` on the sale it has
+   * just committed against the booking it holds locked; the sales route never
+   * passes it, and a tender NAMED `paid_online` without it is refused. Recorded
+   * as `transfer` money, so no drawer opens and the till's cash-up leaves it
+   * out (OD-A10).
+   */
+  onlineTender?: { bookingId: string; bookingReference: string; onlineInvoiceNo: string | null } | null;
 }
 
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
@@ -3326,7 +3374,23 @@ export async function finaliseSale(
        * check before they write an attempt.
        */
       await assertSaleVouchersHeld(tx, voucherScope, now);
-      const amountSatang = tender.amountSatang ?? owed;
+      const online = input.onlineTender ?? null;
+      if (online && row.bookingId !== online.bookingId) {
+        throw errors.conflict(
+          'SALE_NOT_BOOKING',
+          'Only the sale that redeems this booking can be settled as paid online',
+          { saleId, bookingId: online.bookingId },
+        );
+      }
+      if (!online && tender.method === PAID_ONLINE_TENDER_CODE) {
+        throw errors.badRequest(
+          'A sale is settled as paid online only by redeeming the booking that paid for it',
+          { method: tender.method },
+        );
+      }
+      // The paid-online tender settles everything: the booking paid the whole
+      // of it before the family arrived, and a part of it is not a thing.
+      const amountSatang = online ? owed : tender.amountSatang ?? owed;
       if (amountSatang <= 0) throw errors.badRequest('A tender has to settle something');
       if (amountSatang > owed) {
         throw errors.badRequest('That tender is more than this sale still owes', {
@@ -3334,8 +3398,10 @@ export async function finaliseSale(
           outstandingSatang: owed,
         });
       }
-      const methodCode = tender.method ?? 'cash';
-      const method = await tenderMethodOf(tx, row.operatorId, methodCode, tender.kind);
+      const methodCode = online ? PAID_ONLINE_TENDER_CODE : tender.method ?? 'cash';
+      const method = online
+        ? PAID_ONLINE_TENDER_METHOD
+        : await tenderMethodOf(tx, row.operatorId, methodCode, tender.kind);
       const changeSatang = changeFor(amountSatang, tender.tenderedSatang);
       /**
        * OPENED, THEN SETTLED — the lifecycle every tender shares, run here in
@@ -3374,6 +3440,16 @@ export async function finaliseSale(
           ...(tender.reference ? { reference: tender.reference } : {}),
           takenByAccountId: actor.accountId,
           ...(input.actionId ? { actionId: input.actionId } : {}),
+          // S2-12 — which booking paid this, and under which gateway invoice,
+          // so the redemption sale reconciles to the money it came from.
+          ...(online
+            ? {
+                paidOnline: true,
+                bookingId: online.bookingId,
+                reference: online.bookingReference,
+                onlineInvoiceNo: online.onlineInvoiceNo,
+              }
+            : {}),
         },
       });
       // Money taken at a counter is paid at the moment it is recorded. The

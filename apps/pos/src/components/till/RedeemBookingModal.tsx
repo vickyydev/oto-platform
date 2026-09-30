@@ -6,8 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Booking } from '@/types';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import {
+  BOOKING_QR_SIGNATURE_INVALID,
   bookingsApi,
   describeRedemption,
+  fetchScannedBooking,
+  typedBookingQr,
+  type ScannedBooking,
   toPosBooking,
   type PlatformBooking,
   type PlatformRedemption,
@@ -28,6 +32,14 @@ interface RedeemBookingModalProps {
    * put with the reason nothing was issued.
    */
   onConfirm: (booking: Booking, platform: PlatformBooking) => Promise<RedeemOutcome>;
+  /**
+   * S2-12 round 3 — the booking a scanned QR named: the id the box vouched
+   * for after checking the signature, or the raw code a scanner on this
+   * device read, which the platform checks before anything opens. When set as
+   * the dialog opens, it goes straight to that booking's summary instead of
+   * waiting for a typed reference.
+   */
+  scannedBooking?: ScannedBooking | null;
 }
 
 type Stage = 'lookup' | 'summary' | 'already_redeemed';
@@ -58,7 +70,13 @@ function paymentMethodIcon(pm: string) {
  * answer, the panel says which of the three things happened — no connection, no
  * such route on this deployment, or the lookup failed — and nothing is issued.
  */
-export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: RedeemBookingModalProps) {
+export function RedeemBookingModal({
+  open,
+  onOpenChange,
+  branchId,
+  onConfirm,
+  scannedBooking = null,
+}: RedeemBookingModalProps) {
   const [stage, setStage] = useState<Stage>('lookup');
   const [refInput, setRefInput] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -147,10 +165,16 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
     setLookingUp(true);
     setError(null);
     try {
-      const p = await bookingsApi.byReference(trimmed, branchId ?? undefined);
+      // A booking QR read into this field by a scanner goes to the platform
+      // whole, which checks its signature; anything else is the reference
+      // printed beside it.
+      const qr = typedBookingQr(trimmed);
+      const p = qr ? await bookingsApi.byQr(qr) : await bookingsApi.byReference(trimmed, branchId ?? undefined);
       show(p);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 404 && !isMissingRoute(err)) {
+      if (err instanceof ApiError && err.code === BOOKING_QR_SIGNATURE_INVALID) {
+        setError(err.message);
+      } else if (err instanceof ApiError && err.status === 404 && !isMissingRoute(err)) {
         setError(`No booking found for "${trimmed}".`);
       } else {
         setError(readFailure(err, `"${trimmed}"`));
@@ -159,6 +183,36 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
       setLookingUp(false);
     }
   }
+
+  // A scanned QR opened this dialog: go straight to that booking.
+  useEffect(() => {
+    if (!open || !scannedBooking) return;
+    let live = true;
+    setLookingUp(true);
+    setError(null);
+    void fetchScannedBooking(scannedBooking)
+      .then((p) => {
+        if (!live) return;
+        setRefInput(p.reference);
+        show(p);
+      })
+      .catch((err: unknown) => {
+        if (!live) return;
+        if (err instanceof ApiError && err.code === BOOKING_QR_SIGNATURE_INVALID) {
+          setError(err.message);
+        } else if (err instanceof ApiError && err.status === 404 && !isMissingRoute(err)) {
+          setError('No booking found for the scanned QR.');
+        } else {
+          setError(readFailure(err, 'the scanned booking'));
+        }
+      })
+      .finally(() => {
+        if (live) setLookingUp(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [open, scannedBooking, show, readFailure]);
 
   function handleLookup() {
     void lookup(refInput);

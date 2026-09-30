@@ -9,7 +9,9 @@ import {
   normaliseBoothCode,
   parseBandCode,
   parseBandShortCode,
+  parseBookingQr,
   verifyBandCode,
+  verifyBookingQr,
   verifyBoothCode,
 } from '@oto/shared';
 
@@ -594,6 +596,99 @@ export function bandCodeHandler(key: () => string | Uint8Array | null): ScanHand
   };
 }
 
+// --- The signed booking QR (S2-12, SCRUM-209 round 3) ------------------------
+
+/** The name the booking handler goes by on the tape, in the Box log drawer and on the station channel. */
+export const BOOKING_QR_HANDLER = 'booking';
+
+/** Why a booking scan was not a booking this park signed — short and non-leaking, as on the tape. */
+export const BOOKING_QR_SIGNATURE_INVALID = 'BOOKING_QR_SIGNATURE_INVALID';
+export const BOOKING_QR_MALFORMED = 'BOOKING_QR_MALFORMED';
+export const BOOKING_KEY_MISSING = 'BOOKING_KEY_MISSING';
+export const BOOKING_KEY_INVALID = 'BOOKING_KEY_INVALID';
+
+/**
+ * The booking QR's header, read the way the platform reads it: trimmed, upper
+ * case. The header (`BK1:`) is one no band code or product barcode can carry
+ * — a band code is letters and digits then a dot, a barcode digits only — so a
+ * string that starts with it is a booking QR or a damaged one, never a guess.
+ */
+function hasBookingHeader(code: string): boolean {
+  return code.trim().toUpperCase().startsWith('BK1:');
+}
+
+/**
+ * The handler: the QR on a family's booking confirmation, read at the counter.
+ *
+ * It checks the signature with the park's key (`verifyBookingQr`, the same
+ * key the bands use under a different domain, so neither signature replays as
+ * the other) and answers with the booking it names and the action the till
+ * takes: open the redeem flow on that booking (`action: 'redeem_booking'`).
+ * Whether the booking is paid, or already redeemed, is the platform's answer
+ * at the moment of redemption — the box decides only that this park signed it.
+ *
+ * The code itself does not travel: `detail` carries the booking id and a
+ * sentence for the screen. A code with the header and the wrong signature is
+ * `refused`; a box with no key says so as an `error`, never as a pass.
+ */
+export function bookingQrHandler(key: () => string | Uint8Array | null): ScanHandler {
+  return {
+    name: BOOKING_QR_HANDLER,
+    kind: 'booking',
+    matches: hasBookingHeader,
+    handle(ctx) {
+      if (!parseBookingQr(ctx.code)) {
+        return {
+          outcome: 'refused',
+          errorCode: BOOKING_QR_MALFORMED,
+          detail: { message: 'This reads like a booking QR, but part of it is missing — type the booking reference instead' },
+        };
+      }
+      const secret = key();
+      if (!secret) {
+        return {
+          outcome: 'error',
+          errorCode: BOOKING_KEY_MISSING,
+          detail: {
+            message: 'This box has no park key yet, so it cannot check a booking QR — type the booking reference instead',
+          },
+        };
+      }
+      let verdict: ReturnType<typeof verifyBookingQr>;
+      try {
+        verdict = verifyBookingQr(ctx.code, secret);
+      } catch {
+        return {
+          outcome: 'error',
+          errorCode: BOOKING_KEY_INVALID,
+          detail: { message: 'This box’s park key is not usable, so it cannot check a booking QR' },
+        };
+      }
+      if (!verdict.ok) {
+        return {
+          outcome: 'refused',
+          errorCode: verdict.reason === 'signature' ? BOOKING_QR_SIGNATURE_INVALID : BOOKING_QR_MALFORMED,
+          detail: {
+            message:
+              verdict.reason === 'signature'
+                ? 'Not a booking this park issued — its signature does not match'
+                : 'This reads like a booking QR, but part of it is missing — type the booking reference instead',
+            reason: verdict.reason,
+          },
+        };
+      }
+      return {
+        outcome: 'handled',
+        detail: {
+          action: 'redeem_booking',
+          bookingId: verdict.bookingId,
+          message: 'Online booking — signature checked on this box',
+        },
+      };
+    },
+  };
+}
+
 export class ScanRouter {
   private readonly options: ScanRouterOptions;
   private readonly handlers: ScanHandler[] = [];
@@ -618,11 +713,20 @@ export class ScanRouter {
    * `bandKey` — and absent otherwise.
    */
   private readonly band: ScanHandler | null;
+  /**
+   * S2-12 — the signed booking QR, claimed by the router itself after the band
+   * and for the same reason: its header is the platform's own
+   * (`@oto/shared`'s `booking-qr.ts`). Always present, so a booking QR is
+   * CLASSIFIED as one on any router; one without the park key answers
+   * `BOOKING_KEY_MISSING` rather than letting the code fall to a broad matcher.
+   */
+  private readonly booking: ScanHandler;
 
   constructor(options: ScanRouterOptions) {
     this.options = options;
     this.log = options.log ?? silentLog;
     this.band = options.bandKey ? bandCodeHandler(options.bandKey) : null;
+    this.booking = bookingQrHandler(options.bandKey ?? (() => null));
   }
 
   /**
@@ -651,6 +755,7 @@ export class ScanRouter {
     return [
       this.voucher.name,
       ...(this.band ? [this.band.name] : []),
+      this.booking.name,
       ...this.handlers.map((h) => h.name),
     ];
   }
@@ -658,9 +763,9 @@ export class ScanRouter {
   /**
    * What the box thinks a code is, before any handler runs.
    *
-   * A kind is `unknown` until something claims its shape. Booking QRs are
-   * redeemed by S2-12, and inventing a shape for those here would be inventing
-   * a format the code that mints them would then have to match. A retail
+   * A kind is `unknown` until something claims its shape. A booking QR is
+   * claimed by its header (`BK1:`, S2-12's `booking-qr.ts` — the format the
+   * api mints at payment, not one invented here). A retail
    * barcode is matched (`isProductBarcode`), because its shape was decided by
    * GS1 long before this park existed — and so are a Lucky Wheel voucher code
    * (`isBoothVoucherCode`, S2-10b) and a band code (`isBandCodeCandidate`,
@@ -672,6 +777,7 @@ export class ScanRouter {
     // ticket's matcher gets.
     if (this.voucher.matches(code)) return { kind: this.voucher.kind, handler: this.voucher };
     if (this.band?.matches(code)) return { kind: this.band.kind, handler: this.band };
+    if (this.booking.matches(code)) return { kind: this.booking.kind, handler: this.booking };
     for (const handler of this.handlers) {
       let claimed = false;
       try {

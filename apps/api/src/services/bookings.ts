@@ -9,8 +9,8 @@ import {
   member,
   station,
 } from '@oto/db';
-import { isoDateInTz, newId, wallClockMinutesInTz } from '@oto/shared';
-import { errors, type AppError } from '../lib/errors';
+import { isoDateInTz, newId, parseBookingQr, wallClockMinutesInTz } from '@oto/shared';
+import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { bookingChange, recordChange } from './sync';
 import type { Exec, Tx } from './tx';
@@ -208,7 +208,7 @@ export interface BookingView {
   redemption: RedemptionView | null;
 }
 
-function linesOf(row: BookingRow): BookingLineView[] {
+export function linesOf(row: BookingRow): BookingLineView[] {
   const raw = payloadOf(row).lines;
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((entry) => {
@@ -409,6 +409,43 @@ export async function loadBookingForOperator(
   return row ?? null;
 }
 
+/** The code a booking QR the park did not sign is refused with — the box's own name for it. */
+export const BOOKING_QR_SIGNATURE_INVALID = 'BOOKING_QR_SIGNATURE_INVALID';
+
+/**
+ * A booking QR the till read itself — a USB scanner or the typed field — checked
+ * on the platform before anything opens (S2-12 round 3 fix: a tampered code
+ * opened the redeem dialog because the till only parsed its shape).
+ *
+ * The signature is compared with the one the platform STORED when the booking
+ * was paid (`booking.qr_signature`, `booking-payment.ts`), not recomputed: the
+ * stored one is the QR the family was actually given, so a later key rotation
+ * does not strand it, and a booking never paid has none and opens nothing.
+ * Every refusal after the shape check is the same answer — an unknown booking,
+ * an unsigned one and a wrong signature are all "not a booking this park
+ * issued" — so the route is not a way to probe which ids exist.
+ *
+ * The comparison runs over every character whatever the first difference.
+ */
+export async function loadBookingByQr(
+  exec: Exec,
+  operatorId: string,
+  code: string,
+): Promise<BookingRow> {
+  const parsed = parseBookingQr(code);
+  if (!parsed) throw errors.badRequest('That is not a booking QR.');
+  const row = await loadBookingForOperator(exec, operatorId, parsed.bookingId);
+  const stored = row?.qrSignature ?? '';
+  let difference = stored.length === parsed.signature.length ? 0 : 1;
+  for (let i = 0; i < parsed.signature.length; i += 1) {
+    difference |= (stored.charCodeAt(i) || 0) ^ parsed.signature.charCodeAt(i);
+  }
+  if (!row || difference !== 0) {
+    throw new AppError(422, BOOKING_QR_SIGNATURE_INVALID, 'Not a booking QR this park issued. Look the booking up by its reference instead.');
+  }
+  return row;
+}
+
 export async function loadAttendees(exec: Exec, bookingIds: string[]): Promise<AttendeeRow[]> {
   if (bookingIds.length === 0) return [];
   return exec.select().from(attendee).where(inArray(attendee.bookingId, bookingIds));
@@ -537,6 +574,11 @@ export interface RedeemBookingArgs {
   bandCodes: string[];
   requestId?: string | null;
   now?: Date;
+  /**
+   * S2-12 round 3 — leave the box delta to the caller, which publishes it once
+   * the bands it mints in the same transaction are on the redemption row.
+   */
+  deferPublish?: boolean;
 }
 
 /**
@@ -656,17 +698,30 @@ export async function redeemBooking(tx: Tx, args: RedeemBookingArgs): Promise<Bo
    * since SCRUM-304 it is a row of its own, and what a box is told has to be
    * what this transaction wrote.
    */
+  if (!args.deferPublish) await publishRedemption(tx, after, stored);
+  return after;
+}
+
+/**
+ * The redemption's delta to the boxes at the booking's branch (SCRUM-305).
+ * `redeemBookingAtCounter` defers it until the bands are minted, so a box is
+ * told the band codes the counter handed over rather than an empty list.
+ */
+export async function publishRedemption(
+  tx: Tx,
+  after: BookingRow,
+  stored: StoredRedemption,
+): Promise<void> {
   await recordChange(
     tx,
-    { operatorId: row.operatorId, branchId: row.branchId },
+    { operatorId: after.operatorId, branchId: after.branchId },
     {
       scope: 'bookings',
       entityType: 'booking',
-      entityId: row.id,
+      entityId: after.id,
       payload: bookingChange(after, stored),
     },
   );
-  return after;
 }
 
 /**

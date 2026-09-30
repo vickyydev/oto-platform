@@ -1,7 +1,10 @@
 import type { Booking, CartLine, SelectedAddOn } from '@/types';
 import { getTicketTypes } from '@/store/catalogStore';
 import { SOCKS_ADDON_ID, SOCKS_LABEL, toBaht } from '@/lib/cartWire';
+import { parseBookingQr } from '@oto/shared';
+import type { StationScanEvent } from '@/lib/scanChannel';
 import { api, ApiError, idemKey } from './client';
+import type { ApiSalePrintJob } from './history';
 
 /**
  * ONLINE BOOKINGS, FROM THE TILL'S SIDE — SCRUM-234.
@@ -88,8 +91,26 @@ export interface PlatformBooking {
   redemption: PlatformRedemption | null;
 }
 
+/** A band the redemption minted, as the platform reads it back — the short code, never the credential. */
+export interface RedeemedBand {
+  id: string;
+  kind: 'kid' | 'adult';
+  shortCode: string | null;
+  childName: string | null;
+  printedJobId: string | null;
+}
+
+/**
+ * S2-12 round 3 — what redeeming answers: the booking, the sale the platform
+ * recorded for it (the booking on it, the paid-online tender, the booking's
+ * exact total), the bands it minted and the paper it queued — the same
+ * printing answer a walk-in sale's finalisation gives.
+ */
 export interface BookingRedeemResult {
   booking: PlatformBooking;
+  sale: { id: string; receiptNumber: string | null; totals: { grossSatang: number } };
+  bands: RedeemedBand[];
+  printing: { jobs: ApiSalePrintJob[]; notes: string[]; failed: { code: string; message: string } | null } | null;
 }
 
 /** The route's own error code for a second redemption, carrying the first one. */
@@ -142,7 +163,7 @@ export const bookingsApi = {
    */
   redeem: (
     bookingId: string,
-    body: { stationId?: string; bandCodes?: string[] },
+    body: { stationId?: string; visitId?: string },
     key: string,
   ) =>
     api.post<BookingRedeemResult>(`/bookings/${encodeURIComponent(bookingId)}/redeem`, body, {
@@ -150,7 +171,75 @@ export const bookingsApi = {
     }),
 
   newRedeemKey: idemKey,
+
+  /**
+   * One booking by the id the BOX named after checking the QR's signature
+   * (S2-12 round 3). Only for a scan the box answered `handled`; a code this
+   * device read itself goes through `byQr`. 404 when there is none.
+   */
+  byId: (bookingId: string) => api.get<PlatformBooking>(`/bookings/${encodeURIComponent(bookingId)}`),
+
+  /**
+   * One booking by the whole QR a scanner on THIS device read, or the typed
+   * field held. The till has no key, so the platform checks the signature
+   * against the one it issued; a tampered or foreign code answers 422
+   * `BOOKING_QR_SIGNATURE_INVALID` and nothing opens.
+   */
+  byQr: (code: string) =>
+    api.get<PlatformBooking>(`/bookings/by-qr?code=${encodeURIComponent(code)}`),
 };
+
+/** The platform's refusal of a QR whose signature is not the park's. */
+export const BOOKING_QR_SIGNATURE_INVALID = 'BOOKING_QR_SIGNATURE_INVALID';
+
+/**
+ * A scanned booking QR on its way to the redeem dialog: the id a box vouched
+ * for, or the raw code this device read, which only the platform can vouch for.
+ */
+export type ScannedBooking = { bookingId: string } | { qr: string };
+
+/** Read the booking a scan names — through the check that scan still needs. */
+export function fetchScannedBooking(scan: ScannedBooking): Promise<PlatformBooking> {
+  return 'bookingId' in scan ? bookingsApi.byId(scan.bookingId) : bookingsApi.byQr(scan.qr);
+}
+
+/** The name the box's booking handler goes by (`BOOKING_QR_HANDLER` in `@oto/box-agent`). */
+export const BOOKING_QR_HANDLER = 'booking';
+
+/**
+ * Read a scan as the till reads a booking QR (S2-12 round 3): the booking the
+ * box checked the signature of, or null when the scan is some other screen's.
+ * The box answers `handled` with `detail.bookingId` and the action to take;
+ * a refused or unchecked QR carries a sentence in `detail.message`.
+ */
+export function readBookingScan(
+  event: StationScanEvent,
+): { bookingId: string } | { refused: string } | null {
+  if (event.codeKind !== 'booking') return null;
+  if (event.outcome === 'handled' && event.handler === BOOKING_QR_HANDLER) {
+    const id = event.detail?.bookingId;
+    return typeof id === 'string' && id.length > 0 ? { bookingId: id } : null;
+  }
+  const message = event.detail?.message;
+  return { refused: typeof message === 'string' ? message : 'That booking QR could not be checked.' };
+}
+
+/**
+ * A booking QR typed in by a USB or Bluetooth scanner on this device, which no
+ * box has seen: the code as the platform compares it, or null when the text is
+ * not the shape of one. SHAPE ONLY — this routes the burst to the booking
+ * lookup and never names a booking by itself: `parseBookingQr` is not a
+ * signature check, so the id inside is not trusted until `bookingsApi.byQr`
+ * has matched the signature on the platform.
+ */
+export function typedBookingQr(code: string): string | null {
+  return parseBookingQr(code)?.code ?? null;
+}
+
+/** Whether a scanner burst is shaped like a booking QR — the till's `useScannerBurst` filter. */
+export function looksLikeBookingQr(code: string): boolean {
+  return typedBookingQr(code) !== null;
+}
 
 /**
  * The first redemption carried on a 409, where the route sent one.

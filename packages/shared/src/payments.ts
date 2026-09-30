@@ -31,6 +31,31 @@ export const PAYMENT_METHODS = ['cash', 'card', 'qr', 'wallet', 'voucher', 'tran
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 /**
+ * S2-12 (SCRUM-209 round 3) — THE "PAID ONLINE" TENDER on a booking's redemption sale.
+ *
+ * A family who booked and paid on the booking site is handed their bands at
+ * the counter against a sale that owes nothing to the till: the money reached
+ * the park through the gateway on the day it was paid, under the booking's own
+ * `WEB` invoice. The redemption sale is filed on the visit day (OD-A10) and is
+ * settled by this tender, which is recorded as `transfer` money — never
+ * `cash` — so no drawer opens for it and a cash-up that counts till takings
+ * leaves it out (`countsAsTillTakings`). It is a constant, not a row in the
+ * operator's tender list: staff never choose it, only redemption writes it.
+ */
+export const PAID_ONLINE_TENDER_CODE = 'paid_online';
+export const PAID_ONLINE_TENDER_METHOD: PaymentMethod = 'transfer';
+
+/**
+ * Whether a tender is money the till itself took, for the till's cash-up and
+ * takings (OD-A10). The paid-online tender is not: it was counted on the day
+ * the booking was paid, and counting it again at the counter would report the
+ * same baht twice.
+ */
+export function countsAsTillTakings(attempt: { methodCode?: string | null }): boolean {
+  return attempt.methodCode !== PAID_ONLINE_TENDER_CODE;
+}
+
+/**
  * WHO answered, which is a different question from how the money was taken.
  *
  * A card can be `ghl` (the NEXGO on the serial cable), `simulator` (the same

@@ -527,7 +527,7 @@ test('a box with no band key says it cannot check, and never passes a band', asy
 test('a router with no key leaves band codes to nobody, as a router always has', async () => {
   const t = open();
   const router = new ScanRouter({ boxId: BOX_ID, store: t.store });
-  assert.deepEqual(router.registered(), ['voucher']);
+  assert.deepEqual(router.registered(), ['voucher', 'booking']);
   const result = await router.deliver(STATION_ID, { code: SIGNED, source: 'camera' });
   assert.equal(result.kind, 'unknown');
   assert.equal(result.outcome, 'unhandled');
@@ -546,7 +546,7 @@ test('a band is claimed before any registration, and nothing that is not one is 
       greedy.push(ctx.code);
     },
   });
-  assert.deepEqual(router.registered(), ['voucher', 'band', 'greedy'], 'match order: voucher, band, registrations');
+  assert.deepEqual(router.registered(), ['voucher', 'band', 'booking', 'greedy'], 'match order: voucher, band, booking, registrations');
 
   assert.equal((await router.deliver(STATION_ID, { code: SIGNED, source: 'box_hid' })).handler, 'band');
   assert.equal(greedy.length, 0);
@@ -584,7 +584,7 @@ test('the box checks bands against the key its configuration brought; a host’s
   const unchecked = await without.agent.scanner()!.deliver(STATION_ID, { code: SIGNED, source: 'simulator' });
   assert.equal(unchecked.outcome, 'error');
   assert.equal(unchecked.errorCode, BAND_KEY_MISSING);
-  assert.deepEqual(without.agent.scanner()!.registered(), ['voucher', 'band']);
+  assert.deepEqual(without.agent.scanner()!.registered(), ['voucher', 'band', 'booking']);
   without.close();
 });
 
