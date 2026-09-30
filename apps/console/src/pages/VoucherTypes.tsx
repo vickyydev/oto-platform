@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearch } from 'wouter';
 import { Plus, RefreshCw } from 'lucide-react';
 import { useSession } from '@/auth/SessionContext';
 import {
@@ -81,6 +82,23 @@ export function VoucherTypes() {
   useEffect(() => {
     void load(showArchived);
   }, [load, showArchived]);
+
+  /**
+   * `?type=<id>` opens that type's drawer once the list has been read — the
+   * prize editor's "Edit the slip’s words" link (SCRUM-468), so the words a
+   * manager went looking for are on screen when they land. Once only: a later
+   * read of the list must not reopen a drawer somebody has closed. A type the
+   * list does not carry (archived, with "Show archived" off) opens nothing.
+   */
+  const search = useSearch();
+  const askedFor = useRef<string | null>(new URLSearchParams(search).get('type'));
+  useEffect(() => {
+    const id = askedFor.current;
+    if (!id || list.state !== 'read') return;
+    askedFor.current = null;
+    const row = list.value.find((r) => r.id === id);
+    if (row) setOpen(row);
+  }, [list]);
 
   /** The pickers' contents, read once: the operator's products and packages. */
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { createHash, randomInt } from 'node:crypto';
 import { hash as argonHash } from '@node-rs/argon2';
-import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import {
   account,
   boothConfigVersion,
@@ -552,6 +552,31 @@ export interface PublishedVersionView {
   publishedByAccountId: string | null;
 }
 
+/** One slice as the Console's prize table reads it. */
+export interface BoothPrizeView {
+  id: string;
+  nameEn: string;
+  nameTh: string | null;
+  wheelLabel: string | null;
+  weightBp: number;
+  active: boolean;
+  expiryDays: number | null;
+  dailyCap: number | null;
+  costSatang: number;
+  sliceColor: string | null;
+  textColor: string | null;
+  sortOrder: number;
+  voucherDefinitionId: string | null;
+  /** The definition's own code and expiry, so the editor can show what a win produces. */
+  voucherDefinitionCode: string | null;
+  effectiveExpiryDays: number | null;
+}
+
+/** A slice taken off the wheel, as the "show archived" list reads it (SCRUM-468). */
+export interface BoothArchivedPrizeView extends BoothPrizeView {
+  archivedAt: string;
+}
+
 export interface BoothDraftView {
   booth: { id: string; name: string; branchId: string; codePrefix: string | null };
   settings: {
@@ -564,24 +589,18 @@ export interface BoothDraftView {
     staffSessionMinutes: number | null;
     spinDurationSeconds: number;
   };
-  prizes: Array<{
-    id: string;
-    nameEn: string;
-    nameTh: string | null;
-    wheelLabel: string | null;
-    weightBp: number;
-    active: boolean;
-    expiryDays: number | null;
-    dailyCap: number | null;
-    costSatang: number;
-    sliceColor: string | null;
-    textColor: string | null;
-    sortOrder: number;
-    voucherDefinitionId: string | null;
-    /** The definition's own code and expiry, so the editor can show what a win produces. */
-    voucherDefinitionCode: string | null;
-    effectiveExpiryDays: number | null;
-  }>;
+  prizes: BoothPrizeView[];
+  /**
+   * The slices archived off this booth, most recently archived first — only
+   * when the caller asked for them (`includeArchived`), and absent otherwise,
+   * so the draft everybody else reads is the draft it always was (SCRUM-468).
+   *
+   * Beside `prizes` rather than in it: `prizes` is what a publish would
+   * freeze, and every total the Console draws from it — the odds, the money,
+   * "adds to 100%" — would be wrong with a row in it the wheel will never
+   * carry. Nothing here reaches the bundle or its hash.
+   */
+  archivedPrizes?: BoothArchivedPrizeView[];
   /** Exactly what publishing would mint, or null while there is no layout. */
   bundle: unknown;
   bundleHash: string | null;
@@ -604,7 +623,65 @@ export interface BoothDraftView {
   blockers: PublishBlocker[];
 }
 
-export async function boothDraft(db: Db, row: BoothStationRow): Promise<BoothDraftView> {
+/** A prize row as the Console reads it, its voucher definition looked up in `definitions`. */
+function prizeView(
+  p: PrizeRow,
+  definitions: ReadonlyMap<string, typeof voucherDefinition.$inferSelect>,
+): BoothPrizeView {
+  const definition = p.voucherDefinitionId ? definitions.get(p.voucherDefinitionId) : undefined;
+  return {
+    id: p.id,
+    nameEn: p.nameEn,
+    nameTh: p.nameTh,
+    wheelLabel: p.wheelLabel,
+    weightBp: p.weightBp,
+    active: p.active,
+    expiryDays: p.expiryDays,
+    dailyCap: p.dailyCap,
+    costSatang: p.costSatang,
+    sliceColor: p.sliceColor,
+    textColor: p.textColor,
+    sortOrder: p.sortOrder,
+    voucherDefinitionId: p.voucherDefinitionId,
+    voucherDefinitionCode: definition?.code ?? null,
+    effectiveExpiryDays: p.expiryDays ?? definition?.expiryDays ?? null,
+  };
+}
+
+/**
+ * The booth's archived slices, most recently archived first (SCRUM-468) —
+ * what "Show archived prizes" lists, each with its voucher definition's code
+ * so a manager can tell them apart before bringing one back.
+ */
+async function archivedPrizeViews(
+  exec: Exec,
+  row: BoothStationRow,
+  known: ReadonlyMap<string, typeof voucherDefinition.$inferSelect>,
+): Promise<BoothArchivedPrizeView[]> {
+  const rows = await exec
+    .select()
+    .from(boothPrize)
+    .where(and(eq(boothPrize.stationId, row.stationId), isNotNull(boothPrize.archivedAt)))
+    .orderBy(desc(boothPrize.archivedAt), asc(boothPrize.nameEn));
+  const missing = [
+    ...new Set(rows.map((p) => p.voucherDefinitionId).filter(isNonNull)),
+  ].filter((id) => !known.has(id));
+  const extra = missing.length
+    ? await exec.select().from(voucherDefinition).where(inArray(voucherDefinition.id, missing))
+    : [];
+  const definitions = new Map([...known, ...extra.map((d) => [d.id, d] as const)]);
+  return rows.map((p) => ({
+    ...prizeView(p, definitions),
+    // The WHERE above keeps only archived rows; the fallback is never taken.
+    archivedAt: (p.archivedAt ?? new Date(0)).toISOString(),
+  }));
+}
+
+export async function boothDraft(
+  db: Db,
+  row: BoothStationRow,
+  opts: { includeArchived?: boolean } = {},
+): Promise<BoothDraftView> {
   const draft = await loadDraft(db, row);
   const bundle = bundleFrom(draft);
   const blockers = await publishBlockers(db, row, draft);
@@ -641,26 +718,10 @@ export async function boothDraft(db: Db, row: BoothStationRow): Promise<BoothDra
       staffSessionMinutes: draft.settings.staffSessionMinutes,
       spinDurationSeconds: draft.settings.spinDurationSeconds,
     },
-    prizes: draft.prizes.map((p) => {
-      const definition = p.voucherDefinitionId ? draft.definitions.get(p.voucherDefinitionId) : undefined;
-      return {
-        id: p.id,
-        nameEn: p.nameEn,
-        nameTh: p.nameTh,
-        wheelLabel: p.wheelLabel,
-        weightBp: p.weightBp,
-        active: p.active,
-        expiryDays: p.expiryDays,
-        dailyCap: p.dailyCap,
-        costSatang: p.costSatang,
-        sliceColor: p.sliceColor,
-        textColor: p.textColor,
-        sortOrder: p.sortOrder,
-        voucherDefinitionId: p.voucherDefinitionId,
-        voucherDefinitionCode: definition?.code ?? null,
-        effectiveExpiryDays: p.expiryDays ?? definition?.expiryDays ?? null,
-      };
-    }),
+    prizes: draft.prizes.map((p) => prizeView(p, draft.definitions)),
+    ...(opts.includeArchived
+      ? { archivedPrizes: await archivedPrizeViews(db, row, draft.definitions) }
+      : {}),
     bundle,
     bundleHash,
     published,
@@ -1211,6 +1272,87 @@ export async function archiveBoothPrize(
 }
 
 /**
+ * Bring an archived slice back (SCRUM-468).
+ *
+ * Archiving was a one-way door: the slice left every list, and nothing on
+ * the platform could put it back, so a prize taken off by mistake had to be
+ * typed in again under a new id — and last month's spins then named a prize
+ * the editor could no longer show.
+ *
+ * **It comes back switched off**, whatever it was when it was archived, with
+ * its weight, cost and position as they were. A switched-off slice is drawn
+ * by nobody and counts in no total, so restoring one changes no odds on its
+ * own: somebody has to switch it on in the editor and re-fit the chances to
+ * 100%, and the publish refuses the wheel until they do — the same rule as
+ * every other edit here, and the only safe answer for a wheel whose other
+ * slices were re-weighted while this one was away.
+ *
+ * **Refused while its voucher type is archived** (409): a slice pointing at
+ * an archived type could never be switched on and published, so bringing it
+ * back would only move the refusal to a later screen. The message says which
+ * type, and that it is restored on Voucher types first.
+ *
+ * One that is not archived answers with itself and records nothing, like
+ * `archiveBoothPrize` and the voucher types' own restore: a double press is
+ * the same request. A live slice of the same name is the unique index's to
+ * refuse, with the name said.
+ */
+export async function restoreBoothPrize(
+  db: Db,
+  ctx: OpContext,
+  actor: { accountId: string; operatorId: string },
+  row: BoothStationRow,
+  before: PrizeRow,
+): Promise<{ prize: PrizeRow }> {
+  if (!before.archivedAt) return { prize: before };
+
+  try {
+    return await withTx(db, ctx, 'booth_prize.restore', async (tx) => {
+      // Read inside the transaction, so an archive of the type committed a
+      // moment ago is seen rather than raced.
+      if (before.voucherDefinitionId) {
+        const definition = await requireDefinition(tx, actor.operatorId, before.voucherDefinitionId);
+        if (definition.archivedAt) {
+          throw new AppError(
+            409,
+            'BOOTH_PRIZE_VOUCHER_ARCHIVED',
+            `“${before.nameEn}” cannot come back yet: its voucher type “${definition.nameEn}” is archived. Restore that voucher type on Voucher types first, then this prize.`,
+            { voucherDefinitionId: definition.id },
+          );
+        }
+      }
+      const restoredAt = new Date();
+      await tx
+        .update(boothPrize)
+        .set({ archivedAt: null, active: false, updatedAt: restoredAt })
+        .where(eq(boothPrize.id, before.id));
+      const [prize] = await tx.select().from(boothPrize).where(eq(boothPrize.id, before.id)).limit(1);
+      await audit.record(tx, {
+        actorAccountId: actor.accountId,
+        operatorId: row.operatorId,
+        branchId: row.branchId,
+        action: 'booth_prize.restore',
+        entityType: 'booth_prize',
+        entityId: before.id,
+        before,
+        after: prize,
+        requestId: ctx.requestId,
+      });
+      return { prize: prize! };
+    });
+  } catch (err) {
+    if (isUniqueViolation(err, 'booth_prize_name_unique')) {
+      throw new AppError(
+        409,
+        'BOOTH_PRIZE_NAME_TAKEN',
+        `This booth already has a live prize called “${before.nameEn}”. Rename or archive that one first — two slices with one name cannot be told apart on the wheel.`,
+      );
+    }
+    throw err;
+  }
+}
+
+/**
  * The slice order, set as a whole list rather than a field at a time.
  *
  * The order IS the wheel — `SpinResponse.prizeIndex` indexes the published
@@ -1280,15 +1422,15 @@ export async function loadBoothPrize(db: Db, stationId: string, prizeId: string)
  * The same lookup, except that a slice already off the wheel comes back
  * rather than 404ing.
  *
- * Only the archive route uses it, and for one reason: a second archive of the
- * same prize is the same request, and answering 404 to it tells a manager the
- * archive failed at the moment it had in fact just succeeded. The console
- * sends this DELETE without an idempotency key, so a double press or a retry
- * after a dropped response arrives here with the row already archived — see
- * `archiveBoothPrize`, which returns it unchanged.
+ * The archive route uses it for one reason: a second archive of the same
+ * prize is the same request, and answering 404 to it tells a manager the
+ * archive failed at the moment it had in fact just succeeded. A double press
+ * or a retry after a dropped response arrives here with the row already
+ * archived — see `archiveBoothPrize`, which returns it unchanged. The restore
+ * route (SCRUM-468) uses it because an archived row is exactly what it is for.
  *
  * EDITING an archived slice is still refused: that is `loadBoothPrize`, and
- * the PATCH route keeps it.
+ * the PATCH route keeps it. Restore it first.
  */
 export async function loadBoothPrizeIncludingArchived(
   db: Db,

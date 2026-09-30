@@ -129,6 +129,15 @@ export interface BoothPrizeDraft {
   effectiveExpiryDays: number | null;
 }
 
+/**
+ * `BoothArchivedPrizeView`: a slice archived off the booth, listed only when
+ * the draft is read with `includeArchived` (SCRUM-468). It is never in
+ * `prizes`, so no total on the page counts it.
+ */
+export interface BoothArchivedPrize extends BoothPrizeDraft {
+  archivedAt: string;
+}
+
 export interface BoothSettingsDraft {
   layoutId: string | null;
   layoutName: string | null;
@@ -168,6 +177,12 @@ export interface BoothDraft {
   settings: BoothSettingsDraft;
   /** In slice order — `sortOrder`, then name, which is what a publish freezes. */
   prizes: BoothPrizeDraft[];
+  /**
+   * The archived slices, most recently archived first — present only when the
+   * draft was read with `includeArchived` (SCRUM-468), and absent from a
+   * deployment older than it.
+   */
+  archivedPrizes?: BoothArchivedPrize[];
   /** Exactly what publishing would mint. Left unparsed; see the file note. */
   bundle: unknown;
   /**
@@ -415,7 +430,13 @@ export const boothApi = {
 
   status: (id: string) => api.get<BoothStatus>(`${at(id)}/status`),
 
-  draft: (id: string) => api.get<BoothDraft>(`${at(id)}/draft`),
+  /**
+   * `includeArchived` adds the archived slices beside the live ones, the way
+   * `voucherDefinitions` below does for voucher types (SCRUM-468). The draft
+   * itself — prizes, bundle, hash — is the same either way.
+   */
+  draft: (id: string, includeArchived = false) =>
+    api.get<BoothDraft>(`${at(id)}/draft${includeArchived ? '?includeArchived=true' : ''}`),
 
   versions: (id: string) => api.get<{ versions: BoothVersionRow[] }>(`${at(id)}/versions`),
 
@@ -478,6 +499,16 @@ export const boothApi = {
    */
   archivePrize: (id: string, prizeId: string) =>
     api.delete<unknown>(`${at(id)}/prizes/${encodeURIComponent(prizeId)}`, {
+      idempotencyKey: idemKey(),
+    }),
+
+  /**
+   * Brings an archived slice back, switched off (SCRUM-468). The API refuses
+   * it while its voucher type is archived, and while a live slice has its
+   * name; either refusal is said in the prizes panel.
+   */
+  restorePrize: (id: string, prizeId: string) =>
+    api.post<unknown>(`${at(id)}/prizes/${encodeURIComponent(prizeId)}/restore`, undefined, {
       idempotencyKey: idemKey(),
     }),
 

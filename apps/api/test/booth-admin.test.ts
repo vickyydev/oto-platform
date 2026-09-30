@@ -915,6 +915,211 @@ describe('taking a slice off the wheel (S2-07b)', () => {
   });
 });
 
+/**
+ * SCRUM-468 — archiving was a one-way door. The slice left every list and
+ * nothing could put it back, so the owner, at the park, retyped a prize he
+ * had archived by mistake. These pin the way back: the draft lists archived
+ * slices only when asked, a restore brings one back SWITCHED OFF, and the
+ * wheel is then published only once somebody has re-fitted the chances to
+ * 100% — through the real route and the real box, like the publish above.
+ */
+describe('bringing an archived slice back (SCRUM-468)', () => {
+  interface DraftPrize {
+    id: string;
+    nameEn: string;
+    active: boolean;
+    weightBp: number;
+    voucherDefinitionCode: string | null;
+    archivedAt?: string;
+  }
+  interface DraftAnswer {
+    prizes: DraftPrize[];
+    archivedPrizes?: DraftPrize[];
+    bundleHash: string | null;
+  }
+
+  const draftOf = async (includeArchived = false): Promise<DraftAnswer> => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/booths/${boothId}/draft${includeArchived ? '?includeArchived=true' : ''}`,
+      headers: asAdmin(),
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    return res.json() as DraftAnswer;
+  };
+
+  const archive = async (prizeId: string): Promise<void> => {
+    const res = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/booths/${boothId}/prizes/${prizeId}`,
+      headers: asAdmin(),
+    });
+    expect(res.statusCode, res.body).toBe(200);
+  };
+
+  const restore = (prizeId: string, cookie = adminCookie) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/booths/${boothId}/prizes/${prizeId}/restore`,
+      headers: { cookie },
+    });
+
+  const restoreRows = (prizeId: string) =>
+    db
+      .select({ before: auditLog.before, after: auditLog.after })
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'booth_prize.restore'), eq(auditLog.entityId, prizeId)));
+
+  it('lists it only when asked, brings it back switched off, and the wheel publishes once the chances are re-fitted', async () => {
+    const [anchor, victim] = (await livePrizes()).filter((p) => p.active && p.voucherDefinitionId);
+    expect(victim, 'the seeded wheel needs two live, vouchered slices').toBeTruthy();
+    await archive(victim!.id);
+
+    // Unasked, the draft is the draft it always was: no archived list at all.
+    const plain = await draftOf();
+    expect(plain.archivedPrizes).toBeUndefined();
+    expect(plain.prizes.map((p) => p.id)).not.toContain(victim!.id);
+
+    // Asked, the archived slice is listed beside the prizes — never among
+    // them, and never in the bundle, so the hash does not move.
+    const listed = await draftOf(true);
+    const entry = listed.archivedPrizes?.find((p) => p.id === victim!.id);
+    expect(entry, 'the archived slice is not in the archived list').toBeTruthy();
+    expect(entry!.nameEn).toBe(victim!.nameEn);
+    expect(entry!.archivedAt).toBeTruthy();
+    expect(entry!.voucherDefinitionCode).toBeTruthy();
+    expect(listed.prizes.map((p) => p.id)).toEqual(plain.prizes.map((p) => p.id));
+    expect(listed.bundleHash).toBe(plain.bundleHash);
+
+    // Back, switched off, with its weight as it was.
+    const back = await restore(victim!.id);
+    expect(back.statusCode, back.body).toBe(200);
+    expect(back.json().prize.archivedAt).toBeNull();
+    expect(back.json().prize.active).toBe(false);
+    expect(back.json().prize.weightBp).toBe(victim!.weightBp);
+    expect(back.json().prize.sortOrder).toBe(victim!.sortOrder);
+
+    // A second press is the same request: the same slice, one audit row.
+    const again = await restore(victim!.id);
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.json().prize.updatedAt).toBe(back.json().prize.updatedAt);
+    const rows = await restoreRows(victim!.id);
+    expect(rows).toHaveLength(1);
+    expect((rows[0]!.before as { archivedAt: string | null }).archivedAt).not.toBeNull();
+    expect((rows[0]!.after as { archivedAt: string | null }).archivedAt).toBeNull();
+
+    // In the draft again, off the wheel and out of the archived list.
+    const after = await draftOf(true);
+    expect(after.prizes.find((p) => p.id === victim!.id)?.active).toBe(false);
+    expect(after.archivedPrizes!.map((p) => p.id)).not.toContain(victim!.id);
+
+    // Switched off, its share is missing from the wheel, and the publish says so.
+    const refused = await publish({ note: 'restored, not re-fitted' });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.body.error!.details!.blockers!.map((b) => b.code)).toContain(
+      'BOOTH_WEIGHTS_NOT_WHOLE',
+    );
+
+    // Re-fitted — the restored slice on at a slightly smaller share, the
+    // difference given to another — the wheel is whole and publishes.
+    const shift = 50;
+    for (const [prize, payload] of [
+      [victim!, { active: true, weightBp: victim!.weightBp - shift }],
+      [anchor!, { weightBp: anchor!.weightBp + shift }],
+    ] as const) {
+      const res = await ctx.app.inject({
+        method: 'PATCH',
+        url: `/booths/${boothId}/prizes/${prize.id}`,
+        headers: asAdmin(),
+        payload,
+      });
+      expect(res.statusCode, res.body).toBe(200);
+    }
+    const minted = await publish({ note: 'restored the slice archived by mistake' });
+    expect(minted.statusCode, JSON.stringify(minted.body)).toBe(200);
+
+    // And the box runs it: the restored slice is on the wheel it pulls.
+    await agent.syncCache();
+    const running = booth.config();
+    expect(running!.version).toBe(minted.body.version!.version);
+    const onTheWheel = running!.bundle.prizes.find((p) => p.id === victim!.id);
+    expect(onTheWheel, 'the restored slice is not on the published wheel').toBeTruthy();
+    expect(onTheWheel!.active).toBe(true);
+    expect(onTheWheel!.weightBp).toBe(victim!.weightBp - shift);
+  });
+
+  it('refuses to bring a slice back while its voucher type is archived, and brings it back once the type is', async () => {
+    const victim = (await livePrizes()).find((p) => p.voucherDefinitionId)!;
+    const typeId = victim.voucherDefinitionId!;
+    await archive(victim.id);
+    const archivedType = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/voucher-definitions/${typeId}`,
+      headers: asAdmin(),
+    });
+    expect(archivedType.statusCode, archivedType.body).toBe(200);
+
+    try {
+      const auditBefore = (await restoreRows(victim.id)).length;
+      const refused = await restore(victim.id);
+      expect(refused.statusCode, refused.body).toBe(409);
+      expect(refused.json().error.code).toBe('BOOTH_PRIZE_VOUCHER_ARCHIVED');
+      // Polite, and it says what to do: which type, and where it comes back.
+      expect(refused.json().error.message).toContain(archivedType.json().definition.nameEn);
+      expect(refused.json().error.message).toContain('Voucher types');
+      // Nothing moved, and nothing was recorded as if it had.
+      const [row] = await db.select().from(boothPrize).where(eq(boothPrize.id, victim.id));
+      expect(row!.archivedAt).not.toBeNull();
+      expect(await restoreRows(victim.id)).toHaveLength(auditBefore);
+    } finally {
+      const typeBack = await ctx.app.inject({
+        method: 'POST',
+        url: `/voucher-definitions/${typeId}/restore`,
+        headers: asAdmin(),
+      });
+      expect(typeBack.statusCode, typeBack.body).toBe(200);
+    }
+
+    const back = await restore(victim.id);
+    expect(back.statusCode, back.body).toBe(200);
+    expect(back.json().prize.archivedAt).toBeNull();
+    expect(back.json().prize.active).toBe(false);
+  });
+
+  it('refuses a restore that would put two slices of one name on the wheel, and anybody who may not edit the wheel', async () => {
+    const victim = (await livePrizes())[2]!;
+    await archive(victim.id);
+
+    // Somebody who works the counter may not bring a slice back.
+    const counter = await restore(victim.id, receptionCookie);
+    expect(counter.statusCode, 'reception restored a prize').toBe(403);
+
+    // A new slice took the name while the old one was away.
+    const twin = await ctx.app.inject({
+      method: 'POST',
+      url: `/booths/${boothId}/prizes`,
+      headers: asAdmin(),
+      payload: { nameEn: victim.nameEn, weightBp: 0, active: false },
+    });
+    expect(twin.statusCode, twin.body).toBe(201);
+    const twinId = (twin.json() as { prize: { id: string } }).prize.id;
+    try {
+      const refused = await restore(victim.id);
+      expect(refused.statusCode, refused.body).toBe(409);
+      expect(refused.json().error.code).toBe('BOOTH_PRIZE_NAME_TAKEN');
+      expect(refused.json().error.message).toContain(victim.nameEn);
+    } finally {
+      // Never spun, so nothing points at it: the fixture goes, rather than
+      // staying on the booth for the cases after this one.
+      await db.delete(boothPrize).where(eq(boothPrize.id, twinId));
+    }
+
+    const unknown = await restore(newId());
+    expect(unknown.statusCode).toBe(404);
+    expect(unknown.json().error.code).toBe('BOOTH_PRIZE_NOT_FOUND');
+  });
+});
+
 describe('voucher definitions (S2-07b)', () => {
   it('refuses a definition whose value is not filled in, and accepts a complete one', async () => {
     const incomplete = await ctx.app.inject({

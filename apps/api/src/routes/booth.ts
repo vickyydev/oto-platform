@@ -37,6 +37,7 @@ import {
   publishBoothConfig,
   removeBoothStaff,
   reorderBoothPrizes,
+  restoreBoothPrize,
   setBoothPin,
   updateBoothLayout,
   updateBoothPrize,
@@ -518,15 +519,16 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'What would be published if somebody pressed Publish now: the settings, the prize list in slice order, the exact bundle and its hash, the bundle the booths are running now beside it so a before-and-after can be shown, whether the draft differs, when it was last edited — and every reason it cannot be published yet, each naming its field. There is no draft table: these rows ARE the draft, one per booth and shared, so a colleague’s edit is in here too.',
+          'What would be published if somebody pressed Publish now: the settings, the prize list in slice order, the exact bundle and its hash, the bundle the booths are running now beside it so a before-and-after can be shown, whether the draft differs, when it was last edited — and every reason it cannot be published yet, each naming its field. There is no draft table: these rows ARE the draft, one per booth and shared, so a colleague’s edit is in here too. With `includeArchived=true` the slices archived off the booth come too, most recently archived first, as `archivedPrizes` beside `prizes` — never in it, and never in the bundle — so an archived prize can be found and restored.',
         params: BoothIdParams,
+        querystring: z.object({ includeArchived: z.enum(['true', 'false']).default('false') }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
       const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:booth:read', { branchId: row.branchId });
-      return boothDraft(app.db, row);
+      return boothDraft(app.db, row, { includeArchived: req.query.includeArchived === 'true' });
     },
   );
 
@@ -619,10 +621,10 @@ export async function boothRoutes(app: App): Promise<void> {
       },
     },
     /**
-     * The one by-id prize route that accepts an already-archived row
-     * (`loadBoothPrizeIncludingArchived`). A second DELETE of the same prize
-     * is the same request; answering 404 to it would tell a manager the
-     * archive failed a moment after it succeeded.
+     * One of the two by-id prize routes that accept an already-archived row
+     * (`loadBoothPrizeIncludingArchived`), the restore below being the other.
+     * A second DELETE of the same prize is the same request; answering 404 to
+     * it would tell a manager the archive failed a moment after it succeeded.
      */
     async (req) => {
       const auth = req.requireAuth();
@@ -634,6 +636,35 @@ export async function boothRoutes(app: App): Promise<void> {
         req.params.prizeId,
       );
       return archiveBoothPrize(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        prize,
+      );
+    },
+  );
+
+  app.post(
+    '/booths/:id/prizes/:prizeId/restore',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Bring an archived slice back to the draft, switched off, with its weight, cost and position as they were: it is drawn by nobody until somebody switches it on and re-fits the chances to 100%, which the publish checks as it does every edit. Refused (409 BOOTH_PRIZE_VOUCHER_ARCHIVED) while its voucher type is archived — restore that first — and (409 BOOTH_PRIZE_NAME_TAKEN) while a live slice of the booth has its name. One that is not archived answers with itself and records nothing, like the voucher types’ own restore.',
+        params: PrizeParams,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
+      const prize = await loadBoothPrizeIncludingArchived(
+        app.db,
+        row.stationId,
+        req.params.prizeId,
+      );
+      return restoreBoothPrize(
         app.db,
         opCtx(req),
         { accountId: auth.accountId, operatorId: auth.operatorId },

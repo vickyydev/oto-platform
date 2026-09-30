@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Plus, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ExternalLink, FileText, Plus, RefreshCw } from 'lucide-react';
 import { useSession } from '@/auth/SessionContext';
 import { directoryApi, type BranchRow } from '@/api/platform';
 import {
@@ -13,7 +13,7 @@ import {
   Unreadable,
 } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
-import { Field, Select } from '@/components/Form';
+import { CheckRow, Field, Select } from '@/components/Form';
 import { StatusMark, StatusPill, toneForHealth } from '@/components/Status';
 import { toneForPaper, toneForReachability } from '@/lib/fleetWords';
 import { formatWhen, timeAgo } from '@/lib/time';
@@ -35,12 +35,16 @@ import {
   type VoucherDefinitionRow,
 } from '@/components/booth/boothApi';
 import { BoothScreensPanel, boothBoxPlace } from '@/components/booth/BoothScreensPanel';
-import { BoothSettingsPanel, type BoothSettingsEdit } from '@/components/booth/BoothSettingsPanel';
+import {
+  BoothSettingsEditor,
+  BoothSettingsPanel,
+  type BoothSettingsEdit,
+} from '@/components/booth/BoothSettingsPanel';
 import { BoothSpinsPanel } from '@/components/booth/BoothSpinsPanel';
 import { BoothSetupChecklist } from '@/components/booth/BoothSetupChecklist';
 import { BoothStaffPanel } from '@/components/booth/BoothStaffPanel';
 import { PrizeEditor } from '@/components/booth/PrizeEditor';
-import { PrizeTable } from '@/components/booth/PrizeTable';
+import { ArchivedPrizes, PrizeTable } from '@/components/booth/PrizeTable';
 import { PublishPanel } from '@/components/booth/PublishPanel';
 import { WheelPreview } from '@/components/booth/WheelPreview';
 import {
@@ -87,12 +91,28 @@ import {
  * two managers editing one booth are editing the same thing and the second
  * one's Publish carries a hash that has moved. That is why every write here
  * re-reads rather than patching what is on screen.
+ *
+ * **Laid out as a dashboard (SCRUM-468).** It used to be one long column of
+ * dense panels, and the owner, at the park, could not find his way round it.
+ * The panels and every word on them are the same; what changed is where they
+ * sit. The setup checklist heads the page with the booth's name and where its
+ * wheel stands, the live reading follows it, and the rest is grouped under
+ * five titles — prizes, the wheel and its publish, staff and screens,
+ * settings, activity — two panels abreast where they are narrow enough. The
+ * settings form opens in a drawer from a summary, as the prize editor always
+ * has, so no form stacks inline on the page.
  */
 /**
  * Which panel a write belongs to, so its refusal is drawn where the button was
  * pressed rather than in whichever panel happens to hold an error slot.
+ * `archived` is the Restore under "Show archived prizes", below the prize
+ * table — its refusal is drawn beside the list, not above a table's height of
+ * rows.
  */
-type WriteSite = 'prizes' | 'settings' | 'publish' | 'screens' | 'staff';
+type WriteSite = 'prizes' | 'archived' | 'settings' | 'publish' | 'screens' | 'staff';
+
+/** The till's origin, whose back office holds the Print Templates panel (`env.d.ts`). */
+const POS_URL = import.meta.env.VITE_POS_URL?.trim();
 
 export function Booths() {
   const { me, has } = useSession();
@@ -132,6 +152,17 @@ export function Booths() {
   const [mintedCode, setMintedCode] = useState<MintedPairingCode | null>(null);
 
   const [editing, setEditing] = useState<BoothPrizeDraft | null>(null);
+  /** The settings drawer (SCRUM-468): the form lives there, the summary on the page. */
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  /**
+   * "Show archived prizes" (SCRUM-468), the voucher types' `showArchived`.
+   * Mirrored in a ref so every read of the draft — a write's re-read
+   * included — asks for the archived slices while the box is ticked, without
+   * `loadBooth` changing identity and re-running the booth-selection effect
+   * (which would drop a pairing code on screen).
+   */
+  const [showArchived, setShowArchived] = useState(false);
+  const showArchivedRef = useRef(false);
   const [busy, setBusy] = useState(false);
   /**
    * The last refusal, and WHICH panel's button earned it.
@@ -183,24 +214,29 @@ export function Booths() {
     }
   }, []);
 
-  const loadBooth = useCallback(async (id: string) => {
+  /** The booth's draft, with its archived slices while "Show archived prizes" is ticked. */
+  const readDraft = useCallback(async (id: string) => {
     setDraft((held) => reading(held));
+    await boothApi
+      .draft(id, showArchivedRef.current)
+      .then((d) => setDraft(readOk<BoothDraft | null>(d)))
+      .catch((reason: unknown) =>
+        setDraft((held) =>
+          isMissingRoute(reason)
+            ? readAbsent<BoothDraft | null>(null)
+            : readFailed(held, readFailureMessage(reason), null),
+        ),
+      );
+  }, []);
+
+  const loadBooth = useCallback(async (id: string) => {
     setVersions((held) => reading(held));
     setStatus((held) => reading(held));
     setStaff((held) => reading(held));
 
     // Each read is settled on its own, so one failing does not empty the page.
     await Promise.allSettled([
-      boothApi
-        .draft(id)
-        .then((d) => setDraft(readOk<BoothDraft | null>(d)))
-        .catch((reason: unknown) =>
-          setDraft((held) =>
-            isMissingRoute(reason)
-              ? readAbsent<BoothDraft | null>(null)
-              : readFailed(held, readFailureMessage(reason), null),
-          ),
-        ),
+      readDraft(id),
       boothApi
         .status(id)
         .then((s) => setStatus(readOk<BoothStatus | null>(s)))
@@ -242,7 +278,14 @@ export function Booths() {
           ),
         ),
     ]);
-  }, []);
+  }, [readDraft]);
+
+  /** Tick or untick "Show archived prizes", and read the draft again to match. */
+  const toggleArchived = (next: boolean) => {
+    showArchivedRef.current = next;
+    setShowArchived(next);
+    if (selectedId) void readDraft(selectedId);
+  };
 
   /**
    * The pickers' contents: the operator's designs and its voucher
@@ -434,9 +477,15 @@ export function Booths() {
         )}
       </Panel>
 
+      {/*
+        The head of the booth (SCRUM-468): its name, where its wheel stands,
+        and the setup checklist, whose steps jump to the sections below. The
+        live reading follows at once — what the booth is RUNNING comes before
+        anything somebody is editing.
+      */}
       {selected && <BoothSetupChecklist draft={draft} status={status} staff={staff} />}
       {selectedId && (
-        <div id="booth-printer">
+        <div id="booth-printer" className="scroll-mt-24">
           <LiveStatus
             status={status}
             timezone={timezone}
@@ -478,188 +527,237 @@ export function Booths() {
             </p>
           )}
 
-          <div id="booth-station">
-            <Panel
-              title="Booth station"
-              description="The station and its voucher prefix, set under Devices."
-            >
-              <p className="text-sm">
-                {selected.booth.name} · Prefix: {selected.booth.codePrefix ?? 'Not set'}
-              </p>
-              <a className="underline text-sm" href="/devices">
-                Open Devices to set the station or printer
-              </a>
-            </Panel>
-          </div>
-          <div id="booth-settings">
-            <BoothSettingsPanel
-              draft={selected}
-              layouts={layouts}
-              saving={busy}
-              unavailable={writeUnavailable}
-              readOnly={!canManage}
-              error={errorAt('settings')}
-              onSave={(settings: BoothSettingsEdit) =>
-                void run('settings', () => boothApi.saveSettings(selected.booth.id, settings))
-              }
-            />
-          </div>
-          <div id="booth-staff">
-            <BoothStaffPanel
-              // The PIN form holds digits for one booth; another booth is another panel.
-              key={selected.booth.id}
-              branchId={selected.booth.branchId}
-              staff={staff}
-              // What the box grants now is the PUBLISHED length; the draft's
-              // reaches it with the next publish, and the note says both.
-              session={{
-                running: publishedSessionMinutes(selected),
-                next: selected.settings.staffSessionMinutes ?? null,
-              }}
+          <Group title="Prizes">
+            <div id="booth-prizes" className="scroll-mt-24">
+              <Panel
+                title="Prizes and odds"
+                description="What the wheel gives away, what each one costs, and whether the odds add up."
+                actions={
+                  canManage ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditing(blankPrize(selected))}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add prize
+                    </Button>
+                  ) : undefined
+                }
+              >
+                {errorAt('prizes') && <ErrorNote message={errorAt('prizes')!} />}
+                {selected.prizes.length === 0 ? (
+                  <EmptyState
+                    title="No prizes on this booth"
+                    detail="A wheel with nothing on it refuses every press. Add the first prize to start."
+                  />
+                ) : (
+                  <PrizeTable
+                    prizes={selected.prizes}
+                    spinsToday={status.state === 'read' ? (status.value?.today.spins ?? null) : null}
+                    cappedToday={status.value?.today.dailyCapsReached ?? []}
+                    onEdit={(p) => setEditing(p)}
+                    disabled={!canManage || busy}
+                  />
+                )}
+                {/*
+                  The archived slices (SCRUM-468), behind a quiet tick the way
+                  Voucher types keeps its archived rows: off by default, so
+                  the table reads as the wheel it is.
+                */}
+                <div className="mt-3 border-t pt-2 flex flex-col gap-2">
+                  <CheckRow
+                    checked={showArchived}
+                    onChange={toggleArchived}
+                    label="Show archived prizes"
+                    detail="Archived prizes are off the wheel and out of every total here; every spin that won one still names it."
+                  />
+                  {showArchived &&
+                    (errorAt('archived') ? <ErrorNote message={errorAt('archived')!} /> : null)}
+                  {showArchived &&
+                    (selected.archivedPrizes !== undefined ? (
+                      <ArchivedPrizes
+                        prizes={selected.archivedPrizes}
+                        definitions={definitions}
+                        timezone={timezone}
+                        readOnly={!canManage}
+                        busy={busy}
+                        onRestore={(p) =>
+                          void run('archived', () => boothApi.restorePrize(selected.booth.id, p.id))
+                        }
+                      />
+                    ) : draft.refreshing ? (
+                      <Loading what="archived prizes" />
+                    ) : (
+                      <p className="py-2 text-sm text-muted-foreground">
+                        This deployment does not list archived prizes yet.
+                      </p>
+                    ))}
+                </div>
+              </Panel>
+            </div>
+          </Group>
+
+          <Group title="Wheel and publish">
+            <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
+              <Panel
+                title="Wheel preview"
+                description="Slice order and colours, as the television draws them."
+              >
+                <WheelPreview prizes={selected.prizes} />
+              </Panel>
+              <div id="booth-publish" className="scroll-mt-24 min-w-0">
+                {canPublish ? (
+                  <PublishPanel
+                    draft={selected}
+                    publishing={busy}
+                    unavailable={writeUnavailable}
+                    error={errorAt('publish')}
+                    lastPublished={lastPublished}
+                    timezone={timezone}
+                    onPublish={(note, expectedBundleHash) =>
+                      void run('publish', async () => {
+                        const answer = await boothApi.publish(selected.booth.id, {
+                          note: note.trim() === '' ? null : note.trim(),
+                          // Sent only when the draft had one: the API treats it
+                          // as "refuse if this is not still the draft", and an
+                          // absent hash is a booth with no publishable bundle,
+                          // not a licence to overwrite.
+                          ...(expectedBundleHash ? { expectedBundleHash } : {}),
+                        });
+                        setLastPublished({ version: answer.version.version });
+                        await loadBooths(branchId);
+                      })
+                    }
+                  />
+                ) : (
+                  <Panel
+                    title="Publish"
+                    description="Freezes the draft as a new version the booths pick up."
+                  >
+                    <p className="text-sm text-muted-foreground">
+                      Publishing needs <code className="font-mono text-xs">admin:booth:publish</code>. A
+                      manager can grant it from the Login Users panel.
+                    </p>
+                  </Panel>
+                )}
+              </div>
+            </div>
+          </Group>
+
+          <Group title="Staff and screens">
+            <div id="booth-staff" className="scroll-mt-24">
+              <BoothStaffPanel
+                // The PIN form holds digits for one booth; another booth is another panel.
+                key={selected.booth.id}
+                branchId={selected.booth.branchId}
+                staff={staff}
+                // What the box grants now is the PUBLISHED length; the draft's
+                // reaches it with the next publish, and the note says both.
+                session={{
+                  running: publishedSessionMinutes(selected),
+                  next: selected.settings.staffSessionMinutes ?? null,
+                }}
+                busy={busy}
+                readOnly={!canAssignStaff}
+                error={errorAt('staff')}
+                onAdd={(accountId) =>
+                  void runStaff(() => boothApi.addStaff(selected.booth.id, accountId))
+                }
+                onRemove={(accountId) =>
+                  void runStaff(() => boothApi.removeStaff(selected.booth.id, accountId))
+                }
+                onSetPin={async (accountId, input) => {
+                  let result: BoothPinResult | null = null;
+                  await runStaff(async () => {
+                    result = await boothApi.setPin(selected.booth.id, accountId, input);
+                  });
+                  return result;
+                }}
+                onClearPin={(accountId) =>
+                  void runStaff(() =>
+                    boothApi.clearPin(selected.booth.id, accountId, 'withdrawn from the Console'),
+                  )
+                }
+                onRetry={() => selectedId && void loadBooth(selectedId)}
+              />
+            </div>
+
+            <BoothScreensPanel
+              // Whether this booth is paired at all: only one on the platform's
+              // virtual box is. A booth on its own box, the Pi, needs no pairing.
+              place={boothBoxPlace(status, selected.booth.id)}
+              screens={screens}
+              minted={mintedCode}
               busy={busy}
-              readOnly={!canAssignStaff}
-              error={errorAt('staff')}
-              onAdd={(accountId) =>
-                void runStaff(() => boothApi.addStaff(selected.booth.id, accountId))
+              readOnly={!canManage}
+              error={errorAt('screens')}
+              timezone={timezone}
+              onMint={() =>
+                void run('screens', async () => {
+                  // The answer is the only copy of the code there will ever be,
+                  // so it is put on screen before anything else can throw.
+                  setMintedCode(
+                    await boothApi.mintPairingCode(selected.booth.id, 'Booth television'),
+                  );
+                })
               }
-              onRemove={(accountId) =>
-                void runStaff(() => boothApi.removeStaff(selected.booth.id, accountId))
-              }
-              onSetPin={async (accountId, input) => {
-                let result: BoothPinResult | null = null;
-                await runStaff(async () => {
-                  result = await boothApi.setPin(selected.booth.id, accountId, input);
-                });
-                return result;
-              }}
-              onClearPin={(accountId) =>
-                void runStaff(() =>
-                  boothApi.clearPin(selected.booth.id, accountId, 'withdrawn from the Console'),
-                )
+              onUnpair={(screen) =>
+                void run('screens', async () => {
+                  await boothApi.unpairScreen(
+                    selected.booth.id,
+                    screen.id,
+                    'unpaired from the Console',
+                  );
+                  setMintedCode(null);
+                })
               }
               onRetry={() => selectedId && void loadBooth(selectedId)}
+              onDismissCode={() => setMintedCode(null)}
             />
-          </div>
-          <div id="booth-prizes">
-            <Panel
-              title="Prizes and odds"
-              description="What the wheel gives away, what each one costs, and whether the odds add up."
-              actions={
-                canManage ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEditing(blankPrize(selected))}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add prize
-                  </Button>
-                ) : undefined
-              }
-            >
-              {errorAt('prizes') && <ErrorNote message={errorAt('prizes')!} />}
-              {selected.prizes.length === 0 ? (
-                <EmptyState
-                  title="No prizes on this booth"
-                  detail="A wheel with nothing on it refuses every press. Add the first prize to start."
-                />
-              ) : (
-                <PrizeTable
-                  prizes={selected.prizes}
-                  spinsToday={status.state === 'read' ? (status.value?.today.spins ?? null) : null}
-                  cappedToday={status.value?.today.dailyCapsReached ?? []}
-                  onEdit={(p) => setEditing(p)}
-                  disabled={!canManage || busy}
-                />
-              )}
-            </Panel>
-            <Panel
-              title="Wheel preview"
-              description="Slice order and colours, as the television draws them."
-            >
-              <WheelPreview prizes={selected.prizes} />
-            </Panel>
-          </div>
-          <div id="booth-publish">
-            {canPublish ? (
-              <PublishPanel
-                draft={selected}
-                publishing={busy}
-                unavailable={writeUnavailable}
-                error={errorAt('publish')}
-                lastPublished={lastPublished}
-                timezone={timezone}
-                onPublish={(note, expectedBundleHash) =>
-                  void run('publish', async () => {
-                    const answer = await boothApi.publish(selected.booth.id, {
-                      note: note.trim() === '' ? null : note.trim(),
-                      // Sent only when the draft had one: the API treats it
-                      // as "refuse if this is not still the draft", and an
-                      // absent hash is a booth with no publishable bundle,
-                      // not a licence to overwrite.
-                      ...(expectedBundleHash ? { expectedBundleHash } : {}),
-                    });
-                    setLastPublished({ version: answer.version.version });
-                    await loadBooths(branchId);
-                  })
-                }
-              />
-            ) : (
-              <Panel
-                title="Publish"
-                description="Freezes the draft as a new version the booths pick up."
-              >
-                <p className="text-sm text-muted-foreground">
-                  Publishing needs <code className="font-mono text-xs">admin:booth:publish</code>. A
-                  manager can grant it from the Login Users panel.
-                </p>
-              </Panel>
-            )}
-          </div>
-          <BoothSpinsPanel
-            key={'spins-' + selected.booth.id}
-            id={selected.booth.id}
-            timezone={timezone}
-          />
+          </Group>
 
-          <BoothScreensPanel
-            // Whether this booth is paired at all: only one on the platform's
-            // virtual box is. A booth on its own box, the Pi, needs no pairing.
-            place={boothBoxPlace(status, selected.booth.id)}
-            screens={screens}
-            minted={mintedCode}
-            busy={busy}
-            readOnly={!canManage}
-            error={errorAt('screens')}
-            timezone={timezone}
-            onMint={() =>
-              void run('screens', async () => {
-                // The answer is the only copy of the code there will ever be,
-                // so it is put on screen before anything else can throw.
-                setMintedCode(
-                  await boothApi.mintPairingCode(selected.booth.id, 'Booth television'),
-                );
-              })
-            }
-            onUnpair={(screen) =>
-              void run('screens', async () => {
-                await boothApi.unpairScreen(
-                  selected.booth.id,
-                  screen.id,
-                  'unpaired from the Console',
-                );
-                setMintedCode(null);
-              })
-            }
-            onRetry={() => selectedId && void loadBooth(selectedId)}
-            onDismissCode={() => setMintedCode(null)}
-          />
+          <Group title="Settings">
+            <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
+              <div id="booth-settings" className="scroll-mt-24 min-w-0">
+                <BoothSettingsPanel
+                  draft={selected}
+                  readOnly={!canManage}
+                  onEdit={() => {
+                    setWriteError((held) => (held?.where === 'settings' ? null : held));
+                    setSettingsOpen(true);
+                  }}
+                />
+              </div>
+              <div id="booth-station" className="scroll-mt-24 min-w-0">
+                <Panel
+                  title="Booth station"
+                  description="The station and its voucher prefix, set under Devices."
+                >
+                  <p className="text-sm">
+                    {selected.booth.name} · Prefix: {selected.booth.codePrefix ?? 'Not set'}
+                  </p>
+                  <a className="underline text-sm" href="/devices">
+                    Open Devices to set the station or printer
+                  </a>
+                </Panel>
+              </div>
+            </div>
+          </Group>
 
-          <VersionHistory
-            versions={versions}
-            timezone={timezone}
-            onRetry={() => selectedId && void loadBooth(selectedId)}
-          />
+          <Group title="Activity">
+            <BoothSpinsPanel
+              key={'spins-' + selected.booth.id}
+              id={selected.booth.id}
+              timezone={timezone}
+            />
+
+            <VersionHistory
+              versions={versions}
+              timezone={timezone}
+              onRetry={() => selectedId && void loadBooth(selectedId)}
+            />
+          </Group>
         </>
       )}
 
@@ -692,6 +790,43 @@ export function Booths() {
           }
         />
       )}
+
+      {settingsOpen && selected && (
+        <BoothSettingsEditor
+          // One booth's edit is not another's: a different booth is a
+          // different form, seeded from its own draft.
+          key={selected.booth.id}
+          draft={selected}
+          layouts={layouts}
+          saving={busy}
+          unavailable={writeUnavailable}
+          readOnly={!canManage}
+          error={errorAt('settings')}
+          onClose={() => setSettingsOpen(false)}
+          onSave={(settings: BoothSettingsEdit) =>
+            void run('settings', async () => {
+              await boothApi.saveSettings(selected.booth.id, settings);
+              setSettingsOpen(false);
+            })
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * A titled group of panels on the booth page (SCRUM-468) — the small
+ * uppercase label the console's sidebar uses for its own groups, so a manager
+ * scanning the page reads five sections rather than eleven panels.
+ */
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4 pt-2">
+      <h2 className="px-1 text-[11px] font-semibold uppercase tracking-widest text-foreground/45">
+        {title}
+      </h2>
+      {children}
     </div>
   );
 }
@@ -767,6 +902,7 @@ function LiveStatus({
               </StatusPill>
             </span>
           )}
+          <TemplatesLink />
         </Fact>
         <Fact label={`Spins today (${s.today.businessDate})`}>
           {/*
@@ -805,6 +941,51 @@ function LiveStatus({
         </p>
       )}
     </Panel>
+  );
+}
+
+/**
+ * Where a printout's layout is changed, beside the printer that prints it
+ * (SCRUM-468) — the owner looked for it on this page, at the park, and nothing
+ * here led to it.
+ *
+ * The receipt and slip templates are the till's back office's Print
+ * Templates panel (`apps/pos`, Operations › Print Templates), so this links to
+ * that back office and names the panel. It cannot land ON the panel, or with
+ * this booth's printer chosen: the back office opens on its first panel and
+ * takes no address for one yet, and a template is the branch's, not a
+ * device's. With no till origin configured (`VITE_POS_URL`) the words stay and
+ * the link does not — a dead address is worse than a sentence.
+ *
+ * The booth's own voucher slip is laid out by the platform and has no
+ * template there; its words are its voucher type's, which the prize editor
+ * links to.
+ */
+function TemplatesLink() {
+  const label = (
+    <>
+      <FileText className="w-3.5 h-3.5 shrink-0" />
+      Receipt and slip templates
+    </>
+  );
+  return (
+    <span className="mt-2 flex flex-col gap-0.5 text-xs font-normal">
+      {POS_URL ? (
+        <a
+          href={`${POS_URL}/admin`}
+          className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-4"
+        >
+          {label}
+          <ExternalLink className="w-3 h-3 shrink-0 opacity-60" />
+        </a>
+      ) : (
+        <span className="inline-flex items-center gap-1.5 font-semibold">{label}</span>
+      )}
+      <span className="text-muted-foreground">
+        In the till’s back office, under Operations › Print Templates. The booth’s voucher slip takes
+        its words from its voucher type.
+      </span>
+    </span>
   );
 }
 
