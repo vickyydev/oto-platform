@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useParams, useLocation } from "wouter";
+import { useParams } from "wouter";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,11 @@ import { cn } from "@/lib/utils";
 import type { TrainingModule, QuizQuestion } from "@shared/schema";
 
 interface ModuleWithQuestions extends TrainingModule {
-  questions: QuizQuestion[];
+  questions: Omit<QuizQuestion, "correctAnswer">[];
 }
 
 export default function ModulePage() {
   const { id } = useParams<{ id: string }>();
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [phase, setPhase] = useState<"content" | "quiz" | "results">("content");
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -53,15 +52,19 @@ export default function ModulePage() {
 
   if (isLoading || !module) {
     return (
-      <AppLayout hideNav>
+      <AppLayout>
         <LoadingScreen />
       </AppLayout>
     );
   }
 
-  const questions = module.questions.sort((a, b) => a.sortOrder - b.sortOrder);
+  const questions = [...module.questions].sort((a, b) => a.sortOrder - b.sortOrder);
 
   const handleStartQuiz = () => {
+    if (questions.length === 0) {
+      submitQuizMutation.mutate({ answers: {} });
+      return;
+    }
     setPhase("quiz");
     setCurrentQuestion(0);
     setAnswers({});
@@ -87,11 +90,11 @@ export default function ModulePage() {
   };
 
   return (
-    <AppLayout hideNav>
+      <AppLayout>
       <div className="min-h-screen flex flex-col">
         <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border p-4" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
           <div className="flex items-center gap-3 max-w-lg mx-auto">
-            <Link href="/learn">
+            <Link href="/core/learn">
               <Button size="icon" variant="ghost" data-testid="button-back">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -115,14 +118,14 @@ export default function ModulePage() {
           {phase === "content" && (
             <div className="space-y-6">
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <div dangerouslySetInnerHTML={{ __html: module.content.replace(/\n/g, "<br/>") }} />
+                <div className="whitespace-pre-wrap">{module.content}</div>
               </div>
               <Button 
                 className="w-full h-12" 
                 onClick={handleStartQuiz}
                 data-testid="button-start-quiz"
               >
-                Start Quiz ({questions.length} questions)
+                {questions.length ? `Start Quiz (${questions.length} questions)` : "Complete module"}
               </Button>
             </div>
           )}
@@ -202,12 +205,14 @@ export default function ModulePage() {
                   {quizResult.passed ? "Congratulations!" : "Not Quite"}
                 </h2>
                 <p className="text-muted-foreground">
-                  You scored {quizResult.score} out of {quizResult.total}
+                  {quizResult.total
+                    ? `You scored ${quizResult.score} out of ${quizResult.total}`
+                    : "Module complete"}
                 </p>
               </div>
 
               <div className="text-6xl font-bold">
-                {Math.round((quizResult.score / quizResult.total) * 100)}%
+                    {quizResult.total ? Math.round((quizResult.score / quizResult.total) * 100) : 100}%
               </div>
 
               <div className="space-y-3">
@@ -221,7 +226,7 @@ export default function ModulePage() {
                     Try Again
                   </Button>
                 )}
-                <Link href="/learn">
+                <Link href="/core/learn">
                   <Button 
                     variant={quizResult.passed ? "default" : "secondary"} 
                     className="w-full h-12"

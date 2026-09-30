@@ -143,9 +143,7 @@ export default function LearnPage() {
           ) : (
             modules.map((module) => {
               const hasAttempt = module.bestAttempt !== null && module.bestAttempt !== undefined;
-              const scorePercent = hasAttempt 
-                ? Math.round((module.bestAttempt!.score / module.bestAttempt!.totalQuestions) * 100)
-                : 0;
+              const scorePercent = hasAttempt ? Math.round(module.bestAttempt!.score ?? 0) : 0;
               
               return (
                 <Card 
@@ -184,7 +182,7 @@ export default function LearnPage() {
                           )}
                         </div>
                       </div>
-                      <Link href={`/learn/${module.id}`}>
+                      <Link href={`/core/modules/${module.id}`}>
                         <Button 
                           variant={module.completion ? "outline" : "default"}
                           className="shrink-0"
