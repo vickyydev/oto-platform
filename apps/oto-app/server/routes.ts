@@ -98,7 +98,7 @@ function buildWarningData(mergeDataJson?: any) {
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import OpenAI from "openai";
+import { aiComplete, aiConfigured, FAST_AI_MODEL } from "./lib/anthropic";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import { runAttentionEngine, evaluateForEmployee, evaluateForContract, getLastCalculatedAt, evaluateRuleForEmployee, getRuleDefinitions } from "./attention-engine";
@@ -21572,18 +21572,14 @@ OTO Company Limited`,
       // Combine all chunks into full text
       const fullText = chunks.map(c => c.text).join("\n\n");
       
-      // Check for OpenAI API key
-      if (!process.env.OPENAI_API_KEY) {
+      // Check for the AI key
+      if (!aiConfigured()) {
         return res.status(500).json({ message: "AI service not configured" });
       }
-      
-      // Use OpenAI to extract structured steps
-      const completion = await getAskOtoOpenAI().chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert at analyzing documents and extracting step-by-step procedures.
+
+      // Extract structured steps with the AI model
+      const aiResponse = await aiComplete({
+        system: `You are an expert at analyzing documents and extracting step-by-step procedures.
 Your task is to analyze the provided document text and extract structured SOP (Standard Operating Procedure) steps.
 
 Return a JSON object with:
@@ -21594,19 +21590,12 @@ Return a JSON object with:
   - description: A detailed description of what to do (max 200 characters)
 
 Focus on actionable steps that staff can follow. If the document contains multiple procedures, focus on the main one.
-Return ONLY valid JSON, no markdown or explanation.`
-          },
-          {
-            role: "user",
-            content: `Please extract structured steps from this document:\n\n${fullText.substring(0, 8000)}`
-          }
-        ],
+Return ONLY valid JSON, no markdown or explanation.`,
+        user: `Please extract structured steps from this document:\n\n${fullText.substring(0, 8000)}`,
         temperature: 0.3,
-        max_tokens: 2000,
+        maxTokens: 2000,
       });
-      
-      const aiResponse = completion.choices[0]?.message?.content || "";
-      
+
       // Parse the JSON response
       let parsedSteps;
       try {
@@ -21783,14 +21772,6 @@ Return ONLY valid JSON, no markdown or explanation.`
   // ASK OTO (RAG-based knowledge assistant)
   // ============================================
   
-  const getAskOtoOpenAI = (() => {
-    let _client: OpenAI | null = null;
-    return () => {
-      if (!_client) _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, baseURL: process.env.OPENAI_BASE_URL });
-      return _client;
-    };
-  })();
-
   app.post("/api/ask-oto", requireAuth, async (req, res, next) => {
     try {
       const { question } = req.body;
@@ -22024,7 +22005,7 @@ Return ONLY valid JSON, no markdown or explanation.`
         context += `\n\n---\n\nDocument: "${fileGroup.file.filename}"\n${chunkTexts}`;
       }
 
-      // Generate answer using OpenAI
+      // Generate the answer with the AI model
       const systemPrompt = `You are OTO, a knowledge assistant for park staff. You answer questions ONLY using the provided park knowledge articles and SOPs.
 
 RULES (NON-NEGOTIABLE):
@@ -22038,9 +22019,9 @@ RULES (NON-NEGOTIABLE):
 KNOWLEDGE BASE ARTICLES & SOPs:
 ${context}`;
 
-      // Check if OpenAI API key is configured
-      if (!process.env.OPENAI_API_KEY) {
-        console.error("Ask OTO: OpenAI API key not configured");
+      // Check if the AI key is configured
+      if (!aiConfigured()) {
+        console.error("Ask OTO: Anthropic API key not configured");
         return res.status(503).json({ 
           message: "AI assistant is temporarily unavailable. Please try again later or ask your manager.",
           answer: "",
@@ -22051,16 +22032,13 @@ ${context}`;
 
       let answer = "";
       try {
-        const completion = await getAskOtoOpenAI().chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: question },
-          ],
-          max_completion_tokens: 500,
+        answer = await aiComplete({
+          model: FAST_AI_MODEL,
+          system: systemPrompt,
+          user: question,
+          maxTokens: 500,
           temperature: 0.3,
         });
-        answer = completion.choices[0]?.message?.content || "";
       } catch {
         console.error("Ask OTO answer generation failed");
         return res.status(503).json({ 
