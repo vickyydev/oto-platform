@@ -8,6 +8,7 @@ import {
   branch,
   paymentAttempt,
   paymentNotification,
+  station,
   ticketPackage,
 } from '@oto/db';
 import {
@@ -825,6 +826,16 @@ describe('the confirmation can be reopened while the booking is paid and unredee
     expect(second.qr).toBe(first.qr);
     expect(first.visitDate).toBe(today());
     expect(JSON.stringify(second)).not.toMatch(/Mali|\+66812345678|parentName|phone/);
+
+    // Round 3: redemption happens AT a till, so the session stands at one first.
+    const [till] = await ctx.db.select().from(station).where(eq(station.name, 'Reception Till 1'));
+    const stood = await ctx.app.inject({
+      method: 'PUT',
+      url: '/me/session/station',
+      headers: { cookie: reception },
+      payload: { stationId: till!.id },
+    });
+    expect(stood.statusCode, stood.body).toBe(200);
 
     const redeemed = await redeem(made.id);
     expect(redeemed.statusCode, redeemed.body).toBe(200);
