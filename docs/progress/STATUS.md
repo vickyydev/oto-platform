@@ -69,6 +69,8 @@ SCRUM-465 camp-photo ownership is live at `b96a9652` (`dep-daul1mp42hec73est5g0`
 
 SCRUM-465's camp child-profile follow-up is live at `edd28317` (`dep-daulhk49v7es73a1o570`). Manager child search, duplicate review, history, merge and photo/profile propagation now stay in the signed-in tenant and permitted branches. The existing camp/check-in spec passed 4/4, production build passed, typecheck stayed at 542 inherited diagnostics and scoped lint found no new error. Staging app 200 and anonymous child-list/private-photo guards 401/401 passed. The duplicate queued auto-deploy was canceled; the manual deploy is live. SCRUM-465 is Testing, not Deployed: live authenticated branch proof and a real named UI screenshot remain. The in-app browser screenshot backend times out even on a neutral page; Opera Browser Connector is installed but is not connected to this chat. SCRUM-193 remains In Progress with the recorded platform dependencies. See `docs/qa/oto-app-lift/files.md`.
 
+SCRUM-465 staging screenshot capture now works through the app's existing headless Chromium browser tooling. The attached real staging image `scrum-465-staging-synthetic-child-list.png` shows one labelled synthetic camp child in Central Floresta after launcher sign-in; authenticated child search and history each returned one result, and cleanup removed the registration and event with a zero-result final search. The earlier `studio-children.png` shows the empty entry state. The ticket is still open: restricted-manager branch refusal and positive private-media reads remain. See `docs/qa/oto-app-lift/files.md`.
+
 ## Release checkpoint - 30 September 2026 - break checkpoint saved
 
 The current release checkpoint is complete. Stop here and await the next
