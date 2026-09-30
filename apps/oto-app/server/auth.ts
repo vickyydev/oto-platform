@@ -139,8 +139,6 @@ export function setupAuth(app: Express) {
       
       req.login(user, async (err) => {
         if (err) return next(err);
-        console.log(`[auth-diag] req.secure=${req.secure} x-forwarded-proto=${req.headers['x-forwarded-proto']} sessionID=${req.sessionID}`);
-        
         // Update last login timestamp
         await storage.updateUser(user.id, { updatedAt: new Date() } as any);
         await storage.updateUserLastLogin(user.id);
