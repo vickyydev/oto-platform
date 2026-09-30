@@ -6,4 +6,4 @@ An isolated local parent token and event produced a JPEG invitation with the pho
 
 The production build passed. App typecheck stays at 577 inherited errors; its one diagnostic in this route is on the unchanged token-query expression, and the edited lines add none. Scoped ESLint reported 15 inherited diagnostics and zero on changed lines.
 
-The public parent and guest links remain valid until revoked under the existing schema. A link-expiry policy is an open owner decision; adding an expiry column would require the platform lane. A positive staging invitation generation and named screenshot are still required before SCRUM-456 can be Deployed.
+The public parent and guest links remain valid until revoked under the existing schema. A link-expiry policy is an open owner decision; adding an expiry column would require the platform lane. Commit `428f6bdc` is live on oto-app-staging (`dep-dau5saflot8c739ps8s0`). Its health, packaged artwork, and invalid-token invitation routes returned 200, 200, and 404. A positive signed-in staging invitation generation and named screenshot are still required before SCRUM-456 can be Deployed.
