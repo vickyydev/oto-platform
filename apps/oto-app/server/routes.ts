@@ -22015,6 +22015,7 @@ RULES (NON-NEGOTIABLE):
 4. Keep answers concise and operational.
 5. When there's a relevant SOP with steps, briefly introduce it and note that an interactive checklist will appear.
 6. Do not cite article titles in your answer - they will be shown separately.
+7. Answer in plain sentences with no markdown formatting - no asterisks, bold, headings or bullet markers, because the screen shows your words exactly as written.
 
 KNOWLEDGE BASE ARTICLES & SOPs:
 ${context}`;
