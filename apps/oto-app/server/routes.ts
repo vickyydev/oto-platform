@@ -22927,7 +22927,7 @@ ${context}`;
       }
       // Private documents have their own record-scoped routes; this generic
       // file route cannot decide who may read a contract or employee record.
-      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private"].includes(folder)) {
+      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private", "knowledge-files", "test-uploads"].includes(folder)) {
         return res.status(404).json({ message: "File not found" });
       }
       
