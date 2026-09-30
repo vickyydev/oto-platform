@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
 import {
   box,
+  boxCommand,
   device,
   printJob,
   printTemplate,
@@ -20,9 +21,15 @@ import {
   type PrintTemplateUpdate,
 } from '@oto/shared';
 import { ROLE_FOR_KIND, profileFor, testPrintJob } from '@oto/box-agent';
-import { renderPreviewPng } from '@oto/print';
+import {
+  DEFAULT_PRINT_SAMPLE,
+  printSampleJob,
+  renderPreviewPng,
+  type PrintSampleName,
+} from '@oto/print';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
+import { boxAuthFromRow, configBundle } from './box';
 import { queueCommand } from './fleet';
 import { recordRun } from './ops';
 import { withTx, type Exec, type OpContext } from './tx';
@@ -254,6 +261,14 @@ export interface TestPrintTarget {
  * Naming a station settles it, because a station belongs to exactly one box —
  * which is why the Print Templates panel asks which till to test on rather
  * than picking one and hoping the person was standing at it.
+ *
+ * **The station has to be at the branch asked about** (SCRUM-472). Every
+ * caller checks its permission against that branch — the template's, or the
+ * station's own — so a station of another branch answered here would let
+ * `pos:print:read` at branch A read the routed printer of a till at branch B,
+ * and `admin:box:command` at A queue paper on B's box. It is not found, as a
+ * station of another operator is not, rather than refused by name: from this
+ * branch's side it is not one of its stations.
  */
 export async function resolveTestPrintTarget(
   db: Db,
@@ -264,9 +279,15 @@ export async function resolveTestPrintTarget(
     const [row] = await db
       .select()
       .from(station)
-      .where(and(eq(station.id, input.stationId), eq(station.operatorId, operatorId)))
+      .where(
+        and(
+          eq(station.id, input.stationId),
+          eq(station.operatorId, operatorId),
+          eq(station.branchId, input.branchId),
+        ),
+      )
       .limit(1);
-    if (!row) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station');
+    if (!row) throw new AppError(404, 'STATION_NOT_FOUND', 'No such station at this branch');
     if (!row.boxId) {
       throw new AppError(
         409,
@@ -353,6 +374,10 @@ export async function routeOnBox(
  * assigned and nothing unsaved on the screen they agree to the byte, which
  * `print-api.test.ts` asserts by comparing this PNG with the one the simulator
  * rebuilds from the bytes it was sent.
+ *
+ * That is the default. The editor can also ask for one of `@oto/print`'s named
+ * scenarios (SCRUM-472) — a simple sale, a fuller one, long names — which the
+ * same renderer draws but which a Test print does not put on paper.
  */
 export interface TemplatePreviewResult {
   png: Uint8Array;
@@ -373,33 +398,62 @@ function sampleKindFor(type: PrintTemplateType): PrintKind {
   return kind;
 }
 
-export async function renderTemplatePreview(
+/** A printer role in the words the editor shows beside its Test print button. */
+const ROLE_WORDS: Record<string, string> = {
+  receipt: 'receipt',
+  kitchen: 'kitchen',
+  bar: 'bar',
+  kids_band: 'kids band',
+  adult_band: 'adult band',
+};
+
+/**
+ * The printer a template's Test print would reach from a station, and the
+ * paper its preview is laid out for.
+ *
+ * One answer for both, because they are one question: the preview is drawn
+ * for the printer the Test print button would use, so "the preview fits" and
+ * "the paper fits" are the same statement, and the button can name where the
+ * paper will come out (SCRUM-472) without a second lookup that might disagree.
+ * A branch with no printer for the role still gets a preview: `profileFor`
+ * falls back to the defaults for the kind, which is what the box would do with
+ * a device nobody has measured yet.
+ */
+export interface TemplatePrinter {
+  kind: PrintKind;
+  role: string;
+  /** The device a Test print would be routed to, when there is one. */
+  device: typeof device.$inferSelect | null;
+  /** Why a Test print from here would reach no printer; null when it would. */
+  unrouted: string | null;
+  profile: ReturnType<typeof profileFor>;
+}
+
+export async function templatePrinter(
   db: Db,
   operatorId: string,
   row: typeof printTemplate.$inferSelect,
-  draft: PrintTemplateUpdate,
-  input: { stationId?: string | null } = {},
-): Promise<TemplatePreviewResult> {
+  stationId: string | null,
+): Promise<TemplatePrinter> {
   const kind = sampleKindFor(row.type);
   const role = ROLE_FOR_KIND[kind];
 
-  /**
-   * Lay the sample out for the printer the Test print button would use, so
-   * "the preview fits" and "the paper fits" are the same statement. A branch
-   * with no printer for the role still gets a preview: `profileFor` falls back
-   * to the defaults for the kind, which is what the box would do with a device
-   * nobody has measured yet.
-   */
-  let routed: { device: typeof device.$inferSelect } | null = null;
+  let routed: typeof device.$inferSelect | null = null;
+  let unrouted: string | null = null;
   try {
     const target = await resolveTestPrintTarget(db, operatorId, {
       branchId: row.branchId,
-      stationId: input.stationId ?? null,
+      stationId,
     });
     const hit = await routeOnBox(db, target.boxRow.id, role, target.stationId);
     if (hit) {
       const [deviceRow] = await db.select().from(device).where(eq(device.id, hit.deviceId)).limit(1);
-      if (deviceRow) routed = { device: deviceRow };
+      routed = deviceRow ?? null;
+    }
+    if (!routed) {
+      unrouted = `No ${ROLE_WORDS[role] ?? role} printer is assigned${
+        target.stationId ? ' to this station' : ' on this box'
+      }`;
     }
   } catch (err) {
     // No box on the branch, or a station that is not attached to one. That
@@ -407,24 +461,70 @@ export async function renderTemplatePreview(
     // a box, and somebody configuring a template before the hardware arrives
     // is the ordinary case rather than the odd one.
     if (!(err instanceof AppError)) throw err;
+    unrouted = err.message;
   }
 
   const profile = profileFor({
-    id: routed?.device.id ?? row.id,
+    id: routed?.id ?? row.id,
     role,
-    kind: routed?.device.kind ?? (role.endsWith('band') ? 'band_printer' : 'receipt_printer'),
-    label: routed?.device.label ?? 'Sample',
-    transport: routed?.device.transport ?? 'simulated',
-    address: routed?.device.address ?? null,
-    model: routed?.device.model ?? null,
-    protocol: routed?.device.protocol ?? null,
+    kind: routed?.kind ?? (role.endsWith('band') ? 'band_printer' : 'receipt_printer'),
+    label: routed?.label ?? 'Sample',
+    transport: routed?.transport ?? 'simulated',
+    address: routed?.address ?? null,
+    model: routed?.model ?? null,
+    protocol: routed?.protocol ?? null,
     serialNumber: null,
     terminalId: null,
     merchantId: null,
-    settings: routed?.device.settings ?? null,
+    settings: routed?.settings ?? null,
   });
+  return { kind, role, device: routed, unrouted, profile };
+}
 
-  const job = await testPrintJob(kind);
+/** What the editor's Test print button says about where its paper goes. */
+export interface TestPrintDestination {
+  printer: { deviceId: string; label: string } | null;
+  /** Why nothing would print, in words for the editor; null when a printer is there. */
+  note: string | null;
+  /** The width the preview is drawn at, in printer dots. */
+  widthDots: number;
+}
+
+export async function describeTestPrintDestination(
+  db: Db,
+  operatorId: string,
+  row: typeof printTemplate.$inferSelect,
+  input: { stationId?: string | null } = {},
+): Promise<TestPrintDestination> {
+  const printer = await templatePrinter(db, operatorId, row, input.stationId ?? null);
+  return {
+    printer: printer.device ? { deviceId: printer.device.id, label: printer.device.label } : null,
+    note: printer.unrouted,
+    widthDots: printer.profile.widthDots,
+  };
+}
+
+export async function renderTemplatePreview(
+  db: Db,
+  operatorId: string,
+  row: typeof printTemplate.$inferSelect,
+  draft: PrintTemplateUpdate,
+  input: { stationId?: string | null; sample?: PrintSampleName } = {},
+): Promise<TemplatePreviewResult> {
+  const { kind, device: routed, profile } = await templatePrinter(
+    db,
+    operatorId,
+    row,
+    input.stationId ?? null,
+  );
+
+  /**
+   * The scenario the editor picked (SCRUM-472). `standard` — the default — is
+   * the committed fixture, which is the Test print's own sample; the others
+   * are `@oto/print`'s named sets, drawn by the same renderer.
+   */
+  const job =
+    printSampleJob(kind, input.sample ?? DEFAULT_PRINT_SAMPLE) ?? (await testPrintJob(kind));
   const png = renderPreviewPng(job, {
     device: profile,
     templates: [
@@ -439,7 +539,7 @@ export async function renderTemplatePreview(
       },
     ],
   });
-  return { png, deviceLabel: routed?.device.label ?? null, widthDots: profile.widthDots };
+  return { png, deviceLabel: routed?.label ?? null, widthDots: profile.widthDots };
 }
 
 export interface TestPrintInput {
@@ -449,6 +549,47 @@ export interface TestPrintInput {
   role?: string | null;
   copies?: number;
   actionId: string;
+  /**
+   * Make sure the box prints the template as it is saved now (SCRUM-472): when
+   * the box has not confirmed the configuration it would be handed now, a
+   * `config_apply` goes ahead of the print. The template editor's "Save &
+   * print test" sets it; see `boxHoldsCurrentConfig`.
+   */
+  refreshConfig?: boolean;
+}
+
+/**
+ * Whether a box has told us it is running the configuration it would be
+ * handed now (SCRUM-472).
+ *
+ * A box renders a test print with the templates it cached from its last
+ * config pull, and it pulls on a heartbeat whose answer names a newer version
+ * — once a minute — or on a `config_apply`. The command poll runs every five
+ * seconds and does not look at the version. So a template saved and then
+ * test-printed straight away, which is exactly what "Save & print test" does,
+ * came out as it was BEFORE the save unless a heartbeat happened to land in
+ * between: a section hidden, and still on the paper.
+ *
+ * The version the box reported on its last heartbeat is compared with the
+ * bundle it would be handed now, which is the same hash `/box/v1/config`
+ * answers its `If-None-Match` with. Equal means the box already holds every
+ * saved template. Anything else — a different version, a box that has never
+ * said, a bundle that cannot be built — answers no, and the caller queues the
+ * pull: an unneeded one costs the box a 304, a missed one costs the paper.
+ */
+export async function boxHoldsCurrentConfig(
+  db: Db,
+  boxRow: typeof box.$inferSelect,
+): Promise<boolean> {
+  const reported = (boxRow.lastStatus as { configVersion?: unknown } | null)?.configVersion;
+  if (typeof reported !== 'string') return false;
+  try {
+    const bundle = await configBundle(db, boxAuthFromRow(boxRow));
+    return bundle.configVersion === reported;
+  } catch (err) {
+    if (err instanceof AppError) return false;
+    throw err;
+  }
 }
 
 export interface TestPrintResult {
@@ -464,6 +605,9 @@ export interface TestPrintResult {
  * the box reports lands on the row the button created. The row is written
  * before its command, in one transaction with the complete response, so a box
  * cannot collect a command without its job and a retry cannot print it twice.
+ * With `refreshConfig`, a `config_apply` is queued ahead of it in the same
+ * transaction when the box may still hold an older template, and the poll
+ * hands the two out in that order (see the comment at the pull below).
  */
 export async function requestTestPrint(
   db: Db,
@@ -485,6 +629,8 @@ export async function requestTestPrint(
       ),
     )
     .limit(1);
+  const refresh =
+    !!routed && !!input.refreshConfig && !(await boxHoldsCurrentConfig(db, target.boxRow));
 
   const jobId = newId();
   return withTx(db, ctx, 'print_job.test', async (tx) => {
@@ -520,6 +666,36 @@ export async function requestTestPrint(
       after: { kind: input.kind, role, deviceId: routed?.deviceId ?? null, boxId: target.boxRow.id },
       requestId: ctx.requestId,
     });
+    if (refresh) {
+      /**
+       * The pull goes AHEAD of the print (SCRUM-472), so the box renders the
+       * template that was just saved rather than the one it cached before.
+       *
+       * In this transaction, so the two become visible to a poll together and
+       * a print that cannot be queued leaves no pull behind; under the same
+       * action id, because it is one press. The box runs a poll's commands one
+       * after another in the order it was handed them, and `pollCommands`
+       * hands them out ordered by `created_at`, then `id`. That order is set
+       * by the final select of its claim, because an `update … returning`
+       * alone comes back in hash order (fixed in the second SCRUM-472 fix
+       * round). Two rows written in one transaction share `created_at`, since
+       * `now()` is the transaction's start, so the pull is stamped a
+       * millisecond earlier. That puts it first without leaning on the `id`
+       * tie-break.
+       *
+       * The guarantee holds when both commands come out in one poll. A box
+       * with four or more older commands still queued can get the pull in one
+       * poll and the print in the next, and two polls can overlap.
+       */
+      const pull = await queueCommand(tx, ctx, actor, target.boxRow, {
+        kind: 'config_apply',
+        actionId: input.actionId,
+      });
+      await tx
+        .update(boxCommand)
+        .set({ createdAt: sql`${boxCommand.createdAt} - interval '1 millisecond'` })
+        .where(eq(boxCommand.id, pull.commandId));
+    }
     const command = await queueCommand(tx, ctx, actor, target.boxRow, {
       kind: 'test_print',
       payload: {

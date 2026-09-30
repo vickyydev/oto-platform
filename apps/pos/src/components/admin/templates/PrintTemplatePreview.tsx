@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { PrintTemplate } from '@/types';
-import { printApi } from '@/api/platform';
 import { ApiError } from '@/api/client';
+import { templatesApi } from './templatesApi';
+import { paperLabel, previewRequest } from './templateDraft';
+import { DEFAULT_PREVIEW_SAMPLE, type PreviewSampleId } from './previewSamples';
 
 interface PrintTemplatePreviewProps {
   /** The draft on the editor's left-hand side, saved or not. */
@@ -11,6 +13,13 @@ interface PrintTemplatePreviewProps {
   live: boolean;
   /** Which till to lay the sample out for; null lets the branch decide. */
   stationId?: string | null;
+  /** Which of the platform's sample scenarios to fill it with (SCRUM-472). */
+  sample?: PreviewSampleId;
+  /**
+   * The frame's lower toolbar (SCRUM-472): the editor's Test print, attached
+   * to the picture it would put on paper rather than to the form.
+   */
+  footer?: ReactNode;
 }
 
 /**
@@ -53,6 +62,7 @@ const ZOOMS: ReadonlyArray<{ id: Zoom; label: string; scale: number; title: stri
   { id: 'full', label: '100%', scale: 1, title: 'Actual size — one pixel per dot' },
   { id: 'double', label: '200%', scale: 2, title: 'Double size — four pixels per dot' },
 ];
+const FIT_SCALE = 0.5;
 
 /** A rendered picture and its width in dots, which is its width in pixels. */
 interface Picture {
@@ -60,30 +70,23 @@ interface Picture {
   dots: number;
 }
 
-export function PrintTemplatePreview({ template, live, stationId }: PrintTemplatePreviewProps) {
+/**
+ * Fetch, measure and hold one rendered picture, re-asking when the request
+ * changes. `active` false holds off without clearing (a thumbnail not yet
+ * scrolled into view); `live` false clears (a row the platform does not hold).
+ */
+function usePreviewPicture(
+  templateId: string,
+  request: string,
+  live: boolean,
+  active: boolean,
+  debounceMs: number,
+) {
   const [picture, setPicture] = useState<Picture | null>(null);
-  const [zoom, setZoom] = useState<Zoom>('fit');
   const [drawing, setDrawing] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   /** The object URL currently on screen, so it can be released when replaced. */
   const held = useRef<string | null>(null);
-
-  /**
-   * The request body, as one string.
-   *
-   * It is both what is sent and what the effect below depends on, so a
-   * re-render that changed nothing the printer would draw — the template's
-   * name, a parent's state — does not spend a round trip. The type is not in
-   * it: which printout this is comes from the saved row and the editor cannot
-   * change it.
-   */
-  const draft = JSON.stringify({
-    showLogo: template.showLogo,
-    headerText: template.headerText ?? null,
-    footerText: template.footerText ?? null,
-    fields: template.fields,
-    stationId: stationId ?? null,
-  });
 
   useEffect(() => {
     if (!live) {
@@ -93,16 +96,13 @@ export function PrintTemplatePreview({ template, live, stationId }: PrintTemplat
       setFailed(null);
       return;
     }
+    if (!active) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       setDrawing(true);
       void (async () => {
         try {
-          const blob = await printApi.previewPng(
-            template.id,
-            JSON.parse(draft) as Parameters<typeof printApi.previewPng>[1],
-            controller.signal,
-          );
+          const blob = await templatesApi.previewPng(templateId, request, controller.signal);
           if (controller.signal.aborted) return;
           const url = URL.createObjectURL(blob);
           let dots: number;
@@ -127,14 +127,14 @@ export function PrintTemplatePreview({ template, live, stationId }: PrintTemplat
           if (!controller.signal.aborted) setDrawing(false);
         }
       })();
-    }, DEBOUNCE_MS);
+    }, debounceMs);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [draft, live, template.id]);
+  }, [request, live, active, templateId, debounceMs]);
 
-  // Release the last picture when the editor closes.
+  // Release the last picture when the component goes.
   useEffect(
     () => () => {
       if (held.current) URL.revokeObjectURL(held.current);
@@ -143,15 +143,44 @@ export function PrintTemplatePreview({ template, live, stationId }: PrintTemplat
     [],
   );
 
-  const scale = ZOOMS.find((z) => z.id === zoom)?.scale ?? 0.5;
+  return { picture, drawing, failed };
+}
+
+export function PrintTemplatePreview({
+  template,
+  live,
+  stationId,
+  sample = DEFAULT_PREVIEW_SAMPLE,
+  footer,
+}: PrintTemplatePreviewProps) {
+  const [zoom, setZoom] = useState<Zoom>('fit');
+  const request = previewRequest(template, stationId ?? null, sample);
+  const { picture, drawing, failed } = usePreviewPicture(
+    template.id,
+    request,
+    live,
+    true,
+    DEBOUNCE_MS,
+  );
+
+  const scale = ZOOMS.find((z) => z.id === zoom)?.scale ?? FIT_SCALE;
 
   return (
     <div className="mx-auto w-fit min-w-[280px] max-w-full rounded-lg bg-stone-50 p-2 shadow-xl shadow-black/40 ring-1 ring-black/10">
-      {/* UI addition (SCRUM-470): the zoom, in the frame's corner. No one
-          frame width shows a 576-dot picture with every dot on screen inside
-          a 300px column, so the person picks. It sits above the scrolling
-          area rather than over the paper, so it never covers a header. */}
-      <div className="mb-1.5 flex justify-end">
+      {/* The frame's toolbar: the paper this is drawn for (SCRUM-472) beside
+          the zoom (SCRUM-470). Both sit above the scrolling area rather than
+          over the paper, so neither ever covers a header. */}
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        {picture ? (
+          <span
+            className="rounded-full bg-stone-200/70 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-stone-600"
+            title={`${picture.dots} dots across`}
+          >
+            {paperLabel(template.type, picture.dots)}
+          </span>
+        ) : (
+          <span />
+        )}
         <div
           role="group"
           aria-label="Preview zoom"
@@ -189,7 +218,7 @@ export function PrintTemplatePreview({ template, live, stationId }: PrintTemplat
                `max-w-none` because the stylesheet's reset caps every image at
                its column, which would fold 100% and 200% back into Fit. */
             style={{ width: picture.dots * scale }}
-            className={`block h-auto max-w-none [image-rendering:pixelated] transition-opacity ${
+            className={`mx-auto block h-auto max-w-none [image-rendering:pixelated] transition-opacity ${
               drawing ? 'opacity-60' : ''
             }`}
           />
@@ -211,6 +240,84 @@ export function PrintTemplatePreview({ template, live, stationId }: PrintTemplat
       {picture && failed && (
         <div className="px-1 pt-1 text-[11px] text-stone-500">{failed}</div>
       )}
+      {footer && <div className="mt-2 border-t border-stone-200 pt-2">{footer}</div>}
+    </div>
+  );
+}
+
+/**
+ * A template card's thumbnail (SCRUM-472): the SAVED template's printout, the
+ * Test print's own sample, drawn by the same renderer at Fit — two dots per
+ * pixel, the one downscale that keeps a one-dot rule — and cropped to the head
+ * of the paper rather than shrunk to fit the card, because shrinking further
+ * is exactly the blur SCRUM-470 removed.
+ *
+ * Asked for only once the card scrolls into view, so opening the list costs
+ * the renders somebody can see and no more. It reports the picture's width in
+ * dots so the card can name the paper.
+ */
+export function PrintTemplateThumbnail({
+  template,
+  live,
+  stationId,
+  onDots,
+}: {
+  template: PrintTemplate;
+  live: boolean;
+  stationId?: string | null;
+  onDots?: (dots: number) => void;
+}) {
+  const box = useRef<HTMLDivElement | null>(null);
+  const [seen, setSeen] = useState(false);
+
+  useEffect(() => {
+    const node = box.current;
+    if (!node || seen) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setSeen(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setSeen(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '120px' },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [seen]);
+
+  const request = previewRequest(template, stationId ?? null);
+  const { picture, failed } = usePreviewPicture(template.id, request, live, seen, 0);
+
+  useEffect(() => {
+    if (picture) onDots?.(picture.dots);
+  }, [picture, onDots]);
+
+  return (
+    <div
+      ref={box}
+      className="relative flex h-36 justify-center overflow-hidden rounded-xl bg-stone-100 pt-3"
+    >
+      {picture ? (
+        <img
+          src={picture.url}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          style={{ width: picture.dots * FIT_SCALE }}
+          className="block h-auto max-w-none self-start rounded-sm bg-white shadow-md shadow-black/15 ring-1 ring-black/5 [image-rendering:pixelated]"
+        />
+      ) : (
+        <div className="flex items-center text-[11px] text-stone-400">
+          {!live ? 'No preview' : failed ? 'Preview unavailable' : <Loader2 className="h-4 w-4 animate-spin" />}
+        </div>
+      )}
+      {/* The paper runs on past the card; a fade says so rather than a hard cut. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-stone-100 to-transparent" />
     </div>
   );
 }
