@@ -4,7 +4,9 @@ import { TERMINAL_OUTCOMES, type TerminalOutcome } from '@oto/shared';
 import { isMissingRoute, type DeviceRow } from '@/api/fleet';
 import { simulatorApi } from '@/components/devices/simulatorApi';
 import { Button } from '@/components/ui/button';
-import { EmptyState, Panel, RouteUnavailable } from '@/components/Panel';
+import { RouteUnavailable } from '@/components/Panel';
+import { CardShell } from '@/components/redesign/layout';
+import { EmptyNote } from '@/components/redesign/StatTile';
 import { Field, NumberInput, Select } from '@/components/Form';
 import { StatusPill } from '@/components/Status';
 
@@ -139,9 +141,11 @@ export function TerminalSimulatorPanel({
   };
 
   return (
-    <Panel
+    <CardShell
+      span={12}
+      icon={CreditCard}
       title="Card terminals"
-      description="What a simulated EDC does with the next tender sent to it"
+      note="what a simulated EDC does with the next tender sent to it"
     >
       {missing ? (
         <RouteUnavailable
@@ -149,13 +153,14 @@ export function TerminalSimulatorPanel({
           detail="This deployment's API has no tender surface yet."
         />
       ) : terminals.length === 0 ? (
-        <EmptyState
+        <EmptyNote
+          className="py-3"
           title="No simulated card terminal on this branch"
           detail="A terminal is simulated when its device row carries the simulated transport. A real EDC cannot be asked to pretend its host timed out."
         />
       ) : (
         <>
-          <p className="mb-3 text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             The setting is chosen <span className="font-semibold">before</span> a tender is sent and
             stays until it is changed — a terminal asked after the fact what it had done could not
             reproduce “no answer at all”, which is the case the whole inquiry rule exists for. These
@@ -164,7 +169,7 @@ export function TerminalSimulatorPanel({
             other.
           </p>
 
-          <ul className="flex flex-col divide-y rounded-xl border">
+          <ul className="flex flex-col divide-y divide-card-border rounded-[14px] border border-card-border">
             {terminals.map((terminal) => (
               <TerminalRow
                 key={terminal.id}
@@ -198,16 +203,16 @@ export function TerminalSimulatorPanel({
           </ul>
 
           {!canCommand && (
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Sending any of these needs <span className="font-mono text-xs">admin:box:command</span>
               , which this account does not hold at this branch.
             </p>
           )}
-          {note && <p className="mt-2 text-sm text-muted-foreground">{note}</p>}
-          {failed && <p className="mt-2 text-sm text-destructive break-words">{failed}</p>}
+          {note && <p className="text-sm text-muted-foreground">{note}</p>}
+          {failed && <p className="text-sm text-destructive break-words">{failed}</p>}
         </>
       )}
-    </Panel>
+    </CardShell>
   );
 }
 

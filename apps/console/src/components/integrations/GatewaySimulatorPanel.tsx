@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BadgeCheck, Ban, Clock, Hourglass, Loader2, RefreshCw, WifiOff } from 'lucide-react';
+import { BadgeCheck, Ban, Clock, Hourglass, Loader2, QrCode, RefreshCw, WifiOff } from 'lucide-react';
 import { api, idemKey, isMissingRoute } from '@/api/client';
 import { Button } from '@/components/ui/button';
-import { EmptyState, ErrorNote, Loading, Panel, RouteUnavailable } from '@/components/Panel';
-import { Chip, StatusPill, type Tone } from '@/components/Status';
+import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
+import { type Tone } from '@/components/Status';
+import { CodeTag, StatusChip, Tag } from '@/components/redesign/chips';
+import { CardShell, FactLine, FactList, RailNote, type Span } from '@/components/redesign/layout';
+import { EmptyNote } from '@/components/redesign/StatTile';
 import { formatWhen, timeAgo } from '@/lib/time';
 
 /**
@@ -116,7 +119,13 @@ const CONTROLS: Array<{
   },
 ];
 
-export function GatewaySimulatorPanel({ timezone }: { timezone?: string | null }) {
+export function GatewaySimulatorPanel({
+  timezone,
+  span,
+}: {
+  timezone?: string | null;
+  span?: Span;
+}) {
   const [status, setStatus] = useState<GatewayStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
@@ -173,30 +182,53 @@ export function GatewaySimulatorPanel({ timezone }: { timezone?: string | null }
 
   if (missing) {
     return (
-      <Panel title="QR payment gateway">
+      <CardShell span={span} icon={QrCode} title="QR payment gateway">
         <RouteUnavailable
           what="The gateway simulator"
           detail="It appears as soon as the payments API is deployed here."
         />
-      </Panel>
+      </CardShell>
     );
   }
 
+  const tone: Tone | null = status
+    ? status.provider === '2c2p'
+      ? 'ok'
+      : status.fellBack
+        ? 'warn'
+        : 'idle'
+    : null;
+
   return (
-    <Panel
+    <CardShell
+      span={span}
+      icon={QrCode}
       title="QR payment gateway"
-      description="Which gateway this deployment runs, and — when it is the simulator — a way to rehearse every case a QR can end in."
+      badge={
+        status && tone ? (
+          <StatusChip tone={tone}>
+            {status.provider === '2c2p' ? 'Live' : status.fellBack ? 'Fallback' : 'Simulated'}
+          </StatusChip>
+        ) : undefined
+      }
+      note="which gateway this deployment runs, and — when it is the simulator — a way to rehearse every case a QR can end in"
       actions={
         <Button
           variant="outline"
           size="sm"
-          className="h-9 gap-2"
+          className="h-9 gap-2 rounded-full px-3.5"
           onClick={() => void load()}
           disabled={loading}
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Refresh
         </Button>
+      }
+      footer={
+        <RailNote>
+          A deployment quietly running a pretend gateway is what this card exists to catch. No value of
+          any key appears here — only whether it is set.
+        </RailNote>
       }
     >
       {error && <ErrorNote message={error} onRetry={() => void load()} />}
@@ -207,17 +239,20 @@ export function GatewaySimulatorPanel({ timezone }: { timezone?: string | null }
           <GatewayCard status={status} />
 
           {note && (
-            <p className="rounded-xl border px-4 py-2.5 text-sm text-muted-foreground">{note}</p>
+            <p className="rounded-[14px] bg-foreground/[0.025] px-4 py-2.5 text-sm text-muted-foreground">{note}</p>
           )}
           {failed && <ErrorNote message={failed} />}
 
           {!status.simulatorAvailable ? (
-            <EmptyState
+            <EmptyNote
+              className="py-3"
               title="This deployment talks to the real gateway"
               detail="There is nothing to simulate: a QR here is a real payment instruction, and it is paid in somebody's banking app."
             />
           ) : status.attempts.length === 0 ? (
-            <EmptyState
+            <EmptyNote
+              className="py-3"
+              icon={QrCode}
               title="No QR is waiting to be paid"
               detail="Take a QR tender on a till and it appears here while the code is on the customer display."
             />
@@ -236,44 +271,37 @@ export function GatewaySimulatorPanel({ timezone }: { timezone?: string | null }
           )}
         </div>
       )}
-    </Panel>
+    </CardShell>
   );
 }
 
 function GatewayCard({ status }: { status: GatewayStatus }) {
-  const tone: Tone = status.provider === '2c2p' ? 'ok' : status.fellBack ? 'warn' : 'idle';
   return (
-    <div className="rounded-xl border bg-background/40 p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-bold">
+    <div className="flex flex-col gap-2">
+      <FactList>
+        <FactLine label="Provider">
           {status.provider === '2c2p' ? '2C2P' : 'Gateway simulator'}
-        </span>
-        <Chip>{status.environment}</Chip>
-        <Chip>{status.channelCode}</Chip>
-        <StatusPill tone={tone} className="ml-auto">
-          {status.provider === '2c2p' ? 'Live' : status.fellBack ? 'Fallback' : 'Simulated'}
-        </StatusPill>
-      </div>
+        </FactLine>
+        <FactLine label="Environment">{status.environment}</FactLine>
+        <FactLine label="Channel">
+          <span className="font-mono text-xs">{status.channelCode}</span>
+        </FactLine>
+        {/* Presence, never contents. */}
+        <FactLine label="Callback URL">{status.backendReturnUrlSet ? 'set' : 'not set'}</FactLine>
+        <FactLine label="URL filter">{status.webhookSecretSet ? 'set' : 'not set'}</FactLine>
+        <FactLine label="Refund keys">{status.maintenanceConfigured ? 'set' : 'not set'}</FactLine>
+      </FactList>
 
-      <p className="mt-1.5 text-sm text-muted-foreground break-words">{status.reason}</p>
+      <p className="px-3 text-[12.5px] text-muted-foreground break-words">{status.reason}</p>
 
       {status.missingVars.length > 0 && (
-        <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+        <p className="flex flex-wrap items-center gap-1.5 px-3 text-xs">
           <span className="text-muted-foreground">unset:</span>
           {status.missingVars.map((name) => (
-            <code key={name} className="rounded bg-muted/60 px-1.5 py-0.5 font-mono">
-              {name}
-            </code>
+            <CodeTag key={name}>{name}</CodeTag>
           ))}
         </p>
       )}
-
-      {/* Presence, never contents. */}
-      <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-        <Chip>{status.backendReturnUrlSet ? 'callback URL set' : 'no callback URL'}</Chip>
-        <Chip>{status.webhookSecretSet ? 'URL filter set' : 'no URL filter'}</Chip>
-        <Chip>{status.maintenanceConfigured ? 'refund keys set' : 'no refund keys'}</Chip>
-      </p>
     </div>
   );
 }
@@ -290,11 +318,11 @@ function AttemptRow({
   onPress: (attempt: PendingAttempt, control: (typeof CONTROLS)[number]) => Promise<void>;
 }) {
   return (
-    <div className="rounded-xl border p-4">
+    <div className="rounded-[14px] border border-card-border p-4">
       <div className="flex flex-wrap items-center gap-2">
         <code className="font-mono text-sm font-semibold">{attempt.invoiceNo}</code>
-        <Chip>{baht(attempt.amountSatang)}</Chip>
-        <Chip>{attempt.status}</Chip>
+        <Tag>{baht(attempt.amountSatang)}</Tag>
+        <Tag>{attempt.status}</Tag>
         <span className="ml-auto text-xs text-muted-foreground" title={formatWhen(attempt.createdAt, timezone)}>
           shown {timeAgo(attempt.createdAt)}
         </span>
@@ -315,7 +343,7 @@ function AttemptRow({
          * before the last restart cannot be driven from here. The attempt is
          * still real, still pending, and still closes by the ordinary paths.
          */
-        <p className="mt-3 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+        <p className="mt-3 rounded-[12px] border border-dashed border-foreground/20 px-3 py-2 text-xs text-muted-foreground">
           The API has restarted since this QR was taken, so the simulator no longer remembers it.
           Take a new QR on the till to rehearse against.
         </p>
@@ -329,7 +357,7 @@ function AttemptRow({
                 key={control.event}
                 variant="outline"
                 size="sm"
-                className="h-9 gap-2"
+                className="h-9 gap-2 rounded-full bg-card px-3.5"
                 title={control.detail}
                 disabled={busy !== null}
                 onClick={() => void onPress(attempt, control)}

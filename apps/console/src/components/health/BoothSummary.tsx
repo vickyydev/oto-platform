@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import type { AlertRow, BoothHealth, HealthBox } from '@/api/observability';
-import { Panel } from '@/components/Panel';
-import { StatusMark, StatusPill, toneForHealth, type Tone } from '@/components/Status';
+import { FerrisWheel } from 'lucide-react';
+import { StatusMark, toneForHealth, type Tone } from '@/components/Status';
+import { StatusChip } from '@/components/redesign/chips';
+import { CardShell } from '@/components/redesign/layout';
 import { toneForPaper, toneForReachability } from '@/lib/fleetWords';
 import { formatWhen, timeAgo } from '@/lib/time';
 
@@ -51,9 +53,11 @@ export function BoothSummary({
   if (withBooths.length === 0) return null;
 
   return (
-    <Panel
+    <CardShell
+      span={12}
+      icon={FerrisWheel}
       title="Booths"
-      description="The Lucky Wheel at each branch: the wheel it is running, who is signed in, and what it is still holding."
+      note="the Lucky Wheel at each branch: the wheel it is running, who is signed in, and what it is still holding"
     >
       <div className="flex flex-col gap-3">
         {withBooths.flatMap((box) =>
@@ -68,7 +72,7 @@ export function BoothSummary({
           )),
         )}
       </div>
-    </Panel>
+    </CardShell>
   );
 }
 
@@ -122,7 +126,7 @@ function BoothCard({
   const waiting = reported?.vouchersPending ?? box.outboxDepth ?? null;
 
   return (
-    <article className="rounded-xl border bg-background/40 p-3.5">
+    <article className="rounded-[14px] bg-foreground/[0.025] px-4 py-3.5">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <StatusMark tone={toneForHealth(box.state)} />
         <span className="font-semibold min-w-0 break-words">{name}</span>
@@ -141,12 +145,15 @@ function BoothCard({
         booth does anything at all: a booth that has never synced a wheel shows
         a television asking for the internet and a button that does nothing.
       */}
-      <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="mt-3 grid gap-3 @md:grid-cols-2 @3xl:grid-cols-4">
         <Reading label="Wheel">
           {reported === null ? (
             <Muted>not reported</Muted>
           ) : reported.configVersion === null ? (
-            <span style={{ color: 'hsl(var(--status-down))' }}>never synced a wheel</span>
+            <span className="inline-flex items-center gap-1.5 text-status-down">
+              <StatusMark tone="down" className="w-2.5 h-2.5" />
+              never synced a wheel
+            </span>
           ) : (
             <>version {reported.configVersion}</>
           )}
@@ -167,12 +174,12 @@ function BoothCard({
             <Muted>not reported</Muted>
           ) : (
             <span className="flex flex-wrap items-center gap-1.5">
-              <StatusPill tone={toneForReachability(reported.printerReachable)}>
+              <StatusChip tone={toneForReachability(reported.printerReachable)}>
                 {reported.printerReachable}
-              </StatusPill>
-              <StatusPill tone={toneForPaper(reported.paperStatus)}>
+              </StatusChip>
+              <StatusChip tone={toneForPaper(reported.paperStatus)}>
                 paper {reported.paperStatus}
-              </StatusPill>
+              </StatusChip>
             </span>
           )}
         </Reading>
@@ -209,7 +216,8 @@ function BoothCard({
           ) : booth.unattributedToday === 0 ? (
             'none — every voucher has a name against it'
           ) : (
-            <span style={{ color: 'hsl(var(--status-warn))' }}>
+            <span className="inline-flex items-center gap-1.5 text-status-warn">
+              <StatusMark tone="warn" className="w-2.5 h-2.5" />
               {booth.unattributedToday} voucher(s) with nobody signed in
             </span>
           )}
@@ -227,7 +235,7 @@ function BoothCard({
       </dl>
 
       {open.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-1 border-t pt-3">
+        <ul className="mt-3 flex flex-col gap-1 border-t border-card-border pt-3">
           {open.map((a) => (
             <li key={a.id} className="flex items-start gap-2 text-sm">
               <StatusMark tone={severityTone(a.severity)} className="w-2.5 h-2.5 mt-1.5" />

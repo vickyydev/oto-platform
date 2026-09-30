@@ -30,8 +30,12 @@ export interface ConsoleNavGroup {
 }
 
 /**
- * Console v1. One group today; Booths joined it in S2-07b, which is why the
- * shape is a group of sections rather than a flat list.
+ * The console's navigation, in the four groups of the approved design
+ * (SCRUM-474, Shell.dc.html): what is wrong (Watch), what stands at the park
+ * (The park), what is sold (Selling) and what the platform leans on
+ * (Connections). The groups are labels only — every entry keeps its own route,
+ * icon and permission, and the sidebar drops an entry the account cannot open
+ * and a group whose every entry it drops.
  *
  * The Sprint 1 back-office panels — catalogue, tax, members, accounts — stay in
  * the POS at /admin this sprint and are linked from the foot of the nav rather
@@ -39,8 +43,8 @@ export interface ConsoleNavGroup {
  */
 export const consoleNav: ConsoleNavGroup[] = [
   {
-    id: 'operations',
-    label: 'Operations',
+    id: 'watch',
+    label: 'Watch',
     sections: [
       {
         id: 'health',
@@ -62,6 +66,24 @@ export const consoleNav: ConsoleNavGroup[] = [
         icon: Activity,
         description: 'The audit log: who did what, to what, from where, and whether it went through.',
         permission: 'admin:audit:read',
+      },
+    ],
+  },
+  {
+    id: 'park',
+    label: 'The park',
+    sections: [
+      {
+        id: 'booths',
+        label: 'Booths',
+        icon: FerrisWheel,
+        description:
+          'The Lucky Wheel at each booth: its prizes, their odds and what they cost, and the version each booth is running.',
+        // Reading the wheel is the page; changing it needs `admin:booth:manage`
+        // and publishing it `admin:booth:publish`, both checked on the panels
+        // themselves — so somebody who may look at the odds gets the page
+        // rather than a locked door.
+        permission: 'admin:booth:read',
       },
       {
         id: 'devices',
@@ -86,6 +108,12 @@ export const consoleNav: ConsoleNavGroup[] = [
         // may see their own park gets the page rather than a locked door.
         permission: 'admin:branch:read',
       },
+    ],
+  },
+  {
+    id: 'selling',
+    label: 'Selling',
+    sections: [
       {
         id: 'bookings',
         label: 'Bookings',
@@ -95,18 +123,6 @@ export const consoleNav: ConsoleNavGroup[] = [
         // The counter's own read, at the park's own scope: the list names the
         // same families the redeem screen does (S2-12).
         permission: 'pos:booking:read',
-      },
-      {
-        id: 'booths',
-        label: 'Booths',
-        icon: FerrisWheel,
-        description:
-          'The Lucky Wheel at each booth: its prizes, their odds and what they cost, and the version each booth is running.',
-        // Reading the wheel is the page; changing it needs `admin:booth:manage`
-        // and publishing it `admin:booth:publish`, both checked on the panels
-        // themselves — so somebody who may look at the odds gets the page
-        // rather than a locked door.
-        permission: 'admin:booth:read',
       },
       {
         id: 'vouchers',
@@ -121,11 +137,18 @@ export const consoleNav: ConsoleNavGroup[] = [
         icon: Ticket,
         description:
           'What each Lucky Wheel prize is worth at the park and the words its slip prints — set up here before a booth gives one away.',
-        // Directly under Booths, whose prize editor picks from this list. The
-        // same split as there: reading is the page, and changing a type needs
-        // `admin:booth:manage`, checked on the buttons (SCRUM-400).
+        // Beside Vouchers under Selling (SCRUM-474); the Booths prize editor
+        // picks from this list. The same split as there: reading is the page,
+        // and changing a type needs `admin:booth:manage`, checked on the buttons
+        // (SCRUM-400).
         permission: 'admin:booth:read',
       },
+    ],
+  },
+  {
+    id: 'connections',
+    label: 'Connections',
+    sections: [
       {
         id: 'integrations',
         label: 'Integrations',

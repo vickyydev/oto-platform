@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { BellRing, CalendarClock, FlaskConical, Loader2, RefreshCw, Server } from 'lucide-react';
 import {
   healthApi,
   testControlsApi,
@@ -13,15 +13,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { BoothSummary } from '@/components/health/BoothSummary';
 import { FleetSummary } from '@/components/devices/FleetSummary';
-import { EmptyState, ErrorNote, Panel, RouteUnavailable } from '@/components/Panel';
+import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
 import {
   StatusMark,
-  StatusPill,
   toneForHealth,
   toneForOutcome,
   toneForSeverity,
   type Tone,
 } from '@/components/Status';
+import { CommandBar } from '@/components/redesign/CommandBar';
+import { BarChip, StatusChip } from '@/components/redesign/chips';
+import { CardShell, PageGrid, StripedList } from '@/components/redesign/layout';
+import { EmptyNote, UnreadNote } from '@/components/redesign/StatTile';
 import { useSession } from '@/auth/SessionContext';
 import { boxStoreAlertNote } from '@/lib/fleetWords';
 import { usePlatformStatus } from '@/lib/platformStatus';
@@ -32,11 +35,12 @@ import { elapsed, formatWhen, millis, timeAgo } from '@/lib/time';
  * Health answers one question — is anything wrong right now — and it answers it
  * in the first screenful.
  *
- * So the page opens with a verdict and, when the verdict is bad, the names of
- * the things that are bad. The tiles, the job list and the alerts underneath
+ * So the command bar carries the verdict, and the Alerts card beside the
+ * services names the things that are wrong when there are any — or says, in
+ * one line, that nothing needs anybody. The services, the boxes and the jobs
  * are where someone goes AFTER they know there is something to look at. A table
  * of green rows is not an answer; it is a reading exercise handed to somebody
- * who is already in a hurry.
+ * who is already in a hurry. (Laid out on the approved design, SCRUM-474.)
  */
 export function Health() {
   const { me, has } = useSession();
@@ -48,7 +52,7 @@ export function Health() {
   /**
    * SCRUM-301 — whose page this is.
    *
-   * The banner, the dependency tiles and the job register are the DEPLOYMENT's
+   * The verdict, the services and the job register are the DEPLOYMENT's
    * state. A park manager cannot act on any of them — acknowledging an alert
    * or retrying a run asks for `admin:ops:manage` at the row's own branch, and
    * a platform row has no branch — so her page used to open on "2 things need
@@ -58,8 +62,9 @@ export function Health() {
    */
   const reach = readReach(snapshot);
   const estateWide = isEstateWide(reach);
+  const parkLabel = reachLabel(reach);
 
-  // The API tile comes from /ready either way: "is it answering, and how fast"
+  // The API row comes from /ready either way: "is it answering, and how fast"
   // is the one reading this page should never lose, and the richer snapshot
   // reports on dependencies rather than on the round trip to itself.
   const checks = [...apiCheck(ready), ...(snapshot?.checks ?? checksFromReady(ready).slice(1))];
@@ -67,259 +72,199 @@ export function Health() {
   const alerts = (snapshot?.alerts ?? []).filter((a) => !a.resolvedAt);
   const problems = listProblems(ready, checks, jobs, alerts);
   const verdict = overallTone(ready, checks, jobs, alerts, problems);
+  // The same sentences without the alert ones: the Alerts card lists the
+  // alerts themselves underneath, each with its own button.
+  const systemProblems = estateWide ? listProblems(ready, checks, jobs, []) : [];
+  /**
+   * Whether "no open alerts" is something /ops/health actually said. Not before
+   * its first answer (the snapshot is still null) and not while the last read
+   * failed (what is held is older than the error above it): an all-clear drawn
+   * from either would be the page's guess, dressed in the green tick.
+   */
+  const alertsRead = snapshot !== null && !error;
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
+      <CommandBar
+        sectionId="health"
+        place={me?.branch?.name}
+        actions={
+          <>
+            {estateWide && (
+              <BarChip tone={verdict}>{headline(verdict, problems.length, snapshotMissing)}</BarChip>
+            )}
+            <BarChip>
+              {lastCheckedAt ? `checked ${timeAgo(new Date(lastCheckedAt).toISOString())}` : 'checking…'}
+            </BarChip>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 rounded-full px-4"
+              onClick={() => void refresh()}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Refresh
+            </Button>
+          </>
+        }
+      />
+
       {error && <ErrorNote message={error} onRetry={() => void refresh()} />}
+      {/* A park manager's page says which park it is reporting on. */}
+      {!estateWide && parkLabel && <p className="text-sm text-muted-foreground">{parkLabel}</p>}
 
-      {estateWide ? (
-        <Verdict
-          tone={verdict}
-          problems={problems}
-          partial={snapshotMissing}
-          checkedAt={lastCheckedAt}
-          loading={loading}
-          onRefresh={() => void refresh()}
-        />
-      ) : (
-        // The park's own heading: which park, when it was last read, and the
-        // refresh button — which lives inside the verdict above and would
-        // otherwise have gone with it.
-        <ParkHeading
-          label={reachLabel(reach)}
-          checkedAt={lastCheckedAt}
-          loading={loading}
-          onRefresh={() => void refresh()}
-        />
-      )}
+      <PageGrid>
+        {estateWide && (
+          <CardShell
+            span={7}
+            icon={Server}
+            title="Services"
+            note={
+              snapshotMissing
+                ? 'from /ready, which every deployment answers'
+                : 'what each dependency reported on the last check'
+            }
+          >
+            {checks.length === 0 ? (
+              <EmptyNote
+                title="No checks reported"
+                detail="The API answered without naming any dependency."
+              />
+            ) : (
+              <StripedList label="Services">
+                {checks.map((check) => (
+                  <CheckRow key={check.key} check={check} />
+                ))}
+              </StripedList>
+            )}
+            {snapshotMissing && (
+              <p className="px-3 text-xs text-muted-foreground">
+                Only /ready is reporting on this deployment, so this is not yet a verdict on the jobs,
+                the alerts or anything else. The fuller set of checks arrives with the observability
+                API.
+              </p>
+            )}
+          </CardShell>
+        )}
 
-      {estateWide && (
-        <Panel
-          title="Services"
-          description={
-            snapshotMissing
-              ? 'From /ready, which every deployment answers. The fuller set of checks arrives with the observability API.'
-              : 'What each dependency reported on the last check.'
-          }
+        {!estateWide && <FleetSummary timezone={timezone} span={7} />}
+
+        <CardShell
+          span={5}
+          icon={BellRing}
+          title="Alerts"
+          note={alerts.length > 0 ? 'raised by the watchdog, open until someone takes them' : undefined}
         >
-          {checks.length === 0 ? (
-            <EmptyState title="No checks reported" detail="The API answered without naming any dependency." />
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {checks.map((check) => (
-                <CheckTile key={check.key} check={check} />
-              ))}
-            </div>
-          )}
-        </Panel>
-      )}
-
-      <FleetSummary timezone={timezone} />
-
-      {/*
-        Under the boxes, because a booth IS one of them and the panel above is
-        where a reader has just seen it go quiet. This adds the half of a booth
-        that a box-shaped row cannot carry: the wheel it is running, whether
-        anybody is signed in, and the two conditions that belong to the booth
-        rather than to the machine under it. It renders nothing at all where no
-        box drives a booth.
-      */}
-      <BoothSummary boxes={snapshot?.boxes} alerts={alerts} timezone={timezone} />
-
-      {estateWide && (
-        <Panel
-          title="Scheduled jobs"
-          description="Each job the platform expects to run, and how long it has been since it last did."
-        >
-          {snapshotMissing ? (
-            <RouteUnavailable
-              what="The job register"
-              detail="Jobs appear here once the runner and its expectations are deployed to this environment."
-            />
-          ) : jobs.length === 0 ? (
-            <EmptyState
-              title="No jobs registered"
-              detail="Nothing has declared an expectation yet, so there is nothing to be late."
-            />
-          ) : (
-            <ul className="flex flex-col divide-y">
-              {jobs.map((job) => (
-                <JobRow key={job.name} job={job} timezone={timezone} />
+          {systemProblems.length > 0 && (
+            <ul className="flex flex-col gap-1.5" aria-label="What needs attention">
+              {systemProblems.map((p) => (
+                <li key={p} className="flex items-start gap-2 text-[13px]">
+                  <StatusMark tone={verdict} className="mt-1 w-3 h-3" />
+                  <span className="min-w-0 break-words">{p}</span>
+                </li>
               ))}
             </ul>
           )}
-        </Panel>
-      )}
+          {snapshotMissing ? (
+            <RouteUnavailable what="Alerting" />
+          ) : alerts.length > 0 ? (
+            <StripedList label="Open alerts">
+              {alerts.map((alert) => (
+                <AlertItem
+                  key={alert.id}
+                  alert={alert}
+                  timezone={timezone}
+                  canManage={canManage}
+                  onAcknowledged={() => void refresh()}
+                />
+              ))}
+            </StripedList>
+          ) : error ? (
+            // The error note above carries the reason and the Try again.
+            <UnreadNote what="The alert list" />
+          ) : !alertsRead ? (
+            <Loading what="alerts" />
+          ) : systemProblems.length === 0 ? (
+            <EmptyNote
+              good
+              title="Nothing needs you right now"
+              detail="When something does, it lands here with what is wrong, since when, and the button that takes it."
+            />
+          ) : null}
+        </CardShell>
 
-      <Panel
-        title="Open alerts"
-        description="Raised by the watchdog and kept open until someone takes them."
-      >
-        {snapshotMissing ? (
-          <RouteUnavailable what="Alerting" />
-        ) : alerts.length === 0 ? (
-          <EmptyState title="No open alerts" detail="Nothing has been raised that is still outstanding." />
-        ) : (
-          <ul className="flex flex-col divide-y">
-            {alerts.map((alert) => (
-              <AlertItem
-                key={alert.id}
-                alert={alert}
-                timezone={timezone}
-                canManage={canManage}
-                onAcknowledged={() => void refresh()}
+        {estateWide && <FleetSummary timezone={timezone} span={7} />}
+
+        {estateWide && (
+          <CardShell
+            span={5}
+            icon={CalendarClock}
+            title="Scheduled jobs"
+            note="how long since each last ran"
+          >
+            {snapshotMissing ? (
+              <RouteUnavailable
+                what="The job register"
+                detail="Jobs appear here once the runner and its expectations are deployed to this environment."
               />
-            ))}
-          </ul>
+            ) : jobs.length === 0 ? (
+              <EmptyNote
+                title="No jobs registered"
+                detail="Nothing has declared an expectation yet, so there is nothing to be late."
+              />
+            ) : (
+              <StripedList label="Scheduled jobs">
+                {jobs.map((job) => (
+                  <JobRow key={job.name} job={job} timezone={timezone} />
+                ))}
+              </StripedList>
+            )}
+          </CardShell>
         )}
-      </Panel>
 
-      <TestControls canManage={canManage} onRan={() => void refresh()} />
-    </div>
+        {/*
+          Under the boxes, because a booth IS one of them and the card above is
+          where a reader has just seen it go quiet. This adds the half of a booth
+          that a box-shaped row cannot carry: the wheel it is running, whether
+          anybody is signed in, and the two conditions that belong to the booth
+          rather than to the machine under it. It renders nothing at all where no
+          box drives a booth.
+        */}
+        <BoothSummary boxes={snapshot?.boxes} alerts={alerts} timezone={timezone} />
+
+        <TestControls canManage={canManage} onRan={() => void refresh()} />
+      </PageGrid>
+    </>
   );
 }
 
 // ---------------------------------------------------------------------------
 
-function Verdict({
-  tone,
-  problems,
-  partial,
-  checkedAt,
-  loading,
-  onRefresh,
-}: {
-  tone: Tone;
-  problems: string[];
-  /** Only /ready is reporting: say what is known, not "everything is fine". */
-  partial: boolean;
-  checkedAt: number | null;
-  loading: boolean;
-  onRefresh: () => void;
-}) {
-  const headline =
-    tone === 'idle'
-      ? 'Nothing is reporting yet'
-      : tone === 'ok'
-        ? partial
-          ? 'The API is answering'
-          : 'Everything is healthy'
-        : problems.length === 1
-          ? 'One thing needs attention'
-          : `${problems.length} things need attention`;
-
-  return (
-    <section
-      className="rounded-2xl border p-5 sm:p-6"
-      style={{
-        borderColor: `hsl(var(--status-${tone}) / 0.4)`,
-        backgroundColor: `hsl(var(--status-${tone}) / 0.08)`,
-      }}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-4 min-w-0">
-          <span
-            className="flex h-12 w-12 items-center justify-center rounded-2xl shrink-0"
-            style={{ backgroundColor: `hsl(var(--status-${tone}) / 0.15)` }}
-          >
-            {tone === 'ok' ? (
-              <CheckCircle2 className="w-6 h-6" style={{ color: `hsl(var(--status-ok))` }} />
-            ) : (
-              <StatusMark tone={tone} className="w-6 h-6" />
-            )}
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-2xl font-black tracking-tight" style={{ color: `hsl(var(--status-${tone}))` }}>
-              {headline}
-            </h2>
-            {problems.length > 0 ? (
-              <ul className="mt-2 flex flex-col gap-1">
-                {problems.map((p) => (
-                  <li key={p} className="flex items-start gap-2 text-sm text-foreground/80">
-                    <StatusMark tone={tone} className="w-2.5 h-2.5 mt-1.5" />
-                    <span className="min-w-0">{p}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-1 text-sm text-foreground/60">
-                {partial
-                  ? 'Only /ready is reporting on this deployment, so this is not yet a verdict on the jobs, the alerts or anything else.'
-                  : 'The API is answering, and nothing it reports is outside its thresholds.'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {checkedAt ? `checked ${timeAgo(new Date(checkedAt).toISOString())}` : 'checking…'}
-          </span>
-          <Button variant="outline" size="sm" className="h-9 gap-2" onClick={onRefresh} disabled={loading}>
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Refresh
-          </Button>
-        </div>
-      </div>
-    </section>
-  );
+/** The verdict in the words the command bar's chip carries. */
+function headline(tone: Tone, problemCount: number, partial: boolean): string {
+  if (tone === 'idle') return 'Nothing is reporting yet';
+  if (tone === 'ok') return partial ? 'The API is answering' : 'Everything is healthy';
+  return problemCount === 1 ? 'One thing needs attention' : `${problemCount} things need attention`;
 }
 
-/**
- * What a park manager's Health page opens on instead of the platform verdict:
- * which park is being reported on, when it was last read, and the refresh.
- *
- * Deliberately not a verdict of its own. "Everything is healthy" from a page
- * that has been told nothing about the database or the job runner would be a
- * claim this page cannot make; the boxes and alerts below say what is known.
- */
-function ParkHeading({
-  label,
-  checkedAt,
-  loading,
-  onRefresh,
-}: {
-  label: string | null;
-  checkedAt: number | null;
-  loading: boolean;
-  onRefresh: () => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <p className="text-sm text-muted-foreground min-w-0">{label ?? ''}</p>
-      <div className="flex items-center gap-3 shrink-0">
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {checkedAt ? `checked ${timeAgo(new Date(checkedAt).toISOString())}` : 'checking…'}
-        </span>
-        <Button variant="outline" size="sm" className="h-9 gap-2" onClick={onRefresh} disabled={loading}>
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          Refresh
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function CheckTile({ check }: { check: HealthCheck }) {
+function CheckRow({ check }: { check: HealthCheck }) {
   const tone = toneForHealth(check.status);
+  const reading =
+    check.value === null || check.value === undefined
+      ? statusWord(check.status)
+      : `${check.value}${check.unit ? ` ${check.unit}` : ''}`;
   return (
-    <div className="rounded-xl border bg-background/40 p-3.5">
-      <div className="flex items-center gap-2">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-0.5 px-3 py-2.5 text-[13.5px] @lg:grid-cols-[minmax(0,1fr)_120px_minmax(0,180px)]">
+      <span className="flex min-w-0 items-center gap-2.5">
         <StatusMark tone={tone} />
-        <span className="text-sm font-semibold truncate">{check.label ?? prettify(check.key)}</span>
-      </div>
-      <p className="mt-2 text-xl font-black tracking-tight tabular-nums">
-        {check.value === null || check.value === undefined ? (
-          <span className="text-base font-bold text-muted-foreground">{statusWord(check.status)}</span>
-        ) : (
-          <>
-            {check.value}
-            {check.unit && <span className="ml-1 text-sm font-semibold text-muted-foreground">{check.unit}</span>}
-          </>
-        )}
-      </p>
-      {check.detail && <p className="mt-1 text-xs text-muted-foreground break-words">{check.detail}</p>}
-    </div>
+        <span className="truncate font-semibold">{check.label ?? prettify(check.key)}</span>
+      </span>
+      <span className="font-mono text-xs text-muted-foreground tabular-nums">{reading}</span>
+      <span className="col-span-2 text-[12.5px] text-muted-foreground break-words @lg:col-span-1 @lg:text-right">
+        {check.detail ?? ''}
+      </span>
+    </li>
   );
 }
 
@@ -328,23 +273,23 @@ function JobRow({ job, timezone }: { job: JobStatus; timezone?: string | null })
   const late =
     job.expectedEverySeconds && job.ageSeconds && job.ageSeconds > job.expectedEverySeconds * 2;
   return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-3 first:pt-0 last:pb-0">
-      <StatusMark tone={tone} />
-      <span className="font-mono text-sm font-semibold min-w-0 break-all">{job.name}</span>
-      {job.lastOutcome && <StatusPill tone={toneForOutcome(job.lastOutcome)}>{job.lastOutcome}</StatusPill>}
-      <span className="text-sm text-muted-foreground">
+    <li className="px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <StatusMark tone={tone} />
+        <span className="min-w-0 font-mono text-[12.5px] font-semibold break-all">{job.name}</span>
+        {job.lastOutcome && (
+          <StatusChip tone={toneForOutcome(job.lastOutcome)}>{job.lastOutcome}</StatusChip>
+        )}
+        <span className="ml-auto text-[12.5px] text-muted-foreground tabular-nums">
+          {job.ageSeconds !== null && job.ageSeconds !== undefined ? elapsed(job.ageSeconds) : '—'}
+          {job.expectedEverySeconds ? ` / every ${elapsed(job.expectedEverySeconds)}` : ''}
+          {late ? ' · late' : ''}
+        </span>
+      </div>
+      <p className="mt-0.5 text-xs text-muted-foreground">
         {job.lastRunAt ? `last ran ${formatWhen(job.lastRunAt, timezone)}` : 'never run'}
-      </span>
-      <span className="text-sm text-muted-foreground ml-auto tabular-nums">
-        {job.ageSeconds !== null && job.ageSeconds !== undefined ? elapsed(job.ageSeconds) : '—'}
-        {job.expectedEverySeconds ? ` / every ${elapsed(job.expectedEverySeconds)}` : ''}
-        {late ? ' · late' : ''}
-      </span>
-      {job.lastError && (
-        <p className="w-full text-xs break-words" style={{ color: 'hsl(var(--status-down))' }}>
-          {job.lastError}
-        </p>
-      )}
+      </p>
+      {job.lastError && <p className="mt-0.5 text-xs text-status-down break-words">{job.lastError}</p>}
     </li>
   );
 }
@@ -384,32 +329,38 @@ function AlertItem({
   };
 
   return (
-    <li className="py-3 first:pt-0 last:pb-0">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusPill tone={toneForSeverity(alert.severity)}>{alert.severity}</StatusPill>
-        <span className="font-semibold min-w-0 break-words">{alert.title}</span>
+    <li className="px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+        <StatusChip tone={toneForSeverity(alert.severity)}>{alert.severity}</StatusChip>
+        <span className="min-w-0 text-[13.5px] font-semibold break-words">{alert.title}</span>
         {alert.count && alert.count > 1 && (
-          <span className="text-xs text-muted-foreground tabular-nums">×{alert.count}</span>
+          <span className="text-xs font-bold text-muted-foreground tabular-nums">×{alert.count}</span>
         )}
-        <span className="text-sm text-muted-foreground">
-          open since {formatWhen(alert.openedAt, timezone)}
-        </span>
-        <div className="ml-auto shrink-0">
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px] text-muted-foreground">
+        <span>open since {formatWhen(alert.openedAt, timezone)}</span>
+        <span className="ml-auto shrink-0">
           {alert.acknowledgedAt ? (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs">
               taken {timeAgo(alert.acknowledgedAt)}
               {alert.acknowledgedBy ? ` by ${alert.acknowledgedBy}` : ''}
             </span>
           ) : canManage ? (
-            <Button variant="outline" size="sm" onClick={() => void acknowledge()} disabled={busy}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full border-primary text-primary-ink"
+              onClick={() => void acknowledge()}
+              disabled={busy}
+            >
               {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
               Acknowledge
             </Button>
           ) : null}
-        </div>
+        </span>
       </div>
-      {alert.detail && <p className="mt-1 text-sm text-muted-foreground break-words">{alert.detail}</p>}
-      {note && <p className="mt-1 text-sm text-muted-foreground break-words">{note}</p>}
+      {alert.detail && <p className="mt-1 text-[12.5px] text-muted-foreground break-words">{alert.detail}</p>}
+      {note && <p className="mt-1 text-[12.5px] text-muted-foreground break-words">{note}</p>}
       {failed && <p className="mt-1 text-sm text-destructive">{failed}</p>}
     </li>
   );
@@ -460,9 +411,11 @@ function TestControls({ canManage, onRan }: { canManage: boolean; onRan: () => v
   };
 
   return (
-    <Panel
+    <CardShell
+      span={12}
+      icon={FlaskConical}
       title="Test controls"
-      description="This deployment is a playground. These make something fail on purpose, so the alerting can be watched doing its job."
+      note="This deployment is a playground. These make something fail on purpose, so the alerting can be watched doing its job."
     >
       <div className="flex flex-wrap gap-2">
         {controls.map((control) => (
@@ -470,6 +423,7 @@ function TestControls({ canManage, onRan }: { canManage: boolean; onRan: () => v
             key={control.key}
             variant="outline"
             size="sm"
+            className="rounded-full"
             title={control.description ?? undefined}
             disabled={busyKey !== null}
             onClick={() => void run(control)}
@@ -479,10 +433,11 @@ function TestControls({ canManage, onRan }: { canManage: boolean; onRan: () => v
           </Button>
         ))}
       </div>
-      {note && <p className="mt-3 text-sm text-muted-foreground">{note}</p>}
-    </Panel>
+      {note && <p className="text-sm text-muted-foreground">{note}</p>}
+    </CardShell>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 
