@@ -1,9 +1,16 @@
 import type { Booking, CartLine, SelectedAddOn } from '@/types';
 import { getTicketTypes } from '@/store/catalogStore';
 import { SOCKS_ADDON_ID, SOCKS_LABEL, toBaht } from '@/lib/cartWire';
-import { parseBookingQr } from '@oto/shared';
+import {
+  BRIDGE_BOOKING_INTENTS,
+  parseBookingQr,
+  type BridgeBookingRedeemAnswer,
+  type BridgeBookingView,
+} from '@oto/shared';
 import type { StationScanEvent } from '@/lib/scanChannel';
+import { viaLane } from '@/lib/lane';
 import { api, ApiError, idemKey } from './client';
+import { bridgeApi, bridgeStaffName } from './bridge';
 import type { ApiSalePrintJob } from './history';
 
 /**
@@ -111,6 +118,13 @@ export interface BookingRedeemResult {
   sale: { id: string; receiptNumber: string | null; totals: { grossSatang: number } };
   bands: RedeemedBand[];
   printing: { jobs: ApiSalePrintJob[]; notes: string[]; failed: { code: string; message: string } | null } | null;
+  /**
+   * S2-12 round 5 — set when the counter's BOX redeemed it, with the link
+   * down: the box already printed the paper from its own queue, so the till
+   * announces what it said rather than dispatching anything, and the
+   * confirmation shows the band codes for reading aloud.
+   */
+  box?: { notes: string[] } | null;
 }
 
 /** The route's own error code for a second redemption, carrying the first one. */
@@ -124,9 +138,52 @@ export const ALREADY_REDEEMED = 'BOOKING_ALREADY_REDEEMED';
  * summary with a reason nothing was issued.
  */
 export type RedeemOutcome =
-  | { ok: true }
+  | {
+      ok: true;
+      /**
+       * S2-12 round 5 — what the box issued when it redeemed the booking
+       * offline: the receipt number and the SHORT band codes with the children
+       * they name, which the dialog shows for reading aloud, as an offline
+       * sale's confirmation does. Absent online, where the dialog just closes.
+       */
+      issued?: { receiptNumber: string | null; bands: RedeemedBand[]; notes: string[] } | null;
+    }
   | { ok: false; redemption: PlatformRedemption }
   | { ok: false; message: string };
+
+/** The box's booking, in the platform's shape the modal reads (the box adds only `source`). */
+function platformOfBox(view: BridgeBookingView): PlatformBooking {
+  const { source: _source, ...booking } = view;
+  return booking;
+}
+
+/** What the box answered a redemption with, in the platform's redeem shape. */
+function redeemResultOfBox(answer: BridgeBookingRedeemAnswer): BookingRedeemResult {
+  return {
+    booking: platformOfBox(answer.booking),
+    sale: { id: answer.sale.id, receiptNumber: answer.sale.receiptNumber, totals: answer.sale.totals },
+    bands: answer.bands.map((band) => ({
+      id: band.id,
+      kind: band.kind,
+      shortCode: band.shortCode,
+      childName: band.childName,
+      printedJobId: null,
+    })),
+    // Printed by the box, from its own queue: nothing for the till to dispatch.
+    printing: null,
+    box: { notes: answer.printing.notes },
+  };
+}
+
+/** Ask this counter's box for a booking from its own copy (S2-12 round 5). */
+async function lookupOnBox(stationId: string, body: Record<string, unknown>): Promise<PlatformBooking> {
+  const answer = await bridgeApi.intent<{ booking: BridgeBookingView }>(
+    stationId,
+    BRIDGE_BOOKING_INTENTS.lookup,
+    body,
+  );
+  return platformOfBox(answer.result!.booking);
+}
 
 export const bookingsApi = {
   /**
@@ -138,11 +195,18 @@ export const bookingsApi = {
       `/bookings?branchId=${encodeURIComponent(branchId)}&status=paid&limit=${limit}`,
     ),
 
-  /** One booking by the reference printed on the customer's QR. 404 when there is none. */
+  /**
+   * One booking by the reference printed on the customer's QR. 404 when there
+   * is none. With the link down it comes from the counter's box (round 5).
+   */
   byReference: (reference: string, branchId?: string) =>
-    api.get<PlatformBooking>(
-      `/bookings/by-reference/${encodeURIComponent(reference)}` +
-        (branchId ? `?branchId=${encodeURIComponent(branchId)}` : ''),
+    viaLane(
+      () =>
+        api.get<PlatformBooking>(
+          `/bookings/by-reference/${encodeURIComponent(reference)}` +
+            (branchId ? `?branchId=${encodeURIComponent(branchId)}` : ''),
+        ),
+      (stationId) => lookupOnBox(stationId, { reference }),
     ),
 
   /**
@@ -163,12 +227,39 @@ export const bookingsApi = {
    */
   redeem: (
     bookingId: string,
-    body: { stationId?: string; visitId?: string },
+    body: { stationId?: string; visitId?: string; visitChildIds?: string[] },
     key: string,
   ) =>
-    api.post<BookingRedeemResult>(`/bookings/${encodeURIComponent(bookingId)}/redeem`, body, {
-      idempotencyKey: key,
-    }),
+    viaLane(
+      () =>
+        api.post<BookingRedeemResult>(
+          `/bookings/${encodeURIComponent(bookingId)}/redeem`,
+          { ...(body.stationId ? { stationId: body.stationId } : {}), ...(body.visitId ? { visitId: body.visitId } : {}) },
+          { idempotencyKey: key },
+        ),
+      /**
+       * S2-12 round 5 — the link is down: the counter's box redeems it from
+       * its own copy, the SAME three stages riding the bridge. The press's key
+       * is the box's replay key, so a retried Confirm is answered with the one
+       * sale; a second till on the box is told who redeemed it and when.
+       */
+      async (stationId) => {
+        const staffName = bridgeStaffName();
+        const answer = await bridgeApi.intent<BridgeBookingRedeemAnswer>(
+          stationId,
+          BRIDGE_BOOKING_INTENTS.redeem,
+          {
+            bookingId,
+            actionId: key.slice(0, 200),
+            ...(body.visitId ? { visitId: body.visitId } : {}),
+            ...(body.visitChildIds && body.visitChildIds.length > 0 ? { visitChildIds: body.visitChildIds } : {}),
+            ...(staffName ? { staffName } : {}),
+          },
+          { actionId: key },
+        );
+        return redeemResultOfBox(answer.result!);
+      },
+    ),
 
   newRedeemKey: idemKey,
 
@@ -177,7 +268,11 @@ export const bookingsApi = {
    * (S2-12 round 3). Only for a scan the box answered `handled`; a code this
    * device read itself goes through `byQr`. 404 when there is none.
    */
-  byId: (bookingId: string) => api.get<PlatformBooking>(`/bookings/${encodeURIComponent(bookingId)}`),
+  byId: (bookingId: string) =>
+    viaLane(
+      () => api.get<PlatformBooking>(`/bookings/${encodeURIComponent(bookingId)}`),
+      (stationId) => lookupOnBox(stationId, { bookingId }),
+    ),
 
   /**
    * One booking by the whole QR a scanner on THIS device read, or the typed
@@ -186,7 +281,10 @@ export const bookingsApi = {
    * `BOOKING_QR_SIGNATURE_INVALID` and nothing opens.
    */
   byQr: (code: string) =>
-    api.get<PlatformBooking>(`/bookings/by-qr?code=${encodeURIComponent(code)}`),
+    viaLane(
+      () => api.get<PlatformBooking>(`/bookings/by-qr?code=${encodeURIComponent(code)}`),
+      (stationId) => lookupOnBox(stationId, { qr: code }),
+    ),
 };
 
 /** The platform's refusal of a QR whose signature is not the park's. */

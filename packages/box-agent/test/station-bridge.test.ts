@@ -600,7 +600,9 @@ test('what the capability list refuses on the box lane says why; money with nowh
   await refused('payment.wallet', 'BOX_LANE_WALLET_REFUSED');
   await refused('payment.voucher', 'VOUCHER_NEEDS_INTERNET');
   await refused('payment.2c2p', 'BOX_LANE_2C2P_QR_REFUSED');
-  await refused('booking.redeem', 'BOX_LANE_BOOKING_REFUSED');
+  // S2-12 round 5: a booking is redeemed on the box lane from the box's own
+  // copy, and like closing a sale online it needs its permission.
+  await refused('booking.redeem', 'FORBIDDEN', 403);
   // A money intent this box does not know yet: the round-3 sentence, not `unknown_intent`.
   await refused('sale.split_bill', 'BOX_LANE_PAYMENT_UNAVAILABLE');
   // Closing a sale needs what closing one online needs.

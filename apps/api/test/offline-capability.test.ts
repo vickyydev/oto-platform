@@ -735,7 +735,16 @@ describe('what works offline works through the box (plan §4, Rounds 3 and 4)', 
     await refusedAs('payment.2c2p', {}, BOX_LANE_REFUSALS.qr2c2p.code);
     await refusedAs('payment.voucher', {}, BOX_LANE_REFUSALS.voucher.code);
     await refusedAs('payment.wallet', {}, BOX_LANE_REFUSALS.wallet.code);
-    await refusedAs('booking.redeem', {}, BOX_LANE_REFUSALS.booking.code);
+    // S2-12 round 5: a booking now rides the bridge, redeemed from the box's
+    // own copy; one the box holds no copy of is refused in the counter's words.
+    const unknownBooking = await call(
+      'POST',
+      bridge('intents'),
+      cookie,
+      intent('booking.redeem', { bookingId: newId(), actionId: 'redeem-unknown' }),
+    );
+    expect(unknownBooking.statusCode, JSON.stringify(unknownBooking.body)).toBe(404);
+    expect((unknownBooking.body.error as { code: string }).code).toBe('BOOKING_NOT_ON_BOX');
     await refusedAs('sale.refund', {}, BOX_LANE_REFUSALS.refund.code);
     await refusedAs('sale.void', {}, BOX_LANE_REFUSALS.refund.code);
     // A voucher riding a cart is refused before anything is numbered.

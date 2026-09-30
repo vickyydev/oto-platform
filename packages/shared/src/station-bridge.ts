@@ -354,7 +354,8 @@ export const BOX_LANE_UNREACHABLE = {
  *   - 2C2P QR — minting is a server call;
  *   - gift or prize voucher — single use across counters is server-validated;
  *   - wallet spend — refused until the wallet ticket adds the capped row (OD-14);
- *   - online booking redemption — S2-12 builds it on this bridge;
+ *   - online booking redemption — kept for a box too old to redeem one; since
+ *     S2-12 round 5 a box redeems from its own copy (`BRIDGE_BOOKING_INTENTS`);
  *   - refund, void — online only, with `pos:refund:approve`; a "refund
  *     requested" note queues on the till.
  *
@@ -736,6 +737,154 @@ export interface BridgeSaleAnswer {
    * where the platform's sale read cannot be reached.
    */
   bands?: BridgeSaleBand[];
+}
+
+// --- Redeeming an online booking on the box lane (S2-12 round 5) --------------------------
+//
+// A family who booked and paid online arrives while the counter's box has no
+// internet. The box holds the park key (it checks the booking QR itself), the
+// bookings for today ±1 with their redemptions (the `bookings` cache scope),
+// and the sale path that numbers, bands and prints offline (`SaleQueue`). So
+// the same three stages the till runs online — find the booking, read its
+// summary, Confirm & Issue — ride the bridge:
+//
+//   - `booking.lookup` answers the booking from the box's copy, in the
+//     platform's own `GET /bookings/:id` shape, with the box's own local
+//     redemption laid over it;
+//   - `booking.redeem` claims it in the box's redemption log (one row per
+//     booking per box, written BEFORE anything is sold), commits the sale from
+//     the booking's paid lines with the paid-online tender through the box's
+//     own sale path, and queues ONE `booking.redeemed` fact.
+//
+// SINGLE USE ACROSS TWO BOXES IS NOT MADE SAFE OFFLINE (OD-A9). Tills on one box
+// share its log, so a second till is told who redeemed it and when. A second
+// BOX redeeming the same booking is caught at sync: its event is quarantined
+// with an alert naming both redemptions and is never applied blind.
+
+export const BRIDGE_BOOKING_INTENTS = {
+  lookup: 'booking.lookup',
+  redeem: 'booking.redeem',
+} as const;
+
+/** The fact a box queues for a booking it redeemed (the sync handler's own name). */
+export const BOOKING_REDEEMED_FACT = 'booking.redeemed';
+
+/** `booking.lookup`: by the id a scan vouched for, the reference typed, or a QR read on this device. */
+export const BridgeBookingLookupSchema = z
+  .object({
+    bookingId: Uuid.optional(),
+    reference: z.string().trim().min(3).max(40).optional(),
+    qr: z.string().trim().min(8).max(400).optional(),
+  })
+  .refine((body) => !!(body.bookingId || body.reference || body.qr), {
+    message: 'Name the booking by its QR, its id or its reference',
+  });
+export type BridgeBookingLookup = z.infer<typeof BridgeBookingLookupSchema>;
+
+/**
+ * `booking.redeem` — Confirm & Issue on the box lane. `actionId` is the press:
+ * the same press again is answered from the box's log with the sale it made.
+ */
+export const BridgeBookingRedeemSchema = z.object({
+  bookingId: Uuid,
+  actionId: z.string().min(1).max(200),
+  /** The visit reception confirmed, whose children the kids' bands name. */
+  visitId: Uuid.nullish(),
+  /** The children staff confirmed, when the box's copy lacks the visit. */
+  visitChildIds: z.array(Uuid).max(20).optional(),
+  /** Printed beside "Staff" and read back on a second scan; never sent to the platform. */
+  staffName: z.string().max(120).nullish(),
+});
+export type BridgeBookingRedeem = z.infer<typeof BridgeBookingRedeemSchema>;
+
+/**
+ * THE `booking.redeemed` FACT. Its id (`redemptionId`) is minted on the box, so
+ * a replay of the event — the same envelope again, or the same fact under a new
+ * one — files it once. `saleId` is the sale the box committed for it, which
+ * reaches the platform ahead of this fact as `sale.finalised`.
+ */
+export const OfflineBookingRedeemedSchema = z.object({
+  redemptionId: Uuid,
+  bookingId: Uuid,
+  saleId: Uuid,
+  reference: z.string().min(1).max(40),
+  /** When the counter redeemed it, by the box's clock. */
+  redeemedAt: z.string().datetime(),
+  /** The SHORT codes of the bands handed over — never the signed ones. */
+  bandCodes: z.array(z.string().min(1).max(40)).max(200).default([]),
+  receiptNumber: z.string().max(40).nullish(),
+  staffTokenJti: Uuid.nullish(),
+  offlineFresh: OfflineFresh,
+});
+export type OfflineBookingRedeemed = z.infer<typeof OfflineBookingRedeemedSchema>;
+
+/** The box-lane refusals of a booking, in the counter's words. */
+export const BOX_BOOKING_REFUSALS = {
+  unknown: {
+    code: 'BOOKING_NOT_ON_BOX',
+    message:
+      'This counter is offline and has no copy of that booking, so it cannot be checked here. Please send the family to reception.',
+  },
+  qrUnchecked: {
+    code: 'BOOKING_QR_UNCHECKED',
+    message:
+      'This counter cannot check that booking QR while it is offline — scan it at the counter’s own scanner, or type the booking reference instead.',
+  },
+  inProgress: {
+    code: 'BOOKING_REDEMPTION_IN_PROGRESS',
+    message: 'Another till on this counter is redeeming this booking right now. Wait a moment, then look it up again.',
+  },
+} as const;
+
+/** The booking as a box-lane answer gives it back: the till's `PlatformBooking`, from the box. */
+export interface BridgeBookingView {
+  id: string;
+  reference: string;
+  branchId: string;
+  branchName: string | null;
+  memberId: string | null;
+  bookingDate: string;
+  createdAt: string;
+  status: string;
+  totalSatang: number;
+  tier: string;
+  rateMode: string | null;
+  parentName: string | null;
+  phone: string | null;
+  paymentMethod: string | null;
+  lines: Array<{
+    packageId: string;
+    name: string;
+    kids: number;
+    adults: number;
+    kidUnitSatang: number;
+    adultsFree: number;
+    adultUnitSatang: number;
+    socks: number;
+    socksUnitSatang: number;
+    addOns: Array<{ productId: string; name: string; unitSatang: number; quantity: number }>;
+    lineTotalSatang: number;
+  }>;
+  redemption: {
+    at: string;
+    branchName: string | null;
+    stationName: string | null;
+    staffName: string | null;
+    bandCodes: string[];
+  } | null;
+  /** Where the answer came from: the cached copy, or this box's own redemption log. */
+  source: 'cache' | 'log';
+}
+
+/** What `booking.redeem` answers: the sale the box committed for it, its bands, its paper. */
+export interface BridgeBookingRedeemAnswer {
+  booking: BridgeBookingView;
+  sale: BridgeSaleView;
+  bands: BridgeSaleBand[];
+  printing: { jobs: Array<{ id: string; kind: string; status: string }>; notes: string[] };
+  /** True when this press was already answered, and this is the log's answer again. */
+  replay: boolean;
+  outboxDepth: number;
 }
 
 // --- What the box priced from (OD-8) ---------------------------------------------------

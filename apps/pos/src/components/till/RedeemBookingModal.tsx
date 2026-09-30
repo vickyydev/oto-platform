@@ -16,6 +16,7 @@ import {
   type PlatformBooking,
   type PlatformRedemption,
   type RedeemOutcome,
+  type RedeemedBand,
   type UnmappedLine,
 } from '@/api/bookings';
 import { QrCode, CheckCircle2, AlertTriangle, Search, Ticket, Users, Baby, CreditCard, Smartphone, Loader2 } from 'lucide-react';
@@ -42,7 +43,14 @@ interface RedeemBookingModalProps {
   scannedBooking?: ScannedBooking | null;
 }
 
-type Stage = 'lookup' | 'summary' | 'already_redeemed';
+type Stage = 'lookup' | 'summary' | 'already_redeemed' | 'issued';
+
+/** What the counter's box issued for a booking it redeemed offline (S2-12 round 5). */
+interface Issued {
+  receiptNumber: string | null;
+  bands: RedeemedBand[];
+  notes: string[];
+}
 
 function paymentMethodLabel(pm: string): string {
   if (pm === 'card') return 'Card';
@@ -86,6 +94,7 @@ export function RedeemBookingModal({
   // S2-12 — why nothing can be issued against the booking found (not paid), or null.
   const [notPaid, setNotPaid] = useState<string | null>(null);
   const [redemption, setRedemption] = useState<PlatformRedemption | null>(null);
+  const [issued, setIssued] = useState<Issued | null>(null);
   const [waiting, setWaiting] = useState<PlatformBooking[]>([]);
   const [waitingState, setWaitingState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [waitingNote, setWaitingNote] = useState<string | null>(null);
@@ -126,6 +135,7 @@ export function RedeemBookingModal({
     setUnmapped([]);
     setNotPaid(null);
     setRedemption(null);
+    setIssued(null);
     setLookingUp(false);
     setTimeout(() => inputRef.current?.focus(), 80);
 
@@ -231,6 +241,13 @@ export function RedeemBookingModal({
     try {
       const outcome = await onConfirm(foundBooking, foundPlatform);
       if (outcome.ok) {
+        // Redeemed by the counter's box with the link down: stay on the codes,
+        // for reading aloud should a band not print.
+        if (outcome.issued) {
+          setIssued(outcome.issued);
+          setStage('issued');
+          return;
+        }
         onOpenChange(false);
         return;
       }
@@ -508,6 +525,50 @@ export function RedeemBookingModal({
                 Confirm &amp; Issue
               </Button>
             </div>
+          </div>
+        )}
+
+        {stage === 'issued' && foundBooking && issued && (
+          <div className="space-y-5 pt-1">
+            <div className="flex flex-col items-center text-center gap-3 py-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-lg">Redeemed on this counter's box</p>
+                <p className="font-mono text-muted-foreground mt-0.5">{foundBooking.reference}</p>
+                {issued.receiptNumber && (
+                  <p className="text-sm text-muted-foreground mt-0.5">Receipt {issued.receiptNumber}</p>
+                )}
+              </div>
+            </div>
+
+            {issued.bands.length > 0 && (
+              <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm space-y-1">
+                <p className="text-muted-foreground">
+                  Wristband codes — read them out if a band did not print:
+                </p>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5" data-testid="band-codes">
+                  {issued.bands.map((band) => (
+                    <span key={band.id} className="whitespace-nowrap">
+                      <span className="font-mono font-semibold text-foreground">{band.shortCode ?? 'No code'}</span>
+                      {band.childName && <span className="text-muted-foreground"> {band.childName}</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {issued.notes.length > 0 && (
+              <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>{issued.notes.join(' · ')}</span>
+              </div>
+            )}
+
+            <Button className="w-full h-12" onClick={() => onOpenChange(false)}>
+              Done
+            </Button>
           </div>
         )}
 

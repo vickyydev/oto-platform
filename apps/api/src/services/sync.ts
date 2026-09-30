@@ -7,6 +7,7 @@ import {
   bandEvent,
   boothStaffAssignment,
   booking,
+  bookingRedemption,
   box,
   boxOutbox,
   boxSyncKey,
@@ -23,12 +24,14 @@ import {
   memberTierVerification,
   modifierGroup,
   modifierOption,
+  paymentAttempt,
   paymentMethod,
   product,
   productCategory,
   productModifierGroup,
   receiptSeries,
   role,
+  sale,
   roleAssignment,
   rolePermission,
   station,
@@ -53,8 +56,13 @@ import {
   type SyncQuarantineStatus,
 } from '@oto/db';
 import {
+  BOOKING_REDEEMED_FACT,
   GATE_EVENT_TYPE,
   GateEventPayloadSchema,
+  OfflineBookingRedeemedSchema,
+  PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  PAID_ONLINE_TENDER_CODE,
+  bandShortCode,
   OFFLINE_POLICY,
   OfflineChildCreatedSchema,
   OfflineChildUpdatedSchema,
@@ -90,7 +98,21 @@ import { audit } from './audit';
  * function-level one `./ops` and this file already have, and used the same way:
  * inside a call, never while either module is still being evaluated.
  */
-import { loadRedemptions, type StoredRedemption } from './bookings';
+import {
+  linesOf,
+  loadRedemptions,
+  redeemBooking,
+  REDEEMABLE_STATUS,
+  type BookingRow,
+  type StoredRedemption,
+} from './bookings';
+/**
+ * S2-12 round 5 — a booking a box redeemed offline is filed exactly as the
+ * counter's online redemption files it: priced from the lines the family paid
+ * for, never from today's list. Function-level, as the imports above.
+ */
+import { priceBasisOfBooking } from './booking-redemption';
+import { commitSale, finaliseSale, type ActorContext, type CommitSaleInput } from './sale';
 /**
  * The money a box took while it was cut off (S2-10a, Slice G). It lives beside
  * the cash tender's own service rather than here, because a replayed sale is
@@ -863,6 +885,383 @@ export function bookingChange(
   };
 }
 
+// --- A booking redeemed at a box with no internet (S2-12 round 5) -------------
+//
+// The box claims the booking in its own redemption log, commits the sale from
+// the lines the family paid for with the paid-online tender, prints and bands
+// it, and queues two facts in this order: `sale.finalised` (its cart naming the
+// booking) and `booking.redeemed`. The FIRST of them to reach the cloud with its
+// sale writes the redemption: the booking's row lock, the paid-only predicate
+// and the unique `booking_redemption` row (`redeemBooking`), then the sale
+// shaped as the counter's online redemption shapes it — the booking on it, the
+// paid-online tender, the booking's own price basis — with the box's number
+// and the bands on the family's wrists.
+//
+// SINGLE USE ACROSS TWO BOXES IS NOT MADE SAFE OFFLINE (OD-A9). A second
+// redemption of the same booking — another box's, or one made after the
+// counter online already issued it — is NEVER APPLIED BLIND: its events are
+// quarantined (`conflict`) and an alert names both redemptions, so a person
+// decides what the second family was handed.
+
+/** The marker a box puts on the cart of a sale that redeems a booking. */
+const BookingSaleMarkSchema = z.object({
+  cart: z.object({
+    bookingId: z.string().uuid().nullish(),
+    bookingRedemptionId: z.string().uuid().nullish(),
+  }),
+});
+
+/** The redemption already on a booking, and the sale that issued it — what the alert names first. */
+interface FirstRedemption {
+  redeemedAt: string | null;
+  stationId: string | null;
+  accountId: string | null;
+  saleId: string | null;
+  boxId: string | null;
+  /** `cloud` when the counter redeemed it online, `box` when a box filed it from offline. */
+  origin: string | null;
+  receiptNumber: string | null;
+}
+
+async function firstRedemptionOf(tx: Tx, bookingId: string): Promise<FirstRedemption | null> {
+  const [row] = await tx
+    .select()
+    .from(bookingRedemption)
+    .where(eq(bookingRedemption.bookingId, bookingId))
+    .limit(1);
+  const [issued] = await tx
+    .select({ id: sale.id, boxId: sale.boxId, origin: sale.origin, receiptNumber: sale.receiptNumber })
+    .from(sale)
+    .where(eq(sale.bookingId, bookingId))
+    .orderBy(asc(sale.createdAt))
+    .limit(1);
+  if (!row && !issued) return null;
+  return {
+    redeemedAt: row?.redeemedAt.toISOString() ?? null,
+    stationId: row?.stationId ?? null,
+    accountId: row?.accountId ?? null,
+    saleId: issued?.id ?? null,
+    boxId: issued?.boxId ?? null,
+    origin: issued?.origin ?? null,
+    receiptNumber: issued?.receiptNumber ?? null,
+  };
+}
+
+/**
+ * THE SECOND REDEMPTION, named beside the first and held for a person. Raised
+ * on the pool before the refusal is thrown, so it outlives the savepoint the
+ * refusal rolls back; `critical`, because it is two families through the gate
+ * on one payment.
+ */
+async function refuseSecondRedemption(
+  scope: BatchScope,
+  event: PreparedEvent,
+  row: BookingRow,
+  first: FirstRedemption | null,
+  second: { saleId: string; redeemedAt: string; receiptNumber: string | null; redemptionId: string | null },
+): Promise<never> {
+  const boxName = `${scope.auth.name} (${scope.auth.slot})`;
+  const firstWhere = first?.boxId && first.origin === 'box'
+    ? first.boxId === scope.auth.boxId
+      ? 'on this same box'
+      : `on box ${first.boxId}`
+    : 'at a counter online';
+  const detail = {
+    bookingId: row.id,
+    reference: row.reference,
+    first: first ?? { redeemedAt: null },
+    second: {
+      boxId: scope.auth.boxId,
+      stationId: event.envelope.stationId ?? null,
+      actorAccountId: event.envelope.actorAccountId ?? null,
+      saleId: second.saleId,
+      redemptionId: second.redemptionId,
+      redeemedAt: second.redeemedAt,
+      receiptNumber: second.receiptNumber,
+      eventId: event.envelope.eventId,
+    },
+  };
+  try {
+    await raiseAlert(
+      scope.db,
+      {
+        key: `booking.redeemed_twice:${row.id}`,
+        category: 'booking.redeemed_twice',
+        severity: 'critical',
+        subject: `Booking ${row.reference}`,
+        summary:
+          `Booking ${row.reference} was redeemed twice: first ${firstWhere}` +
+          (first?.redeemedAt ? ` at ${first.redeemedAt}` : '') +
+          (first?.receiptNumber ? ` (sale ${first.receiptNumber})` : '') +
+          `, then again offline on ${boxName} at ${second.redeemedAt}` +
+          (second.receiptNumber ? ` (sale ${second.receiptNumber})` : '') +
+          '. The second was not applied — it is held in quarantine for a person to look at.',
+        detail,
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  } catch (err) {
+    scope.log?.error(
+      { err, bookingId: row.id },
+      'a second redemption of a booking could not be alerted; its quarantine row names it',
+    );
+  }
+  throw new RefuseEvent(
+    'conflict',
+    'SYNC_BOOKING_REDEEMED_TWICE',
+    `Booking ${row.reference} was already redeemed ${firstWhere}; this box's redemption of it was not applied`,
+  );
+}
+
+/** The booking a box names, inside the credential's operator, locked for the claim. */
+async function lockedBooking(tx: Tx, scope: BatchScope, bookingId: string): Promise<BookingRow> {
+  const [row] = await tx
+    .select()
+    .from(booking)
+    .where(and(eq(booking.id, bookingId), eq(booking.operatorId, scope.auth.operatorId)))
+    .for('update')
+    .limit(1);
+  if (!row) {
+    throw new RefuseEvent('poison', 'SYNC_BOOKING_UNKNOWN', 'That booking is not one of this park’s');
+  }
+  if (row.branchId !== scope.auth.branchId) {
+    throw new RefuseEvent(
+      'poison',
+      'SYNC_BOOKING_NOT_OURS',
+      'That booking is for another branch than the box that redeemed it',
+    );
+  }
+  return row;
+}
+
+/** The gateway invoice that paid the booking, for the tender's reconciliation (as online). */
+async function onlineInvoiceOf(tx: Tx, bookingId: string): Promise<string | null> {
+  const [paid] = await tx
+    .select({ invoiceNo: paymentAttempt.invoiceNo })
+    .from(paymentAttempt)
+    .where(
+      and(
+        sql`${paymentAttempt.payload} ->> 'bookingId' = ${bookingId}`,
+        isNull(paymentAttempt.saleId),
+        inArray(paymentAttempt.status, [...PAYMENT_ATTEMPT_TAKEN_STATUSES]),
+      ),
+    )
+    .orderBy(desc(paymentAttempt.createdAt))
+    .limit(1);
+  return paid?.invoiceNo ?? null;
+}
+
+/**
+ * The sale a box committed for a booking it redeemed offline.
+ *
+ * FIRST ARRIVAL CLAIMS. The booking is taken `FOR UPDATE`; a booking already
+ * redeemed — by another box, or at a counter online — refuses this sale into
+ * quarantine with an alert naming both. Otherwise, in the event's savepoint:
+ * the claim (`redeemBooking`, with the band codes the family holds and the
+ * counter's own instant), the sale committed against the booking at the prices
+ * it was PAID at, the box's journal columns, the paid-online tender that
+ * closes it under the number the box printed, and then the replay's own half —
+ * the box's bands recorded as they are and the audit row naming the event.
+ */
+async function applyBoxBookingSale(
+  tx: Tx,
+  scope: BatchScope,
+  event: PreparedEvent,
+  payload: z.infer<typeof OfflineSalePayloadSchema>,
+  mark: { bookingId: string; redemptionId: string | null },
+): Promise<ApplyResult> {
+  const replay = replayScope(scope, event);
+  // S2-12 closing audit — a booking's redemption is settled by the money the
+  // family paid online, and by nothing else: this path files the sale under
+  // the paid-online tender and drops the box's tenders. A sale that names a
+  // booking and carries any other money (cash, a card) is not a redemption the
+  // box's `booking.redeem` wrote, and filing it here would erase that money.
+  // Held for a person, whole — never applied blind.
+  const foreign = payload.tenders.filter((t) => t.methodCode !== PAID_ONLINE_TENDER_CODE);
+  if (foreign.length > 0) {
+    throw new RefuseEvent(
+      'conflict',
+      'SYNC_BOOKING_SALE_TENDER',
+      `A sale naming a booking carries ${foreign.map((t) => `${t.methodCode} ${formatTHB(t.amountSatang)}`).join(', ')}; a redemption is paid online only, so it was not applied`,
+    );
+  }
+  const row = await lockedBooking(tx, scope, mark.bookingId);
+  const withoutMoney = { ...payload, tenders: [] };
+
+  // This sale again (a replay of the event, or under a new envelope): the
+  // redemption was written with it the first time. The replay's own half is
+  // idempotent on every key, so it answers as the first did.
+  const [existing] = await tx
+    .select({ id: sale.id, bookingId: sale.bookingId })
+    .from(sale)
+    .where(eq(sale.id, payload.saleId))
+    .limit(1);
+  if (existing) {
+    if (existing.bookingId !== row.id) {
+      throw new RefuseEvent('conflict', 'SYNC_SALE_ID_TAKEN', 'That sale id already names another sale');
+    }
+    return { ...saleApplied(await replayOfflineSale(tx, replay, withoutMoney)), entityType: 'sale' };
+  }
+
+  const first = await firstRedemptionOf(tx, row.id);
+  if (first || row.status === 'redeemed') {
+    return refuseSecondRedemption(scope, event, row, first, {
+      saleId: payload.saleId,
+      redeemedAt: replay.occurredAt.toISOString(),
+      receiptNumber: payload.receipt?.number ?? null,
+      redemptionId: mark.redemptionId,
+    });
+  }
+  if (row.status !== REDEEMABLE_STATUS) {
+    // The box's copy said paid and the platform's does not: never filed blind.
+    throw new RefuseEvent(
+      'conflict',
+      'SYNC_BOOKING_NOT_PAID',
+      `Booking ${row.reference} is ${row.status} here, so the box's redemption of it was not applied`,
+    );
+  }
+  if (payload.cart.expectedTotalSatang !== row.totalSatang) {
+    throw new RefuseEvent(
+      'conflict',
+      'BOOKING_TOTAL_DRIFT',
+      `Booking ${row.reference} was paid ${formatTHB(row.totalSatang)}, and the box filed ${formatTHB(payload.cart.expectedTotalSatang)}`,
+    );
+  }
+
+  // 1. THE CLAIM, at the counter's own instant, with the bands the family holds.
+  const bandCodes = payload.bands
+    .map((b) => bandShortCode(b.code))
+    .filter((c): c is string => !!c);
+  const claimed = await redeemBooking(tx, {
+    bookingId: row.id,
+    operatorId: scope.auth.operatorId,
+    actorAccountId: replay.actorAccountId,
+    stationId: replay.stationId,
+    bandCodes,
+    now: replay.occurredAt,
+  });
+
+  // 2. THE SALE, at the prices the family paid (`priceBasisOfBooking`, as online).
+  const lines = linesOf(claimed).filter((l) => l.packageId && (l.kids > 0 || l.adults > 0));
+  const bag = (claimed.payload ?? {}) as Record<string, unknown>;
+  const tier = typeof bag.tier === 'string' && bag.tier ? bag.tier : 'tourist';
+  const rateMode = bag.rateMode === 'weekend' ? 'weekend' : 'weekday';
+  const socksId = payload.cart.socks?.addOnId ?? null;
+  const [socks] = socksId
+    ? await tx
+        .select({ id: product.id })
+        .from(product)
+        .where(and(eq(product.id, socksId), eq(product.operatorId, scope.auth.operatorId)))
+        .limit(1)
+    : [];
+  const actor: ActorContext = {
+    accountId: replay.actorAccountId,
+    operatorId: scope.auth.operatorId,
+    branchId: claimed.branchId,
+  };
+  const memberId = claimed.memberId
+    ? await survivingMemberId(tx, scope.auth.operatorId, claimed.memberId)
+    : null;
+  const input: CommitSaleInput = {
+    id: payload.saleId,
+    stationId: replay.stationId,
+    branchId: claimed.branchId,
+    memberId,
+    visitId: payload.cart.visitId ?? null,
+    bookingId: claimed.id,
+    lines: payload.cart.lines,
+    ...(payload.cart.socks ? { socks: payload.cart.socks } : {}),
+    note: payload.cart.note ?? `Online booking ${claimed.reference}`,
+    actionId: replay.actionId,
+    occurredAt: replay.occurredAt.toISOString(),
+    expectedTotalSatang: claimed.totalSatang,
+  };
+  try {
+    await tx.transaction((sp) =>
+      commitSale(sp, actor, input, replay.occurredAt, {
+        priceBasis: priceBasisOfBooking(tier, rateMode, lines, socks?.id ?? null),
+        printing: 'skip',
+        catalogueVersion: payload.catalogueVersion ?? null,
+      }),
+    );
+  } catch (err) {
+    if (err instanceof AppError && (err.code === 'SALE_TOTAL_MISMATCH' || err.code === 'SALE_LINE_PRICE_MISMATCH')) {
+      throw new RefuseEvent(
+        'conflict',
+        'BOOKING_TOTAL_DRIFT',
+        `Booking ${claimed.reference} was paid ${formatTHB(claimed.totalSatang)}, and the platform would file the box's sale at a different sum`,
+      );
+    }
+    throw err;
+  }
+
+  // 3. THE BOX'S COLUMNS, while the sale is still open (`pos.sale_freeze`).
+  await tx
+    .update(sale)
+    .set({
+      origin: 'box',
+      boxId: scope.auth.boxId,
+      boxSeq: replay.boxSeq,
+      sourceEventId: replay.eventId,
+      ...(payload.staffTokenJti ? { staffTokenJti: payload.staffTokenJti } : {}),
+    })
+    .where(eq(sale.id, payload.saleId));
+
+  // 4. SETTLED AS PAID ONLINE, under the number the box printed when it is free.
+  const tenderActionId = payload.tenders[0]?.actionId ?? `paid-online:${payload.saleId}`;
+  await finaliseSale(
+    tx,
+    actor,
+    payload.saleId,
+    {
+      onlineTender: {
+        bookingId: claimed.id,
+        bookingReference: claimed.reference,
+        onlineInvoiceNo: await onlineInvoiceOf(tx, claimed.id),
+      },
+      actionId: tenderActionId,
+      printing: 'skip',
+      adoptReceipt: payload.receipt ?? null,
+    },
+    replay.occurredAt,
+  );
+
+  // 5. The box's bands, and the audit row that names the event.
+  const outcome = await replayOfflineSale(tx, replay, {
+    ...withoutMoney,
+    cart: { ...payload.cart, memberId },
+  });
+  await audit.record(tx, {
+    actorAccountId: replay.actorAccountId,
+    operatorId: scope.auth.operatorId,
+    branchId: claimed.branchId,
+    action: 'booking.redeem.offline',
+    entityType: 'booking',
+    entityId: claimed.id,
+    before: { status: row.status },
+    after: {
+      reference: claimed.reference,
+      saleId: payload.saleId,
+      receiptNumber: outcome.receiptNumber,
+      boxId: scope.auth.boxId,
+      stationId: replay.stationId,
+      redemptionId: mark.redemptionId,
+      redeemedAt: replay.occurredAt.toISOString(),
+      totalSatang: claimed.totalSatang,
+      tender: PAID_ONLINE_AUDIT,
+      bandCodes,
+    },
+    requestId: null,
+    actionId: replay.actionId,
+    sourceEventId: replay.eventId,
+  });
+  return saleApplied(outcome);
+}
+
+const PAID_ONLINE_AUDIT = 'paid_online';
+
 const HANDLERS: Record<string, EventHandler> = {
   /**
    * A member created at a counter, possibly with no internet.
@@ -1580,6 +1979,15 @@ const HANDLERS: Record<string, EventHandler> = {
   'sale.finalised': {
     schema: OfflineSalePayloadSchema,
     async apply(tx, scope, event, payload: z.infer<typeof OfflineSalePayloadSchema>) {
+      // S2-12 round 5 — the sale a box committed for a booking it redeemed
+      // offline: filed as the counter's online redemption files one.
+      const mark = BookingSaleMarkSchema.safeParse(event.envelope.payload);
+      if (mark.success && mark.data.cart.bookingId) {
+        return applyBoxBookingSale(tx, scope, event, payload, {
+          bookingId: mark.data.cart.bookingId,
+          redemptionId: mark.data.cart.bookingRedemptionId ?? null,
+        });
+      }
       const replay = {
         ...replayScope(scope, event),
         // OD-8: asked only when today's prices disagree with the box's.
@@ -1690,6 +2098,108 @@ const HANDLERS: Record<string, EventHandler> = {
       const replay = replayScope(scope, event);
       const outcome = await replayOfflineTender(tx, replay, payload);
       return saleApplied(outcome);
+    },
+  },
+
+  /**
+   * A BOOKING REDEEMED AT A BOX WITH NO INTERNET (S2-12 round 5; OD-A9).
+   *
+   * Its sale travels ahead of it as `sale.finalised`, and whichever of the two
+   * reaches here first with the sale writes the redemption
+   * (`applyBoxBookingSale`). So this fact, arriving after its own sale, finds
+   * the redemption already there and linked to that sale: it is applied once,
+   * and every replay — the same envelope, or the same fact under a new one —
+   * answers the same without writing again.
+   *
+   * A booking redeemed by ANOTHER sale — a second box's, or the counter's
+   * online — is the case this handler exists for: quarantined with an alert
+   * naming both, never applied blind. A sale that has not arrived yet (its
+   * event is behind this one, or was itself held) is `apply_failed`, held to
+   * replay once it has — as money that reaches the cloud before its sale is.
+   */
+  [BOOKING_REDEEMED_FACT]: {
+    schema: OfflineBookingRedeemedSchema,
+    async apply(tx, scope, event, payload: z.infer<typeof OfflineBookingRedeemedSchema>) {
+      const replay = replayScope(scope, event);
+      const row = await lockedBooking(tx, scope, payload.bookingId);
+      const [own] = await tx
+        .select({ id: sale.id, bookingId: sale.bookingId, operatorId: sale.operatorId })
+        .from(sale)
+        .where(eq(sale.id, payload.saleId))
+        .limit(1);
+      if (own && own.operatorId !== scope.auth.operatorId) {
+        throw new RefuseEvent('poison', 'SYNC_SALE_NOT_OURS', 'That sale belongs to another park');
+      }
+      const first = await firstRedemptionOf(tx, row.id);
+      const ours = !!own && own.bookingId === row.id;
+      if (first && ours && first.saleId === own!.id) {
+        // Applied with its sale. Nothing more to write.
+        return { entityType: 'booking', entityId: row.id };
+      }
+      if (first || row.status === 'redeemed') {
+        return refuseSecondRedemption(scope, event, row, first, {
+          saleId: payload.saleId,
+          redeemedAt: payload.redeemedAt,
+          receiptNumber: payload.receiptNumber ?? null,
+          redemptionId: payload.redemptionId,
+        });
+      }
+      if (!own) {
+        throw new RefuseEvent(
+          'apply_failed',
+          'SYNC_SALE_ABSENT',
+          `The sale that redeemed booking ${row.reference} is not here yet, so the redemption waits for it`,
+        );
+      }
+      if (own.bookingId !== row.id) {
+        throw new RefuseEvent(
+          'conflict',
+          'SYNC_SALE_NOT_BOOKING',
+          `That sale does not redeem booking ${row.reference}`,
+        );
+      }
+      // The sale is here, linked, and no redemption was written with it (a
+      // sale filed before this round's handler): the claim is written now.
+      if (row.status !== REDEEMABLE_STATUS) {
+        throw new RefuseEvent(
+          'conflict',
+          'SYNC_BOOKING_NOT_PAID',
+          `Booking ${row.reference} is ${row.status} here, so the box's redemption of it was not applied`,
+        );
+      }
+      await redeemBooking(tx, {
+        bookingId: row.id,
+        operatorId: scope.auth.operatorId,
+        actorAccountId: replay.actorAccountId,
+        stationId: replay.stationId,
+        bandCodes: payload.bandCodes,
+        // The skew-checked instant (`replayScope`), never the box's raw clock.
+        now: replay.occurredAt,
+      });
+      await audit.record(tx, {
+        actorAccountId: replay.actorAccountId,
+        operatorId: scope.auth.operatorId,
+        branchId: row.branchId,
+        action: 'booking.redeem.offline',
+        entityType: 'booking',
+        entityId: row.id,
+        before: { status: row.status },
+        after: {
+          reference: row.reference,
+          saleId: payload.saleId,
+          receiptNumber: payload.receiptNumber ?? null,
+          boxId: scope.auth.boxId,
+          stationId: replay.stationId,
+          redemptionId: payload.redemptionId,
+          redeemedAt: payload.redeemedAt,
+          bandCodes: payload.bandCodes,
+          ...freshMark(payload),
+        },
+        requestId: null,
+        actionId: replay.actionId,
+        sourceEventId: replay.eventId,
+      });
+      return { entityType: 'booking', entityId: row.id };
     },
   },
 

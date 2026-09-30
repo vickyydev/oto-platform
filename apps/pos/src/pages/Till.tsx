@@ -880,9 +880,14 @@ export default function Till() {
         printing.failed ? [...printing.notes, printing.failed.message] : printing.notes,
       );
     }
+    // S2-12 round 5 — redeemed by this counter's box with the link down: the
+    // box printed from its own queue, so only what did not print is said.
+    for (const note of redeemed.box?.notes ?? []) {
+      toast({ title: 'Not printed', description: note, variant: 'destructive' });
+    }
 
     toast({
-      title: 'Booking redeemed',
+      title: redeemed.box ? 'Booking redeemed offline' : 'Booking redeemed',
       // A deployment from before round 3 answers the claim alone, with no bands.
       description: `${booking.reference} — ${(redeemed.bands ?? []).length} wristband(s) issued.`,
     });
@@ -918,7 +923,18 @@ export default function Till() {
       setPendingDropOffRegistration({ registrationId: booking.registrationId, childNames: dropOffNames });
     }
 
-    return { ok: true };
+    // On the box lane the dialog stays open on the codes, for reading aloud
+    // should a band not print — as an offline sale's confirmation does.
+    return redeemed.box
+      ? {
+          ok: true,
+          issued: {
+            receiptNumber: redeemed.sale?.receiptNumber ?? null,
+            bands: redeemed.bands ?? [],
+            notes: redeemed.box.notes,
+          },
+        }
+      : { ok: true };
   };
 
   // Re-price every line to a newly-picked tier. Normal lines recompute via

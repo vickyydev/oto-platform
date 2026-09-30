@@ -1,10 +1,25 @@
 import { createHash, randomBytes } from 'node:crypto';
 import {
+  BOOKING_REDEEMED_FACT,
+  BOX_BOOKING_REFUSALS,
   BOX_CATALOGUE_TOO_OLD,
   BOX_LANE_PAYMENT_REFUSAL,
   BOX_LANE_REFUSALS,
   BOX_SESSION_PREFIX,
+  BRIDGE_BOOKING_INTENTS,
   BRIDGE_CART_QUOTE_INTENT,
+  BridgeBookingLookupSchema,
+  BridgeBookingRedeemSchema,
+  PAID_ONLINE_TENDER_CODE,
+  PAID_ONLINE_TENDER_METHOD,
+  isoDateInTz,
+  parseBookingQr,
+  verifyBookingQr,
+  wallClockMinutesInTz,
+  type BridgeBookingRedeem,
+  type BridgeBookingRedeemAnswer,
+  type BridgeBookingView,
+  type OfflineBookingRedeemed,
   BRIDGE_MONEY_INTENT_PREFIXES,
   BRIDGE_RECEIPT_OBSERVED_INTENT,
   BRIDGE_RECORD_INTENTS,
@@ -239,6 +254,13 @@ export interface BridgeHost {
   sales?(): SaleQueue | null;
   /** The box's card terminals (Round 4), or null on a box built without them. */
   terminals?(): TerminalController | null;
+  /**
+   * The park key (S2-12 round 5), for a booking QR a till's own scanner read
+   * and typed into the redeem field. A QR read at the box's scanner is checked
+   * by the scan router and arrives as a booking id; without this a typed QR is
+   * refused with "type the booking reference instead".
+   */
+  bandKey?(): string | Uint8Array | null;
 }
 
 export interface StationBridgeOptions {
@@ -406,7 +428,9 @@ const REFUSED_ON_BOX_LANE: Record<string, BoxLaneRefusal> = {
   'payment.voucher': 'voucher',
   'sale.voucher': 'voucher',
   'payment.wallet': 'wallet',
-  'booking.redeem': 'booking',
+  // `booking.redeem` is no longer here: since S2-12 round 5 the box redeems a
+  // paid booking from its own copy (`bookingRedeem`). A box without the store
+  // tables to keep its redemption log still refuses it, in these same words.
   'sale.refund': 'refund',
   'payment.refund': 'refund',
   'sale.void': 'refund',
@@ -527,6 +551,232 @@ interface SaleMemo {
   attempt: PaymentAttemptView | null;
 }
 
+// --- Redeeming an online booking on the box lane (S2-12 round 5) ----------------------
+
+/** One priced line of a booking, as `POST /public/bookings` stored it and the bundle carries it. */
+interface CachedBookingLine {
+  packageId: string;
+  name: string;
+  kids: number;
+  adults: number;
+  kidUnitSatang: number;
+  adultsFree: number;
+  adultUnitSatang: number;
+  socks: number;
+  socksUnitSatang: number;
+  addOns: Array<{ productId: string; name: string; unitSatang: number; quantity: number }>;
+  lineTotalSatang: number;
+}
+
+/** A booking in the box's `bookings` scope (`bookingChange` in the api's `sync.ts`). */
+interface CachedBooking {
+  id: string;
+  branchId: string;
+  memberId: string | null;
+  reference: string;
+  bookingDate: string;
+  status: string;
+  totalSatang: number;
+  createdAt: string;
+  payload: Record<string, unknown>;
+}
+
+const n0 = (value: unknown): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : 0;
+
+function cachedBookingOf(raw: unknown): CachedBooking | null {
+  const b = rec(raw);
+  const id = s(b?.id);
+  const reference = s(b?.reference);
+  if (!b || !id || !reference) return null;
+  return {
+    id,
+    branchId: s(b.branchId) ?? '',
+    memberId: s(b.memberId),
+    reference,
+    bookingDate: s(b.bookingDate) ?? '',
+    status: s(b.status) ?? 'pending',
+    totalSatang: n0(b.totalSatang),
+    createdAt: s(b.createdAt) ?? '',
+    payload: rec(b.payload) ?? {},
+  };
+}
+
+/** The lines a booking paid for — `linesOf` in the api's `bookings.ts`, over the cached copy. */
+function bookingLinesOf(booking: CachedBooking): CachedBookingLine[] {
+  const raw = booking.payload.lines;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    const bag = rec(entry);
+    if (!bag) return [];
+    const addOns = (Array.isArray(bag.addOns) ? bag.addOns : []).flatMap((a) => {
+      const add = rec(a);
+      const quantity = n0(add?.quantity);
+      if (!add || quantity <= 0) return [];
+      return [
+        {
+          productId: s(add.productId) ?? s(add.id) ?? '',
+          name: s(add.name) ?? '',
+          unitSatang: n0(add.unitSatang),
+          quantity,
+        },
+      ];
+    });
+    return [
+      {
+        packageId: s(bag.packageId) ?? '',
+        name: s(bag.name) ?? '',
+        kids: n0(bag.kids),
+        adults: n0(bag.adults),
+        kidUnitSatang: n0(bag.kidUnitSatang),
+        adultsFree: n0(bag.adultsFree),
+        adultUnitSatang: n0(bag.adultUnitSatang),
+        socks: n0(bag.socks),
+        socksUnitSatang: n0(bag.socksUnitSatang),
+        addOns,
+        lineTotalSatang: n0(bag.lineTotalSatang),
+      },
+    ];
+  });
+}
+
+/** The socks add-on's catalogue code, as the booking site priced the `socks` integer. */
+const SOCKS_CODE = 'AO-SOCKS';
+
+type CataloguePackage = NonNullable<ReturnType<OfflineCatalogue['packages']['get']>>;
+
+/** A rate pair that answers the same figure on any day: the booking already chose the day. */
+const flat = (satang: number) => ({ weekday: satang, weekend: satang });
+
+/**
+ * THE CATALOGUE A BOOKING WAS PAID FROM, laid over the box's own — the box's
+ * half of `priceBasisOfBooking` in the api's `booking-redemption.ts`, unit for
+ * unit: each package at the line's kid unit under the booking's tier, its
+ * adults `free_adults` with the line's free count and paid unit (or
+ * `set_price` when none were free), each extra and the socks at what was paid.
+ * The booking's tier is the default, so a walk-in booking is priced at it too.
+ * The tax set-up is the box's current one — the one input a booking does not
+ * store — and a total that no longer equals what was paid is refused.
+ */
+function bookingCatalogue(
+  catalogue: OfflineCatalogue,
+  tier: string,
+  lines: readonly CachedBookingLine[],
+  socksProductId: string | null,
+): OfflineCatalogue {
+  const packages = new Map(catalogue.packages);
+  const set = new Map<string, string>();
+  for (const line of lines) {
+    const adultRule =
+      line.adultsFree > 0
+        ? { kind: 'free_adults', freeAdults: line.adultsFree, overflow: 'set_price', price: flat(line.adultUnitSatang) }
+        : { kind: 'set_price', price: flat(line.adultUnitSatang) };
+    const prices = { [tier]: flat(line.kidUnitSatang) };
+    const adultRules = { [tier]: adultRule };
+    const fingerprint = JSON.stringify([prices, adultRules]);
+    const earlier = set.get(line.packageId);
+    if (earlier !== undefined && earlier !== fingerprint) {
+      throw new BridgeError(
+        409,
+        'BOOKING_LINES_AMBIGUOUS',
+        'This booking prices the same ticket twice at different figures, so it cannot be redeemed at the counter — ask a manager',
+        { packageId: line.packageId },
+      );
+    }
+    set.set(line.packageId, fingerprint);
+    const held = catalogue.packages.get(line.packageId);
+    packages.set(line.packageId, {
+      id: line.packageId,
+      name: held?.name ?? (line.name || 'Ticket'),
+      prices: prices as CataloguePackage['prices'],
+      adultRules,
+      active: true,
+      archivedAt: null,
+      hours: held?.hours ?? null,
+      durationLabel: held?.durationLabel ?? null,
+    });
+  }
+  const products = new Map(catalogue.products);
+  const paidAt = (productId: string, unit: number) => {
+    const held = products.get(productId);
+    if (held) {
+      products.set(productId, {
+        ...held,
+        priceSatang: unit,
+        priceWeekendSatang: unit,
+        active: true,
+        archivedAt: null,
+      });
+    }
+  };
+  for (const line of lines) {
+    for (const addOn of line.addOns) paidAt(addOn.productId, addOn.unitSatang);
+    if (line.socks > 0 && socksProductId) paidAt(socksProductId, line.socksUnitSatang);
+  }
+  return { ...catalogue, packages, products, defaultTier: tier };
+}
+
+/**
+ * THE BOX'S REDEMPTION LOG — one row per booking per box, in the store's
+ * runtime values, written BEFORE anything is sold (the write-ahead pattern the
+ * offline cluster set for a terminal tender). Every till on this box reads the
+ * same row, so a second till is told who redeemed it and when; and a box that
+ * lost power between the row and the sale finds the row, with the sale's own
+ * id and cart, and finishes that ONE sale rather than starting another.
+ *
+ *   claimed  the row is on disk; the sale may or may not be;
+ *   done     the sale is recorded and the `booking.redeemed` fact is queued,
+ *            written with this state in one store transaction.
+ */
+interface BookingRedemptionLog {
+  bookingId: string;
+  reference: string;
+  /** The `booking.redeemed` fact's id, minted here. */
+  redemptionId: string;
+  saleId: string;
+  /** The press that claimed it: the same press again is answered with its sale. */
+  actionId: string;
+  tenderActionId: string;
+  stationId: string;
+  stationName: string | null;
+  accountId: string;
+  staffName: string | null;
+  /** When the counter claimed it, by the box's clock. The sale is dated to it. */
+  at: string;
+  state: 'claimed' | 'done';
+  /** What the sale is priced from, kept so a recovery prices the same sale. */
+  tier: string;
+  lines: CachedBookingLine[];
+  socksProductId: string | null;
+  totalSatang: number;
+  /** The sale as it is committed, under its ids. */
+  sale: BridgeSaleFinalise;
+  /** Once done: the number printed and the short codes handed over. */
+  receiptNumber?: string | null;
+  bandCodes?: string[];
+}
+
+const redemptionKey = (bookingId: string) => `booking_redemption:${bookingId}`;
+
+/** The keys the platform reads as a booking redemption (`BookingSaleMarkSchema` in the api's `sync.ts`). */
+const BOOKING_MARKER_KEYS = ['bookingId', 'bookingRedemptionId', 'bookingReference'] as const;
+
+/** Whether a till's cart — flat, or nested under `cart` — names a booking. */
+function cartNamesBooking(raw: unknown): boolean {
+  const outer = rec(raw);
+  if (!outer) return false;
+  const inner = rec(outer.cart);
+  return [outer, inner].some(
+    (bag) => !!bag && BOOKING_MARKER_KEYS.some((k) => bag[k] !== undefined && bag[k] !== null),
+  );
+}
+
+/** Bookings a call on this box is redeeming right now, as `boxId:bookingId` (see `salesInHand`). */
+const bookingsInHand = new Set<string>();
+
+/** Where inside a box redemption a test can pull the power lead. */
+export type RedemptionCrashPoint = 'after_claim' | 'after_sale';
+
 // --- The bridge ----------------------------------------------------------------------
 
 export interface BridgeIntentAnswer {
@@ -540,6 +790,12 @@ export class StationBridge {
   private readonly options: Required<StationBridgeOptions>;
   private readonly log: AgentLog;
   private readonly held = new Map<string, HeldSession>();
+  /**
+   * Named crash points inside a box redemption (S2-12 round 5), called in
+   * order. A test throws from one to prove a restart there recovers to exactly
+   * one sale; nothing else sets it.
+   */
+  redemptionCrash: ((point: RedemptionCrashPoint) => void | Promise<void>) | null = null;
 
   constructor(host: BridgeHost, options: StationBridgeOptions = {}) {
     this.host = host;
@@ -1003,6 +1259,14 @@ export class StationBridge {
     if (caller.kind === 'till' && intent.type === BRIDGE_RECEIPT_OBSERVED_INTENT) {
       const result = await this.observeReceipt(station, caller, intent.payload);
       return { document: await this.host.sessions.open(stationId), result };
+    }
+    if (caller.kind === 'till' && intent.type === BRIDGE_BOOKING_INTENTS.lookup) {
+      const booking = await this.bookingLookup(caller, intent.payload);
+      return { document: await this.host.sessions.open(stationId), result: { booking } };
+    }
+    if (caller.kind === 'till' && intent.type === BRIDGE_BOOKING_INTENTS.redeem) {
+      const result = await this.bookingRedeem(station, caller, intent.payload);
+      return { document: await this.host.sessions.open(stationId), result: { ...result } };
     }
     const refusal = REFUSED_ON_BOX_LANE[intent.type];
     if (refusal) this.refuse(refusal);
@@ -1689,9 +1953,30 @@ export class StationBridge {
     station: BridgeStation,
     caller: BridgeTillCaller,
     body: BridgeSaleFinalise | BridgePaymentStart,
-    /** Price as at this moment rather than now: a held tender is closed at the price it was charged at. */
-    opts: { at?: Date } = {},
+    /**
+     * `at`: price as at this moment rather than now — a held tender is closed at
+     * the price it was charged at. `overlay`: the prices a booking was PAID at,
+     * laid over the catalogue (S2-12 round 5), so a redemption is never
+     * re-priced from today's list. `redeeming`: this is `booking.redeem`'s own
+     * sale, the one cart allowed to name a booking.
+     */
+    opts: {
+      at?: Date;
+      overlay?: (catalogue: OfflineCatalogue) => OfflineCatalogue;
+      redeeming?: boolean;
+    } = {},
   ): Promise<PreparedSale> {
+    // S2-12 closing audit — the booking marker is what the platform reads to
+    // file a box's sale as a booking's redemption, settled paid online. Only
+    // `booking.redeem` may write it: on an ordinary cart it would turn cash
+    // into a redemption the caller was never allowed to make.
+    if (!opts.redeeming && cartNamesBooking(body.cart)) {
+      throw new BridgeError(
+        400,
+        'SALE_CART_NAMES_BOOKING',
+        'This cart names an online booking. Redeem the booking with Confirm & Issue instead of ringing it up as a sale.',
+      );
+    }
     const policy = await this.policy(station.id);
     const bundle = await this.bundle('catalogue');
     const now = opts.at ?? this.host.now();
@@ -1700,7 +1985,8 @@ export class StationBridge {
         appliedAt: bundle?.appliedAt ?? null,
       });
     }
-    const catalogue = readOfflineCatalogue(bundle?.payload ?? null);
+    const read = readOfflineCatalogue(bundle?.payload ?? null);
+    const catalogue = read && opts.overlay ? opts.overlay(read) : read;
     if (!catalogue) {
       throw new BridgeError(
         409,
@@ -2752,6 +3038,497 @@ export class StationBridge {
     const body = this.parse(BridgeReceiptObservedSchema, payload);
     const observed = await this.saleQueue().observeReceipt(station.id, body.receiptNumber);
     return { observed };
+  }
+
+  // --- redeeming an online booking (S2-12 round 5) ------------------------------------------
+
+  private async cachedBookings(): Promise<CachedBooking[]> {
+    return itemsOf(await this.bundle('bookings'))
+      .map(cachedBookingOf)
+      .filter((b): b is CachedBooking => !!b);
+  }
+
+  private async readRedemption(bookingId: string): Promise<BookingRedemptionLog | null> {
+    if (!this.host.store.features().boothRuntime) return null;
+    const raw = await this.host.store.readRuntimeValue(this.host.boxId, redemptionKey(bookingId));
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as BookingRedemptionLog;
+    } catch {
+      return null;
+    }
+  }
+
+  /** `2026-09-22 14:05` at the branch, for a sentence read out at a counter. */
+  private wallClock(iso: string): string {
+    const at = new Date(iso);
+    const timezone = this.host.branch()?.timezone;
+    if (!timezone || Number.isNaN(at.getTime())) return iso;
+    const minutes = wallClockMinutesInTz(at, timezone);
+    return `${isoDateInTz(at, timezone)} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(
+      minutes % 60,
+    ).padStart(2, '0')}`;
+  }
+
+  private async branchName(branchId: string | null): Promise<string | null> {
+    if (!branchId || this.host.branch()?.id !== branchId) return null;
+    return s(rec((await this.catalogueItem())?.receiptHeader)?.name);
+  }
+
+  /**
+   * Who redeemed a booking and when, in the platform's `RedemptionView`: this
+   * box's own log first — it is newer than any copy the platform sent — then
+   * the redemption the cached booking carries. Null when neither has one. A log
+   * row whose sale was never recorded (the power went between the claim and
+   * the sale) is not a redemption yet: nothing was handed over, and the next
+   * Confirm finishes that one sale.
+   */
+  private async redemptionOf(
+    booking: CachedBooking,
+    log: BookingRedemptionLog | null,
+  ): Promise<BridgeBookingView['redemption']> {
+    const issued = log && (log.state === 'done' || (await this.host.sales?.()?.recorded(log.saleId)));
+    if (log && issued) {
+      return {
+        at: log.at,
+        branchName: await this.branchName(this.host.branch()?.id ?? null),
+        stationName: log.stationName,
+        staffName: log.staffName,
+        bandCodes: log.bandCodes ?? [],
+      };
+    }
+    const cloud = rec(booking.payload.redemption);
+    if (!cloud && booking.status !== 'redeemed') return null;
+    const stationId = s(cloud?.stationId);
+    return {
+      at: s(cloud?.redeemedAt) ?? booking.createdAt,
+      branchName: await this.branchName(s(cloud?.branchId) ?? booking.branchId),
+      stationName: stationId ? (this.host.station(stationId)?.name ?? null) : null,
+      // A box holds no staff names (SCRUM-223); the platform's answer names them.
+      staffName: null,
+      bandCodes: Array.isArray(cloud?.bandCodes)
+        ? cloud.bandCodes.filter((c): c is string => typeof c === 'string')
+        : [],
+    };
+  }
+
+  /** The booking in the platform's `GET /bookings/:id` shape, from the box's copy. */
+  private async bookingView(
+    booking: CachedBooking,
+    log: BookingRedemptionLog | null,
+  ): Promise<BridgeBookingView> {
+    const redemption = await this.redemptionOf(booking, log);
+    const p = booking.payload;
+    return {
+      id: booking.id,
+      reference: booking.reference,
+      branchId: booking.branchId,
+      branchName: await this.branchName(booking.branchId),
+      memberId: booking.memberId,
+      bookingDate: booking.bookingDate,
+      createdAt: booking.createdAt,
+      status: redemption ? 'redeemed' : booking.status,
+      totalSatang: booking.totalSatang,
+      tier: s(p.tier) ?? '',
+      rateMode: s(p.rateMode),
+      parentName: s(p.parentName),
+      phone: s(p.phone),
+      paymentMethod: s(p.paymentMethod),
+      lines: bookingLinesOf(booking),
+      redemption,
+      source: log && redemption && log.state === 'done' ? 'log' : 'cache',
+    };
+  }
+
+  /** "Booking OTO-… was already redeemed on … at …", with the first redemption in `details`. */
+  private alreadyRedeemed(
+    booking: Pick<CachedBooking, 'reference'>,
+    redemption: NonNullable<BridgeBookingView['redemption']>,
+  ): BridgeError {
+    const where = [redemption.branchName, redemption.stationName, redemption.staffName]
+      .filter(Boolean)
+      .join(', ');
+    return new BridgeError(
+      409,
+      'BOOKING_ALREADY_REDEEMED',
+      `Booking ${booking.reference} was already redeemed on ${this.wallClock(redemption.at)}${
+        where ? ` at ${where}` : ''
+      }.`,
+      { reference: booking.reference, redemption },
+    );
+  }
+
+  /** `booking.lookup`: the booking a scan, a QR or a reference names, from this box's copy. */
+  private async bookingLookup(
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<BridgeBookingView> {
+    this.require(caller, 'pos:booking:read');
+    const body = this.parse(BridgeBookingLookupSchema, payload);
+    let bookingId = body.bookingId ?? null;
+    if (!bookingId && body.qr) {
+      if (!parseBookingQr(body.qr)) {
+        throw new BridgeError(
+          422,
+          'BOOKING_QR_SIGNATURE_INVALID',
+          'This reads like a booking QR, but part of it is missing — type the booking reference instead',
+        );
+      }
+      const key = this.host.bandKey?.() ?? null;
+      if (!key) {
+        throw new BridgeError(409, BOX_BOOKING_REFUSALS.qrUnchecked.code, BOX_BOOKING_REFUSALS.qrUnchecked.message);
+      }
+      const verdict = verifyBookingQr(body.qr, key);
+      if (!verdict.ok) {
+        throw new BridgeError(
+          422,
+          'BOOKING_QR_SIGNATURE_INVALID',
+          'Not a booking this park issued — its signature does not match',
+        );
+      }
+      bookingId = verdict.bookingId;
+    }
+    const bookings = await this.cachedBookings();
+    const reference = body.reference?.trim().toUpperCase() ?? null;
+    const found = bookingId
+      ? bookings.find((b) => b.id === bookingId)
+      : bookings.find((b) => b.reference.toUpperCase() === reference);
+    if (!found) {
+      throw new BridgeError(404, BOX_BOOKING_REFUSALS.unknown.code, BOX_BOOKING_REFUSALS.unknown.message);
+    }
+    return this.bookingView(found, await this.readRedemption(found.id));
+  }
+
+  /**
+   * `booking.redeem` — Confirm & Issue with the box's link down.
+   *
+   * THE CLAIM COMES FIRST, as online: the box's redemption log row is on disk
+   * before a receipt number is spent or a band is minted, and every till on
+   * this box reads that row. So a second till is answered already-redeemed —
+   * with who and when — rather than issuing a second set of bands. Then the
+   * sale, through the box's own sale path (`SaleQueue.record`: number, bands,
+   * paper and the `sale.finalised` fact in one transaction), from the lines the
+   * family PAID for with the paid-online tender; then the `booking.redeemed`
+   * fact and the log's `done`, in one store transaction.
+   */
+  private async bookingRedeem(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<BridgeBookingRedeemAnswer> {
+    this.require(caller, 'pos:booking:redeem');
+    this.require(caller, 'pos:sale:create');
+    const body = this.parse(BridgeBookingRedeemSchema, payload);
+    const queue = this.saleQueue();
+    // The log lives in the store's runtime values: a box without them keeps the
+    // round-4 refusal rather than redeem with nowhere to write the claim.
+    if (!this.host.store.features().boothRuntime) this.refuse('booking');
+    const key = `${this.host.boxId}:${body.bookingId}`;
+    if (bookingsInHand.has(key)) {
+      const log = await this.readRedemption(body.bookingId);
+      throw new BridgeError(409, BOX_BOOKING_REFUSALS.inProgress.code, BOX_BOOKING_REFUSALS.inProgress.message, {
+        ...(log ? { stationName: log.stationName, staffName: log.staffName, at: log.at } : {}),
+      });
+    }
+    bookingsInHand.add(key);
+    try {
+      return await this.redeemHeld(station, caller, body, queue);
+    } finally {
+      bookingsInHand.delete(key);
+    }
+  }
+
+  private async redeemHeld(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    body: BridgeBookingRedeem,
+    queue: SaleQueue,
+  ): Promise<BridgeBookingRedeemAnswer> {
+    const booking = (await this.cachedBookings()).find((b) => b.id === body.bookingId) ?? null;
+    const held = await this.readRedemption(body.bookingId);
+    if (held) {
+      const recorded = await queue.recorded(held.saleId);
+      const samePress = held.actionId === body.actionId;
+      if (recorded && !samePress) {
+        // Tills on one box share this log: the second is told who and when.
+        const redemption = await this.redemptionOf(booking ?? this.bookingFromLog(held), held);
+        throw this.alreadyRedeemed(held, redemption!);
+      }
+      // The same press again — or a claim a restart left with no sale behind
+      // it, which the next Confirm finishes under the SAME sale id.
+      if (!recorded && booking) {
+        // S2-12 closing audit — nothing was handed over under that claim, and
+        // the box has since learnt the booking was redeemed elsewhere (a
+        // counter online while the box was back). Finishing the claim now would
+        // band a second family on one payment: refused, by who and when.
+        const elsewhere = await this.redemptionOf(booking, null);
+        if (elsewhere || booking.status !== 'paid') {
+          if (elsewhere) throw this.alreadyRedeemed(booking, elsewhere);
+          throw new BridgeError(
+            409,
+            'BOOKING_NOT_REDEEMABLE',
+            `Booking ${booking.reference}: booking not paid. It is ${booking.status}, so it cannot be redeemed at the counter.`,
+            { reference: booking.reference, status: booking.status, reason: 'not_paid' },
+          );
+        }
+      }
+      if (!recorded) {
+        this.log.warn(
+          { bookingId: held.bookingId, saleId: held.saleId, stationId: station.id },
+          'a booking claimed on this box before a restart is finished now, under the sale it was claimed for',
+        );
+      }
+      return this.completeRedemption(station, caller, held, booking, samePress && !!recorded);
+    }
+
+    if (!booking) {
+      throw new BridgeError(404, BOX_BOOKING_REFUSALS.unknown.code, BOX_BOOKING_REFUSALS.unknown.message);
+    }
+    const already = await this.redemptionOf(booking, null);
+    if (already) throw this.alreadyRedeemed(booking, already);
+    if (booking.status !== 'paid') {
+      // The platform's own words (`redeemBooking` in `services/bookings.ts`).
+      throw new BridgeError(
+        409,
+        'BOOKING_NOT_REDEEMABLE',
+        `Booking ${booking.reference}: booking not paid. It is ${booking.status}, so it cannot be redeemed at the counter.`,
+        { reference: booking.reference, status: booking.status, reason: 'not_paid' },
+      );
+    }
+    const lines = bookingLinesOf(booking).filter((l) => l.packageId && (l.kids > 0 || l.adults > 0));
+    if (lines.length === 0) {
+      throw new BridgeError(
+        409,
+        'BOOKING_NOTHING_TO_ISSUE',
+        `Booking ${booking.reference} carries no tickets, so there is nothing to issue at the counter`,
+        { reference: booking.reference },
+      );
+    }
+
+    const at = this.host.now().toISOString();
+    const tier = s(booking.payload.tier) || (await this.defaultTier());
+    const socksProductId = lines.some((l) => l.socks > 0) ? await this.socksProductId() : null;
+    const socksUnit = lines.find((l) => l.socks > 0)?.socksUnitSatang ?? 0;
+    const member = booking.memberId ? await this.resolveMember(booking.memberId) : null;
+    const saleId = uuidv7();
+    const redemptionId = uuidv7();
+    const log: BookingRedemptionLog = {
+      bookingId: booking.id,
+      reference: booking.reference,
+      redemptionId,
+      saleId,
+      actionId: body.actionId,
+      tenderActionId: `paid-online:${redemptionId}`,
+      stationId: station.id,
+      stationName: station.name,
+      accountId: caller.accountId,
+      staffName: body.staffName ?? null,
+      at,
+      state: 'claimed',
+      tier,
+      lines,
+      socksProductId,
+      totalSatang: booking.totalSatang,
+      sale: {
+        saleId,
+        actionId: body.actionId,
+        occurredAt: at,
+        visitId: body.visitId ?? null,
+        note: `Online booking ${booking.reference}`,
+        staffName: body.staffName ?? null,
+        ...(body.visitChildIds ? { visitChildIds: body.visitChildIds } : {}),
+        tender: null,
+        cart: {
+          ...(member ? { memberId: member.id } : {}),
+          tier,
+          lines: lines.map((line) => ({
+            id: uuidv7(),
+            packageId: line.packageId,
+            packageName: line.name,
+            tier,
+            kids: line.kids,
+            adults: line.adults,
+            socks: line.socks,
+            addOns: line.addOns.map((a) => ({
+              id: a.productId,
+              name: a.name,
+              unitSatang: a.unitSatang,
+              quantity: a.quantity,
+            })),
+          })),
+          ...(lines.some((l) => l.socks > 0)
+            ? {
+                socks: socksProductId
+                  ? { addOnId: socksProductId }
+                  : { addOnId: 'booking-socks', unitSatang: socksUnit, label: 'Regular Socks' },
+              }
+            : {}),
+          expectedTotalSatang: booking.totalSatang,
+          // What the platform reads to file this sale as the booking's redemption.
+          bookingId: booking.id,
+          bookingRedemptionId: redemptionId,
+          bookingReference: booking.reference,
+        },
+      },
+    };
+    // Priced BEFORE the claim is written, so a booking the counter cannot issue
+    // (the park's tax set-up moved since it was paid) leaves no claim behind.
+    await this.prepareBookingSale(station, caller, log);
+    await this.host.store.writeRuntimeValue(this.host.boxId, redemptionKey(booking.id), JSON.stringify(log), at);
+    await this.redemptionCrash?.('after_claim');
+    return this.completeRedemption(station, caller, log, booking, false);
+  }
+
+  /** A booking the log names, when the cached copy has since gone (a newer pull). */
+  private bookingFromLog(log: BookingRedemptionLog): CachedBooking {
+    return {
+      id: log.bookingId,
+      branchId: this.host.branch()?.id ?? '',
+      memberId: null,
+      reference: log.reference,
+      bookingDate: log.at.slice(0, 10),
+      status: 'redeemed',
+      totalSatang: log.totalSatang,
+      createdAt: log.at,
+      payload: { tier: log.tier, lines: log.lines },
+    };
+  }
+
+  /** The socks product the booking site priced `socks` from, if the box's catalogue has it. */
+  private async socksProductId(): Promise<string | null> {
+    const item = await this.catalogueItem();
+    const products = Array.isArray(item?.products) ? item.products.map(rec) : [];
+    return s(products.find((p) => p && p.code === SOCKS_CODE && !p.archivedAt)?.id) ?? null;
+  }
+
+  /** The sale a redemption commits, priced from what the family paid, as at the claim. */
+  private async prepareBookingSale(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    log: BookingRedemptionLog,
+  ): Promise<PreparedSale> {
+    try {
+      return await this.prepareSale(station, caller, log.sale, {
+        at: new Date(log.at),
+        redeeming: true,
+        overlay: (catalogue) => bookingCatalogue(catalogue, log.tier, log.lines, log.socksProductId),
+      });
+    } catch (err) {
+      if (err instanceof BridgeError && (err.code === 'SALE_TOTAL_MISMATCH' || err.code === 'SALE_LINE_PRICE_MISMATCH')) {
+        throw new BridgeError(
+          409,
+          'BOOKING_TOTAL_DRIFT',
+          `Booking ${log.reference} was paid ฿${(log.totalSatang / 100).toFixed(2)}, and the park's tax set-up has changed since, so the counter would file a different sum. Nothing was issued — ask a manager.`,
+          { reference: log.reference, totalSatang: log.totalSatang, details: err.details ?? null },
+        );
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Finish a claimed redemption: the sale (once — `SaleQueue` answers a sale id
+   * it already recorded from its log), then the `booking.redeemed` fact and
+   * the log's `done` in one store transaction.
+   */
+  private async completeRedemption(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    log: BookingRedemptionLog,
+    booking: CachedBooking | null,
+    replay: boolean,
+  ): Promise<BridgeBookingRedeemAnswer> {
+    const queue = this.saleQueue();
+    let answer = await this.answerAgain(queue, log.saleId);
+    if (!answer) {
+      const sale = await this.prepareBookingSale(station, caller, log);
+      const tenders: OfflineTenderFact[] =
+        sale.gross > 0
+          ? [
+              {
+                actionId: log.tenderActionId,
+                methodCode: PAID_ONLINE_TENDER_CODE,
+                kind: 'other',
+                provider: 'manual',
+                amountSatang: sale.gross,
+                paidAt: log.at,
+                reference: log.reference,
+              },
+            ]
+          : [];
+      const attempt: PaymentAttemptView | null =
+        sale.gross > 0
+          ? {
+              ...this.attemptView({
+                attemptId: uuidv7(),
+                saleId: log.saleId,
+                kind: 'cash',
+                provider: 'manual',
+                status: 'approved',
+                amountSatang: sale.gross,
+                actionId: log.tenderActionId,
+                paidAt: log.at,
+                createdAt: log.at,
+              }),
+              method: PAID_ONLINE_TENDER_METHOD,
+            }
+          : null;
+      answer = await this.closeSale(station, caller, log.sale, sale, tenders, attempt, { at: log.at });
+    }
+    await this.redemptionCrash?.('after_sale');
+
+    let done = log;
+    if (log.state !== 'done') {
+      const seal = this.host.sealer();
+      if (!seal) {
+        throw new BridgeError(
+          503,
+          'BOX_AGENT_ELSEWHERE',
+          'This counter’s box is not running here, so it cannot record anything right now',
+        );
+      }
+      const bandCodes = (answer.bands ?? [])
+        .map((b) => b.shortCode)
+        .filter((c): c is string => !!c);
+      done = { ...log, state: 'done', receiptNumber: answer.sale.receiptNumber, bandCodes };
+      const fact: OfflineBookingRedeemed = {
+        redemptionId: log.redemptionId,
+        bookingId: log.bookingId,
+        saleId: log.saleId,
+        reference: log.reference,
+        redeemedAt: log.at,
+        bandCodes,
+        receiptNumber: answer.sale.receiptNumber,
+        staffTokenJti: caller.jti,
+        ...(caller.offlineFresh ? { offlineFresh: true } : {}),
+      };
+      const now = this.host.now().toISOString();
+      const queued: QueuedFact = {
+        type: BOOKING_REDEEMED_FACT,
+        payload: fact as unknown as Record<string, unknown>,
+        occurredAt: log.at,
+        stationId: log.stationId,
+        actorKind: 'account',
+        actorAccountId: caller.accountId,
+        actionId: log.actionId.slice(0, 200),
+      };
+      const written = done;
+      await this.host.store.atomically(async (tx) => {
+        await tx.enqueueMany(this.host.boxId, [queued], seal, now);
+        await tx.writeRuntimeValue(this.host.boxId, redemptionKey(log.bookingId), JSON.stringify(written), now);
+      });
+    }
+    const depth = await this.host.store
+      .depth(this.host.boxId)
+      .catch(() => ({ queued: 0, oldestQueuedAt: null }));
+    return {
+      booking: await this.bookingView(booking ?? this.bookingFromLog(done), done),
+      sale: answer.sale,
+      bands: answer.bands ?? [],
+      printing: answer.printing,
+      replay,
+      outboxDepth: depth.queued,
+    };
   }
 
   // --- the overlay's end -------------------------------------------------------------------
