@@ -1,7 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { newId, type PaymentAttemptView } from '@oto/shared';
 import { ApiError, NetworkError } from '@/api/client';
-import { paymentRefusalMessage } from './lane';
+import {
+  apiSaleOfBox,
+  finaliseOnBox,
+  forgetLaneSale,
+  holdLaneSale,
+  laneSale,
+  observeReceipt,
+  rungUpOnBox,
+} from '@/api/boxSales';
+import {
+  currentLane,
+  isBoxLaneTrigger,
+  laneStation,
+  noteLaneFailure,
+  paymentRefusalMessage,
+} from './lane';
 import {
   commitSale,
   finaliseSale,
@@ -55,6 +70,17 @@ import {
  *    An answer from a previous sale is dropped rather than drawn onto the next
  *    visitor at the counter — the same guard as `saleEpochRef` in
  *    `pages/Till.tsx`.
+ *
+ * 5. THE BOX LANE (offline plan §2.4, Round 4). When the lane arbiter says box
+ *    — the station forced offline, the link down — the same input commits
+ *    through the station bridge instead: the box prices the cart, and the
+ *    tender closes it there, numbered, banded and printed from the box's own
+ *    queue (`api/boxSales.ts`). A sale stays on the lane it was rung up on. One
+ *    rung up on the platform whose cash press meets a dropped link is closed on
+ *    the box under the same ids, and meets itself on replay; an electronic
+ *    tender is never moved (plan §2.1). After an online sale the till tells its
+ *    box the number the platform gave it, so the box's offline series never
+ *    re-issues it (OD-4, `receipt.observed`).
  */
 
 /** Why an attempt failed, in the terms the panel has to speak to reception. */
@@ -384,8 +410,41 @@ export function useSaleWriter(): SaleWriter {
     const attempt = ++attemptsRef.current;
     setState({ kind: 'writing', saleId: ids.saleId, attempt });
 
+    const station = laneStation();
+    const rungUp = {
+      saleId: ids.saleId,
+      actionId: ids.actionId,
+      occurredAt: ids.occurredAt,
+      cart: input.cart,
+      visitId: input.visitId ?? null,
+      note: input.note ?? null,
+    };
+    let triedBox = false;
+    /**
+     * The box lane: priced and held on the box, closed there by its tender. A
+     * ฿0 sale the caller wants closed at Pay is closed on the box at once.
+     */
+    const onBox = async (stationId: string): Promise<SaleWriteOutcome> => {
+      triedBox = true;
+      let sale = await rungUpOnBox({ ...rungUp, stationId });
+      if (input.finalise && sale.totals.grossSatang === 0) {
+        const closed = await finaliseOnBox(laneSale(ids.saleId)!, undefined, ids.actionId);
+        sale = apiSaleOfBox(closed.sale);
+      }
+      if (isCurrent(epoch, ids.saleId)) {
+        committedRef.current = sale;
+        setState(
+          sale.status === 'finalised'
+            ? { kind: 'written', saleId: ids.saleId, sale, replay: false }
+            : { kind: 'committed', saleId: ids.saleId, sale },
+        );
+      }
+      return { ok: true, written: true, sale, replay: false, saleId: ids.saleId };
+    };
+
     const run = async (): Promise<SaleWriteOutcome> => {
       try {
+        if (station && currentLane() === 'box') return await onBox(station);
         const result = await commitSale({
           saleId: ids.saleId,
           actionId: ids.actionId,
@@ -395,6 +454,10 @@ export function useSaleWriter(): SaleWriter {
           note: input.note ?? null,
           finalise: input.finalise,
         });
+        // Kept for the box lane: a cash press that meets a dropped link closes
+        // this same sale on the box, under the same ids.
+        if (station) holdLaneSale({ ...rungUp, stationId: station, lane: 'platform' });
+        if (result.sale.status === 'finalised') observeReceipt(station, result.sale.receiptNumber);
         if (isCurrent(epoch, ids.saleId)) committedRef.current = result.sale;
         // The till has started another sale. The write still happened and the
         // platform holds it; what must not happen is this answer being drawn
@@ -413,7 +476,18 @@ export function useSaleWriter(): SaleWriter {
           replay: result.replay,
           saleId: ids.saleId,
         };
-      } catch (err) {
+      } catch (caught) {
+        let err: unknown = caught;
+        // The platform is unreachable or the station is forced offline: the
+        // same sale is rung up on the box instead (OD-1).
+        if (station && !triedBox && isBoxLaneTrigger(err)) {
+          noteLaneFailure(err);
+          try {
+            return await onBox(station);
+          } catch (boxErr) {
+            err = boxErr;
+          }
+        }
         if (err instanceof SalesLedgerUnavailable) {
           if (isCurrent(epoch, ids.saleId)) {
             setState({ kind: 'unwritten', saleId: ids.saleId, reason: err.message });
@@ -517,10 +591,51 @@ export function useSaleWriter(): SaleWriter {
     const epoch = epochRef.current;
     const attempt = ++attemptsRef.current;
     setState({ kind: 'finalising', saleId: held.id, attempt });
+    const station = laneStation();
+    const onTheBox = laneSale(held.id);
+    /**
+     * Close it on the box: a sale rung up there, or — for cash, which has no
+     * unknown outcome — one rung up on the platform whose link has gone. A card
+     * or the PAX QR that already closed it on the box answers from what the box
+     * said (`payment.start`, `api/boxSales.ts`).
+     */
+    const closeOnBox = async (): Promise<SaleWriteOutcome> => {
+      const boxSale = onTheBox!;
+      const answer =
+        boxSale.answer?.finalised
+          ? boxSale.answer
+          : await finaliseOnBox(boxSale, tender, actionId ?? ids.actionId);
+      const sale = apiSaleOfBox(answer.sale);
+      if (isCurrent(epoch, ids.saleId)) {
+        committedRef.current = sale;
+        setState(answer.finalised
+          ? { kind: 'written', saleId: held.id, sale, replay: answer.replay }
+          : { kind: 'committed', saleId: held.id, sale });
+      }
+      return {
+        ok: true, written: true, sale, replay: answer.replay, saleId: held.id,
+        finalised: answer.finalised, outstandingSatang: answer.outstandingSatang, attempt: answer.attempt,
+      };
+    };
+    const cashOrNothing = !tender || tender.kind === 'cash' || tender.amountSatang === 0;
     try {
+      if (onTheBox && (onTheBox.lane === 'box' || (cashOrNothing && station && currentLane() === 'box'))) {
+        return await closeOnBox();
+      }
       // A split uses one explicit identity per deliberate tender; retries keep it.
-      const result = await finaliseSale(held.id, actionId ?? ids.actionId, tender);
+      let result;
+      try {
+        result = await finaliseSale(held.id, actionId ?? ids.actionId, tender);
+      } catch (err) {
+        // The link went at the cash press: the same sale, the same press, on the box.
+        if (onTheBox && station && cashOrNothing && isBoxLaneTrigger(err)) {
+          noteLaneFailure(err);
+          return await closeOnBox();
+        }
+        throw err;
+      }
       const finalised = result.finalised ?? result.sale.status === 'finalised';
+      if (finalised) observeReceipt(station, result.sale.receiptNumber);
       if (isCurrent(epoch, ids.saleId)) {
         committedRef.current = result.sale;
         setState(finalised
@@ -592,6 +707,35 @@ export function useSaleWriter(): SaleWriter {
     );
     if (rungUp.length === 0) return { ok: true, voided: false };
     for (const s of rungUp) {
+      /**
+       * A sale rung up on the box lane exists nowhere but on this till until
+       * it is paid (Round 4): there is nothing to void, only an order to let
+       * go. One the box has closed is refunded, online; one with a terminal
+       * tender still waiting is resolved first.
+       */
+      const boxHeld = laneSale(s.id);
+      if (boxHeld?.lane === 'box') {
+        if (boxHeld.answer?.finalised) {
+          return {
+            ok: false,
+            code: 'SALE_FINALISED',
+            message: 'This sale is finalised — a closed sale is refunded, not voided',
+            closed: s.id === onScreen?.id,
+          };
+        }
+        const waiting = boxHeld.answer?.attempt;
+        if (waiting && ['sent_to_terminal', 'unknown', 'inquiring', 'awaiting_staff_confirmation'].includes(waiting.status)) {
+          return {
+            ok: false,
+            code: 'PAYMENT_IN_FLIGHT',
+            message: 'A payment is still waiting for its answer on the terminal. Resolve it before cancelling.',
+            closed: false,
+          };
+        }
+        forgetLaneSale(s.id);
+        supersededRef.current.delete(s.id);
+        continue;
+      }
       try {
         const answer = await salesApi.voidSale(s.id, reason);
         if (epochRef.current === epoch && saleRef.current?.actionId === actionId) {

@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { BoxAgent } from '@oto/box-agent';
 import {
   account,
+  band,
   box,
   boxState,
   child,
@@ -20,7 +21,7 @@ import {
   visit,
   voucherRedemption,
 } from '@oto/db';
-import { newId } from '@oto/shared';
+import { BOX_LANE_REFUSALS, mintBoothCode, newId, verifyBandCode } from '@oto/shared';
 import {
   ADMIN,
   RECEPTION,
@@ -30,6 +31,7 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
+import { currentBandKey } from '../src/services/bands';
 import { attachInProcessBox, detachInProcessBox } from '../src/services/box';
 import { linkedAgent, type CuttableLink } from './box-link';
 
@@ -40,13 +42,12 @@ import { linkedAgent, type CuttableLink } from './box-link';
  * §17 publishes it; this file enforces it (register Check 7). Every row gets a
  * case that runs its operation with the station offline and asserts the row:
  *
- *   - a REFUSAL row is asserted now, in the platform's own words — the answer a
- *     till gets for it with its station offline;
- *   - a WORKS row is a pending case naming the round that builds it (plan §4,
- *     rounds 3 and 4). It becomes an assertion in that round, driven through
- *     the box, and until then no row can claim "works offline" through a path
- *     that does not exist. Round 3's rows are asserted below, through the
- *     station bridge, with the station forced offline;
+ *   - a REFUSAL row is asserted in the platform's own words — the answer a
+ *     till gets for it with its station offline — and again on the box lane,
+ *     in the capability list's own reasons (`BOX_LANE_REFUSALS`);
+ *   - a WORKS row is asserted through the box: rounds 3 and 4 built every one
+ *     (plan §4), and each is driven through the station bridge with the
+ *     station forced offline and the box's link cut;
  *   - the check-in row belongs to S2-13 and is named, not claimed.
  *
  * THE LIST AND THE DOCUMENT ARE ONE LIST. The first case reads §17's table
@@ -77,21 +78,17 @@ const CAPABILITIES: Capability[] = [
   { operation: 'Create a member; add or edit a child; confirm who is visiting', offline: 'Works' },
   { operation: 'Ticket, F&B and shop pricing', offline: 'Works, bounded' },
   { operation: 'Promo code', offline: 'Works' },
-  {
-    operation: 'Manual discount, ฿0 comp, tier change',
-    offline: 'Works',
-    pending: 'round 4: the ฿0 replay (the cached permissions and the tier-change fact landed in round 3)',
-  },
-  { operation: 'Cash', offline: 'Works', pending: 'round 4: SaleQueue.record, drawer after disk' },
-  { operation: 'Card on the terminal', offline: 'Works', pending: 'round 4: the box’s terminal adapter (OD-3)' },
-  { operation: 'PAX (Digio) QR', offline: 'Works, flagged', pending: 'round 4: awaiting_settlement' },
+  { operation: 'Manual discount, ฿0 comp, tier change', offline: 'Works' },
+  { operation: 'Cash', offline: 'Works' },
+  { operation: 'Card on the terminal', offline: 'Works' },
+  { operation: 'PAX (Digio) QR', offline: 'Works, flagged' },
   { operation: '2C2P QR', offline: 'Refused' },
   { operation: 'Gift or prize voucher', offline: 'Refused' },
   { operation: 'Wallet spend', offline: 'Refused' },
   { operation: 'Online booking redemption', offline: 'Refused' },
   { operation: 'Refund, void', offline: 'Refused; a "refund requested" note queues' },
-  { operation: 'Receipt and bands for an offline sale', offline: 'Works', pending: 'round 4: the shared print composer and the box’s queue' },
-  { operation: 'Reprint', offline: 'Works for today\'s sales on this box', pending: 'round 4: the box’s print log' },
+  { operation: 'Receipt and bands for an offline sale', offline: 'Works' },
+  { operation: 'Reprint', offline: 'Works for today\'s sales on this box' },
   { operation: 'Customer display', offline: 'Works' },
   { operation: 'History, Today, reports', offline: 'Refused politely' },
   { operation: 'Child check-in and release', offline: 'Rides this bridge in S2-13', pending: 'S2-13, not this cluster' },
@@ -317,7 +314,7 @@ describe('what is refused offline is refused in the platform’s own words', () 
  * The box is the virtual box's agent (`createBoxAgent`), running in this
  * process as it does on staging, with its link to the platform cut.
  */
-describe('what works offline works through the box (plan §4, Round 3)', () => {
+describe('what works offline works through the box (plan §4, Rounds 3 and 4)', () => {
   let ctx: TestContext;
   let cookie: string;
   let adminCookie: string;
@@ -385,7 +382,7 @@ describe('what works offline works through the box (plan §4, Round 3)', () => {
       .from(account)
       .where(eq(account.phone, RECEPTION.phone));
     accountId = staff!.id;
-    agent = linkedAgent(ctx, box1.id, 'capability-box', link);
+    agent = linkedAgent(ctx, box1.id, 'capability-box', link, { devices: true });
     expect(await agent.ensureRegistered()).toBe(true);
     await agent.syncConfig();
     await agent.syncCache();
@@ -554,9 +551,185 @@ describe('what works offline works through the box (plan §4, Round 3)', () => {
     expect((await agent.bridge()!.displayCaller(tillId, bearer))?.kind).toBe('display');
   });
 
-  it('and paying on the box lane refuses politely: round 4 builds it', async () => {
-    const res = await call('POST', bridge('intents'), cookie, intent('sale.finalise', {}));
-    expect(res.statusCode).toBe(409);
-    expect(res.body.error).toMatchObject({ code: 'BOX_LANE_PAYMENT_UNAVAILABLE' });
+  // --- Round 4: selling offline ------------------------------------------------------
+
+  const packageId = async (): Promise<string> => {
+    const [pkg] = await ctx.db
+      .select({ id: ticketPackage.id })
+      .from(ticketPackage)
+      .where(and(eq(ticketPackage.branchId, branchId), eq(ticketPackage.name, '2 Hours Play')));
+    return pkg!.id;
+  };
+  /** Price a cart on the box, as a till on the box lane does before taking the money. */
+  const boxTotal = async (cart: Record<string, unknown>): Promise<number> => {
+    const priced = await call('POST', bridge('intents'), cookie, intent('cart.quote', cart));
+    expect(priced.statusCode, JSON.stringify(priced.body)).toBe(200);
+    return (priced.body.result as { quote: { totals: { grossSatang: number } } }).quote.totals.grossSatang;
+  };
+  const sell = async (type: string, payload: Record<string, unknown>) => {
+    const res = await call('POST', bridge('intents'), cookie, intent(type, payload));
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+    return res.body.result as {
+      sale: { id: string; receiptNumber: string; totals: { grossSatang: number } };
+      finalised: boolean;
+      attempt: { status: string; approvalCode: string | null } | null;
+      printing: { jobs: Array<{ kind: string; status: string }>; notes: string[] };
+      drawer: string;
+    };
+  };
+  /** The link back, everything queued pushed, and the ledger's row for a sale. */
+  const landed = async (saleId: string) => {
+    await goOnline();
+    for (let i = 0; i < 10; i += 1) {
+      if ((await agent.outbox()!.flush()).state !== 'pushed') break;
+    }
+    const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
+    await goOffline();
+    return row;
+  };
+  const ticket = async (over: Record<string, unknown> = {}) => {
+    const cart = { lines: [{ id: newId(), packageId: await packageId(), kids: 1, adults: 1 }], ...over };
+    return { cart, total: await boxTotal(cart) };
+  };
+
+  it(`Cash — ${byOperation('Cash').offline.toLowerCase()}: the drawer opens after the sale is on disk, and it lands once`, async () => {
+    const { cart, total } = await ticket();
+    const saleId = newId();
+    const paid = await sell('sale.finalise', {
+      saleId,
+      actionId: `pay-${saleId.slice(-8)}`,
+      cart: { ...cart, expectedTotalSatang: total },
+      tender: { actionId: `cash-${saleId.slice(-8)}`, method: 'cash', kind: 'cash', amountSatang: total, tenderedSatang: total },
+    });
+    expect(paid.finalised).toBe(true);
+    expect(paid.drawer).not.toBe('not_asked');
+    const row = await landed(saleId);
+    expect(row).toMatchObject({ status: 'finalised', origin: 'box', receiptNumber: paid.sale.receiptNumber });
+  });
+
+  it(`Manual discount, ฿0 comp, tier change — ${byOperation('Manual discount, ฿0 comp, tier change').offline.toLowerCase()}: a comp closes with no tender and replays`, async () => {
+    const { cart, total } = await ticket({
+      manualDiscounts: [{ id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Staff / family' }],
+    });
+    expect(total).toBe(0);
+    const saleId = newId();
+    const comped = await sell('sale.finalise', {
+      saleId,
+      actionId: `comp-${saleId.slice(-8)}`,
+      cart: { ...cart, expectedTotalSatang: 0 },
+      tender: null,
+    });
+    expect(comped.attempt).toBeNull();
+    const row = await landed(saleId);
+    expect(row).toMatchObject({ status: 'finalised', grossSatang: 0, receiptNumber: comped.sale.receiptNumber });
+  });
+
+  it(`Card on the terminal — ${byOperation('Card on the terminal').offline.toLowerCase()}: the counter's own terminal answers and the sale closes`, async () => {
+    const { cart, total } = await ticket();
+    const saleId = newId();
+    const paid = await sell('payment.start', {
+      saleId,
+      actionId: `pay-${saleId.slice(-8)}`,
+      cart: { ...cart, expectedTotalSatang: total },
+      tender: { actionId: `card-${saleId.slice(-8)}`, method: 'card', kind: 'card', amountSatang: total },
+    });
+    expect(paid.attempt?.status).toBe('approved');
+    expect(paid.attempt?.approvalCode).toBeTruthy();
+    const row = await landed(saleId);
+    expect(row?.status).toBe('finalised');
+    const [attempt] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    expect(attempt).toMatchObject({ status: 'approved', offline: true });
+  });
+
+  it(`PAX (Digio) QR — ${byOperation('PAX (Digio) QR').offline.toLowerCase()}: closed, and flagged awaiting settlement`, async () => {
+    const { cart, total } = await ticket();
+    const saleId = newId();
+    const paid = await sell('payment.start', {
+      saleId,
+      actionId: `pay-${saleId.slice(-8)}`,
+      cart: { ...cart, expectedTotalSatang: total },
+      tender: { actionId: `qr-${saleId.slice(-8)}`, method: 'promptpay', kind: 'qr', amountSatang: total },
+    });
+    expect(paid.finalised).toBe(true);
+    expect(paid.attempt?.status).toBe('awaiting_settlement');
+    await landed(saleId);
+    const [attempt] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    expect(attempt?.status).toBe('awaiting_settlement');
+  });
+
+  it(`Receipt and bands for an offline sale — ${byOperation('Receipt and bands for an offline sale').offline.toLowerCase()}: from the box's snapshot and print queue`, async () => {
+    const { cart, total } = await ticket();
+    const saleId = newId();
+    const paid = await sell('sale.finalise', {
+      saleId,
+      actionId: `pay-${saleId.slice(-8)}`,
+      cart: { ...cart, expectedTotalSatang: total },
+      tender: { actionId: `cash-${saleId.slice(-8)}`, method: 'cash', kind: 'cash', amountSatang: total, tenderedSatang: total },
+    });
+    expect(paid.printing.jobs.find((j) => j.kind === 'receipt')?.status).toBe('printed');
+    expect(paid.printing.jobs.find((j) => j.kind === 'kids_wristband')?.status).toBe('printed');
+    expect(paid.printing.jobs.find((j) => j.kind === 'adult_wristband')?.status).toBe('printed');
+    const logged = await agent.sales()!.recorded(saleId);
+    for (const minted of logged!.bands) {
+      expect(verifyBandCode(minted.code, currentBandKey()!).ok).toBe(true);
+    }
+    await landed(saleId);
+    const bands = await ctx.db.select().from(band).where(eq(band.saleId, saleId));
+    expect(bands.map((b) => b.code).sort()).toEqual(logged!.bands.map((b) => b.code).sort());
+  });
+
+  it(`Reprint — ${byOperation('Reprint').offline.toLowerCase()}: from the box's own print log`, async () => {
+    const { cart, total } = await ticket();
+    const saleId = newId();
+    await sell('sale.finalise', {
+      saleId,
+      actionId: `pay-${saleId.slice(-8)}`,
+      cart: { ...cart, expectedTotalSatang: total },
+      tender: { actionId: `cash-${saleId.slice(-8)}`, method: 'cash', kind: 'cash', amountSatang: total, tenderedSatang: total },
+    });
+    const copy = await call(
+      'POST',
+      bridge('intents'),
+      cookie,
+      intent('sale.reprint', { saleId, kind: 'receipt', reason: 'Guest asked' }),
+    );
+    expect(copy.statusCode, JSON.stringify(copy.body)).toBe(200);
+    expect((copy.body.result as { jobs: Array<{ kind: string; status: string }> }).jobs).toEqual([
+      expect.objectContaining({ kind: 'receipt', status: 'printed' }),
+    ]);
+    const elsewhere = await call(
+      'POST',
+      bridge('intents'),
+      cookie,
+      intent('sale.reprint', { saleId: newId(), kind: 'receipt' }),
+    );
+    expect(elsewhere.statusCode).toBe(404);
+    expect((elsewhere.body.error as { code: string }).code).toBe('REPRINT_NOT_ON_THIS_BOX');
+  });
+
+  it('and on the box lane the refusal rows are refused in the capability list’s own reasons', async () => {
+    const refusedAs = async (type: string, payload: Record<string, unknown>, code: string) => {
+      const res = await call('POST', bridge('intents'), cookie, intent(type, payload));
+      expect(res.statusCode, `${type}: ${JSON.stringify(res.body)}`).toBe(409);
+      expect((res.body.error as { code: string }).code).toBe(code);
+    };
+    await refusedAs('payment.2c2p', {}, BOX_LANE_REFUSALS.qr2c2p.code);
+    await refusedAs('payment.voucher', {}, BOX_LANE_REFUSALS.voucher.code);
+    await refusedAs('payment.wallet', {}, BOX_LANE_REFUSALS.wallet.code);
+    await refusedAs('booking.redeem', {}, BOX_LANE_REFUSALS.booking.code);
+    await refusedAs('sale.refund', {}, BOX_LANE_REFUSALS.refund.code);
+    await refusedAs('sale.void', {}, BOX_LANE_REFUSALS.refund.code);
+    // A voucher riding a cart is refused before anything is numbered.
+    const { cart, total } = await ticket();
+    await refusedAs(
+      'sale.finalise',
+      {
+        saleId: newId(),
+        actionId: 'pay-voucher',
+        cart: { ...cart, promoCodes: [mintBoothCode('B1', (n) => 7 % n)], expectedTotalSatang: total },
+        tender: { actionId: 'cash-voucher', method: 'cash', kind: 'cash', amountSatang: total },
+      },
+      BOX_LANE_REFUSALS.voucher.code,
+    );
   });
 });

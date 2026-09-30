@@ -38,7 +38,9 @@ import { withTx } from './tx';
  * Facts are sealed by the virtual box's agent when it runs in this process —
  * the only holder of its signing key. On an api instance it does not run on,
  * the record intents are refused by name (`BOX_AGENT_ELSEWHERE`) rather than
- * queue a fact nobody signed.
+ * queue a fact nobody signed, and a money intent politely
+ * (`BOX_LANE_PAYMENT_UNAVAILABLE`): a sale is written by the agent's own queue
+ * (Round 4), with its receipt number, bands and paper, or not at all.
  */
 
 interface MountedBox {
@@ -92,6 +94,11 @@ export async function bridgeForStation(
       signingKeys: () => entry.keys,
       link: () => entry.link,
       sealer: () => inProcessBox(boxId)?.sealer() ?? null,
+      // Round 4: a sale taken on this mount is written by the virtual box's own
+      // queue, and a card is driven through its own terminals — the same code a
+      // Pi runs. On an instance the agent is not running on, money is refused.
+      sales: () => inProcessBox(boxId)?.sales() ?? null,
+      terminals: () => inProcessBox(boxId)?.terminal() ?? null,
       verifyPassword: (hash, password) => verifyArgon(hash, password),
       now: () => new Date(),
       log: {

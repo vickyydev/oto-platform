@@ -340,15 +340,17 @@ describe('with the station forced offline, the till works through its box (plan 
     expect(quote.catalogueVersion).toMatch(/^[0-9a-f]{16}$/);
   });
 
-  it('and paying refuses politely — round 4 builds it', async () => {
+  it('and paying reaches the box’s sale queue — round 4 (`offline-selling.test.ts` sells through it)', async () => {
+    // A money intent is no longer refused as unavailable: it is read, and one
+    // that names no sale is refused as the unreadable request it is.
     const pay = await call(
       'POST',
       bridgePath(tillId, 'intents'),
       cookieA,
       intent('sale.finalise', {}),
     );
-    expect(pay.statusCode).toBe(409);
-    expect(pay.body.error).toMatchObject({ code: 'BOX_LANE_PAYMENT_UNAVAILABLE' });
+    expect(pay.statusCode).toBe(400);
+    expect(pay.body.error).toMatchObject({ code: 'VALIDATION' });
   });
 
   it('the same family at Counter 2, through that box’s own bridge with a fresh sign-in', async () => {

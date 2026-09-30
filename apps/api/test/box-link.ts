@@ -6,6 +6,7 @@ import {
   type BoxAgent,
 } from '@oto/box-agent';
 import { boxStoreFor } from '../src/lib/box-store';
+import { currentBandKey } from '../src/services/bands';
 import { issueClaimCode } from '../src/services/box';
 import type { TestContext } from './helpers';
 
@@ -44,12 +45,18 @@ export function injectedTransport(ctx: TestContext, link: CuttableLink): AgentFe
   };
 }
 
-/** A registered-on-first-use box for one seeded box row, with argon2id for its unlocks. */
+/**
+ * A registered-on-first-use box for one seeded box row, with argon2id for its
+ * unlocks. With `devices` (offline plan Round 4) it also runs its printers and
+ * card terminals — the seed's, all simulated — and holds the park's band key,
+ * as the virtual box does, so a sale taken on it prints and is banded.
+ */
 export function linkedAgent(
   ctx: TestContext,
   boxId: string,
   name: string,
   link: CuttableLink,
+  opts: { devices?: boolean } = {},
 ): BoxAgent {
   return createBoxAgent({
     apiBaseUrl: `http://${name}.test`,
@@ -60,7 +67,12 @@ export function linkedAgent(
     claimCode: async () => (await issueClaimCode(ctx.db, boxId)).code,
     booth: { verifySecret: (hash, secret) => verifyArgon(hash, secret) },
     bridge: { verifyPassword: (hash, password) => verifyArgon(hash, password) },
-    printing: { enabled: false },
-    terminal: { enabled: false },
+    ...(opts.devices
+      ? {
+          printing: { retryDelayMs: 0 },
+          terminal: { timeouts: { saleMs: 300, probeMs: 300 } },
+          bands: { key: currentBandKey },
+        }
+      : { printing: { enabled: false }, terminal: { enabled: false } }),
   });
 }

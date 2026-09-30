@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import {
   account,
+  alert,
   auditLog,
   box,
   boxCommand,
@@ -11,6 +12,8 @@ import {
   paymentMethod,
   receiptSeries,
   sale,
+  session,
+  staffToken,
   station,
   stationDevice,
   syncAnomaly,
@@ -47,7 +50,7 @@ import {
 } from './helpers';
 import { boxAuthFromRow, issueClaimCode, provisionVirtualBox } from '../src/services/box';
 import { boxStoreFor } from '../src/lib/box-store';
-import { replayQuarantined } from '../src/services/sync';
+import { catalogueVersionOf, replayQuarantined } from '../src/services/sync';
 /**
  * B's own producer, imported rather than imitated: the `drawer_kick` cases
  * below assert the box against the payload the platform really queues, so a
@@ -464,28 +467,48 @@ describe('a sale taken with no internet reaches the ledger (SCRUM-206)', () => {
   });
 
   /**
-   * A fully comped sale cannot be expressed as an offline event — the payload
-   * requires at least one positive tender — so a ฿0 cart arrives carrying money
-   * it says is not owed. It is named rather than left to fail on the ceiling
-   * above, because "the till priced this at nothing" is the fact somebody
-   * reading Failures needs, and it is true before anything is written.
+   * A ฿0 COMP REPLAYS (offline plan §2.6; S2-09a). A fully comped sale is a
+   * real thing at a counter: it owes nothing, arrives with no tender, and is
+   * committed and closed like any other — under the number the box printed.
+   * A cart the till called free that the engine prices at something is the
+   * mismatch it is, and is refused as one.
    */
-  it('refuses a cart the till priced at nothing, by name', async () => {
+  it('files a ฿0 comp with no tender under the number the box printed', async () => {
     const b = await freshBox();
     const saleId = newId();
-
+    const comp = {
+      id: newId(),
+      scope: 'order',
+      type: 'comp',
+      value: 0,
+      reason: 'Staff / family',
+    };
     const answer = await push(b, [
       mint(b, 'sale.finalised', {
         saleId,
-        cart: cart(0),
-        tenders: [cashTender(14_400)],
+        cart: cart(0, { manualDiscounts: [comp] }),
+        tenders: [],
+        receipt: { series: b.prefix, seq: 1, number: `${b.prefix}-000001` },
       }),
     ]);
-    expect(answer.applied).toBe(0);
-    expect(answer.results[0]!.errorCode).toBe('SALE_NOTHING_TO_PAY');
-    expect(await saleRow(saleId)).toBeUndefined();
-  });
+    expect(answer.results[0]!.errorCode ?? null).toBeNull();
+    expect(answer.applied).toBe(1);
+    const row = await saleRow(saleId);
+    expect(row!.status).toBe('finalised');
+    expect(row!.grossSatang).toBe(0);
+    expect(row!.origin).toBe('box');
+    expect(row!.receiptNumber).toBe(`${b.prefix}-000001`);
+    expect(await attemptsOf(saleId)).toHaveLength(0);
 
+    // The till called it free and the engine does not: refused as the mismatch.
+    const priced = newId();
+    const refused = await push(b, [
+      mint(b, 'sale.finalised', { saleId: priced, cart: cart(0), tenders: [] }),
+    ]);
+    expect(refused.applied).toBe(0);
+    expect(refused.results[0]!.errorCode).toBe('SALE_TOTAL_MISMATCH');
+    expect(await saleRow(priced)).toBeUndefined();
+  });
   it('refuses a sale that names no station and one that names nobody', async () => {
     const b = await freshBox();
     const total = await quotedTotal(b.stationId);
@@ -703,62 +726,105 @@ describe('a batch delivered out of order (SCRUM-206)', () => {
   });
 });
 
-describe('a receipt series that moved on while the box was away (SCRUM-206)', () => {
+describe('the receipt number a box printed (offline plan OD-4)', () => {
   /**
-   * The number the box showed is provisional; the allocator's is the ledger's.
-   *
-   * A box mints from the high-water mark the cache bundle last shipped it
-   * (`receipt-hwm.test.ts` proves that mark is the allocator's own). While it
-   * is away the mark can move — a second till on the same station, a sale rung
-   * up in the cloud — and the box has no way to know. What must never happen is
-   * two sales under one number; what must happen is that somebody can find out
-   * which paper number became which ledger number.
+   * The box printed a number and a guest is holding it. On replay the sale is
+   * filed under that number when it is free in the station's series, and the
+   * allocator moves past it. When it is taken — an abandoned sale that lost its
+   * answer, a replaced box whose predecessor's tail syncs later — the sale is
+   * filed under the next free number, both numbers on the anomaly and on the
+   * audit row, so somebody can find out which paper number became which.
    */
-  it('allocates after the mark, never a duplicate, and records both numbers', async () => {
+  it('adopts a free printed number and moves the series past it', async () => {
     const b = await freshBox();
     const total = await quotedTotal(b.stationId);
-
-    // The series moved on while the box was offline: three numbers issued here.
-    await ctx.db.insert(receiptSeries).values({
-      id: newId(),
-      operatorId,
-      branchId,
-      stationId: b.stationId,
-      series: b.prefix,
-      kind: 'sale',
-      nextSeq: 4,
-    });
-
     const saleId = newId();
-    const boxNumber = `${b.prefix}-000001`;
     const answer = await push(b, [
       mint(b, 'sale.finalised', {
         saleId,
         cart: cart(total),
         tenders: [cashTender(total)],
-        receipt: { series: b.prefix, seq: 1, number: boxNumber },
+        receipt: { series: b.prefix, seq: 7, number: `${b.prefix}-000007` },
+      }),
+    ]);
+    expect(answer.applied).toBe(1);
+    expect((await saleRow(saleId))!.receiptNumber).toBe(`${b.prefix}-000007`);
+    const [series] = await ctx.db
+      .select()
+      .from(receiptSeries)
+      .where(and(eq(receiptSeries.stationId, b.stationId), eq(receiptSeries.series, b.prefix)));
+    expect(series!.nextSeq).toBe(8);
+    const anomalies = await ctx.db
+      .select()
+      .from(syncAnomaly)
+      .where(eq(syncAnomaly.eventId, answer.results[0]!.eventId));
+    expect(anomalies.map((a) => a.kind)).not.toContain('receipt_collision');
+
+    // An earlier number the box printed before this one, arriving after it,
+    // is still free: adopted too, and the series does not move backwards.
+    const earlier = newId();
+    await push(b, [
+      mint(b, 'sale.finalised', {
+        saleId: earlier,
+        cart: cart(total),
+        tenders: [cashTender(total)],
+        receipt: { series: b.prefix, seq: 6, number: `${b.prefix}-000006` },
+      }),
+    ]);
+    expect((await saleRow(earlier))!.receiptNumber).toBe(`${b.prefix}-000006`);
+    const [after] = await ctx.db
+      .select()
+      .from(receiptSeries)
+      .where(and(eq(receiptSeries.stationId, b.stationId), eq(receiptSeries.series, b.prefix)));
+    expect(after!.nextSeq).toBe(8);
+  });
+
+  it('files a sale whose printed number was taken under the next free one, and names both', async () => {
+    const b = await freshBox();
+    const total = await quotedTotal(b.stationId);
+    // The number the box printed was used first by another sale of this series.
+    const first = newId();
+    await push(b, [
+      mint(b, 'sale.finalised', {
+        saleId: first,
+        cart: cart(total),
+        tenders: [cashTender(total)],
+        receipt: { series: b.prefix, seq: 3, number: `${b.prefix}-000003` },
+      }),
+    ]);
+    const saleId = newId();
+    const boxNumber = `${b.prefix}-000003`;
+    const answer = await push(b, [
+      mint(b, 'sale.finalised', {
+        saleId,
+        cart: cart(total),
+        tenders: [cashTender(total)],
+        receipt: { series: b.prefix, seq: 3, number: boxNumber },
       }),
     ]);
     expect(answer.applied).toBe(1);
 
     const row = await saleRow(saleId);
     expect(row!.receiptNumber).toBe(`${b.prefix}-000004`);
-    expect(row!.receiptNumber).not.toBe(boxNumber);
-
-    // Applied, with a caveat recorded: the guest is holding a slip that says
-    // something else, and the anomaly is where that is answerable from.
     const anomalies = await ctx.db
       .select()
       .from(syncAnomaly)
       .where(eq(syncAnomaly.eventId, answer.results[0]!.eventId));
-    expect(anomalies.map((a) => a.kind)).toContain('late_arrival');
-    expect(anomalies.find((a) => a.kind === 'late_arrival')!.detail).toMatchObject({
+    const collision = anomalies.find((a) => a.kind === 'receipt_collision');
+    expect(collision!.detail).toMatchObject({
       boxReceiptNumber: boxNumber,
       receiptNumber: `${b.prefix}-000004`,
     });
+    const [audited] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'sale.offline_replay'), eq(auditLog.entityId, saleId)));
+    expect(audited!.after).toMatchObject({
+      receiptNumber: `${b.prefix}-000004`,
+      boxReceiptNumber: boxNumber,
+    });
   });
 });
-
 describe('the tenders a box can take with nobody to ask (SCRUM-206)', () => {
   /** The park's own EDC, moved onto this box so the attempt may name it. */
   async function terminalOn(b: TestBox): Promise<string> {
@@ -1303,4 +1369,218 @@ describe('the box takes the sale and the ledger banks it (SCRUM-206)', () => {
     expect(ran!.errorCode).toBe('PRINTER_HAS_NO_DRAWER');
     expect(ran!.result).toMatchObject({ opened: false, stationId: bandStationId, role: 'receipt' });
   }, 60_000);
+});
+
+// --- Offline plan Round 4: the replay changes of §2.6 -------------------------
+
+describe('two boxes on one number (offline plan OD-4)', () => {
+  /**
+   * A spare swapped in for a day while the counter's own box was away, then
+   * the original put back: both printed the same number in the station's
+   * series, because neither had heard of the other's sale. The first to arrive
+   * keeps it; the original box's unsent tail syncs later, is filed under the
+   * next free number, and says so — both numbers on the anomaly and the audit
+   * row, because a guest is holding each.
+   */
+  it('files the late one under the next free number and raises the anomaly', async () => {
+    const a = await freshBox();
+    const spare = await freshBox();
+    const total = await quotedTotal(a.stationId);
+    const printed = { series: a.prefix, seq: 5, number: `${a.prefix}-000005` };
+    const tailSale = newId();
+    // The counter's own box takes a sale offline and never reaches the platform.
+    const tail = mint(a, 'sale.finalised', {
+      saleId: tailSale,
+      cart: cart(total),
+      tenders: [cashTender(total)],
+      receipt: printed,
+    });
+
+    // The spare takes over the station and prints the same number.
+    await ctx.db.update(station).set({ boxId: spare.boxId }).where(eq(station.id, a.stationId));
+    const onSpare: TestBox = { ...spare, stationId: a.stationId, prefix: a.prefix };
+    const spareSale = newId();
+    const first = await push(onSpare, [
+      mint(onSpare, 'sale.finalised', {
+        saleId: spareSale,
+        cart: cart(total),
+        tenders: [cashTender(total)],
+        receipt: printed,
+      }),
+    ]);
+    expect(first.applied).toBe(1);
+    expect((await saleRow(spareSale))!.receiptNumber).toBe(printed.number);
+
+    // The original box is put back, and its tail syncs.
+    await ctx.db.update(station).set({ boxId: a.boxId }).where(eq(station.id, a.stationId));
+    const late = await push(a, [tail]);
+    expect(late.applied).toBe(1);
+    expect((await saleRow(tailSale))!.receiptNumber).toBe(`${a.prefix}-000006`);
+    const [collision] = await ctx.db
+      .select()
+      .from(syncAnomaly)
+      .where(and(eq(syncAnomaly.eventId, late.results[0]!.eventId), eq(syncAnomaly.kind, 'receipt_collision')));
+    expect(collision!.detail).toMatchObject({
+      saleId: tailSale,
+      boxReceiptNumber: printed.number,
+      receiptNumber: `${a.prefix}-000006`,
+    });
+  });
+});
+
+describe('a price that changed while the box was offline (offline plan OD-8)', () => {
+  it('files a sale priced from an older catalogue at the box’s price, with an alert; the same version at another total stays quarantined', async () => {
+    const b = await freshBox();
+    const before = await catalogueVersionOf(ctx.db, operatorId, branchId);
+    const [pkg] = await ctx.db.select().from(ticketPackage).where(eq(ticketPackage.id, twoHoursId));
+    const quoted = await ctx.app.inject({
+      method: 'POST',
+      url: '/sales/quote',
+      headers: { cookie: receptionCookie },
+      payload: { stationId: b.stationId, lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 0 }] },
+    });
+    const oldQuote = quoted.json() as { pricingMode: 'weekday' | 'weekend'; totals: { grossSatang: number } };
+    const oldTotal = oldQuote.totals.grossSatang;
+    const basis = {
+      catalogueVersion: before,
+      pricingMode: oldQuote.pricingMode,
+      tier: 'tourist',
+      taxConfig: null,
+      packages: [{ id: pkg!.id, prices: pkg!.prices, adultRules: pkg!.adultRules ?? null }],
+      products: [],
+      options: [],
+    };
+
+    // The park raises its prices while the box is away.
+    const raised = Object.fromEntries(
+      Object.entries(pkg!.prices as Record<string, { weekday: number; weekend: number }>).map(
+        ([tier, p]) => [tier, { weekday: p.weekday + 5_000, weekend: p.weekend + 5_000 }],
+      ),
+    );
+    await ctx.db.update(ticketPackage).set({ prices: raised }).where(eq(ticketPackage.id, twoHoursId));
+    try {
+      const after = await catalogueVersionOf(ctx.db, operatorId, branchId);
+      expect(after).not.toBe(before);
+
+      const saleId = newId();
+      const answer = await push(b, [
+        mint(b, 'sale.finalised', {
+          saleId,
+          cart: cart(oldTotal),
+          tenders: [cashTender(oldTotal)],
+          catalogueVersion: before,
+          priceBasis: basis,
+        }),
+      ]);
+      expect(answer.results[0]!.errorCode ?? null).toBeNull();
+      expect(answer.applied).toBe(1);
+      const row = await saleRow(saleId);
+      expect(row!.status).toBe('finalised');
+      expect(row!.grossSatang).toBe(oldTotal);
+      expect(row!.catalogueVersion).toBe(before);
+      const [raisedAlert] = await ctx.db
+        .select()
+        .from(alert)
+        .where(eq(alert.key, `sale.offline_price:${saleId}`));
+      expect(raisedAlert!.category).toBe('sale.offline_price');
+      const [audited] = await ctx.db
+        .select()
+        .from(auditLog)
+        .where(and(eq(auditLog.action, 'sale.offline_replay'), eq(auditLog.entityId, saleId)));
+      expect(audited!.after).toMatchObject({
+        priceFiledAsTaken: { boxCatalogueVersion: before, currentCatalogueVersion: after, boxTotalSatang: oldTotal },
+      });
+
+      // The same version at a different total is a defect, and is refused whole.
+      const defect = newId();
+      const refused = await push(b, [
+        mint(b, 'sale.finalised', {
+          saleId: defect,
+          cart: cart(oldTotal),
+          tenders: [cashTender(oldTotal)],
+          catalogueVersion: after,
+          priceBasis: { ...basis, catalogueVersion: after },
+        }),
+      ]);
+      expect(refused.applied).toBe(0);
+      expect(refused.results[0]!.errorCode).toBe('SALE_TOTAL_MISMATCH');
+      expect(await saleRow(defect)).toBeUndefined();
+    } finally {
+      await ctx.db.update(ticketPackage).set({ prices: pkg!.prices }).where(eq(ticketPackage.id, twoHoursId));
+    }
+  });
+});
+
+describe('an actor revoked before the sale (offline plan OD-9)', () => {
+  async function tokenFor(b: TestBox, revokedAt: Date): Promise<string> {
+    const [seat] = await ctx.db
+      .select({ id: session.id })
+      .from(session)
+      .where(eq(session.accountId, receptionAccountId))
+      .limit(1);
+    const jti = newId();
+    const issuedAt = new Date(Date.now() - 2 * 3_600_000);
+    await ctx.db.insert(staffToken).values({
+      jti,
+      operatorId,
+      branchId,
+      accountId: receptionAccountId,
+      sessionId: seat!.id,
+      stationId: b.stationId,
+      boxId: b.boxId,
+      kid: 'offline-selling-test',
+      issuedAt,
+      expiresAt: new Date(issuedAt.getTime() + 16 * 3_600_000),
+      revokedAt,
+      revokedReason: 'admin',
+    });
+    return jti;
+  }
+
+  it('files the sale, and raises a revoked_actor anomaly and an alert', async () => {
+    const b = await freshBox();
+    const jti = await tokenFor(b, new Date(Date.now() - 3_600_000));
+    const total = await quotedTotal(b.stationId);
+    const saleId = newId();
+    const answer = await push(b, [
+      mint(b, 'sale.finalised', {
+        saleId,
+        cart: cart(total),
+        tenders: [cashTender(total)],
+        staffTokenJti: jti,
+      }),
+    ]);
+    expect(answer.applied).toBe(1);
+    expect((await saleRow(saleId))!.status).toBe('finalised');
+    const [anomaly] = await ctx.db
+      .select()
+      .from(syncAnomaly)
+      .where(and(eq(syncAnomaly.eventId, answer.results[0]!.eventId), eq(syncAnomaly.kind, 'revoked_actor')));
+    // The token id is redacted from the stored detail like any token field; the
+    // sale row carries it (`staff_token_jti`).
+    expect(anomaly!.detail).toMatchObject({ saleId, actorAccountId: receptionAccountId, reason: 'admin' });
+    expect((await saleRow(saleId))!.staffTokenJti).toBe(jti);
+    const [raised] = await ctx.db.select().from(alert).where(eq(alert.key, `sale.revoked_actor:${saleId}`));
+    expect(raised!.category).toBe('sale.revoked_actor');
+  });
+
+  it('a token revoked after the sale is an ordinary actor', async () => {
+    const b = await freshBox();
+    const jti = await tokenFor(b, new Date(Date.now() + 3_600_000));
+    const total = await quotedTotal(b.stationId);
+    const answer = await push(b, [
+      mint(b, 'sale.finalised', {
+        saleId: newId(),
+        cart: cart(total),
+        tenders: [cashTender(total)],
+        staffTokenJti: jti,
+      }),
+    ]);
+    expect(answer.applied).toBe(1);
+    const anomalies = await ctx.db
+      .select()
+      .from(syncAnomaly)
+      .where(eq(syncAnomaly.eventId, answer.results[0]!.eventId));
+    expect(anomalies.map((a) => a.kind)).not.toContain('revoked_actor');
+  });
 });

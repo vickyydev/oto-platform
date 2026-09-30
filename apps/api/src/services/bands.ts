@@ -9,6 +9,7 @@ import {
   normaliseBandCode,
   parseBandCode,
   parseBandShortCode,
+  planLedgerBands,
   ulidFromUuid,
 } from '@oto/shared';
 import type { Exec, Tx } from './tx';
@@ -69,35 +70,20 @@ export interface PlannedBand {
  * (a line whose adults were all free has no paid row).
  */
 export function planBands(lines: readonly SaleLineRow[]): PlannedBand[] {
-  const byCart = new Map<string, SaleLineRow[]>();
-  for (const line of lines) {
-    if (!line.ticketPackageId) continue;
-    const key = line.cartLineId ?? line.id;
-    const group = byCart.get(key) ?? [];
-    group.push(line);
-    byCart.set(key, group);
-  }
-  const plan: PlannedBand[] = [];
-  for (const [cartLineId, group] of byCart) {
-    const first = group[0];
-    if (!first) continue;
-    const kids = first.kidCount;
-    const adults = first.adultCount;
-    const free = Math.min(first.freeAdultCount, adults);
-    const kidsRow = group.find((l) => l.kind === 'kids') ?? first;
-    const paidRow = group.find((l) => l.kind === 'adults_paid');
-    const freeRow = group.find((l) => l.kind === 'adults_free');
-    for (let i = 0; i < kids; i += 1) {
-      plan.push({ kind: 'kid', saleLineId: kidsRow.id, cartLineId });
-    }
-    for (let i = 0; i < adults; i += 1) {
-      const row = i < adults - free ? (paidRow ?? freeRow ?? first) : (freeRow ?? paidRow ?? first);
-      plan.push({ kind: 'adult', saleLineId: row.id, cartLineId });
-    }
-  }
-  return plan;
+  // The one rule, shared with a box that mints the bands of a sale it takes
+  // with no internet (offline plan OD-13): the same lines owe the same bands.
+  return planLedgerBands(
+    lines.map((line) => ({
+      id: line.id,
+      cartLineId: line.cartLineId,
+      kind: line.kind,
+      ticket: line.ticketPackageId !== null,
+      kidCount: line.kidCount,
+      adultCount: line.adultCount,
+      freeAdultCount: line.freeAdultCount,
+    })),
+  );
 }
-
 /** The children a sale's visit named, in the order reception confirmed them. */
 async function visitChildrenOf(db: Exec, visitId: string | null): Promise<string[]> {
   if (!visitId) return [];

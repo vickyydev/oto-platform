@@ -43,6 +43,21 @@ export function holdBoxSession(value: string | null): void {
   boxSession = value;
 }
 
+let staffName: string | null = null;
+
+/**
+ * Who is signed in at this till, as the receipt names them (Round 4). A till's
+ * box holds no staff names (SCRUM-223), so a receipt it prints offline takes
+ * the name from the till, which knows who is standing at it.
+ */
+export function setBridgeStaffName(value: string | null): void {
+  staffName = value?.trim() || null;
+}
+
+export function bridgeStaffName(): string | null {
+  return staffName;
+}
+
 export function bridgeUrl(stationId: string, rest: string): string {
   const path = `${STATION_BRIDGE_BASE}/${encodeURIComponent(stationId)}/${rest}`;
   return origin ? `${origin}${path}` : `/api${path}`;

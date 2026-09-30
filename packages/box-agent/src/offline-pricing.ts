@@ -1,6 +1,8 @@
 import {
   businessDate,
+  cartUnits,
   computeTicketCartTotals,
+  deriveSaleLineId,
   getRateModeForDate,
   isLegacyBoothCode,
   itemCartLine,
@@ -8,19 +10,25 @@ import {
   itemPricePair,
   itemTaxCategory,
   itemUnitPrice,
+  ledgerUnitComponentKey,
+  ledgerUnitKindOf,
+  ledgerUnitLabel,
   normaliseBoothCode,
   parseDayStart,
   priceCartLine,
   PRICING_ENGINE_VERSION,
+  splitLedgerUnitMoney,
   TaxConfigSchema,
   TaxableCategorySchema,
   verifyBoothCode,
   type BridgeCart,
+  type OfflinePriceBasis,
   type CartAddOn,
   type CartPromo,
   type DiscountTarget,
   type ManualDiscount,
   type PricingContext,
+  type SalePrintLine,
   type TaxableCategory,
   type TaxConfigShape,
   type TicketCartLine,
@@ -78,6 +86,9 @@ interface PackageRow {
   adultRules: unknown;
   active: boolean;
   archivedAt: string | null;
+  /** How long a band from it admits: the receipt and the band print it. */
+  hours: number | null;
+  durationLabel: string | null;
 }
 
 interface CategoryRow {
@@ -85,6 +96,8 @@ interface CategoryRow {
   parentId: string | null;
   taxableCategory: TaxableCategory | null;
   name: string;
+  /** Where an item filed here prints its prep ticket, unless it says otherwise. */
+  defaultPrepStation: string | null;
 }
 
 interface ProductRow {
@@ -95,6 +108,7 @@ interface ProductRow {
   priceWeekendSatang: number | null;
   categoryId: string | null;
   taxCategoryOverride: TaxableCategory | null;
+  prepStationOverride: string | null;
   variants: Array<{ id: string; label: string }>;
   active: boolean;
   archivedAt: string | null;
@@ -184,6 +198,8 @@ export function readOfflineCatalogue(
       adultRules: row.adultRules ?? null,
       active: row.active !== false,
       archivedAt: str(row.archivedAt),
+      hours: int(row.hours),
+      durationLabel: str(row.durationLabel),
     });
   }
 
@@ -199,6 +215,7 @@ export function readOfflineCatalogue(
       priceWeekendSatang: int(row.priceWeekendSatang),
       categoryId: str(row.categoryId),
       taxCategoryOverride: taxArea(row.taxCategoryOverride),
+      prepStationOverride: str(row.prepStationOverride),
       variants: rows(row.variants).flatMap((v) => {
         const vid = str(v.id);
         return vid ? [{ id: vid, label: str(v.label) ?? vid }] : [];
@@ -225,6 +242,7 @@ export function readOfflineCatalogue(
               parentId: str(c.parentId),
               taxableCategory: taxArea(c.taxableCategory),
               name: str(c.name) ?? '',
+              defaultPrepStation: str(c.defaultPrepStation),
             },
           ]
         : [];
@@ -448,6 +466,65 @@ export function priceOfflineCart(
   cart: BridgeCart,
   context: OfflineQuoteContext,
 ): OfflineQuote {
+  return priceOfflineSale(catalogue, cart, context).quote;
+}
+
+/** An F&B or shop line's own facts, beside its money: what the ledger's line payload carries. */
+export interface OfflineItemLine {
+  kind: 'fnb_item' | 'merch_item';
+  productId: string;
+  payload: {
+    modifiers?: {
+      groupId: string;
+      groupName: string;
+      optionId: string;
+      optionName: string;
+      unitSatang: number;
+    }[];
+    note?: string;
+    variant?: { variantId: string; variantLabel: string };
+    prepStation?: string;
+  };
+}
+
+/** Everything a sale taken on the box is priced from, beside the till's quote. */
+export interface OfflineSalePricing {
+  quote: OfflineQuote;
+  cartLines: TicketCartLine[];
+  ctx: PricingContext;
+  totals: TicketCartTotals;
+  /** The F&B and shop lines, by cart line id. */
+  items: Map<string, OfflineItemLine>;
+  /** The rows the price came from, for the fact (OD-8). */
+  basis: OfflinePriceBasis;
+}
+
+/**
+ * Where an item's prep ticket prints: its own override, else its category's,
+ * else the parent's, else the kitchen — `effectivePrepStation` in the api's
+ * menu, walked over the cached catalogue.
+ */
+function prepStationOf(product: ProductRow, categories: readonly CategoryRow[]): string {
+  if (product.prepStationOverride) return product.prepStationOverride;
+  const own = categories.find((c) => c.id === product.categoryId);
+  if (own?.defaultPrepStation) return own.defaultPrepStation;
+  const parent = own?.parentId ? categories.find((c) => c.id === own.parentId) : undefined;
+  return parent?.defaultPrepStation ?? 'kitchen';
+}
+
+/**
+ * Price a sale from the box's catalogue: the quote the till shows, and the
+ * engine's own cart lines and totals, which the ledger lines of an offline
+ * receipt are split from (`splitLedgerUnitMoney`), and the price basis the
+ * fact carries (OD-8).
+ */
+export function priceOfflineSale(
+  catalogue: OfflineCatalogue,
+  cart: BridgeCart,
+  context: OfflineQuoteContext,
+): OfflineSalePricing {
+  const items = new Map<string, OfflineItemLine>();
+  const optionsUsed = new Map<string, OptionRow>();
   if (!catalogue.taxConfig) {
     throw new OfflinePriceError(
       'VALIDATION',
@@ -679,6 +756,34 @@ export function priceOfflineCart(
         priceSatang: priced.options[index] ?? 0,
       })),
     };
+    for (const { option } of picked) optionsUsed.set(option.id, option);
+    const size =
+      isMerch && line.variant ? row.variants.find((v) => v.id === line.variant!.variantId) : undefined;
+    const note = (line.note ?? '').trim();
+    items.set(line.id, {
+      kind: isMerch ? 'merch_item' : 'fnb_item',
+      productId: row.id,
+      payload: {
+        ...(picked.length > 0
+          ? {
+              modifiers: picked.map(({ group, option }, index) => ({
+                groupId: group.id,
+                groupName: group.name,
+                optionId: option.id,
+                optionName: option.name,
+                unitSatang: priced.options[index] ?? 0,
+              })),
+            }
+          : {}),
+        ...(note ? { note } : {}),
+        ...(size
+          ? { variant: { variantId: size.id, variantLabel: size.label } }
+          : !isMerch && line.variant
+            ? { variant: line.variant }
+            : {}),
+        ...(isMerch ? {} : { prepStation: prepStationOf(row, catalogue.categories) }),
+      },
+    });
     freeItemLines.push({ lineId: line.id, productId: row.id });
     cartLines.push(cartLine);
   }
@@ -736,7 +841,40 @@ export function priceOfflineCart(
   const lineTotals: Record<string, number> = {};
   for (const line of cartLines) lineTotals[line.id] = line.lineTotal;
 
-  return {
+  const productsUsed = new Set<string>([
+    ...(socksProduct ? [socksProduct.id] : []),
+    ...cart.lines.flatMap((line) => (line.addOns ?? []).map((a) => a.id)),
+    ...cart.items.map((item) => item.productId),
+  ]);
+  const basis: OfflinePriceBasis = {
+    catalogueVersion: catalogue.version,
+    pricingMode: rate.mode,
+    tier: tierCode,
+    taxConfig: catalogue.taxConfig,
+    packages: [...new Set(cart.lines.map((l) => l.packageId))].flatMap((id) => {
+      const pkg = catalogue.packages.get(id);
+      return pkg ? [{ id: pkg.id, prices: pkg.prices, adultRules: pkg.adultRules ?? null }] : [];
+    }),
+    products: [...productsUsed].flatMap((id) => {
+      const product = catalogue.products.get(id);
+      return product
+        ? [
+            {
+              id: product.id,
+              priceSatang: product.priceSatang,
+              priceWeekendSatang: product.priceWeekendSatang,
+            },
+          ]
+        : [];
+    }),
+    options: [...optionsUsed.values()].map((option) => ({
+      id: option.id,
+      priceSatang: option.priceSatang,
+      priceWeekendSatang: option.priceWeekendSatang,
+    })),
+  };
+
+  const quote: OfflineQuote = {
     source: 'box',
     businessDate: date,
     pricingMode: rate.mode,
@@ -780,4 +918,67 @@ export function priceOfflineCart(
       tierDiffers: cart.tier !== undefined && cart.tier !== tierCode,
     },
   };
+  return { quote, cartLines, ctx, totals, items, basis };
+}
+
+// --- The ledger's lines, on the box (plan §2.5, Round 4) ----------------------------
+
+/** One ledger line of a sale taken on the box: what it prints, and what its bands are planned from. */
+export interface OfflineLedgerLine extends SalePrintLine {
+  cartLineId: string;
+  kidCount: number;
+  adultCount: number;
+  freeAdultCount: number;
+}
+
+/**
+ * The lines the platform will file this sale under, named and split exactly
+ * as `commitSale` names and splits them: one per engine unit, the id derived
+ * from the sale, the cart line and the unit's component key
+ * (`deriveSaleLineId`), and each unit's money from `splitLedgerUnitMoney`. So
+ * the receipt printed at an offline counter carries the ledger's own lines,
+ * and a band minted here names the ledger line it admits against.
+ */
+export function offlineLedgerLines(
+  saleId: string,
+  catalogue: OfflineCatalogue,
+  pricing: Pick<OfflineSalePricing, 'cartLines' | 'ctx' | 'totals' | 'items'>,
+  pickupCode: string | null,
+): OfflineLedgerLine[] {
+  const units = cartUnits(pricing.cartLines, pricing.ctx);
+  const money = splitLedgerUnitMoney(units, pricing.totals);
+  const linesById = new Map(pricing.cartLines.map((line) => [line.id, line]));
+  const occurrences = new Map<string, number>();
+  return units.map((unit, index) => {
+    const cartLine = linesById.get(unit.lineId);
+    const item = pricing.items.get(unit.lineId);
+    const kind = item ? item.kind : ledgerUnitKindOf(unit);
+    const component = ledgerUnitComponentKey(unit);
+    const key = `${unit.lineId}|${component}`;
+    const occurrence = occurrences.get(key) ?? 0;
+    occurrences.set(key, occurrence + 1);
+    const pkg = cartLine ? catalogue.packages.get(cartLine.packageId) : undefined;
+    const row = unit.row;
+    return {
+      id: deriveSaleLineId(saleId, unit.lineId, component, occurrence),
+      cartLineId: unit.lineId,
+      kind,
+      label: ledgerUnitLabel(unit),
+      quantity: row?.quantity ?? 1,
+      grossSatang: money[index]?.gross ?? 0,
+      ticket: !!pkg,
+      payload: item
+        ? {
+            ...item.payload,
+            // The order's pick-up code, on every F&B line, as the platform stamps it.
+            ...(item.kind === 'fnb_item' && pickupCode ? { pickupCode } : {}),
+          }
+        : null,
+      stayHours: pkg?.hours ?? null,
+      stayDurationLabel: pkg?.durationLabel ?? null,
+      kidCount: cartLine?.kids ?? 0,
+      adultCount: cartLine?.adults ?? 0,
+      freeAdultCount: row?.key === 'adults-free' ? row.quantity : 0,
+    };
+  });
 }

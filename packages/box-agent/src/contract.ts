@@ -169,6 +169,8 @@ export const SYNC_ANOMALY_KINDS = [
   'merge',
   'epoch_regressed',
   'late_arrival',
+  'receipt_collision',
+  'revoked_actor',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 

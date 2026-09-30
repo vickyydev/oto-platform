@@ -1069,6 +1069,20 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
     version: t.version,
   }));
 
+  /**
+   * OD-13 — THE PARK'S BAND KEY, to counter and gate boxes only.
+   *
+   * A counter with no internet mints the bands of the sales it takes, and a
+   * gate checks them, with the same HMAC key the platform mints and checks
+   * with — the same format both ways, so the gate cannot tell an offline band
+   * from an online one. A box that runs only booths sells nothing and admits
+   * nobody, so it is never sent the key (`boxCacheRole`). This document is
+   * fetched over the box's own credential and never logged; a Pi writes it
+   * with the credential's own permissions (`fileConfigCache`).
+   */
+  const role = await boxCacheRole(db, auth);
+  const bandKey = role === 'counter' ? currentBandKey() : null;
+
   const body = {
     box: {
       id: auth.boxId,
@@ -1110,6 +1124,7 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
      */
     printTemplates,
     signingKeys,
+    ...(bandKey ? { bandKey } : {}),
     heartbeatIntervalS: settings.heartbeatIntervalS,
     minSupportedAgentVersion: settings.minAgentVersion,
   };

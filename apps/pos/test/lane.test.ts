@@ -156,17 +156,17 @@ describe('which lane a call takes', () => {
   });
 });
 
-describe('paying on the box lane (round 4 builds it)', () => {
-  it('a forced-offline answer is refused in the counter’s words', () => {
+describe('what paying says when no lane took it (round 4 sells on the box lane)', () => {
+  it('a forced-offline answer on a till with no box to sell through is refused in the counter’s words', () => {
     const message = paymentRefusalMessage(new ApiError(503, 'STATION_FORCED_OFFLINE', 'forced'));
     expect(message).toMatch(/working without the internet/);
     expect(currentLane()).toBe('box');
   });
 
-  it('a single dropped request on the platform lane keeps its own words, and moves the till to its box', () => {
+  it('a single dropped request on the platform lane keeps its own words, and moves the till to its box; the box not answering either says so', () => {
     expect(paymentRefusalMessage(new NetworkError())).toBeNull();
     expect(currentLane()).toBe('box');
-    expect(paymentRefusalMessage(new NetworkError())).toMatch(/working without the internet/);
+    expect(paymentRefusalMessage(new NetworkError())).toMatch(/Neither the internet nor this counter’s box answered/);
   });
 
   it('any other refusal is not the lane’s to reword', () => {

@@ -243,6 +243,10 @@ export const SYNC_ANOMALY_KINDS = [
   'merge',
   'epoch_regressed',
   'late_arrival',
+  /** A box's printed receipt number was taken; filed under the next free one (OD-4). */
+  'receipt_collision',
+  /** Made by an account revoked before it happened; applied, with an alert (OD-9). */
+  'revoked_actor',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 

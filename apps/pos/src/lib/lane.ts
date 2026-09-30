@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { BOX_LANE_PAYMENT_REFUSAL, type BridgeLane } from '@oto/shared';
+import { BOX_LANE_PAYMENT_REFUSAL, BOX_LANE_UNREACHABLE, type BridgeLane } from '@oto/shared';
 import { ApiError, NetworkError } from '@/api/client';
 import { bridgeApi } from '@/api/bridge';
 
@@ -124,19 +124,22 @@ export async function viaLane<T>(
 }
 
 /**
- * What a payment meets on the box lane this round (round 4 builds it), in
- * words a guest can hear: the platform's forced-offline answer, or a dropped
- * link on a till already working through its box. A single dropped request on
- * the platform lane keeps its own words — it may be a blip, and saying the
- * counter is offline would send staff after the wrong thing — but it still
- * moves the till to its box for what follows.
+ * What a payment the box lane could not take says, in words a guest can hear
+ * (Round 4 sells on the box lane; `lib/saleWriter.ts` moves a sale there on a
+ * trigger). What reaches here is what is left: the platform's forced-offline
+ * answer on a till with no station, so no box to sell through; or a dropped
+ * link on a till already working through its box — the box did not answer
+ * either. A single dropped request on the platform lane keeps its own words —
+ * it may be a blip, and saying the counter is offline would send staff after
+ * the wrong thing — but it still moves the till to its box for what follows.
  */
 export function paymentRefusalMessage(err: unknown): string | null {
   if (!isBoxLaneTrigger(err)) return null;
   const alreadyOnBox = lane === 'box' && stationId !== null;
   noteLaneFailure(err);
   const forced = err instanceof ApiError && err.code === 'STATION_FORCED_OFFLINE';
-  return forced || alreadyOnBox ? BOX_LANE_PAYMENT_REFUSAL.message : null;
+  if (alreadyOnBox) return BOX_LANE_UNREACHABLE.message;
+  return forced ? BOX_LANE_PAYMENT_REFUSAL.message : null;
 }
 
 export function useLane(): BridgeLane {

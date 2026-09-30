@@ -520,22 +520,31 @@ test('a cart is priced from the cached catalogue; after seven days the box refus
   r.t.close();
 });
 
-test('paying on the box lane is refused politely until round 4', async () => {
+test('what the capability list refuses on the box lane says why; money with nowhere to write it is refused politely', async () => {
   const r = await rig();
   const { caller } = await r.bridge.unlock(STATION_ID, {
     token: token(r.now.at),
     password: 'open-sesame',
   });
-  await assert.rejects(
-    r.bridge.intent(STATION_ID, caller, intent('sale.finalise', {})),
-    (err: unknown) =>
-      err instanceof BridgeError &&
-      err.code === 'BOX_LANE_PAYMENT_UNAVAILABLE' &&
-      err.status === 409,
-  );
+  const refused = async (type: string, code: string, status = 409) =>
+    assert.rejects(
+      r.bridge.intent(STATION_ID, caller, intent(type, {})),
+      (err: unknown) => err instanceof BridgeError && err.code === code && err.status === status,
+      `${type} is refused as ${code}`,
+    );
+  // Plan §2.8's refusals, in its reasons (`BOX_LANE_REFUSALS`).
+  await refused('sale.refund', 'BOX_LANE_REFUND_REFUSED');
+  await refused('sale.void', 'BOX_LANE_REFUND_REFUSED');
+  await refused('payment.wallet', 'BOX_LANE_WALLET_REFUSED');
+  await refused('payment.voucher', 'VOUCHER_NEEDS_INTERNET');
+  await refused('payment.2c2p', 'BOX_LANE_2C2P_QR_REFUSED');
+  await refused('booking.redeem', 'BOX_LANE_BOOKING_REFUSED');
+  // A money intent this box does not know yet: the round-3 sentence, not `unknown_intent`.
+  await refused('sale.split_bill', 'BOX_LANE_PAYMENT_UNAVAILABLE');
+  // Closing a sale needs what closing one online needs.
+  await refused('sale.finalise', 'FORBIDDEN', 403);
   r.t.close();
 });
-
 test('with no signing key here, a record is refused by name rather than queued unsigned', async () => {
   const r = await rig({ seal: false });
   const { caller } = await r.bridge.unlock(STATION_ID, {

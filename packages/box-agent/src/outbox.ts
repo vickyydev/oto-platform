@@ -315,13 +315,43 @@ export interface OfflineTenderFact {
   responseCode?: string | null;
   paidAt?: string;
   reference?: string | null;
+  /**
+   * OD-3 — a GHL card sale that gave no answer, which that dialect cannot be
+   * asked about: staff read the terminal's own screen and typed its approval
+   * code. The money is recorded as taken, named on the person who said so,
+   * and flagged for end-of-day reconciliation against the terminal's slips.
+   */
+  staffConfirmation?: {
+    accountId: string;
+    at: string;
+    approvalCode: string;
+    note?: string | null;
+  } | null;
 }
 
-/** The receipt number the box showed the guest. Provisional; the cloud allocates the real one. */
+/**
+ * The receipt number the box printed and the guest holds (OD-4). The cloud
+ * files the sale under it when it is free in the station's series, and under
+ * the next free number — both named — when it is not.
+ */
 export interface OfflineReceiptFact {
   series: string;
   seq: number;
   number: string;
+}
+
+/**
+ * A band the box minted for the sale (OD-13): its id and signed code, the
+ * cart line it admits against and the ledger line that is (`deriveSaleLineId`),
+ * and the child it names. The cloud records it as it is and mints nothing.
+ */
+export interface OfflineBandFact {
+  id: string;
+  code: string;
+  kind: 'kid' | 'adult';
+  cartLineId: string;
+  saleLineId: string | null;
+  childId: string | null;
 }
 
 export interface OfflineSaleFact {
@@ -349,10 +379,19 @@ export interface OfflineSaleFact {
    * type error here rather than a quarantined sale in Phuket.
    */
   cart: Record<string, unknown> & { expectedTotalSatang: number };
+  /** Every tender that closed the sale. Empty for a ฿0 comp, which owes nothing. */
   tenders: readonly OfflineTenderFact[];
   receipt?: OfflineReceiptFact | null;
+  /** The bands minted on the box for the sale's tickets (Round 4). */
+  bands?: readonly OfflineBandFact[];
+  /** The catalogue version the box priced the cart from (OD-8). */
+  catalogueVersion?: string | null;
+  /** The prices it priced from, so an older catalogue's price can be filed as taken (OD-8). */
+  priceBasis?: Record<string, unknown> | null;
   /** The offline staff token the box verified, by its `jti`, where one was used. */
   staffTokenJti?: string | null;
+  /** Taken under a fresh offline sign-in with no live token (OD-6). */
+  offlineFresh?: boolean;
   /** The till's clock when the sale was rung up. The cloud weighs it against the box's skew. */
   occurredAt?: string;
   actionId?: string | null;
@@ -373,6 +412,10 @@ export function saleFinalisedFact(sale: OfflineSaleFact): QueuedFact {
       tenders: sale.tenders.map((tender) => ({ ...tender })),
       receipt: sale.receipt ?? null,
       staffTokenJti: sale.staffTokenJti ?? null,
+      ...(sale.offlineFresh ? { offlineFresh: true } : {}),
+      ...(sale.bands && sale.bands.length > 0 ? { bands: sale.bands.map((band) => ({ ...band })) } : {}),
+      ...(sale.catalogueVersion !== undefined ? { catalogueVersion: sale.catalogueVersion } : {}),
+      ...(sale.priceBasis ? { priceBasis: sale.priceBasis } : {}),
     },
   };
 }

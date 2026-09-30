@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { TaxConfigSchema } from './catalog-shapes';
+import { PAYMENT_METHOD_KINDS, type PaymentAttemptView } from './payments';
+import { SALE_REPRINT_KINDS } from './print';
 import { TIER_PROOF_TYPES } from './tier-proof';
 import { STAFF_OFFLINE_SIGN_IN_DAYS, STAFF_TOKEN_TTL_S } from './staff-token';
 
@@ -280,18 +283,121 @@ export type BridgeRecordIntent = keyof typeof BRIDGE_RECORD_INTENTS;
 export const BRIDGE_CART_QUOTE_INTENT = 'cart.quote';
 
 /**
- * The money intents, which round 4 builds. Until then the bridge answers them
- * with a polite refusal rather than `unknown_intent`, so a till that switched
- * lanes mid-sale can say what is happening in words a guest can hear.
+ * The money intents' family names. Round 4 builds the ones in
+ * `BRIDGE_SALE_INTENTS`; any other `sale.*` or `payment.*` a till sends is
+ * refused politely rather than answered `unknown_intent`, so a till newer than
+ * its box can still say what is happening in words a guest can hear.
  */
 export const BRIDGE_MONEY_INTENT_PREFIXES = ['sale.', 'payment.'] as const;
 
-/** The refusal a money intent meets on the box lane this round. */
+/**
+ * SELLING ON THE BOX LANE (offline plan §2.4, Round 4).
+ *
+ *   - `sale.finalise`: the whole sale and the money that closes it — cash, or
+ *     nothing at all for a ฿0 comp — priced, numbered, banded, put on disk and
+ *     printed by the box in one store transaction (`SaleQueue.record`);
+ *   - `payment.start`: a card or the PAX QR on the counter's own terminal,
+ *     which the box drives itself; an approval closes the sale the same way;
+ *   - `payment.inquire`: ask the terminal what became of a tender with no
+ *     final answer (a Digio terminal can be asked; a GHL card sale cannot);
+ *   - `payment.confirm`: staff confirm, against the terminal's own screen and
+ *     with the approval code typed, a GHL card sale that gave no answer (OD-3);
+ *   - `payment.status`: where a terminal tender the box is holding stands —
+ *     what the till polls while a guest finds a card;
+ *   - `sale.reprint`: another copy of today's sale from this box's own log.
+ */
+export const BRIDGE_SALE_INTENTS = {
+  finalise: 'sale.finalise',
+  reprint: 'sale.reprint',
+  paymentStart: 'payment.start',
+  paymentInquire: 'payment.inquire',
+  paymentConfirm: 'payment.confirm',
+  paymentStatus: 'payment.status',
+} as const;
+export type BridgeSaleIntent = (typeof BRIDGE_SALE_INTENTS)[keyof typeof BRIDGE_SALE_INTENTS];
+
+/**
+ * The till tells its box the receipt number the platform gave an online sale
+ * (OD-4), so the box's offline series continues from the higher of that and
+ * the mark it last pulled — never re-issuing a number the counter has already
+ * handed a guest.
+ */
+export const BRIDGE_RECEIPT_OBSERVED_INTENT = 'receipt.observed';
+
+/**
+ * The refusal a money intent meets when the box has nowhere to write it: an
+ * api instance the virtual box is not running on, or a box with no store. The
+ * copy stays the round-3 sentence the till already shows.
+ */
 export const BOX_LANE_PAYMENT_REFUSAL = {
   code: 'BOX_LANE_PAYMENT_UNAVAILABLE',
   message:
     'This counter is working without the internet, and taking payment offline is not switched on yet. Keep the order and take payment when the connection is back.',
 } as const;
+
+/**
+ * What a till on the box lane says when its box did not answer either: the
+ * sale was not taken anywhere, and the counter's own network is the thing to
+ * look at.
+ */
+export const BOX_LANE_UNREACHABLE = {
+  code: 'BOX_LANE_UNREACHABLE',
+  message:
+    'Neither the internet nor this counter’s box answered, so nothing was taken. Check the counter’s box and its network, then try again.',
+} as const;
+
+/**
+ * WHAT CANNOT BE TAKEN ON THE BOX LANE, in the capability list's own reasons
+ * (plan §2.8, `ARCHITECTURE.md` §17). Each is said in words a guest can hear;
+ * the list is what they say it for:
+ *
+ *   - 2C2P QR — minting is a server call;
+ *   - gift or prize voucher — single use across counters is server-validated;
+ *   - wallet spend — refused until the wallet ticket adds the capped row (OD-14);
+ *   - online booking redemption — S2-12 builds it on this bridge;
+ *   - refund, void — online only, with `pos:refund:approve`; a "refund
+ *     requested" note queues on the till.
+ *
+ * Two more are this lane's own bounds rather than rows of the list: a split
+ * tender (the box closes a sale with one payment; the ledger takes a split
+ * online), and a counter with no terminal of the kind asked for.
+ */
+export const BOX_LANE_REFUSALS = {
+  qr2c2p: {
+    code: 'BOX_LANE_2C2P_QR_REFUSED',
+    message:
+      'A 2C2P QR is minted by the platform, so it cannot be offered while this counter is offline. Take cash, a card on the terminal or the PAX QR instead.',
+  },
+  voucher: {
+    code: 'VOUCHER_NEEDS_INTERNET',
+    message: 'Vouchers need the internet — take this one when the connection is back',
+  },
+  wallet: {
+    code: 'BOX_LANE_WALLET_REFUSED',
+    message:
+      'Wallet spend needs the internet until wallets can be capped at the counter. Take another payment while this counter is offline.',
+  },
+  booking: {
+    code: 'BOX_LANE_BOOKING_REFUSED',
+    message:
+      'Online bookings are redeemed with the internet. Keep the booking and redeem it when the connection is back.',
+  },
+  refund: {
+    code: 'BOX_LANE_REFUND_REFUSED',
+    message:
+      'Refunds and voids need the internet and a manager who can approve them. Note the refund request — it is done when the connection is back.',
+  },
+  split: {
+    code: 'BOX_LANE_SPLIT_REFUSED',
+    message:
+      'While this counter is offline a sale is paid in one go. Take the whole amount with one payment, or split it when the connection is back.',
+  },
+  noTerminal: {
+    code: 'BOX_LANE_NO_TERMINAL',
+    message: 'This counter has no terminal for that payment. Take another payment.',
+  },
+} as const;
+export type BoxLaneRefusal = keyof typeof BOX_LANE_REFUSALS;
 
 /** The refusal a quote meets when the box's catalogue is older than OD-5 allows. */
 export const BOX_CATALOGUE_TOO_OLD = {
@@ -466,3 +572,195 @@ export function bridgeCartOf(payload: unknown): BridgeCart {
   const { cart: _nested, ...flat } = parsed;
   return BridgeCartBodySchema.parse(flat);
 }
+
+// --- Selling on the box lane (plan §2.4, Round 4) ---------------------------------
+//
+// The till sends the same cart it would send `POST /sales`, under the ids it
+// minted (OD-12): the sale, every line, the press. The box prices it again
+// from its own catalogue — on this lane the box's figure authorises taking
+// money (`ARCHITECTURE.md` §17) — and refuses a cart whose total the till saw
+// differently, before anything is numbered or taken.
+
+/** One tender as the till took it. `method` is the configured token staff chose. */
+export const BridgeTenderSchema = z.object({
+  /** `x-oto-action-id` — the press. The replay key on the platform (rule 2). */
+  actionId: z.string().min(1).max(200),
+  method: z.string().min(1).max(40),
+  kind: z.enum(PAYMENT_METHOD_KINDS),
+  amountSatang: z.number().int().min(0).max(100_000_000),
+  tenderedSatang: z.number().int().min(0).max(100_000_000).optional(),
+  changeSatang: z.number().int().min(0).max(100_000_000).optional(),
+});
+export type BridgeTender = z.infer<typeof BridgeTenderSchema>;
+
+const BridgeSaleBaseSchema = z.object({
+  /** Minted at the till, once per cart. The box and the platform both key on it. */
+  saleId: Uuid,
+  /** The Pay press — the sale's own action id. */
+  actionId: z.string().min(1).max(200),
+  /** The till's clock when Pay was pressed. The box's own is what it records. */
+  occurredAt: z.string().max(40).optional(),
+  visitId: Uuid.nullish(),
+  note: z.string().max(500).nullish(),
+  /**
+   * The name the receipt prints beside "Staff". A till's box holds no staff
+   * names (SCRUM-223), and the till knows who is signed in; it is printed and
+   * kept for a reprint, and never sent to the platform, which prints its own.
+   */
+  staffName: z.string().max(120).nullish(),
+  /** The children staff confirmed for this sale's visit, when the box's copy lacks the visit. */
+  visitChildIds: z.array(Uuid).max(20).optional(),
+  cart: z.record(z.unknown()),
+});
+
+/** `sale.finalise`: the sale and the money that closes it — one cash tender, or none for a ฿0 comp. */
+export const BridgeSaleFinaliseSchema = BridgeSaleBaseSchema.extend({
+  tender: BridgeTenderSchema.nullish(),
+});
+export type BridgeSaleFinalise = z.infer<typeof BridgeSaleFinaliseSchema>;
+
+/** `payment.start`: a card or a QR on the counter's own terminal, for the whole balance. */
+export const BridgePaymentStartSchema = BridgeSaleBaseSchema.extend({
+  tender: BridgeTenderSchema.extend({ kind: z.enum(['card', 'qr']) }),
+});
+export type BridgePaymentStart = z.infer<typeof BridgePaymentStartSchema>;
+
+/** `payment.inquire` and `payment.status`: what became of a tender with no final answer. */
+export const BridgePaymentInquireSchema = z.object({
+  saleId: Uuid,
+  attemptId: Uuid,
+});
+export type BridgePaymentInquire = z.infer<typeof BridgePaymentInquireSchema>;
+
+/**
+ * `payment.confirm` (OD-3): a GHL card sale that gave no answer, confirmed by
+ * staff against the terminal's own screen. `took` with the approval code typed
+ * off it records the money and flags it for end-of-day reconciliation; `took:
+ * false` records that nothing was taken.
+ */
+export const BridgePaymentConfirmSchema = z
+  .object({
+    saleId: Uuid,
+    attemptId: Uuid,
+    took: z.boolean(),
+    approvalCode: z.string().trim().min(1).max(12).nullish(),
+    last4: z.string().regex(/^\d{4}$/).nullish(),
+    note: z.string().max(300).nullish(),
+  })
+  .refine((body) => !body.took || !!body.approvalCode, {
+    message: 'Type the approval code from the terminal’s screen to confirm the payment',
+    path: ['approvalCode'],
+  });
+export type BridgePaymentConfirm = z.infer<typeof BridgePaymentConfirmSchema>;
+
+/** `receipt.observed`: the number the platform gave an online sale at this station (OD-4). */
+export const BridgeReceiptObservedSchema = z.object({
+  receiptNumber: z.string().min(3).max(40),
+});
+
+/** `sale.reprint`: another copy of a sale this box printed today. */
+export const BridgeSaleReprintSchema = z.object({
+  saleId: Uuid,
+  kind: z.enum(SALE_REPRINT_KINDS),
+  reason: z.string().max(200).nullish(),
+});
+export type BridgeSaleReprint = z.infer<typeof BridgeSaleReprintSchema>;
+
+/** The sale as a box-lane answer gives it back: the till's `ApiSale`, from the box. */
+export interface BridgeSaleView {
+  id: string;
+  status: 'tendering' | 'finalised';
+  businessDate: string;
+  occurredAt: string;
+  receiptNumber: string | null;
+  receiptSeries: string | null;
+  receiptSeq: number | null;
+  stationId: string;
+  boxId: string;
+  pricingMode: 'weekday' | 'weekend';
+  customerTier: string;
+  totals: {
+    subtotalSatang: number;
+    manualDiscountSatang: number;
+    promoDiscountSatang: number;
+    discountSatang: number;
+    netSatang: number;
+    serviceChargeSatang: number;
+    taxInclusiveSatang: number;
+    taxExclusiveSatang: number;
+    grossSatang: number;
+    unappliedDiscountSatang: number;
+  };
+  engineVersion: string;
+  /** Where it was filed: the box's own queue, to reach the platform when the link is back. */
+  origin: 'box';
+}
+
+/** What `sale.finalise` and a closing `payment.*` answer with. */
+export interface BridgeSaleAnswer {
+  sale: BridgeSaleView;
+  finalised: boolean;
+  outstandingSatang: number;
+  /** The tender this call took or is waiting on, in the platform's attempt shape. */
+  attempt: PaymentAttemptView | null;
+  /** True when the box had already recorded this sale and answered from its log. */
+  replay: boolean;
+  printing: { jobs: Array<{ id: string; kind: string; status: string }>; notes: string[] };
+  drawer: 'opened' | 'failed' | 'not_asked';
+  /** Everything still waiting to go up. "3 sales to send". */
+  outboxDepth: number;
+}
+
+// --- What the box priced from (OD-8) ---------------------------------------------------
+
+/**
+ * THE PRICES A BOX-LANE SALE WAS TAKEN AT, carried with the fact (OD-8).
+ *
+ * The platform re-prices every replayed sale with its own catalogue. When the
+ * two disagree and the box priced from an OLDER catalogue version, the money
+ * was taken at a price the park displayed: the sale is filed at the box's
+ * price — re-priced here from exactly these rows — and an alert says so. The
+ * same version at a different total is a defect, and stays quarantined.
+ *
+ * Only the rows the cart used, so the fact stays small.
+ */
+export const OfflinePriceBasisSchema = z.object({
+  catalogueVersion: z.string().max(64).nullable(),
+  pricingMode: z.enum(['weekday', 'weekend']),
+  tier: z.string().min(1).max(40),
+  taxConfig: TaxConfigSchema.nullable(),
+  packages: z
+    .array(
+      z.object({
+        id: Uuid,
+        prices: z.record(
+          z.string(),
+          z.object({ weekday: z.number().int().min(0), weekend: z.number().int().min(0) }),
+        ),
+        adultRules: z.unknown().nullable(),
+      }),
+    )
+    .max(50)
+    .default([]),
+  products: z
+    .array(
+      z.object({
+        id: Uuid,
+        priceSatang: z.number().int().min(0),
+        priceWeekendSatang: z.number().int().min(0).nullable(),
+      }),
+    )
+    .max(200)
+    .default([]),
+  options: z
+    .array(
+      z.object({
+        id: Uuid,
+        priceSatang: z.number().int(),
+        priceWeekendSatang: z.number().int().nullable(),
+      }),
+    )
+    .max(400)
+    .default([]),
+});
+export type OfflinePriceBasis = z.infer<typeof OfflinePriceBasisSchema>;

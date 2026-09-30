@@ -19,25 +19,19 @@ import {
 } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
-  bandShortCode,
-  formatTHB,
   groupPrepTickets,
-  isoDateInTz,
   newId,
   reprintRootOf,
-  summarizeTax,
-  wallClockMinutesInTz,
+  salePrintDocumentOf,
+  salePrintRequests,
   type PrintKind,
+  type SalePrintRequest,
+  type SalePrintSnapshot,
+  type SaleReceiptDocument,
   type SaleReprintKind,
   type TaxBreakdown,
 } from '@oto/shared';
-import type {
-  BandData,
-  ItemVoucherData,
-  PrepTicketData,
-  PrintJob as RenderJob,
-  ReceiptData,
-} from '@oto/print';
+import type { PrintJob as RenderJob } from '@oto/print';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { boxSettings } from './box';
@@ -122,9 +116,6 @@ const LABEL_OF: Record<PrintKind, string> = {
   test_page: 'Test page',
 };
 
-/** The ticket units that are things to collect rather than admission (`buildCreditGrants`). */
-const ITEM_VOUCHER_KINDS = new Set(['socks', 'addon', 'promo_item']);
-
 // --- The jobs -------------------------------------------------------------------
 
 /** One print job as the finalise answer, a reprint and the sale detail show it. */
@@ -203,6 +194,12 @@ interface JobRequest {
 interface JobScope {
   operatorId: string;
   branchId: string;
+  /**
+   * The sale these jobs print, carried on every command (offline plan §2.5):
+   * a box that already printed this sale from its own queue while it was
+   * offline refuses a late FIRST print of it, and needs the sale's id to know.
+   */
+  saleId: string;
   stationRow: StationRow;
   actorAccountId: string | null;
   actionId: string;
@@ -290,7 +287,15 @@ async function writeJob(tx: Tx, scope: JobScope, request: JobRequest, offsetMs: 
         /** The box fetches this job's content from the platform before it prints. */
         document: 'platform',
         subjectType: request.subjectType,
+        saleId: scope.saleId,
         ...(request.reprintOf ? { reprintOf: request.reprintOf } : {}),
+        /**
+         * A copy somebody asked for. Said on its own because a sale the box
+         * printed offline has no platform job for a reprint to name, and the
+         * box refuses a first print of a sale it already printed — never a
+         * reprint.
+         */
+        ...(request.reprintReason ? { reprint: true } : {}),
       } as never,
       requestedByAccountId: scope.actorAccountId,
       actionId: scope.actionId,
@@ -312,18 +317,6 @@ function noteFor(job: SalePrintJobView): string | null {
 
 async function linesOf(db: Exec, saleId: string): Promise<SaleLineRow[]> {
   return db.select().from(saleLine).where(eq(saleLine.saleId, saleId)).orderBy(asc(saleLine.lineNo));
-}
-
-/** The item vouchers a ticket sale's lines owe: one per label, the first line standing for the group. */
-function itemVoucherGroups(lines: readonly SaleLineRow[]): { lineId: string; label: string; quantity: number }[] {
-  const groups = new Map<string, { lineId: string; label: string; quantity: number }>();
-  for (const line of lines) {
-    if (!ITEM_VOUCHER_KINDS.has(line.kind) || line.quantity <= 0) continue;
-    const found = groups.get(line.label);
-    if (found) found.quantity += line.quantity;
-    else groups.set(line.label, { lineId: line.id, label: line.label, quantity: line.quantity });
-  }
-  return [...groups.values()];
 }
 
 /**
@@ -355,13 +348,13 @@ export async function routeSalePrinting(
       const scope: JobScope = {
         operatorId: saleRow.operatorId,
         branchId: saleRow.branchId,
+        saleId: saleRow.id,
         stationRow,
         actorAccountId: opts.actorAccountId,
         actionId: opts.actionId ?? newId(),
         requestId: opts.requestId,
         now,
       };
-      const requests: JobRequest[] = [{ kind: 'receipt', subjectType: 'sale', subjectId: saleRow.id }];
       const notes: string[] = [];
 
       const ticketLines = lines.filter((l) => l.ticketPackageId !== null);
@@ -387,26 +380,12 @@ export async function routeSalePrinting(
             notes.push(`Bands not issued — ${reason}. Reprint them from History once it is put right`);
           }
         }
-        for (const b of bandRows.filter((r) => r.kind === 'kid')) {
-          requests.push({ kind: 'kids_wristband', subjectType: 'band', subjectId: b.id });
-        }
-        for (const b of bandRows.filter((r) => r.kind === 'adult')) {
-          requests.push({ kind: 'adult_wristband', subjectType: 'band', subjectId: b.id });
-        }
-        for (const group of itemVoucherGroups(ticketLines)) {
-          requests.push({ kind: 'item_voucher', subjectType: 'sale_line', subjectId: group.lineId });
-        }
       }
 
-      const fnbLines = lines.filter((l) => l.kind === 'fnb_item');
-      for (const ticket of groupPrepTickets(fnbLines.map((l) => ({ id: l.id, prepStation: prepStationOf(l) })))) {
-        requests.push({
-          kind: ticket.station === 'kitchen' ? 'kitchen_ticket' : 'bar_ticket',
-          subjectType: 'sale',
-          subjectId: saleRow.id,
-        });
-      }
-
+      // What it prints, in order — the receipt, the bands, the item vouchers,
+      // the prep tickets — decided by the composer a box with no internet
+      // prints from too (`salePrintRequests` in `@oto/shared`).
+      const requests: JobRequest[] = salePrintRequests(await salePrintSnapshotOf(sp, saleRow));
       const jobs: SalePrintJobView[] = [];
       for (const [index, request] of requests.entries()) {
         const job = await writeJob(sp, scope, request, index);
@@ -542,6 +521,7 @@ export async function reprintSale(
   const scope: JobScope = {
     operatorId: saleRow.operatorId,
     branchId: saleRow.branchId,
+    saleId: saleRow.id,
     stationRow,
     actorAccountId: actor.accountId,
     actionId: input.actionId,
@@ -707,33 +687,6 @@ export async function printJobsOfSale(db: Exec, saleId: string): Promise<SalePri
 
 // --- The document the box prints ------------------------------------------------
 
-/** `2026-09-30 14:05` in the branch's own time. The renderer owns no clock. */
-function stampIn(instant: Date, timezone: string): string {
-  return `${isoDateInTz(instant, timezone)} ${hhmm(instant, timezone)}`;
-}
-
-function hhmm(instant: Date, timezone: string): string {
-  const minutes = wallClockMinutesInTz(instant, timezone);
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-}
-
-function lineName(line: SaleLineRow): string {
-  const payload = (line.payload ?? {}) as {
-    modifiers?: { optionName: string }[];
-    variant?: { variantLabel: string };
-  };
-  const extras = [
-    payload.variant?.variantLabel,
-    ...(payload.modifiers ?? []).map((m) => m.optionName),
-  ].filter((v): v is string => !!v);
-  return extras.length ? `${line.label} (${extras.join(', ')})` : line.label;
-}
-
-function lineNote(line: SaleLineRow): string | undefined {
-  const note = ((line.payload ?? {}) as { note?: string }).note?.trim();
-  return note || undefined;
-}
-
 async function staffNameOf(db: Exec, accountId: string): Promise<string | undefined> {
   const [row] = await db
     .select({ name: employee.name, nickname: employee.nickname })
@@ -744,32 +697,12 @@ async function staffNameOf(db: Exec, accountId: string): Promise<string | undefi
   return row?.nickname ?? row?.name ?? undefined;
 }
 
-/** How a tender reads on the receipt: "Cash", "Card •••• 4242", "QR". */
-function tenderLabel(row: typeof paymentAttempt.$inferSelect): string {
-  const token = row.methodCode ?? row.method;
-  const word = token.charAt(0).toUpperCase() + token.slice(1).replace(/_/g, ' ');
-  return row.last4 ? `${word} •••• ${row.last4}` : word;
-}
-
 /**
- * The allergy line for a prep ticket or a kids band: each child's allergies and
- * medical notes, named. On a kids band it is that child's; on a prep ticket
- * it is every child on the order's visit — or, with no visit, every child of
- * the member the order is for — because the kitchen cannot know which child a
- * plate is for and an allergy left off is the one mistake that matters. The
- * prototype read it off the scanned band's holder (`buildPrepTickets`); the
- * band-scan order is S2-14a, and this is the ledger's closest equivalent.
+ * The children on the order, for the kitchen's allergy line: the visit's, or —
+ * with no visit — every child of the member the order is for. The prototype
+ * read it off the scanned band's holder (`buildPrepTickets`); the band-scan
+ * order is S2-14a, and this is the ledger's closest equivalent.
  */
-function allergyTextOf(rows: { name: string; allergies: string | null; medicalNotes: string | null }[]): string | undefined {
-  const parts = rows
-    .map((c) => {
-      const bits = [c.allergies?.trim(), c.medicalNotes?.trim()].filter((v): v is string => !!v);
-      return bits.length ? `${c.name}: ${bits.join('; ')}` : null;
-    })
-    .filter((v): v is string => v !== null);
-  return parts.length ? parts.join(' · ') : undefined;
-}
-
 async function orderChildren(db: Exec, saleRow: SaleRow) {
   if (saleRow.visitId) {
     return db
@@ -787,15 +720,15 @@ async function orderChildren(db: Exec, saleRow: SaleRow) {
     .orderBy(asc(child.name));
 }
 
-/** The receipt's extra rows: every `summarizeTax` row, formatted. The template's `vat` is the included one. */
-export interface ReceiptDocument extends ReceiptData {
-  /** Each row of `summarizeTax(sale.tax_breakdown)`: service, VAT included, VAT added. */
-  taxRows?: { label: string; amount: string; kind: string }[];
-  /** True on a copy History asked for. */
-  copy?: boolean;
-}
-
-export async function receiptDocument(db: Exec, saleRow: SaleRow, copy = false): Promise<ReceiptDocument> {
+/**
+ * THE SALE AS THE COMPOSER READS IT, from the ledger (offline plan §2.5).
+ *
+ * Everything a printout says comes out of this one snapshot and the shared
+ * composer (`@oto/shared` `sale-print.ts`), which a box with no internet feeds
+ * from its own finalise instead — so the paper is the same whichever end made
+ * it. Built at the moment the box asks, so a reprint picks up a correction.
+ */
+export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<SalePrintSnapshot> {
   const lines = await linesOf(db, saleRow.id);
   const [names] = await db
     .select({ operatorName: operator.name, branchName: branch.name })
@@ -812,130 +745,65 @@ export async function receiptDocument(db: Exec, saleRow: SaleRow, copy = false):
     .where(eq(paymentAttempt.saleId, saleRow.id))
     .orderBy(asc(paymentAttempt.createdAt));
   const taken = attempts.filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status));
-  const bands = await db
-    .select({ code: band.code })
+  const bandRows = await db
+    .select({
+      band,
+      childName: child.name,
+      allergies: child.allergies,
+      medicalNotes: child.medicalNotes,
+      dietary: child.dietary,
+    })
     .from(band)
+    .leftJoin(child, eq(child.id, band.childId))
     .where(eq(band.saleId, saleRow.id))
     .orderBy(asc(band.createdAt), asc(band.id));
-  const rows = summarizeTax(saleRow.taxBreakdown as TaxBreakdown);
-  const included = rows.filter((r) => r.kind === 'tax_included').reduce((sum, r) => sum + r.amount, 0);
-  const service = rows.filter((r) => r.kind === 'service').reduce((sum, r) => sum + r.amount, 0);
-  const tenders: { label: string; amount: string }[] = [];
-  for (const attempt of taken) {
-    tenders.push({ label: tenderLabel(attempt), amount: formatTHB(attempt.amountSatang) });
-    if (attempt.tenderedSatang !== null && attempt.changeSatang !== null && attempt.changeSatang > 0) {
-      tenders.push({ label: 'Cash tendered', amount: formatTHB(attempt.tenderedSatang) });
-      tenders.push({ label: 'Change', amount: formatTHB(attempt.changeSatang) });
-    }
-  }
-  const hasFnb = lines.some((l) => l.kind === 'fnb_item');
-  const vouchers = itemVoucherGroups(lines.filter((l) => l.ticketPackageId !== null));
   return {
-    title: copy ? 'Receipt (copy)' : 'Receipt',
-    /**
-     * The abbreviated tax-invoice header. The Thai title is the document's
-     * name under the Revenue Code; the seller's tax id is the park's own
-     * footer line on the receipt template, where the prototype kept it.
-     * PROJECT_CONTEXT §8 leaves the full field list to the park's
-     * accountant — this is a slot, filled with what the ledger knows.
-     */
-    taxInvoiceLines: [
-      'ใบกำกับภาษีอย่างย่อ',
-      'ABBREVIATED TAX INVOICE',
-      ...(names ? [`${names.operatorName} · ${names.branchName}`] : []),
-      ...(included > 0 ? ['VAT included'] : []),
-    ],
-    receiptNumber: saleRow.receiptNumber ?? undefined,
-    dateTime: stampIn(saleRow.finalisedAt ?? saleRow.occurredAt, saleRow.timezone),
-    staffName: await staffNameOf(db, saleRow.createdByAccountId),
-    memberNickname: memberRow?.nickname || undefined,
-    lines: lines
-      .filter((l) => l.quantity > 0)
-      .map((l) => ({ qty: l.quantity, name: lineName(l), price: formatTHB(l.grossSatang), note: lineNote(l) })),
-    subtotal: formatTHB(saleRow.subtotalSatang),
-    service: service > 0 ? formatTHB(service) : undefined,
-    vat: included > 0 ? formatTHB(included) : undefined,
-    total: formatTHB(saleRow.grossSatang),
-    tenders,
-    // The SHORT codes: a staff member matches a band to its sale by them, and
-    // a receipt carrying the signed code would be a second gate credential.
-    bandCodes: bands.map((b) => bandShortCode(b.code)).filter((c): c is string => c !== null),
-    creditGrants: vouchers.map((v) => `${v.quantity}× ${v.label} to collect`),
-    orderNote: hasFnb && saleRow.note ? saleRow.note : undefined,
-    taxRows: rows.map((r) => ({ label: r.label, amount: formatTHB(r.amount), kind: r.kind })),
-    copy,
+    saleId: saleRow.id,
+    receiptNumber: saleRow.receiptNumber,
+    at: (saleRow.finalisedAt ?? saleRow.occurredAt).toISOString(),
+    timezone: saleRow.timezone,
+    operatorName: names?.operatorName ?? null,
+    branchName: names?.branchName ?? null,
+    staffName: (await staffNameOf(db, saleRow.createdByAccountId)) ?? null,
+    memberNickname: memberRow?.nickname ?? null,
+    lines: lines.map((l) => ({
+      id: l.id,
+      kind: l.kind,
+      label: l.label,
+      quantity: l.quantity,
+      grossSatang: l.grossSatang,
+      ticket: l.ticketPackageId !== null,
+      payload: (l.payload ?? null) as SalePrintSnapshot['lines'][number]['payload'],
+      stayHours: l.stayHours,
+      stayDurationLabel: l.stayDurationLabel,
+    })),
+    subtotalSatang: saleRow.subtotalSatang,
+    grossSatang: saleRow.grossSatang,
+    taxBreakdown: saleRow.taxBreakdown as TaxBreakdown,
+    tenders: taken.map((a) => ({
+      method: a.methodCode ?? a.method,
+      last4: a.last4,
+      amountSatang: a.amountSatang,
+      tenderedSatang: a.tenderedSatang,
+      changeSatang: a.changeSatang,
+    })),
+    bands: bandRows.map(({ band: b, childName, allergies, medicalNotes, dietary }) => ({
+      id: b.id,
+      kind: b.kind,
+      code: b.code,
+      saleLineId: b.saleLineId,
+      childName: b.childId ? childName : null,
+      allergies: b.childId ? allergies : null,
+      medicalNotes: b.childId ? medicalNotes : null,
+      dietary: b.childId ? dietary : null,
+    })),
+    orderChildren: await orderChildren(db, saleRow),
+    note: saleRow.note,
   };
 }
 
-export async function prepDocument(
-  db: Exec,
-  saleRow: SaleRow,
-  stationKind: 'kitchen' | 'bar',
-): Promise<PrepTicketData> {
-  const lines = (await linesOf(db, saleRow.id)).filter((l) => l.kind === 'fnb_item');
-  const ticket = groupPrepTickets(lines.map((l) => ({ ...l, prepStation: prepStationOf(l) }))).find(
-    (t) => t.station === stationKind,
-  );
-  const [memberRow] = saleRow.memberId
-    ? await db.select({ nickname: member.nickname }).from(member).where(eq(member.id, saleRow.memberId)).limit(1)
-    : [];
-  const pickup = ((lines[0]?.payload ?? {}) as { pickupCode?: string }).pickupCode;
-  return {
-    title: ticket?.title ?? (stationKind === 'kitchen' ? 'Kitchen' : 'Bar'),
-    orderRef: pickup ?? saleRow.receiptNumber ?? saleRow.id.slice(-6),
-    time: hhmm(saleRow.finalisedAt ?? saleRow.occurredAt, saleRow.timezone),
-    holderName: memberRow?.nickname || undefined,
-    allergiesMedical: allergyTextOf(await orderChildren(db, saleRow)),
-    lines: (ticket?.lines ?? []).map((l) => ({ qty: l.quantity, name: lineName(l), note: lineNote(l) })),
-    orderNote: saleRow.note ?? undefined,
-  };
-}
-
-export async function bandDocument(db: Exec, bandRow: typeof band.$inferSelect): Promise<BandData> {
-  const [saleRow] = await db.select().from(sale).where(eq(sale.id, bandRow.saleId)).limit(1);
-  const [lineRow] = bandRow.saleLineId
-    ? await db.select().from(saleLine).where(eq(saleLine.id, bandRow.saleLineId)).limit(1)
-    : [];
-  const [childRow] = bandRow.childId
-    ? await db
-        .select({ name: child.name, allergies: child.allergies, medicalNotes: child.medicalNotes, dietary: child.dietary })
-        .from(child)
-        .where(eq(child.id, bandRow.childId))
-        .limit(1)
-    : [];
-  const [memberRow] = bandRow.memberId
-    ? await db.select({ nickname: member.nickname }).from(member).where(eq(member.id, bandRow.memberId)).limit(1)
-    : [];
-  const start = saleRow?.finalisedAt ?? saleRow?.occurredAt ?? bandRow.createdAt;
-  const timezone = saleRow?.timezone ?? 'Asia/Bangkok';
-  const duration =
-    lineRow?.stayHours && lineRow.stayHours > 0
-      ? `${lineRow.stayDurationLabel ?? `${lineRow.stayHours} hours`} · valid until ${hhmm(
-          new Date(start.getTime() + lineRow.stayHours * 3_600_000),
-          timezone,
-        )}`
-      : (lineRow?.stayDurationLabel ?? undefined);
-  const allergy =
-    bandRow.kind === 'kid' && childRow
-      ? [childRow.allergies?.trim(), childRow.medicalNotes?.trim()].filter((v): v is string => !!v).join('; ') ||
-        undefined
-      : undefined;
-  return {
-    holderName: bandRow.kind === 'kid' ? (childRow?.name ?? undefined) : memberRow?.nickname || undefined,
-    duration,
-    dietaryRequirement: bandRow.kind === 'kid' ? (childRow?.dietary?.trim() || undefined) : undefined,
-    allergy,
-    bandCode: bandRow.code,
-    shortCode: bandShortCode(bandRow.code) ?? undefined,
-  };
-}
-
-async function itemVoucherDocument(db: Exec, lineRow: SaleLineRow): Promise<ItemVoucherData> {
-  const lines = (await linesOf(db, lineRow.saleId)).filter((l) => l.ticketPackageId !== null);
-  const group = itemVoucherGroups(lines).find((g) => g.label === lineRow.label);
-  return { label: lineRow.label, quantity: group?.quantity ?? lineRow.quantity };
-}
-
+/** The receipt's extra rows ride beside the template's own: `taxRows` and `copy`. */
+export type ReceiptDocument = SaleReceiptDocument;
 /** What `GET /box/v1/print-jobs/:id/document` answers. */
 export interface PrintDocumentView {
   printJobId: string;
@@ -981,27 +849,44 @@ export async function buildPrintDocument(
   };
   const noDocument = () =>
     new AppError(404, 'PRINT_DOCUMENT_NOT_FOUND', 'This print job has no document on the platform');
-  if (row.subjectType === 'sale' && row.subjectId) {
-    const [saleRow] = await db.select().from(sale).where(eq(sale.id, row.subjectId)).limit(1);
-    if (!saleRow) throw noDocument();
-    if (row.kind === 'receipt') {
-      return { ...base, job: { kind: 'receipt', data: await receiptDocument(db, saleRow, row.reprintOf !== null) } };
+  /**
+   * A copy is a job History asked for: it names the original, or — for a sale
+   * whose first paper came out of a box with no internet, which left no
+   * platform job to name — it carries the reason it was asked for.
+   */
+  const copy = row.reprintOf !== null || row.reprintReason !== null;
+  const saleIdOf = async (): Promise<string | null> => {
+    if (!row.subjectId) return null;
+    if (row.subjectType === 'sale') return row.subjectId;
+    if (row.subjectType === 'band') {
+      const [found] = await db.select({ saleId: band.saleId }).from(band).where(eq(band.id, row.subjectId)).limit(1);
+      return found?.saleId ?? null;
     }
-    if (row.kind === 'kitchen_ticket' || row.kind === 'bar_ticket') {
-      const data = await prepDocument(db, saleRow, row.kind === 'kitchen_ticket' ? 'kitchen' : 'bar');
-      return { ...base, job: { kind: row.kind, data } };
+    if (row.subjectType === 'sale_line') {
+      const [found] = await db
+        .select({ saleId: saleLine.saleId })
+        .from(saleLine)
+        .where(eq(saleLine.id, row.subjectId))
+        .limit(1);
+      return found?.saleId ?? null;
     }
-  }
-  if (row.subjectType === 'band' && row.subjectId) {
-    const [bandRow] = await db.select().from(band).where(eq(band.id, row.subjectId)).limit(1);
-    if (!bandRow) throw noDocument();
-    const kind = bandRow.kind === 'kid' ? 'kids_wristband' : 'adult_wristband';
-    return { ...base, job: { kind, data: await bandDocument(db, bandRow) } };
-  }
-  if (row.subjectType === 'sale_line' && row.subjectId && row.kind === 'item_voucher') {
-    const [lineRow] = await db.select().from(saleLine).where(eq(saleLine.id, row.subjectId)).limit(1);
-    if (!lineRow) throw noDocument();
-    return { ...base, job: { kind: 'item_voucher', data: await itemVoucherDocument(db, lineRow) } };
-  }
-  throw noDocument();
+    return null;
+  };
+  const saleId = await saleIdOf();
+  const [saleRow] = saleId ? await db.select().from(sale).where(eq(sale.id, saleId)).limit(1) : [];
+  if (!saleRow || !row.subjectId) throw noDocument();
+  const snapshot = await salePrintSnapshotOf(db, saleRow);
+  const request = {
+    kind: row.kind,
+    subjectType: row.subjectType,
+    subjectId: row.subjectId,
+  } as SalePrintRequest;
+  const shaped =
+    (row.subjectType === 'sale' &&
+      (row.kind === 'receipt' || row.kind === 'kitchen_ticket' || row.kind === 'bar_ticket')) ||
+    (row.subjectType === 'band' && (row.kind === 'kids_wristband' || row.kind === 'adult_wristband')) ||
+    (row.subjectType === 'sale_line' && row.kind === 'item_voucher');
+  const document = shaped ? salePrintDocumentOf(snapshot, request, copy) : null;
+  if (!document) throw noDocument();
+  return { ...base, job: document as RenderJob };
 }

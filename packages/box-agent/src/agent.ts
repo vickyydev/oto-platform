@@ -12,17 +12,10 @@ import {
 import { planCacheApply, type CacheFaultReason } from './cache-apply';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
-import {
-  createOutbox,
-  paymentRecordedFact,
-  saleFinalisedFact,
-  type OfflineReceiptFact,
-  type OfflineSaleFact,
-  type OfflineTenderFact,
-  type Outbox,
-} from './outbox';
+import { createOutbox, type Outbox } from './outbox';
+import { createSaleQueue, type FinaliseCrashPoint, type SaleQueue } from './sale-queue';
 import { createRefusalBackOff } from './reregister';
-import { generateSyncKeyPair, publicKeyFor, sealEnvelope, uuidv7 } from './signing';
+import { generateSyncKeyPair, publicKeyFor, sealEnvelope } from './signing';
 import { StationBridge, type StationBridgeOptions } from './station-bridge';
 import { BAND_CODE_HANDLER, ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
@@ -79,9 +72,6 @@ import {
   BOOTH_STAFF_VERIFY_ERRORS,
   BOOTH_STAFF_VERIFY_PATH,
   PrintTemplateSchema,
-  isLegacyBoothCode,
-  normaliseBoothCode,
-  verifyBoothCode,
 } from '@oto/shared';
 import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@oto/shared';
 
@@ -278,6 +268,8 @@ export interface BoxAgentOptions {
      * send a void rather than guessing.
      */
     voidPassword?: string | null;
+    /** Read deadlines, for a test that must not wait out a two-minute budget. */
+    timeouts?: { saleMs?: number; probeMs?: number };
   };
   /**
    * Band codes (S2-11).
@@ -292,6 +284,14 @@ export interface BoxAgentOptions {
    */
   bands?: {
     key?: () => string | Uint8Array | null;
+  };
+  /**
+   * The sale queue (offline plan Round 4). `crashPoint` is a test's hand on
+   * the power lead: called at each named point inside the finalise
+   * transaction, and a throw there must leave nothing half-written.
+   */
+  sales?: {
+    crashPoint?: (point: FinaliseCrashPoint) => void | Promise<void>;
   };
   /**
    * The station bridge (offline plan §2.2, Round 3): how a till and a customer
@@ -513,139 +513,21 @@ export interface BoxAgent {
 }
 
 /**
- * TAKING MONEY WITH THE LINK DOWN (S2-10a, Slice G).
- *
- * The rule the outbox states — a fact is on disk before the person who caused
- * it is told it worked — applied to the one fact that is money. The till hands
- * the sale over, this writes it to the box's own queue, and it reaches the
- * ledger whenever the mall's internet comes back: minutes, or tomorrow.
- *
- * WHAT THE BOX DECIDES AND WHAT IT DOES NOT. It decides three things, all of
- * them things only a box can know: the journal position (`box_seq`, from the
- * store's gapless generator), the receipt number to show the guest (from the
- * high-water mark the cloud last told it), and whether the drawer opens. It
- * decides NOTHING about what the sale costs — see `OfflineSaleFact.cart`.
+ * TAKING MONEY WITH THE LINK DOWN lives in `sale-queue.ts` (S2-10a; offline
+ * plan Round 4): the finalise transaction, the receipt series, the bands and
+ * the box's own print log. Its words are re-exported here, where S2-10a first
+ * published them.
  */
-export interface SaleQueue {
-  /**
-   * Record a whole sale and its money. On disk when this resolves.
-   *
-   * ONE FACT carries both: the cart and every tender that closed the sale
-   * travel inside a single `sale.finalised`, so a box that loses power has
-   * either the whole sale or none of it, and the cloud applies both halves in
-   * one savepoint. `queueAll` is used rather than `queue` because it is the
-   * transaction the multi-fact case needs and a single fact is the same call
-   * with one entry — money that arrives LATER is `recordTender`, which mints a
-   * second fact of its own.
-   */
-  record(request: OfflineSaleRequest): Promise<OfflineSaleAnswer>;
-  /** A later tender against a sale already queued: a split's second half, a late approval. */
-  recordTender(request: OfflineTenderRequest): Promise<OfflineSaleAnswer>;
-  /** Where this station's receipt numbering stands, as the box last heard. */
-  receiptMark(stationId: string): Promise<ReceiptMark | null>;
-}
-
-/**
- * S2-10b (SCRUM-207) — THE WORDS AN OFFLINE SALE CARRYING A VOUCHER IS REFUSED
- * WITH, exactly as the till shows them.
- */
-export const OFFLINE_VOUCHER_REFUSAL =
-  'Vouchers need the internet — take this one when the connection is back';
-
-/** A sale the box will not take offline, with a code the till can tell apart. */
-export class OfflineSaleRefused extends Error {
-  readonly code: 'VOUCHER_NEEDS_INTERNET';
-
-  constructor(message: string, code: 'VOUCHER_NEEDS_INTERNET') {
-    super(message);
-    this.name = 'OfflineSaleRefused';
-    this.code = code;
-  }
-}
-
-/**
- * The Lucky Wheel voucher an offline sale's cart names, or null — the one
- * question the box asks of a cart it otherwise never reads
- * (`OfflineSaleFact.cart`).
- *
- * WHY THE BOX ASKS IT. A voucher is redeemed online only (spec §8; the owner,
- * 24 September): it is held by the platform for one cart and used up in the
- * transaction that closes that sale, and a sale taken offline reaches the
- * platform later through the replay, which prices the cart WITHOUT its
- * `promoCodes`. A voucher riding an offline sale would therefore be honoured
- * at the counter on the strength of the slip alone, never used up, and the
- * sale's price would disagree with the platform's when it arrived. So the box
- * refuses the sale before it numbers or queues anything, whatever the till
- * did or did not check first.
- *
- * WHERE A VOUCHER RIDES. A till names one by putting its code in the cart's
- * `promoCodes` — flat, or under `cart` as the till nests it — and nowhere
- * else: the platform refuses a voucher described in `promos`
- * (VOUCHER_CLAIM_REFUSED). `promos` is not read here on purpose. The park's own
- * discount codes ride there and some have a booth code's shape (SONGKRAN25,
- * MEMBERDAY25), which only the platform's discount catalogue can tell apart.
- *
- * Any code of a booth code's shape counts — eleven characters with a right
- * check, or the ten-character shape printed before the check — digits alone
- * included: refusing a sale over a code that turns out to be nobody's voucher
- * costs a retype, and a voucher taken offline costs the voucher.
- */
-export function voucherOnOfflineCart(cart: Record<string, unknown>): string | null {
-  const codesOf = (value: unknown): string[] =>
-    Array.isArray(value) ? value.filter((code): code is string => typeof code === 'string') : [];
-  const nested =
-    cart.cart && typeof cart.cart === 'object' ? (cart.cart as Record<string, unknown>) : null;
-  for (const raw of [...codesOf(cart.promoCodes), ...codesOf(nested?.promoCodes)]) {
-    const code = normaliseBoothCode(raw);
-    if (verifyBoothCode(code).ok || isLegacyBoothCode(code)) return code;
-  }
-  return null;
-}
-
-export interface OfflineSaleRequest extends Omit<OfflineSaleFact, 'saleId' | 'receipt'> {
-  /** Minted at the till. One is minted here when the till did not send one. */
-  saleId?: string;
-  /**
-   * Open the drawer. Defaults to "whenever one of the tenders was cash", which
-   * is the rule the cloud's own cash finalise applies (`payments/drawer.ts`) —
-   * a card payment leaves it shut.
-   */
-  openDrawer?: boolean;
-}
-
-export interface OfflineTenderRequest {
-  saleId: string;
-  stationId: string;
-  actorAccountId: string;
-  tender: OfflineTenderFact;
-  occurredAt?: string;
-  actionId?: string | null;
-  openDrawer?: boolean;
-}
-
-export interface OfflineSaleAnswer {
-  saleId: string;
-  /** What the till shows the guest. Provisional: the cloud allocates the real one. */
-  receipt: OfflineReceiptFact | null;
-  /** The journal position the first of this sale's facts took. */
-  boxSeq: number;
-  /** How many facts this call put on the queue. One, on both paths today. */
-  queued: number;
-  /** What the drawer did. `not_asked` when this sale took no cash. */
-  drawer: 'opened' | 'failed' | 'not_asked';
-  /** Everything still waiting to go up, so the till can say "3 sales to send". */
-  outboxDepth: number;
-}
-
-/** A station's receipt numbering, as the cache bundle last shipped it. */
-export interface ReceiptMark {
-  stationId: string;
-  /** The station's `code_prefix`, which is the series name printed on the number. */
-  prefix: string | null;
-  /** The highest number the CLOUD has issued in this series. 0 means none. */
-  highWaterMark: number;
-}
-
+export {
+  OFFLINE_VOUCHER_REFUSAL,
+  OfflineSaleRefused,
+  voucherOnOfflineCart,
+  type OfflineSaleAnswer,
+  type OfflineSaleRequest,
+  type OfflineTenderRequest,
+  type ReceiptMark,
+  type SaleQueue,
+} from './sale-queue';
 /** Kept small: it is read by `collect_logs` and it lives in a Pi's memory. */
 const LOG_RING = 500;
 
@@ -1634,6 +1516,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       log: (level, msg, detail) => note(level, msg, detail),
       openSerial: options.terminal?.openSerial,
       voidPassword: options.terminal?.voidPassword ?? null,
+      ...(options.terminal?.timeouts ? { timeouts: options.terminal.timeouts } : {}),
     });
   }
 
@@ -1731,6 +1614,13 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       await booth.reportPrint(outcome);
       return;
     }
+    /**
+     * A sale's printout the BOX raised, for a sale it took with no internet
+     * (offline plan §2.5): the cloud has no row for it, so its outcome goes
+     * into that sale's log on this box and never up the print-result route.
+     */
+    const sales = saleQueue();
+    if (sales && (await sales.notePrintOutcome(outcome).catch(() => false))) return;
     if (!credential || state.offline) return;
     const { status } = await request(`/box/v1/print-jobs/${outcome.id}/result`, {
       method: 'POST',
@@ -2026,6 +1916,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         verifyPassword,
         now: () => new Date(clock()),
         log,
+        // Round 4: a till on the box lane sells through this box's own queue
+        // and drives this box's own terminals.
+        sales: () => saleQueue(),
+        terminals: () => terminals,
       },
       options.bridge?.options,
     );
@@ -2778,205 +2672,37 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
   }
 
-  // --- Sales taken with no internet (S2-10a, Slice G) -----------------------
+  // --- Sales taken with no internet (S2-10a; offline plan Round 4) -----------
 
   /**
-   * The local half of the receipt numbering, and why it is a counter rather
-   * than a stored "next number".
-   *
-   * `edge.box_counter` moves in ONE statement (`store-sql.ts:1160`), so two
-   * tills finishing in the same second cannot both read 41 and both write 42 —
-   * which is the whole of the problem, and is exactly why the terminal
-   * reference counter next door uses the same row.
-   *
-   * THE KEY CARRIES THE MARK. The counter says how many numbers this box has
-   * minted SINCE the cloud last told it where the series stands, so a mark that
-   * has moved starts a fresh run rather than colliding with the numbers the
-   * cloud issued in between. Without the mark in the key, a box that sold five
-   * offline, reconnected, and went offline again would mint those same five
-   * numbers a second time.
-   *
-   * THE DATE IN THE KEY IS PINNED, which is the one unusual thing here: the
-   * other users of this table are daily caps and want the reset that the
-   * primary key's `business_date` gives them. A receipt series is continuous
-   * and does not reset at 5am — a box that was offline across midnight would
-   * otherwise re-issue the numbers it had already shown guests the evening
-   * before.
+   * The box's sale queue (`sale-queue.ts`): one per registered box, over this
+   * box's store, outbox, key, printers and band key. Null on a box with no
+   * store — a queue in memory is a day's takings lost to a power cut.
    */
-  const RECEIPT_SEQ_SCOPE = 'receipt_seq';
-  const RECEIPT_SERIES_DAY = '1970-01-01';
-  /**
-   * `pos.receipt_series.seq_padding`'s default, which the cache bundle does not
-   * carry. A series configured wider would make the box's PRINTED string differ
-   * from the cloud's while the number itself is the same; the ledger's is
-   * authoritative either way, and the audit row names both.
-   */
-  const RECEIPT_SEQ_PADDING = 6;
-
-  /** The `receipt_series` scope of the cache, as this box last wrote it. */
-  async function receiptMarks(boxId: string): Promise<ReceiptMark[]> {
-    const held = await store?.readBundle(boxId, RECEIPT_SERIES).catch(() => null);
-    const items = (held?.payload as { items?: unknown[] } | undefined)?.items ?? [];
-    const out: ReceiptMark[] = [];
-    for (const raw of items) {
-      const item = raw as Partial<ReceiptMark>;
-      if (typeof item?.stationId !== 'string') continue;
-      out.push({
-        stationId: item.stationId,
-        prefix: typeof item.prefix === 'string' ? item.prefix : null,
-        highWaterMark: typeof item.highWaterMark === 'number' ? item.highWaterMark : 0,
-      });
-    }
-    return out;
-  }
-
-  /**
-   * The number this sale is shown under at the counter.
-   *
-   * REFUSES rather than guesses, in both of the ways it can fail. A box that
-   * has never been told where the series stands would start at 1 and collide
-   * with numbers the cloud has already issued — and offline that collision is
-   * discovered after the money is in the drawer, with the sale quarantined
-   * (`receipt-hwm.test.ts` says exactly this). A station with no code prefix
-   * cannot number a receipt at all, which the cloud refuses at the same point
-   * on the online path (`sale.ts`, "this station has no code prefix"). Both
-   * are configuration somebody can fix in a minute; taking the money first is
-   * what cannot be fixed.
-   */
-  async function mintReceipt(boxId: string, stationId: string): Promise<OfflineReceiptFact> {
-    if (!store) throw new Error('This box has no store, so it cannot number a sale offline');
-    const marks = await receiptMarks(boxId);
-    const mark = marks.find((m) => m.stationId === stationId);
-    if (!mark) {
-      throw new Error(
-        'This box has not been told where this station’s receipt numbering stands, so it cannot number a sale offline',
-      );
-    }
-    if (!mark.prefix) {
-      throw new Error('This station has no code prefix, so it cannot number a receipt');
-    }
-    const since = await store.bumpCounter(
-      boxId,
-      {
-        scope: RECEIPT_SEQ_SCOPE,
-        key: `${stationId}:${mark.prefix}:${mark.highWaterMark}`,
-        businessDate: RECEIPT_SERIES_DAY,
-      },
-      1,
-      new Date(clock()).toISOString(),
-    );
-    const seq = mark.highWaterMark + since;
-    return {
-      series: mark.prefix,
-      seq,
-      number: `${mark.prefix}-${String(seq).padStart(RECEIPT_SEQ_PADDING, '0')}`,
-    };
-  }
-
-  /** Cash opens the drawer; a card leaves it shut. */
-  function tookCash(tenders: readonly OfflineTenderFact[]): boolean {
-    return tenders.some((t) => t.kind === 'cash' || t.methodCode === 'cash');
-  }
-
-  /**
-   * Open the drawer, and never let it fail a sale.
-   *
-   * The money is already in the till and the fact is already on disk by the
-   * time this runs. A printer that has been unplugged is a drawer somebody
-   * opens with the key, not a sale to roll back.
-   */
-  async function openDrawerFor(stationId: string, actionId: string | null): Promise<'opened' | 'failed'> {
-    if (!printing) return 'failed';
-    try {
-      const outcome = await printing.pulseDrawer({ stationId, actionId });
-      if (!outcome.opened) {
-        note('warn', 'the cash drawer did not open for an offline sale', {
-          stationId,
-          errorCode: outcome.errorCode,
-        });
-      }
-      return outcome.opened ? 'opened' : 'failed';
-    } catch (err) {
-      note('error', 'the cash drawer could not be opened', { stationId, err: String(err) });
-      return 'failed';
-    }
-  }
-
+  let salesQueue: { boxId: string; queue: SaleQueue } | null = null;
   function saleQueue(): SaleQueue | null {
     const queue = outbox;
     const boxId = state.boxId;
     if (!store || !queue || !boxId) return null;
-    return {
-      async record(request) {
-        /**
-         * S2-10b — A VOUCHER NEVER RIDES AN OFFLINE SALE (`voucherOnOfflineCart`).
-         * Refused first: before a receipt number is minted, so the refused
-         * sale spends no number in the station's series, and before anything
-         * is queued or the drawer opens. The code itself is not logged.
-         */
-        if (voucherOnOfflineCart(request.cart)) {
-          note('warn', 'an offline sale carrying a voucher was refused', {
-            stationId: request.stationId,
-          });
-          throw new OfflineSaleRefused(OFFLINE_VOUCHER_REFUSAL, 'VOUCHER_NEEDS_INTERNET');
-        }
-        const saleId = request.saleId ?? uuidv7();
-        const receipt = await mintReceipt(boxId, request.stationId);
-        /**
-         * THE ORDER IS THE POINT: on disk, then the drawer.
-         *
-         * A drawer that opened for a sale the box then failed to record is
-         * money in a till with no row behind it — the one outcome this whole
-         * path exists to prevent. The other way round, the worst case is a
-         * recorded sale whose drawer has to be opened by hand.
-         */
-        const records = await queue.queueAll([
-          saleFinalisedFact({ ...request, saleId, receipt }),
-        ]);
-        const drawer =
-          (request.openDrawer ?? tookCash(request.tenders))
-            ? await openDrawerFor(request.stationId, request.actionId ?? null)
-            : ('not_asked' as const);
-        const depth = await queue.depth();
-        note('info', 'an offline sale is on the queue', {
-          saleId,
-          stationId: request.stationId,
-          boxSeq: records[0]?.envelope.boxSeq ?? null,
-          receiptNumber: receipt.number,
-          tenders: request.tenders.length,
-          drawer,
-        });
-        return {
-          saleId,
-          receipt,
-          boxSeq: records[0]?.envelope.boxSeq ?? 0,
-          queued: records.length,
-          drawer,
-          outboxDepth: depth.queued,
-        };
+    if (salesQueue?.boxId === boxId) return salesQueue.queue;
+    const created = createSaleQueue({
+      store,
+      boxId,
+      outbox: queue,
+      sealer: () => {
+        const key = syncPrivateKeyPem;
+        return key ? (draft) => sealEnvelope(draft, boxId, key) : null;
       },
-      async recordTender(request) {
-        const records = await queue.queueAll([paymentRecordedFact(request)]);
-        const drawer =
-          (request.openDrawer ?? tookCash([request.tender]))
-            ? await openDrawerFor(request.stationId, request.actionId ?? null)
-            : ('not_asked' as const);
-        const depth = await queue.depth();
-        return {
-          saleId: request.saleId,
-          receipt: null,
-          boxSeq: records[0]?.envelope.boxSeq ?? 0,
-          queued: records.length,
-          drawer,
-          outboxDepth: depth.queued,
-        };
-      },
-      async receiptMark(stationId) {
-        return (await receiptMarks(boxId)).find((m) => m.stationId === stationId) ?? null;
-      },
-    };
+      printing: () => printing,
+      durablePrinting: () => options.printing?.durable === true,
+      bandKey: bandKeyNow,
+      now: () => new Date(clock()),
+      note,
+      ...(options.sales?.crashPoint ? { crashPoint: options.sales.crashPoint } : {}),
+    });
+    salesQueue = { boxId, queue: created };
+    return created;
   }
-
   async function heartbeat(): Promise<BoxHeartbeatAck | null> {
     if (!credential || state.heartbeatsPaused) return null;
     // Read before the guard below, so the toggle coming back on is noticed on
@@ -3393,6 +3119,54 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
          * test print of fixture content.
          */
         const fromPlatform = payload.document === PLATFORM_DOCUMENT && typeof payload.printJobId === 'string';
+        /**
+         * A LATE FIRST PRINT OF A SALE THIS BOX ALREADY PRINTED (offline plan
+         * §2.5). A sale begun online and finished on this box — the platform's
+         * answer lost on the way, the till switched lanes — has had its paper
+         * from this box's own queue. When the platform's finalise lands too,
+         * its print commands reach the box later, and printing them would put a
+         * second receipt and a second set of bands in the family's hands. So a
+         * first print of a sale in this box's log is refused, by name, on the
+         * job's row. A copy somebody asked for from History is printed.
+         */
+        const saleOfJob = typeof payload.saleId === 'string' ? payload.saleId : null;
+        const askedForCopy = payload.reprint === true || typeof payload.reprintOf === 'string';
+        if (fromPlatform && saleOfJob && !askedForCopy) {
+          const printedHere = await saleQueue()
+            ?.recorded(saleOfJob)
+            .catch(() => null);
+          if (printedHere) {
+            const errorMessage =
+              'This sale was already printed at the counter while it was offline, so this late print was refused — reprint it from History for another copy';
+            await reportPrintJob({
+              id: jobId,
+              status: 'skipped',
+              attempts: 0,
+              deviceId: null,
+              role,
+              stationId,
+              errorCode: 'PRINTED_ON_BOX',
+              errorMessage,
+              overflow: [],
+              elapsedMs: null,
+            }).catch((reportErr: unknown) =>
+              note('warn', 'a refused late print could not be reported', {
+                jobId,
+                err: String(reportErr),
+              }),
+            );
+            note('warn', 'a late platform print of a sale this box already printed was refused', {
+              jobId,
+              saleId: saleOfJob,
+            });
+            return {
+              state: 'succeeded',
+              result: { printJobId: jobId, status: 'skipped', kind, refused: 'PRINTED_ON_BOX' },
+              errorCode: 'PRINTED_ON_BOX',
+              errorMessage,
+            };
+          }
+        }
         let job;
         let template: { templateId: string | null; templateVersion: number | null } = {
           templateId: null,

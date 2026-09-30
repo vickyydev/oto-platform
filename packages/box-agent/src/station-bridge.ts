@@ -2,10 +2,19 @@ import { createHash, randomBytes } from 'node:crypto';
 import {
   BOX_CATALOGUE_TOO_OLD,
   BOX_LANE_PAYMENT_REFUSAL,
+  BOX_LANE_REFUSALS,
   BOX_SESSION_PREFIX,
   BRIDGE_CART_QUOTE_INTENT,
   BRIDGE_MONEY_INTENT_PREFIXES,
+  BRIDGE_RECEIPT_OBSERVED_INTENT,
   BRIDGE_RECORD_INTENTS,
+  BRIDGE_SALE_INTENTS,
+  BridgePaymentConfirmSchema,
+  BridgePaymentInquireSchema,
+  BridgePaymentStartSchema,
+  BridgeReceiptObservedSchema,
+  BridgeSaleFinaliseSchema,
+  BridgeSaleReprintSchema,
   OFFLINE_POLICY,
   OfflineChildCreatedSchema,
   OfflineChildUpdatedSchema,
@@ -18,14 +27,26 @@ import {
   catalogueState,
   normalizePhone,
   parseDayStart,
+  planLedgerBands,
+  type BoxLaneRefusal,
+  type BridgeCart,
   type BridgeChild,
   type BridgeMember,
+  type BridgePaymentStart,
   type BridgeRecordIntent,
+  type BridgeSaleAnswer,
+  type BridgeSaleFinalise,
+  type BridgeSaleView,
   type BridgeStatus,
   type BridgeUnlockMethod,
   type BridgeUnlockRequest,
   type BridgeUnlockResponse,
   type OfflinePolicy,
+  type PaymentAttemptStatus,
+  type PaymentAttemptView,
+  type PaymentMethod,
+  type PaymentProvider,
+  type SalePrintSnapshot,
 } from '@oto/shared';
 import type {
   StationChannelMessage,
@@ -35,11 +56,26 @@ import type {
 } from './contract';
 import {
   OfflinePriceError,
+  offlineLedgerLines,
   priceOfflineCart,
+  priceOfflineSale,
   readOfflineCatalogue,
+  type OfflineCatalogue,
+  type OfflineLedgerLine,
   type OfflineQuote,
+  type OfflineSalePricing,
 } from './offline-pricing';
+import type { OfflineTenderFact } from './outbox';
+import {
+  OfflineSaleRefused,
+  ReceiptSeriesUnavailable,
+  ReprintRefused,
+  type OfflineBandPlan,
+  type OfflineSaleAnswer,
+  type SaleQueue,
+} from './sale-queue';
 import { uuidv7 } from './signing';
+import type { TerminalCommandOutcome, TerminalController, TerminalProtocol } from './terminal/index';
 import type { StationSessionManager } from './station-session';
 import {
   OFFLINE_UNLOCK_REFUSALS,
@@ -92,8 +128,15 @@ import { silentLog, type AgentLog } from './transport';
  *     to the outbox and to the overlay in ONE store transaction, under the ids
  *     the till minted (OD-12), with the alias rule applied (OD-7).
  *
- * Nothing here can take money. `sale.*` and `payment.*` are round 4's and are
- * refused politely until then (`BOX_LANE_PAYMENT_REFUSAL`).
+ *   - SELLING (Round 4, plan §2.4): `sale.finalise` takes cash or a ฿0 comp,
+ *     `payment.*` drives the counter's own terminal — a card, the PAX QR
+ *     flagged `awaiting_settlement`, a GHL card with no answer confirmed by
+ *     staff with the typed approval code (OD-3) — and each closing is
+ *     `SaleQueue.record`: one store transaction for the receipt number, the
+ *     bands, the paper and the fact, then the drawer, then the printer. The
+ *     cart is priced again here, and a total the till saw differently is
+ *     refused before anything is numbered. What the capability list refuses
+ *     offline is refused in its own reasons (`BOX_LANE_REFUSALS`).
  */
 
 // --- Errors ----------------------------------------------------------------------
@@ -185,6 +228,15 @@ export interface BridgeHost {
    * gets the store's `box_throttle`, which a restart does not clear.
    */
   throttle?: OfflineThrottle;
+  /**
+   * The box's sale queue (Round 4): the one transaction a sale taken here is
+   * written in. Null where this process cannot write for the box — an api
+   * instance the virtual box's agent is not running on — and a money intent
+   * is then refused politely rather than taken with nowhere to put it.
+   */
+  sales?(): SaleQueue | null;
+  /** The box's card terminals (Round 4), or null on a box built without them. */
+  terminals?(): TerminalController | null;
 }
 
 export interface StationBridgeOptions {
@@ -335,6 +387,142 @@ function storeThrottle(
       await store.clearThrottle(boxId, UNLOCK_THROTTLE_SCOPE, accountId);
     },
   };
+}
+
+// --- Selling on the box lane (plan §2.4, Round 4) ------------------------------------
+
+const SALE_INTENT_TYPES: ReadonlySet<string> = new Set(Object.values(BRIDGE_SALE_INTENTS));
+
+/**
+ * What a till may name on the box lane and be told no, in the capability
+ * list's words (plan §2.8): the 2C2P QR, vouchers, wallet spend, online
+ * booking redemption, refunds and voids.
+ */
+const REFUSED_ON_BOX_LANE: Record<string, BoxLaneRefusal> = {
+  'payment.gateway_qr': 'qr2c2p',
+  'payment.2c2p': 'qr2c2p',
+  'payment.voucher': 'voucher',
+  'sale.voucher': 'voucher',
+  'payment.wallet': 'wallet',
+  'booking.redeem': 'booking',
+  'sale.refund': 'refund',
+  'payment.refund': 'refund',
+  'sale.void': 'refund',
+};
+
+/** Where a terminal tender the box is holding stands, in the platform's attempt words. */
+const UNRESOLVED: ReadonlySet<PaymentAttemptStatus> = new Set([
+  'sent_to_terminal',
+  'unknown',
+  'inquiring',
+  'awaiting_staff_confirmation',
+]);
+
+/** A terminal (or a person reading its screen) said yes: the money is taken. */
+const SETTLED: ReadonlySet<PaymentAttemptStatus> = new Set(['approved', 'awaiting_settlement']);
+
+/**
+ * Mid-exchange words: only true while a call on this box is talking to the
+ * terminal. One found with no such call was left by a power cut or a crash
+ * between the write-ahead and the answer.
+ */
+const MID_EXCHANGE: ReadonlySet<PaymentAttemptStatus> = new Set(['sent_to_terminal', 'inquiring']);
+
+/**
+ * The sales whose money a call is handling right now, as `boxId:saleId`.
+ *
+ * Module-wide rather than per bridge, so two bridges over one box in one
+ * process (the api's mount and the in-process agent's own) still see one
+ * another. A process that restarts starts with none — which is exactly how a
+ * held tender at `sent_to_terminal` is known to have lost its exchange.
+ */
+const salesInHand = new Set<string>();
+
+/** The platform's words (`payments/attempt.ts`) for money that may yet move. */
+const paymentInFlight = (): BridgeError =>
+  new BridgeError(
+    409,
+    'PAYMENT_IN_FLIGHT',
+    'A payment is still waiting for an answer. Resolve it before charging this balance again.',
+  );
+
+const attemptNotHeld = (): BridgeError =>
+  new BridgeError(404, 'PAYMENT_ATTEMPT_NOT_FOUND', 'This box holds no such payment for that sale');
+
+/**
+ * Errors that mean nothing was sent to the terminal at all, so no money can
+ * have moved. Anything else with no answer is UNKNOWN: a timer or a failed
+ * read never proves money was not taken. On an INQUIRY none of them says
+ * anything about the sale, and the tender stays where it was.
+ */
+const NOTHING_SENT = new Set([
+  'TERMINAL_NOT_ON_THIS_BOX',
+  'DEVICE_NO_ADDRESS',
+  'TERMINAL_NOT_CONFIGURED',
+  'TERMINAL_BAD_REQUEST',
+]);
+
+/**
+ * A card or QR tender the box is driving on the counter's own terminal,
+ * written down BEFORE a byte goes to the terminal (plan §6, "terminal
+ * write-ahead"): a power cut mid-payment leaves this row, and the till asking
+ * again is answered with the tender it left behind — never a second charge
+ * after an unknown outcome.
+ */
+interface HeldTender {
+  attemptId: string;
+  saleId: string;
+  stationId: string;
+  actionId: string;
+  method: string;
+  kind: 'card' | 'qr';
+  amountSatang: number;
+  deviceId: string;
+  protocol: TerminalProtocol;
+  provider: PaymentProvider;
+  status: PaymentAttemptStatus;
+  terminalRef: string | null;
+  tranRef: string | null;
+  invoiceNo: string | null;
+  approvalCode: string | null;
+  last4: string | null;
+  tid: string | null;
+  mid: string | null;
+  responseCode: string | null;
+  responseText: string | null;
+  reversalPending: boolean;
+  startedAt: string;
+  updatedAt: string;
+  /** When the terminal or a person said yes: the tender's `paidAt`, kept for a close after a crash. */
+  paidAt?: string | null;
+  /** OD-3: the person who confirmed a no-answer card against the terminal's screen. */
+  staffConfirmation?: { accountId: string; at: string; approvalCode: string; note?: string } | null;
+  /** The sale the tender pays for, as the till sent it, so it can be closed later. */
+  sale: BridgePaymentStart;
+}
+
+const heldTenderKey = (saleId: string) => `terminal_tender:${saleId}`;
+
+/** A sale priced, lined and planned on the box, ready to take its money. */
+interface PreparedSale {
+  cart: BridgeCart;
+  catalogue: OfflineCatalogue;
+  pricing: OfflineSalePricing;
+  lines: OfflineLedgerLine[];
+  gross: number;
+  businessDate: string;
+  memberId: string | null;
+  bandPlan: OfflineBandPlan[];
+  /** Everything the composer reads but the tenders, the number and the bands. */
+  snapshot: Omit<SalePrintSnapshot, 'saleId' | 'receiptNumber' | 'at' | 'bands' | 'tenders'>;
+  /** The cart as the fact carries it: what was sold, and what the box charged. */
+  factCart: Record<string, unknown> & { expectedTotalSatang: number };
+}
+
+/** What the box keeps beside a sale in its log, to answer the till the same way twice. */
+interface SaleMemo {
+  view: Omit<BridgeSaleView, 'receiptNumber' | 'receiptSeries' | 'receiptSeq' | 'status'>;
+  attempt: PaymentAttemptView | null;
 }
 
 // --- The bridge ----------------------------------------------------------------------
@@ -806,6 +994,16 @@ export class StationBridge {
       const quote = await this.quote(station, intent.payload);
       return { document: await this.host.sessions.open(stationId), result: { quote } };
     }
+    if (caller.kind === 'till' && SALE_INTENT_TYPES.has(intent.type)) {
+      const result = await this.sell(station, caller, intent);
+      return { document: await this.host.sessions.open(stationId), result };
+    }
+    if (caller.kind === 'till' && intent.type === BRIDGE_RECEIPT_OBSERVED_INTENT) {
+      const result = await this.observeReceipt(station, caller, intent.payload);
+      return { document: await this.host.sessions.open(stationId), result };
+    }
+    const refusal = REFUSED_ON_BOX_LANE[intent.type];
+    if (refusal) this.refuse(refusal);
     if (BRIDGE_MONEY_INTENT_PREFIXES.some((prefix) => intent.type.startsWith(prefix))) {
       throw new BridgeError(409, BOX_LANE_PAYMENT_REFUSAL.code, BOX_LANE_PAYMENT_REFUSAL.message);
     }
@@ -1422,6 +1620,1118 @@ export class StationBridge {
     return branch
       ? businessDate(now, branch.timezone, parseDayStart(branch.businessDayStart))
       : now.toISOString().slice(0, 10);
+  }
+
+  // --- selling (plan §2.4, Round 4) ------------------------------------------------------------
+
+  private refuse(which: BoxLaneRefusal, details?: Record<string, unknown>): never {
+    const refusal = BOX_LANE_REFUSALS[which];
+    throw new BridgeError(409, refusal.code, refusal.message, details);
+  }
+
+  /** The box's sale queue, or the polite refusal where nothing here can write a sale. */
+  private saleQueue(): SaleQueue {
+    const queue = this.host.sales?.() ?? null;
+    if (!queue) {
+      throw new BridgeError(503, BOX_LANE_PAYMENT_REFUSAL.code, BOX_LANE_PAYMENT_REFUSAL.message);
+    }
+    return queue;
+  }
+
+  private parse<T>(
+    schema: { safeParse(v: unknown): { success: true; data: T } | { success: false; error: unknown } },
+    payload: unknown,
+  ): T {
+    const parsed = schema.safeParse(payload);
+    if (!parsed.success) {
+      throw new BridgeError(400, 'VALIDATION', 'That request could not be read', {
+        issue: String(parsed.error),
+      });
+    }
+    return parsed.data;
+  }
+
+  private async sell(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    intent: StationIntent,
+  ): Promise<Record<string, unknown>> {
+    switch (intent.type) {
+      case BRIDGE_SALE_INTENTS.finalise:
+        return { ...(await this.finaliseSale(station, caller, intent.payload)) };
+      case BRIDGE_SALE_INTENTS.paymentStart:
+        return { ...(await this.startPayment(station, caller, intent.payload)) };
+      case BRIDGE_SALE_INTENTS.paymentInquire:
+        return { ...(await this.inquirePayment(station, caller, intent.payload)) };
+      case BRIDGE_SALE_INTENTS.paymentConfirm:
+        return { ...(await this.confirmPayment(station, caller, intent.payload)) };
+      case BRIDGE_SALE_INTENTS.paymentStatus:
+        return { ...(await this.paymentStatus(station, caller, intent.payload)) };
+      case BRIDGE_SALE_INTENTS.reprint:
+        return this.reprintSale(caller, intent.payload, intent.actionId ?? null);
+      default:
+        throw new BridgeError(409, BOX_LANE_PAYMENT_REFUSAL.code, BOX_LANE_PAYMENT_REFUSAL.message);
+    }
+  }
+
+  /**
+   * Price the sale on the box, line it as the ledger will, and plan its bands.
+   *
+   * On this lane the box's figure authorises taking money (`ARCHITECTURE.md`
+   * §17): the cart is priced again from the box's own catalogue with the one
+   * satang engine, and a till that saw a different total is refused before
+   * anything is numbered or taken — the platform's rule 1, held at the
+   * counter rather than discovered at sync.
+   */
+  private async prepareSale(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    body: BridgeSaleFinalise | BridgePaymentStart,
+    /** Price as at this moment rather than now: a held tender is closed at the price it was charged at. */
+    opts: { at?: Date } = {},
+  ): Promise<PreparedSale> {
+    const policy = await this.policy(station.id);
+    const bundle = await this.bundle('catalogue');
+    const now = opts.at ?? this.host.now();
+    if (catalogueState(bundle?.appliedAt ?? null, now, policy) === 'refused') {
+      throw new BridgeError(409, BOX_CATALOGUE_TOO_OLD.code, BOX_CATALOGUE_TOO_OLD.message, {
+        appliedAt: bundle?.appliedAt ?? null,
+      });
+    }
+    const catalogue = readOfflineCatalogue(bundle?.payload ?? null);
+    if (!catalogue) {
+      throw new BridgeError(
+        409,
+        'BOX_CATALOGUE_MISSING',
+        'This counter has no copy of the prices yet — connect it to the internet once.',
+      );
+    }
+    const branch = this.host.branch();
+    if (!branch) {
+      throw new BridgeError(409, 'BOX_NOT_CONFIGURED', 'This counter has no branch configuration yet');
+    }
+    let cart: BridgeCart;
+    try {
+      cart = bridgeCartOf(body.cart);
+    } catch (err) {
+      throw new BridgeError(400, 'VALIDATION', 'That cart could not be read', { issue: String(err) });
+    }
+    if (cart.expectedTotalSatang === undefined) {
+      throw new BridgeError(
+        400,
+        'VALIDATION',
+        'The till has to say what it is charging for this cart before the box can take the money',
+      );
+    }
+    if (cart.manualDiscounts.length > 0) this.require(caller, 'pos:sale:discount');
+
+    const owner = cart.memberId ? await this.resolveMember(cart.memberId) : null;
+    if (cart.memberId && !owner) throw new BridgeError(404, 'NOT_FOUND', 'Member not found');
+    const memberTier = owner ? (s(owner.overlay?.record.tierCode) ?? owner.member.tierCode) : null;
+
+    let pricing: OfflineSalePricing;
+    try {
+      pricing = priceOfflineSale(catalogue, cart, {
+        now,
+        timezone: branch.timezone,
+        businessDayStart: branch.businessDayStart,
+        memberTier,
+      });
+    } catch (err) {
+      if (err instanceof OfflinePriceError) {
+        if (err.code === 'VOUCHER_NEEDS_INTERNET') this.refuse('voucher');
+        throw new BridgeError(
+          err.code === 'SALE_LINE_PRICE_MISMATCH' ? 409 : 400,
+          err.code,
+          err.message,
+          err.details,
+        );
+      }
+      throw err;
+    }
+    const gross = pricing.quote.totals.grossSatang;
+    if (cart.expectedTotalSatang !== gross) {
+      throw new BridgeError(
+        409,
+        'SALE_TOTAL_MISMATCH',
+        'The till and this counter priced the cart differently — nothing was taken. Refresh the order and try again.',
+        { expectedTotalSatang: cart.expectedTotalSatang, boxTotalSatang: gross },
+      );
+    }
+    const hasFnb = [...pricing.items.values()].some((item) => item.kind === 'fnb_item');
+    const pickupCode = cart.pickupCode?.trim() || null;
+    if (hasFnb && !pickupCode) {
+      throw new BridgeError(
+        400,
+        'PICKUP_CODE_REQUIRED',
+        'An order with food on it needs its pick-up code before it is paid',
+      );
+    }
+
+    const lines = offlineLedgerLines(body.saleId, catalogue, pricing, pickupCode);
+    const shown = owner ? await this.present(owner.member, [], owner.source) : null;
+    const byId = new Map((shown?.children ?? []).map((c) => [c.id, c]));
+    const visitChildIds = await this.visitChildIds(body.visitId ?? null, body.visitChildIds);
+    const banded = visitChildIds.map((id) => byId.get(id)).filter((c): c is BridgeChild => !!c);
+    let nextChild = 0;
+    const bandPlan: OfflineBandPlan[] = planLedgerBands(lines).map((planned) => {
+      const child = planned.kind === 'kid' ? (banded[nextChild++] ?? null) : null;
+      return {
+        kind: planned.kind,
+        cartLineId: planned.cartLineId ?? '',
+        saleLineId: planned.saleLineId,
+        childId: child?.id ?? null,
+        childName: child?.name ?? null,
+        allergies: child?.allergies ?? null,
+        medicalNotes: child?.medicalNotes ?? null,
+        dietary: child?.dietary ?? null,
+      };
+    });
+    const orderChildren = (body.visitId ? banded : [...(shown?.children ?? [])])
+      .map((c) => ({ name: c.name, allergies: c.allergies, medicalNotes: c.medicalNotes }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const header = rec((await this.catalogueItem())?.receiptHeader);
+    const sent = body.cart as Record<string, unknown>;
+    const inner = rec(sent.cart);
+    const sentCart: Record<string, unknown> = inner ?? sent;
+    return {
+      cart,
+      catalogue,
+      pricing,
+      lines,
+      gross,
+      businessDate: pricing.quote.businessDate,
+      memberId: owner?.id ?? null,
+      bandPlan,
+      snapshot: {
+        timezone: branch.timezone,
+        operatorName: s(header?.operatorName),
+        branchName: s(header?.name),
+        staffName: body.staffName ?? null,
+        memberNickname: shown?.nickname ?? null,
+        lines: lines.map((line) => ({
+          id: line.id,
+          kind: line.kind,
+          label: line.label,
+          quantity: line.quantity,
+          grossSatang: line.grossSatang,
+          ticket: line.ticket,
+          payload: line.payload,
+          stayHours: line.stayHours,
+          stayDurationLabel: line.stayDurationLabel,
+        })),
+        subtotalSatang: pricing.quote.totals.subtotalSatang,
+        grossSatang: gross,
+        taxBreakdown: pricing.totals.taxBreakdown,
+        orderChildren,
+        note: body.note ?? null,
+      },
+      factCart: {
+        ...sentCart,
+        // The survivor's id when the family was signed up twice (OD-7).
+        ...(owner ? { memberId: owner.id } : {}),
+        ...(body.visitId ? { visitId: body.visitId } : {}),
+        ...(body.note ? { note: body.note } : {}),
+        expectedTotalSatang: gross,
+      },
+    };
+  }
+
+  /** The children a sale's visit names: the visit this counter recorded, else what the till confirmed. */
+  private async visitChildIds(
+    visitId: string | null,
+    fromTill: readonly string[] | undefined,
+  ): Promise<string[]> {
+    if (visitId) {
+      const held = await this.host.store
+        .readOverlay(this.host.boxId, 'visit', visitId)
+        .catch(() => null);
+      const ids = held?.record.childIds;
+      if (Array.isArray(ids)) return ids.filter((id): id is string => typeof id === 'string');
+    }
+    return [...(fromTill ?? [])];
+  }
+
+  /** The sale as the till's `ApiSale` reads it, before it has its number. */
+  private saleViewOf(
+    station: BridgeStation,
+    saleId: string,
+    sale: PreparedSale,
+    at: string,
+  ): SaleMemo['view'] {
+    const quote = sale.pricing.quote;
+    return {
+      id: saleId,
+      businessDate: quote.businessDate,
+      occurredAt: at,
+      stationId: station.id,
+      boxId: this.host.boxId,
+      pricingMode: quote.pricingMode,
+      customerTier: quote.customerTier,
+      totals: quote.totals,
+      engineVersion: quote.engineVersion,
+      origin: 'box',
+    };
+  }
+
+  private attemptView(input: {
+    attemptId: string;
+    saleId: string;
+    kind: 'cash' | 'card' | 'qr';
+    provider: PaymentProvider;
+    status: PaymentAttemptStatus;
+    amountSatang: number;
+    tenderedSatang?: number | null;
+    changeSatang?: number | null;
+    terminalRef?: string | null;
+    tid?: string | null;
+    approvalCode?: string | null;
+    last4?: string | null;
+    invoiceNo?: string | null;
+    tranRef?: string | null;
+    actionId: string;
+    inquirySupported?: boolean;
+    reversalPending?: boolean;
+    paidAt: string | null;
+    createdAt: string;
+  }): PaymentAttemptView {
+    return {
+      id: input.attemptId,
+      saleId: input.saleId,
+      method: input.kind as PaymentMethod,
+      provider: input.provider,
+      status: input.status,
+      amountSatang: input.amountSatang,
+      tenderedSatang: input.tenderedSatang ?? null,
+      changeSatang: input.changeSatang ?? null,
+      terminalRef: input.terminalRef ?? null,
+      ...(input.inquirySupported === undefined ? {} : { inquirySupported: input.inquirySupported }),
+      ...(input.reversalPending ? { reversalPending: true } : {}),
+      tid: input.tid ?? null,
+      approvalCode: input.approvalCode ?? null,
+      last4: input.last4 ?? null,
+      invoiceNo: input.invoiceNo ?? null,
+      tranRef: input.tranRef ?? null,
+      actionId: input.actionId,
+      offline: true,
+      paidAt: input.paidAt,
+      createdAt: input.createdAt,
+    };
+  }
+
+  /** The till's answer, from what the queue recorded and the memo kept beside it. */
+  private answerOf(
+    recorded: Pick<OfflineSaleAnswer, 'receipt' | 'replay' | 'printing' | 'drawer' | 'outboxDepth' | 'memo'>,
+  ): BridgeSaleAnswer {
+    const memo = recorded.memo as unknown as SaleMemo | null;
+    if (!memo?.view) {
+      throw new BridgeError(
+        409,
+        'SALE_NOT_FROM_BRIDGE',
+        'That sale was recorded on this box by something other than a till',
+      );
+    }
+    return {
+      sale: {
+        ...memo.view,
+        status: 'finalised',
+        receiptNumber: recorded.receipt?.number ?? null,
+        receiptSeries: recorded.receipt?.series ?? null,
+        receiptSeq: recorded.receipt?.seq ?? null,
+      },
+      finalised: true,
+      outstandingSatang: 0,
+      attempt: memo.attempt,
+      replay: recorded.replay,
+      printing: {
+        jobs: recorded.printing.jobs.map((job) => ({ id: job.id, kind: job.kind, status: job.status })),
+        notes: recorded.printing.notes,
+      },
+      drawer: recorded.drawer,
+      outboxDepth: recorded.outboxDepth,
+    };
+  }
+
+  /** The sale this box already took under this id, answered as it was the first time. */
+  private async answerAgain(queue: SaleQueue, saleId: string): Promise<BridgeSaleAnswer | null> {
+    const held = await queue.recorded(saleId);
+    if (!held) return null;
+    const depth = await this.host.store
+      .depth(this.host.boxId)
+      .catch(() => ({ queued: 0, oldestQueuedAt: null }));
+    return this.answerOf({
+      receipt: held.receipt,
+      replay: true,
+      printing: { jobs: held.jobs, notes: held.notes },
+      drawer: 'not_asked',
+      outboxDepth: depth.queued,
+      memo: held.memo,
+    });
+  }
+
+  /**
+   * Record the sale and its money on the box: one transaction, then the
+   * drawer, then the paper (`SaleQueue.record`).
+   */
+  private async closeSale(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    body: BridgeSaleFinalise | BridgePaymentStart,
+    sale: PreparedSale,
+    tenders: OfflineTenderFact[],
+    attempt: PaymentAttemptView | null,
+    /** When the sale happened, if not now: a held tender closed after a crash happened when it was paid. */
+    opts: { at?: string } = {},
+  ): Promise<BridgeSaleAnswer> {
+    const queue = this.saleQueue();
+    const at = opts.at ?? this.host.now().toISOString();
+    const memo: SaleMemo = { view: this.saleViewOf(station, body.saleId, sale, at), attempt };
+    let recorded: OfflineSaleAnswer;
+    try {
+      recorded = await queue.record({
+        saleId: body.saleId,
+        stationId: station.id,
+        actorAccountId: caller.accountId,
+        cart: sale.factCart,
+        tenders,
+        staffTokenJti: caller.jti,
+        ...(caller.offlineFresh ? { offlineFresh: true } : {}),
+        occurredAt: at,
+        actionId: body.actionId,
+        catalogueVersion: sale.pricing.basis.catalogueVersion,
+        priceBasis: sale.pricing.basis as unknown as Record<string, unknown>,
+        printout: {
+          snapshot: {
+            ...sale.snapshot,
+            tenders: tenders.map((tender) => ({
+              method: tender.methodCode,
+              last4: tender.last4 ?? null,
+              amountSatang: tender.amountSatang,
+              tenderedSatang: tender.tenderedSatang ?? null,
+              changeSatang: tender.changeSatang ?? null,
+            })),
+          },
+          bands: sale.bandPlan,
+          businessDate: sale.businessDate,
+        },
+        memo: memo as unknown as Record<string, unknown>,
+      });
+    } catch (err) {
+      if (err instanceof OfflineSaleRefused) this.refuse('voucher');
+      if (err instanceof ReceiptSeriesUnavailable) {
+        throw new BridgeError(409, err.code, err.message);
+      }
+      throw err;
+    }
+    return this.answerOf(recorded);
+  }
+
+  /** `sale.finalise`: cash, or nothing at all for a ฿0 comp. */
+  private async finaliseSale(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<BridgeSaleAnswer> {
+    this.require(caller, 'pos:sale:create');
+    this.require(caller, 'pos:sale:update');
+    const body = this.parse(BridgeSaleFinaliseSchema, payload);
+    const queue = this.saleQueue();
+    return this.holdingSale(
+      body.saleId,
+      async () => {
+        const again = await this.answerAgain(queue, body.saleId);
+        if (again) return again;
+        throw paymentInFlight();
+      },
+      async () => {
+        const again = await this.answerAgain(queue, body.saleId);
+        if (again) return again;
+        /**
+         * A card or QR tender this box holds for the sale comes first. One the
+         * terminal approved closes the sale with THAT money — the till lost the
+         * answer, and cash on top would take the family's money twice. One
+         * with no final answer yet refuses the cash, as the platform does
+         * (PAYMENT_IN_FLIGHT): it may yet have taken the money.
+         */
+        const held = await this.readHeld(body.saleId);
+        if (held && SETTLED.has(held.status)) return this.closeHeld(station, caller, held);
+        if (held && UNRESOLVED.has(held.status)) throw paymentInFlight();
+        return this.finaliseHeldSale(station, caller, body);
+      },
+    );
+  }
+
+  /** `sale.finalise` once the sale is in this call's hands. */
+  private async finaliseHeldSale(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    body: BridgeSaleFinalise,
+  ): Promise<BridgeSaleAnswer> {
+    const tender = body.tender ?? null;
+    if (tender && tender.amountSatang > 0) {
+      if (tender.method === 'wallet') this.refuse('wallet');
+      if (tender.kind === 'card' || tender.kind === 'qr') {
+        throw new BridgeError(
+          400,
+          'VALIDATION',
+          'A card or a QR is taken on the counter’s terminal (payment.start), not recorded by hand',
+        );
+      }
+      if (tender.kind !== 'cash') this.refuse('noTerminal');
+    }
+    const sale = await this.prepareSale(station, caller, body);
+    const now = this.host.now().toISOString();
+    if (sale.gross === 0) {
+      if (tender && tender.amountSatang > 0) {
+        throw new BridgeError(
+          400,
+          'VALIDATION',
+          'This sale owes nothing, so there is no payment to take',
+        );
+      }
+      // A ฿0 comp: closed with no tender, as the platform closes one (S2-09a).
+      return this.closeSale(station, caller, body, sale, [], null);
+    }
+    if (!tender) {
+      throw new BridgeError(400, 'VALIDATION', 'A sale that owes money needs its payment');
+    }
+    if (tender.amountSatang !== sale.gross) {
+      this.refuse('split', { amountSatang: tender.amountSatang, grossSatang: sale.gross });
+    }
+    const handed = tender.tenderedSatang ?? sale.gross;
+    if (handed < sale.gross) {
+      throw new BridgeError(
+        400,
+        'VALIDATION',
+        'The cash taken is less than the amount being settled, so this would leave negative change',
+      );
+    }
+    const fact: OfflineTenderFact = {
+      actionId: tender.actionId,
+      methodCode: tender.method,
+      kind: 'cash',
+      provider: 'manual',
+      amountSatang: sale.gross,
+      tenderedSatang: handed,
+      changeSatang: handed - sale.gross,
+      paidAt: now,
+    };
+    const attempt = this.attemptView({
+      attemptId: uuidv7(),
+      saleId: body.saleId,
+      kind: 'cash',
+      provider: 'manual',
+      status: 'approved',
+      amountSatang: sale.gross,
+      tenderedSatang: handed,
+      changeSatang: handed - sale.gross,
+      actionId: tender.actionId,
+      paidAt: now,
+      createdAt: now,
+    });
+    return this.closeSale(station, caller, body, sale, [fact], attempt);
+  }
+
+  // --- the counter's own terminal --------------------------------------------------------
+
+  /**
+   * Run `fn` with this sale's money in this call's hands, or `busy` when
+   * another call on this box already has it. One call at a time talks to the
+   * terminal for a sale, closes it, or picks up a tender left behind; the
+   * check and the claim have no await between them.
+   */
+  private async holdingSale<T>(
+    saleId: string,
+    busy: () => Promise<T>,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    const key = `${this.host.boxId}:${saleId}`;
+    if (salesInHand.has(key)) return busy();
+    salesInHand.add(key);
+    try {
+      return await fn();
+    } finally {
+      salesInHand.delete(key);
+    }
+  }
+
+  /**
+   * The tender this box holds for a sale.
+   *
+   * Read by a call holding the sale (`holdingSale`), bar the busy answer's
+   * `peek`. So a tender found mid-exchange (`sent_to_terminal`, `inquiring`)
+   * has no exchange behind it any more: the process that wrote it went down
+   * before the terminal's answer landed. It is set down where the platform
+   * sets a lost terminal result (`payments/terminal.ts`, `result_missing`):
+   * `unknown` when the terminal can be asked about the sale by its own
+   * reference, else `awaiting_staff_confirmation`, for a person to read the
+   * terminal's screen (OD-3). Never `declined`: a power cut does not prove the
+   * card was not charged.
+   */
+  private async readHeld(saleId: string, opts: { peek?: boolean } = {}): Promise<HeldTender | null> {
+    if (!this.host.store.features().boothRuntime) return null;
+    const raw = await this.host.store.readRuntimeValue(this.host.boxId, heldTenderKey(saleId));
+    if (!raw) return null;
+    let held: HeldTender;
+    try {
+      held = JSON.parse(raw) as HeldTender;
+    } catch {
+      return null;
+    }
+    if (!opts.peek && MID_EXCHANGE.has(held.status)) {
+      const was = held.status;
+      held.status = this.unknownStatus(held);
+      held.updatedAt = this.host.now().toISOString();
+      await this.writeHeld(held);
+      this.log.warn(
+        { saleId, attemptId: held.attemptId, deviceId: held.deviceId, was, now: held.status },
+        'a terminal tender lost its exchange part-way; it waits to be asked about or confirmed, and is never sent again',
+      );
+    }
+    return held;
+  }
+
+  private async writeHeld(held: HeldTender): Promise<void> {
+    await this.host.store.writeRuntimeValue(
+      this.host.boxId,
+      heldTenderKey(held.saleId),
+      JSON.stringify(held),
+      held.updatedAt,
+    );
+  }
+
+  /**
+   * Can the terminal be asked about this tender? The platform's rule
+   * (`payments/terminal.ts` `canInquire`, `payments/attempt.ts`): Digio for
+   * everything, GHL for a QR but never a card — and only with the sale's own
+   * reference, which the terminal's answer carries.
+   */
+  private canAsk(held: HeldTender): boolean {
+    return (held.protocol === 'digio_tlv' || held.kind !== 'card') && !!held.terminalRef;
+  }
+
+  private heldAttempt(held: HeldTender): PaymentAttemptView {
+    return this.attemptView({
+      attemptId: held.attemptId,
+      saleId: held.saleId,
+      kind: held.kind,
+      provider: held.provider,
+      status: held.status,
+      amountSatang: held.amountSatang,
+      terminalRef: held.terminalRef,
+      tid: held.tid,
+      approvalCode: held.approvalCode,
+      last4: held.last4,
+      invoiceNo: held.invoiceNo,
+      tranRef: held.tranRef,
+      actionId: held.actionId,
+      inquirySupported: this.canAsk(held),
+      reversalPending: held.reversalPending,
+      paidAt: null,
+      createdAt: held.startedAt,
+    });
+  }
+
+  /** A tender still open: the sale is not closed and owes its whole amount. */
+  private async openAnswer(
+    station: BridgeStation,
+    held: HeldTender,
+    sale: PreparedSale,
+  ): Promise<BridgeSaleAnswer> {
+    const depth = await this.host.store
+      .depth(this.host.boxId)
+      .catch(() => ({ queued: 0, oldestQueuedAt: null }));
+    return {
+      sale: {
+        ...this.saleViewOf(station, held.saleId, sale, held.startedAt),
+        status: 'tendering',
+        receiptNumber: null,
+        receiptSeries: null,
+        receiptSeq: null,
+      },
+      finalised: false,
+      outstandingSatang: sale.gross,
+      attempt: this.heldAttempt(held),
+      replay: false,
+      printing: { jobs: [], notes: [] },
+      drawer: 'not_asked',
+      outboxDepth: depth.queued,
+    };
+  }
+
+  /** The sale a held tender pays for, priced as at the press that started it. */
+  private heldSale(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    held: HeldTender,
+  ): Promise<PreparedSale> {
+    return this.prepareSale(station, caller, held.sale, { at: new Date(held.startedAt) });
+  }
+
+  /**
+   * What a call is told while another call has this sale's money in hand: the
+   * sale, if the box has closed it; else the tender it names, read and never
+   * moved on. A new press with no live tender on disk yet (none, or an
+   * earlier one that already ended) is told a payment is under way.
+   */
+  private async busyAnswer(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    saleId: string,
+    attemptId?: string,
+  ): Promise<BridgeSaleAnswer> {
+    const again = await this.answerAgain(this.saleQueue(), saleId);
+    if (again) return again;
+    const held = await this.readHeld(saleId, { peek: true });
+    if (!held) throw paymentInFlight();
+    if (attemptId !== undefined) {
+      if (held.attemptId !== attemptId) throw attemptNotHeld();
+    } else if (!UNRESOLVED.has(held.status) && !SETTLED.has(held.status)) {
+      throw paymentInFlight();
+    }
+    return this.openAnswer(station, held, await this.heldSale(station, caller, held));
+  }
+
+  /**
+   * Close the sale with a tender the terminal, or a person reading its
+   * screen, already said yes to, whose sale was never written: the power went,
+   * or the log refused, between the answer and the record. The money was
+   * taken once. The sale closes with THAT tender and the terminal is asked
+   * for nothing (plan §2.1, OD-3), dated when it was paid.
+   */
+  private async closeHeld(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    held: HeldTender,
+  ): Promise<BridgeSaleAnswer> {
+    const sale = await this.heldSale(station, caller, held);
+    const paidAt = held.paidAt ?? held.updatedAt;
+    this.log.warn(
+      { saleId: held.saleId, attemptId: held.attemptId, status: held.status },
+      'a terminal tender approved before its sale was written closes the sale now, with no second charge',
+    );
+    return this.closeSale(
+      station,
+      caller,
+      held.sale,
+      sale,
+      [this.terminalTender(held)],
+      { ...this.heldAttempt(held), paidAt },
+      { at: paidAt },
+    );
+  }
+
+  /**
+   * The money a terminal's approval puts on the sale (OD-3): a PAX QR is
+   * flagged `awaiting_settlement`, and a card a person confirmed carries who,
+   * when and the code they typed.
+   */
+  private terminalTender(held: HeldTender): OfflineTenderFact {
+    const staff = held.staffConfirmation ?? null;
+    return {
+      actionId: held.actionId,
+      methodCode: held.method,
+      kind: held.kind,
+      provider: held.provider,
+      amountSatang: held.amountSatang,
+      status: held.kind === 'qr' ? 'awaiting_settlement' : 'approved',
+      deviceId: held.deviceId,
+      terminalRef: held.terminalRef,
+      tranRef: held.tranRef,
+      invoiceNo: held.invoiceNo,
+      approvalCode: staff?.approvalCode ?? held.approvalCode,
+      last4: held.last4,
+      tid: held.tid,
+      mid: held.mid,
+      responseCode: held.responseCode,
+      paidAt: held.paidAt ?? this.host.now().toISOString(),
+      ...(staff
+        ? {
+            staffConfirmation: {
+              accountId: staff.accountId,
+              at: staff.at,
+              approvalCode: staff.approvalCode,
+              ...(staff.note ? { note: staff.note } : {}),
+            },
+          }
+        : {}),
+    };
+  }
+
+  /**
+   * No final answer: `unknown` when the terminal can be asked (`canAsk`),
+   * else a person confirms against its screen (OD-3) — a GHL card always, and
+   * any tender whose exchange never brought back its reference.
+   */
+  private unknownStatus(held: HeldTender): PaymentAttemptStatus {
+    return this.canAsk(held) ? 'unknown' : 'awaiting_staff_confirmation';
+  }
+
+  /**
+   * Read a terminal's answer into the tender the box is holding, and close the
+   * sale when it approved. A partial approval is voided on the terminal and the
+   * sale is refused, as online: the platform has no way to take the difference.
+   *
+   * An INQUIRY that got no answer — the terminal gone, the request refused
+   * before a byte went out — says nothing about the sale, so the tender stays
+   * without a final answer; only a SALE that sent nothing is declined.
+   */
+  private async settleTerminal(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    held: HeldTender,
+    sale: PreparedSale,
+    outcome: TerminalCommandOutcome,
+    mode: 'sale' | 'inquire',
+  ): Promise<BridgeSaleAnswer> {
+    const terminals = this.host.terminals?.() ?? null;
+    const result = outcome.result;
+    const now = this.host.now().toISOString();
+    let status: PaymentAttemptStatus;
+    if (!result) {
+      status =
+        mode === 'sale' && NOTHING_SENT.has(outcome.errorCode ?? '')
+          ? 'declined'
+          : this.unknownStatus(held);
+      held.responseText = outcome.errorMessage ?? null;
+    } else {
+      held.terminalRef = result.terminalRef ?? held.terminalRef;
+      held.tranRef = result.tranRef ?? held.tranRef;
+      held.invoiceNo = result.invoiceNo ?? held.invoiceNo;
+      held.approvalCode = result.approvalCode ?? held.approvalCode;
+      held.last4 = result.last4 ?? held.last4;
+      held.tid = result.tid ?? held.tid;
+      held.mid = result.mid ?? held.mid;
+      held.responseCode = result.responseCode;
+      held.responseText = result.responseText;
+      const short =
+        result.outcome === 'partial_approval' ||
+        (result.outcome === 'approved' &&
+          result.approvedSatang !== null &&
+          result.approvedSatang !== held.amountSatang);
+      if (short) {
+        const voided =
+          terminals && held.tranRef
+            ? await terminals.runCommand({
+                mode: 'void',
+                attemptId: held.attemptId,
+                stationId: station.id,
+                deviceId: held.deviceId,
+                amountSatang: result.approvedSatang ?? held.amountSatang,
+                tender: held.kind,
+                tranRef: held.tranRef,
+                approvalCode: held.approvalCode,
+              })
+            : null;
+        held.reversalPending = voided?.result?.outcome !== 'approved';
+        status = 'declined';
+      } else if (result.outcome === 'approved') {
+        status = held.kind === 'qr' ? 'awaiting_settlement' : 'approved';
+      } else if (result.outcome === 'declined') {
+        status = 'declined';
+      } else if (result.outcome === 'cancelled') {
+        status = 'cancelled';
+      } else if (result.outcome === 'not_found') {
+        status = 'not_found';
+      } else {
+        status = this.unknownStatus(held);
+      }
+    }
+    held.status = status;
+    held.updatedAt = now;
+    if (SETTLED.has(status)) held.paidAt = now;
+    // Written before the sale is: should recording it fail, the next call
+    // finds a tender that took the money and closes the sale with it.
+    await this.writeHeld(held);
+    if (SETTLED.has(status)) {
+      return this.closeSale(station, caller, held.sale, sale, [this.terminalTender(held)], {
+        ...this.heldAttempt(held),
+        paidAt: now,
+      });
+    }
+    return this.openAnswer(station, held, sale);
+  }
+
+  /** `payment.start`: a card, or the PAX QR, on the counter's own terminal. */
+  private async startPayment(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<BridgeSaleAnswer> {
+    this.require(caller, 'pos:sale:create');
+    this.require(caller, 'pos:sale:update');
+    this.require(caller, 'pos:payment:capture');
+    const body = this.parse(BridgePaymentStartSchema, payload);
+    const queue = this.saleQueue();
+    return this.holdingSale(
+      body.saleId,
+      () => this.busyAnswer(station, caller, body.saleId),
+      async () => {
+        const again = await this.answerAgain(queue, body.saleId);
+        if (again) return again;
+        /**
+         * A tender this box holds for this sale answers first, and the
+         * terminal is sent nothing (plan §2.1, OD-3). One it approved closes
+         * the sale with that money — the till lost the answer, not the charge.
+         * One with no final answer is handed back to be inquired or confirmed.
+         */
+        const earlier = await this.readHeld(body.saleId);
+        if (earlier && SETTLED.has(earlier.status)) return this.closeHeld(station, caller, earlier);
+        if (body.tender.method === 'wallet') this.refuse('wallet');
+        const sale = await this.prepareSale(station, caller, body);
+        if (earlier && UNRESOLVED.has(earlier.status)) return this.openAnswer(station, earlier, sale);
+        if (sale.gross === 0) {
+          throw new BridgeError(
+            400,
+            'VALIDATION',
+            'This sale owes nothing, so there is no payment to take',
+          );
+        }
+        if (body.tender.amountSatang !== sale.gross) {
+          this.refuse('split', { amountSatang: body.tender.amountSatang, grossSatang: sale.gross });
+        }
+        if (!this.host.store.features().boothRuntime) {
+          throw new BridgeError(503, BOX_LANE_PAYMENT_REFUSAL.code, BOX_LANE_PAYMENT_REFUSAL.message);
+        }
+        const terminals = this.host.terminals?.() ?? null;
+        const role = body.tender.kind === 'card' ? 'card_terminal' : 'qr_terminal';
+        const routed = terminals?.route(station.id, role) ?? null;
+        if (!terminals || !routed) {
+          // With no terminal QR on this counter, the only QR left is the 2C2P
+          // gateway's — and minting that is a server call.
+          if (body.tender.kind === 'qr') this.refuse('qr2c2p');
+          this.refuse('noTerminal');
+        }
+        const protocol = routed.terminal.protocol;
+        const now = this.host.now().toISOString();
+        const held: HeldTender = {
+          attemptId: uuidv7(),
+          saleId: body.saleId,
+          stationId: station.id,
+          actionId: body.tender.actionId,
+          method: body.tender.method,
+          kind: body.tender.kind,
+          amountSatang: sale.gross,
+          deviceId: routed.device.id,
+          protocol,
+          provider: protocol === 'ghl_linkpos' ? 'ghl' : 'digio',
+          status: 'sent_to_terminal',
+          terminalRef: null,
+          tranRef: null,
+          invoiceNo: null,
+          approvalCode: null,
+          last4: null,
+          tid: routed.device.terminalId ?? null,
+          mid: routed.device.merchantId ?? null,
+          responseCode: null,
+          responseText: null,
+          reversalPending: false,
+          startedAt: now,
+          updatedAt: now,
+          paidAt: null,
+          staffConfirmation: null,
+          sale: body,
+        };
+        // Written down BEFORE a byte goes to the terminal (plan §6).
+        await this.writeHeld(held);
+        const outcome = await terminals.runCommand({
+          mode: 'sale',
+          attemptId: held.attemptId,
+          stationId: station.id,
+          deviceId: held.deviceId,
+          role,
+          amountSatang: held.amountSatang,
+          tender: held.kind,
+          requestQrPayload: held.kind === 'qr',
+          qrDirection: 'show',
+        });
+        return this.settleTerminal(station, caller, held, sale, outcome, 'sale');
+      },
+    );
+  }
+
+  /** The held tender this call names, or a refusal in words. */
+  private async heldFor(saleId: string, attemptId: string): Promise<HeldTender> {
+    const held = await this.readHeld(saleId);
+    if (!held || held.attemptId !== attemptId) throw attemptNotHeld();
+    return held;
+  }
+
+  /** `payment.inquire`: ask the terminal what became of a tender with no final answer. */
+  private async inquirePayment(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<BridgeSaleAnswer> {
+    this.require(caller, 'pos:payment:confirm');
+    const body = this.parse(BridgePaymentInquireSchema, payload);
+    const queue = this.saleQueue();
+    return this.holdingSale(
+      body.saleId,
+      () => this.busyAnswer(station, caller, body.saleId, body.attemptId),
+      async () => {
+        const again = await this.answerAgain(queue, body.saleId);
+        if (again) return again;
+        const held = await this.heldFor(body.saleId, body.attemptId);
+        if (SETTLED.has(held.status)) return this.closeHeld(station, caller, held);
+        const sale = await this.heldSale(station, caller, held);
+        if (held.status !== 'unknown') return this.openAnswer(station, held, sale);
+        if (!this.canAsk(held)) {
+          // Nothing to ask the terminal by: a person reads its screen instead.
+          held.status = 'awaiting_staff_confirmation';
+          held.updatedAt = this.host.now().toISOString();
+          await this.writeHeld(held);
+          return this.openAnswer(station, held, sale);
+        }
+        const terminals = this.host.terminals?.() ?? null;
+        if (!terminals) this.refuse('noTerminal');
+        held.status = 'inquiring';
+        held.updatedAt = this.host.now().toISOString();
+        await this.writeHeld(held);
+        const outcome = await terminals.runCommand({
+          mode: 'inquire',
+          attemptId: held.attemptId,
+          stationId: station.id,
+          deviceId: held.deviceId,
+          amountSatang: held.amountSatang,
+          tender: held.kind,
+          terminalRef: held.terminalRef,
+          tranRef: held.tranRef,
+        });
+        return this.settleTerminal(station, caller, held, sale, outcome, 'inquire');
+      },
+    );
+  }
+
+  /**
+   * `payment.confirm` (OD-3): a card sale that gave no answer, confirmed by a
+   * person against the terminal's own screen with the approval code typed.
+   * Recorded on the box, named on that person, and flagged for end-of-day
+   * reconciliation — because refusing it would leave money taken and not
+   * recorded.
+   */
+  private async confirmPayment(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<BridgeSaleAnswer> {
+    this.require(caller, 'pos:payment:confirm');
+    const body = this.parse(BridgePaymentConfirmSchema, payload);
+    const queue = this.saleQueue();
+    return this.holdingSale(
+      body.saleId,
+      () => this.busyAnswer(station, caller, body.saleId, body.attemptId),
+      async () => {
+        const again = await this.answerAgain(queue, body.saleId);
+        if (again) return again;
+        const held = await this.heldFor(body.saleId, body.attemptId);
+        // Confirmed (or approved) already, and the sale never written: close it with that.
+        if (SETTLED.has(held.status)) return this.closeHeld(station, caller, held);
+        const sale = await this.heldSale(station, caller, held);
+        if (held.status !== 'awaiting_staff_confirmation') {
+          throw new BridgeError(
+            409,
+            'ATTEMPT_NOT_AWAITING_CONFIRMATION',
+            `This tender is ${held.status.replace(/_/g, ' ')}; there is nothing for a person to confirm`,
+            { status: held.status },
+          );
+        }
+        const now = this.host.now().toISOString();
+        held.updatedAt = now;
+        if (!body.took) {
+          held.status = 'declined';
+          await this.writeHeld(held);
+          return this.openAnswer(station, held, sale);
+        }
+        held.status = 'approved';
+        held.approvalCode = body.approvalCode ?? held.approvalCode;
+        held.last4 = body.last4 ?? held.last4;
+        held.paidAt = now;
+        // Kept on the tender, so a close after a crash still says who confirmed it.
+        held.staffConfirmation = {
+          accountId: caller.accountId,
+          at: now,
+          approvalCode: body.approvalCode ?? '',
+          ...(body.note ? { note: body.note } : {}),
+        };
+        await this.writeHeld(held);
+        return this.closeSale(station, caller, held.sale, sale, [this.terminalTender(held)], {
+          ...this.heldAttempt(held),
+          paidAt: now,
+        });
+      },
+    );
+  }
+
+  /**
+   * `payment.status`: where the tender the box holds for a sale stands. A
+   * tender that took the money but whose sale was never written is closed
+   * here, by a caller who may close sales.
+   */
+  private async paymentStatus(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<BridgeSaleAnswer> {
+    this.require(caller, 'pos:sale:create');
+    const body = this.parse(BridgePaymentInquireSchema, payload);
+    const queue = this.saleQueue();
+    return this.holdingSale(
+      body.saleId,
+      () => this.busyAnswer(station, caller, body.saleId, body.attemptId),
+      async () => {
+        const again = await this.answerAgain(queue, body.saleId);
+        if (again) return again;
+        const held = await this.heldFor(body.saleId, body.attemptId);
+        if (SETTLED.has(held.status) && caller.can('pos:sale:update')) {
+          return this.closeHeld(station, caller, held);
+        }
+        return this.openAnswer(station, held, await this.heldSale(station, caller, held));
+      },
+    );
+  }
+
+  /** `sale.reprint`: another copy of a sale this box took today (plan §2.8, Reprint). */
+  private async reprintSale(
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+    actionId: string | null,
+  ): Promise<Record<string, unknown>> {
+    this.require(caller, 'pos:print:reprint');
+    const body = this.parse(BridgeSaleReprintSchema, payload);
+    const queue = this.saleQueue();
+    try {
+      const printed = await queue.reprint(body.saleId, body.kind, {
+        today: this.tradingDay(),
+        reason: body.reason ?? null,
+        actionId,
+      });
+      return {
+        jobs: printed.jobs.map((job) => ({ id: job.id, kind: job.kind, status: job.status })),
+        notes: printed.notes,
+      };
+    } catch (err) {
+      if (err instanceof ReprintRefused) {
+        throw new BridgeError(
+          err.code === 'NOT_ON_THIS_BOX' ? 404 : 409,
+          `REPRINT_${err.code}`,
+          err.message,
+        );
+      }
+      throw err;
+    }
+  }
+
+  /** `receipt.observed` (OD-4): the number the platform gave an online sale here. */
+  private async observeReceipt(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    this.require(caller, 'pos:sale:create');
+    const body = this.parse(BridgeReceiptObservedSchema, payload);
+    const observed = await this.saleQueue().observeReceipt(station.id, body.receiptNumber);
+    return { observed };
   }
 
   // --- the overlay's end -------------------------------------------------------------------

@@ -179,12 +179,14 @@ describe('gate seam', () => {
     expect(JSON.stringify(d)).not.toContain(bands[0]!.code);
   });
 
-  it('scanner simulator on the api-hosted box: no key -> BAND_KEY_MISSING; with key -> handled to the band id; tampered -> refused', async () => {
-    expect((agent.config() as { bandKey?: string } | null)?.bandKey ?? null).toBeNull();
+  it('scanner simulator on the api-hosted box: the key comes in the config bundle (OD-13) -> handled to the band id; tampered -> refused', async () => {
+    // Offline plan Round 4, OD-13: a counter box is sent the park's band key
+    // in its config bundle, so it can mint and check bands with no internet.
+    expect((agent.config() as { bandKey?: string } | null)?.bandKey ?? null).toBe(DEV_BAND_HMAC_KEY);
     const code = bands[0]!.code;
     hostKey = null;
-    const missing = await scan(code);
-    console.log('NO KEY >>>', missing.state, JSON.stringify(missing.result), missing.errorCode);
+    const fromBundle = await scan(code);
+    expect((fromBundle.result as { outcome: string }).outcome).toBe('handled');
     hostKey = DEV_BAND_HMAC_KEY;
     const ok = await scan(code);
     const okResult = ok.result as { outcome: string; band?: { bandId: string } };

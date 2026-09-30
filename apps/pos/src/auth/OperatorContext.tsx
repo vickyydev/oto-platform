@@ -14,7 +14,7 @@ import { INACTIVITY_TIMEOUT_MS, INACTIVITY_WARNING_MS } from '@/auth/timings';
 import { useStaffTheme, useCustomerTheme } from '@/lib/themePref';
 import { authApi } from '@/api/platform';
 import { ApiError } from '@/api/client';
-import { bridgeApi } from '@/api/bridge';
+import { bridgeApi, setBridgeStaffName } from '@/api/bridge';
 import { forgetStaffToken, readStaffToken, staffTokenLive } from '@/auth/staffToken';
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure } from '@/lib/lane';
 import { loadCatalogFromApi } from '@/api/catalogBridge';
@@ -162,6 +162,11 @@ function toOperator(me: Awaited<ReturnType<typeof authApi.me>>, isManager: boole
 
 export function OperatorProvider({ children }: { children: ReactNode }) {
   const [operator, setOperator] = useState<Operator | null>(null);
+  // Who a receipt printed by the box lane names (offline plan Round 4): a
+  // till's box holds no staff names, and the till knows who is standing at it.
+  useEffect(() => {
+    setBridgeStaffName(operator?.name ?? null);
+  }, [operator?.name]);
   const [held, setHeld] = useState<ReadonlySet<string>>(() => new Set());
   const [locked, setLocked] = useState(false);
   const [offlineUnlock, setOfflineUnlock] = useState<

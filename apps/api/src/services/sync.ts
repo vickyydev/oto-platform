@@ -10,6 +10,7 @@ import {
   boxOutbox,
   boxSyncKey,
   branch,
+  operator,
   branchHoliday,
   branchTaxConfig,
   child,
@@ -30,6 +31,7 @@ import {
   roleAssignment,
   rolePermission,
   station,
+  staffToken,
   stationDevice,
   syncAnomaly,
   syncChange,
@@ -64,6 +66,7 @@ import {
   canonicalSyncBytes,
   newId,
   normalizePhone,
+  formatTHB,
   parseDayStart,
   type BusinessDateSource,
   type SyncEventEnvelope,
@@ -1574,7 +1577,12 @@ const HANDLERS: Record<string, EventHandler> = {
   'sale.finalised': {
     schema: OfflineSalePayloadSchema,
     async apply(tx, scope, event, payload: z.infer<typeof OfflineSalePayloadSchema>) {
-      const replay = replayScope(scope, event);
+      const replay = {
+        ...replayScope(scope, event),
+        // OD-8: asked only when today's prices disagree with the box's.
+        catalogueVersion: () =>
+          catalogueVersionOf(tx, scope.auth.operatorId, scope.auth.branchId as string),
+      };
       // A sale rung up under a merged member's id is the survivor's (OD-7).
       const memberId = payload.cart.memberId
         ? await survivingMemberId(tx, scope.auth.operatorId, payload.cart.memberId)
@@ -1601,7 +1609,66 @@ const HANDLERS: Record<string, EventHandler> = {
         outcome,
         scope.log,
       );
-      return saleApplied(outcome);
+      const boxName = `${scope.auth.name} (${scope.auth.slot})`;
+      const saleName = outcome.receiptNumber ?? outcome.saleId;
+      // OD-8 — filed at the box's price because the catalogue had moved on.
+      if (outcome.priceFiledAsTaken) {
+        const priced = outcome.priceFiledAsTaken;
+        await raiseSaleAlert(scope, {
+          key: `sale.offline_price:${outcome.saleId}`,
+          category: 'sale.offline_price',
+          subject: `Offline sale ${saleName} (${boxName})`,
+          summary:
+            `Offline sale ${saleName} was filed at ${formatTHB(priced.boxTotalSatang)}, the price the counter took it at from an older price list` +
+            (priced.platformTotalSatang === null
+              ? '; today’s prices would not sell it as it was rung up.'
+              : `; today’s prices would have charged ${formatTHB(priced.platformTotalSatang)}.`),
+          detail: { saleId: outcome.saleId, receiptNumber: outcome.receiptNumber, ...priced },
+        });
+      }
+      /**
+       * OD-9 — WHO IS THE ACTOR ON A FACT THAT SYNCS HOURS LATER? The account
+       * that unlocked the box session, whose shift token the fact names.
+       * Expiry since then does not matter. A token revoked BEFORE the sale
+       * happened is still applied — a sale that happened is filed, not lost —
+       * and raises a `revoked_actor` anomaly with an alert.
+       */
+      const revoked = await revokedBefore(tx, payload.staffTokenJti ?? null, replay.occurredAt);
+      if (revoked) {
+        await raiseSaleAlert(scope, {
+          key: `sale.revoked_actor:${outcome.saleId}`,
+          category: 'sale.revoked_actor',
+          subject: `Offline sale ${saleName} (${boxName})`,
+          summary: `Offline sale ${saleName} was taken on a shift token that had been revoked before the sale; it was filed, and needs a person to look at it.`,
+          detail: {
+            saleId: outcome.saleId,
+            receiptNumber: outcome.receiptNumber,
+            actorAccountId: replay.actorAccountId,
+            staffTokenJti: revoked.jti,
+            revokedAt: revoked.revokedAt.toISOString(),
+            occurredAt: replay.occurredAt.toISOString(),
+          },
+        });
+      }
+      const applied = saleApplied(outcome);
+      return revoked
+        ? {
+            ...applied,
+            anomalies: [
+              ...(applied.anomalies ?? []),
+              {
+                kind: 'revoked_actor' as const,
+                detail: {
+                  saleId: outcome.saleId,
+                  actorAccountId: replay.actorAccountId,
+                  staffTokenJti: revoked.jti,
+                  revokedAt: revoked.revokedAt.toISOString(),
+                  reason: revoked.reason,
+                },
+              },
+            ],
+          }
+        : applied;
     },
   },
 
@@ -1685,14 +1752,67 @@ function replayScope(scope: BatchScope, event: PreparedEvent): ReplayScope {
 }
 
 /**
+ * A shift token revoked BEFORE the fact it signed happened (OD-9), or null.
+ * Revoked afterwards, or never, is an ordinary actor.
+ */
+async function revokedBefore(
+  tx: Tx,
+  jti: string | null,
+  occurredAt: Date,
+): Promise<{ jti: string; revokedAt: Date; reason: string | null } | null> {
+  if (!jti) return null;
+  const [row] = await tx
+    .select({ revokedAt: staffToken.revokedAt, reason: staffToken.revokedReason })
+    .from(staffToken)
+    .where(eq(staffToken.jti, jti))
+    .limit(1);
+  if (!row?.revokedAt || row.revokedAt.getTime() >= occurredAt.getTime()) return null;
+  return { jti, revokedAt: row.revokedAt, reason: row.reason ?? null };
+}
+
+/**
+ * An alert about a sale a box filed, on the pool as every alert a handler
+ * raises, and best-effort: an alert that cannot be written is logged, never
+ * thrown, so it cannot quarantine the sale it is about.
+ */
+async function raiseSaleAlert(
+  scope: BatchScope,
+  alert: {
+    key: string;
+    category: string;
+    subject: string;
+    summary: string;
+    detail: Record<string, unknown>;
+  },
+): Promise<void> {
+  try {
+    await raiseAlert(
+      scope.db,
+      {
+        ...alert,
+        severity: 'warning',
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  } catch (err) {
+    scope.log?.error(
+      { err, key: alert.key },
+      "an offline sale's alert could not be raised; its audit row names what happened",
+    );
+  }
+}
+
+/**
  * What a replayed sale leaves behind, as the ledger records it.
  *
- * The anomaly is the one thing worth flagging without refusing: the box showed
- * a guest a receipt number and the ledger issued a different one, because the
- * series had moved on while the box was away. Nothing is wrong with either
- * number — the allocator's is the real one and can never be a duplicate — but
- * somebody holding the first is going to ask about it, and `late_arrival` is
- * exactly what happened.
+ * The anomaly is the one thing worth flagging without refusing (OD-4): the
+ * box printed a receipt number the ledger could not file the sale under —
+ * already used in the station's series, or the platform had numbered this
+ * sale itself before the box's copy arrived — so it was filed under the next
+ * free one. Nothing is wrong with the ledger's number, and it can never be a
+ * duplicate, but somebody holding the first is going to ask about it.
  */
 function saleApplied(outcome: ReplayOutcome): ApplyResult {
   return {
@@ -1702,7 +1822,7 @@ function saleApplied(outcome: ReplayOutcome): ApplyResult {
       ? {
           anomalies: [
             {
-              kind: 'late_arrival' as const,
+              kind: 'receipt_collision' as const,
               detail: {
                 saleId: outcome.saleId,
                 boxReceiptNumber: outcome.receiptDiffers.box,
@@ -3606,6 +3726,184 @@ export interface CacheBundle {
 }
 
 /**
+ * THE `catalogue` SCOPE'S ONE ITEM, with a version of its own (offline plan
+ * §2.3, OD-8). A function of its own since Round 4, because the offline replay
+ * asks for the same version: a sale priced offline names the catalogue it was
+ * priced from, and a sale from an OLDER one is filed at the price it was taken.
+ */
+export async function catalogueCacheItem(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+): Promise<Record<string, unknown> & { version: string }> {
+  const packages = await db
+    .select()
+    .from(ticketPackage)
+    .where(and(eq(ticketPackage.branchId, branchId), isNull(ticketPackage.archivedAt)))
+    .orderBy(asc(ticketPackage.name));
+  const categories = await db
+    .select()
+    .from(productCategory)
+    .where(eq(productCategory.operatorId, operatorId))
+    .orderBy(asc(productCategory.name));
+  /**
+   * This branch's items AND the operator-wide ones (branch null), which is
+   * what the platform's own cart reads (`loadCatalogue` in `sale.ts`) and
+   * what the menu shows. A box holding only the branch's rows could not
+   * price an operator-wide item a till put on the order (offline plan §2.3).
+   */
+  const products = await db
+    .select()
+    .from(product)
+    .where(
+      and(
+        eq(product.operatorId, operatorId),
+        or(isNull(product.branchId), eq(product.branchId, branchId)),
+        isNull(product.archivedAt),
+      ),
+    )
+    .orderBy(asc(product.name));
+  const tiers = await db
+    .select()
+    .from(tier)
+    .where(eq(tier.operatorId, operatorId))
+    .orderBy(asc(tier.code));
+  const holidays = await db
+    .select()
+    .from(branchHoliday)
+    .where(eq(branchHoliday.branchId, branchId))
+    .orderBy(asc(branchHoliday.startsOn));
+  const [taxConfig] = await db
+    .select()
+    .from(branchTaxConfig)
+    .where(eq(branchTaxConfig.branchId, branchId))
+    .limit(1);
+  const overrides = await db
+    .select()
+    .from(taxOverride)
+    .where(eq(taxOverride.branchId, branchId));
+  /**
+   * What a local quote lacks without them (offline plan §2.3, Round 3):
+   * the modifier groups and options an item offers and the library groups
+   * it links, the tenders the park takes, the promotion definitions, and
+   * the branch's receipt header. Each is read with the same scope the
+   * platform's own cart reads it with (`resolveItemLines`, `readMenu`).
+   */
+  const productIds = products.map((p) => p.id);
+  const modifierGroups = await db
+    .select()
+    .from(modifierGroup)
+    .where(and(eq(modifierGroup.operatorId, operatorId), isNull(modifierGroup.archivedAt)))
+    .orderBy(asc(modifierGroup.sortOrder), asc(modifierGroup.name));
+  const modifierOptions = modifierGroups.length
+    ? await db
+        .select()
+        .from(modifierOption)
+        .where(
+          and(
+            inArray(
+              modifierOption.modifierGroupId,
+              modifierGroups.map((g) => g.id),
+            ),
+            isNull(modifierOption.archivedAt),
+          ),
+        )
+        .orderBy(asc(modifierOption.sortOrder), asc(modifierOption.name))
+    : [];
+  const modifierLinks = productIds.length
+    ? await db
+        .select({
+          productId: productModifierGroup.productId,
+          modifierGroupId: productModifierGroup.modifierGroupId,
+          sortOrder: productModifierGroup.sortOrder,
+        })
+        .from(productModifierGroup)
+        .where(
+          and(
+            eq(productModifierGroup.operatorId, operatorId),
+            inArray(productModifierGroup.productId, productIds),
+          ),
+        )
+        .orderBy(asc(productModifierGroup.productId), asc(productModifierGroup.sortOrder))
+    : [];
+  const paymentMethods = await db
+    .select({
+      code: paymentMethod.code,
+      label: paymentMethod.label,
+      kind: paymentMethod.kind,
+      enabled: paymentMethod.enabled,
+      sortOrder: paymentMethod.sortOrder,
+    })
+    .from(paymentMethod)
+    .where(and(eq(paymentMethod.operatorId, operatorId), isNull(paymentMethod.archivedAt)))
+    .orderBy(asc(paymentMethod.sortOrder), asc(paymentMethod.code));
+  const promotions = await db
+    .select({
+      id: discountDefinition.id,
+      branchId: discountDefinition.branchId,
+      code: discountDefinition.code,
+      label: discountDefinition.label,
+      kind: discountDefinition.kind,
+      valueBp: discountDefinition.valueBp,
+      valueSatang: discountDefinition.valueSatang,
+      freeProductId: discountDefinition.freeProductId,
+      target: discountDefinition.target,
+      validFrom: discountDefinition.validFrom,
+      validUntil: discountDefinition.validUntil,
+      stackable: discountDefinition.stackable,
+      active: discountDefinition.active,
+    })
+    .from(discountDefinition)
+    .where(
+      and(
+        eq(discountDefinition.operatorId, operatorId),
+        or(isNull(discountDefinition.branchId), eq(discountDefinition.branchId, branchId)),
+        isNull(discountDefinition.archivedAt),
+      ),
+    )
+    .orderBy(asc(discountDefinition.code));
+  const [header] = await db
+    .select({ name: branch.name, address: branch.address, country: branch.country })
+    .from(branch)
+    .where(eq(branch.id, branchId))
+    .limit(1);
+  // The seller's name the receipt's tax-invoice header prints beside the
+  // branch's (offline plan §2.5): a box printing a receipt with no internet
+  // has nowhere else to read it.
+  const [seller] = await db
+    .select({ name: operator.name })
+    .from(operator)
+    .where(eq(operator.id, operatorId))
+    .limit(1);
+  const item = {
+    packages,
+    categories,
+    products,
+    tiers,
+    holidays,
+    taxConfig: taxConfig ?? null,
+    overrides,
+    modifierGroups,
+    modifierOptions,
+    modifierLinks,
+    paymentMethods,
+    promotions,
+    receiptHeader: header ? { ...header, operatorName: seller?.name ?? null } : null,
+  };
+  // One item, because the catalogue is applied as a unit: half a price list
+  // is worse than none. It carries a version of its OWN (OD-8): the bundle's
+  // is hashed over every administered scope together, and a sale priced
+  // offline has to name the price list it was priced from, not the staff
+  // list beside it.
+  return { ...item, version: sha256Hex(JSON.stringify(item)).slice(0, 16) };
+}
+
+/** The version `catalogueCacheItem` would ship a box of this branch now (OD-8). */
+export async function catalogueVersionOf(db: Exec, operatorId: string, branchId: string): Promise<string> {
+  return (await catalogueCacheItem(db, operatorId, branchId)).version;
+}
+
+/**
  * Everything one box needs to keep its counter working with no internet.
  *
  * **What it does NOT carry, and why.** A box is a Raspberry Pi standing in a
@@ -3723,158 +4021,7 @@ export async function cacheBundle(
 
   for (const scope of wanted) {
     if (scope === 'catalogue') {
-      const packages = await db
-        .select()
-        .from(ticketPackage)
-        .where(and(eq(ticketPackage.branchId, branchId), isNull(ticketPackage.archivedAt)))
-        .orderBy(asc(ticketPackage.name));
-      const categories = await db
-        .select()
-        .from(productCategory)
-        .where(eq(productCategory.operatorId, operatorId))
-        .orderBy(asc(productCategory.name));
-      /**
-       * This branch's items AND the operator-wide ones (branch null), which is
-       * what the platform's own cart reads (`loadCatalogue` in `sale.ts`) and
-       * what the menu shows. A box holding only the branch's rows could not
-       * price an operator-wide item a till put on the order (offline plan §2.3).
-       */
-      const products = await db
-        .select()
-        .from(product)
-        .where(
-          and(
-            eq(product.operatorId, operatorId),
-            or(isNull(product.branchId), eq(product.branchId, branchId)),
-            isNull(product.archivedAt),
-          ),
-        )
-        .orderBy(asc(product.name));
-      const tiers = await db
-        .select()
-        .from(tier)
-        .where(eq(tier.operatorId, operatorId))
-        .orderBy(asc(tier.code));
-      const holidays = await db
-        .select()
-        .from(branchHoliday)
-        .where(eq(branchHoliday.branchId, branchId))
-        .orderBy(asc(branchHoliday.startsOn));
-      const [taxConfig] = await db
-        .select()
-        .from(branchTaxConfig)
-        .where(eq(branchTaxConfig.branchId, branchId))
-        .limit(1);
-      const overrides = await db
-        .select()
-        .from(taxOverride)
-        .where(eq(taxOverride.branchId, branchId));
-      /**
-       * What a local quote lacks without them (offline plan §2.3, Round 3):
-       * the modifier groups and options an item offers and the library groups
-       * it links, the tenders the park takes, the promotion definitions, and
-       * the branch's receipt header. Each is read with the same scope the
-       * platform's own cart reads it with (`resolveItemLines`, `readMenu`).
-       */
-      const productIds = products.map((p) => p.id);
-      const modifierGroups = await db
-        .select()
-        .from(modifierGroup)
-        .where(and(eq(modifierGroup.operatorId, operatorId), isNull(modifierGroup.archivedAt)))
-        .orderBy(asc(modifierGroup.sortOrder), asc(modifierGroup.name));
-      const modifierOptions = modifierGroups.length
-        ? await db
-            .select()
-            .from(modifierOption)
-            .where(
-              and(
-                inArray(
-                  modifierOption.modifierGroupId,
-                  modifierGroups.map((g) => g.id),
-                ),
-                isNull(modifierOption.archivedAt),
-              ),
-            )
-            .orderBy(asc(modifierOption.sortOrder), asc(modifierOption.name))
-        : [];
-      const modifierLinks = productIds.length
-        ? await db
-            .select({
-              productId: productModifierGroup.productId,
-              modifierGroupId: productModifierGroup.modifierGroupId,
-              sortOrder: productModifierGroup.sortOrder,
-            })
-            .from(productModifierGroup)
-            .where(
-              and(
-                eq(productModifierGroup.operatorId, operatorId),
-                inArray(productModifierGroup.productId, productIds),
-              ),
-            )
-            .orderBy(asc(productModifierGroup.productId), asc(productModifierGroup.sortOrder))
-        : [];
-      const paymentMethods = await db
-        .select({
-          code: paymentMethod.code,
-          label: paymentMethod.label,
-          kind: paymentMethod.kind,
-          enabled: paymentMethod.enabled,
-          sortOrder: paymentMethod.sortOrder,
-        })
-        .from(paymentMethod)
-        .where(and(eq(paymentMethod.operatorId, operatorId), isNull(paymentMethod.archivedAt)))
-        .orderBy(asc(paymentMethod.sortOrder), asc(paymentMethod.code));
-      const promotions = await db
-        .select({
-          id: discountDefinition.id,
-          branchId: discountDefinition.branchId,
-          code: discountDefinition.code,
-          label: discountDefinition.label,
-          kind: discountDefinition.kind,
-          valueBp: discountDefinition.valueBp,
-          valueSatang: discountDefinition.valueSatang,
-          freeProductId: discountDefinition.freeProductId,
-          target: discountDefinition.target,
-          validFrom: discountDefinition.validFrom,
-          validUntil: discountDefinition.validUntil,
-          stackable: discountDefinition.stackable,
-          active: discountDefinition.active,
-        })
-        .from(discountDefinition)
-        .where(
-          and(
-            eq(discountDefinition.operatorId, operatorId),
-            or(isNull(discountDefinition.branchId), eq(discountDefinition.branchId, branchId)),
-            isNull(discountDefinition.archivedAt),
-          ),
-        )
-        .orderBy(asc(discountDefinition.code));
-      const [header] = await db
-        .select({ name: branch.name, address: branch.address, country: branch.country })
-        .from(branch)
-        .where(eq(branch.id, branchId))
-        .limit(1);
-      const item = {
-        packages,
-        categories,
-        products,
-        tiers,
-        holidays,
-        taxConfig: taxConfig ?? null,
-        overrides,
-        modifierGroups,
-        modifierOptions,
-        modifierLinks,
-        paymentMethods,
-        promotions,
-        receiptHeader: header ?? null,
-      };
-      // One item, because the catalogue is applied as a unit: half a price list
-      // is worse than none. It carries a version of its OWN (OD-8): the bundle's
-      // is hashed over every administered scope together, and a sale priced
-      // offline has to name the price list it was priced from, not the staff
-      // list beside it.
-      put('catalogue', [{ ...item, version: sha256Hex(JSON.stringify(item)).slice(0, 16) }]);
+      put('catalogue', [await catalogueCacheItem(db, operatorId, branchId)]);
       continue;
     }
 

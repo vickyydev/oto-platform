@@ -42,8 +42,11 @@ import { actionIdOf, openChannel } from './stations';
  *     the same guard `/display/session` uses, and is only ever handed the
  *     redacted document (OD-10).
  *
- * Nothing here can take money: `sale.*` and `payment.*` intents are refused
- * politely until round 4 builds them.
+ * Round 4 sells here: `sale.finalise` (cash, or a ฿0 comp) and `payment.*`
+ * (a card or the PAX QR on the counter's own terminal) are written by the
+ * virtual box's own sale queue — one store transaction for the number, the
+ * bands, the paper and the fact — and printed from its queue. What the
+ * capability list refuses offline is refused here in its words.
  */
 
 const Params = z.object({ stationId: z.string().uuid() });
@@ -326,7 +329,7 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          "Ask the box to act: the session manager's intents, `cart.quote` priced from the box's catalogue, and the member, child, visit and tier-change records written to its outbox and overlay under the till's ids. `sale.*` and `payment.*` are refused politely until round 4.",
+          "Ask the box to act: the session manager's intents, `cart.quote` priced from the box's catalogue, the member, child, visit and tier-change records written to its outbox and overlay under the till's ids, and selling (Round 4): `sale.finalise`, `payment.start`, `payment.inquire`, `payment.confirm`, `payment.status`, `sale.reprint` and `receipt.observed`. The 2C2P QR, vouchers, wallet spend, booking redemption, refunds and voids are refused in the capability list's words.",
         params: Params,
         body: StationIntentSchema,
         response: { 200: IntentAnswer },

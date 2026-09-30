@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import {
   account,
   branch,
@@ -29,7 +29,6 @@ import {
   type StationKind,
 } from '@oto/db';
 import {
-  apportion,
   businessDate,
   cartUnits,
   componentKey,
@@ -41,6 +40,9 @@ import {
   itemPricePair,
   itemTaxCategory,
   itemUnitPrice,
+  ledgerUnitComponentKey,
+  ledgerUnitKindOf,
+  ledgerUnitLabel,
   newId,
   isPaymentReversalPending,
   parseDayStart,
@@ -50,13 +52,13 @@ import {
   priceCartLine,
   refundStatusOf,
   refundableSatang,
-  SERVICE_FEE_ROW_KEY,
+  splitLedgerUnitMoney,
   type CartAddOn,
   type CartPromo,
-  type CartUnit,
   type DiscountComponentTarget,
   type ManualDiscount,
   type PrepStation,
+  type OfflinePriceBasis,
   type PricingContext,
   type TaxableCategory,
   type TaxConfigShape,
@@ -770,16 +772,63 @@ async function loadCatalogue(
   return { packages, products };
 }
 
-/** What a unit of the engine's decomposition is, as the ledger names it. */
-function lineKindOf(unit: CartUnit): SaleLineKind {
-  if (unit.promoItem) return 'promo_item';
-  const row = unit.row;
-  if (!row) return 'food_provision';
-  if (row.key === SERVICE_FEE_ROW_KEY) return 'service_fee';
-  if (row.kind === 'kids') return 'kids';
-  if (row.kind === 'adults') return row.key === 'adults-free' ? 'adults_free' : 'adults_paid';
-  if (row.kind === 'socks') return 'socks';
-  return 'addon';
+/**
+ * OD-8 — PRICE THE CART AS THE BOX PRICED IT.
+ *
+ * A sale taken offline from an older catalogue version is filed at the price
+ * the box charged, because the money was taken at a price the park displayed.
+ * The rows the cart used are laid over what the catalogue holds today: each
+ * package's prices and adult rules, each product's price pair, the day's rate
+ * and the tax configuration. A package or product withdrawn since is read back
+ * as it stands, so the sale is filed with the line it sold.
+ */
+async function applyPriceBasis(
+  db: Exec,
+  scope: PricingScope,
+  catalogue: CatalogueLookup,
+  basis: OfflinePriceBasis,
+): Promise<void> {
+  if (basis.pricingMode !== scope.pricingMode) {
+    scope.pricingMode = basis.pricingMode;
+    scope.pricingModeReason = `As the counter priced it offline (${basis.pricingMode} pricing)`;
+  }
+  if (basis.taxConfig) scope.taxConfig = basis.taxConfig as TaxConfigShape;
+
+  const missingPackages = basis.packages.filter((p) => !catalogue.packages.has(p.id)).map((p) => p.id);
+  if (missingPackages.length > 0) {
+    const rows = await db
+      .select()
+      .from(ticketPackage)
+      .where(and(inArray(ticketPackage.id, missingPackages), eq(ticketPackage.branchId, scope.branchId)));
+    for (const row of rows) catalogue.packages.set(row.id, row);
+  }
+  for (const priced of basis.packages) {
+    const row = catalogue.packages.get(priced.id);
+    if (!row) continue;
+    catalogue.packages.set(priced.id, {
+      ...row,
+      prices: priced.prices as typeof row.prices,
+      adultRules: (priced.adultRules ?? row.adultRules) as typeof row.adultRules,
+    });
+  }
+
+  const missingProducts = basis.products.filter((p) => !catalogue.products.has(p.id)).map((p) => p.id);
+  if (missingProducts.length > 0) {
+    const rows = await db
+      .select()
+      .from(product)
+      .where(and(inArray(product.id, missingProducts), eq(product.operatorId, scope.operatorId)));
+    const areas = await resolveItemTaxCategories(db, rows);
+    for (const row of rows) catalogue.products.set(row.id, { row, category: areas.get(row.id) ?? null });
+  }
+  for (const priced of basis.products) {
+    const found = catalogue.products.get(priced.id);
+    if (!found) continue;
+    catalogue.products.set(priced.id, {
+      ...found,
+      row: { ...found.row, priceSatang: priced.priceSatang, priceWeekendSatang: priced.priceWeekendSatang },
+    });
+  }
 }
 
 // --- F&B and shop lines (S2-09b) --------------------------------------------
@@ -912,7 +961,7 @@ interface ResolvedItemLine {
  * around the engine: it means the F&B money is decomposed into units, bounded
  * by the discount ledger, run through the same tax cascade and apportioned back
  * the same way admission is, instead of a second set of totals arithmetic
- * living here. `lineKindOf` would call such a unit an `addon`; `buildPricedLines`
+ * living here. `ledgerUnitKindOf` would call such a unit an `addon`; `buildPricedLines`
  * writes the kind this function resolved, `fnb_item` or `merch_item`.
  *
  * WHAT THE ROW SAYS IT IS, so a promo code can be scoped to it (SCRUM-344).
@@ -940,6 +989,8 @@ async function resolveItemLines(
   input: CartInput,
   catalogue: CatalogueLookup,
   tierCode: string,
+  /** OD-8 — each option's price as the box priced it offline. */
+  optionPrices?: ReadonlyMap<string, { priceSatang: number; priceWeekendSatang: number | null }>,
 ): Promise<ResolvedItemLine[]> {
   const itemInputs = input.items ?? [];
   if (itemInputs.length === 0) return [];
@@ -990,7 +1041,7 @@ async function resolveItemLines(
         inArray(productModifierGroup.productId, productIds),
       ),
     );
-  const options = groups.length
+  const loadedOptions = groups.length
     ? await db
         .select()
         .from(modifierOption)
@@ -1005,6 +1056,18 @@ async function resolveItemLines(
         )
         .orderBy(asc(modifierOption.sortOrder), asc(modifierOption.name))
     : [];
+  const options = optionPrices
+    ? loadedOptions.map((option) => {
+        const asPriced = optionPrices.get(option.id);
+        return asPriced
+          ? {
+              ...option,
+              priceSatang: asPriced.priceSatang,
+              priceWeekendSatang: asPriced.priceWeekendSatang,
+            }
+          : option;
+      })
+    : loadedOptions;
   const prepStations = await resolveItemPrepStations(db, rows);
   const categoryWalk = await loadItemCategoryWalk(db, rows);
 
@@ -1139,6 +1202,13 @@ export async function priceCart(
   now: Date = new Date(),
   voucherScope: CartVoucherScope = { mode: 'quote', stationId: null },
   promoPricing: PromoPricing = 'definition',
+  /**
+   * OD-8 — the prices a box priced an offline sale from, when the catalogue
+   * has moved on since: the sale is filed at the price the park displayed and
+   * the money was taken at. Only the offline replay passes it, and only after
+   * the current catalogue disagreed with the box's total.
+   */
+  priceBasis: OfflinePriceBasis | null = null,
 ): Promise<PricedCart> {
   const branchId = input.branchId ?? actor.branchId;
   if (!branchId) throw errors.badRequest('No active branch on this session');
@@ -1168,9 +1238,11 @@ export async function priceCart(
    * refuses on the same reason before it takes any money for it.
    */
   const claimed = await resolveTierClaim(db, actor, scope.branchId, input, now);
-  const resolvedTier: PricedCart['tier'] =
-    claimed.claim ?? (await resolveTier(db, actor.operatorId, input.memberId));
+  const resolvedTier: PricedCart['tier'] = priceBasis
+    ? { code: priceBasis.tier, source: input.memberId ? 'member' : 'default' }
+    : claimed.claim ?? (await resolveTier(db, actor.operatorId, input.memberId));
   const catalogue = await loadCatalogue(db, scope, input);
+  if (priceBasis) await applyPriceBasis(db, scope, catalogue, priceBasis);
 
   // What the platform stood behind, and what it took on trust. Filled as the
   // cart resolves and written onto the lines that were priced from a snapshot.
@@ -1314,7 +1386,15 @@ export async function priceCart(
    * S2-09b — the F&B and shop lines, priced from the catalogue and appended to
    * the cart the engine totals, so one cascade covers the whole bill.
    */
-  const itemLines = await resolveItemLines(db, scope, ctx, input, catalogue, resolvedTier.code);
+  const itemLines = await resolveItemLines(
+    db,
+    scope,
+    ctx,
+    input,
+    catalogue,
+    resolvedTier.code,
+    priceBasis ? new Map(priceBasis.options.map((o) => [o.id, o])) : undefined,
+  );
   for (const item of itemLines) {
     const sent = (input.items ?? []).find((l) => l.id === item.cartLineId)?.lineTotalSatang;
     // The same reconciliation a ticket line gets, and yielding to a refused
@@ -1593,122 +1673,22 @@ function buildPricedLines(
   voucherLines: ReadonlyMap<string, { id: string; code: string; productId: string }> = new Map(),
 ): PricedLine[] {
   const units = cartUnits(cartLines, ctx);
-  const byCategory = new Map<TaxableCategory, number[]>();
-  units.forEach((unit, index) => {
-    const list = byCategory.get(unit.category) ?? [];
-    list.push(index);
-    byCategory.set(unit.category, list);
-  });
-
-  // Per-unit money, filled in category by category.
-  const discount = new Array<number>(units.length).fill(0);
-  const baseAfter = new Array<number>(units.length).fill(0);
-  const service = new Array<number>(units.length).fill(0);
-  const taxIncl = new Array<number>(units.length).fill(0);
-  const taxExcl = new Array<number>(units.length).fill(0);
-
-  /**
-   * S2-10b — WHAT A LINE-AIMED PROMO TOOK, ON THE UNIT IT TOOK IT FROM: a
-   * voucher's free item on the voucher's own line, a 1+1 on one line's kids.
-   * The engine reports it (`AppliedPromo.units`, indexed like `cartUnits` over
-   * these same lines and context). Spread by the category rule below instead, a
-   * free pizza beside a paid one would put ฿110 off on each — the right total,
-   * two wrong receipt lines, and a refund of the paid pizza returning ฿110.
-   */
-  const pinned = new Array<number>(units.length).fill(0);
-  for (const applied of totals.appliedPromos) {
-    for (const aimed of applied.units ?? []) {
-      if (aimed.index < 0 || aimed.index >= units.length) {
-        throw new Error('a line-aimed discount names a unit this cart does not have');
-      }
-      pinned[aimed.index] = (pinned[aimed.index] ?? 0) + aimed.amount;
-    }
-  }
-
-  for (const [category, indexes] of byCategory) {
-    const weights = indexes.map((i) => units[i]?.base ?? 0);
-    const originalBase = weights.reduce((sum, w) => sum + w, 0);
-    const row = totals.taxBreakdown.categories.find((c) => c.category === category);
-    // A category with no row in the breakdown contributed no base at all.
-    const after = row?.base ?? originalBase;
-    const inclusive =
-      (row?.taxMode === 'inclusive' ? (row?.tax ?? 0) : 0) +
-      (row?.secondaryTaxMode === 'inclusive' ? (row?.secondaryTax ?? 0) : 0);
-    const exclusive =
-      (row?.taxMode === 'exclusive' ? (row?.tax ?? 0) : 0) +
-      (row?.secondaryTaxMode === 'exclusive' ? (row?.secondaryTax ?? 0) : 0);
-
-    const categoryDiscount = Math.max(0, originalBase - after);
-    const pins = indexes.map((i) => pinned[i] ?? 0);
-    const pinnedTotal = pins.reduce((sum, pin) => sum + pin, 0);
-
-    if (pinnedTotal === 0) {
-      // Nothing aimed at a line in this category: every figure spread across
-      // its units in proportion to their undiscounted bases, as it always was.
-      const shares = {
-        base: apportion(after, weights),
-        discount: apportion(categoryDiscount, weights),
-        service: apportion(row?.serviceCharge ?? 0, weights),
-        inclusive: apportion(inclusive, weights),
-        exclusive: apportion(exclusive, weights),
-      };
-      indexes.forEach((unitIndex, position) => {
-        baseAfter[unitIndex] = shares.base[position] ?? 0;
-        discount[unitIndex] = shares.discount[position] ?? 0;
-        service[unitIndex] = shares.service[position] ?? 0;
-        taxIncl[unitIndex] = shares.inclusive[position] ?? 0;
-        taxExcl[unitIndex] = shares.exclusive[position] ?? 0;
-      });
-      continue;
-    }
-
-    // The aimed markdown on its own units — never more than the category's own
-    // discount, which is none when discounts are placed after tax ...
-    const aimedShares = pinnedTotal <= categoryDiscount ? pins : apportion(categoryDiscount, pins);
-    const aimedTotal = aimedShares.reduce((sum, share) => sum + share, 0);
-    // ... and the rest of the category's discount over what each unit has left.
-    const room = indexes.map((i, position) =>
-      Math.max(0, (units[i]?.base ?? 0) - (aimedShares[position] ?? 0)),
-    );
-    const restShares = apportion(categoryDiscount - aimedTotal, room);
-    const discounts = indexes.map(
-      (_, position) =>
-        (aimedShares[position] ?? 0) + Math.min(restShares[position] ?? 0, room[position] ?? 0),
-    );
-    const bases = indexes.map((i, position) => (units[i]?.base ?? 0) - (discounts[position] ?? 0));
-    // Service charge and tax follow the base each unit is left with: an item
-    // handed over for nothing carries none of either.
-    const chargeWeights = bases.some((base) => base > 0) ? bases : weights;
-    const shares = {
-      service: apportion(row?.serviceCharge ?? 0, chargeWeights),
-      inclusive: apportion(inclusive, chargeWeights),
-      exclusive: apportion(exclusive, chargeWeights),
-    };
-    indexes.forEach((unitIndex, position) => {
-      baseAfter[unitIndex] = bases[position] ?? 0;
-      discount[unitIndex] = discounts[position] ?? 0;
-      service[unitIndex] = shares.service[position] ?? 0;
-      taxIncl[unitIndex] = shares.inclusive[position] ?? 0;
-      taxExcl[unitIndex] = shares.exclusive[position] ?? 0;
-    });
-  }
-
+  // Each unit's share of the money, split by the one function the box's
+  // finalise runs too (`splitLedgerUnitMoney` in `@oto/shared`, offline plan
+  // §2.5), so the line a guest reads on an offline receipt is the line this
+  // ledger files.
+  const money = splitLedgerUnitMoney(units, totals);
   const linesById = new Map(cartLines.map((line) => [line.id, line]));
   return units.map((unit, index) => {
     const cartLine = linesById.get(unit.lineId);
     const row = unit.row;
     const categoryRow = totals.taxBreakdown.categories.find((c) => c.category === unit.category);
-    const base = baseAfter[index] ?? 0;
-    const incl = taxIncl[index] ?? 0;
-    const excl = taxExcl[index] ?? 0;
-    const serviceCharge = service[index] ?? 0;
-    // Inclusive tax is already inside the base; exclusive tax is added to it.
-    const net = base - incl;
+    const share = money[index]!;
     // An F&B or shop line reaches the engine as one add-on row on its own cart
-    // line, so `lineKindOf` would call it an `addon`. The kind the ledger
+    // line, so `ledgerUnitKindOf` would call it an `addon`. The kind the ledger
     // records is the one `resolveItemLines` resolved from `product.kind`.
     const item = itemLines.get(unit.lineId);
-    const kind = item ? item.kind : lineKindOf(unit);
+    const kind = item ? item.kind : ledgerUnitKindOf(unit);
     const voucherLine = unit.promoItem ? voucherLines.get(unit.lineId) : undefined;
     const productId = item
       ? item.productId
@@ -1726,29 +1706,25 @@ function buildPricedLines(
       lineNo: index + 1,
       cartLineId: unit.lineId,
       kind,
-      componentKey: row
-        ? row.key
-        : unit.promoItem
-          ? `promo-item:${unit.promoItem.itemId}`
-          : 'food-provision',
+      componentKey: ledgerUnitComponentKey(unit),
       ticketPackageId: pkg?.id ?? null,
       productId,
-      label: row?.label ?? unit.promoItem?.name ?? 'Prepaid food',
+      label: ledgerUnitLabel(unit),
       revenueCategory: unit.category,
       taxableCategory: unit.category,
       quantity: row?.quantity ?? 1,
       unitSatang: row?.unitPrice ?? unit.base,
-      baseSatang: unit.base,
-      discountSatang: discount[index] ?? 0,
-      netSatang: net,
-      serviceChargeSatang: serviceCharge,
-      taxSatang: incl + excl,
+      baseSatang: share.base,
+      discountSatang: share.discount,
+      netSatang: share.net,
+      serviceChargeSatang: share.service,
+      taxSatang: share.taxInclusive + share.taxExclusive,
       taxMode: categoryRow?.taxMode ?? 'none',
       // Basis points: 7 % is 700. The percent comes from the resolved rate.
       taxRateBp: Math.round((categoryRow?.taxPercent ?? 0) * 100),
       taxRateId: categoryRow?.taxRateId ?? null,
       taxName: categoryRow?.taxName ?? null,
-      grossSatang: net + incl + excl + serviceCharge,
+      grossSatang: share.gross,
       customerTier: tierCode,
       kidCount: cartLine?.kids ?? 0,
       adultCount: cartLine?.adults ?? 0,
@@ -2242,6 +2218,85 @@ export async function allocateReceipt(
 }
 
 /**
+ * OD-4 — ADOPT THE NUMBER A BOX PRINTED, when it is free.
+ *
+ * A counter with no internet numbers its sales from its own copy of the
+ * series and persists each number before printing it, so a guest is holding
+ * that number. On replay it is filed under that number whenever no sale in the
+ * station's series already carries it, and `next_seq` moves past it so the
+ * allocator never issues it again. When it IS taken — an abandoned sale that
+ * lost its answer, a replaced box whose predecessor's unsent tail arrived
+ * late — the sale is filed under the next free number and the caller names
+ * both. Locks the series row as `allocateReceipt` does, so an online sale
+ * numbering at the same instant waits its turn.
+ */
+export async function adoptReceipt(
+  tx: Tx,
+  scope: { operatorId: string; branchId: string; stationId: string; series: string },
+  printed: { series: string; seq: number; number: string },
+): Promise<{ receipt: { series: string; seq: number; number: string }; adopted: boolean }> {
+  if (printed.series !== scope.series) {
+    // Printed under another prefix than the station's series today: not a
+    // number this series can hold.
+    return { receipt: await allocateReceipt(tx, scope), adopted: false };
+  }
+  // Open or lock the series first, exactly as a number is allocated.
+  const [row] = await tx
+    .select()
+    .from(receiptSeries)
+    .where(
+      and(
+        eq(receiptSeries.stationId, scope.stationId),
+        eq(receiptSeries.series, scope.series),
+        eq(receiptSeries.kind, 'sale'),
+      ),
+    )
+    .for('update')
+    .limit(1);
+  const padding = row?.seqPadding ?? 6;
+  const number = `${printed.series}-${String(printed.seq).padStart(padding, '0')}`;
+  const [taken] = await tx
+    .select({ id: sale.id })
+    .from(sale)
+    .where(
+      or(
+        and(
+          eq(sale.stationId, scope.stationId),
+          eq(sale.receiptSeries, printed.series),
+          eq(sale.receiptSeq, printed.seq),
+        ),
+        and(eq(sale.branchId, scope.branchId), eq(sale.receiptNumber, number)),
+      ),
+    )
+    .limit(1);
+  if (taken) return { receipt: await allocateReceipt(tx, scope), adopted: false };
+  if (!row) {
+    await tx
+      .insert(receiptSeries)
+      .values({
+        id: newId(),
+        operatorId: scope.operatorId,
+        branchId: scope.branchId,
+        stationId: scope.stationId,
+        series: scope.series,
+        kind: 'sale',
+        nextSeq: printed.seq + 1,
+        lastIssuedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [receiptSeries.stationId, receiptSeries.series, receiptSeries.kind],
+        set: { nextSeq: sql`greatest(${receiptSeries.nextSeq}, ${printed.seq + 1})`, lastIssuedAt: new Date() },
+      });
+  } else if (row.nextSeq <= printed.seq) {
+    await tx
+      .update(receiptSeries)
+      .set({ nextSeq: printed.seq + 1, lastIssuedAt: new Date() })
+      .where(eq(receiptSeries.id, row.id));
+  }
+  return { receipt: { series: printed.series, seq: printed.seq, number }, adopted: true };
+}
+
+/**
  * The tolerance the sync path already applies to a box's clock
  * (`CLOCK_TOLERANCE_MS` in services/sync.ts), applied here to a till's: past
  * it, the clock is called skewed and the platform's own is used instead.
@@ -2480,6 +2535,13 @@ function assertSameLines(
 export interface CommitSaleOptions {
   promoPricing?: PromoPricing;
   /**
+   * OD-8 — price the cart from the rows a box priced it from offline, when
+   * the catalogue has moved on since. Only the offline replay sets it.
+   */
+  priceBasis?: OfflinePriceBasis | null;
+  /** The catalogue version a box priced the sale from, recorded on the row (OD-8). */
+  catalogueVersion?: string | null;
+  /**
    * S2-11 — `skip` for a sale whose paper was already printed where it was
    * taken: an offline replay. Everything else routes its printing.
    */
@@ -2569,6 +2631,7 @@ export async function commitSale(
     clock.occurredAt,
     { mode: 'commit', saleId, stationId: st.id },
     promoPricing,
+    options.priceBasis ?? null,
   );
   if (st.branchId !== priced.scope.branchId) {
     throw errors.badRequest('That station belongs to another branch');
@@ -2705,6 +2768,7 @@ export async function commitSale(
     /** SCRUM-311 — the document check that chose that tier, when one did. */
     tierClaimId: priced.tier.claimId ?? null,
     engineVersion: priced.engineVersion,
+    ...(options.catalogueVersion ? { catalogueVersion: options.catalogueVersion } : {}),
     taxConfig: priced.scope.taxConfig,
     taxBreakdown: priced.totals.taxBreakdown,
     ...priced.money,
@@ -3035,6 +3099,12 @@ export interface FinaliseSaleInput {
    * taken (the offline replay). Everything else routes its printing.
    */
   printing?: 'route' | 'skip';
+  /**
+   * OD-4 — the number a box printed at an offline counter. Adopted when it is
+   * free in the station's series; when it is not, the sale is filed under the
+   * next free number and the answer names both. Only the offline replay sets it.
+   */
+  adoptReceipt?: { series: string; seq: number; number: string } | null;
 }
 
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
@@ -3076,6 +3146,12 @@ export interface FinaliseResult {
    * not close the sale. Printing never fails a sale: a failure is `failed`.
    */
   printing: SalePrintingResult | null;
+  /**
+   * OD-4 — the number the box printed was already used in the series, so the
+   * sale was filed under the next free one. Null when it was adopted, and on
+   * every sale no box numbered.
+   */
+  receiptCollision: { box: string; ledger: string } | null;
 }
 
 /**
@@ -3148,6 +3224,7 @@ export async function finaliseSale(
       redeemedVoucherIds: [],
       // Printed on the first answer too; a retry does not print it twice.
       printing: null,
+      receiptCollision: null,
     };
   }
   if (row.status === 'voided' || row.status === 'refunded') {
@@ -3365,6 +3442,7 @@ export async function finaliseSale(
       drawerKick,
       redeemedVoucherIds: [],
       printing: null,
+      receiptCollision: null,
     };
   }
 
@@ -3386,12 +3464,21 @@ export async function finaliseSale(
       'This station has no code prefix, so it cannot number a receipt — set one on the station',
     );
   }
-  const receipt = await allocateReceipt(tx, {
+  const seriesScope = {
     operatorId: row.operatorId,
     branchId: row.branchId,
     stationId: row.stationId,
     series: st.codePrefix,
-  });
+  };
+  let receiptCollision: FinaliseResult['receiptCollision'] = null;
+  let receipt: { series: string; seq: number; number: string };
+  if (input.adoptReceipt) {
+    const adoption = await adoptReceipt(tx, seriesScope, input.adoptReceipt);
+    receipt = adoption.receipt;
+    if (!adoption.adopted) receiptCollision = { box: input.adoptReceipt.number, ledger: receipt.number };
+  } else {
+    receipt = await allocateReceipt(tx, seriesScope);
+  }
 
   const updated = await tx
     .update(sale)
@@ -3458,6 +3545,7 @@ export async function finaliseSale(
     drawerKick,
     redeemedVoucherIds: consumed,
     printing,
+    receiptCollision,
   };
 }
 
