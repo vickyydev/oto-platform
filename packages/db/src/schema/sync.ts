@@ -505,6 +505,19 @@ export const SYNC_ANOMALY_KINDS = [
   'epoch_regressed',
   /** Applied a long time after it happened — a box back from days offline. */
   'late_arrival',
+  /**
+   * A sale a box numbered offline arrived to find its printed number already
+   * used in the station's series, so it was filed under the next free one
+   * (offline plan OD-4). Both numbers are on the anomaly and the audit row:
+   * somebody is holding a slip with the first.
+   */
+  'receipt_collision',
+  /**
+   * A fact made by an account whose shift token was revoked before the fact
+   * happened, applied anyway because a sale that happened is filed, not lost
+   * (offline plan OD-9). An alert goes with it.
+   */
+  'revoked_actor',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 
@@ -544,7 +557,7 @@ export const syncAnomaly = edge.table(
     index('sync_anomaly_detected_idx').on(t.detectedAt),
     check(
       'sync_anomaly_kind_check',
-      sql`${t.kind} in ('clock_recomputed','duplicate_replay','sequence_gap','merge','epoch_regressed','late_arrival')`,
+      sql`${t.kind} in ('clock_recomputed','duplicate_replay','sequence_gap','merge','epoch_regressed','late_arrival','receipt_collision','revoked_actor')`,
     ),
   ],
 );
