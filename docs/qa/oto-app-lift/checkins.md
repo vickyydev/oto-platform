@@ -15,3 +15,5 @@ The published default schema exposed a second, more serious gap: its field IDs d
 The production build passed. App typecheck stayed at 578 inherited errors; the existing import error at `server/checkin-routes.ts:7` is unchanged, and no edited line has a type diagnostic. Scoped ESLint found no diagnostic on edited lines. There is no existing public check-in browser spec; the disposable probes were removed without adding a suite.
 
 Separate app-owned gaps remain: branch-scoped access on check-in reads/writes and token generation, server-side nanny eligibility/booking conflict checks, and the POS check-in coexistence decision. These are not covered by the published-form repair.
+
+The SCRUM-465 file-access follow-up now gives new public drop-off submissions private photo/signature paths and a seven-day signed photo URL for the staff board's existing parent-message flow. Older raw photo links remain public indefinitely as directed. A local full submission and signed-link/denial probe passed; details and the remaining staging acceptance are in `files.md`. This file-access work does not close the broader check-in story.

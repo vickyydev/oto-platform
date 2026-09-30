@@ -109,6 +109,95 @@ function validateBranchToken(branchId: string, token: string): boolean {
 
 const router = Router();
 
+const PRIVATE_DROPOFF_PHOTOS = "dropoff-photos-private";
+const PRIVATE_DROPOFF_SIGNATURES = "dropoff-signatures-private";
+const PHOTO_SHARE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
+
+function photoShareSignature(checkinId: string, photoUrl: string, expires: number): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) throw new Error("SESSION_SECRET is required for photo sharing");
+  return crypto.createHmac("sha256", secret)
+    .update(`dropoff-photo:${checkinId}:${photoUrl}:${expires}`)
+    .digest("hex");
+}
+
+function sharedCheckinPhotoUrl(checkin: typeof serviceCheckins.$inferSelect): string | null {
+  const photoUrl = checkin.photoUrl;
+  if (!photoUrl) return null;
+  if (!photoUrl.startsWith(`/api/files/${PRIVATE_DROPOFF_PHOTOS}/`)) return photoUrl;
+  const expires = Date.now() + PHOTO_SHARE_LIFETIME_MS;
+  const signature = photoShareSignature(checkin.id, photoUrl, expires);
+  return `/api/public/dropoff-photo/${checkin.id}?expires=${expires}&sig=${signature}`;
+}
+
+router.get("/api/public/dropoff-photo/:id", async (req: Request, res: Response) => {
+  const expiresRaw = req.query.expires;
+  const signature = req.query.sig;
+  const expires = typeof expiresRaw === "string" ? Number(expiresRaw) : NaN;
+  if (!Number.isSafeInteger(expires) || expires <= Date.now() ||
+      expires > Date.now() + PHOTO_SHARE_LIFETIME_MS + 60_000 ||
+      typeof signature !== "string" || !/^[a-f0-9]{64}$/.test(signature)) {
+    return res.status(404).json({ message: "Photo link unavailable" });
+  }
+  try {
+    const [checkin] = await db.select({ id: serviceCheckins.id, photoUrl: serviceCheckins.photoUrl })
+      .from(serviceCheckins).where(eq(serviceCheckins.id, req.params.id)).limit(1);
+    const filename = /^\/api\/files\/dropoff-photos-private\/([a-zA-Z0-9._-]+)$/.exec(checkin?.photoUrl || "")?.[1];
+    if (!checkin?.photoUrl || !filename) return res.status(404).json({ message: "Photo link unavailable" });
+    const expected = photoShareSignature(checkin.id, checkin.photoUrl, expires);
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+      return res.status(404).json({ message: "Photo link unavailable" });
+    }
+    const photo = await getFileFromObjectStorage(PRIVATE_DROPOFF_PHOTOS, filename);
+    if (!photo) return res.status(404).json({ message: "Photo link unavailable" });
+    res.setHeader("Content-Type", photo.contentType);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    photo.stream.pipe(res);
+  } catch (error) {
+    console.error("[Checkin] Failed to serve shared photo", error);
+    res.status(500).json({ message: "Photo unavailable" });
+  }
+});
+
+async function serveDropoffSignature(req: Request, res: Response, folder: string) {
+  const filename = req.params.filename;
+  if (!["dropoff-signatures", PRIVATE_DROPOFF_SIGNATURES].includes(folder) ||
+      !/^[a-zA-Z0-9._-]+$/.test(filename) || filename === "." || filename === "..") {
+    return res.status(404).json({ message: "Signature not found" });
+  }
+  const tenantId = req.kioskSession?.tenantId ?? (req.user as UserWithBranchAccess | undefined)?.tenantId;
+  if (!tenantId) return res.status(403).json({ message: "Access denied" });
+  const paths = [`/api/files/${folder}/${filename}`, `/uploads/${folder}/${filename}`];
+  try {
+    const [serviceRows, dropoffRows] = await Promise.all([
+      db.select({ branchId: serviceCheckins.branchId }).from(serviceCheckins)
+        .where(and(eq(serviceCheckins.tenantId, tenantId), inArray(serviceCheckins.consentSignature, paths))).limit(1),
+      db.select({ branchId: dropoffCheckins.branchId }).from(dropoffCheckins)
+        .where(and(eq(dropoffCheckins.tenantId, tenantId), inArray(dropoffCheckins.signatureUrl, paths))).limit(1),
+    ]);
+    const branchId = serviceRows[0]?.branchId ?? dropoffRows[0]?.branchId;
+    if (!branchId || !await canAccessCheckinBranch(req, branchId)) {
+      return res.status(404).json({ message: "Signature not found" });
+    }
+    const signature = await getFileFromObjectStorage(folder, filename);
+    if (!signature) return res.status(404).json({ message: "Signature not found" });
+    res.setHeader("Content-Type", signature.contentType);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    signature.stream.pipe(res);
+  } catch (error) {
+    console.error("[Checkin] Failed to serve signature", error);
+    res.status(500).json({ message: "Signature unavailable" });
+  }
+}
+
+router.get("/api/files/dropoff-signatures/:filename", requireAuthOrKiosk,
+  (req, res) => serveDropoffSignature(req, res, "dropoff-signatures"));
+router.get("/api/files/dropoff-signatures-private/:filename", requireAuthOrKiosk,
+  (req, res) => serveDropoffSignature(req, res, PRIVATE_DROPOFF_SIGNATURES));
+
 const publicCheckinSchema = z.object({
   branchId: z.string(),
   branchToken: z.string().min(16).max(16),
@@ -377,7 +466,7 @@ router.post("/api/public/dropoff-checkin", async (req: Request, res: Response) =
       const signatureBuffer = Buffer.from(base64Data, "base64");
       const signatureFilename = `sig-${Date.now()}-${Math.round(Math.random() * 1e9)}.png`;
       try {
-        signatureUrl = await uploadToObjectStorage(signatureBuffer, "dropoff-signatures", signatureFilename, "image/png");
+        signatureUrl = await uploadToObjectStorage(signatureBuffer, PRIVATE_DROPOFF_SIGNATURES, signatureFilename, "image/png");
         console.log(`[Checkin] Signature uploaded for branch ${branchId}: ${signatureFilename}`);
       } catch (uploadErr: any) {
         console.error(`[Checkin] Signature upload failed — branchId=${branchId} file=${signatureFilename} error=${uploadErr.message}`, uploadErr.stack);
@@ -388,10 +477,11 @@ router.post("/api/public/dropoff-checkin", async (req: Request, res: Response) =
     }
 
     // Upload photo to object storage
-    const photoFilename = `dropoff_${Date.now()}_${Math.round(Math.random() * 1e9)}.jpg`;
+    const photoExtension = req.file.mimetype === "image/png" ? "png" : req.file.mimetype === "image/webp" ? "webp" : "jpg";
+    const photoFilename = `dropoff_${Date.now()}_${Math.round(Math.random() * 1e9)}.${photoExtension}`;
     let photoUrl: string;
     try {
-      photoUrl = await uploadToObjectStorage(req.file.buffer, "dropoff-photos", photoFilename, req.file.mimetype);
+      photoUrl = await uploadToObjectStorage(req.file.buffer, PRIVATE_DROPOFF_PHOTOS, photoFilename, req.file.mimetype);
       console.log(`[Checkin] Photo uploaded for branch ${branchId}: ${photoFilename} (${req.file.size} bytes)`);
     } catch (uploadErr: any) {
       console.error(`[Checkin] Photo upload failed — branchId=${branchId} file=${photoFilename} size=${req.file.size} error=${uploadErr.message}`, uploadErr.stack);
@@ -457,7 +547,8 @@ router.post("/api/public/dropoff-checkin", async (req: Request, res: Response) =
 
 router.get("/api/core/checkins", requireAuthOrKiosk, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.kioskSession?.tenantId ?? (req.user as UserWithBranchAccess | undefined)?.tenantId;
+    if (!tenantId) return res.status(403).json({ message: "Tenant access required" });
     const { branchId, status, type, q } = req.query;
 
     const conditions = [eq(serviceCheckins.tenantId, tenantId)];
@@ -508,7 +599,7 @@ router.get("/api/core/checkins", requireAuthOrKiosk, async (req: Request, res: R
       );
     }
 
-    res.json(filtered);
+    res.json(filtered.map(checkin => ({ ...checkin, photoUrl: sharedCheckinPhotoUrl(checkin) })));
   } catch (error: any) {
     console.error("[Checkin] GET /api/core/checkins error:", error);
     res.status(500).json({ message: error.message });

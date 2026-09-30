@@ -1482,7 +1482,7 @@ export async function registerRoutes(
   // Legacy public paths only; private uploads use their record-scoped routes.
   app.use("/uploads", (req, res, _next) => {
     const match = /^\/([a-z0-9-]+)\/([a-zA-Z0-9._-]+)$/.exec(req.path);
-    const publicFolders = new Set(["branch-logos", "dropoff-photos", "dropoff-signatures", "invitations"]);
+    const publicFolders = new Set(["branch-logos", "dropoff-photos", "invitations"]);
     if (!match || !publicFolders.has(match[1]) || match[2] === "." || match[2] === "..") {
       return res.status(404).json({ message: "File not found" });
     }
@@ -22937,7 +22937,7 @@ ${context}`;
   // GENERAL FILE SERVING FROM OBJECT STORAGE
   // ============================================
   // Public folders that don't require authentication
-  const publicFileFolders = ["branch-logos", "dropoff-photos", "dropoff-signatures", "invitations"];
+  const publicFileFolders = ["branch-logos", "dropoff-photos", "invitations"];
   
   // Serve any file type from object storage with legacy fallback
   // Some folders are public, others require authentication
@@ -22949,7 +22949,7 @@ ${context}`;
       }
       // Private documents have their own record-scoped routes; this generic
       // file route cannot decide who may read a contract or employee record.
-      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs"].includes(folder)) {
+      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private"].includes(folder)) {
         return res.status(404).json({ message: "File not found" });
       }
       
