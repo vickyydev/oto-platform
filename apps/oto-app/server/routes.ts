@@ -23162,14 +23162,10 @@ ${context}`;
   // ============================================
 
   // List all supplier tokens
-  app.get("/api/settings/supplier-tokens", requireAuth, async (req, res, next) => {
+  app.get("/api/settings/supplier-tokens", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const user = req.user as UserWithBranchAccess;
-      if (!user.hasAllBranchesAccess && user.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
-      const tenantId = await getDefaultTenantId();
+      const tenantId = await resolveTenantId(user.tenantId);
       const tokens = await storage.getFixSupplierTokens(tenantId);
       
       // Don't expose token hashes
@@ -23180,9 +23176,9 @@ ${context}`;
         allowedBranchIds: t.allowedBranchIds,
         expiresAt: t.expiresAt,
         createdAt: t.createdAt,
-        lastAccessedAt: t.lastAccessedAt,
+        lastAccessedAt: t.lastUsedAt,
         createdByUserId: t.createdByUserId,
-        isActive: !t.expiresAt || new Date(t.expiresAt) > new Date(),
+        isActive: t.isEnabled && (!t.expiresAt || new Date(t.expiresAt) > new Date()),
       }));
       
       res.json(safeTokens);
@@ -23192,22 +23188,27 @@ ${context}`;
   });
 
   // Create a new supplier token
-  app.post("/api/settings/supplier-tokens", requireAuth, async (req, res, next) => {
+  app.post("/api/settings/supplier-tokens", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const user = req.user as UserWithBranchAccess;
-      if (!user.hasAllBranchesAccess && user.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
       const { name, allowedBranchIds, expiresAt } = req.body;
-      if (!name || typeof name !== 'string') {
+      if (typeof name !== 'string' || !name.trim()) {
         return res.status(400).json({ message: "Supplier name is required" });
       }
-      if (!allowedBranchIds || !Array.isArray(allowedBranchIds) || allowedBranchIds.length === 0) {
+      if (!Array.isArray(allowedBranchIds) || allowedBranchIds.length === 0 || !allowedBranchIds.every(id => typeof id === 'string')) {
         return res.status(400).json({ message: "At least one branch must be selected" });
       }
 
-      const tenantId = await getDefaultTenantId();
+      const tenantId = await resolveTenantId(user.tenantId);
+      const branchesInTenant = (await storage.getBranches()).filter(branch => branch.tenantId === tenantId);
+      const validBranchIds = new Set(branchesInTenant.map(branch => branch.id));
+      if (allowedBranchIds.some(id => !validBranchIds.has(id))) {
+        return res.status(400).json({ message: "Selected branch is not available" });
+      }
+      const expiry = expiresAt == null ? null : new Date(expiresAt);
+      if (expiry && (!Number.isFinite(expiry.getTime()) || expiry <= new Date())) {
+        return res.status(400).json({ message: "Expiry must be a future date" });
+      }
       
       // Generate a secure random token
       const rawToken = crypto.randomBytes(32).toString('hex');
@@ -23217,8 +23218,8 @@ ${context}`;
         tenantId,
         name: name.trim(),
         tokenHash,
-        allowedBranchIds,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        allowedBranchIds: [...new Set(allowedBranchIds)],
+        expiresAt: expiry,
         createdByUserId: user.id,
       });
 
@@ -23238,14 +23239,15 @@ ${context}`;
   });
 
   // Revoke (delete) a supplier token
-  app.delete("/api/settings/supplier-tokens/:id", requireAuth, async (req, res, next) => {
+  app.delete("/api/settings/supplier-tokens/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const user = req.user as UserWithBranchAccess;
-      if (!user.hasAllBranchesAccess && user.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
+      const tenantId = await resolveTenantId(user.tenantId);
+      const token = await storage.getFixSupplierToken(req.params.id);
+      if (!token || token.tenantId !== tenantId) {
+        return res.status(404).json({ message: "Supplier token not found" });
       }
-
-      await storage.deleteFixSupplierToken(req.params.id);
+      await storage.updateFixSupplierToken(token.id, { isEnabled: false });
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -23256,33 +23258,40 @@ ${context}`;
   // SUPPLIER PORTAL (Public with token auth)
   // ============================================
 
+  const resolveSupplierPortalToken = async (rawToken: unknown) => {
+    if (typeof rawToken !== 'string' || !/^[a-f0-9]{64}$/.test(rawToken)) return null;
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const token = await storage.getFixSupplierTokenByHash(tokenHash);
+    if (!token?.isEnabled || (token.expiresAt && new Date(token.expiresAt) <= new Date())) return null;
+    return token;
+  };
+
+  const supplierCanAccessReport = (token: { tenantId: string; allowedBranchIds: string[] }, report: FixReport) =>
+    report.tenantId === token.tenantId && token.allowedBranchIds.includes(report.branchId);
+
+  const supplierMediaUrls = (report: FixReport, rawToken: string) =>
+    report.media.flatMap(url => {
+      const filename = /^\/api\/files\/fix-media\/([a-zA-Z0-9._-]+)$/.exec(url)?.[1];
+      return filename
+        ? [`/api/supplier-portal/fix-reports/${report.id}/media/${filename}?token=${rawToken}`]
+        : [];
+    });
+
   // Validate supplier token and get supplier info
   app.get("/api/supplier-portal/validate", async (req, res, next) => {
     try {
-      const token = req.query.token as string;
-      if (!token) {
-        return res.status(401).json({ message: "Token required" });
-      }
-
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      const supplierToken = await storage.getFixSupplierTokenByHash(tokenHash);
-      
+      const supplierToken = await resolveSupplierPortalToken(req.query.token);
       if (!supplierToken) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
-
-      // Check if token is expired
-      if (supplierToken.expiresAt && new Date(supplierToken.expiresAt) < new Date()) {
-        return res.status(401).json({ message: "Token has expired" });
+        return res.status(401).json({ message: "Invalid or expired token" });
       }
 
       // Update last used time
       await storage.updateFixSupplierTokenLastUsed(supplierToken.id);
 
       // Get branches for display
-      const branches = await storage.getBranches(supplierToken.tenantId);
-      const allowedBranches = branches.filter(b => 
-        supplierToken.allowedBranchIds.includes(b.id)
+      const branches = await storage.getBranches();
+      const allowedBranches = branches.filter(b =>
+        b.tenantId === supplierToken.tenantId && supplierToken.allowedBranchIds.includes(b.id)
       );
 
       res.json({
@@ -23298,20 +23307,9 @@ ${context}`;
   // Get fix reports for supplier
   app.get("/api/supplier-portal/fix-reports", async (req, res, next) => {
     try {
-      const token = req.query.token as string;
-      if (!token) {
-        return res.status(401).json({ message: "Token required" });
-      }
-
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      const supplierToken = await storage.getFixSupplierTokenByHash(tokenHash);
-      
+      const supplierToken = await resolveSupplierPortalToken(req.query.token);
       if (!supplierToken) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
-
-      if (supplierToken.expiresAt && new Date(supplierToken.expiresAt) < new Date()) {
-        return res.status(401).json({ message: "Token has expired" });
+        return res.status(401).json({ message: "Invalid or expired token" });
       }
 
       // Get fix reports for allowed branches only
@@ -23320,7 +23318,10 @@ ${context}`;
         supplierToken.allowedBranchIds
       );
 
-      res.json(reports);
+      res.json(reports.map(report => ({
+        ...report,
+        mediaUrls: supplierMediaUrls(report, req.query.token as string),
+      })));
     } catch (error) {
       next(error);
     }
@@ -23329,33 +23330,64 @@ ${context}`;
   // Get fix report details for supplier
   app.get("/api/supplier-portal/fix-reports/:id", async (req, res, next) => {
     try {
-      const token = req.query.token as string;
-      if (!token) {
-        return res.status(401).json({ message: "Token required" });
-      }
-
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      const supplierToken = await storage.getFixSupplierTokenByHash(tokenHash);
-      
+      const supplierToken = await resolveSupplierPortalToken(req.query.token);
       if (!supplierToken) {
-        return res.status(401).json({ message: "Invalid token" });
+        return res.status(401).json({ message: "Invalid or expired token" });
       }
 
-      if (supplierToken.expiresAt && new Date(supplierToken.expiresAt) < new Date()) {
-        return res.status(401).json({ message: "Token has expired" });
-      }
-
-      const report = await storage.getFixReportWithDetails(req.params.id);
-      if (!report) {
+      const details = await storage.getFixReportWithDetails(req.params.id);
+      if (!details) {
         return res.status(404).json({ message: "Fix report not found" });
       }
 
-      // Verify supplier has access to this branch
-      if (!supplierToken.allowedBranchIds.includes(report.branchId)) {
+      if (!supplierCanAccessReport(supplierToken, details.report)) {
         return res.status(403).json({ message: "Access denied to this report" });
       }
 
-      res.json(report);
+      res.json({
+        ...details.report,
+        mediaUrls: supplierMediaUrls(details.report, req.query.token as string),
+        locationDetails: details.location ?? null,
+        comments: details.comments.map(comment => ({
+          ...comment,
+          supplierToken: comment.supplierTokenId === supplierToken.id
+            ? { id: supplierToken.id, name: supplierToken.name }
+            : null,
+        })),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Supplier media stays private to the report and token's tenant and branches.
+  app.get("/api/supplier-portal/fix-reports/:id/media/:filename", async (req, res, next) => {
+    try {
+      const supplierToken = await resolveSupplierPortalToken(req.query.token);
+      if (!supplierToken) return res.status(401).json({ message: "Invalid or expired token" });
+      const report = await storage.getFixReport(req.params.id);
+      if (!report) return res.status(404).json({ message: "Fix report not found" });
+      if (!supplierCanAccessReport(supplierToken, report)) {
+        return res.status(403).json({ message: "Access denied to this report" });
+      }
+      const filename = req.params.filename;
+      if (!/^[a-zA-Z0-9._-]+$/.test(filename) || !report.media.includes(`/api/files/fix-media/${filename}`)) {
+        return res.status(404).json({ message: "Media not found" });
+      }
+      const file = await getFileRangeFromObjectStorage("fix-media", filename, req.headers.range);
+      if (!file) return res.status(404).json({ message: "Media not found" });
+      res.setHeader("Content-Type", file.contentType);
+      res.setHeader("Accept-Ranges", "bytes");
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (file.isPartial) {
+        res.status(206);
+        res.setHeader("Content-Range", `bytes ${file.start}-${file.end}/${file.totalSize}`);
+        res.setHeader("Content-Length", String(file.end - file.start + 1));
+      } else {
+        res.setHeader("Content-Length", String(file.totalSize));
+      }
+      file.stream.pipe(res);
     } catch (error) {
       next(error);
     }
@@ -23364,20 +23396,9 @@ ${context}`;
   // Add comment as supplier
   app.post("/api/supplier-portal/fix-reports/:id/comments", async (req, res, next) => {
     try {
-      const token = req.query.token as string;
-      if (!token) {
-        return res.status(401).json({ message: "Token required" });
-      }
-
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      const supplierToken = await storage.getFixSupplierTokenByHash(tokenHash);
-      
+      const supplierToken = await resolveSupplierPortalToken(req.query.token);
       if (!supplierToken) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
-
-      if (supplierToken.expiresAt && new Date(supplierToken.expiresAt) < new Date()) {
-        return res.status(401).json({ message: "Token has expired" });
+        return res.status(401).json({ message: "Invalid or expired token" });
       }
 
       const report = await storage.getFixReport(req.params.id);
@@ -23385,20 +23406,19 @@ ${context}`;
         return res.status(404).json({ message: "Fix report not found" });
       }
 
-      // Verify supplier has access to this branch
-      if (!supplierToken.allowedBranchIds.includes(report.branchId)) {
+      if (!supplierCanAccessReport(supplierToken, report)) {
         return res.status(403).json({ message: "Access denied to this report" });
       }
 
       const { message } = req.body;
-      if (!message || typeof message !== 'string' || message.trim().length === 0) {
-        return res.status(400).json({ message: "Comment message is required" });
+      if (typeof message !== 'string' || !message.trim() || message.length > 5000) {
+        return res.status(400).json({ message: "Comment must be 1 to 5000 characters" });
       }
 
       const comment = await storage.createFixComment({
-        fixReportId: req.params.id,
+        fixId: req.params.id,
         authorType: 'supplier_token',
-        authorSupplierTokenId: supplierToken.id,
+        supplierTokenId: supplierToken.id,
         message: message.trim(),
       });
 
@@ -23411,20 +23431,9 @@ ${context}`;
   // Close fix report as supplier
   app.patch("/api/supplier-portal/fix-reports/:id/close", async (req, res, next) => {
     try {
-      const token = req.query.token as string;
-      if (!token) {
-        return res.status(401).json({ message: "Token required" });
-      }
-
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      const supplierToken = await storage.getFixSupplierTokenByHash(tokenHash);
-      
+      const supplierToken = await resolveSupplierPortalToken(req.query.token);
       if (!supplierToken) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
-
-      if (supplierToken.expiresAt && new Date(supplierToken.expiresAt) < new Date()) {
-        return res.status(401).json({ message: "Token has expired" });
+        return res.status(401).json({ message: "Invalid or expired token" });
       }
 
       const report = await storage.getFixReport(req.params.id);
@@ -23432,17 +23441,23 @@ ${context}`;
         return res.status(404).json({ message: "Fix report not found" });
       }
 
-      // Verify supplier has access to this branch
-      if (!supplierToken.allowedBranchIds.includes(report.branchId)) {
+      if (!supplierCanAccessReport(supplierToken, report)) {
         return res.status(403).json({ message: "Access denied to this report" });
       }
 
+      if (report.status === 'done') {
+        return res.status(409).json({ message: "Fix report is already done" });
+      }
+
       const { doneNote } = req.body;
+      if (doneNote != null && (typeof doneNote !== 'string' || doneNote.length > 5000)) {
+        return res.status(400).json({ message: "Resolution note is too long" });
+      }
       const closedReport = await storage.closeFixReport(
         req.params.id,
         null, // No user ID
         supplierToken.id,
-        doneNote || undefined
+        doneNote?.trim() || undefined
       );
 
       res.json(closedReport);
