@@ -1,0 +1,9 @@
+# SCRUM-463: Vault scope and audited reveal
+
+The original vault saved the credential text directly in `password_encrypted`. Its ordinary detail GET returned that field, while the page sent a separate view-log request after reveal. A failed or skipped log therefore left an unrecorded reveal. The generic data-admin model also exposed the vault row.
+
+The vault now uses the signed-in tenant for list, detail, reveal, create, update and audit reads. Non-admin readers need both the configured role visibility and branch access; archived entries are admin-only. Create and update validate the referenced branches against the same tenant. The detail and write responses omit the credential. The generic access-item data-admin registration is removed. Reveal or copy calls `POST /api/access/:id/reveal`; that server operation checks access, writes the audit row and then returns only the credential with `Cache-Control: no-store`. The page keeps a revealed value only while its dialog is open and clears it on hide, close or item switch.
+
+New and changed credentials are sealed with AES-256-GCM under a tenant-specific key derived from the app's existing session secret. Original unsealed rows remain readable for cutover compatibility and are resealed on their first audited reveal. The data migration is therefore opportunistic; a separate backfill would be needed if an environment has legacy vault rows that are never revealed. No real credential values were read or recorded during this work.
+
+Verification: production build passed. App typecheck remains at 542 inherited errors, with none in the touched vault area. Scoped ESLint reports no changed-area error. A disposable local probe passed seal/open, wrong-tenant, tamper and legacy-read checks; no new test suite was added. There is no existing vault test file. Signed-in staging role/branch, reveal/audit and screenshot checks remain before Deployed.
