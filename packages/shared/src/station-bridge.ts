@@ -696,6 +696,26 @@ export interface BridgeSaleView {
   origin: 'box';
 }
 
+/**
+ * One band the box minted for a sale, as the till's confirmation reads it back
+ * on the box lane. The platform's own sale read is unreachable offline, so this
+ * is where the payment-done screen gets its band codes: the SHORT code the guest
+ * holds (`T1-7KMQ4X`) and the child it names, so a band that fails to print can
+ * be read out at the counter during an outage. Never the signed code, which is a
+ * gate credential; `cartLineId` places each band on its bracelet row exactly as
+ * the online screen does.
+ */
+export interface BridgeSaleBand {
+  id: string;
+  kind: 'kid' | 'adult';
+  status: string;
+  shortCode: string | null;
+  cartLineId: string;
+  saleLineId: string | null;
+  childId: string | null;
+  childName: string | null;
+}
+
 /** What `sale.finalise` and a closing `payment.*` answer with. */
 export interface BridgeSaleAnswer {
   sale: BridgeSaleView;
@@ -709,6 +729,13 @@ export interface BridgeSaleAnswer {
   drawer: 'opened' | 'failed' | 'not_asked';
   /** Everything still waiting to go up. "3 sales to send". */
   outboxDepth: number;
+  /**
+   * The bands this sale minted, once it is finalised — the codes the guest holds
+   * and the children they name. Present on a finalised answer (and its replay),
+   * absent on one still tendering. The confirmation reads them on the box lane
+   * where the platform's sale read cannot be reached.
+   */
+  bands?: BridgeSaleBand[];
 }
 
 // --- What the box priced from (OD-8) ---------------------------------------------------
