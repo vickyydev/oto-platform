@@ -34,6 +34,7 @@ import {
   cartUnits,
   componentKey,
   computeTicketCartTotals,
+  deriveSaleLineId,
   getRateModeForDate,
   newId,
   isPaymentReversalPending,
@@ -2404,6 +2405,74 @@ export interface CommitResult {
   printing?: SalePrintingResult | null;
 }
 
+/**
+ * SCRUM-270 — THE CART LINE IDS A CART WOULD LEAVE ON THE LEDGER.
+ *
+ * A sale line is one priced UNIT of a cart line (`cartUnits` in
+ * `@oto/shared`), and every unit carries its cart line's id
+ * (`sale_line.cart_line_id`). A cart line that prices into no unit at all — a
+ * ticket line with nobody on it, nothing added and no fee — leaves no row, so
+ * its id cannot be read back off the ledger; comparing a replay against the
+ * stored ids therefore leaves those out, or every retry of a cart carrying one
+ * would be refused for a line that was never there to store. This mirrors the
+ * engine's rule unit for unit (`id-conformance.test.ts` holds the two
+ * together): a free-item line is one unit, kids, adults, socks, each add-on, a
+ * fee and prepaid food each make one, and every F&B or shop line is one.
+ */
+export function storedCartLineIds(input: Pick<CartInput, 'lines' | 'items'>): Set<string> {
+  const ids = new Set<string>();
+  for (const line of input.lines ?? []) {
+    const pricesIntoAUnit =
+      Boolean(line.promoItem) ||
+      line.kids > 0 ||
+      line.adults > 0 ||
+      (line.socks ?? 0) > 0 ||
+      (line.addOns?.length ?? 0) > 0 ||
+      (line.serviceFee?.amountSatang ?? 0) > 0 ||
+      (line.foodProvision?.paidSatang ?? 0) > 0;
+    if (pricesIntoAUnit) ids.add(line.id.toLowerCase());
+  }
+  for (const item of input.items ?? []) ids.add(item.id.toLowerCase());
+  return ids;
+}
+
+/**
+ * SCRUM-270, OD-12 — a sale id arriving again is the same sale only if it
+ * names the same lines.
+ *
+ * The till mints the sale's id and every line's, and both lanes carry them
+ * (plan `offline/PLAN.md` §2.1), so the one sale begun at the counter and
+ * finished through the box meets itself here. Other line ids under the same
+ * sale id are not a retry of this sale: they are a different cart claiming its
+ * name, which is a defect somewhere and not a thing to answer with the stored
+ * sale as though it were this one. Refused in words, and nothing is written.
+ *
+ * What is compared is the line IDS, not what is on the lines: a retry that
+ * re-sends a line with other counts is still that line, and the sale stays as
+ * it was first recorded. A voucher's free item is a line the platform put on
+ * the bill itself (`payload.voucher`), so it is not one the caller could name.
+ */
+function assertSameLines(
+  saleId: string,
+  stored: ReadonlyArray<{ cartLineId: string; payload: unknown }>,
+  input: CartInput,
+): void {
+  const recorded = new Set(
+    stored
+      .filter((row) => !(row.payload as { voucher?: unknown } | null)?.voucher)
+      .map((row) => row.cartLineId.toLowerCase()),
+  );
+  const sent = storedCartLineIds(input);
+  const same = recorded.size === sent.size && [...sent].every((id) => recorded.has(id));
+  if (!same) {
+    throw errors.conflict(
+      'SALE_LINES_DIFFER',
+      'That sale has already been recorded with different lines — nothing was saved',
+      { saleId },
+    );
+  }
+}
+
 /** How a commit prices its promo codes. Only the offline replay sets it. */
 export interface CommitSaleOptions {
   promoPricing?: PromoPricing;
@@ -2452,22 +2521,23 @@ export async function commitSale(
   const promoPricing = options.promoPricing ?? 'definition';
   const saleId = input.id ?? newId();
 
-  // Replay by the till-minted id.
+  // Replay by the till-minted id — the same sale only if it names the same
+  // lines (SCRUM-270, `assertSameLines`).
   const [already] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
   if (already) {
     if (already.operatorId !== actor.operatorId) throw errors.notFound('Sale not found');
     await actor.assertBranchAllowed?.(already.branchId);
+    const storedLines = await tx
+      .select({ cartLineId: saleLine.cartLineId, kind: saleLine.kind, payload: saleLine.payload })
+      .from(saleLine)
+      .where(eq(saleLine.saleId, already.id));
+    assertSameLines(already.id, storedLines, input);
     return {
       replay: true,
       replayed: true,
       finalised: already.status === 'finalised',
       outstandingSatang: await outstandingOf(tx, already),
-      pickupCode: recordedPickupCode(
-        await tx
-          .select({ payload: saleLine.payload })
-          .from(saleLine)
-          .where(and(eq(saleLine.saleId, already.id), eq(saleLine.kind, 'fnb_item'))),
-      ),
+      pickupCode: recordedPickupCode(storedLines.filter((line) => line.kind === 'fnb_item')),
       sale: viewOf(already, await voidedByNameOf(tx, already)),
       lines: [],
       rejectedPromoCodes: [],
@@ -2675,9 +2745,25 @@ export async function commitSale(
     await spendTierClaim(tx, priced.tier.claimId, saleId, clock.occurredAt);
   }
 
+  /**
+   * SCRUM-270 — EVERY ROW NAMED FROM WHAT THE TILL MINTED, not minted here.
+   *
+   * One cart line fans out into several units, so a unit's id cannot be the
+   * till's line id; it is DERIVED from the sale's id, that line id, the unit's
+   * component key and — for a line carrying one key twice — which occurrence
+   * it is (`deriveSaleLineId`, `@oto/shared`). Anyone holding the cart can
+   * therefore name every row before it is saved: the box, which prints a band
+   * against a sale line the platform has not written yet (plan §2.6), and the
+   * replay, which lands on the same rows. The sale's id keeps two sales that
+   * share a cart line id apart.
+   */
+  const occurrences = new Map<string, number>();
   for (const line of priced.lines) {
+    const key = `${line.cartLineId}|${line.componentKey ?? line.kind}`;
+    const occurrence = occurrences.get(key) ?? 0;
+    occurrences.set(key, occurrence + 1);
     await tx.insert(saleLine).values({
-      id: newId(),
+      id: deriveSaleLineId(saleId, line.cartLineId, line.componentKey ?? line.kind, occurrence),
       saleId,
       operatorId: actor.operatorId,
       branchId: priced.scope.branchId,

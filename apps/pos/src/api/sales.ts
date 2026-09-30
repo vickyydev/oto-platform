@@ -84,7 +84,12 @@ export interface SaleCartAddOnPayload {
 }
 
 export interface SaleCartLinePayload {
-  /** The till's own cart line id — `pos.sale_line.cart_line_id`. */
+  /**
+   * The till's own cart line id — `pos.sale_line.cart_line_id` — as the
+   * UUIDv7 this till minted for it (`platformId`, SCRUM-270). The platform
+   * names every row the line fans out into from it and the sale's id, and a
+   * retry of the same sale carrying other line ids is refused, not replayed.
+   */
   id: string;
   /** The platform's `ticket_package` id: what the platform prices from. */
   packageId: string;
@@ -749,7 +754,7 @@ export function buildCartPayload(
     lines: cart.lines.map((line) => {
       const source = byId.get(line.id);
       return {
-        // Translated at the wire — see `platformId`. The till keeps its own id.
+        // Minted at the wire, once per line — see `platformId`. The screen keeps its own id.
         id: platformId(line.id),
         packageId: line.packageId,
         packageName: source?.ticketType.name ?? '',
@@ -790,7 +795,7 @@ export function buildCartPayload(
       return {
         id: platformId(discount.id),
         scope: discount.scope,
-        // The same translation, or a line-scoped discount would point at a line
+        // The same minted id, or a line-scoped discount would point at a line
         // id the platform has never seen and be treated as order-wide.
         ...(discount.targetLineId ? { targetLineId: platformId(discount.targetLineId) } : {}),
         ...(discount.targetComponent ? { targetComponent: discount.targetComponent } : {}),

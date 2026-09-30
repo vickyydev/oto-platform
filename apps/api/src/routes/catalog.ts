@@ -26,6 +26,7 @@ import {
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { categoryTaxCategory } from '../services/menu';
 import {
   archivePaymentMethod,
@@ -465,15 +466,34 @@ export async function catalogRoutes(app: App): Promise<void> {
     {
       config: { permission: 'catalog:package:create', target: { branchId: 'params.branchId' } },
       schema: {
-        description: 'Create a ticket package',
+        description:
+          'Create a ticket package. An optional body id names it (SCRUM-270): the same id again ' +
+          'answers with that package under x-oto-replay; an id naming another record — another ' +
+          "branch's package included — is refused 409 ID_IN_USE.",
         params: BranchParams,
-        body: TicketPackageBodySchema,
+        body: TicketPackageBodySchema.extend({
+          /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+          id: ClientIdSchema.optional(),
+        }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
-      const id = newId();
+      const { id: sentId, ...fields } = req.body;
+      // A package belongs to its branch, which `loadBranch` placed inside the
+      // caller's operator — so "this record" is a package of THIS branch.
+      const claim = await claimClientId(
+        sentId,
+        async (id) =>
+          (await app.db.select().from(ticketPackage).where(eq(ticketPackage.id, id)).limit(1))[0],
+        (row) => row.branchId === req.params.branchId,
+      );
+      if (claim.replay) {
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: claim.id };
+      }
+      const id = claim.id;
       // Catalogue writes carry their audit row in the same transaction: a
       // price the tills start charging that nobody can account for is worse
       // than a price change that never landed.
@@ -482,9 +502,9 @@ export async function catalogRoutes(app: App): Promise<void> {
           id,
           operatorId: auth.operatorId,
           branchId: req.params.branchId,
-          ...req.body,
-          gateAccess: req.body.gateAccess ?? false,
-          active: req.body.active ?? true,
+          ...fields,
+          gateAccess: fields.gateAccess ?? false,
+          active: fields.active ?? true,
         });
         await audit.record(tx, {
           actorAccountId: auth.accountId,
@@ -493,7 +513,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           action: 'ticket_package.create',
           entityType: 'ticket_package',
           entityId: id,
-          after: req.body,
+          after: fields,
           requestId: req.id,
         });
         return { id };
@@ -617,10 +637,15 @@ export async function catalogRoutes(app: App): Promise<void> {
     {
       config: { permission: 'catalog:holiday:manage', target: { branchId: 'params.branchId' } },
       schema: {
-        description: 'Add a holiday range (inclusive, forces weekend pricing)',
+        description:
+          'Add a holiday range (inclusive, forces weekend pricing). An optional body id names it ' +
+          '(SCRUM-270): the same id again answers with that range under x-oto-replay; an id naming ' +
+          'another record is refused 409 ID_IN_USE.',
         params: BranchParams,
         body: z
           .object({
+            /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+            id: ClientIdSchema.optional(),
             name: z.string().min(1),
             startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
             endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -628,12 +653,23 @@ export async function catalogRoutes(app: App): Promise<void> {
           .refine((b) => b.startsOn <= b.endsOn, { message: 'startsOn must be <= endsOn' }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
-      const id = newId();
+      const { id: sentId, ...range } = req.body;
+      const claim = await claimClientId(
+        sentId,
+        async (id) =>
+          (await app.db.select().from(branchHoliday).where(eq(branchHoliday.id, id)).limit(1))[0],
+        (row) => row.branchId === req.params.branchId,
+      );
+      if (claim.replay) {
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: claim.id };
+      }
+      const id = claim.id;
       return withTx(app.db, opCtx(req), 'branch_holiday.create', async (tx) => {
-        await tx.insert(branchHoliday).values({ id, branchId: req.params.branchId, ...req.body });
+        await tx.insert(branchHoliday).values({ id, branchId: req.params.branchId, ...range });
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
@@ -641,7 +677,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           action: 'branch_holiday.create',
           entityType: 'branch_holiday',
           entityId: id,
-          after: req.body,
+          after: range,
           requestId: req.id,
         });
         return { id };
@@ -934,10 +970,15 @@ export async function catalogRoutes(app: App): Promise<void> {
     {
       config: { permission: 'catalog:tax:manage', target: { branchId: 'params.branchId' } },
       schema: {
-        description: 'Add a tax override (category- or product-scoped)',
+        description:
+          'Add a tax override (category- or product-scoped). An optional body id names it ' +
+          '(SCRUM-270): the same id again answers with that override under x-oto-replay; an id ' +
+          'naming another record is refused 409 ID_IN_USE.',
         params: BranchParams,
         body: z
           .object({
+            /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+            id: ClientIdSchema.optional(),
             categoryId: z.string().uuid().nullable().optional(),
             productId: z.string().uuid().nullable().optional(),
             vatRateBp: z.number().int().min(0).max(10000).nullable().optional(),
@@ -946,10 +987,21 @@ export async function catalogRoutes(app: App): Promise<void> {
           .refine((b) => b.categoryId || b.productId, { message: 'categoryId or productId required' }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       await loadBranch(app, req.params.branchId, auth.operatorId);
-      const id = newId();
+      const { id: sentId, ...override } = req.body;
+      const claim = await claimClientId(
+        sentId,
+        async (id) =>
+          (await app.db.select().from(taxOverride).where(eq(taxOverride.id, id)).limit(1))[0],
+        (row) => row.branchId === req.params.branchId,
+      );
+      if (claim.replay) {
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: claim.id };
+      }
+      const id = claim.id;
       return withTx(app.db, opCtx(req), 'tax_override.create', async (tx) => {
         await tx.insert(taxOverride).values({
           id,
@@ -966,7 +1018,7 @@ export async function catalogRoutes(app: App): Promise<void> {
           action: 'tax_override.create',
           entityType: 'tax_override',
           entityId: id,
-          after: req.body,
+          after: override,
           requestId: req.id,
         });
         return { id };

@@ -8,6 +8,7 @@ import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { atBranch } from '../lib/staff-scope';
 import { audit } from '../services/audit';
+import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { opCtx, withTx } from '../services/tx';
 import { deliverCode, invalidateAllSessions, mintCode, type PendingCode } from '../services/auth';
 import { resolveEffectivePermissions, type EffectivePermission } from '../services/permissions';
@@ -160,8 +161,13 @@ export async function accountRoutes(app: App): Promise<void> {
     {
       config: { permission: 'admin:account:create' },
       schema: {
-        description: 'Create a staff account and assign scoped roles',
+        description:
+          'Create a staff account and assign scoped roles. An optional body id names the account ' +
+          '(SCRUM-270): the same id again answers with that account under x-oto-replay; an id ' +
+          'already naming another record is refused 409 ID_IN_USE.',
         body: z.object({
+          /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+          id: ClientIdSchema.optional(),
           phone: z.string(),
           employeeId: z.string().uuid().optional(),
           employeeName: z.string().min(1).optional(),
@@ -169,10 +175,31 @@ export async function accountRoutes(app: App): Promise<void> {
         }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       const phone = normalizePhone(req.body.phone);
       if (!phone) throw errors.badRequest('Invalid phone number');
+
+      // Before the phone check: a replay's phone is its own account's, and the
+      // phone check would otherwise refuse the account for existing.
+      const claim = await claimClientId(
+        req.body.id,
+        async (id) => (await app.db.select().from(account).where(eq(account.id, id)).limit(1))[0],
+        (row) => row.operatorId === auth.operatorId,
+      );
+      if (claim.replay) {
+        // Answered only to a caller who may see that account (SCRUM-249), and
+        // with what the stored answer of the first attempt carries: the id and
+        // the status, never the setup code.
+        await assertAccountInScope(
+          await req.effectivePermissions(),
+          auth.operatorId,
+          claim.id,
+          'admin:account:create',
+        );
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: claim.row.id, status: claim.row.status };
+      }
 
       const [existing] = await app.db
         .select()
@@ -199,7 +226,7 @@ export async function accountRoutes(app: App): Promise<void> {
       // Employee, account, role assignments, the setup code and the audit row
       // are one operation: a failure at any point leaves no trace of it. The
       // SMS is not part of it — see below.
-      const id = newId();
+      const id = claim.id;
       // Assigned inside the transaction; the code it carries deliberately
       // never joins the value that transaction returns, because `withTx`
       // stores that value in `idempotency_key.response_body`.
@@ -286,12 +313,18 @@ export async function accountRoutes(app: App): Promise<void> {
     {
       config: { permission: 'admin:role:assign' },
       schema: {
-        description: 'Assign a role with a scope',
+        description:
+          'Assign a role with a scope. An optional body id names the assignment (SCRUM-270): the ' +
+          'same id again answers with it under x-oto-replay; an id naming another record is ' +
+          'refused 409 ID_IN_USE.',
         params: z.object({ id: z.string().uuid() }),
-        body: RoleAssignmentInput,
+        body: RoleAssignmentInput.extend({
+          /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+          id: ClientIdSchema.optional(),
+        }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       await loadTargetAccount(app.db, auth.operatorId, req.params.id);
       const roleRow = await loadRoleForOperator(app.db, auth.operatorId, req.body.roleName);
@@ -312,7 +345,25 @@ export async function accountRoutes(app: App): Promise<void> {
       await assertAccountInScope(callerEffective, auth.operatorId, req.params.id, 'admin:role:assign');
       await assertScopeOwned(app.db, callerEffective, auth.operatorId, scope);
       await assertRoleDominated(app.db, callerEffective, auth.operatorId, roleRow.id, scope);
-      const id = newId();
+      // After every check above, so a replay is answered only to a caller who
+      // could have made this grant. An assignment belongs to its account, which
+      // `loadTargetAccount` placed inside the caller's operator.
+      const claim = await claimClientId(
+        req.body.id,
+        async (id) =>
+          (await app.db.select().from(roleAssignment).where(eq(roleAssignment.id, id)).limit(1))[0],
+        (row) => row.accountId === req.params.id,
+      );
+      if (claim.replay) {
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: claim.id };
+      }
+      const id = claim.id;
+      const grant = {
+        roleName: req.body.roleName,
+        scopeType: req.body.scopeType,
+        scopeId: req.body.scopeId,
+      };
       return withTx(app.db, opCtx(req), 'role_assignment.create', async (tx) => {
         await tx.insert(roleAssignment).values({
           id,
@@ -327,7 +378,7 @@ export async function accountRoutes(app: App): Promise<void> {
           action: 'role_assignment.create',
           entityType: 'role_assignment',
           entityId: id,
-          after: { accountId: req.params.id, ...req.body },
+          after: { accountId: req.params.id, ...grant },
           requestId: req.id,
         });
         return { id };

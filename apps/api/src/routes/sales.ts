@@ -266,6 +266,12 @@ const Cart = z.object({
 
 /** The till sends the cart nested under `cart`; a curl sends it flat. */
 const CommitBody = Cart.extend({
+  /**
+   * The sale's id, minted by the till (UUIDv7) with every line's (SCRUM-270,
+   * OD-12). The same id with the same line ids is a replay, answered with the
+   * sale under `x-oto-replay`; the same id with other line ids is refused
+   * `409 SALE_LINES_DIFFER` (`commitSale`).
+   */
   id: z.string().uuid().optional(),
   actionId: z.string().min(1).max(200).optional(),
   cart: Cart.optional(),
@@ -417,7 +423,10 @@ export async function saleRoutes(app: App): Promise<void> {
           'Record a ticket sale. It is written unfinalised and with no receipt number; ' +
           'the tender at /sales/:id/finalise closes it. A ฿0 comp has nothing to tender, ' +
           'so `finalise` may close it here; the ticket and F&B tills leave it open instead ' +
-          'and close it at their confirm press, so it can still be voided until then.',
+          'and close it at their confirm press, so it can still be voided until then. ' +
+          'The till names the sale and every line: the same sale id with the same line ids ' +
+          'answers with the recorded sale under x-oto-replay, and with other line ids is ' +
+          'refused 409 SALE_LINES_DIFFER.',
         body: CommitBody,
       },
     },

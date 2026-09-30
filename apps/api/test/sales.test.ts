@@ -28,6 +28,7 @@ import {
 } from '@oto/db';
 import {
   businessDate,
+  deriveSaleLineId,
   mintBoothCode,
   newId,
   normalizePhone,
@@ -290,16 +291,69 @@ describe('committing a sale writes the ledger', () => {
 
   it('answers a retry of the same sale id with the sale that exists', async () => {
     const saleId = newId();
-    const payload = { id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] };
+    const sold = line(twoHoursId, 1, 1);
+    const payload = { id: saleId, memberId: jamesId, lines: [sold] };
     const first = await commit(payload);
     expect(first.statusCode).toBe(200);
-    const second = await commit({ ...payload, lines: [line(twoHoursId, 9, 9)] });
+    // SCRUM-270 — the same sale id AND the same line id: the same sale, whatever
+    // the retry now says is on that line. It is answered as first recorded.
+    const second = await commit({ ...payload, lines: [{ ...sold, kids: 9, adults: 9 }] });
     expect(second.statusCode).toBe(200);
     expect(second.headers['x-oto-replay']).toBe('true');
     expect(second.json().sale.totals.grossSatang).toBe(first.json().sale.totals.grossSatang);
 
     const rows = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
     expect(rows).toHaveLength(1);
+  });
+
+  it('refuses the same sale id carrying other line ids, and writes nothing (SCRUM-270)', async () => {
+    // OD-12: the till names the sale and every line. Another cart under a sale
+    // id already recorded is not a retry of that sale — it is refused in words
+    // rather than answered with a sale it does not describe.
+    const saleId = newId();
+    const first = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] });
+    expect(first.statusCode).toBe(200);
+    const linesBefore = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
+
+    const other = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] });
+    expect(other.statusCode).toBe(409);
+    expect(other.headers['x-oto-replay']).toBeUndefined();
+    expect(other.json().error).toEqual({
+      code: 'SALE_LINES_DIFFER',
+      message: 'That sale has already been recorded with different lines — nothing was saved',
+      details: { saleId },
+    });
+    // One more line than was recorded is other lines too.
+    const recordedLineId = linesBefore[0]!.cartLineId;
+    const more = await commit({
+      id: saleId,
+      memberId: jamesId,
+      lines: [{ ...line(twoHoursId, 1, 1), id: recordedLineId }, line(twoHoursId, 1, 0)],
+    });
+    expect(more.statusCode).toBe(409);
+    expect(more.json().error.code).toBe('SALE_LINES_DIFFER');
+
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, saleId))).toHaveLength(1);
+    expect(await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId))).toEqual(linesBefore);
+  });
+
+  it('names every sale line from the ids the till minted (SCRUM-270)', async () => {
+    // One cart line, two units: kids and adults. Each row's id is
+    // the one anybody holding the cart would name it by before it was saved.
+    const saleId = newId();
+    const sold = line(twoHoursId, 2, 1);
+    const res = await commit({ id: saleId, memberId: jamesId, lines: [sold] });
+    expect(res.statusCode).toBe(200);
+    const rows = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
+    expect(rows.map((row) => row.componentKey).sort()).toEqual(['adults', 'kids']);
+    for (const row of rows) {
+      expect(row.cartLineId).toBe(sold.id);
+      expect(row.id).toBe(deriveSaleLineId(saleId, sold.id, row.componentKey ?? row.kind, 0));
+    }
+    // The replay lands on the same rows rather than beside them.
+    const again = await commit({ id: saleId, memberId: jamesId, lines: [sold] });
+    expect(again.headers['x-oto-replay']).toBe('true');
+    expect(await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId))).toHaveLength(rows.length);
   });
 
   it('refuses a retry that minted a new id under the same action', async () => {

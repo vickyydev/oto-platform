@@ -5,6 +5,7 @@ import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { opCtx, withTx } from '../services/tx';
 import { isPlatformWide } from '../services/permissions';
 import { deliverCode, mintCode, type PendingCode } from '../services/auth';
@@ -33,11 +34,31 @@ export async function operatorRoutes(app: App): Promise<void> {
     '/',
     {
       config: { platformWide: true },
-      schema: { description: 'Create an operator', body: z.object({ name: z.string().min(1) }) },
+      schema: {
+        description:
+          'Create an operator. An optional body id names it (SCRUM-270): the same id again answers ' +
+          'with that operator under x-oto-replay.',
+        body: z.object({
+          /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+          id: ClientIdSchema.optional(),
+          name: z.string().min(1),
+        }),
+      },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = await requirePlatform(req);
-      const id = newId();
+      // An operator has no parent: every operator is a platform administrator's
+      // to name, so an id that names one is a replay of creating it.
+      const claim = await claimClientId(
+        req.body.id,
+        async (id) => (await app.db.select().from(operator).where(eq(operator.id, id)).limit(1))[0],
+        () => true,
+      );
+      if (claim.replay) {
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: claim.id };
+      }
+      const id = claim.id;
       return withTx(app.db, opCtx(req), 'operator.create', async (tx) => {
         await tx.insert(operator).values({ id, name: req.body.name });
         await audit.record(tx, {
@@ -94,20 +115,41 @@ export async function operatorRoutes(app: App): Promise<void> {
     {
       config: { platformWide: true },
       schema: {
-        description: 'Create/assign an operator administrator',
+        description:
+          'Create/assign an operator administrator. An optional body id names the new account ' +
+          '(SCRUM-270): the same id again answers with it under x-oto-replay; an id naming ' +
+          "another operator's account, or any other record, is refused 409 ID_IN_USE.",
         params: z.object({ id: z.string().uuid() }),
-        body: z.object({ phone: z.string(), name: z.string().min(1) }),
+        body: z.object({
+          /** Optional, client-minted (OD-12): the administrator's ACCOUNT id. */
+          id: ClientIdSchema.optional(),
+          phone: z.string(),
+          name: z.string().min(1),
+        }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = await requirePlatform(req);
       const phone = normalizePhone(req.body.phone);
       if (!phone) throw errors.badRequest('Invalid phone number');
       const [op] = await app.db.select().from(operator).where(eq(operator.id, req.params.id)).limit(1);
       if (!op || op.archivedAt) throw errors.notFound('Operator not found');
 
+      // The id names the administrator's account, which belongs to the
+      // operator in the path; the employee row and the grant beside it are the
+      // platform's own, named by it as before.
+      const claim = await claimClientId(
+        req.body.id,
+        async (id) => (await app.db.select().from(account).where(eq(account.id, id)).limit(1))[0],
+        (row) => row.operatorId === req.params.id,
+      );
+      if (claim.replay) {
+        // What the first attempt's stored answer carries: the account, never a code.
+        reply.header(REPLAY_HEADER, 'true');
+        return { accountId: claim.id };
+      }
       const employeeId = newId();
-      const accountId = newId();
+      const accountId = claim.id;
       // The system role, not an operator's own role of the same name: roles
       // are unique per operator since S2-01b, so the name alone is ambiguous.
       const [adminRole] = await app.db

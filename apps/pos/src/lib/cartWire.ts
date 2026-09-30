@@ -14,6 +14,7 @@ import { getAddOns, getTaxConfig } from '@/store/catalogStore';
 import { getEffectiveModifierGroups } from '@/lib/menu';
 import { resolveRate, todayRateMode, type RateMode } from '@/lib/pricingMode';
 import {
+  newId,
   satangFromBaht,
   type CartAddOn,
   type ManualDiscount as EngineManualDiscount,
@@ -42,7 +43,8 @@ import {
  * till sends the platform, and everything the till prices locally when the
  * platform cannot be reached, goes through these functions. It is pure — no
  * React, no fetch, one read of the catalogue store per call — so the same input
- * always produces the same cart.
+ * always produces the same cart. The one thing it remembers is the ids it has
+ * minted for the cart's own (`platformId`), which is what keeps that true.
  *
  * WHAT IT DOES NOT DO: decide money. Every figure here is either copied from
  * the cart or converted between baht and satang. The arithmetic is the
@@ -61,64 +63,55 @@ export const toSatang = (baht: number): number => satangFromBaht(baht);
 const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * THE TILL'S IDS ARE NOT UUIDs, AND THE PLATFORM'S COLUMNS ARE.
+ * Every id this till has minted for one of its cart's own ids, for the life of
+ * the page. Written by `platformId`, read back by `localIdFor`.
+ */
+const minted = new Map<string, string>();
+
+/**
+ * THE TILL NAMES WHAT IT SELLS BEFORE IT IS SAVED — SCRUM-270, plan
+ * `docs/progress/plans/offline/PLAN.md` §2.7 and OD-12.
  *
  * `pos.sale_line.cart_line_id` is a `uuid`, and `POST /sales` refuses anything
  * else. The prototype's cart mints `Math.random().toString(36).substring(7)`
  * for a ticket line (`pages/Till.tsx`), `line-<checkInId>` for a drop-off child
- * (`lib/dropoff.ts:80`), `promo-<CODE>` for a free-item promo line — a shape
- * `@oto/shared`'s `freeItemLineId` depends on to resolve that promo's scope —
- * and `md-<random>` for a staff discount (`ManualDiscountModal`). Send any of
- * them and the platform answers 400 and no sale is written. This was found by
- * reading the route's schema against the ids the cart actually carries, not by
- * driving it, because there is no deployment to drive yet.
+ * (`lib/dropoff.ts:80`), `line-<n>` and `mline-<n>` for an F&B or shop row,
+ * `promo-<CODE>` for a free-item promo line — a shape `@oto/shared`'s
+ * `freeItemLineId` depends on to resolve that promo's scope — and
+ * `md-<random>` for a staff discount (`ManualDiscountModal`). Those stay the
+ * screen's own keys: the prototype's components find their rows by them
+ * (CLAUDE.md §7).
  *
- * So ids are translated HERE, at the wire, and only here: an id that is already
- * a uuid passes through untouched, and anything else is derived deterministically
- * from its own text. Deterministic matters twice — the quote and the commit
- * describe the same cart, and the platform answers keyed by whatever it was
- * sent, so the answer has to be translatable back (`localIdFor`).
+ * WHAT THE PLATFORM IS SENT IS A UUIDv7 THIS TILL MINTED, once per local id,
+ * the first time that id reaches the wire, and the same one every time after.
+ * The platform names every row a cart line fans out into from it and the
+ * sale's own id (`deriveSaleLineId` in `@oto/shared`), so the till can name
+ * each sale line before the sale is saved — what a box needs in order to finish
+ * a sale this till began (plan §2.1) — and a replay of a sale id carrying other
+ * lines is refused as the conflict it is (`SALE_LINES_DIFFER`).
  *
- * WHAT THIS COSTS, said plainly rather than left for a reader to find: the
- * `cart_line_id` stored on a sale line is then a derived value, not the id the
- * till knows, so "this row came from the promo line for ICECREAM" is no longer
- * readable off the ledger. Grouping within a sale still works, which is what
- * the column is documented for. THE BETTER FIX IS ONE OF TWO DECISIONS, and
- * neither is this till's to take alone: the platform accepts the till's id as
- * text, or the cart mints UUIDv7 ids everywhere — which needs `freeItemLineId`
- * in `@oto/shared` to stop encoding the code in the id. Raised on SCRUM-203.
- * This function is written to be deleted in one edit the day either lands.
+ * STABLE FOR THE PAGE, which is the life of every cart: the quote and the
+ * commit describe the same cart, every retry of one Pay press sends the same
+ * body (`lib/saleWriter.ts` keys the sale id on it), and the platform answers
+ * keyed by whatever it was sent, so an answer has to be translatable back
+ * (`localIdFor`). Nothing holds a cart across a reload, and a reload mints
+ * afresh. A local id that recurs from one cart to the next on the same page —
+ * `promo-<CODE>` does — keeps the one id it was given; that is harmless,
+ * because a sale line's own id is named from the sale's id as well, and the
+ * platform compares line ids only within one sale.
  *
- * It is an id, not a secret: all that is required of the derivation is that it
- * is stable and does not collide within one cart of at most fifty lines.
+ * UNTIL SCRUM-270 these ids were derived, not minted: an FNV hash of the local
+ * id's text, so `promo-ICECREAM` or `line-1` became the same uuid in every
+ * sale from every till, and nothing about the id said where or when it was
+ * made. A local id that is already a uuid still passes through untouched.
  */
 export function platformId(localId: string): string {
   if (UUID_SHAPE.test(localId)) return localId;
-  // FNV-1a over the string, run four times from different offset bases, for
-  // 128 bits laid out in the uuid shape. The version and variant nibbles are
-  // set so the value is a well-formed uuid to anything that validates one.
-  const word = (offset: number): number => {
-    let hash = offset >>> 0;
-    for (let i = 0; i < localId.length; i += 1) {
-      hash ^= localId.charCodeAt(i);
-      hash = Math.imul(hash, 0x01000193) >>> 0;
-    }
-    // One final avalanche so two ids differing in the last character do not
-    // produce two neighbouring values.
-    hash ^= hash >>> 16;
-    hash = Math.imul(hash, 0x7feb352d) >>> 0;
-    hash ^= hash >>> 15;
-    return hash >>> 0;
-  };
-  const hex = (n: number): string => n.toString(16).padStart(8, '0');
-  const a = hex(word(0x811c9dc5));
-  const b = hex(word(0x9e3779b9));
-  const c = hex(word(0x85ebca6b));
-  const d = hex(word(0xc2b2ae35));
-  return (
-    `${a}-${b.slice(0, 4)}-4${b.slice(5, 8)}-` +
-    `${((parseInt(c.slice(0, 1), 16) & 0x3) | 0x8).toString(16)}${c.slice(1, 4)}-${c.slice(4)}${d}`
-  );
+  const known = minted.get(localId);
+  if (known) return known;
+  const id = newId();
+  minted.set(localId, id);
+  return id;
 }
 
 /**
@@ -126,12 +119,18 @@ export function platformId(localId: string): string {
  *
  * The platform keys its answer by whatever it was sent, so a response has to be
  * translated back before the screen can find the row it belongs to — without
- * this, a staff discount's amount comes back under a derived key, the panel
+ * this, a staff discount's amount comes back under a minted key, the panel
  * looks it up by the id it knows, finds nothing, and the discount row silently
  * renders as ฿0 while the total below it is correct.
+ *
+ * A lookup, so it mints nothing: an id this till never sent cannot be the key
+ * of an answer about it.
  */
 export function localIdFor(localIds: readonly string[], platformKey: string): string | null {
-  for (const id of localIds) if (platformId(id) === platformKey) return id;
+  for (const id of localIds) {
+    const sent = UUID_SHAPE.test(id) ? id : minted.get(id);
+    if (sent === platformKey) return id;
+  }
   return null;
 }
 
@@ -394,7 +393,7 @@ export interface ItemModifierSelection {
 
 /** An F&B or shop cart row in the platform's terms. */
 export interface ItemCartLine {
-  /** The till's own cart line id, translated at the wire (see `platformId`). */
+  /** The till's own cart line id, as the UUIDv7 it minted for the wire (see `platformId`). */
   id: string;
   /** `pos.product.id` — what the platform prices from. */
   productId: string;

@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { and, eq } from 'drizzle-orm';
 import { account, child, fileObject, member, type Db } from '@oto/db';
-import { newId } from '@oto/shared';
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { storageFailureReason } from '../services/files';
 import { opCtx, withTx } from '../services/tx';
 import type { AuthContext } from '../plugins/session';
@@ -174,8 +174,13 @@ export async function fileRoutes(app: App): Promise<void> {
     {
       config: { dynamicPermission: true },
       schema: {
-        description: 'Register a file and get a presigned upload URL',
+        description:
+          'Register a file and get a presigned upload URL. An optional body id names the file ' +
+          '(SCRUM-270): the same id again answers with that file and a fresh upload URL under ' +
+          'x-oto-replay; an id naming another record is refused 409 ID_IN_USE.',
         body: z.object({
+          /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+          id: ClientIdSchema.optional(),
           contentType: z.string().min(1),
           ownerEntityType: z.enum(['account', 'member', 'child']),
           ownerEntityId: z.string().uuid(),
@@ -183,7 +188,7 @@ export async function fileRoutes(app: App): Promise<void> {
         }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       await checkOwnerAccess(req, auth, req.body.ownerEntityType, req.body.ownerEntityId, 'write');
       await assertOwnerInOperator(
@@ -194,7 +199,29 @@ export async function fileRoutes(app: App): Promise<void> {
       );
       const storage = app.fileStorage;
       if (!storage) throw notConfigured();
-      const id = newId();
+      // A file belongs to its owner inside the caller's operator, and the write
+      // check above was made against THAT owner — so a replay is a file of the
+      // same owner, and any other file's id is somebody else's.
+      const claim = await claimClientId(
+        req.body.id,
+        async (id) => (await app.db.select().from(fileObject).where(eq(fileObject.id, id)).limit(1))[0],
+        (row) =>
+          row.operatorId === auth.operatorId &&
+          row.ownerEntityType === req.body.ownerEntityType &&
+          row.ownerEntityId === req.body.ownerEntityId,
+      );
+      if (claim.replay) {
+        // Nothing is written; the upload URL is signed afresh for the object
+        // the first attempt registered, because a caller retrying through a
+        // dropped connection never received the first one. Signing reaches no
+        // storage and no database.
+        const again = await withStorageLog(req, 'presign upload', () =>
+          storage.presignedPut(claim.row.objectKey),
+        );
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: claim.id, uploadUrl: again };
+      }
+      const id = claim.id;
       const ext = req.body.filename?.split('.').pop()?.toLowerCase() ?? 'bin';
       const objectKey = `${auth.operatorId}/${req.body.ownerEntityType}/${req.body.ownerEntityId}/${id}.${ext}`;
       const uploadUrl = await withStorageLog(req, 'presign upload', () =>

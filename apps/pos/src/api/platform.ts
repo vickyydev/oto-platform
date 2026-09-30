@@ -140,8 +140,16 @@ export const membersApi = {
     api.post<{ member: ApiMember }>('/members', { id: newRecordId(), ...body }, { idempotencyKey: idemKey() }),
   update: (id: string, patch: Record<string, unknown>) =>
     api.patch<{ member: ApiMember }>(`/members/${id}`, patch),
+  /**
+   * The till mints the child's id too (SCRUM-270, OD-12), for the reason given
+   * on `create`: sending the same id again answers with the child that exists.
+   */
   addChild: (memberId: string, body: Record<string, unknown>) =>
-    api.post<{ child: ApiChild }>(`/members/${memberId}/children`, body, { idempotencyKey: idemKey() }),
+    api.post<{ child: ApiChild }>(
+      `/members/${memberId}/children`,
+      { id: newRecordId(), ...body },
+      { idempotencyKey: idemKey() },
+    ),
   updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
     api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch, { idempotencyKey, signal }),
   verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt: string; note?: string }) =>

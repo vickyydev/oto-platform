@@ -5,6 +5,7 @@ import { TIER_PROOF_TYPES, newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import {
   REGISTER_PAGE_DEFAULT,
   REGISTER_PAGE_MAX,
@@ -310,9 +311,11 @@ export async function memberRoutes(app: App): Promise<void> {
           /**
            * Client-minted UUIDv7 (S2-01b). A till that mints the id can retry
            * a create through a dropped connection without risking a second
-           * member: sending the same id again returns the row that exists.
+           * member: sending the same id again returns the row that exists,
+           * and an id another operator's member already carries is refused
+           * 409 ID_IN_USE rather than failing on the primary key (SCRUM-270).
            */
-          id: z.string().uuid().optional(),
+          id: ClientIdSchema.optional(),
           phone: z.string(),
           nickname: z.string().min(1),
           preferredChannel: z.enum(['whatsapp', 'telegram', 'line']).optional(),
@@ -325,16 +328,14 @@ export async function memberRoutes(app: App): Promise<void> {
       const phone = normalizePhone(req.body.phone);
       if (!phone) throw errors.badRequest('Invalid phone number');
 
-      if (req.body.id) {
-        const [already] = await app.db
-          .select()
-          .from(member)
-          .where(and(eq(member.id, req.body.id), eq(member.operatorId, auth.operatorId)))
-          .limit(1);
-        if (already) {
-          reply.header('x-oto-replay', 'true');
-          return { member: await memberWithChildren(app, already.id, auth.operatorId) };
-        }
+      const claim = await claimClientId(
+        req.body.id,
+        async (id) => (await app.db.select().from(member).where(eq(member.id, id)).limit(1))[0],
+        (row) => row.operatorId === auth.operatorId,
+      );
+      if (claim.replay) {
+        reply.header(REPLAY_HEADER, 'true');
+        return { member: await memberWithChildren(app, claim.row.id, auth.operatorId) };
       }
 
       const [existing] = await app.db
@@ -349,7 +350,7 @@ export async function memberRoutes(app: App): Promise<void> {
           memberId: existing.id,
         });
       }
-      const id = req.body.id ?? newId();
+      const id = claim.id;
       await withTx(app.db, opCtx(req), 'member.create', async (tx) => {
         const [created] = await tx
           .insert(member)
@@ -681,12 +682,18 @@ export async function memberRoutes(app: App): Promise<void> {
     {
       config: { permission: 'pos:child:create', stationTrading: true },
       schema: {
-        description: 'Add a child to a member',
+        description:
+          'Add a child to a member. The till names the child with an optional body id (SCRUM-270): ' +
+          'the same id again answers with that child under x-oto-replay; an id already naming ' +
+          "another member's child is refused 409 ID_IN_USE.",
         params: z.object({ id: z.string().uuid() }),
-        body: ChildBody,
+        body: ChildBody.extend({
+          /** Client-minted UUIDv7 (OD-12): re-sending it returns the child that exists. */
+          id: ClientIdSchema.optional(),
+        }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       // The guardian proves the tenancy: a child is only reachable through a
       // member of the caller's own operator.
@@ -696,20 +703,33 @@ export async function memberRoutes(app: App): Promise<void> {
         .where(and(eq(member.id, req.params.id), eq(member.operatorId, auth.operatorId)))
         .limit(1);
       if (!m) throw errors.notFound('Member not found');
-      const id = newId();
+      const { id: sentId, ...details } = req.body;
+      // A child id carries no operator; the guardian does. So "this record" is
+      // a child of THIS member — which the lookup above already placed inside
+      // the caller's operator — and a child of anybody else is somebody else's.
+      const claim = await claimClientId(
+        sentId,
+        async (id) => (await app.db.select().from(child).where(eq(child.id, id)).limit(1))[0],
+        (row) => row.memberId === m.id,
+      );
+      if (claim.replay) {
+        reply.header(REPLAY_HEADER, 'true');
+        return { child: serializeChild(claim.row) };
+      }
+      const id = claim.id;
       await withTx(app.db, opCtx(req), 'child.create', async (tx) => {
         const [created] = await tx.insert(child).values({
           id,
           memberId: req.params.id,
-          name: req.body.name.trim(),
-          dateOfBirth: req.body.dateOfBirth ?? null,
-          ageYears: req.body.ageYears ?? null,
-          allergies: req.body.allergies ?? null,
-          medicalNotes: req.body.medicalNotes ?? null,
-          medicalAlert: req.body.medicalAlert ?? Boolean(req.body.allergies),
-          dietary: req.body.dietary ?? null,
-          foodRestrictions: req.body.foodRestrictions ?? null,
-          notes: req.body.notes ?? null,
+          name: details.name.trim(),
+          dateOfBirth: details.dateOfBirth ?? null,
+          ageYears: details.ageYears ?? null,
+          allergies: details.allergies ?? null,
+          medicalNotes: details.medicalNotes ?? null,
+          medicalAlert: details.medicalAlert ?? Boolean(details.allergies),
+          dietary: details.dietary ?? null,
+          foodRestrictions: details.foodRestrictions ?? null,
+          notes: details.notes ?? null,
           consentRecordedAt: new Date(),
         }).returning();
         await recordChange(tx, { operatorId: auth.operatorId, branchId: null }, {
@@ -730,7 +750,7 @@ export async function memberRoutes(app: App): Promise<void> {
           action: 'child.create',
           entityType: 'child',
           entityId: id,
-          after: req.body,
+          after: details,
           requestId: req.id,
         });
       });
