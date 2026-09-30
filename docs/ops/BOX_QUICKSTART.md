@@ -122,6 +122,17 @@ keyboard to sign in, press the button, the slip prints. No slip within 3 seconds
 code and QR show on the TV, and the slip follows once the printer answers. Redeem the
 slip at a till per [COUNTER_VOUCHERS.md](COUNTER_VOUCHERS.md).
 
+## Resetting the game
+
+- Fresh game: `sudo systemctl restart oto-kiosk` (10 s). Fresh game and box:
+  `sudo systemctl restart oto-box oto-kiosk`. No keyboard/SSH: pull the power, wait
+  5 s, plug back — a cold start is safe by design.
+- TV amnesia (forgets the chosen booth, rotation, everything the page remembered):
+  `sudo systemctl stop oto-kiosk && rm -rf /home/oto/.config/oto-kiosk && sudo systemctl start oto-kiosk`
+- Button dead but the game is up? Press the keyboard's space bar: keyboard spins but
+  button does not → replug the button (other black USB port); neither spins → the
+  browser lost focus, restart the kiosk. Note which case it was (SCRUM-467).
+
 ## If something misbehaves
 
 `oto-box status` · `journalctl -u oto-box -n 50` · TV blank: `journalctl -u oto-kiosk
