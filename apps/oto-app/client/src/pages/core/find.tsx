@@ -4,11 +4,10 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { LoadingScreen, LoadingSpinner } from "@/components/ui/loading-spinner";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Search, FileText, ChevronRight, Clock, QrCode, ExternalLink, BookOpen, CheckCircle, Lightbulb } from "lucide-react";
+import { Search, FileText, ChevronRight, Clock, QrCode, ExternalLink, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import type { SopArticle } from "@shared/schema";
@@ -45,10 +44,10 @@ export default function FindPage() {
   const filteredArticles = articles?.filter((article) => {
     const matchesSearch = searchQuery === "" || 
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.body.toLowerCase().includes(searchQuery.toLowerCase());
+      (article.body || "").toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesDepartment = selectedDepartment === "all" || 
-      article.departments.includes(selectedDepartment);
+      (article.departments || []).includes(selectedDepartment);
     
     return matchesSearch && matchesDepartment;
   });
@@ -166,7 +165,7 @@ export default function FindPage() {
             />
           ) : (
             filteredArticles.map((article) => (
-              <Link key={article.id} href={`/sop/${article.id}`}>
+              <Link key={article.id} href={`/core/sop/${article.id}`}>
                 <Card className="hover-elevate active-elevate-2 cursor-pointer overflow-visible" data-testid={`card-article-${article.id}`}>
                   <CardContent className="p-0">
                     {(article as any).coverImageUrl && (
@@ -183,10 +182,10 @@ export default function FindPage() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold mb-1">{article.title}</h3>
                           <p className="text-sm text-muted-foreground line-clamp-2">
-                            {(article as any).summary || article.body.substring(0, 120)}...
+                            {(article as any).summary || (article.body || "").substring(0, 120)}...
                           </p>
                           <div className="flex items-center gap-2 mt-3 flex-wrap">
-                            {article.departments.slice(0, 2).map((dept) => (
+                            {(article.departments || []).slice(0, 2).map((dept) => (
                               <Badge key={dept} variant="secondary" className="text-xs capitalize">
                                 {dept.replace("_", "/")}
                               </Badge>

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import DOMPurify from "isomorphic-dompurify";
 import { useParams } from "wouter";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
@@ -21,14 +22,21 @@ import type { SopArticle } from "@shared/schema";
 export default function SopArticlePage() {
   const { id } = useParams<{ id: string }>();
 
-  const { data: article, isLoading } = useQuery<SopArticle>({
+  const { data: article, isLoading, isError } = useQuery<SopArticle>({
     queryKey: ["/api/sops", id],
+    enabled: !!id,
   });
 
-  if (isLoading || !article) {
+  if (isLoading) {
+    return <AppLayout><LoadingScreen /></AppLayout>;
+  }
+  if (isError || !article) {
     return (
-      <AppLayout hideNav>
-        <LoadingScreen />
+      <AppLayout>
+        <div className="p-6">
+          <p className="mb-4">This article is unavailable.</p>
+          <Link href="/core/find"><Button variant="outline">Back to Find & Learn</Button></Link>
+        </div>
       </AppLayout>
     );
   }
@@ -54,11 +62,11 @@ export default function SopArticlePage() {
   const hasBody = article.body && article.body.trim().length > 0;
 
   return (
-    <AppLayout hideNav>
+    <AppLayout>
       <div className="min-h-screen flex flex-col bg-background">
         <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border" style={{ paddingTop: "env(safe-area-inset-top)" }}>
           <div className="flex items-center justify-between p-3 max-w-2xl mx-auto">
-            <Link href="/find">
+            <Link href="/core/find">
               <Button size="icon" variant="ghost" data-testid="button-back">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -83,7 +91,7 @@ export default function SopArticlePage() {
           <div className="p-4">
             <HeroCard 
               title={article.title}
-              departments={article.departments}
+              departments={(article.departments || []).join(", ")}
               readingTime={extendedArticle.readingTime}
               icon={<FileText className="h-7 w-7 text-primary" />}
             />
@@ -123,7 +131,7 @@ export default function SopArticlePage() {
             )}
 
             {hasBody && (
-              <BodyContent content={article.body} />
+              <BodyContent content={DOMPurify.sanitize(article.body || "")} />
             )}
           </div>
         </article>
