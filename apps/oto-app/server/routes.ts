@@ -21102,104 +21102,109 @@ OTO Company Limited`,
   // KNOWLEDGE BASE ARTICLES
   // ============================================
 
-  // Helper: Check if user can access a KB article based on branchScope and branchIds
-  function canAccessKbArticle(
+  const canAccessKbArticle = (
     user: UserWithBranchAccess,
-    articleBranchScope: string,
-    articleBranchIds: string[] | null
-  ): boolean {
-    // Global admins can access everything
-    if (isGlobalAdmin(user)) return true;
-    
-    // If article is scoped to ALL branches, any authenticated manager+ can access
-    if (articleBranchScope === "ALL") return true;
-    
-    // If article is scoped to specific BRANCHES, check user's allowed branches
-    if (articleBranchScope === "BRANCHES") {
-      // Deny access if branchIds is empty/null (malformed data - should not happen)
-      if (!articleBranchIds || articleBranchIds.length === 0) {
-        return false;
-      }
-      const { allowedBranchIds } = getAllowedOperatorAndBranchIds(user);
-      if (!allowedBranchIds) return false;
-      // User can access if any of their branches are in the article's branchIds
-      return articleBranchIds.some(bid => allowedBranchIds.includes(bid));
-    }
-    
-    // Default deny for unknown branchScope values
-    return false;
-  }
+    article: Awaited<ReturnType<typeof storage.getKbArticle>>,
+    tenantId: string,
+  ) => {
+    if (!article || article.tenantId !== tenantId) return false;
+    if (article.branchScope === "ALL") return true;
+    return article.branchScope === "SELECTED" &&
+      (article.branchIds || []).some(id => canUserAccessBranch(user, id));
+  };
 
-  // List knowledge base articles with filtering (manager+ only)
-  app.get("/api/knowledge-base", requireAuth, requireManager, async (req, res, next) => {
+  const getKbAudienceRoles = async (user: UserWithBranchAccess) => {
+    const names: string[] = [user.role];
+    if (user.linkedEmployeeId) {
+      const assigned = await storage.getEmployeeRoles(user.linkedEmployeeId);
+      names.push(...assigned.map(item => item.role.name));
+    }
+    return names;
+  };
+
+  const canBrowseKbArticle = (
+    user: UserWithBranchAccess,
+    article: Awaited<ReturnType<typeof storage.getKbArticle>>,
+    tenantId: string,
+    audienceRoles: string[],
+  ) => canAccessKbArticle(user, article, tenantId) && !!article &&
+    (["admin", "global_admin", "operator_admin", "manager"].includes(user.role) ||
+      (article.status === "published" &&
+        (!article.roles?.length || article.roles.some(role => audienceRoles.includes(role)))));
+
+  const validKbBranches = async (
+    user: UserWithBranchAccess,
+    tenantId: string,
+    scope: string,
+    branchIds: string[],
+  ) => {
+    if (scope === "ALL") return branchIds.length === 0;
+    if (scope !== "SELECTED" || branchIds.length === 0 ||
+        new Set(branchIds).size !== branchIds.length ||
+        branchIds.some(id => !canUserAccessBranch(user, id))) return false;
+    const branches = await Promise.all(branchIds.map(id => storage.getBranch(id)));
+    return branches.every(branch => branch?.tenantId === tenantId);
+  };
+
+  // Staff browse published articles; managers and administrators also see drafts.
+  app.get("/api/knowledge-base", requireAuth, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       const { status, type, branchId, search } = req.query;
-      
-      // For non-admin users, enforce branch scoping at storage level
-      const { allowedBranchIds } = getAllowedOperatorAndBranchIds(user);
-      const effectiveBranchId = branchId as string | undefined;
-      
-      // If user requests a specific branch, verify they have access
-      if (effectiveBranchId && !isGlobalAdmin(user) && allowedBranchIds && !allowedBranchIds.includes(effectiveBranchId)) {
-        return res.status(403).json({ message: "Access denied to this branch" });
+      if ([status, type, branchId, search].some(value => value !== undefined && typeof value !== "string") ||
+          (status && !["draft", "published", "archived"].includes(status as string)) ||
+          (type && !["SOP", "Policy", "Safety", "Checklist", "Script", "FAQ", "Training", "Maintenance"].includes(type as string)) ||
+          (typeof search === "string" && search.length > 200)) {
+        return res.status(400).json({ message: "Invalid article filter" });
       }
-      
-      // Pass allowedBranchIds to storage for non-admin users to enforce branch scoping
-      const articles = await storage.getKbArticles(tenantId, {
-        status: status as string | undefined,
+      if (branchId) {
+        if (!canUserAccessBranch(user, branchId as string)) {
+          return res.status(403).json({ message: "Access denied to this branch" });
+        }
+        const branch = await storage.getBranch(branchId as string);
+        if (!branch || branch.tenantId !== tenantId) {
+          return res.status(404).json({ message: "Branch not found" });
+        }
+      }
+      const canManage = ["admin", "global_admin", "operator_admin", "manager"].includes(user.role);
+      const audienceRoles = await getKbAudienceRoles(user);
+      const articles = (await storage.getKbArticles(tenantId, {
+        status: canManage ? status as string | undefined : "published",
         type: type as string | undefined,
-        branchId: effectiveBranchId,
         search: search as string | undefined,
-        allowedBranchIds: isGlobalAdmin(user) ? undefined : allowedBranchIds,
-      });
-      
+      })).filter(article => canBrowseKbArticle(user, article, tenantId, audienceRoles) &&
+        (!branchId || article.branchScope === "ALL" || (article.branchIds || []).includes(branchId as string)));
       res.json(articles);
     } catch (error) {
       next(error);
     }
   });
 
-  // Get single knowledge base article (manager+ only)
-  app.get("/api/knowledge-base/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.get("/api/knowledge-base/:id", requireAuth, async (req, res, next) => {
     try {
-      const { id } = req.params;
       const user = req.user as UserWithBranchAccess;
-      const article = await storage.getKbArticle(id);
-      if (!article) {
+      const tenantId = await resolveTenantId(user.tenantId);
+      const article = await storage.getKbArticle(req.params.id);
+      const audienceRoles = await getKbAudienceRoles(user);
+      if (!canBrowseKbArticle(user, article, tenantId, audienceRoles)) {
         return res.status(404).json({ message: "Article not found" });
       }
-      
-      // For non-admin users, verify branch access based on branchScope and branchIds
-      if (!canAccessKbArticle(user, article.branchScope, article.branchIds as string[] | null)) {
-        return res.status(403).json({ message: "Access denied to this article" });
-      }
-      
       res.json(article);
     } catch (error) {
       next(error);
     }
   });
 
-  // Get article version history (manager+ only)
   app.get("/api/knowledge-base/:id/versions", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const { id } = req.params;
       const user = req.user as UserWithBranchAccess;
-      
-      // First verify user can access the parent article
-      const article = await storage.getKbArticle(id);
-      if (!article) {
+      const tenantId = await resolveTenantId(user.tenantId);
+      const article = await storage.getKbArticle(req.params.id);
+      if (!canAccessKbArticle(user, article, tenantId)) {
         return res.status(404).json({ message: "Article not found" });
       }
-      
-      if (!canAccessKbArticle(user, article.branchScope, article.branchIds as string[] | null)) {
-        return res.status(403).json({ message: "Access denied to this article" });
-      }
-      
-      const versions = await storage.getKbArticleVersions(id);
-      res.json(versions);
+      res.json(await storage.getKbArticleVersions(req.params.id));
     } catch (error) {
       next(error);
     }
@@ -21208,41 +21213,27 @@ OTO Company Limited`,
   // Create knowledge base article (admin/manager only)
   app.post("/api/knowledge-base", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
-      
-      // Add tenantId and owner info before validation
-      const bodyWithDefaults = {
-        ...req.body,
+      const tenantId = await resolveTenantId(user.tenantId);
+      const { title, type, content, quickAnswer, departments, roles: audience,
+        tags, branchScope, branchIds } = req.body || {};
+      const parsed = insertKbArticleSchema.safeParse({
+        title, type, content, quickAnswer, departments, roles: audience,
+        tags, branchScope, branchIds,
         tenantId,
         ownerId: user.id,
         ownerName: user.fullName || user.username || "Unknown",
         status: "draft",
         version: 1,
-      };
-      
-      // Validate with Zod schema
-      const parsed = insertKbArticleSchema.safeParse(bodyWithDefaults);
+      });
       if (!parsed.success) {
-        return res.status(400).json({ message: "Validation failed", errors: parsed.error.issues });
+        return res.status(400).json({ message: "Invalid article" });
       }
-      
-      // Validate: BRANCHES scope requires at least one branchId
-      if (parsed.data.branchScope === "BRANCHES") {
-        const branchIds = parsed.data.branchIds as string[] | null;
-        if (!branchIds || branchIds.length === 0) {
-          return res.status(400).json({ message: "branchIds is required when branchScope is BRANCHES" });
-        }
-        
-        // Verify user has access to all specified branches (non-admins)
-        if (!isGlobalAdmin(user)) {
-          const { allowedBranchIds } = getAllowedOperatorAndBranchIds(user);
-          if (allowedBranchIds && branchIds.some(bid => !allowedBranchIds.includes(bid))) {
-            return res.status(403).json({ message: "Access denied to create articles for the specified branches" });
-          }
-        }
+      const scopedBranchIds = parsed.data.branchIds || [];
+      if (!Array.isArray(scopedBranchIds) ||
+          !(await validKbBranches(user, tenantId, parsed.data.branchScope || "ALL", scopedBranchIds))) {
+        return res.status(400).json({ message: "Invalid article branch scope" });
       }
-      
       const article = await storage.createKbArticle(parsed.data);
       res.status(201).json(article);
     } catch (error) {
@@ -21250,95 +21241,82 @@ OTO Company Limited`,
     }
   });
 
-  // Update knowledge base article (admin/manager only)
   app.patch("/api/knowledge-base/:id", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const { id } = req.params;
       const user = req.user as UserWithBranchAccess;
-      const existing = await storage.getKbArticle(id);
-      if (!existing) {
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getKbArticle(req.params.id);
+      if (!canAccessKbArticle(user, existing, tenantId)) {
         return res.status(404).json({ message: "Article not found" });
       }
-      
-      // Verify user can access the existing article
-      if (!canAccessKbArticle(user, existing.branchScope, existing.branchIds as string[] | null)) {
-        return res.status(403).json({ message: "Access denied to update this article" });
-      }
-      
-      // Validate with partial schema
-      const updateSchema = insertKbArticleSchema.partial().omit({ tenantId: true, ownerId: true, ownerName: true });
+      const updateSchema = insertKbArticleSchema.partial().omit({
+        tenantId: true, ownerId: true, ownerName: true, status: true,
+        version: true, publishedAt: true, archivedAt: true,
+      });
       const parsed = updateSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Validation failed", errors: parsed.error.issues });
+        return res.status(400).json({ message: "Invalid article" });
       }
-      
-      // Determine the final branchScope and branchIds after update
-      const finalBranchScope = parsed.data.branchScope ?? existing.branchScope;
-      const finalBranchIds = parsed.data.branchIds !== undefined 
-        ? (parsed.data.branchIds as string[] | null)
-        : (existing.branchIds as string[] | null);
-      
-      // Validate: BRANCHES scope requires at least one branchId
-      if (finalBranchScope === "BRANCHES") {
-        if (!finalBranchIds || finalBranchIds.length === 0) {
-          return res.status(400).json({ message: "branchIds is required when branchScope is BRANCHES" });
-        }
-        
-        // If updating branchIds, verify user has access to the new branches (non-admins)
-        if (parsed.data.branchIds && !isGlobalAdmin(user)) {
-          const { allowedBranchIds } = getAllowedOperatorAndBranchIds(user);
-          if (allowedBranchIds && finalBranchIds.some(bid => !allowedBranchIds.includes(bid))) {
-            return res.status(403).json({ message: "Access denied to assign articles to the specified branches" });
-          }
-        }
+      const scope = parsed.data.branchScope ?? existing!.branchScope;
+      const branchIds = parsed.data.branchIds ?? existing!.branchIds ?? [];
+      if (!Array.isArray(branchIds) || !(await validKbBranches(user, tenantId, scope, branchIds))) {
+        return res.status(400).json({ message: "Invalid article branch scope" });
       }
-      
-      const article = await storage.updateKbArticle(id, parsed.data);
-      res.json(article);
+      res.json(await storage.updateKbArticle(req.params.id, parsed.data));
     } catch (error) {
       next(error);
     }
   });
 
-  // Publish knowledge base article (admin/manager only)
   app.post("/api/knowledge-base/:id/publish", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const { id } = req.params;
       const user = req.user as UserWithBranchAccess;
-      const { changeNotes } = req.body;
-      
-      const article = await storage.publishKbArticle(
-        id, 
-        user.id, 
-        user.fullName || user.username || "Unknown",
-        changeNotes
-      );
-      res.json(article);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Archive knowledge base article (admin only)
-  app.post("/api/knowledge-base/:id/archive", requireAuth, requireAdmin, async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const article = await storage.archiveKbArticle(id);
-      res.json(article);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Delete knowledge base article (admin only)
-  app.delete("/api/knowledge-base/:id", requireAuth, requireAdmin, async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const existing = await storage.getKbArticle(id);
-      if (!existing) {
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getKbArticle(req.params.id);
+      if (!canAccessKbArticle(user, existing, tenantId)) {
         return res.status(404).json({ message: "Article not found" });
       }
-      await storage.deleteKbArticle(id);
+      if (existing!.status === "archived") {
+        return res.status(409).json({ message: "Archived articles cannot be published" });
+      }
+      const changeNotes = req.body.changeNotes;
+      if (changeNotes !== undefined && (typeof changeNotes !== "string" || changeNotes.length > 1000)) {
+        return res.status(400).json({ message: "Invalid change notes" });
+      }
+      res.json(await storage.publishKbArticle(
+        req.params.id, user.id, user.fullName || user.username || "Unknown", changeNotes,
+      ));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/knowledge-base/:id/archive", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getKbArticle(req.params.id);
+      if (!canAccessKbArticle(user, existing, tenantId)) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      if (existing!.status === "archived") {
+        return res.status(409).json({ message: "Article is already archived" });
+      }
+      res.json(await storage.archiveKbArticle(req.params.id));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/knowledge-base/:id", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getKbArticle(req.params.id);
+      if (!canAccessKbArticle(user, existing, tenantId)) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      await storage.deleteKbArticle(req.params.id);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -21349,33 +21327,56 @@ OTO Company Limited`,
   // KNOWLEDGE FILES (PDFs, images for RAG)
   // ============================================
 
-  // List knowledge files (admin/manager only)
+  const canAccessKnowledgeFile = (
+    user: UserWithBranchAccess,
+    file: Awaited<ReturnType<typeof storage.getKnowledgeFile>>,
+    tenantId: string,
+  ) => !!file && file.tenantId === tenantId &&
+    (!file.branchId || canUserAccessBranch(user, file.branchId));
+
+  const validKnowledgeBranch = async (
+    user: UserWithBranchAccess,
+    tenantId: string,
+    branchId: string | null,
+  ) => {
+    if (!branchId) return true;
+    if (!canUserAccessBranch(user, branchId)) return false;
+    const branch = await storage.getBranch(branchId);
+    return branch?.tenantId === tenantId;
+  };
+
   app.get("/api/knowledge-files", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       const { branchId, fileType, indexStatus, isActive } = req.query;
-      
-      const files = await storage.getKnowledgeFiles(tenantId, {
+      if ([branchId, fileType, indexStatus, isActive].some(value => value !== undefined && typeof value !== "string") ||
+          (fileType && !["pdf", "image", "video"].includes(fileType as string)) ||
+          (indexStatus && !["pending", "processing", "indexed", "failed"].includes(indexStatus as string)) ||
+          (isActive && !["true", "false"].includes(isActive as string))) {
+        return res.status(400).json({ message: "Invalid file filter" });
+      }
+      if (branchId && !(await validKnowledgeBranch(user, tenantId, branchId as string))) {
+        return res.status(403).json({ message: "Access denied to this branch" });
+      }
+      const files = (await storage.getKnowledgeFiles(tenantId, {
         branchId: branchId as string | undefined,
         fileType: fileType as string | undefined,
         indexStatus: indexStatus as string | undefined,
         isActive: isActive === "true" ? true : isActive === "false" ? false : undefined,
-      });
-      
+      })).filter(file => canAccessKnowledgeFile(user, file, tenantId));
       res.json(files);
     } catch (error) {
       next(error);
     }
   });
 
-  // Get single knowledge file
   app.get("/api/knowledge-files/:id", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
-      const file = await storage.getKnowledgeFile(id);
-      // Security: enforce tenant isolation
-      if (!file || file.tenantId !== tenantId) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const file = await storage.getKnowledgeFile(req.params.id);
+      if (!canAccessKnowledgeFile(user, file, tenantId)) {
         return res.status(404).json({ message: "File not found" });
       }
       res.json(file);
@@ -21387,8 +21388,8 @@ OTO Company Limited`,
   // Upload knowledge file (PDF/image/video)
   app.post("/api/knowledge-files/upload", requireAuth, requireManager, knowledgeFileUpload.single("file"), fixMulterFilenames, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       const file = req.file;
       
       if (!file) {
@@ -21405,8 +21406,28 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Unsupported file type. Only PDF, images, and videos are allowed." });
       }
 
+      const { title, description, branchId, departmentId, language, tags, version } = req.body;
+      if (branchId && (typeof branchId !== "string" || !(await validKnowledgeBranch(user, tenantId, branchId)))) {
+        return res.status(400).json({ message: "Invalid file branch" });
+      }
+      if (departmentId) {
+        const department = await storage.getDepartment(departmentId);
+        if (department?.tenantId !== tenantId) {
+          return res.status(400).json({ message: "Invalid file department" });
+        }
+      }
+      let parsedTags: string[] = [];
+      try {
+        parsedTags = tags ? (typeof tags === "string" ? JSON.parse(tags) : tags) : [];
+      } catch {
+        return res.status(400).json({ message: "Invalid file tags" });
+      }
+      if (!Array.isArray(parsedTags) || parsedTags.some(tag => typeof tag !== "string")) {
+        return res.status(400).json({ message: "Invalid file tags" });
+      }
+
       const timestamp = Date.now();
-      const safeFilename = file.originalname.replace(/[\/\\:*?"<>|]/g, '_');
+      const safeFilename = file.originalname.replace(/[\\:*?"<>|]/g, '_').replaceAll("/", "_");
       const knowledgeFilename = `${timestamp}_${safeFilename}`;
 
       const storageUrl = await uploadToObjectStorage(
@@ -21415,11 +21436,6 @@ OTO Company Limited`,
         knowledgeFilename,
         file.mimetype,
       );
-
-      // Parse metadata from request body
-      const { title, description, branchId, departmentId, language, tags, version } = req.body;
-
-      console.log(`[KnowledgeFiles] Creating database record for: ${file.originalname}, storageUrl: ${storageUrl}`);
 
       // Create knowledge file record
       let knowledgeFile;
@@ -21434,7 +21450,7 @@ OTO Company Limited`,
           branchId: branchId || null,
           departmentId: departmentId || null,
           language: language || "en",
-          tags: tags ? (typeof tags === "string" ? JSON.parse(tags) : tags) : [],
+          tags: parsedTags,
           version: version || null,
           title: title || file.originalname,
           description: description || null,
@@ -21443,21 +21459,21 @@ OTO Company Limited`,
           indexStatus: "pending",
         });
         console.log(`[KnowledgeFiles] Database record created: ${knowledgeFile.id}`);
-      } catch (dbError: any) {
-        console.error(`[KnowledgeFiles] Database error:`, dbError.message || dbError);
+      } catch {
+        await deleteFromObjectStorage("knowledge-files", knowledgeFilename).catch(() => undefined);
+        console.error("[KnowledgeFiles] Database record could not be saved");
         return res.status(500).json({ message: "Failed to save file record to database" });
       }
 
       // If PDF, trigger async text extraction and chunking
       if (fileType === "pdf") {
-        extractAndChunkPDF(knowledgeFile.id, file.buffer, tenantId).catch((err) => {
-          console.error(`[KnowledgeFiles] Failed to extract PDF ${knowledgeFile.id}:`, err);
+        extractAndChunkPDF(knowledgeFile.id, file.buffer, tenantId).catch(() => {
+          console.error("[KnowledgeFiles] PDF extraction failed");
         });
       }
 
       res.status(201).json(knowledgeFile);
-    } catch (error: any) {
-      console.error(`[KnowledgeFiles] Unexpected error:`, error.message || error);
+    } catch (error) {
       next(error);
     }
   });
@@ -21507,11 +21523,11 @@ OTO Company Limited`,
       
       await storage.updateKnowledgeFile(fileId, { indexStatus: "indexed" });
       console.log(`[KnowledgeFiles] Successfully indexed ${chunks.length} chunks from PDF ${fileId}`);
-    } catch (error) {
-      console.error(`[KnowledgeFiles] Error extracting PDF:`, error);
+    } catch {
+      console.error("[KnowledgeFiles] PDF extraction failed");
       await storage.updateKnowledgeFile(fileId, { 
         indexStatus: "failed",
-        indexError: error instanceof Error ? error.message : "Unknown error",
+        indexError: "PDF extraction failed",
       });
     }
   }
@@ -21615,55 +21631,57 @@ Return ONLY valid JSON, no markdown or explanation.`
         stepsCount: structuredSteps.length,
       });
     } catch (error) {
-      console.error("[GenerateSOP] Error:", error);
+      console.error("[GenerateSOP] Request failed");
       next(error);
     }
   });
 
-  // Update knowledge file metadata
   app.patch("/api/knowledge-files/:id", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const existing = await storage.getKnowledgeFile(id);
-      if (!existing) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getKnowledgeFile(req.params.id);
+      if (!canAccessKnowledgeFile(user, existing, tenantId)) {
         return res.status(404).json({ message: "File not found" });
       }
-      
       const { title, description, branchId, departmentId, language, tags, version, isActive } = req.body;
-      
-      const updated = await storage.updateKnowledgeFile(id, {
-        title,
-        description,
-        branchId,
-        departmentId,
-        language,
-        tags,
-        version,
-        isActive,
-      });
-      
-      res.json(updated);
+      if (branchId !== undefined &&
+          (branchId !== null && (typeof branchId !== "string" ||
+            !(await validKnowledgeBranch(user, tenantId, branchId))))) {
+        return res.status(400).json({ message: "Invalid file branch" });
+      }
+      if (departmentId) {
+        const department = await storage.getDepartment(departmentId);
+        if (department?.tenantId !== tenantId) {
+          return res.status(400).json({ message: "Invalid file department" });
+        }
+      }
+      if (tags !== undefined && (!Array.isArray(tags) || tags.some(tag => typeof tag !== "string"))) {
+        return res.status(400).json({ message: "Invalid file tags" });
+      }
+      if (isActive !== undefined && typeof isActive !== "boolean") {
+        return res.status(400).json({ message: "Invalid file status" });
+      }
+      res.json(await storage.updateKnowledgeFile(req.params.id, {
+        title, description, branchId, departmentId, language, tags, version, isActive,
+      }));
     } catch (error) {
       next(error);
     }
   });
 
-  // Re-index a knowledge file (trigger re-extraction)
   app.post("/api/knowledge-files/:id/reindex", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
-      const existing = await storage.getKnowledgeFile(id);
-      // Security: enforce tenant isolation
-      if (!existing || existing.tenantId !== tenantId) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getKnowledgeFile(req.params.id);
+      if (!canAccessKnowledgeFile(user, existing, tenantId)) {
         return res.status(404).json({ message: "File not found" });
       }
-      
-      if (existing.fileType !== "pdf") {
+      if (existing!.fileType !== "pdf") {
         return res.status(400).json({ message: "Only PDF files can be re-indexed" });
       }
-      
-      const knowledgeFilename = path.basename(existing.storageUrl);
+      const knowledgeFilename = path.basename(existing!.storageUrl);
       const knowledgeFile = await getFileFromObjectStorage("knowledge-files", knowledgeFilename);
       if (!knowledgeFile) {
         return res.status(500).json({ message: "Could not download file from storage" });
@@ -21674,90 +21692,65 @@ Return ONLY valid JSON, no markdown or explanation.`
         knowledgeFile.stream.on("end", resolve);
         knowledgeFile.stream.on("error", reject);
       });
-      const fileBuffer = Buffer.concat(fileChunks);
-      
-      // Trigger re-extraction
-      extractAndChunkPDF(id, fileBuffer, tenantId).catch((err) => {
-        console.error(`[KnowledgeFiles] Failed to re-index PDF ${id}:`, err);
+      extractAndChunkPDF(req.params.id, Buffer.concat(fileChunks), tenantId).catch(() => {
+        console.error("[KnowledgeFiles] PDF re-index failed");
       });
-      
       res.json({ message: "Re-indexing started" });
     } catch (error) {
       next(error);
     }
   });
 
-  // Delete knowledge file
   app.delete("/api/knowledge-files/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
-      const existing = await storage.getKnowledgeFile(id);
-      // Security: enforce tenant isolation
-      if (!existing || existing.tenantId !== tenantId) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getKnowledgeFile(req.params.id);
+      if (!canAccessKnowledgeFile(user, existing, tenantId)) {
         return res.status(404).json({ message: "File not found" });
       }
-      
-      // Delete chunks first
-      await storage.deleteKnowledgeChunksForFile(id);
-      
-      // Delete file from object storage
+      await storage.deleteKnowledgeChunksForFile(req.params.id);
       try {
-        const knowledgeFilename = path.basename(existing.storageUrl);
-        await deleteFromObjectStorage("knowledge-files", knowledgeFilename);
-      } catch (storageError) {
-        console.warn(`[KnowledgeFiles] Could not delete file from storage:`, storageError);
+        await deleteFromObjectStorage("knowledge-files", path.basename(existing!.storageUrl));
+      } catch {
+        console.warn("[KnowledgeFiles] File object could not be deleted");
       }
-      
-      // Delete database record
-      await storage.deleteKnowledgeFile(id);
-      
+      await storage.deleteKnowledgeFile(req.params.id);
       res.status(204).send();
     } catch (error) {
       next(error);
     }
   });
 
-  // Get chunks for a knowledge file
   app.get("/api/knowledge-files/:id/chunks", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
-      const existing = await storage.getKnowledgeFile(id);
-      // Security: enforce tenant isolation
-      if (!existing || existing.tenantId !== tenantId) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const existing = await storage.getKnowledgeFile(req.params.id);
+      if (!canAccessKnowledgeFile(user, existing, tenantId)) {
         return res.status(404).json({ message: "File not found" });
       }
-      
-      const chunks = await storage.getKnowledgeChunks(id);
-      res.json(chunks);
+      res.json(await storage.getKnowledgeChunks(req.params.id));
     } catch (error) {
       next(error);
     }
   });
 
-  // Serve knowledge file media (images/videos) - requires authentication
   app.get("/api/knowledge-files/:id/media", requireAuth, async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
-      const file = await storage.getKnowledgeFile(id);
-      
-      // Security: enforce tenant isolation
-      if (!file || file.tenantId !== tenantId) {
+      const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
+      const file = await storage.getKnowledgeFile(req.params.id);
+      if (!canAccessKnowledgeFile(user, file, tenantId) || !file?.isActive) {
         return res.status(404).json({ message: "File not found" });
       }
-      
       if (file.fileType !== "image" && file.fileType !== "video") {
         return res.status(400).json({ message: "Not a media file" });
       }
-      
-      const mediaFilename = path.basename(file.storageUrl);
-      const mediaFile = await getFileFromObjectStorage("knowledge-files", mediaFilename);
+      const mediaFile = await getFileFromObjectStorage("knowledge-files", path.basename(file.storageUrl));
       if (!mediaFile) {
         return res.status(404).json({ message: "File not found in storage" });
       }
-
       res.set({
         "Content-Type": file.mimeType || mediaFile.contentType,
         "Cache-Control": "private, max-age=3600",
@@ -21783,19 +21776,17 @@ Return ONLY valid JSON, no markdown or explanation.`
   app.post("/api/ask-oto", requireAuth, async (req, res, next) => {
     try {
       const { question } = req.body;
-      if (!question || typeof question !== "string") {
-        return res.status(400).json({ message: "Question is required" });
+      if (typeof question !== "string" || !question.trim() || question.length > 2000) {
+        return res.status(400).json({ message: "Question must be 1 to 2000 characters" });
       }
 
       const user = req.user as UserWithBranchAccess;
       const tenantId = await resolveTenantId(user.tenantId);
-      const { branchIds: allowedBranchIds } = await getAllowedOperatorAndBranchIds(user);
-
-      // Retrieve published Knowledge Base articles with branch scoping
-      const articles = await storage.getKbArticles(tenantId, {
+      const audienceRoles = await getKbAudienceRoles(user);
+      // Every answer source must be visible to the signed-in user's branch.
+      const articles = (await storage.getKbArticles(tenantId, {
         status: "published",
-        allowedBranchIds: allowedBranchIds ?? undefined,
-      });
+      })).filter(article => canBrowseKbArticle(user, article, tenantId, audienceRoles));
 
       // Also retrieve PUBLISHED SOP articles only (security: draft SOPs should not appear)
       const sops = (await storage.getSopArticles(tenantId, null, {
@@ -21803,20 +21794,18 @@ Return ONLY valid JSON, no markdown or explanation.`
       })).filter(article => canReadSopArticle(user, article, tenantId));
 
       // Retrieve indexed knowledge files and their chunks
-      const knowledgeFiles = await storage.getKnowledgeFiles(tenantId, {
+      const knowledgeFiles = (await storage.getKnowledgeFiles(tenantId, {
         indexStatus: "indexed",
         isActive: true,
-      });
-      const knowledgeChunks = await storage.getKnowledgeChunksByTenant(tenantId);
-      
-      // Also get all active media files (images/videos) for potential display
-      const allMediaFiles = await storage.getKnowledgeFiles(tenantId, {
-        isActive: true,
-      });
-      const mediaFiles = allMediaFiles.filter(f => f.fileType === "image" || f.fileType === "video");
+      })).filter(file => canAccessKnowledgeFile(user, file, tenantId));
+      const fileMap = new Map(knowledgeFiles.map(file => [file.id, file]));
+      const knowledgeChunks = (await storage.getKnowledgeChunksByTenant(tenantId))
+        .filter(chunk => fileMap.has(chunk.fileId));
 
-      // Create a map of file IDs to file details
-      const fileMap = new Map(knowledgeFiles.map(f => [f.id, f]));
+      const mediaFiles = (await storage.getKnowledgeFiles(tenantId, {
+        isActive: true,
+      })).filter(file => canAccessKnowledgeFile(user, file, tenantId) &&
+        (file.fileType === "image" || file.fileType === "video"));
 
       const hasContent = articles.length > 0 || sops.length > 0 || knowledgeChunks.length > 0 || mediaFiles.length > 0;
       if (!hasContent) {
@@ -21844,7 +21833,7 @@ Return ONLY valid JSON, no markdown or explanation.`
         }
         
         // Boost by user's role match (roles are stored as lowercase: admin, manager, staff)
-        if (user.role && article.roles?.includes(user.role)) {
+        if (article.roles?.some(role => audienceRoles.includes(role))) {
           score += 2;
         }
         
@@ -21885,7 +21874,7 @@ Return ONLY valid JSON, no markdown or explanation.`
         
         for (const keyword of keywords) {
           // Count occurrences for better scoring
-          const occurrences = (textLower.match(new RegExp(keyword, 'g')) || []).length;
+          const occurrences = textLower.split(keyword).length - 1;
           score += occurrences * 2;
         }
         
@@ -22054,8 +22043,8 @@ ${context}`;
           temperature: 0.3,
         });
         answer = completion.choices[0]?.message?.content || "";
-      } catch (openaiError) {
-        console.error("Ask OTO OpenAI error:", openaiError);
+      } catch {
+        console.error("Ask OTO answer generation failed");
         return res.status(503).json({ 
           message: "AI assistant encountered an error. Please try again later or ask your manager.",
           answer: "",
@@ -22096,7 +22085,7 @@ ${context}`;
         media: isNoMatch ? [] : topMedia,
       });
     } catch (error) {
-      console.error("Ask OTO error:", error);
+      console.error("Ask OTO request failed");
       next(error);
     }
   });
@@ -22104,8 +22093,8 @@ ${context}`;
   // Get user's ASK OTO threads
   app.get("/api/ask-oto/threads", requireAuth, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       const threads = await storage.getAskOtoThreads(user.id, tenantId);
       res.json(threads);
     } catch (error) {
@@ -22116,14 +22105,14 @@ ${context}`;
   // Create a new ASK OTO thread
   app.post("/api/ask-oto/threads", requireAuth, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
-      const { title } = req.body;
-      
+      const tenantId = await resolveTenantId(user.tenantId);
+      if (req.body?.title != null) {
+        return res.status(400).json({ message: "Thread titles are not supported" });
+      }
       const thread = await storage.createAskOtoThread({
         tenantId,
         userId: user.id,
-        title: title || "New conversation",
       });
       res.status(201).json(thread);
     } catch (error) {
@@ -22135,8 +22124,8 @@ ${context}`;
   app.get("/api/ask-oto/threads/:threadId/messages", requireAuth, async (req, res, next) => {
     try {
       const { threadId } = req.params;
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       
       // Verify thread belongs to user AND tenant (security: enforce tenant isolation)
       const thread = await storage.getAskOtoThread(threadId);
@@ -22145,7 +22134,15 @@ ${context}`;
       }
       
       const messages = await storage.getAskOtoMessages(threadId);
-      res.json(messages);
+      res.json(messages.map(message => {
+        const details = message.contentJson as { sources?: unknown; checklist?: unknown } | null;
+        return {
+          ...message,
+          content: message.contentText,
+          sources: details?.sources ?? null,
+          checklist: details?.checklist ?? null,
+        };
+      }));
     } catch (error) {
       next(error);
     }
@@ -22175,8 +22172,8 @@ ${context}`;
   app.post("/api/ask-oto/threads/:threadId/messages", requireAuth, async (req, res, next) => {
     try {
       const { threadId } = req.params;
-      const tenantId = await getDefaultTenantId();
       const user = req.user as UserWithBranchAccess;
+      const tenantId = await resolveTenantId(user.tenantId);
       
       // Validate request body
       const parsed = createMessageSchema.safeParse(req.body);
@@ -22192,17 +22189,14 @@ ${context}`;
       }
       
       const message = await storage.createAskOtoMessage({
+        tenantId,
         threadId,
         role,
-        content,
-        sources: sources || null,
-        checklist: checklist || null,
+        contentText: content,
+        contentJson: { sources: sources || null, checklist: checklist || null },
       });
-      
-      // Update thread's updatedAt
-      await storage.updateAskOtoThread(threadId, { updatedAt: new Date() });
-      
-      res.status(201).json(message);
+      await storage.updateAskOtoThread(threadId, {});
+      res.status(201).json({ ...message, content, sources: sources || null, checklist: checklist || null });
     } catch (error) {
       next(error);
     }
