@@ -213,6 +213,14 @@ const ANOMALIES: Record<SyncAnomalyKind, AnomalyWords> = {
     label: 'Filed long after it happened',
     what: 'A box that had been away for a while. The fact is filed against the day it actually happened, not the day it arrived — this row is why the two differ.',
   },
+  receipt_collision: {
+    label: 'A printed receipt number was already taken',
+    what: 'A counter printed this number while it was offline, and by the time the sale arrived the number had been used in the station’s series. The sale is filed under the next free number; both numbers are on the row, because a guest is holding the first.',
+  },
+  revoked_actor: {
+    label: 'Taken on a shift that had been ended',
+    what: 'The shift token this sale was taken on had been revoked before the sale happened. The sale is filed, because it happened, and an alert asks somebody to look at who was at the counter.',
+  },
 };
 
 export function anomalyWords(kind: string): AnomalyWords {
