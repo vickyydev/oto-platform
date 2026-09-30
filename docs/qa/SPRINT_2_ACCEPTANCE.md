@@ -11,7 +11,7 @@ For each Testing module, record one real staging write or action and resulting s
 | **Identity and people** | | |
 | Launcher sign-on | WORKS | The administrator entered Today through one suite sign-on; [staging capture](oto-app-lift/staging-screenshots-2026-09-30.md). Verify additional roles during module walks. |
 | Users and permissions | Testing | [Local access checks](oto-app-lift/org-hr-verification.md) passed; create/change access on staging and prove a lower-role refusal. |
-| Organization: branches, departments, operators | Testing | [Local access checks](oto-app-lift/org-hr-verification.md) passed; save each on staging and verify cross-branch/tenant isolation. |
+| Organization: branches, departments, operators | Testing | A launcher-signed second-tenant administrator created branches, saw only its own, and received 404 for foreign reads/writes; [real staging branches capture](oto-app-lift/scrum-193-staging-foreign-branches.png). Department and operator writes and lower-role refusal remain. |
 | HR employees | Testing | [Local HR checks](oto-app-lift/org-hr-verification.md); create/edit an employee on staging and verify a denied branch read. |
 | Contracts and e-sign | Testing | [PDF and scoped-storage checks](oto-app-lift/contracts-pdfs.md) passed locally; sign on staging, open the stored PDF through scoped access, deny another session. |
 | Contract templates | Testing | [Existing local browser checks](oto-app-lift/contracts-pdfs.md); save a template and generate its result on staging. |
@@ -39,7 +39,7 @@ For each Testing module, record one real staging write or action and resulting s
 | Events core | Testing | [Existing local event checks](oto-app-lift/events-camps.md); create/edit an event on staging, verify branch scope and POS view once supplied. |
 | BEO | Testing | [Local PDF render](oto-app-lift/contracts-pdfs.md); create a BEO and open its stored, scoped PDF on staging. |
 | Packages and menus | Testing | [Existing local set-menu check](oto-app-lift/events-camps.md); save a package/menu and verify the BEO result on staging. |
-| Camps and children | Testing | [Existing local camp checks](oto-app-lift/events-camps.md) and [live photo route probe](oto-app-lift/files.md) cover a disposable registration, lookup, kiosk roster and other-branch photo refusal; complete the signed-in camp/children UI and attendance actions with named screenshots. |
+| Camps and children | Testing | A launcher-signed second tenant created a camp and child, updated attendance, and removed the registration while a default-tenant administrator received 404; [before](oto-app-lift/scrum-193-staging-foreign-camp-before-delete.png), [child row](oto-app-lift/scrum-193-staging-foreign-camp-child-row.png), [after](oto-app-lift/scrum-193-staging-foreign-camp-after-delete.png). Wider camp/children workflows remain. |
 | Parent portal and RSVP | Testing | SCRUM-456's live staging invitation rendered packaged artwork and escaped hostile editable markup; its local concurrent RSVP probe passed. Complete a public staging RSVP and invalid-link result. |
 | Drop-off and staff check-ins | Testing | A staged test drop-off appeared on the staff board; a branch-scoped staff session read its own branch and received 403 for another branch's board and check-in (SCRUM-454 Deployed). Finish the broader checkout/form action and resulting state. |
 | Nanny booking | Testing | [Local duty/conflict probe](oto-app-lift/nanny-booking.md); assign, reserve and change status on staging, including a conflicting reservation. |
