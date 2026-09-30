@@ -16,9 +16,11 @@ counter. This guide covers the rest of the counter's day.
   you do not have them.)
 - Take a till when it asks — **Reception Till 1** is set up for everything below.
 - Staging has no paper printer. Everything that "prints" appears in the **print
-  simulator**: open the Console in a second tab → **Devices** → the till's box →
+  simulator**: open the Console in a second tab → **Devices** → **Virtual box 1** →
   **Printing**. Each slip shows there as it would print, and that is where you check
-  the receipts, wristbands and kitchen tickets this guide talks about.
+  the receipts, wristbands and kitchen tickets this guide talks about. One staging
+  quirk to know: each time a new version deploys, the simulator's pictures from
+  before the deploy vanish — the sales themselves are safe, so just print again.
 - Two kinds of account matter here: a **reception** account (sells, cannot approve
   refunds) and a **manager** account (can). Try part 5 with both.
 
@@ -39,12 +41,15 @@ counter. This guide covers the rest of the counter's day.
 
 ## 2. A restaurant order and its kitchen tickets
 
-1. Switch to the **F&B** station, start an order for a member whose child has an
-   allergy note, add one kitchen item and one drink, and add an order note.
+1. Switch to the **F&B** station and start the order by scanning a demo wristband
+   (the station's demo band loads that member's tab — that is how an order belongs
+   to a member today). Add one kitchen item and one drink, with a note on the item.
 2. Complete and pay. In the print simulator:
-   - The **kitchen ticket** carries the allergy line and your note.
+   - The **kitchen ticket** carries the allergy line for that member's children,
+     and your item note.
    - Till 1 deliberately has **no bar printer**, so the drink's ticket is recorded as
-     skipped and the till says so. That is the intended behaviour to check.
+     skipped, and both the toast and the confirmation say so. That is the intended
+     behaviour to check.
 
 ## 3. A shop sale
 
@@ -54,7 +59,8 @@ carries a voucher label, an item voucher beside it.
 ## 4. Find it all again in History
 
 1. Open **History**. Today's sales are listed; each opens into a detail with its
-   items, payments, bands and printouts.
+   items, payments, bracelets, refunds and reprints. The first printouts themselves
+   live in the simulator, not in the detail.
 2. **Search by wristband**: type or scan a band's short code from part 1. The band's
    sale appears, whatever day it was made.
 3. **Search by phone**: type the member's phone in any format. Their sales appear.
@@ -63,23 +69,29 @@ carries a voucher label, an item voucher beside it.
 
 ## 5. Refunds — try to be refused
 
-1. As **reception**, open the cash sale from part 1 and press **Refund**. You should
-   be told a manager's approval is needed. That refusal is the test.
-2. As a **manager**, refund one item. The amount is capped at what remains, and a
-   reason is required. The sale's badge moves to *Partially refunded*.
-3. Refund the rest. The badge moves to *Refunded*.
+1. As **reception**, open the cash sale from part 1, press **Refund**, choose an
+   amount and a reason, and press the final Refund. Only then are you told a
+   manager's approval is needed. That refusal is the test.
+2. As a **manager**, refund part of the sale with **Amount** ("By item" refunds
+   whole ticket groups, so a part of one group goes by amount). The amount is
+   capped at what remains, and a reason is required. The sale's badge reads
+   *Partial refund*.
+3. Refund the rest. The badge moves to *Refunded*, and the children's wristbands
+   from that sale stop being valid.
 4. The detail now shows the **Refund history**: amount, reason, refund number (like
-   `T1-R-000001`), who made it and who approved it, and how the money goes back.
+   `T1-R-000001`), who made it and that it carried manager approval, and how the
+   money goes back.
 5. If you have a card sale from the terminal simulator, refund it too: inside the
    terminal's void window it voids; after the window, the money is handed back in
    cash.
 
 ## 6. Print something again
 
-In a sale's detail, press **Reprint** and choose the receipt, then a band group. Each
-arrives in the simulator marked as a **copy**, and the detail's **Reprint history**
-records what was reprinted, by whom, and which original it copies. A reprinted band
-keeps its code — the child's wristband stays valid, only the paper is new.
+In a sale's detail, press **Reprint** and choose the receipt, then a band group. The
+receipt arrives in the simulator marked as a **copy**; a reprinted band looks like
+the band it replaces, because it keeps the same code — the child's wristband stays
+valid, only the paper is new. The detail's **Reprint history** records what was
+reprinted, by whom, and which original it copies.
 
 ## 7. The wheel's voucher at the counter
 
