@@ -50,6 +50,49 @@ are set directly on the hotspot screen.)
 for the printer, with a fixed address and no internet route, so the cable gets nothing
 and confuses the printer link.
 
+**Make the new Wi-Fi stick.** A network joined once should come back by itself on
+every boot. If it does not:
+
+```
+sudo nmcli connection up "WIFI-NAME"
+sudo nmcli connection modify "WIFI-NAME" connection.autoconnect yes connection.autoconnect-priority 20
+sudo reboot
+```
+
+If `connection up` complains about secrets, the saved profile has no password — give
+it one and retry:
+
+```
+sudo nmcli connection modify "WIFI-NAME" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "THE-PASSWORD"
+```
+
+Worth knowing: after a few failed attempts (usually a wrong or missing password) the
+Pi quietly stops auto-trying that network until someone activates it by hand or
+reboots. One successful `connection up` clears the block. Old networks can stay
+saved — priority decides who wins, so the box connects at the park and at home with
+no hands either way.
+
+## A2. Keep the box awake — run once on every new box
+
+The park test found three power-saving defaults that make a booth look broken: the
+button and mouse die after idle, and the box vanishes from the network. Until the
+installer sets these itself, run this block once over SSH on every new box, in this
+order (the last step drops SSH for a few seconds; it comes back):
+
+```
+for f in /sys/bus/usb/devices/*/power/control; do echo on | sudo tee "$f"; done
+grep -q usbcore.autosuspend /boot/firmware/cmdline.txt || sudo sed -i '1 s/$/ usbcore.autosuspend=-1/' /boot/firmware/cmdline.txt
+sudo raspi-config nonint do_blanking 1
+printf '[connection]\nwifi.powersave = 2\n' | sudo tee /etc/NetworkManager/conf.d/wifi-powersave.conf
+sudo systemctl restart NetworkManager
+sudo reboot
+```
+
+After the reboot, two checks: `iw dev wlan0 get power_save` says off, and the box
+still answers SSH after twenty untouched minutes. One thing no command reaches: the
+TV's own eco or auto-off timer, switched off once in the TV's own settings menu with
+its remote.
+
 ## B. The printer — nothing to set, ever
 
 With `--printer-direct`, the printer is not on any Wi-Fi or router: it hangs on its own
