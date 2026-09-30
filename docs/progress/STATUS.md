@@ -71,6 +71,8 @@ SCRUM-465's camp child-profile follow-up is live at `edd28317` (`dep-daulhk49v7e
 
 SCRUM-465 staging screenshot capture now works through the app's existing headless Chromium browser tooling. The attached real staging image `scrum-465-staging-synthetic-child-list.png` shows one labelled synthetic camp child in Central Floresta after launcher sign-in; authenticated child search and history each returned one result, and cleanup removed the registration and event with a zero-result final search. The earlier `studio-children.png` shows the empty entry state. The ticket is still open: restricted-manager branch refusal and positive private-media reads remain. See `docs/qa/oto-app-lift/files.md`.
 
+SCRUM-465 task-attachment follow-up is locally verified, pending staging deployment. Attachment list/upload/delete and file reads now require the owning task in the signed-in tenant and permitted branch; deletion must match the task ID, active content downloads safely, new storage filenames are unique, and the generic file route denies unknown private folders. A disposable two-branch/two-tenant local probe passed 13 access/download checks and cleaned up; the existing camp/check-in spec passed 4/4. Build passed; app typecheck stayed at 542 inherited errors with none on edited routes; scoped lint had no edited-region error. Restricted-manager staging branch/cross-tenant proof and positive private-media reads still gate Deployed. See `docs/qa/oto-app-lift/files.md`.
+
 ## Release checkpoint - 30 September 2026 - break checkpoint saved
 
 The current release checkpoint is complete. Stop here and await the next

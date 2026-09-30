@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { randomUUID } from "crypto";
 import { db } from "../db";
 import { eq, and, gte, lte, inArray, sql, desc, or, isNull } from "drizzle-orm";
 import { format } from "date-fns";
@@ -1076,8 +1077,14 @@ router.get("/activities/recent", requireAuth, async (req: Request, res: Response
 
 router.get("/:id/attachments", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
     const taskId = req.params.id;
+    if (!tenantId) return res.status(403).json({ message: "Task access denied" });
+    const [task] = await db.select({ branchId: tasks.branchId }).from(tasks)
+      .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId))).limit(1);
+    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
     const result = await db
       .select({
@@ -1113,10 +1120,16 @@ router.get("/:id/attachments", requireAuth, async (req: Request, res: Response) 
 
 router.post("/:id/attachments", requireAuth, attachmentUpload.array("files", 10), fixMulterFilenames, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
     const taskId = req.params.id;
     const userId = (req.user as any)?.id;
     const uploadedFiles = req.files as Express.Multer.File[];
+    if (!tenantId) return res.status(403).json({ message: "Task access denied" });
+    const [task] = await db.select({ branchId: tasks.branchId, title: tasks.title }).from(tasks)
+      .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId))).limit(1);
+    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
     if (!uploadedFiles || uploadedFiles.length === 0) {
       return res.status(400).json({ message: "No files provided" });
@@ -1125,8 +1138,8 @@ router.post("/:id/attachments", requireAuth, attachmentUpload.array("files", 10)
     const inserted = [];
     for (const file of uploadedFiles) {
       const timestamp = Date.now();
-      const safeName = file.originalname.replace(/[\/\\:*?"<>|]/g, "_");
-      const storageFilename = `${timestamp}_${safeName}`;
+      const safeName = file.originalname.replace(/[/\\:*?"<>|]/g, "_");
+      const storageFilename = `${timestamp}_${randomUUID()}_${safeName}`;
       const fileUrl = await uploadToObjectStorage(
         file.buffer,
         "task-attachments",
@@ -1147,11 +1160,10 @@ router.post("/:id/attachments", requireAuth, attachmentUpload.array("files", 10)
       inserted.push(attachment);
     }
 
-    const [taskInfo] = await db.select({ branchId: tasks.branchId, title: tasks.title }).from(tasks).where(eq(tasks.id, taskId));
     const uploaderName = await getUserDisplayName(userId);
     for (const att of inserted) {
       await logTaskActivity(
-        tenantId, taskId, taskInfo?.branchId, "attachment_added",
+        tenantId, taskId, task.branchId, "attachment_added",
         `${uploaderName || "Someone"} added attachment "${att.fileName}"`,
         userId,
         { attachmentId: att.id, fileName: att.fileName }
@@ -1159,13 +1171,12 @@ router.post("/:id/attachments", requireAuth, attachmentUpload.array("files", 10)
     }
 
     try {
-      if (taskInfo?.title && userId) {
+      if (task.title && userId) {
         const stakeholders = await getTaskStakeholderUserIds(taskId, tenantId);
-        const fileNames = inserted.map(a => a.fileName).join(", ");
         await createTaskAttachmentNotification({
           tenantId,
           taskId,
-          taskTitle: taskInfo.title,
+          taskTitle: task.title,
           fileName: inserted.length === 1 ? inserted[0].fileName : `${inserted.length} files`,
           actorUserId: userId,
           recipientUserIds: stakeholders.filter(id => id !== userId),
@@ -1184,23 +1195,30 @@ router.post("/:id/attachments", requireAuth, attachmentUpload.array("files", 10)
 
 router.delete("/:id/attachments/:attachmentId", requireAuth, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = req.userWithAccess?.tenantId;
     const taskId = req.params.id;
     const { attachmentId } = req.params;
     const userId = (req.user as any)?.id;
+    if (!tenantId) return res.status(403).json({ message: "Task access denied" });
+    const [task] = await db.select({ branchId: tasks.branchId }).from(tasks)
+      .where(and(eq(tasks.id, taskId), eq(tasks.tenantId, tenantId))).limit(1);
+    if (!task || !req.userWithAccess || !canUserAccessBranch(req.userWithAccess, task.branchId)) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
     const [att] = await db.select({ fileName: taskAttachments.fileName }).from(taskAttachments)
-      .where(and(eq(taskAttachments.id, attachmentId), eq(taskAttachments.tenantId, tenantId)));
+      .where(and(eq(taskAttachments.id, attachmentId), eq(taskAttachments.taskId, taskId), eq(taskAttachments.tenantId, tenantId)));
+    if (!att) return res.status(404).json({ message: "Attachment not found" });
 
     await db.delete(taskAttachments).where(and(
       eq(taskAttachments.id, attachmentId),
+      eq(taskAttachments.taskId, taskId),
       eq(taskAttachments.tenantId, tenantId)
     ));
 
-    const [taskInfo] = await db.select({ branchId: tasks.branchId }).from(tasks).where(eq(tasks.id, taskId));
     const removerName = await getUserDisplayName(userId);
     await logTaskActivity(
-      tenantId, taskId, taskInfo?.branchId, "attachment_removed",
+      tenantId, taskId, task.branchId, "attachment_removed",
       `${removerName || "Someone"} removed attachment "${att?.fileName || "unknown"}"`,
       userId,
       { attachmentId, fileName: att?.fileName }

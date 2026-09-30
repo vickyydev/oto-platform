@@ -122,7 +122,7 @@ import { registerAuthOtpRoutes } from "./auth-otp-routes";
 import { db } from "./db";
 import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
-import { tasks, taskQuestions, taskAssignments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
+import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
 
@@ -23401,31 +23401,58 @@ ${context}`;
   // ============================================
   // Public folders that don't require authentication
   const publicFileFolders = ["branch-logos", "dropoff-photos", "invitations"];
+
+  // Task attachments keep their existing URLs but require the owning task in
+  // the reader's tenant and permitted branch. Only inert image types display
+  // inline; other uploaded content downloads instead of running in the app.
+  app.get("/api/files/task-attachments/:filename", requireAuth, async (req, res, next) => {
+    try {
+      const { filename } = req.params;
+      if (!filename || filename === "." || filename === ".." || /[/\\\0]/.test(filename)) {
+        return res.status(404).json({ message: "Attachment not found" });
+      }
+      const access = req.userWithAccess;
+      if (!access?.tenantId) return res.status(403).json({ message: "Task access denied" });
+      const url = `/api/files/task-attachments/${filename}`;
+      const owners = await db.select({
+        fileName: taskAttachments.fileName,
+        branchId: tasks.branchId,
+      }).from(taskAttachments).innerJoin(tasks, eq(taskAttachments.taskId, tasks.id)).where(and(
+        eq(taskAttachments.tenantId, access.tenantId),
+        eq(tasks.tenantId, access.tenantId),
+        eq(taskAttachments.fileUrl, url),
+      ));
+      const owner = owners.find(row => canUserAccessBranch(access, row.branchId));
+      if (!owner) return res.status(404).json({ message: "Attachment not found" });
+
+      const file = await getFileFromObjectStorage("task-attachments", filename);
+      const legacyPath = path.join(process.cwd(), "task-attachments", filename);
+      if (!file && !fs.existsSync(legacyPath)) return res.status(404).json({ message: "Attachment not found" });
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      const contentType = file?.contentType || "application/octet-stream";
+      res.setHeader("Content-Type", contentType);
+      const safeImage = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(contentType);
+      res.setHeader("Content-Disposition", `${safeImage ? "inline" : "attachment"}; filename="attachment"; filename*=UTF-8''${encodeURIComponent(owner.fileName)}`);
+      if (file) file.stream.pipe(res);
+      else res.sendFile(legacyPath);
+    } catch (error) {
+      next(error);
+    }
+  });
   
   // Serve any file type from object storage with legacy fallback
-  // Some folders are public, others require authentication
+  // All private folders use record-scoped routes above; unknown folders fail closed.
   app.get("/api/files/:folder/:filename", async (req, res, next) => {
     try {
       const { folder, filename } = req.params;
       if (!/^[a-z0-9-]+$/i.test(folder) || !filename || filename === '.' || filename === '..' || /[/\\\0]/.test(filename)) {
         return res.status(404).json({ message: "File not found" });
       }
-      // Private documents have their own record-scoped routes; this generic
-      // file route cannot decide who may read a contract or employee record.
-      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private", "knowledge-files", "test-uploads", "pin-photos", "checkin-photos", "checker-photos", "task-photos", "camp-photos", "camp-photos-private"].includes(folder)) {
+      if (!publicFileFolders.includes(folder)) {
         return res.status(404).json({ message: "File not found" });
       }
-      
-      // Check if folder requires authentication
-      if (!publicFileFolders.includes(folder)) {
-        // Require authentication for non-public folders
-        if (!req.isAuthenticated || !req.isAuthenticated()) {
-          return res.status(401).json({ message: "Authentication required" });
-        }
-      }
-      res.setHeader("Cache-Control", publicFileFolders.includes(folder)
-        ? "public, max-age=86400, stale-while-revalidate=604800"
-        : "private, no-store");
+      res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
       res.setHeader("X-Content-Type-Options", "nosniff");
       
       // Try object storage first
