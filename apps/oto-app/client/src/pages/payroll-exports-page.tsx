@@ -1,16 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useRoute } from "wouter";
-import { format } from "date-fns";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import {
   ArrowLeft,
   AlertTriangle,
@@ -18,7 +15,6 @@ import {
   FileText,
   Building2,
   Calculator,
-  Clock,
   CheckCircle,
 } from "lucide-react";
 
@@ -34,7 +30,6 @@ interface PayrollRun {
 }
 
 export default function PayrollExportsPage() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [, params] = useRoute("/payroll/runs/:runId/exports");
   const runId = params?.runId;
@@ -113,7 +108,6 @@ export default function PayrollExportsPage() {
     },
   });
 
-  const isPayrollAdmin = user?.role === "global_admin" || user?.role === "operator_admin" || user?.role === "admin";
   const isFinalized = run?.status === "FINALIZED";
 
   if (isLoading) {
@@ -176,7 +170,7 @@ export default function PayrollExportsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Select value={bankFormat} onValueChange={setBankFormat}>
                 <SelectTrigger className="w-[180px]" data-testid="select-bank-format">
                   <SelectValue />
@@ -214,7 +208,7 @@ export default function PayrollExportsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Select value={journalFormat} onValueChange={setJournalFormat}>
                 <SelectTrigger className="w-[180px]" data-testid="select-journal-format">
                   <SelectValue />
@@ -311,7 +305,7 @@ export default function PayrollExportsPage() {
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">
-              <p>Payslips will be generated when the run is finalized.</p>
+              <p>Payslips appear here when the run is finalized.</p>
             </div>
           )}
         </CardContent>

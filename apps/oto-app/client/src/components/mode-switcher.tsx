@@ -102,10 +102,12 @@ export function ModeSwitcher() {
                 size="sm"
                 onClick={() => handleModeChange(m)}
                 className="gap-1.5"
+                aria-label={config.label}
+                title={config.label}
                 data-testid={`button-mode-${m}`}
               >
                 <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{config.label}</span>
+                <span className="hidden lg:inline">{config.label}</span>
               </Button>
             );
           })}

@@ -1057,7 +1057,7 @@ export default function RotaPage() {
                                 const onShiftNow = isCurrentlyOnShift(shift.date, shift.start, shift.end);
                                 
                                 let breakIndicator = null;
-                                if (shift.breakStart && shift.breakEnd) {
+                                if (shift.breakStart && shift.breakEnd && !shift.breakHasConflict) {
                                   const breakLeftPct = timeToPercent(shift.breakStart) - shiftLeftPct;
                                   const breakRightPct = timeToPercent(shift.breakEnd) - shiftLeftPct;
                                   const breakWidthPct = Math.max(breakRightPct - breakLeftPct, 0.5);
@@ -1173,7 +1173,7 @@ export default function RotaPage() {
                                           shift.breakHasConflict ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
                                         )}>
                                           <Coffee className="h-4 w-4" />
-                                          <span className="font-medium">Break: {shift.breakStart.slice(0,5)} – {shift.breakEnd.slice(0,5)}</span>
+                                          <span className="font-medium">{shift.breakHasConflict ? "Break schedule needs review" : `Break: ${shift.breakStart.slice(0,5)} – ${shift.breakEnd.slice(0,5)}`}</span>
                                         </div>
                                       )}
                                       {shift.dutyBlocks && shift.dutyBlocks.length > 0 && (
@@ -1272,7 +1272,7 @@ export default function RotaPage() {
                                             shift.breakHasConflict ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
                                           )}>
                                             <Coffee className="h-4 w-4" />
-                                            <span className="font-medium">Break: {shift.breakStart.slice(0,5)} – {shift.breakEnd.slice(0,5)}</span>
+                                            <span className="font-medium">{shift.breakHasConflict ? "Break schedule needs review" : `Break: ${shift.breakStart.slice(0,5)} – ${shift.breakEnd.slice(0,5)}`}</span>
                                           </div>
                                         )}
                                       </div>
@@ -1462,7 +1462,7 @@ export default function RotaPage() {
                                                                     shift.breakHasConflict ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
                                                                   )}>
                                                                     <Coffee className="h-2.5 w-2.5" />
-                                                                    <span>Lunch: {shift.breakStart.slice(0, 5)} - {shift.breakEnd.slice(0, 5)}</span>
+                                                                    <span>{shift.breakHasConflict ? "Break schedule needs review" : `Lunch: ${shift.breakStart.slice(0, 5)} - ${shift.breakEnd.slice(0, 5)}`}</span>
                                                                   </div>
                                                                 )}
                                                                 {shift.dutyBlocks && shift.dutyBlocks.length > 0 && (
@@ -1521,7 +1521,7 @@ export default function RotaPage() {
                                                           {timelineMode === "day" && shift.breakStart && shift.breakEnd && (
                                                             <div className="text-[9px] opacity-90 flex items-center gap-0.5 mt-0.5">
                                                               <Coffee className="h-2.5 w-2.5" />
-                                                              <span>Lunch {shift.breakStart.slice(0,5)}-{shift.breakEnd.slice(0,5)}</span>
+                                                              <span>{shift.breakHasConflict ? "Break needs review" : `Lunch ${shift.breakStart.slice(0,5)}-${shift.breakEnd.slice(0,5)}`}</span>
                                                             </div>
                                                           )}
                                                           {timelineMode === "day" && shift.dutyBlocks && shift.dutyBlocks.length > 0 && (
@@ -1602,7 +1602,7 @@ export default function RotaPage() {
                                                               shift.breakHasConflict ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
                                                             )}>
                                                               <Coffee className="h-3 w-3" />
-                                                              <span>Lunch: {shift.breakStart.slice(0, 5)} - {shift.breakEnd.slice(0, 5)}</span>
+                                                              <span>{shift.breakHasConflict ? "Break schedule needs review" : `Lunch: ${shift.breakStart.slice(0, 5)} - ${shift.breakEnd.slice(0, 5)}`}</span>
                                                             </div>
                                                           )}
                                                           {shift.dutyBlocks && shift.dutyBlocks.length > 0 && (
