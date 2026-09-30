@@ -10,10 +10,13 @@ on:
 # Two agent lanes push several times an hour, and a run superseded by a newer
 # push proves nothing anyone waits for: Render deploys the newest green
 # commit, and the Pi release is fetched for tips, not intermediates. One
-# in-flight run per branch; a newer push cancels the older run.
+# in-flight run per branch; newer pushes QUEUE behind it rather than cancel
+# it: with two lanes pushing, a cancelled run left main's workspace suite
+# unproven while a later app-only push went green by path gate — and the
+# deploys ride whatever green comes. A queued run always finishes its tree.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   ci:
