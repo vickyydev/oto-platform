@@ -14,6 +14,27 @@
   section 4, OD-A1 to OD-A15): each carries a recommended answer the build will
   follow unless the owner says otherwise before S2-12 starts. The ones only the
   site, the gate supplier or the 2C2P credentials can settle are marked so.
+- **One calculator on the till (SCRUM-271, offline plan Round 2).** The till's
+  older baht calculator is deleted: every screen, the F&B and shop fallback, the
+  party and booking totals, the history screens and the reports now price
+  through the platform's satang engine. Measured on 170 carts against the
+  prototype's own recorded figures (`apps/pos/test/one-calculator-parity.test.ts`):
+  163 totals identical; a staff percent discount now rounds to the satang, not
+  the baht (up to ฿0.50); a VAT row on a cart spanning two tax categories can
+  read ฿0.01 lower (each category rounded, as the ledger stores it). Beyond
+  rounding, only the two rulings of §3c — now on every screen, where before the
+  prototype's figure showed wherever the platform had not priced the cart:
+  (a) a free-item code — the prototype charged ฿2,080 where the rule says
+  ฿2,130 (a cited rule, no question); (b) a scoped code after a comp — ฿0
+  became ฿1,000, and two ticket codes ฿0 became ฿300 (our decision).
+  **Owner:** confirm (b) stands now that every screen shows it; no code the park
+  holds today is scoped this way. **And one question it raised, left as it
+  was:** a sale re-read on a history screen or in a report on a day of the
+  other rate mode is still re-derived the prototype's way — subtotal from its
+  lines, tax and total at today's rate (a weekday ฿1,790 sale reads ฿2,290 on a
+  Saturday). The engine's own rule is to re-price at the mode it was sold
+  under. Recommended: switch when those screens read the platform's stored sale
+  (they read the till's own records today); until then nothing changes.
 
 ## Current follow-ups - 30 September 2026
 

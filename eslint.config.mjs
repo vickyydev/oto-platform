@@ -90,6 +90,64 @@ export default tseslint.config(
     },
   },
   {
+    // SCRUM-271 — ONE CALCULATOR. The till kept a second, older money stack
+    // beside the satang engine: the prototype's baht-float `lib/tax.ts`
+    // (`computeTaxBreakdown`, `summarizeTax`, `roundTHB`) and the totals built
+    // on it in `lib/sale.ts`, `lib/fnb.ts` and `lib/merch.ts`. It is deleted;
+    // every figure comes from `@oto/shared` through `lib/cartWire.ts`, and is
+    // pinned against the prototype's own in
+    // `apps/pos/test/one-calculator-parity.test.ts`. This keeps it deleted: the
+    // module, and the names it answered to, cannot come back by import.
+    files: ['apps/pos/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/lib/tax',
+              message:
+                'The baht calculator is gone (SCRUM-271): take tax rows, totals and display rounding from @/lib/cartWire.',
+            },
+            {
+              name: '@/lib/sale',
+              importNames: ['computeTotals', 'tillTaxInputs'],
+              message: 'A ticket cart is totalled by ticketTotals in @/lib/cartWire (SCRUM-271).',
+            },
+            {
+              name: '@/lib/fnb',
+              importNames: ['computeFnbTotals', 'fnbTaxInputs', 'computeUnitPrice', 'computeLineTotal'],
+              message:
+                'An F&B row is priced by fnbUnitPrice/fnbLineTotal and an order by itemOrderTotals in @/lib/cartWire (SCRUM-271).',
+            },
+            {
+              name: '@/lib/merch',
+              importNames: ['computeMerchTotals', 'merchTaxInputs', 'computeMerchLineTotal'],
+              message:
+                'A shop row is priced by merchLineTotal and an order by itemOrderTotals in @/lib/cartWire (SCRUM-271).',
+            },
+          ],
+          patterns: [
+            {
+              group: ['**/lib/tax', '**/lib/tax.ts'],
+              message:
+                'The baht calculator is gone (SCRUM-271): take tax rows, totals and display rounding from @/lib/cartWire.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // THE ONE IMPORTER THE BAN TOLERATES, and only until it moves. The shop's
+    // customer display is held unchanged while another lane's work on it is
+    // open, and still reads three display names from `@/lib/tax` — which is now
+    // nothing but a re-export of them from `@/lib/cartWire`. When its import
+    // moves there, delete `apps/pos/src/lib/tax.ts` and this block.
+    files: ['apps/pos/src/components/merch/MerchCustomerDisplay.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
+  {
     // The till's hook tests render against a stand-in for React's own hooks.
     // Its useCallback hands the caller's dependency list straight to its
     // useMemo, which exhaustive-deps reads as a component missing a dependency.

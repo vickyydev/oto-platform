@@ -16,10 +16,10 @@ import {
   recordFnbOrder,
 } from '@/mockApi';
 import {
-  computeLineTotal,
   hasModifiers,
   modifierSignature,
 } from '@/lib/fnb';
+import { fnbLineTotal } from '@/lib/cartWire';
 import { dropDiscountsForRemovedLines } from '@/lib/manualDiscount';
 import { announceSalePrinting, dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
 import { useBranch } from '@/branch/BranchContext';
@@ -144,7 +144,7 @@ export function MobileOrderStation() {
     menuItem: item,
     qty,
     selectedModifiers: selected,
-    lineTotal: computeLineTotal(item, selected, qty),
+    lineTotal: fnbLineTotal(item, selected, qty),
     note,
   });
 
@@ -161,7 +161,7 @@ export function MobileOrderStation() {
         const next = [...prev];
         const merged = next[idx];
         const newQty = merged.qty + qty;
-        next[idx] = { ...merged, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+        next[idx] = { ...merged, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
         return next;
       }
       return [...prev, makeLine(item, selected, qty, note)];
@@ -251,7 +251,7 @@ export function MobileOrderStation() {
             .map((l) => {
               if (l.id !== prev[twinIdx].id) return l;
               const newQty = l.qty + addQty;
-              return { ...l, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+              return { ...l, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
             });
           setManualDiscounts((mds) => dropDiscountsForRemovedLines(mds, next.map((l) => l.id)));
           return next;
@@ -262,7 +262,7 @@ export function MobileOrderStation() {
                 ...l,
                 selectedModifiers: selected,
                 qty,
-                lineTotal: computeLineTotal(item, selected, qty),
+                lineTotal: fnbLineTotal(item, selected, qty),
                 note,
               }
             : l,
@@ -287,7 +287,7 @@ export function MobileOrderStation() {
       if (qty <= 0) return prev.filter((l) => l.id !== lineId);
       return prev.map((l) =>
         l.id === lineId
-          ? { ...l, qty, lineTotal: computeLineTotal(l.menuItem, l.selectedModifiers, qty) }
+          ? { ...l, qty, lineTotal: fnbLineTotal(l.menuItem, l.selectedModifiers, qty) }
           : l,
       );
     });

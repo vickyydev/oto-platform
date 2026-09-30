@@ -23,7 +23,7 @@ import {
 import { lookupMember } from '@/api/members';
 import { toast } from '@/hooks/use-toast';
 import { computeLineTotal, computeLineBreakdown } from '@/lib/pricing';
-import { computeTotals } from '@/lib/sale';
+import { ticketTotals } from '@/lib/cartWire';
 import { resolveAutoTier } from '@/lib/membership';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
@@ -141,7 +141,7 @@ export function PartyTicketModal({
   const activeLine = lines.find((l) => l.id === activeLineId) ?? null;
 
   const { subtotal, total } = useMemo(
-    () => computeTotals(lines, [], manualDiscounts),
+    () => ticketTotals(lines, [], manualDiscounts),
     [lines, manualDiscounts],
   );
 

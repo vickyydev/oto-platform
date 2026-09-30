@@ -153,27 +153,52 @@ const CartItemLine = z.object({
   lineTotalSatang: z.number().int().min(0).optional(),
 });
 
-const ManualDiscount = z.object({
-  id: z.string().uuid(),
-  scope: z.enum(['order', 'line']),
-  targetLineId: z.string().uuid().optional(),
-  targetComponent: ComponentTarget.optional(),
-  targetLabel: z.string().max(120).optional(),
-  type: z.enum(['percent', 'fixed', 'comp']),
-  /** A percentage for `percent`, satang for `fixed`, ignored for `comp`. */
-  value: z.number().min(0).max(100_000_000).default(0),
-  /** Required: a discount with no reason is what the discounts report exists to stop. */
-  reason: z.string().min(1).max(120),
-  note: z.string().max(500).optional(),
-  /**
-   * The till names who applied it; the platform records the SESSION's account
-   * instead, because that is the one it authenticated. Accepted so the till's
-   * payload validates, and ignored.
-   */
-  appliedByAccountId: z.string().uuid().optional(),
-  appliedByName: z.string().max(160).optional(),
-  appliedAt: z.string().max(40).optional(),
-});
+/**
+ * SCRUM-271 — A DISCOUNT THAT CARRIES MONEY CARRIES WHOLE SATANG.
+ *
+ * Every other money field on this route is named for its unit and declared
+ * `.int()`, and `test/money-fields.test.ts` walks the OpenAPI document to keep
+ * it so. A discount's `value` cannot be: it is a percentage for `percent` —
+ * which may be 12.5 — and satang for `fixed` (and, on a promo, for a free
+ * item's price). So the whole-satang rule is checked here, on the types that
+ * carry money, and a fraction of a satang is refused by name rather than
+ * reaching an engine that works in integers.
+ */
+function wholeSatangWhenMoney(moneyTypes: readonly string[]) {
+  return (discount: { type: string; value: number }, ctx: z.RefinementCtx) => {
+    if (moneyTypes.includes(discount.type) && !Number.isInteger(discount.value)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['value'],
+        message: `A ${discount.type} discount's value is money, and money is whole satang`,
+      });
+    }
+  };
+}
+
+const ManualDiscount = z
+  .object({
+    id: z.string().uuid(),
+    scope: z.enum(['order', 'line']),
+    targetLineId: z.string().uuid().optional(),
+    targetComponent: ComponentTarget.optional(),
+    targetLabel: z.string().max(120).optional(),
+    type: z.enum(['percent', 'fixed', 'comp']),
+    /** A percentage for `percent`, satang for `fixed`, ignored for `comp`. */
+    value: z.number().min(0).max(100_000_000).default(0),
+    /** Required: a discount with no reason is what the discounts report exists to stop. */
+    reason: z.string().min(1).max(120),
+    note: z.string().max(500).optional(),
+    /**
+     * The till names who applied it; the platform records the SESSION's account
+     * instead, because that is the one it authenticated. Accepted so the till's
+     * payload validates, and ignored.
+     */
+    appliedByAccountId: z.string().uuid().optional(),
+    appliedByName: z.string().max(160).optional(),
+    appliedAt: z.string().max(40).optional(),
+  })
+  .superRefine(wholeSatangWhenMoney(['fixed']));
 
 /**
  * A park promo code as the till applied it. SCRUM-401 — ONLY `code` IS PRICED:
@@ -193,6 +218,7 @@ const Promo = z
     freeItemKind: z.enum(['menu', 'merch']).optional(),
     target: z.unknown().optional(),
   })
+  .superRefine(wholeSatangWhenMoney(['fixed', 'free_item']))
   .describe(
     "A promo code as the till applied it. Only the code is priced, from the park's own " +
       'definition; the type, value and target beside it are the till’s and move no money.',

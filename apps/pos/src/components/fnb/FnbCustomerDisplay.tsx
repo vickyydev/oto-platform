@@ -2,7 +2,7 @@ import { ChargeTarget, FnbOrder, FnbOrderLine, ManualDiscount, Wristband } from 
 import type { DisplayFnbCart, DisplayTotals } from '@oto/shared';
 import { breakdownModifiers, describeModifiers } from '@/lib/fnb';
 import { resolveRateToday } from '@/lib/pricingMode';
-import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
+import { perUnitBaht, taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { computeManualDiscount, formatDiscountDetail } from '@/lib/manualDiscount';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
@@ -33,7 +33,7 @@ interface FnbCustomerDisplayProps {
   orderNote?: string;
   manualDiscounts?: ManualDiscount[];
   total?: number;
-  taxBreakdown?: TaxBreakdown;
+  taxBreakdown?: TaxBreakdownBaht;
   payment?: PaymentDisplayState;
   /** Legacy party display input; it cannot supply a verified payment QR. */
   promptpayAmount?: number | null;
@@ -50,8 +50,8 @@ const discountDetail = (discount: ManualDiscount | PublicDiscount) => 'reason' i
   : discount.type === 'comp' ? 'Comp (100% off)' : discount.type === 'percent'
     ? `${discount.value}% off` : `฿${discount.value} off`;
 
-function capturedTaxes(totals: DisplayTotals): TaxBreakdown {
-  // Only the captured service/tax fields are read by summarizeTax.
+function capturedTaxes(totals: DisplayTotals): TaxBreakdownBaht {
+  // Only the captured service/tax fields are read by taxRowsOf.
   return { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0, inclusiveTaxTotal: 0,
     taxTotal: 0, grandTotal: totals.total, serviceChargeTotal: totals.taxBreakdown.serviceChargeTotal,
     categories: totals.taxBreakdown.categories.map(category => ({ ...category, category: 'fnb',
@@ -172,7 +172,7 @@ function OrderLines({
                         second arithmetic on this screen could contradict it in
                         front of the guest it is being read by.
                       */}
-                      ฿{roundTHB(line.lineTotal / line.qty)} each × {line.qty}
+                      ฿{perUnitBaht(line.lineTotal, line.qty)} each × {line.qty}
                     </div>
                   )}
                   {breakdown.length > 0 && (
@@ -357,10 +357,10 @@ export function FnbCustomerDisplay({
               </div>
             );
           })}
-          {(taxBreakdown ? summarizeTax(taxBreakdown) : []).map((row) => (
+          {(taxBreakdown ? taxRowsOf(taxBreakdown) : []).map((row) => (
             <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
               <span className="text-lg">{row.label}</span>
-              <span className="text-lg tabular-nums">฿{roundTHB(row.amount)}</span>
+              <span className="text-lg tabular-nums">฿{row.amount}</span>
             </div>
           ))}
           <div className="flex items-center justify-between">

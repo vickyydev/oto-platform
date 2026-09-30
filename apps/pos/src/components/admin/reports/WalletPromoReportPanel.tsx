@@ -15,7 +15,7 @@ import {
   walletLedgerRows,
   promoUsageSummary,
 } from '@/lib/reporting';
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, thb } from './shared';
+import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
 
 /**
  * Wallet-credit + promo-code usage report. Wristband records carry no
@@ -24,7 +24,7 @@ import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, th
  * applies to ledger entries.
  *
  * Note: usedCount/usageLimit on each promo row are lifetime, network-wide
- * catalog counters, but totalDiscountValueTHB is scoped to the current date
+ * catalog counters, but totalDiscountValueSatang is scoped to the current date
  * range + branch filter — the two numbers describe different windows by
  * design, and the table header/CSV label reflect that.
  */
@@ -45,15 +45,15 @@ export function WalletPromoReportPanel() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
-          { label: 'Granted', value: summary.grantedTHB },
-          { label: 'Spent', value: summary.spentTHB },
-          { label: 'Refunded', value: summary.refundedTHB },
-          { label: 'Expired', value: summary.expiredTHB },
-          { label: 'Live balance (today)', value: summary.netOutstandingTHB },
+          { label: 'Granted', value: summary.grantedSatang },
+          { label: 'Spent', value: summary.spentSatang },
+          { label: 'Refunded', value: summary.refundedSatang },
+          { label: 'Expired', value: summary.expiredSatang },
+          { label: 'Live balance (today)', value: summary.netOutstandingSatang },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3">
             <div className="text-[11px] uppercase tracking-wide text-foreground/45">{s.label}</div>
-            <div className="mt-1 text-lg font-bold tabular-nums">{thb(s.value)}</div>
+            <div className="mt-1 text-lg font-bold tabular-nums">{thbFromSatang(s.value)}</div>
           </div>
         ))}
       </div>
@@ -70,7 +70,7 @@ export function WalletPromoReportPanel() {
                   r.wristbandCode,
                   r.customerNickname,
                   r.kind,
-                  r.amountTHB.toFixed(2),
+                  csvBaht(r.amountSatang),
                   r.source,
                   r.at,
                   r.by ?? '',
@@ -98,7 +98,7 @@ export function WalletPromoReportPanel() {
                 <TableCell className="font-mono text-xs">{r.wristbandCode}</TableCell>
                 <TableCell>{r.customerNickname}</TableCell>
                 <TableCell className="capitalize">{r.kind}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.amountTHB)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.amountSatang)}</TableCell>
                 <TableCell className="text-xs text-foreground/60">{r.source}</TableCell>
                 <TableCell className="text-xs text-foreground/60">
                   {new Date(r.at).toLocaleString()}
@@ -124,7 +124,7 @@ export function WalletPromoReportPanel() {
                   p.usedCount,
                   p.usageLimit ?? '',
                   p.active ? 'yes' : 'no',
-                  p.totalDiscountValueTHB.toFixed(2),
+                  csvBaht(p.totalDiscountValueSatang),
                 ])
               )
             }
@@ -152,7 +152,7 @@ export function WalletPromoReportPanel() {
                 <TableCell className="capitalize">{p.type.replace('_', ' ')}</TableCell>
                 <TableCell className="text-right tabular-nums">{p.usedCount}</TableCell>
                 <TableCell className="text-right tabular-nums">{p.usageLimit ?? '—'}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(p.totalDiscountValueTHB)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(p.totalDiscountValueSatang)}</TableCell>
                 <TableCell>
                   <Badge variant={p.active ? 'secondary' : 'outline'} className="text-[10px]">
                     {p.active ? 'active' : 'inactive'}

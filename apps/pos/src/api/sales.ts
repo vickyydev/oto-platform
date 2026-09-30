@@ -7,38 +7,45 @@ import type {
   SaleQuotedPricing,
   TaxConfig,
 } from '@/types';
-import { computeTotals } from '@/lib/sale';
-import { computeFnbTotals } from '@/lib/fnb';
-import { computeMerchTotals } from '@/lib/merch';
-import { summarizeTax } from '@/lib/tax';
 import {
   computeTicketCartTotals,
   newId,
-  type AppliedPromo,
   type PaymentAttemptView,
   type TaxBreakdown as EngineTaxBreakdown,
   type TaxableCategory,
   type TicketCartTotals,
 } from '@oto/shared';
 import {
+  breakdownToBaht,
   engineCart,
   engineManualDiscount,
   enginePromo,
   itemCart,
+  itemOrderTotals,
   type ItemCartLine,
   localIdFor,
   platformId,
   SOCKS_ADDON_ID,
   SOCKS_LABEL,
+  taxRowsOf,
   toBaht,
   toSatang,
+  totalsToBaht,
   unpricedDropOffLines,
   type EngineCart,
+  type OrderTotals,
 } from '@/lib/cartWire';
 import { todayRateMode, type RateMode } from '@/lib/pricingMode';
 import { api, ApiError, idemKey, isMissingRoute } from './client';
 import type { VoucherEffect } from './vouchers';
-import type { TaxBreakdown as PosTaxBreakdown, CategoryTaxLine as PosCategoryTaxLine } from '@/lib/tax';
+
+/**
+ * The totals shape every money component renders, and one applied code as they
+ * draw it. They live with the rest of the display edge in `lib/cartWire.ts`
+ * since SCRUM-271; re-exported so the screens that have always read them from
+ * here still do.
+ */
+export type { OrderTotals, QuotedPromoLine } from '@/lib/cartWire';
 
 /**
  * THE SALES LEDGER, FROM THE TILL'S SIDE — S2-09a (SCRUM-203).
@@ -869,9 +876,10 @@ export interface ItemCartIdentity extends CartIdentity {
  * WHAT FOLLOWED FROM THAT, and it is answered — SCRUM-362. `computeFnbTotals`
  * and `computeMerchTotals` took no promo codes, so an order with a code on it
  * that the platform could not be reached for would have shown an undiscounted
- * figure on the screen and then been refused at the commit against it. Both now
- * take the codes and price them through the same engine the platform does
- * (`lib/itemPromo.ts`), and `localItemQuote` passes them on, so the fallback
+ * figure on the screen and then been refused at the commit against it. Since
+ * SCRUM-271 both are gone and the order is priced, codes and all, by the engine
+ * the platform prices it with (`itemOrderTotals`, `lib/cartWire.ts`), and
+ * `localItemQuote` passes the codes on, so the fallback
  * figure and the platform's are the same figure while this station's copy of a
  * code matches the park's definition. Where it does not (SCRUM-401), the
  * platform's figure stands, and a code it refused comes off the order
@@ -941,45 +949,37 @@ export function buildItemCartPayload(
 /**
  * THE ORDER'S PRICE, ON THIS DEVICE, when the platform cannot be asked.
  *
- * This is the prototype's own arithmetic (`lib/fnb.ts`, `lib/merch.ts`) and it
- * is labelled as such — `source: 'till'`, `engineVersion: 'prototype'` — for
- * the reason `cartQuote.ts` sets out: a figure on a screen has to say where it
- * came from, and an F&B order has no ticket cart for `@oto/shared` to price.
- * Nothing is SOLD from it silently: the commit carries it as
- * `expectedTotalSatang` and the platform refuses the sale if it disagrees.
+ * Until SCRUM-271 this was the prototype's own baht arithmetic (`lib/fnb.ts`,
+ * `lib/merch.ts`), labelled `engineVersion: 'prototype'`. It is the platform's
+ * engine now, run on this device over the same item lines the platform builds
+ * (`itemOrderTotals`, `lib/cartWire.ts`), so the figure is labelled with the
+ * engine's version — and `source: 'till'` still says, as `cartQuote.ts` sets
+ * out, that this device priced it rather than the platform. Nothing is SOLD
+ * from it silently: the commit carries it as `expectedTotalSatang` and the
+ * platform refuses the sale if it disagrees.
  *
- * THE CODES ARE THE EXCEPTION TO "the prototype's own arithmetic" — SCRUM-362.
- * A promo code on the order is priced by `@oto/shared` over the same rows the
- * platform prices it over, inside those two helpers, because a code the till
- * discounted differently would be a commit the platform refuses.
+ * The codes on the order (SCRUM-362) are priced in the same pass, after the
+ * staff discounts, as the platform prices them.
  */
 export function localItemQuote(
-  kind: 'fnb' | 'shop',
+  // Which counter, as the callers name it. Nothing turns on it any more: one
+  // pass prices both, and a shop line is told from an F&B line by what it carries.
+  _kind: 'fnb' | 'shop',
   lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
   manualDiscounts: readonly ManualDiscount[],
   options: { config?: TaxConfig; reason?: string; promos?: readonly Discount[] } = {},
 ): CartQuote {
   const rate = todayRateMode();
-  const promos = options.promos ?? [];
-  const totals =
-    kind === 'fnb'
-      ? computeFnbTotals(
-          [...(lines as readonly FnbOrderLine[])],
-          [...manualDiscounts],
-          options.config,
-          promos,
-        )
-      : computeMerchTotals(
-          [...(lines as readonly MerchOrderLine[])],
-          [...manualDiscounts],
-          options.config,
-          promos,
-        );
+  const totals = itemOrderTotals(lines as readonly (FnbOrderLine | MerchOrderLine)[], manualDiscounts, {
+    ...(options.config ? { config: options.config } : {}),
+    ...(options.promos ? { promos: options.promos } : {}),
+    mode: rate.mode,
+  });
   return {
     totals: {
       subtotal: totals.subtotal,
-      discountAmount: totals.promoDiscountAmount,
-      scannedDiscounts: totals.appliedPromos,
+      discountAmount: totals.discountAmount,
+      scannedDiscounts: totals.scannedDiscounts,
       manualDiscountAmount: totals.manualDiscountAmount,
       manualAmounts: totals.manualAmounts,
       serviceChargeTotal: totals.serviceChargeTotal,
@@ -991,7 +991,7 @@ export function localItemQuote(
     source: 'till',
     pricingMode: rate.mode,
     pricingModeReason: rate.reason,
-    engineVersion: 'prototype',
+    engineVersion: totals.satang.engineVersion,
     ...(options.reason ? { reason: options.reason } : {}),
   };
 }
@@ -1104,91 +1104,9 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
 
 // --- Totals, in the shape the prototype's components render -----------------
 
-/** One applied code, as `OrderSummary` and the customer display draw it. */
-export interface QuotedPromoLine {
-  code: string;
-  label: string;
-  type: Discount['type'];
-  amount: number;
-  exhaustedReason?: string;
-}
-
 /**
- * EXACTLY THE SHAPE `lib/sale.ts:computeTotals` RETURNS, in baht.
- *
- * That is the point: every component that shows money already destructures
- * this, so the source of the numbers can change without a single one of them
- * being redesigned. What changes is where it comes from — `source` says which.
- */
-export interface OrderTotals {
-  subtotal: number;
-  discountAmount: number;
-  scannedDiscounts: QuotedPromoLine[];
-  manualDiscountAmount: number;
-  manualAmounts: Record<string, number>;
-  serviceChargeTotal: number;
-  taxTotal: number;
-  taxBreakdown: PosTaxBreakdown;
-  total: number;
-}
-
-function breakdownToBaht(breakdown: EngineTaxBreakdown): PosTaxBreakdown {
-  const categories: PosCategoryTaxLine[] = breakdown.categories.map((category) => ({
-    category: category.category,
-    base: toBaht(category.base),
-    taxMode: category.taxMode,
-    ...(category.taxRateId ? { taxRateId: category.taxRateId } : {}),
-    ...(category.taxName ? { taxName: category.taxName } : {}),
-    taxPercent: category.taxPercent,
-    serviceCharge: toBaht(category.serviceCharge),
-    tax: toBaht(category.tax),
-    ...(category.secondaryTaxRateId ? { secondaryTaxRateId: category.secondaryTaxRateId } : {}),
-    ...(category.secondaryTaxName ? { secondaryTaxName: category.secondaryTaxName } : {}),
-    secondaryTaxMode: category.secondaryTaxMode,
-    secondaryTaxPercent: category.secondaryTaxPercent,
-    secondaryTax: toBaht(category.secondaryTax),
-    gross: toBaht(category.gross),
-  }));
-  return {
-    netSubtotal: toBaht(breakdown.netSubtotal),
-    discountTotal: toBaht(breakdown.discountTotal),
-    serviceChargeTotal: toBaht(breakdown.serviceChargeTotal),
-    exclusiveTaxTotal: toBaht(breakdown.exclusiveTaxTotal),
-    inclusiveTaxTotal: toBaht(breakdown.inclusiveTaxTotal),
-    taxTotal: toBaht(breakdown.taxTotal),
-    categories,
-    grandTotal: toBaht(breakdown.grandTotal),
-  };
-}
-
-function promosToBaht(promos: readonly AppliedPromo[]): QuotedPromoLine[] {
-  return promos.map((promo) => ({
-    code: promo.code,
-    label: promo.label,
-    type: promo.type,
-    amount: toBaht(promo.amount),
-    ...(promo.exhaustedReason ? { exhaustedReason: promo.exhaustedReason } : {}),
-  }));
-}
-
-function totalsToBaht(totals: TicketCartTotals): OrderTotals {
-  const manualAmounts: Record<string, number> = {};
-  for (const [id, satang] of Object.entries(totals.manualAmounts)) manualAmounts[id] = toBaht(satang);
-  return {
-    subtotal: toBaht(totals.subtotal),
-    discountAmount: toBaht(totals.promoDiscountTotal),
-    scannedDiscounts: promosToBaht(totals.appliedPromos),
-    manualDiscountAmount: toBaht(totals.manualDiscountTotal),
-    manualAmounts,
-    serviceChargeTotal: toBaht(totals.serviceChargeTotal),
-    taxTotal: toBaht(totals.taxTotal),
-    taxBreakdown: breakdownToBaht(totals.taxBreakdown),
-    total: toBaht(totals.total),
-  };
-}
-
-/**
- * The same, from the platform's answer.
+ * The platform's answer in the shape every money component renders
+ * (`OrderTotals`, whose engine-side twin is `totalsToBaht` in `lib/cartWire.ts`).
  *
  * `manualIds` are the till's own discount ids: the platform keys its amounts by
  * what it was sent, and the panel looks them up by the id it knows. Without the
@@ -1316,55 +1234,6 @@ export interface CartQuote {
 }
 
 /**
- * A SELF-CHECK ON EVERY QUOTE, IN DEVELOPMENT.
- *
- * The engine is tested to 1,694 lines. The till has a unit runner of its own
- * now (vitest, `apps/pos/test`, SCRUM-408), but nothing in it drives the
- * translation from this cart to the engine (`lib/cartWire.ts`): the cart-quote
- * tests replace `quoteCart`, where that translation happens, with answers of
- * their own. So it is checked by the compiler and by somebody driving the
- * till. A wrong conversion there — a price left in baht, an adult rule's nested
- * price missed — would not fail to compile and would not look wrong on screen.
- * It would simply charge the visitor a hundredth or a hundred times the money.
- *
- * So in development the two arithmetics are compared on every quote and any
- * difference is reported, loudly, with both figures.
- *
- * WHERE THEY ARE ALLOWED TO DIFFER, and it is not a short list: rulings 1 and 2
- * in `cart-totals.ts` deliberately move money on carts with stacked or scoped
- * codes, and manual percent discounts round to the satang rather than to the
- * baht. A warning on those would be noise that trains the reader to ignore the
- * ones that matter. The comparison therefore runs only where the two are
- * REQUIRED to agree: at most one promo code, no free-item code, and no percent
- * discount of either kind.
- */
-function warnOnDivergence(
-  engineTotalSatang: number,
-  prototypeTotalBaht: number,
-  lines: readonly CartLine[],
-  discounts: readonly Discount[],
-  manualDiscounts: readonly ManualDiscount[],
-): void {
-  // `import.meta.env` is Vite's, and it is absent under a plain node runner —
-  // where this module is perfectly loadable and where a check of this kind is
-  // most likely to be run. Reading it defensively costs nothing and stops a
-  // diagnostic from being the thing that throws.
-  const env = (import.meta as { env?: { DEV?: boolean } }).env;
-  if (!env?.DEV) return;
-  if (discounts.length > 1) return;
-  if (discounts.some((d) => d.type === 'free_item' || d.type === 'percent')) return;
-  if (manualDiscounts.some((m) => m.type === 'percent')) return;
-  const expected = toSatang(prototypeTotalBaht);
-  if (expected === engineTotalSatang) return;
-  console.warn(
-    '[S2-09a] The platform engine and the prototype disagree on this cart. ' +
-      `Engine ${engineTotalSatang} satang, prototype ${expected} satang. ` +
-      'One of them is wrong about what a visitor owes — check apps/pos/src/lib/cartWire.ts.',
-    { lines, discounts, manualDiscounts },
-  );
-}
-
-/**
  * Price a cart on this device, with the platform's own engine.
  *
  * `staleLines: 'throw'` is deliberately left at its default: a cart whose
@@ -1392,13 +1261,11 @@ export function localQuote(
     cart.config,
     cart.ctx,
   );
-  warnOnDivergence(
-    totals.total,
-    computeTotals([...lines], [...discounts], [...manualDiscounts], options.config).total,
-    lines,
-    discounts,
-    manualDiscounts,
-  );
+  // Until SCRUM-271 a development-only check re-totalled every quote with the
+  // prototype's own arithmetic and warned when the two disagreed. That
+  // arithmetic is gone; the translation from this cart to the engine is proven
+  // instead, on every run of the till's suite, against the prototype's recorded
+  // figures (`apps/pos/test/one-calculator-parity.test.ts`).
   return {
     totals: totalsToBaht(totals),
     satang: totals,
@@ -1712,7 +1579,7 @@ export function refusedPromoCodes(
  * split four ways, not the per-category breakdown a receipt prints.
  */
 export function quotedPricing(quote: CartQuote, written?: ApiSale | null): SaleQuotedPricing {
-  const taxRows = summarizeTax(quote.totals.taxBreakdown);
+  const taxRows = taxRowsOf(quote.totals.taxBreakdown);
   if (!written) {
     return {
       source: quote.source,

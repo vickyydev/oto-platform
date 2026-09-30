@@ -21,7 +21,8 @@ import {
 } from '@/lib/pricing';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
 import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
-import { buildSale, computeTotals } from '@/lib/sale';
+import { buildSale } from '@/lib/sale';
+import { shownBaht, taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
@@ -35,7 +36,6 @@ import {
 } from '@/mockApi';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { paymentMethodLabel } from '@/lib/payments';
-import { summarizeTax, roundTHB } from '@/lib/tax';
 import { subscribeCatalog } from '@/store/catalogStore';
 
 import { useOperator } from '@/auth/OperatorContext';
@@ -137,7 +137,7 @@ function MobileConfirmation({
   // the counter till's confirmation: one price, wherever a person reads one.
   const taxRows =
     sale.quoted?.taxRows ??
-    summarizeTax(computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts).taxBreakdown);
+    taxRowsOf(ticketTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts).taxBreakdown);
   const receiptTpl = getPrintTemplate('receipt');
   const showCreditInfo = receiptTpl ? !!receiptTpl.fields.voucherInfo : true;
 
@@ -156,7 +156,7 @@ function MobileConfirmation({
         </p>
         {taxRows.length > 0 && (
           <p className="text-muted-foreground/70 mt-0.5 text-[11px]">
-            {taxRows.map((r) => `${r.label} ฿${roundTHB(r.amount)}`).join(' · ')}
+            {taxRows.map((r) => `${r.label} ฿${shownBaht(r.amount)}`).join(' · ')}
           </p>
         )}
       </div>

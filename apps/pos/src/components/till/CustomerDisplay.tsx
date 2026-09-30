@@ -19,9 +19,7 @@ import {
   unpricedLineReason,
   type LineBreakdownKind,
 } from '@/lib/pricing';
-import { unpricedDropOffLines } from '@/lib/cartWire';
-import { computeTotals } from '@/lib/sale';
-import { summarizeTax, roundTHB } from '@/lib/tax';
+import { taxRowsOf, ticketTotals, unpricedDropOffLines, type OrderTotals } from '@/lib/cartWire';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { paymentMethodKind, paymentMethodLabel } from '@/lib/payments';
 import { tierNeedsProof } from '@/lib/membership';
@@ -111,7 +109,7 @@ interface CustomerDisplayProps {
    * the same one to both.
    */
   totals?: Pick<
-    ReturnType<typeof computeTotals>,
+    OrderTotals,
     'manualAmounts' | 'discountAmount' | 'total' | 'taxBreakdown'
   >;
   /**
@@ -313,8 +311,8 @@ export function CustomerDisplay({
   if (stage === 'order') {
     const { manualAmounts, discountAmount, total, taxBreakdown } =
       totals ??
-      computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts);
-    const taxRows = summarizeTax(taxBreakdown);
+      ticketTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts);
+    const taxRows = taxRowsOf(taxBreakdown);
     const orderDiscounts = sale.manualDiscounts.filter((md) => md.scope === 'order');
     /**
      * WHAT THIS SCREEN WILL NOT QUOTE A FAMILY (SCRUM-312).
@@ -540,7 +538,7 @@ export function CustomerDisplay({
             taxRows.map((row) => (
               <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
                 <span className="text-lg">{row.label}</span>
-                <span className="text-lg tabular-nums">฿{roundTHB(row.amount)}</span>
+                <span className="text-lg tabular-nums">฿{row.amount}</span>
               </div>
             ))}
           {/* The same sentence the staff panel shows, from the same helper, so

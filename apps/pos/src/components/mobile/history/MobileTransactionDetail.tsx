@@ -10,8 +10,7 @@ import {
   recordExtension,
 } from '@/mockApi';
 import { computeLineBreakdown } from '@/lib/pricing';
-import { computeTotals } from '@/lib/sale';
-import { computeMerchTotals } from '@/lib/merch';
+import { itemOrderTotals, taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import {
   paymentMethodLabel,
   paymentMethodIcon,
@@ -19,8 +18,7 @@ import {
   refundModeForMethod,
   type RefundMode,
 } from '@/lib/payments';
-import { computeFnbTotals, describeModifiers } from '@/lib/fnb';
-import { summarizeTax, roundTHB } from '@/lib/tax';
+import { describeModifiers } from '@/lib/fnb';
 import { tierLabel } from '@/lib/membership';
 import { useOperator } from '@/auth/OperatorContext';
 import { setCorrectedOrder } from '@/lib/correctedOrder';
@@ -159,17 +157,20 @@ export function MobileTransactionDetail({ txn, onBack, onChanged }: MobileTransa
   const subtotal = record.lines.reduce((acc, l) => acc + l.lineTotal, 0);
   const manualDiscounts = record.manualDiscounts;
   const manualDiscountAmount = manualDiscounts.reduce((acc, d) => acc + d.amountTHB, 0);
-  const scannedDiscounts = sale
-    ? computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts).scannedDiscounts
-    : [];
-  const scannedDiscountAmount = scannedDiscounts.reduce((acc, sd) => acc + sd.amount, 0);
+  // The record's figures through the engine (SCRUM-271): the codes and the tax
+  // rows are summed in satang there, and only shown here.
+  const saleTotals = sale
+    ? ticketTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts)
+    : null;
+  const scannedDiscounts = saleTotals ? saleTotals.scannedDiscounts : [];
+  const scannedDiscountAmount = saleTotals ? saleTotals.discountAmount : 0;
 
-  const taxBreakdown = sale
-    ? computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts).taxBreakdown
+  const taxBreakdown = saleTotals
+    ? saleTotals.taxBreakdown
     : merch
-      ? computeMerchTotals(merch.lines, merch.manualDiscounts).taxBreakdown
-      : computeFnbTotals(order!.lines, order!.manualDiscounts).taxBreakdown;
-  const taxRows = summarizeTax(taxBreakdown);
+      ? itemOrderTotals(merch.lines, merch.manualDiscounts).taxBreakdown
+      : itemOrderTotals(order!.lines, order!.manualDiscounts).taxBreakdown;
+  const taxRows = taxRowsOf(taxBreakdown);
 
   const creditAlreadyRestored = record.refunds.reduce((acc, r) => acc + r.creditRestoredTHB, 0);
   const restorableCredit = payOrder
@@ -500,7 +501,7 @@ export function MobileTransactionDetail({ txn, onBack, onChanged }: MobileTransa
                 {taxRows.map((row) => (
                   <div key={row.key} className="flex items-center justify-between text-muted-foreground text-xs">
                     <span>{row.label}</span>
-                    <span className="tabular-nums">฿{roundTHB(row.amount)}</span>
+                    <span className="tabular-nums">฿{row.amount}</span>
                   </div>
                 ))}
               </div>

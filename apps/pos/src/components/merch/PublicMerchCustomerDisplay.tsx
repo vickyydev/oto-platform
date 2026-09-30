@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { DisplayMerchCart, DisplayPayment, DisplayTotals } from '@oto/shared';
-import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
+import { taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -13,13 +13,13 @@ const discountDetail = (discount: Discount) => discount.type === 'comp' ? 'Comp 
   : discount.type === 'percent' ? `${discount.value}% off` : `฿${discount.value} off`;
 
 function taxRows(totals: DisplayTotals) {
-  const captured: TaxBreakdown = { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0,
+  const captured: TaxBreakdownBaht = { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0,
     inclusiveTaxTotal: 0, taxTotal: 0, grandTotal: totals.total,
     serviceChargeTotal: totals.taxBreakdown.serviceChargeTotal,
     categories: totals.taxBreakdown.categories.map(category => ({ ...category, category: 'merch',
       base: 0, taxPercent: 0, serviceCharge: 0, secondaryTaxPercent: 0, gross: 0 })),
   };
-  return summarizeTax(captured);
+  return taxRowsOf(captured);
 }
 
 function Shell({ children }: { children: ReactNode }) {
@@ -101,7 +101,7 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
             <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
           </div>)}
         {taxRows(totals).map(row => <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-          <span className="text-lg">{row.label}</span><span className="text-lg tabular-nums">฿{roundTHB(row.amount)}</span>
+          <span className="text-lg">{row.label}</span><span className="text-lg tabular-nums">฿{row.amount}</span>
         </div>)}
         <div className="flex items-center justify-between"><span className="text-2xl text-foreground/70">{t('common.total')}</span>
           <span className="text-5xl font-black text-primary tabular-nums">฿{totals.total}</span></div>

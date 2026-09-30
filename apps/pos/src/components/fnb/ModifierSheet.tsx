@@ -13,7 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { cn } from '@/lib/utils';
-import { computeUnitPrice, isGroupSatisfied, areModifiersValid } from '@/lib/fnb';
+import { isGroupSatisfied, areModifiersValid } from '@/lib/fnb';
+import { fnbUnitPrice } from '@/lib/cartWire';
 import { getEffectiveModifierGroups } from '@/lib/menu';
 import { Check, AlertCircle, StickyNote } from 'lucide-react';
 
@@ -77,7 +78,7 @@ export function ModifierSheet({
       .filter((s) => s.optionIds.length > 0);
   }, [effectiveGroups, selections]);
 
-  const unitPrice = item ? computeUnitPrice(item, selectedModifiers) : 0;
+  const unitPrice = item ? fnbUnitPrice(item, selectedModifiers) : 0;
   const canSave = item ? areModifiersValid(item, selectedModifiers) : false;
 
   if (!item) return null;

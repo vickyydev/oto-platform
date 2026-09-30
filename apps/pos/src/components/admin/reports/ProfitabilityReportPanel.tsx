@@ -10,16 +10,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { downloadCsv } from '@/lib/csv';
 import { defaultReportFilters, fnbProfitability, merchProfitability, ProfitabilityRow } from '@/lib/reporting';
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, thb } from './shared';
+import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
 
 function ProfitabilityTable({ rows, exportName, filters }: { rows: ProfitabilityRow[]; exportName: string; filters: { startDate: string; endDate: string } }) {
-  const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
-  const totalCogs = rows.reduce((s, r) => s + r.cogs, 0);
+  const totalRevenue = rows.reduce((s, r) => s + r.revenueSatang, 0);
+  const totalCogs = rows.reduce((s, r) => s + r.cogsSatang, 0);
   const totalMargin = totalRevenue - totalCogs;
 
   return (
     <ReportCard
-      title={`Revenue ${thb(totalRevenue)} · COGS ${thb(totalCogs)} · Margin ${thb(totalMargin)}`}
+      title={`Revenue ${thbFromSatang(totalRevenue)} · COGS ${thbFromSatang(totalCogs)} · Margin ${thbFromSatang(totalMargin)}`}
       action={
         <ExportCsvButton
           onExport={() =>
@@ -29,9 +29,9 @@ function ProfitabilityTable({ rows, exportName, filters }: { rows: Profitability
               rows.map((r) => [
                 r.name,
                 r.qty,
-                r.revenue.toFixed(2),
-                r.cogs.toFixed(2),
-                r.margin.toFixed(2),
+                csvBaht(r.revenueSatang),
+                csvBaht(r.cogsSatang),
+                csvBaht(r.marginSatang),
                 r.marginPercent.toFixed(1),
                 r.costTracked ? 'yes' : 'no',
               ])
@@ -64,9 +64,9 @@ function ProfitabilityTable({ rows, exportName, filters }: { rows: Profitability
                 )}
               </TableCell>
               <TableCell className="text-right tabular-nums">{r.qty}</TableCell>
-              <TableCell className="text-right tabular-nums">{thb(r.revenue)}</TableCell>
-              <TableCell className="text-right tabular-nums">{thb(r.cogs)}</TableCell>
-              <TableCell className="text-right tabular-nums">{thb(r.margin)}</TableCell>
+              <TableCell className="text-right tabular-nums">{thbFromSatang(r.revenueSatang)}</TableCell>
+              <TableCell className="text-right tabular-nums">{thbFromSatang(r.cogsSatang)}</TableCell>
+              <TableCell className="text-right tabular-nums">{thbFromSatang(r.marginSatang)}</TableCell>
               <TableCell className="text-right tabular-nums">
                 {r.costTracked ? `${r.marginPercent.toFixed(1)}%` : '—'}
               </TableCell>

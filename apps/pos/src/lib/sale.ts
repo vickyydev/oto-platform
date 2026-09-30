@@ -5,138 +5,23 @@ import {
   ManualDiscount,
   Sale,
   SaleQuotedPricing,
-  TaxConfig,
-  TaxableCategory,
   TicketCreditRule,
   CreditGrant,
 } from '@/types';
-import { computeManualDiscount } from '@/lib/manualDiscount';
-import { computeLineBreakdown, lineComponentBases, priceForTier, resolveAdultLine } from '@/lib/pricing';
-import { discountTargetBase } from '@/lib/discountTarget';
-import { computeTaxBreakdown, groupTaxInputs, TaxCategoryInput } from '@/lib/tax';
-import { getTaxConfig } from '@/store/catalogStore';
+import { priceForTier, resolveAdultLine } from '@/lib/pricing';
 import { resolveFreeItem } from '@/lib/promoVoucher';
+import { ticketTotals } from '@/lib/cartWire';
 
-/**
- * Map a till cart's line components to taxable-category bases. Reuses
- * computeLineBreakdown so the bases always sum to the line totals:
- *   kids/adults → tickets, the drop-off service fee → drop_off, socks + add-ons → addons.
- *   prepaid food credit → drop_off (stored-value load; inclusive VAT reported, not added)
- *   prepaid food items  → fnb (taxed at the F&B rate, which is inclusive in the seeded config)
+/*
+ * SCRUM-271 — THE TILL'S OLDER CALCULATOR USED TO START HERE: `tillTaxInputs`
+ * and `computeTotals`, the prototype's baht-float totals, which the till, the
+ * customer display, the history screens, the parties, the booking page and the
+ * reports all read. They are gone; a ticket cart's totals come from the satang
+ * engine through `ticketTotals` (`lib/cartWire.ts`), and the figures they
+ * showed are pinned against the prototype's in
+ * `apps/pos/test/one-calculator-parity.test.ts`. What stays in this file is the
+ * sale record itself — the credit grants and the bands a sale issues.
  */
-export function tillTaxInputs(lines: CartLine[]): TaxCategoryInput[] {
-  const inputs: TaxCategoryInput[] = [];
-  for (const line of lines) {
-    for (const item of computeLineBreakdown(line)) {
-      // For individual add-on items, respect any taxCategoryOverride set on
-      // the add-on (visible in Admin → Add-ons). Falls back to 'addons' when
-      // absent. Socks ('socks' kind) and other non-addon kinds also default to
-      // 'addons' — they have no per-item override path today.
-      const addonCategory = (): TaxableCategory => {
-        const a = line.addOns.find((ao) => ao.id === item.key);
-        return a?.taxCategoryOverride ?? 'addons';
-      };
-      const category: TaxableCategory =
-        item.key === 'dropoff-service'
-          ? 'drop_off'
-          : item.kind === 'kids' || item.kind === 'adults'
-            ? 'tickets'
-            : item.kind === 'addon'
-              ? addonCategory()
-              : 'addons'; // socks + any future non-addon kinds default here
-      inputs.push({ category, base: item.subtotal });
-    }
-    // Prepaid food provision adds to lineTotal but isn't covered by
-    // computeLineBreakdown — route it to the appropriate category so
-    // the tax engine's grandTotal equals the sum of line totals.
-    const fp = line.dropOff?.foodProvision;
-    if (fp && fp.paidTHB > 0) {
-      const category: TaxableCategory =
-        fp.mode === 'prepaid_items'
-          ? 'fnb'           // taxed NOW at the F&B category rate
-          : 'stored_value'; // prepaid_credit: stored-value load, NOT taxed at load;
-                            // tax is realized on spend at the F&B station
-      inputs.push({ category, base: fp.paidTHB });
-    }
-  }
-  return groupTaxInputs(inputs);
-}
-
-/** Per-code contribution of a scanned promo to the order's discount total. */
-export interface ScannedDiscountLine {
-  code: string;
-  label: string;
-  type: Discount['type'];
-  amount: number;
-}
-
-export function computeTotals(
-  lines: CartLine[],
-  discounts: Discount[] = [],
-  manualDiscounts: ManualDiscount[] = [],
-  config: TaxConfig = getTaxConfig()
-) {
-  const subtotal = lines.reduce((acc, line) => acc + line.lineTotal, 0);
-
-  const lineAmounts = Object.fromEntries(lines.map((l) => [l.id, l.lineTotal]));
-  const componentBases = Object.fromEntries(
-    lines.map((l) => [l.id, lineComponentBases(l)])
-  );
-  const manual = computeManualDiscount(manualDiscounts, subtotal, lineAmounts, componentBases);
-
-  // Manual discounts come off first; scanned codes apply to what remains.
-  // Multiple stackable codes apply SEQUENTIALLY: each subsequent code is
-  // computed against the balance left by the previous one, so the order can
-  // never go negative and a single code behaves exactly as before.
-  let running = subtotal - manual.total;
-  let discountAmount = 0;
-  const scannedDiscounts: ScannedDiscountLine[] = [];
-  for (const discount of discounts) {
-    // The code applies only to the ฿ within its scope (whole order by default),
-    // never more than what remains after earlier discounts.
-    // For free_item promos the promoItem CartLine is already in `lines` at its
-    // full shelf price.  Using `running` (the running total inclusive of the
-    // item) as the base guarantees its amount = item.priceTHB exactly, so the
-    // customer's bill stays unchanged while EOD records the markdown.
-    const target = discount.target ?? { kind: 'everything' as const };
-    const base =
-      discount.type === 'free_item' || target.kind === 'everything'
-        ? running
-        : Math.min(discountTargetBase(lines, target), running);
-    let amount =
-      discount.type === 'fixed' || discount.type === 'free_item'
-        ? Math.min(discount.value, base)
-        : base * (discount.value / 100);
-    amount = Math.min(amount, running);
-    discountAmount += amount;
-    running -= amount;
-    scannedDiscounts.push({
-      code: discount.code,
-      label: discount.label,
-      type: discount.type,
-      amount,
-    });
-  }
-
-  // Route the net through the tax + service engine. The engine's grand total
-  // drives the order summary, customer display, receipt, refunds and end-of-day.
-  // With the seeded config (inclusive VAT, no service) the grand total equals the
-  // old subtotal − discount, so existing totals are unchanged; VAT is reported.
-  const discountTotal = manual.total + discountAmount;
-  const taxBreakdown = computeTaxBreakdown(tillTaxInputs(lines), discountTotal, config);
-
-  return {
-    subtotal,
-    discountAmount,
-    scannedDiscounts,
-    manualDiscountAmount: manual.total,
-    manualAmounts: manual.amounts,
-    serviceChargeTotal: taxBreakdown.serviceChargeTotal,
-    taxTotal: taxBreakdown.taxTotal,
-    taxBreakdown,
-    total: taxBreakdown.grandTotal,
-  };
-}
 
 /**
  * The F&B/merch credit (฿) one person earns from a ticket's give-back rule,
@@ -290,7 +175,8 @@ interface BuildSaleParams {
    * confirmation screen, the receipt lines and the history detail all read
    * them, so the amount taken, the amount printed and the amount in the ledger
    * are one number. Omitted — a preview, a seeded sale, a screen that has no
-   * quote — the prototype's own arithmetic still answers, as it always did.
+   * quote — the sale is totalled from its lines by the engine (`ticketTotals`,
+   * SCRUM-271), where the prototype's own arithmetic used to answer.
    */
   quoted?: SaleQuotedPricing;
 }
@@ -299,7 +185,7 @@ export function buildSale(params: BuildSaleParams): Sale {
   const { operatorId, operatorName, tier, lines, memberId, customerPhone, customerNickname, wristbandCode, paymentMethod, bookingReference } = params;
   const discounts = params.discounts ?? [];
   const manualDiscounts = params.manualDiscounts ?? [];
-  const total = params.quoted ? params.quoted.total : computeTotals(lines, discounts, manualDiscounts).total;
+  const total = params.quoted ? params.quoted.total : ticketTotals(lines, discounts, manualDiscounts).total;
   const totalKids = lines.reduce((acc, l) => acc + l.kids, 0);
   const totalAdults = lines.reduce((acc, l) => acc + l.adults, 0);
 

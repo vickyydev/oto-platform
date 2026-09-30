@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { describeModifiers } from '@/lib/fnb';
-import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
+import { taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { StaffBenefitBreakdown, type StaffBenefitBreakdownData } from '@/components/fnb/StaffBenefitBreakdown';
 import { PromoCodeEntry, type PromoCodeRow } from '@/components/fnb/PromoCodeEntry';
@@ -20,7 +20,7 @@ interface FnbCartProps {
   total: number;
   manualDiscounts: ManualDiscount[];
   manualAmounts: Record<string, number>;
-  taxBreakdown: TaxBreakdown;
+  taxBreakdown: TaxBreakdownBaht;
   /** Per-primitive relief breakdown for the currently-scanned staff benefit, if any. */
   benefitBreakdown?: StaffBenefitBreakdownData | null;
   /**
@@ -451,13 +451,13 @@ export function FnbCart({
         )}
 
         {!isEmpty &&
-          summarizeTax(taxBreakdown).map((row) => (
+          taxRowsOf(taxBreakdown).map((row) => (
             <div
               key={row.key}
               className="flex justify-between text-sm text-muted-foreground mb-1"
             >
               <span>{row.label}</span>
-              <span className="tabular-nums">฿{roundTHB(row.amount)}</span>
+              <span className="tabular-nums">฿{row.amount}</span>
             </div>
           ))}
 

@@ -1,123 +1,30 @@
 import {
-  Discount,
   FnbOrder,
   FnbOrderLine,
-  ManualDiscount,
   MenuCategoryDef,
   MenuItem,
   ModifierGroup,
   PrepStation,
   SelectedModifier,
-  TaxConfig,
 } from '@/types';
-import { computeManualDiscount } from '@/lib/manualDiscount';
-import { computeItemPromoDiscount } from '@/lib/itemPromo';
-import {
-  effectivePrepStation,
-  effectiveTaxCategory,
-  getEffectiveModifierGroups,
-} from '@/lib/menu';
-import { computeTaxBreakdown, groupTaxInputs, TaxBreakdown, TaxCategoryInput } from '@/lib/tax';
-import { getMenuCategories, getTaxConfig } from '@/store/catalogStore';
+import { effectivePrepStation, getEffectiveModifierGroups } from '@/lib/menu';
+import { getMenuCategories } from '@/store/catalogStore';
 import { RateMode, resolveRate, todayRateMode } from '@/lib/pricingMode';
+
+/*
+ * SCRUM-271 — THE F&B COUNTER'S MONEY IS NOT HERE ANY MORE. This file priced an
+ * item (`computeUnitPrice`, `computeLineTotal`) and totalled an order
+ * (`fnbTaxInputs`, `computeFnbTotals`) with the prototype's baht arithmetic. An
+ * F&B row is priced now by the shared item engine the platform prices it with
+ * — `fnbUnitPrice` and `fnbLineTotal` in `lib/cartWire.ts` — and an order is
+ * totalled by `itemOrderTotals` there, in satang. What stays is what the menu
+ * asks and where the kitchen prints.
+ */
 
 /** True when the item requires a modifier selection before it can be added. */
 export function hasModifiers(item: MenuItem): boolean {
   return getEffectiveModifierGroups(item).length > 0;
 }
-
-/** Base price plus the sum of all selected option price deltas (per single unit). */
-export function computeUnitPrice(
-  item: MenuItem,
-  selected: SelectedModifier[],
-  mode: RateMode = todayRateMode().mode,
-): number {
-  let price = resolveRate(item.price, mode);
-  for (const group of getEffectiveModifierGroups(item)) {
-    const sel = selected.find((s) => s.groupId === group.id);
-    if (!sel) continue;
-    for (const optId of sel.optionIds) {
-      const opt = group.options.find((o) => o.id === optId);
-      if (opt) price += resolveRate(opt.price, mode);
-    }
-  }
-  return price;
-}
-
-/** Unit price × qty. */
-export function computeLineTotal(
-  item: MenuItem,
-  selected: SelectedModifier[],
-  qty: number,
-  mode: RateMode = todayRateMode().mode,
-): number {
-  return computeUnitPrice(item, selected, mode) * qty;
-}
-
-/**
- * Group F&B order lines into taxable-category bases for the tax engine. Each
- * line's taxable area is its item's EFFECTIVE tax category (per-item override,
- * else the menu category's default) — resolved via lib/menu.
- */
-export function fnbTaxInputs(
-  lines: FnbOrderLine[],
-  categories: MenuCategoryDef[] = getMenuCategories()
-): TaxCategoryInput[] {
-  return groupTaxInputs(
-    lines.map((l) => ({
-      category: effectiveTaxCategory(l.menuItem, categories),
-      base: l.lineTotal,
-    }))
-  );
-}
-
-/**
- * Full F&B order totals through the shared tax + service engine. Mirrors the till's
- * computeTotals: subtotal is the net of line totals, manual discounts come off, and
- * the engine returns service + tax + grand total. With the seeded config (inclusive
- * VAT, no service) the grand total equals subtotal − discount, so totals are unchanged.
- * Credit spend against this grand total (gross) like cash — handled by the caller.
- *
- * THE PROMO CODES ARE THE ENGINE'S — SCRUM-362. The codes an order carries are
- * priced by `@oto/shared` over the same rows the platform prices
- * (`lib/itemPromo.ts`), never by arithmetic of this file's own, so the figure
- * this till shows when it prices an order itself is the figure the platform
- * quotes for it. They run AFTER the manual discounts, which is the engine's
- * order, and the amount they came to joins the manual total in the one discount
- * the tax cascade places. Callers that pass no codes are unaffected: the
- * argument defaults to none and nothing is computed.
- */
-export function computeFnbTotals(
-  lines: FnbOrderLine[],
-  manualDiscounts: ManualDiscount[] = [],
-  config: TaxConfig = getTaxConfig(),
-  promos: readonly Discount[] = []
-) {
-  const subtotal = lines.reduce((sum, l) => sum + l.lineTotal, 0);
-  const lineAmounts = Object.fromEntries(lines.map((l) => [l.id, l.lineTotal]));
-  const manual = computeManualDiscount(manualDiscounts, subtotal, lineAmounts);
-  const promo = computeItemPromoDiscount(lines, manualDiscounts, promos, { config });
-  const taxBreakdown = computeTaxBreakdown(
-    fnbTaxInputs(lines),
-    manual.total + promo.discountAmount,
-    config
-  );
-
-  return {
-    subtotal,
-    manualDiscountAmount: manual.total,
-    manualAmounts: manual.amounts,
-    promoDiscountAmount: promo.discountAmount,
-    appliedPromos: promo.appliedPromos,
-    serviceChargeTotal: taxBreakdown.serviceChargeTotal,
-    taxTotal: taxBreakdown.taxTotal,
-    taxBreakdown,
-    total: taxBreakdown.grandTotal,
-  };
-}
-
-export type FnbTotals = ReturnType<typeof computeFnbTotals>;
-export type { TaxBreakdown };
 
 /** Human-readable list of chosen option names, in group order (for display). */
 export function describeModifiers(item: MenuItem, selected: SelectedModifier[]): string[] {

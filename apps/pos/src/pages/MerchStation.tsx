@@ -5,7 +5,8 @@ import { Discount, ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristb
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
 import { getActiveMerchItems, getDiscountByCode, getDiscountReasons, recordMerchOrder, getInventoryItem } from '@/mockApi';
-import { asksForSize, computeMerchLineTotal, isOutOfStock, merchSizes } from '@/lib/merch';
+import { asksForSize, isOutOfStock, merchSizes } from '@/lib/merch';
+import { merchLineTotal } from '@/lib/cartWire';
 import { readProductScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
@@ -150,8 +151,9 @@ export default function MerchStation() {
 
   /**
    * THE PRICE THE PLATFORM QUOTES FOR THIS SALE. The prototype totalled the
-   * shop cart in the browser (`computeMerchTotals`); that is now the fallback,
-   * and when it is what is on screen the note above the charge button says so.
+   * shop cart in the browser (`computeMerchTotals`); the fallback is now the
+   * platform's own engine run on this till (`itemOrderTotals`, SCRUM-271), and
+   * when it is what is on screen the note above the charge button says so.
    */
   const sale = useItemCartQuoteWithPromos({
     kind: 'shop',
@@ -239,7 +241,7 @@ export default function MerchStation() {
         const newQty = current + 1;
         return prev.map((l) =>
           l === existing
-            ? { ...l, qty: newQty, lineTotal: computeMerchLineTotal(item, newQty) }
+            ? { ...l, qty: newQty, lineTotal: merchLineTotal(item, newQty) }
             : l,
         );
       }
@@ -247,7 +249,7 @@ export default function MerchStation() {
         id: `mline-${lineCounter++}`,
         merchItem: item,
         qty: 1,
-        lineTotal: computeMerchLineTotal(item, 1),
+        lineTotal: merchLineTotal(item, 1),
         ...(variantId ? { variantId, variantLabel } : {}),
       };
       return [...prev, line];
@@ -373,7 +375,7 @@ export default function MerchStation() {
           maxStock = l.merchItem.stock ?? Infinity;
         }
         const clamped = Math.min(qty, maxStock);
-        return { ...l, qty: clamped, lineTotal: computeMerchLineTotal(l.merchItem, clamped) };
+        return { ...l, qty: clamped, lineTotal: merchLineTotal(l.merchItem, clamped) };
       });
     });
   };

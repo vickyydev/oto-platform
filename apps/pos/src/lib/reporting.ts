@@ -22,11 +22,23 @@ import {
   getMerchItems,
   getDiscounts,
 } from '@/store/catalogStore';
-import { computeTotals } from '@/lib/sale';
-import { computeFnbTotals } from '@/lib/fnb';
-import { computeMerchTotals } from '@/lib/merch';
-import { TaxBreakdown, summarizeTax } from '@/lib/tax';
+import { itemOrderTotals, ticketTotals, toSatang } from '@/lib/cartWire';
+import { summarizeTax, type Satang, type TaxBreakdown } from '@oto/shared';
 import { getRateModeForDate, resolveRate, RateMode } from '@/lib/pricingMode';
+
+/*
+ * SCRUM-271 — EVERY FIGURE HERE IS SATANG. These reports used to re-derive each
+ * record with the prototype's baht-float calculator and add the floats up over
+ * a month of rows (`grossRevenue`, `taxCollected`, `serviceCharge`, …), which is
+ * exactly where a VAT report stops reconciling with the receipts it summarises.
+ * Each record is now re-derived by the satang engine (`ticketTotals`,
+ * `itemOrderTotals` in `lib/cartWire.ts`), every accumulator is an integer
+ * number of satang — a stored baht figure (a wallet entry, a recorded discount,
+ * a cost) is converted once, where it is read — and the one place a figure is
+ * turned back into baht is the edge: the panels' `thbFromSatang` on screen and
+ * `csvBaht` in an export (`components/admin/reports/shared.tsx`). Every money
+ * field says so in its name.
+ */
 
 // ── Shared filters ───────────────────────────────────────────────────────
 // Every report in the manager Reports module filters by an inclusive date
@@ -102,34 +114,35 @@ function isEventPassLine(ticketTypeId: string): boolean {
 }
 
 // ── Tax re-derivation (never store parallel tax math — always recompute
-// through lib/tax.ts + the per-surface tax-input mappers, exactly like
-// TransactionDetail.tsx does for a single receipt). ─────────────────────────
+// through the engine, exactly like TransactionDetail.tsx does for a single
+// receipt). Each breakdown is the engine's own, in satang. ─────────────────
 
 export function saleTaxBreakdown(sale: Sale, config = getTaxConfig()): TaxBreakdown {
-  return computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts, config).taxBreakdown;
+  return ticketTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts, { config }).satang
+    .taxBreakdown;
 }
 
 export function fnbOrderTaxBreakdown(order: FnbOrder, config = getTaxConfig()): TaxBreakdown {
-  return computeFnbTotals(order.lines, order.manualDiscounts, config).taxBreakdown;
+  return itemOrderTotals(order.lines, order.manualDiscounts, { config }).satang.taxBreakdown;
 }
 
 export function merchOrderTaxBreakdown(order: MerchOrder, config = getTaxConfig()): TaxBreakdown {
-  return computeMerchTotals(order.lines, order.manualDiscounts, config).taxBreakdown;
+  return itemOrderTotals(order.lines, order.manualDiscounts, { config }).satang.taxBreakdown;
 }
 
-/** Net-of-refunds ฿ for any recorded transaction (refunds always reduce, never negative). */
-export function netAfterRefunds(total: number, refunds: { amountTHB: number }[]): number {
-  const refunded = refunds.reduce((sum, r) => sum + r.amountTHB, 0);
-  return Math.max(0, total - refunded);
+/** Net-of-refunds satang for any recorded transaction (refunds always reduce, never negative). */
+export function netAfterRefunds(total: number, refunds: { amountTHB: number }[]): Satang {
+  const refunded = refunds.reduce((sum, r) => sum + toSatang(r.amountTHB), 0);
+  return Math.max(0, toSatang(total) - refunded);
 }
 
 // ── 1. Sales reports ─────────────────────────────────────────────────────
 
 export interface CategoryTotal {
   category: TaxableCategory;
-  grossRevenue: number; // sum of category gross (post tax/service, pre-order-level refund)
-  taxCollected: number;
-  serviceCharge: number;
+  grossRevenueSatang: Satang; // sum of category gross (post tax/service, pre-order-level refund)
+  taxCollectedSatang: Satang;
+  serviceChargeSatang: Satang;
   count: number; // number of source transactions contributing to this category
   /** This category's share of total gross revenue across all categories, 0-100. */
   pctShare: number;
@@ -139,17 +152,17 @@ export interface CategoryTotal {
 export function salesByCategory(filters: ReportFilters): CategoryTotal[] {
   const config = getTaxConfig();
   const byCategory = new Map<TaxableCategory, Omit<CategoryTotal, 'pctShare'>>();
-  const bump = (category: TaxableCategory, gross: number, tax: number, service: number) => {
+  const bump = (category: TaxableCategory, gross: Satang, tax: Satang, service: Satang) => {
     const cur = byCategory.get(category) ?? {
       category,
-      grossRevenue: 0,
-      taxCollected: 0,
-      serviceCharge: 0,
+      grossRevenueSatang: 0,
+      taxCollectedSatang: 0,
+      serviceChargeSatang: 0,
       count: 0,
     };
-    cur.grossRevenue += gross;
-    cur.taxCollected += tax;
-    cur.serviceCharge += service;
+    cur.grossRevenueSatang += gross;
+    cur.taxCollectedSatang += tax;
+    cur.serviceChargeSatang += service;
     cur.count += 1;
     byCategory.set(category, cur);
   };
@@ -173,25 +186,25 @@ export function salesByCategory(filters: ReportFilters): CategoryTotal[] {
     }
   }
 
-  const totalGross = [...byCategory.values()].reduce((s, c) => s + c.grossRevenue, 0);
+  const totalGross = [...byCategory.values()].reduce((s, c) => s + c.grossRevenueSatang, 0);
   return [...byCategory.values()]
-    .map((c) => ({ ...c, pctShare: totalGross > 0 ? (c.grossRevenue / totalGross) * 100 : 0 }))
-    .sort((a, b) => b.grossRevenue - a.grossRevenue);
+    .map((c) => ({ ...c, pctShare: totalGross > 0 ? (c.grossRevenueSatang / totalGross) * 100 : 0 }))
+    .sort((a, b) => b.grossRevenueSatang - a.grossRevenueSatang);
 }
 
 export interface PaymentMixRow {
   method: string;
-  amount: number;
+  amountSatang: Satang;
   count: number;
 }
 
 /** Payment-method mix across tickets (single `paymentMethod` token) + F&B/merch (split payment). */
 export function paymentMix(filters: ReportFilters): PaymentMixRow[] {
   const byMethod = new Map<string, PaymentMixRow>();
-  const bump = (method: string, amount: number) => {
+  const bump = (method: string, amount: Satang) => {
     if (amount <= 0) return;
-    const cur = byMethod.get(method) ?? { method, amount: 0, count: 0 };
-    cur.amount += amount;
+    const cur = byMethod.get(method) ?? { method, amountSatang: 0, count: 0 };
+    cur.amountSatang += amount;
     cur.count += 1;
     byMethod.set(method, cur);
   };
@@ -200,25 +213,25 @@ export function paymentMix(filters: ReportFilters): PaymentMixRow[] {
     bump(sale.paymentMethod ?? 'unknown', netAfterRefunds(sale.total, sale.refunds));
   }
   for (const order of getFilteredFnbOrders(filters)) {
-    bump('cash', order.payment.cash);
-    bump('card', order.payment.card);
-    bump('promptpay', order.payment.promptpay);
-    bump('wallet_credit', order.payment.creditUsed);
+    bump('cash', toSatang(order.payment.cash));
+    bump('card', toSatang(order.payment.card));
+    bump('promptpay', toSatang(order.payment.promptpay));
+    bump('wallet_credit', toSatang(order.payment.creditUsed));
   }
   for (const order of getFilteredMerchOrders(filters)) {
-    bump('cash', order.payment.cash);
-    bump('card', order.payment.card);
-    bump('promptpay', order.payment.promptpay);
-    bump('wallet_credit', order.payment.creditUsed);
+    bump('cash', toSatang(order.payment.cash));
+    bump('card', toSatang(order.payment.card));
+    bump('promptpay', toSatang(order.payment.promptpay));
+    bump('wallet_credit', toSatang(order.payment.creditUsed));
   }
 
-  return [...byMethod.values()].sort((a, b) => b.amount - a.amount);
+  return [...byMethod.values()].sort((a, b) => b.amountSatang - a.amountSatang);
 }
 
 export interface TicketTierRow {
   tier: string;
-  ticketRevenue: number;
-  dropOffRevenue: number;
+  ticketRevenueSatang: Satang;
+  dropOffRevenueSatang: Satang;
   saleCount: number;
 }
 
@@ -228,26 +241,29 @@ export function ticketSalesByTier(filters: ReportFilters): TicketTierRow[] {
   for (const sale of getFilteredSales(filters)) {
     const cur = byTier.get(sale.tier) ?? {
       tier: sale.tier,
-      ticketRevenue: 0,
-      dropOffRevenue: 0,
+      ticketRevenueSatang: 0,
+      dropOffRevenueSatang: 0,
       saleCount: 0,
     };
     const bd = saleTaxBreakdown(sale);
     const dropOff = bd.categories.find((c) => c.category === 'drop_off')?.gross ?? 0;
     const ticket = bd.grandTotal - dropOff;
-    cur.ticketRevenue += ticket;
-    cur.dropOffRevenue += dropOff;
+    cur.ticketRevenueSatang += ticket;
+    cur.dropOffRevenueSatang += dropOff;
     cur.saleCount += 1;
     byTier.set(sale.tier, cur);
   }
-  return [...byTier.values()].sort((a, b) => (b.ticketRevenue + b.dropOffRevenue) - (a.ticketRevenue + a.dropOffRevenue));
+  return [...byTier.values()].sort(
+    (a, b) =>
+      b.ticketRevenueSatang + b.dropOffRevenueSatang - (a.ticketRevenueSatang + a.dropOffRevenueSatang),
+  );
 }
 
 export interface ItemSalesRow {
   itemId: string;
   name: string;
   qty: number;
-  revenue: number;
+  revenueSatang: Satang;
 }
 
 /** F&B item sales, aggregated by menu item across all filtered orders. */
@@ -259,14 +275,14 @@ export function fnbSalesByItem(filters: ReportFilters): ItemSalesRow[] {
         itemId: line.menuItem.id,
         name: line.menuItem.name,
         qty: 0,
-        revenue: 0,
+        revenueSatang: 0,
       };
       cur.qty += line.qty;
-      cur.revenue += line.lineTotal;
+      cur.revenueSatang += toSatang(line.lineTotal);
       byItem.set(line.menuItem.id, cur);
     }
   }
-  return [...byItem.values()].sort((a, b) => b.revenue - a.revenue);
+  return [...byItem.values()].sort((a, b) => b.revenueSatang - a.revenueSatang);
 }
 
 /** Merch item sales, aggregated by item across all filtered orders. */
@@ -278,14 +294,14 @@ export function merchSalesByItem(filters: ReportFilters): ItemSalesRow[] {
         itemId: line.merchItem.id,
         name: line.merchItem.name,
         qty: 0,
-        revenue: 0,
+        revenueSatang: 0,
       };
       cur.qty += line.qty;
-      cur.revenue += line.lineTotal;
+      cur.revenueSatang += toSatang(line.lineTotal);
       byItem.set(line.merchItem.id, cur);
     }
   }
-  return [...byItem.values()].sort((a, b) => b.revenue - a.revenue);
+  return [...byItem.values()].sort((a, b) => b.revenueSatang - a.revenueSatang);
 }
 
 export interface TicketTypeSalesRow {
@@ -294,7 +310,7 @@ export interface TicketTypeSalesRow {
   lineCount: number;
   kids: number;
   adults: number;
-  revenue: number; // sum of lineTotal (ticket + socks + addOns for that line, excludes drop-off fee)
+  revenueSatang: Satang; // sum of lineTotal (ticket + socks + addOns for that line, excludes drop-off fee)
 }
 
 /**
@@ -315,22 +331,22 @@ export function ticketTypeSalesRows(filters: ReportFilters): TicketTypeSalesRow[
         lineCount: 0,
         kids: 0,
         adults: 0,
-        revenue: 0,
+        revenueSatang: 0,
       };
       cur.lineCount += 1;
       cur.kids += line.kids;
       cur.adults += line.adults;
-      cur.revenue += line.lineTotal;
+      cur.revenueSatang += toSatang(line.lineTotal);
       byType.set(line.ticketType.id, cur);
     }
   }
-  return [...byType.values()].sort((a, b) => b.revenue - a.revenue);
+  return [...byType.values()].sort((a, b) => b.revenueSatang - a.revenueSatang);
 }
 
 export interface WeekdayWeekendRow {
   mode: RateMode;
   saleCount: number;
-  revenue: number;
+  revenueSatang: Satang;
 }
 
 /**
@@ -343,12 +359,12 @@ export function ticketWeekdayWeekendSplit(filters: ReportFilters): WeekdayWeeken
   const byMode = new Map<RateMode, WeekdayWeekendRow>();
   for (const sale of getFilteredSales(filters)) {
     const mode = getRateModeForDate(new Date(sale.createdAt)).mode;
-    const cur = byMode.get(mode) ?? { mode, saleCount: 0, revenue: 0 };
+    const cur = byMode.get(mode) ?? { mode, saleCount: 0, revenueSatang: 0 };
     cur.saleCount += 1;
-    cur.revenue += saleTaxBreakdown(sale).grandTotal;
+    cur.revenueSatang += saleTaxBreakdown(sale).grandTotal;
     byMode.set(mode, cur);
   }
-  return [...byMode.values()].sort((a, b) => b.revenue - a.revenue);
+  return [...byMode.values()].sort((a, b) => b.revenueSatang - a.revenueSatang);
 }
 
 export interface EventCampRevenueRow {
@@ -365,7 +381,7 @@ export interface EventCampRevenueRow {
    * ledger. This is passesSold × the event's CURRENT entryPriceTHB (resolved
    * for the event's date's rate mode) — flagged in the UI as an estimate.
    */
-  estimatedRevenue: number;
+  estimatedRevenueSatang: Satang;
 }
 
 /** Camp/event attendance + estimated revenue, read from OtoEvent.attendees (the exact roster). */
@@ -387,17 +403,17 @@ export function eventCampRevenueRows(filters: ReportFilters): EventCampRevenueRo
         date: e.date,
         passesSold,
         attended,
-        estimatedRevenue: passesSold * priceNow,
+        estimatedRevenueSatang: passesSold * toSatang(priceNow),
       };
     })
-    .sort((a, b) => b.estimatedRevenue - a.estimatedRevenue);
+    .sort((a, b) => b.estimatedRevenueSatang - a.estimatedRevenueSatang);
 }
 
 export interface DropOffNannyRow {
   service: 'drop_off' | 'nanny';
   sessionCount: number;
   totalHours: number;
-  feesTHB: number;
+  feesSatang: Satang;
 }
 
 /** Drop-off / nanny session volume + fees, read from each sale's DropOffLine (the buildSale gotcha's bare CartLine). */
@@ -407,14 +423,14 @@ export function dropOffNannyRevenueRows(filters: ReportFilters): DropOffNannyRow
     for (const line of sale.lines) {
       const d = line.dropOff;
       if (!d || (d.service !== 'drop_off' && d.service !== 'nanny')) continue;
-      const cur = byService.get(d.service) ?? { service: d.service, sessionCount: 0, totalHours: 0, feesTHB: 0 };
+      const cur = byService.get(d.service) ?? { service: d.service, sessionCount: 0, totalHours: 0, feesSatang: 0 };
       cur.sessionCount += 1;
       cur.totalHours += d.hours;
-      cur.feesTHB += d.serviceFeeTHB;
+      cur.feesSatang += toSatang(d.serviceFeeTHB);
       byService.set(d.service, cur);
     }
   }
-  return [...byService.values()].sort((a, b) => b.feesTHB - a.feesTHB);
+  return [...byService.values()].sort((a, b) => b.feesSatang - a.feesSatang);
 }
 
 // ── 2. Profitability (F&B + merch COGS) ─────────────────────────────────
@@ -430,9 +446,9 @@ export interface ProfitabilityRow {
   itemId: string;
   name: string;
   qty: number;
-  revenue: number;
-  cogs: number;
-  margin: number; // revenue - cogs
+  revenueSatang: Satang;
+  cogsSatang: Satang;
+  marginSatang: Satang; // revenue - cogs
   marginPercent: number; // 0 when revenue is 0
   costTracked: boolean; // false = no cost set on the catalog item (cogs is 0, not "free")
 }
@@ -447,13 +463,13 @@ export function fnbProfitability(filters: ReportFilters): ProfitabilityRow[] {
   return fnbSalesByItem(filters).map((row) => {
     const unitCost = menuCostByItemId.get(row.itemId);
     const costTracked = unitCost !== undefined;
-    const cogs = costTracked ? unitCost! * row.qty : 0;
-    const margin = row.revenue - cogs;
+    const cogs = costTracked ? toSatang(unitCost!) * row.qty : 0;
+    const margin = row.revenueSatang - cogs;
     return {
       ...row,
-      cogs,
-      margin,
-      marginPercent: row.revenue > 0 ? (margin / row.revenue) * 100 : 0,
+      cogsSatang: cogs,
+      marginSatang: margin,
+      marginPercent: row.revenueSatang > 0 ? (margin / row.revenueSatang) * 100 : 0,
       costTracked,
     };
   });
@@ -464,13 +480,13 @@ export function merchProfitability(filters: ReportFilters): ProfitabilityRow[] {
   return merchSalesByItem(filters).map((row) => {
     const item = catalog.get(row.itemId);
     const costTracked = item?.cost !== undefined;
-    const cogs = costTracked ? (item!.cost ?? 0) * row.qty : 0;
-    const margin = row.revenue - cogs;
+    const cogs = costTracked ? toSatang(item!.cost ?? 0) * row.qty : 0;
+    const margin = row.revenueSatang - cogs;
     return {
       ...row,
-      cogs,
-      margin,
-      marginPercent: row.revenue > 0 ? (margin / row.revenue) * 100 : 0,
+      cogsSatang: cogs,
+      marginSatang: margin,
+      marginPercent: row.revenueSatang > 0 ? (margin / row.revenueSatang) * 100 : 0,
       costTracked,
     };
   });
@@ -483,11 +499,11 @@ export function merchProfitability(filters: ReportFilters): ProfitabilityRow[] {
 // regardless of the branch filter (flagged in the UI).
 
 export interface WalletLedgerSummary {
-  grantedTHB: number;
-  spentTHB: number;
-  refundedTHB: number;
-  expiredTHB: number;
-  netOutstandingTHB: number; // sum of live creditBalanceTHB across all bands (today's snapshot, not date-ranged)
+  grantedSatang: Satang;
+  spentSatang: Satang;
+  refundedSatang: Satang;
+  expiredSatang: Satang;
+  netOutstandingSatang: Satang; // sum of live creditBalanceTHB across all bands (today's snapshot, not date-ranged)
   entryCount: number;
 }
 
@@ -503,7 +519,7 @@ export function walletCreditSummary(filters: ReportFilters): WalletLedgerSummary
     for (const entry of band.ledger ?? []) {
       if (!inDateRange(entry.at, filters)) continue;
       entryCount += 1;
-      const amt = entry.amountTHB;
+      const amt = toSatang(entry.amountTHB);
       if (entry.kind === 'grant') granted += amt;
       else if (entry.kind === 'spend') spent += Math.abs(amt);
       else if (entry.kind === 'refund') refunded += amt;
@@ -511,16 +527,23 @@ export function walletCreditSummary(filters: ReportFilters): WalletLedgerSummary
     }
   }
 
-  const netOutstandingTHB = bands.reduce((sum, b) => sum + (b.creditBalanceTHB || 0), 0);
+  const netOutstandingSatang = bands.reduce((sum, b) => sum + toSatang(b.creditBalanceTHB || 0), 0);
 
-  return { grantedTHB: granted, spentTHB: spent, refundedTHB: refunded, expiredTHB: expired, netOutstandingTHB, entryCount };
+  return {
+    grantedSatang: granted,
+    spentSatang: spent,
+    refundedSatang: refunded,
+    expiredSatang: expired,
+    netOutstandingSatang,
+    entryCount,
+  };
 }
 
 export interface WalletLedgerRow {
   wristbandCode: string;
   customerNickname: string;
   kind: WalletEntry['kind'];
-  amountTHB: number;
+  amountSatang: Satang;
   source: string;
   at: string;
   by?: string;
@@ -535,7 +558,7 @@ export function walletLedgerRows(filters: ReportFilters): WalletLedgerRow[] {
         wristbandCode: band.code,
         customerNickname: band.customerNickname,
         kind: entry.kind,
-        amountTHB: entry.amountTHB,
+        amountSatang: toSatang(entry.amountTHB),
         source: entry.source,
         at: entry.at,
         by: entry.by,
@@ -554,8 +577,8 @@ export interface PromoUsageRow {
   usedCount: number;
   usageLimit?: number;
   active: boolean;
-  /** Total ฿ discount value redeemed under this code within the filtered date range/branch. */
-  totalDiscountValueTHB: number;
+  /** Total discount value (satang) redeemed under this code within the filtered date range/branch. */
+  totalDiscountValueSatang: Satang;
 }
 
 /**
@@ -565,9 +588,9 @@ export interface PromoUsageRow {
  * the same scanned-code ledger the Discount/Comp report uses — no parallel math).
  */
 export function promoUsageSummary(filters: ReportFilters): PromoUsageRow[] {
-  const valueByCode = new Map<string, number>();
+  const valueByCode = new Map<string, Satang>();
   for (const row of promoDiscountImpact(filters)) {
-    valueByCode.set(row.code, (valueByCode.get(row.code) ?? 0) + row.amountTHB);
+    valueByCode.set(row.code, (valueByCode.get(row.code) ?? 0) + row.amountSatang);
   }
   return getDiscounts()
     .filter((d) => (d.usedCount ?? 0) > 0 || d.usageLimit !== undefined)
@@ -578,7 +601,7 @@ export function promoUsageSummary(filters: ReportFilters): PromoUsageRow[] {
       usedCount: d.usedCount ?? 0,
       usageLimit: d.usageLimit,
       active: d.active !== false,
-      totalDiscountValueTHB: valueByCode.get(d.code) ?? 0,
+      totalDiscountValueSatang: valueByCode.get(d.code) ?? 0,
     }))
     .sort((a, b) => b.usedCount - a.usedCount);
 }
@@ -593,7 +616,7 @@ export interface DiscountImpactRow {
   type: ManualDiscount['type'];
   reason: string;
   note?: string;
-  amountTHB: number;
+  amountSatang: Satang;
   appliedBy: string;
 }
 
@@ -610,7 +633,7 @@ export function discountAndCompImpact(filters: ReportFilters): DiscountImpactRow
         type: md.type,
         reason: md.reason,
         note: md.note,
-        amountTHB: md.amountTHB,
+        amountSatang: toSatang(md.amountTHB),
         appliedBy: md.appliedBy,
       });
     }
@@ -625,7 +648,7 @@ export function discountAndCompImpact(filters: ReportFilters): DiscountImpactRow
         type: md.type,
         reason: md.reason,
         note: md.note,
-        amountTHB: md.amountTHB,
+        amountSatang: toSatang(md.amountTHB),
         appliedBy: md.appliedBy,
       });
     }
@@ -640,7 +663,7 @@ export function discountAndCompImpact(filters: ReportFilters): DiscountImpactRow
         type: md.type,
         reason: md.reason,
         note: md.note,
-        amountTHB: md.amountTHB,
+        amountSatang: toSatang(md.amountTHB),
         appliedBy: md.appliedBy,
       });
     }
@@ -655,22 +678,22 @@ export interface PromoDiscountImpactRow {
   code: string;
   label: string;
   type: Discount['type'];
-  amountTHB: number;
+  amountSatang: Satang;
 }
 
 /**
  * Scanned promo-code impact (separate from manual comps/discounts above).
  * FnbOrder/MerchOrder carry no `discounts` field — only ticket sales apply
- * promo codes today — so this is ticket-only. Re-derives each code's ฿
- * contribution via computeTotals' scannedDiscounts (never re-implements the
- * discount math here).
+ * promo codes today — so this is ticket-only. Re-derives each code's
+ * contribution via the engine's applied promos (`ticketTotals`; never
+ * re-implements the discount math here).
  */
 export function promoDiscountImpact(filters: ReportFilters): PromoDiscountImpactRow[] {
   const rows: PromoDiscountImpactRow[] = [];
   for (const sale of getFilteredSales(filters)) {
     if (!sale.discounts || sale.discounts.length === 0) continue;
-    const { scannedDiscounts } = computeTotals(sale.lines, sale.discounts, sale.manualDiscounts);
-    for (const sd of scannedDiscounts) {
+    const { appliedPromos } = ticketTotals(sale.lines, sale.discounts, sale.manualDiscounts).satang;
+    for (const sd of appliedPromos) {
       if (sd.amount <= 0) continue;
       rows.push({
         transactionId: sale.id,
@@ -679,7 +702,7 @@ export function promoDiscountImpact(filters: ReportFilters): PromoDiscountImpact
         code: sd.code,
         label: sd.label,
         type: sd.type,
-        amountTHB: sd.amount,
+        amountSatang: sd.amount,
       });
     }
   }
@@ -689,9 +712,9 @@ export function promoDiscountImpact(filters: ReportFilters): PromoDiscountImpact
 export interface CompByOperatorRow {
   appliedBy: string;
   compCount: number;
-  compTotalTHB: number;
+  compTotalSatang: Satang;
   discountCount: number;
-  discountTotalTHB: number;
+  discountTotalSatang: Satang;
 }
 
 /** Manual discounts/comps grouped per operator, for the "who's granting comps" view. */
@@ -701,34 +724,34 @@ export function discountImpactByOperator(filters: ReportFilters): CompByOperator
     const cur = byOperator.get(row.appliedBy) ?? {
       appliedBy: row.appliedBy,
       compCount: 0,
-      compTotalTHB: 0,
+      compTotalSatang: 0,
       discountCount: 0,
-      discountTotalTHB: 0,
+      discountTotalSatang: 0,
     };
     if (row.type === 'comp') {
       cur.compCount += 1;
-      cur.compTotalTHB += row.amountTHB;
+      cur.compTotalSatang += row.amountSatang;
     } else {
       cur.discountCount += 1;
-      cur.discountTotalTHB += row.amountTHB;
+      cur.discountTotalSatang += row.amountSatang;
     }
     byOperator.set(row.appliedBy, cur);
   }
   return [...byOperator.values()].sort(
-    (a, b) => b.compTotalTHB + b.discountTotalTHB - (a.compTotalTHB + a.discountTotalTHB),
+    (a, b) => b.compTotalSatang + b.discountTotalSatang - (a.compTotalSatang + a.discountTotalSatang),
   );
 }
 
 export interface PromoImpactByTypeRow {
   type: Discount['type'];
   count: number;
-  amountTHB: number;
+  amountSatang: Satang;
 }
 
 /**
  * Scanned promo-code impact grouped by discount type, so 'free_item' redemptions
  * (a benefit — the guest gets a menu/merch item at ฿0, valued at the item's cart
- * price via computeTotals' scannedDiscounts) are broken out and attributable
+ * price via the engine's applied promos) are broken out and attributable
  * separately from straightforward percent/fixed money-off codes. This is the
  * benefit/credit-consumption side of "discount and comp impact" — free_item value
  * is already computed by the tax engine's scannedDiscounts, never re-derived here.
@@ -736,12 +759,12 @@ export interface PromoImpactByTypeRow {
 export function promoDiscountImpactByType(filters: ReportFilters): PromoImpactByTypeRow[] {
   const byType = new Map<Discount['type'], PromoImpactByTypeRow>();
   for (const row of promoDiscountImpact(filters)) {
-    const cur = byType.get(row.type) ?? { type: row.type, count: 0, amountTHB: 0 };
+    const cur = byType.get(row.type) ?? { type: row.type, count: 0, amountSatang: 0 };
     cur.count += 1;
-    cur.amountTHB += row.amountTHB;
+    cur.amountSatang += row.amountSatang;
     byType.set(row.type, cur);
   }
-  return [...byType.values()].sort((a, b) => b.amountTHB - a.amountTHB);
+  return [...byType.values()].sort((a, b) => b.amountSatang - a.amountSatang);
 }
 
 // ── 6. Tax receipts + VAT summary ────────────────────────────────────────
@@ -752,10 +775,10 @@ export interface TaxReceiptRow {
   createdAt: string;
   branchId?: string;
   operatorName: string;
-  netSubtotal: number;
-  serviceCharge: number;
-  taxTotal: number;
-  grandTotal: number;
+  netSubtotalSatang: Satang;
+  serviceChargeSatang: Satang;
+  taxTotalSatang: Satang;
+  grandTotalSatang: Satang;
   taxSummaryLabel: string; // e.g. "VAT ฿12.34, Service ฿5.00"
   /** Every taxable category this transaction touched (for the category filter + CSV column). */
   categories: TaxableCategory[];
@@ -779,6 +802,18 @@ function dominantTender(payment: { cash: number; card: number; promptpay: number
   if (tenders.length === 0) return 'unknown';
   if (tenders.length === 1) return tenders[0][0];
   return 'split';
+}
+
+/**
+ * "VAT included ฿4.58": one transaction's receipt rows as the export's label
+ * column prints them — summed in satang by the engine and formatted here, the
+ * one place this file writes a baht figure, in the words and the two decimals
+ * the prototype's label used.
+ */
+function taxSummaryLabel(breakdown: TaxBreakdown): string {
+  return summarizeTax(breakdown)
+    .map((row) => `${row.label} ฿${(row.amount / 100).toFixed(2)}`)
+    .join('; ');
 }
 
 export interface TaxReportFilters extends ReportFilters {
@@ -820,11 +855,11 @@ export function taxReceiptRows(filters: TaxReportFilters): TaxReceiptRow[] {
       createdAt: sale.createdAt,
       branchId: sale.branchId,
       operatorName: sale.operatorName,
-      netSubtotal: bd.netSubtotal,
-      serviceCharge: bd.serviceChargeTotal,
-      taxTotal: bd.taxTotal,
-      grandTotal: bd.grandTotal,
-      taxSummaryLabel: summarizeTax(bd).map((r) => `${r.label} ฿${r.amount.toFixed(2)}`).join('; '),
+      netSubtotalSatang: bd.netSubtotal,
+      serviceChargeSatang: bd.serviceChargeTotal,
+      taxTotalSatang: bd.taxTotal,
+      grandTotalSatang: bd.grandTotal,
+      taxSummaryLabel: taxSummaryLabel(bd),
       categories,
       paymentMethod,
     });
@@ -840,11 +875,11 @@ export function taxReceiptRows(filters: TaxReportFilters): TaxReceiptRow[] {
       createdAt: order.createdAt,
       branchId: order.branchId,
       operatorName: order.operatorName,
-      netSubtotal: bd.netSubtotal,
-      serviceCharge: bd.serviceChargeTotal,
-      taxTotal: bd.taxTotal,
-      grandTotal: bd.grandTotal,
-      taxSummaryLabel: summarizeTax(bd).map((r) => `${r.label} ฿${r.amount.toFixed(2)}`).join('; '),
+      netSubtotalSatang: bd.netSubtotal,
+      serviceChargeSatang: bd.serviceChargeTotal,
+      taxTotalSatang: bd.taxTotal,
+      grandTotalSatang: bd.grandTotal,
+      taxSummaryLabel: taxSummaryLabel(bd),
       categories,
       paymentMethod,
     });
@@ -860,11 +895,11 @@ export function taxReceiptRows(filters: TaxReportFilters): TaxReceiptRow[] {
       createdAt: order.createdAt,
       branchId: order.branchId,
       operatorName: order.operatorName,
-      netSubtotal: bd.netSubtotal,
-      serviceCharge: bd.serviceChargeTotal,
-      taxTotal: bd.taxTotal,
-      grandTotal: bd.grandTotal,
-      taxSummaryLabel: summarizeTax(bd).map((r) => `${r.label} ฿${r.amount.toFixed(2)}`).join('; '),
+      netSubtotalSatang: bd.netSubtotal,
+      serviceChargeSatang: bd.serviceChargeTotal,
+      taxTotalSatang: bd.taxTotal,
+      grandTotalSatang: bd.grandTotal,
+      taxSummaryLabel: taxSummaryLabel(bd),
       categories,
       paymentMethod,
     });
@@ -886,11 +921,11 @@ export interface VatSummaryRow {
   category: TaxableCategory;
   /** Set only when vatSummary() is called with period !== 'range' — the ISO day (YYYY-MM-DD) or month (YYYY-MM) bucket. */
   period?: string;
-  netBase: number;
-  serviceCharge: number;
-  exclusiveTax: number;
-  inclusiveTax: number;
-  gross: number;
+  netBaseSatang: Satang;
+  serviceChargeSatang: Satang;
+  exclusiveTaxSatang: Satang;
+  inclusiveTaxSatang: Satang;
+  grossSatang: Satang;
 }
 
 export type VatSummaryPeriod = 'range' | 'day' | 'month';
@@ -917,17 +952,17 @@ export function vatSummary(filters: ReportFilters, period: VatSummaryPeriod = 'r
       const cur = byKey.get(key) ?? {
         category: c.category,
         period: period === 'range' ? undefined : bucket,
-        netBase: 0,
-        serviceCharge: 0,
-        exclusiveTax: 0,
-        inclusiveTax: 0,
-        gross: 0,
+        netBaseSatang: 0,
+        serviceChargeSatang: 0,
+        exclusiveTaxSatang: 0,
+        inclusiveTaxSatang: 0,
+        grossSatang: 0,
       };
-      cur.netBase += c.base;
-      cur.serviceCharge += c.serviceCharge;
-      cur.exclusiveTax += (c.taxMode === 'exclusive' ? c.tax : 0) + (c.secondaryTaxMode === 'exclusive' ? c.secondaryTax : 0);
-      cur.inclusiveTax += (c.taxMode === 'inclusive' ? c.tax : 0) + (c.secondaryTaxMode === 'inclusive' ? c.secondaryTax : 0);
-      cur.gross += c.gross;
+      cur.netBaseSatang += c.base;
+      cur.serviceChargeSatang += c.serviceCharge;
+      cur.exclusiveTaxSatang += (c.taxMode === 'exclusive' ? c.tax : 0) + (c.secondaryTaxMode === 'exclusive' ? c.secondaryTax : 0);
+      cur.inclusiveTaxSatang += (c.taxMode === 'inclusive' ? c.tax : 0) + (c.secondaryTaxMode === 'inclusive' ? c.secondaryTax : 0);
+      cur.grossSatang += c.gross;
       byKey.set(key, cur);
     }
   };
@@ -938,6 +973,6 @@ export function vatSummary(filters: ReportFilters, period: VatSummaryPeriod = 'r
 
   return [...byKey.values()].sort((a, b) => {
     if (a.period !== b.period) return (a.period ?? '').localeCompare(b.period ?? '');
-    return b.gross - a.gross;
+    return b.grossSatang - a.grossSatang;
   });
 }

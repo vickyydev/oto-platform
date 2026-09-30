@@ -2001,7 +2001,8 @@ function _getRecordByKindAcrossBranches(
 /**
  * Reporting seam (manager Reports module): raw, unfiltered access to every
  * recorded Sale/FnbOrder/MerchOrder across ALL branches. Reports do their own
- * date-range + branch filtering and re-derive tax via lib/tax.ts — this just
+ * date-range + branch filtering and re-derive tax through the engine
+ * (lib/cartWire.ts, SCRUM-271) — this just
  * exposes the same in-memory ledgers `getTransactions()` already reads, without
  * the active-branch scoping. Read-only; never mutate the returned arrays.
  */

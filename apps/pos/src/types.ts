@@ -317,8 +317,9 @@ export interface Discount {
 
 // --- Tax + service-charge engine ------------------------------------------
 // A configurable VAT/tax + service-charge model. The owner's accountant sets
-// the rates/sequence as data (never hardcoded); the pricing engine (lib/tax.ts)
-// reads this and reports/adds tax + service charge per area. Seeded so today's
+// the rates/sequence as data (never hardcoded); the pricing engine (@oto/shared,
+// through lib/cartWire.ts since SCRUM-271) reads this and reports/adds tax +
+// service charge per area. Seeded so today's
 // displayed totals are unchanged until the config is edited (see catalogStore).
 export type TaxMode = 'inclusive' | 'exclusive' | 'none';
 
@@ -563,7 +564,7 @@ export interface DropOffLine {
   foodRestrictions?: string;
   // Prepaid food provision captured at door consent. When present, the
   // paidTHB is already included in the CartLine lineTotal (added on top of
-  // ticket + service fee); tillTaxInputs routes it to the correct tax category.
+  // ticket + service fee); the engine's cartUnits routes it to the correct tax category.
   foodProvision?: ChildFoodProvision;
   // Photo captured during online consent (data URL) — the child together with
   // the parent / guardian; carried into the CheckIn for pickup verification.
@@ -659,8 +660,8 @@ export interface SaleQuotedPricing {
   serviceChargeTotal: number;
   taxTotal: number;
   /**
-   * The tax and service rows a receipt prints, exactly as `summarizeTax`
-   * returned them for this sale.
+   * The tax and service rows a receipt prints, exactly as `taxRowsOf`
+   * (lib/cartWire.ts) returned them for this sale.
    */
   taxRows: {
     key: string;

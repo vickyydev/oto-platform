@@ -36,6 +36,11 @@ import {
   computeTicketCartTotals,
   deriveSaleLineId,
   getRateModeForDate,
+  itemCartLine,
+  itemCategoryWalk,
+  itemPricePair,
+  itemTaxCategory,
+  itemUnitPrice,
   newId,
   isPaymentReversalPending,
   parseDayStart,
@@ -45,7 +50,6 @@ import {
   priceCartLine,
   refundStatusOf,
   refundableSatang,
-  resolveRate,
   SERVICE_FEE_ROW_KEY,
   type CartAddOn,
   type CartPromo,
@@ -827,18 +831,6 @@ function pickupCodeRequired(): never {
 }
 
 /**
- * The `packageId` an F&B or shop line's cart line carries.
- *
- * It is NOT a package and names no row: an item line has no admission on it, so
- * there is nothing for a `ticketType`-scoped discount to match and a real
- * package id here would make one match something it never sold. `buildPricedLines`
- * looks it up in the loaded packages, finds nothing, and writes
- * `ticket_package_id` null — which is what the ledger should say about a plate
- * of chips.
- */
-const ITEM_LINE_PACKAGE_KEY = 'item-line';
-
-/**
  * SCRUM-344 — each item's own menu category and its parent, by product id.
  *
  * What an `fnbCategory`-scoped promo matches on: a code scoped to Drinks has to
@@ -870,7 +862,9 @@ async function loadItemCategoryWalk(
     if (!row.categoryId) continue;
     const category = byId.get(row.categoryId);
     if (!category) continue;
-    walk.set(row.id, category.parentId ? [category.id, category.parentId] : [category.id]);
+    // The walk itself is the shared item engine's (`itemCategoryWalk`), so the
+    // till and a box build the scope a code matches on exactly as this does.
+    walk.set(row.id, itemCategoryWalk(category.id, () => category.parentId));
   }
   return walk;
 }
@@ -887,6 +881,14 @@ interface ResolvedItemLine {
 /**
  * Price the cart's F&B and shop lines from the catalogue, and refuse the ones
  * the menu does not allow.
+ *
+ * THE ARITHMETIC IS THE SHARED ITEM ENGINE'S — SCRUM-271. The unit price, the
+ * category walk, the taxable area's fallback and the cart line an item becomes
+ * are `itemUnitPrice`, `itemCategoryWalk`, `itemTaxCategory` and `itemCartLine`
+ * in `@oto/shared` (`item-cart.ts`), moved there unchanged so the till and a box
+ * selling offline price an item with this code rather than a copy of it. What
+ * stays here is what needs the database: loading the item's groups and options,
+ * checking the selection against the menu, resolving the size, the prep station.
  *
  * THREE RULES, all of them the prototype's:
  *
@@ -1008,9 +1010,6 @@ async function resolveItemLines(
 
   const inlineGroups = groups.filter((g) => g.productId !== null);
   const libraryGroups = groups.filter((g) => g.productId === null);
-  /** The weekday/weekend pair as the engine resolves every other one. */
-  const rate = (weekday: number, weekend: number | null): number =>
-    resolveRate({ weekday, weekend: weekend ?? weekday }, ctx.mode);
 
   const resolved: ResolvedItemLine[] = [];
   itemInputs.forEach((line, index) => {
@@ -1044,35 +1043,45 @@ async function resolveItemLines(
         : null;
 
     const chosenByGroup = new Map(chosen.map((c) => [c.groupId, c.optionIds]));
-    let unitSatang = rate(row.priceSatang, row.priceWeekendSatang);
-    const modifiers: NonNullable<SaleLinePayload['modifiers']> = [];
     // Group order, then the order the options were chosen in — the order the
     // prototype lists them in on the display and the receipt
     // (`describeModifiers`, `breakdownModifiers`).
-    for (const { group, options: offered } of itemGroups) {
-      for (const optionId of chosenByGroup.get(group.id) ?? []) {
-        const option = offered.find((o) => o.id === optionId)!;
-        const delta = rate(option.priceSatang, option.priceWeekendSatang);
-        unitSatang += delta;
-        modifiers.push({
-          groupId: group.id,
-          groupName: group.name,
-          optionId: option.id,
-          optionName: option.name,
-          unitSatang: delta,
-        });
-      }
-    }
+    const picked = itemGroups.flatMap(({ group, options: offered }) =>
+      (chosenByGroup.get(group.id) ?? []).map((optionId) => ({
+        group,
+        option: offered.find((o) => o.id === optionId)!,
+      })),
+    );
+    // Rule 1, priced by the shared item engine: the item's pair and every
+    // chosen option's pair, each resolved at this rate mode.
+    const priced = itemUnitPrice(
+      itemPricePair(row.priceSatang, row.priceWeekendSatang),
+      picked.map(({ option }) => itemPricePair(option.priceSatang, option.priceWeekendSatang)),
+      ctx.mode,
+    );
+    const unitSatang = priced.unit;
+    const modifiers: NonNullable<SaleLinePayload['modifiers']> = picked.map(
+      ({ group, option }, position) => ({
+        groupId: group.id,
+        groupName: group.name,
+        optionId: option.id,
+        optionName: option.name,
+        unitSatang: priced.options[position] ?? 0,
+      }),
+    );
 
     /**
      * Which taxable area this item's money lands in: the resolved walk from
      * `loadCatalogue` — the item's override, else its category's, else its
      * parent's. Where nothing in the chain answers, a menu item is `fnb` and a
      * shop item is `merch`, which is the prototype's own fallback on each side
-     * (`lib/menu.ts:101-110`, `lib/merch.ts:merchTaxInputs`).
+     * (`lib/menu.ts:101-110`, `lib/merch.ts:merchTaxInputs`) and the shared
+     * engine's `itemTaxCategory`.
      */
-    const taxCategory: TaxableCategory =
-      catalogue.products.get(row.id)?.category ?? (kind === 'merch_item' ? 'merch' : 'fnb');
+    const taxCategory: TaxableCategory = itemTaxCategory(
+      kind === 'merch_item' ? 'merch' : 'menu',
+      catalogue.products.get(row.id)?.category,
+    );
     const note = (line.note ?? '').trim();
     const payload: SaleLinePayload = {
       ...(modifiers.length > 0 ? { modifiers } : {}),
@@ -1088,31 +1097,25 @@ async function resolveItemLines(
       ...(kind === 'fnb_item' ? { prepStation: prepStations.get(row.id) ?? 'kitchen' } : {}),
     };
 
-    const cartLine: TicketCartLine = {
-      id: line.id,
-      packageId: ITEM_LINE_PACKAGE_KEY,
-      package: { prices: {}, adultRules: null },
-      tier: tierCode,
-      kids: 0,
-      adults: 0,
-      socks: 0,
-      addOns: [
-        {
-          id: row.id,
-          // The line's label: "Grip Socks — M" when a size was sold, which is
-          // what the receipt and the Sale detail read back.
-          name: variant ? variantLineLabel(row.name, variant.label) : row.name,
-          price: unitSatang,
-          quantity: line.quantity,
-          taxCategoryOverride: taxCategory,
-          // What this row IS, for the promo scopes — see the header.
-          itemKind: kind === 'merch_item' ? ('merch' as const) : ('menu' as const),
-          categoryIds: categoryWalk.get(row.id) ?? [],
-        },
-      ],
-      lineTotal: 0,
-    };
-    cartLine.lineTotal = priceCartLine(cartLine, ctx);
+    // The cart line the item becomes, and its total, from the shared item
+    // engine — the same line the till and a box build for it.
+    const cartLine: TicketCartLine = itemCartLine(
+      {
+        id: line.id,
+        itemId: row.id,
+        // The line's label: "Grip Socks — M" when a size was sold, which is
+        // what the receipt and the Sale detail read back.
+        name: variant ? variantLineLabel(row.name, variant.label) : row.name,
+        // What this row IS, for the promo scopes — see the header.
+        itemKind: kind === 'merch_item' ? 'merch' : 'menu',
+        unitPrice: unitSatang,
+        quantity: line.quantity,
+        taxCategory,
+        categoryIds: categoryWalk.get(row.id) ?? [],
+        tier: tierCode,
+      },
+      ctx,
+    );
     resolved.push({ cartLineId: line.id, kind, productId: row.id, payload, cartLine });
   });
 

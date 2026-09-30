@@ -5,13 +5,11 @@ import { Card } from '@/components/ui/card';
 import { CheckCircle2, Baby, User, Printer, UtensilsCrossed, ShoppingBag } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { computeTotals } from '@/lib/sale';
-import { summarizeTax, roundTHB } from '@/lib/tax';
 import { getPrintTemplate } from '@/mockApi';
 import { paymentMethodLabel } from '@/lib/payments';
 import { bandsByCartLine, getSale, type ApiSaleBand, type ApiSaleLine, type ApiSalePrintJob } from '@/api/history';
 import { reportsCreditVoucher } from '@/lib/salePrinting';
-import { platformId } from '@/lib/cartWire';
+import { platformId, shownBaht, taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { QrCode } from './QrCode';
 
 /**
@@ -195,10 +193,11 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConf
   const leftover = (issue.bands ?? []).filter((b) => b.status !== 'revoked' && !onRows.has(b.id));
   // The sale's own figures, not a second computation of them (S2-09a): what is
   // read out here is what the platform charged. A sale with no quoted figures —
-  // seeded history, a deployment with no ledger — still totals the old way.
+  // seeded history, a deployment with no ledger — is totalled from its lines by
+  // the engine (`ticketTotals`, SCRUM-271), as the prototype's arithmetic did.
   const taxRows =
     sale.quoted?.taxRows ??
-    summarizeTax(computeTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts).taxBreakdown);
+    taxRowsOf(ticketTotals(sale.lines, sale.discounts ?? [], sale.manualDiscounts).taxBreakdown);
 
   // The receipt's CONTENT follows the active receipt template. Routing is
   // unchanged. With no template configured, default to showing the breakdown.
@@ -233,7 +232,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note }: StepConf
         </p>
         {showTaxBreakdown && taxRows.length > 0 && (
           <p className="text-muted-foreground/80 mt-1 text-sm">
-            {taxRows.map((r) => `${r.label} ฿${roundTHB(r.amount)}`).join(' · ')}
+            {taxRows.map((r) => `${r.label} ฿${shownBaht(r.amount)}`).join(' · ')}
           </p>
         )}
         {note && <div className="mt-2">{note}</div>}

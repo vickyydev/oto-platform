@@ -20,7 +20,8 @@ import {
 } from '@/mockApi';
 import { INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
-import { computeLineTotal, hasModifiers, modifierSignature } from '@/lib/fnb';
+import { hasModifiers, modifierSignature } from '@/lib/fnb';
+import { fnbLineTotal } from '@/lib/cartWire';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
 import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
@@ -296,8 +297,9 @@ export default function OrderStation() {
   /**
    * THE PRICE THE PLATFORM QUOTES FOR THIS ORDER. Every figure the order panel,
    * the customer display and the payment screen show comes from here. The
-   * prototype totalled the order in the browser (`computeFnbTotals`); that
-   * arithmetic is now only the fallback, and when it is what is on screen
+   * prototype totalled the order in the browser (`computeFnbTotals`); the
+   * fallback is now the platform's own engine run on this till
+   * (`itemOrderTotals`, SCRUM-271), and when it is what is on screen
    * `PriceSourceNote` says so beside the total.
    *
    * Switched off once the order is confirmed: the sale's own figures stand from
@@ -420,7 +422,7 @@ export default function OrderStation() {
     menuItem: item,
     qty,
     selectedModifiers: selected,
-    lineTotal: computeLineTotal(item, selected, qty),
+    lineTotal: fnbLineTotal(item, selected, qty),
     note,
     ...(variant
       ? { variantId: variant.variantId, variantLabel: variant.variantLabel }
@@ -498,7 +500,7 @@ export default function OrderStation() {
         const next = [...prev];
         const merged = next[idx];
         const newQty = merged.qty + addQty;
-        next[idx] = { ...merged, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+        next[idx] = { ...merged, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
         return next;
       }
       return [...prev, makeLine(item, selected, addQty, note, variant)];
@@ -599,7 +601,7 @@ export default function OrderStation() {
             .map((l) => {
               if (l.id !== prev[twinIdx].id) return l;
               const newQty = l.qty + addQty;
-              return { ...l, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+              return { ...l, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
             });
           // The edited line merged into its twin and no longer exists — drop
           // any manual discount that targeted it.
@@ -612,7 +614,7 @@ export default function OrderStation() {
                 ...l,
                 selectedModifiers: selected,
                 qty,
-                lineTotal: computeLineTotal(item, selected, qty),
+                lineTotal: fnbLineTotal(item, selected, qty),
                 note,
               }
             : l
@@ -657,7 +659,7 @@ export default function OrderStation() {
         return {
           ...l,
           qty: nextQty,
-          lineTotal: computeLineTotal(l.menuItem, l.selectedModifiers, nextQty),
+          lineTotal: fnbLineTotal(l.menuItem, l.selectedModifiers, nextQty),
         };
       });
     });

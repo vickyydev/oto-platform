@@ -15,6 +15,7 @@ export * from './tax';
 export * from './discount';
 export * from './promo';
 export * from './cart-totals';
+export * from './item-cart';
 export * from './station-session';
 export * from './display-presentation';
 export * from './display-child-review';

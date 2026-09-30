@@ -9,7 +9,7 @@ import {
 } from '@/mockApi';
 import { resolveAutoTier } from '@/lib/membership';
 import { computeLineTotal } from '@/lib/pricing';
-import { computeTotals } from '@/lib/sale';
+import { ticketTotals } from '@/lib/cartWire';
 import { resolveRequirement, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
 import { dropOffServiceFee, normalizeDropOffFees, resolveDropOffPricing, type DropOffPricing as ResolvedDropOffPricing } from '@/lib/dropoff';
 import { getSupervisionPolicy, wwp, subscribeCatalog } from '@/store/catalogStore';
@@ -42,7 +42,8 @@ type Stage = 'identify' | 'tickets' | 'pass' | 'savedChildren' | 'supervise' | '
 // A synthetic kid-ticket line modelling one event pass, used ONLY for the running
 // total + tax (NEVER stored in booking.lines). The flat entryPriceTHB is placed
 // in prices[tier] so computeLineBreakdown taxes it as a ticket — avoiding the
-// "fee in lineTotal only -> 0 in computeTotals" gotcha.
+// "fee in lineTotal only -> 0 in the cart's totals" gotcha (computeTotals then,
+// `ticketTotals` since SCRUM-271: the same re-derivation, in the engine).
 function buildPassLine(pass: PassSelection, tier: CustomerTier): CartLine {
   const fee = resolveRateToday(pass.event.entryPriceTHB);
   const ticketType: TicketType = {
@@ -203,8 +204,8 @@ function buildEffectiveLines(
           allergiesMedical: slot.allergiesMedical || undefined,
           mayOrderFood: slot.mayOrderFood,
           // Carry the parent's prepaid food choice onto the drop-off line so its
-          // paidTHB flows into the cart total + tax engine (tillTaxInputs routes
-          // prepaid_items → fnb, prepaid_credit → stored_value), exactly as the
+          // paidTHB flows into the cart total + tax engine (the engine's cartUnits
+          // routes prepaid_items → fnb, prepaid_credit → stored_value), exactly as the
           // door flow does via makeDropOffLine. createBooking then persists it on
           // the registration; the band is loaded at check-in (not at booking).
           foodProvision: slot.foodProvision,
@@ -329,7 +330,7 @@ export default function Book() {
   // Synthetic lines model each pass's flat fee so it taxes alongside the basket;
   // they are summed for the total only, never persisted on the booking.
   const passLines = useMemo(() => passes.map((p) => buildPassLine(p, tier)), [passes, tier]);
-  const { total } = computeTotals([...normalizedLines, ...passLines]);
+  const { total } = ticketTotals([...normalizedLines, ...passLines]);
 
   // Per-child resolution for the basket gate.
   const supRows = useMemo(

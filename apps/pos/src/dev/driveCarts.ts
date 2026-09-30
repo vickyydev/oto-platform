@@ -66,8 +66,10 @@ import {
   getMenuItems,
 } from '@/store/catalogStore';
 import { getEffectiveModifierGroups } from '@/lib/menu';
-import { computeLineTotal, areModifiersValid } from '@/lib/fnb';
-import { computeMerchLineTotal } from '@/lib/merch';
+import { areModifiersValid } from '@/lib/fnb';
+// SCRUM-271: an F&B or shop row is priced by the shared item engine, the code
+// the platform prices it with, through the till's one translation layer.
+import { fnbLineTotal, merchLineTotal, platformId, toSatang } from '@/lib/cartWire';
 import { ApiError } from '@/api/client';
 import {
   buildItemCartPayload,
@@ -161,7 +163,7 @@ async function main(): Promise<void> {
     menuItem: withRequiredSingle,
     qty,
     selectedModifiers: chosen,
-    lineTotal: computeLineTotal(withRequiredSingle, chosen, qty),
+    lineTotal: fnbLineTotal(withRequiredSingle, chosen, qty),
     ...(note ? { note } : {}),
   });
 
@@ -204,6 +206,17 @@ async function main(): Promise<void> {
     );
     const rows = Object.keys(quote.lineTotals).length;
     check('…row by row', rows === 2, `${rows} row(s) answered`);
+    // SCRUM-271 — one calculator: this till's own figure is the platform's
+    // engine run here, so the two agree to the satang, row by row and in total.
+    check(
+      '…to the satang of what this till priced it at',
+      quotedSatang === toSatang(local.totals.total),
+      `platform ${quotedSatang} · till ${toSatang(local.totals.total)} satang`,
+    );
+    check(
+      '…and each row too',
+      order.every((line) => quote.lineTotals[platformId(line.id)] === toSatang(line.lineTotal)),
+    );
   } catch (err) {
     check('the platform prices the order', false, describe(err));
   }
@@ -260,7 +273,7 @@ async function main(): Promise<void> {
     id: newId(),
     merchItem: item,
     qty: 1,
-    lineTotal: computeMerchLineTotal(item, 1),
+    lineTotal: merchLineTotal(item, 1),
     ...(size ? { variantId: size.id, variantLabel: size.label } : {}),
   };
   const shopLocal = localItemQuote('shop', [shopLine], []);
@@ -274,6 +287,11 @@ async function main(): Promise<void> {
     const { quote } = await salesApi.quote(shopPayload);
     const shopSatang = quote.totals.grossSatang;
     check('the platform prices the shop sale', shopSatang > 0, `฿${shopSatang / 100} · ${item.name}`);
+    check(
+      '…to the satang of what this till priced it at',
+      shopSatang === toSatang(shopLocal.totals.total),
+      `platform ${shopSatang} · till ${toSatang(shopLocal.totals.total)} satang`,
+    );
     const saleId = newId();
     const actionId = newId();
     const sold = buildItemCartPayload([shopLine], [], shopIdentity, shopSatang / 100);

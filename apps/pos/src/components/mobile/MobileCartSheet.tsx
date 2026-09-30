@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { CartLine, CustomerTier, Discount, ManualDiscount } from '@/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { OrderSummary } from '@/components/till/OrderSummary';
-import { computeTotals } from '@/lib/sale';
+import { ticketTotals } from '@/lib/cartWire';
 import { unpricedCartLines } from '@/lib/pricing';
 import type { OrderTotals } from '@/api/sales';
 import { ShoppingCart, ChevronUp } from 'lucide-react';
@@ -97,18 +97,18 @@ export function MobileCartSheet({
    * WHAT THE BAR PRINTS (SCRUM-349).
    *
    * The quoted total when the caller passes one, so the bar, the panel in the
-   * sheet and the Review step all print the one figure. `computeTotals` is the
-   * fallback for a caller that quotes nothing; it is the till's own arithmetic,
-   * and the sheet's `priceNote` says so beneath the total.
+   * sheet and the Review step all print the one figure. `ticketTotals` is the
+   * fallback for a caller that quotes nothing; it is the engine run on this
+   * till, and the sheet's `priceNote` says so beneath the total.
    */
-  const total = totals ? totals.total : computeTotals(lines, discounts, manualDiscounts).total;
+  const total = totals ? totals.total : ticketTotals(lines, discounts, manualDiscounts).total;
   const itemCount = lines.length;
   /**
    * WHAT THIS CART CANNOT BE PRICED AT (SCRUM-316/329).
    *
    * Read from the same `unpricedCartLines(lines)` the panel in the sheet
    * reads, so the bar and the panel above it agree: a line at a tier nobody
-   * priced totals ฿0 through `computeTotals`, and the bar printed that ฿0 as
+   * priced totals ฿0 through `ticketTotals`, and the bar printed that ฿0 as
    * the amount due while the panel printed dashes.
    */
   const unpriced = unpricedCartLines(lines).length > 0;
