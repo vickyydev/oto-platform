@@ -1,7 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { createHash } from "crypto";
+import { createHash, randomBytes, scryptSync } from "crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../server/db";
+import { deleteFromObjectStorage } from "../server/file-storage";
 import {
   accessPolicies,
   advisorAttendanceSessions,
@@ -11,6 +12,9 @@ import {
   kioskDevices,
   people,
   tenants,
+  timeEvents,
+  userBranchAccess,
+  users,
   DEFAULT_TENANT_SLUG,
 } from "../shared/schema";
 import { advisorSessionCorrectionValues, advisorSessionMetrics, canAdvisorUseKiosk, issueAdvisorIdentificationProof, verifyAdvisorIdentificationProof } from "../server/advisor-attendance";
@@ -188,21 +192,115 @@ test("verified advisor phone records one unscheduled session across midnight wit
     name: "Advisor denied kiosk",
     deviceSecretHash: createHash("sha256").update(deniedSecret).digest("hex"),
   }).returning();
+  const password = randomBytes(18).toString("base64url");
+  const salt = randomBytes(16).toString("hex");
+  const passwordHash = `${scryptSync(password, salt, 64).toString("hex")}.${salt}`;
+  const [manager] = await db.insert(users).values({
+    email: `advisor-photo-manager-${suffix}@example.test`, password: passwordHash,
+    fullName: "Advisor Photo Manager", role: "manager", isActive: true, mustChangePassword: false,
+  }).returning();
+  const [otherManager] = await db.insert(users).values({
+    email: `advisor-photo-other-${suffix}@example.test`, password: passwordHash,
+    fullName: "Other Branch Manager", role: "manager", isActive: true, mustChangePassword: false,
+  }).returning();
+  await db.insert(userBranchAccess).values([
+    { tenantId: tenant.id, userId: manager.id, branchId: allowedBranch.id, accessScope: "selected_branches" },
+    { tenantId: tenant.id, userId: otherManager.id, branchId: deniedBranch.id, accessScope: "selected_branches" },
+  ]);
 
+  let uploadedFilename: string | null = null;
+  let testEmployeeId: string | null = null;
   try {
     const denied = await request.post("/api/kiosk/clock-phone", {
-      data: { phone, photoEvidenceUrl: "/test/advisor.jpg", deviceSecret: deniedSecret },
+      data: { phone, photoEvidenceUrl: "", deviceSecret: deniedSecret },
     });
     expect(denied.status()).toBe(401);
 
+    const upload = await request.post("/api/kiosk/upload-pin-photo", {
+      headers: { "x-kiosk-device-secret": allowedSecret },
+      multipart: {
+        photo: {
+          name: "evidence.png",
+          mimeType: "image/png",
+          buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==", "base64"),
+        },
+      },
+    });
+    expect(upload.status()).toBe(200);
+    const receipt = (await upload.json()).photoUrl as string;
+    expect(receipt.includes("?claim=")).toBe(true);
+    const canonicalPhotoUrl = receipt.split("?claim=")[0];
+    uploadedFilename = canonicalPhotoUrl.split("/").pop() || null;
+    const wrongSignature = `${receipt.slice(0, -1)}${receipt.endsWith("0") ? "1" : "0"}`;
+    const forged = await request.post("/api/kiosk/clock-phone", {
+      data: { phone, photoEvidenceUrl: wrongSignature, deviceSecret: allowedSecret },
+    });
+    expect(forged.status()).toBe(400);
+    const wrongDevice = await request.post("/api/kiosk/clock-phone", {
+      data: { phone, photoEvidenceUrl: receipt, deviceSecret: deniedSecret },
+    });
+    expect(wrongDevice.status()).toBe(400);
+
     const clockIn = await request.post("/api/kiosk/clock-phone", {
-      data: { phone, photoEvidenceUrl: "/test/advisor.jpg", deviceSecret: allowedSecret },
+      data: { phone, photoEvidenceUrl: receipt, deviceSecret: allowedSecret },
     });
     expect(clockIn.status()).toBe(200);
     expect(await clockIn.json()).toMatchObject({ success: true, identityType: "ADVISOR", eventType: "IN" });
 
     const [open] = await db.select().from(advisorAttendanceSessions)
       .where(and(eq(advisorAttendanceSessions.personId, advisor.id), eq(advisorAttendanceSessions.branchId, allowedBranch.id)));
+    expect(open.photoEvidenceUrl === canonicalPhotoUrl).toBe(true);
+    const anonymousPhoto = await request.get(canonicalPhotoUrl);
+    expect(anonymousPhoto.status()).toBe(401);
+    const managerLogin = await request.post("/api/login", {
+      headers: { "x-forwarded-proto": "https" },
+      data: { identifier: manager.email, password },
+    });
+    expect(managerLogin.status()).toBe(200);
+    const managerCookie = managerLogin.headersArray().find(header => header.name.toLowerCase() === "set-cookie")?.value?.split(";")[0];
+    expect(Boolean(managerCookie)).toBe(true);
+    const managerReview = await request.get(`/api/timekeeping/review?date=${open.checkInDate}`, {
+      headers: { Cookie: managerCookie! },
+    });
+    expect(managerReview.status()).toBe(200);
+    expect((await managerReview.json()).summaries.some((summary: { employeeId: string }) => summary.employeeId === advisor.id)).toBe(true);
+    for (const photoPath of [canonicalPhotoUrl, `/api/pin-photos/${uploadedFilename}`, `/uploads/pin-photos/${uploadedFilename}`]) {
+      const authorizedPhoto = await request.get(photoPath, { headers: { Cookie: managerCookie! } });
+      expect(authorizedPhoto.status()).toBe(200);
+      expect(authorizedPhoto.headers()["cache-control"]).toBe("private, no-store");
+    }
+    const [testEmployee] = await db.insert(employees).values({
+      tenantId: tenant.id, branchId: allowedBranch.id, fullName: "Photo Test Employee",
+      nickname: "Photo Test", email: `photo-test-${suffix}@example.test`, status: "active",
+    }).returning();
+    testEmployeeId = testEmployee.id;
+    await db.insert(timeEvents).values({
+      tenantId: tenant.id, branchId: allowedBranch.id, employeeId: testEmployee.id,
+      eventType: "IN", eventTime: new Date(), authMethod: "PIN",
+    });
+    const managerEvents = await request.get(`/api/employees/${testEmployee.id}/time-events`, {
+      headers: { Cookie: managerCookie! },
+    });
+    expect(managerEvents.status()).toBe(200);
+    expect((await managerEvents.json()).total).toBe(1);
+    const otherLogin = await request.post("/api/login", {
+      headers: { "x-forwarded-proto": "https" },
+      data: { identifier: otherManager.email, password },
+    });
+    expect(otherLogin.status()).toBe(200);
+    const otherCookie = otherLogin.headersArray().find(header => header.name.toLowerCase() === "set-cookie")?.value?.split(";")[0];
+    expect(Boolean(otherCookie)).toBe(true);
+    const otherReview = await request.get(`/api/timekeeping/review?date=${open.checkInDate}`, {
+      headers: { Cookie: otherCookie! },
+    });
+    expect(otherReview.status()).toBe(200);
+    expect((await otherReview.json()).summaries.some((summary: { employeeId: string }) => summary.employeeId === advisor.id)).toBe(false);
+    const wrongBranchPhoto = await request.get(canonicalPhotoUrl, { headers: { Cookie: otherCookie! } });
+    expect(wrongBranchPhoto.status()).toBe(404);
+    const otherEvents = await request.get(`/api/employees/${testEmployee.id}/time-events`, {
+      headers: { Cookie: otherCookie! },
+    });
+    expect(otherEvents.status()).toBe(404);
     const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000);
     const yesterday = new Date();
     yesterday.setUTCDate(yesterday.getUTCDate() - 1);
@@ -212,7 +310,7 @@ test("verified advisor phone records one unscheduled session across midnight wit
     }).where(eq(advisorAttendanceSessions.id, open.id));
 
     const clockOut = await request.post("/api/kiosk/clock-phone", {
-      data: { phone, photoEvidenceUrl: "/test/advisor.jpg", deviceSecret: allowedSecret },
+      data: { phone, photoEvidenceUrl: receipt, deviceSecret: allowedSecret },
     });
     expect(clockOut.status()).toBe(200);
     expect(await clockOut.json()).toMatchObject({ success: true, identityType: "ADVISOR", eventType: "OUT" });
@@ -226,7 +324,16 @@ test("verified advisor phone records one unscheduled session across midnight wit
     expect(await db.select().from(employees).where(eq(employees.personId, advisor.id))).toHaveLength(0);
     expect(await db.select().from(kioskAuthAttempts).where(eq(kioskAuthAttempts.personId, advisor.id))).toHaveLength(2);
   } finally {
+    if (uploadedFilename) await deleteFromObjectStorage("pin-photos", uploadedFilename);
+    if (testEmployeeId) {
+      await db.delete(timeEvents).where(eq(timeEvents.employeeId, testEmployeeId));
+      await db.delete(employees).where(eq(employees.id, testEmployeeId));
+    }
     await db.delete(kioskAuthAttempts).where(eq(kioskAuthAttempts.personId, advisor.id));
+    await db.delete(userBranchAccess).where(eq(userBranchAccess.userId, manager.id));
+    await db.delete(userBranchAccess).where(eq(userBranchAccess.userId, otherManager.id));
+    await db.delete(users).where(eq(users.id, manager.id));
+    await db.delete(users).where(eq(users.id, otherManager.id));
     await db.delete(people).where(eq(people.id, advisor.id));
     await db.delete(kioskDevices).where(eq(kioskDevices.id, allowedDevice.id));
     await db.delete(kioskDevices).where(eq(kioskDevices.id, deniedDevice.id));

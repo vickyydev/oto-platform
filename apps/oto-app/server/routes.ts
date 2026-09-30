@@ -120,7 +120,7 @@ import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db } from "./db";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { tasks, taskQuestions, taskAssignments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -1480,8 +1480,9 @@ export async function registerRoutes(
   });
 
   // Legacy public paths only; private uploads use their record-scoped routes.
-  app.use("/uploads", (req, res, _next) => {
+  app.use("/uploads", (req, res, next) => {
     const match = /^\/([a-z0-9-]+)\/([a-zA-Z0-9._-]+)$/.exec(req.path);
+    if (match?.[1] === "pin-photos") return next();
     const publicFolders = new Set(["branch-logos", "dropoff-photos", "invitations"]);
     if (!match || !publicFolders.has(match[1]) || match[2] === "." || match[2] === "..") {
       return res.status(404).json({ message: "File not found" });
@@ -8371,6 +8372,27 @@ OTO Company Limited`,
     return { ...device, tenantId: branch.tenantId, branch };
   }
 
+  const PIN_PHOTO_CLAIM_MS = 30 * 60_000;
+  type ResolvedKioskDevice = NonNullable<Awaited<ReturnType<typeof resolveKioskDevice>>>;
+  function kioskPinPhotoSignature(url: string, device: ResolvedKioskDevice, expiresAt: number): string {
+    const secret = process.env.SESSION_SECRET;
+    if (!secret) throw new Error("SESSION_SECRET is required for kiosk photo uploads");
+    return crypto.createHmac("sha256", secret)
+      .update(`${url}:${device.id}:${device.tenantId}:${device.branchId}:${expiresAt}`)
+      .digest("hex");
+  }
+
+  function verifyKioskPinPhotoClaim(supplied: string, device: ResolvedKioskDevice): string | null {
+    if (!supplied) return ""; // Clocking still works if the camera or upload failed.
+    const match = /^(\/api\/files\/pin-photos\/[a-zA-Z0-9._-]+)\?claim=(\d{13})\.([a-f0-9]{64})$/.exec(supplied);
+    if (!match) return null;
+    const [, url, expiry, signature] = match;
+    const expiresAt = Number(expiry);
+    if (expiresAt < Date.now() || expiresAt > Date.now() + PIN_PHOTO_CLAIM_MS) return null;
+    const expected = Buffer.from(kioskPinPhotoSignature(url, device, expiresAt), "hex");
+    return crypto.timingSafeEqual(Buffer.from(signature, "hex"), expected) ? url : null;
+  }
+
   // Compares two hex digests without leaking, through how long the comparison
   // runs, how many leading characters matched.
   function timingSafeEqualHex(a: string, b: string): boolean {
@@ -9841,7 +9863,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Validation failed", errors: validationResult.error.errors });
       }
 
-      const { phone, photoEvidenceUrl, sessionId, deviceSecret } = validationResult.data;
+      const { phone, photoEvidenceUrl: submittedPhotoEvidenceUrl, sessionId, deviceSecret } = validationResult.data;
 
       // Throttle before anything else, so the limit applies to callers that
       // present no credential as well as to provisioned kiosks.
@@ -9855,6 +9877,11 @@ OTO Company Limited`,
       const device = await resolveKioskDevice(deviceSecret);
       if (!device) {
         return refuseKioskPhone(res);
+      }
+
+      const photoEvidenceUrl = verifyKioskPinPhotoClaim(submittedPhotoEvidenceUrl, device);
+      if (photoEvidenceUrl === null) {
+        return res.status(400).json({ message: "Invalid photo evidence" });
       }
 
       const kioskDeviceId: string | undefined = device.id;
@@ -10028,7 +10055,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Validation failed", errors: validationResult.error.errors });
       }
 
-      const { employeeId, pin, photoEvidenceUrl, sessionId, deviceSecret } = validationResult.data;
+      const { employeeId, pin, photoEvidenceUrl: submittedPhotoEvidenceUrl, sessionId, deviceSecret } = validationResult.data;
 
       const callerIp = req.ip || req.socket.remoteAddress || "unknown";
       if (!takeKioskAttempt(`pin-ip:${callerIp}`, 60, 5 * 60 * 1000)) {
@@ -10038,6 +10065,11 @@ OTO Company Limited`,
       const device = await resolveKioskDevice(deviceSecret);
       if (!device) {
         return res.status(401).json({ message: "Invalid PIN" });
+      }
+
+      const photoEvidenceUrl = verifyKioskPinPhotoClaim(submittedPhotoEvidenceUrl, device);
+      if (photoEvidenceUrl === null) {
+        return res.status(400).json({ message: "Invalid photo evidence" });
       }
 
       const kioskDeviceId: string | undefined = device.id;
@@ -10141,6 +10173,8 @@ OTO Company Limited`,
     }
   }, profilePhotoUpload.single("photo"), fixMulterFilenames, async (req, res, next) => {
     try {
+      const device = await resolveKioskDevice(req.get("x-kiosk-device-secret"));
+      if (!device) return refuseKiosk(res);
       let imageBuffer: Buffer;
       let mimeType = "image/jpeg";
 
@@ -10165,40 +10199,77 @@ OTO Company Limited`,
       const extension = mimeType === "image/png" ? "png" : "jpg";
       const filename = `pin_${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
       const photoUrl = await uploadToObjectStorage(imageBuffer, "pin-photos", filename, mimeType);
-      
-      res.json({ success: true, photoUrl });
+      const expiresAt = Date.now() + PIN_PHOTO_CLAIM_MS;
+      res.json({ success: true, photoUrl: `${photoUrl}?claim=${expiresAt}.${kioskPinPhotoSignature(photoUrl, device, expiresAt)}` });
     } catch (error) {
       next(error);
     }
   });
   
-  // Serve PIN evidence photos from object storage
-  app.get("/api/pin-photos/:filename", requireAuth, async (req, res, next) => {
+  // PIN evidence belongs to an attendance event or attempt, not to anyone
+  // who knows its filename. Both URL forms use the same record-scoped read.
+  const servePinPhoto = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { filename } = req.params;
-      const sanitizedFilename = path.basename(filename);
-      
-      // Try object storage first
-      const file = await getFileFromObjectStorage("pin-photos", sanitizedFilename);
+      if (!/^[a-zA-Z0-9._-]+$/.test(filename) || filename === "." || filename === "..") {
+        return res.status(404).json({ message: "Photo not found" });
+      }
+      const tenantId = await resolveTenantId((req.user as UserWithBranchAccess).tenantId);
+      const access = req.userWithAccess;
+      const visibleBranches = await db.select({ id: branches.id }).from(branches).where(and(
+        eq(branches.tenantId, tenantId),
+        ...(access?.hasAllBranchesAccess ? [] : [inArray(branches.id, access?.allowedBranchIds || [])]),
+      ));
+      const branchIds = visibleBranches.map(branch => branch.id);
+      if (!branchIds.length) return res.status(404).json({ message: "Photo not found" });
+      const urls = [
+        `/api/files/pin-photos/${filename}`,
+        `/api/pin-photos/${filename}`,
+        `/uploads/pin-photos/${filename}`,
+      ];
+      const [event, advisor, attempt] = await Promise.all([
+        db.select({ id: timeEvents.id }).from(timeEvents).where(and(
+          eq(timeEvents.tenantId, tenantId), inArray(timeEvents.branchId, branchIds),
+          inArray(timeEvents.photoEvidenceUrl, urls),
+        )).limit(1),
+        db.select({ id: advisorAttendanceSessions.id }).from(advisorAttendanceSessions).where(and(
+          eq(advisorAttendanceSessions.tenantId, tenantId), inArray(advisorAttendanceSessions.branchId, branchIds),
+          inArray(advisorAttendanceSessions.photoEvidenceUrl, urls),
+        )).limit(1),
+        db.select({ id: kioskAuthAttempts.id }).from(kioskAuthAttempts)
+          .innerJoin(branches, eq(branches.id, kioskAuthAttempts.branchId)).where(and(
+            eq(branches.tenantId, tenantId), inArray(kioskAuthAttempts.branchId, branchIds),
+            inArray(kioskAuthAttempts.photoEvidenceUrl, urls),
+          )).limit(1),
+      ]);
+      if (!event.length && !advisor.length && !attempt.length) {
+        return res.status(404).json({ message: "Photo not found" });
+      }
+
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      const file = await getFileFromObjectStorage("pin-photos", filename);
       if (file) {
         res.setHeader("Content-Type", file.contentType);
         file.stream.pipe(res);
         return;
       }
-      
-      // Fallback to local storage for legacy files
-      const filePath = path.join(pinPhotosDir, sanitizedFilename);
-      if (fs.existsSync(filePath)) {
-        res.setHeader("Content-Type", "image/jpeg");
-        res.sendFile(filePath);
-        return;
+
+      for (const filePath of [path.join(pinPhotosDir, filename), path.join(process.cwd(), "uploads", "pin-photos", filename)]) {
+        if (fs.existsSync(filePath)) {
+          res.setHeader("Content-Type", "image/jpeg");
+          res.sendFile(filePath);
+          return;
+        }
       }
-      
       res.status(404).json({ message: "Photo not found" });
     } catch (error) {
       next(error);
     }
-  });
+  };
+  app.get("/api/files/pin-photos/:filename", requireAuth, requireManager, servePinPhoto);
+  app.get("/api/pin-photos/:filename", requireAuth, requireManager, servePinPhoto);
+  app.get("/uploads/pin-photos/:filename", requireAuth, requireManager, servePinPhoto);
 
   // =====================================================
   // TIMEKEEPING REVIEW ENDPOINTS
@@ -10306,9 +10377,14 @@ OTO Company Limited`,
       const { deriveSessionsAndAnomalies, computeDailyTotals, computeEmployeeDaySummary } = await import("./timekeeping-deriver");
       
       const user = req.user as any;
+      const tenantId = await resolveTenantId(user.tenantId);
       const userAccess = req.userWithAccess;
       const hasAllBranches = !!userAccess?.hasAllBranchesAccess;
-      const accessibleBranchIds = userAccess?.allowedBranchIds || [];
+      const branchRecords = (await storage.getBranches()).filter(branch => branch.tenantId === tenantId);
+      const tenantBranchIds = branchRecords.map(branch => branch.id);
+      const accessibleBranchIds = hasAllBranches
+        ? tenantBranchIds
+        : (userAccess?.allowedBranchIds || []).filter(id => tenantBranchIds.includes(id));
 
       const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
       const branchId = req.query.branchId as string | undefined;
@@ -10318,17 +10394,15 @@ OTO Company Limited`,
       const searchQuery = (req.query.search as string || '').toLowerCase();
 
       // Validate branch access
-      if (branchId && !hasAllBranches && !accessibleBranchIds.includes(branchId)) {
+      if (branchId && !accessibleBranchIds.includes(branchId)) {
         return res.status(403).json({ message: "Access denied to branch" });
       }
 
       // Get employees for the branch(es)
-      let allEmployees = await storage.getEmployees();
+      const allEmployees = (await storage.getEmployees()).filter(employee => employee.tenantId === tenantId);
       let employees;
       if (branchId) {
         employees = allEmployees.filter(e => e.branchId === branchId);
-      } else if (hasAllBranches) {
-        employees = allEmployees;
       } else {
         employees = allEmployees.filter(e => e.branchId && accessibleBranchIds.includes(e.branchId));
       }
@@ -10337,7 +10411,6 @@ OTO Company Limited`,
       employees = employees.filter(e => e.status === 'active');
 
       // Get all branches for lookup (with timezone info)
-      const branchRecords = await storage.getBranches();
       const branchMap = new Map(branchRecords.map(b => [b.id, b]));
 
       // Use the selected branch's timezone, or first accessible branch, or default to Bangkok
@@ -10355,11 +10428,13 @@ OTO Company Limited`,
       };
       if (branchId) {
         eventOptions.branchId = branchId;
-      } else if (!hasAllBranches) {
+      } else {
         eventOptions.branchIds = accessibleBranchIds;
       }
 
-      const allEvents = await storage.getTimeEvents({ ...eventOptions, limit: 10000 });
+      const allEvents = accessibleBranchIds.length
+        ? await storage.getTimeEvents({ ...eventOptions, limit: 10000 })
+        : [];
 
       // Group events by employee
       const eventsByEmployee = new Map<string, any[]>();
@@ -10479,9 +10554,9 @@ OTO Company Limited`,
       const advisorRows = await db.select({ session: advisorAttendanceSessions, person: people, branch: branches })
         .from(advisorAttendanceSessions).innerJoin(people, eq(people.id, advisorAttendanceSessions.personId))
         .innerJoin(branches, eq(branches.id, advisorAttendanceSessions.branchId))
-        .where(and(eq(advisorAttendanceSessions.tenantId, await resolveTenantId(user.tenantId)), eq(advisorAttendanceSessions.checkInDate, dateStr), ...(branchId
+        .where(and(eq(advisorAttendanceSessions.tenantId, tenantId), eq(advisorAttendanceSessions.checkInDate, dateStr), ...(branchId
           ? [eq(advisorAttendanceSessions.branchId, branchId)]
-          : !hasAllBranches ? [inArray(advisorAttendanceSessions.branchId, accessibleBranchIds)] : []), isNull(advisorAttendanceSessions.voidedAt)));
+          : [inArray(advisorAttendanceSessions.branchId, accessibleBranchIds)]), isNull(advisorAttendanceSessions.voidedAt)));
       const advisorSessionIds = advisorRows.map(({ session }) => session.id);
       const correctionRows = advisorSessionIds.length
         ? await db.select({
@@ -10489,7 +10564,7 @@ OTO Company Limited`,
             changedByName: users.fullName,
           }).from(advisorAttendanceCorrections)
             .innerJoin(users, eq(users.id, advisorAttendanceCorrections.changedBy))
-            .where(and(eq(advisorAttendanceCorrections.tenantId, await resolveTenantId(user.tenantId)), inArray(advisorAttendanceCorrections.sessionId, advisorSessionIds)))
+            .where(and(eq(advisorAttendanceCorrections.tenantId, tenantId), inArray(advisorAttendanceCorrections.sessionId, advisorSessionIds)))
             .orderBy(desc(advisorAttendanceCorrections.createdAt))
         : [];
       const correctionsBySession = new Map<string, typeof correctionRows>();
@@ -10998,27 +11073,43 @@ OTO Company Limited`,
   });
 
   // Get employee's time events
-  app.get("/api/employees/:employeeId/time-events", requireAuth, async (req, res, next) => {
+  app.get("/api/employees/:employeeId/time-events", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { employeeId } = req.params;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
       const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
       const employee = await storage.getEmployee(employeeId);
-      if (!employee) {
+      const tenantId = await resolveTenantId((req.user as UserWithBranchAccess).tenantId);
+      const access = req.userWithAccess;
+      if (!employee || employee.tenantId !== tenantId || !employee.branchId ||
+          (!access?.hasAllBranchesAccess && !access?.allowedBranchIds?.includes(employee.branchId))) {
         return res.status(404).json({ message: "Employee not found" });
       }
 
-      const events = await storage.getTimeEvents({
+      const allowedBranches = (await storage.getBranches())
+        .filter(branch => branch.tenantId === tenantId &&
+          (access?.hasAllBranchesAccess || access?.allowedBranchIds?.includes(branch.id)))
+        .map(branch => branch.id);
+
+      const events = allowedBranches.length ? await storage.getTimeEvents({
         employeeId,
+        branchIds: allowedBranches,
         limit,
         offset,
-      });
+      }) : [];
 
-      const total = await storage.getTimeEventsCount({ employeeId });
-      const pinUsageCount = await storage.getEmployeePinUsageCount(employeeId, 30);
+      const total = allowedBranches.length
+        ? await storage.getTimeEventsCount({ employeeId, branchIds: allowedBranches })
+        : 0;
+      const [pinUsage] = allowedBranches.length ? await db.select({ count: sql<number>`count(*)::int` })
+        .from(timeEvents).where(and(
+          eq(timeEvents.tenantId, tenantId), eq(timeEvents.employeeId, employeeId),
+          inArray(timeEvents.branchId, allowedBranches), eq(timeEvents.authMethod, "PIN"),
+          gte(timeEvents.eventTime, new Date(Date.now() - 30 * 24 * 60 * 60_000)),
+        )) : [{ count: 0 }];
 
-      res.json({ events, total, limit, offset, pinUsageCount30d: pinUsageCount });
+      res.json({ events, total, limit, offset, pinUsageCount30d: pinUsage.count });
     } catch (error) {
       next(error);
     }
@@ -22928,7 +23019,7 @@ ${context}`;
       }
       // Private documents have their own record-scoped routes; this generic
       // file route cannot decide who may read a contract or employee record.
-      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private", "knowledge-files", "test-uploads"].includes(folder)) {
+      if (["contracts", "letters", "beo-pdfs", "employee-documents", "payroll-exports", "payroll-payslips", "fix-media-thumbs", "dropoff-photos-private", "dropoff-signatures", "dropoff-signatures-private", "knowledge-files", "test-uploads", "pin-photos"].includes(folder)) {
         return res.status(404).json({ message: "File not found" });
       }
       

@@ -61,6 +61,8 @@ SCRUM-465's next check-in-media slice is live on oto-app-staging at 2e4d8491 (de
 
 SCRUM-465's knowledge-file guard is live at `5485154a` (`dep-dauifs7lot8c73b990h0`): generic `knowledge-files` and `test-uploads` reads returned 404, anonymous scoped media returned 401, and health returned 200. Build passed, typecheck remains at 542 inherited errors and edited-line lint is clear. The remaining generic folders include kiosk PIN evidence, checklist/checker media, checkout photos, task photos and camp photos; each needs owner/tenant access without breaking its workflow. See `docs/qa/oto-app-lift/files.md`.
 
+SCRUM-465 kiosk PIN evidence is locally verified, pending staging deployment. Generic reads close; current and legacy image reads require a manager and an owning event/session/attempt in the signed-in tenant and branch. Upload receipts bind the photo to a kiosk device; clock requests reject forged or wrong-device receipts. Timekeeping review and employee event reads also enforce tenant and branch. The existing kiosk authorization and expanded advisor-attendance specs passed 12/12 and 10/10 on a fresh isolated database; build passed; typecheck stays at 542 inherited errors and scoped lint has no new finding. The separate timekeeping-review spec cannot import missing `fixtures/users.json`; the advisor spec covers the relevant manager and branch outcomes. Checklist/checker, checkout, task and camp media remain. See `docs/qa/oto-app-lift/files.md`.
+
 ## Release checkpoint - 30 September 2026 - break checkpoint saved
 
 The current release checkpoint is complete. Stop here and await the next
