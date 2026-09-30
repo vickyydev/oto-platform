@@ -103,6 +103,7 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { runAttentionEngine, evaluateForEmployee, evaluateForContract, getLastCalculatedAt, evaluateRuleForEmployee, getRuleDefinitions } from "./attention-engine";
 import { getEmployeeDisplayName } from "./lib/employeeDisplayName";
+import { isSealedAccessPassword, openAccessPassword, sealAccessPassword } from "./lib/accessVault";
 import { faceRecognitionService, replaceFaceEnrollment } from "./face-recognition";
 import { advisorSessionCorrectionValues, advisorSessionMetrics, canAdvisorUseKiosk, issueAdvisorIdentificationProof, verifyAdvisorIdentificationProof } from "./advisor-attendance";
 
@@ -119,7 +120,7 @@ import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db } from "./db";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { tasks, taskQuestions, taskAssignments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -25103,12 +25104,36 @@ ${context}`;
   // ACCESS VAULT ROUTES
   // ============================================
 
+  const canReadAccessItem = (item: { tenantId: string; status: string; visibilityLevel: string; branchIds: string[] }, user?: UserWithBranchAccess): boolean => {
+    if (!user?.tenantId || item.tenantId !== user.tenantId) return false;
+    const admin = ['global_admin', 'operator_admin', 'admin'].includes(user.role);
+    if (!admin && item.status !== 'active') return false;
+    if (!admin && user.role === 'manager' && !['admin_manager', 'all_staff'].includes(item.visibilityLevel)) return false;
+    if (!admin && user.role !== 'manager' && item.visibilityLevel !== 'all_staff') return false;
+    return admin || user.hasAllBranchesAccess || !item.branchIds?.length || item.branchIds.some(id => user.allowedBranchIds.includes(id));
+  };
+
+  const validAccessBranches = async (tenantId: string, value: unknown): Promise<boolean> => {
+    if (!Array.isArray(value) || value.some(id => typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) return false;
+    if (!value.length) return true;
+    const found = await db.select({ id: branches.id }).from(branches)
+      .where(and(eq(branches.tenantId, tenantId), inArray(branches.id, value)));
+    return found.length === new Set(value).size;
+  };
+
+  const withoutAccessPassword = <T extends { passwordEncrypted: string }>(item: T): Omit<T, 'passwordEncrypted'> => {
+    const { passwordEncrypted, ...safeItem } = item;
+    void passwordEncrypted;
+    return safeItem;
+  };
+
   // Get access items (filtered by user's visibility level and branch access)
   // Admin mode: ?adminMode=true bypasses visibility/branch filtering (admin only)
   app.get("/api/access", requireAuth, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
       const user = req.userWithAccess;
+      const tenantId = user?.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const userRole = user?.role || 'staff';
       const branchId = req.query.branchId as string | undefined;
       const category = req.query.category as string | undefined;
@@ -25125,27 +25150,7 @@ ${context}`;
       // Filter by status
       let items = allItems.filter(item => item.status === status);
 
-      // Filter by visibility level based on user role (skip in admin mode)
-      if (!useAdminMode) {
-        items = items.filter(item => {
-          if (isAdmin) {
-            return true; // Admin can see all
-          }
-          if (userRole === 'manager') {
-            return item.visibilityLevel === 'admin_manager' || item.visibilityLevel === 'all_staff';
-          }
-          // staff
-          return item.visibilityLevel === 'all_staff';
-        });
-
-        // Filter by branch access (skip in admin mode)
-        if (user && !user.hasAllBranchesAccess) {
-          items = items.filter(item => {
-            if (!item.branchIds || item.branchIds.length === 0) return true; // No branch restriction
-            return item.branchIds.some(bid => user.allowedBranchIds.includes(bid));
-          });
-        }
-      }
+      if (!useAdminMode) items = items.filter(item => canReadAccessItem(item, user));
 
       // Filter by specific branch if provided
       if (branchId) {
@@ -25185,87 +25190,44 @@ ${context}`;
     try {
       const { id } = req.params;
       const user = req.userWithAccess;
-      const userRole = user?.role || 'staff';
-
       const item = await storage.getAccessItem(id);
-      if (!item) {
+      if (!item || !canReadAccessItem(item, user)) {
         return res.status(404).json({ message: "Access item not found" });
       }
-
-      // Check visibility
-      let canView = false;
-      if (userRole === 'global_admin' || userRole === 'operator_admin' || userRole === 'admin') {
-        canView = true;
-      } else if (userRole === 'manager') {
-        canView = item.visibilityLevel === 'admin_manager' || item.visibilityLevel === 'all_staff';
-      } else {
-        canView = item.visibilityLevel === 'all_staff';
-      }
-
-      // Check branch access
-      if (canView && user && !user.hasAllBranchesAccess) {
-        if (item.branchIds && item.branchIds.length > 0) {
-          canView = item.branchIds.some(bid => user.allowedBranchIds.includes(bid));
-        }
-      }
-
-      if (!canView) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      res.json(item);
+      res.json(withoutAccessPassword(item));
     } catch (error) {
       next(error);
     }
   });
 
-  // Log password view (only if user has visibility)
-  app.post("/api/access/:id/view-log", requireAuth, async (req, res, next) => {
+  // Reveal and audit in one server operation. The detail route never sends the credential.
+  app.post("/api/access/:id/reveal", requireAuth, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
       const user = req.user;
       const userWithAccess = req.userWithAccess;
-      const userRole = userWithAccess?.role || 'staff';
-
-      if (!user) {
+      const tenantId = userWithAccess?.tenantId;
+      if (!user || !tenantId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-
-      // Verify user has access to this item before logging
       const item = await storage.getAccessItem(id);
-      if (!item) {
+      if (!item || !canReadAccessItem(item, userWithAccess)) {
         return res.status(404).json({ message: "Access item not found" });
       }
-
-      // Check visibility
-      let canView = false;
-      if (userRole === 'global_admin' || userRole === 'operator_admin' || userRole === 'admin') {
-        canView = true;
-      } else if (userRole === 'manager') {
-        canView = item.visibilityLevel === 'admin_manager' || item.visibilityLevel === 'all_staff';
-      } else {
-        canView = item.visibilityLevel === 'all_staff';
-      }
-
-      // Check branch access
-      if (canView && userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        if (item.branchIds && item.branchIds.length > 0) {
-          canView = item.branchIds.some(bid => userWithAccess.allowedBranchIds.includes(bid));
-        }
-      }
-
-      if (!canView) {
-        return res.status(403).json({ message: "Access denied" });
-      }
+      const password = openAccessPassword(tenantId, item.passwordEncrypted);
+      if (password === null) return res.status(503).json({ message: "Credential unavailable; ask an administrator" });
 
       await storage.createAccessViewLog({
         tenantId,
         accessItemId: id,
         viewedBy: user.id,
       });
-
-      res.json({ success: true });
+      if (!isSealedAccessPassword(item.passwordEncrypted)) {
+        await db.update(accessItems).set({ passwordEncrypted: sealAccessPassword(tenantId, password) })
+          .where(and(eq(accessItems.id, id), eq(accessItems.tenantId, tenantId), eq(accessItems.passwordEncrypted, item.passwordEncrypted)));
+      }
+      res.setHeader('Cache-Control', 'no-store');
+      res.json({ password });
     } catch (error) {
       next(error);
     }
@@ -25274,20 +25236,24 @@ ${context}`;
   // Create access item (admin only)
   app.post("/api/access", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const user = req.user;
       const { title, category, username, password, notes, branchIds, visibilityLevel, status } = req.body;
 
-      if (!title || !password) {
+      if (typeof title !== 'string' || !title.trim() || typeof password !== 'string' || !password) {
         return res.status(400).json({ message: "Title and password are required" });
       }
+      if (!(await validAccessBranches(tenantId, branchIds || []))) return res.status(400).json({ message: "Invalid branches" });
+      if (visibilityLevel && !['admin_only', 'admin_manager', 'all_staff'].includes(visibilityLevel)) return res.status(400).json({ message: "Invalid visibility" });
+      if (status && !['active', 'archived'].includes(status)) return res.status(400).json({ message: "Invalid status" });
 
       const item = await storage.createAccessItem({
         tenantId,
         title,
         category: category || null,
         username: username || null,
-        passwordEncrypted: password, // In production, encrypt this
+        passwordEncrypted: sealAccessPassword(tenantId, password),
         notes: notes || null,
         branchIds: branchIds || [],
         visibilityLevel: visibilityLevel || 'admin_only',
@@ -25295,7 +25261,7 @@ ${context}`;
         updatedBy: user?.id || null,
       });
 
-      res.json(item);
+      res.json(withoutAccessPassword(item));
     } catch (error) {
       next(error);
     }
@@ -25305,26 +25271,33 @@ ${context}`;
   app.patch("/api/access/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const user = req.user;
       const { title, category, username, password, notes, branchIds, visibilityLevel, status } = req.body;
 
       const item = await storage.getAccessItem(id);
-      if (!item) {
+      if (!item || item.tenantId !== tenantId) {
         return res.status(404).json({ message: "Access item not found" });
       }
+      if (branchIds !== undefined && !(await validAccessBranches(tenantId, branchIds))) return res.status(400).json({ message: "Invalid branches" });
+      if (visibilityLevel !== undefined && !['admin_only', 'admin_manager', 'all_staff'].includes(visibilityLevel)) return res.status(400).json({ message: "Invalid visibility" });
+      if (status !== undefined && !['active', 'archived'].includes(status)) return res.status(400).json({ message: "Invalid status" });
+      if (title !== undefined && (typeof title !== 'string' || !title.trim())) return res.status(400).json({ message: "Invalid title" });
+      if (password !== undefined && (typeof password !== 'string' || !password)) return res.status(400).json({ message: "Invalid password" });
 
       const updates: Record<string, any> = { updatedBy: user?.id };
       if (title !== undefined) updates.title = title;
       if (category !== undefined) updates.category = category;
       if (username !== undefined) updates.username = username;
-      if (password !== undefined) updates.passwordEncrypted = password;
+      if (password !== undefined) updates.passwordEncrypted = sealAccessPassword(tenantId, password);
       if (notes !== undefined) updates.notes = notes;
       if (branchIds !== undefined) updates.branchIds = branchIds;
       if (visibilityLevel !== undefined) updates.visibilityLevel = visibilityLevel;
       if (status !== undefined) updates.status = status;
 
       const updated = await storage.updateAccessItem(id, updates);
-      res.json(updated);
+      res.json(withoutAccessPassword(updated));
     } catch (error) {
       next(error);
     }
@@ -25334,10 +25307,13 @@ ${context}`;
   app.get("/api/access/:id/view-logs", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const logs = await storage.getAccessViewLogs(id);
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const item = await storage.getAccessItem(id);
+      if (!item || item.tenantId !== tenantId) return res.status(404).json({ message: "Access item not found" });
+      const logs = (await storage.getAccessViewLogs(id)).filter(log => log.tenantId === tenantId);
       
       // Get user names for the logs
-      const userIds = [...new Set(logs.map(l => l.viewedBy))];
       const allUsers = await storage.getUsers();
       const userMap = new Map(allUsers.map(u => [u.id, u]));
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Lock, Plus, Eye, EyeOff, Copy, Edit, Archive, Search, Filter, Check, Clock, User } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lock, Plus, Eye, EyeOff, Edit, Archive, Search, Check, Clock, User } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -24,7 +24,6 @@ interface AccessItem {
   notes: string | null;
   updatedAt: string;
   updatedBy: string | null;
-  passwordEncrypted?: string;
 }
 
 interface Branch {
@@ -78,11 +77,6 @@ export default function AccessConfigPage() {
 
   const { data: branches = [] } = useQuery<Branch[]>({
     queryKey: ["/api/branches"],
-  });
-
-  const { data: itemDetail } = useQuery<AccessItem>({
-    queryKey: ["/api/access", editingItem?.id],
-    enabled: !!editingItem?.id,
   });
 
   const { data: viewLogs = [] } = useQuery<ViewLog[]>({

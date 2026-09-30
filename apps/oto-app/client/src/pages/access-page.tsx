@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Lock, Eye, EyeOff, Copy, Wifi, Monitor, Key, Building2, CreditCard, MoreHorizontal, Search, Filter, Check, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 
 interface AccessItem {
   id: string;
@@ -22,7 +22,6 @@ interface AccessItem {
   notes: string | null;
   updatedAt: string;
   updatedBy: string | null;
-  passwordEncrypted?: string;
 }
 
 interface Branch {
@@ -54,7 +53,9 @@ export default function AccessPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [branchFilter, setBranchFilter] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<AccessItem | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [revealedPassword, setRevealedPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const { data: accessItems = [], isLoading } = useQuery<AccessItem[]>({
@@ -70,9 +71,11 @@ export default function AccessPage() {
     enabled: !!selectedItem?.id,
   });
 
-  const logViewMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("POST", `/api/access/${id}/view-log`);
+  const revealMutation = useMutation({
+    mutationFn: async (id: string): Promise<string> => {
+      const response = await apiRequest("POST", `/api/access/${id}/reveal`);
+      const result = await response.json();
+      return result.password;
     },
   });
 
@@ -84,25 +87,41 @@ export default function AccessPage() {
   });
 
   const handleItemClick = (item: AccessItem) => {
+    selectedIdRef.current = item.id;
     setSelectedItem(item);
     setShowPassword(false);
+    setRevealedPassword(null);
     setCopied(false);
   };
 
-  const handleShowPassword = () => {
-    if (!showPassword && selectedItem) {
-      logViewMutation.mutate(selectedItem.id);
+  const handleShowPassword = async () => {
+    if (showPassword) {
+      setShowPassword(false);
+      setRevealedPassword(null);
+      return;
     }
-    setShowPassword(!showPassword);
+    if (!selectedItem) return;
+    try {
+      const password = await revealMutation.mutateAsync(selectedItem.id);
+      if (selectedIdRef.current !== selectedItem.id) return;
+      setRevealedPassword(password);
+      setShowPassword(true);
+    } catch {
+      toast({ title: "Unable to show credential", variant: "destructive" });
+    }
   };
 
   const handleCopyPassword = async () => {
-    if (itemDetail?.passwordEncrypted) {
-      await navigator.clipboard.writeText(itemDetail.passwordEncrypted);
-      setCopied(true);
-      if (!showPassword && selectedItem) {
-        logViewMutation.mutate(selectedItem.id);
+    if (selectedItem) {
+      try {
+        const password = revealedPassword ?? await revealMutation.mutateAsync(selectedItem.id);
+        if (selectedIdRef.current !== selectedItem.id) return;
+        await navigator.clipboard.writeText(password);
+      } catch {
+        toast({ title: "Unable to copy credential", variant: "destructive" });
+        return;
       }
+      setCopied(true);
       toast({
         title: "Copied",
         description: "Password copied to clipboard",
@@ -226,7 +245,7 @@ export default function AccessPage() {
         </div>
       )}
 
-      <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
+      <Dialog open={!!selectedItem} onOpenChange={(open) => { if (!open) { selectedIdRef.current = null; setSelectedItem(null); setRevealedPassword(null); setShowPassword(false); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -271,12 +290,13 @@ export default function AccessPage() {
                 <div className="text-sm text-muted-foreground mb-1">Password / Code</div>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono">
-                    {showPassword ? itemDetail.passwordEncrypted : "••••••••••••"}
+                    {showPassword ? revealedPassword : "••••••••••••"}
                   </code>
                   <Button 
                     size="icon" 
                     variant="ghost"
                     onClick={handleShowPassword}
+                    disabled={revealMutation.isPending}
                     data-testid="button-toggle-password"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -285,6 +305,7 @@ export default function AccessPage() {
                     size="icon" 
                     variant="ghost"
                     onClick={handleCopyPassword}
+                    disabled={revealMutation.isPending}
                     data-testid="button-copy-password"
                   >
                     {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}

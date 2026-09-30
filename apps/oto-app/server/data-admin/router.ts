@@ -39,7 +39,6 @@ import scheduleShiftRowRoleAdmin from "./models/scheduleShiftRowRole";
 import scheduleShiftBreakAdmin from "./models/scheduleShiftBreak";
 import payrollPeriodAdmin from "./models/payrollPeriod";
 import payrollDayReconciliationAdmin from "./models/payrollDayReconciliation";
-import accessItemAdmin from "./models/accessItem";
 import xeroTokenAdmin from "./models/xeroToken";
 import templateAssignmentAdmin from "./models/templateAssignment";
 import staffCostAllocationAdmin from "./models/staffCostAllocation";
@@ -103,7 +102,7 @@ import cashDailyAdmin from "./models/cashDaily";
   sessionAdmin, payrollLineItemAdmin, payrollEmployeeSummaryAdmin, accessPolicyAdmin, employeePresenceAdmin,
   payrollRunAdmin, kioskDeviceAdmin, branchEventAdmin, departmentBranchAssignmentAdmin,
   scheduleShiftRowRoleAdmin, scheduleShiftBreakAdmin, payrollPeriodAdmin, payrollDayReconciliationAdmin,
-  accessItemAdmin, xeroTokenAdmin, templateAssignmentAdmin, staffCostAllocationAdmin, contractInstanceAdmin,
+  xeroTokenAdmin, templateAssignmentAdmin, staffCostAllocationAdmin, contractInstanceAdmin,
   activityLogAdmin, attentionItemAdmin, enrollmentSessionAdmin, timeEntryAdmin, timekeepingIssueAdmin,
   authOtpEventAdmin, shiftRequiredRoleAdmin, leavePolicyAdmin, scheduleTemplateAdmin,
   scheduleTemplateRowAdmin, scheduleTemplateRowRoleAdmin, scheduleAuditLogAdmin, payrollExceptionAdmin,
