@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshCw, Ticket, UserPlus, Users, X } from 'lucide-react';
+import { RefreshCw, Ticket, TriangleAlert, UserPlus, Users, X } from 'lucide-react';
 import { staffCandidates, type BranchStaffMember } from '@/api/fleet';
-import { ErrorNote, Loading, Panel, RouteUnavailable } from '@/components/Panel';
+import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
 import { Field, Select, TextInput } from '@/components/Form';
-import { StatusPill } from '@/components/Status';
 import { Button } from '@/components/ui/button';
+import { StatusChip } from '@/components/redesign/chips';
+import { CardShell, StripedList } from '@/components/redesign/layout';
+import { cn } from '@/lib/utils';
 import { ApiError, boothApi, isMissingRoute, type BoothDutyRule, type BoothDutyView } from './boothApi';
 import {
   APP_STATE_NOTE,
@@ -23,20 +25,28 @@ import {
  * The roster with where each person came from, the label preview, "Sync now",
  * the names the sync could not match (said plainly, never dropped), manual add
  * and remove, and the day's log lines in quiet mono — the approved "Today's
- * staff" artboard, in this page's design language. The card reads and writes
- * its own routes, so the rest of the page is not re-read on every change here.
+ * staff" card, on the page's sheet (SCRUM-474). The card reads and writes its
+ * own routes, so the rest of the page is not re-read on every change here.
+ *
+ * On the page's card language: the people as striped rows like Booth staff,
+ * the label on a primary wash, a warning with its triangle, the forms in the
+ * bordered boxes every card uses for them, and the log on the ruled foot.
  */
 export function TodayStaffPanel({
   boothId,
   branchId,
   timezone,
   readOnly,
+  id,
+  className,
 }: {
   boothId: string;
   branchId: string;
   timezone: string | null | undefined;
   /** The caller may read the roster but not change it (`admin:booth:staff_assign`). */
   readOnly: boolean;
+  id?: string;
+  className?: string;
 }) {
   const [view, setView] = useState<BoothDutyView | null>(null);
   const [missing, setMissing] = useState(false);
@@ -90,7 +100,13 @@ export function TodayStaffPanel({
   };
 
   const syncButton = !readOnly && view && (
-    <Button size="sm" variant="outline" disabled={busy} onClick={() => void act(() => boothApi.syncDuty(boothId))}>
+    <Button
+      size="sm"
+      variant="outline"
+      className="rounded-full px-3.5"
+      disabled={busy}
+      onClick={() => void act(() => boothApi.syncDuty(boothId))}
+    >
       <RefreshCw className={busy ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
       Sync now
     </Button>
@@ -98,9 +114,9 @@ export function TodayStaffPanel({
 
   if (missing) {
     return (
-      <Panel title="Today’s staff">
+      <CardShell id={id} className={className} icon={Users} title="Today’s staff">
         <RouteUnavailable what="Today’s staff" detail="This deployment does not sync the booth’s roster yet." />
-      </Panel>
+      </CardShell>
     );
   }
 
@@ -109,20 +125,38 @@ export function TodayStaffPanel({
   const unmatched = view?.lastSync?.unmatched ?? [];
 
   return (
-    <Panel
+    <CardShell
+      id={id}
+      className={className}
+      icon={Users}
       title="Today’s staff"
-      description={
+      note={
         view
-          ? `Who works this booth on ${view.businessDate}, from the OTO App’s rota. Their names print together on every voucher.`
-          : 'Who works this booth today, from the OTO App’s rota.'
+          ? `who works this booth on ${view.businessDate}, from the OTO App’s rota — their names print together on every voucher`
+          : 'who works this booth today, from the OTO App’s rota'
       }
       actions={syncButton}
+      footer={
+        // The day's log lines in quiet mono, on the card's ruled foot.
+        view && view.log.length > 0 ? (
+          <ul className="flex w-full flex-col gap-1.5 text-xs">
+            {view.log.map((line, i) => (
+              <li key={`${line.at}-${i}`} className="flex gap-2.5">
+                <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground/80">
+                  {logTime(line.at, timezone)}
+                </span>
+                <span className="min-w-0 break-words">{logLineText(line)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : undefined
+      }
     >
       {error && <ErrorNote message={error} onRetry={() => void load()} />}
       {!view ? (
         !error && <Loading what="today’s staff" />
       ) : (
-        <div className="flex flex-col gap-3">
+        <>
           {view.roster.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nobody is assigned for today.{' '}
@@ -131,41 +165,48 @@ export function TodayStaffPanel({
                 : 'The rota has not been read yet today — it is read when the park opens, or now with Sync now.'}
             </p>
           ) : (
-            <ul className="flex flex-col gap-2">
-              {view.roster.map((person) => (
-                <li key={person.id} className="flex items-center gap-3 rounded-xl bg-muted/30 px-3 py-2.5">
+            <StripedList label="Today’s staff">
+              {view.roster.map((person, index) => (
+                <li key={person.id} className="flex items-center gap-3 px-3 py-2.5">
                   <span
                     aria-hidden="true"
-                    className="flex w-9 h-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary"
+                    className={cn(
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold',
+                      // The artboard alternates the two suite washes down the
+                      // roster, so two people side by side read as two.
+                      index % 2 === 0
+                        ? 'bg-secondary text-secondary-foreground'
+                        : 'bg-primary/10 text-primary-ink',
+                    )}
                   >
                     {initialOf(person.displayName)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold truncate">{person.displayName}</div>
+                    <div className="truncate text-[13.5px] font-semibold">{person.displayName}</div>
                     <div className="text-xs text-muted-foreground">
                       {person.accountId ? 'May sign in today' : 'No login — named on the voucher only'}
                     </div>
                   </div>
-                  <StatusPill tone={DUTY_SOURCE[person.source].tone}>{DUTY_SOURCE[person.source].label}</StatusPill>
+                  <StatusChip tone={DUTY_SOURCE[person.source].tone}>{DUTY_SOURCE[person.source].label}</StatusChip>
                   {!readOnly && (
                     <button
                       type="button"
                       aria-label={`Take ${person.displayName} off today’s roster`}
                       disabled={busy}
                       onClick={() => void act(() => boothApi.removeDuty(boothId, person.id))}
-                      className="rounded-full p-1 text-muted-foreground hover:bg-muted disabled:opacity-50"
+                      className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground disabled:opacity-50"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   )}
                 </li>
               ))}
-            </ul>
+            </StripedList>
           )}
 
-          <div className="flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm">
-            <Ticket className="w-4 h-4 shrink-0 text-primary" aria-hidden="true" />
-            <span>
+          <div className="flex items-center gap-2.5 rounded-[14px] border border-primary/30 bg-primary/10 px-3.5 py-2.5 text-sm">
+            <Ticket className="w-4 h-4 shrink-0 text-primary-ink" aria-hidden="true" />
+            <span className="min-w-0 break-words">
               {view.label ? (
                 <>
                   On every voucher today: <strong>{view.label}</strong>
@@ -176,28 +217,33 @@ export function TodayStaffPanel({
             </span>
           </div>
 
-          {note && <p className="text-sm" style={{ color: 'hsl(var(--status-warn))' }}>{note}</p>}
+          {note && (
+            <p className="flex gap-2.5 rounded-[14px] border border-status-warn/30 bg-status-warn/15 px-3.5 py-2.5 text-sm">
+              <TriangleAlert className="mt-0.5 w-4 h-4 shrink-0 text-status-warn" aria-hidden="true" />
+              <span className="min-w-0 break-words">{note}</span>
+            </p>
+          )}
 
           {unmatched.length > 0 && (
-            <div className="rounded-xl border px-3.5 py-2.5 text-sm">
+            <div className="flex flex-col gap-1 rounded-[14px] border border-border p-3 text-sm">
               <p className="font-semibold">On the rota, but not matched to an account</p>
-              <ul className="mt-1 flex flex-col gap-0.5 text-muted-foreground">
+              <ul className="flex flex-col gap-0.5 text-muted-foreground">
                 {unmatched.map((u) => (
-                  <li key={`${u.name}-${u.reason}`}>
+                  <li key={`${u.name}-${u.reason}`} className="break-words">
                     {u.name} — {UNMATCHED_REASON[u.reason]}
                   </li>
                 ))}
               </ul>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Not on the voucher until linked, or added here by hand.
               </p>
             </div>
           )}
 
           {!readOnly && (
-            <div className="rounded-xl border p-3 flex flex-col gap-3">
+            <div className="flex flex-col gap-3 rounded-[14px] border border-border p-3">
               <p className="text-sm font-semibold">Add somebody for today</p>
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div className="grid gap-3 @md:grid-cols-[1fr_auto] @md:items-end">
                 <Field label="A member of staff">
                   <Select
                     value={adding}
@@ -211,6 +257,7 @@ export function TodayStaffPanel({
                 </Field>
                 <Button
                   size="sm"
+                  className="rounded-full px-4 font-bold"
                   disabled={busy || adding === ''}
                   onClick={() => {
                     const accountId = adding;
@@ -222,13 +269,14 @@ export function TodayStaffPanel({
                   Add
                 </Button>
               </div>
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div className="grid gap-3 @md:grid-cols-[1fr_auto] @md:items-end">
                 <Field label="Or a name alone" hint="Somebody with no login — named on the voucher, never signs in.">
                   <TextInput value={name} onChange={setName} placeholder="e.g. Nok" disabled={busy} />
                 </Field>
                 <Button
                   size="sm"
                   variant="outline"
+                  className="rounded-full bg-card px-4"
                   disabled={busy || name.trim() === ''}
                   onClick={() => {
                     const displayName = name.trim();
@@ -243,16 +291,17 @@ export function TodayStaffPanel({
             </div>
           )}
 
-          <div>
+          <div className="flex flex-col gap-2">
             <button
               type="button"
-              className="text-xs font-semibold text-muted-foreground underline"
+              aria-expanded={ruleOpen}
+              className="self-start text-xs font-semibold text-primary-ink underline underline-offset-4"
               onClick={() => setRuleOpen((o) => !o)}
             >
               {ruleOpen ? 'Hide how staff are found' : 'How staff are found'}
             </button>
             {ruleOpen && rule && (
-              <div className="mt-2 flex flex-col gap-3 rounded-xl border p-3">
+              <div className="flex flex-col gap-3 rounded-[14px] border border-border p-3">
                 <Field
                   label="Shift group, department or role contains"
                   hint="The park schedules the booth under “Sale Booth”. Upper or lower case and trailing spaces do not matter."
@@ -271,9 +320,10 @@ export function TodayStaffPanel({
                   />
                 </Field>
                 {!readOnly && (
-                  <div>
+                  <div className="flex flex-col gap-1">
                     <Button
                       size="sm"
+                      className="self-start rounded-full px-4 font-bold"
                       disabled={
                         busy || (rule.groupText === view.rule.groupText && rule.dutyText === view.rule.dutyText)
                       }
@@ -281,31 +331,20 @@ export function TodayStaffPanel({
                     >
                       Save rule
                     </Button>
-                    <p className="mt-1 text-xs text-muted-foreground">Takes effect at the next sync.</p>
+                    <p className="text-xs text-muted-foreground">Takes effect at the next sync.</p>
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {view.log.length > 0 && (
-            <ul className="flex flex-col gap-1 border-t pt-3 text-xs text-muted-foreground">
-              {view.log.map((line, i) => (
-                <li key={`${line.at}-${i}`} className="flex gap-2.5">
-                  <span className="font-mono text-[11px] text-foreground/45">{logTime(line.at, timezone)}</span>
-                  <span>{logLineText(line)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-
           {readOnly && (
             <p className="text-xs text-muted-foreground">
-              Changing today’s staff needs <code className="font-mono">admin:booth:staff_assign</code>.
+              Changing today’s staff needs <code className="font-mono text-xs">admin:booth:staff_assign</code>.
             </p>
           )}
-        </div>
+        </>
       )}
-    </Panel>
+    </CardShell>
   );
 }
