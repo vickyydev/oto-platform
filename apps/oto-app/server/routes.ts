@@ -25839,14 +25839,17 @@ ${context}`;
   
   app.get("/api/notifications", requireAuth, async (req, res, next) => {
     try {
-      const user = req.user as any;
-      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-      const offset = parseInt(req.query.offset as string) || 0;
+      const userId = req.user?.id;
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!userId || !tenantId) return res.status(403).json({ message: "Access denied" });
+      const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+      const offset = Math.max(Number(req.query.offset) || 0, 0);
+      if (!Number.isInteger(limit) || !Number.isSafeInteger(offset)) return res.status(400).json({ message: "Invalid pagination" });
       
       const items = await db
         .select()
         .from(notificationsTable)
-        .where(eq(notificationsTable.recipientUserId, user.id))
+        .where(and(eq(notificationsTable.tenantId, tenantId), eq(notificationsTable.recipientUserId, userId)))
         .orderBy(drizzleDesc(notificationsTable.createdAt))
         .limit(limit)
         .offset(offset);
@@ -25859,12 +25862,15 @@ ${context}`;
   
   app.get("/api/notifications/unread-count", requireAuth, async (req, res, next) => {
     try {
-      const user = req.user as any;
+      const userId = req.user?.id;
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!userId || !tenantId) return res.status(403).json({ message: "Access denied" });
       const [result] = await db
         .select({ count: sql`count(*)::int` })
         .from(notificationsTable)
         .where(and(
-          eq(notificationsTable.recipientUserId, user.id),
+          eq(notificationsTable.tenantId, tenantId),
+          eq(notificationsTable.recipientUserId, userId),
           eq(notificationsTable.isRead, false)
         ));
       
@@ -25876,16 +25882,24 @@ ${context}`;
   
   app.patch("/api/notifications/:id/read", requireAuth, async (req, res, next) => {
     try {
-      const user = req.user as any;
+      const userId = req.user?.id;
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!userId || !tenantId) return res.status(403).json({ message: "Access denied" });
       const { id } = req.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
       
-      await db
+      const [updated] = await db
         .update(notificationsTable)
         .set({ isRead: true, readAt: new Date() })
         .where(and(
           eq(notificationsTable.id, id),
-          eq(notificationsTable.recipientUserId, user.id)
-        ));
+          eq(notificationsTable.tenantId, tenantId),
+          eq(notificationsTable.recipientUserId, userId)
+        ))
+        .returning({ id: notificationsTable.id });
+      if (!updated) return res.status(404).json({ message: "Notification not found" });
       
       res.json({ success: true });
     } catch (err) {
@@ -25895,13 +25909,16 @@ ${context}`;
   
   app.post("/api/notifications/mark-all-read", requireAuth, async (req, res, next) => {
     try {
-      const user = req.user as any;
+      const userId = req.user?.id;
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!userId || !tenantId) return res.status(403).json({ message: "Access denied" });
       
       await db
         .update(notificationsTable)
         .set({ isRead: true, readAt: new Date() })
         .where(and(
-          eq(notificationsTable.recipientUserId, user.id),
+          eq(notificationsTable.tenantId, tenantId),
+          eq(notificationsTable.recipientUserId, userId),
           eq(notificationsTable.isRead, false)
         ));
       
