@@ -45,8 +45,11 @@ counter. This guide covers the rest of the counter's day.
    (the station's demo band loads that member's tab — that is how an order belongs
    to a member today). Add one kitchen item and one drink, with a note on the item.
 2. Complete and pay. In the print simulator:
-   - The **kitchen ticket** carries the allergy line for that member's children,
-     and your item note.
+   - The **kitchen ticket** carries your item note. It cannot yet carry the allergy
+     line: the demo wristbands the tab screen offers are stand-ins with no member
+     behind them, so the kitchen has nobody's children to warn about. Real
+     wristband tabs are the wallets round's work, and the allergy line arrives
+     with them; the gap is tracked as its own ticket.
    - Till 1 deliberately has **no bar printer**, so the drink's ticket is recorded as
      skipped, and both the toast and the confirmation say so. That is the intended
      behaviour to check.
