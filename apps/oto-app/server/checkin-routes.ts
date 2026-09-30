@@ -4,7 +4,8 @@ import { eq, and, desc, sql, gte, or, ilike, inArray } from "drizzle-orm";
 import { serviceCheckins, dropoffCheckins, nannyReservations, employeeRoleAvailability } from "./db/coreSchema";
 import { employees, employeePresence, branches, roles, employeeRoles, tenants, DEFAULT_TENANT_SLUG } from "@shared/schema";
 import { requireAuth } from "./auth";
-import { requireManager, getAllowedOperatorAndBranchIds, UserWithBranchAccess } from "./auth-middleware";
+import { requireManager, getAllowedOperatorAndBranchIds } from "./auth-middleware";
+import type { UserWithBranchAccess } from "@shared/schema";
 import { z } from "zod";
 import crypto from "crypto";
 import QRCode from "qrcode";
@@ -61,6 +62,29 @@ async function getDefaultTenantId(): Promise<string> {
     .limit(1);
   if (!result.length) throw new Error(`Default tenant ${DEFAULT_TENANT_SLUG} not found`);
   return result[0].id;
+}
+
+async function canAccessCheckinBranch(req: Request, branchId: string): Promise<boolean> {
+  if (req.kioskSession) return req.kioskSession.branchId === branchId;
+  if (!req.user) return false;
+  const scope = await getAllowedOperatorAndBranchIds(req.user as UserWithBranchAccess);
+  return scope.branchIds === null || scope.branchIds.includes(branchId);
+}
+
+async function requireCheckinBranch(req: Request, res: Response, next: NextFunction) {
+  try {
+    const tenantId = await getDefaultTenantId();
+    const [checkin] = await db.select({ branchId: serviceCheckins.branchId })
+      .from(serviceCheckins)
+      .where(and(eq(serviceCheckins.id, req.params.id), eq(serviceCheckins.tenantId, tenantId)));
+    if (!checkin) return res.status(404).json({ message: "Check-in not found" });
+    if (!await canAccessCheckinBranch(req, checkin.branchId)) {
+      return res.status(403).json({ message: "Access denied to this branch" });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
 }
 
 function generateBranchToken(branchId: string): string {
@@ -151,6 +175,9 @@ router.post("/api/public/checkins", async (req: Request, res: Response) => {
 router.get("/api/core/branches/:branchId/checkin-token", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
     const { branchId } = req.params;
+    if (!await canAccessCheckinBranch(req, branchId)) {
+      return res.status(403).json({ message: "Access denied to this branch" });
+    }
     const token = generateBranchToken(branchId);
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const checkinUrl = `${baseUrl}/checkin/${branchId}/${token}`;
@@ -164,6 +191,9 @@ router.get("/api/core/branches/:branchId/checkin-token", requireAuth, requireMan
 router.get("/api/admin/branches/:branchId/qr", requireAuth, requireManager, async (req: Request, res: Response) => {
   try {
     const { branchId } = req.params;
+    if (!await canAccessCheckinBranch(req, branchId)) {
+      return res.status(403).json({ message: "Access denied to this branch" });
+    }
     const token = generateBranchToken(branchId);
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const formUrl = `${baseUrl}/checkin/${branchId}/${token}`;
@@ -430,14 +460,26 @@ router.get("/api/core/checkins", requireAuthOrKiosk, async (req: Request, res: R
     const tenantId = await getDefaultTenantId();
     const { branchId, status, type, q } = req.query;
 
-    let query = db.select().from(serviceCheckins)
-      .where(eq(serviceCheckins.tenantId, tenantId))
-      .orderBy(desc(serviceCheckins.registeredAt));
-
     const conditions = [eq(serviceCheckins.tenantId, tenantId)];
-    
-    if (branchId && typeof branchId === "string") {
-      conditions.push(eq(serviceCheckins.branchId, branchId));
+
+    if (branchId && typeof branchId !== "string") {
+      return res.status(400).json({ message: "Invalid branch" });
+    }
+    if (req.kioskSession) {
+      if (branchId && branchId !== req.kioskSession.branchId) {
+        return res.status(403).json({ message: "Access denied to this branch" });
+      }
+      conditions.push(eq(serviceCheckins.branchId, req.kioskSession.branchId));
+    } else {
+      const scope = await getAllowedOperatorAndBranchIds(req.user as UserWithBranchAccess);
+      if (scope.branchIds !== null) {
+        if (branchId && !scope.branchIds.includes(branchId)) {
+          return res.status(403).json({ message: "Access denied to this branch" });
+        }
+        if (scope.branchIds.length === 0) return res.json([]);
+        conditions.push(inArray(serviceCheckins.branchId, scope.branchIds));
+      }
+      if (branchId) conditions.push(eq(serviceCheckins.branchId, branchId));
     }
     
     if (status && typeof status === "string") {
@@ -473,7 +515,7 @@ router.get("/api/core/checkins", requireAuthOrKiosk, async (req: Request, res: R
   }
 });
 
-router.patch("/api/core/checkins/:id/status", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.patch("/api/core/checkins/:id/status", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -511,7 +553,7 @@ router.patch("/api/core/checkins/:id/status", requireAuthOrKiosk, async (req: Re
 });
 
 // Checkout with photo - releases nanny reservation
-router.post("/api/core/checkins/:id/checkout", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/checkout", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { outPhotoData } = req.body;
@@ -578,7 +620,7 @@ router.post("/api/core/checkins/:id/checkout", requireAuthOrKiosk, async (req: R
 });
 
 // Revert checkout - put child back in park
-router.post("/api/core/checkins/:id/revert-checkout", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/revert-checkout", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const tenantId = await getDefaultTenantId();
@@ -637,6 +679,9 @@ router.get("/api/core/nannies/available", requireAuthOrKiosk, async (req: Reques
 
     if (!branchId || typeof branchId !== "string") {
       return res.status(400).json({ message: "branchId is required" });
+    }
+    if (!await canAccessCheckinBranch(req, branchId)) {
+      return res.status(403).json({ message: "Access denied to this branch" });
     }
 
     console.log("[Nannies Available] tenantId:", tenantId, "branchId:", branchId);
@@ -761,7 +806,7 @@ router.get("/api/core/nannies/available", requireAuthOrKiosk, async (req: Reques
   }
 });
 
-router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { nannyEmployeeId } = req.body;
@@ -806,7 +851,7 @@ router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, async (re
 });
 
 // Update service type and duration
-router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { serviceType, durationHours, startTime } = req.body;
@@ -989,7 +1034,7 @@ router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, async (req: R
 });
 
 // Extend time for in_park children
-router.post("/api/core/checkins/:id/extend-time", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/extend-time", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { additionalMinutes } = req.body;
@@ -1056,7 +1101,7 @@ router.post("/api/core/checkins/:id/extend-time", requireAuthOrKiosk, async (req
 });
 
 // Enter park - start the service
-router.post("/api/core/checkins/:id/enter-park", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.post("/api/core/checkins/:id/enter-park", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = (req.user as any)?.id;
@@ -1114,7 +1159,7 @@ router.post("/api/core/checkins/:id/enter-park", requireAuthOrKiosk, async (req:
 });
 
 // Get checkin details
-router.get("/api/core/checkins/:id", requireAuthOrKiosk, async (req: Request, res: Response) => {
+router.get("/api/core/checkins/:id", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const tenantId = await getDefaultTenantId();
