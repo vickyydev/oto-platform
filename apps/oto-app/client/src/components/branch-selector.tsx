@@ -147,26 +147,26 @@ export function BranchSelector({ compact = false }: BranchSelectorProps) {
 
       {/* Mobile: static name for single branch users */}
       {showStaticBranchName && (
-        <div className="flex items-center gap-2 md:hidden" data-testid="branch-selector-mobile-static">
+        <div className={cn("flex items-center gap-2 min-w-0 md:hidden", compact && "max-w-full")} data-testid="branch-selector-mobile-static">
           <Building2 className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">{activeBranchName}</span>
+          <span className="text-sm font-medium truncate" title={activeBranchName}>{activeBranchName}</span>
         </div>
       )}
 
-      <div className="hidden md:flex items-center gap-2" data-testid="branch-selector-desktop">
+      <div className={cn("hidden md:flex items-center gap-2 min-w-0", compact && "max-w-full")} data-testid="branch-selector-desktop">
         <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         {showStaticBranchName ? (
-          <span className="text-sm font-medium">{activeBranchName}</span>
+          <span className="text-sm font-medium truncate" title={activeBranchName}>{activeBranchName}</span>
         ) : (
           <Popover open={desktopOpen} onOpenChange={setDesktopOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-8 px-2 gap-1 text-sm font-normal"
+                className="h-8 px-2 gap-1 text-sm font-normal min-w-0 max-w-full"
                 data-testid="branch-selector-trigger"
               >
-                {displayName}
-                <ChevronDown className="h-3 w-3 opacity-50" />
+                <span className="truncate" title={displayName}>{displayName}</span>
+                <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-2 max-h-[70vh] overflow-y-auto" align="start">
