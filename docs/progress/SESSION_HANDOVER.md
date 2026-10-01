@@ -214,6 +214,12 @@ offline-selling cluster (SCRUM-269 + 270 + 271 + 295), which also closes
 SCRUM-206/205; the other lane continues SCRUM-193 (its voucher-contract
 question answered on the ticket: the module counts as moved, nothing rebuilt).
 
+## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, Knowledge PDF action proof
+
+On live oto-app-staging, a synthetic one-page PDF uploaded through Knowledge Files reached `indexed`, produced one chunk with its unique fact and yielded the correct Ask OTO answer with its own file ID cited. The real 820px answer and expanded-source screenshots were reviewed and attached to SCRUM-193 under `scrum-193-knowledge-pdf-answer-tablet-2026-10-01.png` and `scrum-193-knowledge-pdf-source-tablet-2026-10-01.png`. The exact-ID DELETE returned 204 and later detail read 404 for every probe. The QA index, Knowledge/Ask notes and module status register now reflect this action; lower-role, other file types and other AI helpers remain open. No app source changed in this slice.
+
+SCRUM-193 remains In Progress with the five parent gates open. Continue the app-owned Organization scope repair, then stage an exact-cleanup operator action and the package/menu and Supplier positive paths only with safe removal. Needs from the platform lane: `otoapp_v` POS views/read proof, tenant-bearing Directory identity, tenant-safe legacy columns/backfills, persisted leave approval, shift-group contract, durable locked `ops_run`/Health/Failures and CI structure-only restore rehearsal. The CI wrapper skipped workspace checks; do not call full CI green.
+
 ## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, live package guard and module status
 
 This is the newest OTO App lane block. Source `9c0bed04` is live on oto-app-staging with `/api/status` 200. Direct package line-item list/create/edit/delete/reorder now verify the parent package belongs to the signed-in tenant, and mutable template identifiers are server-owned. A disposable two-tenant probe passed 54 assertions and removed its database; build passed, TypeScript stayed at 478 inherited diagnostics with none in the edited file, and scoped lint had no errors. On live staging, the normal launcher hand-off returned `/api/user` 200, a missing package's line-item list and reorder returned 404, and a separate anonymous context got 401. No foreign real package was touched. This is a narrow access check, not positive package/menu acceptance.

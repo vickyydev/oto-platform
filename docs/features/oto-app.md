@@ -162,9 +162,9 @@ or source change lacks the required staging action proof.
 | Knowledge, administration and finance | State | Current staging evidence and limit |
 | --- | --- | --- |
 | SOP and Find | WORKS | A published SOP was revised and opened from Find; branch refusal and staff published-only behavior have separate proof. [SOP notes](../qa/oto-app-lift/sops.md). |
-| Knowledge Base and files | WORKING WITH CAVEATS | FAQ publish/read and private Knowledge File byte round-trip passed; PDF indexing, chunk search and file-sourced Ask answer remain in [knowledge notes](../qa/oto-app-lift/knowledge-ask-oto.md). |
+| Knowledge Base and files | WORKING WITH CAVEATS | FAQ publish/read, private image byte round-trip, PDF indexing to one chunk and a file-sourced Ask answer passed; lower-role file access and other file types remain in [knowledge notes](../qa/oto-app-lift/knowledge-ask-oto.md). |
 | Training and quizzes | WORKING WITH CAVEATS | Module save, wrong/right attempts and 100% completion passed; restricted role/branch proof remains in [training notes](../qa/oto-app-lift/training-quiz.md). |
-| Ask OTO and AI helpers | WORKING WITH CAVEATS | A synthetic question returned expected KB/SOP citations and another-branch source refusal; other helpers, thread behavior and title decision remain in [Ask notes](../qa/oto-app-lift/knowledge-ask-oto.md). |
+| Ask OTO and AI helpers | WORKING WITH CAVEATS | Synthetic questions returned KB/SOP and uploaded-PDF citations plus a refusal to show another branch's source; other helpers, thread behavior and title decision remain in [Ask notes](../qa/oto-app-lift/knowledge-ask-oto.md). |
 | Casual workers | WORKING WITH CAVEATS | Create, assign/rate, deactivate and picker removal passed; an ungrouped shift row still returns 500 in [worker notes](../qa/oto-app-lift/casual-workers.md). |
 | Payroll | WORKING WITH CAVEATS | Private CSV and payslip PDF matched stored bytes and anonymous reads were refused; staff/self-service and other exports remain in [payroll notes](../qa/oto-app-lift/payroll-files.md). |
 | Xero sandbox | NOT YET VERIFIED | Staff access to finance/Xero routes was refused; a positive sandbox exchange needs a connected park account. Production Xero is outside this staging check. [Finance notes](../qa/oto-app-lift/finance-access.md). |
