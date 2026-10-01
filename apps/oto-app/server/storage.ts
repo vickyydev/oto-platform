@@ -332,6 +332,7 @@ import {
         ne,
         and,
         sql,
+        exists,
         ilike,
         isNull,
         isNotNull,
@@ -595,12 +596,14 @@ export interface IStorage {
 
         getAttentionItems(options?: {
                 branchId?: string;
+                scope?: { tenantId: string; branchIds: string[] };
                 types?: AttentionType[];
                 resolved?: boolean;
                 limit?: number;
         }): Promise<AttentionItem[]>;
         getAttentionItemCounts(
                 branchId?: string,
+                scope?: { tenantId: string; branchIds: string[] },
         ): Promise<{ total: number; high: number; medium: number; low: number }>;
         createAttentionItem(item: InsertAttentionItem): Promise<AttentionItem>;
         resolveAttentionItem(
@@ -1920,6 +1923,35 @@ const FIX_REPORT_STATUS_FILTER_MAP: Record<string, string[]> = {
 };
 export function resolveFixReportStatusFilter(status: string): string[] {
         return FIX_REPORT_STATUS_FILTER_MAP[status] || [status];
+}
+
+type AttentionReadScope = { tenantId: string; branchIds: string[] };
+
+// Legacy attention rows have no tenant_id. Only a branch-owned row whose
+// linked employee and contract agree with that branch can be shown safely.
+function attentionReadScope(scope: AttentionReadScope) {
+        if (scope.branchIds.length === 0) return sql`false`;
+        return and(
+                inArray(attentionItems.branchId, scope.branchIds),
+                exists(db.select({ id: branches.id }).from(branches).where(and(
+                        eq(branches.id, attentionItems.branchId),
+                        eq(branches.tenantId, scope.tenantId),
+                ))),
+                or(isNull(attentionItems.employeeId), exists(
+                        db.select({ id: employees.id }).from(employees).where(and(
+                                eq(employees.id, attentionItems.employeeId),
+                                eq(employees.tenantId, scope.tenantId),
+                                or(isNull(employees.branchId), eq(employees.branchId, attentionItems.branchId)),
+                        )),
+                )),
+                or(isNull(attentionItems.contractInstanceId), exists(
+                        db.select({ id: contractInstances.id }).from(contractInstances).where(and(
+                                eq(contractInstances.id, attentionItems.contractInstanceId),
+                                eq(contractInstances.employeeId, attentionItems.employeeId),
+                                or(isNull(contractInstances.branchId), eq(contractInstances.branchId, attentionItems.branchId)),
+                        )),
+                )),
+        )!;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3606,6 +3638,7 @@ export class DatabaseStorage implements IStorage {
 
         async getAttentionItems(options?: {
                 branchId?: string;
+                scope?: { tenantId: string; branchIds: string[] };
                 types?: AttentionType[];
                 resolved?: boolean;
                 limit?: number;
@@ -3614,6 +3647,10 @@ export class DatabaseStorage implements IStorage {
                 const showResolved = options?.resolved ?? false;
 
                 const conditions = [];
+
+                if (options?.scope) {
+                        conditions.push(attentionReadScope(options.scope));
+                }
 
                 if (!showResolved) {
                         conditions.push(eq(attentionItems.status, "open"));
@@ -3646,14 +3683,15 @@ export class DatabaseStorage implements IStorage {
 
         async getAttentionItemCounts(
                 branchId?: string,
+                scope?: { tenantId: string; branchIds: string[] },
         ): Promise<{ total: number; high: number; medium: number; low: number }> {
-                let condition = eq(attentionItems.status, "open");
+                const conditions = [eq(attentionItems.status, "open")];
 
                 if (branchId) {
-                        condition = and(
-                                eq(attentionItems.status, "open"),
-                                eq(attentionItems.branchId, branchId),
-                        )!;
+                        conditions.push(eq(attentionItems.branchId, branchId));
+                }
+                if (scope) {
+                        conditions.push(attentionReadScope(scope));
                 }
 
                 const results = await db
@@ -3662,7 +3700,7 @@ export class DatabaseStorage implements IStorage {
                                 count: sql<number>`count(*)::int`,
                         })
                         .from(attentionItems)
-                        .where(condition)
+                        .where(and(...conditions))
                         .groupBy(attentionItems.severity);
 
                 const counts = { total: 0, high: 0, medium: 0, low: 0 };
@@ -3847,11 +3885,11 @@ export class DatabaseStorage implements IStorage {
                         );
         }
 
-        async getAttentionItem(id: string): Promise<AttentionItem | undefined> {
+        async getAttentionItem(id: string, scope?: AttentionReadScope): Promise<AttentionItem | undefined> {
                 const [item] = await db
                         .select()
                         .from(attentionItems)
-                        .where(eq(attentionItems.id, id));
+                        .where(and(eq(attentionItems.id, id), scope ? attentionReadScope(scope) : undefined));
                 return item;
         }
 

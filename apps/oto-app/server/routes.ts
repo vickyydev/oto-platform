@@ -101,7 +101,7 @@ import crypto from "crypto";
 import { aiComplete, aiConfigured, FAST_AI_MODEL } from "./lib/anthropic";
 import multer from "multer";
 import * as XLSX from "xlsx";
-import { runAttentionEngine, evaluateForEmployee, evaluateForContract, getLastCalculatedAt, evaluateRuleForEmployee, getRuleDefinitions } from "./attention-engine";
+import { evaluateForEmployee, evaluateForContract, evaluateRuleForEmployee, getRuleDefinitions } from "./attention-engine";
 import { getEmployeeDisplayName } from "./lib/employeeDisplayName";
 import { isSealedAccessPassword, openAccessPassword, sealAccessPassword } from "./lib/accessVault";
 import { faceRecognitionService, replaceFaceEnrollment } from "./face-recognition";
@@ -6751,12 +6751,41 @@ OTO Company Limited`,
     }
   });
 
-  // Attention items routes
-  app.get("/api/attention-items", requireAuth, async (req, res, next) => {
+  // Attention rows have no tenant column yet. Branchless or inconsistent rows
+  // are withheld until the platform migration can classify them.
+  const attentionAccess = async (req: Request, res: Response, branchId?: string) => {
+    const user = req.userWithAccess;
+    if (!user?.tenantId) {
+      res.status(403).json({ message: "Tenant access required" });
+      return null;
+    }
+    const tenantBranches = await db.select({ id: branches.id }).from(branches)
+      .where(eq(branches.tenantId, user.tenantId));
+    const tenantIds = tenantBranches.map(branch => branch.id);
+    if (branchId && !tenantIds.includes(branchId)) {
+      res.status(404).json({ message: "Branch not found" });
+      return null;
+    }
+    if (branchId && !canUserAccessBranch(user, branchId)) {
+      res.status(403).json({ message: "Branch access denied" });
+      return null;
+    }
+    return {
+      tenantId: user.tenantId,
+      branchIds: branchId ? [branchId] : tenantIds.filter(id => canUserAccessBranch(user, id)),
+    };
+  };
+
+  app.get("/api/attention-items", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { branchId, types, resolved, limit } = req.query;
-      
-      const options: { branchId?: string; types?: AttentionType[]; resolved?: boolean; limit?: number } = {};
+      if (branchId !== undefined && typeof branchId !== "string") {
+        return res.status(400).json({ message: "Invalid branch" });
+      }
+      const scope = await attentionAccess(req, res, branchId);
+      if (!scope) return;
+
+      const options: { branchId?: string; scope: typeof scope; types?: AttentionType[]; resolved?: boolean; limit?: number } = { scope };
       
       if (branchId && typeof branchId === "string") {
         options.branchId = branchId;
@@ -6771,22 +6800,30 @@ OTO Company Limited`,
       }
       
       if (limit && typeof limit === "string") {
-        options.limit = parseInt(limit, 10);
+        const parsedLimit = Number(limit);
+        if (!Number.isInteger(parsedLimit) || parsedLimit < 1) {
+          return res.status(400).json({ message: "Invalid limit" });
+        }
+        options.limit = Math.min(parsedLimit, 1000);
       }
       
       const items = await storage.getAttentionItems(options);
-      const lastCalculatedAt = getLastCalculatedAt();
-      res.json({ items, lastCalculatedAt });
+      res.json({ items, lastCalculatedAt: null });
     } catch (error) {
       next(error);
     }
   });
 
-  app.get("/api/attention-items/counts", requireAuth, async (req, res, next) => {
+  app.get("/api/attention-items/counts", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { branchId } = req.query;
+      if (branchId !== undefined && typeof branchId !== "string") {
+        return res.status(400).json({ message: "Invalid branch" });
+      }
+      const scope = await attentionAccess(req, res, branchId);
+      if (!scope) return;
       const counts = await storage.getAttentionItemCounts(
-        branchId && typeof branchId === "string" ? branchId : undefined
+        branchId, scope,
       );
       res.json(counts);
     } catch (error) {
@@ -6794,44 +6831,28 @@ OTO Company Limited`,
     }
   });
 
-  app.post("/api/attention-items/:id/resolve", requireAuth, requireManager, async (req, res, next) => {
-    try {
-      const userId = (req.user as any)?.id;
-      if (!userId) {
-        return res.status(401).json({ message: "User not authenticated" });
-      }
-      
-      const permanent = req.body?.permanent === true;
-      const resolved = await storage.resolveAttentionItem(req.params.id, userId, permanent);
-      res.json(resolved);
-    } catch (error) {
-      next(error);
-    }
+  app.post("/api/attention-items/:id/resolve", requireAuth, requireManager, (_req, res) => {
+    res.status(503).json({ message: "Attention updates are unavailable until tenant ownership is recorded" });
   });
 
-  app.post("/api/attention-items/refresh", requireAuth, async (req, res, next) => {
-    try {
-      const result = await runAttentionEngine();
-      const lastCalculatedAt = getLastCalculatedAt();
-      res.json({ ...result, lastCalculatedAt });
-    } catch (error) {
-      next(error);
-    }
+  app.post("/api/attention-items/refresh", requireAuth, requireManager, (_req, res) => {
+    res.status(503).json({ message: "Attention refresh is unavailable until tenant jobs are isolated" });
   });
 
   // Get last calculated timestamp
-  app.get("/api/attention-items/last-run", requireAuth, async (req, res, next) => {
-    try {
-      const lastCalculatedAt = getLastCalculatedAt();
-      res.json({ lastCalculatedAt });
-    } catch (error) {
-      next(error);
-    }
+  app.get("/api/attention-items/last-run", requireAuth, requireManager, (_req, res) => {
+    res.status(503).json({ message: "Tenant job history is unavailable" });
   });
 
   // Admin-only diagnostics endpoint
   app.get("/api/attention-items/diagnostics/:employeeId", requireAuth, requireAdmin, async (req, res, next) => {
     try {
+      const scope = await attentionAccess(req, res);
+      if (!scope) return;
+      const [employee] = scope.branchIds.length ? await db.select({ id: employees.id }).from(employees)
+        .where(and(eq(employees.id, req.params.employeeId), eq(employees.tenantId, scope.tenantId), inArray(employees.branchId, scope.branchIds)))
+        .limit(1) : [];
+      if (!employee) return res.status(404).json({ message: "Employee not found" });
       const diagnostics = await evaluateRuleForEmployee(req.params.employeeId);
       const ruleDefinitions = getRuleDefinitions();
       res.json({ diagnostics, ruleDefinitions });
@@ -6841,9 +6862,11 @@ OTO Company Limited`,
   });
 
   // Check if attention item condition is still active (for manual resolve warning)
-  app.get("/api/attention-items/:id/check-condition", requireAuth, async (req, res, next) => {
+  app.get("/api/attention-items/:id/check-condition", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const item = await storage.getAttentionItem(req.params.id);
+      const scope = await attentionAccess(req, res);
+      if (!scope) return;
+      const item = await storage.getAttentionItem(req.params.id, scope);
       if (!item) {
         return res.status(404).json({ message: "Attention item not found" });
       }
@@ -6865,46 +6888,12 @@ OTO Company Limited`,
     }
   });
 
-  // Attention rules configuration
-  const ATTENTION_CONFIG_KEY = "attention_rules_config";
-  const DEFAULT_ATTENTION_CONFIG = {
-    openShiftHoursThreshold: 72,
-    contractNotSentDaysThreshold: 7,
-    documentExpiryDaysThreshold: 30,
-    clockInGraceMinutes: 5,
-    overtimeThresholdMinutes: 15,
-    lateThresholdMinutes: 5,
-    enabledRules: [
-      "CONTRACT_NOT_SENT", "DOCUMENT_EXPIRY_SOON", "MISSING_DOCUMENT",
-      "PROBATION_ENDING_SOON", "OPEN_SHIFT_SOON", "SHIFT_NEEDS_COVERAGE",
-      "MISSING_LOGIN_ACCESS", "CHECKLIST_AUDIT_FAIL", "CHECKLIST_NOTE_FLAGGED",
-    ],
-  };
-
-  app.get("/api/attention-rules/config", requireAuth, requireAdmin, async (req, res, next) => {
-    try {
-      const setting = await storage.getSetting(ATTENTION_CONFIG_KEY);
-      if (setting) {
-        res.json(JSON.parse(setting.value));
-      } else {
-        res.json(DEFAULT_ATTENTION_CONFIG);
-      }
-    } catch (error) {
-      next(error);
-    }
+  app.get("/api/attention-rules/config", requireAuth, requireAdmin, (_req, res) => {
+    res.status(503).json({ message: "Attention rules are unavailable until tenant settings are isolated" });
   });
 
-  app.put("/api/attention-rules/config", requireAuth, requireAdmin, async (req, res, next) => {
-    try {
-      const config = { ...DEFAULT_ATTENTION_CONFIG, ...req.body };
-      await storage.upsertSetting({
-        key: ATTENTION_CONFIG_KEY,
-        value: JSON.stringify(config),
-      });
-      res.json(config);
-    } catch (error) {
-      next(error);
-    }
+  app.put("/api/attention-rules/config", requireAuth, requireAdmin, (_req, res) => {
+    res.status(503).json({ message: "Attention rules are unavailable until tenant settings are isolated" });
   });
 
   // These legacy tables have no tenant column. Until they do, only the default
