@@ -1,90 +1,39 @@
 # Sprint 2 progress
 
-## Platform lane checkpoint - 2 October 2026 - S2-14a wallets, all 5 rounds on main
+## Platform lane checkpoint - 2 October 2026 (evening) - S2-14a wallets DEPLOYED
 
-S2-14a (SCRUM-212, In Progress until the staging walkthrough) follows
-docs/progress/plans/wallet/PLAN.md (40c9798e). The ledger is the single
-source of truth; the stored balance must always equal the sum of entries.
+S2-14a (SCRUM-212) is Deployed, with seven staging evidence cards attached
+(docs/qa/jira-comments/attachments/SCRUM-212). Plan:
+docs/progress/plans/wallet/PLAN.md. The ledger is the single source of
+truth; every test wallet's balance equals the sum of its entries.
 
-All five build rounds are landed, each with a Jira comment on SCRUM-212:
-- Round 1 (966e77a9, CI green): migration 0045, server-side grants at
-  finalise, child prepaid at check-in, the real credit voucher.
-- Round 2 (bc09ec24, CI green): the platform-written wallet tender (never
-  on the grid, never the drawer, never takings), the last-baht race,
-  wallet-first refunds, F&B and shop live.
-- Round 3 (bbe30fcd): expiry job, audited reactivation, entries dated by
-  the day money moves, the Wallet view, report / EOD line / daily fact
-  reconciled. Its own CI run failed on the deliberate offline-capability
-  tripwire; cured by round 4.
-- Round 4 (1f117138, CI green - main green again, covers round 3):
-  offline spend under the B300/day cap, sync-once, the two-box overdraft
-  anomaly on Failures, migration 0046.
-- Round 5 (this commit): promotional vouchers on the landed engine
-  (category / item / free-item targets, global and per-customer limits
-  under concurrency, validity window, tax via the S2-09a seam, till issue
-  and campaign batches), wallet_credit vouchers loading the real ledger,
-  foregone revenue as its own report line, migration 0047, and the
-  whole-story closing audit (grant -> spend -> refund -> expire ->
-  reactivate -> offline spend -> sync -> voucher load).
+Commits: plan 40c9798e; rounds 966e77a9 (model + grants, migration 0045),
+bc09ec24 (platform-written tender, last baht, refunds), bbe30fcd (expiry,
+reactivation, Wallet view, figures), 1f117138 (offline cap, migration
+0046), 463d78e9 (promotional vouchers, migration 0047, closing audit);
+CI repairs e9e22ec9 (lint) and 08bbdb73 (test helper teardown
+disconnect); walkthrough fixes 8a58ad4c (credit-grants print block, guest
+"left to pay", the till's offline credit through the box, voucher issue
+and redeem guards). Final CI green at 8a58ad4c (run 36914307534); staging
+live there.
 
-CI on round 5 (463d78e9) FAILED at lint: one unused variable in the new
-closing-audit test (no product code wrong). The failure went unnoticed
-for about an hour because the CI watcher matched titles, which GitHub
-truncates. Fixed in e9e22ec9 (lint-clean across every round-5 file; audit
-9/9). Its CI run (36894551431) then FAILED in the api test job:
-2204/2204 tests passed, but vitest counted 2 unhandled errors - a pool
-connection cut (57P01) when the test helper dropped the database while
-the connection was still closing, re-thrown because the pool had no
-error listener. Timing-dependent, any file can hit it; it surfaced in
-wallet-gate-r1. Fixed in the shared helper (apps/api/test/helpers.ts):
-57P01 is expected only after close() begins, every other pool error stays
-loud. Landed with this checkpoint; CI watched by SHA. The watcher now
-matches the exact commit SHA (scratchpad watch-ci.sh).
+Lessons now standing (memory): CI watched by exact commit SHA, eslint over
+every landing list before push, every reviewer hand-over actioned at once,
+workflow agents on Opus 5.5 while the Fable limit is spent. Docs-only
+commits trigger no CI run.
 
-CI green on 08bbdb73 (run 36898105289); staging live on 08bbdb7 with
-migrations 0045-0047 applied. Staging walkthrough (2 October; evidence in
-the session scratchpad wallet-drive/): grant T1-000041, F&B spend
-T1-000042/43, last-baht race (one 409 WALLET_EMPTY), refund T1-R-000003
-back to the same wallet, Wallet view, box offline spend T1-000045 under
-the cap synced once, voucher load T1-000046 with both limit refusals,
-balance == sum on every test wallet - all PASS. Three defects found, so
-SCRUM-212 stays In Progress: F1 the till's "Credit Grants to Print" block
-never shows (printJobsOfSale omits wallet jobs); F2 the F&B guest display
-shows the full total as "Left to pay"; F3 the till still refuses offline
-credit (round 4's till handover was never actioned). Plus minors F4
-(used-up voucher still issuable), F6 (voucher before tier leaves cart
-unpriced), F7 (voucher row overflows). Fix round (Opus 5.5 after the
-Fable usage limit stopped its first fixer) passed its gate and lands with
-this checkpoint: F1 credit-voucher jobs in the sale read; F2 the guest's
-"left to pay" is total minus credit everywhere; F3 the till's box lane
-spends credit through the box's own intents with its refusals verbatim
-and a lost press never moves lanes; F4 a used-up voucher refuses to issue;
-F6 a voucher needs a customer type first; F7 the voucher row wraps.
-Follow-up ticketed: a band read online keeps its platform balance as the
-preview after the link drops (asks for less, never more). Next: CI by SHA,
-a repeat walkthrough of F1-F7 on staging, evidence cards, Deployed.
-
-Jira state: SCRUM-211 story In Progress (status comment posted);
-SCRUM-212 wallets In Progress until the staging walkthrough; SCRUM-213
-stock To Do, not started, next in the agreed order. Voucher rulings filed
-as SCRUM-482.
-
-Remaining for SCRUM-212: green CI on the helper fix, staging deploy, then the
-staging walkthrough with named, attached screenshots (grant on a ticket
-sale, F&B spend with the display, the last-baht refusal, refund back to the
-wallet, the Wallet view, an offline spend under the cap, a voucher
-top-up), then Deployed. After that, SCRUM-213 stock begins.
-
-Owner questions raised by the round-5 review (non-blocking, to file):
-should a wallet_credit or unlimited voucher need a manager to issue
-(reception can issue today, capped by usage limit and audited)? Should
-the foregone line exclude refunded sales and booth Lucky Wheel vouchers?
-The per-customer limit cannot apply to an unassigned code on a walk-in
-sale (matches the landed promo-code rule). Also open: SCRUM-481, SCRUM-480,
+Open tickets from the story: SCRUM-483 (Medium: the offline balance
+preview reads the platform, not the box; the money is always right),
+SCRUM-484 (Low: three display touches), SCRUM-481 and SCRUM-482 (owner
+rulings). Still waiting on the owner: SCRUM-480 (R2 CORS for photos),
 Xero, 2C2P sandbox, pricing rulings, SCRUM-467, SCRUM-469, OD-W1..W5.
 
-Migrations landed through 0047. To resume: read PLAN.md, then this block,
-then the SCRUM-212 comments, then `git log main`.
+Next: S2-14b stock (SCRUM-213), moved to In Progress today. It starts with
+two read-only studies (the prototype's stock domain and the platform's
+landed seams) feeding docs/progress/plans/stock/PLAN.md.
+
+Migrations landed through 0047. To resume: read this block, then the
+SCRUM-213 comments, then `git log main`.
 
 ## Platform lane checkpoint - 1 October 2026 (evening) - S2-13 Deployed whole
 
