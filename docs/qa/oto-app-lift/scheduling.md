@@ -1,5 +1,13 @@
 # SCRUM-193: scheduling and My Shifts
 
+## Short-shift break fix on staging `dfe71536`, 1 October 2026
+
+At a real 820 × 1180 viewport, a fresh labelled synthetic employee was assigned to a 10:00–12:00 shift on 2 October. The authenticated `scope=me` rota returned one matching shift with no break start/end and `breakHasConflict: false`. Regenerating breaks for that exact shift row returned 200; a fresh rota read still showed no break and no conflict. My Shifts displayed the shift without an invalid break or “Break schedule needs review.” The visually reviewed screenshot is `scrum-193-staging-my-shifts-short-break-fixed.png`.
+
+A separate 10:00–17:00 control shift returned a valid 12:30–13:30 break with `breakHasConflict: false`, both after assignment and after exact-row regeneration. My Shifts displayed that break in the visually reviewed `scrum-193-staging-my-shifts-valid-break.png`. This confirms normal eligible breaks still generate. It does not exercise tenant-wide regeneration, which would rewrite other staging schedules.
+
+For each case, the prior week plan was absent. The synthetic assignment, shift row, shift group, week plan and linked employee were then deleted by exact ID with 204 responses. Final Data Admin searches found zero matching employees, shift rows or groups. Both screenshots capture the transient staging fixtures before cleanup.
+
 ## Tablet retest after deployment 858df417, 1 October 2026
 
 At a real 820 × 1180 staging viewport, a normal click opened the branch selector on Scheduling, Policies and the blank employee editor; an option click succeeded on each page. The mode controls now show icons at this width and no longer cover the selector. The visually reviewed screenshots are `scrum-193-staging-tablet-scheduling-selector.png`, `scrum-193-staging-tablet-policies-selector.png` and `scrum-193-staging-tablet-employee-editor-selector.png`. The editor was blank and no employee was saved. This resolves the tablet header obstruction observed in the earlier walkthrough.
