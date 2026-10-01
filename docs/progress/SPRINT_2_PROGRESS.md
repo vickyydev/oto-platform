@@ -1,5 +1,45 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 1 October 2026 (night) - S2-14a wallets, rounds 1-3 of 5 on main
+
+S2-14a (SCRUM-212, In Progress) follows docs/progress/plans/wallet/PLAN.md
+(40c9798e). The ledger is the single source of truth: the stored balance is
+only a locked running figure that must equal the sum of its entries.
+
+Landed, each with its own Jira comment on SCRUM-212:
+- Round 1 (966e77a9, CI green): migration 0045 (keyed wallets, the
+  action-keyed ledger, wallet_policy seeded same-day / B300 cap / prepaid
+  refund, the daily liability fact). Credit grants now happen on the server
+  inside the finalise transaction, so walk-ins and booking redemptions
+  earn the same way. A child's prepaid lunch money loads at check-in. The
+  credit voucher prints for real.
+- Round 2 (bc09ec24, CI green): the platform writes the wallet tender
+  itself. It is never on the tender grid, never opens the drawer and never
+  counts as till takings (countsAsTillTakings is false for it). Two tills
+  racing for the last baht get one success and one honest zero. Refunds go
+  back to the wallet first. The F&B and shop stations are live.
+- Round 3 (bbe30fcd, CI running): the end-of-day expiry job; audited
+  reactivation with a typed reason; ledger entries dated by the day the
+  money moves; the Wallet view; the report, the End of day credit line
+  and the daily fact taken off mock data and reconciled sign-exact over
+  a scripted week.
+
+In flight: round 4, offline spend under the B300/day cap on the box (cache
+snapshots, sync-once, the two-box overdraft anomaly on Failures). It is
+building on its own file fence and may mint migration 0046.
+Next: round 5 (promotional vouchers), then the staging walkthrough with
+evidence, then Deployed.
+
+Open items: SCRUM-481 (owner ruling: should refunding prepaid lunch money
+take the credit back off the child's band?). A backlog note: a ticket sale
+rung up before the day boundary and finalised after it still dates its grant
+by the sale's day. Still waiting on the owner: SCRUM-480 (R2 CORS for
+photos), Xero, 2C2P sandbox, pricing rulings, SCRUM-467, SCRUM-469, and
+OD-W1..W5 / OD-14 (the seeded cap, expiry and prepaid-refund values).
+
+Migrations landed through 0045. To resume: read PLAN.md, then this block,
+then the SCRUM-212 comments, then `git log main`.
+
 ## Platform lane checkpoint - 1 October 2026 (evening) - S2-13 Deployed whole
 
 This is the platform lane's block (the Codex lane's release checkpoint
