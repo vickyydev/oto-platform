@@ -40,3 +40,4 @@ export * from './station-bridge';
 export * from './ledger-lines';
 export * from './sale-print';
 export * from './supervision';
+export * from './release';

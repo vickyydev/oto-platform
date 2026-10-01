@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,15 +19,30 @@ import {
   User,
   UserX,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
-import { getAuthorizedPickups, addGuardianToRegistration } from '@/mockApi';
-import { useOperator } from '@/auth/OperatorContext';
-import {
-  computePrepaidFoodReconciliation,
-  type PrepaidFoodReconciliation,
-} from '@/lib/dropoff';
+import type { PickupView, ReleaseView } from '@oto/shared';
+import { type PrepaidFoodReconciliation } from '@/lib/dropoff';
 import { FoodReconciliationSummary } from '@/components/shared/FoodReconciliationSummary';
 import { CameraCapture } from '@/components/shared/CameraCapture';
+import {
+  pickupFromView,
+  reconciliationFromWire,
+  releaseApi,
+  type ReleaseCollector,
+  type ReleaseContext,
+} from '@/api/release';
+
+/**
+ * The release modal (S2-13 round 3, plan docs/progress/plans/checkin/PLAN.md
+ * §2.4). The prototype's four steps and their look are unchanged; what moved
+ * is where the data lives. The pickup list, the stored sign-up photo and the
+ * prepaid food come from the platform; the on-the-spot collector is added to
+ * the platform's list with the photo stored; the live pickup photo is stored;
+ * and "Confirm pickup" RELEASES the child on the platform, which enforces
+ * R-92 itself and answers a refusal in the counter's words. Every stored
+ * photo shown here is read through the access-logged path (R-94).
+ */
 
 type Step = 'select' | 'verify' | 'on_spot' | 'capture';
 
@@ -49,15 +64,24 @@ interface CheckOutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   checkIn: CheckIn;
-  /** The child's wristband (used to read remaining prepaid balance). */
+  /**
+   * The child's wristband. Kept for the board's call; the remaining prepaid
+   * balance is now the platform's (round 3), so it is not read here.
+   */
   wristband?: Wristband;
-  /** Configured policy for unused prepaid food. */
+  /** Configured policy for unused prepaid food — shown until the platform's answers. */
   prepaidFoodPolicy?: 'refund' | 'forfeit';
-  /** Called once collector is verified and pickup photo captured. */
+  /**
+   * Called once the platform has RELEASED the child: the release is written
+   * by this modal — R-92 checked, the pickup photo stored, the prepaid food
+   * settled — and `release` carries what was recorded. The board refreshes;
+   * it must not release a second time.
+   */
   onConfirm: (
     pickupPhotoUrl: string,
     collectorInput: CollectorInput,
     reconciliation?: { unusedTHB: number; policy: 'refund' | 'forfeit' },
+    release?: ReleaseView,
   ) => void;
 }
 
@@ -113,42 +137,95 @@ export function CheckOutModal({
   open,
   onOpenChange,
   checkIn,
-  wristband,
   prepaidFoodPolicy,
   onConfirm,
 }: CheckOutModalProps) {
-  const { operator } = useOperator();
   const [step, setStep] = useState<Step>('select');
   const [pickups, setPickups] = useState<AuthorizedPickup[]>([]);
   const [selectedPickup, setSelectedPickup] = useState<AuthorizedPickup | null>(null);
   const [onSpotForm, setOnSpotForm] = useState<OnSpotForm>({ name: '', relationship: '', phone: '' });
   const [onSpotPhotoUrl, setOnSpotPhotoUrl] = useState<string | undefined>();
   const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string | undefined>();
+  // The platform's side of the same screen.
+  const [context, setContext] = useState<ReleaseContext | null>(null);
+  const [signUpPhotoUrl, setSignUpPhotoUrl] = useState<string | undefined>();
+  const [onSpotFileId, setOnSpotFileId] = useState<string | null>(null);
+  const [pickupFileId, setPickupFileId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // One opening, one release id — a retried press is the same release.
+  const releaseIdRef = useRef<string>(releaseApi.newId());
+  // Each stored photo is read (and so access-logged) once per opening, not per render.
+  const photoUrlsRef = useRef(new Map<string, string>());
 
-  // Load authorized pickups when modal opens.
-  useEffect(() => {
-    if (open) {
-      setStep('select');
-      setPickups(getAuthorizedPickups(checkIn.registrationId));
-      setSelectedPickup(null);
-      setOnSpotForm({ name: '', relationship: '', phone: '' });
-      setOnSpotPhotoUrl(undefined);
-      setPickupPhotoUrl(undefined);
+  const photoUrlOf = async (fileId: string | null): Promise<string | undefined> => {
+    if (!fileId) return undefined;
+    const known = photoUrlsRef.current.get(fileId);
+    if (known) return known;
+    try {
+      const url = await releaseApi.photoUrl(fileId);
+      photoUrlsRef.current.set(fileId, url);
+      return url;
+    } catch {
+      return undefined;
     }
-  }, [open, checkIn.registrationId]);
+  };
 
-  const reconciliation = useMemo<PrepaidFoodReconciliation | null>(() => {
-    const fp = wristband?.foodProvision ?? checkIn.foodProvision;
-    if (!fp || fp.mode === 'none') return null;
-    const remaining = wristband?.creditBalanceTHB ?? 0;
-    return computePrepaidFoodReconciliation(fp, remaining);
-  }, [wristband?.foodProvision, wristband?.creditBalanceTHB, checkIn.foodProvision]);
+  const showPickups = async (views: PickupView[]) => {
+    const list = await Promise.all(views.map(async (p) => pickupFromView(p, await photoUrlOf(p.photoFileId))));
+    setPickups(list);
+  };
+
+  // Load the pickup list, the sign-up photo and the food from the platform when the modal opens.
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    setStep('select');
+    setPickups([]);
+    setSelectedPickup(null);
+    setOnSpotForm({ name: '', relationship: '', phone: '' });
+    setOnSpotPhotoUrl(undefined);
+    setPickupPhotoUrl(undefined);
+    setOnSpotFileId(null);
+    setPickupFileId(null);
+    setContext(null);
+    setSignUpPhotoUrl(undefined);
+    setError(null);
+    setBusy(false);
+    releaseIdRef.current = releaseApi.newId();
+    photoUrlsRef.current = new Map();
+    void (async () => {
+      try {
+        const ctx = await releaseApi.context(checkIn.id);
+        if (!live) return;
+        setContext(ctx);
+        const signUp = await photoUrlOf(ctx.signUpPhotoFileId);
+        if (!live) return;
+        setSignUpPhotoUrl(signUp);
+        await showPickups(ctx.pickups);
+      } catch (err) {
+        if (live) setError(err instanceof Error ? err.message : 'The pickup list could not be loaded.');
+      }
+    })();
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- photoUrlOf and showPickups read refs and setters only; the stay is what reloads it
+  }, [open, checkIn.id]);
+
+  const reconciliation = useMemo<PrepaidFoodReconciliation | null>(
+    () => (context?.reconciliation ? reconciliationFromWire(context.reconciliation) : null),
+    [context?.reconciliation],
+  );
 
   const hasFood = reconciliation !== null;
-  const policy = prepaidFoodPolicy ?? 'forfeit';
+  const policy = context?.prepaidPolicy ?? prepaidFoodPolicy ?? 'forfeit';
+  const registrationId = context?.registrationId ?? checkIn.registrationId;
+  const uploadPhoto = (dataUrl: string) => releaseApi.uploadPhoto(registrationId, dataUrl);
 
   const handleSelectPickup = (p: AuthorizedPickup) => {
     setSelectedPickup(p);
+    setError(null);
     // Dropper-off: skip verify, go straight to capture.
     if (p.isDropperOff) {
       setStep('capture');
@@ -159,36 +236,34 @@ export function CheckOutModal({
 
   const handleConfirmVerify = () => setStep('capture');
 
-  const handleOnSpotProceed = () => {
+  const handleOnSpotProceed = async () => {
     if (!onSpotForm.name.trim()) return;
     // Persist the on-the-spot collector so they appear in the authorized list.
-    if (!onSpotPhotoUrl) return;
-    const guardian = addGuardianToRegistration(
-      checkIn.registrationId,
-      {
+    // The platform refuses one without a name and a photo (R-92).
+    if (!onSpotPhotoUrl || !onSpotFileId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const guardian = await releaseApi.addGuardian(registrationId, {
+        id: releaseApi.newId(),
         name: onSpotForm.name.trim(),
-        phone: onSpotForm.phone.trim() || undefined,
-        relationship: onSpotForm.relationship.trim() || undefined,
-        photoUrl: onSpotPhotoUrl,
+        phone: onSpotForm.phone.trim() || null,
+        relationship: onSpotForm.relationship.trim() || null,
+        photoFileId: onSpotFileId,
         source: 'on_the_spot',
-      },
-      { operatorName: operator?.name ?? 'Unknown', operatorId: operator?.id },
-    );
-    if (!guardian) return;
-    const persisted: AuthorizedPickup = {
-      id: guardian.id,
-      registrationId: guardian.registrationId,
-      name: guardian.name,
-      relationship: guardian.relationship,
-      phone: guardian.phone || undefined,
-      isDropperOff: false,
-      source: 'on_the_spot',
-      addedAt: guardian.addedAt,
-    };
-    // Refresh the list so the new guardian shows if user navigates back.
-    setPickups(getAuthorizedPickups(checkIn.registrationId));
-    setSelectedPickup(persisted);
-    setStep('capture');
+      });
+      photoUrlsRef.current.set(onSpotFileId, onSpotPhotoUrl);
+      const persisted = pickupFromView(guardian, onSpotPhotoUrl);
+      // Refresh the list so the new guardian shows if user navigates back.
+      const fresh = await releaseApi.pickups(registrationId).catch(() => null);
+      if (fresh) await showPickups(fresh.pickups);
+      setSelectedPickup(persisted);
+      setStep('capture');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The collector could not be added.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const buildCollectorInput = (): CollectorInput | null => {
@@ -202,16 +277,34 @@ export function CheckOutModal({
     };
   };
 
-  const handleConfirmCheckOut = () => {
-    if (!pickupPhotoUrl) return;
+  const handleConfirmCheckOut = async () => {
+    if (!pickupPhotoUrl || !pickupFileId) return;
     const collectorInput = buildCollectorInput();
-    if (!collectorInput) return;
-    const rec =
-      reconciliation && reconciliation.totalUnusedTHB > 0
-        ? { unusedTHB: reconciliation.totalUnusedTHB, policy }
-        : undefined;
-    onConfirm(pickupPhotoUrl, collectorInput, rec);
-    onOpenChange(false);
+    if (!collectorInput || !selectedPickup) return;
+    const collector: ReleaseCollector = selectedPickup.isDropperOff
+      ? { kind: 'dropper_off' }
+      : { kind: 'guardian', guardianId: selectedPickup.id };
+    setBusy(true);
+    setError(null);
+    try {
+      const { release } = await releaseApi.release(checkIn.id, {
+        id: releaseIdRef.current,
+        collector,
+        pickupPhotoFileId: pickupFileId,
+      });
+      const settled = release.settlement;
+      const rec =
+        settled && settled.unusedSatang > 0
+          ? { unusedTHB: settled.unusedSatang / 100, policy: settled.policy }
+          : undefined;
+      onConfirm(pickupPhotoUrl, collectorInput, rec, release);
+      onOpenChange(false);
+    } catch (err) {
+      // R-92's refusals arrive in the counter's words; show them as they came.
+      setError(err instanceof Error ? err.message : 'The child could not be released.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const TITLE: Record<Step, string> = {
@@ -222,6 +315,7 @@ export function CheckOutModal({
   };
 
   const initial = checkIn.childName.charAt(0).toUpperCase();
+  const signUpUrl = signUpPhotoUrl ?? checkIn.childPhotoUrl;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -232,6 +326,7 @@ export function CheckOutModal({
               <button
                 type="button"
                 onClick={() => {
+                  setError(null);
                   if (step === 'verify' || step === 'on_spot') setStep('select');
                   else if (step === 'capture') {
                     // on_the_spot guardians are already persisted — go back to select (they'll be in list).
@@ -254,6 +349,13 @@ export function CheckOutModal({
 
         <div className="space-y-4 py-2">
 
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 flex items-start gap-2 text-red-300 text-xs">
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           {/* ── STEP: select ─────────────────────────────────────────── */}
           {step === 'select' && (
             <>
@@ -261,6 +363,12 @@ export function CheckOutModal({
                 Select the person collecting this child. Only authorized persons may collect.
               </p>
               <div className="space-y-2">
+                {!context && !error && (
+                  <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading the pickup list…
+                  </div>
+                )}
                 {pickups.map((p) => (
                   <PickupCard
                     key={p.id}
@@ -273,9 +381,13 @@ export function CheckOutModal({
                 <Button
                   variant="outline"
                   className="w-full h-11 gap-2 text-amber-400 border-amber-500/30 hover:text-amber-300"
+                  disabled={!context}
                   onClick={() => {
                     setSelectedPickup(null);
                     setOnSpotForm({ name: '', relationship: '', phone: '' });
+                    setOnSpotPhotoUrl(undefined);
+                    setOnSpotFileId(null);
+                    setError(null);
                     setStep('on_spot');
                   }}
                 >
@@ -389,16 +501,18 @@ export function CheckOutModal({
                     value={onSpotPhotoUrl}
                     onCapture={setOnSpotPhotoUrl}
                     onClear={() => setOnSpotPhotoUrl(undefined)}
+                    upload={uploadPhoto}
+                    onUploaded={setOnSpotFileId}
                   />
                 </div>
               </div>
 
               <Button
                 className="w-full h-12 gap-2"
-                disabled={!onSpotForm.name.trim() || !onSpotPhotoUrl}
-                onClick={handleOnSpotProceed}
+                disabled={!onSpotForm.name.trim() || !onSpotPhotoUrl || !onSpotFileId || busy}
+                onClick={() => void handleOnSpotProceed()}
               >
-                <Camera className="w-4 h-4" />
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                 Proceed to pickup photo
               </Button>
             </>
@@ -436,9 +550,9 @@ export function CheckOutModal({
                 <div className="flex-1 space-y-1.5">
                   <p className="text-xs font-semibold text-muted-foreground">Sign-up photo</p>
                   <div className="aspect-square rounded-xl overflow-hidden bg-muted flex items-center justify-center">
-                    {checkIn.childPhotoUrl ? (
+                    {signUpUrl ? (
                       <img
-                        src={checkIn.childPhotoUrl}
+                        src={signUpUrl}
                         alt={checkIn.childName}
                         className="w-full h-full object-cover"
                       />
@@ -469,6 +583,8 @@ export function CheckOutModal({
                   value={pickupPhotoUrl}
                   onCapture={(url) => setPickupPhotoUrl(url)}
                   onClear={() => setPickupPhotoUrl(undefined)}
+                  upload={uploadPhoto}
+                  onUploaded={setPickupFileId}
                 />
               </div>
 
@@ -479,11 +595,11 @@ export function CheckOutModal({
               <Button
                 variant="destructive"
                 className="w-full h-14 text-lg gap-2"
-                disabled={!pickupPhotoUrl}
-                onClick={handleConfirmCheckOut}
+                disabled={!pickupPhotoUrl || !pickupFileId || busy}
+                onClick={() => void handleConfirmCheckOut()}
               >
-                <LogOut className="w-5 h-5" />
-                {pickupPhotoUrl ? 'Confirm pickup & check out' : 'Capture a photo first'}
+                {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogOut className="w-5 h-5" />}
+                {!pickupPhotoUrl ? 'Capture a photo first' : !pickupFileId ? 'Saving photo…' : 'Confirm pickup & check out'}
               </Button>
             </>
           )}

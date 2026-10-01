@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -10,12 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CameraCapture } from '@/components/shared/CameraCapture';
 import { AuthorizedPickup } from '@/types';
-import {
-  getAuthorizedPickups,
-  addGuardianToRegistration,
-  editGuardian,
-} from '@/mockApi';
-import { useOperator } from '@/auth/OperatorContext';
+import type { PickupView } from '@oto/shared';
+import { pickupFromView, releaseApi } from '@/api/release';
 import {
   ShieldCheck,
   UserPlus,
@@ -24,7 +20,19 @@ import {
   Check,
   User,
   MessageCircle,
+  AlertTriangle,
+  Loader2,
+  UserMinus,
 } from 'lucide-react';
+
+/**
+ * The authorised-pickup sheet (S2-13 round 3, plan docs/progress/plans/
+ * checkin/PLAN.md §2.4). Same look and the same steps as the prototype's;
+ * the list, the additions and the edits are the platform's now, audited
+ * there, and a photo taken here is stored through the presigned path before
+ * it is named on the person. Taking someone off the list (R-91) revokes —
+ * nobody is ever deleted.
+ */
 
 interface AuthorizedPickupSheetProps {
   open: boolean;
@@ -53,9 +61,11 @@ interface FormState {
   relationship: string;
   phone: string;
   photoUrl: string;
+  /** The stored file behind `photoUrl` when it was taken in this form; null otherwise. */
+  photoFileId: string | null;
 }
 
-const EMPTY_FORM: FormState = { name: '', relationship: '', phone: '', photoUrl: '' };
+const EMPTY_FORM: FormState = { name: '', relationship: '', phone: '', photoUrl: '', photoFileId: null };
 
 export function AuthorizedPickupSheet({
   open,
@@ -63,17 +73,53 @@ export function AuthorizedPickupSheet({
   registrationId,
   parentName,
 }: AuthorizedPickupSheetProps) {
-  const { operator } = useOperator();
   const [pickups, setPickups] = useState<AuthorizedPickup[]>([]);
   const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // A taken photo is shown as captured from memory; a stored one is read once (access-logged).
+  const photoUrlsRef = useRef(new Map<string, string>());
 
-  const reload = () => setPickups(getAuthorizedPickups(registrationId));
+  const photoUrlOf = async (fileId: string | null): Promise<string | undefined> => {
+    if (!fileId) return undefined;
+    const known = photoUrlsRef.current.get(fileId);
+    if (known) return known;
+    try {
+      const url = await releaseApi.photoUrl(fileId);
+      photoUrlsRef.current.set(fileId, url);
+      return url;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const show = async (views: PickupView[]) => {
+    setPickups(await Promise.all(views.map(async (p) => pickupFromView(p, await photoUrlOf(p.photoFileId)))));
+  };
+
+  const reload = async () => {
+    if (!registrationId) return;
+    setLoading(true);
+    try {
+      const res = await releaseApi.pickups(registrationId);
+      await show(res.pickups);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The pickup list could not be loaded.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (open) {
-      reload();
+      photoUrlsRef.current = new Map();
+      setPickups([]);
+      setError(null);
+      void reload();
       setMode('list');
       setForm(EMPTY_FORM);
     }
@@ -83,6 +129,7 @@ export function AuthorizedPickupSheet({
   const openAdd = () => {
     setForm(EMPTY_FORM);
     setEditingId(null);
+    setError(null);
     setMode('add');
   };
 
@@ -92,54 +139,78 @@ export function AuthorizedPickupSheet({
       relationship: p.relationship ?? '',
       phone: p.phone ?? '',
       photoUrl: p.photoUrl ?? '',
+      photoFileId: null,
     });
     setEditingId(p.id);
+    setError(null);
     setMode('edit');
+  };
+
+  const run = async (work: () => Promise<unknown>) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await work();
+      await reload();
+      setMode('list');
+      setEditingId(null);
+      setForm(EMPTY_FORM);
+    } catch (err) {
+      // The platform's refusal is already in the counter's words.
+      setError(err instanceof Error ? err.message : 'That could not be saved.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remember = () => {
+    if (form.photoFileId && form.photoUrl) photoUrlsRef.current.set(form.photoFileId, form.photoUrl);
   };
 
   const handleSaveAdd = () => {
     if (!form.name.trim()) return;
-    addGuardianToRegistration(
-      registrationId,
-      {
+    remember();
+    void run(() =>
+      releaseApi.addGuardian(registrationId, {
+        id: releaseApi.newId(),
         name: form.name,
-        phone: form.phone || undefined,
-        relationship: form.relationship || undefined,
-        photoUrl: form.photoUrl || undefined,
+        phone: form.phone || null,
+        relationship: form.relationship || null,
+        photoFileId: form.photoFileId,
         source: 'in_person',
-      },
-      { operatorName: operator?.name ?? 'Unknown', operatorId: operator?.id ?? 'unknown' },
+      }),
     );
-    reload();
-    setMode('list');
-    setForm(EMPTY_FORM);
   };
 
   const handleSaveEdit = () => {
     if (!editingId || !form.name.trim()) return;
-    editGuardian(
-      editingId,
-      {
+    remember();
+    void run(() =>
+      releaseApi.editGuardian(editingId, {
         name: form.name,
-        phone: form.phone || undefined,
-        relationship: form.relationship || undefined,
-        photoUrl: form.photoUrl || undefined,
-      },
-      { operatorName: operator?.name ?? 'Unknown', operatorId: operator?.id ?? 'unknown' },
+        phone: form.phone || null,
+        relationship: form.relationship || null,
+        // Only a newly taken photo replaces the one on file (prototype `editGuardian`).
+        ...(form.photoFileId ? { photoFileId: form.photoFileId } : {}),
+      }),
     );
-    reload();
-    setMode('list');
-    setEditingId(null);
-    setForm(EMPTY_FORM);
+  };
+
+  const handleRevoke = () => {
+    if (!editingId) return;
+    void run(() => releaseApi.revokeGuardian(editingId));
   };
 
   const handleCancel = () => {
     setMode('list');
     setEditingId(null);
+    setError(null);
     setForm(EMPTY_FORM);
   };
 
-  const isFormValid = form.name.trim().length > 0;
+  // A photo still saving (taken, not yet stored) holds the save button.
+  const photoPending = form.photoUrl.startsWith('data:') && !form.photoFileId;
+  const isFormValid = form.name.trim().length > 0 && !photoPending && !saving;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -155,12 +226,25 @@ export function AuthorizedPickupSheet({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 flex items-start gap-2 text-red-300 text-xs">
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           {mode === 'list' && (
             <>
               <p className="text-xs text-muted-foreground">
                 The parent / dropper-off is always authorized. Add anyone else who may collect.
               </p>
               <div className="space-y-2">
+                {loading && pickups.length === 0 && (
+                  <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading the pickup list…
+                  </div>
+                )}
                 {pickups.map((p) => (
                   <div
                     key={p.id}
@@ -213,7 +297,7 @@ export function AuthorizedPickupSheet({
                 ))}
               </div>
 
-              <Button variant="outline" className="w-full gap-2" onClick={openAdd}>
+              <Button variant="outline" className="w-full gap-2" onClick={openAdd} disabled={!registrationId}>
                 <UserPlus className="w-4 h-4" />
                 Add authorized pickup person
               </Button>
@@ -282,8 +366,10 @@ export function AuthorizedPickupSheet({
                   </label>
                   <CameraCapture
                     value={form.photoUrl || undefined}
-                    onCapture={(url) => setForm((f) => ({ ...f, photoUrl: url }))}
-                    onClear={() => setForm((f) => ({ ...f, photoUrl: '' }))}
+                    onCapture={(url) => setForm((f) => ({ ...f, photoUrl: url, photoFileId: null }))}
+                    onClear={() => setForm((f) => ({ ...f, photoUrl: '', photoFileId: null }))}
+                    upload={(dataUrl) => releaseApi.uploadPhoto(registrationId, dataUrl)}
+                    onUploaded={(fileId) => setForm((f) => ({ ...f, photoFileId: fileId }))}
                   />
                 </div>
               </div>
@@ -293,9 +379,22 @@ export function AuthorizedPickupSheet({
                 disabled={!isFormValid}
                 onClick={mode === 'add' ? handleSaveAdd : handleSaveEdit}
               >
-                <Check className="w-4 h-4" />
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 {mode === 'add' ? 'Save pickup person' : 'Save changes'}
               </Button>
+
+              {/* R-91: off the list, audited — never deleted. */}
+              {mode === 'edit' && (
+                <Button
+                  variant="ghost"
+                  className="w-full gap-2 text-red-400 hover:text-red-300"
+                  disabled={saving}
+                  onClick={handleRevoke}
+                >
+                  <UserMinus className="w-4 h-4" />
+                  Take off the pickup list
+                </Button>
+              )}
             </div>
           )}
         </div>

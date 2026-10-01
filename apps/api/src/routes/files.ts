@@ -54,18 +54,18 @@ async function checkOwnerAccess(
   ownerEntityId: string,
   mode: 'read' | 'write',
   db: Db,
-): Promise<void> {
+): Promise<string | null> {
   switch (ownerEntityType) {
     case 'account': {
       // Your own profile photo — or admin access to any account's.
-      if (ownerEntityId === auth.accountId) return;
+      if (ownerEntityId === auth.accountId) return null;
       await req.requirePermission(mode === 'read' ? 'admin:account:read' : 'admin:account:update');
-      return;
+      return null;
     }
     case 'member':
     case 'child': {
       await req.requirePermission(mode === 'read' ? 'pos:member:read' : 'pos:member:update');
-      return;
+      return null;
     }
     /**
      * S2-13 — the check-in photos (plan §2.1, OD-C2): the child-and-guardian
@@ -77,7 +77,8 @@ async function checkOwnerAccess(
     case 'release': {
       const branchId = await checkinOwnerBranch(db, auth.operatorId, ownerEntityType, ownerEntityId);
       await req.requirePermission(mode === 'read' ? 'pos:checkin:read' : 'pos:checkin:update', { branchId });
-      return;
+      // The park the photo belongs to: its access-log row is filed there (R-94).
+      return branchId;
     }
     default:
       throw errors.forbidden(`Unsupported file owner ${ownerEntityType}`);
@@ -336,7 +337,7 @@ export async function fileRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const [row] = await app.db.select().from(fileObject).where(eq(fileObject.id, req.params.id)).limit(1);
       if (!row || row.operatorId !== auth.operatorId) throw errors.notFound('File not found');
-      await checkOwnerAccess(req, auth, row.ownerEntityType, row.ownerEntityId, 'read', app.db);
+      const ownerBranchId = await checkOwnerAccess(req, auth, row.ownerEntityType, row.ownerEntityId, 'read', app.db);
       const storage = app.fileStorage;
       if (!storage) throw notConfigured();
       const url = await withStorageLog(req, 'presign download', () =>
@@ -345,18 +346,25 @@ export async function fileRoutes(app: App): Promise<void> {
       /**
        * R-94 — every read of a check-in photo is ACCESS-LOGGED: a child's
        * photo with the guardian is the most sensitive thing the park keeps,
-       * and who looked at it, when, is part of the record.
+       * and who looked at it, when, is part of the record. The row is filed
+       * at the park the photo belongs to, with the till it was looked at
+       * from, and committed BEFORE the signed URL leaves: a read that could
+       * not be logged is not answered.
        */
       if (CHECKIN_OWNERS.has(row.ownerEntityType)) {
         await withTx(app.db, opCtx(req), 'file.read', async (tx) => {
           await audit.record(tx, {
             actorAccountId: auth.accountId,
             operatorId: auth.operatorId,
-            branchId: auth.branchId,
+            branchId: ownerBranchId ?? auth.branchId,
             action: 'file.read',
             entityType: 'file_object',
             entityId: row.id,
-            after: { ownerEntityType: row.ownerEntityType, ownerEntityId: row.ownerEntityId },
+            after: {
+              ownerEntityType: row.ownerEntityType,
+              ownerEntityId: row.ownerEntityId,
+              stationId: auth.stationId ?? null,
+            },
             requestId: req.id,
           });
         });
