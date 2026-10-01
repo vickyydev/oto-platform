@@ -19,3 +19,12 @@ The documented administrator entered through the suite launcher and reached OTO 
 For SCRUM-466, a separate signed-in staging API check returned 200 for model index, Users list and user detail; each removed model endpoint returned 404; neither Users response contained a password field. No response body or secret value was recorded. The direct check and three screenshots are named in the ticket's Deployed comment.
 
 The in-app browser screenshot service timed out on fresh tabs, including an unrelated blank page. The repository's existing browser-test tooling captured the images without changing application code. This evidence-only checkpoint did not redeploy the app or claim a new CI result.
+
+## Added 1 October 2026
+
+| Ticket | Screenshot | What is visible | Remaining acceptance |
+| --- | --- | --- | --- |
+| SCRUM-193 | `scrum-193-package-saved-tablet-2026-10-01.png` (Jira attachment 11203) | Saved synthetic birthday package in Event Settings | Event package snapshot and tenant refusal |
+| SCRUM-193 | `scrum-193-set-menu-saved-tablet-2026-10-01.png` (Jira attachment 11204) | Saved synthetic one-item set menu | Event selection and tenant refusal |
+
+The exact synthetic package, line item and menu were removed after capture. Both images are real staging browser captures at an 820x1180 viewport; neither image is a mockup.

@@ -151,7 +151,7 @@ or source change lacks the required staging action proof.
 | --- | --- | --- |
 | Events core | WORKING WITH CAVEATS | Restricted manager routes read own event and refused another branch; broader event action and POS seam remain in [event notes](../qa/oto-app-lift/events-camps.md). |
 | BEO | WORKING WITH CAVEATS | A private BEO PDF and a saved/read timeline step were staged; package/menu workflow and named restricted-refusal proof remain in [event notes](../qa/oto-app-lift/events-camps.md). |
-| Packages and menus | NOT YET VERIFIED | Both empty pages loaded, but no template save/use was staged; tenant-wide soft-delete requires safe cleanup; line-item scope repair is live with signed-in missing-parent 404 and anonymous 401 checks. [Event notes](../qa/oto-app-lift/events-camps.md). |
+| Packages and menus | WORKING WITH CAVEATS | Package, line item and set menu saved/read on staging with two real tablet captures, then their exact synthetic rows were removed. Anonymous line-item access was refused. Event snapshot/selection and signed-in foreign-tenant proof remain in [event notes](../qa/oto-app-lift/events-camps.md). |
 | Camps and children | WORKING WITH CAVEATS | A second-tenant camp registration, attendance edit and removal worked with foreign-tenant refusal; wider flows remain in [event notes](../qa/oto-app-lift/events-camps.md). |
 | Parent portal and RSVP | WORKING WITH CAVEATS | An anonymous RSVP saved and matched the event summary; public delivery and edit/language variants remain in [RSVP notes](../qa/oto-app-lift/parent-rsvp.md). |
 | Drop-off and staff check-ins | WORKING WITH CAVEATS | Staff board showed a check-in and another branch was refused; full checkout/form action remains in [check-in notes](../qa/oto-app-lift/checkins.md). |
