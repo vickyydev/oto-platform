@@ -214,6 +214,12 @@ offline-selling cluster (SCRUM-269 + 270 + 271 + 295), which also closes
 SCRUM-206/205; the other lane continues SCRUM-193 (its voucher-contract
 question answered on the ticket: the module counts as moved, nothing rebuilt).
 
+## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, Organization live action
+
+Exact `4baed2aa` is live on oto-app-staging with `/api/status` 200. The normal launcher-signed administrator created a unique unassigned operator through the 820px Operators UI. Detail/branches/users were 200 with no assignments, a tenant-move PATCH returned 400, and anonymous detail returned 401. The reviewed real screenshot `scrum-193-operator-created-tablet-2026-10-01.png` is attached to SCRUM-193. Exact-ID DELETE returned 200, later detail 404, and the list had zero matching rows. This is a positive default-tenant operator action; signed-in foreign-tenant/lower-role refusal, department action and tenant-bearing user assignment remain open.
+
+SCRUM-193 is In Progress, all five parent gates open. Next commit this evidence and same-turn Jira status/comment, then run the validated exact-cleanup package/menu and Supplier Portal positive staging actions. Keep any raw supplier token only in browser memory, revoke before cleanup, and recheck both selected branches have zero unrelated Fix reports before creating a token. Platform needs and CI limits are in the preceding OTO App block.
+
 ## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, Organization source ready
 
 App-owned source `5d5b4150` scopes operator and department read/write/assignment routes to the signed-in tenant and permitted branches. Operator user responses omit password hashes. A disposable two-tenant HTTP probe passed 26 assertions and removed its database; build passed, TypeScript retained 473 inherited diagnostics, and scoped lint found zero edited-line errors. This source has not yet been deployed or tested on staging. A synthetic unassigned operator can be created and fully deleted by exact ID for positive staging proof. Department DELETE only deactivates, so a synthetic department needs exact cleanup first. The legacy users table has no tenant key; an operator assignment without explicit tenant-bearing user branch access fails closed, needing a platform identity contract.
