@@ -26,6 +26,22 @@ import {
   type RelayDriver,
 } from './gate/index';
 import { StationBridge, type StationBridgeOptions } from './station-bridge';
+import { tmpdir } from 'node:os';
+import { join as joinPath } from 'node:path';
+import {
+  fsBlobStore,
+  memoryBlobStore,
+  registerBoxBlobs,
+  type BlobLimits,
+  type BlobStore,
+} from './blob-store';
+import {
+  createPhotoUploader,
+  fetchPut,
+  type PhotoUploader,
+  type UploadCrashPoint,
+  type UploadTick,
+} from './photo-upload';
 import { BAND_CODE_HANDLER, ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
 import { StationSessionManager } from './station-session';
@@ -81,6 +97,7 @@ import {
   BOOTH_STAFF_VERIFY_ERRORS,
   BOOTH_STAFF_VERIFY_PATH,
   PrintTemplateSchema,
+  childPhotosEnabled,
 } from '@oto/shared';
 import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@oto/shared';
 
@@ -366,6 +383,24 @@ export interface BoxAgentOptions {
    * pulses its relay HAT through `gpioset`; the virtual box does neither
    * unless told to here.
    */
+  /**
+   * S2-13 round 4 — photos taken at a counter with the link down (plan §2.5):
+   * the bounded store on this box (`blob-store.ts`) and the worker that sends
+   * them through the platform when the link is back (`photo-upload.ts`).
+   */
+  photos?: {
+    /** `CHILD_PHOTOS_ENABLED`; absent, the process environment decides (on unless switched off). */
+    enabled?: boolean;
+    /** Where the photos are kept on disk. Default: the system temp directory, per box. */
+    dir?: string;
+    /** Keep them in memory instead (tests). */
+    memory?: boolean;
+    limits?: Partial<BlobLimits>;
+    /** The PUT to object storage. Default: `fetch`. */
+    put?: (url: string, bytes: Uint8Array, contentType: string) => Promise<number>;
+    /** A test's hand on the power lead between the upload's steps. */
+    crashPoint?: (point: UploadCrashPoint, photoId: string) => void | Promise<void>;
+  };
   gate?: {
     /** Off only for a test that wants the agent without it. */
     enabled?: boolean;
@@ -532,6 +567,12 @@ export interface BoxAgent {
    * on a box with no store (offline plan Round 3).
    */
   bridge(): StationBridge | null;
+  /** S2-13 round 4 — the box's photo store, or null before the box knows who it is. */
+  photoStore(): BlobStore | null;
+  /** S2-13 round 4 — one pass of the photo upload worker. Also run on the cache tick. */
+  uploadPhotos(): Promise<UploadTick>;
+  /** S2-13 round 4 — pull the `checkin` scope on its own (it is volatile). Also run on the cache tick. */
+  syncCheckin(): Promise<boolean>;
   /**
    * Seals facts with this box's signing key, or null before registration.
    *
@@ -870,6 +911,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   /** Whether `prepare` has run since the last `stop`: the gate follows config only then. */
   let gateArmed = false;
   let bridge: StationBridge | null = null;
+  let photoStore: BlobStore | null = null;
+  let photoUploader: PhotoUploader | null = null;
   /**
    * The `staff` cache scope, as the booth's sign-in reads it.
    *
@@ -1919,6 +1962,19 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      */
     const verifyPassword =
       options.bridge?.verifyPassword ?? options.booth?.verifySecret ?? (async () => false);
+    /**
+     * S2-13 round 4 — the photo store, one per box, registered so a bridge in
+     * the same process (the api's mount for a virtual box) keeps a captured
+     * photo where this box's upload worker reads it.
+     */
+    if (!photoStore) {
+      photoStore = options.photos?.memory
+        ? memoryBlobStore({ limits: options.photos.limits })
+        : fsBlobStore(options.photos?.dir ?? joinPath(tmpdir(), 'oto-box-photos', boxId), {
+            limits: options.photos?.limits,
+          });
+    }
+    registerBoxBlobs(boxId, photoStore);
     bridge = new StationBridge(
       {
         boxId,
@@ -1962,9 +2018,21 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
          * QR with `BOOKING_QR_UNCHECKED`, which the staging drive met live.
          */
         bandKey: bandKeyNow,
+        blobs: () => photoStore,
+        photosEnabled: () => options.photos?.enabled ?? childPhotosEnabled(process.env.CHILD_PHOTOS_ENABLED),
       },
       options.bridge?.options,
     );
+    photoUploader = createPhotoUploader({
+      blobs: () => photoStore,
+      request: (path, init) => request(path, init),
+      put: options.photos?.put ?? fetchPut,
+      target: async (photoId) => (await bridge?.photoTarget(photoId)) ?? null,
+      isOnline: () => !!credential && !state.offline && state.linkUp,
+      now: () => new Date(clock()),
+      note: (level, msg, detail) => note(level, msg, detail),
+      ...(options.photos?.crashPoint ? { crashPoint: options.photos.crashPoint } : {}),
+    });
 
     /**
      * The Lucky Wheel (S2-07a).
@@ -2450,7 +2518,65 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      * own store is the evidence (`box-cache-survives.test.ts`).
      */
     await pullReceiptSeries(boxId);
+    // S2-13 round 4: the check-in copy moves with every check-in, so like the
+    // receipt mark it is read on its own every tick; then the photos taken
+    // offline go up, now that their rows may have reached the platform.
+    await pullCheckinScope(boxId).catch((err: unknown) => {
+      note('warn', 'the check-in copy could not be refreshed', { err: String(err) });
+    });
+    await photoUploader?.tick().catch((err: unknown) => {
+      note('warn', 'the photo upload pass failed', { err: String(err) });
+    });
     return applied;
+  }
+
+  /**
+   * The `checkin` scope, read on its own (S2-13 round 4). Volatile, as
+   * `bands` is — every check-in moves it — so the bundle's version does not
+   * stand for it. Written whole and never moves `cacheCursorSeq`. After it
+   * lands, rows this counter recorded offline that the platform has since
+   * taken are let go (`pruneCheckinOverlay`).
+   */
+  async function pullCheckinScope(boxId: string): Promise<boolean> {
+    if (!store || !credential || state.offline) return false;
+    // Only a counter checks children in: a booth or a gate box is not asked to
+    // hold the board, and is spared the request.
+    if (!bundle?.stations.some((s) => s.kind === 'till')) return false;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=checkin`, { method: 'GET' });
+    if (status === 401) {
+      await reregisterAfterRefusal('cache');
+      return false;
+    }
+    if (status !== 200 || !body) return false;
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const held = plan.apply.includes('checkin') ? body.scopes.checkin : undefined;
+    if (!held) return false;
+    // The same board as last time (its own version, which leaves out when it
+    // was generated): nothing is rewritten, as a 304 rewrites nothing.
+    const versionOf = (items: unknown): string | null => {
+      const first = Array.isArray(items) ? (items[0] as { version?: unknown } | undefined) : undefined;
+      return typeof first?.version === 'string' ? first.version : null;
+    };
+    const before = await store.readBundle(boxId, 'checkin').catch(() => null);
+    const incoming = versionOf(held.items);
+    if (before && incoming && versionOf((before.payload as { items?: unknown }).items) === incoming) return false;
+    await store.writeBundle(boxId, {
+      scope: 'checkin',
+      schemaVersion: body.schemaVersion,
+      cursorSeq: cacheCursorSeq,
+      payload: { items: held.items },
+      appliedAt: new Date(clock()).toISOString(),
+    });
+    cacheScopesHeld.add('checkin');
+    await bridge?.pruneCheckinOverlay().catch((err: unknown) => {
+      note('warn', 'the check-in overlay could not be pruned after a pull', { err: String(err) });
+    });
+    return true;
   }
 
   /**
@@ -4004,6 +4130,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     gate: () => gateHost,
     sales: saleQueue,
     bridge: () => bridge,
+    photoStore: () => photoStore,
+    uploadPhotos: async () =>
+      photoUploader ? photoUploader.tick() : { linked: 0, waiting: 0, failed: 0, purged: 0 },
+    syncCheckin: async () => (state.boxId ? pullCheckinScope(state.boxId) : false),
     sealer: () => {
       const key = syncPrivateKeyPem;
       const id = state.boxId;

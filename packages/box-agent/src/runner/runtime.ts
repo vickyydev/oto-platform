@@ -926,6 +926,9 @@ export async function startRunner(options: RunnerOptions): Promise<RunningBox> {
           }
         : { enabled: false },
       ...(store ? {} : { terminal: { enabled: false } }),
+      // S2-13 round 4 — photos taken with the link down live on the card, in
+      // the box's home, bounded and purged a week after they upload.
+      photos: { dir: join(paths.home, 'photos') },
       booth: store
         ? {
             ...(verifySecret ? { verifySecret } : {}),

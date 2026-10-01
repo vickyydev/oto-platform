@@ -186,6 +186,8 @@ export const SYNC_CHANGE_SCOPES = [
   'receipt_series',
   /** The booth's published wheel (S2-07a). */
   'booth',
+  /** S2-13 round 4 — in-park children, pickup lists, registrations awaiting check-in. */
+  'checkin',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

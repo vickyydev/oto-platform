@@ -1,4 +1,6 @@
 import {
+  BRIDGE_CHECKIN_INTENTS,
+  OFFLINE_PHOTO_POLICY,
   newId as newRecordId,
   satangFromBaht,
   type DropOffPricingConfig,
@@ -6,20 +8,86 @@ import {
   type SupervisionRequirement,
 } from '@oto/shared';
 import type { CheckIn, ChildFoodProvision, ContactChannel, DropOffServiceType } from '@/types';
+import { viaLane } from '@/lib/lane';
 import { api, idemKey } from './client';
+import { bridgeApi, bridgeStaffName } from './bridge';
 import { apiBranchIdForSlug } from './catalogBridge';
 
 /**
  * S2-13 round 1 — the supervision gate's calls (plan
- * docs/progress/plans/checkin/PLAN.md §2.2), ONLINE ONLY.
+ * docs/progress/plans/checkin/PLAN.md §2.2).
  *
  * Where the prototype's till called its in-memory mutators —
  * `registerWalkInChildren`, `recordSupervisionWaiver`,
  * `checkInFamilyWithPayment` + `linkCheckInSaleId` + `braceletPrintJobs`,
- * `markCheckInsBooked` — it calls these. The box answers for them in round 4;
- * until then a till with no link gets the platform's refusal, never a record
- * that exists only in this browser.
+ * `markCheckInsBooked` — it calls these.
+ *
+ * ROUND 4 — THE BOX LANE (plan §2.5). Each call runs on whichever lane the
+ * arbiter says (`lib/lane.ts`): through the platform while the link is up,
+ * through the counter's BOX when it is down — the same ids either way (OD-12),
+ * so a press begun on one lane and finished on the other meets itself. The
+ * box answers in the platform's own shapes (`checkin-desk.ts` in
+ * `@oto/box-agent`), so the screens do not know which lane answered. A photo
+ * taken on the box lane is kept on the box and sent when the link is back.
+ * Never a record that exists only in this browser.
  */
+
+/** One intent to this till's box, answered in the platform's shape. */
+async function onBox<R>(stationId: string, type: string, payload: Record<string, unknown>): Promise<R> {
+  const answer = await bridgeApi.intent<R>(stationId, type, payload, { actionId: newRecordId() });
+  return answer.result as R;
+}
+
+/** The refusal for what the box lane does not do, in the counter's words. */
+function needsInternet(what: string): Error {
+  return new Error(`${what} needs the internet — this counter is offline. Do it when the connection is back.`);
+}
+
+/**
+ * A photo as the box lane sends it: shrunk to `OFFLINE_PHOTO_POLICY.shrinkToPx`
+ * on its longest edge at JPEG 0.7, so it travels to the box in one small
+ * request and the box's bounded store holds a fortnight of them. Unchanged
+ * where the browser cannot draw it (the box refuses what is too large).
+ */
+export async function shrinkForBox(dataUrl: string): Promise<string> {
+  if (typeof document === 'undefined' || typeof Image === 'undefined') return dataUrl;
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('unreadable'));
+      i.src = dataUrl;
+    });
+    const longest = Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
+    if (!longest) return dataUrl;
+    const scale = Math.min(1, OFFLINE_PHOTO_POLICY.shrinkToPx / longest);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round((img.naturalWidth || img.width) * scale);
+    canvas.height = Math.round((img.naturalHeight || img.height) * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.7);
+  } catch {
+    return dataUrl;
+  }
+}
+
+/** Keep a photo on the box (`photo.capture`); answers its id, which the platform files it under later. */
+export async function capturePhotoOnBox(
+  stationId: string,
+  registrationId: string,
+  dataUrl: string,
+  purpose: 'consent' | 'collector' | 'pickup',
+): Promise<{ photoId: string; registration?: ApiRegistration }> {
+  const photoId = newRecordId();
+  return onBox(stationId, BRIDGE_CHECKIN_INTENTS.photo, {
+    photoId,
+    registrationId,
+    purpose,
+    dataUrl: await shrinkForBox(dataUrl),
+  });
+}
 
 /**
  * THE PARK, IN THE PLATFORM'S ID (round-1 fix, finding R1).
@@ -66,6 +134,8 @@ export interface ApiSupervisionConfig {
   pricing: DropOffPricingConfig;
   photoRetentionDays: number;
   nannies: ApiNanny[];
+  /** The box's answer only: false while `CHILD_PHOTOS_ENABLED` is off on that box. Absent from the platform's. */
+  photosEnabled?: boolean;
 }
 
 export interface ApiFoodProvision {
@@ -227,22 +297,52 @@ export const checkinApi = {
 
   /** The park's policy, pricing and nanny roster. `branchId` is the PLATFORM's id (`requirePlatformBranchId`). */
   config: async (branchId: string) =>
-    api.get<ApiSupervisionConfig>(
-      `/checkin/config?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+    viaLane(
+      () =>
+        api.get<ApiSupervisionConfig>(
+          `/checkin/config?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+        ),
+      (stationId) => onBox<ApiSupervisionConfig>(stationId, BRIDGE_CHECKIN_INTENTS.config, {}),
     ),
 
   /** Registrations waiting to be checked in. `branchId` is the PLATFORM's id (`requirePlatformBranchId`). */
   awaiting: async (branchId: string) =>
-    api.get<{ registrations: ApiRegistration[] }>(
-      `/checkin/registrations?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+    viaLane(
+      () =>
+        api.get<{ registrations: ApiRegistration[] }>(
+          `/checkin/registrations?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+        ),
+      (stationId) => onBox<{ registrations: ApiRegistration[] }>(stationId, BRIDGE_CHECKIN_INTENTS.awaiting, {}),
     ),
 
   /** The same id again answers with the registration that exists — consent and payment never make two. */
   createRegistration: (body: CreateRegistrationBody) =>
-    api.post<ApiRegistration>('/checkin/registrations', body, { idempotencyKey: idemKey() }),
+    viaLane(
+      () => api.post<ApiRegistration>('/checkin/registrations', body, { idempotencyKey: idemKey() }),
+      async (stationId) =>
+        (
+          await onBox<{ registration: ApiRegistration }>(stationId, BRIDGE_CHECKIN_INTENTS.create, {
+            registrationId: body.id,
+            memberId: body.memberId ?? null,
+            visitId: body.visitId ?? null,
+            guardianName: body.guardianName,
+            guardianPhone: body.guardianPhone ?? null,
+            contactChannel: body.contactChannel,
+            consentAcknowledged: body.consentAcknowledged,
+            acknowledgedConfirmationIds: body.acknowledgedConfirmationIds,
+            children: body.children,
+          })
+        ).registration,
+    ),
 
   addChildren: (registrationId: string, children: RegistrationChildBody[]) =>
-    api.post<ApiRegistration>(`/checkin/registrations/${registrationId}/children`, { children }, { idempotencyKey: idemKey() }),
+    viaLane(
+      () =>
+        api.post<ApiRegistration>(`/checkin/registrations/${registrationId}/children`, { children }, { idempotencyKey: idemKey() }),
+      async () => {
+        throw needsInternet('Adding a child to a registration that is already paid for');
+      },
+    ),
 
   recordWaiver: (body: {
     id: string;
@@ -252,46 +352,91 @@ export const checkinApi = {
     child: { name: string; ageYears: number; childId?: string | null };
     sibling: { name: string; ageYears: number; childId?: string | null };
     waivedRequirement: 'drop_off' | 'nanny';
-  }) => api.post<{ id: string; siblingName: string }>('/checkin/waivers', body, { idempotencyKey: idemKey() }),
+  }) =>
+    viaLane(
+      () => api.post<{ id: string; siblingName: string }>('/checkin/waivers', body, { idempotencyKey: idemKey() }),
+      (stationId) =>
+        onBox<{ id: string; siblingName: string }>(stationId, BRIDGE_CHECKIN_INTENTS.waiver, {
+          waiverId: body.id,
+          registrationId: body.registrationId ?? null,
+          child: body.child,
+          sibling: body.sibling,
+          waivedRequirement: body.waivedRequirement,
+        }),
+    ),
 
   /**
    * The combined child-and-guardian photo (OD-C2): registered under the
    * registration, PUT straight to storage on the presigned URL, then attached.
    */
-  uploadPhoto: async (registrationId: string, dataUrl: string, checkinIds: string[]): Promise<ApiRegistration> => {
-    const blob = blobOfDataUrl(dataUrl);
-    const file = await api.post<{ id: string; uploadUrl: string }>(
-      '/files',
-      {
-        id: newRecordId(),
-        contentType: blob.type,
-        ownerEntityType: 'registration',
-        ownerEntityId: registrationId,
-        filename: `consent.${blob.type.split('/')[1] ?? 'jpg'}`,
+  uploadPhoto: async (registrationId: string, dataUrl: string, checkinIds: string[]): Promise<ApiRegistration> =>
+    viaLane(
+      () => uploadConsentPhoto(registrationId, dataUrl, checkinIds),
+      async (stationId) => {
+        // Kept on the box and named for the registration; it is sent and
+        // attached when the link is back (the box's upload worker).
+        const kept = await capturePhotoOnBox(stationId, registrationId, dataUrl, 'consent');
+        if (kept.registration) return kept.registration;
+        throw new Error('The photo is kept on this counter, but the registration it belongs to is not — register the family first.');
       },
-      { idempotencyKey: idemKey() },
-    );
-    const put = await fetch(file.uploadUrl, { method: 'PUT', body: blob, headers: { 'content-type': blob.type } });
-    if (!put.ok) throw new Error(`The photo did not upload (${put.status})`);
-    return api.post<ApiRegistration>(
-      `/checkin/registrations/${registrationId}/photo`,
-      { fileId: file.id, checkinIds },
-      { idempotencyKey: idemKey() },
-    );
-  },
+    ),
 
   checkInNow: (body: { saleId: string; entries: { checkinId: string; nannyId?: string | null }[] }) =>
-    api.post<{
-      saleId: string;
-      children: ApiCheckin[];
-      bands: { id: string; checkinId: string; childName: string }[];
-      printJobs: { id: string; kind: string; status: string }[];
-      notes: string[];
-    }>('/checkin/check-in-now', body, { idempotencyKey: idemKey() }),
+    viaLane(
+      () =>
+        api.post<CheckInNowAnswer>('/checkin/check-in-now', body, { idempotencyKey: idemKey() }),
+      (stationId) =>
+        onBox<CheckInNowAnswer>(stationId, BRIDGE_CHECKIN_INTENTS.update, {
+          event: 'check_in_now',
+          saleId: body.saleId,
+          entries: body.entries,
+          staffName: bridgeStaffName(),
+        }),
+    ),
 
   leaveAsBooked: (body: { saleId: string; scheduledFor?: string; entries: { checkinId: string }[] }) =>
-    api.post<{ saleId: string; children: ApiCheckin[] }>('/checkin/leave-as-booked', body, { idempotencyKey: idemKey() }),
+    viaLane(
+      () =>
+        api.post<{ saleId: string; children: ApiCheckin[] }>('/checkin/leave-as-booked', body, { idempotencyKey: idemKey() }),
+      (stationId) =>
+        onBox<{ saleId: string; children: ApiCheckin[] }>(stationId, BRIDGE_CHECKIN_INTENTS.update, {
+          event: 'leave_as_booked',
+          ...body,
+        }),
+    ),
 };
+
+/** What "Check in now" answers, on either lane. */
+export interface CheckInNowAnswer {
+  saleId: string;
+  children: ApiCheckin[];
+  bands: { id: string; checkinId: string; childName: string; shortCode?: string | null }[];
+  printJobs: { id: string; kind: string; status: string }[];
+  notes: string[];
+}
+
+/** The platform lane's consent photo: registered under the registration, PUT to storage, attached. */
+async function uploadConsentPhoto(registrationId: string, dataUrl: string, checkinIds: string[]): Promise<ApiRegistration> {
+  const blob = blobOfDataUrl(dataUrl);
+  const file = await api.post<{ id: string; uploadUrl: string }>(
+    '/files',
+    {
+      id: newRecordId(),
+      contentType: blob.type,
+      ownerEntityType: 'registration',
+      ownerEntityId: registrationId,
+      filename: `consent.${blob.type.split('/')[1] ?? 'jpg'}`,
+    },
+    { idempotencyKey: idemKey() },
+  );
+  const put = await fetch(file.uploadUrl, { method: 'PUT', body: blob, headers: { 'content-type': blob.type } });
+  if (!put.ok) throw new Error(`The photo did not upload (${put.status})`);
+  return api.post<ApiRegistration>(
+    `/checkin/registrations/${registrationId}/photo`,
+    { fileId: file.id, checkinIds },
+    { idempotencyKey: idemKey() },
+  );
+}
 
 // ================================================================================
 // S2-13 round 2 — THE BOARD (plan §2.3). The DropOff page, its cards, the
@@ -487,52 +632,139 @@ export interface PricingBody {
   prepaidFoodUnused: 'refund' | 'forfeit';
 }
 
+/** The board's edit fields the box takes offline; the guardian's own details wait for the link. */
+const BOX_EDIT_FIELDS = ['childName', 'childAgeYears', 'service', 'mayOrderFood', 'foodRestrictions', 'allergies', 'bookedMinutes'] as const;
+
 export const boardApi = {
   /** The park's board. `branchId` is the PLATFORM's id (`requirePlatformBranchId`). */
   board: (branchId: string) =>
-    api.get<ApiBoard>(`/checkin/board?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`),
+    viaLane(
+      () => api.get<ApiBoard>(`/checkin/board?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`),
+      (stationId) => onBox<ApiBoard>(stationId, BRIDGE_CHECKIN_INTENTS.board, {}),
+    ),
 
   /** The Today screen's drop-off count. */
   today: (branchId: string) =>
-    api.get<{ inPark: number; upcoming: number }>(
-      `/checkin/today?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+    viaLane(
+      () =>
+        api.get<{ inPark: number; upcoming: number }>(
+          `/checkin/today?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+        ),
+      async (stationId) => {
+        const board = await onBox<ApiBoard>(stationId, BRIDGE_CHECKIN_INTENTS.board, {});
+        const stays = board.families.flatMap((f) => f.children);
+        return {
+          inPark: stays.filter((c) => c.status === 'in_park').length,
+          upcoming: stays.filter((c) => c.status === 'registered').length,
+        };
+      },
     ),
 
   /** One audited edit; the answer carries how many fields changed and any ratio warning. */
   edit: (checkinId: string, body: Record<string, unknown>) =>
-    api.patch<{ checkin: ApiBoardChild; changed: number; warnings: string[]; contact: ApiContact | null }>(
-      `/checkin/checkins/${checkinId}`,
-      body,
-      { idempotencyKey: idemKey() },
+    viaLane(
+      () =>
+        api.patch<{ checkin: ApiBoardChild; changed: number; warnings: string[]; contact: ApiContact | null }>(
+          `/checkin/checkins/${checkinId}`,
+          body,
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) => {
+        if ('guardianName' in body || 'guardianPhone' in body || 'contactChannel' in body) {
+          throw needsInternet("Changing the guardian's name, phone or channel");
+        }
+        const fields = Object.fromEntries(BOX_EDIT_FIELDS.filter((k) => k in body).map((k) => [k, body[k]]));
+        return onBox<{ checkin: ApiBoardChild; changed: number; warnings: string[]; contact: ApiContact | null }>(
+          stationId,
+          BRIDGE_CHECKIN_INTENTS.update,
+          { event: 'edit', checkinId, fields, ...('nannyId' in body ? { nannyId: body.nannyId ?? null } : {}) },
+        );
+      },
     ),
 
-  history: (checkinId: string) => api.get<{ entries: ApiChangeLogEntry[] }>(`/checkin/checkins/${checkinId}/history`),
+  /** The change log reads the platform's audit rows; offline it has nothing to show yet. */
+  history: (checkinId: string) =>
+    viaLane(
+      () => api.get<{ entries: ApiChangeLogEntry[] }>(`/checkin/checkins/${checkinId}/history`),
+      async () => ({ entries: [] as ApiChangeLogEntry[] }),
+    ),
 
   assignNanny: (checkinId: string, nannyId: string) =>
-    api.post<{ checkin: ApiBoardChild; warnings: string[] }>(
-      `/checkin/checkins/${checkinId}/nanny`,
-      { nannyId },
-      { idempotencyKey: idemKey() },
+    viaLane(
+      () =>
+        api.post<{ checkin: ApiBoardChild; warnings: string[] }>(
+          `/checkin/checkins/${checkinId}/nanny`,
+          { nannyId },
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) =>
+        onBox<{ checkin: ApiBoardChild; warnings: string[] }>(stationId, BRIDGE_CHECKIN_INTENTS.update, {
+          event: 'assign_nanny',
+          checkinId,
+          nannyId,
+        }),
     ),
 
   /** Booked, already-paid children: no payment, no sale — bands on the sale they paid on. */
   checkInBooked: (body: { entries: { checkinId: string; nannyId?: string | null }[]; consentAcknowledged?: boolean }) =>
-    api.post<{
-      saleIds: string[];
-      children: ApiCheckin[];
-      bands: { id: string; checkinId: string; childName: string }[];
-      printJobs: { id: string; kind: string; status: string }[];
-      notes: string[];
-    }>('/checkin/check-in-booked', body, { idempotencyKey: idemKey() }),
+    viaLane(
+      () =>
+        api.post<{
+          saleIds: string[];
+          children: ApiCheckin[];
+          bands: { id: string; checkinId: string; childName: string }[];
+          printJobs: { id: string; kind: string; status: string }[];
+          notes: string[];
+        }>('/checkin/check-in-booked', body, { idempotencyKey: idemKey() }),
+      async (stationId) => {
+        // On the box: each booked child is checked in on the sale they were
+        // paid on, exactly as "Check in now" does after a payment (R-90: no
+        // second sale).
+        const board = await onBox<ApiBoard>(stationId, BRIDGE_CHECKIN_INTENTS.board, {});
+        const saleOf = new Map(board.families.flatMap((f) => f.children).map((c) => [c.id, c.saleId] as const));
+        const bySale = new Map<string, { checkinId: string; nannyId?: string | null }[]>();
+        for (const e of body.entries) {
+          const saleId = saleOf.get(e.checkinId);
+          if (!saleId) throw new Error('This child has no payment on file at this counter — check them in when the connection is back.');
+          bySale.set(saleId, [...(bySale.get(saleId) ?? []), e]);
+        }
+        const out = { saleIds: [] as string[], children: [] as ApiCheckin[], bands: [] as CheckInNowAnswer['bands'], printJobs: [] as CheckInNowAnswer['printJobs'], notes: [] as string[] };
+        for (const [saleId, entries] of bySale) {
+          const res = await onBox<CheckInNowAnswer>(stationId, BRIDGE_CHECKIN_INTENTS.update, {
+            event: 'check_in_now',
+            saleId,
+            entries,
+            staffName: bridgeStaffName(),
+          });
+          out.saleIds.push(saleId);
+          out.children.push(...res.children);
+          out.bands.push(...res.bands);
+          out.printJobs.push(...res.printJobs);
+          out.notes.push(...res.notes);
+        }
+        return out;
+      },
+    ),
 
   contactTest: (registrationId: string) =>
-    api.post<ApiContact>(`/checkin/registrations/${registrationId}/contact-test`, {}, { idempotencyKey: idemKey() }),
+    viaLane(
+      () => api.post<ApiContact>(`/checkin/registrations/${registrationId}/contact-test`, {}, { idempotencyKey: idemKey() }),
+      async () => {
+        throw needsInternet('Testing the guardian’s chat channel');
+      },
+    ),
 
   contactStatus: (registrationId: string, status: 'confirmed' | 'failed') =>
-    api.post<ApiContact>(
-      `/checkin/registrations/${registrationId}/contact-status`,
-      { status },
-      { idempotencyKey: idemKey() },
+    viaLane(
+      () =>
+        api.post<ApiContact>(
+          `/checkin/registrations/${registrationId}/contact-status`,
+          { status },
+          { idempotencyKey: idemKey() },
+        ),
+      async () => {
+        throw needsInternet('Recording the chat channel’s answer');
+      },
     ),
 
   savePolicy: (branchId: string, body: PolicyBody) =>

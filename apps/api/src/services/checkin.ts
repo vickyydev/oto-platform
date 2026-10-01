@@ -825,7 +825,17 @@ export async function checkInNow(
         scheduledFor: s.scheduledFor?.toISOString() ?? null,
         bookedMinutes: s.bookedMinutes,
       },
-      after: { status: 'in_park', saleId: saleRow.id, nannyId, bookedMinutes: patch.bookedMinutes, checkedInAt: now.toISOString(), event },
+      // `scheduledFor: null` because the write above clears it: the audit
+      // after has to say what the row now holds (S2-13 round 4, audit fix).
+      after: {
+        status: 'in_park',
+        saleId: saleRow.id,
+        nannyId,
+        scheduledFor: null,
+        bookedMinutes: patch.bookedMinutes,
+        checkedInAt: now.toISOString(),
+        event,
+      },
     });
   }
 

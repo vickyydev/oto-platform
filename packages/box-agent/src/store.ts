@@ -727,7 +727,24 @@ export interface BoxStore extends PrintJobStore {
 
 // --- The offline overlay ------------------------------------------------------
 
-export const BOX_OVERLAY_KINDS = ['member', 'child', 'visit'] as const;
+/**
+ * What a counter keeps offline. `member`, `child`, `visit` since offline plan
+ * Round 3; the check-in domain's four since S2-13 round 4 (plan §2.5): a
+ * registration, a stay, a person on a pickup list and a release. Their
+ * `memberId` column carries the REGISTRATION's id (`member` on a registration
+ * row), so one family's rows are listed together; `phone` is null on all four.
+ * Migration 0044 widens the platform's twin; `prepareSqliteBoxStore` rebuilds
+ * a Pi's table that predates them.
+ */
+export const BOX_OVERLAY_KINDS = [
+  'member',
+  'child',
+  'visit',
+  'registration',
+  'checkin',
+  'guardian',
+  'release',
+] as const;
 export type BoxOverlayKind = (typeof BOX_OVERLAY_KINDS)[number];
 
 /** What a producer writes. `record` is the entity as this counter now knows it. */

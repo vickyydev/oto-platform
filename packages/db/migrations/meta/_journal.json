@@ -309,6 +309,13 @@
       "when": 1790827823598,
       "tag": "0043_checkin_supervision",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1790827824598,
+      "tag": "0044_checkin_overlay_kinds",
+      "breakpoints": true
     }
   ]
 }

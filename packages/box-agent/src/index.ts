@@ -60,3 +60,11 @@ export * from './agent';
  */
 export * from './offline-pricing';
 export * from './station-bridge';
+/**
+ * S2-13 round 4 — check-in on the box lane: the desk the bridge hands its
+ * check-in intents to, the bounded photo store and the worker that sends the
+ * photos taken offline through the platform when the link is back.
+ */
+export * from './checkin-desk';
+export * from './blob-store';
+export * from './photo-upload';

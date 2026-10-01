@@ -594,7 +594,20 @@ export const boxCache = edge.table(
  * knows the operator, and a table added later with no tenancy column is the
  * debt `schema-shape.test.ts` lists for the older edge tables.
  */
-export const BOX_OVERLAY_KINDS = ['member', 'child', 'visit'] as const;
+/**
+ * S2-13 round 4 (migration 0044): a counter box also keeps the check-in domain
+ * offline — a registration, a stay, a person on a pickup list, a release —
+ * with the registration's id in `member_id` so one family's rows list together.
+ */
+export const BOX_OVERLAY_KINDS = [
+  'member',
+  'child',
+  'visit',
+  'registration',
+  'checkin',
+  'guardian',
+  'release',
+] as const;
 export type BoxOverlayKind = (typeof BOX_OVERLAY_KINDS)[number];
 
 export const boxOverlay = edge.table(
@@ -627,7 +640,10 @@ export const boxOverlay = edge.table(
     index('box_overlay_operator_idx').on(t.operatorId),
     index('box_overlay_phone_idx').on(t.boxId, t.phone),
     index('box_overlay_member_idx').on(t.boxId, t.memberId),
-    check('box_overlay_kind_check', sql`${t.kind} in ('member','child','visit')`),
+    check(
+      'box_overlay_kind_check',
+      sql`${t.kind} in ('member','child','visit','registration','checkin','guardian','release')`,
+    ),
     check(
       'box_overlay_phone_check',
       sql`${t.phone} is null or ${t.phone} ~ '^\\+[1-9][0-9]{6,14}$'`,

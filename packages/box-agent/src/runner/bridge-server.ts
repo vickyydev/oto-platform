@@ -43,8 +43,13 @@ import { silentLog, type AgentLog } from '../transport';
 /** Where the bridge listens on the box. Caddy's `reverse_proxy` names it. */
 export const BRIDGE_DEFAULT_PORT = 8471;
 
-/** The largest body the bridge reads: a cart with fifty lines is a few KB. */
-const MAX_BODY_BYTES = 256 * 1024;
+/**
+ * The largest body the bridge reads. A cart with fifty lines is a few KB; the
+ * largest thing a till sends is a photo taken with the link down (S2-13 round
+ * 4, `photo.capture`): at most `OFFLINE_PHOTO_POLICY.maxPhotoBytes` (400 KB)
+ * as base64 in a data URL, so a little over 540 KB.
+ */
+const MAX_BODY_BYTES = 768 * 1024;
 
 /** How long a channel may sit silent before a comment line keeps it open. */
 const CHANNEL_KEEPALIVE_MS = 25_000;

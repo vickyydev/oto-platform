@@ -1549,6 +1549,8 @@ describe('the cache bundle', () => {
       // booth, so a full bundle now carries one.
       'booth',
       'catalogue',
+      // S2-13 round 4: the check-in board a counter works from offline.
+      'checkin',
       'deny_list',
       'members',
       'receipt_series',
@@ -1859,6 +1861,8 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     'bookings',
     'booth',
     'catalogue',
+    // S2-13 round 4: the check-in board a counter works from offline.
+    'checkin',
     'deny_list',
     'members',
     'receipt_series',

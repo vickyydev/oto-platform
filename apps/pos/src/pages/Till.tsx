@@ -2108,6 +2108,15 @@ export default function Till() {
           try {
             await checkinApi.uploadPhoto(reg.id, slot.childPhotoUrl, [stayId]);
           } catch (err) {
+            // The box with CHILD_PHOTOS_ENABLED off keeps no photo at all and
+            // says so (gate r4, finding 2): there is nothing to take again.
+            if (err instanceof ApiError && err.code === 'CHILD_PHOTOS_DISABLED') {
+              toast({
+                title: `${slot.name.trim() || 'The child'}: photo not kept`,
+                description: `${err.message} The registration is saved.`,
+              });
+              continue;
+            }
             toast({
               title: `${slot.name.trim() || 'The child'}: photo not saved`,
               description: `${err instanceof Error ? err.message : 'Unknown error'} The registration is saved; take the photo again before pickup.`,
@@ -2782,9 +2791,17 @@ export default function Till() {
         })),
       })
       .then((done) => {
+        // S2-13 round 4 — with the link down the BOX answers (`checkinApi`
+        // runs on the lane the arbiter says): it mints and prints the bands
+        // itself and names each band's short code, so a band that did not
+        // print can be read out at the counter, as an offline sale's can.
+        const codes = done.bands.map((b) => b.shortCode).filter((c): c is string => !!c);
         toast({
           title: 'Checked in',
-          description: [`${group.entries.map((e) => e.childName).join(', ')} — band(s) issued.`, ...done.notes].join(' '),
+          description: [
+            `${group.entries.map((e) => e.childName).join(', ')} — band(s) issued${codes.length ? `: ${codes.join(', ')}` : ''}.`,
+            ...done.notes,
+          ].join(' '),
         });
         resolveCheckInGroup(group.registrationId);
       })

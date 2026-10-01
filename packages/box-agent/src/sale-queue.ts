@@ -266,6 +266,49 @@ export interface SaleQueue {
    * such a job, so its outcome never goes up the print-result route.
    */
   notePrintOutcome(outcome: PrintJobOutcome): Promise<boolean>;
+  /**
+   * S2-13 round 4 — "Check in now" on the box lane: the supervised children's
+   * bands, which a sale's finalisation leaves alone (as the platform's does),
+   * minted with the park's key under the station's prefix and printed — in
+   * ONE store transaction with whatever the caller writes beside them (the
+   * check-in fact and its overlay rows, `write`). The printer is touched after
+   * the commit, as a sale's is.
+   */
+  issueCheckinBands(request: CheckinBandRequest): Promise<CheckinBandAnswer>;
+}
+
+/** One supervised child's band, as "Check in now" asks for it. */
+export interface CheckinBandPlan extends OfflineBandPlan {
+  supervisionBadge: 'DROP-OFF' | 'NANNY' | null;
+  nannyName: string | null;
+  /** The stay's booked length, for the band's "valid until" when the sale is not on this box. */
+  stayHours: number | null;
+}
+
+export interface CheckinBandRequest {
+  stationId: string;
+  saleId: string;
+  actionId: string | null;
+  staffName: string | null;
+  bands: CheckinBandPlan[];
+  /** Written inside the same transaction, after the bands are minted. */
+  write: (tx: BoxStore, minted: OfflineAnswerBand[]) => Promise<void>;
+}
+
+export interface CheckinBandAnswer {
+  bands: OfflineAnswerBand[];
+  printing: { jobs: SalePrintLogJob[]; notes: string[] };
+}
+
+/** Why a supervised child's band cannot be issued offline, in the counter's words. */
+export class CheckinBandRefused extends Error {
+  readonly code: 'BAND_KEY_MISSING' | 'STATION_NO_PREFIX';
+
+  constructor(code: CheckinBandRefused['code'], message: string) {
+    super(message);
+    this.name = 'CheckinBandRefused';
+    this.code = code;
+  }
 }
 
 /** Why a sale cannot be numbered offline: configuration somebody can fix in a minute. */
@@ -965,6 +1008,151 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
       await printJobs(records, jobs, notes);
       await saveLog({ ...sale, jobs: [...sale.jobs, ...jobs] });
       return { jobs, notes };
+    },
+
+    async issueCheckinBands(request) {
+      const key = deps.bandKey();
+      if (!key) {
+        throw new CheckinBandRefused(
+          'BAND_KEY_MISSING',
+          'No band can be issued at this counter while it is offline, so nobody was checked in — leave them as booked or try again when the connection is back.',
+        );
+      }
+      const seal = deps.sealer();
+      if (!seal) throw new Error('This box has no signing key yet; it cannot record a check-in');
+      const at = deps.now().toISOString();
+      const notes: string[] = [];
+      const logJobs: SalePrintLogJob[] = [];
+      let records: PrintJobRecord[] = [];
+      let minted: OfflineAnswerBand[] = [];
+      let printedBands: SalePrintSnapshot['bands'] = [];
+      const recorded = await readLog(request.saleId);
+      await store.atomically(async (tx) => {
+        const mark = (await receiptMarks(tx)).find((m) => m.stationId === request.stationId);
+        const prefix = mark?.prefix ?? null;
+        if (!prefix) {
+          throw new CheckinBandRefused(
+            'STATION_NO_PREFIX',
+            'This counter has not been told its station code, so it cannot issue a band offline. Leave the children as booked, or connect it once.',
+          );
+        }
+        const full = request.bands.map((band) => {
+          const id = uuidv7();
+          return { ...band, id, code: mintBandCode(prefix, ulidFromUuid(id), key) };
+        });
+        minted = full.map(({ id, code, kind, cartLineId, saleLineId, childId, childName }) => ({
+          id,
+          code,
+          kind,
+          cartLineId,
+          saleLineId,
+          childId,
+          childName,
+        }));
+        // What the band's paper reads: the sale's own lines when this box took
+        // the sale, else one line for the stay so "valid until" still prints.
+        const lines = recorded?.snapshot?.lines ?? [];
+        const snapshot: SalePrintSnapshot = {
+          saleId: request.saleId,
+          receiptNumber: recorded?.receipt.number ?? null,
+          at,
+          timezone: recorded?.snapshot?.timezone ?? 'Asia/Bangkok',
+          operatorName: recorded?.snapshot?.operatorName ?? null,
+          branchName: recorded?.snapshot?.branchName ?? null,
+          staffName: request.staffName,
+          memberNickname: recorded?.snapshot?.memberNickname ?? null,
+          lines: [
+            ...lines,
+            ...full
+              .filter((b) => !b.saleLineId || !lines.some((l) => l.id === b.saleLineId))
+              .map((b) => ({
+                id: b.saleLineId ?? b.cartLineId,
+                kind: 'kids',
+                label: b.supervisionBadge ?? 'Kids',
+                quantity: 1,
+                grossSatang: 0,
+                ticket: true,
+                payload: null,
+                stayHours: b.stayHours,
+                stayDurationLabel: b.stayHours ? `${b.stayHours} hours` : null,
+              })),
+          ],
+          subtotalSatang: 0,
+          grossSatang: 0,
+          // Only the bands print from this snapshot; the receipt's money is
+          // the sale's own and is never re-rendered here.
+          taxBreakdown:
+            recorded?.snapshot?.taxBreakdown ??
+            ({
+              netSubtotal: 0,
+              discountTotal: 0,
+              serviceChargeTotal: 0,
+              exclusiveTaxTotal: 0,
+              inclusiveTaxTotal: 0,
+            } as unknown as SalePrintSnapshot['taxBreakdown']),
+          tenders: [],
+          bands: full.map((b) => ({
+            id: b.id,
+            kind: b.kind,
+            code: b.code,
+            saleLineId: b.saleLineId ?? b.cartLineId,
+            childName: b.childName,
+            allergies: b.allergies,
+            medicalNotes: b.medicalNotes,
+            dietary: b.dietary,
+            supervisionBadge: b.supervisionBadge,
+            nannyName: b.nannyName,
+          })),
+          orderChildren: [],
+          note: null,
+        };
+        printedBands = snapshot.bands;
+        records = [];
+        for (const band of snapshot.bands) {
+          const printRequest = { kind: 'kids_wristband' as const, subjectType: 'band' as const, subjectId: band.id };
+          const document = salePrintDocumentOf(snapshot, printRequest);
+          if (!document) continue;
+          const id = uuidv7();
+          records.push(
+            jobRecord(id, request.stationId, 'kids_wristband', document as PrintJobRecord['job'], request.actionId, at),
+          );
+          logJobs.push({
+            id,
+            kind: 'kids_wristband',
+            subjectType: 'band',
+            subjectId: band.id,
+            status: 'queued',
+            errorCode: null,
+            copy: false,
+          });
+        }
+        if (tx.features().printJobs && deps.durablePrinting?.()) {
+          for (const record of records) await tx.putPrintJob(record);
+        }
+        for (const record of records) {
+          await tx.writeRuntimeValue(boxId, jobKey(record.id), request.saleId, at);
+        }
+        await request.write(tx, minted);
+      });
+      await printJobs(records, logJobs, notes);
+      // A sale this box took keeps its bands and paper in its own log, so a
+      // reprint of the kids bands from the till includes the check-in's.
+      if (recorded) {
+        await saveLog({
+          ...recorded,
+          bands: [...recorded.bands, ...minted],
+          jobs: [...recorded.jobs, ...logJobs],
+          snapshot: recorded.snapshot
+            ? { ...recorded.snapshot, bands: [...recorded.snapshot.bands, ...printedBands] }
+            : null,
+        });
+      }
+      deps.note('info', 'supervised children checked in on the box', {
+        saleId: request.saleId,
+        stationId: request.stationId,
+        bands: minted.length,
+      });
+      return { bands: minted, printing: { jobs: logJobs, notes } };
     },
 
     async notePrintOutcome(outcome) {

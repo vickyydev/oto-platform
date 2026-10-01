@@ -57,6 +57,7 @@ import {
 } from '@oto/db';
 import {
   BOOKING_REDEEMED_FACT,
+  SYNC_QUARANTINE_REASONS,
   GATE_EVENT_TYPE,
   GateEventPayloadSchema,
   OfflineBookingRedeemedSchema,
@@ -130,6 +131,12 @@ import {
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
 import { raiseOfflinePromoAlerts } from './promo-codes';
 import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
+/**
+ * S2-13 round 4 — check-in, the board and release taken at a box with the
+ * link down: their facts' handlers and the `checkin` cache scope, in a file of
+ * their own as the booth's are.
+ */
+import { CHECKIN_HANDLERS, checkinCacheItem } from './sync-checkin';
 import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
@@ -2412,6 +2419,7 @@ const HANDLERS: Record<string, EventHandler> = {
    * changes what a push does.
    */
   ...BOOTH_HANDLERS,
+  ...CHECKIN_HANDLERS,
 };
 
 /**
@@ -4023,6 +4031,17 @@ function classifyFailure(err: unknown): RefuseEvent {
     return new RefuseEvent('conflict', 'SYNC_EVENT_ID_TAKEN', 'That event id is already recorded');
   }
   const info = errorInfo(err);
+  /**
+   * S2-13 round 4 — a handler in its own file (`sync-checkin.ts`) cannot
+   * throw `RefuseEvent` without a runtime cycle through this one, so it names
+   * the finer reason on its `AppError` (`details.quarantineReason`): a release
+   * that conflicts with one recorded online is a `conflict`, as the booking
+   * double is, not an `apply_failed` a replay would fix.
+   */
+  const named = err instanceof AppError ? (err.details as { quarantineReason?: unknown } | undefined)?.quarantineReason : undefined;
+  if (typeof named === 'string' && (SYNC_QUARANTINE_REASONS as readonly string[]).includes(named)) {
+    return new RefuseEvent(named as SyncQuarantineReason, info.code, info.message);
+  }
   return new RefuseEvent('apply_failed', info.code, info.message);
 }
 
@@ -4259,8 +4278,14 @@ export async function pullChanges(
   const asked: readonly SyncChangeScope[] | undefined = query.scopes?.length
     ? query.scopes
     : undefined;
+  // `checkin` is a cache scope only (S2-13 round 4): it is never written to
+  // the change feed, so a feed narrowed to it is narrowed to nothing of it.
+  const feedOnly = (names: readonly string[]): SyncChangeScope[] =>
+    names.filter((name): name is SyncChangeScope => name !== 'checkin');
   const scopes =
-    role === 'counter' ? asked : (asked ?? offered).filter((name) => offered.includes(name));
+    role === 'counter'
+      ? asked && feedOnly(asked)
+      : feedOnly((asked ?? offered).filter((name) => (offered as readonly string[]).includes(name)));
   const where = and(
     eq(syncChange.operatorId, auth.operatorId),
     or(isNull(syncChange.branchId), eq(syncChange.branchId, auth.branchId)),
@@ -4329,6 +4354,13 @@ export const CACHE_SCOPES = [
    * it. Built by `boothCacheItems` in `sync-booth.ts`.
    */
   'booth',
+  /**
+   * S2-13 round 4 — the branch's check-in board as one item: the families in
+   * the park or awaiting check-in (and today's collected), their pickup lists,
+   * today's releases, the supervision config and the nanny roster with its
+   * shifts. Built by `checkinCacheItem` in `sync-checkin.ts`. Volatile.
+   */
+  'checkin',
 ] as const;
 export type CacheScope = (typeof CACHE_SCOPES)[number];
 
@@ -4365,6 +4397,12 @@ export const CACHE_VOLATILE_SCOPES = [
    * (`verifyBandCode` in `@oto/shared`).
    */
   'bands',
+  /**
+   * S2-13 round 4 — every check-in, edit and release moves the board, so the
+   * `checkin` scope may not move the etag either; the agent reads it on its
+   * own tick (`?scopes=checkin`, `pullCheckinScope` in `@oto/box-agent`).
+   */
+  'checkin',
 ] as const satisfies readonly CacheScope[];
 
 function isVolatileScope(name: string): boolean {
@@ -4736,6 +4774,13 @@ export async function cacheBundle(
   for (const scope of wanted) {
     if (scope === 'catalogue') {
       put('catalogue', [await catalogueCacheItem(db, operatorId, branchId)]);
+      continue;
+    }
+
+    if (scope === 'checkin') {
+      // One item, applied whole, like the catalogue: half a board is a child
+      // the counter cannot find at pickup.
+      put('checkin', [await checkinCacheItem(db, operatorId, branchId)]);
       continue;
     }
 

@@ -1,12 +1,18 @@
 import {
+  BRIDGE_CHECKIN_INTENTS,
+  DROPPER_OFF_PICKUP_ID,
   newId as newRecordId,
+  type BridgeCheckinFamily,
   type PickupView,
   type PrepaidReconciliation,
   type ReleaseView,
 } from '@oto/shared';
 import type { AuthorizedPickup } from '@/types';
 import type { PrepaidFoodReconciliation } from '@/lib/dropoff';
+import { viaLane } from '@/lib/lane';
 import { api, idemKey } from './client';
+import { bridgeApi } from './bridge';
+import { capturePhotoOnBox } from './checkin';
 
 /**
  * S2-13 round 3 — the pickup list and the release, ONLINE (plan
@@ -26,6 +32,55 @@ import { api, idemKey } from './client';
  * read when it is shown, and only then. Never a photo of an identity document.
  */
 
+/**
+ * ROUND 4 — THE BOX LANE (plan §2.5). The pickup list, the release modal's
+ * context, an on-the-spot collector and the release itself answer from the
+ * counter's box when the link is down, in the platform's own shapes; the
+ * photos are kept on the box and sent when the link is back (the row says
+ * `photo_pending_upload` until then). Editing or revoking someone already on
+ * the list, and reading a stored photo, wait for the link.
+ */
+async function onBox<R>(stationId: string, type: string, payload: Record<string, unknown>): Promise<R> {
+  const answer = await bridgeApi.intent<R>(stationId, type, payload, { actionId: newRecordId() });
+  return answer.result as R;
+}
+
+function needsInternet(what: string): Error {
+  return new Error(`${what} needs the internet — this counter is offline. Do it when the connection is back.`);
+}
+
+/** A family's pickup list as the box knows it: the dropper-off first, then everyone added. */
+function pickupsOfFamily(family: BridgeCheckinFamily): PickupView[] {
+  return [
+    {
+      id: DROPPER_OFF_PICKUP_ID,
+      registrationId: family.registrationId,
+      name: family.guardianName,
+      phone: family.guardianPhone,
+      relationship: null,
+      photoFileId: family.photoFileId,
+      isDropperOff: true,
+      source: 'dropper_off',
+      addedByName: null,
+      addedAt: family.createdAt,
+    },
+    ...family.guardians
+      .filter((g) => !g.revoked)
+      .map((g) => ({
+        id: g.id,
+        registrationId: family.registrationId,
+        name: g.name,
+        phone: g.phone,
+        relationship: g.relationship,
+        photoFileId: g.photoFileId,
+        isDropperOff: false,
+        source: g.source,
+        addedByName: null,
+        addedAt: g.createdAt,
+      })),
+  ];
+}
+
 export interface ReleaseContext {
   checkinId: string;
   registrationId: string;
@@ -39,6 +94,14 @@ export interface ReleaseContext {
   reconciliation: PrepaidReconciliation | null;
   prepaidPolicy: 'refund' | 'forfeit';
   release: ReleaseView | null;
+  /**
+   * The BOX's answer only (gate r4, finding 2): `false` while
+   * `CHILD_PHOTOS_ENABLED` is off on that counter's box, which then refuses
+   * every capture and accepts a release — or an on-the-spot collector — with
+   * no photo. The platform never answers it (R-92: a photo, always), so absent
+   * means required.
+   */
+  photosEnabled?: boolean;
 }
 
 export type ReleaseCollector =
@@ -50,7 +113,8 @@ export type ReleaseCollector =
       name: string;
       relationship?: string | null;
       phone?: string | null;
-      photoFileId: string;
+      /** Null only where photos are switched off (`photosEnabled: false`). */
+      photoFileId: string | null;
     };
 
 /** A data URL — or any URL the browser can fetch — as the bytes an upload sends. */
@@ -108,12 +172,25 @@ export const releaseApi = {
   newId: (): string => newRecordId(),
 
   /** Everything the release modal shows for one stay. */
-  context: (checkinId: string) => api.get<ReleaseContext>(`/checkin/pickups/stays/${encodeURIComponent(checkinId)}`),
+  context: (checkinId: string) =>
+    viaLane(
+      () => api.get<ReleaseContext>(`/checkin/pickups/stays/${encodeURIComponent(checkinId)}`),
+      (stationId) => onBox<ReleaseContext>(stationId, BRIDGE_CHECKIN_INTENTS.context, { checkinId }),
+    ),
 
   /** A registration's pickup list: the dropper-off first. */
   pickups: (registrationId: string) =>
-    api.get<{ registrationId: string; branchId: string; pickups: PickupView[] }>(
-      `/checkin/pickups/registrations/${encodeURIComponent(registrationId)}`,
+    viaLane(
+      () =>
+        api.get<{ registrationId: string; branchId: string; pickups: PickupView[] }>(
+          `/checkin/pickups/registrations/${encodeURIComponent(registrationId)}`,
+        ),
+      async (stationId) => {
+        const board = await onBox<{ families: BridgeCheckinFamily[] }>(stationId, BRIDGE_CHECKIN_INTENTS.board, {});
+        const family = board.families.find((f) => f.registrationId === registrationId);
+        if (!family) throw new Error('This counter is offline and has no copy of that family’s pickup list.');
+        return { registrationId, branchId: family.branchId, pickups: pickupsOfFamily(family) };
+      },
     ),
 
   addGuardian: (
@@ -127,39 +204,52 @@ export const releaseApi = {
       source: 'in_person' | 'from_chat' | 'on_the_spot';
     },
   ) =>
-    api.post<PickupView>(`/checkin/pickups/registrations/${encodeURIComponent(registrationId)}/guardians`, body, {
-      idempotencyKey: idemKey(),
-    }),
+    viaLane(
+      () =>
+        api.post<PickupView>(`/checkin/pickups/registrations/${encodeURIComponent(registrationId)}/guardians`, body, {
+          idempotencyKey: idemKey(),
+        }),
+      (stationId) =>
+        onBox<PickupView>(stationId, BRIDGE_CHECKIN_INTENTS.guardian, {
+          guardianId: body.id,
+          registrationId,
+          name: body.name,
+          relationship: body.relationship ?? null,
+          phone: body.phone ?? null,
+          source: body.source,
+          photoId: body.photoFileId ?? null,
+        }),
+    ),
 
   editGuardian: (
     guardianId: string,
     body: { name?: string; relationship?: string | null; phone?: string | null; photoFileId?: string | null },
-  ) => api.patch<PickupView>(`/checkin/pickups/guardians/${encodeURIComponent(guardianId)}`, body, { idempotencyKey: idemKey() }),
+  ) =>
+    viaLane(
+      () => api.patch<PickupView>(`/checkin/pickups/guardians/${encodeURIComponent(guardianId)}`, body, { idempotencyKey: idemKey() }),
+      async () => {
+        throw needsInternet('Editing someone already on the pickup list');
+      },
+    ),
 
   revokeGuardian: (guardianId: string) =>
-    api.post<PickupView>(`/checkin/pickups/guardians/${encodeURIComponent(guardianId)}/revoke`, {}, { idempotencyKey: idemKey() }),
+    viaLane(
+      () => api.post<PickupView>(`/checkin/pickups/guardians/${encodeURIComponent(guardianId)}/revoke`, {}, { idempotencyKey: idemKey() }),
+      async () => {
+        throw needsInternet('Taking someone off the pickup list');
+      },
+    ),
 
   /**
    * Store a photo the counter just took, under the registration; answers the
    * file id the guardian or the release then names.
    */
-  uploadPhoto: async (registrationId: string, dataUrl: string): Promise<string> => {
-    const blob = await blobOf(dataUrl);
-    const file = await api.post<{ id: string; uploadUrl: string }>(
-      '/files',
-      {
-        id: newRecordId(),
-        contentType: blob.type || 'image/jpeg',
-        ownerEntityType: 'registration',
-        ownerEntityId: registrationId,
-        filename: `pickup.${(blob.type || 'image/jpeg').split('/')[1] ?? 'jpg'}`,
-      },
-      { idempotencyKey: idemKey() },
-    );
-    const put = await fetch(file.uploadUrl, { method: 'PUT', body: blob, headers: { 'content-type': blob.type || 'image/jpeg' } });
-    if (!put.ok) throw new Error(`The photo did not save (${put.status}) — take it again.`);
-    return file.id;
-  },
+  uploadPhoto: async (registrationId: string, dataUrl: string): Promise<string> =>
+    viaLane(
+      () => uploadToStorage(registrationId, dataUrl),
+      // Kept on the box; the release or the collector it is used for names it.
+      async (stationId) => (await capturePhotoOnBox(stationId, registrationId, dataUrl, 'pickup')).photoId,
+    ),
 
   /** A short-lived URL for a stored photo. Every call is access-logged by the platform (R-94). */
   photoUrl: async (fileId: string): Promise<string> =>
@@ -184,11 +274,57 @@ export const releaseApi = {
     });
   },
 
-  /** Release the child. The same `id` again answers with the release it made. */
-  release: (checkinId: string, body: { id: string; collector: ReleaseCollector; pickupPhotoFileId: string; stationId?: string | null }) =>
-    api.post<{ replay: boolean; release: ReleaseView }>(
-      `/checkin/pickups/stays/${encodeURIComponent(checkinId)}/release`,
-      body,
-      { idempotencyKey: idemKey() },
+  /**
+   * Release the child. The same `id` again answers with the release it made.
+   * `pickupPhotoFileId` is null only where the box said photos are off; the
+   * platform lane refuses a null in its own words (`PICKUP_PHOTO_REQUIRED`),
+   * so a link that comes back between the modal opening and the press is met
+   * with the truth rather than a release without its photo.
+   */
+  release: (checkinId: string, body: { id: string; collector: ReleaseCollector; pickupPhotoFileId: string | null; stationId?: string | null }) =>
+    viaLane(
+      () =>
+        api.post<{ replay: boolean; release: ReleaseView }>(
+          `/checkin/pickups/stays/${encodeURIComponent(checkinId)}/release`,
+          body,
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) =>
+        onBox<{ replay: boolean; release: ReleaseView }>(stationId, BRIDGE_CHECKIN_INTENTS.release, {
+          releaseId: body.id,
+          checkinId,
+          collector:
+            body.collector.kind === 'on_the_spot'
+              ? {
+                  kind: 'on_the_spot',
+                  guardianId: body.collector.guardianId ?? newRecordId(),
+                  // A missing name is the box's refusal to give, in the counter's words.
+                  name: body.collector.name ?? '',
+                  relationship: body.collector.relationship ?? null,
+                  phone: body.collector.phone ?? null,
+                  photoId: body.collector.photoFileId,
+                }
+              : body.collector,
+          pickupPhotoId: body.pickupPhotoFileId || null,
+        }),
     ),
 };
+
+/** The platform lane's photo: registered under the registration, PUT straight to storage. */
+async function uploadToStorage(registrationId: string, dataUrl: string): Promise<string> {
+  const blob = await blobOf(dataUrl);
+  const file = await api.post<{ id: string; uploadUrl: string }>(
+    '/files',
+    {
+      id: newRecordId(),
+      contentType: blob.type || 'image/jpeg',
+      ownerEntityType: 'registration',
+      ownerEntityId: registrationId,
+      filename: `pickup.${(blob.type || 'image/jpeg').split('/')[1] ?? 'jpg'}`,
+    },
+    { idempotencyKey: idemKey() },
+  );
+  const put = await fetch(file.uploadUrl, { method: 'PUT', body: blob, headers: { 'content-type': blob.type || 'image/jpeg' } });
+  if (!put.ok) throw new Error(`The photo did not save (${put.status}) — take it again.`);
+  return file.id;
+}

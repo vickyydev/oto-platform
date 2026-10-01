@@ -34,6 +34,7 @@ import {
   registerSyncKey,
 } from '../services/sync';
 import { recordPrintJobResult } from '../services/print';
+import { BoxPhotoBodySchema, linkBoxPhoto, presignBoxPhoto } from '../services/sync-checkin';
 import { buildPrintDocument } from '../services/sale-printing';
 import type { OpContext } from '../services/tx';
 
@@ -260,6 +261,42 @@ export async function boxRoutes(app: App): Promise<void> {
     },
   );
 
+  // --- Photos taken at a counter with the link down (S2-13 round 4) ----------
+
+  app.post(
+    '/photos/:id/upload-url',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'Step 1 of the box’s photo upload: a presigned PUT for a check-in photo the box kept while offline. The photo id is the file’s id, so asking again is a fresh URL for the same object. `linked: true` with no URL when the row already holds it. 409 PHOTO_TARGET_NOT_READY while the row it belongs to has not been filed yet.',
+        params: z.object({ id: z.string().uuid() }),
+        body: BoxPhotoBodySchema,
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      return presignBoxPhoto(app.db, app.fileStorage, auth, req.params.id, req.body, boxCtx(req, auth));
+    },
+  );
+
+  app.post(
+    '/photos/:id/link',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'Step 3 of the box’s photo upload: link the uploaded photo to its registration, pickup-list person or release, exactly once. The same photo again answers `replay: true` and writes nothing; another photo on that row is refused PHOTO_TARGET_TAKEN.',
+        params: z.object({ id: z.string().uuid() }),
+        body: BoxPhotoBodySchema,
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      return linkBoxPhoto(app.db, auth, req.params.id, req.body, boxCtx(req, auth));
+    },
+  );
+
   // --- The sync core (S2-05) ------------------------------------------------
 
   app.post(
@@ -319,7 +356,10 @@ export async function boxRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = boxAuth(req);
-      const scopes = parseList(req.query.scopes, SYNC_CHANGE_SCOPES);
+      // `checkin` is served by `/cache` alone and never fed (S2-13 round 4).
+      const scopes = parseList(req.query.scopes, SYNC_CHANGE_SCOPES).filter(
+        (name): name is Exclude<(typeof SYNC_CHANGE_SCOPES)[number], 'checkin'> => name !== 'checkin',
+      );
       return pullChanges(app.db, auth, {
         cursorSeq: req.query.cursorSeq,
         limit: req.query.limit,

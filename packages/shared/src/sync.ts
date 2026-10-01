@@ -262,6 +262,13 @@ export const SYNC_CHANGE_SCOPES = [
   'receipt_series',
   /** The booth's published wheel (S2-07a) — `booth.booth_config_version`. */
   'booth',
+  /**
+   * S2-13 round 4 — the branch's in-park children, their pickup lists and the
+   * registrations awaiting check-in, with the supervision config and the nanny
+   * roster. A cache scope only: it is served whole by `GET /box/v1/cache` and
+   * never written to `edge.sync_change` (its rows move with every check-in).
+   */
+  'checkin',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

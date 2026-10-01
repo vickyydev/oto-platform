@@ -39,6 +39,7 @@ import {
   OfflineVisitCreatedSchema,
   bandShortCode,
   bridgeCartOf,
+  childPhotosEnabled,
   businessDate,
   catalogueState,
   normalizePhone,
@@ -94,6 +95,8 @@ import {
 } from './sale-queue';
 import { uuidv7 } from './signing';
 import type { TerminalCommandOutcome, TerminalController, TerminalProtocol } from './terminal/index';
+import { boxBlobs, type BlobStore } from './blob-store';
+import { CheckinDesk, DeskRefusal, type DeferredBand } from './checkin-desk';
 import type { StationSessionManager } from './station-session';
 import {
   OFFLINE_UNLOCK_REFUSALS,
@@ -262,6 +265,15 @@ export interface BridgeHost {
    * refused with "type the booking reference instead".
    */
   bandKey?(): string | Uint8Array | null;
+  /**
+   * S2-13 round 4 — the box's bounded photo store (`blob-store.ts`). Absent,
+   * the store the agent registered for this box is used (`boxBlobs`), which is
+   * how the api's mount for a virtual box keeps a photo where that box's
+   * upload worker finds it.
+   */
+  blobs?(): BlobStore | null;
+  /** `CHILD_PHOTOS_ENABLED`. Absent, the process environment decides (on unless switched off). */
+  photosEnabled?(): boolean;
 }
 
 export interface StationBridgeOptions {
@@ -540,6 +552,8 @@ interface PreparedSale {
   businessDate: string;
   memberId: string | null;
   bandPlan: OfflineBandPlan[];
+  /** S2-13 round 4: the supervised children's bands, minted at "Check in now", not here. */
+  deferredBands: DeferredBand[];
   /** Everything the composer reads but the tenders, the number and the bands. */
   snapshot: Omit<SalePrintSnapshot, 'saleId' | 'receiptNumber' | 'at' | 'bands' | 'tenders'>;
   /** The cart as the fact carries it: what was sold, and what the box charged. */
@@ -550,6 +564,8 @@ interface PreparedSale {
 interface SaleMemo {
   view: Omit<BridgeSaleView, 'receiptNumber' | 'receiptSeries' | 'receiptSeq' | 'status'>;
   attempt: PaymentAttemptView | null;
+  /** S2-13 round 4: the bands this sale left for "Check in now" (`checkin-desk.ts`). */
+  deferredBands?: DeferredBand[];
 }
 
 // --- Redeeming an online booking on the box lane (S2-12 round 5) ----------------------
@@ -810,6 +826,40 @@ export class StationBridge {
 
   get boxId(): string {
     return this.host.boxId;
+  }
+
+  private deskInstance: CheckinDesk | null = null;
+
+  /** The check-in desk (S2-13 round 4): the gate, the board and the release on the box lane. */
+  get desk(): CheckinDesk {
+    this.deskInstance ??= new CheckinDesk({
+      boxId: this.host.boxId,
+      store: this.host.store,
+      now: () => this.host.now(),
+      log: this.log,
+      sealer: () => this.host.sealer(),
+      sales: () => this.host.sales?.() ?? null,
+      blobs: () => (this.host.blobs ? this.host.blobs() : boxBlobs(this.host.boxId)),
+      photosEnabled: () =>
+        this.host.photosEnabled ? this.host.photosEnabled() : childPhotosEnabled(process.env.CHILD_PHOTOS_ENABLED),
+      resolveMember: async (memberId) => {
+        const found = await this.resolveMember(memberId);
+        if (!found) return null;
+        const shown = await this.present(found.member, [], found.source);
+        return { id: found.id, childIds: new Set(shown.children.map((c) => c.id)) };
+      },
+    });
+    return this.deskInstance;
+  }
+
+  /** The row a photo this box holds was taken for: what the upload worker links it to. */
+  async photoTarget(photoId: string) {
+    return this.desk.photoTarget(photoId);
+  }
+
+  /** The check-in overlay's end, after a `checkin` pull (S2-13 round 4). */
+  async pruneCheckinOverlay(): Promise<number> {
+    return this.desk.pruneOverlay();
   }
 
   /** The station, or 404: a bridge serves only the stations on its own box. */
@@ -1268,6 +1318,21 @@ export class StationBridge {
     if (caller.kind === 'till' && intent.type === BRIDGE_BOOKING_INTENTS.redeem) {
       const result = await this.bookingRedeem(station, caller, intent.payload);
       return { document: await this.host.sessions.open(stationId), result: { ...result } };
+    }
+    if (caller.kind === 'till' && this.desk.handles(intent.type)) {
+      try {
+        const result = await this.desk.intent(
+          station,
+          caller,
+          intent.type,
+          intent.payload,
+          intent.actionId ?? null,
+        );
+        return { document: await this.host.sessions.open(stationId), result };
+      } catch (err) {
+        if (err instanceof DeskRefusal) throw new BridgeError(err.status, err.code, err.message, err.details);
+        throw err;
+      }
     }
     const refusal = REFUSED_ON_BOX_LANE[intent.type];
     if (refusal) this.refuse(refusal);
@@ -2061,21 +2126,52 @@ export class StationBridge {
     const shown = owner ? await this.present(owner.member, [], owner.source) : null;
     const byId = new Map((shown?.children ?? []).map((c) => [c.id, c]));
     const visitChildIds = await this.visitChildIds(body.visitId ?? null, body.visitChildIds);
-    const banded = visitChildIds.map((id) => byId.get(id)).filter((c): c is BridgeChild => !!c);
+    /**
+     * S2-13 round 4: THE SUPERVISED CHILDREN'S LINES, which finalisation
+     * leaves alone, as the platform's does (`mintSaleBands`). A drop-off or
+     * nanny child's line carries its stay's id, and its band waits for "Check
+     * in now" (`checkin-desk.ts`), which mints and prints it; "Leave as
+     * booked" mints none. Their children are not handed another line's band.
+     */
+    const cartLineIds = [...new Set(lines.map((l) => l.cartLineId).filter((id): id is string => !!id))];
+    const supervised = await this.desk.supervisedLineIds(cartLineIds);
+    const supervisedChildren = await this.desk.supervisedChildIds([...supervised]);
+    const banded = visitChildIds
+      .filter((id) => !supervisedChildren.has(id))
+      .map((id) => byId.get(id))
+      .filter((c): c is BridgeChild => !!c);
     let nextChild = 0;
-    const bandPlan: OfflineBandPlan[] = planLedgerBands(lines).map((planned) => {
+    const bandPlan: OfflineBandPlan[] = [];
+    const deferredBands: DeferredBand[] = [];
+    for (const planned of planLedgerBands(lines)) {
+      const cartLineId = planned.cartLineId ?? '';
+      if (planned.kind === 'kid' && supervised.has(cartLineId)) {
+        const line = lines.find((l) => l.id === planned.saleLineId);
+        deferredBands.push({
+          kind: 'kid',
+          cartLineId,
+          saleLineId: planned.saleLineId,
+          childId: null,
+          childName: null,
+          allergies: null,
+          medicalNotes: null,
+          dietary: null,
+          stayHours: line?.stayHours ?? null,
+        });
+        continue;
+      }
       const child = planned.kind === 'kid' ? (banded[nextChild++] ?? null) : null;
-      return {
+      bandPlan.push({
         kind: planned.kind,
-        cartLineId: planned.cartLineId ?? '',
+        cartLineId,
         saleLineId: planned.saleLineId,
         childId: child?.id ?? null,
         childName: child?.name ?? null,
         allergies: child?.allergies ?? null,
         medicalNotes: child?.medicalNotes ?? null,
         dietary: child?.dietary ?? null,
-      };
-    });
+      });
+    }
     const orderChildren = (body.visitId ? banded : [...(shown?.children ?? [])])
       .map((c) => ({ name: c.name, allergies: c.allergies, medicalNotes: c.medicalNotes }))
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -2092,6 +2188,7 @@ export class StationBridge {
       businessDate: pricing.quote.businessDate,
       memberId: owner?.id ?? null,
       bandPlan,
+      deferredBands,
       snapshot: {
         timezone: branch.timezone,
         operatorName: s(header?.operatorName),
@@ -2292,7 +2389,11 @@ export class StationBridge {
   ): Promise<BridgeSaleAnswer> {
     const queue = this.saleQueue();
     const at = opts.at ?? this.host.now().toISOString();
-    const memo: SaleMemo = { view: this.saleViewOf(station, body.saleId, sale, at), attempt };
+    const memo: SaleMemo = {
+      view: this.saleViewOf(station, body.saleId, sale, at),
+      attempt,
+      ...(sale.deferredBands.length > 0 ? { deferredBands: sale.deferredBands } : {}),
+    };
     let recorded: OfflineSaleAnswer;
     try {
       recorded = await queue.record({
@@ -3648,7 +3749,11 @@ export class StationBridge {
    * what staff typed until a person has looked.
    */
   async pruneOverlay(): Promise<number> {
-    const rows = await this.host.store.allOverlay(this.host.boxId);
+    // The member half only: the check-in kinds are pruned against their own
+    // scope's pull (`pruneCheckinOverlay`, S2-13 round 4).
+    const rows = (await this.host.store.allOverlay(this.host.boxId)).filter(
+      (row) => row.kind === 'member' || row.kind === 'child' || row.kind === 'visit',
+    );
     if (rows.length === 0) return 0;
     const members = await this.bundle('members');
     if (!members) return 0;

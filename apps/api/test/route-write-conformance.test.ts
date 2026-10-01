@@ -452,6 +452,14 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /box/v1/commands/:commandId/result [credential:box]',
   'POST /box/v1/commands/poll [credential:box]',
   'POST /box/v1/heartbeat [credential:box]',
+  /**
+   * S2-13 round 4 — a box's photo upload. A machine's own replay protection,
+   * as the print-job result: the photo id IS the file's id, so asking for an
+   * upload URL again is the same file, and linking again is a replay that
+   * writes nothing (`linkBoxPhoto`).
+   */
+  'POST /box/v1/photos/:id/link [credential:box]',
+  'POST /box/v1/photos/:id/upload-url [credential:box]',
   'POST /box/v1/print-jobs/:id/result [credential:box]',
   'POST /box/v1/register [secretResponse,credential:box-claim]',
   'POST /box/v1/sync/key [credential:box]',

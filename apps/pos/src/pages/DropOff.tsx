@@ -3,15 +3,15 @@ import { useLocation, useSearch } from 'wouter';
 import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent, EventAttendee, AuthorizedPickupSource } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
 import {
-  checkOut,
-  getMockWristbands,
   getEventDropInPricing,
   getEventsForDate,
   checkInEventAttendee,
   checkOutEventAttendee,
-  addPickupFromChatPhoto,
   type NewEventAttendeeInput,
 } from '@/mockApi';
+import type { ReleaseView } from '@oto/shared';
+import type { Wristband } from '@/types';
+import { releaseApi } from '@/api/release';
 import {
   boardApi,
   boardChildToCheckIn,
@@ -329,6 +329,13 @@ export default function DropOff() {
   // the platform's now. It is re-read after every action (the `version`
   // bump), and every 30 seconds so a check-in at another till shows up here.
   // The timers stay client-ticked on the 10-second `now` above.
+  //
+  // S2-13 round 4 — with the link down the BOX answers: `boardApi`,
+  // `checkinApi` and `releaseApi` run on the lane the arbiter says
+  // (`lib/lane.ts`), so the board reads the box's copy with what this counter
+  // recorded offline laid over it, and an edit, a nanny, a booked check-in and
+  // a release are written to the box's outbox to reach the platform once.
+  // Photos taken offline stay on the box until its upload worker sends them.
   const platformBranchId = useMemo(() => {
     try {
       return requirePlatformBranchId(branchId);
@@ -513,30 +520,62 @@ export default function DropOff() {
 
   const [pickupsFor, setPickupsFor] = useState<CheckIn | null>(null);
 
-  const checkOutWristband = useMemo(
-    () => (checkOutFor ? getMockWristbands().find((w) => w.checkInId === checkOutFor.id) : undefined),
-    [checkOutFor],
-  );
+  /**
+   * The child's band, from the REAL check-in link (S2-13 round 4 hand-over):
+   * the board's stay carries the band id the platform (or the box) linked at
+   * check-in. The board read carries the band's id and not its printed code,
+   * and the modal reads neither — the remaining prepaid balance is the
+   * platform's since round 3 — so this is the band's identity only. No mock
+   * wristband store is consulted any more.
+   */
+  const checkOutWristband = useMemo<Wristband | undefined>(() => {
+    if (!checkOutFor || !board) return undefined;
+    const stay = board.families.flatMap((f) => f.children).find((c) => c.id === checkOutFor.id);
+    if (!stay?.bandId) return undefined;
+    return {
+      id: stay.bandId,
+      code: '',
+      customerNickname: checkOutFor.parentName,
+      creditBalanceTHB: 0,
+      holderName: checkOutFor.childName,
+      ...(checkOutFor.allergiesMedical ? { allergiesMedical: checkOutFor.allergiesMedical } : {}),
+    } as Wristband;
+  }, [checkOutFor, board]);
   const prepaidFoodPolicy = board?.prepaidFoodUnused ?? 'refund';
 
   const handleManagePickups = (c: CheckIn) => setPickupsFor(c);
 
+  /**
+   * Promote a chat photo to the pickup list — through the platform
+   * (`releaseApi.promoteFromChat`: the image stored under the registration,
+   * the person added `from_chat`, audited). No in-memory list any more.
+   */
   const handleAddPickupFromPhoto = (
     _messageId: string,
     imageUrl: string,
     input: { name: string; relationship?: string; phone?: string },
   ) => {
-    if (!messageCtx?.registrationId) return;
-    addPickupFromChatPhoto(
-      messageCtx.registrationId,
-      { ...input, imageUrl },
-      { operatorName, operatorId },
-    );
-    toast({ title: 'Pickup added', description: `${input.name} has been added to the authorized pickup list.` });
+    const registrationId = messageCtx?.registrationId;
+    if (!registrationId) return;
+    void releaseApi
+      .promoteFromChat(registrationId, { ...input, imageUrl })
+      .then((added) => {
+        toast({ title: 'Pickup added', description: `${added.name} has been added to the authorized pickup list.` });
+        refresh();
+      })
+      .catch((err: unknown) => {
+        toast({ title: 'Could not add the pickup', description: messageOf(err), variant: 'destructive' });
+      });
   };
 
+  /**
+   * After the modal RELEASED the child (it writes the release itself — R-92,
+   * the pickup photo, the prepaid settlement), the board only tells the
+   * counter what was recorded and re-reads itself from the API. It never
+   * releases a second time, and no mock check-out runs any more.
+   */
   const handleConfirmCheckOut = (
-    pickupPhotoUrl: string,
+    _pickupPhotoUrl: string,
     collectorInput: {
       pickupId: string;
       name: string;
@@ -544,30 +583,31 @@ export default function DropOff() {
       isDropperOff: boolean;
       source: AuthorizedPickupSource;
     },
-    reconciliation?: { unusedTHB: number; policy: 'refund' | 'forfeit' },
+    _reconciliation?: { unusedTHB: number; policy: 'refund' | 'forfeit' },
+    release?: ReleaseView,
   ) => {
     if (!checkOutFor) return;
-    const res = checkOut(checkOutFor.id, { operatorName, operatorId }, pickupPhotoUrl, reconciliation, collectorInput);
-    if (res) {
-      const settlement = res.prepaidFoodSettlement;
-      let description = `${res.childName} was released to their pickup.`;
-      if (settlement && settlement.unusedTHB > 0) {
-        if (settlement.settlementError === 'refund_no_sale') {
-          toast({
-            title: 'Manual refund required',
-            description: `฿${settlement.unusedTHB} unused prepaid food could not be auto-refunded — the check-in sale was not found in Order History. Please issue a manual refund of ฿${settlement.unusedTHB} to the family.`,
-            variant: 'destructive',
-          });
-        } else {
-          description +=
-            settlement.policy === 'refund'
-              ? ` Prepaid food refund of ฿${settlement.unusedTHB} recorded.`
-              : ` ฿${settlement.unusedTHB} prepaid food forfeited.`;
-        }
+    const childName = release?.childName || checkOutFor.childName;
+    const collector = release?.collectorName || collectorInput.name;
+    let description = `${childName} was released to ${collector}.`;
+    const settlement = release?.settlement ?? null;
+    if (settlement && settlement.unusedSatang > 0) {
+      const unusedTHB = settlement.unusedSatang / 100;
+      if (settlement.settlementError === 'refund_no_sale') {
+        toast({
+          title: 'Manual refund required',
+          description: `฿${unusedTHB} unused prepaid food could not be refunded automatically. Please issue a manual refund of ฿${unusedTHB} to the family.`,
+          variant: 'destructive',
+        });
+      } else {
+        description +=
+          settlement.policy === 'refund'
+            ? ` Prepaid food refund of ฿${unusedTHB} recorded.`
+            : ` ฿${unusedTHB} prepaid food forfeited.`;
       }
-      toast({ title: 'Checked out', description });
-      refresh();
     }
+    toast({ title: 'Checked out', description });
+    refresh();
   };
 
   const handleMessage = (c: CheckIn) => {
