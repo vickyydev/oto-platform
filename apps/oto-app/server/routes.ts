@@ -121,7 +121,7 @@ import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db } from "./db";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -1534,15 +1534,33 @@ export async function registerRoutes(
   // OPERATORS (Global Admin only)
   // ============================================
 
+  const operatorForUser = async (user: UserWithBranchAccess | undefined, id: string) => {
+    if (!user?.tenantId) return undefined;
+    const [operator] = await db.select().from(operators)
+      .where(and(eq(operators.id, id), eq(operators.tenantId, user.tenantId))).limit(1);
+    return operator;
+  };
+
+  const usersForOperator = async (operatorId: string, tenantId: string) => {
+    const assigned = await storage.getUsersByOperator(operatorId);
+    const scoped = await Promise.all(assigned.map(async (user) => {
+      const access = await storage.getUserBranchAccess(user.id);
+      return access.length > 0 && access.every(row => row.tenantId === tenantId) ? user : null;
+    }));
+    return scoped.filter((user): user is NonNullable<typeof user> => user !== null);
+  };
+
   // Get operators accessible to user (Global Admin sees all, Operator Admin sees their own)
   app.get("/api/operators", requireAdmin, async (req, res, next) => {
     try {
       const user = req.userWithAccess;
+      if (!user?.tenantId) return res.status(403).json({ message: "Access denied" });
       if (user?.role === "global_admin" || user?.role === "admin") {
-        const operators = await storage.getOperators();
-        return res.json(operators);
+        const visible = await db.select().from(operators)
+          .where(eq(operators.tenantId, user.tenantId)).orderBy(operators.name);
+        return res.json(visible);
       } else if (user?.role === "operator_admin" && user.operatorId) {
-        const operator = await storage.getOperator(user.operatorId);
+        const operator = await operatorForUser(user, user.operatorId);
         return res.json(operator ? [operator] : []);
       }
       res.json([]);
@@ -1554,8 +1572,11 @@ export async function registerRoutes(
   // Get all operators (Global Admin only)
   app.get("/api/admin/operators", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const operators = await storage.getOperators();
-      res.json(operators);
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const visible = await db.select().from(operators)
+        .where(eq(operators.tenantId, tenantId)).orderBy(operators.name);
+      res.json(visible);
     } catch (error) {
       next(error);
     }
@@ -1564,7 +1585,7 @@ export async function registerRoutes(
   // Get single operator (Global Admin only)
   app.get("/api/admin/operators/:id", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const operator = await storage.getOperator(req.params.id);
+      const operator = await operatorForUser(req.userWithAccess, req.params.id);
       if (!operator) {
         return res.status(404).json({ message: "Operator not found" });
       }
@@ -1577,8 +1598,10 @@ export async function registerRoutes(
   // Get branches for a specific operator (Global Admin only)
   app.get("/api/admin/operators/:id/branches", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const branches = await storage.getBranchesByOperator(req.params.id);
-      res.json(branches);
+      const operator = await operatorForUser(req.userWithAccess, req.params.id);
+      if (!operator) return res.status(404).json({ message: "Operator not found" });
+      const assigned = await storage.getBranchesByOperator(req.params.id);
+      res.json(assigned.filter(branch => branch.tenantId === operator.tenantId));
     } catch (error) {
       next(error);
     }
@@ -1587,7 +1610,8 @@ export async function registerRoutes(
   // Create operator (Global Admin only)
   app.post("/api/admin/operators", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const data = { ...req.body, tenantId };
       const result = insertOperatorSchema.safeParse(data);
       if (!result.success) {
@@ -1603,11 +1627,15 @@ export async function registerRoutes(
   // Update operator (Global Admin only)
   app.patch("/api/admin/operators/:id", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const operator = await storage.getOperator(req.params.id);
+      const operator = await operatorForUser(req.userWithAccess, req.params.id);
       if (!operator) {
         return res.status(404).json({ message: "Operator not found" });
       }
-      const updated = await storage.updateOperator(req.params.id, req.body);
+      const parsed = insertOperatorSchema.pick({ name: true, status: true }).partial().strict().safeParse(req.body);
+      if (!parsed.success || Object.keys(parsed.data).length === 0) {
+        return res.status(400).json({ message: "Invalid operator data" });
+      }
+      const updated = await storage.updateOperator(req.params.id, parsed.data);
       res.json(updated);
     } catch (error) {
       next(error);
@@ -1617,7 +1645,7 @@ export async function registerRoutes(
   // Delete operator (Global Admin only)
   app.delete("/api/admin/operators/:id", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const operator = await storage.getOperator(req.params.id);
+      const operator = await operatorForUser(req.userWithAccess, req.params.id);
       if (!operator) {
         return res.status(404).json({ message: "Operator not found" });
       }
@@ -1629,6 +1657,10 @@ export async function registerRoutes(
           branchCount: branches.length
         });
       }
+      const assignedUsers = await storage.getUsersByOperator(req.params.id);
+      if (assignedUsers.length > 0) {
+        return res.status(400).json({ message: "Cannot delete operator with assigned users", userCount: assignedUsers.length });
+      }
       await storage.deleteOperator(req.params.id);
       res.json({ success: true });
     } catch (error) {
@@ -1639,8 +1671,10 @@ export async function registerRoutes(
   // Get users assigned to an operator (Global Admin only)
   app.get("/api/admin/operators/:id/users", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const users = await storage.getUsersByOperator(req.params.id);
-      res.json(users);
+      const operator = await operatorForUser(req.userWithAccess, req.params.id);
+      if (!operator) return res.status(404).json({ message: "Operator not found" });
+      const assigned = await usersForOperator(req.params.id, operator.tenantId);
+      res.json(assigned.map(({ password: _password, ...user }) => user));
     } catch (error) {
       next(error);
     }
@@ -1649,25 +1683,37 @@ export async function registerRoutes(
   // Update branch assignments for an operator (Global Admin only)
   app.put("/api/admin/operators/:id/branches", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const { branchIds } = req.body;
-      if (!Array.isArray(branchIds)) {
+      const operator = await operatorForUser(req.userWithAccess, req.params.id);
+      if (!operator) return res.status(404).json({ message: "Operator not found" });
+      if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
         return res.status(400).json({ message: "branchIds must be an array" });
+      }
+      const { branchIds } = req.body;
+      if (!Array.isArray(branchIds) || branchIds.some(id => typeof id !== "string")) {
+        return res.status(400).json({ message: "branchIds must be an array" });
+      }
+      const uniqueIds = [...new Set<string>(branchIds)];
+      const selected = uniqueIds.length > 0 ? await db.select().from(branches)
+        .where(and(eq(branches.tenantId, operator.tenantId), inArray(branches.id, uniqueIds))) : [];
+      if (selected.length !== uniqueIds.length || selected.some(branch => branch.operatorId && branch.operatorId !== operator.id)) {
+        return res.status(403).json({ message: "Selected branches are not available" });
       }
       
       // First, unassign all branches currently assigned to this operator
-      const currentBranches = await storage.getBranchesByOperator(req.params.id);
+      const currentBranches = (await storage.getBranchesByOperator(req.params.id))
+        .filter(branch => branch.tenantId === operator.tenantId);
       const currentBranchIds = currentBranches.map(b => b.id);
       if (currentBranchIds.length > 0) {
         await storage.assignBranchesToOperator(null, currentBranchIds);
       }
       
       // Then assign the new branches
-      if (branchIds.length > 0) {
-        await storage.assignBranchesToOperator(req.params.id, branchIds);
+      if (uniqueIds.length > 0) {
+        await storage.assignBranchesToOperator(req.params.id, uniqueIds);
       }
       
       const updatedBranches = await storage.getBranchesByOperator(req.params.id);
-      res.json(updatedBranches);
+      res.json(updatedBranches.filter(branch => branch.tenantId === operator.tenantId));
     } catch (error) {
       next(error);
     }
@@ -1676,25 +1722,41 @@ export async function registerRoutes(
   // Update user assignments for an operator (Global Admin only)
   app.put("/api/admin/operators/:id/users", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const { userIds } = req.body;
-      if (!Array.isArray(userIds)) {
+      const operator = await operatorForUser(req.userWithAccess, req.params.id);
+      if (!operator) return res.status(404).json({ message: "Operator not found" });
+      if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
         return res.status(400).json({ message: "userIds must be an array" });
+      }
+      const { userIds } = req.body;
+      if (!Array.isArray(userIds) || userIds.some(id => typeof id !== "string")) {
+        return res.status(400).json({ message: "userIds must be an array" });
+      }
+      const uniqueIds = [...new Set<string>(userIds)];
+      const selected = uniqueIds.length > 0 ? await db.select().from(users).where(inArray(users.id, uniqueIds)) : [];
+      if (selected.length !== uniqueIds.length) return res.status(403).json({ message: "Selected users are not available" });
+      const selectedAccess = await Promise.all(selected.map(user => storage.getUserBranchAccess(user.id)));
+      if (selectedAccess.some(access => access.length === 0 || access.some(row => row.tenantId !== operator.tenantId))) {
+        return res.status(403).json({ message: "Selected users are not available" });
       }
       
       // First, unassign all users currently assigned to this operator
       const currentUsers = await storage.getUsersByOperator(req.params.id);
+      const scopedCurrentUsers = await usersForOperator(req.params.id, operator.tenantId);
+      if (scopedCurrentUsers.length !== currentUsers.length) {
+        return res.status(409).json({ message: "Operator has users with unresolved tenant access" });
+      }
       const currentUserIds = currentUsers.map(u => u.id);
       if (currentUserIds.length > 0) {
         await storage.assignUsersToOperator(null, currentUserIds);
       }
       
       // Then assign the new users
-      if (userIds.length > 0) {
-        await storage.assignUsersToOperator(req.params.id, userIds);
+      if (uniqueIds.length > 0) {
+        await storage.assignUsersToOperator(req.params.id, uniqueIds);
       }
       
       const updatedUsers = await storage.getUsersByOperator(req.params.id);
-      res.json(updatedUsers);
+      res.json(updatedUsers.map(({ password: _password, ...user }) => user));
     } catch (error) {
       next(error);
     }
@@ -1872,16 +1934,26 @@ export async function registerRoutes(
   // DEPARTMENTS (company-wide, assigned to branches)
   // ============================================
 
+  const departmentForUser = async (user: UserWithBranchAccess | undefined, id: string) => {
+    if (!user?.tenantId) return undefined;
+    const department = await storage.getDepartmentWithBranches(id);
+    if (!department || department.tenantId !== user.tenantId) return undefined;
+    const tenantBranches = (department.branches ?? []).filter(branch => branch.tenantId === user.tenantId);
+    if (!user.hasAllBranchesAccess && !tenantBranches.some(branch => user.allowedBranchIds.includes(branch.id))) {
+      return undefined;
+    }
+    return { ...department, branches: tenantBranches };
+  };
+
   // Get departments for a branch
   app.get("/api/branches/:branchId/departments", requireAuth, async (req, res, next) => {
     try {
       const { branchId } = req.params;
-      
-      if (!canUserAccessBranch(req.userWithAccess, branchId)) {
-        return res.status(403).json({ message: "Access denied to this branch" });
+      const branch = await storage.getBranch(branchId);
+      if (!branch || !(await canAccessBranchRecord(req.userWithAccess, branch))) {
+        return res.status(404).json({ message: "Branch not found" });
       }
-      
-      const depts = await storage.getDepartments(branchId);
+      const depts = (await storage.getDepartments(branchId)).filter(dept => dept.tenantId === branch.tenantId);
       
       const deptsWithCounts = await Promise.all(
         depts.map(async (dept) => ({
@@ -1900,12 +1972,15 @@ export async function registerRoutes(
   app.get("/api/departments", requireAuth, async (req, res, next) => {
     try {
       const branchId = req.query.branchId as string | undefined;
+      const userWithAccess = req.userWithAccess;
+      if (!userWithAccess?.tenantId) return res.status(403).json({ message: "Access denied" });
       
       if (branchId) {
-        if (!canUserAccessBranch(req.userWithAccess, branchId)) {
-          return res.status(403).json({ message: "Access denied to this branch" });
+        const branch = await storage.getBranch(branchId);
+        if (!branch || !(await canAccessBranchRecord(userWithAccess, branch))) {
+          return res.status(404).json({ message: "Branch not found" });
         }
-        const depts = await storage.getDepartments(branchId);
+        const depts = (await storage.getDepartments(branchId)).filter(dept => dept.tenantId === userWithAccess.tenantId);
         const deptsWithCounts = await Promise.all(
           depts.map(async (dept) => ({
             ...dept,
@@ -1915,15 +1990,11 @@ export async function registerRoutes(
         return res.json(deptsWithCounts);
       }
       
-      const deptsWithBranches = await storage.getDepartmentsWithBranches();
-      
-      const userWithAccess = req.userWithAccess;
-      let filteredDepts = deptsWithBranches;
-      if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        filteredDepts = deptsWithBranches.filter(d => 
-          d.branches?.some(b => userWithAccess.allowedBranchIds.includes(b.id))
-        );
-      }
+      const deptsWithBranches = (await storage.getDepartmentsWithBranches())
+        .filter(dept => dept.tenantId === userWithAccess.tenantId)
+        .map(dept => ({ ...dept, branches: (dept.branches ?? []).filter(branch => branch.tenantId === userWithAccess.tenantId) }));
+      const filteredDepts = userWithAccess.hasAllBranchesAccess ? deptsWithBranches
+        : deptsWithBranches.filter(dept => dept.branches.some(branch => userWithAccess.allowedBranchIds.includes(branch.id)));
       
       const deptsWithCounts = await Promise.all(
         filteredDepts.map(async (dept) => ({
@@ -1941,19 +2012,10 @@ export async function registerRoutes(
   // Get single department with branch assignments
   app.get("/api/departments/:id", requireAuth, async (req, res, next) => {
     try {
-      const dept = await storage.getDepartmentWithBranches(req.params.id);
+      const dept = await departmentForUser(req.userWithAccess, req.params.id);
       if (!dept) {
         return res.status(404).json({ message: "Department not found" });
       }
-      
-      const userWithAccess = req.userWithAccess;
-      if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        const hasAccess = dept.branches?.some(b => userWithAccess.allowedBranchIds.includes(b.id));
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Access denied" });
-        }
-      }
-      
       res.json(dept);
     } catch (error) {
       next(error);
@@ -1963,33 +2025,32 @@ export async function registerRoutes(
   // Create department (company-wide, with optional branch assignments)
   app.post("/api/departments", requireAuth, requireManager, async (req, res, next) => {
     try {
+      const userWithAccess = req.userWithAccess;
+      if (!userWithAccess?.tenantId) return res.status(403).json({ message: "Access denied" });
+      if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Invalid department data" });
+      }
       const { branchIds, ...deptData } = req.body;
-      
-      // Add tenantId to department data
-      const tenantId = await getDefaultTenantId();
-      const parsed = insertDepartmentSchema.safeParse({ ...deptData, tenantId });
+      const parsed = insertDepartmentSchema.safeParse({ ...deptData, tenantId: userWithAccess.tenantId });
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.message });
       }
-      
-      if (branchIds && Array.isArray(branchIds) && branchIds.length > 0) {
-        const allBranches = await storage.getBranches();
-        const validBranchIds = allBranches.map(b => b.id);
-        const invalidIds = branchIds.filter(id => !validBranchIds.includes(id));
-        if (invalidIds.length > 0) {
-          return res.status(400).json({ message: `Invalid branch IDs: ${invalidIds.join(', ')}` });
-        }
-        
-        const userWithAccess = req.userWithAccess;
-        if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-          const hasAccessToAll = branchIds.every(id => userWithAccess.allowedBranchIds.includes(id));
-          if (!hasAccessToAll) {
-            return res.status(403).json({ message: "You don't have access to all selected branches" });
-          }
+      if (branchIds !== undefined && (!Array.isArray(branchIds) || branchIds.some(id => typeof id !== "string"))) {
+        return res.status(400).json({ message: "Invalid branch IDs" });
+      }
+      const selectedIds: string[] = [...new Set<string>(branchIds ?? [])];
+      if (!userWithAccess.hasAllBranchesAccess && selectedIds.length === 0) {
+        return res.status(403).json({ message: "A permitted branch is required" });
+      }
+      if (selectedIds.length > 0) {
+        const selected = await db.select().from(branches)
+          .where(and(eq(branches.tenantId, userWithAccess.tenantId), inArray(branches.id, [...new Set(selectedIds)])));
+        if (selected.length !== new Set(selectedIds).size ||
+            (!userWithAccess.hasAllBranchesAccess && selectedIds.some(id => !userWithAccess.allowedBranchIds.includes(id)))) {
+          return res.status(403).json({ message: "Selected branches are not available" });
         }
       }
-      
-      const dept = await storage.createDepartment(parsed.data, branchIds, req.user?.id);
+      const dept = await storage.createDepartment(parsed.data, selectedIds, req.user?.id);
       const deptWithBranches = await storage.getDepartmentWithBranches(dept.id);
       res.status(201).json(deptWithBranches);
     } catch (error) {
@@ -2001,12 +2062,11 @@ export async function registerRoutes(
   app.post("/api/branches/:branchId/departments", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { branchId } = req.params;
-      
-      if (!canUserAccessBranch(req.userWithAccess, branchId)) {
-        return res.status(403).json({ message: "Access denied to this branch" });
+      const branch = await storage.getBranch(branchId);
+      if (!branch || !(await canAccessBranchRecord(req.userWithAccess, branch))) {
+        return res.status(404).json({ message: "Branch not found" });
       }
-      
-      const parsed = insertDepartmentSchema.safeParse(req.body);
+      const parsed = insertDepartmentSchema.safeParse({ ...req.body, tenantId: branch.tenantId });
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.message });
       }
@@ -2021,43 +2081,37 @@ export async function registerRoutes(
   // Update department
   app.patch("/api/departments/:id", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const dept = await storage.getDepartmentWithBranches(req.params.id);
+      const dept = await departmentForUser(req.userWithAccess, req.params.id);
       if (!dept) {
         return res.status(404).json({ message: "Department not found" });
       }
-      
       const userWithAccess = req.userWithAccess;
-      if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        const hasAccess = dept.branches?.some(b => userWithAccess.allowedBranchIds.includes(b.id));
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Access denied" });
-        }
+      if (!userWithAccess || !req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Invalid department data" });
       }
-      
       const { branchIds, ...updates } = req.body;
-      
-      if (branchIds && Array.isArray(branchIds)) {
-        const allBranches = await storage.getBranches();
-        const validBranchIds = allBranches.map(b => b.id);
-        const invalidIds = branchIds.filter((id: string) => !validBranchIds.includes(id));
-        if (invalidIds.length > 0) {
-          return res.status(400).json({ message: `Invalid branch IDs: ${invalidIds.join(', ')}` });
+      const parsed = insertDepartmentSchema.omit({ tenantId: true }).partial().strict().safeParse(updates);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid department data" });
+      if (branchIds !== undefined) {
+        if (!Array.isArray(branchIds) || branchIds.some(id => typeof id !== "string")) {
+          return res.status(400).json({ message: "Invalid branch IDs" });
         }
-        
-        if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-          const hasAccessToAll = branchIds.every((id: string) => userWithAccess.allowedBranchIds.includes(id));
-          if (!hasAccessToAll) {
-            return res.status(403).json({ message: "You don't have access to all selected branches" });
-          }
+        if (!userWithAccess.hasAllBranchesAccess && branchIds.length === 0) {
+          return res.status(403).json({ message: "A permitted branch is required" });
         }
-        await storage.setDepartmentBranchAssignments(req.params.id, branchIds, req.user?.id);
+        const selectedIds: string[] = [...new Set(branchIds)];
+        const selected = selectedIds.length > 0 ? await db.select().from(branches)
+          .where(and(eq(branches.tenantId, dept.tenantId), inArray(branches.id, selectedIds))) : [];
+        if (selected.length !== selectedIds.length ||
+            (!userWithAccess.hasAllBranchesAccess && selectedIds.some(id => !userWithAccess.allowedBranchIds.includes(id)))) {
+          return res.status(403).json({ message: "Selected branches are not available" });
+        }
+        await storage.setDepartmentBranchAssignments(req.params.id, selectedIds, req.user?.id);
       }
-      
-      if (Object.keys(updates).length > 0) {
-        await storage.updateDepartment(req.params.id, updates);
+      if (Object.keys(parsed.data).length > 0) {
+        await storage.updateDepartment(req.params.id, parsed.data);
       }
-      
-      const updated = await storage.getDepartmentWithBranches(req.params.id);
+      const updated = await departmentForUser(req.userWithAccess, req.params.id);
       res.json(updated);
     } catch (error) {
       next(error);
@@ -2067,17 +2121,9 @@ export async function registerRoutes(
   // Deactivate department
   app.post("/api/departments/:id/deactivate", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const deptWithBranches = await storage.getDepartmentWithBranches(req.params.id);
+      const deptWithBranches = await departmentForUser(req.userWithAccess, req.params.id);
       if (!deptWithBranches) {
         return res.status(404).json({ message: "Department not found" });
-      }
-      
-      const userWithAccess = req.userWithAccess;
-      if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        const hasAccess = deptWithBranches.branches?.some(b => userWithAccess.allowedBranchIds.includes(b.id));
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Access denied" });
-        }
       }
       
       const employeeCount = await storage.getEmployeeCountByDepartment(req.params.id);
@@ -2098,25 +2144,17 @@ export async function registerRoutes(
   // Get employees assigned to a department
   app.get("/api/departments/:id/employees", requireAuth, async (req, res, next) => {
     try {
-      const dept = await storage.getDepartmentWithBranches(req.params.id);
+      const dept = await departmentForUser(req.userWithAccess, req.params.id);
       if (!dept) {
         return res.status(404).json({ message: "Department not found" });
       }
-      
       const userWithAccess = req.userWithAccess;
-      if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        const hasAccess = dept.branches?.some(b => userWithAccess.allowedBranchIds.includes(b.id));
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Access denied" });
-        }
-      }
-      
       const employees = await storage.getEmployees();
-      let accessibleEmployees = employees.filter(e => e.status === 'active');
+      let accessibleEmployees = employees.filter(e => e.status === 'active' && e.tenantId === dept.tenantId);
       
       if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
         accessibleEmployees = accessibleEmployees.filter(e => 
-          userWithAccess.allowedBranchIds.includes(e.branchId)
+          e.branchId !== null && userWithAccess.allowedBranchIds.includes(e.branchId)
         );
       }
       
@@ -2133,30 +2171,23 @@ export async function registerRoutes(
   app.patch("/api/departments/:id/employees", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { employeeIds } = req.body;
-      if (!Array.isArray(employeeIds)) {
+      if (!Array.isArray(employeeIds) || employeeIds.some(id => typeof id !== "string")) {
         return res.status(400).json({ message: "employeeIds must be an array" });
       }
 
-      const dept = await storage.getDepartmentWithBranches(req.params.id);
+      const dept = await departmentForUser(req.userWithAccess, req.params.id);
       if (!dept) {
         return res.status(404).json({ message: "Department not found" });
       }
-      
       const userWithAccess = req.userWithAccess;
-      if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        const hasAccess = dept.branches?.some(b => userWithAccess.allowedBranchIds.includes(b.id));
-        if (!hasAccess) {
-          return res.status(403).json({ message: "Access denied" });
-        }
-      }
 
       // Get all active employees
       const allEmployees = await storage.getEmployees();
-      let accessibleEmployees = allEmployees.filter(e => e.status === 'active');
+      let accessibleEmployees = allEmployees.filter(e => e.status === 'active' && e.tenantId === dept.tenantId);
       
       if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
         accessibleEmployees = accessibleEmployees.filter(e => 
-          userWithAccess.allowedBranchIds.includes(e.branchId)
+          e.branchId !== null && userWithAccess.allowedBranchIds.includes(e.branchId)
         );
       }
       
@@ -2195,10 +2226,11 @@ export async function registerRoutes(
   app.post("/api/departments/reorder", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { orderedIds } = req.body;
-      if (!Array.isArray(orderedIds)) {
+      if (!Array.isArray(orderedIds) || orderedIds.some(id => typeof id !== "string") || new Set(orderedIds).size !== orderedIds.length) {
         return res.status(400).json({ message: "orderedIds must be an array" });
       }
-      
+      const scoped = await Promise.all(orderedIds.map(id => departmentForUser(req.userWithAccess, id)));
+      if (scoped.some(dept => !dept)) return res.status(403).json({ message: "Selected departments are not available" });
       await storage.reorderDepartments(orderedIds);
       res.json({ success: true });
     } catch (error) {
