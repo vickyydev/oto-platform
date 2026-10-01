@@ -215,6 +215,9 @@ export default function UsersPage() {
           <h1 className="text-2xl font-semibold" data-testid="text-page-title">User Management</h1>
           <p className="text-muted-foreground">Manage user accounts and branch access permissions</p>
         </div>
+        <Button onClick={() => setIsCreateDialogOpen(true)} data-testid="button-create-user">
+          <Plus className="h-4 w-4 mr-2" /> Create User
+        </Button>
       </div>
 
       <Card>
@@ -234,7 +237,7 @@ export default function UsersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table className="min-w-[760px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -320,6 +323,7 @@ export default function UsersPage() {
               ))}
             </TableBody>
           </Table>
+          <p className="mt-2 text-xs text-muted-foreground lg:hidden">Scroll sideways to view status and actions.</p>
         </CardContent>
       </Card>
 

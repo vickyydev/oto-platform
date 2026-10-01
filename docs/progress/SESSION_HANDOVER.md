@@ -214,6 +214,10 @@ offline-selling cluster (SCRUM-269 + 270 + 271 + 295), which also closes
 SCRUM-206/205; the other lane continues SCRUM-193 (its voucher-contract
 question answered on the ticket: the module counts as moved, nothing rebuilt).
 
+## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, Users create control repaired locally
+
+Live `30624922` served the scoped Users list/detail without password hashes (`200`), anonymous `401`; reviewed 820px list screenshot is Jira 11219. The list revealed no trigger for its existing create dialog and weak tablet table discoverability. A small Create User button/scroll-cue repair passes app build, 469 inherited TypeScript diagnostics with none in the page, scoped lint zero errors/one inherited warning. Land source and this checkpoint with same-turn Jira In Progress comment, deploy exact source, then perform a reversible no-message synthetic `/api/users` create/edit and exact cleanup with real screenshot. Needs from the platform lane: tenant-bearing Directory identity, POS views/read proof, tenant-safe legacy columns/backfills, persisted leave approval, shift-group contract, job-run/Health/Failures, CI restore. SCRUM-193 remains In Progress.
+
 ## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, Check-ins tenant guard staged
 
 At live `30624922`, signed-in authorized branch check-ins and nanny availability returned `200`, unknown branch `403`, missing check-in `404`, anonymous check-ins `401`. The reviewed real 820px empty board is Jira attachment 11220. No staging record was created; second-tenant proof remains the nine-case disposable local HTTP probe, and POS/OTO check-in ownership needs the platform lane. Land this evidence with same-turn In Progress Jira comment. Users UI source is locally verified but still uncommitted; finish and deploy it next. Needs from the platform lane: POS views/read proof, tenant-bearing Directory, tenant-safe legacy columns/backfills, persisted leave approval, shift-group contract, job-run/Health/Failures and CI restore. SCRUM-193 stays In Progress.
