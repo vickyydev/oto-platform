@@ -214,6 +214,12 @@ offline-selling cluster (SCRUM-269 + 270 + 271 + 295), which also closes
 SCRUM-206/205; the other lane continues SCRUM-193 (its voucher-contract
 question answered on the ticket: the module counts as moved, nothing rebuilt).
 
+## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, Organization source ready
+
+App-owned source `5d5b4150` scopes operator and department read/write/assignment routes to the signed-in tenant and permitted branches. Operator user responses omit password hashes. A disposable two-tenant HTTP probe passed 26 assertions and removed its database; build passed, TypeScript retained 473 inherited diagnostics, and scoped lint found zero edited-line errors. This source has not yet been deployed or tested on staging. A synthetic unassigned operator can be created and fully deleted by exact ID for positive staging proof. Department DELETE only deactivates, so a synthetic department needs exact cleanup first. The legacy users table has no tenant key; an operator assignment without explicit tenant-bearing user branch access fails closed, needing a platform identity contract.
+
+SCRUM-193 remains In Progress with all five parent gates open. Land the verified Organization source on latest main with a same-turn Jira status/comment, deploy oto-app-staging, prove one operator lifecycle and a foreign refusal with a real screenshot, then continue package/menu and Supplier positive checks with validated exact cleanup. Other platform needs remain POS `otoapp_v` views/read proof, Directory tenant identity, tenant-safe legacy backfills, persisted leave approval, shift-group contract, durable locked `ops_run`/Health/Failures and CI structure-only restore rehearsal. No full CI green claim.
+
 ## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, Knowledge PDF action proof
 
 On live oto-app-staging, a synthetic one-page PDF uploaded through Knowledge Files reached `indexed`, produced one chunk with its unique fact and yielded the correct Ask OTO answer with its own file ID cited. The real 820px answer and expanded-source screenshots were reviewed and attached to SCRUM-193 under `scrum-193-knowledge-pdf-answer-tablet-2026-10-01.png` and `scrum-193-knowledge-pdf-source-tablet-2026-10-01.png`. The exact-ID DELETE returned 204 and later detail read 404 for every probe. The QA index, Knowledge/Ask notes and module status register now reflect this action; lower-role, other file types and other AI helpers remain open. No app source changed in this slice.
