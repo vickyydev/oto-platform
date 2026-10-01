@@ -23,7 +23,7 @@ import {
 import type { PrintingController } from './printing/index';
 import { ROLE_FOR_KIND, type PrintJobOutcome } from './printing/queue';
 import { uuidv7 } from './signing';
-import type { BoxStore, EnvelopeSealer, PrintJobRecord } from './store';
+import type { BoxStore, EnvelopeSealer, PrintJobRecord, QueuedFact } from './store';
 
 /**
  * TAKING MONEY WITH THE LINK DOWN (S2-10a, Slice G; offline plan §2.4, Round 4).
@@ -148,6 +148,19 @@ export interface OfflineSaleRequest extends Omit<OfflineSaleFact, 'saleId' | 're
    * time. The bridge keeps the till's view of the sale here.
    */
   memo?: Record<string, unknown> | null;
+  /**
+   * S2-14a round 4 — what must land WITH this sale and with nothing else: a
+   * wallet's offline spend, its day counter and its hold. Called inside the
+   * sale's own store transaction once its receipt is numbered; whatever it
+   * writes through `tx` commits or rolls back with the sale, and the facts it
+   * returns are queued right behind `sale.finalised`, in the same
+   * `enqueueMany`, so the platform files the sale before the money that
+   * closes it. A throw refuses the whole sale, number and all.
+   */
+  alongside?: (
+    tx: BoxStore,
+    sale: { saleId: string; receipt: OfflineReceiptFact; at: string },
+  ) => Promise<QueuedFact[]>;
 }
 
 export interface OfflineTenderRequest {
@@ -740,6 +753,7 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
       const printout = request.printout ?? null;
       let records: PrintJobRecord[] = [];
       let logged: RecordedSale | null = null;
+      let extraFacts = 0;
 
       /**
        * ONE TRANSACTION: the number, the bands, the paper, the fact and the
@@ -812,6 +826,8 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
         }
         await crash('after_print_jobs');
 
+        const alongside = request.alongside ? await request.alongside(tx, { saleId, receipt, at }) : [];
+        extraFacts = alongside.length;
         const [queued] = await tx.enqueueMany(
           boxId,
           [
@@ -829,6 +845,7 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
                 childId,
               })),
             }),
+            ...alongside,
           ],
           seal,
           at,
@@ -895,7 +912,7 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
         saleId,
         receipt: sale.receipt,
         boxSeq: sale.boxSeq,
-        queued: 1,
+        queued: 1 + extraFacts,
         drawer,
         outboxDepth: depth.queued,
         replay: false,

@@ -221,6 +221,10 @@ const ANOMALIES: Record<SyncAnomalyKind, AnomalyWords> = {
     label: 'Taken on a shift that had been ended',
     what: 'The shift token this sale was taken on had been revoked before the sale happened. The sale is filed, because it happened, and an alert asks somebody to look at who was at the counter.',
   },
+  wallet_overdraft: {
+    label: 'Credit spent offline that the wallet did not have',
+    what: 'A counter with no internet took credit off a wallet, and when the spend reached us the wallet had held less than that at the moment it was taken — usually because two counters spent the same wallet while both were offline. A spend that only reached us after the day’s end had expired the credit is not one of these: it is filed as the spend it was, with the expiry’s take put back first. The sale is filed as it was taken and the wallet is at zero; the row names the wallet, the box, the station and how much credit was given that was not there, so somebody can follow it up.',
+  },
 };
 
 export function anomalyWords(kind: string): AnomalyWords {

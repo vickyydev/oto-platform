@@ -323,6 +323,13 @@
       "when": 1790827825598,
       "tag": "0045_wallet_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1790827826598,
+      "tag": "0046_sync_anomaly_wallet_overdraft",
+      "breakpoints": true
     }
   ]
 }

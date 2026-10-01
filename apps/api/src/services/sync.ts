@@ -137,6 +137,7 @@ import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
  * their own as the booth's are.
  */
 import { CHECKIN_HANDLERS, checkinCacheItem } from './sync-checkin';
+import { WALLET_HANDLERS, walletCacheItem } from './sync-wallet';
 import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
@@ -2420,6 +2421,8 @@ const HANDLERS: Record<string, EventHandler> = {
    */
   ...BOOTH_HANDLERS,
   ...CHECKIN_HANDLERS,
+  /** S2-14a round 4 — `wallet.spent`: credit a box took offline under the cap (`sync-wallet.ts`). */
+  ...WALLET_HANDLERS,
 };
 
 /**
@@ -4278,10 +4281,11 @@ export async function pullChanges(
   const asked: readonly SyncChangeScope[] | undefined = query.scopes?.length
     ? query.scopes
     : undefined;
-  // `checkin` is a cache scope only (S2-13 round 4): it is never written to
-  // the change feed, so a feed narrowed to it is narrowed to nothing of it.
+  // `checkin` (S2-13 round 4) and `wallets` (S2-14a round 4) are cache scopes
+  // only: never written to the change feed, so a feed narrowed to one of them
+  // is narrowed to nothing of it.
   const feedOnly = (names: readonly string[]): SyncChangeScope[] =>
-    names.filter((name): name is SyncChangeScope => name !== 'checkin');
+    names.filter((name): name is SyncChangeScope => name !== 'checkin' && name !== 'wallets');
   const scopes =
     role === 'counter'
       ? asked && feedOnly(asked)
@@ -4361,6 +4365,12 @@ export const CACHE_SCOPES = [
    * shifts. Built by `checkinCacheItem` in `sync-checkin.ts`. Volatile.
    */
   'checkin',
+  /**
+   * S2-14a round 4 — the branch's spendable wallets as balance SNAPSHOTS with
+   * the policy's offline cap, keys as digests only. Built by
+   * `walletCacheItem` in `sync-wallet.ts`. Volatile.
+   */
+  'wallets',
 ] as const;
 export type CacheScope = (typeof CACHE_SCOPES)[number];
 
@@ -4403,6 +4413,12 @@ export const CACHE_VOLATILE_SCOPES = [
    * own tick (`?scopes=checkin`, `pullCheckinScope` in `@oto/box-agent`).
    */
   'checkin',
+  /**
+   * S2-14a round 4 — every grant and spend moves a balance, so the snapshots
+   * may not move the etag; the agent reads them on its own tick
+   * (`?scopes=wallets`, `pullWalletScope` in `@oto/box-agent`).
+   */
+  'wallets',
 ] as const satisfies readonly CacheScope[];
 
 function isVolatileScope(name: string): boolean {
@@ -4667,8 +4683,12 @@ export async function catalogueVersionOf(db: Exec, operatorId: string, branchId:
  *   - **no sales history, no payments, no audit log, no reporting.** A box acts;
  *     it does not answer questions about the past. A stolen Pi must not be a
  *     copy of the business;
- *   - **no wallet balances and no payment instruments.** An offline box must
- *     not be able to spend money it cannot verify;
+ *   - **no payment instruments, and of wallets only SNAPSHOTS.** The old "no
+ *     wallet balances" rule is widened deliberately and no further (S2-14a
+ *     round 4, plan `wallet/PLAN.md` §2.6): the `wallets` scope carries each
+ *     spendable wallet's balance, status and expiry, the policy's offline cap,
+ *     and its keys as DIGESTS — never a voucher QR or a band code. A box
+ *     spends from it only under the cap, and an overdraft is found at sync;
  *   - **no member notes, email or tier evidence.** Staff notes are free text and
  *     can say anything; the till's identify step does not read them;
  *   - **of staff, only what an offline unlock needs** — the account id, the
@@ -4781,6 +4801,12 @@ export async function cacheBundle(
       // One item, applied whole, like the catalogue: half a board is a child
       // the counter cannot find at pickup.
       put('checkin', [await checkinCacheItem(db, operatorId, branchId)]);
+      continue;
+    }
+
+    if (scope === 'wallets') {
+      // One item, applied whole: balances, the cap, this box's filed spends.
+      put('wallets', [await walletCacheItem(db, auth)]);
       continue;
     }
 

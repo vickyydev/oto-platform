@@ -518,6 +518,14 @@ export const SYNC_ANOMALY_KINDS = [
    * (offline plan OD-9). An alert goes with it.
    */
   'revoked_actor',
+  /**
+   * S2-14a round 4 — a wallet spent offline past what it held when the spend
+   * reached the platform: two boxes spending one wallet in one outage. The
+   * spend is filed (the money was promised at the counter), the wallet's
+   * balance never goes below zero, and the overdraft is named here with a
+   * critical alert (migration 0046).
+   */
+  'wallet_overdraft',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 
@@ -557,7 +565,7 @@ export const syncAnomaly = edge.table(
     index('sync_anomaly_detected_idx').on(t.detectedAt),
     check(
       'sync_anomaly_kind_check',
-      sql`${t.kind} in ('clock_recomputed','duplicate_replay','sequence_gap','merge','epoch_regressed','late_arrival','receipt_collision','revoked_actor')`,
+      sql`${t.kind} in ('clock_recomputed','duplicate_replay','sequence_gap','merge','epoch_regressed','late_arrival','receipt_collision','revoked_actor','wallet_overdraft')`,
     ),
   ],
 );

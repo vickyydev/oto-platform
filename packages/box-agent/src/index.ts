@@ -68,3 +68,9 @@ export * from './station-bridge';
 export * from './checkin-desk';
 export * from './blob-store';
 export * from './photo-upload';
+/**
+ * S2-14a round 4 — credit on the box lane under the offline cap: the key
+ * digests the api ships the `wallets` scope with, and the arithmetic the
+ * bridge spends by.
+ */
+export * from './wallet-lane';

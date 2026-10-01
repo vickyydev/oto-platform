@@ -247,6 +247,13 @@ export const SYNC_ANOMALY_KINDS = [
   'receipt_collision',
   /** Made by an account revoked before it happened; applied, with an alert (OD-9). */
   'revoked_actor',
+  /**
+   * S2-14a round 4 — a wallet spent offline past what it held when the spend
+   * reached the platform (two boxes spending one wallet in one outage): the
+   * spend is filed, the wallet never goes below zero, and the overdraft is
+   * named here with a critical alert.
+   */
+  'wallet_overdraft',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 
@@ -269,6 +276,14 @@ export const SYNC_CHANGE_SCOPES = [
    * never written to `edge.sync_change` (its rows move with every check-in).
    */
   'checkin',
+  /**
+   * S2-14a round 4 — the branch's spendable wallets as balance SNAPSHOTS, with
+   * the policy's offline cap: what a counter needs to take credit under the
+   * cap with the link down. A cache scope only, like `checkin`: served whole
+   * by `GET /box/v1/cache`, never written to `edge.sync_change`, and its keys
+   * travel as digests, never as the codes a guest holds.
+   */
+  'wallets',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

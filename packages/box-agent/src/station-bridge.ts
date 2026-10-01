@@ -20,6 +20,24 @@ import {
   type BridgeBookingRedeemAnswer,
   type BridgeBookingView,
   type OfflineBookingRedeemed,
+  BOX_WALLET_REFUSALS,
+  BRIDGE_WALLET_INTENTS,
+  BridgeWalletLookupSchema,
+  BridgeWalletSpendSchema,
+  WALLET_SNAPSHOT_REFUSE_AFTER_S,
+  WALLET_SPENT_FACT,
+  WALLET_TENDER_CODE,
+  WALLET_TENDER_METHOD,
+  formatTHB,
+  walletOfflineCapMessage,
+  type BridgeTender,
+  type BridgeWalletBalance,
+  type BridgeWalletSpend,
+  type BridgeWalletSpendAnswer,
+  type BridgeWalletSpendView,
+  type OfflineWalletSpent,
+  type WalletSnapshotEntry,
+  type WalletSnapshotItem,
   BRIDGE_MONEY_INTENT_PREFIXES,
   BRIDGE_RECEIPT_OBSERVED_INTENT,
   BRIDGE_RECORD_INTENTS,
@@ -83,16 +101,28 @@ import {
   type OfflineQuote,
   type OfflineSalePricing,
 } from './offline-pricing';
-import type { OfflineTenderFact } from './outbox';
+import type { OfflineReceiptFact, OfflineTenderFact } from './outbox';
 import {
   OfflineSaleRefused,
   ReceiptSeriesUnavailable,
   ReprintRefused,
   type OfflineBandPlan,
   type OfflineSaleAnswer,
+  type OfflineSaleRequest,
   type RecordedSale,
   type SaleQueue,
 } from './sale-queue';
+import {
+  WALLET_SPEND_COUNTER_SCOPE,
+  WALLET_SPEND_TOTAL_DAY,
+  WALLET_SPEND_TOTAL_SCOPE,
+  decideOfflineSpend,
+  findSnapshotWallet,
+  offlineWalletAllowance,
+  readWalletSnapshot,
+  type OfflineAllowance,
+  type OfflineSpendRefusal,
+} from './wallet-lane';
 import { uuidv7 } from './signing';
 import type { TerminalCommandOutcome, TerminalController, TerminalProtocol } from './terminal/index';
 import { boxBlobs, type BlobStore } from './blob-store';
@@ -440,7 +470,10 @@ const REFUSED_ON_BOX_LANE: Record<string, BoxLaneRefusal> = {
   'payment.2c2p': 'qr2c2p',
   'payment.voucher': 'voucher',
   'sale.voucher': 'voucher',
-  'payment.wallet': 'wallet',
+  // `payment.wallet` is no longer here: since S2-14a round 4 the box spends a
+  // scanned wallet under the offline cap (`spendWallet`). A tender NAMED
+  // `wallet` on `sale.finalise` or `payment.start` is still refused, in the
+  // list's words — credit is scanned, never picked off the grid.
   // `booking.redeem` is no longer here: since S2-12 round 5 the box redeems a
   // paid booking from its own copy (`bookingRedeem`). A box without the store
   // tables to keep its redemption log still refuses it, in these same words.
@@ -566,6 +599,60 @@ interface SaleMemo {
   attempt: PaymentAttemptView | null;
   /** S2-13 round 4: the bands this sale left for "Check in now" (`checkin-desk.ts`). */
   deferredBands?: DeferredBand[];
+  /** S2-14a round 4: the credit this sale took offline, answered again as it was the first time. */
+  wallet?: { spend: BridgeWalletSpendView; attempt: PaymentAttemptView };
+}
+
+/**
+ * CREDIT WRITTEN AHEAD FOR A SALE (S2-14a round 4). A credit press that does
+ * not cover the order is counted against the wallet's day on this box in one
+ * store transaction with this row, BEFORE the till is told; the press that
+ * takes the rest in cash closes the sale with it and queues its fact. A
+ * restart in between keeps both, so a retried press is answered from here and
+ * the counter never moves twice.
+ */
+interface WalletHold {
+  saleId: string;
+  stationId: string;
+  accountId: string;
+  /** The credit press: the wallet tender's action id on the platform, and the spend's replay key. */
+  actionId: string;
+  attemptId: string;
+  spendId: string;
+  walletId: string;
+  amountSatang: number;
+  source: 'fnb_order' | 'merch_order';
+  businessDate: string;
+  snapshotBalanceSatang: number;
+  /** What this box had filed against the wallet when the snapshot was built (any day). */
+  reflectedSatang: number;
+  capSatang: number;
+  /** This wallet's day on this box once this credit is counted. */
+  spentTodaySatang: number;
+  /** This wallet's spends on this box across all days once this credit is counted (absent on a hold written before the all-days counter). */
+  spentOnBoxSatang?: number;
+  balanceAfterSatang: number;
+  capLeftSatang: number;
+  snapshotVersion: string | null;
+  snapshotAt: string | null;
+  at: string;
+  /** Set when the sale it pays for was recorded: the hold is spent, and its fact is queued. */
+  closed?: boolean;
+}
+
+const walletHoldKey = (saleId: string) => `wallet_hold:${saleId}`;
+
+/** A wallet a scanned key names, with what it can spend at this counter now. */
+interface WalletAtCounter {
+  snapshot: WalletSnapshotItem;
+  snapshotAt: string | null;
+  wallet: WalletSnapshotEntry;
+  capSatang: number;
+  businessDate: string;
+  spentTodaySatang: number;
+  spentOnBoxSatang: number;
+  reflectedSatang: number;
+  allowance: OfflineAllowance;
 }
 
 // --- Redeeming an online booking on the box lane (S2-12 round 5) ----------------------
@@ -1302,6 +1389,14 @@ export class StationBridge {
       }
       const quote = await this.quote(station, intent.payload);
       return { document: await this.host.sessions.open(stationId), result: { quote } };
+    }
+    if (caller.kind === 'till' && intent.type === BRIDGE_WALLET_INTENTS.spend) {
+      const result = await this.spendWallet(station, caller, intent.payload);
+      return { document: await this.host.sessions.open(stationId), result: { ...result } };
+    }
+    if (caller.kind === 'till' && intent.type === BRIDGE_WALLET_INTENTS.lookup) {
+      const wallet = await this.walletLookup(station, caller, intent.payload);
+      return { document: await this.host.sessions.open(stationId), result: { wallet } };
     }
     if (caller.kind === 'till' && SALE_INTENT_TYPES.has(intent.type)) {
       const result = await this.sell(station, caller, intent);
@@ -2321,6 +2416,8 @@ export class StationBridge {
       );
     }
     return {
+      // S2-14a round 4: the credit it took, as the platform's wallet answer carries it.
+      ...(memo.wallet ? { walletSpend: memo.wallet.spend, walletAttempt: memo.wallet.attempt } : {}),
       sale: {
         ...memo.view,
         status: 'finalised',
@@ -2384,8 +2481,17 @@ export class StationBridge {
     sale: PreparedSale,
     tenders: OfflineTenderFact[],
     attempt: PaymentAttemptView | null,
-    /** When the sale happened, if not now: a held tender closed after a crash happened when it was paid. */
-    opts: { at?: string } = {},
+    /**
+     * `at`: when the sale happened, if not now — a held tender closed after a
+     * crash happened when it was paid. `alongside` and `wallet` (S2-14a round
+     * 4): the credit this sale took offline, written and queued inside the
+     * sale's own transaction, and kept in its log for a retried press.
+     */
+    opts: {
+      at?: string;
+      alongside?: OfflineSaleRequest['alongside'];
+      wallet?: SaleMemo['wallet'];
+    } = {},
   ): Promise<BridgeSaleAnswer> {
     const queue = this.saleQueue();
     const at = opts.at ?? this.host.now().toISOString();
@@ -2393,7 +2499,29 @@ export class StationBridge {
       view: this.saleViewOf(station, body.saleId, sale, at),
       attempt,
       ...(sale.deferredBands.length > 0 ? { deferredBands: sale.deferredBands } : {}),
+      ...(opts.wallet ? { wallet: opts.wallet } : {}),
     };
+    // The credit prints above the cash, as the platform's receipt lists it.
+    const printedTenders = [
+      ...(opts.wallet
+        ? [
+            {
+              method: WALLET_TENDER_CODE,
+              last4: null,
+              amountSatang: opts.wallet.spend.amountSatang,
+              tenderedSatang: null,
+              changeSatang: null,
+            },
+          ]
+        : []),
+      ...tenders.map((tender) => ({
+        method: tender.methodCode,
+        last4: tender.last4 ?? null,
+        amountSatang: tender.amountSatang,
+        tenderedSatang: tender.tenderedSatang ?? null,
+        changeSatang: tender.changeSatang ?? null,
+      })),
+    ];
     let recorded: OfflineSaleAnswer;
     try {
       recorded = await queue.record({
@@ -2411,18 +2539,13 @@ export class StationBridge {
         printout: {
           snapshot: {
             ...sale.snapshot,
-            tenders: tenders.map((tender) => ({
-              method: tender.methodCode,
-              last4: tender.last4 ?? null,
-              amountSatang: tender.amountSatang,
-              tenderedSatang: tender.tenderedSatang ?? null,
-              changeSatang: tender.changeSatang ?? null,
-            })),
+            tenders: printedTenders,
           },
           bands: sale.bandPlan,
           businessDate: sale.businessDate,
         },
         memo: memo as unknown as Record<string, unknown>,
+        ...(opts.alongside ? { alongside: opts.alongside } : {}),
       });
     } catch (err) {
       if (err instanceof OfflineSaleRefused) this.refuse('voucher');
@@ -2488,6 +2611,13 @@ export class StationBridge {
       if (tender.kind !== 'cash') this.refuse('noTerminal');
     }
     const sale = await this.prepareSale(station, caller, body);
+    /**
+     * S2-14a round 4 — credit already written ahead for this sale on this box
+     * (`payment.wallet` that did not cover it): the press that takes the rest
+     * in cash closes the sale with both, the credit's fact queued behind it.
+     */
+    const hold = await this.readWalletHold(body.saleId);
+    if (hold && !hold.closed) return this.closeWithCredit(station, caller, body, sale, hold, tender, false);
     const now = this.host.now().toISOString();
     if (sale.gross === 0) {
       if (tender && tender.amountSatang > 0) {
@@ -2540,7 +2670,523 @@ export class StationBridge {
     return this.closeSale(station, caller, body, sale, [fact], attempt);
   }
 
-  // --- the counter's own terminal --------------------------------------------------------
+  // --- credit on the box lane, under the cap (S2-14a round 4) ------------------------------
+
+  /**
+   * A credit press and the sale's or the cash tender's press must be two
+   * keys: the platform files the credit under its own action id, and a cash
+   * tender already filed under the same id would read as the credit already
+   * filed — the credit silently dropped, the sale left tendering (the round 4
+   * gate's observation under invariant (2)). Refused before anything moves.
+   */
+  private refuseSharedPressKey(other: string, walletActionId: string): void {
+    if (other === walletActionId) {
+      throw new BridgeError(400, 'VALIDATION', 'The credit press needs an action id of its own, not the sale’s or the cash tender’s', {
+        actionId: walletActionId,
+      });
+    }
+  }
+
+  /** Where a refusal of credit is said, in the counter's words. */
+  private walletRefusal(refusal: OfflineSpendRefusal, at: WalletAtCounter, askedSatang?: number): never {
+    switch (refusal) {
+      case 'cap':
+        throw new BridgeError(409, BOX_WALLET_REFUSALS.cap.code, walletOfflineCapMessage(at.capSatang), {
+          walletId: at.wallet.id,
+          capSatang: at.capSatang,
+          capLeftSatang: at.allowance.capLeftSatang,
+          spentTodaySatang: at.spentTodaySatang,
+        });
+      case 'empty':
+        throw new BridgeError(409, 'WALLET_EMPTY', 'This wallet has ฿0 left — take the order in cash or card.', {
+          walletId: at.wallet.id,
+          balanceSatang: 0,
+        });
+      case 'insufficient':
+        throw new BridgeError(
+          409,
+          'WALLET_INSUFFICIENT',
+          `This wallet has ${formatTHB(at.allowance.balanceLeftSatang)} left, not ${formatTHB(askedSatang ?? 0)}.`,
+          { walletId: at.wallet.id, balanceSatang: at.allowance.balanceLeftSatang, amountSatang: askedSatang ?? null },
+        );
+      default:
+        throw new BridgeError(400, 'VALIDATION', 'That is more credit than this order owes.', {
+          amountSatang: askedSatang ?? null,
+        });
+    }
+  }
+
+  /** The cap at this station: its own `offline_wallet_cap_satang` where set, else the branch policy's. */
+  private async walletCap(stationId: string, snapshot: WalletSnapshotItem): Promise<number> {
+    const config = await this.bundle('station_config');
+    const entry = itemsOf(config)
+      .map(rec)
+      .find((row) => row?.id === stationId);
+    const own = entry?.offlineWalletCapSatang;
+    return typeof own === 'number' && Number.isSafeInteger(own) && own >= 0 ? own : snapshot.capSatang;
+  }
+
+  /**
+   * THE WALLET A KEY NAMES, from the box's snapshot, with what it can spend
+   * here now — or the honest refusal: no counter to count it on, no copy (or a
+   * key the copy does not hold), a copy too old to trust, credit expired.
+   */
+  private async walletAt(station: BridgeStation, key: string): Promise<WalletAtCounter> {
+    if (!this.host.store.features().boothRuntime) {
+      throw new BridgeError(503, BOX_WALLET_REFUSALS.noCounter.code, BOX_WALLET_REFUSALS.noCounter.message);
+    }
+    const now = this.host.now();
+    const bundle = await this.bundle('wallets');
+    const snapshot = bundle ? readWalletSnapshot(bundle.payload) : null;
+    if (!bundle || !snapshot) {
+      throw new BridgeError(409, BOX_WALLET_REFUSALS.unknown.code, BOX_WALLET_REFUSALS.unknown.message);
+    }
+    const age = ageOf(bundle.appliedAt, now);
+    if (age === null || age >= WALLET_SNAPSHOT_REFUSE_AFTER_S) {
+      throw new BridgeError(409, BOX_WALLET_REFUSALS.stale.code, BOX_WALLET_REFUSALS.stale.message, {
+        appliedAt: bundle.appliedAt,
+      });
+    }
+    const match = findSnapshotWallet(snapshot, key);
+    if (!match || !('found' in match)) {
+      throw new BridgeError(404, BOX_WALLET_REFUSALS.unknown.code, BOX_WALLET_REFUSALS.unknown.message);
+    }
+    const wallet = match.found;
+    const expiresAt = wallet.expiresAt ? Date.parse(wallet.expiresAt) : null;
+    if (wallet.status !== 'active' || (expiresAt !== null && Number.isFinite(expiresAt) && expiresAt <= now.getTime())) {
+      throw new BridgeError(
+        409,
+        'WALLET_EXPIRED',
+        `This wallet's credit has expired — only a manager can bring it back. Take the order in cash or card.`,
+        { walletId: wallet.id },
+      );
+    }
+    const capSatang = await this.walletCap(station.id, snapshot);
+    const businessDate = this.tradingDay();
+    // Two counts of this wallet on this box: today's, for the cap, and every
+    // day's, for the snapshot — a day's turn with the link still down must
+    // not forget yesterday's unsynced credit (the round 4 gate's REJECT 2).
+    const spentTodaySatang = await this.host.store.readCounter(this.host.boxId, {
+      scope: WALLET_SPEND_COUNTER_SCOPE,
+      key: wallet.id,
+      businessDate,
+    });
+    const spentOnBoxSatang = await this.host.store.readCounter(this.host.boxId, {
+      scope: WALLET_SPEND_TOTAL_SCOPE,
+      key: wallet.id,
+      businessDate: WALLET_SPEND_TOTAL_DAY,
+    });
+    // What the platform had filed from this box, on any day, when the copy was built.
+    const reflectedSatang = wallet.boxSpentSatang;
+    return {
+      snapshot,
+      snapshotAt: bundle.appliedAt,
+      wallet,
+      capSatang,
+      businessDate,
+      spentTodaySatang,
+      spentOnBoxSatang,
+      reflectedSatang,
+      allowance: offlineWalletAllowance({
+        snapshotBalanceSatang: wallet.balanceSatang,
+        reflectedSatang,
+        spentOnBoxSatang,
+        spentTodaySatang,
+        capSatang,
+      }),
+    };
+  }
+
+  /** `wallet.lookup`: what a scanned key's wallet can spend at this counter right now. */
+  private async walletLookup(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<BridgeWalletBalance> {
+    this.require(caller, 'pos:wallet:read');
+    const body = this.parse(BridgeWalletLookupSchema, payload);
+    const at = await this.walletAt(station, body.key);
+    return {
+      walletId: at.wallet.id,
+      balanceSatang: at.allowance.balanceLeftSatang,
+      capLeftSatang: at.allowance.capLeftSatang,
+      capSatang: at.capSatang,
+      spendableSatang: at.allowance.allowedSatang,
+      snapshotAt: at.snapshotAt,
+      source: 'snapshot',
+    };
+  }
+
+  private async readWalletHold(saleId: string): Promise<WalletHold | null> {
+    if (!this.host.store.features().boothRuntime) return null;
+    const raw = await this.host.store.readRuntimeValue(this.host.boxId, walletHoldKey(saleId)).catch(() => null);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as WalletHold;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * COUNT IT, under the cap, in the caller's store transaction — and refuse,
+   * rolling the count back with everything else, when the counter it moved
+   * says this credit no longer fits. The bump is one statement, so two tills on
+   * this box spending one wallet at once cannot both fit under one allowance.
+   */
+  private async countCredit(tx: BoxStore, hold: WalletHold): Promise<void> {
+    const after = await tx.bumpCounter(
+      this.host.boxId,
+      { scope: WALLET_SPEND_COUNTER_SCOPE, key: hold.walletId, businessDate: hold.businessDate },
+      hold.amountSatang,
+      hold.at,
+    );
+    // The all-days count moves with the day's, in the same transaction: both
+    // or neither, and a refusal below rolls both back.
+    const totalAfter = await tx.bumpCounter(
+      this.host.boxId,
+      { scope: WALLET_SPEND_TOTAL_SCOPE, key: hold.walletId, businessDate: WALLET_SPEND_TOTAL_DAY },
+      hold.amountSatang,
+      hold.at,
+    );
+    const before = after - hold.amountSatang;
+    const totalBefore = totalAfter - hold.amountSatang;
+    const allowance = offlineWalletAllowance({
+      snapshotBalanceSatang: hold.snapshotBalanceSatang,
+      reflectedSatang: hold.reflectedSatang,
+      spentOnBoxSatang: totalBefore,
+      spentTodaySatang: before,
+      capSatang: hold.capSatang,
+    });
+    if (hold.amountSatang > allowance.capLeftSatang) {
+      throw new BridgeError(409, BOX_WALLET_REFUSALS.cap.code, walletOfflineCapMessage(hold.capSatang), {
+        walletId: hold.walletId,
+        capSatang: hold.capSatang,
+        capLeftSatang: allowance.capLeftSatang,
+      });
+    }
+    if (hold.amountSatang > allowance.balanceLeftSatang) {
+      throw new BridgeError(
+        409,
+        'WALLET_INSUFFICIENT',
+        `This wallet has ${formatTHB(allowance.balanceLeftSatang)} left, not ${formatTHB(hold.amountSatang)}.`,
+        { walletId: hold.walletId, balanceSatang: allowance.balanceLeftSatang },
+      );
+    }
+    hold.spentTodaySatang = after;
+    hold.spentOnBoxSatang = totalAfter;
+    hold.balanceAfterSatang = allowance.balanceLeftSatang - hold.amountSatang;
+    hold.capLeftSatang = allowance.capLeftSatang - hold.amountSatang;
+  }
+
+  /** The credit as the till's answer carries it. */
+  private walletSpendView(hold: WalletHold): BridgeWalletSpendView {
+    return {
+      walletId: hold.walletId,
+      amountSatang: hold.amountSatang,
+      balanceAfterSatang: hold.balanceAfterSatang,
+      capLeftSatang: hold.capLeftSatang,
+      offline: true,
+    };
+  }
+
+  /** The credit as an attempt, in the platform's words: method `wallet`, approved, offline. */
+  private walletAttemptView(hold: WalletHold): PaymentAttemptView {
+    return {
+      id: hold.attemptId,
+      saleId: hold.saleId,
+      method: WALLET_TENDER_METHOD,
+      provider: 'manual',
+      status: 'approved',
+      amountSatang: hold.amountSatang,
+      tenderedSatang: null,
+      changeSatang: null,
+      terminalRef: null,
+      tid: null,
+      approvalCode: null,
+      last4: null,
+      invoiceNo: null,
+      tranRef: null,
+      actionId: hold.actionId,
+      offline: true,
+      paidAt: hold.at,
+      createdAt: hold.at,
+    };
+  }
+
+  /** The `wallet.spent` fact a closed sale's credit travels as. */
+  private walletSpentFact(
+    caller: BridgeTillCaller,
+    hold: WalletHold,
+    receipt: OfflineReceiptFact,
+    at: string,
+  ): QueuedFact {
+    const payload: OfflineWalletSpent = {
+      spendId: hold.spendId,
+      walletId: hold.walletId,
+      saleId: hold.saleId,
+      actionId: hold.actionId,
+      amountSatang: hold.amountSatang,
+      source: hold.source,
+      businessDate: hold.businessDate,
+      snapshotBalanceSatang: hold.snapshotBalanceSatang,
+      capSatang: hold.capSatang,
+      spentTodaySatang: hold.spentTodaySatang,
+      spentOnBoxSatang: hold.spentOnBoxSatang ?? null,
+      snapshotVersion: hold.snapshotVersion,
+      snapshotAt: hold.snapshotAt,
+      receipt: { series: receipt.series, seq: receipt.seq, number: receipt.number },
+      staffTokenJti: caller.jti,
+      ...(caller.offlineFresh ? { offlineFresh: true } : {}),
+    };
+    return {
+      type: WALLET_SPENT_FACT,
+      stationId: hold.stationId,
+      actorKind: 'account',
+      actorAccountId: hold.accountId,
+      actionId: hold.actionId,
+      occurredAt: at,
+      payload: payload as unknown as Record<string, unknown>,
+    };
+  }
+
+  /**
+   * CLOSE A SALE WITH ITS CREDIT: the rest in cash (or nothing, when the
+   * credit covered it), recorded through `SaleQueue.record` in ONE store
+   * transaction with the credit's count (for a press that was not written
+   * ahead), its hold marked spent, and its `wallet.spent` fact queued right
+   * behind `sale.finalised`.
+   */
+  private async closeWithCredit(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    body: BridgeSaleFinalise,
+    sale: PreparedSale,
+    hold: WalletHold,
+    tender: BridgeTender | null,
+    fresh: boolean,
+  ): Promise<BridgeSaleAnswer> {
+    const rest = sale.gross - hold.amountSatang;
+    if (rest < 0) {
+      throw new BridgeError(
+        409,
+        'WALLET_CREDIT_OVER_ORDER',
+        `Credit of ${formatTHB(hold.amountSatang)} was already taken for this order, which now costs ${formatTHB(sale.gross)} — keep the order as it was rung up.`,
+        { creditSatang: hold.amountSatang, grossSatang: sale.gross },
+      );
+    }
+    let fact: OfflineTenderFact | null = null;
+    let cashAttempt: PaymentAttemptView | null = null;
+    const now = this.host.now().toISOString();
+    if (rest > 0) {
+      if (!tender) throw new BridgeError(400, 'VALIDATION', 'A sale that owes money needs its payment');
+      if (tender.method === 'wallet') this.refuse('wallet');
+      this.refuseSharedPressKey(tender.actionId, hold.actionId);
+      if (tender.kind !== 'cash') {
+        // The box closes a sale in one go with one payment beside the credit:
+        // the rest is cash on this lane, as it defaults online (OD-W3).
+        this.refuse('split', { amountSatang: tender.amountSatang, outstandingSatang: rest, creditSatang: hold.amountSatang });
+      }
+      if (tender.amountSatang !== rest) {
+        this.refuse('split', { amountSatang: tender.amountSatang, outstandingSatang: rest, creditSatang: hold.amountSatang });
+      }
+      const handed = tender.tenderedSatang ?? rest;
+      if (handed < rest) {
+        throw new BridgeError(
+          400,
+          'VALIDATION',
+          'The cash taken is less than the amount being settled, so this would leave negative change',
+        );
+      }
+      fact = {
+        actionId: tender.actionId,
+        methodCode: tender.method,
+        kind: 'cash',
+        provider: 'manual',
+        amountSatang: rest,
+        tenderedSatang: handed,
+        changeSatang: handed - rest,
+        paidAt: now,
+      };
+      cashAttempt = this.attemptView({
+        attemptId: uuidv7(),
+        saleId: body.saleId,
+        kind: 'cash',
+        provider: 'manual',
+        status: 'approved',
+        amountSatang: rest,
+        tenderedSatang: handed,
+        changeSatang: handed - rest,
+        actionId: tender.actionId,
+        paidAt: now,
+        createdAt: now,
+      });
+    } else if (tender && tender.amountSatang > 0) {
+      throw new BridgeError(400, 'VALIDATION', 'The credit covers this order, so there is no payment to take');
+    }
+    const memoWallet: NonNullable<SaleMemo['wallet']> = {
+      spend: this.walletSpendView(hold),
+      attempt: this.walletAttemptView(hold),
+    };
+    return this.closeSale(station, caller, body, sale, fact ? [fact] : [], cashAttempt, {
+      // The figures `countCredit` settles are only known inside the
+      // transaction; the memo is read back from the log on a retry, so the
+      // closed hold carries them too.
+      alongside: async (tx, recorded) => {
+        if (fresh) await this.countCredit(tx, hold);
+        const closed: WalletHold = { ...hold, closed: true };
+        await tx.writeRuntimeValue(this.host.boxId, walletHoldKey(hold.saleId), JSON.stringify(closed), recorded.at);
+        memoWallet.spend = this.walletSpendView(hold);
+        return [this.walletSpentFact(caller, hold, recorded.receipt, recorded.at)];
+      },
+      wallet: memoWallet,
+    });
+  }
+
+  /** A sale whose credit is written ahead and whose rest is still owed. */
+  private async holdAnswer(
+    station: BridgeStation,
+    sale: PreparedSale,
+    hold: WalletHold,
+    replay: boolean,
+  ): Promise<BridgeWalletSpendAnswer> {
+    const depth = await this.host.store
+      .depth(this.host.boxId)
+      .catch(() => ({ queued: 0, oldestQueuedAt: null }));
+    return {
+      sale: {
+        ...this.saleViewOf(station, hold.saleId, sale, hold.at),
+        status: 'tendering',
+        receiptNumber: null,
+        receiptSeries: null,
+        receiptSeq: null,
+      },
+      finalised: false,
+      outstandingSatang: Math.max(0, sale.gross - hold.amountSatang),
+      attempt: null,
+      replay,
+      printing: { jobs: [], notes: [] },
+      drawer: 'not_asked',
+      outboxDepth: depth.queued,
+      walletSpend: this.walletSpendView(hold),
+      walletAttempt: this.walletAttemptView(hold),
+    };
+  }
+
+  /**
+   * `payment.wallet` — "use credit" on the box lane (plan §2.6). The sale is
+   * priced again from the box's own catalogue; the scanned key names a wallet
+   * in the box's snapshot; the credit is min(what it holds here, what the cap
+   * allows on this box today, what the order owes) — or an exact figure,
+   * refused above any of those, never floored. Then, written ahead in a store
+   * transaction exactly as an offline cash sale is:
+   *
+   *   - credit that covers the order (or a press that carries the cash for the
+   *     rest) closes the sale at once: number, bands, paper, `sale.finalised`
+   *     and `wallet.spent`, and the wallet's day on this box, all or none;
+   *   - credit that does not is counted and held for the sale; the press that
+   *     takes the rest in cash (`sale.finalise`) closes it.
+   *
+   * The same press again — a till retrying through a lost answer, a restart in
+   * between — is answered from the box's log or the hold, and nothing is
+   * counted twice.
+   */
+  private async spendWallet(
+    station: BridgeStation,
+    caller: BridgeTillCaller,
+    payload: Record<string, unknown>,
+  ): Promise<BridgeWalletSpendAnswer> {
+    this.require(caller, 'pos:sale:create');
+    this.require(caller, 'pos:sale:update');
+    this.require(caller, 'pos:wallet:spend');
+    const body: BridgeWalletSpend = this.parse(BridgeWalletSpendSchema, payload);
+    this.refuseSharedPressKey(body.actionId, body.wallet.actionId);
+    if (body.tender) this.refuseSharedPressKey(body.tender.actionId, body.wallet.actionId);
+    const queue = this.saleQueue();
+    const answer = await this.holdingSale<BridgeSaleAnswer>(
+      body.saleId,
+      async () => {
+        const again = await this.answerAgain(queue, body.saleId);
+        if (again) return again;
+        throw paymentInFlight();
+      },
+      async () => {
+        const again = await this.answerAgain(queue, body.saleId);
+        if (again) return again;
+        // Money already moving on the counter's terminal for this sale comes first.
+        const held = await this.readHeld(body.saleId);
+        if (held && (SETTLED.has(held.status) || UNRESOLVED.has(held.status))) throw paymentInFlight();
+        const sale = await this.prepareSale(station, caller, body);
+        const tender = body.tender ?? null;
+        const earlier = await this.readWalletHold(body.saleId);
+        if (earlier && !earlier.closed) {
+          // Credit already taken for this sale on this box: said again, never
+          // counted again. Cash for the rest in this press closes it.
+          if (tender && tender.amountSatang > 0) {
+            return this.closeWithCredit(station, caller, body, sale, earlier, tender, false);
+          }
+          return this.holdAnswer(station, sale, earlier, true);
+        }
+        if (sale.gross <= 0) {
+          throw new BridgeError(400, 'VALIDATION', 'This order owes nothing, so there is no credit to take');
+        }
+        const channel = sale.cart.channel;
+        if (channel !== 'fnb' && channel !== 'shop') {
+          throw new BridgeError(
+            409,
+            'WALLET_NOT_HERE',
+            'Credit pays for food and shop orders — take this sale in cash, card or QR.',
+            { salesChannel: channel ?? null },
+          );
+        }
+        const at = await this.walletAt(station, body.wallet.key);
+        const decision = decideOfflineSpend(at.allowance, {
+          ...(body.wallet.useCredit !== undefined ? { useCredit: body.wallet.useCredit } : {}),
+          ...(body.wallet.amountSatang !== undefined ? { amountSatang: body.wallet.amountSatang } : {}),
+          outstandingSatang: sale.gross,
+        });
+        if ('refusal' in decision) this.walletRefusal(decision.refusal, at, body.wallet.amountSatang);
+        const now = this.host.now().toISOString();
+        const hold: WalletHold = {
+          saleId: body.saleId,
+          stationId: station.id,
+          accountId: caller.accountId,
+          actionId: body.wallet.actionId,
+          attemptId: uuidv7(),
+          spendId: uuidv7(),
+          walletId: at.wallet.id,
+          amountSatang: decision.amountSatang,
+          source: channel === 'shop' ? 'merch_order' : 'fnb_order',
+          businessDate: at.businessDate,
+          snapshotBalanceSatang: at.wallet.balanceSatang,
+          reflectedSatang: at.reflectedSatang,
+          capSatang: at.capSatang,
+          spentTodaySatang: at.spentTodaySatang + decision.amountSatang,
+          spentOnBoxSatang: at.spentOnBoxSatang + decision.amountSatang,
+          balanceAfterSatang: at.allowance.balanceLeftSatang - decision.amountSatang,
+          capLeftSatang: at.allowance.capLeftSatang - decision.amountSatang,
+          snapshotVersion: at.snapshot.version || null,
+          snapshotAt: at.snapshotAt,
+          at: now,
+        };
+        if (hold.amountSatang === sale.gross || (tender && tender.amountSatang > 0)) {
+          return this.closeWithCredit(station, caller, body, sale, hold, tender, true);
+        }
+        // The rest is owed to the next press: the credit is counted and held
+        // for this sale, on disk, before the till is told.
+        await this.host.store.atomically(async (tx) => {
+          await this.countCredit(tx, hold);
+          await tx.writeRuntimeValue(this.host.boxId, walletHoldKey(hold.saleId), JSON.stringify(hold), now);
+        });
+        this.log.info(
+          { saleId: hold.saleId, walletId: hold.walletId, amountSatang: hold.amountSatang, capLeftSatang: hold.capLeftSatang },
+          'credit taken offline under the cap; the rest of the order is owed',
+        );
+        return this.holdAnswer(station, sale, hold, false);
+      },
+    );
+    return answer as BridgeWalletSpendAnswer;
+  }
 
   /**
    * Run `fn` with this sale's money in this call's hands, or `busy` when
@@ -2888,6 +3534,16 @@ export class StationBridge {
         if (body.tender.method === 'wallet') this.refuse('wallet');
         const sale = await this.prepareSale(station, caller, body);
         if (earlier && UNRESOLVED.has(earlier.status)) return this.openAnswer(station, earlier, sale);
+        // S2-14a round 4: credit taken offline for this sale is closed with cash
+        // on this lane — one payment beside the credit, as the box closes a sale.
+        const credit = await this.readWalletHold(body.saleId);
+        if (credit && !credit.closed) {
+          this.refuse('split', {
+            amountSatang: body.tender.amountSatang,
+            outstandingSatang: sale.gross - credit.amountSatang,
+            creditSatang: credit.amountSatang,
+          });
+        }
         if (sale.gross === 0) {
           throw new BridgeError(
             400,

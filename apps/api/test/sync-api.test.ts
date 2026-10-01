@@ -1556,6 +1556,8 @@ describe('the cache bundle', () => {
       'receipt_series',
       'staff',
       'station_config',
+      // S2-14a round 4: wallet balance snapshots and the offline cap.
+      'wallets',
     ]);
 
     const [first] = bundle.scopes.members!.items as Array<Record<string, unknown>>;
@@ -1868,6 +1870,8 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     'receipt_series',
     'staff',
     'station_config',
+    // S2-14a round 4: wallet balance snapshots and the offline cap.
+    'wallets',
   ];
   const BOOTH_SCOPES = ['booth', 'deny_list', 'staff'];
   const MALI = { phone: '+66900004121', pin: '2580' };

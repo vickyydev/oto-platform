@@ -299,6 +299,9 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
       // S2-13 round 4: a till's box reads its check-in board on its own tick
       // too (volatile, as the mark is) — and writes it only when it moved.
       '/box/v1/cache?schemaVersion=1&scopes=checkin',
+      // S2-14a round 4: and its wallet balance snapshots, written only when
+      // they moved (or the copy is old enough to need confirming).
+      '/box/v1/cache?schemaVersion=1&scopes=wallets',
     ]);
 
     const staffAfter = await freshStore().readBundle(boxId, 'staff');

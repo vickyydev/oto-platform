@@ -10,6 +10,7 @@ import {
   type BoothStationContext,
 } from './booth';
 import { planCacheApply, type CacheFaultReason } from './cache-apply';
+import { WALLET_SNAPSHOT_REWRITE_AFTER_MS } from './wallet-lane';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
 import { createOutbox, type Outbox } from './outbox';
@@ -573,6 +574,8 @@ export interface BoxAgent {
   uploadPhotos(): Promise<UploadTick>;
   /** S2-13 round 4 — pull the `checkin` scope on its own (it is volatile). Also run on the cache tick. */
   syncCheckin(): Promise<boolean>;
+  /** S2-14a round 4 — pull the `wallets` scope (balance snapshots + the cap) on its own. Also run on the cache tick. */
+  syncWallets(): Promise<boolean>;
   /**
    * Seals facts with this box's signing key, or null before registration.
    *
@@ -2524,6 +2527,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     await pullCheckinScope(boxId).catch((err: unknown) => {
       note('warn', 'the check-in copy could not be refreshed', { err: String(err) });
     });
+    // S2-14a round 4: the wallet balance snapshots move with every grant and
+    // spend, so they are read on their own every tick as the board is.
+    await pullWalletScope(boxId).catch((err: unknown) => {
+      note('warn', 'the wallet balance copy could not be refreshed', { err: String(err) });
+    });
     await photoUploader?.tick().catch((err: unknown) => {
       note('warn', 'the photo upload pass failed', { err: String(err) });
     });
@@ -2576,6 +2584,65 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     await bridge?.pruneCheckinOverlay().catch((err: unknown) => {
       note('warn', 'the check-in overlay could not be pruned after a pull', { err: String(err) });
     });
+    return true;
+  }
+
+  /**
+   * The `wallets` scope, read on its own (S2-14a round 4, plan §2.6): the
+   * branch's spendable wallets as balance SNAPSHOTS with the offline cap.
+   * Volatile, as `checkin` is — every grant and spend moves it — and written
+   * when it moved, or when the copy held is older than
+   * `WALLET_SNAPSHOT_REWRITE_AFTER_MS` even though it did not: the copy's
+   * `appliedAt` is what a counter judges a snapshot's age by
+   * (`WALLET_SNAPSHOT_REFUSE_AFTER_S`). Bounded by the platform
+   * (`WALLET_SNAPSHOT_LIMIT`).
+   */
+  async function pullWalletScope(boxId: string): Promise<boolean> {
+    if (!store || !credential || state.offline) return false;
+    // Only a counter spends credit: a booth or a gate box is not sent balances.
+    if (!bundle?.stations.some((s) => s.kind === 'till')) return false;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=wallets`, { method: 'GET' });
+    if (status === 401) {
+      await reregisterAfterRefusal('cache');
+      return false;
+    }
+    if (status !== 200 || !body) return false;
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const held = plan.apply.includes('wallets') ? body.scopes.wallets : undefined;
+    if (!held) return false;
+    const versionOf = (items: unknown): string | null => {
+      const first = Array.isArray(items) ? (items[0] as { version?: unknown } | undefined) : undefined;
+      return typeof first?.version === 'string' ? first.version : null;
+    };
+    const now = clock();
+    const before = await store.readBundle(boxId, 'wallets').catch(() => null);
+    const incoming = versionOf(held.items);
+    // The same balances as the copy held, confirmed recently enough: nothing
+    // is rewritten (a Pi's card is spared a write a minute). Past the refresh
+    // age the same copy is written again, so its `appliedAt` — what a counter
+    // judges the snapshot's age by — never trails the platform by more than
+    // that.
+    if (
+      before &&
+      incoming &&
+      versionOf((before.payload as { items?: unknown }).items) === incoming &&
+      now - Date.parse(before.appliedAt) < WALLET_SNAPSHOT_REWRITE_AFTER_MS
+    ) {
+      return false;
+    }
+    await store.writeBundle(boxId, {
+      scope: 'wallets',
+      schemaVersion: body.schemaVersion,
+      cursorSeq: cacheCursorSeq,
+      payload: { items: held.items },
+      appliedAt: new Date(now).toISOString(),
+    });
+    cacheScopesHeld.add('wallets');
     return true;
   }
 
@@ -4134,6 +4201,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     uploadPhotos: async () =>
       photoUploader ? photoUploader.tick() : { linked: 0, waiting: 0, failed: 0, purged: 0 },
     syncCheckin: async () => (state.boxId ? pullCheckinScope(state.boxId) : false),
+    syncWallets: async () => (state.boxId ? pullWalletScope(state.boxId) : false),
     sealer: () => {
       const key = syncPrivateKeyPem;
       const id = state.boxId;

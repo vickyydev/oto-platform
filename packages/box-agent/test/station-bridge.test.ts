@@ -597,7 +597,9 @@ test('what the capability list refuses on the box lane says why; money with nowh
   // Plan §2.8's refusals, in its reasons (`BOX_LANE_REFUSALS`).
   await refused('sale.refund', 'BOX_LANE_REFUND_REFUSED');
   await refused('sale.void', 'BOX_LANE_REFUND_REFUSED');
-  await refused('payment.wallet', 'BOX_LANE_WALLET_REFUSED');
+  // S2-14a round 4: credit IS spent on the box lane now, under the offline cap
+  // (`offline-wallet.test.ts`) — and like closing a sale it needs its permission.
+  await refused('payment.wallet', 'FORBIDDEN', 403);
   await refused('payment.voucher', 'VOUCHER_NEEDS_INTERNET');
   await refused('payment.2c2p', 'BOX_LANE_2C2P_QR_REFUSED');
   // S2-12 round 5: a booking is redeemed on the box lane from the box's own

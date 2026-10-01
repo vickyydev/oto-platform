@@ -84,7 +84,7 @@ const CAPABILITIES: Capability[] = [
   { operation: 'PAX (Digio) QR', offline: 'Works, flagged' },
   { operation: '2C2P QR', offline: 'Refused' },
   { operation: 'Gift or prize voucher', offline: 'Refused' },
-  { operation: 'Wallet spend', offline: 'Refused' },
+  { operation: 'Wallet spend', offline: 'Works, bounded' },
   { operation: 'Online booking redemption', offline: 'Refused' },
   { operation: 'Refund, void', offline: 'Refused; a "refund requested" note queues' },
   { operation: 'Receipt and bands for an offline sale', offline: 'Works' },
@@ -274,14 +274,19 @@ describe('what is refused offline is refused in the platform’s own words', () 
     expect(await ctx.db.select().from(voucherRedemption)).toHaveLength(heldBefore.length);
   });
 
-  it(`Wallet spend — ${byOperation('Wallet spend').offline}: no route spends a wallet, online or offline (OD-14)`, () => {
-    // A tripwire rather than a request: there is nothing to refuse yet. The day
-    // the wallet ticket adds a spend, this fails until its capped offline row
-    // is written here and in §17.
-    const spends = ctx.app.routeRegistry
-      .filter((r) => r.method !== 'GET' && r.method !== 'HEAD' && /wallet/i.test(r.url))
-      .map((r) => `${r.method} ${r.url}`);
-    expect(spends).toEqual([]);
+  it(`Wallet spend — ${byOperation('Wallet spend').offline.toLowerCase()}: the platform's own spend refuses offline; the box spends under the cap (OD-14)`, async () => {
+    // S2-14a round 4 wrote the capped offline row this tripwire waited for.
+    // Credit online is the platform's (`POST /sales/:id/finalise` with the
+    // scanned key): with the station offline it is refused before anything
+    // is spent. On the box lane it is spent under the ฿300 cap — proved in
+    // `offline-wallet.test.ts`, two boxes and the overdraft included.
+    const saleId = await rungUp();
+    await offline(true);
+    expectRefusedOffline(
+      await call('POST', `/sales/${saleId}/finalise`, { wallet: { key: 'QR-NOTSPENTOFFLINE0', useCredit: true } }),
+    );
+    const attempts = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    expect(attempts).toEqual([]);
   });
 
   it(`Online booking redemption — ${byOperation('Online booking redemption').offline}: refused before the booking is read`, async () => {
@@ -740,7 +745,19 @@ describe('what works offline works through the box (plan §4, Rounds 3 and 4)', 
     };
     await refusedAs('payment.2c2p', {}, BOX_LANE_REFUSALS.qr2c2p.code);
     await refusedAs('payment.voucher', {}, BOX_LANE_REFUSALS.voucher.code);
-    await refusedAs('payment.wallet', {}, BOX_LANE_REFUSALS.wallet.code);
+    // S2-14a round 4: credit is spent on the box under the cap by scanning the
+    // key (`payment.wallet`, `offline-wallet.test.ts`); a tender NAMED
+    // `wallet` is still refused in the list's own reason.
+    await refusedAs(
+      'sale.finalise',
+      {
+        saleId: newId(),
+        actionId: 'manual-wallet-tender',
+        cart: {},
+        tender: { actionId: 'manual-wallet-1', method: 'wallet', kind: 'other', amountSatang: 100 },
+      },
+      BOX_LANE_REFUSALS.wallet.code,
+    );
     // S2-12 round 5: a booking now rides the bridge, redeemed from the box's
     // own copy; one the box holds no copy of is refused in the counter's words.
     const unknownBooking = await call(

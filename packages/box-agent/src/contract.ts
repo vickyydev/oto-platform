@@ -171,6 +171,7 @@ export const SYNC_ANOMALY_KINDS = [
   'late_arrival',
   'receipt_collision',
   'revoked_actor',
+  'wallet_overdraft',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 
@@ -188,6 +189,8 @@ export const SYNC_CHANGE_SCOPES = [
   'booth',
   /** S2-13 round 4 — in-park children, pickup lists, registrations awaiting check-in. */
   'checkin',
+  /** S2-14a round 4 — wallet balance snapshots and the offline cap. */
+  'wallets',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

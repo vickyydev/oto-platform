@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TaxConfigSchema } from './catalog-shapes';
+import { formatTHB } from './money';
 import { PAYMENT_METHOD_KINDS, type PaymentAttemptView } from './payments';
 import { SALE_REPRINT_KINDS } from './print';
 import { TIER_PROOF_TYPES } from './tier-proof';
@@ -353,7 +354,10 @@ export const BOX_LANE_UNREACHABLE = {
  *
  *   - 2C2P QR — minting is a server call;
  *   - gift or prize voucher — single use across counters is server-validated;
- *   - wallet spend — refused until the wallet ticket adds the capped row (OD-14);
+ *   - wallet spend as a TENDER picked off the grid — still refused. Since
+ *     S2-14a round 4 credit IS spent on the box lane, by scanning the key
+ *     (`BRIDGE_WALLET_INTENTS.spend`), under the offline cap (OD-14); only a
+ *     till naming `wallet` as its tender method meets this sentence;
  *   - online booking redemption — kept for a box too old to redeem one; since
  *     S2-12 round 5 a box redeems from its own copy (`BRIDGE_BOOKING_INTENTS`);
  *   - refund, void — online only, with `pos:refund:approve`; a "refund
@@ -886,6 +890,218 @@ export interface BridgeBookingRedeemAnswer {
   replay: boolean;
   outboxDepth: number;
 }
+
+// --- Spending a wallet on the box lane, under the cap (S2-14a round 4) -----------------------
+//
+// Plan `docs/progress/plans/wallet/PLAN.md` §2.6. The box's old "no wallet
+// balances" rule is deliberately widened to SNAPSHOTS and the policy's cap: the
+// `wallets` cache scope carries each spendable wallet's balance as the platform
+// last saw it, and the branch's offline cap (`pos.wallet_policy`, ฿300 seeded;
+// a station's own `offline_wallet_cap_satang` where one is set). A counter with
+// the link down takes credit up to
+//
+//     min(snapshot balance less this box's spends the snapshot does not yet
+//         reflect — on ANY day, cap less this wallet's spends on THIS box today)
+//
+// written ahead in the store transaction exactly as an offline cash sale is,
+// with the local day counted per wallet for the cap and every day counted per
+// wallet for the snapshot. Above the cap it refuses in the counter's words —
+// "online only above ฿300 per day". An unknown key or a snapshot too old to
+// trust refuses honestly. The spend reaches the platform once, keyed by its
+// press (`WALLET_SPENT_FACT`). One that lands after the platform's day end
+// has already expired the credit it was taken from is filed as the spend it
+// was — the expiry's take put back first, by a keyed compensating entry — and
+// only a spend over what the wallet held at its own instant (two boxes
+// spending one wallet in one outage) is filed AND raised as a
+// `wallet_overdraft` anomaly with a critical alert.
+
+/** The intents a till sends its box for credit on the box lane. */
+export const BRIDGE_WALLET_INTENTS = {
+  /** What a scanned key's wallet can spend at this counter right now. */
+  lookup: 'wallet.lookup',
+  /** "Use credit" on a sale the box is ringing up — the box lane's half of the platform's wallet tender. */
+  spend: 'payment.wallet',
+} as const;
+
+/** The fact a box queues for each wallet spend it took (the sync handler's own name). */
+export const WALLET_SPENT_FACT = 'wallet.spent';
+
+/**
+ * How old a balance snapshot may be before a counter stops spending from it.
+ * The scope is refreshed on every agent tick, so a day without one means the
+ * box has been cut off since before the park opened — and same-day credit
+ * from then has expired anyway.
+ */
+export const WALLET_SNAPSHOT_REFUSE_AFTER_S = 24 * 60 * 60;
+
+/** The most wallets one snapshot carries: the branch's live ones, newest first. */
+export const WALLET_SNAPSHOT_LIMIT = 5_000;
+
+/**
+ * A wallet key travels to a box as a DIGEST, never as its value: a voucher QR
+ * is a bearer credential and a band code a gate credential, and a stolen box
+ * must not be a list of either. Both ends compute
+ * `sha256hex(WALLET_KEY_DIGEST_PREFIX + kind + ':' + value)` over the value as
+ * the lookup normalises it — `q` a voucher QR upper-cased, `b` a band's full
+ * code upper-cased, `s` a band's short code (`T1-7KMQ4X`), `c` a child's id
+ * lower-cased. A phone key is never shipped: nothing scans a phone.
+ */
+export const WALLET_KEY_DIGEST_PREFIX = 'oto-wallet-key:v1:';
+export const WALLET_KEY_DIGEST_KINDS = ['q', 'b', 's', 'c'] as const;
+export type WalletKeyDigestKind = (typeof WALLET_KEY_DIGEST_KINDS)[number];
+
+/** One spendable wallet as the `wallets` scope carries it. */
+export interface WalletSnapshotEntry {
+  id: string;
+  status: 'active' | 'expired';
+  /** The balance the platform held when the snapshot was built. */
+  balanceSatang: number;
+  /** When its credit stops being spendable, by policy; null for never. */
+  expiresAt: string | null;
+  /**
+   * What THIS box's offline spends against it came to, ON ANY DAY, as the
+   * platform has filed them — so the box subtracts only what the balance does
+   * not already reflect. All days, not the snapshot's: the box's own all-days
+   * count is compared with it, and a day's turn forgets nothing.
+   */
+  boxSpentSatang: number;
+  keys: Array<{ k: WalletKeyDigestKind; d: string }>;
+}
+
+/** The `wallets` scope's one item. */
+export interface WalletSnapshotItem {
+  version: string;
+  generatedAt: string;
+  branchId: string;
+  /** The branch's trading day the snapshot was built on (`boxSpentSatang` is all days). */
+  businessDate: string;
+  /** The branch policy's offline cap per wallet per day; a station's own override rides `station_config`. */
+  capSatang: number;
+  /** True when the branch has more live wallets than `WALLET_SNAPSHOT_LIMIT`: the rest refuse as unknown. */
+  truncated: boolean;
+  wallets: WalletSnapshotEntry[];
+}
+
+const WalletInstructionSchema = z
+  .object({
+    /** The scanned or typed key: a band's code or short code, a voucher's `QR-…`, a child's id. */
+    key: z.string().trim().min(1).max(200),
+    /** The credit press — the wallet tender's action id on the platform. */
+    actionId: z.string().min(1).max(200),
+    /** "Use credit": take what the wallet can spend here, up to what the order owes. */
+    useCredit: z.boolean().optional(),
+    /** An exact figure instead — refused, never floored, above what can be spent here. */
+    amountSatang: z.number().int().positive().max(100_000_000).optional(),
+  })
+  .refine((w) => w.useCredit === true || w.amountSatang !== undefined, {
+    message: 'Say how much credit to use',
+    path: ['useCredit'],
+  });
+
+/** `wallet.lookup`: what a key's wallet can spend at this counter while it is offline. */
+export const BridgeWalletLookupSchema = z.object({
+  key: z.string().trim().min(1).max(200),
+});
+
+/**
+ * `payment.wallet` — credit first, on the sale the till is ringing up on its
+ * box. With `tender`, the cash for the rest is taken in the same press; without
+ * it, the credit is written ahead and the rest is owed to the next press
+ * (`sale.finalise` with the remainder in cash).
+ */
+export const BridgeWalletSpendSchema = BridgeSaleBaseSchema.extend({
+  wallet: WalletInstructionSchema,
+  tender: BridgeTenderSchema.nullish(),
+});
+export type BridgeWalletSpend = z.infer<typeof BridgeWalletSpendSchema>;
+
+/** What a box-lane wallet read answers. */
+export interface BridgeWalletBalance {
+  walletId: string;
+  /** What the snapshot held, less this box's spends it does not yet reflect. */
+  balanceSatang: number;
+  /** What this wallet may still spend on this box today under the cap. */
+  capLeftSatang: number;
+  capSatang: number;
+  /** min of the two: what "use credit" would take at most. */
+  spendableSatang: number;
+  snapshotAt: string | null;
+  source: 'snapshot';
+}
+
+/** The credit a box-lane press took, as the online answer's `walletSpend` reads it. */
+export interface BridgeWalletSpendView {
+  walletId: string;
+  amountSatang: number;
+  /** The balance the box believes is left: the snapshot less this box's spends. */
+  balanceAfterSatang: number;
+  capLeftSatang: number;
+  offline: true;
+}
+
+/** `payment.wallet`'s answer: the sale's, with the credit beside it as the platform's wallet answer carries it. */
+export interface BridgeWalletSpendAnswer extends BridgeSaleAnswer {
+  walletSpend: BridgeWalletSpendView;
+  walletAttempt: PaymentAttemptView;
+}
+
+/**
+ * THE `wallet.spent` FACT. `actionId` is the credit press — the wallet
+ * tender's action id on the platform and the replay key of the entry it
+ * writes — and `spendId` is minted on the box. It is queued in the same store
+ * transaction as the `sale.finalised` it pays for, right behind it, so the
+ * platform files the sale first and this closes it.
+ */
+export const OfflineWalletSpentSchema = z.object({
+  spendId: Uuid,
+  walletId: Uuid,
+  saleId: Uuid,
+  actionId: z.string().min(1).max(200),
+  amountSatang: z.number().int().positive().max(100_000_000),
+  source: z.enum(['fnb_order', 'merch_order']),
+  /** The box's trading day the spend was counted against. */
+  businessDate: IsoDate,
+  /** The snapshot balance the box spent from, the cap it held, and this wallet's day on this box including this spend. */
+  snapshotBalanceSatang: z.number().int().min(0),
+  capSatang: z.number().int().min(0),
+  spentTodaySatang: z.number().int().min(0),
+  /** This wallet's spends on this box across all days including this one; absent from a hold written before the all-days count. */
+  spentOnBoxSatang: z.number().int().min(0).nullish(),
+  snapshotVersion: z.string().max(64).nullish(),
+  snapshotAt: z.string().max(40).nullish(),
+  /** The number the box printed for the sale, so the platform files it there when this spend closes it (OD-4). */
+  receipt: z
+    .object({ series: z.string().min(1).max(12), seq: z.number().int().min(1), number: z.string().min(1).max(40) })
+    .nullish(),
+  staffTokenJti: Uuid.nullish(),
+  offlineFresh: OfflineFresh,
+});
+export type OfflineWalletSpent = z.infer<typeof OfflineWalletSpentSchema>;
+
+/** The cap refusal, in the counter's words. */
+export function walletOfflineCapMessage(capSatang: number): string {
+  return `Credit is online only above ${formatTHB(capSatang)} per day while this counter is offline — take the rest in cash or card.`;
+}
+
+/** The box-lane refusals of credit, in the counter's words. */
+export const BOX_WALLET_REFUSALS = {
+  cap: { code: 'WALLET_OFFLINE_CAP' },
+  unknown: {
+    code: 'WALLET_NOT_ON_BOX',
+    message:
+      'This counter is offline and has no copy of that wallet, so its credit cannot be used here — take the order in cash or card.',
+  },
+  stale: {
+    code: 'WALLET_SNAPSHOT_STALE',
+    message:
+      'This counter has not had wallet balances from the internet for over a day, so credit cannot be used offline — take the order in cash or card.',
+  },
+  noCounter: {
+    code: 'WALLET_OFFLINE_UNAVAILABLE',
+    message:
+      'This counter’s box cannot count credit while it is offline — take the order in cash or card.',
+  },
+} as const;
 
 // --- What the box priced from (OD-8) ---------------------------------------------------
 
