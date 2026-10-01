@@ -74,6 +74,7 @@ import {
   Download,
 } from "lucide-react";
 import { BeoTimelineEditor } from "./beo-timeline-editor";
+import { BeoPackageModule } from "./beo-package-module";
 import { BeoParentExperienceModule } from "./beo-parent-experience-module";
 import { ONE_OFF_EVENT_COLOR_OPTIONS } from "@/lib/event-types";
 import AssignmentSearchBar, { type AssignmentValue } from "@/components/core/AssignmentSearchBar";
@@ -1941,6 +1942,20 @@ export function BeoEventEditor({ eventId, onClose, onSave, readOnly = false }: B
               </div>
             </AccordionContent>
           </AccordionItem>
+
+          {beoData.eventType === "birthday" && (
+            <AccordionItem value="birthday-package" className="border rounded-lg border-l-4 border-l-indigo-500 bg-indigo-500/5">
+              <AccordionTrigger className="px-4 hover:no-underline" data-testid="accordion-birthday-package">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Gift className="h-4 w-4 shrink-0 text-indigo-500" />
+                  <span>Birthday Package</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <BeoPackageModule eventId={eventId} readOnly={readOnly} section="package" />
+              </AccordionContent>
+            </AccordionItem>
+          )}
 
           {/* 3. POS */}
           <AccordionItem value="party-details" className="border rounded-lg border-l-4 border-l-indigo-500 bg-indigo-500/5">

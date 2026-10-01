@@ -32,6 +32,7 @@ import {
   Download,
 } from "lucide-react";
 import type { BeoEventWithDetails, BeoTimelineItem } from "@shared/schema";
+import { BeoPackageModule } from "./beo-package-module";
 
 interface BeoViewOnlyProps {
   eventId: string;
@@ -243,6 +244,7 @@ function KitchenMenuBucket({
 export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
   const { data: beoData, isLoading } = useQuery<BeoEventWithDetails>({
     queryKey: ['/api/events', eventId, 'beo'],
+    refetchOnMount: "always",
     refetchInterval: (query) => {
       const kitchenPlan = query.state.data?.kitchenPlan as any;
       return kitchenPlan?.setMenuSelectionStatus && !kitchenPlan.setMenuSelectionStatus.isSubmitted ? 5000 : false;
@@ -488,6 +490,22 @@ export function BeoViewOnly({ eventId, showHeader = true }: BeoViewOnlyProps) {
       )}
 
       <Accordion type="multiple" defaultValue={[]} className="space-y-2">
+        {beoData.eventType === "birthday" && beoData.packageSnapshot && (
+          <AccordionItem value="birthday-package" className="border rounded-lg px-4 border-l-4 border-l-indigo-500 bg-indigo-500/5">
+            <AccordionTrigger className="hover:no-underline py-3" data-testid="accordion-birthday-package">
+              <div className="flex min-w-0 items-center gap-2">
+                <CreditCard className="h-4 w-4 shrink-0 text-indigo-500" />
+                <span className="font-medium">Birthday Package</span>
+                <Badge variant="secondary" className="max-w-48 truncate" data-testid="badge-birthday-package-name">
+                  {beoData.packageSnapshot.packageName}
+                </Badge>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4">
+              <BeoPackageModule eventId={eventId} readOnly section="package" />
+            </AccordionContent>
+          </AccordionItem>
+        )}
         {hasPartyHost && (
           <AccordionItem value="party-host" className="border rounded-lg px-4 border-l-4 border-l-pink-500 bg-pink-500/5">
             <AccordionTrigger className="hover:no-underline py-3" data-testid="accordion-party-host">
