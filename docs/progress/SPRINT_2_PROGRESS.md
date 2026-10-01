@@ -27,7 +27,23 @@ All five build rounds are landed, each with a Jira comment on SCRUM-212:
   whole-story closing audit (grant -> spend -> refund -> expire ->
   reactivate -> offline spend -> sync -> voucher load).
 
-Next: the staging walkthrough with named evidence, then Deployed.
+CI on round 5 (463d78e9) FAILED at lint: one unused variable in the new
+closing-audit test (no product code wrong). The failure went unnoticed
+for about an hour because the CI watcher matched titles, which GitHub
+truncates. Fixed in e9e22ec9 (lint-clean across every round-5 file; audit
+9/9); its CI run is in progress. The watcher now matches the exact commit
+SHA (scratchpad watch-ci.sh).
+
+Jira state: SCRUM-211 story In Progress (status comment posted);
+SCRUM-212 wallets In Progress until the staging walkthrough; SCRUM-213
+stock To Do, not started, next in the agreed order. Voucher rulings filed
+as SCRUM-482.
+
+Remaining for SCRUM-212: green CI on e9e22ec9, staging deploy, then the
+staging walkthrough with named, attached screenshots (grant on a ticket
+sale, F&B spend with the display, the last-baht refusal, refund back to the
+wallet, the Wallet view, an offline spend under the cap, a voucher
+top-up), then Deployed. After that, SCRUM-213 stock begins.
 
 Owner questions raised by the round-5 review (non-blocking, to file):
 should a wallet_credit or unlimited voucher need a manager to issue
