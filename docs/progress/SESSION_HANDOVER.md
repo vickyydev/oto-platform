@@ -214,6 +214,10 @@ offline-selling cluster (SCRUM-269 + 270 + 271 + 295), which also closes
 SCRUM-206/205; the other lane continues SCRUM-193 (its voucher-contract
 question answered on the ticket: the module counts as moved, nothing rebuilt).
 
+## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, birthday package UI staged and cleaned
+
+Live `30624922` passed a signed-in UI package apply and read-only Day-of snapshot. Real reviewed 820px editor and Day-of screenshots (Jira 11217/11218) show the saved package; BEO API returned it. Guarded exact-ID cleanup removed eight synthetic rows; final event/snapshot/selection/BEO/kitchen/package reads were `404` and menu absent. `BeoViewOnly` is unmounted; the actual read-only page uses `BeoDayOfView`. Land these docs/screenshots with same-turn In Progress comment, then finish Users UI and live route proof. Needs from the platform lane: POS views/read proof, tenant-bearing Directory, tenant-safe legacy columns/backfills, persisted leave approval, shift-group contract, job-run/Health/Failures and CI restore. SCRUM-193 remains In Progress.
+
 ## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, birthday package UI source landed
 
 Source `a35b6744` mounts saved birthday packages in the event editor and read-only BEO. Isolated build/targeted lint and local settled 820px sheet check passed; app TypeScript stayed at the inherited normalized baseline. Land the checkpoint with same-turn In Progress Jira comment, deploy exact source after final combined checks, then capture saved-package and settled BEO staging images with exact fixture cleanup. The Users/permissions and check-in guards are also pushed but await staging proof. Needs from the platform lane: POS `otoapp_v` views/read proof, tenant-bearing Directory identity, tenant-safe legacy columns/backfills, persisted leave approval, shift-group contract, durable advisory-locked `ops_run`/Health/Failures, and CI structure-only restore. SCRUM-193 remains In Progress.
