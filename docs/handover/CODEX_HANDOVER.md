@@ -5,6 +5,18 @@ in the same working folder, and for the owner setting it up. Everything below wa
 when it was written; verify the live state from `docs/progress/STATUS.md` and the newest
 STOP POINT block of `docs/progress/SESSION_HANDOVER.md` before acting.
 
+## Resume note - 1 October 2026 - SCRUM-193 break checkpoint
+
+The owner requested a break after saving all current OTO App work. SCRUM-193
+(S2-17b) is still In Progress; it has not met the platform and full-module
+release gates. OTO App staging is live at exact source `547532f2` with the
+offboarding, Fix and Timekeeping repairs and real screenshots; all disposable
+fixtures from those runs were removed. Read the newest SCRUM-193 STOP POINT in
+`docs/progress/SESSION_HANDOVER.md`, then the acceptance index and closure plan
+before resuming. Do not start the next ticket until the owner asks. The owner
+accepted display-only Ask OTO titles and confirmed that no Xero sandbox is
+connected yet. Keep the two repository lanes separate.
+
 ## Resume note - 30 September 2026 - stop and wait
 
 The break checkpoint is saved. Do not start new work until the next instruction.
