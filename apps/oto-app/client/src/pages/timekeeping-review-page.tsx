@@ -828,7 +828,9 @@ export default function TimekeepingReviewPage() {
                     <TableHead>Last OUT</TableHead>
                     <TableHead>Total Hours</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="sticky right-0 z-10 w-12 bg-card text-right lg:w-auto" aria-label="Actions">
+                      <span className="sr-only lg:not-sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -874,16 +876,16 @@ export default function TimekeepingReviewPage() {
                           }}
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="sticky right-0 z-10 w-12 bg-card text-right lg:w-auto">
                         {summary.identityType === "ADVISOR" ? (
-                          <Button variant="ghost" size="sm" onClick={() => openAdvisorDialog(summary)} data-testid={`button-correct-advisor-${summary.employeeId}`}>
-                            <Pencil className="h-4 w-4 mr-1" />
-                            Correct
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 lg:w-auto lg:px-3" aria-label={`Correct attendance for ${summary.employeeName}`} onClick={() => openAdvisorDialog(summary)} data-testid={`button-correct-advisor-${summary.employeeId}`}>
+                            <Pencil className="h-4 w-4 lg:mr-1" />
+                            <span className="sr-only lg:not-sr-only">Correct</span>
                           </Button>
                         ) : <Link href={`/timekeeping-review/employee/${summary.employeeId}`}>
-                          <Button variant="ghost" size="sm" data-testid={`button-view-${summary.employeeId}`}>
-                            View Details
-                            <ArrowRight className="h-4 w-4 ml-1" />
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 lg:w-auto lg:px-3" aria-label={`View details for ${summary.employeeName}`} data-testid={`button-view-${summary.employeeId}`}>
+                            <span className="sr-only lg:not-sr-only">View Details</span>
+                            <ArrowRight className="h-4 w-4 lg:ml-1" />
                           </Button>
                         </Link>}
                       </TableCell>
