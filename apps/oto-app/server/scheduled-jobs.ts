@@ -4,6 +4,7 @@ import { employeeRoleAvailability, employees, users, tenants, timeEvents, schedu
 import { serviceCheckins } from "./db/coreSchema";
 import { lt, eq, and, isNull, isNotNull, gte, lte, desc, sql } from "drizzle-orm";
 import { generateTaskInstances } from "./core/taskGeneration";
+import { ATTENTION_WRITES_READY } from "./attention-availability";
 
 const THAILAND_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -49,7 +50,7 @@ export async function runPresenceReconciliation(): Promise<ReconciliationSummary
     summary.stuckClockIns = stuckPresences.length;
 
     for (const presence of stuckPresences) {
-      await storage.createAttentionItem({
+      if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
         type: 'TIMEKEEPING_STUCK_CLOCK_IN',
         severity: 'high',
         employeeId: presence.employeeId,
@@ -159,7 +160,7 @@ export async function runMidnightTimekeepingAutoClockOut(): Promise<number> {
       });
 
       // Create attention item for the missing clock-out
-      await storage.createAttentionItem({
+      if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
         type: 'TIMEKEEPING_STUCK_CLOCK_IN',
         severity: 'medium',
         employeeId: row.employee_id,
@@ -295,6 +296,7 @@ export async function runMidnightTaskGeneration(): Promise<void> {
 }
 
 export async function runNoShowAlertCheck(): Promise<number> {
+  if (!ATTENTION_WRITES_READY) return 0;
   console.log("[NO_SHOW_CHECK] Checking for scheduled no-shows...");
   let alertsCreated = 0;
   let alertsResolved = 0;
@@ -444,9 +446,11 @@ export function startScheduledJobs(): void {
   
   setInterval(runPresenceReconciliation, 6 * 60 * 60 * 1000);
   
-  // Run no-show check every 10 minutes during operating hours
-  setInterval(runNoShowAlertCheck, 10 * 60 * 1000);
-  runNoShowAlertCheck(); // run immediately on startup too
+  // No-show Attention writes resume with tenant ownership and a locked job.
+  if (ATTENTION_WRITES_READY) {
+    setInterval(runNoShowAlertCheck, 10 * 60 * 1000);
+    runNoShowAlertCheck();
+  }
   
   console.log("[SCHEDULED_JOBS] Jobs scheduled: Task generation at 00:01, daily reconciliation at 03:00 Bangkok time, every 6 hours presence check, availability cleanup, every 10 minutes no-show check");
 }

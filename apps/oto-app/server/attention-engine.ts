@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import { ATTENTION_WRITES_READY } from "./attention-availability";
 import type { Employee, ContractInstance, AttentionType, SeverityLevel, InsertAttentionItem, EmployeeDocument, EmployeeLetter, EmployeeAsset, EmployeeRole } from "@shared/schema";
 import crypto from "crypto";
 import { getEmployeeDisplayName } from "./lib/employeeDisplayName";
@@ -951,6 +952,7 @@ export function getLastCalculatedAt(): Date | null {
 }
 
 export async function evaluateForEmployee(employeeId: string): Promise<{ created: number; updated: number; resolved: number }> {
+  if (!ATTENTION_WRITES_READY) return { created: 0, updated: 0, resolved: 0 };
   const employee = await storage.getEmployee(employeeId);
   if (!employee) {
     return { created: 0, updated: 0, resolved: 0 };
@@ -1003,6 +1005,7 @@ export async function evaluateForEmployee(employeeId: string): Promise<{ created
 }
 
 export async function evaluateForContract(contractId: string): Promise<{ created: number; updated: number; resolved: number }> {
+  if (!ATTENTION_WRITES_READY) return { created: 0, updated: 0, resolved: 0 };
   const contract = await storage.getContract(contractId);
   if (!contract || !contract.employeeId) {
     return { created: 0, updated: 0, resolved: 0 };
@@ -1047,6 +1050,7 @@ export async function evaluateForContract(contractId: string): Promise<{ created
 }
 
 export async function runFullReconciliation(): Promise<{ created: number; updated: number; resolved: number; errors: number }> {
+  if (!ATTENTION_WRITES_READY) throw new Error("Tenant-owned Attention reconciliation is unavailable");
   console.log("[AttentionEngine] Starting full reconciliation...");
   
   const employees = await storage.getEmployees();
@@ -1183,6 +1187,7 @@ async function getAttentionConfig(): Promise<Record<string, any>> {
 }
 
 export async function evaluateSchedulingAlerts(): Promise<{ created: number; updated: number; resolved: number }> {
+  if (!ATTENTION_WRITES_READY) throw new Error("Tenant-owned Attention scheduling alerts are unavailable");
   let created = 0;
   let updated = 0;
   let resolved = 0;

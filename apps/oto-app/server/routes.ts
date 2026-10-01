@@ -102,6 +102,7 @@ import { aiComplete, aiConfigured, FAST_AI_MODEL } from "./lib/anthropic";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import { evaluateForEmployee, evaluateForContract, evaluateRuleForEmployee, getRuleDefinitions } from "./attention-engine";
+import { ATTENTION_WRITES_READY } from "./attention-availability";
 import { getEmployeeDisplayName } from "./lib/employeeDisplayName";
 import { isSealedAccessPassword, openAccessPassword, sealAccessPassword } from "./lib/accessVault";
 import { faceRecognitionService, replaceFaceEnrollment } from "./face-recognition";
@@ -3347,7 +3348,7 @@ export async function registerRoutes(
             sql`${scheduleAssignments.shiftDate} > ${lastDayStr}`,
           ));
         if (conflictingAssignments.length > 0) {
-          await storage.createAttentionItem({
+          if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
             type: 'SHIFT_NEEDS_COVERAGE',
             severity: 'high',
             branchId: employee.branchId || undefined,
@@ -4187,8 +4188,8 @@ export async function registerRoutes(
 
       // Clear probation-related attention items for this employee
       try {
-        await storage.deleteAttentionItemsByType("PROBATION_REVIEW_DUE_SOON", employee.id);
-        await storage.deleteAttentionItemsByType("PROBATION_REVIEW_OVERDUE", employee.id);
+        if (ATTENTION_WRITES_READY) await storage.deleteAttentionItemsByType("PROBATION_REVIEW_DUE_SOON", employee.id);
+        if (ATTENTION_WRITES_READY) await storage.deleteAttentionItemsByType("PROBATION_REVIEW_OVERDUE", employee.id);
       } catch (attentionError) {
         console.error("Failed to clear probation attention items:", attentionError);
       }
@@ -4772,7 +4773,7 @@ export async function registerRoutes(
 
       // Create attention item for change without contract
       try {
-        await storage.createAttentionItem({
+        if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
           type: "CHANGE_NO_CONTRACT",
           severity: "medium",
           employeeId: employee.id,
@@ -4918,7 +4919,7 @@ export async function registerRoutes(
 
       // 7. Create attention item for contract update
       try {
-        await storage.createAttentionItem({
+        if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
           type: "CHANGE_NO_CONTRACT",
           severity: "medium",
           employeeId: employee.id,
@@ -5857,7 +5858,7 @@ export async function registerRoutes(
 
       // Clear any CHANGE_NO_CONTRACT attention items for this employee
       try {
-        await storage.deleteAttentionItemsByType("CHANGE_NO_CONTRACT", employee.id);
+        if (ATTENTION_WRITES_READY) await storage.deleteAttentionItemsByType("CHANGE_NO_CONTRACT", employee.id);
       } catch (attentionError) {
         console.error("Failed to clear attention items:", attentionError);
       }
@@ -7275,7 +7276,7 @@ OTO Company Limited`,
           sql`${scheduleAssignments.shiftDate} > ${lastDayStr}`,
         ));
       if (conflictingAssignments.length > 0) {
-        await storage.createAttentionItem({
+        if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
           type: 'SHIFT_NEEDS_COVERAGE',
           severity: 'high',
           branchId: employee.branchId || undefined,
@@ -9141,7 +9142,7 @@ OTO Company Limited`,
           }
         } catch (_) { /* non-fatal — use ID as fallback */ }
 
-        await storage.createAttentionItem({
+        if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
           branchId: employee.branchId || undefined,
           employeeId: employee.id,
           type: "DUPLICATE_FACE_ENROLLMENT",
@@ -21217,7 +21218,7 @@ OTO Company Limited`,
             .limit(1);
           const checklistName = template[0]?.name || 'Unknown checklist';
 
-          await storage.createAttentionItem({
+          if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
             type: 'CHECKLIST_AUDIT_FAIL',
             severity: 'high',
             branchId: currentRun.branchId || undefined,
@@ -21241,7 +21242,7 @@ OTO Company Limited`,
               .limit(1);
             const itemTitle2 = templateItem2[0]?.title || 'Unknown item';
 
-            await storage.createAttentionItem({
+            if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
               type: 'CHECKLIST_NOTE_FLAGGED',
               severity: 'medium',
               branchId: currentRun2.branchId || undefined,
