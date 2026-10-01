@@ -9,6 +9,7 @@ import {
   fileObject,
   guardian,
   nanny,
+  nannyShift,
   refund,
   registration,
   release,
@@ -67,6 +68,17 @@ beforeAll(async () => {
     .from(ticketPackage)
     .where(and(eq(ticketPackage.branchId, branchId), eq(ticketPackage.name, '2 Hours Play')));
   twoHoursId = pkg!.id;
+  // The seeded shifts follow the park's opening hours; this suite runs at any
+  // hour, so Aor — the nanny these cases assign — gets a shift covering now.
+  const [aor] = await ctx.db.select().from(nanny).where(and(eq(nanny.branchId, branchId), eq(nanny.name, 'Aor')));
+  await ctx.db.insert(nannyShift).values({
+    id: newId(),
+    operatorId: hkt!.operatorId,
+    nannyId: aor!.id,
+    branchId,
+    startsAt: new Date(Date.now() - 3_600_000),
+    endsAt: new Date(Date.now() + 3_600_000),
+  });
 }, 180_000);
 
 afterAll(async () => {

@@ -5,7 +5,7 @@ import {
   type SupervisionPolicy,
   type SupervisionRequirement,
 } from '@oto/shared';
-import type { CheckIn, ChildFoodProvision, ContactChannel } from '@/types';
+import type { CheckIn, ChildFoodProvision, ContactChannel, DropOffServiceType } from '@/types';
 import { api, idemKey } from './client';
 import { apiBranchIdForSlug } from './catalogBridge';
 
@@ -291,4 +291,265 @@ export const checkinApi = {
 
   leaveAsBooked: (body: { saleId: string; scheduledFor?: string; entries: { checkinId: string }[] }) =>
     api.post<{ saleId: string; children: ApiCheckin[] }>('/checkin/leave-as-booked', body, { idempotencyKey: idemKey() }),
+};
+
+// ================================================================================
+// S2-13 round 2 — THE BOARD (plan §2.3). The DropOff page, its cards, the
+// overstay banner and the admin panels call these where the prototype called
+// `getCheckIns`, `getNannyRoster`, `updateCheckIn`, `assignNanny`,
+// `checkInFamilyBooked`, the WhatsApp connection-check mutators and the
+// catalogue store's supervision setters.
+// ================================================================================
+
+export type ApiBoardTab = 'registered' | 'in_park' | 'out';
+
+export interface ApiContact {
+  status: 'pending' | 'confirmed' | 'failed';
+  sentAt: string | null;
+  confirmedAt: string | null;
+}
+
+export interface ApiBoardChild extends ApiCheckin {
+  nannyName: string | null;
+  checkedOutAt: string | null;
+}
+
+export interface ApiBoardFamily {
+  registrationId: string;
+  branchId: string;
+  memberId: string | null;
+  guardianName: string;
+  guardianPhone: string | null;
+  contactChannel: string;
+  consentRecordedAt: string | null;
+  source: string;
+  photoFileId: string | null;
+  createdAt: string;
+  contact: ApiContact | null;
+  tab: ApiBoardTab;
+  children: ApiBoardChild[];
+}
+
+export interface ApiBoard {
+  families: ApiBoardFamily[];
+  counts: Record<ApiBoardTab, number>;
+  unconfirmedFamilies: number;
+  nannies: ApiNanny[];
+  nannyRatioSoftMax: number;
+  prepaidFoodUnused: 'refund' | 'forfeit';
+}
+
+/** The editable fields of a stay (the prototype's `CheckInEdits`, mockApi.ts:5358). */
+export interface CheckInEdits {
+  childName: string;
+  childAge: number;
+  parentName: string;
+  contactMethod: ContactChannel;
+  phone: string;
+  serviceType: DropOffServiceType;
+  mayOrderFood: boolean;
+  foodRestrictions?: string;
+  allergiesMedical?: string;
+  bookedDurationMinutes?: number;
+  assignedNannyId?: string;
+}
+
+/** One change-log entry, read back from the audit rows (OD-C5). */
+export interface ApiChangeLogEntry {
+  id: string;
+  field: string;
+  oldValue: string;
+  newValue: string;
+  changedBy: string;
+  changedById: string | null;
+  changedAt: string;
+}
+
+/** A nanny as the pickers render her (the prototype's `NannyAvailability`). */
+export interface NannyChoice {
+  id: string;
+  name: string;
+  onShift: boolean;
+  /** Children she covers OTHER than the one being edited. */
+  load: number;
+  coveredNames: string[];
+  /** On shift = pickable; the server checks it again. */
+  available: boolean;
+}
+
+function removeOne(names: readonly string[], name: string): string[] {
+  const i = names.indexOf(name);
+  return i < 0 ? [...names] : [...names.slice(0, i), ...names.slice(i + 1)];
+}
+
+/**
+ * The roster for one child's picker (prototype `getNannyRoster(forCheckInId)`):
+ * the child being edited is not counted against her own nanny.
+ */
+export function nannyChoicesFor(
+  nannies: readonly ApiNanny[],
+  forCheckIn?: Pick<CheckIn, 'childName' | 'assignedNannyId' | 'status'> | null,
+): NannyChoice[] {
+  return nannies.map((n) => {
+    const own = !!forCheckIn && forCheckIn.assignedNannyId === n.id && forCheckIn.status !== 'out';
+    return {
+      id: n.id,
+      name: n.name,
+      onShift: n.onShift,
+      load: own ? Math.max(0, n.load - 1) : n.load,
+      coveredNames: own ? removeOne(n.coveredNames, forCheckIn.childName) : [...n.coveredNames],
+      available: n.onShift,
+    };
+  });
+}
+
+// --- Photos: a presigned read per file, once per page --------------------------------
+
+const photoUrls = new Map<string, Promise<string | null>>();
+
+/**
+ * The consent photo's short-lived URL. Every read is access-logged on the
+ * platform (R-94), so each file is asked for once per page and remembered,
+ * rather than on every ten-second redraw of the board.
+ */
+export function photoUrlOf(fileId: string): Promise<string | null> {
+  let found = photoUrls.get(fileId);
+  if (!found) {
+    found = api
+      .get<{ url: string }>(`/files/${fileId}/url`)
+      .then((r) => r.url)
+      .catch(() => {
+        photoUrls.delete(fileId);
+        return null;
+      });
+    photoUrls.set(fileId, found);
+  }
+  return found;
+}
+
+/**
+ * A board row in the prototype's `CheckIn` shape, which the cards, the modals
+ * and round 3's CheckOutModal render unchanged. The connection status is the
+ * registration's (one channel per guardian, every sibling the same, as the
+ * prototype stamped it).
+ */
+export function boardChildToCheckIn(c: ApiBoardChild, fam: ApiBoardFamily, photoUrl?: string | null): CheckIn {
+  const base = apiCheckinToCheckIn(c, fam, photoUrl ? { childPhotoUrl: photoUrl } : {});
+  return {
+    ...base,
+    confirmationsAccepted: !!fam.consentRecordedAt,
+    ...(c.photoFileId || fam.photoFileId ? { photoOnFile: true } : {}),
+    ...(c.nannyId ? { assignedNannyId: c.nannyId, ...(c.nannyName ? { assignedNannyName: c.nannyName } : {}) } : {}),
+    ...(c.checkedInAt ? { checkedInAt: c.checkedInAt } : {}),
+    ...(c.checkedOutAt ? { checkedOutAt: c.checkedOutAt } : {}),
+    ...(c.bookedMinutes != null ? { bookedDurationMinutes: c.bookedMinutes } : {}),
+    ...(fam.contact
+      ? {
+          waConnection: {
+            status: fam.contact.status,
+            ...(fam.contact.sentAt ? { sentAt: fam.contact.sentAt } : {}),
+            ...(fam.contact.confirmedAt ? { confirmedAt: fam.contact.confirmedAt } : {}),
+          },
+        }
+      : {}),
+  };
+}
+
+/** The edit modal's form as the PATCH body: only what differs from the stay as shown. */
+export function editsToPatch(before: CheckIn, edits: CheckInEdits): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (edits.childName !== before.childName) body.childName = edits.childName;
+  if (edits.childAge !== before.childAge) body.childAgeYears = edits.childAge;
+  if (edits.parentName !== before.parentName) body.guardianName = edits.parentName;
+  if (edits.contactMethod !== before.contactMethod) body.contactChannel = edits.contactMethod;
+  if (edits.phone !== before.phone) body.guardianPhone = edits.phone || null;
+  if (edits.serviceType !== before.serviceType) body.service = edits.serviceType;
+  if (edits.mayOrderFood !== before.mayOrderFood) body.mayOrderFood = edits.mayOrderFood;
+  if ((edits.foodRestrictions ?? '') !== (before.foodRestrictions ?? '')) body.foodRestrictions = edits.foodRestrictions || null;
+  if ((edits.allergiesMedical ?? '') !== (before.allergiesMedical ?? '')) body.allergies = edits.allergiesMedical || null;
+  const minutes = edits.bookedDurationMinutes && edits.bookedDurationMinutes > 0 ? edits.bookedDurationMinutes : null;
+  if (minutes !== (before.bookedDurationMinutes ?? null)) body.bookedMinutes = minutes;
+  if ((edits.assignedNannyId ?? null) !== (before.assignedNannyId ?? null)) body.nannyId = edits.assignedNannyId ?? null;
+  return body;
+}
+
+export interface PolicyBody {
+  bands: { id: string; label: string; minAge: number; maxAge: number | null; requirement: SupervisionRequirement }[];
+  siblingWaiver: { enabled: boolean; guardianMinAge: number; waivableRequirement: SupervisionRequirement; staffOnly: boolean };
+}
+
+export interface PricingBody {
+  oneTimeFee: { weekday: number; weekend: number };
+  nannyHourly: { weekday: number; weekend: number };
+  extraHour: { weekday: number; weekend: number };
+  fullDayHours: number;
+  nannyRatioSoftMax: number;
+  prepaidFoodUnused: 'refund' | 'forfeit';
+}
+
+export const boardApi = {
+  /** The park's board. `branchId` is the PLATFORM's id (`requirePlatformBranchId`). */
+  board: (branchId: string) =>
+    api.get<ApiBoard>(`/checkin/board?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`),
+
+  /** The Today screen's drop-off count. */
+  today: (branchId: string) =>
+    api.get<{ inPark: number; upcoming: number }>(
+      `/checkin/today?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+    ),
+
+  /** One audited edit; the answer carries how many fields changed and any ratio warning. */
+  edit: (checkinId: string, body: Record<string, unknown>) =>
+    api.patch<{ checkin: ApiBoardChild; changed: number; warnings: string[]; contact: ApiContact | null }>(
+      `/checkin/checkins/${checkinId}`,
+      body,
+      { idempotencyKey: idemKey() },
+    ),
+
+  history: (checkinId: string) => api.get<{ entries: ApiChangeLogEntry[] }>(`/checkin/checkins/${checkinId}/history`),
+
+  assignNanny: (checkinId: string, nannyId: string) =>
+    api.post<{ checkin: ApiBoardChild; warnings: string[] }>(
+      `/checkin/checkins/${checkinId}/nanny`,
+      { nannyId },
+      { idempotencyKey: idemKey() },
+    ),
+
+  /** Booked, already-paid children: no payment, no sale — bands on the sale they paid on. */
+  checkInBooked: (body: { entries: { checkinId: string; nannyId?: string | null }[]; consentAcknowledged?: boolean }) =>
+    api.post<{
+      saleIds: string[];
+      children: ApiCheckin[];
+      bands: { id: string; checkinId: string; childName: string }[];
+      printJobs: { id: string; kind: string; status: string }[];
+      notes: string[];
+    }>('/checkin/check-in-booked', body, { idempotencyKey: idemKey() }),
+
+  contactTest: (registrationId: string) =>
+    api.post<ApiContact>(`/checkin/registrations/${registrationId}/contact-test`, {}, { idempotencyKey: idemKey() }),
+
+  contactStatus: (registrationId: string, status: 'confirmed' | 'failed') =>
+    api.post<ApiContact>(
+      `/checkin/registrations/${registrationId}/contact-status`,
+      { status },
+      { idempotencyKey: idemKey() },
+    ),
+
+  savePolicy: (branchId: string, body: PolicyBody) =>
+    api.put<ApiSupervisionConfig>(
+      `/checkin/config/policy?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+      body,
+    ),
+
+  saveConfirmations: (branchId: string, items: { id: string; text: string; required: boolean; order: number }[]) =>
+    api.put<ApiSupervisionConfig>(
+      `/checkin/config/confirmations?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+      { items },
+    ),
+
+  savePricing: (branchId: string, body: PricingBody) =>
+    api.put<ApiSupervisionConfig>(
+      `/checkin/config/pricing?branchId=${encodeURIComponent(assertPlatformBranchId(branchId))}`,
+      body,
+    ),
 };

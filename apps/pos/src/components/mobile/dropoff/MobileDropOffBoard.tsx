@@ -898,6 +898,8 @@ export function MobileDropOffBoard() {
           open={!!assignFor}
           onOpenChange={(open) => !open && setAssignFor(null)}
           checkIn={assignFor}
+          nannies={getNannyRoster()}
+          softMax={getDropOffPricing().nannyRatioSoftMax}
           onAssign={handleAssign}
         />
       )}
@@ -907,6 +909,8 @@ export function MobileDropOffBoard() {
           open={!!editFor}
           onOpenChange={(open) => !open && setEditFor(null)}
           checkIn={editFor}
+          nannies={getNannyRoster()}
+          softMax={getDropOffPricing().nannyRatioSoftMax}
           onSave={handleSaveEdit}
         />
       )}

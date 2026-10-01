@@ -44,9 +44,15 @@ import type { Exec } from './tx';
  *     replaced band's successor is on the same sale and would double the
  *     child, and a revoked one was refunded.
  *
- *   DROP-OFF KIDS — counted from check-in to check-out once S2-13 lands. No
- *     check-in exists on the platform yet and no band carries one, so the
- *     number is zero today and not estimated.
+ *   DROP-OFF KIDS (S2-13 round 2, OD-A1) — a child left with the park counts
+ *     inside from their check-in to their check-out (`pos.checkin`
+ *     `checked_in_at` / `checked_out_at`), independent of any adult of any
+ *     sale: no adult of theirs is in the park to be counted. Their band, which
+ *     a check-in links, is kept OUT of the sale rule so a supervised child on
+ *     a sale that also had an adult is one child, not two — the prototype's
+ *     rule exactly (`getLiveOccupancy`: "bands with a checkInId are excluded
+ *     from the group rule so they can't double-count"). Windowed to the
+ *     trading day like every passage, so nobody strands as inside across days.
  *
  * THE BRANCH is the gate station's, not the band's: a band sold at one park
  * and walked through another's gate is inside the second.
@@ -220,13 +226,21 @@ export async function countAt(
       coalesce((select json_agg(distinct i.sale_id) from inside i), '[]'::json) as "saleIds",
       (select count(*)::int from pos.band k
         where k.kind = 'kid' and k.status = 'active'
-          and k.sale_id in (select i.sale_id from inside i)) as "kids"
+          and k.sale_id in (select i.sale_id from inside i)
+          and not exists (select 1 from pos.checkin c where c.band_id = k.id)) as "kids",
+      (select count(*)::int from pos.checkin c
+        where c.branch_id = ${branchId}
+          and c.status <> 'registered'
+          and c.checked_in_at is not null
+          and c.checked_in_at >= ${from.toISOString()}::timestamptz
+          and c.checked_in_at <= ${at.toISOString()}::timestamptz
+          and (c.checked_out_at is null or c.checked_out_at > ${at.toISOString()}::timestamptz)) as "dropOffKids"
   `);
   const row = (result as unknown as {
-    rows: Array<{ adultBandIds: string[]; saleIds: string[]; kids: number }>;
+    rows: Array<{ adultBandIds: string[]; saleIds: string[]; kids: number; dropOffKids: number }>;
   }).rows[0]!;
   const adults = row.adultBandIds.length;
-  const kids = Number(row.kids);
+  const kids = Number(row.kids) + Number(row.dropOffKids);
   return { adults, kids, total: adults + kids, saleIds: row.saleIds, adultBandIds: row.adultBandIds };
 }
 

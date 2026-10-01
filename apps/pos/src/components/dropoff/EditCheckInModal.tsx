@@ -13,15 +13,19 @@ import { PhoneInput } from '@/components/shared/PhoneInput';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckIn } from '@/types';
-import { getNannyRoster, getDropOffPricing, type CheckInEdits } from '@/mockApi';
+import { ChangeLogEntry, CheckIn } from '@/types';
+import { boardApi, nannyChoicesFor, type ApiNanny, type CheckInEdits } from '@/api/checkin';
 import { Pencil, History, Save, ArrowRight, Baby, AlertTriangle } from 'lucide-react';
 
 interface EditCheckInModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   checkIn: CheckIn;
-  /** Called with the edited values; the mutator diffs + audits the changes. */
+  /** The park's roster with each nanny's live load (the board's, S2-13 round 2). */
+  nannies: readonly ApiNanny[];
+  /** The suggested ratio the warning is shown at — never a block. */
+  softMax: number;
+  /** Called with the edited values; the platform diffs + audits the changes. */
   onSave: (edits: CheckInEdits) => void;
 }
 
@@ -37,12 +41,37 @@ export function EditCheckInModal({
   open,
   onOpenChange,
   checkIn,
+  nannies,
+  softMax,
   onSave,
 }: EditCheckInModalProps) {
   const [form, setForm] = useState<CheckInEdits>(() => toForm(checkIn));
-  const roster = getNannyRoster(checkIn.id);
-  const softMax = getDropOffPricing().nannyRatioSoftMax;
+  const roster = nannyChoicesFor(nannies, checkIn);
   const selectedNanny = roster.find((n) => n.id === form.assignedNannyId);
+  // The change history is the platform's audit rows for this stay (OD-C5),
+  // read each time the modal opens — there is no change log on the record.
+  const [history, setHistory] = useState<ChangeLogEntry[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    // The mobile shell still runs on the prototype's in-memory records, which
+    // carry their own log; a platform row never has one and reads its audit rows.
+    if (checkIn.changeLog) {
+      setHistory(checkIn.changeLog);
+      return;
+    }
+    let live = true;
+    boardApi
+      .history(checkIn.id)
+      .then((r) => {
+        if (live) setHistory(r.entries.map((e) => ({ ...e, changedById: e.changedById ?? '' })));
+      })
+      .catch(() => {
+        if (live) setHistory([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [open, checkIn.id, checkIn.changeLog]);
   // Over the suggested ratio once SHE also covers this child (current load + 1).
   const overRatio = !!selectedNanny && selectedNanny.load + 1 > softMax;
 
@@ -63,7 +92,7 @@ export function EditCheckInModal({
     onOpenChange(false);
   };
 
-  const log = [...(checkIn.changeLog ?? [])].reverse();
+  const log = [...history].reverse();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

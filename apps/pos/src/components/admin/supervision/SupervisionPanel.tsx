@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Plus,
   Trash2,
@@ -9,18 +9,31 @@ import {
   ClipboardCheck,
   ArrowUp,
   ArrowDown,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { getActiveBranch } from '@/store/catalogStore';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { boardApi, checkinApi, TILL_NOT_LINKED } from '@/api/checkin';
 import type {
   SupervisionBand,
+  SupervisionPolicy,
   SupervisionRequirement,
   SiblingWaiver,
   ConfirmationItem,
 } from '@/types';
-import { NotSavedNotice } from '../NotSavedNotice';
+import { AdminNoticeBanner } from '../NotSavedNotice';
 import { TextInput, SelectInput } from '../discounts/fields';
+
+/** The parts of the policy the platform stores, as one comparable value. */
+const policyKey = (p: SupervisionPolicy): string =>
+  JSON.stringify({
+    bands: [...p.bands].sort((a, b) => a.minAge - b.minAge),
+    siblingWaiver: p.siblingWaiver,
+    confirmations: [...p.confirmations].sort((a, b) => a.order - b.order),
+  });
 
 const REQUIREMENT_OPTIONS: { value: SupervisionRequirement; label: string }[] = [
   { value: 'nanny', label: 'Nanny required' },
@@ -108,13 +121,73 @@ const newConfirmationId = () =>
 
 /**
  * Admin editor for the configurable child-supervision policy: the age → required
- * service bands and the staff sibling-waiver rule. Reads/writes the live shared
- * store via useCatalogStore so edits take effect in-session (the door flow that
- * enforces them is wired in a later prompt).
+ * service bands and the staff sibling-waiver rule. Edits land in the live shared
+ * store via useCatalogStore so the till sees them in-session, and "Save changes"
+ * writes them to the park's platform config (S2-13 round 2 — audited there);
+ * the screen opens on what the platform holds.
  */
 export function SupervisionPanel() {
   const { supervisionPolicy, mutators } = useCatalogStore();
   const { bands, siblingWaiver, confirmations } = supervisionPolicy;
+
+  // --- The platform's copy: loaded on open, saved on demand ---
+  const branchSlug = getActiveBranch().id;
+  const platformId = apiBranchIdForSlug(branchSlug);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(platformId ? null : TILL_NOT_LINKED);
+
+  const adopt = useCallback(
+    (policy: SupervisionPolicy) => {
+      mutators.updateSupervisionPolicy({
+        bands: policy.bands,
+        siblingWaiver: policy.siblingWaiver,
+        confirmations: policy.confirmations,
+      });
+      setSavedKey(policyKey(policy));
+    },
+    [mutators],
+  );
+
+  useEffect(() => {
+    if (!platformId) {
+      setSaveError(TILL_NOT_LINKED);
+      return;
+    }
+    let live = true;
+    checkinApi
+      .config(platformId)
+      .then((c) => {
+        if (live) adopt(c.policy);
+      })
+      .catch((err: unknown) => live && setSaveError(err instanceof Error ? err.message : 'Could not load the policy.'));
+    return () => {
+      live = false;
+    };
+  }, [platformId, adopt]);
+
+  const dirty = savedKey !== null && policyKey(supervisionPolicy) !== savedKey;
+
+  const handleSave = async () => {
+    if (!platformId) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await boardApi.savePolicy(platformId, { bands, siblingWaiver });
+      const after = await boardApi.saveConfirmations(
+        platformId,
+        sortedConfirmations.map((c, i) => ({ id: c.id, text: c.text, required: c.required, order: i })),
+      );
+      adopt(after.policy);
+      setSaved(true);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save.');
+      setSaved(false);
+    } finally {
+      setSaving(false);
+    }
+  };
   const sortedConfirmations = useMemo(
     () => [...confirmations].sort((a, b) => a.order - b.order),
     [confirmations],
@@ -199,10 +272,7 @@ export function SupervisionPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <NotSavedNotice
-        mutators={['updateSupervisionPolicy']}
-        what="age bands, ratios and every supervision rule on this screen"
-      />
+      {saveError && <AdminNoticeBanner>{saveError}</AdminNoticeBanner>}
 
       {/* Age bands */}
       <section className="rounded-3xl border border-foreground/10 bg-foreground/[0.02] p-5 sm:p-6">
@@ -501,6 +571,22 @@ export function SupervisionPanel() {
         </div>
       </section>
 
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={!platformId || !dirty || saving || problems.length > 0}
+        >
+          <Check className="w-4 h-4" />
+          Save changes
+        </Button>
+        {saved && !dirty && (
+          <span className="inline-flex items-center gap-1.5 text-sm text-emerald-700">
+            <Check className="w-4 h-4" />
+            Saved — live in the till.
+          </span>
+        )}
+      </div>
     </div>
   );
 }

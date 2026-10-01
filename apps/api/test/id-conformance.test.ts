@@ -272,6 +272,8 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /tiers': CODE_NAMED,
   'POST /voucher-definitions': NEXT_PASS,
   'PUT /booths/:id/staff/:accountId/pin': 'derived: one PIN row per account and booth, named by the path',
+  'PUT /checkin/config/confirmations':
+    "derived: the list is replaced whole and each item is named by the client's code, unique per branch while live; the row id is never referred to",
 };
 
 /** A create that picks its record's id here: `const id = newId()`, `const refundId = newId()`. */

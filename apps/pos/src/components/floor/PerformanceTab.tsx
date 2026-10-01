@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/floor/StatCard';
 import { RevenueBars } from '@/components/floor/RevenueBars';
 import { getFloorReport } from '@/mockApi';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { boardApi } from '@/api/checkin';
 import { Banknote, Users, PartyPopper, Baby, Ticket } from 'lucide-react';
 
 /**
@@ -21,6 +23,24 @@ export function PerformanceTab({
   isToday: boolean;
 }) {
   const report = useMemo(() => getFloorReport(date, branch), [date, branch]);
+  // S2-13 round 2: the drop-off children in the park now are the platform's
+  // check-ins, not the mock store's — live, not date-bound, as the card says.
+  const [dropOffInPark, setDropOffInPark] = useState<number | null>(null);
+  useEffect(() => {
+    const platformId = apiBranchIdForSlug(branch);
+    if (!platformId) {
+      setDropOffInPark(null);
+      return;
+    }
+    let live = true;
+    boardApi
+      .today(platformId)
+      .then((r) => live && setDropOffInPark(r.inPark))
+      .catch(() => live && setDropOffInPark(null));
+    return () => {
+      live = false;
+    };
+  }, [branch]);
   const { guests, ticketMix } = report;
   const totalGuests = guests.kids + guests.adults;
   const hasTicketMix = ticketMix.oneHour + ticketMix.twoHour + ticketMix.fullDay > 0;
@@ -63,7 +83,7 @@ export function PerformanceTab({
         <StatCard
           icon={<Baby className="w-5 h-5" />}
           label="Drop-off kids in park"
-          value={report.dropOffInParkNow.toLocaleString()}
+          value={dropOffInPark === null ? '—' : dropOffInPark.toLocaleString()}
           sub="In the park right now"
         />
       </div>

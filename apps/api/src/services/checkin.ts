@@ -1,5 +1,8 @@
-import { and, asc, eq, gt, inArray, isNull, lte, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm';
 import {
+  account,
+  auditLog,
+  employee,
   band,
   branch,
   checkin,
@@ -22,8 +25,11 @@ import {
   DEFAULT_DROP_OFF_PRICING,
   DEFAULT_SUPERVISION_POLICY,
   buildAcknowledgedConfirmations,
+  businessDate,
   confirmationsSatisfied,
+  newId,
   normalizePhone,
+  parseDayStart,
   requirementLabel,
   resolveRequirement,
   waiverRefusal,
@@ -40,6 +46,7 @@ import { audit } from './audit';
 import { BandKeyMissingError, mintSaleBands } from './bands';
 import { idInUse } from './client-id';
 import { queueCheckinBandPrints, type SalePrintJobView } from './sale-printing';
+import type { SmsSender } from './sms';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -154,7 +161,15 @@ export async function nannyRosterOf(db: Exec, branchId: string, now: Date = new 
   const shifts = await db
     .select({ nannyId: nannyShift.nannyId })
     .from(nannyShift)
-    .where(and(inArray(nannyShift.nannyId, ids), lte(nannyShift.startsAt, now), gt(nannyShift.endsAt, now)));
+    .where(
+      and(
+        inArray(nannyShift.nannyId, ids),
+        // A shift at another park is not a shift here.
+        eq(nannyShift.branchId, branchId),
+        lte(nannyShift.startsAt, now),
+        gt(nannyShift.endsAt, now),
+      ),
+    );
   const onShift = new Set(shifts.map((s) => s.nannyId));
   const covered = await db
     .select({ nannyId: checkin.nannyId, childName: checkin.childName })
@@ -744,7 +759,9 @@ export async function checkInNow(
   actor: Actor,
   input: { saleId: string; entries: readonly { checkinId: string; nannyId?: string | null }[] },
   now: Date = new Date(),
+  opts: { event?: 'check_in_now' | 'check_in_booked' } = {},
 ): Promise<CheckInNowResult> {
+  const event = opts.event ?? 'check_in_now';
   // A retry of a check-in that landed (the answer was lost on the way back)
   // is answered with what it did, not refused: every child already in the
   // park on THIS sale with a band is exactly the state the first press left.
@@ -768,20 +785,14 @@ export async function checkInNow(
   const { saleRow, stays, lineOf } = await loadChoice(tx, actor, input.saleId, input.entries.map((e) => e.checkinId));
   const nannyByEntry = new Map(input.entries.map((e) => [e.checkinId, e.nannyId ?? null]));
 
-  // The nannies, all before any write (prototype checkInFamilyWithPayment).
-  const nannyIds = new Set<string>();
+  // The nannies, all before any write (prototype checkInFamilyWithPayment):
+  // on this park's roster AND on shift here now — the same rule every other
+  // assignment path applies (`checkNannyFor`).
   for (const s of stays) {
     if (s.service !== 'nanny') continue;
     const id = nannyByEntry.get(s.id) ?? s.nannyId;
     if (!id) throw errors.conflict('NANNY_REQUIRED', `Assign a nanny to ${s.childName} before checking them in.`);
-    nannyIds.add(id);
-  }
-  if (nannyIds.size) {
-    const found = await tx
-      .select({ id: nanny.id })
-      .from(nanny)
-      .where(and(inArray(nanny.id, [...nannyIds]), eq(nanny.branchId, saleRow.branchId), isNull(nanny.archivedAt)));
-    if (found.length !== nannyIds.size) throw errors.conflict('NANNY_NOT_ON_ROSTER', "That nanny is not on this park's roster.");
+    await checkNannyFor(tx, saleRow.branchId, id, s.id, now);
   }
 
   for (const s of stays) {
@@ -807,8 +818,14 @@ export async function checkInNow(
       entityId: s.id,
       requestId: actor.requestId,
       actionId: actor.actionId ?? null,
-      before: { status: s.status, saleId: s.saleId, nannyId: s.nannyId, scheduledFor: s.scheduledFor?.toISOString() ?? null },
-      after: { status: 'in_park', saleId: saleRow.id, nannyId, bookedMinutes: patch.bookedMinutes, checkedInAt: now.toISOString(), event: 'check_in_now' },
+      before: {
+        status: s.status,
+        saleId: s.saleId,
+        nannyId: s.nannyId,
+        scheduledFor: s.scheduledFor?.toISOString() ?? null,
+        bookedMinutes: s.bookedMinutes,
+      },
+      after: { status: 'in_park', saleId: saleRow.id, nannyId, bookedMinutes: patch.bookedMinutes, checkedInAt: now.toISOString(), event },
     });
   }
 
@@ -897,4 +914,1197 @@ export async function leaveAsBooked(
   }
   const after = await tx.select().from(checkin).where(inArray(checkin.id, stays.map((s) => s.id))).orderBy(asc(checkin.createdAt), asc(checkin.id));
   return { saleId: saleRow.id, children: after.map(checkinViewOf) };
+}
+
+// ================================================================================
+// S2-13 round 2 — THE BOARD (plan §2.3). The prototype's DropOff page and its
+// cards, moved from `mockApi.ts` onto these: `getCheckIns` → `boardOf`,
+// `updateCheckIn` → `editCheckin`, `assignNanny` → `assignNanny`,
+// `checkInFamilyBooked` → `checkInBooked`, `resendWaConfirmation` /
+// `simulateWaConfirm` / `markWaConnectionFailed` → the contact-channel test.
+// ================================================================================
+
+/** The board's three status tabs (prototype `DropOff.tsx` TABS). */
+export type BoardTab = 'registered' | 'in_park' | 'out';
+
+/** Minutes left below which a child is "due soon" (prototype `lib/dropoff.ts` DUE_SOON_MINUTES). */
+export const DUE_SOON_MINUTES = 15;
+
+/**
+ * THE CONTACT-CHANNEL TEST (R-95). There is no column for it — round 1's
+ * migration carried none and this round adds none — so its state is the
+ * newest `registration.contact` audit row for the registration: `pending`
+ * when the connection check went out, `confirmed` when the guardian answered,
+ * `failed` when staff could not reach them, `unverified` when the phone was
+ * cleared. The audit rows are the record, exactly as they are for edits.
+ */
+export const CONTACT_ACTION = 'registration.contact';
+export type ContactStatus = 'pending' | 'confirmed' | 'failed';
+
+export interface ContactConnection {
+  status: ContactStatus;
+  sentAt: string | null;
+  confirmedAt: string | null;
+}
+
+export interface BoardChild extends CheckinView {
+  nannyName: string | null;
+  checkedOutAt: string | null;
+}
+
+export interface BoardFamily {
+  registrationId: string;
+  branchId: string;
+  memberId: string | null;
+  guardianName: string;
+  guardianPhone: string | null;
+  contactChannel: string;
+  consentRecordedAt: string | null;
+  source: string;
+  photoFileId: string | null;
+  createdAt: string;
+  /** Null = no connection check on record ("unverified" on the chip when a phone is set). */
+  contact: ContactConnection | null;
+  /** The family's canonical tab: in_park > registered > out (prototype `familyTab`). */
+  tab: BoardTab;
+  children: BoardChild[];
+}
+
+export interface BoardView {
+  families: BoardFamily[];
+  /** Per CHILD, as the prototype counts its tabs. */
+  counts: Record<BoardTab, number>;
+  /** Families whose channel is not confirmed (prototype `waFlaggedCount`). */
+  unconfirmedFamilies: number;
+  nannies: NannyView[];
+  nannyRatioSoftMax: number;
+  prepaidFoodUnused: 'refund' | 'forfeit';
+}
+
+export interface BoardFilter {
+  tab?: BoardTab;
+  service?: 'nanny' | 'drop_off';
+  unconfirmed?: boolean;
+  q?: string;
+  /** In Park only: families with a child due soon or overdue (the ?due=1 hand-off). */
+  due?: boolean;
+}
+
+function boardChildOf(row: CheckinRow, nannyName: string | null): BoardChild {
+  return { ...checkinViewOf(row), nannyName, checkedOutAt: row.checkedOutAt?.toISOString() ?? null };
+}
+
+function tabOfStay(status: CheckinRow['status']): BoardTab {
+  return status === 'in_park' ? 'in_park' : status === 'out' ? 'out' : 'registered';
+}
+
+/** Prototype `familyTab`: the highest-priority status among the children. */
+export function familyTabOf(children: readonly { status: string }[]): BoardTab {
+  if (children.some((c) => c.status === 'in_park')) return 'in_park';
+  if (children.some((c) => c.status === 'registered')) return 'registered';
+  return 'out';
+}
+
+/** Prototype `remainingMinutes`: booked − elapsed, or null when it cannot be told. */
+export function remainingMinutesOf(
+  c: { status: string; checkedInAt: string | null; bookedMinutes: number | null },
+  now: number,
+): number | null {
+  if (c.status !== 'in_park' || !c.checkedInAt || c.bookedMinutes == null) return null;
+  return c.bookedMinutes - (now - new Date(c.checkedInAt).getTime()) / 60_000;
+}
+
+/** Prototype `dueState`, as a boolean: due soon or overdue. */
+function isDue(rem: number | null): boolean {
+  return rem != null && rem < DUE_SOON_MINUTES;
+}
+
+function unconfirmed(f: BoardFamily): boolean {
+  return f.contact?.status !== 'confirmed';
+}
+
+/**
+ * The prototype's board filter and sort (`DropOff.tsx` visibleFamilies), as a
+ * pure function the route applies when asked and the till mirrors on its own
+ * ten-second tick: tab, service, due, unconfirmed, search; In Park sorted by
+ * the least time left, Upcoming by the earliest booked start (walk-ins last).
+ */
+export function filterBoard(families: readonly BoardFamily[], f: BoardFilter, now: number = Date.now()): BoardFamily[] {
+  const q = f.q?.trim().toLowerCase() ?? '';
+  const out: BoardFamily[] = [];
+  for (const fam of families) {
+    if (f.tab && fam.tab !== f.tab) continue;
+    if (f.service && !fam.children.some((c) => c.service === f.service)) continue;
+    if (f.due && fam.tab === 'in_park' && !fam.children.some((c) => isDue(remainingMinutesOf(c, now)))) continue;
+    if (f.unconfirmed && !unconfirmed(fam)) continue;
+    if (q && !fam.children.some((c) => `${c.childName} ${fam.guardianName} ${fam.guardianPhone ?? ''}`.toLowerCase().includes(q))) continue;
+    out.push({ ...fam, children: [...fam.children].sort((a, b) => a.childName.localeCompare(b.childName)) });
+  }
+  if (f.tab === 'in_park') {
+    const least = (fam: BoardFamily) => Math.min(...fam.children.map((c) => remainingMinutesOf(c, now) ?? Infinity));
+    out.sort((a, b) => least(a) - least(b));
+  }
+  if (f.tab === 'registered') {
+    const earliest = (fam: BoardFamily) =>
+      Math.min(...fam.children.map((c) => (c.scheduledFor ? new Date(c.scheduledFor).getTime() : Infinity)));
+    out.sort((a, b) => earliest(a) - earliest(b));
+  }
+  return out;
+}
+
+/** When the branch's current trading day began (its `business_day_start` on its own clock). */
+async function tradingDayStartOf(db: Exec, branchId: string, now: Date): Promise<Date> {
+  const [br] = await db
+    .select({ timezone: branch.timezone, businessDayStart: branch.businessDayStart })
+    .from(branch)
+    .where(eq(branch.id, branchId))
+    .limit(1);
+  if (!br) throw errors.notFound('Branch not found');
+  const day = businessDate(now, br.timezone, parseDayStart(br.businessDayStart));
+  const result = await db.execute(
+    sql`select ((${day}::date + ${br.businessDayStart}::time) at time zone ${br.timezone}) as "start"`,
+  );
+  const value = (result as unknown as { rows: Array<{ start: Date | string }> }).rows[0]!.start;
+  return value instanceof Date ? value : new Date(value);
+}
+
+/** The newest `registration.contact` row per registration — the channel's state. */
+async function contactsOf(db: Exec, registrationIds: readonly string[]): Promise<Map<string, ContactConnection | null>> {
+  const out = new Map<string, ContactConnection | null>();
+  if (registrationIds.length === 0) return out;
+  const rows = await db
+    .select({ entityId: auditLog.entityId, after: auditLog.after })
+    .from(auditLog)
+    .where(
+      and(
+        eq(auditLog.entityType, 'registration'),
+        eq(auditLog.action, CONTACT_ACTION),
+        inArray(auditLog.entityId, [...registrationIds]),
+      ),
+    )
+    .orderBy(asc(auditLog.createdAt), asc(auditLog.id));
+  for (const r of rows) {
+    const a = (r.after ?? {}) as { status?: string; sentAt?: string | null; confirmedAt?: string | null };
+    out.set(
+      r.entityId,
+      a.status === 'pending' || a.status === 'confirmed' || a.status === 'failed'
+        ? { status: a.status, sentAt: a.sentAt ?? null, confirmedAt: a.confirmedAt ?? null }
+        : null,
+    );
+  }
+  return out;
+}
+
+async function nannyNamesOf(db: Exec, ids: readonly (string | null)[]): Promise<Map<string, string>> {
+  const wanted = [...new Set(ids.filter((id): id is string => !!id))];
+  if (wanted.length === 0) return new Map();
+  const rows = await db.select({ id: nanny.id, name: nanny.name }).from(nanny).where(inArray(nanny.id, wanted));
+  return new Map(rows.map((r) => [r.id, r.name]));
+}
+
+/**
+ * THE BOARD at one park (prototype `getCheckIns`, grouped by registration as
+ * `DropOff.tsx` groups them): every family still waiting or in the park, and
+ * the ones collected since this trading day began — the Out tab is today's
+ * pickups, not every child the park ever released. Newest registration first.
+ */
+export async function boardOf(db: Exec, operatorId: string, branchId: string, now: Date = new Date()): Promise<BoardView> {
+  const dayStart = await tradingDayStartOf(db, branchId, now);
+  const stays = await db
+    .select()
+    .from(checkin)
+    .where(
+      and(
+        eq(checkin.operatorId, operatorId),
+        eq(checkin.branchId, branchId),
+        or(ne(checkin.status, 'out'), gte(checkin.checkedOutAt, dayStart)),
+      ),
+    )
+    .orderBy(asc(checkin.createdAt), asc(checkin.id));
+  const regIds = [...new Set(stays.map((s) => s.registrationId))];
+  const regs = regIds.length
+    ? await db
+        .select()
+        .from(registration)
+        .where(inArray(registration.id, regIds))
+        .orderBy(desc(registration.createdAt), asc(registration.id))
+    : [];
+  const names = await nannyNamesOf(db, stays.map((s) => s.nannyId));
+  const contacts = await contactsOf(db, regIds);
+  const config = await supervisionConfigOf(db, branchId);
+
+  const byReg = new Map<string, CheckinRow[]>();
+  for (const s of stays) {
+    const list = byReg.get(s.registrationId);
+    if (list) list.push(s);
+    else byReg.set(s.registrationId, [s]);
+  }
+  const counts: Record<BoardTab, number> = { registered: 0, in_park: 0, out: 0 };
+  for (const s of stays) counts[tabOfStay(s.status)] += 1;
+
+  const families: BoardFamily[] = regs.map((r) => {
+    const children = (byReg.get(r.id) ?? []).map((s) => boardChildOf(s, s.nannyId ? (names.get(s.nannyId) ?? null) : null));
+    return {
+      registrationId: r.id,
+      branchId: r.branchId,
+      memberId: r.memberId,
+      guardianName: r.guardianName,
+      guardianPhone: r.guardianPhone,
+      contactChannel: r.contactChannel,
+      consentRecordedAt: r.consentRecordedAt?.toISOString() ?? null,
+      source: r.source,
+      photoFileId: r.photoFileId,
+      createdAt: r.createdAt.toISOString(),
+      contact: contacts.get(r.id) ?? null,
+      tab: familyTabOf(children),
+      children,
+    };
+  });
+  return {
+    families,
+    counts,
+    unconfirmedFamilies: families.filter(unconfirmed).length,
+    nannies: await nannyRosterOf(db, branchId, now),
+    nannyRatioSoftMax: config.pricing.nannyRatioSoftMax,
+    prepaidFoodUnused: config.pricing.prepaidFoodUnused,
+  };
+}
+
+/** The Today screen's "Drop-off kids in park" — every stay in the park now (prototype `getFloorReport`). */
+export async function dropOffToday(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+): Promise<{ inPark: number; upcoming: number }> {
+  const rows = await db
+    .select({ status: checkin.status, n: sql<number>`count(*)::int` })
+    .from(checkin)
+    .where(and(eq(checkin.operatorId, operatorId), eq(checkin.branchId, branchId), ne(checkin.status, 'out')))
+    .groupBy(checkin.status);
+  const of = (s: string) => Number(rows.find((r) => r.status === s)?.n ?? 0);
+  return { inPark: of('in_park'), upcoming: of('registered') };
+}
+
+// --- The nanny rule -------------------------------------------------------------
+
+/**
+ * The server's answer to "may she take this child": on this park's roster,
+ * not archived, and ON SHIFT — a shift row covering now. Anything else is
+ * refused ("not on shift"). The soft ratio is never a refusal: over it, the
+ * assignment stands and a warning comes back in the counter's words.
+ */
+async function checkNannyFor(
+  db: Exec,
+  branchId: string,
+  nannyId: string,
+  excludeCheckinId: string,
+  now: Date,
+): Promise<{ name: string; warning: string | null }> {
+  const [row] = await db
+    .select({ id: nanny.id, name: nanny.name })
+    .from(nanny)
+    .where(and(eq(nanny.id, nannyId), eq(nanny.branchId, branchId), isNull(nanny.archivedAt)))
+    .limit(1);
+  if (!row) throw errors.conflict('NANNY_NOT_ON_ROSTER', "That nanny is not on this park's roster.");
+  const [shift] = await db
+    .select({ id: nannyShift.id })
+    .from(nannyShift)
+    .where(
+      and(
+        eq(nannyShift.nannyId, nannyId),
+        // The shift must be AT THIS PARK: one at another branch does not cover here.
+        eq(nannyShift.branchId, branchId),
+        lte(nannyShift.startsAt, now),
+        gt(nannyShift.endsAt, now),
+      ),
+    )
+    .limit(1);
+  if (!shift) {
+    throw errors.conflict('NANNY_NOT_ON_SHIFT', `${row.name} is not on shift — pick a nanny who is working now.`);
+  }
+  const [load] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(checkin)
+    .where(and(eq(checkin.nannyId, nannyId), ne(checkin.status, 'out'), ne(checkin.id, excludeCheckinId)));
+  const config = await supervisionConfigOf(db, branchId);
+  const softMax = config.pricing.nannyRatioSoftMax;
+  const after = Number(load?.n ?? 0) + 1;
+  return {
+    name: row.name,
+    warning:
+      after > softMax
+        ? `${row.name} would be looking after ${after} children (over the suggested ${softMax}). Allowed — just double-check it's okay.`
+        : null,
+  };
+}
+
+async function loadStayForUpdate(tx: Tx, operatorId: string, id: string): Promise<CheckinRow> {
+  const [row] = await tx
+    .select()
+    .from(checkin)
+    .where(and(eq(checkin.id, id), eq(checkin.operatorId, operatorId)))
+    .for('update')
+    .limit(1);
+  if (!row) throw errors.notFound('No such check-in');
+  return row;
+}
+
+/** One stay, inside the caller's operator — the board's routes find the branch through it. */
+export async function loadStay(db: Exec, operatorId: string, id: string): Promise<CheckinRow> {
+  const [row] = await db
+    .select()
+    .from(checkin)
+    .where(and(eq(checkin.id, id), eq(checkin.operatorId, operatorId)))
+    .limit(1);
+  if (!row) throw errors.notFound('No such check-in');
+  return row;
+}
+
+async function boardChildById(db: Exec, id: string): Promise<BoardChild> {
+  const [row] = await db.select().from(checkin).where(eq(checkin.id, id)).limit(1);
+  const names = await nannyNamesOf(db, [row!.nannyId]);
+  return boardChildOf(row!, row!.nannyId ? (names.get(row!.nannyId) ?? null) : null);
+}
+
+/**
+ * ASSIGN A NANNY (prototype `assignNanny`, mockApi.ts:4835-4850): she must be
+ * on shift (checked here, never trusted from the picker); the child moves to
+ * the nanny service, as the prototype did. Over the soft ratio is a warning.
+ */
+export async function assignNanny(
+  tx: Tx,
+  actor: Actor,
+  checkinId: string,
+  nannyId: string,
+  now: Date = new Date(),
+): Promise<{ checkin: BoardChild; warnings: string[] }> {
+  const stay = await loadStayForUpdate(tx, actor.operatorId, checkinId);
+  if (stay.status === 'out') {
+    throw errors.conflict('CHECKIN_OUT', `${stay.childName} has already been collected — no nanny is needed.`);
+  }
+  const { name, warning } = await checkNannyFor(tx, stay.branchId, nannyId, stay.id, now);
+  if (stay.nannyId === nannyId && stay.service === 'nanny') {
+    return { checkin: await boardChildById(tx, stay.id), warnings: warning ? [warning] : [] };
+  }
+  const names = await nannyNamesOf(tx, [stay.nannyId]);
+  await tx.update(checkin).set({ nannyId, service: 'nanny', updatedAt: now }).where(eq(checkin.id, stay.id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: stay.branchId,
+    action: 'checkin.update',
+    entityType: 'checkin',
+    entityId: stay.id,
+    requestId: actor.requestId,
+    actionId: actor.actionId ?? null,
+    before: {
+      nannyId: stay.nannyId,
+      nannyName: stay.nannyId ? (names.get(stay.nannyId) ?? null) : null,
+      ...(stay.service !== 'nanny' ? { service: stay.service } : {}),
+    },
+    after: { nannyId, nannyName: name, ...(stay.service !== 'nanny' ? { service: 'nanny' } : {}), event: 'assign_nanny' },
+  });
+  return { checkin: await boardChildById(tx, stay.id), warnings: warning ? [warning] : [] };
+}
+
+// --- The audited edit -----------------------------------------------------------
+
+export interface CheckinEditInput {
+  childName?: string;
+  childAgeYears?: number;
+  service?: SupervisionRequirement;
+  bookedMinutes?: number | null;
+  mayOrderFood?: boolean;
+  foodRestrictions?: string | null;
+  allergies?: string | null;
+  nannyId?: string | null;
+  guardianName?: string;
+  guardianPhone?: string | null;
+  contactChannel?: 'whatsapp' | 'telegram' | 'line';
+}
+
+export interface CheckinEditResult {
+  checkin: BoardChild;
+  /** How many fields changed — the prototype's "N fields updated" toast. */
+  changed: number;
+  warnings: string[];
+  /** The registration's channel after the edit (a new phone or channel sends a fresh check). */
+  contact: ContactConnection | null;
+}
+
+const blank = (v: string | null | undefined): string | null => (v?.trim() ? v.trim() : null);
+
+/**
+ * THE ONE AUDITED EDIT (prototype `updateCheckIn`, mockApi.ts:5380-5477).
+ *
+ * Every field the EditCheckInModal shows: the child's name and age (the
+ * stay's snapshot AND, when the child is saved, the child record), service,
+ * booked minutes, the food flags and allergies, the nanny, and the guardian's
+ * name, phone and channel on the registration. Each write's before/after —
+ * only the fields that changed — IS the change log (OD-C5): one
+ * `checkin.update` row, a `child.update` row when the saved child changed, a
+ * `registration.update` row when the guardian's details did. A nanny is
+ * checked on shift here; leaving the nanny service releases her (the table
+ * holds a nanny on nanny-service children only). A new phone or channel sends
+ * a fresh connection check, and clearing the phone resets it, as the
+ * prototype did.
+ */
+export async function editCheckin(
+  tx: Tx,
+  actor: Actor,
+  checkinId: string,
+  input: CheckinEditInput,
+  deps: { sms: SmsSender | null; now?: Date },
+): Promise<CheckinEditResult> {
+  const now = deps.now ?? new Date();
+  const stay = await loadStayForUpdate(tx, actor.operatorId, checkinId);
+  const [reg] = await tx.select().from(registration).where(eq(registration.id, stay.registrationId)).for('update').limit(1);
+  if (!reg) throw errors.notFound('No such registration');
+  const warnings: string[] = [];
+
+  // --- The stay ---
+  const next = {
+    childName: input.childName !== undefined ? input.childName.trim() : stay.childName,
+    childAgeYears: input.childAgeYears ?? stay.childAgeYears,
+    service: input.service ?? stay.service,
+    bookedMinutes: input.bookedMinutes !== undefined ? input.bookedMinutes : stay.bookedMinutes,
+    mayOrderFood: input.mayOrderFood ?? stay.mayOrderFood,
+    foodRestrictions: input.foodRestrictions !== undefined ? blank(input.foodRestrictions) : stay.foodRestrictions,
+    allergies: input.allergies !== undefined ? blank(input.allergies) : stay.allergies,
+    nannyId: input.nannyId !== undefined ? input.nannyId : stay.nannyId,
+  };
+  if (!next.childName) throw errors.badRequest("The child's name can't be empty.");
+  if (next.service !== 'nanny') next.nannyId = null;
+  let nannyName: string | null = null;
+  if (next.nannyId && next.nannyId !== stay.nannyId) {
+    if (stay.status === 'out') {
+      throw errors.conflict('CHECKIN_OUT', `${stay.childName} has already been collected — no nanny is needed.`);
+    }
+    const checked = await checkNannyFor(tx, stay.branchId, next.nannyId, stay.id, now);
+    nannyName = checked.name;
+    if (checked.warning) warnings.push(checked.warning);
+  }
+  const stayKeys = [
+    'childName',
+    'childAgeYears',
+    'service',
+    'bookedMinutes',
+    'mayOrderFood',
+    'foodRestrictions',
+    'allergies',
+    'nannyId',
+  ] as const;
+  const before: Record<string, unknown> = {};
+  const after: Record<string, unknown> = {};
+  for (const k of stayKeys) {
+    if (next[k] !== stay[k]) {
+      before[k] = stay[k];
+      after[k] = next[k];
+    }
+  }
+  let changed = Object.keys(after).length;
+  if ('nannyId' in after) {
+    const names = await nannyNamesOf(tx, [stay.nannyId, next.nannyId]);
+    before.nannyName = stay.nannyId ? (names.get(stay.nannyId) ?? null) : null;
+    after.nannyName = next.nannyId ? (nannyName ?? names.get(next.nannyId) ?? null) : null;
+  }
+  if (changed > 0) {
+    await tx
+      .update(checkin)
+      .set({ ...next, updatedAt: now })
+      .where(eq(checkin.id, stay.id));
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId: stay.branchId,
+      action: 'checkin.update',
+      entityType: 'checkin',
+      entityId: stay.id,
+      requestId: actor.requestId,
+      actionId: actor.actionId ?? null,
+      before,
+      after: { ...after, event: 'edit' },
+    });
+  }
+
+  // --- The saved child: name, age, allergies and food restrictions follow the edit ---
+  if (stay.childId && ['childName', 'childAgeYears', 'allergies', 'foodRestrictions'].some((k) => k in after)) {
+    const [saved] = await tx.select().from(child).where(eq(child.id, stay.childId)).for('update').limit(1);
+    if (saved) {
+      const patch: Partial<typeof child.$inferInsert> = {};
+      const was: Record<string, unknown> = {};
+      if ('childName' in after && saved.name !== next.childName) {
+        patch.name = next.childName;
+        was.name = saved.name;
+      }
+      if ('childAgeYears' in after && saved.ageYears !== next.childAgeYears) {
+        patch.ageYears = next.childAgeYears;
+        was.ageYears = saved.ageYears;
+      }
+      if ('allergies' in after && saved.allergies !== next.allergies) {
+        patch.allergies = next.allergies;
+        was.allergies = saved.allergies;
+      }
+      if ('foodRestrictions' in after && saved.foodRestrictions !== next.foodRestrictions) {
+        patch.foodRestrictions = next.foodRestrictions;
+        was.foodRestrictions = saved.foodRestrictions;
+      }
+      if (Object.keys(patch).length) {
+        await tx.update(child).set({ ...patch, updatedAt: now }).where(eq(child.id, saved.id));
+        await audit.record(tx, {
+          actorAccountId: actor.accountId,
+          operatorId: actor.operatorId,
+          branchId: stay.branchId,
+          action: 'child.update',
+          entityType: 'child',
+          entityId: saved.id,
+          requestId: actor.requestId,
+          actionId: actor.actionId ?? null,
+          before: was,
+          after: { ...patch, source: 'checkin_board', checkinId: stay.id },
+        });
+      }
+    }
+  }
+
+  // --- The registration: the guardian's name, phone and channel ---
+  let contact: ContactConnection | null = (await contactsOf(tx, [reg.id])).get(reg.id) ?? null;
+  if (input.guardianName !== undefined || input.guardianPhone !== undefined || input.contactChannel !== undefined) {
+    let phone = reg.guardianPhone;
+    if (input.guardianPhone !== undefined) {
+      if (input.guardianPhone?.trim()) {
+        phone = normalizePhone(input.guardianPhone);
+        if (!phone) throw errors.badRequest("That phone number doesn't look right — check it with the guardian.");
+      } else {
+        phone = null;
+      }
+    }
+    const nextReg = {
+      guardianName: input.guardianName !== undefined ? input.guardianName.trim() : reg.guardianName,
+      guardianPhone: phone,
+      contactChannel: input.contactChannel ?? reg.contactChannel,
+    };
+    if (!nextReg.guardianName) throw errors.badRequest("The parent's name can't be empty.");
+    const rBefore: Record<string, unknown> = {};
+    const rAfter: Record<string, unknown> = {};
+    for (const k of ['guardianName', 'guardianPhone', 'contactChannel'] as const) {
+      if (nextReg[k] !== reg[k]) {
+        rBefore[k] = reg[k];
+        rAfter[k] = nextReg[k];
+      }
+    }
+    if (Object.keys(rAfter).length) {
+      changed += Object.keys(rAfter).length;
+      await tx.update(registration).set({ ...nextReg, updatedAt: now }).where(eq(registration.id, reg.id));
+      await audit.record(tx, {
+        actorAccountId: actor.accountId,
+        operatorId: actor.operatorId,
+        branchId: reg.branchId,
+        action: 'registration.update',
+        entityType: 'registration',
+        entityId: reg.id,
+        requestId: actor.requestId,
+        actionId: actor.actionId ?? null,
+        before: rBefore,
+        after: { ...rAfter, event: 'edit', checkinId: stay.id },
+      });
+      // The stored connection must never contradict the phone (prototype
+      // updateCheckIn): a cleared phone resets it; a new one is tested again.
+      const fresh = { ...reg, ...nextReg };
+      if (!fresh.guardianPhone) {
+        if (contact) {
+          await recordContact(tx, actor, fresh, { status: 'unverified', sentAt: null, confirmedAt: null }, contact);
+          contact = null;
+        }
+      } else if ('guardianPhone' in rAfter || 'contactChannel' in rAfter) {
+        contact = await sendContactTest(tx, actor, fresh, deps.sms, now);
+      }
+    }
+  }
+
+  return { checkin: await boardChildById(tx, stay.id), changed, warnings, contact };
+}
+
+// --- The change log, read back from the audit rows ---------------------------------
+
+export interface ChangeLogEntryView {
+  id: string;
+  field: string;
+  oldValue: string;
+  newValue: string;
+  changedBy: string;
+  changedById: string | null;
+  changedAt: string;
+}
+
+const NONE = '—';
+
+/** The prototype's change-log field names (mockApi.ts:5423-5433), in its order. */
+const FIELD_LABELS: Record<string, string> = {
+  childName: 'Child name',
+  childAgeYears: 'Age',
+  guardianName: 'Parent name',
+  contactChannel: 'Contact method',
+  guardianPhone: 'Phone',
+  service: 'Service',
+  mayOrderFood: 'May order food',
+  foodRestrictions: 'Food restrictions',
+  allergies: 'Allergies / medical',
+  bookedMinutes: 'Booked play time',
+  nannyName: 'Nanny',
+  status: 'Status',
+  scheduledFor: 'Booked start',
+};
+
+const STATUS_LABEL: Record<string, string> = { registered: 'Upcoming', in_park: 'In Park', out: 'Out' };
+const SERVICE_LABEL: Record<string, string> = { nanny: 'Nanny', drop_off: 'Drop-Off', none: 'None' };
+
+function formatField(key: string, value: unknown): string {
+  if (value === null || value === undefined || value === '') return NONE;
+  switch (key) {
+    case 'service':
+      return SERVICE_LABEL[String(value)] ?? String(value);
+    case 'mayOrderFood':
+      return value ? 'Yes' : 'No';
+    case 'bookedMinutes':
+      return `${String(value)} min`;
+    case 'status':
+      return STATUS_LABEL[String(value)] ?? String(value);
+    default:
+      return String(value);
+  }
+}
+
+/**
+ * THE CHANGE HISTORY of one stay (EditCheckInModal's detail view), read from
+ * the audit rows filtered to it — its own `checkin.update` rows and the
+ * guardian edits on its registration — one entry per field, oldest first,
+ * stamped with who did it. No jsonb log exists anywhere (OD-C5). A row that
+ * named a nanny by id only (the till's check-in) is given her name here.
+ */
+export async function checkinHistory(db: Exec, operatorId: string, checkinId: string): Promise<ChangeLogEntryView[]> {
+  const stay = await loadStay(db, operatorId, checkinId);
+  const rows = await db
+    .select({
+      id: auditLog.id,
+      before: auditLog.before,
+      after: auditLog.after,
+      createdAt: auditLog.createdAt,
+      actorAccountId: auditLog.actorAccountId,
+      actorName: employee.name,
+      actorNickname: employee.nickname,
+    })
+    .from(auditLog)
+    .leftJoin(account, eq(account.id, auditLog.actorAccountId))
+    .leftJoin(employee, eq(employee.id, account.employeeId))
+    .where(
+      and(
+        eq(auditLog.operatorId, operatorId),
+        or(
+          and(eq(auditLog.entityType, 'checkin'), eq(auditLog.entityId, stay.id), eq(auditLog.action, 'checkin.update')),
+          and(
+            eq(auditLog.entityType, 'registration'),
+            eq(auditLog.entityId, stay.registrationId),
+            eq(auditLog.action, 'registration.update'),
+          ),
+        ),
+      ),
+    )
+    .orderBy(asc(auditLog.createdAt), asc(auditLog.id));
+  const nannyIds: string[] = [];
+  for (const r of rows) {
+    for (const side of [r.before, r.after] as (Record<string, unknown> | null)[]) {
+      if (side && typeof side.nannyId === 'string') nannyIds.push(side.nannyId);
+    }
+  }
+  const names = await nannyNamesOf(db, nannyIds);
+  const out: ChangeLogEntryView[] = [];
+  for (const r of rows) {
+    const before = { ...((r.before ?? {}) as Record<string, unknown>) };
+    const after = { ...((r.after ?? {}) as Record<string, unknown>) };
+    for (const side of [before, after]) {
+      if ('nannyId' in side && !('nannyName' in side)) {
+        side.nannyName = typeof side.nannyId === 'string' ? (names.get(side.nannyId) ?? null) : null;
+      }
+    }
+    for (const k of Object.keys(FIELD_LABELS)) {
+      if (!(k in after)) continue;
+      const oldValue = formatField(k, before[k]);
+      const newValue = formatField(k, after[k]);
+      if (oldValue === newValue) continue;
+      out.push({
+        id: `${r.id}:${k}`,
+        field: FIELD_LABELS[k]!,
+        oldValue,
+        newValue,
+        changedBy: r.actorNickname || r.actorName || (r.actorAccountId ? 'Staff' : 'System'),
+        changedById: r.actorAccountId,
+        changedAt: r.createdAt.toISOString(),
+      });
+    }
+  }
+  return out;
+}
+
+// --- Booked check-in, never a sale (R-90) ------------------------------------------
+
+/**
+ * CHECK IN A BOOKED FAMILY FROM THE BOARD (prototype `checkInFamilyBooked`,
+ * mockApi.ts:5118-5230). The children were paid for already — "Leave as
+ * booked" at the till linked their sale — so this takes NO payment and writes
+ * NO sale: it validates every child first (still waiting, booked, paid for,
+ * each nanny child with an on-shift nanny), records the guardian's consent if
+ * it was not on file, and then runs the in-park process on the sale they were
+ * paid on: in the park with the timer started, the band minted on their own
+ * line and queued for print — the same one transaction as the till's
+ * "Check in now", so a child never stands in the park without a band.
+ */
+export async function checkInBooked(
+  tx: Tx,
+  actor: Actor,
+  input: { entries: readonly { checkinId: string; nannyId?: string | null }[]; consentAcknowledged?: boolean },
+  now: Date = new Date(),
+): Promise<CheckInNowResult & { saleIds: string[] }> {
+  const ids = input.entries.map((e) => e.checkinId);
+  if (new Set(ids).size !== ids.length) throw errors.badRequest('A child was named twice.');
+  const stays = await tx
+    .select()
+    .from(checkin)
+    .where(and(inArray(checkin.id, ids), eq(checkin.operatorId, actor.operatorId)))
+    .for('update');
+  if (stays.length !== ids.length) throw errors.notFound('No such check-in');
+  if (new Set(stays.map((s) => s.branchId)).size !== 1) throw errors.badRequest('These children were registered at different parks.');
+  const nannyOf = new Map(input.entries.map((e) => [e.checkinId, e.nannyId ?? null]));
+
+  // --- Validate all before committing any ---
+  for (const s of stays) {
+    if (s.status !== 'registered') {
+      throw errors.conflict(
+        'CHECKIN_NOT_REGISTERED',
+        `${s.childName} is already ${s.status === 'in_park' ? 'checked in' : 'checked out'}.`,
+      );
+    }
+    if (!s.scheduledFor || !s.saleId) {
+      throw errors.conflict(
+        'CHECKIN_NOT_BOOKED',
+        `${s.childName} has not been paid for yet — check them in at the till, where the payment is taken.`,
+      );
+    }
+    if (s.service === 'nanny') {
+      const id = nannyOf.get(s.id) ?? s.nannyId;
+      if (!id) throw errors.conflict('NANNY_REQUIRED', `Assign a nanny to ${s.childName} before checking them in.`);
+      await checkNannyFor(tx, s.branchId, id, s.id, now);
+    }
+  }
+  const regIds = [...new Set(stays.map((s) => s.registrationId))];
+  const regs = await tx.select().from(registration).where(inArray(registration.id, regIds)).for('update');
+  if (regs.some((r) => !r.consentRecordedAt) && !input.consentAcknowledged) {
+    throw errors.conflict('CONSENT_REQUIRED', "The guardian's consent isn't on file — tick the consent before checking them in.");
+  }
+
+  // --- Commit ---
+  for (const r of regs) {
+    if (r.consentRecordedAt) continue;
+    await tx.update(registration).set({ consentRecordedAt: now, updatedAt: now }).where(eq(registration.id, r.id));
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId: r.branchId,
+      action: 'registration.update',
+      entityType: 'registration',
+      entityId: r.id,
+      requestId: actor.requestId,
+      actionId: actor.actionId ?? null,
+      before: { consentRecordedAt: null },
+      after: { consentRecordedAt: now.toISOString(), event: 'consent_at_check_in' },
+    });
+  }
+  const bySale = new Map<string, { checkinId: string; nannyId: string | null }[]>();
+  for (const s of stays) {
+    const entry = { checkinId: s.id, nannyId: s.service === 'nanny' ? (nannyOf.get(s.id) ?? s.nannyId) : null };
+    const list = bySale.get(s.saleId!);
+    if (list) list.push(entry);
+    else bySale.set(s.saleId!, [entry]);
+  }
+  const result: CheckInNowResult & { saleIds: string[] } = {
+    saleId: '',
+    saleIds: [],
+    children: [],
+    bands: [],
+    printJobs: [],
+    notes: [],
+  };
+  for (const [saleId, entries] of bySale) {
+    const done = await checkInNow(tx, actor, { saleId, entries }, now, { event: 'check_in_booked' });
+    result.saleIds.push(saleId);
+    result.children.push(...done.children);
+    result.bands.push(...done.bands);
+    result.printJobs.push(...done.printJobs);
+    result.notes.push(...done.notes);
+  }
+  result.saleId = result.saleIds[0] ?? '';
+  return result;
+}
+
+// --- The contact-channel test (R-95) -------------------------------------------------
+
+function nameList(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+async function recordContact(
+  tx: Tx,
+  actor: Actor,
+  reg: Pick<RegistrationRow, 'id' | 'branchId' | 'contactChannel'>,
+  next: { status: ContactStatus | 'unverified'; sentAt: string | null; confirmedAt: string | null },
+  prev: ContactConnection | null,
+): Promise<void> {
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: reg.branchId,
+    action: CONTACT_ACTION,
+    entityType: 'registration',
+    entityId: reg.id,
+    requestId: actor.requestId,
+    actionId: actor.actionId ?? null,
+    before: prev ? { ...prev } : { status: 'unverified' },
+    after: { ...next, channel: reg.contactChannel },
+  });
+}
+
+/**
+ * SEND THE CONNECTION CHECK (prototype `resendWaConfirmation`): the
+ * connection-check template, naming every child on the registration, through
+ * the platform's CONSOLE messaging adapter — the one the booking confirmation
+ * uses until real channels are their own ticket — and the registration's
+ * channel goes `pending` for every sibling at once.
+ */
+export async function sendContactTest(
+  tx: Tx,
+  actor: Actor,
+  reg: Pick<RegistrationRow, 'id' | 'branchId' | 'guardianName' | 'guardianPhone' | 'contactChannel'>,
+  sms: SmsSender | null,
+  now: Date = new Date(),
+): Promise<ContactConnection> {
+  if (!reg.guardianPhone) {
+    throw errors.conflict('NO_PHONE', 'There is no phone number on this registration — add one, then send the check.');
+  }
+  if (!sms) {
+    throw new AppError(503, 'MESSAGING_UNAVAILABLE', "Messages can't be sent from this deployment right now — try again later.");
+  }
+  const prev = (await contactsOf(tx, [reg.id])).get(reg.id) ?? null;
+  const kids = await tx.select({ name: checkin.childName }).from(checkin).where(eq(checkin.registrationId, reg.id));
+  const names = nameList(kids.map((k) => k.name).sort((a, b) => a.localeCompare(b)));
+  const body =
+    `Hi ${reg.guardianName}, ${names} has just been registered at Oto. Please tap the button below to confirm we have the right number — ` +
+    "we'll use it for emergency updates during your child's session.";
+  try {
+    await sms.send(reg.guardianPhone, body);
+  } catch {
+    throw new AppError(502, 'MESSAGE_NOT_SENT', "The connection check didn't go out — try again in a moment.");
+  }
+  const next: ContactConnection = { status: 'pending', sentAt: now.toISOString(), confirmedAt: null };
+  await recordContact(tx, actor, reg, next, prev);
+  return next;
+}
+
+/**
+ * The guardian's answer, recorded by staff (prototype `simulateWaConfirm` and
+ * `markWaConnectionFailed`): confirmed only after a check went out; "couldn't
+ * reach" at any time.
+ */
+export async function recordContactStatus(
+  tx: Tx,
+  actor: Actor,
+  reg: RegistrationRow,
+  status: 'confirmed' | 'failed',
+  now: Date = new Date(),
+): Promise<ContactConnection> {
+  const prev = (await contactsOf(tx, [reg.id])).get(reg.id) ?? null;
+  if (status === 'confirmed' && prev?.status !== 'pending') {
+    throw errors.conflict('CONTACT_NOT_PENDING', 'Send the connection check first — then the guardian can confirm it.');
+  }
+  const next: ContactConnection =
+    status === 'confirmed'
+      ? { status, sentAt: prev?.sentAt ?? null, confirmedAt: now.toISOString() }
+      : { status, sentAt: prev?.sentAt ?? null, confirmedAt: prev?.confirmedAt ?? null };
+  await recordContact(tx, actor, reg, next, prev);
+  return next;
+}
+
+export async function contactOf(db: Exec, registrationId: string): Promise<ContactConnection | null> {
+  return (await contactsOf(db, [registrationId])).get(registrationId) ?? null;
+}
+
+// --- The supervision config, audited (the admin panels) -------------------------------
+
+/** Prototype `SupervisionPanel` validateBands: contiguous from 0, one open top band, covering 18. */
+export function bandProblems(bands: readonly { label: string; minAge: number; maxAge: number | null }[]): string[] {
+  const problems: string[] = [];
+  if (bands.length === 0) return ['Add at least one age band so every child resolves to a rule.'];
+  for (const b of bands) {
+    if (!Number.isFinite(b.minAge) || b.minAge < 0) problems.push(`“${b.label || 'Unnamed band'}” has an invalid minimum age.`);
+    if (b.maxAge !== null && b.maxAge < b.minAge) {
+      problems.push(`“${b.label || 'Unnamed band'}” has a maximum age below its minimum.`);
+    }
+  }
+  const sorted = [...bands].sort((a, b) => a.minAge - b.minAge);
+  const openCount = sorted.filter((b) => b.maxAge === null).length;
+  if (openCount > 1) problems.push('Only the highest band may have no upper bound.');
+  else if (openCount === 1 && sorted[sorted.length - 1]!.maxAge !== null) {
+    problems.push('The band with no upper bound must be the highest one.');
+  }
+  if (sorted[0]!.minAge !== 0) problems.push(`Bands should start at age 0 (lowest band starts at ${sorted[0]!.minAge}).`);
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1]!;
+    const cur = sorted[i]!;
+    if (prev.maxAge === null) {
+      problems.push('A band with no upper bound must be last — ages after it can never resolve.');
+      break;
+    }
+    if (cur.minAge <= prev.maxAge) {
+      problems.push(`“${prev.label || prev.minAge}” and “${cur.label || cur.minAge}” overlap at age ${cur.minAge}.`);
+    } else if (cur.minAge > prev.maxAge + 1) {
+      problems.push(`Gap between ages ${prev.maxAge} and ${cur.minAge} — no band covers ${prev.maxAge + 1}.`);
+    }
+  }
+  const top = sorted[sorted.length - 1]!;
+  if (top.maxAge !== null && top.maxAge < 18) {
+    problems.push(`No band covers ages above ${top.maxAge} — add an open-ended top band or extend it.`);
+  }
+  return problems;
+}
+
+async function assertBranchOf(db: Exec, operatorId: string, branchId: string): Promise<void> {
+  const [br] = await db.select({ operatorId: branch.operatorId }).from(branch).where(eq(branch.id, branchId)).limit(1);
+  if (!br || br.operatorId !== operatorId) throw errors.notFound('Branch not found');
+}
+
+/** The policy row, created from the prototype's seed when a branch has none yet. */
+async function policyRowFor(tx: Tx, operatorId: string, branchId: string): Promise<typeof supervisionPolicy.$inferSelect> {
+  const [row] = await tx
+    .select()
+    .from(supervisionPolicy)
+    .where(eq(supervisionPolicy.branchId, branchId))
+    .for('update')
+    .limit(1);
+  if (row) return row;
+  const p = DEFAULT_SUPERVISION_POLICY;
+  const [made] = await tx
+    .insert(supervisionPolicy)
+    .values({
+      id: newId(),
+      operatorId,
+      branchId,
+      bands: p.bands,
+      siblingWaiverEnabled: p.siblingWaiver.enabled,
+      waivableRequirement: p.siblingWaiver.waivableRequirement,
+      guardianMinAge: p.siblingWaiver.guardianMinAge,
+      waiverStaffOnly: p.siblingWaiver.staffOnly,
+      nannyRatioSoftMax: DEFAULT_DROP_OFF_PRICING.nannyRatioSoftMax,
+    })
+    .returning();
+  return made!;
+}
+
+export interface PolicyInput {
+  bands: { id: string; label: string; minAge: number; maxAge: number | null; requirement: SupervisionRequirement }[];
+  siblingWaiver: { enabled: boolean; guardianMinAge: number; waivableRequirement: SupervisionRequirement; staffOnly: boolean };
+}
+
+/** The age bands and the sibling waiver (SupervisionPanel), audited before/after. */
+export async function savePolicy(tx: Tx, actor: Actor, branchId: string, input: PolicyInput): Promise<SupervisionConfig> {
+  await assertBranchOf(tx, actor.operatorId, branchId);
+  const problems = bandProblems(input.bands);
+  if (problems.length) throw errors.badRequest(problems[0]!, { problems });
+  const row = await policyRowFor(tx, actor.operatorId, branchId);
+  const before = {
+    bands: row.bands,
+    siblingWaiver: {
+      enabled: row.siblingWaiverEnabled,
+      guardianMinAge: row.guardianMinAge,
+      waivableRequirement: row.waivableRequirement,
+      staffOnly: row.waiverStaffOnly,
+    },
+  };
+  const bands = [...input.bands].sort((a, b) => a.minAge - b.minAge);
+  await tx
+    .update(supervisionPolicy)
+    .set({
+      bands,
+      siblingWaiverEnabled: input.siblingWaiver.enabled,
+      guardianMinAge: input.siblingWaiver.guardianMinAge,
+      waivableRequirement: input.siblingWaiver.waivableRequirement,
+      waiverStaffOnly: input.siblingWaiver.staffOnly,
+      updatedAt: new Date(),
+    })
+    .where(eq(supervisionPolicy.id, row.id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId,
+    action: 'supervision_policy.update',
+    entityType: 'supervision_policy',
+    entityId: row.id,
+    requestId: actor.requestId,
+    actionId: actor.actionId ?? null,
+    before,
+    after: { bands, siblingWaiver: input.siblingWaiver },
+  });
+  return supervisionConfigOf(tx, branchId);
+}
+
+/**
+ * The confirmations checklist, replaced as the panel holds it: an item kept
+ * is updated, a new one created, one taken off the list ARCHIVED (never
+ * deleted — a registration's acknowledged items still name it). One audit row
+ * per item that changed.
+ */
+export async function saveConfirmations(
+  tx: Tx,
+  actor: Actor,
+  branchId: string,
+  items: readonly { id: string; text: string; required: boolean; order: number }[],
+): Promise<SupervisionConfig> {
+  await assertBranchOf(tx, actor.operatorId, branchId);
+  const codes = items.map((i) => i.id);
+  if (new Set(codes).size !== codes.length) throw errors.badRequest('Two confirmations share the same id.');
+  if (items.some((i) => !i.text.trim())) throw errors.badRequest('A confirmation needs its wording — fill it in or remove it.');
+  const live = await tx
+    .select()
+    .from(confirmationItem)
+    .where(and(eq(confirmationItem.branchId, branchId), isNull(confirmationItem.archivedAt)))
+    .for('update');
+  const byCode = new Map(live.map((r) => [r.code, r]));
+  const now = new Date();
+  const base = {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId,
+    entityType: 'confirmation_item',
+    requestId: actor.requestId,
+    actionId: actor.actionId ?? null,
+  };
+  for (const r of live) {
+    if (codes.includes(r.code)) continue;
+    await tx.update(confirmationItem).set({ archivedAt: now, updatedAt: now }).where(eq(confirmationItem.id, r.id));
+    await audit.record(tx, {
+      ...base,
+      action: 'confirmation_item.archive',
+      entityId: r.id,
+      before: { code: r.code, text: r.text, required: r.required, sortOrder: r.sortOrder },
+      after: { archivedAt: now.toISOString() },
+    });
+  }
+  for (const i of items) {
+    const text = i.text.trim();
+    const existing = byCode.get(i.id);
+    if (!existing) {
+      const id = newId();
+      await tx.insert(confirmationItem).values({
+        id,
+        operatorId: actor.operatorId,
+        branchId,
+        code: i.id,
+        text,
+        required: i.required,
+        sortOrder: i.order,
+      });
+      await audit.record(tx, {
+        ...base,
+        action: 'confirmation_item.create',
+        entityId: id,
+        after: { code: i.id, text, required: i.required, sortOrder: i.order },
+      });
+      continue;
+    }
+    if (existing.text === text && existing.required === i.required && existing.sortOrder === i.order) continue;
+    await tx
+      .update(confirmationItem)
+      .set({ text, required: i.required, sortOrder: i.order, updatedAt: now })
+      .where(eq(confirmationItem.id, existing.id));
+    await audit.record(tx, {
+      ...base,
+      action: 'confirmation_item.update',
+      entityId: existing.id,
+      before: { text: existing.text, required: existing.required, sortOrder: existing.sortOrder },
+      after: { text, required: i.required, sortOrder: i.order },
+    });
+  }
+  return supervisionConfigOf(tx, branchId);
+}
+
+export interface PricingInput {
+  oneTimeFee: { weekday: number; weekend: number };
+  nannyHourly: { weekday: number; weekend: number };
+  extraHour: { weekday: number; weekend: number };
+  fullDayHours: number;
+  nannyRatioSoftMax: number;
+  prepaidFoodUnused: 'refund' | 'forfeit';
+}
+
+/**
+ * Drop-off and nanny pricing (DropOffPricingPanel), in satang, audited. The
+ * soft ratio lives on the policy row (it is the supervision rule the board
+ * warns at), the rest on `pos.drop_off_pricing`; the panel saves them
+ * together, so both are written here, in one transaction and one audit row.
+ */
+export async function savePricing(tx: Tx, actor: Actor, branchId: string, input: PricingInput): Promise<SupervisionConfig> {
+  await assertBranchOf(tx, actor.operatorId, branchId);
+  const now = new Date();
+  const [row] = await tx
+    .select()
+    .from(dropOffPricing)
+    .where(eq(dropOffPricing.branchId, branchId))
+    .for('update')
+    .limit(1);
+  const values = {
+    oneTimeFeeWeekdaySatang: input.oneTimeFee.weekday,
+    oneTimeFeeWeekendSatang: input.oneTimeFee.weekend,
+    nannyHourlyWeekdaySatang: input.nannyHourly.weekday,
+    nannyHourlyWeekendSatang: input.nannyHourly.weekend,
+    extraHourWeekdaySatang: input.extraHour.weekday,
+    extraHourWeekendSatang: input.extraHour.weekend,
+    fullDayHours: input.fullDayHours,
+    prepaidFoodUnused: input.prepaidFoodUnused,
+  };
+  const policy = await policyRowFor(tx, actor.operatorId, branchId);
+  let pricingId: string;
+  let before: Record<string, unknown> | null = null;
+  if (row) {
+    pricingId = row.id;
+    before = {
+      oneTimeFee: { weekday: row.oneTimeFeeWeekdaySatang, weekend: row.oneTimeFeeWeekendSatang },
+      nannyHourly: { weekday: row.nannyHourlyWeekdaySatang, weekend: row.nannyHourlyWeekendSatang },
+      extraHour: { weekday: row.extraHourWeekdaySatang, weekend: row.extraHourWeekendSatang },
+      fullDayHours: row.fullDayHours,
+      nannyRatioSoftMax: policy.nannyRatioSoftMax,
+      prepaidFoodUnused: row.prepaidFoodUnused,
+    };
+    await tx.update(dropOffPricing).set({ ...values, updatedAt: now }).where(eq(dropOffPricing.id, row.id));
+  } else {
+    pricingId = newId();
+    await tx.insert(dropOffPricing).values({ id: pricingId, operatorId: actor.operatorId, branchId, ...values });
+  }
+  if (policy.nannyRatioSoftMax !== input.nannyRatioSoftMax) {
+    await tx
+      .update(supervisionPolicy)
+      .set({ nannyRatioSoftMax: input.nannyRatioSoftMax, updatedAt: now })
+      .where(eq(supervisionPolicy.id, policy.id));
+  }
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId,
+    action: row ? 'drop_off_pricing.update' : 'drop_off_pricing.create',
+    entityType: 'drop_off_pricing',
+    entityId: pricingId,
+    requestId: actor.requestId,
+    actionId: actor.actionId ?? null,
+    before,
+    after: { ...input },
+  });
+  return supervisionConfigOf(tx, branchId);
 }

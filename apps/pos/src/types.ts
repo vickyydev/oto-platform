@@ -1688,6 +1688,12 @@ export interface CheckIn {
   // Sign-up photo: one photo of the child TOGETHER WITH the parent / guardian,
   // used for pickup-safety matching. Placeholder image ok.
   childPhotoUrl?: string;
+  /**
+   * S2-13 round 2: the platform holds a consent photo for this stay, whether
+   * or not its short-lived URL has been fetched into `childPhotoUrl` yet — so
+   * the booked check-in does not ask for a photo that is already on file.
+   */
+  photoOnFile?: boolean;
   parentName: string;
   contactMethod: ContactChannel; // absent-on-legacy-records default = 'whatsapp'
   phone: string; // incl. country code, e.g. +66818953926

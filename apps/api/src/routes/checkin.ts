@@ -10,24 +10,39 @@ import {
   LeaveAsBookedSchema,
 } from '@oto/shared';
 import type { FastifyRequest } from 'fastify';
+import type { Logger } from 'pino';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { REPLAY_HEADER, claimClientId } from '../services/client-id';
 import {
   addRegistrationChildren,
+  assignNanny,
   attachRegistrationPhoto,
+  boardOf,
+  checkInBooked,
   checkInNow,
+  checkinHistory,
   createRegistration,
+  dropOffToday,
+  editCheckin,
+  filterBoard,
   getRegistration,
   leaveAsBooked,
   loadRegistration,
+  loadStay,
   nannyRosterOf,
+  recordContactStatus,
   recordWaiver,
   registrationsAwaitingCheckIn,
+  saveConfirmations,
+  savePolicy,
+  savePricing,
+  sendContactTest,
   supervisionConfigOf,
   waiverViewOf,
   type Actor,
 } from '../services/checkin';
+import { buildSmsSender, type SmsSender } from '../services/sms';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -242,6 +257,322 @@ export async function checkinRoutes(app: App): Promise<void> {
       await req.requirePermission('pos:checkin:update', { branchId });
       return withTx(app.db, { ...opCtx(req), branchId }, 'checkin.leave_booked', (tx) =>
         leaveAsBooked(tx, actor, req.body),
+      );
+    },
+  );
+
+  await boardRoutes(app);
+}
+
+// ================================================================================
+// S2-13 round 2 — THE BOARD (plan §2.3). The DropOff page's reads and writes,
+// where the prototype called `getCheckIns`, `updateCheckIn`, `assignNanny`,
+// `checkInFamilyBooked` and the WhatsApp connection-check mutators. Reads are
+// the till's branch reads (`pos:checkin:read` on the branch); every write is
+// `pos:checkin:update` on the stay's own branch, in one transaction with its
+// audit rows, behind the idempotency key the client sends.
+// ================================================================================
+
+const TAB = z.enum(['registered', 'in_park', 'out']);
+const CHANNEL = z.enum(['whatsapp', 'telegram', 'line']);
+const SERVICE = z.enum(['none', 'drop_off', 'nanny']);
+const flag = z.enum(['1', '0', 'true', 'false']).transform((v) => v === '1' || v === 'true');
+
+const EditCheckinSchema = z
+  .object({
+    childName: z.string().trim().min(1).max(120).optional(),
+    childAgeYears: z.number().int().min(0).max(17).optional(),
+    service: SERVICE.optional(),
+    bookedMinutes: z.number().int().positive().max(24 * 60).nullable().optional(),
+    mayOrderFood: z.boolean().optional(),
+    foodRestrictions: z.string().max(500).nullable().optional(),
+    allergies: z.string().max(1000).nullable().optional(),
+    nannyId: z.string().uuid().nullable().optional(),
+    guardianName: z.string().trim().min(1).max(120).optional(),
+    guardianPhone: z.string().max(40).nullable().optional(),
+    contactChannel: CHANNEL.optional(),
+  })
+  .strict();
+
+const WeekdayWeekend = z.object({ weekday: z.number().int().min(0), weekend: z.number().int().min(0) });
+const BranchQuery = z.object({ branchId: z.string().uuid() });
+
+/** The platform's console messaging adapter (the booking confirmation's), for the connection check. */
+function consoleMessenger(req: FastifyRequest): SmsSender {
+  return buildSmsSender({ adapter: 'console' }, req.log as unknown as Logger);
+}
+
+async function boardRoutes(app: App): Promise<void> {
+  app.get(
+    '/board',
+    {
+      config: { permission: 'pos:checkin:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description:
+          "The drop-off board: the park's families grouped by registration, with the three status tabs' counts, " +
+          'the unconfirmed-channel count and the nanny roster. Optional filters apply the board\'s own filter and sort.',
+        querystring: BranchQuery.extend({
+          tab: TAB.optional(),
+          service: z.enum(['nanny', 'drop_off']).optional(),
+          unconfirmed: flag.optional(),
+          due: flag.optional(),
+          q: z.string().max(100).optional(),
+        }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      await assertBranchOfOperator(app, auth.operatorId, req.query.branchId);
+      const board = await boardOf(app.db, auth.operatorId, req.query.branchId);
+      const { tab, service, unconfirmed, due, q } = req.query;
+      if (tab || service || unconfirmed || due || q) {
+        return { ...board, families: filterBoard(board.families, { tab, service, unconfirmed, due, q }) };
+      }
+      return board;
+    },
+  );
+
+  app.get(
+    '/today',
+    {
+      config: { permission: 'pos:checkin:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description: "Today screen: the drop-off and nanny children in the park now, and those still waiting",
+        querystring: BranchQuery,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      await assertBranchOfOperator(app, auth.operatorId, req.query.branchId);
+      return dropOffToday(app.db, auth.operatorId, req.query.branchId);
+    },
+  );
+
+  app.patch(
+    '/checkins/:id',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          "Edit one child's stay — name and age (the saved child too), service, booked minutes, food and allergies, " +
+          "nanny (on shift only), and the guardian's name, phone and channel. Each change is an audit row: the change log.",
+        params: z.object({ id: z.string().uuid() }),
+        body: EditCheckinSchema,
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      const stay = await loadStay(app.db, actor.operatorId, req.params.id);
+      await req.requirePermission('pos:checkin:update', { branchId: stay.branchId });
+      const sms = consoleMessenger(req);
+      return withTx(app.db, { ...opCtx(req), branchId: stay.branchId }, 'checkin.update', (tx) =>
+        editCheckin(tx, actor, stay.id, req.body, { sms }),
+      );
+    },
+  );
+
+  app.get(
+    '/checkins/:id/history',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description: "One stay's change history, read from its audit rows",
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const stay = await loadStay(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('pos:checkin:read', { branchId: stay.branchId });
+      return { entries: await checkinHistory(app.db, auth.operatorId, stay.id) };
+    },
+  );
+
+  app.post(
+    '/checkins/:id/nanny',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Assign a nanny to a child. Refused unless she is on shift now; over the suggested ratio is a warning, not a refusal.',
+        params: z.object({ id: z.string().uuid() }),
+        body: z.object({ nannyId: z.string().uuid() }).strict(),
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      const stay = await loadStay(app.db, actor.operatorId, req.params.id);
+      await req.requirePermission('pos:checkin:update', { branchId: stay.branchId });
+      return withTx(app.db, { ...opCtx(req), branchId: stay.branchId }, 'checkin.assign_nanny', (tx) =>
+        assignNanny(tx, actor, stay.id, req.body.nannyId),
+      );
+    },
+  );
+
+  app.post(
+    '/check-in-booked',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Check in booked, already-paid children from the board: no payment and no sale — the band is minted on the ' +
+          'sale they were paid on, and printed.',
+        body: z
+          .object({
+            entries: z
+              .array(z.object({ checkinId: z.string().uuid(), nannyId: z.string().uuid().nullable().optional() }).strict())
+              .min(1)
+              .max(20),
+            consentAcknowledged: z.boolean().optional(),
+          })
+          .strict(),
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      const first = await loadStay(app.db, actor.operatorId, req.body.entries[0]!.checkinId);
+      await req.requirePermission('pos:checkin:update', { branchId: first.branchId });
+      return withTx(app.db, { ...opCtx(req), branchId: first.branchId }, 'checkin.check_in_booked', (tx) =>
+        checkInBooked(tx, actor, req.body),
+      );
+    },
+  );
+
+  app.post(
+    '/registrations/:id/contact-test',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          "Send the guardian the connection check on their channel (through the console messaging adapter); the family's chip goes pending",
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      const reg = await loadRegistration(app.db, actor.operatorId, req.params.id);
+      await req.requirePermission('pos:checkin:update', { branchId: reg.branchId });
+      const sms = consoleMessenger(req);
+      return withTx(app.db, { ...opCtx(req), branchId: reg.branchId }, 'registration.contact', (tx) =>
+        sendContactTest(tx, actor, reg, sms),
+      );
+    },
+  );
+
+  app.post(
+    '/registrations/:id/contact-status',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description: "Record the guardian's answer to the connection check: confirmed, or could not be reached",
+        params: z.object({ id: z.string().uuid() }),
+        body: z.object({ status: z.enum(['confirmed', 'failed']) }).strict(),
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      const reg = await loadRegistration(app.db, actor.operatorId, req.params.id);
+      await req.requirePermission('pos:checkin:update', { branchId: reg.branchId });
+      return withTx(app.db, { ...opCtx(req), branchId: reg.branchId }, 'registration.contact', (tx) =>
+        recordContactStatus(tx, actor, reg, req.body.status),
+      );
+    },
+  );
+
+  // --- The admin panels: supervision policy, confirmations, drop-off pricing ---
+
+  app.put(
+    '/config/policy',
+    {
+      config: { permission: 'catalog:package:update', target: { branchId: 'query.branchId' } },
+      schema: {
+        description: "Replace the branch's age bands and sibling-waiver rule (audited)",
+        querystring: BranchQuery,
+        body: z
+          .object({
+            bands: z
+              .array(
+                z.object({
+                  id: z.string().min(1).max(100),
+                  label: z.string().max(40),
+                  minAge: z.number().int().min(0).max(17),
+                  maxAge: z.number().int().min(0).max(99).nullable(),
+                  requirement: SERVICE,
+                }),
+              )
+              .max(20),
+            siblingWaiver: z.object({
+              enabled: z.boolean(),
+              guardianMinAge: z.number().int().min(0).max(17),
+              waivableRequirement: SERVICE,
+              staffOnly: z.boolean(),
+            }),
+          })
+          .strict(),
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      return withTx(app.db, { ...opCtx(req), branchId: req.query.branchId }, 'supervision_policy.update', (tx) =>
+        savePolicy(tx, actor, req.query.branchId, req.body),
+      );
+    },
+  );
+
+  app.put(
+    '/config/confirmations',
+    {
+      config: { permission: 'catalog:package:update', target: { branchId: 'query.branchId' } },
+      schema: {
+        description: "Replace the branch's consent confirmations checklist: kept items update, new ones are created, dropped ones are archived (audited)",
+        querystring: BranchQuery,
+        body: z
+          .object({
+            items: z
+              .array(
+                z.object({
+                  id: z.string().min(1).max(100),
+                  text: z.string().max(300),
+                  required: z.boolean(),
+                  order: z.number().int().min(0).max(1000),
+                }),
+              )
+              .max(30),
+          })
+          .strict(),
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      return withTx(app.db, { ...opCtx(req), branchId: req.query.branchId }, 'confirmation_item.update', (tx) =>
+        saveConfirmations(tx, actor, req.query.branchId, req.body.items),
+      );
+    },
+  );
+
+  app.put(
+    '/config/pricing',
+    {
+      config: { permission: 'catalog:package:update', target: { branchId: 'query.branchId' } },
+      schema: {
+        description: "Replace the branch's drop-off and nanny pricing, in satang, and the nanny ratio it warns at (audited)",
+        querystring: BranchQuery,
+        body: z
+          .object({
+            oneTimeFee: WeekdayWeekend,
+            nannyHourly: WeekdayWeekend,
+            extraHour: WeekdayWeekend,
+            fullDayHours: z.number().int().min(1).max(24),
+            nannyRatioSoftMax: z.number().int().min(1).max(50),
+            prepaidFoodUnused: z.enum(['refund', 'forfeit']),
+          })
+          .strict(),
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      return withTx(app.db, { ...opCtx(req), branchId: req.query.branchId }, 'drop_off_pricing.update', (tx) =>
+        savePricing(tx, actor, req.query.branchId, req.body),
       );
     },
   );
