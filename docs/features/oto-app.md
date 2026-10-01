@@ -145,7 +145,7 @@ or source change lacks the required staging action proof.
 | In-app notifications | WORKING WITH CAVEATS | A task notification changed from unread to read for its recipient; cross-tenant isolation remains in [notification notes](../qa/oto-app-lift/notifications.md). |
 | Attention engine | DISABLED ON STAGING | Existing alerts can be read with a visible pause; Refresh, Snooze, Resolve and automatic writes are off until tenant backfill and durable job ownership exist. [Pause proof](../qa/oto-app-lift/attention-org-staging-dfe7153.md). |
 | Fix reports | WORKING WITH CAVEATS | A positive report/media slice exists; named action capture and denied branch/tenant proof remain in [file notes](../qa/oto-app-lift/files.md). |
-| Supplier portal | NOT YET VERIFIED | Invalid-link and anonymous refusals are staged; positive comment/close needs a safely removable report fixture in [supplier notes](../qa/oto-app-lift/supplier-portal.md). |
+| Supplier portal | WORKING WITH CAVEATS | Live branch-limited link showed one report, accepted supplier comment and close, refused repeat close and the other branch, then revoked tokens denied access. Six real tablet screens and exact fixture cleanup are in [supplier notes](../qa/oto-app-lift/supplier-portal.md); live media, staff replies and natural expiry remain. |
 
 | Park, events and check-in | State | Current staging evidence and limit |
 | --- | --- | --- |
