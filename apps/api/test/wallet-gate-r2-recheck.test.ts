@@ -222,7 +222,7 @@ describe('(3) the refund, replayed and raced', () => {
 
 describe('(4) the cross-stay cap', () => {
   /**
-   * KEPT AS it.fails: `prepaidBalanceOf` counts every `spend` entry after this
+   * FIXED in round 3 (was it.fails): `prepaidBalanceOf` counted every `spend` entry after this
    * stay's load as this stay's spending — including ANOTHER stay's release
    * debit (kind `spend`, source `refund`). With two overlapping stays of one
    * saved child (nothing in check-in refuses the second), B's release refunds
@@ -230,7 +230,7 @@ describe('(4) the cross-stay cap', () => {
    * pays out more than loaded; balance == sum holds. Fix: count only counter
    * spends (`fnb_order` / `merch_order`) and their restores.
    */
-  it.fails("another stay's release debit is not this stay's spending (two overlapping stays of one child)", async () => {
+  it("another stay's release debit is not this stay's spending (two overlapping stays of one child)", async () => {
     // Stay A loads ฿150 and stay B ฿100 on the child's one wallet; nothing is
     // spent at a counter. A is released first and its ฿150 goes back in cash.
     const stayA = newId();

@@ -30,6 +30,7 @@ import { OperatorsPanel } from '@/components/admin/access/OperatorsPanel';
 import { SalesReportPanel } from '@/components/admin/reports/SalesReportPanel';
 import { ProfitabilityReportPanel } from '@/components/admin/reports/ProfitabilityReportPanel';
 import { WalletPromoReportPanel } from '@/components/admin/reports/WalletPromoReportPanel';
+import { WalletLookupPanel } from '@/components/admin/wallets/WalletLookupPanel';
 import { DiscountCompReportPanel } from '@/components/admin/reports/DiscountCompReportPanel';
 import { TaxVatReportPanel } from '@/components/admin/reports/TaxVatReportPanel';
 import { useOperator } from '@/auth/OperatorContext';
@@ -128,6 +129,8 @@ export default function Admin() {
           <ProfitabilityReportPanel />
         ) : activeId === 'reports-wallet' ? (
           <WalletPromoReportPanel />
+        ) : activeId === 'wallets' ? (
+          <WalletLookupPanel />
         ) : activeId === 'reports-discounts' ? (
           <DiscountCompReportPanel />
         ) : activeId === 'reports-tax' ? (

@@ -375,8 +375,102 @@ export const WalletViewSchema = z.object({
     }),
   ),
   createdAt: z.string(),
+  /**
+   * Round 3: when the wallet's credit stops being spendable — the expiry its
+   * latest grant or reactivation recorded from the branch's policy; null for
+   * `never`. Optional so an answer from before round 3 still parses.
+   */
+  expiresAt: z.string().nullable().optional(),
+  /**
+   * Round 3 fix: how much of the balance has already expired by the clock —
+   * each credit by its own date — and the day-end job has not taken yet. A
+   * counter may spend `balanceSatang - lapsedSatang`, nothing more. Optional
+   * so an answer from before the fix still parses (read as 0).
+   */
+  lapsedSatang: z.number().int().min(0).optional(),
 });
 export type WalletView = z.infer<typeof WalletViewSchema>;
+
+// --- Round 3: expiry, reactivation, the figures ----------------------------------
+
+/** The longest reason a reactivation may carry; the shortest is one typed character. */
+export const WALLET_REACTIVATE_REASON_MAX = 500;
+
+export const WalletReactivateBodySchema = z.object({
+  /** Why expired credit is coming back — typed by the manager, kept on the entry and the audit row. */
+  // Absent or blank reaches the service, which refuses it in the counter's words.
+  reason: z.string().max(WALLET_REACTIVATE_REASON_MAX).default(''),
+});
+export type WalletReactivateBody = z.infer<typeof WalletReactivateBodySchema>;
+
+export const WalletPolicyViewSchema = z.object({
+  branchId: z.string().uuid(),
+  expiry: z.enum(WALLET_EXPIRY_POLICIES),
+  expiryDays: z.number().int().nullable(),
+  offlineCapSatang: z.number().int().min(0),
+  prepaidUnused: z.enum(WALLET_PREPAID_UNUSED_POLICIES),
+});
+export type WalletPolicyViewDto = z.infer<typeof WalletPolicyViewSchema>;
+
+/**
+ * THE WALLET & PROMO REPORT'S CREDIT HALF (prototype `WalletLedgerSummary`,
+ * `lib/reporting.ts:497-504`), off the ledger. Each figure is a sum of entries
+ * by KIND over the range's business dates, positive: `spent` every spend
+ * (counter spending and a stay's unused prepaid food handed back in cash),
+ * `refunded` credit a refund put BACK on a wallet. `outstandingSatang` is the
+ * snapshot the prototype called "live balance (today)": the sum of the live
+ * wallet balances, never date-ranged; `ledgerOutstandingSatang` is the same
+ * figure summed from the entries, and the two are always equal.
+ */
+export const WalletReportSummarySchema = z.object({
+  grantedSatang: z.number().int(),
+  spentSatang: z.number().int(),
+  refundedSatang: z.number().int(),
+  expiredSatang: z.number().int(),
+  reactivatedSatang: z.number().int(),
+  outstandingSatang: z.number().int(),
+  ledgerOutstandingSatang: z.number().int(),
+  entryCount: z.number().int(),
+});
+export type WalletReportSummary = z.infer<typeof WalletReportSummarySchema>;
+
+/** One ledger row as the report lists it (prototype `WalletLedgerRow`). */
+export const WalletReportRowSchema = z.object({
+  entryId: z.string().uuid(),
+  walletId: z.string().uuid(),
+  /** The band's short code, else the voucher QR — never a band's signed code. */
+  keyDisplay: z.string(),
+  holderName: z.string().nullable(),
+  kind: z.enum(WALLET_ENTRY_KINDS),
+  source: z.enum(WALLET_ENTRY_SOURCES),
+  amountSatang: z.number().int(),
+  businessDate: z.string(),
+  at: z.string(),
+  by: z.string().nullable(),
+});
+export type WalletReportRow = z.infer<typeof WalletReportRowSchema>;
+
+export const WalletReportQuerySchema = z.object({
+  /** A branch, or omitted for every branch the account reads. */
+  branchId: z.string().uuid().optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  limit: z.coerce.number().int().min(1).max(1000).default(100),
+});
+
+/**
+ * THE END OF DAY `credit` LINE (prototype `getEndOfDay`, `mockApi.ts:2228-2324`):
+ * credit redeemed at the F&B and shop counters on the business date, net of
+ * what refunds put back through those same spends.
+ */
+export const WalletCreditDaySchema = z.object({
+  branchId: z.string().uuid(),
+  businessDate: z.string(),
+  redeemedSatang: z.number().int(),
+  restoredSatang: z.number().int(),
+  netSatang: z.number().int(),
+});
+export type WalletCreditDay = z.infer<typeof WalletCreditDaySchema>;
 
 export const WalletLookupQuerySchema = z.object({
   /** What was scanned or typed: a band code (full or short), a voucher QR. */

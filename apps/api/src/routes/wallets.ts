@@ -1,25 +1,46 @@
 import { z } from 'zod';
-import { and, eq } from 'drizzle-orm';
-import { wallet } from '@oto/db';
-import { WalletLookupQuerySchema } from '@oto/shared';
+import { and, eq, isNull } from 'drizzle-orm';
+import { branch, wallet } from '@oto/db';
+import {
+  WalletLookupQuerySchema,
+  WalletReactivateBodySchema,
+  WalletReportQuerySchema,
+} from '@oto/shared';
 import type { FastifyRequest } from 'fastify';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
-import { ledgerOf, walletFor, walletViewOf } from '../services/wallet';
+import { hasPermission } from '../services/permissions';
+import { opCtx, withTx } from '../services/tx';
+import {
+  creditRedeemedOn,
+  ledgerOf,
+  reactivateWallet,
+  walletFor,
+  walletPolicyViewOf,
+  walletReportOf,
+  walletViewOf,
+} from '../services/wallet';
 
 /**
- * S2-14a round 1 — reading a wallet (plan docs/progress/plans/wallet/PLAN.md
- * §2.1, §2.5). Registered under `/wallets`.
+ * S2-14a — reading a wallet (round 1) and the round-3 surfaces (plan
+ * docs/progress/plans/wallet/PLAN.md §2.1, §2.5). Registered under `/wallets`.
  *
- * What the round-3 Wallet view builds on: scan or type a key — a band's
- * signed code or its short code, a voucher's `QR-…` — and get the wallet it
- * names, its balance and its ledger; or open a wallet by id. Both behind
+ * The Wallet view: scan or type a key — a band's signed code or its short
+ * code, a voucher's `QR-…` — and get the wallet it names, its balance, status,
+ * expiry and its ledger; or open a wallet by id. Both behind
  * `pos:wallet:read`, at the session's park and again at the park that issued
  * the wallet: a wallet at another park is answered exactly like a key that
  * names nothing, so a scan cannot be used to learn that one exists.
  *
- * Nothing here writes. Credit is granted by closing a sale and loaded by
- * checking a child in (`services/wallet.ts`); spending is round 2's tender.
+ * Round 3 adds: bringing expired credit back (`POST /:id/reactivate`, behind
+ * `pos:wallet:reactivate` at the wallet's park, with a typed reason, audited),
+ * the branch's wallet rules (`GET /policy`), the Wallet & Promo report's
+ * credit half (`GET /report`, `analytics:read`) and the End of day `credit`
+ * line (`GET /credit-day`).
+ *
+ * Credit is granted by closing a sale and loaded by checking a child in;
+ * spending is the sale's wallet tender; expiry is the day-end job
+ * (`services/wallet.ts`).
  */
 
 const notFound = () =>
@@ -34,6 +55,8 @@ async function assertWalletBranch(req: FastifyRequest, branchId: string | null):
   }
 }
 
+const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
 export async function walletRoutes(app: App): Promise<void> {
   app.get(
     '/lookup',
@@ -42,7 +65,7 @@ export async function walletRoutes(app: App): Promise<void> {
       schema: {
         description:
           'The wallet a scanned or typed key names — a band (full or short code) or a voucher QR — with its balance, ' +
-          'its keys (a band by its short code only) and its ledger, oldest first. 404 when nothing at this park carries it.',
+          'status, credit expiry, its keys (a band by its short code only) and its ledger, oldest first. 404 when nothing at this park carries it.',
         querystring: WalletLookupQuerySchema,
       },
     },
@@ -55,6 +78,81 @@ export async function walletRoutes(app: App): Promise<void> {
         wallet: await walletViewOf(app.db, found),
         ledger: await ledgerOf(app.db, auth.operatorId, found.id),
       };
+    },
+  );
+
+  app.get(
+    '/policy',
+    {
+      config: { permission: 'pos:wallet:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description:
+          "The branch's wallet rules: when credit expires (same_day | days_n | never), the offline cap per wallet per day, " +
+          'and what happens to a child’s unused prepaid food. The seeded defaults when the branch has no row.',
+        querystring: z.object({ branchId: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const [br] = await app.db
+        .select({ id: branch.id })
+        .from(branch)
+        .where(and(eq(branch.id, req.query.branchId), eq(branch.operatorId, auth.operatorId)))
+        .limit(1);
+      if (!br) throw new AppError(404, 'NOT_FOUND', 'Branch not found');
+      return walletPolicyViewOf(app.db, br.id);
+    },
+  );
+
+  app.get(
+    '/report',
+    {
+      config: { permission: 'analytics:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description:
+          'The Wallet & Promo report’s credit half: granted / spent / refunded back / expired / reactivated over the ' +
+          'business dates from..to, the outstanding snapshot (sum of live balances, not date-ranged) beside the ' +
+          'ledger’s own sum of it, and the newest ledger rows. Without branchId: every park this account reads reports for.',
+        querystring: WalletReportQuerySchema,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const { branchId, from, to, limit } = req.query;
+      if (from > to) throw new AppError(400, 'BAD_REQUEST', 'The report’s start date is after its end date.');
+      let branchIds: string[];
+      if (branchId) {
+        branchIds = [branchId];
+      } else {
+        // Every park of the operator this account holds the report for — an
+        // account scoped to one park sees that park, never the network.
+        const effective = await req.effectivePermissions();
+        const parks = await app.db
+          .select({ id: branch.id })
+          .from(branch)
+          .where(and(eq(branch.operatorId, auth.operatorId), isNull(branch.archivedAt)));
+        branchIds = parks
+          .filter((p) => hasPermission(effective, 'analytics:read', { operatorId: auth.operatorId, branchId: p.id }))
+          .map((p) => p.id);
+      }
+      return walletReportOf(app.db, auth.operatorId, { branchIds, from, to, limit });
+    },
+  );
+
+  app.get(
+    '/credit-day',
+    {
+      config: { permission: 'pos:wallet:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description:
+          'The End of day `credit` line: wallet credit redeemed at the F&B and shop counters on the business date, ' +
+          'net of what refunds put back through those spends.',
+        querystring: z.object({ branchId: z.string().uuid(), date: DATE }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return creditRedeemedOn(app.db, auth.operatorId, req.query.branchId, req.query.date);
     },
   );
 
@@ -78,6 +176,46 @@ export async function walletRoutes(app: App): Promise<void> {
       await assertWalletBranch(req, found.branchId);
       return {
         wallet: await walletViewOf(app.db, found),
+        ledger: await ledgerOf(app.db, auth.operatorId, found.id),
+      };
+    },
+  );
+
+  app.post(
+    '/:id/reactivate',
+    {
+      config: { permission: 'pos:wallet:reactivate' },
+      schema: {
+        description:
+          'Bring expired credit back: exactly the remainder the last expiry took, as its own `reactivate` entry with a ' +
+          'fresh expiry from today’s policy. Needs pos:wallet:reactivate at the wallet’s park and a typed reason; audited ' +
+          'with before/after. 409 when the credit has not expired or ran out before it did.',
+        params: z.object({ id: z.string().uuid() }),
+        body: WalletReactivateBodySchema,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const [found] = await app.db
+        .select()
+        .from(wallet)
+        .where(and(eq(wallet.id, req.params.id), eq(wallet.operatorId, auth.operatorId)))
+        .limit(1);
+      if (!found) throw notFound();
+      // A park this session cannot read answers as nothing; one it reads but
+      // may not reactivate at answers 403, naming the permission.
+      await assertWalletBranch(req, found.branchId);
+      if (found.branchId) await req.requirePermission('pos:wallet:reactivate', { branchId: found.branchId });
+      const written = await withTx(app.db, opCtx(req), 'wallet.reactivate', (tx) =>
+        reactivateWallet(
+          tx,
+          { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
+          { walletId: found.id, reason: req.body.reason, stationId: auth.stationId ?? null },
+        ),
+      );
+      return {
+        replayed: written.replayed,
+        wallet: await walletViewOf(app.db, written.wallet),
         ledger: await ledgerOf(app.db, auth.operatorId, found.id),
       };
     },

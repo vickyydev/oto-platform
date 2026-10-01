@@ -5,7 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ReconSummary } from '@/components/eod/ReconSummary';
 import { AmountInput } from '@/components/eod/AmountInput';
 import { getEdcTerminals, getEndOfDay, getFloatCarryover, closeEndOfDay } from '@/mockApi';
-import { recomputeEndOfDay, channelLabel, lineFlag, RECON_TOLERANCE_THB } from '@/lib/endOfDay';
+import { recomputeEndOfDay, channelLabel, lineFlag, RECON_TOLERANCE_THB, withCreditLine } from '@/lib/endOfDay';
+import { creditLineKey, useCreditLine } from '@/components/eod/useCreditLine';
 import { useOperator } from '@/auth/OperatorContext';
 import { EndOfDay as EndOfDayRecord } from '@/types';
 import { Lock, Vault, Banknote } from 'lucide-react';
@@ -27,6 +28,14 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
   useEffect(() => {
     setRecord(getEndOfDay(date, branch));
   }, [date, branch]);
+
+  // S2-14a round 3 — the credit line is the platform's figure, as on the iPad tab.
+  const credit = useCreditLine(date, branch);
+  useEffect(() => {
+    if (credit.key !== creditLineKey(date, branch) || credit.expectedTHB === null) return;
+    const expected = credit.expectedTHB;
+    setRecord((prev) => (prev.date === date && prev.branchId === branch ? withCreditLine(prev, expected) : prev));
+  }, [credit, date, branch, record.id, record.status]);
 
   const readOnly = record.status === 'closed';
 

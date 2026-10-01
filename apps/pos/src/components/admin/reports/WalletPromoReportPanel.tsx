@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -11,17 +11,27 @@ import { Badge } from '@/components/ui/badge';
 import { downloadCsv } from '@/lib/csv';
 import {
   defaultReportFilters,
-  walletCreditSummary,
-  walletLedgerRows,
+  platformWalletCreditReport,
   promoUsageSummary,
+  type WalletCreditReport,
 } from '@/lib/reporting';
 import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
 
+const EMPTY_REPORT: WalletCreditReport = {
+  summary: { grantedSatang: 0, spentSatang: 0, refundedSatang: 0, expiredSatang: 0, netOutstandingSatang: 0, entryCount: 0 },
+  rows: [],
+  totalEntries: 0,
+};
+
 /**
- * Wallet-credit + promo-code usage report. Wristband records carry no
- * branchId in the data model, so the wallet section is always network-wide
- * (flagged below) regardless of the branch filter — the date range still
- * applies to ledger entries.
+ * Wallet-credit + promo-code usage report.
+ *
+ * S2-14a round 3 — the wallet half reads the PLATFORM's ledger
+ * (`platformWalletCreditReport`, `GET /wallets/report`): the figures are the
+ * entries summed by kind over the range's business dates, the live balance is
+ * the sum of every wallet's balance today, and a wallet belongs to the park
+ * that issued it, so the branch filter now applies to it. The promo half is
+ * still the catalog's mock counters until vouchers move (round 5).
  *
  * Note: usedCount/usageLimit on each promo row are lifetime, network-wide
  * catalog counters, but totalDiscountValueSatang is scoped to the current date
@@ -30,18 +40,50 @@ import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, cs
  */
 export function WalletPromoReportPanel() {
   const [filters, setFilters] = useState(defaultReportFilters());
-  const summary = useMemo(() => walletCreditSummary(filters), [filters]);
-  const ledger = useMemo(() => walletLedgerRows(filters).slice(0, 100), [filters]);
+  const [report, setReport] = useState<WalletCreditReport>(EMPTY_REPORT);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    setLoadError(null);
+    platformWalletCreditReport(filters)
+      .then((next) => { if (live) setReport(next); })
+      .catch((err: unknown) => {
+        if (!live) return;
+        setReport(EMPTY_REPORT);
+        setLoadError(err instanceof Error ? err.message : 'The wallet figures could not be loaded.');
+      });
+    return () => { live = false; };
+  }, [filters]);
+  const summary = report.summary;
+  const ledger = report.rows;
   const promos = useMemo(() => promoUsageSummary(filters), [filters]);
+
+  const exportLedger = async () => {
+    const all = await platformWalletCreditReport(filters, 1000);
+    downloadCsv(
+      `wallet-ledger_${filters.startDate}_${filters.endDate}`,
+      ['Wristband', 'Customer', 'Kind', 'Amount', 'Source', 'At', 'By'],
+      all.rows.map((r) => [
+        r.wristbandCode,
+        r.customerNickname,
+        r.kind,
+        csvBaht(r.amountSatang),
+        r.source,
+        r.at,
+        r.by ?? '',
+      ])
+    );
+  };
 
   return (
     <div className="flex flex-col gap-5">
       <ReportFilterBar filters={filters} onChange={setFilters} />
 
-      <ShellBanner>
-        Wristband wallet balances are not tagged by branch in the data model — this section is
-        always network-wide, regardless of the branch filter above.
-      </ShellBanner>
+      {loadError && (
+        <ShellBanner>
+          The wallet figures could not be loaded from the platform — {loadError}
+        </ShellBanner>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {[
@@ -57,28 +99,15 @@ export function WalletPromoReportPanel() {
           </div>
         ))}
       </div>
+      {(summary.reactivatedSatang ?? 0) > 0 && (
+        <p className="-mt-3 text-xs text-foreground/50">
+          Includes {thbFromSatang(summary.reactivatedSatang ?? 0)} of expired credit a manager reactivated in this range.
+        </p>
+      )}
 
       <ReportCard
         title={`Wallet ledger — ${ledger.length} of ${summary.entryCount} entries shown`}
-        action={
-          <ExportCsvButton
-            onExport={() =>
-              downloadCsv(
-                `wallet-ledger_${filters.startDate}_${filters.endDate}`,
-                ['Wristband', 'Customer', 'Kind', 'Amount', 'Source', 'At', 'By'],
-                walletLedgerRows(filters).map((r) => [
-                  r.wristbandCode,
-                  r.customerNickname,
-                  r.kind,
-                  csvBaht(r.amountSatang),
-                  r.source,
-                  r.at,
-                  r.by ?? '',
-                ])
-              )
-            }
-          />
-        }
+        action={<ExportCsvButton onExport={() => { void exportLedger(); }} />}
       >
         <Table>
           <TableHeader>

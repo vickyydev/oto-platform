@@ -33,6 +33,11 @@ import {
   purgeOldSyncEvents,
   syncSettings,
 } from './sync';
+import { runWalletExpiryJob, runWalletLiabilityJob } from './wallet';
+
+/** S2-14a round 3 — the wallet day-end jobs, named once (the runner, the tests, the Health page). */
+export const WALLET_EXPIRY_JOB = 'job:wallet.expiry';
+export const WALLET_LIABILITY_JOB = 'job:wallet.liability';
 
 /**
  * The job runner and the watchdog (S2-03).
@@ -520,6 +525,43 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
         "Writes each gate branch's head count per quarter-hour and records the groups still counted inside when a trading day ends",
       intervalSeconds: 300,
       run: async ({ db, now }) => ({ detail: await runOccupancyJob(db, now) }),
+    },
+    /**
+     * `job:wallet.expiry` — THE BRANCH'S DAY ENDS, ITS CREDIT EXPIRES (S2-14a
+     * round 3, plan §2.5).
+     *
+     * Every five minutes, for each live branch, the trading days that have
+     * ENDED — a week back, as the occupancy day-end does, so a job that was
+     * down across a boundary still closes the days it missed: every wallet
+     * whose credit's expiry (recorded from the branch's `wallet_policy` when it
+     * was granted — same day, N days, never) has passed loses what it held
+     * through that day, as an `expire` entry keyed by branch, date and wallet
+     * (`expireWalletsForDay` in `services/wallet.ts`). A rerun writes nothing
+     * new. A counter cannot spend credit in the minutes between the boundary
+     * and this tick: the spend checks the expiry's clock as well as the status.
+     */
+    {
+      name: WALLET_EXPIRY_JOB,
+      description: "Expires each branch's wallet credit at the end of its trading day, by the branch's wallet policy",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runWalletExpiryJob(db, now) }),
+    },
+    /**
+     * `job:wallet.liability` — THE OFFICE'S DAILY STORED-VALUE FACT (round 3).
+     *
+     * After the expiry above (array order is run order in `runDue`), each live
+     * branch's ended days are recomputed from the ledger into
+     * `analytics.fact_wallet_liability_daily` — granted, spent, refunded back,
+     * expired, reactivated, outstanding — and upserted only when a figure
+     * moved, so a quiet tick writes nothing and a late offline spend corrects
+     * the day it belongs to. outstanding(D) = outstanding(D-1) + granted -
+     * spent + refunded - expired + reactivated, exactly (wallet-r3-figures).
+     */
+    {
+      name: WALLET_LIABILITY_JOB,
+      description: "Writes each branch's daily wallet liability (granted, spent, refunded, expired, outstanding) from the ledger",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runWalletLiabilityJob(db, now) }),
     },
   ];
 }

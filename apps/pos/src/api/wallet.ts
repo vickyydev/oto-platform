@@ -12,9 +12,9 @@
 // (`scanWallet`), and the till's tab is built from the platform's wallet
 // (`wristbandOfWallet`) — the balance, the ledger popover and the key the
 // confirm press sends to spend it (`api/sales.ts`, `spendWalletOnSale`).
-import type { WalletEntryView, WalletGrantView, WalletView } from '@oto/shared';
+import type { WalletCreditDay, WalletEntryView, WalletGrantView, WalletPolicyViewDto, WalletReportRow, WalletReportSummary, WalletView } from '@oto/shared';
 import type { Wristband, WalletEntry } from '@/types';
-import { ApiError, api } from './client';
+import { ApiError, api, idemKey } from './client';
 
 export type ApiWalletGrant = WalletGrantView;
 
@@ -92,7 +92,7 @@ export function wristbandOfWallet(read: ApiWalletRead, scannedKey: string): Wris
     ...(read.wallet.memberId ? { memberId: read.wallet.memberId } : {}),
     customerNickname: read.wallet.holderName ?? 'Guest',
     ...(read.wallet.holderName ? { holderName: read.wallet.holderName } : {}),
-    creditBalanceTHB: read.wallet.status === 'active' ? read.wallet.balanceSatang / 100 : 0,
+    creditBalanceTHB: walletSpendableSatang(read.wallet) / 100,
     ledger: walletEntriesOf(read.ledger),
     // Only the gate reader consults this (types.ts), never a counter; a
     // wallet's tab opens nothing at the entrance.
@@ -119,4 +119,64 @@ export async function scanWallet(key: string): Promise<Wristband | null> {
     if (err instanceof ApiError && (err.status === 404 || err.status === 400)) return null;
     throw err;
   }
+}
+
+// --- Round 3: expiry, reactivation, the figures ---------------------------------
+
+/**
+ * What a wallet can spend right now, in satang: nothing unless it is active
+ * and its credit's expiry (round 3) has not passed; and never the part the
+ * platform says has lapsed by the clock (`lapsedSatang` — older credit on a
+ * reloaded wallet, dead on its own date) before the day-end job takes it. The
+ * platform refuses past either, so the counter offers no more than this.
+ */
+export function walletSpendableSatang(view: Pick<WalletView, 'status' | 'expiresAt' | 'balanceSatang' | 'lapsedSatang'>, now: number = Date.now()): number {
+  if (view.status !== 'active') return 0;
+  if (view.expiresAt && Date.parse(view.expiresAt) <= now) return 0;
+  return Math.max(0, view.balanceSatang - (view.lapsedSatang ?? 0));
+}
+
+/** Whether a wallet has any credit a counter may spend right now. */
+export function walletSpendable(view: Pick<WalletView, 'status' | 'expiresAt' | 'balanceSatang' | 'lapsedSatang'>, now: number = Date.now()): boolean {
+  if (view.status !== 'active') return false;
+  if (view.expiresAt && Date.parse(view.expiresAt) <= now) return false;
+  // A wallet with nothing on it is still "spendable" in kind — the platform
+  // answers WALLET_EMPTY, the counter shows ฿0 — unless what it holds has lapsed.
+  return view.balanceSatang === 0 || walletSpendableSatang(view, now) > 0;
+}
+
+/** The read after a reactivation: the wallet live again and its ledger with the new entry. */
+export interface ApiWalletReactivated extends ApiWalletRead {
+  replayed: boolean;
+}
+
+/**
+ * Bring a wallet's expired credit back (`pos:wallet:reactivate`), with the
+ * reason the manager typed. One key per gesture, so a retried press is the
+ * same reactivation.
+ */
+export function reactivateWallet(walletId: string, reason: string, idempotencyKey: string = idemKey()): Promise<ApiWalletReactivated> {
+  return api.post<ApiWalletReactivated>(`/wallets/${encodeURIComponent(walletId)}/reactivate`, { reason }, { idempotencyKey });
+}
+
+/** The branch's wallet rules (expiry, the offline cap, unused prepaid food). */
+export function getWalletPolicy(branchApiId: string): Promise<WalletPolicyViewDto> {
+  return api.get<WalletPolicyViewDto>(`/wallets/policy?branchId=${encodeURIComponent(branchApiId)}`);
+}
+
+export interface ApiWalletReport {
+  summary: WalletReportSummary;
+  rows: WalletReportRow[];
+}
+
+/** The Wallet & Promo report's credit half, for a business-date range; no branch = every park this account reads. */
+export function getWalletReport(params: { branchApiId?: string | null; from: string; to: string; limit?: number }): Promise<ApiWalletReport> {
+  const q = new URLSearchParams({ from: params.from, to: params.to, limit: String(params.limit ?? 100) });
+  if (params.branchApiId) q.set('branchId', params.branchApiId);
+  return api.get<ApiWalletReport>(`/wallets/report?${q}`);
+}
+
+/** The End of day `credit` line for one business date: counter credit redeemed, net of restores. */
+export function getCreditDay(branchApiId: string, date: string): Promise<WalletCreditDay> {
+  return api.get<WalletCreditDay>(`/wallets/credit-day?branchId=${encodeURIComponent(branchApiId)}&date=${encodeURIComponent(date)}`);
 }

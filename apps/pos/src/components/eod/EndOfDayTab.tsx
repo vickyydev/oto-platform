@@ -7,7 +7,8 @@ import { CashCountCard } from '@/components/eod/CashCountCard';
 import { ReconSummary } from '@/components/eod/ReconSummary';
 import { AmountInput } from '@/components/eod/AmountInput';
 import { getEdcTerminals, getEndOfDay, getFloatCarryover, closeEndOfDay } from '@/mockApi';
-import { recomputeEndOfDay } from '@/lib/endOfDay';
+import { recomputeEndOfDay, withCreditLine } from '@/lib/endOfDay';
+import { creditLineKey, useCreditLine } from '@/components/eod/useCreditLine';
 import { useOperator } from '@/auth/OperatorContext';
 import { EndOfDay as EndOfDayRecord } from '@/types';
 import { Lock, Vault } from 'lucide-react';
@@ -30,6 +31,15 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
   useEffect(() => {
     setRecord(getEndOfDay(date, branch));
   }, [date, branch]);
+
+  // S2-14a round 3 — the credit line is the platform's figure for this
+  // business date (an open day only; a closed day keeps what was locked).
+  const credit = useCreditLine(date, branch);
+  useEffect(() => {
+    if (credit.key !== creditLineKey(date, branch) || credit.expectedTHB === null) return;
+    const expected = credit.expectedTHB;
+    setRecord((prev) => (prev.date === date && prev.branchId === branch ? withCreditLine(prev, expected) : prev));
+  }, [credit, date, branch, record.id, record.status]);
 
   const readOnly = record.status === 'closed';
 
@@ -98,6 +108,11 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
           readOnly={readOnly}
           onActual={setActual}
         />
+        {credit.error && !readOnly && (
+          <p role="status" className="mt-3 text-xs text-amber-600">
+            The credit line could not be read from the platform — {credit.error}
+          </p>
+        )}
       </Card>
 
       {/* Cash count */}

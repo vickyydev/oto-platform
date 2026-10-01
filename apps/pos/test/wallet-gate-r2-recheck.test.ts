@@ -18,7 +18,7 @@ import type { SaleWriteOutcome } from '@/lib/saleWriter';
  * credit it holds the attempt for — the settlement, the "฿X taken from credit"
  * line and the display's "From your credit" row all read the same figure.
  *
- * KEPT AS it.fails: the stage adds `walletSpend.amountSatang` (null on a
+ * FIXED in round 3 (was it.fails): the stage added `walletSpend.amountSatang` (null on a
  * replay) to `creditSatang`, so after the retry the till card reads "applies
  * ฿40" instead of "฿50 taken from credit" and the guest display drops its
  * "From your credit" row, while the settlement and the receipt are right.
@@ -50,7 +50,7 @@ afterEach(() => {
 });
 
 describe('a credit press retried after a lost answer', () => {
-  it.fails('counts the credit the replay names — the till and the display agree with the settlement', async () => {
+  it('counts the credit the replay names — the till and the display agree with the settlement', async () => {
     vi.spyOn(paymentMethods, 'findPaymentMethod').mockImplementation((id) => METHODS.find((m) => m.id === id));
     vi.spyOn(paymentMethods, 'getEnabledPaymentMethods').mockReturnValue(METHODS);
     const sale = apiSale({ totals: { ...apiSale().totals, grossSatang: 9_000 } });

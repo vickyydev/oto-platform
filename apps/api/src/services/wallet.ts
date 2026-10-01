@@ -1,10 +1,11 @@
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 import {
   account,
   band,
   branch,
   checkin,
   employee,
+  factWalletLiabilityDaily,
   sale,
   saleLine,
   ticketPackage,
@@ -16,8 +17,10 @@ import {
 } from '@oto/db';
 import {
   DEFAULT_WALLET_POLICY,
+  addDaysToIsoDate,
   bandShortCode,
   businessDate as businessDateOf,
+  businessDayEndsAt,
   earningPersonsOf,
   formatTHB,
   grantExpiresAt,
@@ -33,7 +36,11 @@ import {
   type WalletExpiryPolicy,
   type WalletGrantView,
   type WalletKeyKind,
+  type WalletCreditDay,
+  type WalletPolicyViewDto,
   type WalletPrepaidUnusedPolicy,
+  type WalletReportRow,
+  type WalletReportSummary,
   type WalletView,
 } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
@@ -113,6 +120,21 @@ async function expiryFor(db: Exec, branchId: string, at: Date): Promise<{ busine
   return { businessDate: date, expiresAt: grantExpiresAt(policy, date, br.timezone, dayStart) };
 }
 
+/**
+ * THE WALLET LEDGER'S DATE IS THE CLOCK'S (round 3 re-check, R1/R2/R2b): an
+ * entry is filed under the branch's trading day of the moment the money MOVES
+ * — never under the day of the sale it settles. A tab rung up before the
+ * boundary and paid with credit after it spends credit that exists NOW; dating
+ * that spend by the sale made the catch-up expiry of the earlier day count it
+ * against that day's credit (and under-expire), and sent that day's figures
+ * below zero. The payment attempt keeps the sale's date (the cash-up groups
+ * on it); the wallet entry keeps the sale backlink and takes the clock's day.
+ */
+async function tradingDayAt(db: Exec, branchId: string, at: Date): Promise<string> {
+  const clock = await branchClockOf(db, branchId);
+  return businessDateOf(at, clock.timezone, clock.dayStartMinutes);
+}
+
 // --- The two primitives ----------------------------------------------------------
 
 /** Where and why an entry was written — every column an entry carries besides its money. */
@@ -129,10 +151,18 @@ export interface EntryContext {
   stationId?: string | null;
   boxId?: string | null;
   offline?: boolean;
+  /**
+   * The trading day the entry is filed under. Left out, it is the branch's day
+   * of `now` (`tradingDayAt`) — the day the money moved. A caller that passes
+   * one passes the day of the same moment (a grant's policy date, a test's
+   * clock); the ledger never takes a date earlier than its own instant.
+   */
   businessDate?: string | null;
   expiresAt?: Date | null;
   payload?: unknown;
   now?: Date;
+  /** Round 3: a person's typed reason (a reactivation), carried into the audit row. */
+  reason?: string | null;
 }
 
 /**
@@ -170,13 +200,19 @@ async function applyEntry(tx: Tx, actor: WalletActor, walletId: string, ctx: Ent
     );
   }
   const now = ctx.now ?? new Date();
+  // The day the money moves, on the clock of the park the entry is written at
+  // (the wallet's own park when the context names none).
+  const dayBranchId = ctx.branchId ?? locked.branchId;
+  const businessDate = ctx.businessDate ?? (dayBranchId ? await tradingDayAt(tx, dayBranchId, now) : null);
   const [updated] = await tx
     .update(wallet)
     .set({
       balanceSatang: balanceAfter,
       // Credit loaded onto a wallet makes it spendable again; only the expiry
-      // job (round 3) moves one the other way.
+      // job (round 3) moves one the other way — an expiry that leaves nothing
+      // on the wallet closes it.
       ...(ctx.kind === 'grant' || ctx.kind === 'reactivate' ? { status: 'active' as const } : {}),
+      ...(ctx.kind === 'expire' && balanceAfter === 0 ? { status: 'expired' as const } : {}),
       updatedAt: now,
     })
     .where(eq(wallet.id, walletId))
@@ -198,7 +234,7 @@ async function applyEntry(tx: Tx, actor: WalletActor, walletId: string, ctx: Ent
       stationId: ctx.stationId ?? null,
       boxId: ctx.boxId ?? null,
       offline: ctx.offline ?? false,
-      businessDate: ctx.businessDate ?? null,
+      businessDate,
       actorAccountId: actor.accountId,
       expiresAt: ctx.expiresAt ?? null,
       balanceAfter,
@@ -227,6 +263,8 @@ async function applyEntry(tx: Tx, actor: WalletActor, walletId: string, ctx: Ent
       saleId: ctx.saleId ?? null,
       refundId: ctx.refundId ?? null,
       stationId: ctx.stationId ?? null,
+      ...(businessDate ? { businessDate } : {}),
+      ...(ctx.reason ? { reason: ctx.reason } : {}),
     },
   });
   return { wallet: updated, entry };
@@ -457,6 +495,12 @@ export interface SaleSpendInput {
   saleId: string;
   stationId?: string | null;
   boxId?: string | null;
+  /**
+   * The SALE's trading day, as the caller carries it for the attempt. It is
+   * NOT the spend entry's date: the ledger files the spend under the branch's
+   * day of `now`, the moment the credit moves (`tradingDayAt`) — a tab opened
+   * before the boundary and paid after it spends today's credit, today.
+   */
   businessDate?: string | null;
   now?: Date;
   /**
@@ -499,12 +543,21 @@ export async function debitForSale(tx: Tx, actor: WalletActor, input: SaleSpendI
   if (!found || (found.branchId && found.branchId !== input.branchId)) throw walletNotFound();
   const [locked] = await tx.select().from(wallet).where(eq(wallet.id, found.id)).for('update').limit(1);
   if (!locked || locked.operatorId !== actor.operatorId) throw walletNotFound();
-  const balance = locked.balanceSatang;
-  if (locked.status !== 'active') {
+  const now = input.now ?? new Date();
+  // Round 3: expired by its status (the end-of-day job has run) OR by the
+  // clock (credit whose expiry has passed and the job has not taken yet) —
+  // the same refusal either way, so no counter spends credit in the gap
+  // between the branch's day ending and the job's next tick. The clock reads
+  // EACH credit's own expiry (`lapsedCreditOf`, the gate's G1): yesterday's
+  // same-day credit is dead at noon today however much was loaded this
+  // morning, and only this morning's load is spendable.
+  const lapsed = locked.status === 'active' ? await lapsedCreditOf(tx, locked, now) : locked.balanceSatang;
+  const balance = locked.balanceSatang - lapsed;
+  if (locked.status !== 'active' || (lapsed > 0 && balance <= 0) || (locked.balanceSatang === 0 && (await allCreditExpired(tx, locked.id, now)))) {
     throw errors.conflict(
       'WALLET_EXPIRED',
-      `This wallet's credit has expired${balance > 0 ? ` (${formatTHB(balance)})` : ''} — only a manager can bring it back. Take the order in cash or card.`,
-      { walletId: locked.id, balanceSatang: balance },
+      `This wallet's credit has expired${locked.balanceSatang > 0 ? ` (${formatTHB(locked.balanceSatang)})` : ''} — only a manager can bring it back. Take the order in cash or card.`,
+      { walletId: locked.id, balanceSatang: locked.balanceSatang, lapsedSatang: lapsed },
     );
   }
   if (input.outstandingSatang <= 0) throw errors.badRequest('This order owes nothing, so there is no credit to take');
@@ -548,14 +601,16 @@ export async function debitForSale(tx: Tx, actor: WalletActor, input: SaleSpendI
     paymentAttemptId: attempt.id,
     stationId: input.stationId ?? null,
     boxId: input.boxId ?? null,
-    businessDate: input.businessDate ?? null,
-    now: input.now,
+    // The day the credit moves, not the sale's (`tradingDayAt`): the attempt
+    // keeps `input.businessDate`; the wallet ledger belongs to the clock.
+    businessDate: await tradingDayAt(tx, input.branchId, now),
+    now,
   });
   return {
     walletId: locked.id,
     attemptId: attempt.id,
     amountSatang: amount,
-    balanceBeforeSatang: balance,
+    balanceBeforeSatang: locked.balanceSatang,
     balanceAfterSatang: written.entry.balanceAfter,
     entryId: written.entry.id,
   };
@@ -749,8 +804,12 @@ export async function walletViewOf(db: Exec, row: WalletRow): Promise<WalletView
     .from(walletKey)
     .where(eq(walletKey.walletId, row.id))
     .orderBy(asc(walletKey.createdAt));
+  const expiresAt = await creditExpiresAt(db, row.id);
+  const lapsedSatang = row.status === 'active' ? await lapsedCreditOf(db, row, new Date()) : 0;
   return {
     id: row.id,
+    expiresAt: expiresAt?.toISOString() ?? null,
+    lapsedSatang,
     branchId: row.branchId,
     memberId: row.memberId,
     holderName: row.holderName,
@@ -1141,13 +1200,681 @@ export async function prepaidBalanceOf(
   // a counter's spend cannot change before the debit lands.
   const [row] = options.lock ? await base.for('update').limit(1) : await base.limit(1);
   if (!row) return null;
+  // Round 3 (the r2 re-check's kept failure): only COUNTER spending is this
+  // stay's — a spend at F&B or the shop, and the restores refunds put back
+  // through those tenders. Another stay's release debit (kind `spend`, source
+  // `refund`) is that stay's cash going home, not this stay's food, and an
+  // expiry is neither.
   const since = await db
     .select({ id: walletEntry.id, kind: walletEntry.kind, amount: walletEntry.amountSatang, createdAt: walletEntry.createdAt })
     .from(walletEntry)
-    .where(and(eq(walletEntry.walletId, row.id), inArray(walletEntry.kind, ['spend', 'refund'])));
+    .where(
+      and(
+        eq(walletEntry.walletId, row.id),
+        sql`((${walletEntry.kind} = 'spend' and ${walletEntry.source} in ('fnb_order','merch_order')) or (${walletEntry.kind} = 'refund' and ${walletEntry.source} = 'refund'))`,
+      ),
+    );
   const spentSatang = since
     .filter((e) => e.id !== loaded.id && (e.createdAt > loaded.createdAt || (e.createdAt.getTime() === loaded.createdAt.getTime() && e.id > loaded.id)))
     .reduce((sum, e) => sum - e.amount, 0);
   const refundableSatang = Math.max(0, Math.min(row.balanceSatang, loaded.amountSatang - Math.max(0, spentSatang)));
   return { walletId: row.id, balanceSatang: row.balanceSatang, loadedSatang: loaded.amountSatang, spentSatang, refundableSatang };
+}
+
+// --- Round 3: expiry, reactivation, the figures (plan §2.5) -------------------------
+
+/**
+ * WHEN THE WALLET'S NEWEST CREDIT STOPS BEING SPENDABLE: the `expires_at` its
+ * LATEST credit recorded — a ticket grant, a child's prepaid load or a
+ * reactivation — which each wrote from the branch's `wallet_policy` at the
+ * time (same day, N business days, or null for `never`). The view's date.
+ * It is NOT the rule a spend or the day end goes by: each credit expires by
+ * its own date (`expiredCreditHeld`), so older credit on a reloaded wallet
+ * dies on time whatever the newest load says.
+ */
+export async function creditExpiresAt(db: Exec, walletId: string): Promise<Date | null> {
+  const [latest] = await db
+    .select({ expiresAt: walletEntry.expiresAt })
+    .from(walletEntry)
+    .where(and(eq(walletEntry.walletId, walletId), inArray(walletEntry.kind, ['grant', 'reactivate'])))
+    .orderBy(desc(walletEntry.createdAt), desc(walletEntry.id))
+    .limit(1);
+  return latest?.expiresAt ?? null;
+}
+
+/** What the expiry rule reads of an entry. */
+export interface CreditLot {
+  kind: WalletEntryKind;
+  amountSatang: number;
+  expiresAt: Date | null;
+}
+
+/**
+ * HOW MUCH OF WHAT A WALLET HOLDS HAS EXPIRED, as at `at` (the gate's G1).
+ *
+ * The ledger is one pool, not lots, so the rule is the kindest reading that
+ * still lets no credit outlive its policy: a spend is taken from the credit
+ * that dies FIRST, so whatever is still live is attributed to the credit that
+ * has not expired yet, and the rest has. In figures: `held` is what the
+ * entries given sum to; `live` is the credit entries (grant, reactivate) whose
+ * own `expires_at` is after `at`, or null (`never`); and the expired part is
+ * `held - live`, floored at zero and capped at what the wallet holds now.
+ *
+ *   - same_day: every credit dated yesterday or before is dead today, and only
+ *     today's load is spendable — a reload never revives it;
+ *   - days_n: a lot taken by its own last day, however many came after it;
+ *   - never: nothing, ever, since every credit is live.
+ *
+ * Pure, so the spend's clock check, the day-end job and the view agree by
+ * construction: the job passes the entries dated through the day with the
+ * day's cutoff; a spend passes them all with "now".
+ */
+export function expiredCreditHeld(entries: readonly CreditLot[], at: Date, balanceNow: number): number {
+  let held = 0;
+  let live = 0;
+  for (const e of entries) {
+    held += e.amountSatang;
+    if ((e.kind === 'grant' || e.kind === 'reactivate') && (!e.expiresAt || e.expiresAt.getTime() > at.getTime())) live += e.amountSatang;
+  }
+  return Math.min(balanceNow, Math.max(0, held - live));
+}
+
+async function lotsOf(db: Exec, walletId: string): Promise<(CreditLot & { businessDate: string | null; createdAt: Date })[]> {
+  return db
+    .select({ kind: walletEntry.kind, amountSatang: walletEntry.amountSatang, expiresAt: walletEntry.expiresAt, businessDate: walletEntry.businessDate, createdAt: walletEntry.createdAt })
+    .from(walletEntry)
+    .where(eq(walletEntry.walletId, walletId));
+}
+
+/**
+ * THE CREDIT ON A WALLET THAT HAS LAPSED BY THE CLOCK and the day-end job has
+ * not taken yet: what a counter may NOT spend of the balance, right now. Zero
+ * on a closed wallet (its balance is a refund's, live until the next day end).
+ */
+export async function lapsedCreditOf(db: Exec, row: Pick<WalletRow, 'id' | 'balanceSatang' | 'status'>, now: Date): Promise<number> {
+  if (row.status !== 'active' || row.balanceSatang <= 0) return 0;
+  return expiredCreditHeld(await lotsOf(db, row.id), now, row.balanceSatang);
+}
+
+/** True when the wallet has had credit and every piece of it has expired by `at`. */
+async function allCreditExpired(db: Exec, walletId: string, at: Date): Promise<boolean> {
+  const credits = (await lotsOf(db, walletId)).filter((e) => e.kind === 'grant' || e.kind === 'reactivate');
+  return credits.length > 0 && credits.every((e) => e.expiresAt !== null && e.expiresAt.getTime() <= at.getTime());
+}
+
+/** A branch's clock, as the day-end work reads it. */
+export interface WalletBranchClock {
+  id: string;
+  operatorId: string;
+  timezone: string;
+  dayStartMinutes: number;
+}
+
+async function branchClockOf(db: Exec, branchId: string): Promise<WalletBranchClock> {
+  const [br] = await db
+    .select({ id: branch.id, operatorId: branch.operatorId, timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(eq(branch.id, branchId))
+    .limit(1);
+  if (!br) throw errors.notFound('Branch not found');
+  return { id: br.id, operatorId: br.operatorId, timezone: br.timezone, dayStartMinutes: parseDayStart(br.dayStart) };
+}
+
+/** Every live branch, for the day-end jobs. */
+export async function walletBranchClocks(db: Exec): Promise<WalletBranchClock[]> {
+  const rows = await db
+    .select({ id: branch.id, operatorId: branch.operatorId, timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(isNull(branch.archivedAt));
+  return rows.map((br) => ({ id: br.id, operatorId: br.operatorId, timezone: br.timezone, dayStartMinutes: parseDayStart(br.dayStart) }));
+}
+
+/**
+ * The business date an entry belongs to: the one it carries (the clock's day
+ * of its moment, `applyEntry`), else — a row written before the ledger carried
+ * one — the day its instant fell in at its branch. Both are the day the money
+ * moved, never the day of the sale it settled.
+ */
+function entryDay(entry: { businessDate: string | null; createdAt: Date }, clock: WalletBranchClock): string {
+  return entry.businessDate ?? businessDateOf(entry.createdAt, clock.timezone, clock.dayStartMinutes);
+}
+
+/** One expiry per wallet per business day per branch, for ever. */
+export function expiryActionId(branchId: string, businessDate: string, walletId: string): string {
+  return `expiry:${branchId}:${businessDate}:${walletId}`;
+}
+
+export interface WalletDayExpiry {
+  branchId: string;
+  businessDate: string;
+  /** False when the day has not ended yet at this branch — nothing was looked at. */
+  ended: boolean;
+  /** Wallets an `expire` entry was written for, and what they held. */
+  expiredWallets: number;
+  expiredSatang: number;
+  /** Wallets already at ฿0 whose credit had run out: closed, no entry (no money moved). */
+  closedAtZero: number;
+}
+
+/**
+ * THE BRANCH'S DAY ENDS — ITS CREDIT EXPIRES (plan §2.5; prototype
+ * `expireFnbCredit`, `mockApi.ts:2645-2654`: zero the balance, write an
+ * `expire` / `expiry` entry for what was left).
+ *
+ * For one branch and one ENDED business day: every wallet issued there that
+ * holds credit which had expired by that day's end — EACH credit by its OWN
+ * `expires_at` (`expiredCreditHeld`), never the newest load's — loses that
+ * credit as it stood through that day: an `expire` entry keyed
+ * `expiry:<branch>:<date>:<wallet>`, dated that business day. A wallet that
+ * leaves nothing on the wallet closes (`status = expired`). A child's prepaid
+ * food is a wallet like any other and expires with it. `never` credit has no
+ * expiry and is never touched; `days_n` credit is touched at its last day's
+ * end, and a same-day load made on a LATER day neither saves the older credit
+ * nor is taken with it (the gate's G1: a job that catches up a missed day
+ * takes that day's credit and leaves the day after's).
+ *
+ * WHAT A DAY'S EXPIRY TAKES is read off the entries dated that day or before
+ * — never more than the wallet holds now. An entry's date is the day its
+ * money MOVED (`entryDay`), so a spend made today on a tab from yesterday is
+ * today's and a catch-up of yesterday neither nets it off yesterday's credit
+ * nor under-expires (the re-check's R1). Credit a refund put back after the
+ * boundary belongs to the next day's figures and expires at the next day's
+ * end — ALSO on a wallet the job had already closed (the gate's G2): a closed
+ * wallet with money on it is a candidate like a live one, so nothing is ever
+ * credit nobody can spend, bring back or expire.
+ *
+ * Idempotent: a rerun finds the action written (or the wallet closed) and
+ * writes nothing new; two job instances racing one wallet queue on the
+ * action's lock.
+ */
+export async function expireWalletsForDay(db: Exec, branchId: string, businessDate: string, now: Date = new Date()): Promise<WalletDayExpiry> {
+  const clock = await branchClockOf(db, branchId);
+  const cutoff = businessDayEndsAt(businessDate, clock.timezone, clock.dayStartMinutes);
+  const result: WalletDayExpiry = {
+    branchId,
+    businessDate,
+    ended: cutoff.getTime() <= now.getTime(),
+    expiredWallets: 0,
+    expiredSatang: 0,
+    closedAtZero: 0,
+  };
+  if (!result.ended) return result;
+  // A live wallet with ANY credit that had expired by the cutoff, or a closed
+  // one a refund has put money back on since.
+  const candidates = await db.execute<{ id: string }>(sql`
+    select w.id from pos.wallet w
+    where w.branch_id = ${branchId}
+      and ((w.status = 'active'
+            and exists (select 1 from pos.wallet_entry e
+                        where e.wallet_id = w.id and e.kind in ('grant','reactivate')
+                          and e.expires_at <= ${cutoff.toISOString()}::timestamptz))
+           or (w.status = 'expired' and w.balance_satang > 0))
+    order by w.id`);
+  const actor: WalletActor = { accountId: null, operatorId: clock.operatorId };
+  for (const { id } of candidates.rows) {
+    await db.transaction(async (tx) => {
+      const actionId = expiryActionId(branchId, businessDate, id);
+      await lockAction(tx, clock.operatorId, actionId);
+      if (await entryOfAction(tx, clock.operatorId, actionId)) return;
+      const [locked] = await tx.select().from(wallet).where(eq(wallet.id, id)).for('update').limit(1);
+      if (!locked) return;
+      if (locked.status !== 'active' && locked.balanceSatang === 0) return;
+      // Read under the lock: credit loaded since the candidates were read is
+      // dated after this day and counts for neither side of the rule.
+      const lots = (await lotsOf(tx, id)).filter((e) => entryDay(e, clock) <= businessDate);
+      const credits = lots.filter((e) => e.kind === 'grant' || e.kind === 'reactivate');
+      // Nothing of this wallet's credit had expired by this day's end.
+      if (locked.status === 'active' && !credits.some((e) => e.expiresAt && e.expiresAt.getTime() <= cutoff.getTime())) return;
+      const amount = expiredCreditHeld(lots, cutoff, locked.balanceSatang);
+      if (amount > 0) {
+        await applyEntry(tx, actor, id, {
+          actionId,
+          kind: 'expire',
+          source: 'expiry',
+          amountSatang: -amount,
+          branchId,
+          businessDate,
+          payload: {
+            expiredAt: cutoff.toISOString(),
+            // The dates of the credit this took, oldest first — the lots, for the books.
+            creditExpiresAt: [...new Set(credits.filter((e) => e.expiresAt && e.expiresAt.getTime() <= cutoff.getTime()).map((e) => e.expiresAt!.toISOString()))].sort(),
+          },
+          now,
+        });
+        result.expiredWallets += 1;
+        result.expiredSatang += amount;
+      } else if (
+        locked.balanceSatang === 0 &&
+        locked.status === 'active' &&
+        // Closed only once no credit on it is still live — a `days_n` wallet
+        // spent to ฿0 with a lot still in date stays open for a refund.
+        !credits.some((e) => !e.expiresAt || e.expiresAt.getTime() > cutoff.getTime())
+      ) {
+        await tx.update(wallet).set({ status: 'expired', updatedAt: now }).where(eq(wallet.id, id));
+        await audit.record(tx, {
+          actorAccountId: null,
+          operatorId: clock.operatorId,
+          branchId,
+          action: 'wallet.expire',
+          entityType: 'wallet',
+          entityId: id,
+          actionId,
+          before: { balanceSatang: 0, status: locked.status },
+          after: { balanceSatang: 0, status: 'expired', businessDate, amountSatang: 0 },
+        });
+        result.closedAtZero += 1;
+      }
+    });
+  }
+  return result;
+}
+
+/** How many ended days back the day-end jobs look, so a job that was down closes the days it missed. */
+export const WALLET_DAY_END_LOOKBACK_DAYS = 7;
+
+/** The ended business days a branch's day-end work covers at `now`, oldest first. */
+export function endedWalletDays(clock: WalletBranchClock, now: Date, lookback = WALLET_DAY_END_LOOKBACK_DAYS): string[] {
+  const today = businessDateOf(now, clock.timezone, clock.dayStartMinutes);
+  const days: string[] = [];
+  for (let d = lookback; d >= 1; d -= 1) days.push(addDaysToIsoDate(today, -d));
+  return days;
+}
+
+/** `job:wallet.expiry` — every branch's ended days, expired by its policy. */
+export async function runWalletExpiryJob(db: Exec, now: Date): Promise<Record<string, number>> {
+  let days = 0;
+  let wallets = 0;
+  let satang = 0;
+  let closed = 0;
+  for (const clock of await walletBranchClocks(db)) {
+    for (const date of endedWalletDays(clock, now)) {
+      const done = await expireWalletsForDay(db, clock.id, date, now);
+      days += 1;
+      wallets += done.expiredWallets;
+      satang += done.expiredSatang;
+      closed += done.closedAtZero;
+    }
+  }
+  return { days, expiredWallets: wallets, expiredSatang: satang, closedAtZero: closed };
+}
+
+/** One reactivation per expiry: bringing the same expired credit back twice is a replay. */
+export function reactivateActionId(expireEntryId: string): string {
+  return `reactivate:${expireEntryId}`;
+}
+
+/**
+ * A MANAGER BRINGS EXPIRED CREDIT BACK (plan §2.5): its own entry
+ * (`reactivate` / `reactivation`), exactly the remainder the last expiry
+ * took, the wallet active again with a fresh expiry from today's policy, and
+ * the typed reason on the entry and on the audit row (before/after). The
+ * caller holds `pos:wallet:reactivate` at the wallet's park — the route
+ * checks it.
+ *
+ * Refused, having written nothing: no reason typed; a wallet whose credit has
+ * not expired; a wallet that ran out before it expired (nothing to bring back).
+ */
+export async function reactivateWallet(
+  tx: Tx,
+  actor: WalletActor,
+  input: { walletId: string; reason: string; stationId?: string | null; now?: Date },
+): Promise<WalletWrite> {
+  const reason = input.reason.trim();
+  if (!reason) {
+    throw new AppError(400, 'REASON_REQUIRED', 'Type why this credit is coming back — a reactivation is kept with its reason.');
+  }
+  const notExpired = () =>
+    errors.conflict('WALLET_NOT_EXPIRED', "This wallet's credit has not expired — there is nothing to bring back.", {
+      walletId: input.walletId,
+    });
+  const nothingBack = () =>
+    errors.conflict('NOTHING_TO_REACTIVATE', 'This wallet ran out before its credit expired — there is nothing to bring back.', {
+      walletId: input.walletId,
+    });
+  const [current] = await tx.select().from(wallet).where(eq(wallet.id, input.walletId)).limit(1);
+  if (!current || current.operatorId !== actor.operatorId) throw walletNotFound();
+  // THE EXPIRY THAT CAN COME BACK IS THE WALLET'S LATEST MOVEMENT OF CREDIT
+  // (the gate's G3, the view's `reactivatableSatang`): the newest of its
+  // expire, grant and reactivate entries. Credit loaded after an expiry
+  // started a new life for the wallet; if that ran out before its own day
+  // end, the wallet closed taking nothing, and an OLDER expiry's remainder is
+  // not "the expired remainder" — nothing comes back.
+  const [latest] = await tx
+    .select()
+    .from(walletEntry)
+    .where(and(eq(walletEntry.operatorId, actor.operatorId), eq(walletEntry.walletId, input.walletId), inArray(walletEntry.kind, ['expire', 'grant', 'reactivate'])))
+    .orderBy(desc(walletEntry.createdAt), desc(walletEntry.id))
+    .limit(1);
+  if (latest?.kind === 'reactivate') {
+    // The newest movement IS a reactivation: a replayed press (the same
+    // gesture retried, or a second manager a moment later) answers with it
+    // while the wallet is live; one that has since run out and closed again
+    // has nothing to return.
+    await lockAction(tx, actor.operatorId, latest.actionId);
+    const [locked] = await tx.select().from(wallet).where(eq(wallet.id, input.walletId)).for('update').limit(1);
+    if (!locked) throw walletNotFound();
+    if (locked.status === 'active') return { wallet: locked, entry: latest, replayed: true };
+    throw nothingBack();
+  }
+  if (!latest || latest.kind !== 'expire') {
+    if (current.status !== 'expired') throw notExpired();
+    // A closed wallet with money on it: a refund put it back after the day
+    // end (the gate's G2). It is live until the next day end takes it.
+    if (current.balanceSatang > 0) {
+      throw errors.conflict(
+        'NOTHING_TO_REACTIVATE',
+        `This wallet's ${formatTHB(current.balanceSatang)} came back from a refund after its credit expired — it goes with the next day end; there is nothing to bring back.`,
+        { walletId: input.walletId, balanceSatang: current.balanceSatang },
+      );
+    }
+    throw nothingBack();
+  }
+  const expiry = latest;
+  const actionId = reactivateActionId(expiry.id);
+  await lockAction(tx, actor.operatorId, actionId);
+  const done = await entryOfAction(tx, actor.operatorId, actionId);
+  const [locked] = await tx.select().from(wallet).where(eq(wallet.id, input.walletId)).for('update').limit(1);
+  if (!locked) throw walletNotFound();
+  if (done) {
+    // The same expiry brought back already: a replay while the wallet is live;
+    // a wallet that has since run out and closed again has nothing to return.
+    if (locked.status === 'active') return { wallet: locked, entry: done, replayed: true };
+    throw nothingBack();
+  }
+  if (locked.status !== 'expired') throw notExpired();
+  const branchId = locked.branchId ?? expiry.branchId;
+  if (!branchId) throw walletNotFound();
+  const now = input.now ?? new Date();
+  const { businessDate, expiresAt } = await expiryFor(tx, branchId, now);
+  const written = await applyEntry(tx, actor, locked.id, {
+    actionId,
+    kind: 'reactivate',
+    source: 'reactivation',
+    amountSatang: -expiry.amountSatang,
+    branchId,
+    stationId: input.stationId ?? null,
+    businessDate,
+    expiresAt,
+    payload: { reason, expireEntryId: expiry.id },
+    reason,
+    now,
+  });
+  return { ...written, replayed: false };
+}
+
+// --- The figures --------------------------------------------------------------------
+
+/**
+ * Each entry with the business date it belongs to at its wallet's park: the
+ * date it carries, else the day its instant fell in on that park's clock (the
+ * SQL twin of `entryDay`). Either way it is the day the money MOVED — a spend
+ * on a tab from an earlier day is filed under the day it was paid, so no
+ * day's figures carry spending of credit that did not exist yet and the
+ * ledger's running sum through any day is never below zero (the re-check's
+ * R2/R2b; the liability fact's CHECK). `w.branch_id` is the park the figures
+ * are filed under — a wallet spends only at the park that issued it.
+ */
+const ENTRIES = sql`(
+  select e.id, e.wallet_id, e.operator_id, e.kind, e.source, e.amount_satang, e.payment_attempt_id,
+         e.actor_account_id, e.created_at, w.branch_id, w.holder_name,
+         coalesce(e.business_date, ((e.created_at at time zone b.timezone) - (b.business_day_start - time '00:00'))::date) as day
+  from pos.wallet_entry e
+  join pos.wallet w on w.id = e.wallet_id
+  join core.branch b on b.id = coalesce(w.branch_id, e.branch_id)
+)`;
+
+function branchFilter(column: SQL, branchIds: readonly string[] | null): SQL {
+  if (branchIds === null) return sql`true`;
+  if (branchIds.length === 0) return sql`false`;
+  return sql`${column} in (${sql.join(
+    branchIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  )})`;
+}
+
+interface Movements {
+  grantedSatang: number;
+  spentSatang: number;
+  refundedSatang: number;
+  expiredSatang: number;
+  reactivatedSatang: number;
+  entryCount: number;
+}
+
+async function movementsOf(db: Exec, operatorId: string, branchIds: readonly string[] | null, from: string, to: string): Promise<Movements> {
+  const { rows } = await db.execute<Record<string, string | number | null>>(sql`
+    select
+      coalesce(sum(case when x.kind = 'grant' then x.amount_satang end), 0)::bigint as granted,
+      coalesce(sum(case when x.kind = 'spend' then -x.amount_satang end), 0)::bigint as spent,
+      coalesce(sum(case when x.kind = 'refund' then x.amount_satang end), 0)::bigint as refunded,
+      coalesce(sum(case when x.kind = 'expire' then -x.amount_satang end), 0)::bigint as expired,
+      coalesce(sum(case when x.kind = 'reactivate' then x.amount_satang end), 0)::bigint as reactivated,
+      count(*)::bigint as entries
+    from ${ENTRIES} x
+    where x.operator_id = ${operatorId} and x.day between ${from}::date and ${to}::date
+      and ${branchFilter(sql.raw('x.branch_id'), branchIds)}`);
+  const r = rows[0] ?? {};
+  return {
+    grantedSatang: Number(r.granted ?? 0),
+    spentSatang: Number(r.spent ?? 0),
+    refundedSatang: Number(r.refunded ?? 0),
+    expiredSatang: Number(r.expired ?? 0),
+    reactivatedSatang: Number(r.reactivated ?? 0),
+    entryCount: Number(r.entries ?? 0),
+  };
+}
+
+/** What the ledger says was outstanding as a day closed: every entry dated that day or before (null: all of it). */
+async function ledgerOutstandingThrough(db: Exec, operatorId: string, branchIds: readonly string[] | null, through: string | null): Promise<number> {
+  const { rows } = await db.execute<{ total: string | number | null }>(sql`
+    select coalesce(sum(x.amount_satang), 0)::bigint as total
+    from ${ENTRIES} x
+    where x.operator_id = ${operatorId}
+      and ${through === null ? sql`true` : sql`x.day <= ${through}::date`}
+      and ${branchFilter(sql.raw('x.branch_id'), branchIds)}`);
+  return Number(rows[0]?.total ?? 0);
+}
+
+/** The live balances, summed: the guarded projection, now. */
+async function liveOutstanding(db: Exec, operatorId: string, branchIds: readonly string[] | null): Promise<number> {
+  const { rows } = await db.execute<{ total: string | number | null }>(sql`
+    select coalesce(sum(w.balance_satang), 0)::bigint as total from pos.wallet w
+    where w.operator_id = ${operatorId} and ${branchFilter(sql.raw('w.branch_id'), branchIds)}`);
+  return Number(rows[0]?.total ?? 0);
+}
+
+/**
+ * THE WALLET & PROMO REPORT'S CREDIT HALF, off the ledger (prototype
+ * `walletCreditSummary` + `walletLedgerRows`, `lib/reporting.ts:482-549`):
+ * granted / spent / refunded / expired (and reactivated) over the range's
+ * business dates, the outstanding snapshot (live balances, not date-ranged)
+ * beside the ledger's own sum of it, and the newest rows. `branchIds` null is
+ * every park of the operator.
+ */
+export async function walletReportOf(
+  db: Exec,
+  operatorId: string,
+  filters: { branchIds: readonly string[] | null; from: string; to: string; limit?: number },
+): Promise<{ summary: WalletReportSummary; rows: WalletReportRow[] }> {
+  const movements = await movementsOf(db, operatorId, filters.branchIds, filters.from, filters.to);
+  const outstandingSatang = await liveOutstanding(db, operatorId, filters.branchIds);
+  const ledgerOutstandingSatang = await ledgerOutstandingThrough(db, operatorId, filters.branchIds, null);
+  const { rows } = await db.execute<{
+    id: string;
+    wallet_id: string;
+    kind: WalletEntryKind;
+    source: WalletEntrySource;
+    amount_satang: string | number;
+    actor_account_id: string | null;
+    created_at: Date | string;
+    holder_name: string | null;
+    day: string;
+  }>(sql`
+    select x.id, x.wallet_id, x.kind, x.source, x.amount_satang, x.actor_account_id, x.created_at, x.holder_name, x.day::text as day
+    from ${ENTRIES} x
+    where x.operator_id = ${operatorId} and x.day between ${filters.from}::date and ${filters.to}::date
+      and ${branchFilter(sql.raw('x.branch_id'), filters.branchIds)}
+    order by x.created_at desc, x.id desc
+    limit ${filters.limit ?? 100}`);
+  const walletIds = [...new Set(rows.map((r) => r.wallet_id))];
+  const keys = walletIds.length
+    ? await db
+        .select({ walletId: walletKey.walletId, kind: walletKey.kind, value: walletKey.value })
+        .from(walletKey)
+        .where(inArray(walletKey.walletId, walletIds))
+        .orderBy(asc(walletKey.createdAt))
+    : [];
+  const keyOf = (walletId: string): string => {
+    const bandKey = keys.find((k) => k.walletId === walletId && k.kind === 'band');
+    if (bandKey) return bandShortCode(bandKey.value) ?? 'Band';
+    return keys.find((k) => k.walletId === walletId && k.kind === 'voucher_qr')?.value ?? '—';
+  };
+  const names = await namesOf(db, rows.map((r) => r.actor_account_id).filter((id): id is string => !!id));
+  return {
+    summary: { ...movements, outstandingSatang, ledgerOutstandingSatang },
+    rows: rows.map((r) => ({
+      entryId: r.id,
+      walletId: r.wallet_id,
+      keyDisplay: keyOf(r.wallet_id),
+      holderName: r.holder_name,
+      kind: r.kind,
+      source: r.source,
+      amountSatang: Number(r.amount_satang),
+      businessDate: String(r.day).slice(0, 10),
+      at: new Date(r.created_at).toISOString(),
+      by: r.actor_account_id ? (names.get(r.actor_account_id) ?? null) : null,
+    })),
+  };
+}
+
+/**
+ * THE END OF DAY `credit` LINE (prototype `getEndOfDay`, `mockApi.ts:2228-2324`:
+ * "F&B credit redeemed, net of F&B credit restored on refund", per order on
+ * the date): what the F&B and shop counters took from wallets on the business
+ * date — the day the credit MOVED, so a tab from yesterday paid today counts
+ * today — less what refunds have put back through THOSE spends — whenever
+ * the refund was — so the line never reads below zero.
+ */
+export async function creditRedeemedOn(db: Exec, operatorId: string, branchId: string, businessDate: string): Promise<WalletCreditDay> {
+  const { rows } = await db.execute<{ redeemed: string | number | null; restored: string | number | null }>(sql`
+    with spends as (
+      select x.id, x.payment_attempt_id, -x.amount_satang as amount
+      from ${ENTRIES} x
+      where x.operator_id = ${operatorId} and x.branch_id = ${branchId}::uuid and x.day = ${businessDate}::date
+        and x.kind = 'spend' and x.source in ('fnb_order','merch_order')
+    )
+    select
+      (select coalesce(sum(amount), 0) from spends)::bigint as redeemed,
+      (select coalesce(sum(r.amount_satang), 0) from pos.wallet_entry r
+        where r.kind = 'refund' and r.operator_id = ${operatorId}
+          and r.payment_attempt_id in (select s.payment_attempt_id from spends s where s.payment_attempt_id is not null))::bigint as restored`);
+  const redeemedSatang = Number(rows[0]?.redeemed ?? 0);
+  const restoredSatang = Number(rows[0]?.restored ?? 0);
+  return { branchId, businessDate, redeemedSatang, restoredSatang, netSatang: Math.max(0, redeemedSatang - restoredSatang) };
+}
+
+export interface WalletLiabilityDay {
+  branchId: string;
+  businessDate: string;
+  grantedSatang: number;
+  spentSatang: number;
+  refundedSatang: number;
+  expiredSatang: number;
+  reactivatedSatang: number;
+  outstandingSatang: number;
+}
+
+/**
+ * ONE BRANCH'S STORED-VALUE DAY, from the ledger. Sign-exact by construction:
+ *
+ *   outstanding(D) = outstanding(D-1) + granted - spent + refunded - expired + reactivated
+ *
+ * where every figure is the positive sum of that kind's entries dated D, and
+ * outstanding is the sum of every entry dated D or before — so the identity
+ * is the ledger's own arithmetic, and `refunded` (credit a refund put BACK on
+ * a wallet) adds to what is owed rather than taking from it.
+ */
+export async function walletLiabilityOf(db: Exec, branchId: string, businessDate: string): Promise<WalletLiabilityDay & { operatorId: string }> {
+  const clock = await branchClockOf(db, branchId);
+  const m = await movementsOf(db, clock.operatorId, [branchId], businessDate, businessDate);
+  const outstandingSatang = await ledgerOutstandingThrough(db, clock.operatorId, [branchId], businessDate);
+  return {
+    operatorId: clock.operatorId,
+    branchId,
+    businessDate,
+    grantedSatang: m.grantedSatang,
+    spentSatang: m.spentSatang,
+    refundedSatang: m.refundedSatang,
+    expiredSatang: m.expiredSatang,
+    reactivatedSatang: m.reactivatedSatang,
+    outstandingSatang,
+  };
+}
+
+/**
+ * WRITE THE DAY'S FACT (`analytics.fact_wallet_liability_daily`), idempotent
+ * per branch and date: recomputed from the ledger and upserted, and an
+ * unchanged day writes nothing (the update only fires when a figure moved —
+ * an offline spend synced late, a refund put back into a past day).
+ */
+export async function writeWalletLiabilityFact(
+  db: Exec,
+  branchId: string,
+  businessDate: string,
+  now: Date = new Date(),
+): Promise<{ written: boolean; fact: WalletLiabilityDay }> {
+  const { operatorId, ...fact } = await walletLiabilityOf(db, branchId, businessDate);
+  const values = {
+    grantedSatang: fact.grantedSatang,
+    spentSatang: fact.spentSatang,
+    refundedSatang: fact.refundedSatang,
+    expiredSatang: fact.expiredSatang,
+    reactivatedSatang: fact.reactivatedSatang,
+    outstandingSatang: fact.outstandingSatang,
+  };
+  const f = factWalletLiabilityDaily;
+  const written = await db
+    .insert(f)
+    .values({ id: newId(), operatorId, branchId, businessDate, ...values, createdAt: now, updatedAt: now })
+    .onConflictDoUpdate({
+      target: [f.branchId, f.businessDate],
+      set: { ...values, updatedAt: now },
+      setWhere: sql`(${f.grantedSatang}, ${f.spentSatang}, ${f.refundedSatang}, ${f.expiredSatang}, ${f.reactivatedSatang}, ${f.outstandingSatang})
+        is distinct from (excluded.granted_satang, excluded.spent_satang, excluded.refunded_satang, excluded.expired_satang, excluded.reactivated_satang, excluded.outstanding_satang)`,
+    })
+    .returning({ id: f.id });
+  return { written: written.length > 0, fact };
+}
+
+/**
+ * `job:wallet.liability` — every branch's ended days, written. A day that
+ * cannot be written (the CHECK refuses a negative — a ledger that does not
+ * add up) does not stop the other branches; the job then fails loudly with
+ * the count, so the Failures page carries it.
+ */
+export async function runWalletLiabilityJob(db: Exec, now: Date): Promise<Record<string, number>> {
+  let days = 0;
+  let written = 0;
+  let failed = 0;
+  let firstError: unknown = null;
+  for (const clock of await walletBranchClocks(db)) {
+    for (const date of endedWalletDays(clock, now)) {
+      days += 1;
+      try {
+        if ((await writeWalletLiabilityFact(db, clock.id, date, now)).written) written += 1;
+      } catch (err) {
+        failed += 1;
+        firstError ??= err;
+      }
+    }
+  }
+  if (failed > 0) {
+    throw new Error(`wallet liability: ${failed} of ${days} branch-days could not be written`, { cause: firstError });
+  }
+  return { days, written };
+}
+
+/** The branch's wallet rules as the policy read answers them. */
+export async function walletPolicyViewOf(db: Exec, branchId: string): Promise<WalletPolicyViewDto> {
+  return { branchId, ...(await walletPolicyOf(db, branchId)) };
 }

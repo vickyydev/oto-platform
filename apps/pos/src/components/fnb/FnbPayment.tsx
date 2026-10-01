@@ -90,15 +90,22 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
    * so the next press takes the money, the whole amount is owed, and the words
    * stay on the card; staff may put the toggle back, and the press refuses
    * again rather than calling anything.
+   *
+   * S2-14a round 3 — THE PLATFORM'S REFUSALS TOO (`WALLET_EMPTY`,
+   * `WALLET_INSUFFICIENT`, `WALLET_EXPIRED`): nothing was taken, so the toggle
+   * comes off exactly as it does for the lane, with the platform's words on
+   * the card. Every refusal counts (`creditRefusalSeq`), so staff who put the
+   * toggle back and are refused again in the same words see it come off again.
    */
   const creditRefusal = stage.creditRefusal;
+  const refusalSeq = stage.state.creditRefusalSeq ?? 0;
   useEffect(() => {
     if (!creditRefusal || !useCredit || !onUseCreditChange) return;
     onUseCreditChange(false);
     stage.setAmountSatang(outstandingSatang);
     // The refusal is the trigger; the setters read current refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creditRefusal]);
+  }, [creditRefusal, refusalSeq]);
 
   const toggleCredit = () => {
     if (!onUseCreditChange || stage.locked || creditApplied) return;

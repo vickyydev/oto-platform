@@ -88,3 +88,20 @@ export function channelLabel(channel: string, terminals: EdcTerminal[]): string 
       return channel;
   }
 }
+
+/**
+ * S2-14a round 3 — THE `credit` LINE, OFF MOCK. The prototype derived it from
+ * its in-memory F&B and shop orders ("F&B credit redeemed, net of F&B credit
+ * restored on refund", `getEndOfDay`); the platform's ledger now says it
+ * (`GET /wallets/credit-day`). This puts the platform's figure on an OPEN
+ * record's credit line and recomputes the totals; a closed day is left exactly
+ * as it was locked.
+ */
+export function withCreditLine(eod: EndOfDay, expectedTHB: number): EndOfDay {
+  if (eod.status === 'closed') return eod;
+  const has = eod.lines.some((l) => l.channel === 'credit');
+  const lines = has
+    ? eod.lines.map((l) => (l.channel === 'credit' ? { ...l, expectedTHB } : l))
+    : [...eod.lines, { channel: 'credit', expectedTHB, actualTHB: null, differenceTHB: 0 }];
+  return recomputeEndOfDay({ ...eod, lines });
+}

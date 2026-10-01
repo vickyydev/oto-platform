@@ -25,6 +25,7 @@ import {
 import { itemOrderTotals, ticketTotals, toSatang } from '@/lib/cartWire';
 import { summarizeTax, type Satang, type TaxBreakdown } from '@oto/shared';
 import { getRateModeForDate, resolveRate, RateMode } from '@/lib/pricingMode';
+import { getWalletReport } from '@/api/wallet';
 
 /*
  * SCRUM-271 — EVERY FIGURE HERE IS SATANG. These reports used to re-derive each
@@ -505,6 +506,10 @@ export interface WalletLedgerSummary {
   expiredSatang: Satang;
   netOutstandingSatang: Satang; // sum of live creditBalanceTHB across all bands (today's snapshot, not date-ranged)
   entryCount: number;
+  /** S2-14a round 3 — expired credit a manager brought back (the platform's own entry kind; the mock has none). */
+  reactivatedSatang?: Satang;
+  /** S2-14a round 3 — the ledger's own sum of what is outstanding; equals netOutstandingSatang on the platform. */
+  ledgerOutstandingSatang?: Satang;
 }
 
 export function walletCreditSummary(filters: ReportFilters): WalletLedgerSummary {
@@ -542,7 +547,8 @@ export function walletCreditSummary(filters: ReportFilters): WalletLedgerSummary
 export interface WalletLedgerRow {
   wristbandCode: string;
   customerNickname: string;
-  kind: WalletEntry['kind'];
+  /** S2-14a round 3 — the platform's ledger adds `reactivate`. */
+  kind: WalletEntry['kind'] | 'reactivate';
   amountSatang: Satang;
   source: string;
   at: string;
@@ -566,6 +572,63 @@ export function walletLedgerRows(filters: ReportFilters): WalletLedgerRow[] {
     }
   }
   return rows.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+}
+
+/**
+ * S2-14a round 3 — THE WALLET REPORT, OFF MOCK. The platform's ledger in the
+ * prototype's two shapes (`WalletLedgerSummary`, `WalletLedgerRow`), so the
+ * panel's visuals stay exactly as they were: granted / spent / refunded /
+ * expired over the range's business dates, the live-balance snapshot, and the
+ * newest entries. The ledger IS branch-tagged now (a wallet belongs to the park
+ * that issued it), so the branch filter applies: 'all' asks for every park
+ * this account reads reports for. A branch the console only knows locally
+ * (no platform id) has no platform figures and reads as empty.
+ *
+ * `walletCreditSummary` / `walletLedgerRows` above are the prototype's mock
+ * path, kept for the parity fixture; the panel no longer reads them.
+ */
+export interface WalletCreditReport {
+  summary: WalletLedgerSummary;
+  rows: WalletLedgerRow[];
+  /** Entries in range beyond the rows returned. */
+  totalEntries: number;
+}
+
+export async function platformWalletCreditReport(filters: ReportFilters, limit = 100): Promise<WalletCreditReport> {
+  let branchApiId: string | null = null;
+  if (filters.branchId !== 'all') {
+    branchApiId = getBranches().find((b) => b.id === filters.branchId)?.apiId ?? null;
+    if (!branchApiId) {
+      return {
+        summary: { grantedSatang: 0, spentSatang: 0, refundedSatang: 0, expiredSatang: 0, netOutstandingSatang: 0, entryCount: 0 },
+        rows: [],
+        totalEntries: 0,
+      };
+    }
+  }
+  const { summary, rows } = await getWalletReport({ branchApiId, from: filters.startDate, to: filters.endDate, limit });
+  return {
+    summary: {
+      grantedSatang: summary.grantedSatang,
+      spentSatang: summary.spentSatang,
+      refundedSatang: summary.refundedSatang,
+      expiredSatang: summary.expiredSatang,
+      reactivatedSatang: summary.reactivatedSatang,
+      netOutstandingSatang: summary.outstandingSatang,
+      ledgerOutstandingSatang: summary.ledgerOutstandingSatang,
+      entryCount: summary.entryCount,
+    },
+    rows: rows.map((r) => ({
+      wristbandCode: r.keyDisplay,
+      customerNickname: r.holderName ?? 'Guest',
+      kind: r.kind,
+      amountSatang: r.amountSatang,
+      source: r.source,
+      at: r.at,
+      ...(r.by ? { by: r.by } : {}),
+    })),
+    totalEntries: summary.entryCount,
+  };
 }
 
 // ── 4. Promo / discount usage ────────────────────────────────────────────
