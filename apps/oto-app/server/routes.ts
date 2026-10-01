@@ -121,7 +121,7 @@ import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db } from "./db";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -7426,22 +7426,30 @@ OTO Company Limited`,
         return res.status(404).json({ message: "Employee not found" });
       }
 
-      // Create offboarding record
-      const offboarding = await storage.createEmployeeOffboarding({
-        employeeId,
-        branchId: employee.branchId || undefined,
-        offboardingType: validatedData.offboardingType,
-        reasonCode: validatedData.reasonCode,
-        reasonText: validatedData.reasonText || undefined,
-        noticeDate: validatedData.noticeDate ? new Date(validatedData.noticeDate) : undefined,
-        lastWorkingDay: new Date(validatedData.lastWorkingDay),
-        leavePublicHolidaysDays: validatedData.leavePublicHolidaysDays,
-        leaveAnnualDays: validatedData.leaveAnnualDays,
-        leaveOtherDays: validatedData.leaveOtherDays,
-        leaveOtherLabel: validatedData.leaveOtherLabel,
-        notes: validatedData.notes,
-        createdBy: userId,
+      // Serialize requests for the same employee before any offboarding side effects.
+      const offboarding = await db.transaction(async (tx) => {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext('employee_offboarding'), hashtext(${employeeId}))`);
+        const [existing] = await tx.select({ id: employeeOffboarding.id })
+          .from(employeeOffboarding).where(eq(employeeOffboarding.employeeId, employeeId)).limit(1);
+        if (existing) return null;
+        const [created] = await tx.insert(employeeOffboarding).values({
+          employeeId,
+          branchId: employee.branchId || undefined,
+          offboardingType: sql`${validatedData.offboardingType}`,
+          reasonCode: validatedData.reasonCode,
+          reasonText: validatedData.reasonText || undefined,
+          noticeDate: validatedData.noticeDate ? new Date(validatedData.noticeDate) : undefined,
+          lastWorkingDay: new Date(validatedData.lastWorkingDay),
+          leavePublicHolidaysDays: validatedData.leavePublicHolidaysDays,
+          leaveAnnualDays: validatedData.leaveAnnualDays,
+          leaveOtherDays: validatedData.leaveOtherDays,
+          leaveOtherLabel: validatedData.leaveOtherLabel,
+          notes: validatedData.notes,
+          createdBy: userId,
+        }).returning();
+        return created;
       });
+      if (!offboarding) return res.status(409).json({ message: "Offboarding already exists for this employee" });
 
       // Determine employment state based on last working day
       // Compare dates in Bangkok timezone to avoid UTC boundary issues
