@@ -59,8 +59,11 @@ export function fnbDisplayPresentation(state: FnbDisplayState) {
     if (!platformSale || platformSale.status !== 'finalised' || !completedOrder
       || completedOrder.status !== 'paid' || platformSale.totals.grossSatang !== satang(totals.data.total)
       || satang(completedOrder.total) !== platformSale.totals.grossSatang) return fallback;
+    // S2-14a round 2 — the credit the platform took is a settled figure of its
+    // own; the schema's sum check holds the four to the total.
     completion = { saleId: platformSale.id, pickupCode: completedOrder.pickupCode, total: completedOrder.total,
-      payment: { cash: completedOrder.payment.cash, card: completedOrder.payment.card, promptpay: completedOrder.payment.promptpay } };
+      payment: { cash: completedOrder.payment.cash, card: completedOrder.payment.card, promptpay: completedOrder.payment.promptpay,
+        ...(completedOrder.payment.creditUsed > 0 ? { credit: completedOrder.payment.creditUsed } : {}) } };
   }
   const cart = DisplayFnbCartSchema.safeParse({ kind: 'fnb', supported: true, lines, orderNote: state.orderNote,
     manualDiscounts: state.manualDiscounts.map(({ id, scope, targetLineId, targetLabel, type, value }) => ({ id, scope, targetLineId, targetLabel, type, value })),

@@ -46,13 +46,63 @@ export const PAID_ONLINE_TENDER_CODE = 'paid_online';
 export const PAID_ONLINE_TENDER_METHOD: PaymentMethod = 'transfer';
 
 /**
+ * S2-14a round 2 (plan docs/progress/plans/wallet/PLAN.md §2.3) — STORED-VALUE
+ * CREDIT SPENT AT A COUNTER.
+ *
+ * Like the paid-online tender, a constant and never a row in the operator's
+ * tender list: staff never CHOOSE it on the grid. The till sends the scanned
+ * wallet key with the confirm press and the PLATFORM writes the attempt itself
+ * — method `wallet` (a word `pos.payment_attempt.method` has allowed since
+ * S2-10a, so no migration), code `wallet_credit` — in the same transaction as
+ * the wallet's `spend` entry. The method-KIND list below (`cash/card/qr/other`)
+ * describes the park's configurable tenders and does not gain a word: this
+ * tender is not configurable.
+ *
+ * NOT the terminal's Alipay / WeChat "wallet": that is an e-wallet the EDC
+ * takes, recorded as `qr` money with `payload.tender = 'wallet'` and a device.
+ * The two are told apart by method AND code (`isStoredValueTender`).
+ */
+export const WALLET_TENDER_CODE = 'wallet_credit';
+export const WALLET_TENDER_METHOD: PaymentMethod = 'wallet';
+
+/** True only for the platform-written stored-value tender — never for a terminal e-wallet. */
+export function isStoredValueTender(attempt: { method?: string | null; methodCode?: string | null }): boolean {
+  return attempt.method === WALLET_TENDER_METHOD || attempt.methodCode === WALLET_TENDER_CODE;
+}
+
+/**
+ * What the till sends with the confirm press to spend a scanned wallet.
+ *
+ *   key           the band's code (or short code) or the voucher's `QR-…`;
+ *   useCredit     "use credit": the platform takes min(balance, outstanding);
+ *   amountSatang  an exact figure instead — REFUSED, never floored, when the
+ *                 wallet holds less (the prototype's silent clamp,
+ *                 `mockApi.ts:397-405`, is corrected per the requirement).
+ */
+export const WalletTenderInstructionSchema = z
+  .object({
+    key: z.string().trim().min(1).max(200),
+    useCredit: z.boolean().optional(),
+    amountSatang: z.number().int().min(1).optional(),
+  })
+  .refine((w) => w.useCredit === true || w.amountSatang !== undefined, {
+    message: 'Say how much credit to use: "use credit" or an exact amount',
+    path: ['useCredit'],
+  });
+export type WalletTenderInstruction = z.infer<typeof WalletTenderInstructionSchema>;
+
+/**
  * Whether a tender is money the till itself took, for the till's cash-up and
  * takings (OD-A10). The paid-online tender is not: it was counted on the day
  * the booking was paid, and counting it again at the counter would report the
- * same baht twice.
+ * same baht twice. Nor is stored-value credit (S2-14a): it was money when the
+ * ticket that granted it was paid, and at the counter it moves a liability,
+ * not the drawer. A terminal e-wallet (Alipay, WeChat) IS till takings — it is
+ * recorded as `qr` money, so it never reads as stored value here.
  */
-export function countsAsTillTakings(attempt: { methodCode?: string | null }): boolean {
-  return attempt.methodCode !== PAID_ONLINE_TENDER_CODE;
+export function countsAsTillTakings(attempt: { method?: string | null; methodCode?: string | null }): boolean {
+  if (attempt.methodCode === PAID_ONLINE_TENDER_CODE) return false;
+  return !isStoredValueTender(attempt);
 }
 
 /**

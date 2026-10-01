@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { TxnKind, MemberActivity as MemberActivityData } from '@/types';
+import { TxnKind, MemberActivity as MemberActivityData, type Wristband } from '@/types';
+import { scanWallet } from '@/api/wallet';
 import {
   businessDateToday,
   calendarDateIn,
@@ -145,6 +146,8 @@ export function MobileHistory() {
     sales: HistoryTxn[];
   } | null>(null);
   const [bandError, setBandError] = useState<string | null>(null);
+  /** S2-14a round 2 — the platform wallet the scanned band carries, if any. */
+  const [bandWallet, setBandWallet] = useState<Wristband | null>(null);
 
   // The day the park is on, from the branch's own clock and 05:00 boundary —
   // not the browser's calendar, which between midnight and five belongs to
@@ -252,6 +255,10 @@ export function MobileHistory() {
       setView('band');
       setBandResult(null);
       setBandError(null);
+      setBandWallet(null);
+      // S2-14a round 2 — the band's real credit, beside its sales. A lookup
+      // that fails leaves the credit unsaid rather than reading ฿0.
+      void scanWallet(search.code).then(setBandWallet, () => setBandWallet(null));
       try {
         const found = await lookupSales(branchApiId, { band: search.code });
         setBandResult({
@@ -457,7 +464,7 @@ export function MobileHistory() {
               <ClientActivity
                 code={bandResult.label}
                 activity={{
-                  wristband: null,
+                  wristband: bandWallet,
                   member: null,
                   transactions: bandResult.sales,
                   totalSpent: spentOf(bandResult.sales),
@@ -465,7 +472,7 @@ export function MobileHistory() {
                 }}
                 holderName={holder ? holder.nickname || holder.name || holder.phone : 'Walk-in'}
                 memberLine={holder ? { nickname: holder.nickname, phone: holder.phone } : null}
-                creditLabel="Wallet credit arrives with S2-14a"
+                {...(bandWallet ? {} : { creditLabel: 'No credit on this band' })}
                 spentLabel={`Total spent (${branch.name})`}
                 onOpenTxn={(t) => setSelected(t as HistoryTxn)}
                 onBack={backToList}

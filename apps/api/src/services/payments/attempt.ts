@@ -5,6 +5,8 @@ import {
   isPaymentReversalPending,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
+  WALLET_TENDER_CODE,
+  WALLET_TENDER_METHOD,
   type PaymentAttemptStatus,
   type PaymentAttemptView,
 } from '@oto/shared';
@@ -380,7 +382,24 @@ export async function tenderMethodOf(
   operatorId: string,
   methodCode: string,
   declaredKind: string | undefined,
+  /**
+   * S2-14a round 2 — set ONLY by `finaliseSale` when it writes the wallet
+   * tender itself, from a scanned key it has just spent (plan §2.3). Every
+   * other caller — the till's manual tender, the EDC, the QR, the offline
+   * replay — leaves it unset, and the stored-value code is then refused: credit
+   * is never a tender a person picks off a grid.
+   */
+  options: { platform?: 'wallet' } = {},
 ): Promise<PaymentMethod> {
+  // A till declaring kind `wallet` for some other token still falls through to
+  // the refusal at the end: `wallet` is not a kind the park can configure.
+  if (methodCode === WALLET_TENDER_CODE) {
+    if (options.platform === 'wallet') return WALLET_TENDER_METHOD;
+    throw errors.badRequest(
+      'Credit is taken by scanning the band or voucher, not chosen as a tender — scan it at the order screen',
+      { method: methodCode },
+    );
+  }
   const code = methodCode === 'credit_card' ? 'card' : methodCode;
   const [configured] = await db
     .select({ kind: paymentMethod.kind, enabled: paymentMethod.enabled, archivedAt: paymentMethod.archivedAt })

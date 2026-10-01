@@ -1,16 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
-import { newId, PAYMENT_ATTEMPT_TAKEN_STATUSES, PAYMENT_ATTEMPT_TERMINAL_STATUSES, type PaymentAttemptView } from '@oto/shared';
+import { BOX_LANE_REFUSALS, newId, PAYMENT_ATTEMPT_TAKEN_STATUSES, PAYMENT_ATTEMPT_TERMINAL_STATUSES, WALLET_TENDER_CODE, type PaymentAttemptView } from '@oto/shared';
 import { ApiError, NetworkError } from '@/api/client';
+import { laneSale } from '@/api/boxSales';
 import { paymentsApi, type ManualPaymentBody, type PaymentConfirmationBody, type PaymentQrMetadata, type PaymentStartBody } from '@/api/payments';
-import { salesApi, type ApiSale, type SaleTenderPayload } from '@/api/sales';
+import { salesApi, spendWalletOnSale, type ApiSale, type SaleTenderPayload } from '@/api/sales';
 import type { SaleWriteOutcome } from './saleWriter';
-import { findPaymentMethod } from './payments';
+import { currentLane } from './lane';
+import { findPaymentMethod, getEnabledPaymentMethods } from './payments';
 import { lookup } from '@/i18n/dictionary';
 
 /** Staff chrome stays English; customer displays select their own locale. */
 export const paymentStageText = (key: string): string => lookup(`payment.stage.${key}`, 'en') ?? key;
 
-export interface PaymentSettlement extends SaleTenderPayload { attemptId: string }
+export interface PaymentSettlement extends SaleTenderPayload {
+  attemptId: string;
+  /** S2-14a — on the credit settlement only: what the wallet held after it, the platform's figure. */
+  walletBalanceAfterSatang?: number;
+}
+
+/**
+ * S2-14a round 2 — THE SCANNED WALLET, as the station hands it to the stage.
+ * `previewSatang` is what the till expects credit to cover (min(balance,
+ * outstanding)); the platform decides the real figure under the wallet's lock.
+ */
+export interface PaymentStageWallet {
+  key: string;
+  useCredit: boolean;
+  previewSatang: number;
+}
+
+/** True for the credit settlement the platform wrote — never a tender from the grid. */
+export const isCreditSettlement = (part: Pick<PaymentSettlement, 'method'>): boolean => part.method === WALLET_TENDER_CODE;
 export interface PaymentDisplayState {
   saleId: string | null;
   amountSatang: number;
@@ -20,6 +40,8 @@ export interface PaymentDisplayState {
   status: 'idle' | 'pending' | 'paid' | 'blocked' | 'failed';
   offline: boolean;
   online: boolean;
+  /** S2-14a — credit taken, or about to be, on this order; the display's "from your credit". */
+  creditSatang?: number;
 }
 export interface PaymentStageState {
   phase: 'ready' | 'busy' | 'pending' | 'manual' | 'blocked' | 'failed' | 'complete';
@@ -35,6 +57,16 @@ export interface PaymentStageState {
   error: string | null;
   retryable: boolean;
   settlements: readonly PaymentSettlement[];
+  /** S2-14a — credit the platform has taken on this sale so far. */
+  creditSatang: number;
+  /** S2-14a — the sale the scanned wallet was already spent on: once per sale, however many presses. */
+  creditSaleId: string | null;
+  /**
+   * S2-14a round 2 — the sale credit was REFUSED on because it lives on the
+   * box lane (credit is online only this round): no credit is pending on it,
+   * the guest display shows the whole amount, and the station is told why.
+   */
+  creditRefusedSaleId: string | null;
 }
 export interface PaymentStageOptions {
   scope: string | number;
@@ -47,6 +79,8 @@ export interface PaymentStageOptions {
   finaliseSale: (tender?: SaleTenderPayload, actionId?: string) => Promise<SaleWriteOutcome>;
   onComplete: (sale: ApiSale, settlements: readonly PaymentSettlement[]) => void | Promise<void>;
   onLeftBehind?: (saleId: string) => void;
+  /** S2-14a round 2 — spend this wallet first, on the confirm press. Null for no credit. */
+  wallet?: PaymentStageWallet | null;
 }
 export interface PaymentStageController {
   state: PaymentStageState;
@@ -56,6 +90,16 @@ export interface PaymentStageController {
   locked: boolean;
   canBack: boolean;
   canSubmit: boolean;
+  /** S2-14a — the scanned credit is expected to cover what is owed: confirm needs no tender. */
+  creditCoversAll: boolean;
+  /** S2-14a — credit still to be taken by the next press (zero once taken). */
+  creditPendingSatang: number;
+  /**
+   * S2-14a round 2 — why credit cannot be taken on this sale, in the counter's
+   * words (`BOX_LANE_REFUSALS.wallet`): the sale is on the box lane. Null
+   * while credit can be, or has been, taken.
+   */
+  creditRefusal: string | null;
   canInquire: boolean;
   canConfirm: boolean;
   selectMethod: (token: string) => void;
@@ -77,7 +121,20 @@ const supportsInquiry = (attempt: PaymentAttemptView): boolean => attempt.inquir
 const initial = (total: number): PaymentStageState => ({
   phase: 'ready', saleId: null, method: null, kind: null, outstandingSatang: total, amountSatang: total,
   tenderedSatang: total, attempt: null, route: null, qr: emptyQr, error: null, retryable: false, settlements: [],
+  creditSatang: 0, creditSaleId: null, creditRefusedSaleId: null,
 });
+/**
+ * S2-14a round 2 — CREDIT IS ONLINE ONLY (plan §2.6 is round 4; the box keeps
+ * refusing `payment.wallet`). A sale the box holds — rung up on it, or rung up
+ * on the platform by a till that has since moved to its box — cannot reach the
+ * platform's wallet spend, so the press is refused HERE, before any call: a
+ * `NetworkError` from the spend would otherwise block the stage, lock the
+ * credit toggle and disable Back, leaving the counter stuck on the order.
+ */
+const creditOnlineOnly = (saleId: string): boolean => {
+  const held = laneSale(saleId);
+  return Boolean(held && (held.lane !== 'platform' || currentLane() === 'box'));
+};
 interface Context { scope: string | number; generation: number; pause: number; saleId: string | null }
 type Operation = (ctx: Context) => Promise<void>;
 interface ResumeEvidence { saleId: string; attempt?: PaymentAttemptView | null; route?: PaymentStageState['route']; qr?: PaymentQrMetadata }
@@ -275,14 +332,69 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     if (method) update({ kind: method.kind });
     const ctx = context();
     const actionId = newId();
-    const amount = snapshot.amountSatang;
+    let amount = snapshot.amountSatang;
     const tendered = snapshot.tenderedSatang;
+    const wallet = optionsRef.current.wallet ?? null;
+    const walletAction = newId();
     let preparedSale: ApiSale | null = null;
     return perform(async (ctx) => {
       const sale = preparedSale ?? await prepare(ctx);
       if (!sale || !current(ctx)) return;
       preparedSale = sale;
       ctx.saleId = sale.id;
+      /**
+       * S2-14a round 2 — THE CREDIT FIRST (plan §2.3). The platform writes the
+       * wallet tender itself from the scanned key; this press only says "use
+       * credit". Its answer is the real figure and the real remainder: a
+       * remainder the chosen method and the cash handed over cover is taken in
+       * the same press; otherwise the stage stops on it with CASH preselected
+       * (OD-W3). A refusal (`WALLET_EMPTY`, `WALLET_INSUFFICIENT`) stops here,
+       * having taken nothing, in the platform's words.
+       */
+      if (wallet?.useCredit && wallet.key && stateRef.current.creditSaleId !== sale.id && stateRef.current.outstandingSatang > 0) {
+        if (creditOnlineOnly(sale.id)) {
+          // Refused in the box lane's own words, nothing called, nothing locked:
+          // the whole amount is owed, CASH is preselected (OD-W3) and the
+          // station takes the credit toggle off so staff can take the money.
+          const cash = getEnabledPaymentMethods().find((m) => m.kind === 'cash');
+          const outstanding = stateRef.current.outstandingSatang;
+          retryOperation.current = null;
+          update({ phase: 'failed', error: BOX_LANE_REFUSALS.wallet.message, retryable: false,
+            creditRefusedSaleId: sale.id, method: cash?.id ?? null, kind: cash ? 'cash' : null,
+            amountSatang: outstanding, tenderedSatang: outstanding, attempt: null, route: null, qr: emptyQr });
+          return;
+        }
+        const answer = await spendWalletOnSale(sale.id, walletAction, { key: wallet.key, useCredit: true });
+        if (!current(ctx)) { retain(ctx, { saleId: sale.id }); return; }
+        update({ creditSaleId: sale.id });
+        const spent = answer.walletSpend?.amountSatang ?? 0;
+        const credit = answer.walletAttempt ?? null;
+        if (credit && taken(credit) && !stateRef.current.settlements.some((part) => part.attemptId === credit.id)) {
+          update({ settlements: [...stateRef.current.settlements, {
+            attemptId: credit.id, method: WALLET_TENDER_CODE, kind: 'other',
+            amountSatang: credit.amountSatang, tenderedSatang: credit.amountSatang, changeSatang: 0,
+            ...(answer.walletSpend ? { walletBalanceAfterSatang: answer.walletSpend.balanceAfterSatang } : {}),
+          }] });
+        }
+        update({ creditSatang: stateRef.current.creditSatang + spent });
+        if (answer.finalised || answer.sale.status === 'finalised') { await finish(ctx, answer.sale); return; }
+        const remaining = answer.outstandingSatang;
+        if (remaining === undefined || !money(remaining)) {
+          update({ phase: 'blocked', error: 'The payment balance has not been confirmed.', retryable: true });
+          return;
+        }
+        update({ outstandingSatang: remaining });
+        const cash = getEnabledPaymentMethods().find((m) => m.kind === 'cash');
+        const chosen = method?.enabled ? method : undefined;
+        const coversRemainder = Boolean(chosen && amount > 0 && (chosen.kind !== 'cash' || tendered >= Math.min(amount, remaining)));
+        if (!coversRemainder) {
+          retryOperation.current = null;
+          update({ phase: 'ready', method: chosen?.id ?? cash?.id ?? null, kind: chosen?.kind ?? (cash ? 'cash' : null),
+            amountSatang: remaining, tenderedSatang: remaining, error: null, retryable: false });
+          return;
+        }
+        amount = Math.min(amount, remaining);
+      }
       if (stateRef.current.outstandingSatang === 0) { await close(ctx); return; }
       if (!method?.enabled || !money(amount) || amount <= 0 || amount > stateRef.current.outstandingSatang) {
         update({ phase: 'failed', error: 'Choose an enabled payment method and an amount within the balance.', retryable: false });
@@ -458,16 +570,21 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   const busy = state.phase === 'busy';
   const locked = Boolean(options.paused) || busy || unresolved(state.attempt) || state.phase === 'blocked';
   const method = state.method ? findPaymentMethod(state.method) : undefined;
+  const walletOption = options.wallet ?? null;
+  const creditRefusal = state.saleId && state.creditRefusedSaleId === state.saleId ? BOX_LANE_REFUSALS.wallet.message : null;
+  const creditPendingSatang = walletOption?.useCredit && walletOption.key && !creditRefusal && (!state.saleId || state.creditSaleId !== state.saleId)
+    ? Math.max(0, Math.min(walletOption.previewSatang, state.outstandingSatang)) : 0;
+  const creditCoversAll = creditPendingSatang > 0 && creditPendingSatang >= state.outstandingSatang;
   const canSubmit = !locked && state.phase !== 'complete' && state.phase !== 'manual'
-    && (state.outstandingSatang === 0 || Boolean(method?.enabled && money(state.amountSatang) && state.amountSatang > 0
+    && (state.outstandingSatang === 0 || creditCoversAll || Boolean(method?.enabled && money(state.amountSatang) && state.amountSatang > 0
       && state.amountSatang <= state.outstandingSatang && (method.kind !== 'cash' || state.tenderedSatang >= state.amountSatang)));
   return {
-    state, busy, online, locked, canSubmit: canSubmit && online, canInquire: canInquire && !busy && online && !options.paused, canConfirm: canConfirm && !busy && online && !options.paused,
+    state, busy, online, locked, canSubmit: canSubmit && online, creditCoversAll, creditPendingSatang, creditRefusal, canInquire: canInquire && !busy && online && !options.paused, canConfirm: canConfirm && !busy && online && !options.paused,
     canBack: !locked && state.settlements.length === 0 && state.phase !== 'complete',
     display: { saleId: state.saleId, amountSatang: state.attempt?.amountSatang ?? state.amountSatang,
       qrPayload: state.qr.qrPayload, qrImageUrl: state.qr.qrImageUrl, expiresAt: state.qr.expiresAt,
       status: state.phase === 'complete' ? 'paid' : locked ? state.phase === 'blocked' ? 'blocked' : 'pending' : state.phase === 'failed' ? 'failed' : 'idle',
-      offline: state.attempt?.offline ?? false, online },
+      offline: state.attempt?.offline ?? false, online, creditSatang: state.creditSatang + creditPendingSatang },
     selectMethod: (token) => {
       if (optionsRef.current.paused || stateRef.current.phase === 'busy' || stateRef.current.phase === 'blocked' || unresolved(stateRef.current.attempt) || stateRef.current.phase === 'complete') return;
       const selected = findPaymentMethod(token);

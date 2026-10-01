@@ -36,7 +36,7 @@ import {
   type WalletPrepaidUnusedPolicy,
   type WalletView,
 } from '@oto/shared';
-import { errors } from '../lib/errors';
+import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { findBandsByCode } from './bands';
 import type { Exec, Tx } from './tx';
@@ -404,6 +404,10 @@ export async function debitWallet(
   await lockAction(tx, actor.operatorId, input.actionId);
   const done = await entryOfAction(tx, actor.operatorId, input.actionId);
   if (done) {
+    // Round 2 carryover: a replay names the wallet it debited, as a load's does.
+    if (done.walletId !== input.walletId) {
+      throw errors.conflict('ACTION_ID_REUSED', 'That action already debited another wallet', { actionId: input.actionId });
+    }
     const [row] = await tx.select().from(wallet).where(eq(wallet.id, done.walletId)).limit(1);
     return { wallet: row!, entry: done, replayed: true };
   }
@@ -421,6 +425,226 @@ export async function debitWallet(
     now: input.now,
   });
   return { ...written, replayed: false };
+}
+
+// --- Spending at a counter, and putting it back (round 2) -------------------------
+
+/** The spend a payment attempt made: one attempt, one entry, for ever. */
+export function spendActionId(attemptId: string): string {
+  return `attempt:${attemptId}:spend`;
+}
+
+/** What one refund put back through one wallet tender. */
+export function restoreActionId(refundId: string, attemptId: string): string {
+  return `refund:${refundId}:attempt:${attemptId}`;
+}
+
+const walletNotFound = () =>
+  new AppError(404, 'WALLET_NOT_FOUND', 'No wallet carries that band or voucher — check the code and scan again.');
+
+export interface SaleSpendInput {
+  /** The scanned or typed key: a band's code or short code, a voucher's `QR-…`. */
+  key: string;
+  /** "Use credit": take min(balance, outstanding). */
+  useCredit?: boolean;
+  /** An exact figure instead — refused, never floored, above the balance. */
+  amountSatang?: number;
+  /** What the sale still owes, read under the sale's own lock. */
+  outstandingSatang: number;
+  /** Where it was spent — ONE pool for both counters; only the ledger's word differs. */
+  source: Extract<WalletEntrySource, 'fnb_order' | 'merch_order'>;
+  branchId: string;
+  saleId: string;
+  stationId?: string | null;
+  boxId?: string | null;
+  businessDate?: string | null;
+  now?: Date;
+  /**
+   * Write the payment attempt for the amount decided, UNDER the wallet's row
+   * lock — the attempt's id is the spend's action key, so the two are one act.
+   */
+  openAttempt: (amountSatang: number, walletId: string) => Promise<{ id: string }>;
+}
+
+export interface SaleSpendResult {
+  walletId: string;
+  attemptId: string;
+  amountSatang: number;
+  balanceBeforeSatang: number;
+  balanceAfterSatang: number;
+  entryId: string;
+}
+
+/**
+ * SPEND A WALLET ON A SALE (plan §2.3) — the platform's half of the till's
+ * "use credit". Inside the caller's transaction, which already holds the sale:
+ *
+ *   1. the key names the wallet (404 when it names nothing at this park);
+ *   2. `SELECT … FOR UPDATE` on the wallet row — a second till spending the
+ *      same wallet waits HERE until the first commits, then reads what is left;
+ *   3. the amount: min(balance, outstanding) for "use credit", or the exact
+ *      figure asked — REFUSED when the wallet holds less (`WALLET_INSUFFICIENT`),
+ *      never floored. A wallet with nothing left is the honest zero
+ *      (`WALLET_EMPTY`): refused, nothing written, the till takes cash;
+ *   4. the payment attempt (the caller's, via `openAttempt`), then the `spend`
+ *      entry keyed `attempt:<id>:spend` with the balance it left.
+ *
+ * The prototype's `chargeFnbCredit` / `chargeMerchCredit` (`mockApi.ts:397-405`,
+ * `:2663-2671`) clamped silently at zero; the requirement corrects that.
+ */
+export async function debitForSale(tx: Tx, actor: WalletActor, input: SaleSpendInput): Promise<SaleSpendResult> {
+  const found = await walletFor(tx, actor.operatorId, input.key);
+  // A wallet another park issued is answered exactly like a key that names
+  // nothing, as the lookup route answers it.
+  if (!found || (found.branchId && found.branchId !== input.branchId)) throw walletNotFound();
+  const [locked] = await tx.select().from(wallet).where(eq(wallet.id, found.id)).for('update').limit(1);
+  if (!locked || locked.operatorId !== actor.operatorId) throw walletNotFound();
+  const balance = locked.balanceSatang;
+  if (locked.status !== 'active') {
+    throw errors.conflict(
+      'WALLET_EXPIRED',
+      `This wallet's credit has expired${balance > 0 ? ` (${formatTHB(balance)})` : ''} — only a manager can bring it back. Take the order in cash or card.`,
+      { walletId: locked.id, balanceSatang: balance },
+    );
+  }
+  if (input.outstandingSatang <= 0) throw errors.badRequest('This order owes nothing, so there is no credit to take');
+  let amount: number;
+  if (input.amountSatang !== undefined) {
+    if (!Number.isInteger(input.amountSatang) || input.amountSatang <= 0) {
+      throw errors.badRequest('Credit used has to be some amount', { amountSatang: input.amountSatang });
+    }
+    if (input.amountSatang > input.outstandingSatang) {
+      throw errors.badRequest(`That is more credit than this order owes — it owes ${formatTHB(input.outstandingSatang)}.`, {
+        amountSatang: input.amountSatang,
+        outstandingSatang: input.outstandingSatang,
+      });
+    }
+    if (input.amountSatang > balance) {
+      throw errors.conflict(
+        'WALLET_INSUFFICIENT',
+        `This wallet has ${formatTHB(balance)} left, not ${formatTHB(input.amountSatang)}.`,
+        { walletId: locked.id, balanceSatang: balance, amountSatang: input.amountSatang },
+      );
+    }
+    amount = input.amountSatang;
+  } else {
+    if (input.useCredit !== true) throw errors.badRequest('Say how much credit to use');
+    amount = Math.min(balance, input.outstandingSatang);
+    if (amount <= 0) {
+      throw errors.conflict('WALLET_EMPTY', 'This wallet has ฿0 left — take the order in cash or card.', {
+        walletId: locked.id,
+        balanceSatang: 0,
+      });
+    }
+  }
+  const attempt = await input.openAttempt(amount, locked.id);
+  const written = await applyEntry(tx, actor, locked.id, {
+    actionId: spendActionId(attempt.id),
+    kind: 'spend',
+    source: input.source,
+    amountSatang: -amount,
+    branchId: input.branchId,
+    saleId: input.saleId,
+    paymentAttemptId: attempt.id,
+    stationId: input.stationId ?? null,
+    boxId: input.boxId ?? null,
+    businessDate: input.businessDate ?? null,
+    now: input.now,
+  });
+  return {
+    walletId: locked.id,
+    attemptId: attempt.id,
+    amountSatang: amount,
+    balanceBeforeSatang: balance,
+    balanceAfterSatang: written.entry.balanceAfter,
+    entryId: written.entry.id,
+  };
+}
+
+/** The spend one wallet tender made, with what refunds already put back through it. */
+export async function walletTenderOf(
+  db: Exec,
+  operatorId: string,
+  attemptId: string,
+): Promise<{ walletId: string; usedSatang: number; restoredSatang: number } | null> {
+  const rows = await db
+    .select({ walletId: walletEntry.walletId, kind: walletEntry.kind, amount: walletEntry.amountSatang })
+    .from(walletEntry)
+    .where(and(eq(walletEntry.operatorId, operatorId), eq(walletEntry.paymentAttemptId, attemptId)));
+  const spend = rows.find((r) => r.kind === 'spend');
+  if (!spend) return null;
+  const restored = rows
+    .filter((r) => r.kind === 'refund' && r.walletId === spend.walletId)
+    .reduce((sum, r) => sum + r.amount, 0);
+  return { walletId: spend.walletId, usedSatang: -spend.amount, restoredSatang: restored };
+}
+
+export interface RestoreResult {
+  walletId: string;
+  /** What this refund put back on the wallet. */
+  restoredSatang: number;
+  /** What was asked of this wallet tender and could not go back to it (cash instead). */
+  shortSatang: number;
+  balanceAfterSatang: number;
+  replayed: boolean;
+}
+
+/**
+ * A REFUND'S WALLET SLICE, SETTLED (plan §2.4): credit back onto the SAME
+ * wallet the attempt spent, as a `refund` / `refund` entry keyed by the refund
+ * and the attempt — capped at what that tender used less what earlier refunds
+ * already put back (the prototype's restorable rule,
+ * `TransactionDetail.tsx:134-138`). Anything above the cap is `shortSatang`,
+ * and the caller hands it back in cash. Null when the attempt spent no wallet
+ * — the slice is then cash. The refund row must already exist (the entry
+ * names it).
+ */
+export async function restoreForRefund(
+  tx: Tx,
+  actor: WalletActor,
+  input: { refundId: string; saleId: string; attemptId: string; amountSatang: number; branchId: string; stationId?: string | null; now?: Date },
+): Promise<RestoreResult | null> {
+  const actionId = restoreActionId(input.refundId, input.attemptId);
+  await lockAction(tx, actor.operatorId, actionId);
+  const done = await entryOfAction(tx, actor.operatorId, actionId);
+  if (done) {
+    return {
+      walletId: done.walletId,
+      restoredSatang: done.amountSatang,
+      shortSatang: Math.max(0, input.amountSatang - done.amountSatang),
+      balanceAfterSatang: done.balanceAfter,
+      replayed: true,
+    };
+  }
+  const tender = await walletTenderOf(tx, actor.operatorId, input.attemptId);
+  if (!tender) return null;
+  // Under the wallet's lock, so the cap is read with the balance it moves.
+  const [locked] = await tx.select().from(wallet).where(eq(wallet.id, tender.walletId)).for('update').limit(1);
+  if (!locked) return null;
+  const cap = Math.max(0, tender.usedSatang - tender.restoredSatang);
+  const amount = Math.min(input.amountSatang, cap);
+  if (amount <= 0) {
+    return { walletId: tender.walletId, restoredSatang: 0, shortSatang: input.amountSatang, balanceAfterSatang: locked.balanceSatang, replayed: false };
+  }
+  const written = await applyEntry(tx, actor, tender.walletId, {
+    actionId,
+    kind: 'refund',
+    source: 'refund',
+    amountSatang: amount,
+    branchId: input.branchId,
+    saleId: input.saleId,
+    refundId: input.refundId,
+    paymentAttemptId: input.attemptId,
+    stationId: input.stationId ?? null,
+    now: input.now,
+  });
+  return {
+    walletId: tender.walletId,
+    restoredSatang: amount,
+    shortSatang: input.amountSatang - amount,
+    balanceAfterSatang: written.entry.balanceAfter,
+    replayed: false,
+  };
 }
 
 // --- Finding a wallet ------------------------------------------------------------
@@ -891,9 +1115,39 @@ export async function loadChildPrepaid(
  * park (round 4 loads there), or one with no prepaid credit. A null is "no
  * load", never "nothing left": the caller falls back to what was paid.
  */
-export async function prepaidBalanceOf(db: Exec, operatorId: string, checkinId: string): Promise<{ walletId: string; balanceSatang: number } | null> {
+export async function prepaidBalanceOf(
+  db: Exec,
+  operatorId: string,
+  checkinId: string,
+  options: { lock?: boolean } = {},
+): Promise<{
+  walletId: string;
+  balanceSatang: number;
+  /** What this stay's check-in loaded. */
+  loadedSatang: number;
+  /** This stay's net spending since its load: spends, less refunds put back. */
+  spentSatang: number;
+  /**
+   * What the release may hand back in cash for THIS stay (round 2 carryover):
+   * its own load less its own spending, and never more than the wallet holds.
+   * A leftover from an earlier stay stays on the wallet — the child's own pool.
+   */
+  refundableSatang: number;
+} | null> {
   const loaded = await entryOfAction(db, operatorId, prepaidActionId(checkinId));
   if (!loaded) return null;
-  const [row] = await db.select().from(wallet).where(eq(wallet.id, loaded.walletId)).limit(1);
-  return row ? { walletId: row.id, balanceSatang: row.balanceSatang } : null;
+  const base = db.select().from(wallet).where(eq(wallet.id, loaded.walletId));
+  // Locked inside the release's savepoint, so the figure refunded is the figure
+  // a counter's spend cannot change before the debit lands.
+  const [row] = options.lock ? await base.for('update').limit(1) : await base.limit(1);
+  if (!row) return null;
+  const since = await db
+    .select({ id: walletEntry.id, kind: walletEntry.kind, amount: walletEntry.amountSatang, createdAt: walletEntry.createdAt })
+    .from(walletEntry)
+    .where(and(eq(walletEntry.walletId, row.id), inArray(walletEntry.kind, ['spend', 'refund'])));
+  const spentSatang = since
+    .filter((e) => e.id !== loaded.id && (e.createdAt > loaded.createdAt || (e.createdAt.getTime() === loaded.createdAt.getTime() && e.id > loaded.id)))
+    .reduce((sum, e) => sum - e.amount, 0);
+  const refundableSatang = Math.max(0, Math.min(row.balanceSatang, loaded.amountSatang - Math.max(0, spentSatang)));
+  return { walletId: row.id, balanceSatang: row.balanceSatang, loadedSatang: loaded.amountSatang, spentSatang, refundableSatang };
 }

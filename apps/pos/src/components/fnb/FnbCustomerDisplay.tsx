@@ -374,6 +374,10 @@ export function FnbCustomerDisplay({
 
   if (stage === 'payment') {
     const amountToPay = payment.amountSatang / 100;
+    // S2-14a round 2 — the credit the station is really taking (the payment
+    // stage's figure, never the band's whole balance): "from your credit" and
+    // "left to pay", the prototype's rows.
+    const creditUsed = (payment.creditSatang ?? 0) / 100;
 
     if (payment.online && payment.status === 'pending' && (payment.qrPayload || payment.qrImageUrl)) {
       return (
@@ -388,6 +392,11 @@ export function FnbCustomerDisplay({
               <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" />
             </div>
             <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{amountToPay}</div>
+            {creditUsed > 0 && (
+              <p className="text-lg text-foreground/60 mt-3">
+                {t('fnb.payment.paidFromCredit', { amount: String(creditUsed) })}
+              </p>
+            )}
             <PaymentExpiry expiresAt={payment.expiresAt} />
             <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('fnb.payment.openBankingApp')}</p>
             <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg">
@@ -408,10 +417,19 @@ export function FnbCustomerDisplay({
           <p className="text-2xl text-foreground/70 mb-6">{t('fnb.payment.amountToPay')}</p>
 
           <div className="w-full max-w-md space-y-3">
+            {creditUsed > 0 && (
+              <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
+                <span className="flex items-center gap-3 text-xl text-foreground/80">
+                  <Wallet className="w-6 h-6 text-primary" />
+                  {t('fnb.payment.fromCredit')}
+                </span>
+                <span className="text-2xl font-black text-primary tabular-nums">฿{creditUsed}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
               <span className="flex items-center gap-3 text-xl text-foreground/80">
                 <Banknote className="w-6 h-6 text-foreground/60" />
-                {t('fnb.payment.toPay')}
+                {creditUsed > 0 ? t('fnb.payment.leftToPay') : t('fnb.payment.toPay')}
               </span>
               <span className="text-4xl font-black tabular-nums">฿{amountToPay}</span>
             </div>
@@ -502,8 +520,8 @@ export function FnbCustomerDisplay({
                 <span>{t('common.total')}</span>
                 <span className="tabular-nums">฿{completion?.total ?? order?.total}</span>
               </div>
-              {order && order.payment.creditUsed > 0 && (
-                <PaidRow icon={Wallet} label={t('fnb.thankyou.fnbCredit')} amount={order.payment.creditUsed} />
+              {(order ? order.payment.creditUsed : completion?.payment.credit ?? 0) > 0 && (
+                <PaidRow icon={Wallet} label={t('fnb.thankyou.fnbCredit')} amount={order ? order.payment.creditUsed : completion!.payment.credit!} />
               )}
               {paidCash > 0 && <PaidRow icon={Banknote} label={t('common.cash')} amount={paidCash} />}
               {paidCard > 0 && <PaidRow icon={CreditCard} label={t('common.card')} amount={paidCard} />}

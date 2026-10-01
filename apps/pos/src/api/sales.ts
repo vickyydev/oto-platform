@@ -544,6 +544,22 @@ export interface SaleFinaliseResult {
   attempt?: PaymentAttemptView | null;
   /** S2-10b — the vouchers this call used up, by id. Empty unless it closed a sale carrying one. */
   redeemedVoucherIds?: string[];
+  /** S2-14a round 2 — the wallet tender the platform wrote for this press, when it carried a wallet. */
+  walletAttempt?: PaymentAttemptView | null;
+  walletSpend?: { walletId: string; amountSatang: number; balanceAfterSatang: number } | null;
+}
+
+/**
+ * S2-14a round 2 (plan §2.3) — WHAT THE CONFIRM PRESS SENDS TO SPEND A WALLET:
+ * the scanned key (a band's code or a voucher's `QR-…`) and "use credit". The
+ * platform decides the amount — min(balance, outstanding) under the wallet's
+ * lock — and writes the tender itself; this till never names credit as a
+ * method on the tender grid.
+ */
+export interface SaleWalletPayload {
+  key: string;
+  useCredit?: boolean;
+  amountSatang?: number;
 }
 
 // --- The client -------------------------------------------------------------
@@ -668,6 +684,17 @@ export const salesApi = {
   finalise: (saleId: string, body: SaleFinaliseBody) =>
     api.post<SaleFinaliseResult>(`/sales/${encodeURIComponent(saleId)}/finalise`, body, {
       idempotencyKey: saleFinaliseIdempotencyKey(saleId, body.tender, body.actionId),
+      headers: { 'x-oto-action-id': body.actionId },
+    }),
+  /**
+   * S2-14a round 2 — the credit half of a confirm press: the same finalise
+   * route with the wallet and NO tender, so the platform spends the credit
+   * and leaves any remainder owed for the tender that follows. Its own key,
+   * so a retry replays the spend and never repeats it.
+   */
+  spendWallet: (saleId: string, body: { actionId: string; wallet: SaleWalletPayload }) =>
+    api.post<SaleFinaliseResult>(`/sales/${encodeURIComponent(saleId)}/finalise`, body, {
+      idempotencyKey: `sale:${saleId}:wallet:${body.actionId}`,
       headers: { 'x-oto-action-id': body.actionId },
     }),
   /**
@@ -1514,6 +1541,19 @@ export async function finaliseSale(
     if (isMissingRoute(err)) throw new SalesLedgerUnavailable();
     throw err;
   }
+}
+
+/**
+ * S2-14a round 2 — spend the scanned wallet on a rung-up sale, online only.
+ * Refusals arrive in the counter's words (`WALLET_EMPTY`, `WALLET_INSUFFICIENT`,
+ * `WALLET_NOT_FOUND`) as an `ApiError` the payment panel shows as it is.
+ */
+export async function spendWalletOnSale(
+  saleId: string,
+  actionId: string,
+  wallet: SaleWalletPayload,
+): Promise<SaleFinaliseResult> {
+  return salesApi.spendWallet(saleId, { actionId, wallet });
 }
 
 /** The local engine's figures in the platform's own totals shape, for a sale that was not written. */

@@ -71,6 +71,13 @@ export const DisplayPaymentSchema = z.object({
   expiresAt: z.string().datetime({ offset: true }).nullable(),
   status: z.enum(['idle', 'pending', 'paid', 'blocked', 'failed']),
   offline: z.boolean(), online: z.boolean(),
+  /**
+   * S2-14a round 2 — stored-value credit taken, or about to be, on this order,
+   * in satang: the figure behind the guest display's "From your credit / Left
+   * to pay" rows (plan §2.3). A figure only — never the wallet, its key or its
+   * balance, which the display is not permitted to hold.
+   */
+  creditSatang: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
 });
 export type DisplayCart = z.infer<typeof DisplayCartSchema>;
 export type DisplayMember = z.infer<typeof DisplayMemberSchema>;

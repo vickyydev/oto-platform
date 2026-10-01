@@ -6,6 +6,7 @@ import {
   REFUND_MODES,
   SALE_REPRINT_KINDS,
   TaxableCategorySchema,
+  WalletTenderInstructionSchema,
   normalizePhone,
   type Permission,
 } from '@oto/shared';
@@ -341,6 +342,12 @@ const FinaliseBody = Tender.extend({
   actionId: z.string().min(1).max(200).optional(),
   /** S2-09b — the pick-up code, for a food order committed without one. */
   pickupCode: z.string().max(12).optional(),
+  /**
+   * S2-14a round 2 — the scanned wallet and "use credit" (or an exact figure).
+   * The platform writes the wallet tender itself, first; the tender above, if
+   * any, settles what is left (cash when it names no method).
+   */
+  wallet: WalletTenderInstructionSchema.optional(),
 }).nullish();
 
 /**
@@ -528,11 +535,22 @@ export async function saleRoutes(app: App): Promise<void> {
       },
     },
     async (req, reply) => {
-      const actor = actorOf(req, 'pos:sale:update');
       const body = req.body ?? {};
+      const saleActor = actorOf(req, 'pos:sale:update');
+      // S2-14a — spending a wallet needs `pos:wallet:spend` at the sale's own
+      // branch as well, checked when the service has the row.
+      const actor: ActorContext = body.wallet
+        ? {
+            ...saleActor,
+            assertBranchAllowed: async (branchId: string) => {
+              await saleActor.assertBranchAllowed?.(branchId);
+              await req.requirePermission('pos:wallet:spend', { branchId });
+            },
+          }
+        : saleActor;
       // The till sends the tender both nested and flat; either reading is the
       // same tender, so the nested one wins and the flat one is the fallback.
-      const tender = body.tender ?? {
+      const flat = {
         method: body.method,
         kind: body.kind,
         amountSatang: body.amountSatang,
@@ -540,6 +558,10 @@ export async function saleRoutes(app: App): Promise<void> {
         changeSatang: body.changeSatang,
         reference: body.reference,
       };
+      // S2-14a — a wallet press naming no tender at all spends the credit and
+      // leaves the remainder owed; without a wallet, an empty body is cash.
+      const namesTender = body.tender !== undefined || Object.values(flat).some((v) => v !== undefined);
+      const tender = body.tender ?? (namesTender || !body.wallet ? flat : undefined);
       const headerActionId = req.headers['x-oto-action-id'];
       let drawerKick: DrawerKick | null = null;
       const answer = await withTx(app.db, opCtx(req), 'sale.finalise', async (tx) => {
@@ -548,6 +570,7 @@ export async function saleRoutes(app: App): Promise<void> {
           actionId:
             body.actionId ?? (typeof headerActionId === 'string' ? headerActionId : null) ?? null,
           ...(body.pickupCode ? { pickupCode: body.pickupCode } : {}),
+          ...(body.wallet ? { wallet: body.wallet } : {}),
         });
         const { drawerKick: kick, ...response } = result;
         drawerKick = kick;

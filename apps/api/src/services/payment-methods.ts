@@ -1,8 +1,10 @@
 import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
 import { paymentAttempt, paymentMethod } from '@oto/db';
 import {
+  PAID_ONLINE_TENDER_CODE,
   PAYMENT_METHODS,
   PAYMENT_METHOD_KINDS,
+  WALLET_TENDER_CODE,
   newId,
   type PaymentMethodKind,
 } from '@oto/shared';
@@ -216,12 +218,27 @@ function assertLedgerBackedKind(kind: PaymentMethodKind): void {
  * door, for a caller that is not the panel.
  */
 function assertTenderableCode(code: string): void {
-  if (code !== 'credit_card') return;
-  throw errors.badRequest(
-    '“credit_card” is the legacy token for a card tender and is always read as “card”, ' +
-      'so a tender with that code could never be selected. Use “card”, or another code.',
-    { code },
-  );
+  if (code === 'credit_card') {
+    throw errors.badRequest(
+      '“credit_card” is the legacy token for a card tender and is always read as “card”, ' +
+        'so a tender with that code could never be selected. Use “card”, or another code.',
+      { code },
+    );
+  }
+  /**
+   * S2-12 / S2-14a — the two tenders the PLATFORM writes by itself: a booking's
+   * "paid online" settlement and stored-value credit (`PAID_ONLINE_TENDER_CODE`,
+   * `WALLET_TENDER_CODE`). Neither is ever chosen from the grid — `tenderMethodOf`
+   * refuses them before a row is looked up — so a row under either code would
+   * be a dead button the counter can press and get nothing from.
+   */
+  if (code === PAID_ONLINE_TENDER_CODE || code === WALLET_TENDER_CODE) {
+    throw errors.badRequest(
+      `“${code}” is written by the platform itself — ${code === WALLET_TENDER_CODE ? 'stored-value credit, taken by scanning a wallet' : 'a booking paid on the booking site, settled when it is redeemed'} — ` +
+        'and is never chosen from the tender grid, so a tender under that code could take no money. Use another code.',
+      { code, reserved: [PAID_ONLINE_TENDER_CODE, WALLET_TENDER_CODE] },
+    );
+  }
 }
 
 export async function createPaymentMethod(

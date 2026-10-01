@@ -434,7 +434,7 @@ async function remainingCreditOf(db: Exec, stay: CheckinRow): Promise<number> {
   const fp = stay.foodProvision;
   if (!fp || fp.mode !== 'prepaid_credit') return 0;
   const held = await prepaidBalanceOf(db, stay.operatorId, stay.id);
-  return held ? held.balanceSatang : fp.paidSatang;
+  return held ? held.refundableSatang : fp.paidSatang;
 }
 
 export async function reconciliationOf(db: Exec, stay: CheckinRow): Promise<PrepaidReconciliation | null> {
@@ -667,6 +667,10 @@ export async function releaseChild(
         // child's release back with it — the release stands, and staff refund
         // by hand (the prototype's `refund_no_sale` toast).
         refundResult = await tx.transaction(async (sp) => {
+          // S2-14a round 2 — re-read under the wallet's lock, inside this savepoint.
+          const held = reconciliation?.mode === 'prepaid_credit' ? await prepaidBalanceOf(sp, actor.operatorId, stay.id, { lock: true }) : null;
+          const refundSatang = held ? Math.min(unusedSatang, held.refundableSatang) : unusedSatang;
+          if (refundSatang <= 0) return null;
           const refunded = await refundSale(
             sp,
             {
@@ -685,7 +689,7 @@ export async function releaseChild(
               assertCanApprove: async () => undefined,
             },
             linked.id,
-            { mode: 'custom', amountSatang: unusedSatang, reason: 'Unused prepaid food at pickup', note: null },
+            { mode: 'custom', amountSatang: refundSatang, reason: 'Unused prepaid food at pickup', note: null },
             now,
           );
           /**
@@ -697,7 +701,6 @@ export async function releaseChild(
            * (`creditRestoredTHB: 0`, `mockApi.ts:5309`) because its band
            * left the park with the child; a wallet here outlives the stay.
            */
-          const held = reconciliation?.mode === 'prepaid_credit' ? await prepaidBalanceOf(sp, actor.operatorId, stay.id) : null;
           if (held) {
             await debitWallet(
               sp,
@@ -705,13 +708,14 @@ export async function releaseChild(
               {
                 walletId: held.walletId,
                 actionId: `release:${input.id}:prepaid`,
-                amountSatang: unusedSatang,
+                amountSatang: refundSatang,
                 source: 'refund',
                 branchId: stay.branchId,
                 refundId: refunded.refund.id,
                 saleId: linked.id,
                 stationId: actor.stationId,
-                payload: { checkinId: stay.id },
+                // What stays on the child's wallet: an earlier stay's leftover is theirs.
+                payload: { checkinId: stay.id, keptOnWalletSatang: held.balanceSatang - refundSatang },
                 now,
               },
             );

@@ -38,7 +38,8 @@ import { toast } from '@/hooks/use-toast';
 import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
-import { FnbPayment, fnbPaymentResult } from '@/components/fnb/FnbPayment';
+import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
+import { walletKeyOf } from '@/api/wallet';
 import { FnbConfirmation } from '@/components/fnb/FnbConfirmation';
 import { FoodConsentModal } from '@/components/fnb/FoodConsentModal';
 import { PickupCodeModal } from '@/components/fnb/PickupCodeModal';
@@ -80,6 +81,8 @@ export function MobileOrderStation() {
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
+  /** S2-14a round 2 — spend the scanned wallet on this order; preselected when it has credit. */
+  const [useCredit, setUseCredit] = useState(true);
   const [cart, setCart] = useState<FnbOrderLine[]>([]);
   const [orderNote, setOrderNote] = useState('');
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
@@ -303,6 +306,7 @@ export function MobileOrderStation() {
 
   const loadBand = (wb: Wristband | null) => {
     setWristband(wb);
+    setUseCredit(true);
     setStage('order');
   };
 
@@ -313,6 +317,7 @@ export function MobileOrderStation() {
     paymentSnapshotRef.current = null;
     setStage('scan');
     setWristband(null);
+    setUseCredit(true);
     setCart([]);
     setOrderNote('');
     setManualDiscounts([]);
@@ -373,7 +378,9 @@ export function MobileOrderStation() {
     if (!operator || !station || written.status !== 'finalised' || completedSaleRef.current === written.id) return;
     completedSaleRef.current = written.id;
     const payment = fnbPaymentResult(settlements);
-    const balanceAfter = wristband?.creditBalanceTHB ?? null;
+    // S2-14a — the balance the platform left on the wallet, when credit paid.
+    const balanceAfter = walletBalanceAfter(settlements) ?? wristband?.creditBalanceTHB ?? null;
+    const paidWristband = wristband && balanceAfter !== null ? { ...wristband, creditBalanceTHB: balanceAfter } : wristband;
 
     // Commit prepaid item redemptions only after the sale is finalised.
     if (wristband) {
@@ -386,7 +393,7 @@ export function MobileOrderStation() {
       id: String(orderCounter++).padStart(4, '0'),
       operatorId: operator.id,
       operatorName: operator.name,
-      wristband: wristband ?? undefined,
+      wristband: paidWristband ?? undefined,
       lines: displayLines,
       manualDiscounts,
       total: written.totals.grossSatang / 100,
@@ -418,6 +425,10 @@ export function MobileOrderStation() {
     prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordOrderOnPlatform(paymentEpoch), finaliseSale: saleWriter.finalise,
     onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
     onLeftBehind: notePaymentLeftBehind,
+    // S2-14a round 2 — the scanned wallet, spent first by the platform on the confirm press.
+    wallet: wristband && wristband.creditBalanceTHB > 0
+      ? { key: walletKeyOf(wristband), useCredit, previewSatang: Math.round(wristband.creditBalanceTHB * 100) }
+      : null,
   });
   const paymentContextLocked = stage === 'payment' && (paymentStage.locked || paymentStage.state.settlements.length > 0);
   useEffect(() => {
@@ -633,7 +644,7 @@ export function MobileOrderStation() {
                         Prepaid credit · {wristband.holderName ?? wristband.customerNickname}
                       </span>
                       <div className="text-sm text-violet-200/80 mt-0.5">
-                        ฿{wristband.creditBalanceTHB} remaining. Credit payments are not available at this station.
+                        ฿{wristband.creditBalanceTHB} remaining — spends like credit at checkout.
                       </div>
                     </div>
                   </div>
@@ -691,6 +702,8 @@ export function MobileOrderStation() {
             pickupCode={pickupCode}
             stage={paymentStage}
             onBack={backFromPayment}
+            useCredit={useCredit}
+            onUseCreditChange={setUseCredit}
           />
           </div>
         </div>

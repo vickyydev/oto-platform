@@ -37,7 +37,8 @@ import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
 import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { MerchGrid } from '@/components/merch/MerchGrid';
 import { MerchCart } from '@/components/merch/MerchCart';
-import { FnbPayment, fnbPaymentResult } from '@/components/fnb/FnbPayment';
+import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
+import { walletKeyOf } from '@/api/wallet';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -49,7 +50,7 @@ import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { announceSalePrinting } from '@/lib/printRouting';
 import { Button } from '@/components/ui/button';
-import { Monitor } from 'lucide-react';
+import { Monitor, Wallet } from 'lucide-react';
 
 type Stage = 'scan' | 'order' | 'payment' | 'confirmation';
 
@@ -68,6 +69,11 @@ export default function MerchStation() {
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
+  /**
+   * S2-14a round 2 — spend the scanned wallet here: the SAME pool as the F&B
+   * counter (the platform files it as a merch order). Preselected with credit.
+   */
+  const [useCredit, setUseCredit] = useState(true);
   const [cart, setCart] = useState<MerchOrderLine[]>([]);
   // Item awaiting a size: one the platform sells in two or more sizes (S2-09b),
   // or — on the ported catalogue — a multi-variant inventory item.
@@ -454,6 +460,7 @@ export default function MerchStation() {
 
   const loadBand = (wb: Wristband | null) => {
     setWristband(wb);
+    setUseCredit(true);
     setStage('order');
   };
 
@@ -467,6 +474,7 @@ export default function MerchStation() {
     setPlatformSale(null);
     setStage('scan');
     setWristband(null);
+    setUseCredit(true);
     setCart([]);
     setManualDiscounts([]);
     setPromoCodes([]);
@@ -532,14 +540,16 @@ export default function MerchStation() {
     const payment = fnbPaymentResult(settlements);
     setPlatformSale(written);
 
-    const balanceAfter = wristband?.creditBalanceTHB ?? null;
+    // S2-14a — the balance the platform left on the wallet, when credit paid.
+    const balanceAfter = walletBalanceAfter(settlements) ?? wristband?.creditBalanceTHB ?? null;
+    const paidWristband = wristband && balanceAfter !== null ? { ...wristband, creditBalanceTHB: balanceAfter } : wristband;
 
     // The record this till keeps, carrying the figures the guest was shown.
     const record: MerchOrder = {
       id: String(orderCounter++).padStart(4, '0'),
       operatorId: operator.id,
       operatorName: operator.name,
-      wristband: wristband ?? undefined,
+      wristband: paidWristband ?? undefined,
       lines: displayLines,
       manualDiscounts,
       total: written.totals.grossSatang / 100,
@@ -571,6 +581,10 @@ export default function MerchStation() {
     finaliseSale: saleWriter.finalise,
     onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
     onLeftBehind: notePaymentLeftBehind,
+    // S2-14a round 2 — the scanned wallet, spent first by the platform on the confirm press.
+    wallet: wristband && wristband.creditBalanceTHB > 0
+      ? { key: walletKeyOf(wristband), useCredit, previewSatang: Math.round(wristband.creditBalanceTHB * 100) }
+      : null,
   });
   const backFromPayment = () => {
     if (!paymentStage.canBack) return;
@@ -588,7 +602,10 @@ export default function MerchStation() {
   const separateDisplay = useMerchDisplay(station?.stationId ?? null, {
     sessionKey: `${operator?.id ?? ''}:${station?.branchId ?? branch.id}:${station?.stationId ?? ''}:${saleEpochRef.current}`,
     stage: customerStage, online: !stationOffline(),
-    excluded: !!wristband || promoCodes.length > 0 || !shopFromPlatform,
+    // S2-14a round 2 — a scanned wallet no longer excludes the purchase: the
+    // credit the stage takes rides the payment frame as a figure, so the
+    // separate display shows "From your credit / Left to pay" (CLAUDE.md §7 rule 4).
+    excluded: promoCodes.length > 0 || !shopFromPlatform,
     lines, manualDiscounts, quote: sale.quote, pending: sale.pending, quoteFailed: !!sale.error,
     payment: paymentStage.display, completedOrder, platformSale,
   }, !locked && !stationOffline());
@@ -624,7 +641,6 @@ export default function MerchStation() {
                   This till&apos;s own record
                 </span>
                 <span>Stock counts and out-of-stock — S2-14b</span>
-                <span>Wallet credit — S2-14a</span>
                 {!shopFromPlatform && (
                   <span className="text-amber-300">
                     Catalogue — this deployment has no menu route, so the ported one is shown
@@ -678,6 +694,8 @@ export default function MerchStation() {
               creditLabel="Credit"
               stage={paymentStage}
               onBack={backFromPayment}
+              useCredit={useCredit}
+              onUseCreditChange={setUseCredit}
             />
             <div className="mx-auto w-full max-w-2xl px-6 pb-6">
               {saleWriter.state.kind === 'failed' && <SaleWriteFailure
@@ -764,7 +782,8 @@ export default function MerchStation() {
         </div>
         {inlineDisplay && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
-            {separateDisplay.presentation ? <PublicMerchCustomerDisplay
+            {/* The in-till harness keeps the prototype's wallet visuals (the balance chip, the remaining credit); only the separate device reads the captured frame. */}
+            {separateDisplay.presentation && !wristband ? <PublicMerchCustomerDisplay
               stage={customerStage} cart={separateDisplay.presentation.cart}
               totals={separateDisplay.presentation.totals} payment={paymentStage.display}
             /> : stage === 'payment' ? (
@@ -774,6 +793,13 @@ export default function MerchStation() {
                 {paymentStage.display.online && paymentStage.display.status === 'pending' && (paymentStage.display.qrPayload || paymentStage.display.qrImageUrl) && (
                   <div className="rounded-3xl bg-white p-6"><PaymentQr payload={paymentStage.display.qrPayload} imageUrl={paymentStage.display.qrImageUrl} className="h-64 w-64" /></div>
                 )}
+                {(paymentStage.display.creditSatang ?? 0) > 0 && (
+                  <div className="flex w-full max-w-md items-center justify-between rounded-2xl border border-foreground/10 bg-foreground/5 px-6 py-4">
+                    <span className="flex items-center gap-3 text-xl text-foreground/80"><Wallet className="h-6 w-6 text-primary" />{t('merch.payment.fromCredit')}</span>
+                    <span className="text-2xl font-black tabular-nums text-primary">฿{(paymentStage.display.creditSatang ?? 0) / 100}</span>
+                  </div>
+                )}
+                {(paymentStage.display.creditSatang ?? 0) > 0 && <p className="text-xl text-foreground/70">{t('merch.payment.leftToPay')}</p>}
                 <div className="text-6xl font-black tabular-nums text-primary">฿{paymentStage.display.amountSatang / 100}</div>
                 {paymentStage.display.status === 'pending' && <PaymentExpiry expiresAt={paymentStage.display.expiresAt} />}
                 <p className="text-xl text-foreground/60">
@@ -790,6 +816,7 @@ export default function MerchStation() {
               promptpayAmount={null}
               completedOrder={completedOrder}
               newBalance={newBalance}
+              creditSatang={paymentStage.display.creditSatang ?? 0}
             />}
           </div>
         )}

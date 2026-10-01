@@ -83,6 +83,7 @@ import {
   MonitorSmartphone,
   Info,
   WifiOff,
+  Wallet,
 } from 'lucide-react';
 
 /**
@@ -366,10 +367,32 @@ const METHOD_LABEL: Record<PaymentAttemptView['method'], string> = {
   cash: 'Cash',
   card: 'Card',
   qr: 'QR',
-  wallet: 'Wallet',
+  // S2-14a round 2 — the only writer of a `wallet` attempt is the platform's
+  // stored-value tender; the counter calls it credit (the prototype's word).
+  wallet: 'Credit',
   voucher: 'Voucher',
   transfer: 'Transfer',
 };
+
+/**
+ * S2-14a round 2 — WHAT A REFUND CAN STILL PUT BACK ON THE WALLET: the credit
+ * this sale's wallet tenders took, less what earlier refunds already restored
+ * (the prototype's restorable rule, `TransactionDetail.tsx:134-138`). The
+ * platform applies the same cap; this is the figure the Refund dialog shows.
+ */
+export function restorableCreditSatang(
+  attempts: readonly Pick<PaymentAttemptView, 'method' | 'status' | 'amountSatang'>[],
+  refunds: readonly { tenderAllocation: readonly Pick<RefundAllocationEntry, 'route' | 'status' | 'amountSatang'>[] }[],
+): number {
+  const used = attempts
+    .filter((a) => a.method === 'wallet' && PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status))
+    .reduce((sum, a) => sum + a.amountSatang, 0);
+  const restored = refunds
+    .flatMap((r) => r.tenderAllocation)
+    .filter((slice) => slice.route === 'wallet' && slice.status === 'done')
+    .reduce((sum, slice) => sum + slice.amountSatang, 0);
+  return Math.max(0, used - restored);
+}
 
 /**
  * WHAT ONE TENDER IS CALLED ON THE SALE — SCRUM-477.
@@ -431,7 +454,7 @@ function PaymentRow({
 }) {
   const status = STATUS_LABEL[attempt.status];
   const Icon =
-    attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : CreditCard;
+    attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : attempt.method === 'wallet' ? Wallet : CreditCard;
   const detail = [
     attempt.changeSatang !== null && attempt.changeSatang > 0
       ? `฿${baht(attempt.tenderedSatang ?? 0)} given, ฿${baht(attempt.changeSatang)} change`
@@ -496,7 +519,7 @@ export function refundSliceWords(
     },
     wallet: {
       done: 'back on the wallet',
-      pending: 'back to the wallet once wallets arrive (S2-14a)',
+      pending: 'going back on the wallet',
       failed: 'the wallet refused it — hand it back in cash',
     },
     manual: {
@@ -1451,7 +1474,7 @@ export function SaleDetail({
         open={refundOpen}
         onOpenChange={setRefundOpen}
         maxRefund={baht(remainingSatang)}
-        restorableCredit={0}
+        restorableCredit={baht(restorableCreditSatang(attempts, detail?.refunds ?? []))}
         lines={refundOptions.map((option) => ({
           id: option.id,
           label: option.label,

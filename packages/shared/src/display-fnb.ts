@@ -25,7 +25,9 @@ export const DisplayFnbCartSchema = z.object({
   })).max(200),
   completion: z.object({
     saleId: id, pickupCode: z.string().max(64), total: money,
-    payment: z.object({ cash: money, card: money, promptpay: money }),
+    // S2-14a round 2 — `credit` is the stored value the platform took (a baht
+    // figure, nothing of the wallet); absent on an order paid without it.
+    payment: z.object({ cash: money, card: money, promptpay: money, credit: money.optional() }),
   }).nullable(),
 }).superRefine((value, ctx) => {
   if (!value.supported && (value.lines.length || value.orderNote || value.manualDiscounts.length || value.completion)) {
@@ -33,7 +35,7 @@ export const DisplayFnbCartSchema = z.object({
   }
   if (value.completion && Math.round(value.completion.total * 100)
     !== Math.round(value.completion.payment.cash * 100) + Math.round(value.completion.payment.card * 100)
-      + Math.round(value.completion.payment.promptpay * 100)) {
+      + Math.round(value.completion.payment.promptpay * 100) + Math.round((value.completion.payment.credit ?? 0) * 100)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['completion', 'payment'], message: 'Paid amounts must match the completed total' });
   }
 });

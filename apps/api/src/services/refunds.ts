@@ -2,6 +2,8 @@ import { and, asc, eq } from 'drizzle-orm';
 import { device, paymentAttempt, refund, sale, saleLine, station } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  WALLET_TENDER_CODE,
+  WALLET_TENDER_METHOD,
   allocateRefund,
   isoDateInTz,
   newId,
@@ -22,6 +24,7 @@ import { revokeSaleBands } from './bands';
 import { queueTerminalCommand } from './payments/terminal';
 import { accountNames, refundViewOf, settleRefundSlice, type RefundView } from './refund-slices';
 import { allocateReceipt, saleViewOf, type SaleView } from './sale';
+import { restoreForRefund, walletTenderOf } from './wallet';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
 /**
@@ -96,9 +99,18 @@ export interface RefundSaleResult {
   clamped: boolean;
 }
 
-/** How a tender that took money can be reversed. */
-function classify(row: AttemptRow): RefundableTender['channel'] {
-  if (row.method === 'wallet') return 'wallet';
+/**
+ * How a tender that took money can be reversed.
+ *
+ * S2-14a round 2 — STORED VALUE IS TOLD APART BY METHOD AND CODE. Only the
+ * platform-written tender (method `wallet`, code `wallet_credit`, no device)
+ * is the wallet channel. The terminal's Alipay / WeChat "wallet" is `qr` money
+ * on a device with `payload.tender = 'wallet'`: it goes back through the
+ * terminal (or cash), never onto a stored-value wallet.
+ */
+export function classify(row: Pick<AttemptRow, 'method' | 'methodCode' | 'deviceId' | 'invoiceNo' | 'provider'>): RefundableTender['channel'] {
+  if (row.method === WALLET_TENDER_METHOD && row.methodCode === WALLET_TENDER_CODE && !row.deviceId) return 'wallet';
+  if (row.method === WALLET_TENDER_METHOD) return 'manual';
   if (row.method === 'cash') return 'cash';
   if (row.deviceId) return 'terminal';
   if (row.invoiceNo && (row.provider === '2c2p' || row.provider === 'simulator')) return 'gateway';
@@ -261,17 +273,28 @@ export async function refundSale(
       if (entry.attemptId) sentBack.set(entry.attemptId, (sentBack.get(entry.attemptId) ?? 0) + entry.amountSatang);
     }
   }
-  const tenders: RefundableTender[] = attempts.map((a) => ({
-    attemptId: a.id,
-    method: a.method,
-    methodCode: a.methodCode,
-    provider: a.provider,
-    channel: classify(a),
-    terminalTender: a.deviceId ? terminalTenderOf(a) : null,
-    amountSatang: a.amountSatang,
-    refundedSatang: sentBack.get(a.id) ?? 0,
-    paidAt: (a.paidAt ?? a.createdAt).toISOString(),
-  }));
+  const tenders: RefundableTender[] = [];
+  for (const a of attempts) {
+    const channel = classify(a);
+    let refundedSatang = sentBack.get(a.id) ?? 0;
+    if (channel === 'wallet') {
+      // S2-14a — the ledger's word on what this credit tender can still take
+      // back: credit actually used, less what earlier refunds restored.
+      const spent = await walletTenderOf(tx, row.operatorId, a.id);
+      refundedSatang = spent ? Math.max(refundedSatang, a.amountSatang - (spent.usedSatang - spent.restoredSatang)) : a.amountSatang;
+    }
+    tenders.push({
+      attemptId: a.id,
+      method: a.method,
+      methodCode: a.methodCode,
+      provider: a.provider,
+      channel,
+      terminalTender: a.deviceId ? terminalTenderOf(a) : null,
+      amountSatang: a.amountSatang,
+      refundedSatang,
+      paidAt: (a.paidAt ?? a.createdAt).toISOString(),
+    });
+  }
   const allocation = allocateRefund(amount.amountSatang, tenders);
 
   // --- The number, from the station's refund series --------------------------
@@ -336,6 +359,69 @@ export async function refundSale(
     .returning();
   if (!written) throw new Error('the refund was not written');
 
+  /**
+   * S2-14a round 2 — THE WALLET SLICES SETTLE NOW, in this transaction (plan
+   * §2.4): each credits back to the SAME wallet its tender spent, capped at
+   * what that tender used less what was already restored, keyed by this
+   * refund and the attempt so a replay restores once. Whatever the cap holds
+   * back is handed over in cash, as its own slice. After the row exists,
+   * because the wallet's entry names it.
+   */
+  let finalRow = written;
+  if (slices.some((s) => s.route === 'wallet' && s.status === 'pending')) {
+    const settled: RefundAllocationEntry[] = [];
+    let cashTopUp = 0;
+    for (const slice of slices) {
+      if (slice.route !== 'wallet' || slice.status !== 'pending' || !slice.attemptId) {
+        settled.push(slice);
+        continue;
+      }
+      const restored = await restoreForRefund(
+        tx,
+        { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+        {
+          refundId,
+          saleId,
+          attemptId: slice.attemptId,
+          amountSatang: slice.amountSatang,
+          branchId: row.branchId,
+          stationId: actor.stationId,
+          now,
+        },
+      );
+      const back = restored?.restoredSatang ?? 0;
+      if (back > 0) {
+        settled.push({
+          ...slice,
+          amountSatang: back,
+          status: 'done',
+          detail: 'Put back on the wallet it was spent from',
+          settledAt: now.toISOString(),
+        });
+      }
+      cashTopUp += slice.amountSatang - back;
+    }
+    if (cashTopUp > 0) {
+      settled.push({
+        attemptId: null,
+        method: 'cash',
+        methodCode: null,
+        provider: null,
+        route: 'cash',
+        amountSatang: cashTopUp,
+        status: 'done',
+        detail: 'More than the wallet tender can take back — handed back in cash',
+      });
+    }
+    const [updated] = await tx
+      .update(refund)
+      .set({ tenderAllocation: settled, updatedAt: now })
+      .where(eq(refund.id, refundId))
+      .returning();
+    if (updated) finalRow = updated;
+    slices.splice(0, slices.length, ...settled);
+  }
+
   const refundedSatang = row.refundedSatang + amount.amountSatang;
   const full = refundedSatang >= row.grossSatang;
   const [after] = await tx
@@ -391,7 +477,7 @@ export async function refundSale(
     },
   });
 
-  return answerFor(tx, after, written, {
+  return answerFor(tx, after, finalRow, {
     replay: false,
     requestedSatang: amount.requestedSatang,
     clamped: amount.clamped,

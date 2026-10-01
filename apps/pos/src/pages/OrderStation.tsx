@@ -76,7 +76,8 @@ import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { BenefitScanModal } from '@/components/fnb/BenefitScanModal';
 import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { FnbCart } from '@/components/fnb/FnbCart';
-import { FnbPayment, fnbPaymentResult } from '@/components/fnb/FnbPayment';
+import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
+import { walletKeyOf } from '@/api/wallet';
 import { FnbConfirmation } from '@/components/fnb/FnbConfirmation';
 import { PickupCodeModal } from '@/components/fnb/PickupCodeModal';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
@@ -118,6 +119,12 @@ export default function OrderStation() {
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
+  /**
+   * S2-14a round 2 — whether this order spends the scanned wallet. Preselected
+   * whenever the band carries credit (the prototype's tender card); staff can
+   * take it off to collect the whole order another way.
+   */
+  const [useCredit, setUseCredit] = useState(true);
   const [cart, setCart] = useState<FnbOrderLine[]>([]);
   const [orderNote, setOrderNote] = useState('');
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
@@ -861,6 +868,7 @@ export default function OrderStation() {
   const loadBand = (wb: Wristband | null) => {
     if (staffLocked.current) return;
     setWristband(wb);
+    setUseCredit(true);
     setStage('order');
   };
 
@@ -879,6 +887,7 @@ export default function OrderStation() {
     setPlatformPrintJobs(null);
     setStage('scan');
     setWristband(null);
+    setUseCredit(true);
     setCart([]);
     setOrderNote('');
     setManualDiscounts([]);
@@ -1096,7 +1105,9 @@ export default function OrderStation() {
       voucher.reset();
     }
 
-    const balanceAfter = wristband?.creditBalanceTHB ?? null;
+    // S2-14a — the balance the platform left on the wallet, when credit paid.
+    const balanceAfter = walletBalanceAfter(settlements) ?? wristband?.creditBalanceTHB ?? null;
+    const paidWristband = wristband && balanceAfter !== null ? { ...wristband, creditBalanceTHB: balanceAfter } : wristband;
 
     // Commit prepaid item redemptions only after the sale is finalised.
     if (wristband) {
@@ -1139,7 +1150,7 @@ export default function OrderStation() {
       id: String(orderCounter++).padStart(4, '0'),
       operatorId: operator.id,
       operatorName: operator.name,
-      wristband: wristband ?? undefined,
+      wristband: paidWristband ?? undefined,
       // The voucher's free item with the order's own lines: it goes to the
       // kitchen, onto the receipt and into the stock count like any F&B line.
       lines: voucherLine ? [...displayLines, voucherLine] : displayLines,
@@ -1184,6 +1195,10 @@ export default function OrderStation() {
     finaliseSale: saleWriter.finalise,
     onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
     onLeftBehind: notePaymentLeftBehind,
+    // S2-14a round 2 — the scanned wallet, spent first by the platform on the confirm press.
+    wallet: wristband && wristband.creditBalanceTHB > 0
+      ? { key: walletKeyOf(wristband), useCredit, previewSatang: Math.round(wristband.creditBalanceTHB * 100) }
+      : null,
   });
   const backFromPayment = () => {
     if (!paymentStage.canBack) return;
@@ -1201,7 +1216,12 @@ export default function OrderStation() {
   const separateDisplay = useFnbDisplay(station?.stationId ?? null, {
     sessionKey: `${operator?.id ?? ''}:${station?.branchId ?? branch.id}:${station?.stationId ?? ''}:${orderEpochRef.current}`,
     stage: customerStage, online: !stationOffline(),
-    excluded: !!wristband || !!benefitOperator || !!voucher.held || !!voucherUsed || promoCodes.length > 0
+    // S2-14a round 2 — a scanned wallet no longer excludes the order: its lines
+    // and total are the platform's quote, and the credit the stage takes rides
+    // the payment frame as a figure (`creditSatang`), so the separate display —
+    // the production device (CLAUDE.md §7 rule 4) — shows "From your credit /
+    // Left to pay" like the in-till harness. Prepaid items stay this till's own.
+    excluded: !!benefitOperator || !!voucher.held || !!voucherUsed || promoCodes.length > 0
       || !!offLedgerOnly(lines) || lines.some(line => line.isPrepaid),
     lines, orderNote, manualDiscounts: effectiveManualDiscounts, quote: order.quote,
     pending: order.pending, quoteFailed: !!order.error, payment: paymentStage.display, completedOrder, platformSale,
@@ -1333,7 +1353,7 @@ export default function OrderStation() {
                         Prepaid credit · {wristband.holderName ?? wristband.customerNickname}
                       </span>
                       <div className="text-sm text-violet-200/80 mt-0.5">
-                        ฿{wristband.creditBalanceTHB} remaining. Credit payments are not available at this station.
+                        ฿{wristband.creditBalanceTHB} remaining — spends like credit at checkout.
                       </div>
                     </div>
                   </div>
@@ -1352,7 +1372,7 @@ export default function OrderStation() {
                   This till&apos;s own record
                 </span>
                 <span>Stock counts and out-of-stock — S2-14b</span>
-                <span>Wallet credit and prepaid items — S2-14a</span>
+                <span>Prepaid items — S2-14a</span>
                 {!menuFromPlatform && (
                   <span className="text-amber-300">
                     Menu — this deployment has no menu route, so the ported catalogue is shown
@@ -1473,6 +1493,8 @@ export default function OrderStation() {
               pickupCode={pickupCode}
               stage={paymentStage}
               onBack={backFromPayment}
+              useCredit={useCredit}
+              onUseCreditChange={setUseCredit}
             />
             {/*
               What the platform has done with this order, in the same panels the
@@ -1542,7 +1564,10 @@ export default function OrderStation() {
         {inlineDisplay && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <FnbCustomerDisplay
-              presentation={separateDisplay.presentation}
+              // The in-till harness keeps the prototype's wallet visuals (the
+              // greeting, the balance chip, the remaining credit); only the
+              // separate device reads the captured frame.
+              presentation={wristband ? undefined : separateDisplay.presentation}
               stage={customerStage}
               wristband={wristband}
               lines={displayLines}

@@ -4,14 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { findPaymentMethod } from '@/lib/payments';
-import { paymentStageText as label, type PaymentStageController } from '@/lib/usePaymentStage';
+import { isCreditSettlement, paymentStageText as label, type PaymentStageController } from '@/lib/usePaymentStage';
 import { NumberKeypad } from './NumberKeypad';
 import { PaymentExpiry, PaymentQr } from './PaymentQr';
 
 const format = (amount: number) => (amount / 100).toFixed(2);
 export function paymentSubmitLabel(stage: PaymentStageController): string {
   if (stage.busy) return label('pending');
-  if (stage.state.outstandingSatang === 0) return label('complete');
+  // S2-14a — credit expected to cover the order: the press needs no tender.
+  if (stage.state.outstandingSatang === 0 || stage.creditCoversAll) return label('complete');
   const kind = stage.state.method ? findPaymentMethod(stage.state.method)?.kind : null;
   return label(kind === 'cash' ? 'recordCash' : kind === 'qr' ? 'startQr' : kind === 'card' ? 'startCard' : 'selectMethod');
 }
@@ -44,7 +45,7 @@ export function PaymentTenderPanel({ stage, showSubmit = true }: { stage: Paymen
     {!stage.online && <p role="alert" className="rounded-xl border border-amber-500/40 p-4">{label('reconnect')}</p>}
     {state.settlements.length > 0 && <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
       <p className="font-semibold">{label('recorded')}</p>
-      {state.settlements.map((part) => <p key={part.attemptId} className="text-sm">{findPaymentMethod(part.method)?.label ?? part.method} · ฿{format(part.amountSatang)}</p>)}
+      {state.settlements.map((part) => <p key={part.attemptId} className="text-sm">{isCreditSettlement(part) ? 'Credit' : findPaymentMethod(part.method)?.label ?? part.method} · ฿{format(part.amountSatang)}</p>)}
       <p className="mt-2 font-bold">{label('balance')} ฿{format(state.outstandingSatang)}</p>
     </div>}
     {state.method && !stage.locked && state.phase !== 'manual' && state.outstandingSatang > 0 && <div className="space-y-3">

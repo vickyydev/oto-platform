@@ -49,6 +49,7 @@ import {
   isPaymentReversalPending,
   PAID_ONLINE_TENDER_CODE,
   PAID_ONLINE_TENDER_METHOD,
+  WALLET_TENDER_CODE,
   parseDayStart,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
@@ -107,8 +108,8 @@ import type { Exec, Tx } from './tx';
 import { bandsOfSale } from './bands';
 import { refundsOfSale } from './refund-slices';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
-import { grantSaleCredit, grantsOfSale } from './wallet';
-import type { WalletGrantView } from '@oto/shared';
+import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
+import type { WalletGrantView, WalletTenderInstruction } from '@oto/shared';
 import {
   assertSaleVouchersHeld,
   auditVoidReleases,
@@ -3350,6 +3351,19 @@ export interface FinaliseSaleInput {
    * out (OD-A10).
    */
   onlineTender?: { bookingId: string; bookingReference: string; onlineInvoiceNo: string | null } | null;
+  /**
+   * S2-14a round 2 (plan §2.3) — SPEND A SCANNED WALLET FIRST. The till sends
+   * the band's or voucher's key with "use credit" (or an exact figure); the
+   * PLATFORM writes the wallet tender itself on the `onlineTender` model: an
+   * attempt with method `wallet`, code `wallet_credit`, for min(balance,
+   * outstanding), in this transaction and under the wallet's row lock, with
+   * its `spend` entry. It is never offered on the tender grid and never opens
+   * the drawer. Whatever is left is the `tender`'s — cash when it names no
+   * method (OD-W3) — and with no `tender` at all the remainder stays owed for
+   * the till's next press (a ฿0-after-credit order closes here, with none).
+   * Online only: the box's replay never passes it (round 4).
+   */
+  wallet?: WalletTenderInstruction | null;
 }
 
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
@@ -3403,6 +3417,24 @@ export interface FinaliseResult {
    * (plan §2.2). Read back on a replay; empty while the sale is still open.
    */
   grants: WalletGrantView[];
+  /**
+   * S2-14a round 2 — the wallet tender this call wrote or found: its attempt
+   * (as the Attempts list shows it) and what it took off the wallet. Absent
+   * when the call carried no wallet.
+   */
+  walletAttempt?: PaymentAttemptView | null;
+  walletSpend?: { walletId: string; amountSatang: number; balanceAfterSatang: number } | null;
+}
+
+/** Which counter's word the wallet's ledger records a spend under — one pool, two sources. */
+function walletSpendSource(row: { salesChannel: string | null }): 'fnb_order' | 'merch_order' {
+  if (row.salesChannel === 'shop') return 'merch_order';
+  if (row.salesChannel === 'fnb') return 'fnb_order';
+  throw errors.conflict(
+    'WALLET_NOT_HERE',
+    'Credit pays for food and shop orders — take this sale in cash, card or QR.',
+    { salesChannel: row.salesChannel },
+  );
 }
 
 /**
@@ -3478,6 +3510,14 @@ export async function finaliseSale(
       receiptCollision: null,
       // Granted on the first answer, and read back here — never granted twice.
       grants: await grantsOfSale(tx, saleId),
+      ...(input.wallet
+        ? {
+            walletAttempt: input.actionId
+              ? await attemptOfAction(tx, row.operatorId, saleId, `${input.actionId}:wallet`)
+              : null,
+            walletSpend: null,
+          }
+        : {}),
     };
   }
   if (row.status === 'voided' || row.status === 'refunded') {
@@ -3537,7 +3577,85 @@ export async function finaliseSale(
   let replayedTender = false;
   /** Ask the box to open the drawer, once the transaction has committed. */
   let drawerKick: DrawerKick | null = null;
-  if (owed > 0) {
+
+  /**
+   * S2-14a round 2 — THE WALLET FIRST, written by the platform (plan §2.3).
+   *
+   * Keyed `<press>:wallet` beside the press's own tender, so one press may
+   * write both and a retry finds each. The spend and its attempt are one act
+   * under the wallet's row lock (`debitForSale`): a second till spending the
+   * same wallet waits for this one and then reads what is left — the honest
+   * zero, refused, never a negative and never a second charge.
+   */
+  let walletAttempt: PaymentAttemptView | null = null;
+  let walletSpend: FinaliseResult['walletSpend'] = null;
+  let walletReplayed = false;
+  if (input.wallet && owed > 0) {
+    const walletActionId = input.actionId ? `${input.actionId}:wallet` : null;
+    const prior = walletActionId ? await findAttemptByAction(tx, row.operatorId, walletActionId) : null;
+    if (prior) {
+      if (prior.saleId !== saleId) {
+        throw errors.conflict('ACTION_ID_REUSED', 'That action id already recorded a tender against another sale', {
+          actionId: input.actionId,
+          saleId: prior.saleId,
+        });
+      }
+      walletAttempt = attemptView(prior);
+      walletReplayed = true;
+    } else {
+      await assertSaleVouchersHeld(tx, voucherScope, now);
+      const source = walletSpendSource(row);
+      const instruction = input.wallet;
+      const spent = await debitForSale(
+        tx,
+        { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+        {
+          key: instruction.key,
+          useCredit: instruction.useCredit,
+          amountSatang: instruction.amountSatang,
+          outstandingSatang: owed,
+          source,
+          branchId: row.branchId,
+          saleId,
+          stationId: row.stationId,
+          boxId: row.boxId,
+          businessDate: row.businessDate,
+          now,
+          openAttempt: async (amountSatang, walletId) => {
+            const method = await tenderMethodOf(tx, row.operatorId, WALLET_TENDER_CODE, undefined, { platform: 'wallet' });
+            const opened = await openAttempt(tx, {
+              operatorId: row.operatorId,
+              branchId: row.branchId,
+              stationId: row.stationId,
+              businessDate: row.businessDate,
+              saleId,
+              method,
+              methodCode: WALLET_TENDER_CODE,
+              amountSatang,
+              actionId: walletActionId,
+              payload: {
+                platformWritten: true,
+                walletId,
+                source,
+                takenByAccountId: actor.accountId,
+                ...(walletActionId ? { actionId: walletActionId } : {}),
+              },
+            });
+            await settleAttempt(tx, opened.id, { paidAt: now });
+            return opened;
+          },
+        },
+      );
+      owed -= spent.amountSatang;
+      const [settled] = await tx.select().from(paymentAttempt).where(eq(paymentAttempt.id, spent.attemptId)).limit(1);
+      walletAttempt = settled ? attemptView(settled) : null;
+      walletSpend = { walletId: spent.walletId, amountSatang: spent.amountSatang, balanceAfterSatang: spent.balanceAfterSatang };
+    }
+  }
+  // A wallet press with no tender leaves the remainder owed for the next press.
+  const takesTender = !(input.wallet && input.tender === undefined);
+
+  if (owed > 0 && takesTender) {
     // CALLING THIS ROUTE IS THE CONFIRMATION THAT THE MONEY WAS TAKEN — it is
     // what the till's "Confirm Payment Received" does — so a call that names
     // no tender settles the balance in cash rather than refusing. Staff who
@@ -3690,8 +3808,11 @@ export async function finaliseSale(
    * spending it on a sale that is not settled leaves a gap somebody has to
    * explain. The next tender, at this counter or from a webhook, closes it.
    */
+  /** True when this press had already been recorded whole and this call wrote nothing. */
+  const replayedCall = (replayedTender || walletReplayed) && taken === null && walletSpend === null;
+  const walletAnswer = input.wallet ? { walletAttempt, walletSpend } : {};
   if (owed > 0) {
-    if (!replayedTender) {
+    if (!replayedCall) {
       await audit.record(tx, {
         actorAccountId: actor.accountId,
         operatorId: actor.operatorId,
@@ -3701,7 +3822,7 @@ export async function finaliseSale(
         entityId: saleId,
         actionId: input.actionId ?? null,
         requestId: actor.requestId,
-        before: { status: row.status, outstandingSatang: owed + (taken?.amountSatang ?? 0) },
+        before: { status: row.status, outstandingSatang: owed + (taken?.amountSatang ?? 0) + (walletSpend?.amountSatang ?? 0) },
         after: {
           status: row.status,
           stationId: row.stationId,
@@ -3709,12 +3830,13 @@ export async function finaliseSale(
           grossSatang: row.grossSatang,
           outstandingSatang: owed,
           tender: taken,
+          ...(walletSpend ? { wallet: walletSpend } : {}),
         },
       });
     }
     return {
-      replay: replayedTender,
-      replayed: replayedTender,
+      replay: replayedCall,
+      replayed: replayedCall,
       finalised: false,
       outstandingSatang: owed,
       attempt,
@@ -3725,6 +3847,7 @@ export async function finaliseSale(
       printing: null,
       receiptCollision: null,
       grants: [],
+      ...walletAnswer,
     };
   }
 
@@ -3795,6 +3918,7 @@ export async function finaliseSale(
       // What closed it, so "who took this money and how" is answerable from
       // the log and not only from the payment row.
       tender: taken,
+      ...(walletSpend ? { wallet: walletSpend } : {}),
       ...(pickupCode ? { pickupCode } : {}),
     },
   });
@@ -3832,8 +3956,8 @@ export async function finaliseSale(
         });
 
   return {
-    replay: replayedTender,
-    replayed: replayedTender,
+    replay: replayedCall,
+    replayed: replayedCall,
     finalised: true,
     outstandingSatang: 0,
     attempt,
@@ -3845,6 +3969,7 @@ export async function finaliseSale(
     receiptCollision,
     // Read again after the paper: the bands it minted now carry the wallets.
     grants: grants.length > 0 ? await grantsOfSale(tx, saleId) : grants,
+    ...walletAnswer,
   };
 }
 
