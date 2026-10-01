@@ -6809,7 +6809,7 @@ OTO Company Limited`,
       }
       
       const items = await storage.getAttentionItems(options);
-      res.json({ items, lastCalculatedAt: null });
+      res.json({ items, lastCalculatedAt: null, paused: !ATTENTION_WRITES_READY });
     } catch (error) {
       next(error);
     }

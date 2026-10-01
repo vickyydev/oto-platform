@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,7 +19,6 @@ import {
   Clock,
   Calendar,
   RefreshCw,
-  ArrowRight,
   AlertCircle,
   UserCheck,
   Camera,
@@ -52,9 +51,8 @@ import { useState } from "react";
 interface AttentionResponse {
   items: AttentionItem[];
   lastCalculatedAt: string | null;
+  paused?: boolean;
 }
-
-type AttentionType = AttentionItem["type"];
 
 interface AttentionTypeConfig {
   label: string;
@@ -226,6 +224,7 @@ function AttentionItemCard({
   onSnooze,
   isResolving,
   isSnoozing,
+  readOnly,
 }: {
   item: AttentionItem;
   employees: Employee[];
@@ -233,6 +232,7 @@ function AttentionItemCard({
   onSnooze: (id: string) => void;
   isResolving: boolean;
   isSnoozing: boolean;
+  readOnly: boolean;
 }) {
   const config = typeConfigs[item.type] || typeConfigs.CONTRACT_NOT_SENT;
   const Icon = config.icon;
@@ -329,7 +329,7 @@ function AttentionItemCard({
                     variant="ghost"
                     size="sm"
                     onClick={handleSnoozeClick}
-                    disabled={isSnoozing || isResolving || checkingCondition}
+                    disabled={readOnly || isSnoozing || isResolving || checkingCondition}
                     data-testid={`button-snooze-${item.id}`}
                   >
                     <BellOff className="mr-1 h-4 w-4" />
@@ -339,7 +339,7 @@ function AttentionItemCard({
                     variant="ghost"
                     size="sm"
                     onClick={() => onResolve(item.id)}
-                    disabled={isResolving || isSnoozing || checkingCondition}
+                    disabled={readOnly || isResolving || isSnoozing || checkingCondition}
                     data-testid={`button-resolve-${item.id}`}
                   >
                     <CheckCircle className="mr-1 h-4 w-4" />
@@ -401,12 +401,13 @@ export default function AttentionPage() {
     return `/api/attention-items?${params.toString()}`;
   };
 
-  const { data: attentionResponse, isLoading } = useQuery<AttentionResponse>({
+  const { data: attentionResponse, isLoading, isError } = useQuery<AttentionResponse>({
     queryKey: [buildUrl()],
   });
 
   const attentionItems = attentionResponse?.items || [];
   const lastCalculatedAt = attentionResponse?.lastCalculatedAt;
+  const isPaused = attentionResponse?.paused === true;
 
   const { data: employees } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -522,7 +523,7 @@ export default function AttentionPage() {
           <Button
             variant="outline"
             onClick={() => refreshMutation.mutate()}
-            disabled={refreshMutation.isPending}
+            disabled={isPaused || refreshMutation.isPending}
             data-testid="button-refresh-attention"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshMutation.isPending ? "animate-spin" : ""}`} />
@@ -530,6 +531,14 @@ export default function AttentionPage() {
           </Button>
         </div>
       </div>
+
+      {isPaused && (
+        <Card className="border-amber-300" role="status">
+          <CardContent className="py-4 text-sm">
+            Attention alerts are temporarily paused. Saved alerts are shown for reference; new alerts, refresh, snooze and resolve are unavailable.
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex flex-wrap gap-4">
         <div className="flex items-center gap-2">
@@ -593,7 +602,13 @@ export default function AttentionPage() {
         </span>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            Could not load attention alerts. Please try again.
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
@@ -614,8 +629,8 @@ export default function AttentionPage() {
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
-            <p className="text-lg font-medium">All clear!</p>
-            <p className="text-sm">No attention items require your action.</p>
+            <p className="text-lg font-medium">{isPaused ? "No saved alerts in this view" : "All clear!"}</p>
+            <p className="text-sm">{isPaused ? "Automatic alerts are paused." : "No attention items require your action."}</p>
           </CardContent>
         </Card>
       ) : (
@@ -629,6 +644,7 @@ export default function AttentionPage() {
               onSnooze={(id) => snoozeMutation.mutate(id)}
               isResolving={resolvingId === item.id}
               isSnoozing={snoozingId === item.id}
+              readOnly={isPaused}
             />
           ))}
         </div>
