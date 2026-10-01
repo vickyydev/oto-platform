@@ -857,38 +857,108 @@ export async function registerRoutes(
   app.use(parentExperienceRoutes.default);
 
   // User management routes (Admin only)
-  app.get("/api/users", requireAuth, requireAdmin, async (req, res, next) => {
+  const managedUserTenant = async (userId: string): Promise<string | undefined> => {
+    const access = await storage.getUserBranchAccess(userId);
+    if (access.length > 0) {
+      const tenantId = access[0].tenantId;
+      if (!access.every(row => row.tenantId === tenantId)) return undefined;
+      const branchIds = [...new Set(access.map(row => row.branchId).filter((id): id is string => !!id))];
+      if (branchIds.length > 0) {
+        const valid = await db.select({ id: branches.id }).from(branches)
+          .where(and(eq(branches.tenantId, tenantId), inArray(branches.id, branchIds)));
+        if (valid.length !== branchIds.length) return undefined;
+      }
+      const user = await storage.getUser(userId);
+      if (user?.role === "operator_admin" && user.operatorId) {
+        const [operator] = await db.select({ tenantId: operators.tenantId }).from(operators)
+          .where(eq(operators.id, user.operatorId)).limit(1);
+        if (operator?.tenantId !== tenantId) return undefined;
+      }
+      return tenantId;
+    }
+    // An old account with no access row is classifiable only in a one-tenant database.
+    const knownTenants = await db.select({ id: tenants.id }).from(tenants).limit(2);
+    return knownTenants.length === 1 ? knownTenants[0].id : undefined;
+  };
+
+  const userManagementTenant = async (req: Request): Promise<string | undefined> => {
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!req.user?.id || !tenantId) return undefined;
+    return (await managedUserTenant(req.user.id)) === tenantId ? tenantId : undefined;
+  };
+
+  const publicManagedUser = <T extends { password: string }>(user: T) => {
+    const { password: _password, ...safeUser } = user;
+    return safeUser;
+  };
+
+  const managedBranchIds = async (raw: unknown, tenantId: string): Promise<string[] | null> => {
+    if (!Array.isArray(raw) || raw.some(id => typeof id !== "string")) return null;
+    const ids = [...new Set<string>(raw)];
+    if (ids.length === 0) return ids;
+    const selected = await db.select({ id: branches.id }).from(branches)
+      .where(and(eq(branches.tenantId, tenantId), inArray(branches.id, ids)));
+    return selected.length === ids.length ? ids : null;
+  };
+
+  app.get("/api/users", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const users = await storage.getUsersWithBranchAccess();
-      res.json(users);
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const allUsers = await storage.getUsersWithBranchAccess();
+      const scoped = await Promise.all(allUsers.map(async user =>
+        (await managedUserTenant(user.id)) === tenantId ? publicManagedUser(user) : null));
+      res.json(scoped.filter(user => user !== null));
     } catch (error) {
       next(error);
     }
   });
 
-  app.get("/api/users/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  app.get("/api/users/:id", requireGlobalAdmin, async (req, res, next) => {
     try {
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      if ((await managedUserTenant(req.params.id)) !== tenantId) {
+        return res.status(404).json({ message: "User not found" });
+      }
       const user = await storage.getUserWithBranchAccess(req.params.id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json(user);
+      res.json(publicManagedUser(user));
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/users", requireAuth, requireAdmin, async (req, res, next) => {
+  app.post("/api/users", requireGlobalAdmin, async (req, res, next) => {
     try {
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Invalid user data" });
+      }
       const { email, password, fullName, role, accessScope, branchIds, mustChangePassword = true } = req.body;
-      
-      if (!email || !password || !fullName) {
+      if (typeof email !== "string" || typeof password !== "string" || typeof fullName !== "string" ||
+          !email.trim() || !fullName.trim()) {
         return res.status(400).json({ message: "Email, password, and full name are required" });
       }
-      
       if (password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
+      if (typeof mustChangePassword !== "boolean") {
+        return res.status(400).json({ message: "Invalid password change setting" });
+      }
+      const nextRole = role ?? "staff";
+      if (!["admin", "manager", "staff"].includes(nextRole)) {
+        return res.status(400).json({ message: "Role is not available here" });
+      }
+      const nextScope = nextRole === "admin" ? "all_branches" : (accessScope ?? "selected_branches");
+      if (nextScope !== "all_branches" && nextScope !== "selected_branches") {
+        return res.status(400).json({ message: "Invalid branch access scope" });
+      }
+      const selectedIds = await managedBranchIds(branchIds ?? [], tenantId);
+      if (!selectedIds) return res.status(403).json({ message: "Selected branches are not available" });
       
       // Check if email already exists
       const existingUser = await storage.getUserByEmail(email);
@@ -901,17 +971,18 @@ export async function registerRoutes(
         email,
         password: hashedPassword,
         fullName,
-        role: role || 'staff',
+        role: nextRole,
         isActive: true,
         mustChangePassword: mustChangePassword,
         createdBy: req.user?.id,
-      });
+      }, tenantId);
       
       // Set branch access
       await storage.setUserBranchAccess(
         user.id,
-        role === 'admin' ? 'all_branches' : (accessScope || 'selected_branches'),
-        branchIds
+        nextScope,
+        nextScope === "all_branches" ? [] : selectedIds,
+        tenantId,
       );
       
       // Log activity
@@ -928,31 +999,63 @@ export async function registerRoutes(
       });
       
       const userWithAccess = await storage.getUserWithBranchAccess(user.id);
-      res.status(201).json(userWithAccess);
+      res.status(201).json(publicManagedUser(userWithAccess!));
     } catch (error) {
       next(error);
     }
   });
 
-  app.patch("/api/users/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  app.patch("/api/users/:id", requireGlobalAdmin, async (req, res, next) => {
     try {
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      if ((await managedUserTenant(req.params.id)) !== tenantId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Invalid user data" });
+      }
       const { email, fullName, role, isActive, accessScope, branchIds } = req.body;
-      
+      const targetUser = await storage.getUser(req.params.id);
+      if (!targetUser) return res.status(404).json({ message: "User not found" });
+      if (["global_admin", "operator_admin", "advisor"].includes(targetUser.role)) {
+        return res.status(403).json({ message: "This account is managed outside User Management" });
+      }
+      const nextRole = role ?? targetUser.role;
+      if (!["admin", "manager", "staff"].includes(nextRole)) {
+        return res.status(400).json({ message: "Role is not available here" });
+      }
+      if (email !== undefined && (typeof email !== "string" || !email.trim())) {
+        return res.status(400).json({ message: "Invalid email" });
+      }
+      if (fullName !== undefined && (typeof fullName !== "string" || !fullName.trim())) {
+        return res.status(400).json({ message: "Invalid name" });
+      }
+      if (isActive !== undefined && typeof isActive !== "boolean") {
+        return res.status(400).json({ message: "Invalid account status" });
+      }
+      const priorAccess = await storage.getUserBranchAccess(req.params.id);
+      const nextScope = nextRole === "admin" ? "all_branches"
+        : (accessScope ?? (targetUser.role !== "admin" && priorAccess.some(row => row.accessScope === "all_branches")
+          ? "all_branches" : "selected_branches"));
+      if (nextScope !== "all_branches" && nextScope !== "selected_branches") {
+        return res.status(400).json({ message: "Invalid branch access scope" });
+      }
+      const selectedIds = await managedBranchIds(branchIds ?? priorAccess.map(row => row.branchId).filter((id): id is string => !!id), tenantId);
+      if (!selectedIds) return res.status(403).json({ message: "Selected branches are not available" });
+      const linkedEmployee = await storage.getEmployeeByUserId(targetUser.id);
+      if (linkedEmployee && linkedEmployee.tenantId !== tenantId) {
+        return res.status(409).json({ message: "Linked employee belongs to another tenant" });
+      }
       const updateData: any = {};
       if (email !== undefined) updateData.email = email;
       if (fullName !== undefined) updateData.fullName = fullName;
       if (role !== undefined) updateData.role = role;
       if (isActive !== undefined) updateData.isActive = isActive;
       
-      const targetUser = await storage.getUser(req.params.id);
-      if (!targetUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
       const user = await storage.updateUser(req.params.id, updateData);
       
       // Sync overlapping fields to linked employee account (email, fullName)
-      const linkedEmployee = await storage.getEmployeeByUserId(user.id);
       if (linkedEmployee) {
         const syncFields: any = {};
         
@@ -974,11 +1077,12 @@ export async function registerRoutes(
       }
       
       // Update branch access if provided
-      if (accessScope !== undefined || branchIds !== undefined) {
+      if (role !== undefined || accessScope !== undefined || branchIds !== undefined) {
         await storage.setUserBranchAccess(
           user.id,
-          role === 'admin' ? 'all_branches' : (accessScope || 'selected_branches'),
-          branchIds
+          nextScope,
+          nextScope === "all_branches" ? [] : selectedIds,
+          tenantId,
         );
       }
       
@@ -992,24 +1096,34 @@ export async function registerRoutes(
       }
       
       const userWithAccess = await storage.getUserWithBranchAccess(user.id);
-      res.json(userWithAccess);
+      res.json(publicManagedUser(userWithAccess!));
     } catch (error) {
       next(error);
     }
   });
 
   // Admin reset user password endpoint
-  app.post("/api/users/:id/reset-password", requireAuth, requireAdmin, async (req, res, next) => {
+  app.post("/api/users/:id/reset-password", requireGlobalAdmin, async (req, res, next) => {
     try {
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      if ((await managedUserTenant(req.params.id)) !== tenantId) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+        return res.status(400).json({ message: "Invalid password" });
+      }
       const { password } = req.body;
-      
-      if (!password || password.length < 6) {
+      if (typeof password !== "string" || password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
       
       const targetUser = await storage.getUser(req.params.id);
       if (!targetUser) {
         return res.status(404).json({ message: "User not found" });
+      }
+      if (["global_admin", "operator_admin", "advisor"].includes(targetUser.role)) {
+        return res.status(403).json({ message: "This account is managed outside User Management" });
       }
       
       const hashedPassword = await hashPassword(password);
@@ -1023,7 +1137,7 @@ export async function registerRoutes(
       });
       
       const userWithAccess = await storage.getUserWithBranchAccess(req.params.id);
-      res.json(userWithAccess);
+      res.json(publicManagedUser(userWithAccess!));
     } catch (error) {
       next(error);
     }
@@ -1194,21 +1308,29 @@ export async function registerRoutes(
   });
 
   // Clear permission review flag after admin reviews
-  app.post("/api/users/:id/clear-permission-review", requireAuth, requireAdmin, async (req, res, next) => {
+  app.post("/api/users/:id/clear-permission-review", requireGlobalAdmin, async (req, res, next) => {
     try {
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      if ((await managedUserTenant(req.params.id)) !== tenantId) {
+        return res.status(404).json({ message: "User not found" });
+      }
       const user = await storage.updateUser(req.params.id, { permissionReviewRequired: false } as any);
-      res.json(user);
+      res.json(publicManagedUser(user));
     } catch (error) {
       next(error);
     }
   });
 
   // Get users needing permission review
-  app.get("/api/admin/permission-reviews", requireAuth, requireAdmin, async (req, res, next) => {
+  app.get("/api/admin/permission-reviews", requireGlobalAdmin, async (req, res, next) => {
     try {
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const allUsers = await storage.getUsers();
-      const needsReview = allUsers.filter((u: any) => u.permissionReviewRequired === true);
-      res.json(needsReview);
+      const needsReview = await Promise.all(allUsers.filter(user => user.permissionReviewRequired)
+        .map(async user => (await managedUserTenant(user.id)) === tenantId ? publicManagedUser(user) : null));
+      res.json(needsReview.filter(user => user !== null));
     } catch (error) {
       next(error);
     }
@@ -1287,23 +1409,28 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/users/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  app.delete("/api/users/:id", requireGlobalAdmin, async (req, res, next) => {
     try {
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      if ((await managedUserTenant(req.params.id)) !== tenantId) {
+        return res.status(404).json({ message: "User not found" });
+      }
       // Prevent deleting yourself
       if (req.user?.id === req.params.id) {
         return res.status(400).json({ message: "Cannot delete your own account" });
       }
       
-      // Get user to find associated person record
+      // A user account can be removed only when it has no HR identity to preserve.
       const userToDelete = await storage.getUser(req.params.id);
       if (userToDelete) {
-        // Find and delete associated person record by email
+        if (["global_admin", "operator_admin", "advisor"].includes(userToDelete.role)) {
+          return res.status(403).json({ message: "This account is managed outside User Management" });
+        }
+        const linkedEmployee = await storage.getEmployeeByUserId(userToDelete.id);
         const person = await storage.getPersonByEmail(userToDelete.email);
-        if (person) {
-          // Delete access policy first
-          await storage.deleteAccessPolicy(person.id);
-          // Delete person record to free up email
-          await storage.deletePerson(person.id);
+        if (linkedEmployee || person) {
+          return res.status(409).json({ message: "Deactivate this account to preserve its HR record" });
         }
       }
       
@@ -1807,16 +1934,14 @@ export async function registerRoutes(
   // ============================================
   
   // Get full permissions debug info for a user (Global Admin only for security)
-  app.get("/api/admin/users/:id/perms-debug", requireAuth, async (req, res, next) => {
+  app.get("/api/admin/users/:id/perms-debug", requireGlobalAdmin, async (req, res, next) => {
     try {
-      const requestingUser = req.user!;
-      
-      // Only allow global_admin and admin to access debug info for security
-      if (!["global_admin", "admin"].includes(requestingUser.role)) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const userId = req.params.id;
+      if ((await managedUserTenant(userId)) !== tenantId) {
+        return res.status(404).json({ message: "User not found" });
+      }
       
       // Get user record
       const user = await storage.getUser(userId);
@@ -1829,12 +1954,13 @@ export async function registerRoutes(
       
       // Get employee record if linked
       const employees = await storage.getEmployees();
-      const employeeRecord = employees.find(e => e.userId === userId);
+      const employeeRecord = employees.find(e => e.userId === userId && e.tenantId === tenantId);
       
       // Get access policy if exists
       let accessPolicy = null;
       if (employeeRecord?.personId) {
         accessPolicy = await storage.getAccessPolicy(employeeRecord.personId);
+        if (accessPolicy?.tenantId !== tenantId) accessPolicy = null;
       }
       
       // Compute effective permissions (matches frontend use-mode.tsx logic).
@@ -3211,12 +3337,20 @@ export async function registerRoutes(
       // Extract login setup fields before parsing
       const { setupLogin, loginPassword, accessLevel, enableHrModule, enableCoreModule, ...employeeBody } = body;
       
-      // Add tenantId from authenticated user with fallbacks
-      employeeBody.tenantId = await resolveTenantId(req.user?.tenantId);
+      const actorTenantId = await userManagementTenant(req);
+      if (!actorTenantId) return res.status(403).json({ message: "Access denied" });
+      employeeBody.tenantId = actorTenantId;
       
       const parsed = insertEmployeeSchema.safeParse(employeeBody);
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.message });
+      }
+      if (parsed.data.branchId) {
+        const selected = await managedBranchIds([parsed.data.branchId], actorTenantId);
+        if (!selected || (!req.userWithAccess?.hasAllBranchesAccess &&
+            !req.userWithAccess?.allowedBranchIds.includes(parsed.data.branchId))) {
+          return res.status(403).json({ message: "Selected branch is not available" });
+        }
       }
 
       // Validate login setup if requested
@@ -3262,14 +3396,15 @@ export async function registerRoutes(
           isActive: true,
           mustChangePassword: true,
           createdBy: req.user?.id,
-        });
+        }, parsed.data.tenantId);
         linkedUserId = user.id;
         
         // Set branch access
         await storage.setUserBranchAccess(
           user.id,
           "selected_branches",
-          parsed.data.branchId ? [parsed.data.branchId] : []
+          parsed.data.branchId ? [parsed.data.branchId] : [],
+          parsed.data.tenantId,
         );
         
         // Create access policy
@@ -3499,7 +3634,8 @@ export async function registerRoutes(
   app.post("/api/employees/:id/enable-login", requireAuth, requireManager, async (req, res, next) => {
     try {
       const employee = await storage.getEmployee(req.params.id);
-      if (!employee) {
+      const actorTenantId = await userManagementTenant(req);
+      if (!employee || !actorTenantId || employee.tenantId !== actorTenantId) {
         return res.status(404).json({ message: "Employee not found" });
       }
       
@@ -3513,6 +3649,9 @@ export async function registerRoutes(
       
       // Validate request body
       const { email, accessLevel, enableHrModule, enableCoreModule, enableStudioModule, enableEventsModule, enableOpsModule, enableSetupModule, branchScope, branchIds, password } = req.body;
+      const selectedLoginBranches = await managedBranchIds(branchScope === "ALL" ? [] :
+        (branchIds ?? (employee.branchId ? [employee.branchId] : [])), actorTenantId);
+      if (!selectedLoginBranches) return res.status(403).json({ message: "Selected branches are not available" });
       
       // Permission checks
       if (!req.user) {
@@ -3580,10 +3719,9 @@ export async function registerRoutes(
       
       // Determine branch scope and IDs
       const finalBranchScope = branchScope || "SELECTED";
-      const finalBranchIds = branchScope === "ALL" ? [] : (branchIds || (employee.branchId ? [employee.branchId] : []));
+      const finalBranchIds = selectedLoginBranches;
       
-      // Resolve tenantId with fallbacks
-      const resolvedTenantId = await resolveTenantId(req.user?.tenantId);
+      const resolvedTenantId = actorTenantId;
       
       // Defensive cleanup: Delete any orphaned access policy for this personId
       // This can happen if a previous user was deleted without proper cleanup
@@ -3615,7 +3753,7 @@ export async function registerRoutes(
         isActive: true,
         mustChangePassword: true,
         createdBy: req.user.id,
-      });
+      }, resolvedTenantId);
       
       // Set branch access (pass tenantId since users table doesn't have it)
       if (finalBranchScope === "ALL") {
@@ -3664,8 +3802,12 @@ export async function registerRoutes(
       const { generateUniqueUsername, generateTempPassword } = await import("./utils/username-generator");
       
       const employee = await storage.getEmployee(req.params.id);
-      if (!employee) {
+      const actorTenantId = await userManagementTenant(req);
+      if (!employee || !actorTenantId || employee.tenantId !== actorTenantId) {
         return res.status(404).json({ message: "Employee not found" });
+      }
+      if (employee.branchId && !(await managedBranchIds([employee.branchId], actorTenantId))) {
+        return res.status(403).json({ message: "Employee branch is not available" });
       }
       
       // Check if employee already has a user account
@@ -3724,12 +3866,10 @@ export async function registerRoutes(
         isActive: true,
         mustChangePassword: true,
         createdBy: req.user.id,
-      });
+      }, employee.tenantId);
       
       // Set branch access
-      if (employee.branchId) {
-        await storage.setUserBranchAccess(user.id, "selected_branches", [employee.branchId]);
-      }
+      await storage.setUserBranchAccess(user.id, "selected_branches", employee.branchId ? [employee.branchId] : [], employee.tenantId);
       
       // Link user to employee
       await storage.updateEmployee(employee.id, { userId: user.id });
@@ -4837,7 +4977,8 @@ export async function registerRoutes(
   app.post("/api/employees/:employeeId/transfer", requireAuth, requireManager, async (req, res, next) => {
     try {
       const employee = await storage.getEmployee(req.params.employeeId);
-      if (!employee) {
+      const actor = req.userWithAccess;
+      if (!employee || !actor?.tenantId || employee.tenantId !== actor.tenantId) {
         return res.status(404).json({ message: "Employee not found" });
       }
 
@@ -4866,14 +5007,17 @@ export async function registerRoutes(
 
       // Verify new branch exists
       const newBranch = await storage.getBranch(newBranchId);
-      if (!newBranch) {
+      if (!newBranch || newBranch.tenantId !== actor.tenantId) {
         return res.status(400).json({ message: "Invalid new branch" });
+      }
+      if (!canUserAccessBranch(actor, employee.branchId) || !canUserAccessBranch(actor, newBranchId)) {
+        return res.status(403).json({ message: "Access denied to this branch" });
       }
 
       // Verify new department exists if provided
       if (newDepartmentId) {
         const newDepartment = await storage.getDepartment(newDepartmentId);
-        if (!newDepartment) {
+        if (!newDepartment || newDepartment.tenantId !== actor.tenantId) {
           return res.status(400).json({ message: "Invalid new department" });
         }
       }
@@ -4935,7 +5079,7 @@ export async function registerRoutes(
 
       // 5. Update user's branch access if they have a linked user account
       if (employee.userId) {
-        await storage.setUserBranchAccess(employee.userId, 'selected_branches', [newBranchId]);
+        await storage.setUserBranchAccess(employee.userId, 'selected_branches', [newBranchId], employee.tenantId);
       }
 
       // 6. Create activity log
@@ -13195,8 +13339,12 @@ OTO Company Limited`,
     try {
       const { createLogin, password, accessLevel, modules, branchScope, branchIds, isProtected: _stripProtected, ...personData } = createPersonWithUserSchema.parse(req.body);
       
-      // Resolve tenant ID
-      const resolvedTenantId = await resolveTenantId(req.user?.tenantId);
+      const resolvedTenantId = await userManagementTenant(req);
+      if (!resolvedTenantId) return res.status(403).json({ message: "Access denied" });
+      const selectedPersonBranches = await managedBranchIds(branchIds ?? [], resolvedTenantId);
+      if (!selectedPersonBranches) {
+        return res.status(403).json({ message: "Selected branches are not available" });
+      }
       
       // Only create user if createLogin is true AND password is provided
       if (createLogin && password) {
@@ -13243,17 +13391,18 @@ OTO Company Limited`,
           createdBy: req.user?.id,
           phoneNumber: personData.phoneNumber ?? null,
           phoneE164: advisorPhoneE164,
-        });
+        }, resolvedTenantId);
         
         // Determine branch access scope based on request or role
         const effectiveBranchScope = branchScope === "ALL" ? "all_branches" : "selected_branches";
-        const effectiveBranchIds = branchScope === "ALL" ? [] : (branchIds || []);
+        const effectiveBranchIds = branchScope === "ALL" ? [] : selectedPersonBranches;
         
         // Set branch access for the user
         await storage.setUserBranchAccess(
           user.id,
           effectiveBranchScope,
-          effectiveBranchIds
+          effectiveBranchIds,
+          resolvedTenantId,
         );
         
         // Create access policy if any modules are enabled
@@ -13442,9 +13591,19 @@ OTO Company Limited`,
       const validatedData = clientAccessPolicySchema.parse(req.body);
       
       // Resolve tenant ID for new policies
-      const resolvedTenantId = await resolveTenantId(req.user?.tenantId);
+      const resolvedTenantId = await userManagementTenant(req);
+      if (!resolvedTenantId) return res.status(403).json({ message: "Access denied" });
+      const selectedPolicyBranches = await managedBranchIds(validatedData.branchIds ?? [], resolvedTenantId);
+      if (!selectedPolicyBranches) {
+        return res.status(403).json({ message: "Selected branches are not available" });
+      }
       
       const existingPolicy = await storage.getAccessPolicy(id);
+      const personEmployees = await storage.getEmployeesByPersonId(id);
+      if ((existingPolicy && existingPolicy.tenantId !== resolvedTenantId) ||
+          personEmployees.some(employee => employee.tenantId !== resolvedTenantId)) {
+        return res.status(404).json({ message: "Person not found" });
+      }
       let policy;
       if (existingPolicy) {
         policy = await storage.updateAccessPolicy(id, validatedData);
@@ -13453,7 +13612,7 @@ OTO Company Limited`,
       }
       
       // Sync access changes to linked HR user account (if exists - for employees)
-      const employees = await storage.getEmployeesByPersonId(id);
+      const employees = personEmployees;
       if (employees.length > 0 && employees[0].userId) {
         const userId = employees[0].userId;
         const user = await storage.getUser(userId);
@@ -13472,10 +13631,9 @@ OTO Company Limited`,
           // Update user branch access
           if (validatedData.branchScope === 'ALL') {
             // Set to all_branches
-            await storage.setUserBranchAccess(userId, 'all_branches');
-          } else if (validatedData.branchScope === 'SELECTED' && validatedData.branchIds?.length) {
-            // Set to specific branches
-            await storage.setUserBranchAccess(userId, 'selected_branches', validatedData.branchIds);
+            await storage.setUserBranchAccess(userId, 'all_branches', [], resolvedTenantId);
+          } else if (validatedData.branchScope === 'SELECTED') {
+            await storage.setUserBranchAccess(userId, 'selected_branches', selectedPolicyBranches, resolvedTenantId);
           }
           
           console.log(`[AccessSync] Synced user ${userId} role to ${newRole}, branchScope: ${validatedData.branchScope}`);

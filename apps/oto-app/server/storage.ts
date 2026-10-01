@@ -376,7 +376,7 @@ export interface IStorage {
         ): Promise<UserWithBranchAccess | undefined>;
         getUsers(): Promise<User[]>;
         getUsersWithBranchAccess(): Promise<UserWithBranchAccess[]>;
-        createUser(user: InsertUser): Promise<User>;
+        createUser(user: InsertUser, tenantId?: string): Promise<User>;
         updateUser(id: string, user: Partial<InsertUser>): Promise<User>;
         updateUserLastLogin(id: string): Promise<void>;
         updateUserPassword(id: string, passwordHash: string): Promise<void>;
@@ -1995,17 +1995,26 @@ export class DatabaseStorage implements IStorage {
                 return user || undefined;
         }
 
-        async createUser(insertUser: InsertUser): Promise<User> {
+        async createUser(insertUser: InsertUser, tenantId?: string): Promise<User> {
                 const [user] = await db.insert(users).values(insertUser).returning();
 
                 if (user.fullName) {
                         try {
+                                // A name alone is never enough to link across tenants.
+                                let linkTenantId = tenantId;
+                                if (!linkTenantId) {
+                                        const knownTenants = await db.select({ id: tenants.id }).from(tenants).limit(2);
+                                        if (knownTenants.length === 1) linkTenantId = knownTenants[0].id;
+                                }
+                                if (!linkTenantId) return user;
                                 const [matchingEmployee] = await db
                                         .select({ id: employees.id })
                                         .from(employees)
                                         .where(
                                                 and(
+                                                        eq(employees.tenantId, linkTenantId),
                                                         sql`LOWER(TRIM(${employees.fullName})) = LOWER(TRIM(${user.fullName}))`,
+                                                        sql`LOWER(TRIM(${employees.email})) = LOWER(TRIM(${user.email}))`,
                                                         isNull(employees.userId),
                                                 ),
                                         )
@@ -2368,41 +2377,41 @@ export class DatabaseStorage implements IStorage {
                 branchIds?: string[],
                 tenantId?: string,
         ): Promise<void> {
-                // If tenantId not provided, try to get it from an existing branch
+                // Preserve a user's explicit tenant before considering new branch assignments.
                 let resolvedTenantId = tenantId;
+                const existingAccess = await this.getUserBranchAccess(userId);
+                if (!resolvedTenantId && existingAccess.length > 0) {
+                        const tenantIds = new Set(existingAccess.map(row => row.tenantId));
+                        if (tenantIds.size !== 1) throw new Error("User tenant access is ambiguous");
+                        resolvedTenantId = existingAccess[0].tenantId;
+                }
                 if (!resolvedTenantId && branchIds && branchIds.length > 0) {
-                        const [branch] = await db
-                                .select()
+                        const selected = await db
+                                .select({ id: branches.id, tenantId: branches.tenantId })
                                 .from(branches)
-                                .where(eq(branches.id, branchIds[0]));
-                        if (branch) {
-                                resolvedTenantId = branch.tenantId;
+                                .where(inArray(branches.id, [...new Set(branchIds)]));
+                        const tenantIds = new Set(selected.map(branch => branch.tenantId));
+                        if (selected.length !== new Set(branchIds).size || tenantIds.size !== 1) {
+                                throw new Error("Branch access crosses tenant boundaries");
                         }
+                        resolvedTenantId = selected[0].tenantId;
                 }
 
                 if (!resolvedTenantId) {
-                        // Fallback: get from any existing branch
-                        const existingBranches = await db
-                                .select({ tenantId: branches.tenantId })
-                                .from(branches)
-                                .limit(1);
-                        if (existingBranches.length > 0 && existingBranches[0].tenantId) {
-                                resolvedTenantId = existingBranches[0].tenantId;
-                        }
+                        const knownTenants = await db.select({ id: tenants.id }).from(tenants).limit(2);
+                        if (knownTenants.length === 1) resolvedTenantId = knownTenants[0].id;
                 }
 
-                if (!resolvedTenantId) {
-                        // Final fallback: get default tenant
-                        const [defaultTenant] = await db
-                                .select()
-                                .from(tenants)
-                                .where(eq(tenants.slug, DEFAULT_TENANT_SLUG));
-                        if (defaultTenant) {
-                                resolvedTenantId = defaultTenant.id;
-                        }
+                if (!resolvedTenantId) throw new Error("User tenant access cannot be established");
+                if (existingAccess.some(row => row.tenantId !== resolvedTenantId)) {
+                        throw new Error("User tenant access cannot be moved");
                 }
-
-                if (!resolvedTenantId) return;
+                const selectedIds = [...new Set(branchIds ?? [])];
+                if (selectedIds.length > 0) {
+                        const selected = await db.select({ id: branches.id }).from(branches)
+                                .where(and(eq(branches.tenantId, resolvedTenantId), inArray(branches.id, selectedIds)));
+                        if (selected.length !== selectedIds.length) throw new Error("Branch access crosses tenant boundaries");
+                }
 
                 // Delete existing access records
                 await db
@@ -2417,15 +2426,22 @@ export class DatabaseStorage implements IStorage {
                                 accessScope: "all_branches",
                                 tenantId: resolvedTenantId,
                         });
-                } else if (branchIds && branchIds.length > 0) {
-                        // Insert one record per selected branch
-                        const records = branchIds.map((branchId) => ({
+                } else if (selectedIds.length > 0) {
+                        const records = selectedIds.map((branchId) => ({
                                 userId,
                                 branchId,
                                 accessScope: "selected_branches" as const,
                                 tenantId: resolvedTenantId,
                         }));
                         await db.insert(userBranchAccess).values(records);
+                } else {
+                        // A branchless account still needs an unambiguous tenant identity.
+                        await db.insert(userBranchAccess).values({
+                                userId,
+                                branchId: null,
+                                accessScope: "selected_branches",
+                                tenantId: resolvedTenantId,
+                        });
                 }
         }
 
