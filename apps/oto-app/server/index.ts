@@ -9,7 +9,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { runFullReconciliation } from "./attention-engine";
 import { startScheduledJobs } from "./scheduled-jobs";
 import { storage } from "./storage";
 import { hashPassword } from "./auth";
@@ -137,29 +136,8 @@ export function log(message: string, source = "express") {
         }
       }, 2000);
       
-      // Run attention engine on startup and schedule every 6 hours
-      setTimeout(async () => {
-        try {
-          log("Running initial attention engine reconciliation...", "attention");
-          const result = await runFullReconciliation();
-          log(`Attention engine: ${result.created} created, ${result.updated} updated, ${result.resolved} resolved`, "attention");
-        } catch (error) {
-          log(`Attention engine startup error: ${error}`, "attention");
-        }
-      }, 5000); // Wait 5 seconds after server start
-      
-      // Schedule reconciliation every 6 hours
-      const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
-      setInterval(async () => {
-        try {
-          log("Running scheduled attention engine reconciliation...", "attention");
-          const result = await runFullReconciliation();
-          log(`Attention engine: ${result.created} created, ${result.updated} updated, ${result.resolved} resolved`, "attention");
-        } catch (error) {
-          log(`Attention engine scheduled error: ${error}`, "attention");
-        }
-      }, SIX_HOURS_MS);
-      
+      // Reconciliation remains paused until a tenant-owned, locked job can
+      // record its outcome in the platform run ledger.
       // Start presence reconciliation and status transition jobs
       startScheduledJobs();
     },
