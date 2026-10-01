@@ -41,6 +41,21 @@ wallet-gate-r1. Fixed in the shared helper (apps/api/test/helpers.ts):
 loud. Landed with this checkpoint; CI watched by SHA. The watcher now
 matches the exact commit SHA (scratchpad watch-ci.sh).
 
+CI green on 08bbdb73 (run 36898105289); staging live on 08bbdb7 with
+migrations 0045-0047 applied. Staging walkthrough (2 October; evidence in
+the session scratchpad wallet-drive/): grant T1-000041, F&B spend
+T1-000042/43, last-baht race (one 409 WALLET_EMPTY), refund T1-R-000003
+back to the same wallet, Wallet view, box offline spend T1-000045 under
+the cap synced once, voucher load T1-000046 with both limit refusals,
+balance == sum on every test wallet - all PASS. Three defects found, so
+SCRUM-212 stays In Progress: F1 the till's "Credit Grants to Print" block
+never shows (printJobsOfSale omits wallet jobs); F2 the F&B guest display
+shows the full total as "Left to pay"; F3 the till still refuses offline
+credit (round 4's till handover was never actioned). Plus minors F4
+(used-up voucher still issuable), F6 (voucher before tier leaves cart
+unpriced), F7 (voucher row overflows). Fix round running; a repeat
+walkthrough of those parts follows, then Deployed.
+
 Jira state: SCRUM-211 story In Progress (status comment posted);
 SCRUM-212 wallets In Progress until the staging walkthrough; SCRUM-213
 stock To Do, not started, next in the agreed order. Voucher rulings filed
