@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { scheduleShiftRows, scheduleAssignments, scheduleShiftBreaks, scheduleWeekPlans } from "@shared/schema";
-import { eq, and, asc, inArray, isNull, or, sql, gte, lte } from "drizzle-orm";
+import { eq, and, asc, inArray, isNull, or, sql } from "drizzle-orm";
 
 function parseTimeToMinutes(timeStr: string): number {
   const parts = timeStr.split(":");
@@ -12,6 +12,24 @@ function minutesToTimeStr(minutes: number): string {
   const h = Math.floor(normalizedMinutes / 60);
   const m = normalizedMinutes % 60;
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+}
+
+export function autoBreakWindow(shiftRow: typeof scheduleShiftRows.$inferSelect, index: number) {
+  const shiftStart = parseTimeToMinutes(shiftRow.startTime);
+  let shiftEnd = parseTimeToMinutes(shiftRow.endTime);
+  if (shiftEnd < shiftStart) shiftEnd += 1440;
+
+  const breakStart = shiftStart + shiftRow.breakBaseOffsetMinutes + index * shiftRow.breakStaggerMinutes;
+  const breakEnd = breakStart + shiftRow.breakDurationMinutes;
+  // A rule that cannot fit the shift should not create an out-of-shift break.
+  if (shiftRow.breakDurationMinutes <= 0 || breakStart < shiftStart || breakEnd > shiftEnd) return null;
+
+  return {
+    breakStartTime: minutesToTimeStr(breakStart),
+    breakEndTime: minutesToTimeStr(breakEnd),
+    breakDurationMinutes: shiftRow.breakDurationMinutes,
+    hasConflict: false,
+  };
 }
 
 export async function generateBreaksForShiftRow(shiftRowId: string, shiftDate: string): Promise<void> {
@@ -56,18 +74,10 @@ export async function generateBreaksForShiftRow(shiftRowId: string, shiftDate: s
       )
     );
 
-  const shiftStartMinutes = parseTimeToMinutes(shiftRow.startTime);
-  let shiftEndMinutes = parseTimeToMinutes(shiftRow.endTime);
-  if (shiftEndMinutes < shiftStartMinutes) {
-    shiftEndMinutes += 1440;
-  }
-
-  const breakValues = assignments.map((assignment, i) => {
-    const breakStartMinutes = shiftStartMinutes + shiftRow.breakBaseOffsetMinutes + (i * shiftRow.breakStaggerMinutes);
-    const breakEndMinutes = breakStartMinutes + shiftRow.breakDurationMinutes;
-    const hasConflict = breakEndMinutes > shiftEndMinutes;
-
-    return {
+  const breakValues = assignments.flatMap((assignment, i) => {
+    const window = autoBreakWindow(shiftRow, i);
+    if (!window) return [];
+    return [{
       tenantId: shiftRow.tenantId,
       branchId: shiftRow.branchId,
       shiftRowId: shiftRowId,
@@ -75,12 +85,9 @@ export async function generateBreaksForShiftRow(shiftRowId: string, shiftDate: s
       employeeId: assignment.employeeId,
       casualWorkerId: assignment.casualWorkerId,
       assignmentId: assignment.id,
-      breakStartTime: minutesToTimeStr(breakStartMinutes),
-      breakEndTime: minutesToTimeStr(breakEndMinutes),
-      breakDurationMinutes: shiftRow.breakDurationMinutes,
+      ...window,
       source: "auto_rule" as const,
-      hasConflict: hasConflict,
-    };
+    }];
   });
 
   if (breakValues.length > 0) {
@@ -143,14 +150,10 @@ export async function generateBreaksForWeekPlan(weekPlanId: string): Promise<voi
     const shiftRow = shiftRowMap.get(shiftRowId);
     if (!shiftRow || !shiftRow.breakEnabled) continue;
 
-    const shiftStartMinutes = parseTimeToMinutes(shiftRow.startTime);
-    let shiftEndMinutes = parseTimeToMinutes(shiftRow.endTime);
-    if (shiftEndMinutes < shiftStartMinutes) shiftEndMinutes += 1440;
-
     for (let i = 0; i < assignments.length; i++) {
       const assignment = assignments[i];
-      const breakStartMinutes = shiftStartMinutes + shiftRow.breakBaseOffsetMinutes + (i * shiftRow.breakStaggerMinutes);
-      const breakEndMinutes = breakStartMinutes + shiftRow.breakDurationMinutes;
+      const window = autoBreakWindow(shiftRow, i);
+      if (!window) continue;
 
       allBreakValues.push({
         tenantId: shiftRow.tenantId,
@@ -160,11 +163,8 @@ export async function generateBreaksForWeekPlan(weekPlanId: string): Promise<voi
         employeeId: assignment.employeeId,
         casualWorkerId: assignment.casualWorkerId,
         assignmentId: assignment.id,
-        breakStartTime: minutesToTimeStr(breakStartMinutes),
-        breakEndTime: minutesToTimeStr(breakEndMinutes),
-        breakDurationMinutes: shiftRow.breakDurationMinutes,
+        ...window,
         source: "auto_rule" as const,
-        hasConflict: breakEndMinutes > shiftEndMinutes,
       });
     }
   }
@@ -225,14 +225,10 @@ export async function generateAllBreaksForTenant(tenantId: string, branchId?: st
     const shiftRow = shiftRowMap.get(shiftRowId);
     if (!shiftRow) continue;
 
-    const shiftStartMinutes = parseTimeToMinutes(shiftRow.startTime);
-    let shiftEndMinutes = parseTimeToMinutes(shiftRow.endTime);
-    if (shiftEndMinutes < shiftStartMinutes) shiftEndMinutes += 1440;
-
     for (let i = 0; i < assignments.length; i++) {
       const assignment = assignments[i];
-      const breakStartMinutes = shiftStartMinutes + shiftRow.breakBaseOffsetMinutes + (i * shiftRow.breakStaggerMinutes);
-      const breakEndMinutes = breakStartMinutes + shiftRow.breakDurationMinutes;
+      const window = autoBreakWindow(shiftRow, i);
+      if (!window) continue;
 
       allBreakValues.push({
         tenantId: shiftRow.tenantId,
@@ -242,11 +238,8 @@ export async function generateAllBreaksForTenant(tenantId: string, branchId?: st
         employeeId: assignment.employeeId,
         casualWorkerId: assignment.casualWorkerId,
         assignmentId: assignment.id,
-        breakStartTime: minutesToTimeStr(breakStartMinutes),
-        breakEndTime: minutesToTimeStr(breakEndMinutes),
-        breakDurationMinutes: shiftRow.breakDurationMinutes,
+        ...window,
         source: "auto_rule" as const,
-        hasConflict: breakEndMinutes > shiftEndMinutes,
       });
     }
   }
