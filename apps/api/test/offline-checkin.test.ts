@@ -72,7 +72,6 @@ const link: CuttableLink = { cut: false };
 
 /** What object storage holds, by presigned URL. */
 const objects = new Map<string, Uint8Array>();
-let puts = 0;
 /** The upload worker's power lead: the steps it is pulled at, once each. */
 const pulls: UploadCrashPoint[] = [];
 
@@ -101,7 +100,6 @@ function makeAgent(): BoxAgent {
       dir: photoDir,
       put: async (url, bytes) => {
         if (link.cut) throw new Error('ECONNRESET');
-        puts += 1;
         objects.set(url, bytes);
         return 200;
       },
