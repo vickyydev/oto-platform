@@ -1,5 +1,11 @@
 # SCRUM-193: public check-in and staff board
 
+## Tenant route guard, 1 October 2026
+
+The authenticated staff and kiosk check-in routes now take tenant context from the signed-in user or kiosk session rather than the default tenant. Branch checks first confirm that the branch belongs to that tenant; check-in detail/status and reservation deletion are tenant-qualified. A foreign-tenant branch or check-in fails closed even when its ID is known.
+
+The existing affected browser test, `bug-kiosk-camp-checkins.spec.ts` photo branch case, passed. A disposable two-tenant database passed nine HTTP assertions covering own detail/status, foreign detail/status denial, foreign list denial and unchanged home state; the cloned database was dropped. The app build passed; TypeScript remains at 473 inherited diagnostics with none in `checkin-routes.ts`, and scoped ESLint had no errors. Live signed-in tenant-route proof remains after deployment. This source guard does not settle the POS/OTO check-in ownership decision.
+
 The existing public and staff routes were exercised against the isolated full-seed local `otoapp` database. An authenticated seeded admin obtained a branch QR token; a public request with an invalid token returned 403 and a request without consent returned 400. A public request with valid synthetic details returned 201. The new child appeared in the authenticated staff list, changing its status to `in_park` returned 200, checkout returned 200, and revert checkout returned 200. The disposable probe was removed and the synthetic check-in count was confirmed to be zero afterward. No runtime source or schema changed.
 
 The existing multi-child drop-off submission was also exercised locally with synthetic photo and signature bytes. It returned 200, created two linked staff-board rows, suggested nanny for age 4 and drop-off for age 7, and round-tripped both media objects through local storage. The rows and media files were removed; the database and both upload folders were empty afterward. The form now refuses a compressed photo above the server's 10 MB upload limit before submission; the original 20 MB input limit still permits images that compress below that limit.

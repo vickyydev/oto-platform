@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import { db } from "./db";
 import { eq, and, desc, sql, gte, or, ilike, inArray } from "drizzle-orm";
 import { serviceCheckins, dropoffCheckins, nannyReservations, employeeRoleAvailability } from "./db/coreSchema";
-import { employees, employeePresence, branches, roles, employeeRoles, tenants, DEFAULT_TENANT_SLUG } from "@shared/schema";
+import { employees, employeePresence, branches, roles, employeeRoles } from "@shared/schema";
 import { requireAuth } from "./auth";
 import { requireManager, getAllowedOperatorAndBranchIds } from "./auth-middleware";
 import type { UserWithBranchAccess } from "@shared/schema";
@@ -54,26 +54,26 @@ const upload = multer({
   },
 });
 
-async function getDefaultTenantId(): Promise<string> {
-  const result = await db
-    .select({ id: tenants.id })
-    .from(tenants)
-    .where(eq(tenants.slug, DEFAULT_TENANT_SLUG))
-    .limit(1);
-  if (!result.length) throw new Error(`Default tenant ${DEFAULT_TENANT_SLUG} not found`);
-  return result[0].id;
+function getRequestTenantId(req: Request): string {
+  const tenantId = req.kioskSession?.tenantId ?? (req.user as UserWithBranchAccess | undefined)?.tenantId;
+  if (!tenantId) throw new Error("Tenant context required");
+  return tenantId;
 }
 
 async function canAccessCheckinBranch(req: Request, branchId: string): Promise<boolean> {
+  const tenantId = req.kioskSession?.tenantId ?? (req.user as UserWithBranchAccess | undefined)?.tenantId;
+  if (!tenantId || !z.string().uuid().safeParse(branchId).success) return false;
+  const [branch] = await db.select({ id: branches.id }).from(branches)
+    .where(and(eq(branches.id, branchId), eq(branches.tenantId, tenantId))).limit(1);
+  if (!branch) return false;
   if (req.kioskSession) return req.kioskSession.branchId === branchId;
-  if (!req.user) return false;
   const scope = await getAllowedOperatorAndBranchIds(req.user as UserWithBranchAccess);
   return scope.branchIds === null || scope.branchIds.includes(branchId);
 }
 
 async function requireCheckinBranch(req: Request, res: Response, next: NextFunction) {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
     const [checkin] = await db.select({ branchId: serviceCheckins.branchId })
       .from(serviceCheckins)
       .where(and(eq(serviceCheckins.id, req.params.id), eq(serviceCheckins.tenantId, tenantId)));
@@ -651,7 +651,7 @@ router.patch("/api/core/checkins/:id/status", requireAuthOrKiosk, requireCheckin
     const { id } = req.params;
     const { status } = req.body;
     const userId = (req.user as any)?.id;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     if (!["registered", "in_park", "checked_out"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
@@ -689,7 +689,7 @@ router.post("/api/core/checkins/:id/checkout", requireAuthOrKiosk, requireChecki
     const { id } = req.params;
     const { outPhotoData } = req.body;
     const userId = (req.user as any)?.id;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     // Get the check-in first to find any associated nanny
     const [checkin] = await db.select()
@@ -765,7 +765,7 @@ router.post("/api/core/checkins/:id/checkout", requireAuthOrKiosk, requireChecki
 router.post("/api/core/checkins/:id/revert-checkout", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     const [checkin] = await db.select()
       .from(serviceCheckins)
@@ -817,7 +817,7 @@ router.post("/api/core/checkins/:id/revert-checkout", requireAuthOrKiosk, requir
 router.get("/api/core/nannies/available", requireAuthOrKiosk, async (req: Request, res: Response) => {
   try {
     const { branchId } = req.query;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     if (!branchId || typeof branchId !== "string") {
       return res.status(400).json({ message: "branchId is required" });
@@ -968,7 +968,7 @@ router.post("/api/core/checkins/:id/assign-nanny", requireAuthOrKiosk, requireCh
     const { id } = req.params;
     const { nannyEmployeeId } = req.body;
     const userId = (req.user as any)?.id;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     if (typeof nannyEmployeeId !== "string" || !nannyEmployeeId) {
       return res.status(400).json({ message: "nannyEmployeeId is required" });
@@ -1093,7 +1093,7 @@ router.patch("/api/core/checkins/:id/service", requireAuthOrKiosk, requireChecki
     const { id } = req.params;
     const { serviceType, durationHours, startTime } = req.body;
     const user = req.user as UserWithBranchAccess;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     if (!serviceType || !["nanny", "dropoff"].includes(serviceType)) {
       return res.status(400).json({ message: "Invalid service type" });
@@ -1284,7 +1284,7 @@ router.post("/api/core/checkins/:id/extend-time", requireAuthOrKiosk, requireChe
   try {
     const { id } = req.params;
     const { additionalMinutes } = req.body;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     if (!additionalMinutes || additionalMinutes < 15) {
       return res.status(400).json({ message: "Invalid extension time" });
@@ -1351,7 +1351,7 @@ router.post("/api/core/checkins/:id/enter-park", requireAuthOrKiosk, requireChec
   try {
     const { id } = req.params;
     const userId = (req.user as any)?.id;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     const checkin = await db.select().from(serviceCheckins)
       .where(and(eq(serviceCheckins.id, id), eq(serviceCheckins.tenantId, tenantId)))
@@ -1408,7 +1408,7 @@ router.post("/api/core/checkins/:id/enter-park", requireAuthOrKiosk, requireChec
 router.get("/api/core/checkins/:id", requireAuthOrKiosk, requireCheckinBranch, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     const [checkin] = await db.select().from(serviceCheckins)
       .where(and(eq(serviceCheckins.id, id), eq(serviceCheckins.tenantId, tenantId)));
@@ -1432,7 +1432,7 @@ router.get("/api/core/checkins/:id", requireAuthOrKiosk, requireCheckinBranch, a
 router.get("/api/core/nanny-schedule", requireAuthOrKiosk, async (req: Request, res: Response) => {
   try {
     const { branchId, date } = req.query;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
     const targetDate = (date as string) || new Date().toISOString().split("T")[0];
 
     if (!branchId) {
@@ -1647,7 +1647,7 @@ router.get("/api/core/nanny-schedule", requireAuthOrKiosk, async (req: Request, 
 // Create a nanny reservation
 router.post("/api/core/nanny-reservations", requireAuthOrKiosk, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
     const { 
       branchId, 
       nannyEmployeeId, 
@@ -1834,7 +1834,7 @@ router.patch("/api/core/nanny-reservations/:id", requireAuthOrKiosk, async (req:
     if (!z.enum(["active", "completed", "cancelled"]).safeParse(status).success) {
       return res.status(400).json({ message: "Invalid reservation status" });
     }
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
 
     // Fetch reservation first to check branch access
     const [existing] = await db.select().from(nannyReservations)
@@ -1941,10 +1941,11 @@ router.delete("/api/core/nanny-reservations/:id", requireAuth, requireManager, a
   try {
     const { id } = req.params;
     const user = req.user as UserWithBranchAccess;
+    const tenantId = getRequestTenantId(req);
 
     // Fetch reservation first to check branch access
     const [existing] = await db.select().from(nannyReservations)
-      .where(eq(nannyReservations.id, id));
+      .where(and(eq(nannyReservations.id, id), eq(nannyReservations.tenantId, tenantId)));
     
     if (!existing) {
       return res.status(404).json({ message: "Reservation not found" });
@@ -1959,7 +1960,7 @@ router.delete("/api/core/nanny-reservations/:id", requireAuth, requireManager, a
     }
 
     await db.delete(nannyReservations)
-      .where(eq(nannyReservations.id, id));
+      .where(and(eq(nannyReservations.id, id), eq(nannyReservations.tenantId, tenantId)));
 
     res.json({ message: "Reservation deleted" });
   } catch (error: any) {
@@ -1981,7 +1982,7 @@ const adminToggleAvailabilitySchema = z.object({
 
 router.post("/api/core/nanny-availability/toggle", requireAuthOrKiosk, async (req: Request, res: Response) => {
   try {
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
     
     const parsed = adminToggleAvailabilitySchema.safeParse(req.body);
     if (!parsed.success) {
@@ -2099,7 +2100,7 @@ router.post("/api/core/nanny-availability/toggle", requireAuthOrKiosk, async (re
 router.get("/api/core/my-role-availability/:date?", requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as UserWithBranchAccess;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
     const today = new Date().toISOString().split("T")[0];
     const targetDate = (req.params.date as string) || (req.query.date as string) || today;
 
@@ -2156,7 +2157,7 @@ const toggleAvailabilitySchema = z.object({
 router.post("/api/core/my-role-availability", requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as UserWithBranchAccess;
-    const tenantId = await getDefaultTenantId();
+    const tenantId = getRequestTenantId(req);
     
     const parsed = toggleAvailabilitySchema.safeParse(req.body);
     if (!parsed.success) {
