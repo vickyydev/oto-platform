@@ -15,6 +15,7 @@ vi.mock('@/store/catalogStore', () => ({
 }));
 
 const { fetchLiveOccupancy } = await import('../src/api/occupancy');
+const { occupancyStandingOf } = await import('../src/components/shared/OccupancyChip');
 
 afterEach(() => {
   active.apiId = 'b0000000-0000-7000-8000-000000000001';
@@ -76,5 +77,42 @@ describe('fetchLiveOccupancy (S2-12 round 4)', () => {
   it('a refused read is an error the chip shows as stale, not a zero', async () => {
     stubFetch({ error: { code: 'FORBIDDEN', message: 'no' } }, 403);
     await expect(fetchLiveOccupancy()).rejects.toThrow();
+  });
+});
+
+/**
+ * SCRUM-477 — the stale words sit on the chip beside the amber dot, not only
+ * in a tooltip: a zero with a dot next to it read as a live zero.
+ */
+describe('occupancyStandingOf — what the chip says beside its number', () => {
+  const live = { adults: 3, kids: 4, total: 7, stale: false, asOf: '2026-10-01T05:00:00.000Z', gates: 1 };
+
+  it('says nothing beside a live count', () => {
+    expect(occupancyStandingOf(live, false)).toEqual({ stale: false, line: 'People in park now', mark: null });
+  });
+
+  it('marks a stale count with when the gate was last heard from, on the chip and in the line', () => {
+    const standing = occupancyStandingOf({ ...live, stale: true, asOf: '2026-10-01T04:00:00.000Z' }, false);
+    expect(standing.stale).toBe(true);
+    expect(standing.mark).toMatch(/^stale since \d/);
+    expect(standing.line).toMatch(/^Stale since \d.*the gate has not reported since\.$/);
+  });
+
+  it('says "no gate" where nothing counts people in, and "stale" where the gate was never heard', () => {
+    expect(occupancyStandingOf({ adults: 0, kids: 0, total: 0, stale: true, asOf: null, gates: 0 }, false)).toEqual({
+      stale: true,
+      line: 'No gate is reporting at this branch.',
+      mark: 'no gate',
+    });
+    expect(occupancyStandingOf({ ...live, stale: true, asOf: null }, false).mark).toBe('stale');
+  });
+
+  it('a failed read, or no answer yet, is stale too', () => {
+    expect(occupancyStandingOf(live, true).mark).toMatch(/^stale since /);
+    expect(occupancyStandingOf(undefined, false)).toEqual({
+      stale: true,
+      line: 'Stale: the gate has not reported.',
+      mark: 'stale',
+    });
   });
 });

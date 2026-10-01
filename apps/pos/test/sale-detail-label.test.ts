@@ -2,8 +2,10 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  BOOKED_ONLINE_LABEL,
   bandLabel,
   bandsByCartLine,
+  bookingReferenceOf,
   mergeLookup,
   parseHistorySearch,
   refundAmountFor,
@@ -22,7 +24,7 @@ import {
   type HistoryTxn,
   type RefundItemOption,
 } from '@/api/history';
-import { DiscountLabel, refundSliceWords, voucherLabelParts } from '@/components/history/SaleDetail';
+import { DiscountLabel, refundSliceWords, tenderLabel, voucherLabelParts } from '@/components/history/SaleDetail';
 import { platformPrintOutcome, prepStationsPrinted, reportsCreditVoucher } from '@/lib/salePrinting';
 import {
   REFUND_REQUESTS_KEY,
@@ -181,14 +183,20 @@ const totals = (grossSatang: number, refundedSatang = 0): ApiSaleTotals => ({
 const row = (
   id: string,
   occurredAt: string,
-  opts: { status?: ApiSaleListItem['status']; gross?: number; refunded?: number } = {},
+  opts: {
+    status?: ApiSaleListItem['status'];
+    gross?: number;
+    refunded?: number;
+    note?: string | null;
+    member?: ApiSaleListItem['member'];
+  } = {},
 ): HistoryTxn =>
   toTxn(
     {
       id,
       branchId: 'branch-1',
       stationId: 'station-1',
-      memberId: null,
+      memberId: opts.member?.id ?? null,
       visitId: null,
       businessDate: occurredAt.slice(0, 10),
       occurredAt,
@@ -200,16 +208,55 @@ const row = (
       receiptSeries: 'T1',
       receiptSeq: 1,
       finalisedAt: occurredAt,
-      note: null,
+      note: opts.note ?? null,
       totals: totals(opts.gross ?? 30000, opts.refunded ?? 0),
       soldBy: { accountId: 'account-1', name: 'Som' },
       stationName: 'Reception Till 1',
-      member: null,
+      member: opts.member ?? null,
       lineKinds: ['kids'],
       revenueCategories: ['tickets'],
     },
     {},
   );
+
+// --- SCRUM-477: a booking's redemption sale, in History's words -----------------
+
+describe('bookingReferenceOf — the booking a sale redeemed, read off its note', () => {
+  it('reads the reference a redemption writes on its sale, and nothing else', () => {
+    expect(bookingReferenceOf({ note: 'Online booking OTO-7K2Q-9XMB' })).toBe('OTO-7K2Q-9XMB');
+    expect(bookingReferenceOf({ note: null })).toBeNull();
+    expect(bookingReferenceOf({ note: 'Birthday party, table 4' })).toBeNull();
+    expect(bookingReferenceOf({ note: 'Online booking' })).toBeNull();
+  });
+});
+
+describe('toTxn — a paid-online booking sale on the History list', () => {
+  it('carries the booking reference and calls a guest with no member "Booked online", not a walk-in', () => {
+    const txn = row('sale-7', '2026-10-01T03:05:00.000Z', { note: 'Online booking OTO-7K2Q-9XMB' });
+    expect(txn.bookingReference).toBe('OTO-7K2Q-9XMB');
+    expect(txn.customerLabel).toBe(BOOKED_ONLINE_LABEL);
+  });
+
+  it('keeps the member’s own name where the booking has one, and leaves a walk-in sale as it was', () => {
+    const member = { id: 'member-1', name: 'Mali Srisuk', nickname: 'Mali', phone: '+66811111111' };
+    const booked = row('sale-8', '2026-10-01T03:05:00.000Z', { note: 'Online booking OTO-7K2Q-9XMB', member });
+    expect(booked.customerLabel).toBe('Mali');
+    expect(booked.bookingReference).toBe('OTO-7K2Q-9XMB');
+    const walkIn = row('sale-9', '2026-10-01T03:06:00.000Z');
+    expect(walkIn.customerLabel).toBeUndefined();
+    expect(walkIn.bookingReference).toBeUndefined();
+  });
+});
+
+describe('tenderLabel — what the money on a sale is called', () => {
+  it('calls the transfer that settles a booking’s redemption "Paid online", and every other tender by the ledger’s word', () => {
+    const booked = { note: 'Online booking OTO-7K2Q-9XMB' };
+    expect(tenderLabel({ method: 'transfer' }, booked)).toBe('Paid online');
+    expect(tenderLabel({ method: 'cash' }, booked)).toBe('Cash');
+    expect(tenderLabel({ method: 'transfer' }, { note: null })).toBe('Transfer');
+    expect(tenderLabel({ method: 'qr' }, { note: null })).toBe('QR');
+  });
+});
 
 const band = (overrides: Partial<ApiSaleBand> & Pick<ApiSaleBand, 'id' | 'kind'>): ApiSaleBand => ({
   status: 'active',

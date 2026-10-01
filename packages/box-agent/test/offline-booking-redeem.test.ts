@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import {
   BOX_BOOKING_REFUSALS,
   bandShortCode,
+  mintBookingQr,
   verifyBandCode,
   type BridgeBookingRedeemAnswer,
   type BridgeBookingView,
@@ -470,18 +471,30 @@ for (const point of ['after_fact', 'after_log'] as FinaliseCrashPoint[]) {
 
       // The next Confirm — a new press, even at another till — finishes THAT
       // sale, under the sale id the claim was written with.
-      const recovered = await redeem(box, press(), { station: STATION_2, caller: box.till2 });
+      const recovered = await redeem(box, press({ staffName: 'Ploy' }), { station: STATION_2, caller: box.till2 });
       assert.equal(recovered.sale.totals.grossSatang, TOTAL);
       assert.equal(recovered.bands.length, 4);
-      // Any press after that is a second redemption, and is told so.
-      await assert.rejects(
-        redeem(box, press()),
-        (err: unknown) => err instanceof BridgeError && err.code === 'BOOKING_ALREADY_REDEEMED',
-      );
+      // SCRUM-477: the who answer names the till that RANG the sale and the
+      // person at it, not the till whose claim a restart left unsold.
+      assert.equal(recovered.sale.receiptNumber, 'T2-000008');
+      assert.equal(recovered.booking.redemption?.stationName, 'Reception Till 2');
+      assert.equal(recovered.booking.redemption?.staffName, 'Ploy');
+      // Any press after that is a second redemption, and is told so — by that till.
+      await assert.rejects(redeem(box, press()), (err: unknown) => {
+        assert.ok(err instanceof BridgeError && err.code === 'BOOKING_ALREADY_REDEEMED');
+        assert.match(err.message, /at .*Reception Till 2, Ploy/);
+        return true;
+      });
       const events = await facts(box);
       assert.deepEqual(events.map((e) => e.type), ['sale.finalised', 'booking.redeemed']);
       const saleIds = new Set(events.map((e) => (e.payload as { saleId: string }).saleId));
       assert.deepEqual([...saleIds], [recovered.sale.id], 'one sale id across both facts');
+      assert.deepEqual(
+        events.map((e) => e.stationId),
+        [STATION_2, STATION_2],
+        'both facts are filed under the till that rang the sale',
+      );
+      assert.equal(events[1]!.actorAccountId, OTHER_ACCOUNT);
     } finally {
       box.close();
     }
@@ -510,6 +523,138 @@ test('a restart between the sale and its redemption fact queues the fact once, a
 
     await redeem(box, body);
     assert.equal((await facts(box)).length, 2, 'a third press writes nothing');
+  } finally {
+    box.bridge.redemptionCrash = null;
+    box.close();
+  }
+});
+
+// --- SCRUM-477: the arrival residuals ----------------------------------------------------------
+
+test('SCRUM-477: a booking QR typed at the till is checked on the box under the park key', async () => {
+  const box = await openRedeemBox();
+  try {
+    // The agent hands the bridge the key it holds (`bands.key`, else the
+    // bundle's), so the typed QR verifies here as a scanned one does.
+    const found = await lookup(box, { qr: mintBookingQr(PAID, KEY) });
+    assert.equal(found.id, PAID);
+    assert.equal(found.reference, 'OTO-PAID-0001');
+    // A QR signed under another park's key is not this park's.
+    await assert.rejects(lookup(box, { qr: mintBookingQr(PAID, 'some-other-park-key') }), (err: unknown) => {
+      assert.ok(err instanceof BridgeError, String(err));
+      assert.equal(err.code, 'BOOKING_QR_SIGNATURE_INVALID');
+      assert.equal(err.status, 422);
+      return true;
+    });
+    // And a paid booking the park never issued a copy of says see reception.
+    await assert.rejects(lookup(box, { qr: mintBookingQr(uuidv7(), KEY) }), (err: unknown) => {
+      assert.ok(err instanceof BridgeError && err.code === BOX_BOOKING_REFUSALS.unknown.code);
+      return true;
+    });
+  } finally {
+    box.close();
+  }
+});
+
+test('SCRUM-477: a sale rung before a restart gets its redemption fact when the next till asks, and that till is told who, with the band codes', async () => {
+  const box = await openRedeemBox();
+  try {
+    const crashes: RedemptionCrashPoint[] = ['after_sale'];
+    box.bridge.redemptionCrash = (point) => {
+      if (crashes[0] === point) {
+        crashes.shift();
+        throw new Error(`the power went at ${point}`);
+      }
+    };
+    await assert.rejects(redeem(box, press()), /the power went/);
+    assert.deepEqual((await facts(box)).map((e) => e.type), ['sale.finalised'], 'the sale is on disk, its fact is not');
+
+    // Another till, a new press: told who and when — and the log is finished
+    // first, so the answer carries the codes on the family's wrists and the
+    // fact follows its sale rather than never.
+    await assert.rejects(
+      redeem(box, press({ staffName: 'Ploy' }), { station: STATION_2, caller: box.till2 }),
+      (err: unknown) => {
+        assert.ok(err instanceof BridgeError, String(err));
+        assert.equal(err.code, 'BOOKING_ALREADY_REDEEMED');
+        const redemption = (err.details as { redemption: { stationName: string; staffName: string; bandCodes: string[] } })
+          .redemption;
+        assert.equal(redemption.stationName, 'Reception Till 1', 'the till that rang the sale');
+        assert.equal(redemption.staffName, 'Nok');
+        assert.equal(redemption.bandCodes.length, 4);
+        return true;
+      },
+    );
+    const events = await facts(box);
+    assert.deepEqual(events.map((e) => e.type), ['sale.finalised', 'booking.redeemed']);
+    const redeemed = events[1]!.payload as { saleId: string; bandCodes: string[]; receiptNumber: string; staffTokenJti: string | null };
+    assert.equal(redeemed.saleId, (events[0]!.payload as { saleId: string }).saleId);
+    assert.equal(redeemed.receiptNumber, 'T1-000043');
+    assert.equal(redeemed.bandCodes.length, 4);
+    // Filed under the till and the person who rang it, and under nobody else's token.
+    assert.equal(events[1]!.stationId, STATION_ID);
+    assert.equal(events[1]!.actorAccountId, ACCOUNT);
+    assert.equal(redeemed.staffTokenJti, null);
+
+    const seen = await lookup(box, { reference: 'OTO-PAID-0001' });
+    assert.equal(seen.status, 'redeemed');
+    assert.equal(seen.source, 'log');
+    assert.equal(seen.redemption?.bandCodes.length, 4);
+    // A third press — the first till again — writes nothing more.
+    await assert.rejects(
+      redeem(box, press()),
+      (err: unknown) => err instanceof BridgeError && err.code === 'BOOKING_ALREADY_REDEEMED',
+    );
+    assert.equal((await facts(box)).length, 2);
+  } finally {
+    box.bridge.redemptionCrash = null;
+    box.close();
+  }
+});
+
+test('SCRUM-477: a lookup after the restart finishes a sold claim too: its who answer carries the codes, and the fact is queued once', async () => {
+  const box = await openRedeemBox();
+  try {
+    const crashes: RedemptionCrashPoint[] = ['after_sale'];
+    box.bridge.redemptionCrash = (point) => {
+      if (crashes[0] === point) {
+        crashes.shift();
+        throw new Error(`the power went at ${point}`);
+      }
+    };
+    await assert.rejects(redeem(box, press()), /the power went/);
+    assert.deepEqual((await facts(box)).map((e) => e.type), ['sale.finalised'], 'the sale is on disk, its fact is not');
+
+    // The other till scans the QR before anybody presses Confirm again: the
+    // read itself finishes the log, so the answer names the till that rang
+    // the sale and carries the codes on the family's wrists.
+    const answer = await box.bridge.intent(STATION_2, box.till2, intent('booking.lookup', { bookingId: PAID }));
+    const seen = (answer.result as { booking: BridgeBookingView }).booking;
+    assert.equal(seen.status, 'redeemed');
+    assert.equal(seen.source, 'log');
+    assert.equal(seen.redemption?.stationName, 'Reception Till 1', 'the till that rang the sale');
+    assert.equal(seen.redemption?.staffName, 'Nok');
+    assert.equal(seen.redemption?.bandCodes.length, 4);
+    const events = await facts(box);
+    assert.deepEqual(events.map((e) => e.type), ['sale.finalised', 'booking.redeemed']);
+    const redeemed = events[1]!.payload as { saleId: string; receiptNumber: string; staffTokenJti: string | null };
+    assert.equal(redeemed.saleId, (events[0]!.payload as { saleId: string }).saleId);
+    assert.equal(redeemed.receiptNumber, 'T1-000043');
+    assert.equal(events[1]!.stationId, STATION_ID);
+    assert.equal(events[1]!.actorAccountId, ACCOUNT);
+    assert.equal(redeemed.staffTokenJti, null, 'the till that looked it up does not speak for the ringing till’s token');
+
+    // A press after that, at either till, is told so and writes nothing more.
+    await assert.rejects(
+      redeem(box, press({ staffName: 'Ploy' }), { station: STATION_2, caller: box.till2 }),
+      (err: unknown) => err instanceof BridgeError && err.code === 'BOOKING_ALREADY_REDEEMED',
+    );
+    await assert.rejects(
+      redeem(box, press()),
+      (err: unknown) => err instanceof BridgeError && err.code === 'BOOKING_ALREADY_REDEEMED',
+    );
+    assert.equal((await facts(box)).length, 2);
+    assert.equal((await lookup(box, { reference: 'OTO-PAID-0001' })).source, 'log');
   } finally {
     box.bridge.redemptionCrash = null;
     box.close();

@@ -89,6 +89,7 @@ import {
   ReprintRefused,
   type OfflineBandPlan,
   type OfflineSaleAnswer,
+  type RecordedSale,
   type SaleQueue,
 } from './sale-queue';
 import { uuidv7 } from './signing';
@@ -3196,7 +3197,31 @@ export class StationBridge {
     if (!found) {
       throw new BridgeError(404, BOX_BOOKING_REFUSALS.unknown.code, BOX_BOOKING_REFUSALS.unknown.message);
     }
-    return this.bookingView(found, await this.readRedemption(found.id));
+    return this.bookingView(found, await this.recoveredRedemption(caller, found.id));
+  }
+
+  /**
+   * The box's log row for a booking, as a lookup reads it — finished first
+   * when a restart left it short of its fact (SCRUM-477): the sale is on
+   * disk, so the read that tells the next till "already redeemed" carries the
+   * band codes and the fact follows its sale, whether or not anybody presses
+   * Confirm again. Left alone while a call on this box is redeeming it.
+   */
+  private async recoveredRedemption(
+    caller: BridgeTillCaller,
+    bookingId: string,
+  ): Promise<BookingRedemptionLog | null> {
+    const log = await this.readRedemption(bookingId);
+    if (!log || log.state === 'done') return log;
+    const key = `${this.host.boxId}:${bookingId}`;
+    if (bookingsInHand.has(key)) return log;
+    bookingsInHand.add(key);
+    try {
+      const recorded = await this.host.sales?.()?.recorded(log.saleId);
+      return recorded ? await this.finishRecordedRedemption(caller, log, recorded) : log;
+    } finally {
+      bookingsInHand.delete(key);
+    }
   }
 
   /**
@@ -3250,9 +3275,12 @@ export class StationBridge {
       const recorded = await queue.recorded(held.saleId);
       const samePress = held.actionId === body.actionId;
       if (recorded && !samePress) {
-        // Tills on one box share this log: the second is told who and when.
-        const redemption = await this.redemptionOf(booking ?? this.bookingFromLog(held), held);
-        throw this.alreadyRedeemed(held, redemption!);
+        // Tills on one box share this log: the second is told who and when —
+        // once the log is finished, when a restart left it short of its fact
+        // (SCRUM-477), so the answer carries the band codes to read aloud.
+        const finished = await this.finishRecordedRedemption(caller, held, recorded);
+        const redemption = await this.redemptionOf(booking ?? this.bookingFromLog(finished), finished);
+        throw this.alreadyRedeemed(finished, redemption!);
       }
       // The same press again — or a claim a restart left with no sale behind
       // it, which the next Confirm finishes under the SAME sale id.
@@ -3272,13 +3300,25 @@ export class StationBridge {
           );
         }
       }
+      let claim = held;
       if (!recorded) {
         this.log.warn(
           { bookingId: held.bookingId, saleId: held.saleId, stationId: station.id },
           'a booking claimed on this box before a restart is finished now, under the sale it was claimed for',
         );
+        // The sale is rung HERE, so the log — and so the who answer and the
+        // fact — name this till and this person, not the claim's (SCRUM-477).
+        if (held.stationId !== station.id || held.accountId !== caller.accountId) {
+          claim = {
+            ...held,
+            stationId: station.id,
+            stationName: station.name,
+            accountId: caller.accountId,
+            staffName: body.staffName ?? held.staffName,
+          };
+        }
       }
-      return this.completeRedemption(station, caller, held, booking, samePress && !!recorded);
+      return this.completeRedemption(station, caller, claim, booking, samePress && !!recorded);
     }
 
     if (!booking) {
@@ -3479,44 +3519,10 @@ export class StationBridge {
 
     let done = log;
     if (log.state !== 'done') {
-      const seal = this.host.sealer();
-      if (!seal) {
-        throw new BridgeError(
-          503,
-          'BOX_AGENT_ELSEWHERE',
-          'This counter’s box is not running here, so it cannot record anything right now',
-        );
-      }
       const bandCodes = (answer.bands ?? [])
         .map((b) => b.shortCode)
         .filter((c): c is string => !!c);
-      done = { ...log, state: 'done', receiptNumber: answer.sale.receiptNumber, bandCodes };
-      const fact: OfflineBookingRedeemed = {
-        redemptionId: log.redemptionId,
-        bookingId: log.bookingId,
-        saleId: log.saleId,
-        reference: log.reference,
-        redeemedAt: log.at,
-        bandCodes,
-        receiptNumber: answer.sale.receiptNumber,
-        staffTokenJti: caller.jti,
-        ...(caller.offlineFresh ? { offlineFresh: true } : {}),
-      };
-      const now = this.host.now().toISOString();
-      const queued: QueuedFact = {
-        type: BOOKING_REDEEMED_FACT,
-        payload: fact as unknown as Record<string, unknown>,
-        occurredAt: log.at,
-        stationId: log.stationId,
-        actorKind: 'account',
-        actorAccountId: caller.accountId,
-        actionId: log.actionId.slice(0, 200),
-      };
-      const written = done;
-      await this.host.store.atomically(async (tx) => {
-        await tx.enqueueMany(this.host.boxId, [queued], seal, now);
-        await tx.writeRuntimeValue(this.host.boxId, redemptionKey(log.bookingId), JSON.stringify(written), now);
-      });
+      done = await this.finishRedemption(log, { receiptNumber: answer.sale.receiptNumber, bandCodes }, caller);
     }
     const depth = await this.host.store
       .depth(this.host.boxId)
@@ -3529,6 +3535,105 @@ export class StationBridge {
       replay,
       outboxDepth: depth.queued,
     };
+  }
+
+  /**
+   * The `booking.redeemed` fact and the log's `done`, in one store transaction
+   * (S2-12 round 5), once the sale is recorded: `sold` is what it issued. The
+   * fact names the till and the person the log names — who rang the sale —
+   * and carries the caller's shift token only when the caller IS that person:
+   * another till finishing a log a restart left short (SCRUM-477) does not
+   * speak for anybody's token.
+   */
+  private async finishRedemption(
+    log: BookingRedemptionLog,
+    sold: { receiptNumber: string | null; bandCodes: string[] },
+    caller: BridgeTillCaller,
+  ): Promise<BookingRedemptionLog> {
+    const seal = this.host.sealer();
+    if (!seal) {
+      throw new BridgeError(
+        503,
+        'BOX_AGENT_ELSEWHERE',
+        'This counter’s box is not running here, so it cannot record anything right now',
+      );
+    }
+    const done: BookingRedemptionLog = {
+      ...log,
+      state: 'done',
+      receiptNumber: sold.receiptNumber,
+      bandCodes: sold.bandCodes,
+    };
+    const own = caller.accountId === log.accountId;
+    const fact: OfflineBookingRedeemed = {
+      redemptionId: log.redemptionId,
+      bookingId: log.bookingId,
+      saleId: log.saleId,
+      reference: log.reference,
+      redeemedAt: log.at,
+      bandCodes: sold.bandCodes,
+      receiptNumber: sold.receiptNumber,
+      staffTokenJti: own ? caller.jti : null,
+      ...(own && caller.offlineFresh ? { offlineFresh: true } : {}),
+    };
+    const now = this.host.now().toISOString();
+    const queued: QueuedFact = {
+      type: BOOKING_REDEEMED_FACT,
+      payload: fact as unknown as Record<string, unknown>,
+      occurredAt: log.at,
+      stationId: log.stationId,
+      actorKind: 'account',
+      actorAccountId: log.accountId,
+      actionId: log.actionId.slice(0, 200),
+    };
+    await this.host.store.atomically(async (tx) => {
+      await tx.enqueueMany(this.host.boxId, [queued], seal, now);
+      await tx.writeRuntimeValue(this.host.boxId, redemptionKey(log.bookingId), JSON.stringify(done), now);
+    });
+    return done;
+  }
+
+  /**
+   * A claim whose sale was rung and recorded, and whose fact never followed
+   * (SCRUM-477): the power went between the two (`after_sale`), and the next
+   * press is another till's. The cloud files the redemption from the sale
+   * alone, but on the box the log stayed `claimed`, so the who answer could
+   * not read the band codes aloud and the fact was never queued. Finished
+   * here, before that till is answered, under the till that rang the sale —
+   * the sale queue's own record of where it was rung, not the claim's.
+   *
+   * On an api instance the box's agent is not running on nothing can be
+   * sealed; the answer still names the sale and its bands, and the log waits
+   * for a press on the box itself.
+   */
+  private async finishRecordedRedemption(
+    caller: BridgeTillCaller,
+    log: BookingRedemptionLog,
+    recorded: RecordedSale,
+  ): Promise<BookingRedemptionLog> {
+    if (log.state === 'done') return log;
+    const rang = this.host.station(recorded.stationId);
+    const sold = {
+      receiptNumber: recorded.receipt.number,
+      bandCodes: recorded.bands.map((b) => bandShortCode(b.code)).filter((c): c is string => !!c),
+    };
+    const by: BookingRedemptionLog = {
+      ...log,
+      stationId: recorded.stationId,
+      stationName: rang?.name ?? (recorded.stationId === log.stationId ? log.stationName : null),
+    };
+    if (!this.host.sealer()) {
+      this.log.warn(
+        { bookingId: log.bookingId, saleId: log.saleId },
+        'a booking sold on this box before a restart has no redemption fact yet, and this process cannot seal one',
+      );
+      return { ...by, receiptNumber: sold.receiptNumber, bandCodes: sold.bandCodes };
+    }
+    this.log.warn(
+      { bookingId: log.bookingId, saleId: log.saleId, stationId: recorded.stationId },
+      'a booking sold on this box before a restart is filed now: its redemption fact follows its sale',
+    );
+    return this.finishRedemption(by, sold, caller);
   }
 
   // --- the overlay's end -------------------------------------------------------------------

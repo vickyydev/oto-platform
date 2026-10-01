@@ -19,9 +19,10 @@
 // `GET /sales/lookup`, and History changes a sale through two more routes:
 // `POST /sales/:id/refunds` and `POST /sales/:id/reprints`. The list card
 // still leaves `wristbandCode` unset: the list answer carries no bands, and a
-// sale can hold several. Nor is there a booking reference on a sale: a
-// redemption links the booking to the visit, not to the money, so
-// `bookingReference` stays unset too.
+// sale can hold several. The booking reference is read off the sale's note
+// (`bookingReferenceOf`, SCRUM-477): a redemption writes "Online booking
+// OTO-XXXX-XXXX" on the sale it files, and no read yet answers the booking
+// itself.
 import {
   bandShortCode,
   isBandCodeShape,
@@ -386,10 +387,33 @@ export function referenceOf(sale: ApiSale): string {
   return sale.receiptNumber ?? 'No receipt number';
 }
 
+/**
+ * THE BOOKING A SALE REDEEMED — SCRUM-477.
+ *
+ * A redemption sale carries its booking on the ledger row (`sale.booking_id`),
+ * but neither the list nor the detail read answers it. What both carry is the
+ * note the redemption writes on the sale, "Online booking OTO-XXXX-XXXX" —
+ * the counter's online path (`services/booking-redemption.ts`) and the box
+ * lane's (`sync.ts`) write the same words — and that is read here the way a
+ * voucher's label is read above. Until a read carries the booking, this is
+ * the one signal on the wire. Null on every other sale.
+ */
+export function bookingReferenceOf(sale: Pick<ApiSale, 'note'>): string | null {
+  const found = /^Online booking (\S+)$/.exec(sale.note ?? '');
+  return found ? found[1]! : null;
+}
+
+/** The customer line on a redemption sale with no member behind it. */
+export const BOOKED_ONLINE_LABEL = 'Booked online';
+
 /** One ledger sale as the History components read it. */
 export function toTxn(sale: ApiSaleListItem, branch: { id?: string; name?: string }): HistoryTxn {
   const badge = badgeOf(sale);
-  const guest = sale.member ? sale.member.nickname || sale.member.name || sale.member.phone : null;
+  const bookingReference = bookingReferenceOf(sale);
+  // A guest who booked online and is no member is not a walk-in (SCRUM-477).
+  const guest =
+    (sale.member ? sale.member.nickname || sale.member.name || sale.member.phone : null) ??
+    (bookingReference ? BOOKED_ONLINE_LABEL : null);
   return {
     id: sale.id,
     kind: kindOf(sale),
@@ -403,6 +427,7 @@ export function toTxn(sale: ApiSaleListItem, branch: { id?: string; name?: strin
     badge,
     operatorName: sale.soldBy?.name ?? 'Unknown',
     ...(guest ? { customerLabel: guest } : {}),
+    ...(bookingReference ? { bookingReference } : {}),
     ...(branch.id ? { branchId: branch.id } : {}),
     ...(branch.name ? { branchName: branch.name } : {}),
     ledger: sale,

@@ -267,6 +267,8 @@ describe('an online booking redeemed with the box offline (S2-12 round 5)', () =
     expect(attempts[0]!.method).toBe('transfer');
     expect(attempts[0]!.amountSatang).toBe(paid.totalSatang);
     expect(attempts[0]!.payload).toMatchObject({ paidOnline: true, bookingId: paid.id, reference: paid.reference });
+    // SCRUM-477: taken with the box's link down, and the attempt says so.
+    expect(attempts[0]!.offline).toBe(true);
 
     // The bands on the family's wrists, recorded as the box minted them.
     const bands = await ctx.db.select().from(band).where(eq(band.saleId, first.sale.id));
@@ -411,6 +413,80 @@ describe('a booking the counter redeemed online while a box redeemed it offline'
         return q.errorCode === 'SYNC_BOOKING_REDEEMED_TWICE' && (raw.payload?.saleId ?? raw.saleId) === offline.sale.id;
       }),
     ).toHaveLength(2);
+  });
+});
+
+/**
+ * SCRUM-477 — THE QUIET QUARANTINES SPEAK. A box redemption the platform
+ * cannot file for a reason other than a second redemption used to be held in
+ * quarantine and nobody told: the booking cancelled online after the box took
+ * its copy, or the paid sum moved. Both now raise an alert like the double
+ * redemption does, because either way a family holds bands the ledger has no
+ * sale for.
+ */
+describe('a box redemption the platform cannot file (SCRUM-477)', () => {
+  async function redeemedOfflineOnB(): Promise<{ paid: { id: string; reference: string; totalSatang: number }; offline: BridgeBookingRedeemAnswer }> {
+    const paid = await plantPaidBooking();
+    await agentB.syncCache();
+    await agentB.setOffline(true, { reason: 'offline while the platform’s copy moves' });
+    link.cut = true;
+    const atB = await onBox(counterId, cookieB, 'booking.redeem', {
+      bookingId: paid.id,
+      actionId: `redeem-b-held-${newId().slice(-8)}`,
+      staffName: 'Ploy',
+    });
+    expect(atB.statusCode, JSON.stringify(atB.body)).toBe(200);
+    return { paid, offline: atB.body.result as unknown as BridgeBookingRedeemAnswer };
+  }
+
+  async function linkBack(): Promise<void> {
+    link.cut = false;
+    await agentB.setOffline(false);
+    await flushAll(agentB);
+  }
+
+  async function heldCodes(): Promise<string[]> {
+    const held = await ctx.db
+      .select()
+      .from(syncQuarantine)
+      .where(and(eq(syncQuarantine.boxId, agentB.state.boxId!), eq(syncQuarantine.status, 'open')));
+    return held.map((q) => q.errorCode ?? '');
+  }
+
+  it('a booking cancelled online after the box took its copy: quarantined as not paid, with a critical alert naming the sale', async () => {
+    const { paid, offline } = await redeemedOfflineOnB();
+    // Meanwhile, online, the booking is cancelled.
+    await ctx.db.update(booking).set({ status: 'cancelled' }).where(eq(booking.id, paid.id));
+    await linkBack();
+
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, offline.sale.id))).toEqual([]);
+    expect(await heldCodes()).toContain('SYNC_BOOKING_NOT_PAID');
+    const [raised] = await ctx.db.select().from(alert).where(eq(alert.key, `booking.redemption_quarantined:${paid.id}`));
+    expect(raised, 'the quarantine raises an alert').toBeTruthy();
+    expect(raised!.severity).toBe('critical');
+    expect(raised!.category).toBe('booking.redemption_quarantined');
+    expect(raised!.summary).toContain(paid.reference);
+    expect(raised!.summary).toContain('cancelled');
+    expect(raised!.summary).toContain(offline.sale.receiptNumber!);
+    const detail = raised!.detail as { code: string; status: string; second: { saleId: string; boxId: string } };
+    expect(detail.code).toBe('SYNC_BOOKING_NOT_PAID');
+    expect(detail.status).toBe('cancelled');
+    expect(detail.second.saleId).toBe(offline.sale.id);
+    expect(detail.second.boxId).toBe(agentB.state.boxId);
+  });
+
+  it('a booking whose paid sum moved online: quarantined as drifted, with the same alert', async () => {
+    const { paid, offline } = await redeemedOfflineOnB();
+    await ctx.db.update(booking).set({ totalSatang: paid.totalSatang + 100 }).where(eq(booking.id, paid.id));
+    await linkBack();
+
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, offline.sale.id))).toEqual([]);
+    expect(await heldCodes()).toContain('BOOKING_TOTAL_DRIFT');
+    const [raised] = await ctx.db.select().from(alert).where(eq(alert.key, `booking.redemption_quarantined:${paid.id}`));
+    expect(raised).toBeTruthy();
+    expect(raised!.severity).toBe('critical');
+    expect(raised!.summary).toContain(paid.reference);
+    expect((raised!.detail as { code: string }).code).toBe('BOOKING_TOTAL_DRIFT');
   });
 });
 

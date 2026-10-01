@@ -326,9 +326,10 @@ export default function History() {
   const lookup = useSearchLookup(query, branchApiId, reread);
 
   const q = query.trim().toLowerCase();
-  // Universal search across reference (receipt number), customer name/phone,
-  // operator, and amount — combined with the active tab filter — plus, for a
-  // band code or a phone, what the platform found for it on any day.
+  // Universal search across reference (receipt number), the booking reference
+  // a redemption sale carries (SCRUM-477), customer name/phone, operator, and
+  // amount — combined with the active tab filter — plus, for a band code or a
+  // phone, what the platform found for it on any day.
   const filtered = useMemo(() => {
     const all = txns ?? [];
     const onTab = (t: HistoryTxn) => tab === 'all' || t.kind === tab;
@@ -337,6 +338,7 @@ export default function History() {
     const local = byTab.filter(
       (t) =>
         t.reference.toLowerCase().includes(q) ||
+        (t.bookingReference?.toLowerCase().includes(q) ?? false) ||
         (t.customerLabel?.toLowerCase().includes(q) ?? false) ||
         (t.ledger.member?.phone.toLowerCase().includes(q) ?? false) ||
         t.operatorName.toLowerCase().includes(q) ||

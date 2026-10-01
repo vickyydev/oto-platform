@@ -1015,6 +1015,68 @@ async function refuseSecondRedemption(
   );
 }
 
+/**
+ * A BOX REDEMPTION HELD FOR A PERSON for a reason other than a second
+ * redemption (SCRUM-477): the booking is not paid here — cancelled or expired
+ * online after the box took its copy — or the sum the box filed is not the
+ * sum the booking was paid at. Either way a family holds bands the ledger has
+ * no sale for, so it is `critical` like the double redemption, and raised on
+ * the pool before the refusal is thrown for the reason `refuseSecondRedemption`
+ * gives. Before this both refusals quarantined the event and told nobody.
+ */
+async function refuseQuarantinedRedemption(
+  scope: BatchScope,
+  event: PreparedEvent,
+  row: BookingRow,
+  refusal: { code: 'SYNC_BOOKING_NOT_PAID' | 'BOOKING_TOTAL_DRIFT'; message: string },
+  second: { saleId: string; redeemedAt: string; receiptNumber: string | null; redemptionId: string | null },
+): Promise<never> {
+  const boxName = `${scope.auth.name} (${scope.auth.slot})`;
+  const detail = {
+    bookingId: row.id,
+    reference: row.reference,
+    code: refusal.code,
+    status: row.status,
+    paidSatang: row.totalSatang,
+    second: {
+      boxId: scope.auth.boxId,
+      stationId: event.envelope.stationId ?? null,
+      actorAccountId: event.envelope.actorAccountId ?? null,
+      saleId: second.saleId,
+      redemptionId: second.redemptionId,
+      redeemedAt: second.redeemedAt,
+      receiptNumber: second.receiptNumber,
+      eventId: event.envelope.eventId,
+    },
+  };
+  try {
+    await raiseAlert(
+      scope.db,
+      {
+        key: `booking.redemption_quarantined:${row.id}`,
+        category: 'booking.redemption_quarantined',
+        severity: 'critical',
+        subject: `Booking ${row.reference}`,
+        summary:
+          `Booking ${row.reference} was redeemed offline on ${boxName} at ${second.redeemedAt}` +
+          (second.receiptNumber ? ` (sale ${second.receiptNumber})` : '') +
+          `, and the platform could not file it: ${refusal.message}. ` +
+          'The family holds the bands; the sale and the redemption are held in quarantine for a person to look at.',
+        detail,
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  } catch (err) {
+    scope.log?.error(
+      { err, bookingId: row.id, code: refusal.code },
+      'a quarantined box redemption could not be alerted; its quarantine row names it',
+    );
+  }
+  throw new RefuseEvent('conflict', refusal.code, refusal.message);
+}
+
 /** The booking a box names, inside the credential's operator, locked for the claim. */
 async function lockedBooking(tx: Tx, scope: BatchScope, bookingId: string): Promise<BookingRow> {
   const [row] = await tx
@@ -1106,27 +1168,39 @@ async function applyBoxBookingSale(
   }
 
   const first = await firstRedemptionOf(tx, row.id);
+  /** This box's redemption, as every refusal below names it. */
+  const boxSide = {
+    saleId: payload.saleId,
+    redeemedAt: replay.occurredAt.toISOString(),
+    receiptNumber: payload.receipt?.number ?? null,
+    redemptionId: mark.redemptionId,
+  };
   if (first || row.status === 'redeemed') {
-    return refuseSecondRedemption(scope, event, row, first, {
-      saleId: payload.saleId,
-      redeemedAt: replay.occurredAt.toISOString(),
-      receiptNumber: payload.receipt?.number ?? null,
-      redemptionId: mark.redemptionId,
-    });
+    return refuseSecondRedemption(scope, event, row, first, boxSide);
   }
   if (row.status !== REDEEMABLE_STATUS) {
     // The box's copy said paid and the platform's does not: never filed blind.
-    throw new RefuseEvent(
-      'conflict',
-      'SYNC_BOOKING_NOT_PAID',
-      `Booking ${row.reference} is ${row.status} here, so the box's redemption of it was not applied`,
+    return refuseQuarantinedRedemption(
+      scope,
+      event,
+      row,
+      {
+        code: 'SYNC_BOOKING_NOT_PAID',
+        message: `Booking ${row.reference} is ${row.status} here, so the box's redemption of it was not applied`,
+      },
+      boxSide,
     );
   }
   if (payload.cart.expectedTotalSatang !== row.totalSatang) {
-    throw new RefuseEvent(
-      'conflict',
-      'BOOKING_TOTAL_DRIFT',
-      `Booking ${row.reference} was paid ${formatTHB(row.totalSatang)}, and the box filed ${formatTHB(payload.cart.expectedTotalSatang)}`,
+    return refuseQuarantinedRedemption(
+      scope,
+      event,
+      row,
+      {
+        code: 'BOOKING_TOTAL_DRIFT',
+        message: `Booking ${row.reference} was paid ${formatTHB(row.totalSatang)}, and the box filed ${formatTHB(payload.cart.expectedTotalSatang)}`,
+      },
+      boxSide,
     );
   }
 
@@ -1188,10 +1262,15 @@ async function applyBoxBookingSale(
     );
   } catch (err) {
     if (err instanceof AppError && (err.code === 'SALE_TOTAL_MISMATCH' || err.code === 'SALE_LINE_PRICE_MISMATCH')) {
-      throw new RefuseEvent(
-        'conflict',
-        'BOOKING_TOTAL_DRIFT',
-        `Booking ${claimed.reference} was paid ${formatTHB(claimed.totalSatang)}, and the platform would file the box's sale at a different sum`,
+      return refuseQuarantinedRedemption(
+        scope,
+        event,
+        row,
+        {
+          code: 'BOOKING_TOTAL_DRIFT',
+          message: `Booking ${claimed.reference} was paid ${formatTHB(claimed.totalSatang)}, and the platform would file the box's sale at a different sum`,
+        },
+        boxSide,
       );
     }
     throw err;
@@ -1227,6 +1306,15 @@ async function applyBoxBookingSale(
     },
     replay.occurredAt,
   );
+  // The tender was recorded with the box's link down, and the attempt says so
+  // — as a cash tender replayed from a box does (`replayOfflineTender`). The
+  // flag alone (SCRUM-477): the money is the booking's, settled above.
+  await tx
+    .update(paymentAttempt)
+    .set({ offline: true })
+    .where(
+      and(eq(paymentAttempt.saleId, payload.saleId), eq(paymentAttempt.methodCode, PAID_ONLINE_TENDER_CODE)),
+    );
 
   // 5. The box's bands, and the audit row that names the event.
   const outcome = await replayOfflineSale(tx, replay, {
@@ -2161,10 +2249,20 @@ const HANDLERS: Record<string, EventHandler> = {
       // The sale is here, linked, and no redemption was written with it (a
       // sale filed before this round's handler): the claim is written now.
       if (row.status !== REDEEMABLE_STATUS) {
-        throw new RefuseEvent(
-          'conflict',
-          'SYNC_BOOKING_NOT_PAID',
-          `Booking ${row.reference} is ${row.status} here, so the box's redemption of it was not applied`,
+        return refuseQuarantinedRedemption(
+          scope,
+          event,
+          row,
+          {
+            code: 'SYNC_BOOKING_NOT_PAID',
+            message: `Booking ${row.reference} is ${row.status} here, so the box's redemption of it was not applied`,
+          },
+          {
+            saleId: payload.saleId,
+            redeemedAt: payload.redeemedAt,
+            receiptNumber: payload.receiptNumber ?? null,
+            redemptionId: payload.redemptionId,
+          },
         );
       }
       await redeemBooking(tx, {

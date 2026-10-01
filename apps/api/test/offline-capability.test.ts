@@ -287,6 +287,12 @@ describe('what is refused offline is refused in the platform’s own words', () 
   it(`Online booking redemption — ${byOperation('Online booking redemption').offline}: refused before the booking is read`, async () => {
     await offline(true);
     expectRefusedOffline(await call('POST', `/bookings/${newId()}/redeem`, { stationId }));
+    // SCRUM-477: the lookups refuse with it, so the till reads the booking
+    // where it will redeem it — from the box's copy — rather than the
+    // lookup riding the platform while only Confirm goes to the box.
+    expectRefusedOffline(await call('GET', `/bookings/${newId()}`));
+    expectRefusedOffline(await call('GET', `/bookings/by-reference/OTO-0000-0000?branchId=${branchId}`));
+    expectRefusedOffline(await call('GET', '/bookings/by-qr?code=BK-NOTHING-HERE'));
   });
 
   it(`Refund, void — refused, and the sale is left as it was (decision 8)`, async () => {

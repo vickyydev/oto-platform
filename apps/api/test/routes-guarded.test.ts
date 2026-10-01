@@ -44,6 +44,11 @@ describe('route guards (S2-01b)', () => {
       'DELETE /members/:id/tier-verification',
       'DELETE /members/children/:childId',
       'DELETE /sales/:id/vouchers/:voucherId',
+      // SCRUM-477: a booking is read where it is redeemed — on the box, once
+      // the station is forced offline — so the three lookups refuse with it.
+      'GET /bookings/:id',
+      'GET /bookings/by-qr',
+      'GET /bookings/by-reference/:reference',
       'GET /members/lookup',
       'GET /vouchers/lookup',
       'PATCH /members/:id',

@@ -44,6 +44,17 @@ interface TelemetryContext {
   errorCode?: string;
 }
 
+/**
+ * A 5xx that is the platform's own deliberate answer rather than a failure
+ * (SCRUM-477). The station forced offline by the Console's test switch
+ * (SCRUM-285) answers every cloud trading call `503 STATION_FORCED_OFFLINE`,
+ * and the till's lane arbiter reads exactly that and moves to its box — so
+ * the refusal fires on every call of a demonstration. Logged at info and left
+ * out of `ops_run`: nobody should be paged for the answer the switch exists to
+ * give.
+ */
+const EXPECTED_REFUSALS = new Set(['STATION_FORCED_OFFLINE']);
+
 declare module 'fastify' {
   interface FastifyRequest {
     telemetry: TelemetryContext | null;
@@ -142,7 +153,9 @@ export const telemetryPlugin = fp(async (app: FastifyInstance, opts: TelemetryOp
       idempotentReplay: reply.getHeader('x-oto-replay') === 'true' ? true : undefined,
       slow: ms >= slowRequestMs ? true : undefined,
     };
-    if (status >= 500) req.log.error(record, 'request completed');
+    const expected = t?.errorCode !== undefined && EXPECTED_REFUSALS.has(t.errorCode);
+    if (expected) req.log.info(record, 'request completed');
+    else if (status >= 500) req.log.error(record, 'request completed');
     else if (status >= 400) req.log.warn(record, 'request completed');
     else req.log.info(record, 'request completed');
 
@@ -152,7 +165,7 @@ export const telemetryPlugin = fp(async (app: FastifyInstance, opts: TelemetryOp
      * the log line scrolled past. `ops_run` is where it is still there on
      * Monday, grouped with the others like it.
      */
-    if (status >= 500) {
+    if (status >= 500 && !expected) {
       await recordFailedRun(app, {
         kind: 'http',
         name: `http:${req.method} ${route}`,

@@ -190,11 +190,23 @@ export async function bookingRoutes(app: App): Promise<void> {
    *
    * 404 when there is none — the counter tells those apart from an undeployed
    * route by the error code, so this must be our own 404 and not Fastify's.
+   *
+   * `stationTrading`, on this read and the two below (SCRUM-477): with the
+   * station forced offline the platform refuses the lookup as it refuses
+   * `/members/lookup`, so the till's lane arbiter moves the lookup to the box
+   * and the booking is read from the box's copy — the copy Confirm & Issue
+   * then redeems. Before this the lookup rode the platform while only Confirm
+   * went to the box, and a QR typed at an offline till was never checked on
+   * the box at all.
    */
   app.get(
     '/by-reference/:reference',
     {
-      config: { permission: 'pos:booking:read', target: { branchId: 'query.branchId' } },
+      config: {
+        permission: 'pos:booking:read',
+        target: { branchId: 'query.branchId' },
+        stationTrading: true,
+      },
       schema: {
         description: 'One booking at this branch by its reference',
         params: z.object({ reference: z.string().min(1).max(64) }),
@@ -228,7 +240,7 @@ export async function bookingRoutes(app: App): Promise<void> {
   app.get(
     '/by-qr',
     {
-      config: { permission: 'pos:booking:read' },
+      config: { permission: 'pos:booking:read', stationTrading: true },
       schema: {
         description: 'One booking by the whole signed QR the till scanned — refused unless the signature is the one the park issued',
         querystring: z.object({ code: z.string().min(1).max(128) }),
@@ -254,7 +266,7 @@ export async function bookingRoutes(app: App): Promise<void> {
   app.get(
     '/:id',
     {
-      config: { permission: 'pos:booking:read' },
+      config: { permission: 'pos:booking:read', stationTrading: true },
       schema: {
         description: 'One booking by its id — the id a scanned booking QR names',
         params: z.object({ id: z.string().uuid() }),

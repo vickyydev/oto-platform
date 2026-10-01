@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
+  PAID_ONLINE_TENDER_METHOD,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   SALE_REPRINT_KINDS,
@@ -12,6 +13,7 @@ import {
   getSale,
   baht,
   bandLabel,
+  bookingReferenceOf,
   isVoucherDiscount,
   newActionId,
   refundItemOptions,
@@ -370,6 +372,25 @@ const METHOD_LABEL: Record<PaymentAttemptView['method'], string> = {
 };
 
 /**
+ * WHAT ONE TENDER IS CALLED ON THE SALE — SCRUM-477.
+ *
+ * The money that settles a booking's redemption sale is the money the family
+ * paid on the booking site, filed under the paid-online tender as `transfer`
+ * (`PAID_ONLINE_TENDER_METHOD`, `@oto/shared`), and the attempt view does not
+ * carry the tender's own code. Nothing else writes a transfer today, so on a
+ * sale that redeemed a booking (`bookingReferenceOf`) the transfer is that
+ * money, and the row says "Paid online" rather than "Transfer". Everywhere
+ * else the ledger's word stands.
+ */
+export function tenderLabel(
+  attempt: Pick<PaymentAttemptView, 'method'>,
+  sale: Pick<ApiSale, 'note'>,
+): string {
+  if (attempt.method === PAID_ONLINE_TENDER_METHOD && bookingReferenceOf(sale)) return 'Paid online';
+  return METHOD_LABEL[attempt.method];
+}
+
+/**
  * The ten states an attempt can be in, in the words staff use for them.
  *
  * Only `approved` is money in the till. Everything else is said plainly rather
@@ -400,9 +421,12 @@ const STATUS_LABEL: Record<PaymentAttemptView['status'], { label: string; tone: 
  */
 function PaymentRow({
   attempt,
+  sale,
   fmt,
 }: {
   attempt: PaymentAttemptView;
+  /** The sale the tender settled: a booking's redemption names its money "Paid online". */
+  sale: Pick<ApiSale, 'note'>;
   fmt: (iso: string) => string;
 }) {
   const status = STATUS_LABEL[attempt.status];
@@ -424,7 +448,7 @@ function PaymentRow({
         <Icon className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
         <span className="min-w-0">
           <span className="block font-semibold">
-            {METHOD_LABEL[attempt.method]}
+            {tenderLabel(attempt, sale)}
             <span className={`font-normal text-sm ${status.tone}`}> · {status.label}</span>
           </span>
           <span className="block text-xs text-muted-foreground">
@@ -1249,7 +1273,7 @@ export function SaleDetail({
               </div>
               <div className="space-y-3">
                 {attempts.map((attempt) => (
-                  <PaymentRow key={attempt.id} attempt={attempt} fmt={fmt} />
+                  <PaymentRow key={attempt.id} attempt={attempt} sale={sale} fmt={fmt} />
                 ))}
               </div>
             </Card>

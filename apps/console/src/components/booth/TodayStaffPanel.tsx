@@ -182,7 +182,10 @@ export function TodayStaffPanel({
                     {initialOf(person.displayName)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13.5px] font-semibold">{person.displayName}</div>
+                    {/* Wraps rather than truncates (SCRUM-477): a long name was
+                        cut with an ellipsis even at full width, and the name
+                        is the one thing this row exists to show. */}
+                    <div className="break-words text-[13.5px] font-semibold">{person.displayName}</div>
                     <div className="text-xs text-muted-foreground">
                       {person.accountId ? 'May sign in today' : 'No login — named on the voucher only'}
                     </div>

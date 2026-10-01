@@ -531,6 +531,31 @@ test('an open that expires between ticks is journalled when the next scan claims
   await r.host.stop();
 });
 
+test('who is inside survives a restart of the box: the count holds, and the band inside is still anti-passback (SCRUM-477)', async () => {
+  // One store under two hosts: the second is the box coming back from a power
+  // cut, with nothing carried over but what it wrote to `gate.passages`.
+  const kv = new Map<string, string>();
+  const state = { read: async (k: string) => kv.get(k) ?? null, write: async (k: string, v: string) => void kv.set(k, v) };
+  const before = await rig({ over: { state } });
+  const b = adultBand(before);
+  assert.equal((await scan(before, b.code, '0')).code, '1');
+  before.board.emit(0x61);
+  await settle();
+  assert.equal(await before.host.occupancy(), 1);
+  await before.host.stop();
+
+  const after = await rig({ over: { state } });
+  after.bands.push({ id: b.id, kind: 'adult', status: 'active' });
+  assert.equal(await after.host.occupancy(), 1, 'the count is read back, not restarted at zero');
+  assert.deepEqual(await scan(after, b.code, '0'), { code: '0', message: GATE_MESSAGES.ANTI_PASSBACK });
+  assert.equal((await scan(after, b.code, '1')).code, '1');
+  after.board.emit(0x62);
+  await settle();
+  assert.equal(await after.host.occupancy(), 0);
+  assert.deepEqual(kinds(after), ['denied', 'exit']);
+  await after.host.stop();
+});
+
 test('two lanes on one box: a band with an open pending in one lane is GATE_BUSY in the other', async () => {
   const one = station('box_relay', true, 'LANE-1');
   const two = station('box_relay', true, 'LANE-2');

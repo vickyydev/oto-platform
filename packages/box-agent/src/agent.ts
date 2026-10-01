@@ -1955,6 +1955,13 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         // and drives this box's own terminals.
         sales: () => saleQueue(),
         terminals: () => terminals,
+        /**
+         * SCRUM-477 — the park key, so a booking QR typed into the redeem
+         * field at a till on the box lane is verified here, as a QR read at
+         * the box's own scanner is. Without it the bridge refused every typed
+         * QR with `BOOKING_QR_UNCHECKED`, which the staging drive met live.
+         */
+        bandKey: bandKeyNow,
       },
       options.bridge?.options,
     );
