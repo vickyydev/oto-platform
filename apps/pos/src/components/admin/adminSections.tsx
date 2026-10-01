@@ -171,6 +171,17 @@ export const adminNav: AdminNavEntry[] = [
         permission: 'catalog:menu:manage',
       },
       {
+        // S2-14a round 5 — promotional vouchers: each voucher type's scope,
+        // limits and window, and campaigns of codes. `GET /voucher-definitions`
+        // and `GET /voucher-campaigns` ask `admin:booth:read`; saving and
+        // minting ask `admin:booth:manage`, which the panel checks per button.
+        id: 'voucher-promotions',
+        label: 'Voucher Promotions',
+        icon: Gift,
+        description: 'Promotional vouchers: what each comes off, its limits and window, and campaigns of codes.',
+        permission: 'admin:booth:read',
+      },
+      {
         id: 'tax',
         label: 'Tax & Service',
         icon: Receipt,

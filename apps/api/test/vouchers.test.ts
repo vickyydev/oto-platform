@@ -726,8 +726,12 @@ describe('the exact words for every refusal', () => {
       }
       expect((await voucherRow(v.id)).heldSaleId).toBeNull();
     }
+    // S2-14a round 5: a wallet credit with an amount IS set up now — it loads a
+    // wallet when the sale carrying it closes (vouchers-r5-promotions.test.ts).
     const wallet = await issue(defs.wallet!);
-    expect((await lookup(tillA, wallet.code)).json().error.code).toBe('VOUCHER_NOT_SET_UP');
+    const walletLook = await lookup(tillA, wallet.code);
+    expect(walletLook.statusCode, walletLook.body).toBe(200);
+    expect(walletLook.json().voucher.effect).toEqual({ type: 'wallet_credit', valueSatang: b(100) });
   });
 
   it('Already redeemed on <date time> at <branch/station> by <staff>', async () => {

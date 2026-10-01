@@ -300,7 +300,7 @@ export interface CreateWalletInput {
   memberId?: string | null;
   holderName?: string | null;
   amountSatang: number;
-  source: Extract<WalletEntrySource, 'ticket_sale' | 'prepaid_food'>;
+  source: Extract<WalletEntrySource, 'ticket_sale' | 'prepaid_food' | 'promo_voucher'>;
   keys: readonly { kind: WalletKeyKind; value: string }[];
   saleId?: string | null;
   stationId?: string | null;
@@ -1054,6 +1054,64 @@ export async function creditVoucherDocumentOf(
     ...(qr ? { qrCode: qr.value } : {}),
     ...(row.holderName ? { holderName: row.holderName } : {}),
   };
+}
+
+// --- A promotional voucher's credit (round 5) ---------------------------------------
+
+/** The one load a wallet-credit voucher makes, for ever: its action key. */
+export function voucherLoadActionId(voucherId: string): string {
+  return `voucher:${voucherId}:load`;
+}
+
+export interface VoucherCreditInput {
+  voucherId: string;
+  amountSatang: number;
+  /** The park redeeming it: the wallet's park, whose policy dates the credit. */
+  branchId: string;
+  saleId: string;
+  stationId: string | null;
+  boxId?: string | null;
+  /** The sale's member, else the member the voucher was issued to (a backlink; OD-W5 adds no phone key). */
+  memberId?: string | null;
+  now?: Date;
+}
+
+/**
+ * S2-14a round 5 — A WALLET-CREDIT VOUCHER, REDEEMED: a new wallet loaded with
+ * the voucher's credit, through the landed door (`createWalletWithGrant`) — a
+ * `grant` entry from `promo_voucher`, its expiry from the branch's
+ * `wallet_policy` as every grant's, and ONE voucher QR for the wallet, which the
+ * till shows and the credit voucher prints. Keyed `voucher:<id>:load`: a replay
+ * answers with the wallet it made and never loads twice. Called by
+ * `consumeSaleVouchers` inside the transaction that closes the sale.
+ */
+export async function loadWalletFromVoucher(tx: Tx, actor: WalletActor, input: VoucherCreditInput): Promise<WalletWrite> {
+  const now = input.now ?? new Date();
+  const { businessDate, expiresAt } = await expiryFor(tx, input.branchId, now);
+  return createWalletWithGrant(tx, actor, {
+    actionId: voucherLoadActionId(input.voucherId),
+    branchId: input.branchId,
+    memberId: input.memberId ?? null,
+    holderName: 'Voucher credit',
+    amountSatang: input.amountSatang,
+    source: 'promo_voucher',
+    keys: [{ kind: 'voucher_qr', value: mintVoucherQr() }],
+    saleId: input.saleId,
+    stationId: input.stationId,
+    boxId: input.boxId ?? null,
+    businessDate,
+    expiresAt,
+    payload: { voucherId: input.voucherId },
+    now,
+  });
+}
+
+/** The wallet a wallet-credit voucher loaded, or null while it has loaded none. */
+export async function voucherCreditWalletOf(db: Exec, operatorId: string, voucherId: string): Promise<WalletRow | null> {
+  const entry = await entryOfAction(db, operatorId, voucherLoadActionId(voucherId));
+  if (!entry) return null;
+  const [row] = await db.select().from(wallet).where(eq(wallet.id, entry.walletId)).limit(1);
+  return row ?? null;
 }
 
 // --- A child's prepaid food --------------------------------------------------------

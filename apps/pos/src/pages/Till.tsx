@@ -86,6 +86,7 @@ import {
   type HeldVoucher,
 } from '@/lib/tillVoucher';
 import {
+  IssueVoucherEntry,
   RedeemVoucherEntry,
   TillRefusalNotice,
   VoucherCard,
@@ -3318,6 +3319,13 @@ export default function Till() {
                   busy={voucher.busy}
                   disabled={step === 5}
                 />
+                {/* S2-14a round 5 — issue one of the park's promotions here, printed on this till. */}
+                {can('pos:print:voucher') && (
+                  <IssueVoucherEntry
+                    memberId={member?.id && /^[0-9a-f-]{36}$/i.test(member.id) ? member.id : null}
+                    disabled={step === 5}
+                  />
+                )}
                 {voucher.refusal && (
                   <VoucherRefusalCard
                     refusal={voucher.refusal}

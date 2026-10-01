@@ -122,6 +122,7 @@ import {
   saleVoucherCodes,
   voucherConfiguredValue,
   voucherPricing,
+  voucherStandsAlone,
   type CartVoucherClaim,
   type VoucherEffect,
 } from './vouchers';
@@ -1504,7 +1505,9 @@ export async function priceCart(
    * nothing on it — a voucher of another kind, or a code that adds no line —
    * is still empty.
    */
-  if (cartLines.length === 0 && voucherClaim?.effect.type !== 'hand_over') {
+  // S2-14a round 5: a wallet-credit voucher stands alone the same way — it
+  // loads credit when the ฿0 sale closes (`voucherStandsAlone`).
+  if (cartLines.length === 0 && !voucherStandsAlone(voucherClaim?.effect)) {
     throw errors.badRequest('The cart is empty');
   }
 
@@ -1569,7 +1572,7 @@ export async function priceCart(
    * true of a prize that was handed over, so it is dropped, and the row reads
    * as it does beside a ticket: the code, its label, ฿0.
    */
-  if (voucherClaim?.effect.type === 'hand_over') {
+  if (voucherClaim && voucherStandsAlone(voucherClaim.effect)) {
     const applied = totals.appliedPromos.find((promo) => promo.code === voucherClaim.code);
     if (applied) delete applied.exhaustedReason;
   }

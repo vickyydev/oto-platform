@@ -330,6 +330,13 @@
       "when": 1790827826598,
       "tag": "0046_sync_anomaly_wallet_overdraft",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1790868347642,
+      "tag": "0047_promo_vouchers",
+      "breakpoints": true
     }
   ]
 }

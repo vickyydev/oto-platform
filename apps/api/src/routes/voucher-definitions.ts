@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { VOUCHER_KINDS, VOUCHER_OFFLINE_POLICIES, VOUCHER_VALUE_TYPES } from '@oto/db';
+import { VoucherPromoRulesSchema, VoucherTargetSchema } from '@oto/shared';
 import type { App } from '../app';
 import {
   archiveVoucherDefinition,
@@ -86,6 +87,13 @@ const DefinitionBody = z.object({
   termsEn: Words(2000),
   termsTh: Words(2000),
   active: z.boolean().optional(),
+  /**
+   * S2-14a round 5 — the promotional rules: what a discount comes off (a
+   * category or an item, in the pricing engine's scopes), the global and
+   * per-customer redemption limits, and the window on the redeeming branch's
+   * trading day. Each optional; null clears it.
+   */
+  ...VoucherPromoRulesSchema.shape,
 });
 
 const LinkSchema = z.object({
@@ -137,6 +145,14 @@ const DefinitionSchema = z.object({
   ),
   /** Its vouchers still unredeemed — issued, not used, not void, not past their date — when it was read. */
   unredeemedVouchers: z.number().int().min(0),
+  /** S2-14a round 5 — the promotional rules as stored (null target: the ticket rows). */
+  target: VoucherTargetSchema.nullable(),
+  usageLimit: z.number().int().nullable(),
+  perCustomerLimit: z.number().int().nullable(),
+  validFrom: z.string().nullable(),
+  validUntil: z.string().nullable(),
+  /** Its vouchers used up so far — what the global limit counts. */
+  redeemedVouchers: z.number().int().min(0),
 });
 
 const OneDefinition = z.object({ definition: DefinitionSchema });

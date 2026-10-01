@@ -72,6 +72,10 @@ describe('route guards (S2-01b)', () => {
       'POST /sales/quote',
       'POST /sales/tier-claims',
       'POST /visits',
+      // S2-14a round 5: a voucher is issued and its credit printed by the
+      // platform, at the till — online only, like a voucher's redemption.
+      'POST /vouchers/:id/credit/print',
+      'POST /vouchers/issue',
     ]);
     expect(ctx.app.routeRegistry.filter((r) => r.config.stationTrading &&
       (r.config.public || r.config.credential || r.url.startsWith('/boxes/')))).toEqual([]);

@@ -2,8 +2,10 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  date,
   index,
   integer,
+  jsonb,
   text,
   timestamp,
   uniqueIndex,
@@ -175,6 +177,26 @@ export const voucherDefinition = promo.table(
     instructionEn: text('instruction_en'),
     instructionTh: text('instruction_th'),
     active: boolean('active').notNull().default(true),
+    // --- Promotional rules (S2-14a round 5, migration 0047) -----------------
+    /**
+     * What a `discount` voucher comes off, in the pricing engine's own scopes
+     * (`VoucherTarget` in `@oto/shared`: tickets, a ticket package, F&B, one
+     * menu category, named menu items, merch). Null is the landed behaviour —
+     * the ticket rows. Every other kind ignores it and the service clears it.
+     */
+    target: jsonb('target'),
+    /**
+     * How many of this definition's vouchers may be redeemed, across every
+     * voucher, till and branch. Null is unlimited. Enforced under a lock on
+     * the definition at the hold, at Pay and at the use-up
+     * (`apps/api/src/services/voucher-promotions.ts`).
+     */
+    usageLimit: integer('usage_limit'),
+    /** How many one member may redeem. Null is unlimited; a walk-in is not held to it. */
+    perCustomerLimit: integer('per_customer_limit'),
+    /** The window, inclusive, on the redeeming branch's trading day. Null is unbounded. */
+    validFrom: date('valid_from', { mode: 'string' }),
+    validUntil: date('valid_until', { mode: 'string' }),
     ...timestamps,
     ...archivedAt,
   },
@@ -209,6 +231,52 @@ export const voucherDefinition = promo.table(
     ),
     check('voucher_definition_expiry_days_check', sql`${t.expiryDays} is null or ${t.expiryDays} > 0`),
     check('voucher_definition_cost_check', sql`${t.costSatang} >= 0`),
+    check(
+      'voucher_definition_limits_check',
+      sql`(${t.usageLimit} is null or ${t.usageLimit} > 0) and (${t.perCustomerLimit} is null or ${t.perCustomerLimit} > 0)`,
+    ),
+    check(
+      'voucher_definition_window_check',
+      sql`${t.validFrom} is null or ${t.validUntil} is null or ${t.validFrom} <= ${t.validUntil}`,
+    ),
+  ],
+);
+
+/**
+ * S2-14a round 5 (migration 0047) — A CAMPAIGN: a batch of codes of one
+ * definition, minted on the platform at one branch in one press. Each code is
+ * its own `promo.voucher` (source `campaign`, `campaign_id` naming this row),
+ * unique by `voucher_code_unique`; this row is who minted how many, when and
+ * why, so a batch is auditable as a batch.
+ */
+export const voucherCampaign = promo.table(
+  'voucher_campaign',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    /** Where the vouchers are issued — their `branch_id`. */
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    voucherDefinitionId: uuid('voucher_definition_id')
+      .notNull()
+      .references(() => voucherDefinition.id, { onDelete: 'restrict' }),
+    name: text('name').notNull(),
+    quantity: integer('quantity').notNull(),
+    createdByAccountId: uuid('created_by_account_id').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index('voucher_campaign_operator_idx').on(t.operatorId),
+    index('voucher_campaign_branch_idx').on(t.branchId),
+    index('voucher_campaign_definition_idx').on(t.voucherDefinitionId),
+    index('voucher_campaign_created_by_idx').on(t.createdByAccountId),
+    check('voucher_campaign_quantity_check', sql`${t.quantity} > 0`),
+    check('voucher_campaign_name_check', sql`length(${t.name}) between 1 and 120`),
   ],
 );
 
@@ -218,7 +286,7 @@ export const voucherDefinition = promo.table(
  * `legacy` is the S2-10b import of Radar's 4-digit ledger and the older
  * `campaign_qrs`, which is why the code CHECK below is deliberately loose.
  */
-export const VOUCHER_SOURCES = ['booth', 'legacy', 'manual'] as const;
+export const VOUCHER_SOURCES = ['booth', 'legacy', 'manual', 'campaign'] as const;
 export type VoucherSource = (typeof VOUCHER_SOURCES)[number];
 
 export const VOUCHER_STATUSES = ['issued', 'redeemed', 'expired', 'void'] as const;
@@ -322,6 +390,8 @@ export const voucher = promo.table(
     }),
     /** When — the clock a forgotten hold lapses on. */
     heldAt: timestamp('held_at', { withTimezone: true, mode: 'date' }),
+    /** S2-14a round 5: the campaign that minted it (source `campaign`); null otherwise. */
+    campaignId: uuid('campaign_id').references(() => voucherCampaign.id, { onDelete: 'restrict' }),
     ...timestamps,
   },
   (t) => [
@@ -353,6 +423,7 @@ export const voucher = promo.table(
       .where(sql`held_sale_id is not null`),
     index('voucher_held_station_idx').on(t.heldStationId),
     index('voucher_held_by_idx').on(t.heldByAccountId),
+    index('voucher_campaign_idx').on(t.campaignId),
     /**
      * The expiry sweep, and only vouchers that can still expire: one that never
      * expires, or has already been used, is not what that job is looking for.
@@ -362,7 +433,7 @@ export const voucher = promo.table(
       .where(sql`expires_at is not null and status = 'issued'`),
     check(
       'voucher_source_check',
-      sql`${t.source} in ('booth','legacy','manual')`,
+      sql`${t.source} in ('booth','legacy','manual','campaign')`,
     ),
     check(
       'voucher_status_check',

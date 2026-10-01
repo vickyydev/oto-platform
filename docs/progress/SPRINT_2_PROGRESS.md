@@ -1,41 +1,43 @@
 # Sprint 2 progress
 
-## Platform lane checkpoint - 1 October 2026 (night) - S2-14a wallets, rounds 1-4 of 5 on main
+## Platform lane checkpoint - 2 October 2026 - S2-14a wallets, all 5 rounds on main
 
-S2-14a (SCRUM-212, In Progress) follows docs/progress/plans/wallet/PLAN.md
-(40c9798e). The ledger is the single source of truth; the stored balance is
-a locked running figure that must equal the sum of its entries.
+S2-14a (SCRUM-212, In Progress until the staging walkthrough) follows
+docs/progress/plans/wallet/PLAN.md (40c9798e). The ledger is the single
+source of truth; the stored balance must always equal the sum of entries.
 
-Landed, each with its own Jira comment on SCRUM-212:
-- Round 1 (966e77a9, CI green): migration 0045 (keyed wallets, action-keyed
-  ledger, wallet_policy seeded same-day / B300 cap / prepaid refund, daily
-  liability fact). Server-side grants at finalise; child prepaid at
-  check-in; the real credit voucher.
-- Round 2 (bc09ec24, CI green): the platform-written wallet tender. It is
-  never on the grid, never opens the drawer, never counts as takings. The
-  last-baht race gives one success and one zero; refunds go back to the
-  wallet first; F&B and shop stations are live.
+All five build rounds are landed, each with a Jira comment on SCRUM-212:
+- Round 1 (966e77a9, CI green): migration 0045, server-side grants at
+  finalise, child prepaid at check-in, the real credit voucher.
+- Round 2 (bc09ec24, CI green): the platform-written wallet tender (never
+  on the grid, never the drawer, never takings), the last-baht race,
+  wallet-first refunds, F&B and shop live.
 - Round 3 (bbe30fcd): expiry job, audited reactivation, entries dated by
-  the day the money moves, the Wallet view, real report / EOD credit line /
-  daily fact reconciled sign-exact. Its CI run FAILED on one tripwire test
-  (offline-capability: "no route touches a wallet") that its new
-  reactivate route tripped by design; round 4 carries the rewritten test.
-- Round 4 (1f117138, CI running): offline spend on the box under the
-  B300/day cap (durable counter, survives restart and midnight), snapshots
-  holding only spendable credit, sync-once, the two-box overdraft anomaly
-  with one critical alert on Failures; migration 0046; ARCHITECTURE §17
-  wallet row now "Works, bounded". This landing turns main green again.
+  the day money moves, the Wallet view, report / EOD line / daily fact
+  reconciled. Its own CI run failed on the deliberate offline-capability
+  tripwire; cured by round 4.
+- Round 4 (1f117138, CI green - main green again, covers round 3):
+  offline spend under the B300/day cap, sync-once, the two-box overdraft
+  anomaly on Failures, migration 0046.
+- Round 5 (this commit): promotional vouchers on the landed engine
+  (category / item / free-item targets, global and per-customer limits
+  under concurrency, validity window, tax via the S2-09a seam, till issue
+  and campaign batches), wallet_credit vouchers loading the real ledger,
+  foregone revenue as its own report line, migration 0047, and the
+  whole-story closing audit (grant -> spend -> refund -> expire ->
+  reactivate -> offline spend -> sync -> voucher load).
 
-Next: round 5 (promotional vouchers), then the staging walkthrough with
-evidence, then Deployed.
+Next: the staging walkthrough with named evidence, then Deployed.
 
-Open items: SCRUM-481 (owner ruling on refunding prepaid lunch money).
-Backlog note: a ticket sale rung up before the day boundary and finalised
-after it dates its grant by the sale's day. Still waiting on the owner:
-SCRUM-480 (R2 CORS for photos), Xero, 2C2P sandbox, pricing rulings,
-SCRUM-467, SCRUM-469, and the seeded OD-W1..W5 / OD-14 values.
+Owner questions raised by the round-5 review (non-blocking, to file):
+should a wallet_credit or unlimited voucher need a manager to issue
+(reception can issue today, capped by usage limit and audited)? Should
+the foregone line exclude refunded sales and booth Lucky Wheel vouchers?
+The per-customer limit cannot apply to an unassigned code on a walk-in
+sale (matches the landed promo-code rule). Also open: SCRUM-481, SCRUM-480,
+Xero, 2C2P sandbox, pricing rulings, SCRUM-467, SCRUM-469, OD-W1..W5.
 
-Migrations landed through 0046. To resume: read PLAN.md, then this block,
+Migrations landed through 0047. To resume: read PLAN.md, then this block,
 then the SCRUM-212 comments, then `git log main`.
 
 ## Platform lane checkpoint - 1 October 2026 (evening) - S2-13 Deployed whole

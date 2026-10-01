@@ -16,6 +16,9 @@ import {
   type WalletCreditReport,
 } from '@/lib/reporting';
 import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
+import type { PromoVoucherReport } from '@oto/shared';
+import { voucherPromotionsApi } from '@/api/voucherPromotions';
+import { getBranches } from '@/store/catalogStore';
 
 const EMPTY_REPORT: WalletCreditReport = {
   summary: { grantedSatang: 0, spentSatang: 0, refundedSatang: 0, expiredSatang: 0, netOutstandingSatang: 0, entryCount: 0 },
@@ -30,8 +33,10 @@ const EMPTY_REPORT: WalletCreditReport = {
  * (`platformWalletCreditReport`, `GET /wallets/report`): the figures are the
  * entries summed by kind over the range's business dates, the live balance is
  * the sum of every wallet's balance today, and a wallet belongs to the park
- * that issued it, so the branch filter now applies to it. The promo half is
- * still the catalog's mock counters until vouchers move (round 5).
+ * that issued it, so the branch filter now applies to it. Round 5 adds the
+ * promotional vouchers' foregone-revenue line, the platform's own figures
+ * (`GET /vouchers/promotions/report`); the promo-code usage card below it is
+ * still the catalog's mock counters.
  *
  * Note: usedCount/usageLimit on each promo row are lifetime, network-wide
  * catalog counters, but totalDiscountValueSatang is scoped to the current date
@@ -57,6 +62,38 @@ export function WalletPromoReportPanel() {
   const summary = report.summary;
   const ledger = report.rows;
   const promos = useMemo(() => promoUsageSummary(filters), [filters]);
+
+  /**
+   * S2-14a round 5 — FOREGONE REVENUE FROM PROMOTIONAL VOUCHERS, its own line,
+   * separate from discounts (`GET /vouchers/promotions/report`): what the sales
+   * that used a voucher did not charge for it, per voucher type, and beside it
+   * the credit wallet-credit vouchers loaded (stored value, in the ledger above).
+   */
+  const [foregone, setForegone] = useState<PromoVoucherReport | null>(null);
+  const [foregoneError, setForegoneError] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    setForegoneError(null);
+    const branchApiId =
+      filters.branchId === 'all' ? null : (getBranches().find((b) => b.id === filters.branchId)?.apiId ?? undefined);
+    if (branchApiId === undefined) {
+      setForegone(null);
+      return;
+    }
+    voucherPromotionsApi
+      .report({ branchApiId, from: filters.startDate, to: filters.endDate })
+      .then((next) => {
+        if (live) setForegone(next);
+      })
+      .catch((err: unknown) => {
+        if (!live) return;
+        setForegone(null);
+        setForegoneError(err instanceof Error ? err.message : 'The voucher figures could not be loaded.');
+      });
+    return () => {
+      live = false;
+    };
+  }, [filters]);
 
   const exportLedger = async () => {
     const all = await platformWalletCreditReport(filters, 1000);
@@ -136,6 +173,60 @@ export function WalletPromoReportPanel() {
             ))}
           </TableBody>
         </Table>
+      </ReportCard>
+
+      <ReportCard
+        title={`Promotional vouchers — foregone revenue ${foregone ? thbFromSatang(foregone.summary.foregoneSatang) : ''}`}
+        action={
+          <ExportCsvButton
+            onExport={() =>
+              downloadCsv(
+                `voucher-foregone-revenue_${filters.startDate}_${filters.endDate}`,
+                ['Voucher', 'Code', 'Kind', 'Redemptions', 'Foregone revenue', 'Credit loaded'],
+                (foregone?.rows ?? []).map((r) => [
+                  r.nameEn,
+                  r.definitionCode,
+                  r.kind,
+                  r.redemptions,
+                  csvBaht(r.foregoneSatang),
+                  csvBaht(r.creditLoadedSatang),
+                ]),
+              )
+            }
+          />
+        }
+      >
+        {foregoneError && <ShellBanner>The voucher figures could not be loaded — {foregoneError}</ShellBanner>}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Voucher</TableHead>
+              <TableHead>Kind</TableHead>
+              <TableHead className="text-right">Redemptions</TableHead>
+              <TableHead className="text-right">Foregone revenue</TableHead>
+              <TableHead className="text-right">Credit loaded</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(foregone?.rows.length ?? 0) === 0 && <EmptyRow colSpan={5} label="No vouchers were used in this range." />}
+            {(foregone?.rows ?? []).map((r) => (
+              <TableRow key={r.definitionId} data-testid="voucher-foregone-row">
+                <TableCell>
+                  <div className="font-medium">{r.nameEn}</div>
+                  <div className="font-mono text-xs text-foreground/45">{r.definitionCode}</div>
+                </TableCell>
+                <TableCell className="capitalize">{r.kind.replace('_', ' ')}</TableCell>
+                <TableCell className="text-right tabular-nums">{r.redemptions}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.foregoneSatang)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.creditLoadedSatang)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <p className="mt-2 text-xs text-foreground/50">
+          Separate from discounts: manual discounts and promo codes are not in this line. Credit a wallet-credit voucher
+          loaded is stored value — it is in the wallet ledger above until it is spent or expires.
+        </p>
       </ReportCard>
 
       <ReportCard

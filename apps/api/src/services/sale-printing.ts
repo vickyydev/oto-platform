@@ -47,6 +47,7 @@ import {
 } from './bands';
 import { routeOnBox, templateTypeFor } from './print';
 import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf } from './wallet';
+import { tillVoucherDocumentOf } from './voucher-promotions';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -975,6 +976,16 @@ export async function buildPrintDocument(
     const data = await creditVoucherDocumentOf(db, row.subjectId);
     if (!data) throw noDocument();
     return { ...base, job: { kind: 'credit_voucher', data } as RenderJob };
+  }
+  /**
+   * S2-14a round 5 — a voucher issued and printed at a till prints on the
+   * booth voucher's slip (`tillVoucherDocumentOf`). The job row names the
+   * voucher; the box and operator check is the job's own, above.
+   */
+  if (row.subjectType === 'voucher' && row.kind === 'booth_voucher' && row.subjectId) {
+    const data = await tillVoucherDocumentOf(db, row.subjectId, row.stationId);
+    if (!data) throw noDocument();
+    return { ...base, job: { kind: 'booth_voucher', data } as RenderJob };
   }
   /**
    * A copy is a job History asked for: it names the original, or — for a sale

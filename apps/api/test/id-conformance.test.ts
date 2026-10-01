@@ -271,6 +271,11 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /stations/:id/displays/claim': 'derived: the credential a paired display is answered with, once',
   'POST /tiers': CODE_NAMED,
   'POST /voucher-definitions': NEXT_PASS,
+  // S2-14a round 5: the voucher's CODE is what anybody refers to, and it is
+  // minted here on purpose (a bearer code never comes from a client); a press
+  // is made once by its Idempotency-Key, and online only.
+  'POST /vouchers/issue': 'derived: a voucher minted with its platform-drawn code, printed at the till; one press per Idempotency-Key',
+  'POST /voucher-campaigns': 'derived: a batch of platform-drawn codes and the row recording it; one batch per Idempotency-Key',
   'PUT /booths/:id/staff/:accountId/pin': 'derived: one PIN row per account and booth, named by the path',
   'PUT /checkin/config/confirmations':
     "derived: the list is replaced whole and each item is named by the client's code, unique per branch while live; the row id is never referred to",

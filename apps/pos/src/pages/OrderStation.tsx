@@ -923,12 +923,17 @@ export default function OrderStation() {
    */
   const voucherOrderLine = (held: HeldVoucher): FnbOrderLine | null => {
     const effect = held.view.effect;
-    if (effect.type === 'hand_over') {
+    // S2-14a round 5: a wallet-credit voucher is a line the same way — nothing
+    // the kitchen makes; the platform loads the credit when the sale closes.
+    if (effect.type === 'hand_over' || effect.type === 'wallet_credit') {
       return {
         id: `voucher-${held.view.id}`,
         menuItem: {
           id: `voucher-prize-${held.view.id}`,
-          name: held.view.prize.nameEn,
+          name:
+            effect.type === 'wallet_credit'
+              ? `฿${Math.round(effect.valueSatang) / 100} wallet credit`
+              : held.view.prize.nameEn,
           category: '',
           price: { weekday: 0, weekend: 0 },
           prepStationOverride: 'none',

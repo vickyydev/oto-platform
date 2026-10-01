@@ -168,7 +168,7 @@ export const walletEntry = pos.table(
     check('wallet_entry_kind_check', sql`${t.kind} in ('grant','spend','refund','expire','reactivate')`),
     check(
       'wallet_entry_source_check',
-      sql`${t.source} in ('ticket_sale','prepaid_food','fnb_order','merch_order','refund','expiry','reactivation')`,
+      sql`${t.source} in ('ticket_sale','prepaid_food','fnb_order','merch_order','refund','expiry','reactivation','promo_voucher')`,
     ),
     check(
       'wallet_entry_sign_check',

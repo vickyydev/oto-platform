@@ -46,6 +46,11 @@ export const WALLET_ENTRY_SOURCES = [
   'refund',
   'expiry',
   'reactivation',
+  /**
+   * S2-14a round 5: credit a promotional `wallet_credit` voucher loaded when
+   * the sale carrying it closed (migration 0047). A `grant`, like every load.
+   */
+  'promo_voucher',
 ] as const;
 export type WalletEntrySource = (typeof WALLET_ENTRY_SOURCES)[number];
 
