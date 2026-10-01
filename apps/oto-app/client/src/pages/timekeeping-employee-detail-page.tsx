@@ -114,6 +114,30 @@ function formatHours(hours: number): string {
   return `${h}h ${m}m`;
 }
 
+function authMethodLabel(method: unknown): string {
+  switch (method) {
+    case "FACE": return "Face";
+    case "PIN": return "PIN";
+    case "PHONE_FALLBACK": return "Phone";
+    case "ADMIN_OVERRIDE": return "Override";
+    default: return typeof method === "string" && method ? method : "Unknown";
+  }
+}
+
+function SessionAuthMethod({ event, direction, onPhotoClick }: {
+  event: { authMethod?: string; photoEvidenceUrl?: string | null } | null;
+  direction: "IN" | "OUT";
+  onPhotoClick: (url: string) => void;
+}) {
+  if (!event) return null;
+  const label = `${direction}: ${authMethodLabel(event.authMethod)}`;
+  return event.photoEvidenceUrl ? (
+    <Button variant="outline" size="sm" className="h-6 px-2 text-xs" onClick={() => onPhotoClick(event.photoEvidenceUrl!)} aria-label={`View ${label} photo`}>
+      <Image className="h-3 w-3 mr-1" /> {label}
+    </Button>
+  ) : <Badge variant="outline" className="text-xs">{label}</Badge>;
+}
+
 function AnomalyBadge({ type }: { type: string }) {
   const configs: Record<string, { label: string; variant: "destructive" | "secondary" | "default"; icon: any }> = {
     OPEN_SESSION: { label: "No OUT", variant: "destructive", icon: AlertCircle },
@@ -499,35 +523,9 @@ export default function TimekeepingEmployeeDetailPage() {
                         <TableCell className="text-muted-foreground">{session.outBranchName || "-"}</TableCell>
                         <TableCell>{formatDuration(session.durationMinutes)}</TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
-                            {session.inEvent?.authMethod === "PIN" && (
-                              session.inEvent?.photoEvidenceUrl ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 px-2 text-xs text-amber-600 border-amber-600"
-                                  onClick={() => setPhotoPreviewUrl(session.inEvent.photoEvidenceUrl)}
-                                >
-                                  <KeyRound className="h-3 w-3 mr-1" /> IN
-                                </Button>
-                              ) : (
-                                <Badge variant="outline" className="text-xs"><KeyRound className="h-3 w-3" /> IN</Badge>
-                              )
-                            )}
-                            {session.outEvent?.authMethod === "PIN" && (
-                              session.outEvent?.photoEvidenceUrl ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 px-2 text-xs text-amber-600 border-amber-600"
-                                  onClick={() => setPhotoPreviewUrl(session.outEvent.photoEvidenceUrl)}
-                                >
-                                  <KeyRound className="h-3 w-3 mr-1" /> OUT
-                                </Button>
-                              ) : (
-                                <Badge variant="outline" className="text-xs"><KeyRound className="h-3 w-3" /> OUT</Badge>
-                              )
-                            )}
+                          <div className="flex flex-wrap gap-1">
+                            <SessionAuthMethod event={session.inEvent} direction="IN" onPhotoClick={setPhotoPreviewUrl} />
+                            <SessionAuthMethod event={session.outEvent} direction="OUT" onPhotoClick={setPhotoPreviewUrl} />
                           </div>
                         </TableCell>
                       </TableRow>
@@ -567,11 +565,7 @@ export default function TimekeepingEmployeeDetailPage() {
                         </TableCell>
                         <TableCell className="text-muted-foreground">{event.branchName}</TableCell>
                         <TableCell>
-                          {event.authMethod === "PIN" ? (
-                            <Badge variant="outline"><KeyRound className="h-3 w-3 mr-1" /> PIN</Badge>
-                          ) : (
-                            <Badge variant="outline"><UserCheck className="h-3 w-3 mr-1" /> Face</Badge>
-                          )}
+                          <Badge variant="outline">{authMethodLabel(event.authMethod)}</Badge>
                         </TableCell>
                         <TableCell>
                           {event.confidenceScore ? `${event.confidenceScore}%` : "-"}
