@@ -214,6 +214,10 @@ offline-selling cluster (SCRUM-269 + 270 + 271 + 295), which also closes
 SCRUM-206/205; the other lane continues SCRUM-193 (its voucher-contract
 question answered on the ticket: the module counts as moved, nothing rebuilt).
 
+## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, birthday package UI source landed
+
+Source `a35b6744` mounts saved birthday packages in the event editor and read-only BEO. Isolated build/targeted lint and local settled 820px sheet check passed; app TypeScript stayed at the inherited normalized baseline. Land the checkpoint with same-turn In Progress Jira comment, deploy exact source after final combined checks, then capture saved-package and settled BEO staging images with exact fixture cleanup. The Users/permissions and check-in guards are also pushed but await staging proof. Needs from the platform lane: POS `otoapp_v` views/read proof, tenant-bearing Directory identity, tenant-safe legacy columns/backfills, persisted leave approval, shift-group contract, durable advisory-locked `ops_run`/Health/Failures, and CI structure-only restore. SCRUM-193 remains In Progress.
+
 ## STOP POINT - 1 October 2026 morning - SCRUM-193 OTO App lane, Users and permissions tenant guard
 
 Source `15d1efde` has the Users/permissions tenant and branch guard with password hashes removed from responses. Thirty disposable two-tenant HTTP assertions, the storage auto-link check, existing platform sign-on test and build passed. TypeScript's 469 diagnostics and lint findings are inherited, none on edited lines; deactivated-session spec lacks its repository fixture. Land this checkpoint with a same-turn In Progress Jira comment, then land BEO package UI and deploy verified source. Live user creation can invoke SMS, so use a safe no-message identity before that action. Needs from the platform lane: tenant-bearing Directory identity, POS views/read proof, tenant-safe legacy columns/backfills, persisted leave approval, shift-group contract, durable advisory-locked `ops_run`/Health/Failures, and CI structure-only restore. SCRUM-193 remains In Progress.
