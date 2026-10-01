@@ -37,6 +37,13 @@ export async function createTestContext(
 ): Promise<TestContext> {
   const { url, drop } = await createTestDatabase({ otoapp: opts.otoapp });
   const pool = new pg.Pool({ connectionString: url });
+  // Dropping the test database terminates any connection still finishing its
+  // goodbye (57P01). Expected only once close() has begun; anything else stays loud.
+  let closing = false;
+  pool.on('error', (err: Error & { code?: string }) => {
+    if (closing && err.code === '57P01') return;
+    throw err;
+  });
   const db = drizzle(pool, { schema }) as Db;
   await seed(db);
   // Throttle counters live in Postgres now (S2-01a), so the reset needs the
@@ -71,6 +78,7 @@ export async function createTestContext(
       ctx.app = await build();
     },
     close: async () => {
+      closing = true;
       await ctx.app.close();
       await pool.end();
       await drop();

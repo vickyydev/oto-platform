@@ -31,15 +31,22 @@ CI on round 5 (463d78e9) FAILED at lint: one unused variable in the new
 closing-audit test (no product code wrong). The failure went unnoticed
 for about an hour because the CI watcher matched titles, which GitHub
 truncates. Fixed in e9e22ec9 (lint-clean across every round-5 file; audit
-9/9); its CI run is in progress. The watcher now matches the exact commit
-SHA (scratchpad watch-ci.sh).
+9/9). Its CI run (36894551431) then FAILED in the api test job:
+2204/2204 tests passed, but vitest counted 2 unhandled errors - a pool
+connection cut (57P01) when the test helper dropped the database while
+the connection was still closing, re-thrown because the pool had no
+error listener. Timing-dependent, any file can hit it; it surfaced in
+wallet-gate-r1. Fixed in the shared helper (apps/api/test/helpers.ts):
+57P01 is expected only after close() begins, every other pool error stays
+loud. Landed with this checkpoint; CI watched by SHA. The watcher now
+matches the exact commit SHA (scratchpad watch-ci.sh).
 
 Jira state: SCRUM-211 story In Progress (status comment posted);
 SCRUM-212 wallets In Progress until the staging walkthrough; SCRUM-213
 stock To Do, not started, next in the agreed order. Voucher rulings filed
 as SCRUM-482.
 
-Remaining for SCRUM-212: green CI on e9e22ec9, staging deploy, then the
+Remaining for SCRUM-212: green CI on the helper fix, staging deploy, then the
 staging walkthrough with named, attached screenshots (grant on a ticket
 sale, F&B spend with the display, the last-baht refusal, refund back to the
 wallet, the Wallet view, an offline spend under the cap, a voucher
