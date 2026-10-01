@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "./db";
 import { orgNodes, OrgNode, InsertOrgNode } from "./db/coreSchema";
-import { employees, branches, users, people, departments, staffCostAllocations } from "../shared/schema";
+import { employees, employeePayrollProfiles, branches, users, people, departments, staffCostAllocations } from "../shared/schema";
 import { eq, and, sql, inArray, count } from "drizzle-orm";
 import { requireAuth } from "./auth";
 import { z } from "zod";
@@ -819,11 +819,15 @@ router.get("/budget", requireAuth, async (req, res) => {
           personEmployeeId: orgNodes.personEmployeeId,
           expectedMonthlySalary: orgNodes.expectedMonthlySalary,
           branchId: orgNodes.branchId,
-          employeeSalary: employees.baseSalaryMonthly,
+          employeeSalary: employeePayrollProfiles.baseSalaryMonthly,
           branchName: branches.name,
         })
         .from(orgNodes)
         .leftJoin(employees, eq(orgNodes.personEmployeeId, employees.id))
+        .leftJoin(employeePayrollProfiles, and(
+          eq(employeePayrollProfiles.employeeId, employees.id),
+          eq(employeePayrollProfiles.tenantId, tenantId),
+        ))
         .leftJoin(branches, eq(orgNodes.branchId, branches.id))
         .where(and(...conditions));
     };
@@ -838,9 +842,9 @@ router.get("/budget", requireAuth, async (req, res) => {
       const byBranch: Record<string, { name: string; salary: number; personCount: number; vacantCount: number }> = {};
 
       for (const node of nodes) {
-        const salary = node.nodeType === "person"
+        const salary = Number(node.nodeType === "person"
           ? (node.employeeSalary ?? 0)
-          : (node.expectedMonthlySalary ?? 0);
+          : (node.expectedMonthlySalary ?? 0));
         
         totalSalary += salary;
         
