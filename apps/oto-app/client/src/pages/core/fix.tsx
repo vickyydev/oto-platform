@@ -728,7 +728,7 @@ export default function FixPage() {
             {mediaFiles[index]?.type.startsWith("video") ? (
               <video src={preview} className="w-full h-full object-cover" />
             ) : (
-              <img src={preview} alt="" className="w-full h-full object-cover" />
+              <img src={preview} alt="" className="w-full h-full object-contain" />
             )}
             <Button
               size="icon"
