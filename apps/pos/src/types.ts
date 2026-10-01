@@ -1152,6 +1152,13 @@ export interface Wristband {
    * truth). Absent on bands with no credit history.
    */
   ledger?: WalletEntry[];
+  /**
+   * Staging F3 — why this counter cannot take the tab's credit right now, in
+   * its box's words (the offline cap reached today, the credit expired, a
+   * wallet the box holds no copy of). Set only on a tab the box answered while
+   * the counter works without the internet; the credit card shows it as it is.
+   */
+  creditNote?: string;
   // --- Allergy / medical + food consent (drop-off children) ---------------
   // These come from the drop-off web form via the child's CheckIn (the parent
   // declares allergies and whether staff may serve the child food). They are

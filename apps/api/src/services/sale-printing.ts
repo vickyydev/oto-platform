@@ -728,16 +728,33 @@ export async function reprintSale(
   return { jobs, bands: await bandsOfSale(tx, saleRow.id), notes };
 }
 
-/** Every print job for a sale, its bands and its lines, newest first. */
+/**
+ * Every print job for a sale, its bands, its lines and — S2-14a — the credit
+ * vouchers of the wallets it granted, newest first. A credit voucher's subject
+ * is the WALLET (`routeSalePrinting`), so without the last the sale read left
+ * them out and the till's "Credit Grants to Print" block, which shows only
+ * when the read carries one (`reportsCreditVoucher`), never appeared.
+ */
 export async function printJobsOfSale(db: Exec, saleId: string): Promise<SalePrintJobView[]> {
   const bandIds = (await db.select({ id: band.id }).from(band).where(eq(band.saleId, saleId))).map((b) => b.id);
   const lineIds = (await db.select({ id: saleLine.id }).from(saleLine).where(eq(saleLine.saleId, saleId))).map(
     (l) => l.id,
   );
+  const walletIds = await creditVoucherWalletsOf(db, saleId);
   const subjects = [and(eq(printJob.subjectType, 'sale'), eq(printJob.subjectId, saleId))];
   if (bandIds.length) subjects.push(and(eq(printJob.subjectType, 'band'), inArray(printJob.subjectId, bandIds)));
   if (lineIds.length) {
     subjects.push(and(eq(printJob.subjectType, 'sale_line'), inArray(printJob.subjectId, lineIds)));
+  }
+  if (walletIds.length) {
+    // Only the credit voucher: a wallet is spent on later sales, whose paper is theirs.
+    subjects.push(
+      and(
+        eq(printJob.subjectType, 'wallet'),
+        eq(printJob.kind, 'credit_voucher'),
+        inArray(printJob.subjectId, walletIds),
+      ),
+    );
   }
   const rows = await db
     .select({ job: printJob, deviceLabel: device.label })

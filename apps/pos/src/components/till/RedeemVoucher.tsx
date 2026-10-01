@@ -500,6 +500,15 @@ export function VoucherCreditLoaded({ voucherId }: { voucherId: string }) {
 }
 
 /**
+ * Staging F4 — whether a promotion's redemptions are all taken, by the
+ * platform's own figures on the picker (`redeemed` of `usageLimit`). The
+ * platform refuses to issue one (`VOUCHER_LIMIT_REACHED`); the picker greys it.
+ */
+export function definitionUsedUp(d: Pick<IssuableDefinition, 'usageLimit' | 'redeemed'>): boolean {
+  return d.usageLimit !== null && d.redeemed >= d.usageLimit;
+}
+
+/**
  * S2-14a round 5 — ISSUE A VOUCHER AT THE TILL: pick one of the park's
  * promotions the platform says this till may issue today, and the platform
  * mints the code and prints the slip on this till's receipt printer. Built
@@ -530,8 +539,9 @@ export function IssueVoucherEntry({ memberId, disabled }: { memberId?: string | 
       live = false;
     };
   }, [open, options]);
+  const usedUpChosen = (options ?? []).some((d) => d.id === chosen && definitionUsedUp(d));
   const issue = () => {
-    if (!chosen || busy) return;
+    if (!chosen || busy || usedUpChosen) return;
     setBusy(true);
     setAnswer(null);
     vouchersApi
@@ -542,7 +552,14 @@ export function IssueVoucherEntry({ memberId, disabled }: { memberId?: string | 
           text: `Issued ${res.voucher.nameEn} · ${res.voucher.code}${res.print.note ? ` — ${res.print.note}` : ' — printing'}`,
         }),
       )
-      .catch((err: unknown) => setAnswer({ ok: false, text: err instanceof Error ? err.message : 'The voucher was not issued.' }))
+      .catch((err: unknown) => {
+        setAnswer({ ok: false, text: err instanceof Error ? err.message : 'The voucher was not issued.' });
+        // Used up since the list was read: read it again, so the picker greys it.
+        if ((err as { code?: unknown } | null)?.code === 'VOUCHER_LIMIT_REACHED') {
+          setChosen('');
+          setOptions(null);
+        }
+      })
       .finally(() => setBusy(false));
   };
   if (!open) {
@@ -559,29 +576,78 @@ export function IssueVoucherEntry({ memberId, disabled }: { memberId?: string | 
     );
   }
   return (
-    <div className="space-y-1.5" data-testid="issue-voucher">
-      <div className="flex gap-2">
+    <IssueVoucherRow
+      options={options}
+      chosen={chosen}
+      busy={busy}
+      {...(disabled !== undefined ? { disabled } : {})}
+      answer={answer}
+      onChoose={setChosen}
+      onIssue={issue}
+      onClose={() => setOpen(false)}
+    />
+  );
+}
+
+/**
+ * The open Issue row, drawn from what the entry holds — its own component so
+ * the layout and the picker's greyed promotions can be checked without a
+ * browser.
+ */
+export function IssueVoucherRow({
+  options,
+  chosen,
+  busy,
+  disabled,
+  answer,
+  onChoose,
+  onIssue,
+  onClose,
+}: {
+  options: IssuableDefinition[] | null;
+  chosen: string;
+  busy: boolean;
+  disabled?: boolean;
+  answer: { ok: boolean; text: string } | null;
+  onChoose: (id: string) => void;
+  onIssue: () => void;
+  onClose: () => void;
+}) {
+  const usedUpChosen = (options ?? []).some((d) => d.id === chosen && definitionUsedUp(d));
+  return (
+    <div className="min-w-0 max-w-full space-y-1.5" data-testid="issue-voucher">
+      {/*
+        Staging F7 — the row wraps inside the order panel: a long promotion name
+        no longer widens the select past the panel (which scrolled the till half
+        sideways and pushed Close out of view). The select may shrink to nothing
+        (`min-w-0`) and the buttons drop to their own line when it must.
+      */}
+      <div className="flex flex-wrap gap-2 min-w-0" data-testid="issue-voucher-row">
         <select
           value={chosen}
-          onChange={(e) => setChosen(e.target.value)}
+          onChange={(e) => onChoose(e.target.value)}
           aria-label="Voucher to issue"
-          className="flex-1 h-9 rounded-xl border border-foreground/10 bg-black/20 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="min-w-0 w-full flex-1 basis-40 h-9 rounded-xl border border-foreground/10 bg-black/20 px-3 text-sm text-foreground truncate focus:outline-none focus:ring-2 focus:ring-primary/50"
           disabled={disabled || busy || !options}
         >
           <option value="">{options ? 'Choose a promotion…' : 'Loading…'}</option>
           {(options ?? []).map((d) => (
-            <option key={d.id} value={d.id}>
+            // Staging F4 — a promotion whose redemptions are all taken is shown,
+            // greyed and not choosable: the platform would refuse to issue it.
+            <option key={d.id} value={d.id} disabled={definitionUsedUp(d)}>
               {d.nameEn}
               {d.usageLimit !== null ? ` (${d.redeemed}/${d.usageLimit} used)` : ''}
             </option>
           ))}
         </select>
-        <Button size="sm" variant="outline" className="h-9 px-3 shrink-0" disabled={disabled || busy || !chosen} onClick={issue}>
-          {busy ? 'Issuing…' : 'Issue & print'}
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => setOpen(false)} aria-label="Close">
-          <X className="w-4 h-4" />
-        </Button>
+        <div className="flex gap-2 shrink-0 ml-auto">
+          <Button size="sm" variant="outline" className="h-9 px-3 shrink-0" disabled={disabled || busy || !chosen || usedUpChosen} onClick={onIssue}>
+            {busy ? 'Issuing…' : 'Issue & print'}
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={onClose} aria-label="Close">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
       {answer && (
         <div className={`text-xs leading-snug ${answer.ok ? 'text-emerald-500' : 'text-rose-700 dark:text-rose-300'}`}>

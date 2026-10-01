@@ -505,6 +505,18 @@ export async function issueVoucherAtTill(
   now: Date = new Date(),
 ): Promise<IssuedVoucherView> {
   const def = await issuableDefinition(tx, actor.operatorId, input.definitionId, at.branchId, now);
+  // Staging F4 — a promotion whose redemptions are all taken is not issued: the
+  // slip would be refused at the first scan (`assertPromoLimits`), so the till
+  // says so here, in the same words, before any code is minted or printed.
+  if (def.usageLimit !== null) {
+    const redeemed = (await redemptionsByDefinition(tx, actor.operatorId, [def.id])).get(def.id) ?? 0;
+    if (redeemed >= def.usageLimit) {
+      throw new AppError(409, 'VOUCHER_LIMIT_REACHED', PROMO_VOUCHER_MESSAGES.usedUp(def.usageLimit), {
+        limit: def.usageLimit,
+        taken: redeemed,
+      });
+    }
+  }
   const memberId = input.memberId ?? null;
   if (memberId) {
     const [m] = await tx

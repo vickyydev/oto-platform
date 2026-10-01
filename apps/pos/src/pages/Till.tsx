@@ -74,13 +74,13 @@ import { useScannerBurst } from '@/lib/scannerBurst';
 import { vouchersApi } from '@/api/vouchers';
 import {
   CANCELLED_AT_THE_TILL,
-  VOUCHER_AFTER_PAY,
   VOUCHER_AFTER_SALE,
   VOUCHER_AT_THE_RESTAURANT,
   VOUCHER_BEING_PRICED,
   VOUCHER_NOT_COMBINABLE,
   isMenuItemVoucher,
   looksLikeVoucherCode,
+  ticketTillVoucherBlock,
   useTillVoucher,
   voucherUnpricedReason,
   type HeldVoucher,
@@ -1275,13 +1275,15 @@ export default function Till() {
     // One of the park's own discount codes — some have a booth code's shape
     // (SONGKRAN25) — belongs in the promo box, and asking the platform about it
     // as a voucher would count a wrong code against this till.
-    const blockedBy = getDiscountByCode(typed)
-      ? `"${typed}" is a promo code — enter it in the promo code box`
-      : step === 5
-        ? VOUCHER_AFTER_PAY
-        : discounts.length > 0
-          ? VOUCHER_NOT_COMBINABLE
-          : null;
+    // Staging F6 — and a cart with no customer type cannot be priced, so a
+    // voucher is refused until one is chosen rather than held on it.
+    const blockedBy = ticketTillVoucherBlock({
+      typed,
+      isPromoCode: Boolean(getDiscountByCode(typed)),
+      afterPay: step === 5,
+      hasDiscounts: discounts.length > 0,
+      tierChosen: tier !== null,
+    });
     return voucher.redeem(typed, blockedBy);
   };
 

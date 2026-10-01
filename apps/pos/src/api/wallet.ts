@@ -12,8 +12,21 @@
 // (`scanWallet`), and the till's tab is built from the platform's wallet
 // (`wristbandOfWallet`) — the balance, the ledger popover and the key the
 // confirm press sends to spend it (`api/sales.ts`, `spendWalletOnSale`).
-import type { WalletCreditDay, WalletEntryView, WalletGrantView, WalletPolicyViewDto, WalletReportRow, WalletReportSummary, WalletView } from '@oto/shared';
+import {
+  BOX_WALLET_REFUSALS,
+  BRIDGE_WALLET_INTENTS,
+  walletOfflineCapMessage,
+  type BridgeWalletBalance,
+  type WalletCreditDay,
+  type WalletEntryView,
+  type WalletGrantView,
+  type WalletPolicyViewDto,
+  type WalletReportRow,
+  type WalletReportSummary,
+  type WalletView,
+} from '@oto/shared';
 import type { Wristband, WalletEntry } from '@/types';
+import { bridgeApi } from './bridge';
 import { ApiError, api, idemKey } from './client';
 
 export type ApiWalletGrant = WalletGrantView;
@@ -119,6 +132,50 @@ export async function scanWallet(key: string): Promise<Wristband | null> {
     if (err instanceof ApiError && (err.status === 404 || err.status === 400)) return null;
     throw err;
   }
+}
+
+// --- Staging F3: the box lane's scan ----------------------------------------------
+
+/**
+ * The box's refusals of credit at a counter with no internet, in its words
+ * (`BOX_WALLET_REFUSALS`, and the box's `WALLET_EXPIRED`). The tab still
+ * opens — the order can be taken in cash or card — and the words are shown on
+ * the credit card rather than replaced by the till's own.
+ */
+export const BOX_CREDIT_REFUSAL_CODES: readonly string[] = [
+  BOX_WALLET_REFUSALS.cap.code,
+  BOX_WALLET_REFUSALS.unknown.code,
+  BOX_WALLET_REFUSALS.stale.code,
+  BOX_WALLET_REFUSALS.noCounter.code,
+  'WALLET_EXPIRED',
+];
+
+/** `wallet.lookup` on the station's box: what a scanned key can spend at this counter now. */
+export async function lookupWalletOnBox(stationId: string, key: string): Promise<BridgeWalletBalance> {
+  const answer = await bridgeApi.intent<{ wallet: BridgeWalletBalance }>(stationId, BRIDGE_WALLET_INTENTS.lookup, {
+    key: key.trim(),
+  });
+  return answer.result!.wallet;
+}
+
+/**
+ * THE TILL'S TAB FOR A WALLET THE BOX ANSWERED. The credit offered is what the
+ * box will really take here now (`spendableSatang`: the snapshot less this
+ * box's spends, under the day's offline cap), so the card never offers credit
+ * the box then refuses. A wallet that still holds credit but has none left
+ * under the cap today carries the box's cap sentence, so the card says why.
+ * `base` is the station's own copy of the band, when it has one.
+ */
+export function wristbandOfBoxWallet(read: BridgeWalletBalance, scannedKey: string, base?: Wristband | null): Wristband {
+  return {
+    ...(base ?? {}),
+    id: read.walletId,
+    code: scannedKey.trim(),
+    customerNickname: base?.customerNickname ?? 'Guest',
+    creditBalanceTHB: read.spendableSatang / 100,
+    gateAccess: false,
+    ...(read.spendableSatang === 0 && read.balanceSatang > 0 ? { creditNote: walletOfflineCapMessage(read.capSatang) } : {}),
+  };
 }
 
 // --- Round 3: expiry, reactivation, the figures ---------------------------------

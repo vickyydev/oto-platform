@@ -4,6 +4,7 @@ import { taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
 import { Sparkles, Wallet, ShoppingBag, PartyPopper, Banknote, CreditCard,
   BadgePercent, QrCode as QrCodeIcon, Loader2 } from 'lucide-react';
 
@@ -113,6 +114,11 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
     // frame's figure, never a balance this screen cannot hold): the
     // prototype's "From your credit / Left to pay" rows, on the production device.
     const creditUsed = (payment.creditSatang ?? 0) / 100;
+    // Staging F2 — left to pay is never more than the purchase less that
+    // credit: a guest whose credit covers it is not asked to pay it again.
+    const orderSatang = totals ? Math.round(totals.total * 100) : null;
+    const leftToPay = guestLeftToPaySatang(payment, orderSatang) / 100;
+    const coveredByCredit = creditCoversOrder(payment, orderSatang);
     if (payment.online && payment.status === 'pending' && (payment.qrPayload || payment.qrImageUrl)) {
       return <Shell><div className="flex-1 flex flex-col items-center justify-center text-center px-10 transition-none animate-in fade-in zoom-in-95 duration-500">
         <div className="inline-flex items-center gap-2 text-(--cd-violet) mb-4"><QrCodeIcon className="w-6 h-6" />
@@ -120,7 +126,7 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
         <h2 className="text-4xl font-black mb-6">{t('merch.payment.scanToPay')}</h2>
         <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
           <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" /></div>
-        <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{payment.amountSatang / 100}</div>
+        <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{leftToPay}</div>
         {creditUsed > 0 && <p className="text-lg text-foreground/60 mt-3">{t('merch.payment.paidFromCredit', { amount: String(creditUsed) })}</p>}
         <PaymentExpiry expiresAt={payment.expiresAt} />
         <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('merch.payment.openBankingApp')}</p>
@@ -137,10 +143,10 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
         <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
           <span className="flex items-center gap-3 text-xl text-foreground/80"><Banknote className="w-6 h-6 text-foreground/60" />
             {creditUsed > 0 ? t('merch.payment.leftToPay') : t('merch.payment.toPay')}</span>
-          <span className="text-4xl font-black tabular-nums">฿{payment.amountSatang / 100}</span></div></div>
+          <span className="text-4xl font-black tabular-nums">฿{leftToPay}</span></div></div>
       <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded')
         : payment.status === 'pending' ? t('merch.payment.waiting') : payment.status === 'paid' ? t('till.payment.received')
-          : payment.status === 'blocked' ? t('till.payment.checking') : t('merch.payment.confirmWithStaff')}</p>
+          : payment.status === 'blocked' ? t('till.payment.checking') : coveredByCredit ? t('merch.payment.coveredByCredit') : t('merch.payment.confirmWithStaff')}</p>
     </div></Shell>;
   }
   const completion = cart.completion;

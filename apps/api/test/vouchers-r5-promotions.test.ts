@@ -592,6 +592,30 @@ describe('issue at the till, and minted for a campaign', () => {
     expect((await lookup(tillB, row.code)).statusCode).toBe(200);
   });
 
+  it('a used-up promotion is not issued again: refused in the counter’s words, nothing minted or printed (staging F4)', async () => {
+    const def = await define({ nameEn: 'Only one', usageLimit: 1 });
+    const issueAt = () => ctx.app.inject({ method: 'POST', url: '/vouchers/issue', headers: { cookie: tillA }, payload: { definitionId: def } });
+    // Before its use, it issues — and an issued-but-unused slip does not use it up.
+    const first = await issueAt();
+    expect(first.statusCode, first.body).toBe(200);
+    const second = await issueAt();
+    expect(second.statusCode, second.body).toBe(200);
+    await holdCommitPay(tillA, t1.id, (first.json().voucher as { code: string }).code, family(t1.id));
+    // The picker says so: 1/1 used.
+    const listed = await ctx.app.inject({ method: 'GET', url: '/vouchers/issuable', headers: { cookie: tillA } });
+    expect((listed.json().definitions as Array<{ id: string; redeemed: number; usageLimit: number | null }>).find((d) => d.id === def))
+      .toMatchObject({ redeemed: 1, usageLimit: 1 });
+    // Its one redemption taken: the till may not print another.
+    const before = (await ctx.db.select().from(voucher).where(eq(voucher.voucherDefinitionId, def))).length;
+    const refused = await issueAt();
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error).toMatchObject({
+      code: 'VOUCHER_LIMIT_REACHED',
+      message: 'This promotion is used up — its one redemption has been taken',
+    });
+    expect(await ctx.db.select().from(voucher).where(eq(voucher.voucherDefinitionId, def))).toHaveLength(before);
+  });
+
   it('the till’s picker lists what may be issued today: an ended promotion and a switched-off type are not offered', async () => {
     const t = today();
     const open = await define({ nameEn: 'Open promotion', validUntil: addDaysToIsoDate(t, 3) });

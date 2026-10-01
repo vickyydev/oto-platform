@@ -53,8 +53,16 @@ never shows (printJobsOfSale omits wallet jobs); F2 the F&B guest display
 shows the full total as "Left to pay"; F3 the till still refuses offline
 credit (round 4's till handover was never actioned). Plus minors F4
 (used-up voucher still issuable), F6 (voucher before tier leaves cart
-unpriced), F7 (voucher row overflows). Fix round running; a repeat
-walkthrough of those parts follows, then Deployed.
+unpriced), F7 (voucher row overflows). Fix round (Opus 5.5 after the
+Fable usage limit stopped its first fixer) passed its gate and lands with
+this checkpoint: F1 credit-voucher jobs in the sale read; F2 the guest's
+"left to pay" is total minus credit everywhere; F3 the till's box lane
+spends credit through the box's own intents with its refusals verbatim
+and a lost press never moves lanes; F4 a used-up voucher refuses to issue;
+F6 a voucher needs a customer type first; F7 the voucher row wraps.
+Follow-up ticketed: a band read online keeps its platform balance as the
+preview after the link drops (asks for less, never more). Next: CI by SHA,
+a repeat walkthrough of F1-F7 on staging, evidence cards, Deployed.
 
 Jira state: SCRUM-211 story In Progress (status comment posted);
 SCRUM-212 wallets In Progress until the staging walkthrough; SCRUM-213

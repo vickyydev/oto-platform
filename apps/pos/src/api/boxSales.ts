@@ -2,8 +2,10 @@ import {
   BRIDGE_CART_QUOTE_INTENT,
   BRIDGE_RECEIPT_OBSERVED_INTENT,
   BRIDGE_SALE_INTENTS,
+  BRIDGE_WALLET_INTENTS,
   type BridgeSaleAnswer,
   type BridgeSaleView,
+  type BridgeWalletSpendAnswer,
 } from '@oto/shared';
 import { bridgeApi, bridgeStaffName } from './bridge';
 import type { ApiSaleBand, ApiSaleLine } from './history';
@@ -212,6 +214,40 @@ export async function finaliseOnBox(
     { actionId },
   );
   return remember(sale, answer.result!);
+}
+
+/**
+ * Staging F3 — "USE CREDIT" ON THE BOX LANE: the box's own `payment.wallet`
+ * (S2-14a round 4), on the sale it holds, under the till's ids. The box takes
+ * min(what the wallet holds here, what the offline cap leaves today, what the
+ * order owes) — written ahead and counted once per press, so the same press
+ * again answers from its log or its hold and spends nothing twice. Credit that
+ * covers the order closes it on the box; otherwise the rest is owed to the
+ * next press, which is the box lane's cash (`finaliseOnBox`). Refusals arrive
+ * as an `ApiError` in the box's words (`WALLET_OFFLINE_CAP`, `WALLET_EXPIRED`,
+ * `WALLET_NOT_ON_BOX`, …).
+ *
+ * From the credit on, the sale lives on the box: a sale rung up on the
+ * platform whose till moved to its box takes the rest there too, so the credit
+ * and the cash close it together.
+ */
+export async function spendWalletOnBox(
+  sale: BoxLaneSale,
+  wallet: { key: string; actionId: string },
+): Promise<BridgeWalletSpendAnswer> {
+  const answer = await bridgeApi.intent<BridgeWalletSpendAnswer>(
+    sale.stationId,
+    BRIDGE_WALLET_INTENTS.spend,
+    {
+      ...saleBody(sale),
+      wallet: { key: wallet.key.trim(), actionId: wallet.actionId.slice(0, 200), useCredit: true },
+    },
+    { actionId: wallet.actionId },
+  );
+  const result = answer.result!;
+  const held = holdLaneSale({ ...sale, lane: 'box' });
+  remember(held, result);
+  return result;
 }
 
 /** A card or the PAX QR on the counter's own terminal, driven by the box. */

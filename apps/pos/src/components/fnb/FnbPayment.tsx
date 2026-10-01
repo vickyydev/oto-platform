@@ -179,6 +179,24 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
               )}
             </Card>
           )}
+          {/*
+            Staging F3 — a tab the counter's box answered with no credit it can
+            take here (the day's offline cap reached, the credit expired, no copy
+            of the wallet): the box's words on the credit card, nothing to press.
+          */}
+          {!canTakeCredit && !free && balance === 0 && wristband?.creditNote && (
+            <Card className="p-5 bg-muted/30" data-testid="credit-note">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+                  <Wallet className="w-6 h-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-lg">{creditLabel}</div>
+                  <div className="text-sm text-muted-foreground">{wristband.creditNote}</div>
+                </div>
+              </div>
+            </Card>
+          )}
           {free || creditCoversAll ? (
             <Card className="p-6 border-primary/40 bg-primary/5">
               <div className="flex items-center gap-4">

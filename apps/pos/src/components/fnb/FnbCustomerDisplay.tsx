@@ -6,6 +6,7 @@ import { perUnitBaht, taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { computeManualDiscount, formatDiscountDetail } from '@/lib/manualDiscount';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import type { PaymentDisplayState } from '@/lib/usePaymentStage';
+import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
@@ -373,11 +374,16 @@ export function FnbCustomerDisplay({
   }
 
   if (stage === 'payment') {
-    const amountToPay = payment.amountSatang / 100;
     // S2-14a round 2 — the credit the station is really taking (the payment
     // stage's figure, never the band's whole balance): "from your credit" and
     // "left to pay", the prototype's rows.
     const creditUsed = (payment.creditSatang ?? 0) / 100;
+    // Staging F2 — left to pay is never more than the order less that credit:
+    // a guest whose credit covers the order is not asked to pay it again.
+    const orderSatang = presentation?.totals || total > 0 ? Math.round(total * 100) : null;
+    const leftToPaySatang = guestLeftToPaySatang(payment, orderSatang);
+    const coveredByCredit = creditCoversOrder(payment, orderSatang);
+    const amountToPay = leftToPaySatang / 100;
 
     if (payment.online && payment.status === 'pending' && (payment.qrPayload || payment.qrImageUrl)) {
       return (
@@ -435,7 +441,7 @@ export function FnbCustomerDisplay({
             </div>
           </div>
 
-          <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded') : payment.status === 'pending' ? t('fnb.payment.waiting') : payment.status === 'paid' ? t('till.payment.received') : payment.status === 'blocked' ? t('till.payment.checking') : t('fnb.payment.confirmWithStaff')}</p>
+          <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded') : payment.status === 'pending' ? t('fnb.payment.waiting') : payment.status === 'paid' ? t('till.payment.received') : payment.status === 'blocked' ? t('till.payment.checking') : coveredByCredit ? t('fnb.payment.coveredByCredit') : t('fnb.payment.confirmWithStaff')}</p>
         </div>
       </Shell>
     );

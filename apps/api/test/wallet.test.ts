@@ -206,6 +206,31 @@ describe('a walk-in ticket sale grants credit as it closes', () => {
     await assertLedgerTruth();
   });
 
+  it('GET /sales/:id carries the credit vouchers a granting sale printed, and none for a sale that granted nothing (staging F1)', async () => {
+    // Eat & Play: two wallets, two credit vouchers — the read the till's
+    // "Credit Grants to Print" block is decided from must list both.
+    const { saleId, done } = await ticketSale(eatPlayId, 1, 1);
+    const grants = done.grants as Grant[];
+    const read = (await linesOf(saleId)).printJobs as { kind: string; subjectType: string; subjectId: string; reprintOf: string | null }[];
+    const vouchers = read.filter((j) => j.kind === 'credit_voucher');
+    expect(vouchers).toHaveLength(2);
+    expect(vouchers.every((j) => j.subjectType === 'wallet' && j.reprintOf === null)).toBe(true);
+    expect(new Set(vouchers.map((j) => j.subjectId))).toEqual(new Set(grants.map((g) => g.walletId)));
+    // Everything the finalise printed is in the read, nothing more.
+    expect(read.map((j) => j.kind).sort()).toEqual((done.printing.jobs as { kind: string }[]).map((j) => j.kind).sort());
+
+    // A ticket sale that grants nothing reads no credit voucher.
+    await ctx.db.update(ticketPackage).set({ creditRule: null }).where(eq(ticketPackage.id, twoHoursId));
+    try {
+      const plain = await ticketSale(twoHoursId, 1, 1);
+      const plainRead = (await linesOf(plain.saleId)).printJobs as { kind: string }[];
+      expect(plainRead.some((j) => j.kind === 'credit_voucher')).toBe(false);
+      expect(plainRead.map((j) => j.kind).sort()).toEqual(['adult_wristband', 'kids_wristband', 'receipt']);
+    } finally {
+      await ctx.db.update(ticketPackage).set({ creditRule: { appliesTo: 'adults', basis: 'full_price' } }).where(eq(ticketPackage.id, twoHoursId));
+    }
+  });
+
   it('a replayed finalise grants once and answers with the same wallets', async () => {
     const { saleId, done } = await ticketSale(eatPlayId, 1, 1);
     const again = await finalise(saleId);
