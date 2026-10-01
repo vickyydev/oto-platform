@@ -588,6 +588,7 @@ export interface IStorage {
         }): Promise<number>;
         getActivitySummary(options?: {
                 branchId?: string;
+                branchIds?: string[];
                 sinceDays?: number;
         }): Promise<Record<string, number>>;
         createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
@@ -3505,8 +3506,10 @@ export class DatabaseStorage implements IStorage {
                         conditions.push(eq(activityLog.branchId, options.branchId));
                 }
 
-                if (options?.branchIds && options.branchIds.length > 0) {
-                        conditions.push(inArray(activityLog.branchId, options.branchIds));
+                if (options?.branchIds !== undefined) {
+                        conditions.push(options.branchIds.length > 0
+                                ? inArray(activityLog.branchId, options.branchIds)
+                                : sql`false`);
                 }
 
                 if (options?.employeeId) {
@@ -3542,6 +3545,7 @@ export class DatabaseStorage implements IStorage {
 
         async getActivitySummary(options?: {
                 branchId?: string;
+                branchIds?: string[];
                 sinceDays?: number;
         }): Promise<Record<string, number>> {
                 const days = options?.sinceDays ?? 30;
@@ -3555,18 +3559,12 @@ export class DatabaseStorage implements IStorage {
                         "employment_ended",
                 ];
 
-                let conditions = and(
-                        gte(activityLog.createdAt, sinceDate),
-                        inArray(activityLog.activityType, employeeChangeTypes),
-                );
-
-                if (options?.branchId) {
-                        conditions = and(
-                                gte(activityLog.createdAt, sinceDate),
-                                inArray(activityLog.activityType, employeeChangeTypes),
-                                eq(activityLog.branchId, options.branchId),
-                        );
-                }
+                const conditions = this.buildActivityLogConditions({
+                        branchId: options?.branchId,
+                        branchIds: options?.branchIds,
+                        dateFrom: sinceDate,
+                        types: employeeChangeTypes,
+                });
 
                 const results = await db
                         .select({
@@ -3574,7 +3572,7 @@ export class DatabaseStorage implements IStorage {
                                 count: sql<number>`count(*)::int`,
                         })
                         .from(activityLog)
-                        .where(conditions)
+                        .where(and(...conditions))
                         .groupBy(activityLog.activityType);
 
                 const summary: Record<string, number> = {

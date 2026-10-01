@@ -174,7 +174,7 @@ export default function ActivityLogbookPage() {
           Activity Logbook
         </h1>
         <p className="text-muted-foreground">
-          Complete history of all activities and changes across the system
+          Activity history for the branches you can access
         </p>
       </div>
 
