@@ -14,6 +14,15 @@ import {
 import { eq, and, asc } from "drizzle-orm";
 
 export function registerBirthdayPackageRoutes(app: Express) {
+  async function hasPackageAccess(req: Request, packageId: string): Promise<boolean> {
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return false;
+    const [pkg] = await db.select({ id: birthdayPackageTemplates.id }).from(birthdayPackageTemplates)
+      .where(and(eq(birthdayPackageTemplates.id, packageId), eq(birthdayPackageTemplates.tenantId, tenantId)))
+      .limit(1);
+    return !!pkg;
+  }
+
   async function verifyEventAccess(req: Request, eventId: string): Promise<boolean> {
     const user = req.userWithAccess;
     if (!user?.tenantId) return false;
@@ -57,7 +66,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
   app.post("/api/beo/birthday-packages", requireAuth, requireManager, async (req, res, next) => {
     try {
       const user = req.userWithAccess!;
-      const parsed = insertBirthdayPackageTemplateSchema.parse({ ...req.body, tenantId: user.tenantId! });
+      const parsed = insertBirthdayPackageTemplateSchema.parse({ ...req.body, tenantId: user.tenantId!, createdByUserId: user.id });
       const [pkg] = await db.insert(birthdayPackageTemplates).values(parsed).returning();
       res.status(201).json(pkg);
     } catch (error) {
@@ -69,8 +78,10 @@ export function registerBirthdayPackageRoutes(app: Express) {
     try {
       const user = req.userWithAccess!;
       const { id } = req.params;
+      const updates = insertBirthdayPackageTemplateSchema
+        .omit({ tenantId: true, createdByUserId: true }).partial().parse(req.body);
       const [updated] = await db.update(birthdayPackageTemplates)
-        .set({ ...req.body, updatedAt: new Date() })
+        .set({ ...updates, updatedAt: new Date() })
         .where(and(eq(birthdayPackageTemplates.id, id), eq(birthdayPackageTemplates.tenantId, user.tenantId!)))
         .returning();
       if (!updated) return res.status(404).json({ error: "Package not found" });
@@ -154,6 +165,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
   app.get("/api/beo/birthday-packages/:packageId/line-items", requireAuth, async (req, res, next) => {
     try {
       const { packageId } = req.params;
+      if (!await hasPackageAccess(req, packageId)) return res.status(404).json({ error: "Package not found" });
       const items = await db.select().from(packageLineItemTemplates)
         .where(eq(packageLineItemTemplates.packageTemplateId, packageId))
         .orderBy(asc(packageLineItemTemplates.sortOrder));
@@ -166,6 +178,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
   app.post("/api/beo/birthday-packages/:packageId/line-items", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { packageId } = req.params;
+      if (!await hasPackageAccess(req, packageId)) return res.status(404).json({ error: "Package not found" });
       const parsed = insertPackageLineItemTemplateSchema.parse({ ...req.body, packageTemplateId: packageId });
       const [item] = await db.insert(packageLineItemTemplates).values(parsed).returning();
       res.status(201).json(item);
@@ -177,8 +190,11 @@ export function registerBirthdayPackageRoutes(app: Express) {
   app.patch("/api/beo/birthday-packages/:packageId/line-items/:itemId", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { packageId, itemId } = req.params;
+      if (!await hasPackageAccess(req, packageId)) return res.status(404).json({ error: "Package not found" });
+      const updates = insertPackageLineItemTemplateSchema
+        .omit({ packageTemplateId: true }).partial().parse(req.body);
       const [updated] = await db.update(packageLineItemTemplates)
-        .set(req.body)
+        .set(updates)
         .where(and(
           eq(packageLineItemTemplates.id, itemId),
           eq(packageLineItemTemplates.packageTemplateId, packageId)
@@ -194,6 +210,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
   app.delete("/api/beo/birthday-packages/:packageId/line-items/:itemId", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { packageId, itemId } = req.params;
+      if (!await hasPackageAccess(req, packageId)) return res.status(404).json({ error: "Package not found" });
       await db.delete(packageLineItemTemplates)
         .where(and(
           eq(packageLineItemTemplates.id, itemId),
@@ -208,6 +225,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
   app.put("/api/beo/birthday-packages/:packageId/line-items/reorder", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { packageId } = req.params;
+      if (!await hasPackageAccess(req, packageId)) return res.status(404).json({ error: "Package not found" });
       const { orderedIds } = req.body as { orderedIds: string[] };
       if (!Array.isArray(orderedIds)) {
         return res.status(400).json({ error: "orderedIds must be an array of strings" });
@@ -248,7 +266,7 @@ export function registerBirthdayPackageRoutes(app: Express) {
   app.post("/api/beo/entertainment-templates", requireAuth, requireManager, async (req, res, next) => {
     try {
       const user = req.userWithAccess!;
-      const parsed = insertEntertainmentPackageTemplateSchema.parse({ ...req.body, tenantId: user.tenantId! });
+      const parsed = insertEntertainmentPackageTemplateSchema.parse({ ...req.body, tenantId: user.tenantId!, createdByUserId: user.id });
       const [template] = await db.insert(entertainmentPackageTemplates).values(parsed).returning();
       res.status(201).json(template);
     } catch (error) {
@@ -260,8 +278,10 @@ export function registerBirthdayPackageRoutes(app: Express) {
     try {
       const user = req.userWithAccess!;
       const { id } = req.params;
+      const updates = insertEntertainmentPackageTemplateSchema
+        .omit({ tenantId: true, createdByUserId: true }).partial().parse(req.body);
       const [updated] = await db.update(entertainmentPackageTemplates)
-        .set({ ...req.body, updatedAt: new Date() })
+        .set({ ...updates, updatedAt: new Date() })
         .where(and(eq(entertainmentPackageTemplates.id, id), eq(entertainmentPackageTemplates.tenantId, user.tenantId!)))
         .returning();
       if (!updated) return res.status(404).json({ error: "Entertainment template not found" });
@@ -507,8 +527,11 @@ export function registerBirthdayPackageRoutes(app: Express) {
         return res.status(404).json({ error: "Event not found" });
       }
 
+      const { name, description, durationMinutes, price, billable, notes, sortOrder } = req.body;
+      const updates = Object.fromEntries(Object.entries({ name, description, durationMinutes, price, billable, notes, sortOrder })
+        .filter(([, value]) => value !== undefined));
       const [updated] = await db.update(beoEntertainmentSelections)
-        .set({ ...req.body, updatedAt: new Date() })
+        .set({ ...updates, updatedAt: new Date() })
         .where(and(
           eq(beoEntertainmentSelections.id, id),
           eq(beoEntertainmentSelections.eventId, eventId)
