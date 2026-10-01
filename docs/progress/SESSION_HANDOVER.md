@@ -1,5 +1,51 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT — 2 October 2026, early — S2-12 Deployed whole; the console redesign live; the push the owner asked for, delivered
+
+**The arrival story (SCRUM-209, S2-12) is Deployed** — all five rounds built,
+gated, landed and proven on staging inside the owner's two-day push: the real
+checkout with the signed QR and the server-enforced visit window; the gate box
+on the true GE-X2/HX-X1 and reader protocols with anti-passback that refuses
+what it cannot credit (NO simulator app, per the owner's directive — scripted
+doubles in tests only); till redemption to the satang with one sale ever under
+racing tills; live occupancy ordered by each box's own journal with honest
+staleness; and offline redemption on the box with the cross-box quarantine.
+The closing audit read CLEAN after killing two money holes pre-ship: a cash
+sale that could launder itself into a booking redemption, and a crash-abandoned
+claim that could band a second family. Closing evidence: sales T1-000035
+(online) and T1-000036 (box offline, synced exactly once). Residuals live in
+**SCRUM-477** (the band key never reaches the bridge host — staging-confirmed,
+one line plus a test — the bridge lookup path, History's labels for paid-online
+sales, the chip's stale wording, a clipped roster name, a noisy 503). The two
+real-hardware questions (a suspect close-frame example, settings byte width)
+are the bench-day checklist on the story.
+
+**Also Deployed this push:** SCRUM-473 (the rota-synced day roster with its
+fallback ladder and merged names), SCRUM-474 (the console redesign complete —
+shell, all ten pages, from the approved canvas
+claude.ai/artifact/CkikCVjnknyNEnBvZK9Jny), SCRUM-475 (the station-link crash:
+284 errors a day to zero, fixed at the driver-decode root), SCRUM-476 (test
+prints route only through the named station). Earlier in the same arc: 461,
+470, 471, 472 Deployed; 469 and 477 open as the follow-up queue.
+
+**Working-method changes that now stand:** CI queues instead of cancelling on
+main (a cancelled run had left the workspace unproven while app-only pushes
+went green by path gate); landing sweeps print per-file +/- splits and treat
+untracked files by CONTENT diff (the "+0/-N" tracked-diff on an untracked file
+was this session's own false-stale trap, and restores over it destroyed real
+work twice before the rule was fixed); the only trusted typecheck is `npx tsc`
+run inside the package; worker briefs forbid restoring from any git ref.
+Models per the owner's directive: strong only where money or protocol earns
+the full gate, light for prescribed fixes and restyles, gates focused on named
+invariants.
+
+**Next by the agreed order:** S2-13 child check-in and supervision is the next
+platform story (docs: SPRINT_2_PLAN §S2-13; the booked drop-off case S2-12
+handed over is in scope). A quick round clears SCRUM-477 first. The Codex lane
+continues 17b→17c→Radar per the recorded plan. Waiting on the owner: Xero, the
+2C2P sandbox credentials, the card-refund default, pricing rulings, SCRUM-467
+park observations, SCRUM-469's go.
+
 ## STOP POINT — 1 October 2026, night — the arrival checkout landed; the booth trio built; the console learns its design
 
 **S2-12 round 1 (SCRUM-209) is landed and CI-green, not yet Deployed.** The

@@ -1,15 +1,13 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-10-01, night Bangkok. S2-12 round 1 (the online checkout,
-SCRUM-209) is landed and CI-green on main — paid only on the gateway's word,
-signed QR, visit-date step, Console bookings page, migration 0038 — with the
-staging walkthrough screenshots the only step before its round is called done.
-The booth trio is owner-approved: the voucher slip (SCRUM-471, landed, green)
-and the template editor with the box command-ordering fix (SCRUM-472, landed)
-are on main, and the duty sync (SCRUM-473) is building. The console redesign
-(SCRUM-474) is approved from the design canvas; phase 1 passed its gate and
-lands after 472's green. SCRUM-461 and 470 are Deployed. Landing order is
-strict: migrations 38→39→40 share the journal. The newest STOP POINT block in
+_Last updated: 2026-10-02, early Bangkok. The arrival story S2-12 (SCRUM-209)
+is DEPLOYED WHOLE: all five rounds on staging evidence, the closing audit
+clean, residuals in SCRUM-477 with the bench-day hardware checklist on the
+story. The console redesign (SCRUM-474) is complete and live; 473, 475 and
+476 Deployed alongside. CI queues on main now; landing sweeps content-diff
+untracked files; the only trusted typecheck runs inside the package. Next:
+a quick round for SCRUM-477, then S2-13 child check-in per the agreed order,
+while the app lane runs 17b, 17c then Radar. The newest STOP POINT block in
 SESSION_HANDOVER.md carries the detail._
 
 
