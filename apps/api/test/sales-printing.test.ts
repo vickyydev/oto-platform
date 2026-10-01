@@ -533,7 +533,7 @@ describe('refunds — manager approval, the clamp, the status walk, the allocati
   it('refunds a gateway QR through QrPayment.refund', async () => {
     const { saleId, owed } = await commit({
       memberId: jamesId,
-      lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 0 }],
+      lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }],
     });
     const invoiceNo = `S211${Date.now().toString().slice(-10)}`;
     const qr = gatewayFor(ctx.app.env).qr as unknown as {
@@ -652,7 +652,7 @@ describe('reprints from History', () => {
   });
 
   it('refuses a pick-up ticket reprint for a sale with no food on it', async () => {
-    const { saleId } = await ticketSale({ kids: 1, adults: 0 });
+    const { saleId } = await ticketSale({ kids: 1, adults: 1 });
     const res = await ctx.app.inject({
       method: 'POST',
       url: `/sales/${saleId}/reprints`,

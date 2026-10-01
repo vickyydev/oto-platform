@@ -361,12 +361,12 @@ describe('committing a sale writes the ledger', () => {
     // sales just because the client minted a fresh id for the second attempt.
     const actionId = newId();
     const first = await commit(
-      { id: newId(), memberId: jamesId, lines: [line(twoHoursId, 1, 0)] },
+      { id: newId(), memberId: jamesId, lines: [line(twoHoursId, 1, 1)] },
       { 'x-oto-action-id': actionId },
     );
     expect(first.statusCode).toBe(200);
     const second = await commit(
-      { id: newId(), memberId: jamesId, lines: [line(twoHoursId, 1, 0)] },
+      { id: newId(), memberId: jamesId, lines: [line(twoHoursId, 1, 1)] },
       { 'x-oto-action-id': actionId },
     );
     expect(second.statusCode).toBe(409);
@@ -460,7 +460,7 @@ describe('a ฿0 comp finalises like any other sale', () => {
   it('numbers receipts consecutively within the station series', async () => {
     const comp = (): Record<string, unknown> => ({
       id: newId(),
-      lines: [line(twoHoursId, 1, 0)],
+      lines: [line(twoHoursId, 1, 1)],
       manualDiscounts: [{ id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Staff / family' }],
       finalise: true,
     });
@@ -484,7 +484,7 @@ describe('a ฿0 comp finalises like any other sale', () => {
     const saleId = newId();
     await commit({
       id: saleId,
-      lines: [line(twoHoursId, 1, 0)],
+      lines: [line(twoHoursId, 1, 1)],
       manualDiscounts: [{ id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Service recovery' }],
     });
     const first = await ctx.app.inject({
@@ -920,7 +920,7 @@ describe('a branch-scoped account cannot sell at another branch', () => {
         id: saleId,
         branchId: otherBranchId,
         stationId: otherStationId,
-        lines: [line(otherPackageId, 1, 0)],
+        lines: [line(otherPackageId, 1, 1)],
       },
     });
     expect(written.statusCode).toBe(200);
@@ -1166,7 +1166,7 @@ describe('reading a sale back', () => {
 
   it('names no member on a walk-in rather than inventing one', async () => {
     const saleId = newId();
-    await commit({ id: saleId, lines: [line(twoHoursId, 1, 0)] });
+    await commit({ id: saleId, lines: [line(twoHoursId, 1, 1)] });
     const res = await ctx.app.inject({
       method: 'GET',
       url: `/sales?businessDate=${today()}&limit=200`,
@@ -1230,7 +1230,7 @@ describe('reading a sale back', () => {
 
   it('answers null for all four on a sale that was never voided', async () => {
     const saleId = newId();
-    const committed = await commit({ id: saleId, lines: [line(twoHoursId, 1, 0)] });
+    const committed = await commit({ id: saleId, lines: [line(twoHoursId, 1, 1)] });
     expect(committed.statusCode, committed.body).toBe(200);
     // Present and null — not missing: `toMatchObject` fails on an absent key.
     const never = { voidedAt: null, voidedByAccountId: null, voidedByName: null, voidReason: null };
@@ -1340,7 +1340,7 @@ describe('the payload the till actually sends', () => {
       .limit(1);
     expect(iceCream).toBeDefined();
 
-    const cartLine = line(twoHoursId, 1, 0);
+    const cartLine = line(twoHoursId, 1, 1);
     const saleId = newId();
     const res = await commit({
       id: saleId,
@@ -1398,7 +1398,7 @@ describe('the payload the till actually sends', () => {
         id: saleId,
         stationId,
         memberId: jamesId,
-        lines: [line(twoHoursId, 1, 0)],
+        lines: [line(twoHoursId, 1, 1)],
         occurredAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
       },
     });
@@ -1945,7 +1945,7 @@ describe('removing a holiday range the park has traded on', () => {
     const holidayId = await addHoliday('Traded Holiday', date, date);
     const saleId = newId();
     try {
-      const written = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 0)] });
+      const written = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] });
       expect(written.statusCode).toBe(200);
       const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
       expect(row!.holidayId).toBe(holidayId);

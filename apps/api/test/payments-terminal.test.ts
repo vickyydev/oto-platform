@@ -884,7 +884,7 @@ describe('the safeguards on the press itself', () => {
         id: saleId,
         stationId: other!.id,
         memberId: jamesId,
-        lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 0 }],
+        lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }],
       },
     });
     expect(committed.statusCode, committed.body).toBe(200);

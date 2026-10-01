@@ -1362,7 +1362,7 @@ describe('S2-12 round 3 — redemption is a sale, its bands and its print jobs',
   });
 
   it('a till cannot claim the booking channel or the paid-online tender for an ordinary cart', async () => {
-    const cart = { stationId: centralTillId, lines: [{ id: newId(), packageId, kids: 1, adults: 0 }] };
+    const cart = { stationId: centralTillId, lines: [{ id: newId(), packageId, kids: 1, adults: 1 }] };
     const asBooking = await call('POST', '/sales', { cookie: som, payload: { ...cart, channel: 'booking' } });
     // Refused at the door: the cart body's channel list carries no `booking`
     // (and `commitSale` refuses it to a sale that names no booking).

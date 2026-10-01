@@ -7,6 +7,7 @@ import { getInventoryItem } from '@/store/catalogStore';
 import { priceForTier, setAddOnQty, setAddOnVariants } from '@/lib/pricing';
 import { resolveDropOffPricing } from '@/lib/dropoff';
 import { useNannyRoster } from '@/lib/nannyRoster';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -79,6 +80,7 @@ export function DropOffLineConfig({
   onDone,
 }: DropOffLineConfigProps) {
   const { branch } = useBranch();
+  const { t } = useLanguage();
   const roster = useNannyRoster(branch.id, providedRoster);
   const tickets = useMemo(() => getTicketTypes(), []);
   const pricing = useMemo(() => resolveDropOffPricing(getDropOffPricing()), []);
@@ -361,7 +363,7 @@ export function DropOffLineConfig({
                 // drop-off, nothing for a child who opted in at 'none' (R-86).
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    {d.service === 'none' ? 'Supervision opt-in · no fee' : 'Drop-off service'}
+                    {d.service === 'none' ? t('superviseConsent.registeredNoFee') : 'Drop-off service'}
                   </span>
                   <span className="tabular-nums">฿{d.serviceFeeTHB}</span>
                 </div>

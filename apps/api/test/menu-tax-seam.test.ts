@@ -173,7 +173,7 @@ describe('an item in a sub-category inherits its parent’s taxable area', () =>
             id: newId(),
             packageId,
             kids: 1,
-            adults: 0,
+            adults: 1,
             // Sold as an add-on on the ticket line: the path that read the
             // column raw. The till names no tax category, so the only answer
             // available is the catalogue's.
@@ -208,7 +208,7 @@ describe('an item in a sub-category inherits its parent’s taxable area', () =>
             id: newId(),
             packageId,
             kids: 1,
-            adults: 0,
+            adults: 1,
             addOns: [
               { id: popcornId, name: 'Popcorn', unitSatang: 6000, quantity: 1 },
               // A prototype id that resolves to no platform row: the till's

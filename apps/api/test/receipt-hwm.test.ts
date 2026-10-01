@@ -67,7 +67,7 @@ async function comp(): Promise<number> {
     payload: {
       stationId: tillId,
       id: newId(),
-      lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 0 }],
+      lines: [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 1 }],
       manualDiscounts: [
         { id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Staff / family' },
       ],

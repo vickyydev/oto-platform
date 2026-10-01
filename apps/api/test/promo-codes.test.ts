@@ -188,7 +188,76 @@ const voidSale = (cookie: string, saleId: string) =>
     payload: { reason: 'Guest left before paying' },
   });
 
-const kidLine = (packageId = twoHoursHkt) => ({ id: newId(), packageId, kids: 1, adults: 0 });
+/**
+ * Registered drop-off stays, one per kid line below (SCRUM-478).
+ *
+ * The platform refuses a sale that admits children and not one adult unless a
+ * drop-off registration stands behind it; the evidence the till sends is the
+ * supervised child's line under the STAY's id (`pos.checkin.id`). These cases
+ * are about codes, and the money asserted is exactly one kid's, so each line
+ * rides on a registered stay rather than on an adult admission that would move
+ * every total. The pools are filled once in `beforeAll` (a registration takes
+ * 20 children); a pool that runs dry is reused from its start, which the gate
+ * accepts.
+ */
+const stayPool: Record<'hkt' | 'chalong', string[]> = { hkt: [], chalong: [] };
+const stayDrawn: Record<'hkt' | 'chalong', number> = { hkt: 0, chalong: 0 };
+const ALL_CONFIRMATIONS = ['confirm-15min', 'confirm-no-refund', 'confirm-evac'];
+
+async function registerStays(
+  cookie: string,
+  at: { branchId: string; stationId: string },
+  count: number,
+): Promise<string[]> {
+  const ids: string[] = [];
+  while (ids.length < count) {
+    const batch = Math.min(20, count - ids.length);
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/checkin/registrations',
+      headers: { cookie },
+      payload: {
+        id: newId(),
+        branchId: at.branchId,
+        stationId: at.stationId,
+        guardianName: 'Ploy',
+        guardianPhone: '0812345678',
+        contactChannel: 'whatsapp',
+        consentAcknowledged: true,
+        acknowledgedConfirmationIds: ALL_CONFIRMATIONS,
+        children: Array.from({ length: batch }, (_, i) => ({
+          checkinId: newId(),
+          name: `Mint ${ids.length + i + 1}`,
+          ageYears: 6,
+          service: 'drop_off',
+          allergies: null,
+          foodRestrictions: null,
+          foodProvision: { mode: 'none', paidSatang: 0 },
+        })),
+      },
+    });
+    if (res.statusCode !== 200) throw new Error(`stay registration failed (${res.statusCode}): ${res.body}`);
+    for (const c of (res.json() as { children: Array<{ id: string }> }).children) ids.push(c.id);
+  }
+  return ids;
+}
+
+/** The next registered stay's id at a branch: a kid line under it is a registered family's. */
+function stayId(at: 'hkt' | 'chalong' = 'hkt'): string {
+  const pool = stayPool[at];
+  if (pool.length === 0) throw new Error(`no registered stays at ${at} — the pool is filled in beforeAll`);
+  const id = pool[stayDrawn[at] % pool.length]!;
+  stayDrawn[at] += 1;
+  return id;
+}
+
+/** One kid on a package, under a registered stay at that package's branch. */
+const kidLine = (packageId = twoHoursHkt) => ({
+  id: stayId(packageId === twoHoursChalong ? 'chalong' : 'hkt'),
+  packageId,
+  kids: 1,
+  adults: 0,
+});
 
 /** A walk-in's ticket cart at a till. */
 const kids = (opts: { stationId?: string; packageId?: string } = {}) => ({
@@ -301,6 +370,10 @@ beforeAll(async () => {
   await pick(tillA, t1.id);
   chalongTill = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
   await pick(chalongTill, t3.id);
+
+  // The registered families every kid line below rides on (SCRUM-478).
+  stayPool.hkt = await registerStays(tillA, { branchId: hktId, stationId: t1.id }, 60);
+  stayPool.chalong = await registerStays(chalongTill, { branchId: chalongId, stationId: t3.id }, 20);
 }, 180_000);
 
 afterAll(async () => {

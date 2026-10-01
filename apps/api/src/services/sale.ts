@@ -4,6 +4,7 @@ import {
   branch,
   branchHoliday,
   branchTaxConfig,
+  checkin,
   employee,
   member,
   modifierGroup,
@@ -13,6 +14,7 @@ import {
   productCategory,
   productModifierGroup,
   receiptSeries,
+  registration,
   sale,
   saleDiscount,
   saleLine,
@@ -390,6 +392,18 @@ export interface CommitSaleInput extends CartInput {
    * claims (`resolveSalesChannel` refuses that channel to a sale without one).
    */
   bookingId?: string | null;
+  /**
+   * SCRUM-478 — the drop-off registration (`crm.registration`) standing behind
+   * the children on this sale, when the caller names it outright.
+   *
+   * The gate (`supervisionOf`) needs one on a sale that admits children and
+   * not one adult. The till does not send this field today: it sends each
+   * supervised child's drop-off line under the STAY's id (`pos.checkin.id`,
+   * which carries the registration), and the gate reads the registration from
+   * those. This is the other door — for a caller that holds the registration
+   * id and nothing else — and is verified against the row, never believed.
+   */
+  registrationId?: string | null;
 }
 
 export interface ActorContext {
@@ -2558,6 +2572,119 @@ export interface CommitSaleOptions {
    * taken: an offline replay. Everything else routes its printing.
    */
   printing?: 'route' | 'skip';
+  /**
+   * SCRUM-478 — what the supervision gate does to a sale that admits children
+   * with no adult and no registration behind them. `refuse` is the online
+   * path's answer and the default. `warn` records the fact and lets the sale
+   * through: a box's replay (round 4 brings the gate to the box itself), where
+   * the money was already taken at a counter with nobody to ask. Left unset,
+   * a replay is told apart by `printing: 'skip'`, which only those paths set.
+   */
+  supervisionGate?: 'refuse' | 'warn';
+}
+
+// --- SCRUM-478: the supervision gate ----------------------------------------
+
+/** The refusal's code, so the till can name it. */
+export const SALE_KIDS_WITHOUT_REGISTRATION = 'SALE_KIDS_WITHOUT_REGISTRATION';
+
+/**
+ * What the gate found on a cart, before anything is written.
+ *
+ * `unaccompanied` is the one fact the gate acts on: at least one child's
+ * admission on the sale and not one adult's. `registrationIds` is the evidence
+ * that answers it, and `evidence` says where that evidence came from.
+ */
+export interface SupervisionVerdict {
+  kids: number;
+  adults: number;
+  unaccompanied: boolean;
+  registrationIds: string[];
+  evidence: 'no_admissions' | 'adult' | 'registration' | 'stay' | 'none';
+}
+
+/**
+ * NO CHILD IS SOLD A TICKET ALONE. A sale whose admission lines are children's,
+ * with no adult admission beside them, is a child left in the park with nobody
+ * responsible for them — unless the family has been through the drop-off
+ * registration, which is what the till's supervision gate exists to make
+ * happen (`pages/Till.tsx`, `resolveSupervisionGate`). The till enforces that
+ * on screen; this is the same rule at the one place every sale passes, so a
+ * till that skipped the gate, a curl, or a screen that has not caught up
+ * cannot ring up a child on their own.
+ *
+ * THE EVIDENCE, in the order it is read:
+ *
+ *   1. an adult admission on any line — nothing to prove;
+ *   2. `input.registrationId`, when the caller names one: it must be a
+ *      `crm.registration` of this operator, made at this branch;
+ *   3. the kid lines' own ids. The till sends a supervised child's drop-off line
+ *      under the STAY's id (`pos.checkin.id`), which carries its registration
+ *      (`services/checkin.ts` `loadChoice` reads the same link back). One real
+ *      stay on the sale, at this branch, is a registered family — a sibling
+ *      waived down to a plain ticket rides on the registered child's line.
+ *
+ * Read-only: the verdict is taken before the sale is written, so a refusal
+ * writes nothing and a warning is recorded against the sale that was.
+ */
+export async function supervisionOf(
+  db: Exec,
+  actor: Pick<ActorContext, 'operatorId'>,
+  input: Pick<CommitSaleInput, 'lines' | 'registrationId'>,
+  branchId: string,
+): Promise<SupervisionVerdict> {
+  const lines = input.lines ?? [];
+  const kids = lines.reduce((sum, line) => sum + (line.kids ?? 0), 0);
+  const adults = lines.reduce((sum, line) => sum + (line.adults ?? 0), 0);
+  if (kids === 0) {
+    return { kids, adults, unaccompanied: false, registrationIds: [], evidence: 'no_admissions' };
+  }
+  if (adults > 0) {
+    return { kids, adults, unaccompanied: false, registrationIds: [], evidence: 'adult' };
+  }
+
+  if (input.registrationId) {
+    const [reg] = await db
+      .select({ id: registration.id, branchId: registration.branchId })
+      .from(registration)
+      .where(and(eq(registration.id, input.registrationId), eq(registration.operatorId, actor.operatorId)))
+      .limit(1);
+    if (reg && reg.branchId === branchId) {
+      return { kids, adults, unaccompanied: true, registrationIds: [reg.id], evidence: 'registration' };
+    }
+    // Named and not real (or another park's): the same answer as none, with
+    // the reason on it, so the till does not retry the same id.
+    return { kids, adults, unaccompanied: true, registrationIds: [], evidence: 'none' };
+  }
+
+  const kidLineIds = lines.filter((line) => (line.kids ?? 0) > 0).map((line) => line.id);
+  const stays = kidLineIds.length
+    ? await db
+        .select({ id: checkin.id, registrationId: checkin.registrationId, branchId: checkin.branchId })
+        .from(checkin)
+        .where(and(inArray(checkin.id, kidLineIds), eq(checkin.operatorId, actor.operatorId)))
+    : [];
+  const registrationIds = [...new Set(stays.filter((s) => s.branchId === branchId).map((s) => s.registrationId))];
+  if (registrationIds.length > 0) {
+    return { kids, adults, unaccompanied: true, registrationIds, evidence: 'stay' };
+  }
+  return { kids, adults, unaccompanied: true, registrationIds: [], evidence: 'none' };
+}
+
+/** The refusal, in the counter's words. */
+function kidsWithoutRegistration(verdict: SupervisionVerdict, namedRegistrationId: string | null): never {
+  throw errors.conflict(
+    SALE_KIDS_WITHOUT_REGISTRATION,
+    namedRegistrationId
+      ? "The drop-off registration on this sale isn't on file at this park — register the children again, or add an adult admission. Nothing was saved."
+      : "Children can't be sold tickets on their own. Add an adult admission to this sale, or register the children for drop-off first. Nothing was saved.",
+    {
+      kids: verdict.kids,
+      adults: verdict.adults,
+      registrationId: namedRegistrationId,
+      reason: namedRegistrationId ? 'registration_not_found' : 'no_registration',
+    },
+  );
 }
 
 /**
@@ -2752,6 +2879,24 @@ export async function commitSale(
     throw errors.badRequest(
       'This station has no code prefix, so it cannot number a receipt — set one on the station before selling here',
     );
+  }
+
+  /**
+   * SCRUM-478 — THE SUPERVISION GATE, last of the refusals: every answer above
+   * is more specific, and a cart refused here is a cart the platform would
+   * otherwise have written. A booking's redemption is not gated — its adults
+   * and children are the booking's, paid online, and the booking channel has
+   * its own path. A box's replay is warned about rather than refused: the
+   * money was taken with nobody to ask, and the box's own gate is round 4.
+   */
+  const gateMode: 'refuse' | 'warn' =
+    options.supervisionGate ?? (options.printing === 'skip' ? 'warn' : 'refuse');
+  const supervision = input.bookingId
+    ? null
+    : await supervisionOf(tx, actor, input, priced.scope.branchId);
+  const unsupervised = supervision !== null && supervision.unaccompanied && supervision.registrationIds.length === 0;
+  if (unsupervised && gateMode === 'refuse') {
+    kidsWithoutRegistration(supervision, input.registrationId ?? null);
   }
 
   // A sale that has just been written has no tenders against it, so what it
@@ -3047,8 +3192,36 @@ export async function commitSale(
       discountSatang: priced.money.discountSatang,
       lineCount: priced.lines.length,
       status: values.status,
+      /** SCRUM-478 — the registration(s) the children on this sale stand under, when any. */
+      registrationIds: supervision?.registrationIds ?? [],
     },
   });
+  /**
+   * SCRUM-478 — a box let children through on their own. The sale stands (the
+   * money is real), and the fact is on the record under its own action so the
+   * console can list every one of them until the box carries the gate itself.
+   */
+  if (unsupervised && supervision) {
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId: priced.scope.branchId,
+      action: 'sale.supervision_unverified',
+      entityType: 'sale',
+      entityId: saleId,
+      actionId: input.actionId ?? null,
+      requestId: actor.requestId,
+      after: {
+        stationId: st.id,
+        boxId: st.boxId,
+        kids: supervision.kids,
+        adults: supervision.adults,
+        registrationId: input.registrationId ?? null,
+        reason: input.registrationId ? 'registration_not_found' : 'no_registration',
+        gate: gateMode,
+      },
+    });
+  }
   if (finalising) {
     await audit.record(tx, {
       actorAccountId: actor.accountId,

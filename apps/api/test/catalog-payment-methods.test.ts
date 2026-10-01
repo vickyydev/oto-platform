@@ -84,7 +84,7 @@ async function tryTender(tender: Record<string, unknown>) {
     payload: {
       id: saleId,
       stationId,
-      lines: [{ id: newId(), packageId, kids: 1, adults: 0 }],
+      lines: [{ id: newId(), packageId, kids: 1, adults: 1 }],
       finalise: true,
     },
   });
@@ -352,7 +352,7 @@ describe('what the ledger does with a tender that has left the list', () => {
       payload: {
         id: saleId,
         stationId,
-        lines: [{ id: newId(), packageId, kids: 1, adults: 0 }],
+        lines: [{ id: newId(), packageId, kids: 1, adults: 1 }],
         finalise: true,
       },
     });

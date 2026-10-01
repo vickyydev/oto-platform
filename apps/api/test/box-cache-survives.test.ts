@@ -258,7 +258,7 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
       payload: {
         stationId: tillId,
         id: newId(),
-        lines: [{ id: newId(), packageId, kids: 1, adults: 0 }],
+        lines: [{ id: newId(), packageId, kids: 1, adults: 1 }],
         manualDiscounts: [
           { id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Staff / family' },
         ],

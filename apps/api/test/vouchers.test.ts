@@ -231,7 +231,70 @@ const finalise = (cookie: string, saleId: string, payload?: Record<string, unkno
     ...(payload ? { payload } : {}),
   });
 
-/** A walk-in's ticket cart: kids on one package, rung up at a till. */
+/**
+ * Registered drop-off stays, one per kids-only cart below (SCRUM-478).
+ *
+ * The platform refuses a sale that admits children and not one adult unless a
+ * drop-off registration stands behind it; the evidence the till sends is the
+ * supervised child's line under the STAY's id (`pos.checkin.id`). These
+ * fixtures are about vouchers, and the money asserted is exactly one kid's,
+ * so each cart rides on a registered stay rather than on an adult admission
+ * that would move every total. The pools are filled once in `beforeAll` (a
+ * registration takes 20 children); a pool that runs dry is reused from its
+ * start, which the gate accepts.
+ */
+const stayPool: Record<'hkt' | 'chalong', string[]> = { hkt: [], chalong: [] };
+const stayDrawn: Record<'hkt' | 'chalong', number> = { hkt: 0, chalong: 0 };
+const ALL_CONFIRMATIONS = ['confirm-15min', 'confirm-no-refund', 'confirm-evac'];
+
+async function registerStays(
+  cookie: string,
+  at: { branchId: string; stationId: string },
+  count: number,
+): Promise<string[]> {
+  const ids: string[] = [];
+  while (ids.length < count) {
+    const batch = Math.min(20, count - ids.length);
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/checkin/registrations',
+      headers: { cookie },
+      payload: {
+        id: newId(),
+        branchId: at.branchId,
+        stationId: at.stationId,
+        guardianName: 'Ploy',
+        guardianPhone: '0812345678',
+        contactChannel: 'whatsapp',
+        consentAcknowledged: true,
+        acknowledgedConfirmationIds: ALL_CONFIRMATIONS,
+        children: Array.from({ length: batch }, (_, i) => ({
+          checkinId: newId(),
+          name: `Mint ${ids.length + i + 1}`,
+          ageYears: 6,
+          service: 'drop_off',
+          allergies: null,
+          foodRestrictions: null,
+          foodProvision: { mode: 'none', paidSatang: 0 },
+        })),
+      },
+    });
+    if (res.statusCode !== 200) throw new Error(`stay registration failed (${res.statusCode}): ${res.body}`);
+    for (const c of (res.json() as { children: Array<{ id: string }> }).children) ids.push(c.id);
+  }
+  return ids;
+}
+
+/** The next registered stay's id at a branch: a kid line under it is a registered family's. */
+function stayId(at: 'hkt' | 'chalong' = 'hkt'): string {
+  const pool = stayPool[at];
+  if (pool.length === 0) throw new Error(`no registered stays at ${at} — the pool is filled in beforeAll`);
+  const id = pool[stayDrawn[at] % pool.length]!;
+  stayDrawn[at] += 1;
+  return id;
+}
+
+/** A walk-in's ticket cart: kids on one package, rung up at a till, under a registered stay. */
 const kids = (
   count: number,
   opts: {
@@ -242,7 +305,14 @@ const kids = (
   } = {},
 ): Record<string, unknown> => ({
   stationId: opts.stationId ?? t1.id,
-  lines: [{ id: newId(), packageId: opts.packageId ?? twoHoursHkt, kids: count, adults: 0 }],
+  lines: [
+    {
+      id: stayId(opts.stationId === t3.id ? 'chalong' : 'hkt'),
+      packageId: opts.packageId ?? twoHoursHkt,
+      kids: count,
+      adults: 0,
+    },
+  ],
   ...(opts.codes ? { promoCodes: opts.codes } : {}),
   ...opts.extra,
 });
@@ -464,6 +534,10 @@ beforeAll(async () => {
   await pick(managerAtA, t1.id);
   managerAtB = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
   await pick(managerAtB, t2.id);
+
+  // The registered families every kids-only cart below rides on (SCRUM-478).
+  stayPool.hkt = await registerStays(tillA, { branchId: hktId, stationId: t1.id }, 100);
+  stayPool.chalong = await registerStays(chalongTill, { branchId: chalongId, stationId: t3.id }, 20);
 }, 180_000);
 
 afterEach(async () => {
@@ -2873,7 +2947,7 @@ describe('a sale rung up with a voucher keeps it until it is paid or voided', ()
         {
           id: saleId,
           stationId: t1.id,
-          lines: [{ id: newId(), packageId: twoHoursHkt, kids: 1, adults: 0 }],
+          lines: [{ id: stayId(), packageId: twoHoursHkt, kids: 1, adults: 0 }],
           promoCodes: [v.code],
         },
       );
@@ -3396,7 +3470,8 @@ describe('a voucher’s markdown lands on the line it belongs to', () => {
    */
   it('a 1+1 is aimed at the line with the most kid value left once the manual discounts are off', async () => {
     const v = await issue(defs.oneplusone!);
-    const halved = newId();
+    // One registered stay on the sale is the family; the other kid rides on it.
+    const halved = stayId();
     const full = newId();
     const saleId = await holdAndCommit(tillA, v.code, {
       stationId: t1.id,

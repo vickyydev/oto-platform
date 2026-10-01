@@ -563,7 +563,7 @@ describe('SCRUM-309 — correcting a holiday range', () => {
         id: saleId,
         stationId,
         memberId,
-        lines: [{ id: newId(), packageId, kids: 1, adults: 0 }],
+        lines: [{ id: newId(), packageId, kids: 1, adults: 1 }],
       },
     });
     expect(res.statusCode, res.body).toBe(200);

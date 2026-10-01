@@ -480,7 +480,9 @@ describe('POST /checkin/check-in-now', () => {
   it('refuses a child who is not on the sale, and a sale that is not paid', async () => {
     const reg = (await register([childBody({ name: 'Nok', ageYears: 6 })])).json();
     const stayId = reg.children[0].id as string;
-    const otherSale = await paidSaleFor([{ checkinId: newId(), feeSatang: 0 }]);
+    // Another registered family's sale (SCRUM-478: a kids-only sale needs a registration behind it).
+    const other = (await register([childBody({ name: 'Pat', ageYears: 6 })])).json();
+    const otherSale = await paidSaleFor([{ checkinId: other.children[0].id, feeSatang: 0 }]);
     const notOn = await checkInNow(otherSale, [{ checkinId: stayId }]);
     expect(notOn.statusCode).toBe(409);
     expect(notOn.json().error.code).toBe('CHECKIN_NOT_ON_SALE');
