@@ -42,7 +42,6 @@ import templateAssignmentAdmin from "./models/templateAssignment";
 import staffCostAllocationAdmin from "./models/staffCostAllocation";
 import contractInstanceAdmin from "./models/contractInstance";
 import activityLogAdmin from "./models/activityLog";
-import attentionItemAdmin from "./models/attentionItem";
 import enrollmentSessionAdmin from "./models/enrollmentSession";
 import timeEntryAdmin from "./models/timeEntry";
 import timekeepingIssueAdmin from "./models/timekeepingIssue";
@@ -100,7 +99,7 @@ import cashDailyAdmin from "./models/cashDaily";
   payrollRunAdmin, kioskDeviceAdmin, branchEventAdmin, departmentBranchAssignmentAdmin,
   scheduleShiftRowRoleAdmin, scheduleShiftBreakAdmin, payrollPeriodAdmin, payrollDayReconciliationAdmin,
   templateAssignmentAdmin, staffCostAllocationAdmin, contractInstanceAdmin,
-  activityLogAdmin, attentionItemAdmin, enrollmentSessionAdmin, timeEntryAdmin, timekeepingIssueAdmin,
+  activityLogAdmin, enrollmentSessionAdmin, timeEntryAdmin, timekeepingIssueAdmin,
   authOtpEventAdmin, shiftRequiredRoleAdmin, leavePolicyAdmin, scheduleTemplateAdmin,
   scheduleTemplateRowAdmin, scheduleTemplateRowRoleAdmin, scheduleAuditLogAdmin, payrollExceptionAdmin,
   salaryAdvanceAdmin, salaryAdvanceRepaymentAdmin, statutoryRuleSetAdmin, statutoryCalculationResultAdmin,
@@ -115,6 +114,11 @@ import cashDailyAdmin from "./models/cashDaily";
 ].forEach(register);
 
 const router = Router();
+
+// The legacy table cannot authorize a Data Admin row by tenant yet.
+router.use("/attention-items", (_req: Request, res: Response) => {
+  res.status(503).json({ error: "Attention data administration is unavailable until tenant ownership is recorded" });
+});
 
 function withoutUserPassword(admin: unknown, row: Record<string, unknown>): Record<string, unknown> {
   if (admin !== userAdmin) return row;
