@@ -230,7 +230,9 @@ describe('a finalised ticket sale prints its receipt and its signed bands', () =
 
     expect(done.finalised).toBe(true);
     const kinds = (done.printing.jobs as { kind: string }[]).map((j) => j.kind);
-    expect(kinds).toEqual(['receipt', 'kids_wristband', 'kids_wristband', 'adult_wristband']);
+    // S2-14a — 2 Hours Play gives the paying adult their ticket back as credit
+    // (the seeded adults / full_price rule), so a credit voucher follows the bands.
+    expect(kinds).toEqual(['receipt', 'kids_wristband', 'kids_wristband', 'adult_wristband', 'credit_voucher']);
     expect((done.printing.jobs as { status: string }[]).every((j) => j.status === 'queued')).toBe(true);
     expect(done.printing.notes).toEqual([]);
 
@@ -262,7 +264,7 @@ describe('a finalised ticket sale prints its receipt and its signed bands', () =
     const commands = (await ctx.db.select().from(boxCommand).where(eq(boxCommand.kind, 'test_print'))).filter(
       (c) => jobIds.includes((c.payload as { printJobId?: string }).printJobId ?? ''),
     );
-    expect(commands).toHaveLength(4);
+    expect(commands).toHaveLength(5);
     for (const c of commands) {
       expect((c.payload as { document?: string }).document).toBe('platform');
       expect(JSON.stringify(c.payload)).not.toContain(bands[0]!.code);
@@ -648,7 +650,8 @@ describe('reprints from History', () => {
       const [job] = await ctx.db.select().from(printJob).where(eq(printJob.id, b.printedJobId!));
       expect(job!.reprintOf).toBe(was.printedJobId);
     }
-    expect((done.printing.jobs as unknown[]).length).toBe(4);
+    // Receipt, two kids bands, the adult band and (S2-14a) the adult's credit voucher.
+    expect((done.printing.jobs as unknown[]).length).toBe(5);
   });
 
   it('refuses a pick-up ticket reprint for a sale with no food on it', async () => {

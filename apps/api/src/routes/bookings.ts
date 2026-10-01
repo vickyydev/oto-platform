@@ -353,6 +353,8 @@ export async function bookingRoutes(app: App): Promise<void> {
           attempt: done.attempt,
           bands: done.bands,
           printing: done.printing,
+          // S2-14a — the credit the booking's tickets earned, as a walk-in's answer carries it.
+          grants: done.grants,
         };
       });
     },

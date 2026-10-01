@@ -42,3 +42,4 @@ export * from './sale-print';
 export * from './supervision';
 export * from './release';
 export * from './checkin-offline';
+export * from './wallet';

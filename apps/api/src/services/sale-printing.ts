@@ -46,6 +46,7 @@ import {
   type BandView,
 } from './bands';
 import { routeOnBox, templateTypeFor } from './print';
+import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf } from './wallet';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -57,8 +58,10 @@ import type { Exec, Tx } from './tx';
  *   - a TICKET sale (`ticketPrintJobs`): one receipt; a kids band per child
  *     and an adult band per adult (`sale.bracelets`, minted in `bands.ts`);
  *     one item voucher per socks / add-on / free-item grant, aggregated by
- *     label (`buildCreditGrants`), on the receipt printer. Credit vouchers and
- *     wallet grants are S2-14a and are not printed here;
+ *     label (`buildCreditGrants`), on the receipt printer; and — S2-14a — one
+ *     credit voucher per wallet the sale granted (`printRouting.tsx:86-119`),
+ *     after the bands and before the item vouchers, on the receipt printer,
+ *     carrying that wallet's ONE QR (`services/wallet.ts`);
  *   - an F&B order (`fnbPrintJobs`): one receipt carrying only the whole-order
  *     note, and one prep ticket per station that has items — kitchen, then
  *     bar (`groupPrepTickets`) — each with the allergy line, its own items'
@@ -188,7 +191,7 @@ export interface SalePrintingResult {
 
 interface JobRequest {
   kind: PrintKind;
-  subjectType: 'sale' | 'band' | 'sale_line';
+  subjectType: 'sale' | 'band' | 'sale_line' | 'wallet';
   subjectId: string;
   reprintOf?: string | null;
   reprintReason?: string | null;
@@ -389,6 +392,29 @@ export async function routeSalePrinting(
       // the prep tickets — decided by the composer a box with no internet
       // prints from too (`salePrintRequests` in `@oto/shared`).
       const requests: JobRequest[] = salePrintRequests(await salePrintSnapshotOf(sp, saleRow));
+      // S2-14a — each grant wallet goes on its person's band, now the band
+      // exists. Under its own savepoint: a pairing that cannot be written
+      // leaves the wallet on its voucher QR and the bands as minted.
+      if (bandRows.length > 0) {
+        try {
+          await sp.transaction((inner) => attachSaleBandKeys(inner, saleRow, bandRows, now));
+        } catch {
+          notes.push('Credit not linked to the bands — the vouchers still spend by their QR');
+        }
+      }
+      // S2-14a — one credit voucher per granted wallet, where the prototype
+      // put them (`ticketPrintJobs`): after the bands, before the item vouchers.
+      const vouchers: JobRequest[] = (await creditVoucherWalletsOf(sp, saleRow.id)).map((walletId) => ({
+        kind: 'credit_voucher',
+        subjectType: 'wallet',
+        subjectId: walletId,
+      }));
+      if (vouchers.length > 0) {
+        const at = requests.findIndex(
+          (r) => r.kind === 'item_voucher' || r.kind === 'kitchen_ticket' || r.kind === 'bar_ticket',
+        );
+        requests.splice(at < 0 ? requests.length : at, 0, ...vouchers);
+      }
       const jobs: SalePrintJobView[] = [];
       for (const [index, request] of requests.entries()) {
         const job = await writeJob(sp, scope, request, index);
@@ -636,6 +662,8 @@ export async function reprintSale(
         throw err;
       });
       bands = minted.bands.filter((b) => b.kind === kind);
+      // S2-14a — the sale's credit goes on the bands it is issued now.
+      await attachSaleBandKeys(tx, saleRow, minted.bands, now);
     }
     for (const b of bands.filter((row) => row.status === 'active')) {
       const original = b.printedJobId
@@ -938,6 +966,16 @@ export async function buildPrintDocument(
   };
   const noDocument = () =>
     new AppError(404, 'PRINT_DOCUMENT_NOT_FOUND', 'This print job has no document on the platform');
+  /**
+   * S2-14a — a credit voucher prints one wallet: its QR, the credit it was
+   * issued with and its holder (`creditVoucherDocumentOf`). The job row names
+   * the wallet; the box and operator check is the job's own, above.
+   */
+  if (row.subjectType === 'wallet' && row.kind === 'credit_voucher' && row.subjectId) {
+    const data = await creditVoucherDocumentOf(db, row.subjectId);
+    if (!data) throw noDocument();
+    return { ...base, job: { kind: 'credit_voucher', data } as RenderJob };
+  }
   /**
    * A copy is a job History asked for: it names the original, or — for a sale
    * whose first paper came out of a box with no internet, which left no

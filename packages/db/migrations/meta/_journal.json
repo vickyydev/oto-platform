@@ -316,6 +316,13 @@
       "when": 1790827824598,
       "tag": "0044_checkin_overlay_kinds",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1790827825598,
+      "tag": "0045_wallet_ledger",
+      "breakpoints": true
     }
   ]
 }

@@ -22,6 +22,7 @@ import { supervisionConfigOf } from './checkin';
 import { accountNames } from './refund-slices';
 import { refundSale, type RefundSaleResult } from './refunds';
 import type { Exec, Tx } from './tx';
+import { debitWallet, prepaidBalanceOf } from './wallet';
 
 /**
  * S2-13 round 3 — PICKUPS AND RELEASE, online (plan docs/progress/plans/
@@ -414,22 +415,32 @@ export async function revokeGuardian(
 // --- The release ----------------------------------------------------------------------
 
 /**
- * What is left on the band of a prepaid-credit child. Spending against a
- * band's prepaid credit is not on the platform yet (the F&B redemption and
- * the wallet are later stories), so nothing has been recorded as spent and
- * the remaining credit is what was loaded. A prepaid-items child's
+ * What is left on the band of a prepaid-credit child — S2-14a: THE REAL
+ * BALANCE of the wallet check-in loaded for this stay (`services/wallet.ts`,
+ * `prepaidBalanceOf`), every spend against it already taken off; the
+ * reconciliation then counts min(balance, paid) as unused, the prototype's
+ * `computePrepaidFoodReconciliation`.
+ *
+ * A STAY THAT LOADED NO WALLET IS NOT A STAY THAT SPENT EVERYTHING (gate round
+ * 1, finding 2). Two kinds of stay are in the park with no load: one the box's
+ * offline replay checked in (`sync-checkin.ts` never loads a wallet until
+ * round 4) and one that was already in the park when wallets deployed. For
+ * either, nothing could have been spent off a wallet, so what was paid is what
+ * is left — the assumption the release made before wallets existed, kept for
+ * exactly the stays that have no ledger to read. A prepaid-items child's
  * redemptions ride the stay's own snapshot (`redeemedQty`).
  */
-function remainingCreditOf(stay: CheckinRow): number {
+async function remainingCreditOf(db: Exec, stay: CheckinRow): Promise<number> {
   const fp = stay.foodProvision;
   if (!fp || fp.mode !== 'prepaid_credit') return 0;
-  return fp.creditSatang ?? fp.paidSatang;
+  const held = await prepaidBalanceOf(db, stay.operatorId, stay.id);
+  return held ? held.balanceSatang : fp.paidSatang;
 }
 
-export function reconciliationOf(stay: CheckinRow): PrepaidReconciliation | null {
+export async function reconciliationOf(db: Exec, stay: CheckinRow): Promise<PrepaidReconciliation | null> {
   const fp = stay.foodProvision;
   if (!fp || fp.mode === 'none') return null;
-  return prepaidReconciliationOf(fp, remainingCreditOf(stay));
+  return prepaidReconciliationOf(fp, await remainingCreditOf(db, stay));
 }
 
 export interface ReleaseContext {
@@ -466,7 +477,7 @@ export async function releaseContextOf(db: Exec, stay: CheckinRow): Promise<Rele
     status: stay.status,
     signUpPhotoFileId: signUp,
     pickups: await pickupsOf(db, reg, signUp),
-    reconciliation: reconciliationOf(stay),
+    reconciliation: await reconciliationOf(db, stay),
     prepaidPolicy: config.pricing.prepaidFoodUnused,
     release: existing ? await releaseViewOf(db, existing) : null,
   };
@@ -637,7 +648,7 @@ export async function releaseChild(
 
   // --- The prepaid food, by the branch's policy ---------------------------------------
   const config = await supervisionConfigOf(tx, stay.branchId);
-  const reconciliation = reconciliationOf(stay);
+  const reconciliation = await reconciliationOf(tx, stay);
   const unusedSatang = reconciliation?.totalUnusedSatang ?? 0;
   const policy = config.pricing.prepaidFoodUnused;
   let refundResult: RefundSaleResult | null = null;
@@ -655,8 +666,8 @@ export async function releaseChild(
         // A savepoint: a refund that cannot be written never takes the
         // child's release back with it — the release stands, and staff refund
         // by hand (the prototype's `refund_no_sale` toast).
-        refundResult = await tx.transaction((sp) =>
-          refundSale(
+        refundResult = await tx.transaction(async (sp) => {
+          const refunded = await refundSale(
             sp,
             {
               accountId: actor.accountId,
@@ -676,8 +687,37 @@ export async function releaseChild(
             linked.id,
             { mode: 'custom', amountSatang: unusedSatang, reason: 'Unused prepaid food at pickup', note: null },
             now,
-          ),
-        );
+          );
+          /**
+           * S2-14a — THE CREDIT GOES WITH THE CASH. The unused credit has just
+           * been handed back as money, so it comes off the child's wallet in
+           * the same savepoint (a `spend` / `refund` entry naming the refund):
+           * the band cannot also spend it, and the ledger still sums to the
+           * balance. The prototype left the band holding it
+           * (`creditRestoredTHB: 0`, `mockApi.ts:5309`) because its band
+           * left the park with the child; a wallet here outlives the stay.
+           */
+          const held = reconciliation?.mode === 'prepaid_credit' ? await prepaidBalanceOf(sp, actor.operatorId, stay.id) : null;
+          if (held) {
+            await debitWallet(
+              sp,
+              { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+              {
+                walletId: held.walletId,
+                actionId: `release:${input.id}:prepaid`,
+                amountSatang: unusedSatang,
+                source: 'refund',
+                branchId: stay.branchId,
+                refundId: refunded.refund.id,
+                saleId: linked.id,
+                stationId: actor.stationId,
+                payload: { checkinId: stay.id },
+                now,
+              },
+            );
+          }
+          return refunded;
+        });
       } catch (err) {
         if (!(err instanceof AppError)) throw err;
         refundNoSale = true;

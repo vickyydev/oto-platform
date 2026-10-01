@@ -5,6 +5,7 @@ import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   type OfflinePriceBasis,
   type PaymentAttemptView,
+  type WalletGrantView,
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
@@ -92,6 +93,11 @@ export interface RedeemAtCounterResult {
   /** What closing the sale put on paper: jobs, bands, notes. */
   printing: SalePrintingResult | null;
   bands: BandView[];
+  /**
+   * S2-14a — the wallets the redemption granted, exactly as a walk-in sale of
+   * the same tickets grants them (OD-A7): the same finalise, the same law.
+   */
+  grants: WalletGrantView[];
 }
 
 /** The socks add-on's catalogue code, as the booking site priced the `socks` integer (`booking-checkout.ts`). */
@@ -353,6 +359,7 @@ export async function redeemBookingAtCounter(
       totalSatang: claimed.totalSatang,
       tender: 'paid_online',
       bandIds: bands.map((b) => b.id),
+      grantWalletIds: finalised.grants.map((g) => g.walletId),
       printJobIds: (finalised.printing?.jobs ?? []).map((j) => j.id),
     },
     requestId: args.requestId ?? null,
@@ -364,5 +371,6 @@ export async function redeemBookingAtCounter(
     attempt: finalised.attempt,
     printing: finalised.printing,
     bands,
+    grants: finalised.grants,
   };
 }

@@ -211,31 +211,9 @@ export const attendee = pos.table(
   (t) => [index('attendee_booking_idx').on(t.bookingId)],
 );
 
-export const wallet = pos.table(
-  'wallet',
-  {
-    id: idPk(),
-    operatorId: uuid('operator_id').notNull().references(() => operator.id),
-    memberId: uuid('member_id').references(() => member.id),
-    balanceSatang: bigint('balance_satang', { mode: 'number' }).notNull().default(0),
-    ...timestamps,
-  },
-  (t) => [index('wallet_member_idx').on(t.memberId), index('wallet_operator_idx').on(t.operatorId)],
-);
-
-/** Wallet ledger. No CASCADE, for the reason given on `sale_line`. */
-export const walletEntry = pos.table(
-  'wallet_entry',
-  {
-    id: idPk(),
-    walletId: uuid('wallet_id').notNull().references(() => wallet.id),
-    amountSatang: bigint('amount_satang', { mode: 'number' }).notNull(),
-    kind: text('kind').notNull(),
-    payload: jsonb('payload'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-  },
-  (t) => [index('wallet_entry_wallet_idx').on(t.walletId)],
-);
+// `wallet` and `wallet_entry` left with S2-14a (migration 0045): the real
+// stored-value ledger, its keys and the branch's wallet policy live in
+// `wallet.ts`.
 
 /** A stocked thing (Sprint 1 `item`) — renamed away from the bare word. */
 export const stockItem = pos.table(

@@ -89,8 +89,14 @@ export interface BandData {
 }
 
 export interface CreditVoucherData {
-  /** Pre-formatted, e.g. "฿150". */
+  /** Pre-formatted, e.g. "฿150". Wins over `balanceTHB` when both are sent. */
   balance?: string;
+  /**
+   * The credit as the prototype's voucher carried it (`printRouting.tsx:18-26`,
+   * `CreditVoucherData.balanceTHB`), in baht. S2-14a's platform sends both;
+   * a template given only this formats it the way every printout writes money.
+   */
+  balanceTHB?: number;
   /** The wallet key; the same QR resolves the wallet the band does. */
   qrCode?: string;
   holderName?: string;

@@ -43,6 +43,7 @@ import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { checkinRoutes } from './routes/checkin';
 import { releaseRoutes } from './routes/release';
+import { walletRoutes } from './routes/wallets';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
 import { boxRoutes } from './routes/box';
@@ -442,6 +443,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(checkinRoutes, { prefix: '/checkin' });
   // S2-13 round 3 — the authorised-pickup list and the release (online).
   await app.register(releaseRoutes, { prefix: '/checkin/pickups' });
+  // S2-14a — reading a wallet by key or id (round 1; the Wallet view builds on it).
+  await app.register(walletRoutes, { prefix: '/wallets' });
   await app.register(opsRoutes, { prefix: '/ops' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a

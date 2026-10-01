@@ -548,7 +548,12 @@ describe('PLANT — the box reports the same approval twice', () => {
     await setOutcome(cardDeviceId, { outcome: 'approved' });
     const started = await startTender(saleId);
     const attemptId = (started.json() as { attempt: { id: string } }).attempt.id;
-    await agent.runPendingCommands();
+    // The box takes five commands a poll, and the sales before this one left
+    // their paper queued (S2-14a added a credit voucher per earning adult), so
+    // poll until the terminal's command has been reached.
+    for (let i = 0; i < 10 && (await attemptRow(attemptId)).status === 'sent_to_terminal'; i += 1) {
+      await agent.runPendingCommands();
+    }
 
     const first = await attemptRow(attemptId);
     expect(first.status).toBe('approved');

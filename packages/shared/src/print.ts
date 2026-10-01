@@ -252,6 +252,8 @@ export const PRINT_SUBJECT_TYPES = [
   'booking',
   'visit',
   'station',
+  /** S2-14a — a credit voucher prints one wallet: its QR and its balance. */
+  'wallet',
 ] as const;
 export type PrintSubjectType = (typeof PRINT_SUBJECT_TYPES)[number];
 

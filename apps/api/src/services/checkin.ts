@@ -48,6 +48,7 @@ import { idInUse } from './client-id';
 import { queueCheckinBandPrints, type SalePrintJobView } from './sale-printing';
 import type { SmsSender } from './sms';
 import type { Exec, Tx } from './tx';
+import { loadChildPrepaid } from './wallet';
 
 /**
  * S2-13 round 1 — CHILD CHECK-IN AND SUPERVISION, online (plan
@@ -870,6 +871,27 @@ export async function checkInNow(
       throw errors.conflict('BAND_NOT_ISSUED', `No band could be issued for ${s.childName}, so nobody was checked in.`);
     }
     await tx.update(checkin).set({ bandId, updatedAt: now }).where(eq(checkin.id, s.id));
+  }
+
+  /**
+   * S2-14a — A PREPAID-CREDIT CHILD'S FOOD MONEY GOES ON THEIR OWN WALLET, in
+   * this transaction (prototype `checkInFamilyWithPayment`,
+   * `mockApi.ts:5030-5065`: the band is topped up and a `grant` /
+   * `prepaid_food` entry written). The child's wallet carries the band just
+   * minted; a load that cannot be written takes the check-in back with it,
+   * because the family paid for that credit. The figure is the sale's: the
+   * load reads this stay's `food_provision` line off the sale ledger and
+   * refuses the check-in when the registration's figure disagrees with it
+   * (`PREPAID_FOOD_MISMATCH`), so no credit exists that the sale did not
+   * charge for.
+   */
+  const codeOf = new Map(minted.map((b) => [b.id, b.code]));
+  for (const s of stays) {
+    await loadChildPrepaid(
+      tx,
+      { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+      { stay: s, saleRow, bandCode: codeOf.get(bandOf.get(s.id)!) ?? null, now },
+    );
   }
 
   const printed = await queueCheckinBandPrints(tx, saleRow, stays.map((s) => bandOf.get(s.id)!), {

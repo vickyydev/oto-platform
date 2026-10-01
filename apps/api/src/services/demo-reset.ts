@@ -23,6 +23,7 @@ import {
   voucher,
   wallet,
   walletEntry,
+  walletKey,
 } from '@oto/db';
 import type { Exec } from './tx';
 
@@ -120,6 +121,15 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
    * events go, then the bands, before the lines and the sale they hang off. A
    * refund points at its sale the same way.
    */
+  /**
+   * S2-14a: a wallet entry points at the sale, refund and payment attempt it
+   * moved money for (ON DELETE RESTRICT), and a key at its wallet — so the
+   * ledger and the keys go first, then the wallets, before anything they name.
+   */
+  counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
+  counts.wallet_key = (await tx.delete(walletKey).returning({ id: walletKey.id })).length;
+  counts.wallet = (await tx.delete(wallet).returning({ id: wallet.id })).length;
+
   counts.band_event = (await tx.delete(bandEvent).returning({ id: bandEvent.id })).length;
   counts.band = (await tx.delete(band).returning({ id: band.id })).length;
   counts.refund = (await tx.delete(refund).returning({ id: refund.id })).length;
@@ -218,9 +228,6 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
     await tx.delete(bookingRedemption).returning({ id: bookingRedemption.id })
   ).length;
   counts.booking = (await tx.delete(booking).returning({ id: booking.id })).length;
-
-  counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
-  counts.wallet = (await tx.delete(wallet).returning({ id: wallet.id })).length;
 
   // The stocked things and where they live are catalogue; the COUNT is what a
   // day of play moves, so only the levels go.

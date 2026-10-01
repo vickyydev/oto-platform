@@ -107,6 +107,8 @@ import type { Exec, Tx } from './tx';
 import { bandsOfSale } from './bands';
 import { refundsOfSale } from './refund-slices';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
+import { grantSaleCredit, grantsOfSale } from './wallet';
+import type { WalletGrantView } from '@oto/shared';
 import {
   assertSaleVouchersHeld,
   auditVoidReleases,
@@ -2487,6 +2489,12 @@ export interface CommitResult {
    * "not printed" notes. Null when this call did not close the sale.
    */
   printing?: SalePrintingResult | null;
+  /**
+   * S2-14a — the wallets closing it granted (one per person who earns credit,
+   * each with its ONE voucher QR). Empty when this call did not close the sale
+   * or nobody on it earns.
+   */
+  grants?: WalletGrantView[];
 }
 
 /**
@@ -2746,6 +2754,8 @@ export async function commitSale(
       lines: [],
       rejectedPromoCodes: [],
       voucher: null,
+      // S2-14a — what closing it granted, read back: a retry gets the wallets the first call made.
+      grants: already.status === 'finalised' ? await grantsOfSale(tx, already.id) : [],
     };
   }
 
@@ -3245,6 +3255,19 @@ export async function commitSale(
 
   const [written] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
   if (!written) throw new Error('the sale was not written');
+  /**
+   * S2-14a — a ฿0 close earns like any other (the credit is read from the list
+   * price, OD-W2): the grants are written in this transaction, before the paper
+   * that prints their vouchers.
+   */
+  const grants = finalising
+    ? await grantSaleCredit(
+        tx,
+        { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+        written,
+        now,
+      )
+    : [];
   /** S2-11 — a ฿0 close prints like any other: a receipt, and a comp admission's bands. */
   const printing =
     finalising && options.printing !== 'skip'
@@ -3258,6 +3281,7 @@ export async function commitSale(
       : null;
   return {
     printing,
+    grants: grants.length > 0 ? await grantsOfSale(tx, saleId) : grants,
     replay: false,
     replayed: false,
     finalised: finalising,
@@ -3373,6 +3397,12 @@ export interface FinaliseResult {
    * every sale no box numbered.
    */
   receiptCollision: { box: string; ledger: string } | null;
+  /**
+   * S2-14a — the wallets this sale's tickets granted, one per person who earns
+   * credit, in the till's grant order, each with the ONE QR its voucher prints
+   * (plan §2.2). Read back on a replay; empty while the sale is still open.
+   */
+  grants: WalletGrantView[];
 }
 
 /**
@@ -3446,6 +3476,8 @@ export async function finaliseSale(
       // Printed on the first answer too; a retry does not print it twice.
       printing: null,
       receiptCollision: null,
+      // Granted on the first answer, and read back here — never granted twice.
+      grants: await grantsOfSale(tx, saleId),
     };
   }
   if (row.status === 'voided' || row.status === 'refunded') {
@@ -3692,6 +3724,7 @@ export async function finaliseSale(
       redeemedVoucherIds: [],
       printing: null,
       receiptCollision: null,
+      grants: [],
     };
   }
 
@@ -3767,6 +3800,21 @@ export async function finaliseSale(
   });
 
   /**
+   * S2-14a — THE CREDIT, in this transaction, after the number and before the
+   * paper (plan §2.2): one wallet per person the tickets' credit rules pay,
+   * from the list price, keyed by the sale and the person so a replay of this
+   * close — a retried press, the booking's redemption, a box's offline sale
+   * arriving later — grants once. Not under the printing savepoint: credit is
+   * money owed to the guest, and a printer problem must not take it away.
+   */
+  const grants = await grantSaleCredit(
+    tx,
+    { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+    after,
+    now,
+  );
+
+  /**
    * S2-11 — THE PAPER, inside this transaction and after the number: the
    * receipt, the bands and the prep tickets become rows and box commands that
    * commit with the sale. Under a savepoint that never throws, so a printing
@@ -3795,6 +3843,8 @@ export async function finaliseSale(
     redeemedVoucherIds: consumed,
     printing,
     receiptCollision,
+    // Read again after the paper: the bands it minted now carry the wallets.
+    grants: grants.length > 0 ? await grantsOfSale(tx, saleId) : grants,
   };
 }
 
@@ -4215,6 +4265,8 @@ export async function getSaleDetail(
     refunds: await refundsOfSale(db, saleId),
     printJobs: await printJobsOfSale(db, saleId),
     bands: await bandsOfSale(db, saleId),
+    /** S2-14a — the wallets this sale granted, each with the ONE QR its voucher printed. */
+    grants: await grantsOfSale(db, saleId),
     /** S2-09b — the code the guest holds, from the F&B lines that carry it. */
     pickupCode: recordedPickupCode(lines.filter((line) => line.kind === 'fnb_item')),
     attempts,

@@ -117,10 +117,12 @@ export function prepStationsPrinted(jobs: readonly ApiSalePrintJob[]): PrepStati
 /**
  * WHETHER THE PLATFORM REPORTED A CREDIT-VOUCHER PRINTOUT for this sale —
  * SCRUM-208. A ticket sale's F&B credit and item grants print as
- * `credit_voucher` / `item_voucher` jobs, and nothing prints them until the
- * wallets ticket (S2-14a). The payment-done screen's "Credit Grants to Print"
- * block is shown only when the sale's own print jobs (not copies) carry one, so
- * it never promises paper that no printer produces yet.
+ * `credit_voucher` / `item_voucher` jobs. Since S2-14a the platform grants the
+ * credit as it closes the sale and queues one `credit_voucher` job per wallet
+ * (subject: the wallet), so the payment-done screen's "Credit Grants to Print"
+ * block lights up on exactly the sales whose paper carries it. It is still
+ * shown only when the sale's own print jobs (not copies) carry one, so it never
+ * promises paper that no printer produced.
  */
 export function reportsCreditVoucher(jobs: readonly ApiSalePrintJob[]): boolean {
   return jobs.some(

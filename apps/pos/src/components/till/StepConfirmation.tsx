@@ -10,6 +10,7 @@ import { paymentMethodLabel } from '@/lib/payments';
 import { bandsByCartLine, getSale, type ApiSaleBand, type ApiSaleLine, type ApiSalePrintJob } from '@/api/history';
 import type { BoxSaleIssue } from '@/api/boxSales';
 import { reportsCreditVoucher } from '@/lib/salePrinting';
+import { grantsOf, walletQrFor, type ApiWalletGrant } from '@/api/wallet';
 import { platformId, shownBaht, taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { QrCode } from './QrCode';
 
@@ -61,10 +62,16 @@ export interface SaleIssue {
    * the read lands (or when it carries none).
    */
   printJobs: ApiSalePrintJob[] | null;
+  /**
+   * S2-14a — the wallets the platform granted for this sale, each with the ONE
+   * QR its voucher printed. The credit rows draw that QR rather than one
+   * seeded from the till's grant id. Null until the read lands.
+   */
+  grants: ApiWalletGrant[] | null;
 }
 
 export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIssue | null): SaleIssue {
-  const [asked, setAsked] = useState<SaleIssue>({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null });
+  const [asked, setAsked] = useState<SaleIssue>({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null, grants: null });
 
   useEffect(() => {
     // The box lane already answered with its bands (offline finding 3): the
@@ -72,7 +79,7 @@ export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIs
     // from the finalise answer instead, drawn by the same rows below.
     if (box || !PLATFORM_SALE_ID.test(saleId)) return;
     let live = true;
-    setAsked({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null });
+    setAsked({ number: { kind: 'unknown' }, bands: null, lines: [], printJobs: null, grants: null });
     void getSale(saleId)
       .then((detail) => {
         if (!live) return;
@@ -83,6 +90,7 @@ export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIs
           bands: detail.bands ?? null,
           lines: detail.lines ?? [],
           printJobs: detail.printJobs ?? null,
+          grants: grantsOf(detail),
         });
       })
       .catch(() => {
@@ -101,6 +109,7 @@ export function useSaleIssue(saleId: string, given?: SaleNumber, box?: BoxSaleIs
       // The platform's print-job read is what shows the credit-voucher block;
       // the box lane does not carry it, so nothing pretends it did.
       printJobs: null,
+      grants: null,
     };
     return given ? { ...fromBox, number: given } : fromBox;
   }
@@ -155,11 +164,12 @@ function BandCodes({ bands }: { bands: readonly ApiSaleBand[] }) {
   );
 }
 
-function CreditGrantRow({ voucher: grant, index }: { voucher: CreditGrant; index: number }) {
+function CreditGrantRow({ voucher: grant, index, qrCode }: { voucher: CreditGrant; index: number; qrCode?: string | null }) {
   const isCredit = grant.type === 'fnb_credit';
   return (
     <div className="flex items-center gap-4 bg-background border rounded-xl p-3 shrink-0">
-      <QrCode seed={grant.id} className="w-16 h-16" />
+      {/* S2-14a — an F&B credit row shows its wallet's ONE QR, the one its voucher printed. */}
+      <QrCode seed={qrCode ?? grant.id} className="w-16 h-16" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
           {isCredit ? (
@@ -234,6 +244,9 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }
    * read carries such a job.
    */
   const platformPrintsCredit = reportsCreditVoucher(issue.printJobs ?? []);
+  /** The i-th grant row's place among the F&B-credit rows — the platform's person order. */
+  const creditIndexOf = (i: number): number =>
+    sale.creditGrants.slice(0, i).filter((g) => g.type === 'fnb_credit').length;
 
   return (
     <div className="flex flex-col h-full animate-in zoom-in-95 duration-500">
@@ -348,7 +361,12 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }
               <ScrollArea className="flex-1 -mx-2 px-2">
                 <div className="space-y-3">
                   {sale.creditGrants.map((v, i) => (
-                    <CreditGrantRow key={v.id} voucher={v} index={i} />
+                    <CreditGrantRow
+                      key={v.id}
+                      voucher={v}
+                      index={i}
+                      qrCode={v.type === 'fnb_credit' ? walletQrFor(issue.grants, creditIndexOf(i)) : null}
+                    />
                   ))}
                 </div>
               </ScrollArea>

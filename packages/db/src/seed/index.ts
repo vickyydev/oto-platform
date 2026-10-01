@@ -34,6 +34,7 @@ import { closeDb, getDb, type Db } from '../index';
 import { reconcileAppBranches } from '../schema/otoapp';
 import { seedMenu } from './menu';
 import { seedSupervision } from './supervision';
+import { seedWalletPolicies } from './wallet';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
 import * as s from '../schema/index';
 
@@ -1588,6 +1589,9 @@ export async function seed(db: Db = getDb()): Promise<void> {
   // S2-13: every branch's supervision config (bands, confirmations, drop-off
   // pricing) and the park's nanny roster.
   await seedSupervision(db, operatorId);
+
+  // S2-14a: every branch's wallet policy (expiry, the offline cap, unused prepaid).
+  await seedWalletPolicies(db);
 
   console.log(
     'Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park\'s printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.',
