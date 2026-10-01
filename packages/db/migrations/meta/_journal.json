@@ -302,6 +302,13 @@
       "when": 1790805057588,
       "tag": "0042_occupancy_fact",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1790827823598,
+      "tag": "0043_checkin_supervision",
+      "breakpoints": true
     }
   ]
 }

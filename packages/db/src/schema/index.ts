@@ -20,3 +20,6 @@ export * from './promo';
 export * from './booth';
 // The facts (S2-12 round 4): read from everything above, written by jobs.
 export * from './analytics';
+// Child check-in and supervision (S2-13): after the sales ledger, whose sale,
+// band and refund a stay and its release point at.
+export * from './checkin';

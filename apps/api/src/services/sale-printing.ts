@@ -4,10 +4,12 @@ import {
   band,
   boxCommand,
   branch,
+  checkin,
   child,
   device,
   employee,
   member,
+  nanny,
   operator,
   paymentAttempt,
   printJob,
@@ -24,6 +26,7 @@ import {
   reprintRootOf,
   salePrintDocumentOf,
   salePrintRequests,
+  supervisionBadgeOf,
   type PrintKind,
   type SalePrintRequest,
   type SalePrintSnapshot,
@@ -435,6 +438,60 @@ export async function routeSalePrinting(
   }
 }
 
+/**
+ * S2-13 — THE KIDS BANDS "CHECK IN NOW" ISSUES, queued after the sale closed.
+ *
+ * Finalisation leaves a supervised child's band for the check-in choice
+ * (`bands.ts`, `supervisedCheckinsOf`), so the receipt and the other bands are
+ * already queued; these are the supervised children's bands alone, one
+ * `kids_wristband` job each, written exactly as finalisation writes its own
+ * (`writeJob`). The prototype dispatched them the same way, by themselves
+ * (`pages/Till.tsx:handleCheckInGroupNow`, `braceletPrintJobs`).
+ *
+ * Under a savepoint, like `routeSalePrinting`: a print that cannot be queued
+ * never undoes the check-in — the child is in the park with a band minted, and
+ * the note says to reprint from History.
+ */
+export async function queueCheckinBandPrints(
+  tx: Tx,
+  saleRow: SaleRow,
+  bandIds: readonly string[],
+  opts: { actorAccountId: string; actionId?: string | null; requestId?: string; now?: Date },
+): Promise<{ jobs: SalePrintJobView[]; notes: string[] }> {
+  const now = opts.now ?? new Date();
+  if (bandIds.length === 0) return { jobs: [], notes: [] };
+  try {
+    return await tx.transaction(async (sp) => {
+      const [stationRow] = await sp.select().from(station).where(eq(station.id, saleRow.stationId)).limit(1);
+      if (!stationRow?.boxId) {
+        return { jobs: [], notes: ['Bands not printed — this station is not attached to a box'] };
+      }
+      const scope: JobScope = {
+        operatorId: saleRow.operatorId,
+        branchId: saleRow.branchId,
+        saleId: saleRow.id,
+        stationRow,
+        actorAccountId: opts.actorAccountId,
+        actionId: opts.actionId ?? newId(),
+        requestId: opts.requestId,
+        now,
+      };
+      const jobs: SalePrintJobView[] = [];
+      const notes: string[] = [];
+      for (const [index, bandId] of bandIds.entries()) {
+        const job = await writeJob(sp, scope, { kind: 'kids_wristband', subjectType: 'band', subjectId: bandId }, index);
+        jobs.push(job);
+        const note = noteFor(job);
+        if (note) notes.push(note);
+        await sp.update(band).set({ printedJobId: job.id, updatedAt: now }).where(eq(band.id, bandId));
+      }
+      return { jobs, notes };
+    });
+  } catch {
+    return { jobs: [], notes: ['Bands could not be queued for printing — reprint them from History'] };
+  }
+}
+
 function prepStationOf(line: SaleLineRow): string | null {
   const payload = (line.payload ?? {}) as { prepStation?: string };
   return payload.prepStation ?? null;
@@ -752,9 +809,20 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
       allergies: child.allergies,
       medicalNotes: child.medicalNotes,
       dietary: child.dietary,
+      // S2-13 — a supervised child's band: the stay it was issued for, and
+      // the nanny assigned (R-50, the badge and the name now print).
+      stay: {
+        service: checkin.service,
+        childName: checkin.childName,
+        allergies: checkin.allergies,
+        foodRestrictions: checkin.foodRestrictions,
+      },
+      nannyName: nanny.name,
     })
     .from(band)
     .leftJoin(child, eq(child.id, band.childId))
+    .leftJoin(checkin, eq(checkin.bandId, band.id))
+    .leftJoin(nanny, eq(nanny.id, checkin.nannyId))
     .where(eq(band.saleId, saleRow.id))
     .orderBy(asc(band.createdAt), asc(band.id));
   return {
@@ -787,16 +855,37 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
       tenderedSatang: a.tenderedSatang,
       changeSatang: a.changeSatang,
     })),
-    bands: bandRows.map(({ band: b, childName, allergies, medicalNotes, dietary }) => ({
-      id: b.id,
-      kind: b.kind,
-      code: b.code,
-      saleLineId: b.saleLineId,
-      childName: b.childId ? childName : null,
-      allergies: b.childId ? allergies : null,
-      medicalNotes: b.childId ? medicalNotes : null,
-      dietary: b.childId ? dietary : null,
-    })),
+    bands: bandRows.map(({ band: b, childName, allergies, medicalNotes, dietary, stay, nannyName }) => {
+      // A supervised child's band reads what the guardian told the counter for
+      // THIS stay — the check-in's snapshot — and falls back to the saved
+      // record for anything the stay left blank. A walk-in whose guardian left
+      // no number has no saved record, and the stay is all there is.
+      const badge = stay?.service ? supervisionBadgeOf(stay.service) : null;
+      if (b.kind === 'kid' && stay?.childName) {
+        return {
+          id: b.id,
+          kind: b.kind,
+          code: b.code,
+          saleLineId: b.saleLineId,
+          childName: stay.childName,
+          allergies: stay.allergies ?? (b.childId ? allergies : null),
+          medicalNotes: b.childId ? medicalNotes : null,
+          dietary: stay.foodRestrictions ?? (b.childId ? dietary : null),
+          supervisionBadge: badge,
+          nannyName: badge === 'NANNY' ? (nannyName ?? null) : null,
+        };
+      }
+      return {
+        id: b.id,
+        kind: b.kind,
+        code: b.code,
+        saleLineId: b.saleLineId,
+        childName: b.childId ? childName : null,
+        allergies: b.childId ? allergies : null,
+        medicalNotes: b.childId ? medicalNotes : null,
+        dietary: b.childId ? dietary : null,
+      };
+    }),
     orderChildren: await orderChildren(db, saleRow),
     note: saleRow.note,
   };

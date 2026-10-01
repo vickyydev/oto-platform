@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNull, like } from 'drizzle-orm';
-import { band, bandEvent, child, saleLine, visitChild, type sale } from '@oto/db';
+import { band, bandEvent, checkin, child, saleLine, visitChild, type sale } from '@oto/db';
 import {
   BAND_CODE_BODY_LENGTH,
   BAND_CODE_SIGNATURE_LENGTH,
@@ -116,41 +116,101 @@ export interface MintBandsResult {
  * @throws when there is no key or the station has no code prefix; the caller
  *   decides whether that stops anything (finalisation: it does not).
  */
+/**
+ * S2-13 — THE SUPERVISED CHILDREN'S LINES, which finalisation leaves alone.
+ *
+ * A drop-off or nanny child's cart line is minted by the till under the id of
+ * its `pos.checkin` row (`schema/checkin.ts`), so its sale lines carry
+ * `cart_line_id = checkin.id`. Those children's bands wait for the check-in
+ * choice the prototype makes after payment (`pages/Till.tsx:finalizeSale`,
+ * which prints only the non-drop-off kids): "Check in now" mints them through
+ * this same function with `checkins`, "Leave as booked" mints nothing.
+ */
+async function supervisedCheckinsOf(
+  db: Exec,
+  operatorId: string,
+  lines: readonly SaleLineRow[],
+): Promise<Map<string, string | null>> {
+  const cartLineIds = [...new Set(lines.map((l) => l.cartLineId).filter((id): id is string => !!id))];
+  if (cartLineIds.length === 0) return new Map();
+  const rows = await db
+    .select({ id: checkin.id, childId: checkin.childId })
+    .from(checkin)
+    .where(and(eq(checkin.operatorId, operatorId), inArray(checkin.id, cartLineIds)));
+  return new Map(rows.map((r) => [r.id, r.childId]));
+}
+
+export interface MintSaleBandsOptions {
+  /**
+   * S2-13 — mint the bands of THESE supervised children and nothing else:
+   * one kids band on each one's line, named for its child. Idempotent per
+   * line — a line that already has its band is skipped.
+   */
+  checkins?: readonly { id: string; childId: string | null }[];
+}
+
 export async function mintSaleBands(
   tx: Tx,
   saleRow: typeof sale.$inferSelect,
   stationPrefix: string,
   scope: { stationId: string | null; boxId: string | null; now: Date },
+  options: MintSaleBandsOptions = {},
 ): Promise<MintBandsResult> {
   const key = currentBandKey();
   if (!key) throw new BandKeyMissingError();
-  const lines = await tx
+  const allLines = await tx
     .select()
     .from(saleLine)
     .where(eq(saleLine.saleId, saleRow.id))
     .orderBy(asc(saleLine.lineNo));
-  const existing = await tx
+  const allExisting = await tx
     .select()
     .from(band)
     .where(eq(band.saleId, saleRow.id))
     .orderBy(asc(band.createdAt), asc(band.id));
+
+  const supervised = await supervisedCheckinsOf(tx, saleRow.operatorId, allLines);
+  const isSupervised = (line: SaleLineRow): boolean => !!line.cartLineId && supervised.has(line.cartLineId);
+  const requested = options.checkins ? new Map(options.checkins.map((c) => [c.id, c.childId])) : null;
+  // The lines this call owes bands for: the named check-ins' lines, or every
+  // line that is NOT a supervised child's.
+  const lines = requested
+    ? allLines.filter((l) => !!l.cartLineId && requested.has(l.cartLineId))
+    : allLines.filter((l) => !isSupervised(l));
+  const lineIds = new Set(lines.map((l) => l.id));
+  const existing = allExisting.filter((b) => (b.saleLineId ? lineIds.has(b.saleLineId) : !requested));
   const plan = planBands(lines);
   const have = { kid: existing.filter((b) => b.kind === 'kid').length, adult: existing.filter((b) => b.kind === 'adult').length };
   const seen = { kid: 0, adult: 0 };
-  const owed = plan.filter((p) => {
-    seen[p.kind] += 1;
-    return seen[p.kind] > have[p.kind];
-  });
-  if (owed.length === 0) return { bands: existing, minted: [] };
+  const owed = requested
+    ? plan.filter((p) => !existing.some((b) => b.saleLineId === p.saleLineId && b.kind === p.kind))
+    : plan.filter((p) => {
+        seen[p.kind] += 1;
+        return seen[p.kind] > have[p.kind];
+      });
+  if (owed.length === 0) return { bands: allExisting, minted: [] };
 
-  const bandedChildren = new Set(existing.map((b) => b.childId).filter((id): id is string => !!id));
-  const children = (await visitChildrenOf(tx, saleRow.visitId)).filter((id) => !bandedChildren.has(id));
+  // A supervised child's band is named by its check-in; every other kids band
+  // takes the visit's children in order — never one of the supervised ones,
+  // whose bands are theirs to mint at check-in.
+  const supervisedChildren = new Set([...supervised.values()].filter((id): id is string => !!id));
+  const bandedChildren = new Set(allExisting.map((b) => b.childId).filter((id): id is string => !!id));
+  const children = requested
+    ? []
+    : (await visitChildrenOf(tx, saleRow.visitId)).filter(
+        (id) => !bandedChildren.has(id) && !supervisedChildren.has(id),
+      );
 
   const minted: BandRow[] = [];
   let at = scope.now.getTime();
   for (const planned of owed) {
     const id = newId();
-    const childId = planned.kind === 'kid' ? (children.shift() ?? null) : null;
+    const childId =
+      planned.kind !== 'kid'
+        ? null
+        : requested
+          ? (planned.cartLineId ? (requested.get(planned.cartLineId) ?? null) : null)
+          : (children.shift() ?? null);
     const [row] = await tx
       .insert(band)
       .values({
@@ -183,7 +243,7 @@ export async function mintSaleBands(
     });
     minted.push(row);
   }
-  return { bands: [...existing, ...minted], minted };
+  return { bands: [...allExisting, ...minted], minted };
 }
 
 /** No key, so no band. The sale still finalises; the answer says why no band printed. */

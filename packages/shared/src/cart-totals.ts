@@ -549,13 +549,24 @@ export interface CartTotalsOptions {
  * modelled — `TicketCartLine` carries `serviceFee` and `foodProvision` but no
  * drop-off block, because drop-off is S2-13's ticket.
  *
- * So S2-13 picks one, and it is a decision, not a patch: either carry
+ * So S2-13 picked one, and it is a decision, not a patch: either carry
  * `lengthChosen` onto the line and exempt an unpriced drop-off line here the
  * way promo lines are exempt, or keep unpriced lines out of the cart that is
  * totalled until the length is chosen. What it must NOT do is reach for
  * `staleLines: 'trust_stored'` — that is a diagnostic, it re-derives every tax
  * base from `ctx` anyway, and on an unpriced line it would charge the guest for
  * play time the till is showing as ฿0.
+ *
+ * SETTLED (S2-13, plan docs/progress/plans/checkin/PLAN.md §2.2): the second.
+ * A drop-off line ENTERS the cart only once its length is chosen
+ * (`dropOffLineEntersCart` in `supervision.ts`); until then it is on the
+ * till's screen and in no quote and no sale — the till's sale payload builder
+ * (`apps/pos/src/api/sales.ts`, `buildCartPayload`) leaves it out, and the
+ * platform is not asked to quote while one is on screen (`unquotableReason`).
+ * The till's own on-screen total still re-derives it at ฿0 and names it
+ * stale, which is display, not a price. This function is therefore unchanged
+ * and still refuses every stale line it is handed — the platform is never
+ * handed an unpriced drop-off line.
  *
  * AND THE LARGER POINT, FOR WHOEVER BUILDS THE CART (S2-09a), so it is not
  * rediscovered: RULINGS 3 AND 4 DECIDE WHICH DATE IS READ, BUT WHAT ACTUALLY

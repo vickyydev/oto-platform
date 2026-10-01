@@ -1,9 +1,12 @@
 import { useMemo } from 'react';
 import { CartLine, CustomerTier, TicketType, DropOffServiceType, SelectedAddOn, AddOnVariantQty } from '@/types';
-import { getTicketTypes, getNannyRoster, getDropOffPricing, getAddOns } from '@/mockApi';
+import { getTicketTypes, getDropOffPricing, getAddOns } from '@/mockApi';
+import type { ApiNanny } from '@/api/checkin';
+import { useBranch } from '@/branch/BranchContext';
 import { getInventoryItem } from '@/store/catalogStore';
 import { priceForTier, setAddOnQty, setAddOnVariants } from '@/lib/pricing';
 import { resolveDropOffPricing } from '@/lib/dropoff';
+import { useNannyRoster } from '@/lib/nannyRoster';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -42,6 +45,15 @@ interface DropOffLineConfigProps {
    * Lets staff one-tap "same nanny as the others" when configuring a sibling.
    */
   siblingNanny?: { id: string; name: string };
+  /**
+   * S2-13 — the park's nanny roster, from the platform (`GET /checkin/config`):
+   * who is on shift and how many children each already covers. The prototype
+   * read its in-memory roster here; a nanny picked now is a real roster row the
+   * check-in names and the band prints. A screen that passes none gets the
+   * platform's roster read here (`useNannyRoster`), as the prototype read its
+   * own — so the mobile till can pick a nanny too.
+   */
+  roster?: readonly ApiNanny[];
   onBackToGrid: () => void;
   onDone: () => void;
 }
@@ -62,9 +74,12 @@ export function DropOffLineConfig({
   onUpdateExtras,
   onAssignNannyToAll,
   siblingNanny,
+  roster: providedRoster,
   onBackToGrid,
   onDone,
 }: DropOffLineConfigProps) {
+  const { branch } = useBranch();
+  const roster = useNannyRoster(branch.id, providedRoster);
   const tickets = useMemo(() => getTicketTypes(), []);
   const pricing = useMemo(() => resolveDropOffPricing(getDropOffPricing()), []);
   const allAddOns = useMemo(() => getAddOns(), []);
@@ -95,9 +110,8 @@ export function DropOffLineConfig({
     socksPrice * line.socks +
     line.addOns.reduce((sum, a) => sum + a.price * a.quantity, 0);
   const ownTotal = priceForTier(line.ticketType, tier) + extrasTotal;
-  // Exclude this child's own pre-assignment from the load so her own nanny isn't
-  // counted against herself.
-  const roster = useMemo(() => getNannyRoster(d.checkInId), [d.checkInId]);
+  // The roster counts children already in the park; this child is not checked
+  // in yet, so her own nanny is never counted against herself.
 
   const lengthChosen = d.lengthChosen;
   const nannyMissing = d.service === 'nanny' && !d.nannyId;
@@ -343,9 +357,13 @@ export function DropOffLineConfig({
                   </span>
                 </div>
               ) : (
+                // The line's OWN fee (the shared law's figure): the flat fee for
+                // drop-off, nothing for a child who opted in at 'none' (R-86).
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Drop-off service</span>
-                  <span className="tabular-nums">฿{pricing.oneTimeFeeTHB}</span>
+                  <span className="text-muted-foreground">
+                    {d.service === 'none' ? 'Supervision opt-in · no fee' : 'Drop-off service'}
+                  </span>
+                  <span className="tabular-nums">฿{d.serviceFeeTHB}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold pt-1.5 border-t">

@@ -83,6 +83,15 @@ export interface SalePrintBand {
   allergies: string | null;
   medicalNotes: string | null;
   dietary: string | null;
+  /**
+   * S2-13 — the supervision badge of a dropped-off or nanny-supervised child,
+   * and the nanny assigned. Configured on the kids band template since the
+   * prototype and never printed by it (R-50); printed now. Absent on every
+   * band that is not a supervised child's, and on a box's offline snapshot
+   * until round 4 carries it.
+   */
+  supervisionBadge?: 'DROP-OFF' | 'NANNY' | null;
+  nannyName?: string | null;
 }
 
 /** A child on the order, for the kitchen's allergy line. */
@@ -160,6 +169,9 @@ export interface SaleBandDocument {
   duration?: string;
   dietaryRequirement?: string;
   allergy?: string;
+  /** S2-13 — the badge on a supervised child's kids band. The template's own field names (`BandData`). */
+  supervisionMode?: 'DROP-OFF' | 'NANNY';
+  assignedNannyName?: string;
   bandCode?: string;
   shortCode?: string;
 }
@@ -350,6 +362,10 @@ export function saleBandDocument(snapshot: SalePrintSnapshot, band: SalePrintBan
     duration,
     dietaryRequirement: band.kind === 'kid' ? band.dietary?.trim() || undefined : undefined,
     allergy,
+    ...(band.kind === 'kid' && band.supervisionBadge ? { supervisionMode: band.supervisionBadge } : {}),
+    ...(band.kind === 'kid' && band.supervisionBadge && band.nannyName?.trim()
+      ? { assignedNannyName: band.nannyName.trim() }
+      : {}),
     bandCode: band.code,
     shortCode: bandShortCode(band.code) ?? undefined,
   };

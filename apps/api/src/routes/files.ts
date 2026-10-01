@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { and, eq } from 'drizzle-orm';
-import { account, child, fileObject, member, type Db } from '@oto/db';
+import { account, checkin, child, fileObject, guardian, member, registration, release, type Db } from '@oto/db';
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
@@ -53,6 +53,7 @@ async function checkOwnerAccess(
   ownerEntityType: string,
   ownerEntityId: string,
   mode: 'read' | 'write',
+  db: Db,
 ): Promise<void> {
   switch (ownerEntityType) {
     case 'account': {
@@ -64,6 +65,18 @@ async function checkOwnerAccess(
     case 'member':
     case 'child': {
       await req.requirePermission(mode === 'read' ? 'pos:member:read' : 'pos:member:update');
+      return;
+    }
+    /**
+     * S2-13 — the check-in photos (plan §2.1, OD-C2): the child-and-guardian
+     * photo on a registration, an authorised collector's, a pickup's. Staff
+     * only, at the park the stay is at, behind `pos:checkin:*`.
+     */
+    case 'registration':
+    case 'guardian':
+    case 'release': {
+      const branchId = await checkinOwnerBranch(db, auth.operatorId, ownerEntityType, ownerEntityId);
+      await req.requirePermission(mode === 'read' ? 'pos:checkin:read' : 'pos:checkin:update', { branchId });
       return;
     }
     default:
@@ -92,10 +105,49 @@ async function checkOwnerAccess(
  * A child carries no `operator_id` of its own; its tenancy is its guardian's,
  * so the join is the check.
  */
+/**
+ * The park a check-in photo's owner belongs to, inside the caller's operator —
+ * 404 for anybody else's, for `assertOwnerInOperator`'s reason. A guardian and
+ * a release reach their branch through the registration and the stay.
+ */
+async function checkinOwnerBranch(
+  db: Db,
+  operatorId: string,
+  ownerEntityType: 'registration' | 'guardian' | 'release',
+  ownerEntityId: string,
+): Promise<string> {
+  let row: { branchId: string; operatorId: string } | undefined;
+  if (ownerEntityType === 'registration') {
+    [row] = await db
+      .select({ branchId: registration.branchId, operatorId: registration.operatorId })
+      .from(registration)
+      .where(eq(registration.id, ownerEntityId))
+      .limit(1);
+  } else if (ownerEntityType === 'guardian') {
+    [row] = await db
+      .select({ branchId: registration.branchId, operatorId: registration.operatorId })
+      .from(guardian)
+      .innerJoin(registration, eq(registration.id, guardian.registrationId))
+      .where(eq(guardian.id, ownerEntityId))
+      .limit(1);
+  } else {
+    [row] = await db
+      .select({ branchId: checkin.branchId, operatorId: checkin.operatorId })
+      .from(release)
+      .innerJoin(checkin, eq(checkin.id, release.checkinId))
+      .where(eq(release.id, ownerEntityId))
+      .limit(1);
+  }
+  if (!row || row.operatorId !== operatorId) throw errors.notFound(`No such ${ownerEntityType}`);
+  return row.branchId;
+}
+
+const CHECKIN_OWNERS = new Set(['registration', 'guardian', 'release']);
+
 async function assertOwnerInOperator(
   db: Db,
   operatorId: string,
-  ownerEntityType: 'account' | 'member' | 'child',
+  ownerEntityType: 'account' | 'member' | 'child' | 'registration' | 'guardian' | 'release',
   ownerEntityId: string,
 ): Promise<void> {
   const notFound = (): never => {
@@ -130,6 +182,11 @@ async function assertOwnerInOperator(
       if (!row) notFound();
       return;
     }
+    case 'registration':
+    case 'guardian':
+    case 'release':
+      await checkinOwnerBranch(db, operatorId, ownerEntityType, ownerEntityId);
+      return;
   }
 }
 
@@ -182,7 +239,7 @@ export async function fileRoutes(app: App): Promise<void> {
           /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
           id: ClientIdSchema.optional(),
           contentType: z.string().min(1),
-          ownerEntityType: z.enum(['account', 'member', 'child']),
+          ownerEntityType: z.enum(['account', 'member', 'child', 'registration', 'guardian', 'release']),
           ownerEntityId: z.string().uuid(),
           filename: z.string().optional(),
         }),
@@ -190,7 +247,7 @@ export async function fileRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const auth = req.requireAuth();
-      await checkOwnerAccess(req, auth, req.body.ownerEntityType, req.body.ownerEntityId, 'write');
+      await checkOwnerAccess(req, auth, req.body.ownerEntityType, req.body.ownerEntityId, 'write', app.db);
       await assertOwnerInOperator(
         app.db,
         auth.operatorId,
@@ -279,12 +336,31 @@ export async function fileRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const [row] = await app.db.select().from(fileObject).where(eq(fileObject.id, req.params.id)).limit(1);
       if (!row || row.operatorId !== auth.operatorId) throw errors.notFound('File not found');
-      await checkOwnerAccess(req, auth, row.ownerEntityType, row.ownerEntityId, 'read');
+      await checkOwnerAccess(req, auth, row.ownerEntityType, row.ownerEntityId, 'read', app.db);
       const storage = app.fileStorage;
       if (!storage) throw notConfigured();
       const url = await withStorageLog(req, 'presign download', () =>
         storage.presignedGet(row.objectKey),
       );
+      /**
+       * R-94 — every read of a check-in photo is ACCESS-LOGGED: a child's
+       * photo with the guardian is the most sensitive thing the park keeps,
+       * and who looked at it, when, is part of the record.
+       */
+      if (CHECKIN_OWNERS.has(row.ownerEntityType)) {
+        await withTx(app.db, opCtx(req), 'file.read', async (tx) => {
+          await audit.record(tx, {
+            actorAccountId: auth.accountId,
+            operatorId: auth.operatorId,
+            branchId: auth.branchId,
+            action: 'file.read',
+            entityType: 'file_object',
+            entityId: row.id,
+            after: { ownerEntityType: row.ownerEntityType, ownerEntityId: row.ownerEntityId },
+            requestId: req.id,
+          });
+        });
+      }
       return { url, contentType: row.contentType };
     },
   );

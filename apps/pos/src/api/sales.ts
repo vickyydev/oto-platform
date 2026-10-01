@@ -9,6 +9,7 @@ import type {
 } from '@/types';
 import {
   computeTicketCartTotals,
+  dropOffLineEntersCart,
   newId,
   type PaymentAttemptView,
   type TaxBreakdown as EngineTaxBreakdown,
@@ -755,7 +756,11 @@ export function buildCartPayload(
 ): SaleCartPayload {
   const rate = todayRateMode();
   const mode = options.mode ?? rate.mode;
-  const cart = engineCart(lines, discounts, manualDiscounts, {
+  // S2-13 — THE CART RULE (`dropOffLineEntersCart`, the cart-totals.ts note): a
+  // drop-off line enters what the platform is sent only once its play length
+  // is chosen. Until then it is on the screen and nowhere else — never quoted,
+  // never sold, never trusted at the till's ฿0.
+  const cart = engineCart(lines.filter(dropOffLineEntersCart), discounts, manualDiscounts, {
     mode,
     ...(options.config ? { config: options.config } : {}),
   });

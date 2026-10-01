@@ -12,13 +12,19 @@ import { Input } from '@/components/ui/input';
 import { ChildDobPicker } from '@/components/shared/ChildDobPicker';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CheckIn, DropOffServiceType } from '@/types';
-import {
-  getRegistrationsAwaitingCheckIn,
-  addChildToRegistration,
-  type RegistrationGroup,
-} from '@/mockApi';
-import { useOperator } from '@/auth/OperatorContext';
+import { useBranch } from '@/branch/BranchContext';
+import { toast } from '@/hooks/use-toast';
+import { apiCheckinToCheckIn, checkinApi, TILL_NOT_LINKED, type ApiRegistration } from '@/api/checkin';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { Baby, AlertTriangle, UserPlus, Phone, X, CheckCircle2, HandHeart, UserCheck } from 'lucide-react';
+
+/** One waiting registration as the picker lists it (prototype `RegistrationGroup`). */
+interface RegistrationGroup {
+  registrationId: string;
+  parentName: string;
+  phone: string;
+  children: CheckIn[];
+}
 
 // What a freshly-added sibling should become. A drop-off child is always a named
 // individual attaching a registered drop-off line (Drop-off or Nanny service);
@@ -48,16 +54,62 @@ export function AddDropOffModal({
   attachedCheckInIds,
   onAttach,
 }: AddDropOffModalProps) {
-  const { operator } = useOperator();
-  const operatorName = operator?.name ?? 'Unknown';
+  const { branch } = useBranch();
 
-  // Re-read the (mutable, in-memory) registration list each time the modal opens
-  // and after adding a sibling, via a bump counter.
+  /**
+   * S2-13 — the registrations waiting to be checked in are the platform's
+   * (`GET /checkin/registrations`), re-read each time the modal opens and after
+   * a sibling is added, via a bump counter — the prototype read its in-memory
+   * list the same way.
+   */
   const [bump, setBump] = useState(0);
+  const [registrations, setRegistrations] = useState<ApiRegistration[]>([]);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    // The park in the PLATFORM's id, never the catalogue slug (finding R1);
+    // a till with no platform branch is told so, in plain words, once.
+    const platformBranchId = apiBranchIdForSlug(branch.id);
+    if (!platformBranchId) {
+      setRegistrations([]);
+      toast({
+        title: "Couldn't load the waiting bookings",
+        description: TILL_NOT_LINKED,
+        variant: 'destructive',
+      });
+      return;
+    }
+    let live = true;
+    checkinApi
+      .awaiting(platformBranchId)
+      .then((res) => {
+        if (live) setRegistrations(res.registrations);
+      })
+      .catch((err: unknown) => {
+        if (!live) return;
+        setRegistrations([]);
+        toast({
+          title: "Couldn't load the waiting registrations",
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+      });
+    return () => {
+      live = false;
+    };
+  }, [open, bump, branch.id]);
   const groups = useMemo<RegistrationGroup[]>(
-    () => (open ? getRegistrationsAwaitingCheckIn() : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump re-reads the in-memory registration list after a sibling is added (see above)
-    [open, bump],
+    () =>
+      registrations.map((reg) => ({
+        registrationId: reg.id,
+        parentName: reg.guardianName,
+        phone: reg.guardianPhone ?? '',
+        children: reg.children
+          .filter((c) => c.status === 'registered')
+          .map((c) => apiCheckinToCheckIn(c, reg))
+          .sort((a, b) => a.childName.localeCompare(b.childName)),
+      })),
+    [registrations],
   );
 
   // Inline add-sibling form, scoped to one registration at a time.
@@ -85,23 +137,44 @@ export function AddDropOffModal({
 
   const attached = new Set(attachedCheckInIds);
 
-  const handleAddSibling = (registrationId: string) => {
+  const handleAddSibling = async (registrationId: string) => {
     const trimmed = name.trim();
     // A drop-off child is a named individual — name + age are required so the
     // consent record is never missing details.
-    if (!trimmed || !age.trim()) return;
-    const created = addChildToRegistration(
-      registrationId,
-      { name: trimmed, age: Number(age) || 0, dateOfBirth, details },
-      { operatorName },
-    );
-    if (!created) return;
-    setAddingFor(null);
-    resetForm();
-    setBump((b) => b + 1);
-    // Attach the new child straight away (with the chosen service) so it lands in
-    // the sale.
-    onAttach([created], kind);
+    if (!trimmed || !age.trim() || saving) return;
+    // The sibling is written to the registration on the platform (consent is
+    // the registration's), under an id the till minted — the drop-off line
+    // takes the same id, so the sale line names this stay.
+    const checkinId = checkinApi.newId();
+    setSaving(true);
+    try {
+      const reg = await checkinApi.addChildren(registrationId, [
+        {
+          checkinId,
+          name: trimmed,
+          ageYears: Math.max(0, Math.round(Number(age) || 0)),
+          dateOfBirth: dateOfBirth ?? null,
+          service: kind,
+          allergies: details.trim() || null,
+        },
+      ]);
+      const created = reg.children.find((c) => c.id === checkinId);
+      if (!created) return;
+      setAddingFor(null);
+      resetForm();
+      setBump((b) => b + 1);
+      // Attach the new child straight away (with the chosen service) so it lands in
+      // the sale.
+      onAttach([apiCheckinToCheckIn(created, reg)], kind);
+    } catch (err) {
+      toast({
+        title: "Couldn't add this child",
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const attachGroup = (group: RegistrationGroup) => {
@@ -261,8 +334,8 @@ export function AddDropOffModal({
                           <Button
                             type="button"
                             size="sm"
-                            disabled={!name.trim() || !age.trim()}
-                            onClick={() => handleAddSibling(group.registrationId)}
+                            disabled={!name.trim() || !age.trim() || saving}
+                            onClick={() => void handleAddSibling(group.registrationId)}
                           >
                             Add &amp; attach
                           </Button>

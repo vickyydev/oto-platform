@@ -41,6 +41,7 @@ import { branchCloneRoutes } from './routes/branch-clone';
 import { menuRoutes } from './routes/menu';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
+import { checkinRoutes } from './routes/checkin';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
 import { boxRoutes } from './routes/box';
@@ -436,6 +437,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(webhookRoutes, { prefix: '/webhooks' });
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
+  // S2-13 — the supervision gate, the consent and the check-in choice (round 1, online).
+  await app.register(checkinRoutes, { prefix: '/checkin' });
   await app.register(opsRoutes, { prefix: '/ops' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a
