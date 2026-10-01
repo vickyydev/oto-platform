@@ -227,7 +227,6 @@ describe('the wallet story, walked end to end: grant → spend → refund → ex
     const saleId = newId();
     const rung = await call(counter, 'POST', '/sales', { id: saleId, stationId: t2!.id, lines: [{ id: newId(), packageId: eatPlay, kids: 1, adults: 1 }] });
     expect(rung.statusCode, JSON.stringify(rung.body)).toBe(200);
-    const owed = rung.body.sale.totals.grossSatang as number;
     const paid = await call(counter, 'POST', `/sales/${saleId}/finalise`, { method: 'cash', kind: 'cash', actionId: newId() });
     expect(paid.statusCode, JSON.stringify(paid.body)).toBe(200);
     expect(paid.body.finalised).toBe(true);
