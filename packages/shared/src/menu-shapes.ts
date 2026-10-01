@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TaxableCategorySchema } from './catalog-shapes';
+import { ProductStockLinkSchema } from './stock';
 
 /**
  * The menu's API contract (SCRUM-232, SCRUM-204).
@@ -143,6 +144,13 @@ export const MenuItemBodySchema = z.object({
   active: z.boolean().default(true),
   /** Shared library groups this item asks, by id (prototype `linkedModifierGroupIds`). */
   modifierGroupIds: z.array(z.string().uuid()).optional(),
+  /**
+   * S2-14b — the stock items that stock this item at the route's branch, one
+   * per size (`variantId` null for an item sold in one size). The list
+   * replaces what was there; an empty list stops tracking stock; absent leaves
+   * the links alone. The prototype's `inventoryItemId`, made real.
+   */
+  stockLinks: z.array(ProductStockLinkSchema).max(24).optional(),
 });
 export type MenuItemBody = z.infer<typeof MenuItemBodySchema>;
 

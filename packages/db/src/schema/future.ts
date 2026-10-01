@@ -215,43 +215,5 @@ export const attendee = pos.table(
 // stored-value ledger, its keys and the branch's wallet policy live in
 // `wallet.ts`.
 
-/** A stocked thing (Sprint 1 `item`) — renamed away from the bare word. */
-export const stockItem = pos.table(
-  'stock_item',
-  {
-    id: idPk(),
-    operatorId: uuid('operator_id').notNull().references(() => operator.id),
-    name: text('name').notNull(),
-    sku: text('sku'),
-    payload: jsonb('payload'),
-    ...timestamps,
-    ...archivedAt,
-  },
-  (t) => [index('stock_item_operator_idx').on(t.operatorId)],
-);
-
-export const stockLocation = pos.table(
-  'stock_location',
-  {
-    id: idPk(),
-    branchId: uuid('branch_id').notNull().references(() => branch.id),
-    name: text('name').notNull(),
-    ...timestamps,
-  },
-  (t) => [index('stock_location_branch_idx').on(t.branchId)],
-);
-
-export const stockLevel = pos.table(
-  'stock_level',
-  {
-    id: idPk(),
-    stockLocationId: uuid('stock_location_id').notNull().references(() => stockLocation.id),
-    stockItemId: uuid('stock_item_id').notNull().references(() => stockItem.id),
-    quantity: integer('quantity').notNull().default(0),
-    ...timestamps,
-  },
-  (t) => [
-    index('stock_level_location_idx').on(t.stockLocationId),
-    index('stock_level_item_idx').on(t.stockItemId),
-  ],
-);
+// `stock_item`, `stock_location` and `stock_level` left with S2-14b (migration
+// 0048): reshaped into the real stock ledger, they live with it in `stock.ts`.

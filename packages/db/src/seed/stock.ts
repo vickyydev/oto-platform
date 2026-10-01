@@ -1,0 +1,334 @@
+/**
+ * Stock (S2-14b round 1) — the prototype's places, items and figures (OD-S2),
+ * opened by a COUNT (OD-S5).
+ *
+ * Every figure is the prototype's own seed,
+ * `imports/oto-pos/artifacts/oto-till/src/store/catalogStore.ts:491-650`: the
+ * three places (Store = bulk, BOH = back of house, FOH = the sell point), and
+ * per stocked size what sits in back of house and at the counter, its low-stock
+ * threshold, its par at the counter, its unit cost, its pack size and its
+ * reorder settings. Nothing starts in bulk, as nothing does there.
+ *
+ * TWO PLACES THE PROTOTYPE AND THE PLATFORM DIFFER, both stated rather than
+ * smoothed over:
+ *
+ *   - The shop's Grip Socks (`MR-SOCKS`) are sold in S, M and L since the
+ *     owner's decision of 2026-09-24; the prototype counts them as one size,
+ *     six at the counter (`catalogStore.ts:585`), a figure with no size to put
+ *     it on. They take the prototype's own per-size grip-sock figures instead
+ *     — S 25, M 40, L 20 (`inv-a-grip-socks`, `:617-621`), the figures the
+ *     plan's OD-S2 names for the socks — with that item's thresholds and pars
+ *     and the shop item's cost and supplier. The ticket add-on's grip socks
+ *     (`AO-GRIPSOCKS`) carry the same figures as their own pool, as in the
+ *     prototype, where the two are separate stock.
+ *   - The prototype's reorder settings are per item, read against the item's
+ *     TOTAL across sizes (`lib/inventory.ts:getReorderAlerts`). A stock item
+ *     here is one size, so each size row carries the item's settings; the
+ *     reorder rule (round 2) reads them per product, across its sizes.
+ *
+ * THE OPENING. Each branch starts from a stock take marked `opening` whose
+ * lines are the counted figures, and the movements those lines write (`count`)
+ * are the first rows of the ledger; each level is written beside its movement,
+ * so a level is the sum of its movements from the first row. Older refunds are
+ * not replayed (OD-S5).
+ *
+ * Runs once per branch: a branch that already has a place is left alone.
+ */
+import { isoDateInTz, newId, satangFromBaht } from '@oto/shared';
+import { and, eq, inArray } from 'drizzle-orm';
+import type { Db } from '../index';
+import * as s from '../schema/index';
+import type { ProductVariant } from '../schema/catalog';
+
+const b = satangFromBaht;
+
+interface Reorder {
+  point: number;
+  leadDays: number;
+  supplier: string;
+  contact?: string;
+  quantity: number;
+}
+
+interface SizeSeed {
+  /** The product size id; absent for a product sold in one size. */
+  variantId?: string;
+  boh: number;
+  foh: number;
+  threshold: number;
+  par?: number;
+}
+
+interface StockSeed {
+  /** The product it stocks, by its seed code (`seed/menu.ts`). */
+  productCode: string;
+  /** The prototype's inventory item name. */
+  name: string;
+  sizes: SizeSeed[];
+  costBaht?: number;
+  pack?: { code: string; label: string; eaches: number };
+  reorder?: Reorder;
+}
+
+const DOZEN = { code: 'dozen', label: 'Dozen', eaches: 12 };
+const CASE24 = { code: 'case', label: 'Case', eaches: 24 };
+const MERCH_CO: Omit<Reorder, 'point' | 'quantity'> = { leadDays: 7, supplier: 'Bangkok Merch Co.', contact: '02-555-0100' };
+const SOCKS_LTD = { supplier: 'Phuket Socks Ltd.', contact: 'socks@pkt.th' };
+const ISLAND_BEV = { leadDays: 2, supplier: 'Island Beverages Co.' };
+
+/** The sizes the seed gives two products, which the prototype counts in sizes (`catalogStore.ts:617`, `:642`). */
+export const STOCK_SIZED_PRODUCTS: Record<string, ProductVariant[]> = {
+  'AO-GRIPSOCKS': [
+    { id: 's', label: 'S' },
+    { id: 'm', label: 'M' },
+    { id: 'l', label: 'L' },
+  ],
+  'FB-SLUSHIE': [
+    { id: 'red', label: 'Red' },
+    { id: 'blue', label: 'Blue' },
+    { id: 'green', label: 'Green' },
+  ],
+};
+
+const STOCK: StockSeed[] = [
+  {
+    productCode: 'MR-TSHIRT',
+    name: 'Oto T-Shirt',
+    sizes: [{ boh: 28, foh: 12, threshold: 8, par: 15 }],
+    costBaht: 120,
+    reorder: { ...MERCH_CO, point: 20, quantity: 48 },
+  },
+  {
+    productCode: 'MR-CAP',
+    name: 'Oto Cap',
+    sizes: [{ boh: 18, foh: 7, threshold: 6, par: 10 }],
+    costBaht: 90,
+    reorder: { ...MERCH_CO, point: 15, quantity: 24 },
+  },
+  {
+    productCode: 'MR-SOCKS',
+    name: 'Grip Socks (Merch)',
+    sizes: [
+      { variantId: 's', boh: 18, foh: 7, threshold: 8, par: 10 },
+      { variantId: 'm', boh: 28, foh: 12, threshold: 8, par: 15 },
+      { variantId: 'l', boh: 14, foh: 6, threshold: 8, par: 10 },
+    ],
+    costBaht: 35,
+    reorder: { ...SOCKS_LTD, leadDays: 5, point: 15, quantity: 120 },
+  },
+  {
+    productCode: 'MR-BOTTLE',
+    name: 'Water Bottle',
+    sizes: [{ boh: 22, foh: 8, threshold: 8, par: 10 }],
+    costBaht: 60,
+    reorder: { leadDays: 10, supplier: 'Bottle House TH', point: 20, quantity: 48 },
+  },
+  { productCode: 'MR-PLUSH', name: 'Oto Mascot Plush', sizes: [{ boh: 14, foh: 4, threshold: 5, par: 8 }], costBaht: 160 },
+  {
+    productCode: 'MR-STICKERS',
+    name: 'Sticker Pack',
+    sizes: [{ boh: 60, foh: 20, threshold: 15, par: 25 }],
+    costBaht: 12,
+    pack: DOZEN,
+  },
+  {
+    productCode: 'MR-KEYRING',
+    name: 'Mascot Keyring',
+    sizes: [{ boh: 0, foh: 0, threshold: 6, par: 8 }],
+    costBaht: 25,
+    reorder: { ...SOCKS_LTD, leadDays: 14, point: 5, quantity: 24 },
+  },
+  { productCode: 'MR-LANYARD', name: 'Old Lanyard (retired)', sizes: [{ boh: 4, foh: 0, threshold: 0 }] },
+  {
+    productCode: 'AO-SOCKS',
+    name: 'Regular Socks',
+    sizes: [{ boh: 80, foh: 20, threshold: 20, par: 30 }],
+    costBaht: 15,
+    pack: DOZEN,
+    reorder: { ...SOCKS_LTD, leadDays: 5, point: 50, quantity: 120 },
+  },
+  {
+    productCode: 'AO-GRIPSOCKS',
+    name: 'Grip Socks',
+    sizes: [
+      { variantId: 's', boh: 18, foh: 7, threshold: 8, par: 10 },
+      { variantId: 'm', boh: 28, foh: 12, threshold: 8, par: 15 },
+      { variantId: 'l', boh: 14, foh: 6, threshold: 8, par: 10 },
+    ],
+    costBaht: 28,
+    pack: DOZEN,
+    reorder: { ...SOCKS_LTD, leadDays: 5, point: 30, quantity: 72 },
+  },
+  { productCode: 'AO-LOCKER', name: 'Locker Rental', sizes: [{ boh: 10, foh: 5, threshold: 3, par: 5 }] },
+  { productCode: 'AO-CUP', name: 'Refillable Drink Cup', sizes: [{ boh: 38, foh: 12, threshold: 10, par: 15 }], costBaht: 65 },
+  { productCode: 'AO-GLOW', name: 'Glow Band', sizes: [{ boh: 60, foh: 20, threshold: 15, par: 20 }] },
+  {
+    productCode: 'FB-WATER',
+    name: 'Bottled Water',
+    sizes: [{ boh: 48, foh: 12, threshold: 12, par: 24 }],
+    costBaht: 12,
+    pack: CASE24,
+    reorder: { ...ISLAND_BEV, point: 30, quantity: 120 },
+  },
+  {
+    productCode: 'FB-SLUSHIE',
+    name: 'Slushie',
+    sizes: [
+      { variantId: 'red', boh: 15, foh: 5, threshold: 5, par: 8 },
+      { variantId: 'blue', boh: 12, foh: 3, threshold: 5, par: 8 },
+      { variantId: 'green', boh: 2, foh: 2, threshold: 5, par: 8 },
+    ],
+    costBaht: 35,
+    reorder: { ...ISLAND_BEV, point: 10, quantity: 48 },
+  },
+];
+
+export interface StockSeedCounts {
+  locations: number;
+  items: number;
+  movements: number;
+}
+
+export async function seedStock(
+  db: Db,
+  scope: { operatorId: string; branchId: string; timezone: string },
+): Promise<StockSeedCounts> {
+  const { operatorId, branchId } = scope;
+  const counts: StockSeedCounts = { locations: 0, items: 0, movements: 0 };
+
+  const codes = STOCK.map((x) => x.productCode);
+  const products = await db
+    .select({ id: s.product.id, code: s.product.code, variants: s.product.variants })
+    .from(s.product)
+    .where(and(eq(s.product.operatorId, operatorId), inArray(s.product.code, codes)));
+  const byCode = new Map(products.map((p) => [p.code!, p]));
+
+  // The two products the prototype counts in sizes get them — once, on a
+  // product that has none yet, so a size a manager has since edited stays.
+  for (const [code, variants] of Object.entries(STOCK_SIZED_PRODUCTS)) {
+    const row = byCode.get(code);
+    if (!row || row.variants.length > 0) continue;
+    await db.update(s.product).set({ variants }).where(eq(s.product.id, row.id));
+    row.variants = variants;
+  }
+
+  const [existing] = await db
+    .select({ id: s.stockLocation.id })
+    .from(s.stockLocation)
+    .where(eq(s.stockLocation.branchId, branchId))
+    .limit(1);
+  if (existing) return counts;
+
+  await db.transaction(async (tx) => {
+    const store = newId();
+    const boh = newId();
+    const foh = newId();
+    await tx.insert(s.stockLocation).values([
+      { id: store, operatorId, branchId, name: 'Store', type: 'bulk' as const },
+      { id: boh, operatorId, branchId, name: 'BOH', type: 'back_of_house' as const },
+      { id: foh, operatorId, branchId, name: 'FOH', type: 'rotation' as const, sellPoint: true },
+    ]);
+    counts.locations = 3;
+
+    const now = new Date();
+    const businessDate = isoDateInTz(now, scope.timezone);
+    const takeId = newId();
+    await tx.insert(s.stockTake).values({
+      id: takeId,
+      operatorId,
+      branchId,
+      status: 'committed',
+      opening: true,
+      committedAt: now,
+      note: 'Opening count — the prototype’s seed figures (OD-S2, OD-S5)',
+    });
+
+    for (const seedItem of STOCK) {
+      const productRow = byCode.get(seedItem.productCode);
+      if (!productRow) continue;
+      const productItems: string[] = [];
+      for (const size of seedItem.sizes) {
+        const variant = size.variantId ? productRow.variants.find((v) => v.id === size.variantId) : undefined;
+        if (size.variantId && !variant) continue;
+        const itemId = newId();
+        productItems.push(itemId);
+        await tx.insert(s.stockItem).values({
+          id: itemId,
+          operatorId,
+          branchId,
+          name: seedItem.name,
+          productId: productRow.id,
+          variantId: size.variantId ?? null,
+          variantLabel: variant?.label ?? null,
+          unitCostSatang: seedItem.costBaht === undefined ? null : b(seedItem.costBaht),
+          lowStockThreshold: size.threshold,
+          parByLocation: size.par === undefined ? {} : { [foh]: size.par },
+          reorderPoint: seedItem.reorder?.point ?? null,
+          reorderQuantity: seedItem.reorder?.quantity ?? null,
+          leadTimeDays: seedItem.reorder?.leadDays ?? null,
+          supplierName: seedItem.reorder?.supplier ?? null,
+          supplierContact: seedItem.reorder?.contact ?? null,
+        });
+        counts.items += 1;
+        if (seedItem.pack) {
+          await tx.insert(s.stockUnit).values({ id: newId(), operatorId, stockItemId: itemId, ...seedItem.pack });
+        }
+        // The opening count: one take line per place, a `count` movement for
+        // what is there, and the level written beside it.
+        for (const [locationId, counted] of [
+          [store, 0],
+          [boh, size.boh],
+          [foh, size.foh],
+        ] as const) {
+          const lineId = newId();
+          await tx.insert(s.stockTakeLine).values({
+            id: lineId,
+            operatorId,
+            stockTakeId: takeId,
+            stockItemId: itemId,
+            stockLocationId: locationId,
+            expectedQuantity: 0,
+            countedQuantity: counted,
+            difference: counted,
+            flagged: false,
+            status: 'adjusted',
+            countedAt: now,
+          });
+          await tx.insert(s.stockLevel).values({
+            id: newId(),
+            stockItemId: itemId,
+            stockLocationId: locationId,
+            quantity: counted,
+          });
+          if (counted === 0) continue;
+          await tx.insert(s.stockMovement).values({
+            id: newId(),
+            operatorId,
+            branchId,
+            stockItemId: itemId,
+            stockLocationId: locationId,
+            kind: 'count',
+            quantity: counted,
+            levelAfter: counted,
+            actionId: `opening:${lineId}`,
+            stockTakeLineId: lineId,
+            reason: 'Opening count',
+            unitCostSatang: seedItem.costBaht === undefined ? null : b(seedItem.costBaht),
+            businessDate,
+            occurredAt: now,
+          });
+          counts.movements += 1;
+        }
+      }
+      // The prototype's "set = stock-tracked" marker on the product: its
+      // one-size item, else its first size (`services/stock.ts`, setProductStockLinks).
+      if (productItems[0]) {
+        await tx
+          .update(s.product)
+          .set({ stockItemId: productItems[0], updatedAt: new Date() })
+          .where(eq(s.product.id, productRow.id));
+      }
+    }
+  });
+  return counts;
+}

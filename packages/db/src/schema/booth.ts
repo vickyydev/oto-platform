@@ -15,7 +15,7 @@ import {
 import { archivedAt, booth, idPk, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
 import { box, station } from './fleet';
-import { stockItem } from './future';
+import { stockItem } from './stock';
 import { voucher, voucherDefinition } from './promo';
 
 // --- The Lucky Wheel (schema `booth`) ---------------------------------------

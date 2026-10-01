@@ -5,6 +5,8 @@ import {
   WALLET_TENDER_CODE,
   WALLET_TENDER_METHOD,
   allocateRefund,
+  businessDate,
+  parseDayStart,
   isoDateInTz,
   newId,
   refundStatusOf,
@@ -25,6 +27,7 @@ import { queueTerminalCommand } from './payments/terminal';
 import { accountNames, refundViewOf, settleRefundSlice, type RefundView } from './refund-slices';
 import { allocateReceipt, saleViewOf, type SaleView } from './sale';
 import { restoreForRefund, walletTenderOf } from './wallet';
+import { restockForRefund } from './stock';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 
 /**
@@ -42,7 +45,9 @@ import { withTx, type Exec, type OpContext, type Tx } from './tx';
  *     until the last satang goes back and then becomes `refunded` — the
  *     `pos.sale` comment's rule, so no other reader of a finalised sale has to
  *     learn a new word;
- *   - which lines go back to stock (`restockLineIds`), recorded for S2-14b.
+ *   - which lines go back to stock (`restockLineIds`) — and, since S2-14b,
+ *     they go back: a refund movement per line, to the place each unit was
+ *     taken from (`restockForRefund`).
  *
  * WHAT THE PLAN ADDS, and each is recorded on the ticket:
  *
@@ -422,6 +427,27 @@ export async function refundSale(
     slices.splice(0, slices.length, ...settled);
   }
 
+  /**
+   * S2-14b — THE STOCK GOES BACK, in this transaction: each line the restock
+   * decision returns, to the place its units left from (the sale's own
+   * movements, read back). Keyed by the sale line, so whichever refund carries
+   * a line, it is put back once. A line sold before the ledger existed took
+   * nothing off a shelf and puts nothing back (OD-S5).
+   */
+  const restockedMovements = await restockForRefund(tx, {
+    operatorId: row.operatorId,
+    branchId: row.branchId,
+    saleId,
+    refundId,
+    saleLineIds: lineEntries.filter((l) => l.restock).map((l) => l.saleLineId),
+    // The trading day the refund falls on, on the sale's own frozen calendar.
+    businessDate: businessDate(now, row.timezone, parseDayStart(row.businessDayStart)),
+    stationId: series.id,
+    actorAccountId: actor.accountId,
+    requestId: actor.requestId ?? null,
+    now,
+  });
+
   const refundedSatang = row.refundedSatang + amount.amountSatang;
   const full = refundedSatang >= row.grossSatang;
   const [after] = await tx
@@ -474,6 +500,11 @@ export async function refundSale(
       approvedByAccountId: actor.accountId,
       slices: slices.map((s) => ({ attemptId: s.attemptId, route: s.route, amountSatang: s.amountSatang, status: s.status })),
       revokedBandIds,
+      restocked: restockedMovements.map((m) => ({
+        stockItemId: m.stockItemId,
+        stockLocationId: m.stockLocationId,
+        quantity: m.quantity,
+      })),
     },
   });
 

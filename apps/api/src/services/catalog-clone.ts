@@ -309,7 +309,8 @@ export async function planBranchClone(
       copiedProductIds.add(row.id);
       plan.products.create.push(label);
       const { id: _id, branchId: _branchId, createdAt: _c, updatedAt: _u, ...rest } = row;
-      writes.products.push({ ...rest, id, operatorId, branchId: targetBranchId });
+      // S2-14b: a stock link is the source branch's shelf; the copy starts untracked.
+      writes.products.push({ ...rest, stockItemId: null, id, operatorId, branchId: targetBranchId });
     }
   }
 
@@ -495,19 +496,32 @@ export async function planBranchClone(
     const sourceRows = await exec
       .select()
       .from(stockLocation)
-      .where(eq(stockLocation.branchId, sourceBranchId));
+      .where(and(eq(stockLocation.branchId, sourceBranchId), isNull(stockLocation.archivedAt)));
     const targetRows = await exec
-      .select({ name: stockLocation.name })
+      .select({ name: stockLocation.name, sellPoint: stockLocation.sellPoint, archivedAt: stockLocation.archivedAt })
       .from(stockLocation)
       .where(eq(stockLocation.branchId, targetBranchId));
     const taken = new Set(targetRows.map((r) => r.name));
+    // One sell point per branch (`stock_location_sell_point_unique`): a target
+    // that already has one keeps it, and the copies come across as storage.
+    let targetHasSellPoint = targetRows.some((r) => r.sellPoint && !r.archivedAt);
     for (const row of sourceRows) {
       if (taken.has(row.name)) {
         plan.stockLocations.exists.push(row.name);
         continue;
       }
       plan.stockLocations.create.push(row.name);
-      writes.stockLocations.push({ id: newId(), branchId: targetBranchId, name: row.name });
+      writes.stockLocations.push({
+        id: newId(),
+        operatorId,
+        branchId: targetBranchId,
+        name: row.name,
+        // S2-14b: the place's kind and whether it is the sell point come with it.
+        type: row.type,
+        sellPoint: row.sellPoint && row.active && !targetHasSellPoint,
+        active: row.active,
+      });
+      if (row.sellPoint && row.active) targetHasSellPoint = true;
     }
   }
 

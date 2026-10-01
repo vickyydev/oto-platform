@@ -1,4 +1,4 @@
-import { inArray, isNotNull, ne, or } from 'drizzle-orm';
+import { eq, inArray, isNotNull, ne, notInArray, or, sql } from 'drizzle-orm';
 import {
   attendee,
   auditLog,
@@ -12,12 +12,17 @@ import {
   memberTierVerification,
   paymentAttempt,
   paymentNotification,
+  purchaseOrder,
+  purchaseOrderLine,
   refund,
   sale,
   saleDiscount,
   saleLine,
   saleTierClaim,
-  stockLevel,
+  stockAttention,
+  stockMovement,
+  stockTake,
+  stockTakeLine,
   visit,
   visitChild,
   voucher,
@@ -25,7 +30,7 @@ import {
   walletEntry,
   walletKey,
 } from '@oto/db';
-import type { Exec } from './tx';
+import type { Exec, Tx } from './tx';
 
 /**
  * "Reset demo data" — S2-01c.
@@ -103,7 +108,13 @@ export type DemoResetCounts = Record<string, number>;
  * statement runs on the caller's transaction handle, so a failure anywhere
  * leaves the deployment exactly as it was rather than half-wiped.
  */
-export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
+export async function resetDemoData(exec: Exec): Promise<DemoResetCounts> {
+  // One transaction of its own (a savepoint inside the caller's), so the stock
+  // ledger's purge flag below is local to it whichever handle the caller holds.
+  return exec.transaction((tx) => resetDemoDataIn(tx));
+}
+
+async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   const counts: DemoResetCounts = {};
 
   // The members the session created. Collected first: the facts below are
@@ -126,6 +137,65 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
    * moved money for (ON DELETE RESTRICT), and a key at its wallet — so the
    * ledger and the keys go first, then the wallets, before anything they name.
    */
+  /**
+   * S2-14b: the stock ledger's day of play, back to the counted opening. A
+   * movement points at the sale line, sale and refund it moved stock for (ON
+   * DELETE RESTRICT), so it goes first. The ledger is append-only by trigger;
+   * the purge flag, local to this transaction, is the one door through it.
+   * What stays is the opening count (OD-S5) — the stock take marked `opening`
+   * and the movements its lines wrote — and every level is set back to the sum
+   * of the movements that remain, so the projection still adds up.
+   */
+  await tx.execute(sql`select set_config('oto.stock_ledger_purge', 'on', true)`);
+  const openingTakes = (
+    await tx.select({ id: stockTake.id }).from(stockTake).where(eq(stockTake.opening, true))
+  ).map((r) => r.id);
+  const openingLines = openingTakes.length
+    ? (
+        await tx
+          .select({ id: stockTakeLine.id })
+          .from(stockTakeLine)
+          .where(inArray(stockTakeLine.stockTakeId, openingTakes))
+      ).map((r) => r.id)
+    : [];
+  counts.stock_attention = (await tx.delete(stockAttention).returning({ id: stockAttention.id })).length;
+  counts.stock_movement = (
+    await tx
+      .delete(stockMovement)
+      .where(
+        openingLines.length
+          ? or(sql`${stockMovement.stockTakeLineId} is null`, notInArray(stockMovement.stockTakeLineId, openingLines))
+          : undefined,
+      )
+      .returning({ id: stockMovement.id })
+  ).length;
+  counts.stock_take_line = (
+    await tx
+      .delete(stockTakeLine)
+      .where(openingTakes.length ? notInArray(stockTakeLine.stockTakeId, openingTakes) : undefined)
+      .returning({ id: stockTakeLine.id })
+  ).length;
+  counts.stock_take = (
+    await tx
+      .delete(stockTake)
+      .where(eq(stockTake.opening, false))
+      .returning({ id: stockTake.id })
+  ).length;
+  counts.purchase_order_line = (
+    await tx.delete(purchaseOrderLine).returning({ id: purchaseOrderLine.id })
+  ).length;
+  counts.purchase_order = (await tx.delete(purchaseOrder).returning({ id: purchaseOrder.id })).length;
+  await tx.execute(sql`
+    update pos.stock_level l
+       set quantity = coalesce((select sum(m.quantity) from pos.stock_movement m
+                                 where m.stock_item_id = l.stock_item_id
+                                   and m.stock_location_id = l.stock_location_id), 0),
+           updated_at = now()`);
+  // Shut the door again. `set_config(…, true)` lasts until the OUTER transaction
+  // ends, not this savepoint, so left on it would keep the ledger deletable for
+  // whatever the caller does after the reset returns.
+  await tx.execute(sql`select set_config('oto.stock_ledger_purge', 'off', true)`);
+
   counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
   counts.wallet_key = (await tx.delete(walletKey).returning({ id: walletKey.id })).length;
   counts.wallet = (await tx.delete(wallet).returning({ id: wallet.id })).length;
@@ -229,9 +299,8 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   ).length;
   counts.booking = (await tx.delete(booking).returning({ id: booking.id })).length;
 
-  // The stocked things and where they live are catalogue; the COUNT is what a
-  // day of play moves, so only the levels go.
-  counts.stock_level = (await tx.delete(stockLevel).returning({ id: stockLevel.id })).length;
+  // The stocked things and where they live are catalogue; what a day of play
+  // moved went with the stock ledger above (S2-14b), back to the opening count.
 
   counts.member_tier_verification = doomedIds.length
     ? (

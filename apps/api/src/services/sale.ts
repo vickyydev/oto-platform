@@ -23,6 +23,7 @@ import {
   ticketPackage,
   tier,
   visit,
+  type ProductVariant,
   type SaleClockTrust,
   type SaleLineKind,
   type SalesChannel,
@@ -70,6 +71,7 @@ import {
   type TicketCartLine,
   type TicketCartTotals,
   type PaymentAttemptView,
+  type SaleLineStockShare,
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
@@ -107,6 +109,7 @@ import {
 import type { Exec, Tx } from './tx';
 import { bandsOfSale } from './bands';
 import { refundsOfSale } from './refund-slices';
+import { assertCartStock, stockSharesForLines, takeStockForSale } from './stock';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
 import type { WalletGrantView, WalletTenderInstruction } from '@oto/shared';
@@ -235,9 +238,10 @@ export interface CartItemLineInput {
    * (`product.variants`, S2-09b): a size the item does not have is refused, and
    * so is a line that names none when the item comes in two sizes or more. The
    * label recorded is the catalogue's; `variantLabel` here is only what the
-   * screen showed. ON AN F&B LINE it is carried as sent and checked against
-   * nothing: the item routes accept sizes on an item of any kind, but only a
-   * shop line is read against them, and stock by flavour is S2-14b.
+   * screen showed. ON AN F&B LINE the same since S2-14b: a slushie's flavour is
+   * one of the item's own sizes, checked like a shop size, because the flavour
+   * is the shelf its stock is taken from — free text was a shelf nobody could
+   * find.
    */
   variant?: { variantId: string; variantLabel: string } | null;
   /** What the screen showed for this line. Reconciled against the platform's price, never charged. */
@@ -567,11 +571,23 @@ export interface SaleLinePayload {
   /** The prototype's per-item note (`FnbOrderLine.note`). */
   note?: string;
   /**
-   * The size sold. On a shop line, the item's own size — its id and its label
-   * as the catalogue names it (`product.variants`); on an F&B line, what the
-   * till sent (`FnbOrderLine.variantId` / `variantLabel`).
+   * The size sold — the item's own size, its id and its label as the
+   * catalogue names it (`product.variants`), on a shop line and (S2-14b) on an
+   * F&B line alike.
    */
   variant?: { variantId: string; variantLabel: string };
+  /**
+   * S2-14b — on a ticket add-on split across sizes (grip socks 1×S + 2×M), the
+   * split as the till sent it. It used to survive only in the label; each size
+   * takes its own stock (`services/stock.ts`, `lineStock`).
+   */
+  variantBreakdown?: { variantId: string; variantLabel: string; quantity: number }[];
+  /**
+   * S2-14b — the stocked sizes this line takes and the cost per each when it
+   * was sold, frozen at commit (`SaleLineStockShare`). Never on the till's
+   * answer: a cost to the park is not the counter's to read.
+   */
+  stock?: SaleLineStockShare[];
   /** Where this item's prep ticket prints: override → category → parent → kitchen. */
   prepStation?: PrepStation;
   /** The order's pick-up code, on every F&B line so each prep ticket carries it. */
@@ -727,10 +743,37 @@ export type CartVoucherScope =
 interface CatalogueLookup {
   packages: Map<string, typeof ticketPackage.$inferSelect>;
   products: Map<string, { row: typeof product.$inferSelect; category: TaxableCategory | null }>;
+  /**
+   * S2-14b — the branch's socks product when the cart names its socks by the
+   * prototype's id (`a-socks`), which is how the till sends them
+   * (`apps/pos/src/lib/cartWire.ts`). It is the STOCK link only: the socks are
+   * still priced as before (the till's snapshot), but the line carries this
+   * product so the guard sees it and finalise takes Regular Socks off the shelf
+   * for every ticket line's socks count, as the prototype does
+   * (`mockApi.ts:1304-1311`).
+   */
+  socksStockProductId: string | null;
 }
 
 /** Only a uuid can be a `pos.product` id; the prototype's are strings like `a-socks`. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The prototype's socks add-on id, and the catalogue code it was seeded under (`seed/menu.ts`). */
+const PROTOTYPE_SOCKS_ID = 'a-socks';
+const SOCKS_CODE = 'AO-SOCKS';
+
+/**
+ * The branch's own socks product, else the operator-wide one; null when the
+ * catalogue has none (the socks then stay untracked, as an unknown add-on does).
+ */
+async function socksStockProductOf(db: Exec, scope: PricingScope): Promise<string | null> {
+  const rows = await db
+    .select({ id: product.id, branchId: product.branchId })
+    .from(product)
+    .where(and(eq(product.operatorId, scope.operatorId), eq(product.code, SOCKS_CODE), isNull(product.archivedAt)));
+  const own = rows.find((r) => r.branchId === scope.branchId) ?? rows.find((r) => !r.branchId);
+  return own?.id ?? null;
+}
 
 async function loadCatalogue(
   db: Exec,
@@ -799,7 +842,13 @@ async function loadCatalogue(
     }
   }
 
-  return { packages, products };
+  const socksStockProductId =
+    input.socks?.addOnId === PROTOTYPE_SOCKS_ID &&
+    (input.lines ?? []).some((l) => (l.socks ?? 0) > 0)
+      ? await socksStockProductOf(db, scope)
+      : null;
+
+  return { packages, products, socksStockProductId };
 }
 
 /**
@@ -958,6 +1007,42 @@ interface ResolvedItemLine {
 }
 
 /**
+ * S2-14b — what an F&B size the catalogue does not list does to a cart.
+ *
+ *   - `strict`: a till ringing it up now is told, in the counter's words, and
+ *     can pick again;
+ *   - `file`: an offline sale replayed hours later (`printing: 'skip'`) was
+ *     paid for at a price the park displayed, so it is filed with the size the
+ *     box sent, and finalise raises a `size_unknown` attention for it
+ *     (`takeStockForSale`) instead of the sale going to quarantine.
+ */
+type ItemSizeMode = 'strict' | 'file';
+
+/**
+ * THE SIZE ON AN F&B LINE. Never compulsory here: the counter only offers a
+ * size where the item's stock is kept in sizes (`OrderStation.tsx`'s picker,
+ * fed by `GET stock/sellable`), and there the stock guard refuses an unsized
+ * line ("Choose a size for Slushie — it comes in Red, Blue, Green"). An item
+ * whose tracking was switched off, or a till that could not read stock, still
+ * sells it without one, as the prototype's F&B screen did.
+ */
+function fnbLineVariant(
+  itemName: string,
+  variants: readonly ProductVariant[],
+  sent: { variantId: string; variantLabel?: string } | null | undefined,
+  sizes: ItemSizeMode,
+  details: Record<string, unknown>,
+): { id: string; label: string } | null {
+  if (!sent) return null;
+  const found = variants.find((v) => v.id === sent.variantId);
+  if (found) return found;
+  if (sizes === 'file') {
+    return { id: sent.variantId, label: sent.variantLabel?.trim() || sent.variantId };
+  }
+  return resolveLineVariant(itemName, variants, sent, details);
+}
+
+/**
  * Price the cart's F&B and shop lines from the catalogue, and refuse the ones
  * the menu does not allow.
  *
@@ -1020,7 +1105,9 @@ async function resolveItemLines(
   catalogue: CatalogueLookup,
   tierCode: string,
   /** OD-8 — each option's price as the box priced it offline. */
-  optionPrices?: ReadonlyMap<string, { priceSatang: number; priceWeekendSatang: number | null }>,
+  optionPrices: ReadonlyMap<string, { priceSatang: number; priceWeekendSatang: number | null }> | undefined,
+  /** S2-14b — how an F&B size the catalogue does not list is treated (`ItemSizeMode`). */
+  sizes: ItemSizeMode,
 ): Promise<ResolvedItemLine[]> {
   const itemInputs = input.items ?? [];
   if (itemInputs.length === 0) return [];
@@ -1120,20 +1207,20 @@ async function resolveItemLines(
     }));
     assertModifierSelection(row.name, itemGroups, chosen);
     /**
-     * The size, on a shop line (S2-09b): one of the ITEM's sizes, the same way
-     * a modifier option has to be one the item offers — and on an item sold in
-     * two sizes or more, a required one, the way a required question is
-     * (`resolveLineVariant`). Only the id is taken from the till; the label
-     * frozen on the line is the catalogue's. No size carries a price of its
-     * own, so the unit price below is the item's whichever size it is.
+     * The size (S2-09b; F&B since S2-14b): one of the ITEM's sizes, the same
+     * way a modifier option has to be one the item offers. On a shop item sold
+     * in two sizes or more it is a required one, the way a required question is
+     * (`resolveLineVariant`); an F&B size is required only where its stock is
+     * kept in sizes, which the stock guard asks for (`fnbLineVariant`). Only
+     * the id is taken from the till; the label frozen on the line is the
+     * catalogue's. No size carries a price of its own, so the unit price below
+     * is the item's whichever size it is.
      */
-    const variant =
-      kind === 'merch_item'
-        ? resolveLineVariant(row.name, row.variants, line.variant, {
-            cartLineId: line.id,
-            productId: row.id,
-          })
-        : null;
+    const details = { cartLineId: line.id, productId: row.id };
+    const variant: { id: string; label: string } | null =
+      kind === 'fnb_item'
+        ? fnbLineVariant(row.name, row.variants, line.variant, sizes, details)
+        : resolveLineVariant(row.name, row.variants, line.variant, details);
 
     const chosenByGroup = new Map(chosen.map((c) => [c.groupId, c.optionIds]));
     // Group order, then the order the options were chosen in — the order the
@@ -1179,11 +1266,7 @@ async function resolveItemLines(
     const payload: SaleLinePayload = {
       ...(modifiers.length > 0 ? { modifiers } : {}),
       ...(note ? { note } : {}),
-      ...(variant
-        ? { variant: { variantId: variant.id, variantLabel: variant.label } }
-        : kind === 'fnb_item' && line.variant
-          ? { variant: line.variant }
-          : {}),
+      ...(variant ? { variant: { variantId: variant.id, variantLabel: variant.label } } : {}),
       // Merchandise is handed over at the till and prints no prep ticket at all
       // (`types.ts:1213`), so a station on a shop line would be a fact about
       // nothing.
@@ -1239,6 +1322,11 @@ export async function priceCart(
    * the current catalogue disagreed with the box's total.
    */
   priceBasis: OfflinePriceBasis | null = null,
+  /**
+   * S2-14b — `file` only for an offline sale being replayed: an F&B size the
+   * catalogue no longer lists is filed as the box sent it (`ItemSizeMode`).
+   */
+  sizes: ItemSizeMode = 'strict',
 ): Promise<PricedCart> {
   const branchId = input.branchId ?? actor.branchId;
   if (!branchId) throw errors.badRequest('No active branch on this session');
@@ -1424,6 +1512,7 @@ export async function priceCart(
     catalogue,
     resolvedTier.code,
     priceBasis ? new Map(priceBasis.options.map((o) => [o.id, o])) : undefined,
+    sizes,
   );
   for (const item of itemLines) {
     const sent = (input.items ?? []).find((l) => l.id === item.cartLineId)?.lineTotalSatang;
@@ -1727,12 +1816,30 @@ function buildPricedLines(
       : voucherLine
         ? voucherLine.productId
         : kind === 'socks'
-          ? (catalogue.products.get(ctx.socks.addOnId)?.row.id ?? null)
+          ? (catalogue.products.get(ctx.socks.addOnId)?.row.id ?? catalogue.socksStockProductId)
           : kind === 'addon' && row
             ? (catalogue.products.get(row.key)?.row.id ?? null)
             : null;
     const pkg = cartLine ? catalogue.packages.get(cartLine.packageId) : undefined;
     const freeAdults = row?.key === 'adults-free' ? row.quantity : 0;
+    /**
+     * S2-14b — an add-on split across sizes carries the split onto its line, so
+     * each size's stock is taken (and a refund puts each back). The engine
+     * keeps one row per add-on id with the breakdown beside it
+     * (`lib/pricing.ts`'s `setAddOnVariants`), so the cart line's add-on with
+     * this row's key is the one.
+     */
+    const breakdown =
+      kind === 'addon' && row
+        ? cartLine?.addOns.find((a) => a.id === row.key)?.variantBreakdown?.filter((b) => b.quantity > 0)
+        : undefined;
+    const sized: SaleLinePayload | null =
+      breakdown && breakdown.length > 0 ? { variantBreakdown: breakdown } : null;
+    const snapshot =
+      (row && snapshotPriced.has(row.key)) ||
+      (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
+      ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
+        snapshotPriced.has(unit.lineId));
 
     return {
       lineNo: index + 1,
@@ -1773,12 +1880,9 @@ function buildPricedLines(
               // that route to it and has to print the code the guest holds.
               ...(item.kind === 'fnb_item' && pickupCode ? { pickupCode } : {}),
             }
-          : (row && snapshotPriced.has(row.key)) ||
-              (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
-              ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
-                snapshotPriced.has(unit.lineId))
-            ? { priceSource: 'till_snapshot' as const }
-            : null,
+          : snapshot
+            ? { priceSource: 'till_snapshot' as const, ...sized }
+            : sized,
     };
   });
 }
@@ -2593,6 +2697,15 @@ export interface CommitSaleOptions {
    * a replay is told apart by `printing: 'skip'`, which only those paths set.
    */
   supervisionGate?: 'refuse' | 'warn';
+  /**
+   * S2-14b — what the stock guard does to a cart the branch cannot fill.
+   * `refuse` is the till's answer and the default. `skip` is for a sale whose
+   * money is already taken — a box's replay (told apart by `printing: 'skip'`
+   * when this is unset) and a booking's redemption, paid online before the
+   * family arrived. Neither is refused for stock: the decrement at finalise
+   * records what it could take and the shortfall (`takeStockForSale`).
+   */
+  stockGuard?: 'refuse' | 'skip';
 }
 
 // --- SCRUM-478: the supervision gate ----------------------------------------
@@ -2811,6 +2924,7 @@ export async function commitSale(
     { mode: 'commit', saleId, stationId: st.id },
     promoPricing,
     options.priceBasis ?? null,
+    options.printing === 'skip' ? 'file' : 'strict',
   );
   if (st.branchId !== priced.scope.branchId) {
     throw errors.badRequest('That station belongs to another branch');
@@ -2912,6 +3026,27 @@ export async function commitSale(
   if (unsupervised && gateMode === 'refuse') {
     kidsWithoutRegistration(supervision, input.registrationId ?? null);
   }
+
+  /**
+   * S2-14b — THE STOCK GUARD, after every other refusal and before anything is
+   * written: the cart is checked per size, honouring an add-on's split across
+   * sizes, against everything this branch holds (the sell point and every place
+   * the cascade reaches). "Only 3 Grip Socks S left" — and nothing is saved.
+   * A race this cannot see (another till taking the last unit before this sale
+   * is paid) is the finalise decrement's to record, never a refused paid sale.
+   */
+  const stockGuard: 'refuse' | 'skip' =
+    options.stockGuard ?? (options.printing === 'skip' || input.bookingId ? 'skip' : 'refuse');
+  const stockLines = priced.lines.map((line) => ({
+    kind: line.kind,
+    productId: line.productId,
+    quantity: line.quantity,
+    label: line.label,
+    payload: line.payload,
+  }));
+  if (stockGuard === 'refuse') await assertCartStock(tx, priced.scope.branchId, stockLines);
+  /** The stocked sizes each line takes and their cost, frozen onto the line below. */
+  const stockShares = await stockSharesForLines(tx, priced.scope.branchId, stockLines);
 
   // A sale that has just been written has no tenders against it, so what it
   // owes is its gross. `finalise` is honoured when that is nothing and is
@@ -3023,8 +3158,9 @@ export async function commitSale(
    * share a cart line id apart.
    */
   const occurrences = new Map<string, number>();
-  for (const line of priced.lines) {
+  for (const [index, line] of priced.lines.entries()) {
     const key = `${line.cartLineId}|${line.componentKey ?? line.kind}`;
+    const shares = stockShares[index] ?? null;
     const occurrence = occurrences.get(key) ?? 0;
     occurrences.set(key, occurrence + 1);
     await tx.insert(saleLine).values({
@@ -3060,7 +3196,8 @@ export async function commitSale(
       freeAdultCount: line.freeAdultCount,
       stayHours: line.stayHours,
       stayDurationLabel: line.stayDurationLabel,
-      payload: line.payload,
+      // S2-14b — the stock it takes, frozen here and never on the answer.
+      payload: shares ? { ...(line.payload ?? {}), stock: shares } : line.payload,
     });
   }
 
@@ -3259,6 +3396,18 @@ export async function commitSale(
 
   const [written] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
   if (!written) throw new Error('the sale was not written');
+  /**
+   * S2-14b — a ฿0 close takes its stock like any other close: the one finalise
+   * point that is not `finaliseSale`. Never refuses (see `takeStockForSale`).
+   */
+  if (finalising) {
+    await takeStockForSale(tx, written, {
+      actorAccountId: actor.accountId,
+      requestId: actor.requestId ?? null,
+      offline: options.printing === 'skip',
+      now: clock.occurredAt,
+    });
+  }
   /**
    * S2-14a — a ฿0 close earns like any other (the credit is read from the list
    * price, OD-W2): the grants are written in this transaction, before the paper
@@ -3901,6 +4050,21 @@ export async function finaliseSale(
     .returning();
   const after = updated[0];
   if (!after) throw new Error('the sale was not finalised');
+
+  /**
+   * S2-14b — THE STOCK LEAVES THE SHELF, in this transaction, once the sale is
+   * paid: the sell point first, then back of house, then bulk. It never
+   * refuses — a card approved after another till took the last unit, an
+   * offline sale arriving hours later — it records what it took and the
+   * shortfall for someone to count. Keyed by the sale's own line ids, so a
+   * replayed close takes nothing twice.
+   */
+  await takeStockForSale(tx, after, {
+    actorAccountId: actor.accountId,
+    requestId: actor.requestId ?? null,
+    offline: input.printing === 'skip' || after.origin === 'box',
+    now,
+  });
 
   await audit.record(tx, {
     actorAccountId: actor.accountId,

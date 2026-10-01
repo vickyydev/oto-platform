@@ -8,6 +8,7 @@ import { setBranchDayStart, setBranchRateMode, setBranchTimezone } from '@/lib/p
 import { branchesApi, catalogApi, type ApiBranch, type ApiPaymentMethod, type PublicAddOn } from './platform';
 import { isMissingRoute } from './client';
 import { reloadMenuInto } from './menu';
+import { loadSellableStock } from './stock';
 import { apiBranchToBranch, apiPackageToTicketType, holidayToPricingOverride, ticketTypeToApiBody } from './mappers';
 
 let _apiBranches: ApiBranch[] = [];
@@ -98,6 +99,10 @@ export async function loadMenuFromApi(branchSlug: string): Promise<boolean> {
     // contains — which is how the shop came to be READ from the mock while the
     // menu beside it came from the database.
     await reloadMenuInto(branchId, branchSlug);
+    // S2-14b — what each tracked size holds, beside the menu that names it. Its
+    // own non-fatal read (`api/stock.ts`): a platform without the stock route
+    // keeps the ported inventory, and the menu above is still the platform's.
+    await loadSellableStock(branchId);
     return true;
   } catch (err) {
     if (isMissingRoute(err)) return false;

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { MenuItem, MenuCategoryDef } from '@/types';
 import { resolveRateToday } from '@/lib/pricingMode';
-import { getMenuCategories, getInventoryItem } from '@/mockApi';
+import { getMenuCategories } from '@/mockApi';
+import { inventoryFor, useSellableStockVersion } from '@/api/stock';
 import { topLevelCategories, subCategoriesOf } from '@/lib/menu';
 import { variantStatus, type VariantStatus } from '@/lib/inventory';
 import { Card } from '@/components/ui/card';
@@ -26,19 +27,20 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 };
 const iconFor = (id: string): LucideIcon => CATEGORY_ICONS[id] ?? UtensilsCrossed;
 
-// Worst stock status across a menu item's tracked variants ('out' beats 'low').
-// undefined when the item isn't stock-tracked (no inventory link) — no badge.
+// A menu item's stock status across its tracked sizes, from the platform's
+// figures (`api/stock.ts`). 'out' ONLY when every size is out: an item with a
+// size left is still on sale, and the size picker disables the size that is
+// not (S2-14b — the prototype greyed the whole slushie out when one flavour ran
+// dry). 'low' when any size is low or out. undefined when the item isn't
+// stock-tracked (no inventory link) — no badge.
 function menuItemStockStatus(item: MenuItem): VariantStatus | undefined {
   if (!item.inventoryItemId) return undefined;
-  const inv = getInventoryItem(item.inventoryItemId);
+  const inv = inventoryFor(item.inventoryItemId);
   if (!inv || inv.variants.length === 0) return undefined;
-  let worst: VariantStatus = 'ok';
-  for (const v of inv.variants) {
-    const s = variantStatus(v);
-    if (s === 'out') return 'out';
-    if (s === 'low') worst = 'low';
-  }
-  return worst;
+  const statuses = inv.variants.map((v) => variantStatus(v));
+  if (statuses.every((s) => s === 'out')) return 'out';
+  if (statuses.some((s) => s !== 'ok')) return 'low';
+  return 'ok';
 }
 
 interface MenuItemCardProps {
@@ -128,6 +130,8 @@ function matchesQuery(name: string, query: string): boolean {
 }
 
 export function MenuGrid({ items, quantities, onAdd }: MenuGridProps) {
+  // Re-draw the badges when the platform's stock figures move (after a sale).
+  useSellableStockVersion();
   const [search, setSearch] = useState('');
   const query = search.trim();
   const searchResults = useMemo(

@@ -337,6 +337,13 @@
       "when": 1790868347642,
       "tag": "0047_promo_vouchers",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1790886179530,
+      "tag": "0048_stock_ledger",
+      "breakpoints": true
     }
   ]
 }

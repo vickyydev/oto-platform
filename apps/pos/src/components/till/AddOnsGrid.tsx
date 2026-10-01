@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { SelectedAddOn, AddOnVariantQty } from '@/types';
-import { getAddOns, getInventoryItem } from '@/mockApi';
+import { getAddOns } from '@/mockApi';
+import { inventoryFor, useSellableStockVersion } from '@/api/stock';
 import { addOnVariantSummary } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
@@ -32,13 +33,15 @@ interface AddOnsGridProps {
  */
 export function AddOnsGrid({ selected, onSetQuantity, onSetVariants }: AddOnsGridProps) {
   const allAddOns = useMemo(() => getAddOns(), []);
+  // S2-14b — the counts are the platform's (`api/stock.ts`): re-draw when they move.
+  useSellableStockVersion();
 
   // Which add-on's per-size editor is open
   const [sizeAddOnId, setSizeAddOnId] = useState<string | null>(null);
 
   const sizeAddOn = sizeAddOnId ? allAddOns.find((a) => a.id === sizeAddOnId) ?? null : null;
   const sizeInvItem = sizeAddOn?.inventoryItemId
-    ? getInventoryItem(sizeAddOn.inventoryItemId) ?? null
+    ? inventoryFor(sizeAddOn.inventoryItemId) ?? null
     : null;
   const sizeInitial = sizeAddOnId
     ? selected.find((a) => a.id === sizeAddOnId)?.variantBreakdown ?? []
@@ -49,7 +52,7 @@ export function AddOnsGrid({ selected, onSetQuantity, onSetVariants }: AddOnsGri
     if (!addOn) return;
 
     if (addOn.inventoryItemId) {
-      const invItem = getInventoryItem(addOn.inventoryItemId);
+      const invItem = inventoryFor(addOn.inventoryItemId);
       if (invItem && invItem.variants.length === 1) {
         // Single-variant: enforce stock limit before delegating.
         const singleVar = invItem.variants[0];
@@ -77,7 +80,7 @@ export function AddOnsGrid({ selected, onSetQuantity, onSetVariants }: AddOnsGri
 
           // Resolve stock from inventory for display (if linked)
           const invItem = addon.inventoryItemId
-            ? getInventoryItem(addon.inventoryItemId) ?? null
+            ? inventoryFor(addon.inventoryItemId) ?? null
             : null;
           const isMultiVariant = (invItem?.variants.length ?? 0) > 1;
           const totalStock = invItem

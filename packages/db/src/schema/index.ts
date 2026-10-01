@@ -26,3 +26,6 @@ export * from './checkin';
 // Stored value (S2-14a): after the sales ledger, whose sale, refund and
 // payment attempt a wallet entry points back at.
 export * from './wallet';
+// Stock (S2-14b): after the catalogue it stocks and the sales ledger whose
+// lines and refunds its movements point back at.
+export * from './stock';

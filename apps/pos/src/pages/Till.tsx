@@ -9,7 +9,7 @@ import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentActionAllowed,
-  type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
+  stockShortMessage, stockSizeName, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
@@ -20,7 +20,9 @@ import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
-import { getInventoryItem, getAddOns } from '@/store/catalogStore';
+import { getAddOns } from '@/store/catalogStore';
+import { inventoryFor, refreshSellableStock } from '@/api/stock';
+import { isSocksAddOnId } from '@/api/menu';
 import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, getDefaultTier, getSupervisionPolicy, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, type ApiNanny } from '@/api/checkin';
@@ -2391,49 +2393,59 @@ export default function Till() {
     }
 
     // Pre-checkout stock guard: aggregate all stocked items in the cart and
-    // compare against live inventory so an edge-case UI race can't oversell.
+    // compare against what the platform says the branch holds (S2-14b,
+    // `api/stock.ts`) so an edge-case UI race can't oversell. It is the
+    // platform's own rule, read early: the commit refuses the same cart in the
+    // same words, and a race this cannot see is recorded at finalise.
     {
       const stockViolations: string[] = [];
       const allAddOnsForCheck = getAddOns();
-      const socksAddOn = allAddOnsForCheck.find((a) => a.id === 'a-socks');
-      // Socks are tracked as a plain integer per line (CartLine.socks).
-      if (socksAddOn?.inventoryItemId) {
-        const totalSocks = lines.reduce((sum, l) => sum + l.socks, 0);
-        const invItem = getInventoryItem(socksAddOn.inventoryItemId);
-        const available = invItem?.variants[0]?.stock ?? Infinity;
-        if (totalSocks > available) {
-          stockViolations.push(`Regular Socks (need ${totalSocks}, have ${available})`);
-        }
+      // Inventory-linked add-ons — aggregate by inventoryItemId + size. An
+      // add-on split across sizes counts each size against its own shelf (the
+      // prototype's guard ignored the split and counted only the default).
+      const needed = new Map<string, { name: string; label: string | null; qty: number }>();
+      // Socks are tracked as a plain integer per line (CartLine.socks), and are
+      // the branch's Regular Socks product on the platform whichever id this
+      // till holds them under (`isSocksAddOnId`, S2-14b) — counted on the same
+      // shelf as socks sold from the add-on grid, as the platform counts them.
+      const socksAddOn = allAddOnsForCheck.find((a) => isSocksAddOnId(a.id));
+      const totalSocks = lines.reduce((sum, l) => sum + l.socks, 0);
+      if (socksAddOn?.inventoryItemId && totalSocks > 0) {
+        const vid = inventoryFor(socksAddOn.inventoryItemId)?.variants[0]?.id ?? INVENTORY_DEFAULT_VARIANT_ID;
+        needed.set(`${socksAddOn.inventoryItemId}:${vid}`, { name: socksAddOn.name, label: null, qty: totalSocks });
       }
-      // Inventory-linked add-ons — aggregate by inventoryItemId + variantId.
-      const needed = new Map<string, { name: string; qty: number }>();
       for (const line of lines) {
         for (const sa of line.addOns) {
           const ao = allAddOnsForCheck.find((a) => a.id === sa.id);
           if (!ao?.inventoryItemId) continue;
-          const vid = sa.variantId ?? INVENTORY_DEFAULT_VARIANT_ID;
-          const key = `${ao.inventoryItemId}:${vid}`;
-          const prev = needed.get(key);
-          if (prev) {
-            prev.qty += sa.quantity;
-          } else {
-            needed.set(key, { name: sa.name, qty: sa.quantity });
+          const parts =
+            sa.variantBreakdown && sa.variantBreakdown.length > 0
+              ? sa.variantBreakdown.map((b) => ({ vid: b.variantId, label: b.variantLabel, qty: b.quantity }))
+              : [{ vid: sa.variantId ?? INVENTORY_DEFAULT_VARIANT_ID, label: null, qty: sa.quantity }];
+          for (const part of parts) {
+            const key = `${ao.inventoryItemId}:${part.vid}`;
+            const prev = needed.get(key);
+            if (prev) {
+              prev.qty += part.qty;
+            } else {
+              needed.set(key, { name: ao.name, label: part.label, qty: part.qty });
+            }
           }
         }
       }
-      for (const [key, { name, qty }] of needed) {
+      for (const [key, { name, label, qty }] of needed) {
         const [itemId, variantId] = key.split(':');
-        const invItem = getInventoryItem(itemId);
+        const invItem = inventoryFor(itemId);
         const variant = invItem?.variants.find((v) => v.id === variantId);
         const available = variant?.stock ?? Infinity;
         if (qty > available) {
-          stockViolations.push(`${name} (need ${qty}, have ${available})`);
+          stockViolations.push(stockShortMessage(stockSizeName(name, label ?? null), available));
         }
       }
       if (stockViolations.length > 0) {
         toast({
           title: 'Insufficient stock',
-          description: `Cannot complete sale — stock too low: ${stockViolations.join(' · ')}`,
+          description: `Cannot complete sale — ${stockViolations.join(' · ')}`,
           variant: 'destructive',
         });
         return false;
@@ -2655,6 +2667,9 @@ export default function Till() {
       quoted,
     });
     recordSale(newSale);
+    // S2-14b — the platform took the add-ons' stock when it closed the sale;
+    // read what is left so the next guest's grid and guard are current.
+    void refreshSellableStock();
     // Increment each applied promo's usage counter after the sale is committed.
     // Use the same identity key as validatePromoCode for consistent per-customer tracking.
     discounts.forEach((d) =>

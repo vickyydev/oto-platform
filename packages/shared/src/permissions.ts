@@ -196,6 +196,12 @@ export const PERMISSIONS = [
   'pos:stock:adjust',
   'pos:stock:transfer',
   'pos:stock:count',
+  /**
+   * S2-14b (OD-S4, rule R-76) — take a delivery onto a shelf, ad hoc or
+   * against a purchase order line. Split from `order` because every member of
+   * staff receives stock and only a manager raises an order.
+   */
+  'pos:stock:receive',
   /** Purchase orders: raise and receive. */
   'pos:stock:order',
   /** Manager gate on a stock-take variance above the branch's tolerance. */
@@ -375,6 +381,7 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:stock:adjust',
     'pos:stock:transfer',
     'pos:stock:count',
+    'pos:stock:receive',
     'pos:stock:order',
     'pos:stock:approve',
     'catalog:package:create',
@@ -412,6 +419,10 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:wallet:grant',
     'pos:wallet:spend',
     'pos:stock:count',
+    // S2-14b (OD-S4, R-76): all staff do the stock operations — moving stock
+    // between shelves and taking a delivery; setup and orders stay a manager's.
+    'pos:stock:transfer',
+    'pos:stock:receive',
     'app:pos:access',
     'app:booth:access',
     'booth:staff:sign_in',

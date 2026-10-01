@@ -33,6 +33,7 @@ import { and, eq, isNull, notInArray, sql } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
 import { reconcileAppBranches } from '../schema/otoapp';
 import { seedMenu } from './menu';
+import { seedStock } from './stock';
 import { seedSupervision } from './supervision';
 import { seedWalletPolicies } from './wallet';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
@@ -795,6 +796,9 @@ export async function seed(db: Db = getDb()): Promise<void> {
   // Ice Cream Cone (`FB-ICECREAM`, ฿50), so it is seeded BEFORE the tax-target
   // fallback below: the two used to seed the item twice, at ฿50 and ฿60.
   await seedMenu(db, { operatorId, branchId });
+  // Stock (S2-14b): the prototype's places, items and figures, opened by a
+  // count — once per branch, after the menu whose products it stocks.
+  await seedStock(db, { operatorId, branchId, timezone: 'Asia/Bangkok' });
   // A product the tax-override resolver can point at. Found by name so the
   // menu's own Ice Cream Cone counts — this must not mint a second row — and,
   // if the menu somehow seeded none, created at the menu's price, not another.

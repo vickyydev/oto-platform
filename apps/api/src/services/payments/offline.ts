@@ -147,6 +147,23 @@ const OfflineCartSchema = z.object({
               unitSatang: z.number().int().min(0).max(100_000_000).optional(),
               quantity: z.number().int().min(1).max(99),
               taxCategoryOverride: TaxableCategorySchema.optional(),
+              /**
+               * S2-14b — an add-on split across sizes, as the till's own
+               * commit carries it (`routes/sales.ts`), so each size's stock is
+               * taken when the sale is filed. Optional: a box on an older
+               * build sends none, and the sale is filed with a `size_unknown`
+               * attention rather than refused.
+               */
+              variantBreakdown: z
+                .array(
+                  z.object({
+                    variantId: z.string().min(1).max(100),
+                    variantLabel: z.string().max(60),
+                    quantity: z.number().int().min(0).max(99),
+                  }),
+                )
+                .max(20)
+                .optional(),
             }),
           )
           .max(20)

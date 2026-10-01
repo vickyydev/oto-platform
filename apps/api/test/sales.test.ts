@@ -1366,7 +1366,15 @@ describe('the payload the till actually sends', () => {
     expect(locker.taxableCategory).toBe('addons');
 
     const socksLine = lines.find((l) => l.kind === 'socks')!;
-    expect(socksLine.payload).toEqual({ priceSource: 'till_snapshot' });
+    // S2-14b fix round (gate R1) — still priced from the till's snapshot, but
+    // `a-socks` is the branch's Regular Socks product for STOCK: the line names
+    // it and freezes the share it takes, so finalise takes it off the shelf.
+    expect(socksLine.payload).toMatchObject({
+      priceSource: 'till_snapshot',
+      stock: [expect.objectContaining({ quantity: 1, variantId: null })],
+    });
+    const regularSocks = await ctx.db.select({ id: product.id }).from(product).where(eq(product.code, 'AO-SOCKS'));
+    expect(regularSocks.map((p) => p.id)).toContain(socksLine.productId);
 
     const cataloguePriced = lines.find((l) => l.componentKey === iceCream!.id)!;
     // The platform's price, not the ฿0.01 the till sent, and its own category.

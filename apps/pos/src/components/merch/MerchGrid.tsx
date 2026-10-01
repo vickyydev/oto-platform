@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { MerchItem } from '@/types';
 import { isLowStock, isOutOfStock } from '@/lib/merch';
+import { useSellableStockVersion, withPlatformStock } from '@/api/stock';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -54,11 +55,10 @@ function StockLine({
   /**
    * Whether anything counts this item at all (S2-09b).
    *
-   * `pos.product.stock_item_id` is null on every catalogue row until S2-14b
-   * brings the stock module, and an untracked item used to render its count as
-   * `Infinity in stock` — the literal word, on a shelf tile, in front of a
-   * guest. It now says nothing, which is the truth: nobody is counting these
-   * yet, and the strip above the grid names the ticket that will.
+   * An item the platform does not stock-track (no stock item linked, S2-14b)
+   * used to render its count as `Infinity in stock` — the literal word, on a
+   * shelf tile, in front of a guest. It says nothing, which is the truth:
+   * nobody is counting it.
    */
   tracked: boolean;
   out: boolean;
@@ -96,7 +96,12 @@ function StockLine({
   );
 }
 
-export function MerchGrid({ items, quantities, onAdd }: MerchGridProps) {
+export function MerchGrid({ items: given, quantities, onAdd }: MerchGridProps) {
+  // S2-14b — the counts on the tiles are the platform's (`api/stock.ts`):
+  // everything the branch holds, re-read after every sale the till closes.
+  const stockVersion = useSellableStockVersion();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const items = useMemo(() => given.map(withPlatformStock), [given, stockVersion]);
   // Distinct free-text category labels — merch categories are plain strings
   // (not the structured F&B category tree). Uncategorised items group under "Other".
   const categories = useMemo(() => {

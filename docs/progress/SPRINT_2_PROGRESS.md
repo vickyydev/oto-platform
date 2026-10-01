@@ -28,11 +28,22 @@ SCRUM-484 (Low: three display touches), SCRUM-481 and SCRUM-482 (owner
 rulings). Still waiting on the owner: SCRUM-480 (R2 CORS for photos),
 Xero, 2C2P sandbox, pricing rulings, SCRUM-467, SCRUM-469, OD-W1..W5.
 
-Next: S2-14b stock (SCRUM-213), moved to In Progress today. It starts with
-two read-only studies (the prototype's stock domain and the platform's
-landed seams) feeding docs/progress/plans/stock/PLAN.md.
+S2-14b stock (SCRUM-213, In Progress). Plan: docs/progress/plans/stock/PLAN.md
+(f538e415); owner rulings filed as SCRUM-485 (count approval, seed figures,
+booth prizes, who moves stock, the opening count), with the recommended
+answers in force. Round 1 (ledger + sales) lands with this checkpoint:
+migration 0048, stock_movement ledger with levels as a locked projection,
+the commit guard per size, finalise decrements that never refuse a paid
+sale (all seven callers checked), refund restock to the place of origin,
+sizes and unit cost carried on the sale line, the till grids on real
+levels. Gate handovers, all routed into round 2's brief: pack entry must
+refuse non-finite input; AddOnsGrid needs the catalogue-size fallback;
+partially stock-linked products; and platform:sync must lay down the stock
+structure (staging gets 0048 with no places or items, because seedStock
+runs only in the full seed). Next: rounds 2 (stock module live) and 3
+(offline) in parallel, then round 4 and the staging walkthrough.
 
-Migrations landed through 0047. To resume: read this block, then the
+Migrations landed through 0048. To resume: read this block, then the
 SCRUM-213 comments, then `git log main`.
 
 ## Platform lane checkpoint - 1 October 2026 (evening) - S2-13 Deployed whole

@@ -44,3 +44,4 @@ export * from './release';
 export * from './checkin-offline';
 export * from './wallet';
 export * from './voucher-promo';
+export * from './stock';

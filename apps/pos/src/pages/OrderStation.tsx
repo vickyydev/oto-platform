@@ -13,13 +13,13 @@ import {
   getDiscountByCode,
   getDiscountReasons,
   recordFnbOrder,
-  getInventoryItem,
   previewStaffBenefit,
   commitStaffBenefit,
   attachBenefitAuditOrderId,
 } from '@/mockApi';
 import { INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
-import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
+import { inventoryFor, refreshSellableStock, stockIsServerBacked } from '@/api/stock';
+import { VariantPickerModal, type PickableVariant } from '@/components/shared/VariantPickerModal';
 import { hasModifiers, modifierSignature } from '@/lib/fnb';
 import { fnbLineTotal } from '@/lib/cartWire';
 import { validateItemPromoCode } from '@/lib/itemPromo';
@@ -55,7 +55,7 @@ import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { getDefaultTier } from '@/store/catalogStore';
-import { menuIsServerBacked } from '@/api/menu';
+import { catalogueSizesOf, menuIsServerBacked } from '@/api/menu';
 import {
   buildItemCartPayload,
   offLedgerOnly,
@@ -441,7 +441,7 @@ export default function OrderStation() {
   // they resolve against the Default variant — same as recordFnbOrder's decrement.
   const variantStockCap = (item: MenuItem, variantId?: string): number | null => {
     if (!item.inventoryItemId) return null;
-    const inv = getInventoryItem(item.inventoryItemId);
+    const inv = inventoryFor(item.inventoryItemId);
     if (!inv) return null;
     const v = inv.variants.find((x) => x.id === (variantId ?? INVENTORY_DEFAULT_VARIANT_ID));
     return v ? v.stock : null;
@@ -530,10 +530,23 @@ export default function OrderStation() {
     addOrMerge(item, [], 1, undefined, variant);
   };
 
+  /**
+   * The sizes the counter asks about: a stocked item's sizes with their counts
+   * (`api/stock.ts`). An item the platform tracks whose counts this till could
+   * not read is offered its catalogue sizes uncounted (S2-14b), since the
+   * platform asks which size of it was sold; an untracked item is asked nothing,
+   * as in the prototype.
+   */
+  const pickableSizesFor = (item: MenuItem | null): PickableVariant[] => {
+    if (!item?.inventoryItemId) return [];
+    const inv = inventoryFor(item.inventoryItemId);
+    if (inv) return inv.variants.length > 1 ? inv.variants : [];
+    return catalogueSizesOf(item.id);
+  };
+
   const proceedAdd = (item: MenuItem) => {
-    const inv = item.inventoryItemId ? getInventoryItem(item.inventoryItemId) : undefined;
     // Multi-variant stocked item → ask staff which size/flavour first.
-    if (inv && inv.variants.length > 1) {
+    if (pickableSizesFor(item).length > 1) {
       setVariantItem(item);
       return;
     }
@@ -546,8 +559,7 @@ export default function OrderStation() {
     const item = variantItem;
     setVariantItem(null);
     if (!item || !item.inventoryItemId) return;
-    const inv = getInventoryItem(item.inventoryItemId);
-    const v = inv?.variants.find((x) => x.id === variantId);
+    const v = pickableSizesFor(item).find((x) => x.id === variantId);
     continueAdd(item, v ? { variantId: v.id, variantLabel: v.label } : null);
   };
 
@@ -1170,7 +1182,10 @@ export default function OrderStation() {
       foodConsentOverride: foodOverride ?? undefined,
       staffBenefit,
     };
-    recordFnbOrder(record);
+    // S2-14b — the platform took the stock off its shelves when it closed the
+    // order; the local record is kept and the ported inventory is not touched.
+    recordFnbOrder(record, { decrementStock: false });
+    void refreshSellableStock();
     if (staffBenefit) attachBenefitAuditOrderId(staffBenefit.auditId, record.id);
     setCompletedOrder(record);
     setNewBalance(balanceAfter);
@@ -1376,7 +1391,8 @@ export default function OrderStation() {
                 <span className="font-bold uppercase tracking-wide text-foreground/70">
                   This till&apos;s own record
                 </span>
-                <span>Stock counts and out-of-stock — S2-14b</span>
+                {/* S2-14b — the counts are the platform's once it has answered. */}
+                {!stockIsServerBacked() && <span>Stock counts and out-of-stock — S2-14b</span>}
                 <span>Prepaid items — S2-14a</span>
                 {!menuFromPlatform && (
                   <span className="text-amber-300">
@@ -1635,11 +1651,7 @@ export default function OrderStation() {
       <VariantPickerModal
         open={variantItem !== null}
         itemName={variantItem?.name ?? ''}
-        variants={
-          variantItem?.inventoryItemId
-            ? getInventoryItem(variantItem.inventoryItemId)?.variants ?? []
-            : []
-        }
+        variants={pickableSizesFor(variantItem)}
         onPick={handlePickVariant}
         onCancel={() => setVariantItem(null)}
       />
