@@ -121,7 +121,7 @@ import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db } from "./db";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -7355,9 +7355,36 @@ OTO Company Limited`,
   // OFFBOARDING ROUTES
   // =====================
 
+  const authorizedOffboardingEmployee = async (req: Request, employeeId: string) => {
+    const user = req.userWithAccess;
+    if (!user?.tenantId) return null;
+    const employee = await storage.getEmployeeInTenant(employeeId, user.tenantId);
+    if (!employee || !canUserAccessBranch(user, employee.branchId) ||
+        (user.role === "staff" && employee.userId !== user.id)) return null;
+    return employee;
+  };
+
+  const authorizedOffboarding = async (req: Request, offboardingId: string) => {
+    const offboarding = await storage.getOffboardingById(offboardingId);
+    if (!offboarding) return null;
+    const employee = await authorizedOffboardingEmployee(req, offboarding.employeeId);
+    return employee ? { offboarding, employee } : null;
+  };
+
+  const authorizedOffboardingItem = async (req: Request, itemId: string) => {
+    const [item] = await db.select().from(offboardingChecklist)
+      .where(eq(offboardingChecklist.id, itemId)).limit(1);
+    if (!item) return null;
+    const access = await authorizedOffboarding(req, item.offboardingId);
+    return access && item.employeeId === access.employee.id ? item : null;
+  };
+
   // Get offboarding record for an employee
   app.get("/api/employees/:employeeId/offboarding", requireAuth, async (req, res, next) => {
     try {
+      if (!await authorizedOffboardingEmployee(req, req.params.employeeId)) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
       const offboarding = await storage.getEmployeeOffboarding(req.params.employeeId);
       res.json(offboarding || null);
     } catch (error) {
@@ -7394,7 +7421,7 @@ OTO Company Limited`,
       }
       const validatedData = validationResult.data;
       
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await authorizedOffboardingEmployee(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -7559,7 +7586,7 @@ OTO Company Limited`,
       const { employeeId } = req.params;
       const userId = (req.user as any).id;
 
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await authorizedOffboardingEmployee(req, employeeId);
       if (!employee) return res.status(404).json({ message: "Employee not found" });
 
       const offboarding = await storage.getEmployeeOffboarding(employeeId);
@@ -7643,6 +7670,9 @@ OTO Company Limited`,
   // Get offboarding checklist
   app.get("/api/offboarding/:offboardingId/checklist", requireAuth, async (req, res, next) => {
     try {
+      if (!await authorizedOffboarding(req, req.params.offboardingId)) {
+        return res.status(404).json({ message: "Offboarding not found" });
+      }
       const checklist = await storage.getOffboardingChecklist(req.params.offboardingId);
       res.json(checklist);
     } catch (error) {
@@ -7654,6 +7684,9 @@ OTO Company Limited`,
   app.patch("/api/offboarding/checklist/:itemId", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { itemId } = req.params;
+      if (!await authorizedOffboardingItem(req, itemId)) {
+        return res.status(404).json({ message: "Checklist item not found" });
+      }
       const userId = (req.user as any).id;
       const { isCompleted, title, description } = req.body;
       
@@ -7681,6 +7714,9 @@ OTO Company Limited`,
   // Delete offboarding checklist item
   app.delete("/api/offboarding/checklist/:itemId", requireAuth, requireManager, async (req, res, next) => {
     try {
+      if (!await authorizedOffboardingItem(req, req.params.itemId)) {
+        return res.status(404).json({ message: "Checklist item not found" });
+      }
       await storage.deleteOffboardingChecklistItem(req.params.itemId);
       res.json({ success: true });
     } catch (error) {
@@ -7694,17 +7730,15 @@ OTO Company Limited`,
       const { offboardingId } = req.params;
       const { title, description, dueDate } = req.body;
       
-      const offboarding = await storage.getOffboardingById(offboardingId);
-      if (!offboarding) {
+      const access = await authorizedOffboarding(req, offboardingId);
+      if (!access) {
         return res.status(404).json({ message: "Offboarding not found" });
       }
       
-      const employee = await storage.getEmployee(offboarding.employeeId);
-      
       const item = await storage.createOffboardingChecklistItem({
         offboardingId,
-        employeeId: offboarding.employeeId,
-        branchId: employee?.branchId || undefined,
+        employeeId: access.employee.id,
+        branchId: access.employee.branchId || undefined,
         checklistType: "custom",
         title,
         description,
