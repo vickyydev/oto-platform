@@ -29,9 +29,12 @@ The in-app browser screenshot service timed out on fresh tabs, including an unre
 | SCRUM-193 | `scrum-193-supplier-token-admin-tablet-2026-10-01.png` (11205), `scrum-193-supplier-open-list-tablet-2026-10-01.png` (11206) | Two branch-limited QA tokens; allowed supplier sees one synthetic open report | Live media and token natural expiry |
 | SCRUM-193 | `scrum-193-supplier-comment-tablet-2026-10-01.png` (11207), `scrum-193-supplier-done-action-tablet-2026-10-01.png` (11208) | Supplier comment saved and Done confirmation entered | Staff reply |
 | SCRUM-193 | `scrum-193-supplier-completed-list-tablet-2026-10-01.png` (11209), `scrum-193-supplier-completed-detail-tablet-2026-10-01.png` (11210) | Completed count and final report with resolution note and comment | Live media and staff reply |
+| SCRUM-193 | `scrum-193-supplier-media-tablet-2026-10-01.png` (11213), `scrum-193-supplier-staff-reply-tablet-2026-10-01.png` (11214) | Allowed private image loaded; supplier and staff comments both visible | Normal staff upload/create sequence belongs to Fix report acceptance |
+| SCRUM-193 | `scrum-193-supplier-natural-expiry-tablet-2026-10-01.png` (11215), `scrum-193-supplier-expired-token-admin-tablet-2026-10-01.png` (11216) | Naturally expired link denied and exact QA token marked Expired | None for expiry path |
 | SCRUM-193 | `scrum-193-beo-set-menu-submitted-tablet-2026-10-01.png` (11211) | Saved birthday event's included and chosen menu items; selections received | Mounted package UI and foreign-tenant refusal |
-| SCRUM-193 | `scrum-193-beo-synthetic-event-tablet-2026-10-01.png` (11212) | Synthetic Event Info panel clipped on the right at 820px | Fix editor width and re-capture |
+| SCRUM-193 | `scrum-193-beo-synthetic-event-tablet-2026-10-01.png` (11212) | Synthetic Event Info while the sheet was still sliding into place; inconclusive for final width | Capture settled editor before layout acceptance |
 
 The exact synthetic package, line item and menu were removed after capture. Both images are real staging browser captures at an 820x1180 viewport; neither image is a mockup.
 The synthetic supplier report, comment and two access tokens were removed after capture; both existing branches remained.
-The BEO event, package, snapshot, menu, choice and kitchen plan were removed after capture. The clipped screenshot is a defect record, not a layout pass.
+The separate supplier media/reply/expiry fixture was also removed by exact IDs and object key; both branches returned to their baseline report count.
+The BEO event, package, snapshot, menu, choice and kitchen plan were removed after capture. The early editor screenshot is a transition frame and neither a layout pass nor proof of a persistent defect.
