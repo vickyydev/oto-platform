@@ -1,5 +1,45 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 1 October 2026 - arrival Deployed, check-in round 1 on main
+
+This is the platform lane's block (the Codex lane's release checkpoint
+follows below and is untouched).
+
+S2-12 (SCRUM-209, booking arrival) is Deployed whole: hosted checkout with
+the signed booking QR and the server-enforced visit window; the gate box on
+the real GE-X2/HX-X1 protocols with credit-refusing anti-passback (no
+simulator app; scripted doubles in tests only); one-transaction till
+redemption; live occupancy with honest staleness; offline box redemption
+with the cross-box quarantine. Closing staging evidence: sales T1-000035
+(online) and T1-000036 (box offline, synced once). Also Deployed this arc:
+SCRUM-461, 470, 471, 472, 473 (rota-synced booth roster), 474 (console
+redesign complete), 475, 476. SCRUM-477's residual fix round landed as
+1f5f01ef (typed QR verified on the box, recovery naming the ringing till,
+exactly-once quarantine alerts, History paid-online wording); the ticket
+stays open for staging captures and one recorded one-liner (double power-cut
+actor attribution).
+
+S2-13 (SCRUM-210, check-in and supervision) is In Progress on the plan at
+docs/progress/plans/checkin/PLAN.md. Round 1 of 4 landed as 11fce4cb with
+migration 0043_checkin_supervision: the registration/checkin/guardian/
+waiver/release/nanny model with seeded policy, the till's gate persisting
+registration + consent + photo for real, check-in-now as one transaction to
+sale/bands/print, the drop-off fee law in packages/shared/src/supervision.ts,
+and the DROP-OFF/NANNY badge now really printing on kid bands. The round's
+gate caught and fixed branch-id plumbing, fee-law drift and a mock roster
+before landing. SCRUM-478 (High) records its one enforcement gap: the sale
+service must refuse a kids-only sale with no registration.
+
+In flight when this block was written: round 2 (the board) and round 3
+(pickups/release) building in parallel on PLAN.md section 3's file fences,
+plus the SCRUM-478 fix round; round 4 (offline) follows. Resume rule for a
+fresh session: read PLAN.md, check Jira SCRUM-210/477/478 comments for the
+latest landed state, and git log main for commits referencing them.
+
+Migration chain landed through 0043. CI on main queues rather than cancels.
+Waiting on the owner: Xero connection, 2C2P sandbox credentials, card-refund
+default, pricing rulings, SCRUM-467 park observations, SCRUM-469 go.
+
 ## Release checkpoint - 30 September 2026 - break checkpoint saved
 
 The current release checkpoint is complete. Stop here and await the next
