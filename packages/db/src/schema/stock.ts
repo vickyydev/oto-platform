@@ -292,6 +292,15 @@ export const stockTakeLine = pos.table(
     /** counted − expected; negative is a shortage. */
     difference: integer('difference').notNull(),
     flagged: boolean('flagged').notNull().default(false),
+    /**
+     * This line was its place's OPENING — the place's first figure, set where
+     * nothing had been counted or moved before — as the commit judged it under
+     * the branch's count lock (OD-S5; stock walkthrough F1). The reports read
+     * this answer, so they can never disagree with the commit. NULL on lines
+     * written before 0051: those are judged at read time from the counts and
+     * movements that came before them.
+     */
+    opening: boolean('opening'),
     status: text('status').notNull().default('pending'),
     countedByAccountId: uuid('counted_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
     countedAt: timestamp('counted_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),

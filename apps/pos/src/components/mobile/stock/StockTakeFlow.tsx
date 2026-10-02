@@ -3,18 +3,24 @@ import { AlertTriangle, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { STOCK_TAKE_FLAG_THRESHOLD } from '@oto/shared';
 import { InventoryItem, InventoryVariant, StockLocation } from '@/types';
 import { UnitQuantityInput } from './UnitQuantityInput';
-import { stockApi, stockErrorWords } from '@/api/stock';
+import { fetchPlaceOpenings, stockApi, stockErrorWords } from '@/api/stock';
 
 // Discrepancy threshold: flag if |discrepancy| > this many eaches (OD-S1; the
 // platform applies the same figure and is the one that records it).
 const DISCREPANCY_THRESHOLD = STOCK_TAKE_FLAG_THRESHOLD;
 
-interface CountRow {
+export interface CountRow {
   item: InventoryItem;
   variant: InventoryVariant;
   expectedQty: number;
   qtyRaw: string;
   eaches: number;
+}
+
+/** A counted row as the review shows it. */
+export interface ReviewRow extends CountRow {
+  discrepancy: number;
+  flagged: boolean;
 }
 
 interface AdjustedRow {
@@ -35,11 +41,193 @@ interface StockTakeFlowProps {
   onDone: () => void;
 }
 
+/**
+ * Whether the place being counted is at its opening, as the platform answered
+ * BEFORE the commit (stock walkthrough F2): `true` — never counted, so this
+ * count is its opening and flags nothing; `false` — an ordinary count;
+ * `null` — not known (still asking, or the platform could not be asked).
+ */
+export type PlaceOpening = boolean | null;
+
+/**
+ * The counted rows, judged as the platform will judge them: a difference above
+ * the threshold is flagged — except at a place's opening, which sets the
+ * starting figures and flags nothing (OD-S5, per place).
+ */
+export function reviewRows(rows: readonly CountRow[], placeOpening: PlaceOpening): ReviewRow[] {
+  return rows.map((r) => ({
+    ...r,
+    discrepancy: r.eaches - r.expectedQty,
+    flagged: placeOpening !== true && Math.abs(r.eaches - r.expectedQty) > DISCREPANCY_THRESHOLD,
+  }));
+}
+
+/**
+ * THE REVIEW, before the commit. It used to warn "Large discrepancies — will
+ * auto-adjust on commit … flagged in the variance log" for a place's first
+ * count, which the platform then saved as the place's opening, unflagged. It
+ * asks the platform first now and says what will actually be recorded.
+ */
+export function StockTakeReviewBody({
+  locName,
+  rows,
+  placeOpening,
+  checking,
+  expandedItems,
+  onToggleExpand,
+}: {
+  locName: string;
+  rows: readonly ReviewRow[];
+  placeOpening: PlaceOpening;
+  /** True while the platform is being asked whether this place has been counted. */
+  checking: boolean;
+  expandedItems: ReadonlySet<string>;
+  onToggleExpand: (key: string) => void;
+}) {
+  const flaggedRows = rows.filter((r) => r.flagged);
+  const cleanRows = rows.filter((r) => !r.flagged);
+  const varSuffix = (r: ReviewRow) => (r.item.variants.length > 1 ? ` · ${r.variant.label}` : '');
+
+  if (placeOpening === true) {
+    return (
+      <>
+        <div>
+          <p className="font-semibold">Review — {locName}</p>
+          <p className="text-xs text-foreground/50 mt-0.5">
+            {rows.length} counted · opening count
+          </p>
+        </div>
+        <div className="rounded-xl border border-primary/25 bg-primary/[0.05] p-4 flex flex-col gap-1.5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+            Opening count for {locName}
+          </p>
+          <p className="text-xs text-foreground/60 leading-relaxed">
+            {locName} has not been counted before, so this count is its opening: stock there is set to
+            what you counted. Nothing is flagged and nothing goes in the variance log.
+          </p>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-foreground/40">
+            Starting figures ({rows.length})
+          </p>
+          {rows.map((r) => (
+            <div
+              key={`${r.item.id}:${r.variant.id}`}
+              className="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3
+                         flex items-center justify-between text-sm"
+            >
+              <span>
+                {r.item.name}{varSuffix(r)}
+              </span>
+              <span className="text-foreground/40 text-xs">counted {r.eaches}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div>
+        <p className="font-semibold">Review — {locName}</p>
+        <p className="text-xs text-foreground/50 mt-0.5">
+          {rows.length} counted · {flaggedRows.length} flagged
+        </p>
+        {checking && (
+          <p role="status" className="text-xs text-foreground/40 mt-0.5">
+            Checking whether this is {locName}’s first count…
+          </p>
+        )}
+      </div>
+
+      {flaggedRows.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-destructive">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Large discrepancies — will auto-adjust on commit
+          </div>
+          {flaggedRows.map((r) => {
+            const key = `${r.item.id}:${r.variant.id}`;
+            return (
+              <div key={key} className="rounded-xl border border-destructive/30 bg-destructive/[0.04] p-4 flex flex-col gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {r.item.photoUrl && (
+                    <img
+                      src={r.item.photoUrl}
+                      alt=""
+                      className="w-9 h-9 shrink-0 rounded-md object-cover border border-foreground/10"
+                    />
+                  )}
+                  <p className="font-medium text-sm truncate">{r.item.name}{varSuffix(r)}</p>
+                </div>
+                <div className="grid grid-cols-3 text-xs gap-1">
+                  <div className="text-center">
+                    <p className="text-foreground/40">Expected</p>
+                    <p className="font-bold">{r.expectedQty}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-foreground/40">Counted</p>
+                    <p className="font-bold">{r.eaches}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-foreground/40">Diff</p>
+                    <p className={`font-bold ${r.discrepancy < 0 ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'}`}>
+                      {r.discrepancy > 0 ? '+' : ''}{r.discrepancy}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-foreground/40 italic">
+                  {placeOpening === false
+                    ? 'Stock will be auto-adjusted to the counted value and flagged in the variance log.'
+                    : `Stock will be auto-adjusted to the counted value and flagged in the variance log — unless this is ${locName}’s first count, which is its opening and flags nothing.`}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {cleanRows.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-foreground/40">
+            Clean ({cleanRows.length})
+          </p>
+          {cleanRows.map((r) => {
+            const key = `${r.item.id}:${r.variant.id}`;
+            const expanded = expandedItems.has(key);
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onToggleExpand(key)}
+                className="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3
+                           flex items-center justify-between text-sm text-left"
+              >
+                <span>
+                  {r.item.name}{varSuffix(r)}
+                  <span className="text-foreground/40 ml-2 text-xs">
+                    {r.discrepancy === 0 ? '✓ exact' : `diff ${r.discrepancy > 0 ? '+' : ''}${r.discrepancy}`}
+                  </span>
+                </span>
+                {expanded ? <ChevronUp className="w-4 h-4 text-foreground/30" /> : <ChevronDown className="w-4 h-4 text-foreground/30" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
 export function StockTakeFlow({ branchId, inventory, locations, onDone }: StockTakeFlowProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  /** True when the platform recorded this count as the branch's opening (OD-S5). */
+  /** True when the platform recorded this count as the place's opening (OD-S5, per place). */
   const [opening, setOpening] = useState(false);
+  /** The platform's answer, asked on the way to the review: is this the place's first count? */
+  const [placeOpening, setPlaceOpening] = useState<PlaceOpening>(null);
+  const [checkingOpening, setCheckingOpening] = useState(false);
   const [locationId, setLocationId] = useState(locations.find((l) => l.active)?.id ?? '');
   const [phase, setPhase] = useState<'count' | 'review' | 'done'>('count');
   const [rows, setRows] = useState<CountRow[]>([]);
@@ -88,14 +276,25 @@ export function StockTakeFlow({ branchId, inventory, locations, onDone }: StockT
   // a refused entry shows its reason under the field and is not counted).
   const countedRows = rows.filter((r) => r.qtyRaw.trim() !== '' && Number.isInteger(r.eaches));
 
-  const rowsWithDiscrepancy = countedRows.map((r) => ({
-    ...r,
-    discrepancy: r.eaches - r.expectedQty,
-    flagged: Math.abs(r.eaches - r.expectedQty) > DISCREPANCY_THRESHOLD,
-  }));
+  const rowsWithDiscrepancy = reviewRows(countedRows, placeOpening);
 
-  const flaggedRows = rowsWithDiscrepancy.filter((r) => r.flagged);
-  const cleanRows = rowsWithDiscrepancy.filter((r) => !r.flagged);
+  /** On to the review — asking the platform first whether this place has ever been counted (F2). */
+  const goToReview = async () => {
+    setPhase('review');
+    setPlaceOpening(null);
+    if (!branchId) return;
+    setCheckingOpening(true);
+    try {
+      const places = await fetchPlaceOpenings(branchId);
+      const place = places.find((p) => p.locationId === locationId);
+      setPlaceOpening(place ? !place.opened : null);
+    } catch {
+      // Not known: the review says what happens either way; the commit still decides.
+      setPlaceOpening(null);
+    } finally {
+      setCheckingOpening(false);
+    }
+  };
 
   const handleCommit = async () => {
     if (!branchId || busy) return;
@@ -105,9 +304,10 @@ export function StockTakeFlow({ branchId, inventory, locations, onDone }: StockT
       // Auto-adjust ALL rows with a discrepancy (no manager approval gate,
       // OD-S1). The platform sets each counted shelf to what was counted,
       // against the record AT COMMIT — a sale rung up while the count was under
-      // way is not counted twice — flags a difference above three, writes a
-      // take line for every counted shelf (exact matches included, so the
-      // Discrepancies report has the full history) and audits it.
+      // way is not counted twice — flags a difference above three (never at a
+      // place's opening), writes a take line for every counted shelf (exact
+      // matches included, so the Discrepancies report has the full history)
+      // and audits it.
       const take = await stockApi.commitStockTake(
         branchId,
         rowsWithDiscrepancy.map((r) => ({ stockItemId: r.variant.id, locationId, countedQuantity: r.eaches })),
@@ -151,7 +351,7 @@ export function StockTakeFlow({ branchId, inventory, locations, onDone }: StockT
               {countedRows.length} item{countedRows.length !== 1 ? 's' : ''} counted at {locName}
             </p>
             {opening && (
-              <p className="text-xs text-foreground/40 mt-1">Recorded as this branch’s opening count.</p>
+              <p className="text-xs text-foreground/40 mt-1">Recorded as {locName}’s opening count.</p>
             )}
           </div>
         </div>
@@ -208,94 +408,20 @@ export function StockTakeFlow({ branchId, inventory, locations, onDone }: StockT
     const locName = activeLocations.find((l) => l.id === locationId)?.name ?? locationId;
     return (
       <div className="flex flex-col gap-4 p-4 pb-24">
-        <div>
-          <p className="font-semibold">Review — {locName}</p>
-          <p className="text-xs text-foreground/50 mt-0.5">
-            {countedRows.length} counted · {flaggedRows.length} flagged
-          </p>
-        </div>
-
-        {flaggedRows.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-destructive">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              Large discrepancies — will auto-adjust on commit
-            </div>
-            {flaggedRows.map((r) => {
-              const key = `${r.item.id}:${r.variant.id}`;
-              const varSuffix = r.item.variants.length > 1 ? ` · ${r.variant.label}` : '';
-              return (
-                <div key={key} className="rounded-xl border border-destructive/30 bg-destructive/[0.04] p-4 flex flex-col gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {r.item.photoUrl && (
-                      <img
-                        src={r.item.photoUrl}
-                        alt=""
-                        className="w-9 h-9 shrink-0 rounded-md object-cover border border-foreground/10"
-                      />
-                    )}
-                    <p className="font-medium text-sm truncate">{r.item.name}{varSuffix}</p>
-                  </div>
-                  <div className="grid grid-cols-3 text-xs gap-1">
-                    <div className="text-center">
-                      <p className="text-foreground/40">Expected</p>
-                      <p className="font-bold">{r.expectedQty}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-foreground/40">Counted</p>
-                      <p className="font-bold">{r.eaches}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-foreground/40">Diff</p>
-                      <p className={`font-bold ${r.discrepancy < 0 ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'}`}>
-                        {r.discrepancy > 0 ? '+' : ''}{r.discrepancy}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-foreground/40 italic">
-                    Stock will be auto-adjusted to the counted value and flagged in the variance log.
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {cleanRows.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-foreground/40">
-              Clean ({cleanRows.length})
-            </p>
-            {cleanRows.map((r) => {
-              const key = `${r.item.id}:${r.variant.id}`;
-              const varSuffix = r.item.variants.length > 1 ? ` · ${r.variant.label}` : '';
-              const expanded = expandedItems.has(key);
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => toggleExpand(key)}
-                  className="rounded-xl border border-foreground/10 bg-foreground/[0.02] p-3
-                             flex items-center justify-between text-sm text-left"
-                >
-                  <span>
-                    {r.item.name}{varSuffix}
-                    <span className="text-foreground/40 ml-2 text-xs">
-                      {r.discrepancy === 0 ? '✓ exact' : `diff ${r.discrepancy > 0 ? '+' : ''}${r.discrepancy}`}
-                    </span>
-                  </span>
-                  {expanded ? <ChevronUp className="w-4 h-4 text-foreground/30" /> : <ChevronDown className="w-4 h-4 text-foreground/30" />}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <StockTakeReviewBody
+          locName={locName}
+          rows={rowsWithDiscrepancy}
+          placeOpening={placeOpening}
+          checking={checkingOpening}
+          expandedItems={expandedItems}
+          onToggleExpand={toggleExpand}
+        />
 
         <div className="fixed bottom-20 left-0 right-0 px-4">
           {error && <p role="alert" className="mb-2 text-xs text-destructive text-center">{error}</p>}
           <button
             type="button"
-            disabled={busy || !branchId}
+            disabled={busy || !branchId || checkingOpening}
             onClick={() => void handleCommit()}
             className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40"
           >
@@ -368,7 +494,7 @@ export function StockTakeFlow({ branchId, inventory, locations, onDone }: StockT
             <button
               type="button"
               disabled={countedRows.length === 0}
-              onClick={() => setPhase('review')}
+              onClick={() => void goToReview()}
               className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm
                          disabled:opacity-40 transition-opacity"
             >

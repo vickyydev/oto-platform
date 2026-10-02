@@ -85,13 +85,20 @@ opening is per branch but counts are per place (the second place's
 opening read as variance and shrinkage); F3 the Alerts screen computes on
 the device instead of reading the platform attention (trend rule never
 shown, suppressed items shown, stale "future releases" text). Plus F2
-(review wording) and F4 (retired item in the strip). Then a repeat
-walkthrough of those parts, evidence cards, Deployed, and SCRUM-211
-closes. Queued for
+(review wording) and F4 (retired item in the strip). The fix round
+lands with this checkpoint after three gate cycles: the opening is per
+place, decided under the level locks (a place that ever held stock is
+never at its opening, so a real loss always reaches Discrepancies and
+Shrinkage), with the answer stored per count line (migration 0051) and
+older lines judged by the same rule at read time; the Alerts screen shows
+exactly the platform's attention rows (suppression and the 30-day rule
+label included); the review screen names an opening; the strip ignores
+retired items. Next: CI, a repeat walkthrough of these parts, evidence
+cards, Deployed, and SCRUM-211 closes. Queued for
 round 4: show the box's stock refusals on the till, the no-places
 shortfall, two round-2 notes and one refusal wording.
 
-Migrations landed through 0050. To resume: read this block, then the
+Migrations landed through 0051. To resume: read this block, then the
 SCRUM-213 comments, then `git log main`.
 
 ## Platform lane checkpoint - 1 October 2026 (evening) - S2-13 Deployed whole

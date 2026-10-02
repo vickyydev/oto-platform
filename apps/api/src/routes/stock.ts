@@ -21,6 +21,7 @@ import {
   StockLocationsSchema,
   StockLocationViewSchema,
   StockMovementsSchema,
+  StockPlaceOpeningsSchema,
   StockCostOfGoodsSchema,
   StockReceiveBodySchema,
   StockReceiveResultSchema,
@@ -55,6 +56,7 @@ import {
   setSellPoint,
   stockCostOfGoods,
   stockLevelsOf,
+  stockPlaceOpenings,
   stockReports,
   transferStock,
   updateLocation,
@@ -301,13 +303,31 @@ export async function stockRoutes(app: App): Promise<void> {
     },
   );
 
+  app.get(
+    '/branches/:branchId/stock/openings',
+    {
+      config: { permission: 'pos:stock:read', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          "Whether each of the branch's places has had its opening count yet — a place's first count is its opening: it sets the starting figures and flags nothing. The count's review screen asks before committing",
+        params: BranchParams,
+        response: { 200: StockPlaceOpeningsSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      await loadStockBranch(app, req.params.branchId, auth.operatorId);
+      return { places: await stockPlaceOpenings(app.db, auth.operatorId, req.params.branchId) };
+    },
+  );
+
   app.post(
     '/branches/:branchId/stock/stock-takes',
     {
       config: { permission: 'pos:stock:count', target: { branchId: 'params.branchId' } },
       schema: {
         description:
-          'Commit a count: each counted shelf is set to what was counted, a difference above three is flagged, all of it audited. The first count is the opening',
+          "Commit a count: each counted shelf is set to what was counted, a difference above three is flagged, all of it audited. Each place's first count is that place's opening, and is never flagged",
         params: BranchParams,
         body: StockTakeBodySchema,
         response: { 200: StockTakeResultSchema },

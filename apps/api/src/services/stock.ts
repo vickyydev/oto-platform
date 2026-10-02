@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, ne, notInArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne, notInArray, sql, type SQL } from 'drizzle-orm';
 import {
   account,
   branch,
@@ -46,6 +46,7 @@ import {
   type SellableStock,
   type StockAdjustBody,
   type StockAdjustResult,
+  type StockAttentionLowStock,
   type StockAttentionView,
   type StockCostOfGoods,
   type StockDiscrepancyRow,
@@ -54,6 +55,7 @@ import {
   type StockLocationType,
   type StockLocationView,
   type StockMovementView,
+  type StockPlaceOpening,
   type StockPurchaseOrderRow,
   type StockReceiveBody,
   type StockReceiveResult,
@@ -1171,11 +1173,16 @@ export async function sellableStock(db: Exec, operatorId: string, branchId: stri
     items.map((i) => i.id),
   );
   const productIds = [...new Set(items.map((i) => i.productId!))];
+  // A retired product — withdrawn from the sell surface (`active = false`) or
+  // archived — is not sold, so it is not the till's to count: the header strip
+  // never names it as out of stock (stock walkthrough F4, "Old Lanyard
+  // (retired)" in "12 out of stock"). Its stock item still shows on the stock
+  // screens, which read the levels, not this.
   const products = productIds.length
     ? await db
         .select({ id: product.id, name: product.name, variants: product.variants })
         .from(product)
-        .where(inArray(product.id, productIds))
+        .where(and(inArray(product.id, productIds), eq(product.active, true), isNull(product.archivedAt)))
     : [];
   const out: SellableStock = { branchId, sellPointId: sellPoint?.id ?? null, products: [] };
   for (const p of products.sort((a, b) => a.name.localeCompare(b.name))) {
@@ -1261,6 +1268,17 @@ export async function stockLevelsOf(
       : []
     ).map((p) => [p.id, p.kind as string]),
   );
+  // Each item's reorder point today, judged over its live sizes exactly as the
+  // low-stock attention judges it (`syncStockAttention`).
+  const live = items.filter((i) => i.active);
+  const today = await branchToday(db, branchId, new Date());
+  const usage = await usageForTrend(db, branchId, live.map((i) => i.id), today);
+  const liveGroups = new Map<string, ItemRow[]>();
+  for (const i of [...live].sort((a, b) => a.id.localeCompare(b.id))) {
+    const key = stockGroupKey(i);
+    liveGroups.set(key, [...(liveGroups.get(key) ?? []), i]);
+  }
+  const pointNow = new Map([...liveGroups].map(([key, sizes]) => [key, groupReorderPoint(sizes, usage, today).reorderPoint]));
   return {
     branchId,
     locations: locations.map((l) => ({ id: l.id, name: l.name, type: l.type, sellPoint: l.sellPoint })),
@@ -1290,6 +1308,7 @@ export async function stockLevelsOf(
         lowStockThreshold: i.lowStockThreshold,
         parByLocation: i.parByLocation,
         reorderPoint: i.reorderPoint,
+        reorderPointNow: pointNow.get(stockGroupKey(i)) ?? null,
         reorderQuantity: i.reorderQuantity,
         leadTimeDays: i.leadTimeDays,
         supplierName: i.supplierName,
@@ -1368,7 +1387,7 @@ export async function movementsOf(
 //     arrival, today + the largest lead time (`StockPurchasing.tsx:303-315`);
 //   - a count sets each counted shelf to what was counted, flags a difference
 //     above three and adjusts with no approval gate (`StockTakeFlow.tsx:96-148`,
-//     OD-S1); a branch's FIRST count is its opening (OD-S5);
+//     OD-S1); each place's FIRST count is that place's opening (OD-S5);
 //   - exactly one active sell point, only a FOH rotation place can be it, and it
 //     can be neither retired nor retyped (`catalogStore.ts:1434-1447`,
 //     `StockLocationsPanel.tsx:155-203`).
@@ -2133,8 +2152,21 @@ export async function receivePurchaseOrderLine(
  * is the record AT COMMIT (the levels locked), not the one on the counter's
  * screen when the count began, so a sale rung up meanwhile is not counted
  * twice. The difference is written as a `count` movement, flagged when it is
- * above three, and audited — no approval gate (OD-S1). The branch's first
- * count is its opening (OD-S5), whose lines are never flagged.
+ * above three, and audited — no approval gate (OD-S1).
+ *
+ * THE OPENING IS PER PLACE (OD-S5; stock walkthrough F1). The module counts
+ * one place at a time, so the first count at a place WITH NOTHING ON RECORD —
+ * never counted, and no movement ever changed what it holds — is that place's
+ * opening: its lines are never flagged and its reason says "Opening count". It
+ * used to be the branch's first count only, so a second place's first count
+ * (BOH counted 15/25/10 against an expected 0) was recorded as an ordinary
+ * flagged count. A place the ledger already stocked (a transfer in, a delivery)
+ * is NOT at its opening, even at its first count: a shortfall against the
+ * record there is a real loss, flagged and reported. Each line stores the
+ * answer (`stock_take_line.opening`) and the reports read it
+ * (`placeOpeningSql`); lines written before 0051 are judged there by the same
+ * rule. `stock_take.opening` is "every place this take counted was at its
+ * opening"; each line's own answer is `opening` on the result.
  */
 export async function commitStockTake(
   tx: Tx,
@@ -2156,18 +2188,34 @@ export async function commitStockTake(
   );
   const places = new Map<string, LocationRow>();
   for (const id of new Set(body.lines.map((l) => l.locationId))) places.set(id, await loadBranchLocation(tx, actor, id));
-  // One count at a time per branch, so two first counts cannot both be "the opening".
+  // One count at a time per branch, so two first counts at a place cannot both
+  // be "the opening". Each line stores the answer given here (`opening`), and
+  // the reports read it — the commit's order is the only order that counts.
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`stock_take:${actor.branchId}`}))`);
-  const [prior] = await tx
-    .select({ id: stockTake.id })
-    .from(stockTake)
-    .where(and(eq(stockTake.branchId, actor.branchId), eq(stockTake.status, 'committed')))
-    .limit(1);
-  const opening = !prior;
+  // Lock the levels FIRST, then ask whether each place is at its opening. The
+  // movement writers (a delivery, a transfer, a sale) do not take the count
+  // lock, so a delivery still open when the count starts would be invisible to
+  // the question — and then, once it commits, the locked level would read what
+  // it delivered (stock fix gate F1). Once the level rows are locked, every
+  // movement that changed them has committed, and the next statement (READ
+  // COMMITTED) sees it: the answer and the expected figure come from the same
+  // point in the serial order.
   const levels = await lockLevels(
     tx,
     body.lines.map((l) => ({ stockItemId: l.stockItemId, stockLocationId: l.locationId })),
   );
+  const started = await placeRecordStarts(tx, actor, [...places.keys()]);
+  // The backstop: a place where this take counts against a figure the ledger
+  // put there (a level that is not zero) already has a record, whatever the
+  // history query answered.
+  const stocked = new Set(
+    body.lines
+      .filter((l) => (levels.get(pairKey(l.stockItemId, l.locationId)) ?? 0) !== 0)
+      .map((l) => l.locationId),
+  );
+  /** The places this take opens: never counted, nothing ever moved there, nothing held there now. */
+  const openingPlaces = new Set([...places.keys()].filter((id) => !started.has(id) && !stocked.has(id)));
+  const opening = openingPlaces.size === places.size;
   const takeId = newId();
   await tx.insert(stockTake).values({
     id: takeId,
@@ -2187,9 +2235,10 @@ export async function commitStockTake(
     const item = items.get(line.stockItemId)!;
     const expected = levels.get(pairKey(line.stockItemId, line.locationId)) ?? 0;
     const difference = line.countedQuantity - expected;
-    // The opening sets the starting figure; it is not a variance against one,
-    // so it is never flagged — the same as the seed's opening lines.
-    const flagged = !opening && stockTakeFlagged(difference);
+    // A place's opening sets its starting figure; it is not a variance against
+    // one, so it is never flagged — the same as the seed's opening lines.
+    const placeOpening = openingPlaces.has(line.locationId);
+    const flagged = !placeOpening && stockTakeFlagged(difference);
     const status = difference === 0 ? ('confirmed' as const) : ('adjusted' as const);
     const lineId = newId();
     await tx.insert(stockTakeLine).values({
@@ -2202,6 +2251,7 @@ export async function commitStockTake(
       countedQuantity: line.countedQuantity,
       difference,
       flagged,
+      opening: placeOpening,
       status,
       countedByAccountId: actor.accountId,
       countedAt: now,
@@ -2216,7 +2266,7 @@ export async function commitStockTake(
         quantity: difference,
         actionId: `count:${lineId}`,
         stockTakeLineId: lineId,
-        reason: `${opening ? 'Opening count' : 'Stock take'} — expected ${expected}, counted ${line.countedQuantity}${flagged ? ' (flagged)' : ''}`,
+        reason: `${placeOpening ? 'Opening count' : 'Stock take'} — expected ${expected}, counted ${line.countedQuantity}${flagged ? ' (flagged)' : ''}`,
         unitCostSatang: item.unitCostSatang,
       });
     }
@@ -2229,6 +2279,7 @@ export async function commitStockTake(
       difference,
       flagged,
       status,
+      opening: placeOpening,
     });
   }
   await applyMovements(tx, await movementContext(tx, actor, now), drafts);
@@ -2243,6 +2294,7 @@ export async function commitStockTake(
     requestId: actor.requestId ?? null,
     after: {
       opening,
+      openingPlaces: [...openingPlaces].map((id) => ({ locationId: id, place: places.get(id)!.name })),
       counted: lines.length,
       adjusted: lines.filter((l) => l.difference !== 0).length,
       flagged: flaggedLines.map((l) => ({
@@ -2259,6 +2311,104 @@ export async function commitStockTake(
   });
   await syncStockAttention(tx, actor, now);
   return { id: takeId, opening, lines };
+}
+
+/**
+ * WHEN EACH PLACE'S RECORD STARTED — the first committed count there, or the
+ * first movement that changed what the place holds (a transfer in, a delivery,
+ * a correction, a sale that took units), whichever came first. A place with no
+ * entry has nothing on record: its next count is its OPENING (OD-S5, per
+ * place). A place that has one is not, even if it was never counted — the
+ * ledger already put a figure there, and a count against that figure is an
+ * ordinary count whose shortfall is a real loss (stock walkthrough F1).
+ *
+ * A sale's shortfall-only row (quantity 0: units sold that were not on record)
+ * changes nothing a count is measured against, so it does not start a place.
+ *
+ * `locationIds` narrows it to those places; without it, every place of the branch.
+ */
+async function placeRecordStarts(
+  db: Exec,
+  scope: { operatorId: string; branchId: string },
+  locationIds?: string[],
+): Promise<Map<string, Date>> {
+  if (locationIds && locationIds.length === 0) return new Map();
+  const only = (column: SQL) =>
+    locationIds ? sql`and ${column} in (${sql.join(locationIds.map((id) => sql`${id}::uuid`), sql`, `)})` : sql``;
+  const { rows } = await db.execute<{ location_id: string; started_at: Date | string }>(sql`
+    select location_id, min(started_at) as started_at from (
+      select l.stock_location_id as location_id, t.committed_at as started_at
+        from pos.stock_take_line l
+        join pos.stock_take t on t.id = l.stock_take_id
+       where t.operator_id = ${scope.operatorId}::uuid and t.branch_id = ${scope.branchId}::uuid
+         and t.status = 'committed'
+         ${only(sql`l.stock_location_id`)}
+      union all
+      select m.stock_location_id, m.created_at
+        from pos.stock_movement m
+       where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
+         and m.quantity <> 0
+         ${only(sql`m.stock_location_id`)}
+    ) started
+    group by location_id`);
+  return new Map(rows.map((r) => [r.location_id, new Date(r.started_at)]));
+}
+
+/**
+ * IS THIS LINE ITS PLACE'S OPENING? The commit's own answer, stored on the line
+ * (`stock_take_line.opening`, 0051) under the branch's count lock — so the
+ * reports can never order two counts differently from how they were committed
+ * (stock walkthrough F1: a take stamped earlier but committed second was read
+ * as an opening too, and its real variance vanished).
+ *
+ * Lines written before 0051 carry NULL and are judged here, at READ time, by
+ * the same rule the commit uses (`placeRecordStarts`): an opening line is one
+ * whose place had no earlier committed count AND no earlier movement that
+ * changed what it holds — the take's own count movements aside. Staging's BOH,
+ * first counted against an expected 0 after FOH, still reads as its opening;
+ * a place stocked by a transfer or a delivery before its first count does not.
+ *
+ * WHY AT READ TIME, NOT A BACKFILL: the ledger stays append-only and untouched,
+ * so every level is still exactly the sum of its movements; old rows' stored
+ * `flagged` and movement reason stay what was written.
+ *
+ * `line` and `take` are the SQL aliases of `pos.stock_take_line` and
+ * `pos.stock_take` in the calling query — constants, never input.
+ */
+function placeOpeningSql(line: 'stock_take_line' | 'l', take: 'stock_take' | 't') {
+  const l = sql.raw(line);
+  const t = sql.raw(take);
+  return sql`coalesce(${l}.opening, (
+      not exists (
+        select 1 from pos.stock_take_line prior_line
+          join pos.stock_take prior_take on prior_take.id = prior_line.stock_take_id
+         where prior_take.branch_id = ${t}.branch_id
+           and prior_take.status = 'committed'
+           and prior_line.stock_location_id = ${l}.stock_location_id
+           and (prior_take.committed_at, prior_take.id) < (${t}.committed_at, ${t}.id))
+      and not exists (
+        select 1 from pos.stock_movement prior_move
+         where prior_move.branch_id = ${t}.branch_id
+           and prior_move.stock_location_id = ${l}.stock_location_id
+           and prior_move.quantity <> 0
+           and prior_move.created_at < ${t}.committed_at
+           and (prior_move.stock_take_line_id is null or not exists (
+                 select 1 from pos.stock_take_line own
+                  where own.id = prior_move.stock_take_line_id and own.stock_take_id = ${t}.id)))))`;
+}
+
+/**
+ * Whether each place of the branch — retired ones too — has had its opening:
+ * the count's review screen asks before the commit (F2), so a place's first
+ * count is described as what the platform will record it as. A place the
+ * ledger has already stocked — a transfer in, a delivery — is `opened` even
+ * before its first count: that count will be judged against the record.
+ */
+export async function stockPlaceOpenings(db: Exec, operatorId: string, branchId: string): Promise<StockPlaceOpening[]> {
+  const places = await listLocations(db, branchId, { includeRetired: true });
+  const started = await placeRecordStarts(db, { operatorId, branchId });
+  const openedAt = new Map([...started].map(([id, at]) => [id, at.toISOString()]));
+  return places.map((p) => ({ locationId: p.id, opened: openedAt.has(p.id), openedAt: openedAt.get(p.id) ?? null }));
 }
 
 // --- Places -------------------------------------------------------------------------------
@@ -2778,6 +2928,31 @@ async function usageForTrend(
   return out;
 }
 
+/**
+ * One item's reorder point today — all its sizes together, by `reorderPointFor`:
+ * the static point (the first size that has one), the lead time likewise, the
+ * earliest first sale and the window's usage summed over the sizes. The
+ * low-stock attention fires on it, and the levels read carries it
+ * (`reorderPointNow`), so the stock screens judge "low" as the Alerts tab does.
+ */
+function groupReorderPoint(
+  sizes: readonly ItemRow[],
+  usage: Map<string, { firstSaleDate: string | null; usedInWindow: number }>,
+  today: string,
+): ReturnType<typeof reorderPointFor> {
+  const firstSales = sizes.flatMap((s) => {
+    const first = usage.get(s.id)?.firstSaleDate;
+    return first ? [first] : [];
+  });
+  return reorderPointFor({
+    staticPoint: sizes.find((s) => s.reorderPoint !== null)?.reorderPoint ?? null,
+    leadTimeDays: sizes.find((s) => s.leadTimeDays !== null)?.leadTimeDays ?? null,
+    firstSaleDate: firstSales.length ? [...firstSales].sort()[0]! : null,
+    today,
+    usedInWindow: sizes.reduce((n, s) => n + (usage.get(s.id)?.usedInWindow ?? 0), 0),
+  });
+}
+
 /** JSON with every object's keys sorted, so a jsonb read back compares equal to what was written. */
 function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
@@ -2807,7 +2982,8 @@ const sameJson = (a: unknown, b: unknown): boolean => canonicalJson(a) === canon
  *
  * ROUND 4 — THE REORDER POINT FOLLOWS THE ITEM'S USAGE (OD-27,
  * `reorderPointFor`): the static point until the item has 30 days of sale
- * history, then its 30-day usage × (lead time + a safety day); the row's rule
+ * history, then its average daily usage over 30 days × (lead time + a safety
+ * day), rounded up — ceil(used × (lead + 1) / 30); the row's rule
  * says which fired ("≤ reorder point" or "≤ reorder point (30-day usage)").
  *
  * WHO CALLS IT (round 4, handover Q4): every path that moves stock — the stock
@@ -2891,27 +3067,26 @@ export async function syncStockAttention(
       (sum, s) => sum + places.reduce((n, p) => n + (levelOf.get(pairKey(s.id, p.id)) ?? 0), 0),
       0,
     );
-    const firstSales = sizes.flatMap((s) => {
-      const first = usage.get(s.id)?.firstSaleDate;
-      return first ? [first] : [];
-    });
-    const point = reorderPointFor({
-      staticPoint: sizes.find((s) => s.reorderPoint !== null)?.reorderPoint ?? null,
-      leadTimeDays: sizes.find((s) => s.leadTimeDays !== null)?.leadTimeDays ?? null,
-      firstSaleDate: firstSales.length ? firstSales.sort()[0]! : null,
-      today,
-      usedInWindow: sizes.reduce((n, s) => n + (usage.get(s.id)?.usedInWindow ?? 0), 0),
-    });
+    const point = groupReorderPoint(sizes, usage, today);
     const reorderPoint = point.reorderPoint;
     const reorder = reorderPoint !== null && total <= reorderPoint;
     const reorderRule = point.rule === 'trend' ? STOCK_RULE_REORDER_TREND : STOCK_RULE_REORDER;
-    const belowPar: Array<{ stockItemId: string; size: string | null; place: string; level: number; par: number }> = [];
+    const belowPar: Array<{
+      stockItemId: string;
+      size: string | null;
+      locationId: string;
+      place: string;
+      level: number;
+      par: number;
+    }> = [];
     for (const s of sizes) {
       for (const [locationId, par] of Object.entries(s.parByLocation ?? {})) {
         const place = placeById.get(locationId);
         if (!place || !(par > 0)) continue;
         const level = levelOf.get(pairKey(s.id, locationId)) ?? 0;
-        if (level < par) belowPar.push({ stockItemId: s.id, size: s.variantLabel, place: place.name, level, par });
+        // The place's id with its name (walkthrough F3): the Alerts screen
+        // offers the transfer INTO this place, so it names it exactly.
+        if (level < par) belowPar.push({ stockItemId: s.id, size: s.variantLabel, locationId, place: place.name, level, par });
       }
     }
     if (!reorder && belowPar.length === 0) continue;
@@ -3033,7 +3208,41 @@ export async function listStockAttention(db: Exec, operatorId: string, branchId:
     saleId: r.saleId,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
+    lowStock: r.kind === 'low_stock' || r.kind === 'reorder' ? lowStockOf(r.kind, r.detail, r.dedupeKey) : null,
   }));
+}
+
+/**
+ * A low-stock row's figures as the Alerts screen reads them (walkthrough F3):
+ * the detail `syncStockAttention` writes, read leniently — a row written before
+ * a field existed answers it as unknown (a place's id: null, matched by name),
+ * never as a refusal of the whole list.
+ */
+function lowStockOf(kind: 'low_stock' | 'reorder', detail: unknown, dedupeKey: string): StockAttentionLowStock {
+  const d = detail && typeof detail === 'object' && !Array.isArray(detail) ? (detail as Record<string, unknown>) : {};
+  const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? Math.trunc(v) : null);
+  const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+  const belowPar = Array.isArray(d.belowPar) ? (d.belowPar as unknown[]) : [];
+  return {
+    // `low_stock:<branch>:<group>` names the group when the detail does not.
+    groupId: str(d.groupId) ?? dedupeKey.split(':').slice(2).join(':'),
+    total: num(d.total) ?? 0,
+    reorderPoint: num(d.reorderPoint),
+    reorderRule: d.reorderRule === 'trend' ? 'trend' : 'static',
+    staticReorderPoint: num(d.staticReorderPoint),
+    usedInWindow: num(d.usedInWindow),
+    reorder: kind === 'reorder',
+    belowPar: belowPar.flatMap((b) => {
+      if (!b || typeof b !== 'object') return [];
+      const e = b as Record<string, unknown>;
+      const stockItemId = str(e.stockItemId);
+      const place = str(e.place);
+      const level = num(e.level);
+      const par = num(e.par);
+      if (!stockItemId || place === null || level === null || par === null) return [];
+      return [{ stockItemId, size: str(e.size), locationId: str(e.locationId), place, level, par }];
+    }),
+  };
 }
 
 /** Somebody has looked: close one open attention row. A rule still firing raises a fresh one. */
@@ -3075,13 +3284,14 @@ export async function resolveStockAttention(tx: Tx, actor: StockActor, attention
 // Every figure below is read from `pos.stock_movement` — and the counts and
 // orders its rows point at — so each report adds up to the movements it names:
 //
-//   - Discrepancies: the counted shelves of every stock take (openings left
-//     out: a starting figure is not a variance); a non-zero line's difference IS
-//     its `count` movement.
+//   - Discrepancies: the counted shelves of every stock take (each PLACE's
+//     opening left out: a starting figure is not a variance — `placeOpeningSql`);
+//     a non-zero line's difference IS its `count` movement.
 //   - Usage: per size, sales net of refunds over business dates — a unit a paid
 //     sale took past the record counts as used (the guest has it), and a refund
 //     counts only what it put back on a shelf (the restock decision's).
-//   - Shrinkage: count variances (openings left out) plus corrections down.
+//   - Shrinkage: count variances (each place's opening left out) plus
+//     corrections down.
 //   - Purchases: the purchase orders, each line's received units read back from
 //     its `receive` movements.
 //   - Value: what each size holds at the live places now × its cost, "no cost
@@ -3182,7 +3392,9 @@ export async function stockDiscrepancies(
         eq(stockTake.operatorId, scope.operatorId),
         eq(stockTake.branchId, scope.branchId),
         eq(stockTake.status, 'committed'),
-        eq(stockTake.opening, false),
+        // Each place's opening left out — the commit's stored answer; a line
+        // written before 0051 is judged by the same rule at read time (F1).
+        sql`not ${placeOpeningSql('stock_take_line', 'stock_take')}`,
       ),
     )
     .orderBy(desc(stockTakeLine.countedAt), asc(stockTakeLine.id));
@@ -3253,7 +3465,7 @@ export async function stockUsage(
   return out.sort((a, b) => b.net - a.net || a.name.localeCompare(b.name) || a.stockItemId.localeCompare(b.stockItemId));
 }
 
-/** Shrinkage: per size, count variances (openings left out) plus corrections down. */
+/** Shrinkage: per size, count variances (each place's opening left out) plus corrections down. */
 export async function stockShrinkage(
   db: Exec,
   scope: ReportScope,
@@ -3279,7 +3491,7 @@ export async function stockShrinkage(
       left join pos.stock_take t on t.id = l.stock_take_id
      where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
        and m.business_date between ${scope.from}::date and ${scope.to}::date
-       and ((m.kind = 'count' and coalesce(t.opening, false) = false)
+       and ((m.kind = 'count' and (l.id is null or not ${placeOpeningSql('l', 't')}))
             or (m.kind = 'adjust' and m.quantity < 0))
      group by m.stock_item_id`);
   const out: StockShrinkageRow[] = [];

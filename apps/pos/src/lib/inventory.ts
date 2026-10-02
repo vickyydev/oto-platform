@@ -52,10 +52,13 @@ export interface ReorderAlert {
  * This is distinct from par-based transfer suggestions (which fire when a
  * location is below par but total stock may still be adequate).
  *
- * NOTE (backend flag): a production system would trigger on
- *   totalStock ≤ usageRate × leadTimeDays
- * using consumption history from the server. The prototype uses the static
- * reorderPoint field set by the manager in Admin Inventory.
+ * The prototype's static rule, on the device. The platform's own rule is the
+ * one staff see: the mobile Alerts screen reads its attention rows
+ * (`GET /branches/:id/stock/attention`, stock walkthrough F3), which follow
+ * the item's average daily usage over the last 30 days × (lead time + 1 day),
+ * rounded up, once it has that much
+ * history (OD-27) and keep quiet while an open order covers the item. Nothing
+ * on a staff screen reads this any more.
  */
 export function getReorderAlerts(inventory: InventoryItem[]): ReorderAlert[] {
   const alerts: ReorderAlert[] = [];

@@ -26,6 +26,8 @@ import type {
   StockItemBody,
   StockLevels,
   StockLocationView,
+  StockPlaceOpening,
+  StockPlaceOpenings,
   StockReceiveResult,
   StockReports,
   StockTakeResult,
@@ -198,6 +200,13 @@ export interface StockModuleState {
   locations: StockLocation[];
   orders: PurchaseOrder[];
   attention: StockAttentionView[];
+  /**
+   * Each item's reorder point TODAY by the platform's rule (item id → point;
+   * null while it has none) — the trend point once the item has the sales
+   * history, else the one set in Admin Inventory. "Low" is judged on it, as
+   * the Alerts tab's rows are.
+   */
+  reorderPointNow: Record<string, number | null>;
 }
 
 const EMPTY_MODULE: StockModuleState = {
@@ -208,6 +217,7 @@ const EMPTY_MODULE: StockModuleState = {
   locations: [],
   orders: [],
   attention: [],
+  reorderPointNow: {},
 };
 
 let moduleState: StockModuleState = EMPTY_MODULE;
@@ -344,6 +354,7 @@ export async function loadStockModule(forBranchId: string): Promise<void> {
       locations: places.locations.map(toLocation),
       orders: orders.orders.map((o) => toPurchaseOrder(o, groupOf)),
       attention: attention.attention,
+      reorderPointNow: Object.fromEntries(levels.items.map((i) => [i.groupId, i.reorderPointNow])),
     });
   } catch (err) {
     // The last answer stays on screen for the same branch; the error says why it may be stale.
@@ -496,6 +507,15 @@ export function inventoryItemToStockBody(
 // to a manager. The profitability report's cost of goods reads
 // `/stock/reports/cost-of-goods`: the cost frozen on each sale line.
 // =====================================================================================
+
+/**
+ * Whether each place has had its opening count (stock walkthrough F2): the
+ * count's review screen asks before the commit, so a place's first count is
+ * described as what the platform records it as — its opening, flagging nothing.
+ */
+export async function fetchPlaceOpenings(branchId: string): Promise<StockPlaceOpening[]> {
+  return (await api.get<StockPlaceOpenings>(`${stockBase(branchId)}/openings`)).places;
+}
 
 /** The five stock reports over inclusive business dates. */
 export function fetchStockReports(branchId: string, from: string, to: string): Promise<StockReports> {

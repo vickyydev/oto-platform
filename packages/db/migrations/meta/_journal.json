@@ -358,6 +358,13 @@
       "when": 1790920000000,
       "tag": "0050_fact_stock_daily_signed",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1790930000000,
+      "tag": "0051_stock_take_line_opening",
+      "breakpoints": true
     }
   ]
 }

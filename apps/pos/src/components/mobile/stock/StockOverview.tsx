@@ -24,13 +24,38 @@ const CATEGORY_LABEL: Record<Exclude<CategoryFilter, 'all'>, string> = {
 
 const kindLabel = (kind: InventoryItem['linkedKind']) => CATEGORY_LABEL[kind];
 
+/**
+ * The "Low" quick filter. A size at or under its low-stock threshold in the
+ * scope; or, across every place, the item's total at or under its reorder
+ * point — the PLATFORM's point for today (`reorderPointNow`: the trend point
+ * once the item has the sales history), as the Alerts tab's rows judge it, not
+ * the static one set in Admin Inventory. An empty size is "Out", its own filter.
+ */
+export function isLowInScope(item: InventoryItem, reorderPointNow: number | null, locationFilter: string): boolean {
+  const qtyOf = (v: InventoryItem['variants'][number]) =>
+    locationFilter === 'all' ? v.stock : (v.stockByLocation?.[locationFilter] ?? 0);
+  const itemTotal = item.variants.reduce((n, v) => n + v.stock, 0);
+  if (locationFilter === 'all' && reorderPointNow !== null && itemTotal > 0 && itemTotal <= reorderPointNow) return true;
+  return item.variants.some((v) => {
+    const qty = qtyOf(v);
+    if (qty === 0) return false; // "out" is its own filter
+    return v.lowStockThreshold != null && qty <= v.lowStockThreshold;
+  });
+}
+
 interface StockOverviewProps {
   inventory: InventoryItem[];
   locations: StockLocation[];
+  /**
+   * Each item's reorder point today by the platform's rule (item id → point):
+   * the trend point once it has the sales history, else the one set in Admin
+   * Inventory — the figure the Alerts tab's rows fire on.
+   */
+  reorderPointNow: Readonly<Record<string, number | null>>;
   onStartStockTake: () => void;
 }
 
-export function StockOverview({ inventory, locations, onStartStockTake }: StockOverviewProps) {
+export function StockOverview({ inventory, locations, reorderPointNow, onStartStockTake }: StockOverviewProps) {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [category, setCategory] = useState<CategoryFilter>('all');
@@ -63,19 +88,7 @@ export function StockOverview({ inventory, locations, onStartStockTake }: StockO
         if (quick === 'out') {
           if (!item.variants.some((v) => qtyOf(v) === 0)) return false;
         } else if (quick === 'low') {
-          const isLow = item.variants.some((v) => {
-            const qty = qtyOf(v);
-            if (qty === 0) return false; // "out" is its own filter
-            if (v.lowStockThreshold != null && qty <= v.lowStockThreshold) return true;
-            if (
-              locationFilter === 'all' &&
-              item.reorderSettings &&
-              qty <= item.reorderSettings.reorderPoint
-            )
-              return true;
-            return false;
-          });
-          if (!isLow) return false;
+          if (!isLowInScope(item, reorderPointNow[item.id] ?? null, locationFilter)) return false;
         } else if (quick === 'belowPar') {
           const below = item.variants.some((v) => {
             if (!v.parByLocation || !v.stockByLocation) return false;
@@ -90,7 +103,7 @@ export function StockOverview({ inventory, locations, onStartStockTake }: StockO
 
       return true;
     });
-  }, [inventory, search, locationFilter, category, quick]);
+  }, [inventory, reorderPointNow, search, locationFilter, category, quick]);
 
   return (
     <div className="flex flex-col gap-3 p-4 pb-24">

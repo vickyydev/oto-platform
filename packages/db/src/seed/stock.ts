@@ -320,6 +320,7 @@ export async function seedStock(
             countedQuantity: counted,
             difference: counted,
             flagged: false,
+            opening: true,
             status: 'adjusted',
             countedAt: now,
           });

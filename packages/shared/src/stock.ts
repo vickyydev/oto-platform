@@ -231,7 +231,16 @@ export const StockLevelItemSchema = z.object({
   unitCostSatang: z.number().int().nullable(),
   lowStockThreshold: z.number().int().nullable(),
   parByLocation: z.record(z.string(), z.number()),
+  /** The reorder point set in Admin Inventory (the static rule). */
   reorderPoint: z.number().int().nullable(),
+  /**
+   * The item's reorder point TODAY by the platform's rule (`reorderPointFor`):
+   * the static point until the item has `STOCK_TREND_HISTORY_DAYS` days of
+   * sales, its usage from then on — the figure the low-stock attention fires
+   * on, so every stock screen agrees with the Alerts tab. Every size of one
+   * item carries the same figure; null while the item has none.
+   */
+  reorderPointNow: z.number().int().nullable(),
   reorderQuantity: z.number().int().nullable(),
   leadTimeDays: z.number().int().nullable(),
   supplierName: z.string().nullable(),
@@ -499,16 +508,49 @@ export const StockTakeLineViewSchema = z.object({
   difference: z.number().int(),
   flagged: z.boolean(),
   status: z.enum(['pending', 'confirmed', 'adjusted']),
+  /**
+   * This shelf's place had never been counted: the line is that place's
+   * OPENING (OD-S5, per place) — a starting figure, never flagged, and never a
+   * discrepancy, shrinkage or variance.
+   */
+  opening: z.boolean(),
 });
 export type StockTakeLineView = z.infer<typeof StockTakeLineViewSchema>;
 
 export const StockTakeResultSchema = z.object({
   id: StockId,
-  /** The branch's first count: its opening position (OD-S5). */
+  /**
+   * Every place this take counted was at its opening — its first count there
+   * (OD-S5 is per place: a branch counts one place at a time). Each line says
+   * so for its own place.
+   */
   opening: z.boolean(),
   lines: z.array(StockTakeLineViewSchema),
 });
 export type StockTakeResult = z.infer<typeof StockTakeResultSchema>;
+
+/**
+ * Whether each place of the branch has been counted yet — asked by the count's
+ * review screen BEFORE the commit, so it can say plainly that a place's first
+ * count is its opening (sets the starting figures, flags nothing) instead of
+ * warning of discrepancies the platform will not record.
+ */
+export const StockPlaceOpeningSchema = z.object({
+  locationId: StockId,
+  /**
+   * False while the place has nothing on record — never counted, and no
+   * movement (a transfer in, a delivery) ever changed what it holds: the next
+   * count there is its opening. A place the ledger has stocked is opened even
+   * before its first count, and that count is judged against the record.
+   */
+  opened: z.boolean(),
+  /** When the place's record started (its first count or first movement); null while it has none. */
+  openedAt: z.string().nullable(),
+});
+export type StockPlaceOpening = z.infer<typeof StockPlaceOpeningSchema>;
+
+export const StockPlaceOpeningsSchema = z.object({ places: z.array(StockPlaceOpeningSchema) });
+export type StockPlaceOpenings = z.infer<typeof StockPlaceOpeningsSchema>;
 
 /** True when a count's difference is big enough to flag (prototype `StockTakeFlow.tsx:102`). */
 export function stockTakeFlagged(difference: number): boolean {
@@ -574,11 +616,46 @@ export const StockItemResultSchema = z.object({ groupId: z.string(), stockItemId
 
 // --- Attention ------------------------------------------------------------------------
 
+/** One size under its par at one place, as the low-stock rule read it. */
+export const StockAttentionBelowParSchema = z.object({
+  stockItemId: StockId,
+  /** The size's label; null for an item in one size. */
+  size: z.string().nullable(),
+  /** The place's id; null on a row written before the platform recorded it (match by `place`). */
+  locationId: StockId.nullable(),
+  place: z.string(),
+  level: z.number().int(),
+  par: z.number().int(),
+});
+export type StockAttentionBelowPar = z.infer<typeof StockAttentionBelowParSchema>;
+
+/**
+ * What a low-stock row's rule read when it fired — the figures the Alerts
+ * screen shows, so the screen never works its own out (walkthrough F3).
+ */
+export const StockAttentionLowStockSchema = z.object({
+  /** The stock screens' item: every size of it shares this key. */
+  groupId: z.string(),
+  /** Everything the item holds, every size and place. */
+  total: z.number().int(),
+  /** The point the total is held against (static or 30-day usage); null when the item has no reorder settings. */
+  reorderPoint: z.number().int().nullable(),
+  /** Which rule set the point: the item's own figure, or its last 30 days of usage (OD-27). */
+  reorderRule: z.enum(['static', 'trend']),
+  staticReorderPoint: z.number().int().nullable(),
+  /** Units used in the 30 days before today, when the 30-day usage set the point. */
+  usedInWindow: z.number().int().nullable(),
+  /** True when the total is at or below the reorder point. */
+  reorder: z.boolean(),
+  belowPar: z.array(StockAttentionBelowParSchema),
+});
+export type StockAttentionLowStock = z.infer<typeof StockAttentionLowStockSchema>;
+
 export const StockAttentionViewSchema = z.object({
   id: StockId,
   kind: z.enum(['stock_shortfall', 'size_unknown', 'low_stock', 'reorder']),
   stockItemId: StockId.nullable(),
-  /** Which rule fired ("Below par at FOH", "≤ reorder point"). */
+  /** Which rule fired ("Below par at FOH", "≤ reorder point", "≤ reorder point (30-day usage)"). */
   rule: z.string().nullable(),
   quantity: z.number().int(),
   summary: z.string(),
@@ -586,6 +663,8 @@ export const StockAttentionViewSchema = z.object({
   saleId: StockId.nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  /** A low-stock or reorder row's figures; null on a row a sale raised. */
+  lowStock: StockAttentionLowStockSchema.nullable(),
 });
 export type StockAttentionView = z.infer<typeof StockAttentionViewSchema>;
 
@@ -686,8 +765,8 @@ const ReportSize = {
 
 /**
  * One counted shelf of a stock take in the range — matched or not, as the
- * prototype's log keeps every take (`getStockTakeLog`). An opening count is a
- * starting figure, not a variance, and is left out (OD-S5).
+ * prototype's log keeps every take (`getStockTakeLog`). A place's opening — its
+ * first count — is a starting figure, not a variance, and is left out (OD-S5).
  */
 export const StockDiscrepancyRowSchema = z.object({
   id: z.string().uuid(),
@@ -719,7 +798,7 @@ export type StockUsageRow = z.infer<typeof StockUsageRowSchema>;
 /** Count variances and corrections down, per size: what left the shelves unsold. */
 export const StockShrinkageRowSchema = z.object({
   ...ReportSize,
-  /** Signed sum of the count movements (counted − expected), openings excluded. */
+  /** Signed sum of the count movements (counted − expected), each place's opening excluded. */
   countVariance: z.number().int(),
   /** How many counts found the shelf short. */
   countedShort: z.number().int(),

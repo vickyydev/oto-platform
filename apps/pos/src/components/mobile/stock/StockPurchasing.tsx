@@ -3,6 +3,7 @@ import {
   ShoppingCart, ChevronDown, ChevronUp, Check, Clock, Truck,
   Edit2, Trash2, AlertTriangle, Plus, ArrowRight,
 } from 'lucide-react';
+import { STOCK_TREND_HISTORY_DAYS, STOCK_TREND_SAFETY_DAYS } from '@oto/shared';
 import { InventoryItem, PurchaseOrder, PurchaseOrderLine } from '@/types';
 import { stockApi, stockErrorWords } from '@/api/stock';
 import { UnitQuantityInput } from './UnitQuantityInput';
@@ -519,12 +520,13 @@ export function StockPurchasing({ branchId, inventory, orders, onGoToReceive }: 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24">
 
-      {/* Backend prediction note */}
+      {/* How the reorder point is set (OD-27) — the platform's rule, as the Alerts tab shows it */}
       <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2.5 text-[11px] text-foreground/40 leading-relaxed">
-        <span className="font-semibold text-foreground/50">Note (future backend):</span> True auto-reorder
-        (stock ≤ usage rate × lead time) requires server-side consumption history. The prototype uses the
-        static reorder point set per item in Admin Inventory. Items below their reorder point appear as
-        "Needs reordering" in the Suggestions tab.
+        <span className="font-semibold text-foreground/50">Reorder points:</span> an item uses the reorder
+        point set in Admin Inventory until it has {STOCK_TREND_HISTORY_DAYS} days of sales; from then on, what it
+        sells on an average day over the last {STOCK_TREND_HISTORY_DAYS} days × (lead time + {STOCK_TREND_SAFETY_DAYS}{' '}
+        day), rounded up. Items at
+        or below their reorder point appear in the Alerts tab, unless an open order already covers them.
       </div>
 
       {/* Controls row */}

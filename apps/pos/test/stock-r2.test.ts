@@ -44,6 +44,7 @@ const level = (over: Partial<StockLevels['items'][number]>): StockLevels['items'
   lowStockThreshold: 6,
   parByLocation: { [FOH]: 10 },
   reorderPoint: 15,
+  reorderPointNow: 15,
   reorderQuantity: 24,
   leadTimeDays: 7,
   supplierName: 'Bangkok Merch Co.',

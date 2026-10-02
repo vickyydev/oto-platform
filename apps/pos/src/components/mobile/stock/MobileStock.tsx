@@ -228,6 +228,7 @@ export function MobileStock() {
           <StockOverview
             inventory={inventory}
             locations={stockLocations}
+            reorderPointNow={stock.reorderPointNow}
             onStartStockTake={() => setStockTakeActive(true)}
           />
         )}
