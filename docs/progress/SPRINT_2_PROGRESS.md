@@ -61,8 +61,10 @@ reset reply keeps its old era). Rounds 2 and 3 CI green (36945341349,
 platform's era into its store durably from every answer (heartbeat, ack,
 push, reset) with a compare-and-set, a re-sent already-applied sale is
 answered as a duplicate, and an old-era sale is set aside with a critical
-"PAID SALE" note naming its money and goods - never lost. Stock round 4
-(reports, trend rule, five handovers, closing audit) is building. Queued for
+"PAID SALE" note naming its money and goods - never lost. SCRUM-486 is
+Deployed (CI 36950176617, staging live 90b72e9, test-run card attached);
+follow-up SCRUM-487 (Low). Stock round 4 (reports, trend rule, five
+handovers, closing audit) is building. Queued for
 round 4: show the box's stock refusals on the till, the no-places
 shortfall, two round-2 notes and one refusal wording.
 
