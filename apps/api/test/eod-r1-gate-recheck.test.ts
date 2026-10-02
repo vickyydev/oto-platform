@@ -35,6 +35,7 @@ beforeAll(async () => {
 }, 300_000);
 
 afterAll(async () => {
+  await ctx?.close();
   await teardownAll();
 });
 

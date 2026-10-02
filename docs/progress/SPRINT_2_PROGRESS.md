@@ -20,6 +20,10 @@ named, not signed with their own PIN; staff role may close (prototype:
 anyone); no paid-out or safe drop on a closed day; a refund comes off the
 tender it was actually paid back through.
 Note: packages/db migration suites need --no-file-parallelism locally.
+CI on 320c396d: 2415/2415 tests passed but the run failed on one unhandled
+57P01 at teardown: eod-r1-gate-recheck stopped the test server without
+closing its own pool first. Fixed (ctx.close() before teardownAll), the
+only test file missing it.
 
 NEXT (priority): SCRUM-494, then End of Day rounds 2-4.
 
