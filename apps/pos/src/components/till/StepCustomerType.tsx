@@ -70,10 +70,24 @@ export function StepCustomerType({
               <div className="text-sm text-muted-foreground truncate">{member.phone}</div>
             </div>
             {verification ? (
-              <div className="flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-4 py-2 text-sm font-semibold shrink-0">
-                <BadgeCheck className="w-4 h-4" />
-                {tierLabel(verification.tier)} · verified
-              </div>
+              <>
+                {/* The recorded document expiry has passed: the rate holds and
+                    staff can sell at it; this asks for the document again. */}
+                {verification.reverifyDue && (
+                  <button
+                    type="button"
+                    onClick={() => onRequestVerify(verification.tier)}
+                    className="flex items-center gap-2 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 px-4 py-2 text-sm font-semibold shrink-0 hover:bg-amber-500/25"
+                  >
+                    <ShieldQuestion className="w-4 h-4" />
+                    Document expired — re-verify
+                  </button>
+                )}
+                <div className="flex items-center gap-2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-4 py-2 text-sm font-semibold shrink-0">
+                  <BadgeCheck className="w-4 h-4" />
+                  {tierLabel(verification.tier)} · verified
+                </div>
+              </>
             ) : (
               <div className="flex items-center gap-2 rounded-full bg-muted text-muted-foreground px-4 py-2 text-sm font-semibold shrink-0">
                 <ShieldQuestion className="w-4 h-4" />

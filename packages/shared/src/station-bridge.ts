@@ -214,7 +214,9 @@ export const OfflineMemberTierChangedSchema = z.discriminatedUnion('direction', 
     verificationId: Uuid,
     toTier: z.string().min(1).max(64),
     evidenceType: z.enum(TIER_PROOF_TYPES),
-    evidenceExpiresAt: IsoDate,
+    // Optional, as at the online verify step: a document with no expiry date
+    // never expires.
+    evidenceExpiresAt: IsoDate.nullish(),
     note: z.string().max(500).nullish(),
     offlineFresh: OfflineFresh,
   }),

@@ -87,6 +87,12 @@ export interface RefundLineEntry {
   grossSatang: Satang;
   /** Whether this refund returns the line's units to stock (applied by S2-14b). */
   restock: boolean;
+  /**
+   * The line is named only because this full-scope refund returned its units
+   * to stock: its money went back on an earlier refund, or on this refund's
+   * custom amount. `grossSatang` is 0 on such an entry.
+   */
+  restockOnly?: boolean;
 }
 
 /** A tender that took money on the sale, classified by what can reverse it. */
@@ -232,30 +238,43 @@ export function allocateRefund(
 }
 
 /**
- * Which lines this refund returns to stock — the prototype's rule, kept:
+ * A refund's scope, as the approved design's RefundModal derives it: `full`
+ * whenever the (clamped) amount reaches what is left to refund, in ANY mode —
+ * a custom amount or a pick of lines that empties the sale is as full as the
+ * whole-sale button.
+ */
+export function refundScopeOf(amountSatang: Satang, remainingSatang: Satang): 'full' | 'partial' {
+  return amountSatang >= remainingSatang ? 'full' : 'partial';
+}
+
+/**
+ * Which lines this refund returns to stock (`mockApi.ts:recordRefund`):
  *
- *   - a SHOP sale returns exactly the lines a by-item or whole refund covers,
- *     never a line an earlier refund already returned; a custom amount
- *     returns nothing;
- *   - a TICKET or F&B sale returns its stocked lines on a WHOLE refund only,
- *     and only the first one — a partial or custom refund does not map back
- *     to specific units.
+ *   - a SHOP by-item refund returns exactly the lines it picks, as it is made,
+ *     even when it empties the sale;
+ *   - any other FULL-scope refund (`refundScopeOf`), the first one, returns
+ *     every line — including the lines an earlier partial refund covered
+ *     without returning;
+ *   - a partial ticket or F&B refund, and a partial custom amount, return
+ *     nothing: they do not map back to specific units.
  *
- * Applied by S2-14b; recorded now so the refund row says what it owes stock.
+ * Never a line already returned: `alreadyRestocked` holds what earlier refunds
+ * put back.
  */
 export function restockLineIds(input: {
   saleKind: 'ticket' | 'fnb' | 'merch';
   mode: RefundMode;
+  scope: 'full' | 'partial';
   coveredLineIds: readonly string[];
   allLineIds: readonly string[];
   alreadyRestocked: ReadonlySet<string>;
-  earlierWholeRefund: boolean;
+  /** An earlier refund of this sale was already full-scope. */
+  earlierFullScope: boolean;
 }): string[] {
-  if (input.saleKind === 'merch') {
-    if (input.mode === 'custom') return [];
-    const covered = input.mode === 'whole' ? input.allLineIds : input.coveredLineIds;
-    return covered.filter((id) => !input.alreadyRestocked.has(id));
-  }
-  if (input.mode !== 'whole' || input.earlierWholeRefund) return [];
-  return input.allLineIds.filter((id) => !input.alreadyRestocked.has(id));
+  const fresh = (ids: readonly string[]) => ids.filter((id) => !input.alreadyRestocked.has(id));
+  // A shop by-item pick restocks exactly its picked lines, even when it empties
+  // the sale: lines the customer kept never go back on the shelf.
+  if (input.saleKind === 'merch' && input.mode === 'items') return fresh(input.coveredLineIds);
+  if (input.scope === 'full' && !input.earlierFullScope) return fresh(input.allLineIds);
+  return [];
 }

@@ -12,6 +12,7 @@ import {
   DEFAULT_SUPERVISION_POLICY,
   OFFLINE_PHOTO_POLICY,
   childPhotosEnabled,
+  prepaidPaidMismatchRefusal,
   verifyBandCode,
 } from '@oto/shared';
 import { createBoxAgent, type BoxAgent } from '../src/agent';
@@ -183,6 +184,7 @@ const intent = (type: string, payload: Record<string, unknown>, actionId = `t-${
 
 async function ask(box: CheckinBox, type: string, payload: Record<string, unknown>) {
   const answer = await box.bridge.intent(STATION_ID, box.till, intent(type, payload));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the test reads into each answer's shape
   return answer.result as Record<string, any>;
 }
 
@@ -267,6 +269,7 @@ test('the gate on the box: one registration, its stays and its consent in one fa
     assert.equal(again.replayed, true);
     const held = (await facts(box)).filter((e) => e.type === CHECKIN_FACTS.created);
     assert.equal(held.length, 1, 'one fact however often it was pressed');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the test reads into the queued fact's shape
     const payload = held[0]!.payload as Record<string, any>;
     assert.equal(payload.guardianPhone, '+66812345678');
     assert.ok(payload.consentRecordedAt, 'the consent carries the box’s moment');
@@ -285,6 +288,72 @@ test('the gate on the box: one registration, its stays and its consent in one fa
     assert.match(wrongService.message, /Ben is 6 and needs drop-off, not a nanny/);
     const unticked = await refusal(ask(box, 'checkin.create', registrationBody({ acknowledgedConfirmationIds: [ALL[0]] })));
     assert.equal(unticked.code, 'CONFIRMATIONS_REQUIRED');
+  } finally {
+    box.close();
+  }
+});
+
+test('s494 prepaid food at the box gate: every item starts unserved, and an amount paid that is not the items’ sum is refused in the platform’s words', async () => {
+  const box = await openCheckinBox();
+  try {
+    const hotDog = { menuItemId: uuidv7(), menuItemName: 'Hot dog', unitSatang: 6_000 };
+    const checkinId = uuidv7();
+    const body = registrationBody({
+      children: [
+        {
+          checkinId,
+          name: 'Mint',
+          ageYears: 6,
+          service: 'drop_off',
+          foodProvision: { mode: 'prepaid_items', paidSatang: 12_000, items: [{ ...hotDog, qty: 2, redeemedQty: 2 }] },
+        },
+      ],
+    });
+    await ask(box, 'checkin.create', body);
+    const held = (await facts(box)).filter((e) => e.type === CHECKIN_FACTS.created);
+    assert.equal(held.length, 1);
+    const sent = (
+      held[0]!.payload as { children: Array<{ foodProvision: { paidSatang: number; items: Array<{ qty: number; redeemedQty: number }> } }> }
+    ).children[0]!.foodProvision;
+    assert.equal(sent.paidSatang, 12_000);
+    assert.deepEqual(
+      sent.items.map((i: { qty: number; redeemedQty: number }) => [i.qty, i.redeemedQty]),
+      [[2, 0]],
+      'the fact the box queues carries every item unserved',
+    );
+    const awaiting = await ask(box, 'checkin.awaiting', {});
+    const kept = awaiting.registrations[0].children.find((c: { id: string }) => c.id === checkinId);
+    assert.deepEqual(
+      kept.foodProvision.items.map((i: { redeemedQty: number }) => i.redeemedQty),
+      [0],
+      'the box’s own copy starts unserved too',
+    );
+
+    const mismatch = await refusal(
+      ask(
+        box,
+        'checkin.create',
+        registrationBody({
+          children: [
+            {
+              checkinId: uuidv7(),
+              name: 'Ben',
+              ageYears: 6,
+              service: 'drop_off',
+              foodProvision: { mode: 'prepaid_items', paidSatang: 6_100, items: [{ ...hotDog, qty: 1 }] },
+            },
+          ],
+        }),
+      ),
+    );
+    assert.equal(mismatch.code, 'PREPAID_PAID_MISMATCH');
+    assert.equal(mismatch.status, 400);
+    assert.equal(mismatch.message, prepaidPaidMismatchRefusal('Ben', 6_000, 6_100));
+    assert.equal(
+      (await facts(box)).filter((e) => e.type === CHECKIN_FACTS.created).length,
+      1,
+      'the refused registration queued nothing',
+    );
   } finally {
     box.close();
   }

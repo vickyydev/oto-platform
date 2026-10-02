@@ -305,7 +305,7 @@ describe('Tier verification — proof checked at the counter (beyond the prototy
     expect(res.statusCode).toBe(400);
   });
 
-  it('hides an expired verification from the member (rate must be re-proven)', async () => {
+  it('keeps an expired verification on the member, flagged for re-verification (SCRUM-494)', async () => {
     // Write an old verification directly — as if the document expired long ago.
     const created = await ctx.app.inject({
       method: 'POST',
@@ -328,7 +328,12 @@ describe('Tier verification — proof checked at the counter (beyond the prototy
       url: '/members/lookup?phone=0633335555',
       headers: { cookie },
     });
-    expect(lookup.json().member.tierVerification).toBeNull(); // no discount without valid proof
+    // The approved design holds a verified rate; a passed expiry asks for a re-check.
+    expect(lookup.json().member.tierVerification).toMatchObject({
+      tier: 'expat',
+      expiresAt: '2024-01-01',
+      reverifyDue: true,
+    });
 
     // …but the record stays visible for record checking, flagged expired.
     const list = await ctx.app.inject({

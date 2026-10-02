@@ -115,8 +115,10 @@ export interface ApiMember {
     verifiedAt: string;
     /** Staff who checked the document — stamped server-side from the session. */
     verifiedBy: string | null;
-    /** Document expiry (YYYY-MM-DD); the API hides expired verifications. */
+    /** Document expiry (YYYY-MM-DD), when one was recorded. */
     expiresAt: string | null;
+    /** The recorded expiry has passed: staff re-check the document. The rate holds. */
+    reverifyDue?: boolean;
   } | null;
   children: ApiChild[];
 }
@@ -227,7 +229,7 @@ export const membersApi = {
    * A tier checked on a document (OD-11): on the box lane it becomes a
    * `member.tier_changed` fact under the same permission as online.
    */
-  verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt: string; note?: string }) =>
+  verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) =>
     viaLane(
       () =>
         api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {

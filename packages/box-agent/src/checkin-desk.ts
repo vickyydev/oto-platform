@@ -17,6 +17,7 @@ import {
   buildAcknowledgedConfirmations,
   confirmationsSatisfied,
   normalizePhone,
+  prepaidPaidMismatchRefusal,
   prepaidReconciliationOf,
   requirementLabel,
   resolveRequirement,
@@ -752,6 +753,29 @@ export class CheckinDesk {
     } else if (savedIds.length > 0) {
       throw new DeskRefusal(400, 'BAD_REQUEST', 'A saved child needs the guardian it is saved under — send the memberId too.');
     }
+    // The platform's provision rules (`checkin.ts normaliseProvision`,
+    // `assertPrepaidItems`): a prepaid mode that paid nothing is `none`, every
+    // prepaid item starts unserved, and what was paid is the items' sum.
+    const registered = body.children.map((c) => {
+      const raw = c.foodProvision ?? null;
+      const paid = raw && raw.mode !== 'none' && raw.paidSatang <= 0 ? { mode: 'none' as const, paidSatang: 0 } : raw;
+      const foodProvision =
+        paid && paid.mode === 'prepaid_items' && paid.items
+          ? { ...paid, items: paid.items.map((it) => ({ ...it, redeemedQty: 0 })) }
+          : paid;
+      return { ...c, foodProvision };
+    });
+    for (const c of registered) {
+      const fp = c.foodProvision;
+      if (!fp || fp.mode !== 'prepaid_items') continue;
+      const sum = (fp.items ?? []).reduce((s, it) => s + it.unitSatang * it.qty, 0);
+      if (sum !== fp.paidSatang) {
+        throw new DeskRefusal(400, 'PREPAID_PAID_MISMATCH', prepaidPaidMismatchRefusal(c.name.trim(), sum, fp.paidSatang), {
+          itemsSatang: sum,
+          paidSatang: fp.paidSatang,
+        });
+      }
+    }
     if (body.photoId) {
       if (!this.host.photosEnabled()) throw refuse(409, BOX_CHECKIN_REFUSALS.photosOff);
       await this.pendingPhoto(body.photoId, body.registrationId, 'consent');
@@ -768,7 +792,7 @@ export class CheckinDesk {
       contactChannel: body.contactChannel,
       consentRecordedAt: now,
       acknowledgedConfirmations: acknowledged,
-      children: body.children,
+      children: registered,
       photoId: body.photoId ?? null,
     };
     const family: Omit<BridgeCheckinFamily, 'children' | 'guardians' | 'tab' | 'origin'> & { photoId: string | null } = {
@@ -785,11 +809,8 @@ export class CheckinDesk {
       createdAt: now,
       contact: null,
     };
-    const children: BridgeCheckinChild[] = body.children.map((c) => {
-      const provision =
-        c.foodProvision && c.foodProvision.mode !== 'none' && c.foodProvision.paidSatang <= 0
-          ? { mode: 'none' as const, paidSatang: 0 }
-          : (c.foodProvision ?? null);
+    const children: BridgeCheckinChild[] = registered.map((c) => {
+      const provision = c.foodProvision;
       return {
         id: c.checkinId,
         registrationId: body.registrationId,

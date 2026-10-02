@@ -1888,7 +1888,7 @@ export class StationBridge {
           throw new BridgeError(400, 'VALIDATION', `Unknown tier "${body.toTier}"`);
         }
         const today = this.host.now().toISOString().slice(0, 10);
-        if (body.evidenceExpiresAt < today) {
+        if (body.evidenceExpiresAt && body.evidenceExpiresAt < today) {
           throw new BridgeError(
             400,
             'VALIDATION',

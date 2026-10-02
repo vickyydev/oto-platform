@@ -11,10 +11,10 @@ import {
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import {
-  redeemPrepaidItem,
   getDiscountReasons,
   recordFnbOrder,
 } from '@/mockApi';
+import { bandHolderOf, withPrepaidServed } from '@/lib/bandFood';
 import {
   hasModifiers,
   modifierSignature,
@@ -114,8 +114,10 @@ export function MobileOrderStation() {
       branchId, stationId: station.stationId, tier: getDefaultTier()?.id ?? 'tourist', channel: 'fnb',
       pickupCode: pickupCode || null, memberId: null, customerPhone: null, customerNickname: null,
       accountId: operator.id, accountName: operator.name,
+      // SCRUM-494 — the band's child: their own allergy line on the prep ticket, their prepaid items.
+      bandHolder: bandHolderOf(wristband, foodOverride),
     };
-  }, [branch.id, station?.stationId, operator, pickupCode]);
+  }, [branch.id, station?.stationId, operator, pickupCode, wristband, foodOverride]);
   const orderQuote = useItemCartQuote({ kind: 'fnb', lines, manualDiscounts, identity: orderIdentity, enabled: stage !== 'confirmation' });
   const { total, manualAmounts } = orderQuote.totals;
   const displayLines = useMemo(() => lines.map((line) => orderQuote.quote.lineTotals?.[line.id] === undefined
@@ -209,6 +211,8 @@ export function MobileOrderStation() {
       selectedModifiers: [],
       lineTotal: 0,
       isPrepaid: true,
+      // SCRUM-494 — served from the platform stay the scan resolved.
+      ...(wristband?.stayId ? { prepaidStayId: wristband.stayId } : {}),
     };
     setCart((prev) => [...prev, line]);
   };
@@ -380,14 +384,10 @@ export function MobileOrderStation() {
     const payment = fnbPaymentResult(settlements);
     // S2-14a — the balance the platform left on the wallet, when credit paid.
     const balanceAfter = walletBalanceAfter(settlements) ?? wristband?.creditBalanceTHB ?? null;
-    const paidWristband = wristband && balanceAfter !== null ? { ...wristband, creditBalanceTHB: balanceAfter } : wristband;
-
-    // Commit prepaid item redemptions only after the sale is finalised.
-    if (wristband) {
-      for (const line of lines.filter((l) => l.isPrepaid)) {
-        redeemPrepaidItem(wristband.id, line.menuItem.id, line.qty);
-      }
-    }
+    // SCRUM-494 — the platform served the prepaid lines from the child's stay
+    // when it closed the order; this till's copy of the band shows the same counts.
+    const servedWristband = wristband ? withPrepaidServed(wristband, lines) : wristband;
+    const paidWristband = servedWristband && balanceAfter !== null ? { ...servedWristband, creditBalanceTHB: balanceAfter } : servedWristband;
 
     const order: FnbOrder = {
       id: String(orderCounter++).padStart(4, '0'),

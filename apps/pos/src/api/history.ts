@@ -83,8 +83,8 @@ export interface ApiSaleTierClaim {
   documentKind: string;
   /** The tier the document supported — the one this sale was charged at. */
   toTier: string;
-  /** The document's own expiry as the check recorded it (`YYYY-MM-DD`). */
-  evidenceExpiresOn: string;
+  /** The document's own expiry as the check recorded it (`YYYY-MM-DD`), or null when it carries none. */
+  evidenceExpiresOn: string | null;
   /** When reception checked it. */
   verifiedAt: string;
 }

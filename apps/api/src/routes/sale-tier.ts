@@ -47,7 +47,14 @@ const ClaimBody = z
      * number lands in a table that is never swept.
      */
     evidenceType: z.enum(TIER_PROOF_TYPES),
-    evidenceExpiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    /**
+     * The document's expiry, when it carries one. Optional, as at the design's
+     * verify step: a claim with no expiry date never expires.
+     */
+    evidenceExpiresAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullish(),
   })
   .strict();
 
@@ -98,7 +105,7 @@ export async function saleTierRoutes(app: App): Promise<void> {
             actionId: req.body.actionId,
             toTier: req.body.toTier,
             evidenceType: req.body.evidenceType,
-            evidenceExpiresAt: req.body.evidenceExpiresAt,
+            evidenceExpiresAt: req.body.evidenceExpiresAt ?? null,
           },
         ),
       );

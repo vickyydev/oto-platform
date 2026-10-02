@@ -164,7 +164,9 @@ export function MembersPanel() {
         const { member: verified } = await membersApi.verifyTier(saved.id, data.tierChange);
         toast({
           title: `${tierLabel(data.tierChange.toTier)} rate verified`,
-          description: `${verified.nickname} · ${data.tierChange.evidenceType} · valid until ${data.tierChange.evidenceExpiresAt}`,
+          description: `${verified.nickname} · ${data.tierChange.evidenceType}${
+            data.tierChange.evidenceExpiresAt ? ` · valid until ${data.tierChange.evidenceExpiresAt}` : ''
+          }`,
         });
       } catch (err) {
         // The profile write already landed; say which half failed rather than

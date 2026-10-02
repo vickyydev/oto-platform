@@ -5,6 +5,7 @@ import {
   employee,
   band,
   branch,
+  branchHoliday,
   checkin,
   child,
   confirmationItem,
@@ -13,6 +14,7 @@ import {
   member,
   nanny,
   nannyShift,
+  product,
   registration,
   sale,
   saleLine,
@@ -27,9 +29,13 @@ import {
   buildAcknowledgedConfirmations,
   businessDate,
   confirmationsSatisfied,
+  getRateModeForDate,
   newId,
   normalizePhone,
   parseDayStart,
+  prepaidItemNotOnMenuRefusal,
+  prepaidItemPriceRefusal,
+  prepaidPaidMismatchRefusal,
   requirementLabel,
   resolveRequirement,
   waiverRefusal,
@@ -322,9 +328,92 @@ function normaliseProvision(raw: FoodProvisionInput | null | undefined): {
   mayOrderFood: boolean;
 } {
   if (!raw) return { provision: null, mayOrderFood: false };
-  const provision = raw.mode !== 'none' && raw.paidSatang <= 0 ? { mode: 'none' as const, paidSatang: 0 } : raw;
+  const paid = raw.mode !== 'none' && raw.paidSatang <= 0 ? { mode: 'none' as const, paidSatang: 0 } : raw;
+  // SCRUM-494 — nothing has been served at registration: every prepaid item
+  // starts unserved (the design's `redeemedQty: 0`, `ChildFoodProvisionPicker`).
+  const provision =
+    paid.mode === 'prepaid_items' && paid.items
+      ? { ...paid, items: paid.items.map((it) => ({ ...it, redeemedQty: 0 })) }
+      : paid;
   return { provision, mayOrderFood: provision.mode !== 'none' && provision.paidSatang > 0 };
 }
+
+/**
+ * SCRUM-494 — the prepaid items a parent pays for at registration, checked
+ * against the park's menu: each is a menu item on sale at this park, at
+ * today's price (the design prices them with `resolveRateToday(item.price)`),
+ * and what was paid is the items' sum, unit × qty (`ChildFoodProvisionPicker`'s
+ * `prepaidTotal`). The release refunds unserved items at these units, so they
+ * are refused here rather than stored when they do not hold.
+ */
+async function assertPrepaidItems(
+  tx: Tx,
+  operatorId: string,
+  branchId: string,
+  childName: string,
+  provision: FoodProvisionInput | null,
+  now: Date,
+): Promise<void> {
+  if (!provision || provision.mode !== 'prepaid_items') return;
+  const items = provision.items ?? [];
+  const sum = items.reduce((s, it) => s + it.unitSatang * it.qty, 0);
+  if (items.length > 0) {
+    const [br] = await tx.select().from(branch).where(eq(branch.id, branchId)).limit(1);
+    if (!br) throw errors.notFound('Branch not found');
+    const holidays = await tx
+      .select()
+      .from(branchHoliday)
+      .where(and(eq(branchHoliday.branchId, branchId), isNull(branchHoliday.archivedAt)));
+    const day = businessDate(now, br.timezone, parseDayStart(br.businessDayStart));
+    const mode = getRateModeForDate(
+      day,
+      holidays.map((h) => ({ name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })),
+    ).mode;
+    const ids = [...new Set(items.map((it) => it.menuItemId))].filter((id) => UUID_RE.test(id));
+    const rows = ids.length
+      ? await tx
+          .select()
+          .from(product)
+          .where(
+            and(
+              inArray(product.id, ids),
+              eq(product.operatorId, operatorId),
+              eq(product.kind, 'menu'),
+              eq(product.active, true),
+              isNull(product.archivedAt),
+            ),
+          )
+      : [];
+    const onMenu = new Map(
+      rows.filter((r) => !r.branchId || r.branchId === branchId).map((r) => [r.id, r]),
+    );
+    for (const it of items) {
+      const row = onMenu.get(it.menuItemId);
+      if (!row) {
+        throw new AppError(400, 'PREPAID_ITEM_NOT_ON_MENU', prepaidItemNotOnMenuRefusal(it.menuItemName, childName), {
+          menuItemId: it.menuItemId,
+        });
+      }
+      const today = mode === 'weekend' ? (row.priceWeekendSatang ?? row.priceSatang) : row.priceSatang;
+      if (it.unitSatang !== today) {
+        throw new AppError(400, 'PREPAID_ITEM_PRICE', prepaidItemPriceRefusal(row.name, childName, today), {
+          menuItemId: it.menuItemId,
+          unitSatang: it.unitSatang,
+          menuSatang: today,
+          pricingMode: mode,
+        });
+      }
+    }
+  }
+  if (sum !== provision.paidSatang) {
+    throw new AppError(400, 'PREPAID_PAID_MISMATCH', prepaidPaidMismatchRefusal(childName, sum, provision.paidSatang), {
+      itemsSatang: sum,
+      paidSatang: provision.paidSatang,
+    });
+  }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The server's own resolution of a child's service from the age, refusing a
@@ -384,9 +473,11 @@ async function insertStays(
     if (t.registrationId !== reg.id) throw idInUse(t.id);
   }
   const already = new Set(taken.map((t) => t.id));
+  const now = new Date();
   for (const c of children) {
     if (already.has(c.checkinId)) continue;
     const { provision, mayOrderFood } = normaliseProvision(c.foodProvision);
+    await assertPrepaidItems(tx, actor.operatorId, reg.branchId, c.name.trim(), provision, now);
     const values = {
       id: c.checkinId,
       operatorId: actor.operatorId,

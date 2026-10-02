@@ -24,8 +24,8 @@ _Updated: 2 October 2026, night (Bangkok)._
 | S2-14 wallets and stock (SCRUM-211) | Deployed |
 | S2-15a End of Day (SCRUM-215) | Round 1 on main (320c396d, test fix e239454d). Rounds 2-4 to do. Plan: `docs/progress/plans/cash/PLAN.md` |
 | SCRUM-493 till consistency | In Progress. Register: `docs/progress/plans/consistency/REGISTER.md` |
-| SCRUM-494 (register entries 1-9) | On main: entries 5, 6, 7 (b165a118) and 4, gate access, with migration 0053. Entries 1-3 (tier, restock) and 8-9 (food counters) are built and in a final fix round: they land together because both edit sale.ts. Branch wip/scrum-494-inflight holds a snapshot |
-| SCRUM-495, SCRUM-496 | To do, in that order, after End of Day rounds 2-4 |
+| SCRUM-494 (register entries 1-9) | All nine on main: 5-7 (b165a118), 4 gate access (4fc79674, migration 0053), 1-3 and 8-9 (this landing, migration 0054). Next: deploy staging and take the evidence for all nine, then Deployed |
+| SCRUM-495, SCRUM-496, SCRUM-498 | To do, in that order, after End of Day rounds 2-4. SCRUM-498: food-counter band details through the counter box when the internet is down (High) |
 | SCRUM-497 | Owner confirmations; each item keeps the design's behaviour until answered |
 | Staging | Live at 6b5f08f8 (End of Day round 1 and SCRUM-494 entries 5-7 included; migration 0052 applied). Round 1 evidence on SCRUM-215 (one ZZ TEST paid-out of B60 recorded on 2 Oct). Deploy again after each landing before its walkthrough |
 
@@ -36,15 +36,13 @@ deciding whether to finish it or rebuild from the entry.
 
 ## 3. Order of work (owner priority, 2 October)
 
-1. Finish SCRUM-494: entries 8 and 9 (band safety data and prepaid meals at
-   F&B and Shop), then entry 4 (Gate access on adult bands) and entries 1-3
-   (tier expiry, tier pick, full-scope restock). Then deploy staging and take
-   the staging evidence for all nine entries, then SCRUM-494 to Deployed.
+1. SCRUM-494: all nine entries are on main. Deploy staging and take the
+   staging evidence for all nine entries, then SCRUM-494 to Deployed.
 2. S2-15a End of Day rounds 2, 3, 4 (plan section 7): provisional close and
    stranded occupancy and the End of Day receipt; settlement; demo-day and
    the staging walkthrough. SCRUM-215 then SCRUM-214 to Deployed.
-3. SCRUM-495, then SCRUM-496 (register entries in their sections), applying
-   SCRUM-497 answers as each runs.
+3. SCRUM-495, then SCRUM-496 (register entries in their sections), then
+   SCRUM-498, applying SCRUM-497 answers as each runs.
 4. Only then S2-15b and the rest of `docs/progress/SPRINT_2_PLAN.md`'s
    execution order.
 
@@ -77,7 +75,7 @@ deciding whether to finish it or rebuild from the entry.
   - `npx eslint <every file landing>` from the repo root;
   - the relevant tests with `TEST_DATABASE_URL=postgres://oto:oto@localhost:5433/oto`
     (packages/db migration suites need `--no-file-parallelism`).
-- **Migrations**: the next free number after main's highest (0053 is the
+- **Migrations**: the next free number after main's highest (0054 is the
   latest on main), add-only, journal entry ordered after the previous one.
   Never edit an applied migration.
 - **The landing list** is built by comparing files with `origin/main` by

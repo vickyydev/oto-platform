@@ -437,6 +437,8 @@ export interface ItemCartLine {
   variant?: { variantId: string; variantLabel: string } | null;
   /** What the screen showed for this row. Reconciled, never charged. */
   lineTotalSatang: number;
+  /** SCRUM-494 — served from the band holder's prepaid items: the platform prices it at ฿0. */
+  prepaid?: { checkinId: string };
 }
 
 /**
@@ -468,6 +470,22 @@ export function itemModifierSelections(
 
 /** An F&B order line as the platform receives it. */
 export function itemCartLineFromFnb(line: FnbOrderLine): ItemCartLine {
+  // SCRUM-494 — a prepaid line is served as it was paid for: ฿0, no options,
+  // naming the stay whose entitlement it is taken from.
+  if (line.isPrepaid && line.prepaidStayId) {
+    return {
+      id: platformId(line.id),
+      productId: line.menuItem.id,
+      quantity: line.qty,
+      modifiers: [],
+      ...(line.note ? { note: line.note } : {}),
+      ...(line.variantId
+        ? { variant: { variantId: line.variantId, variantLabel: line.variantLabel ?? line.variantId } }
+        : {}),
+      lineTotalSatang: 0,
+      prepaid: { checkinId: line.prepaidStayId },
+    };
+  }
   return {
     id: platformId(line.id),
     productId: line.menuItem.id,
@@ -496,17 +514,18 @@ export function itemCartLineFromMerch(line: MerchOrderLine): ItemCartLine {
 }
 
 /**
- * A line the platform cannot be asked about: one that was not bought.
+ * A line the platform cannot be asked about: a prepaid line with no platform
+ * stay behind it.
  *
- * A prepaid entitlement line is ฿0 on the order panel because it was paid for
- * at booking, and the platform has no wallet or entitlement ledger to take it
- * off (S2-14a). Sending it would offer the catalogue price of an item nobody is
- * paying for now and be refused as a price mismatch. It is therefore kept off
- * the payload and SAID on the screen, which is the same rule the rest of this
- * file follows: nothing the platform did not price is presented as if it had.
+ * A prepaid line served from a stay the counter's scan resolved
+ * (`Wristband.stayId`) goes to the platform, which prices it at ฿0 and takes it
+ * off the stay's entitlements when the order is confirmed (SCRUM-494). One with
+ * no stay has no entitlement the platform can take it off, so it is kept off
+ * the payload and SAID on the screen: nothing the platform did not price is
+ * presented as if it had.
  */
 export function isOffLedgerFnbLine(line: FnbOrderLine): boolean {
-  return line.isPrepaid === true;
+  return line.isPrepaid === true && !line.prepaidStayId;
 }
 
 /**
@@ -885,10 +904,10 @@ function engineItemLine(
 /**
  * The rows the engine totals: every line except one that was not bought here.
  *
- * A prepaid F&B line is kept off the platform's payload (`isOffLedgerFnbLine`)
- * because the ledger has no entitlement to take it off, so it is kept out of the
- * engine's cart too — otherwise a food-scoped code would find a base on this
- * device that the platform never sees. It is ฿0, so no total moves.
+ * A prepaid F&B line was paid for at the door. It is ฿0 on the platform too
+ * (SCRUM-494), where it is a row with no base, so leaving it out of this
+ * device's cart moves no total and gives a food-scoped code no base the
+ * platform would not also see.
  */
 export function engineItemLines(
   lines: readonly (FnbOrderLine | MerchOrderLine)[],
@@ -896,7 +915,7 @@ export function engineItemLines(
   ctx: PricingContext = pricingContext(),
 ): TicketCartLine[] {
   return lines
-    .filter((line) => !isFnbLine(line) || !isOffLedgerFnbLine(line))
+    .filter((line) => !isFnbLine(line) || line.isPrepaid !== true)
     .map((line) => engineItemLine(line, categories, ctx));
 }
 

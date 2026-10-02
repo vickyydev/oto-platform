@@ -78,8 +78,9 @@ export function VerifyTierModal({
   /**
    * SCRUM-241 — the rate this member already holds, and the way to end it.
    *
-   * A verified tier at the counter is otherwise permanent until its document
-   * expires, and a document with no expiry never does. The action sits here
+   * A verified tier at the counter holds until it is revoked; a recorded
+   * document expiry that has passed only flags it for re-verification
+   * (`reverifyDue`). The action sits here
    * because this is the one place at the till that already talks to the tier
    * routes; the member banner on the customer-type step would be the better
    * home for it and belongs to another slice's file.
@@ -144,7 +145,14 @@ export function VerifyTierModal({
   };
 
   const isOther = proofType === 'Other';
-  const expiryValid = /^\d{4}-\d{2}-\d{2}$/.test(expiresAt) && expiresAt >= todayIso();
+  /**
+   * The approved design's step asks for the proof type only, so the expiry is
+   * optional for a member and for a visitor with no member yet alike. A
+   * document with no expiry date never expires; one that is given must not
+   * have passed.
+   */
+  const expiryValid =
+    expiresAt === '' || (/^\d{4}-\d{2}-\d{2}$/.test(expiresAt) && expiresAt >= todayIso());
   const canConfirm = !!proofType && (!isOther || otherDoc.trim().length > 0) && expiryValid && !busy;
 
   const handleConfirm = async () => {
@@ -155,7 +163,7 @@ export function VerifyTierModal({
       verifiedBy: operatorName,
       verifiedById: operatorId,
       verifiedAt: new Date().toISOString(),
-      expiresAt,
+      ...(expiresAt ? { expiresAt } : {}),
     };
 
     // Existing API member: persist now — the server stamps WHO checked it from
@@ -168,13 +176,13 @@ export function VerifyTierModal({
         const res = await membersApi.verifyTier(member.id, {
           toTier: tier,
           evidenceType: proofType,
-          evidenceExpiresAt: expiresAt,
+          ...(expiresAt ? { evidenceExpiresAt: expiresAt } : {}),
           note: isOther ? otherDoc.trim() : undefined,
         });
         const updated = apiMemberToMember(res.member);
         toast({
           title: `${tierLabel(tier)} rate verified`,
-          description: `${proofType} · valid until ${expiresAt} · recorded by ${operatorName}`,
+          description: `${proofType}${expiresAt ? ` · valid until ${expiresAt}` : ''} · recorded by ${operatorName}`,
         });
         onConfirm({ member: { ...member, ...updated }, verification: updated.tierVerification ?? verification });
         onOpenChange(false);
@@ -232,7 +240,12 @@ export function VerifyTierModal({
                 <span>
                   Already holds <span className="font-semibold">{tierLabel(held.tier)}</span> on a{' '}
                   {held.proofType}
-                  {held.expiresAt ? `, valid to ${held.expiresAt}` : ' with no expiry'} — verified by{' '}
+                  {held.expiresAt
+                    ? held.reverifyDue
+                      ? `, expired ${held.expiresAt} — re-verify`
+                      : `, valid to ${held.expiresAt}`
+                    : ' with no expiry'}{' '}
+                  — verified by{' '}
                   {held.verifiedBy}.
                 </span>
               </div>
@@ -340,7 +353,7 @@ export function VerifyTierModal({
               className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"
             >
               <CalendarClock className="w-4 h-4" />
-              Document expiry date <span className="text-destructive">*</span>
+              Document expiry date
             </label>
             <input
               id="tier-evidence-expiry"

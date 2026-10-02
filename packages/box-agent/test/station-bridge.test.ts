@@ -738,3 +738,48 @@ test('OD-11: a tier upgraded on a document at the counter prices the next cart; 
   assert.equal(factTier!.payload.toTier, 'thai');
   r.t.close();
 });
+
+test('OD-11: a document with no expiry date verifies a tier offline; an expired one is refused', async () => {
+  const r = await rig();
+  const { caller } = await r.bridge.unlock(STATION_ID, {
+    token: token(r.now.at),
+    password: 'open-sesame',
+  });
+  const memberId = '018f0000-0000-7000-8000-00000000d007';
+  await r.bridge.intent(
+    STATION_ID,
+    caller,
+    intent('member.create', { memberId, phone: '+66817779999', nickname: 'No expiry' }),
+  );
+  await assert.rejects(
+    r.bridge.intent(
+      STATION_ID,
+      caller,
+      intent('member.tier_change', {
+        direction: 'upgrade',
+        memberId,
+        verificationId: '018f0000-0000-7000-8000-0000000000e9',
+        toTier: 'thai',
+        evidenceType: 'Residence certificate',
+        evidenceExpiresAt: '2000-01-01',
+      }),
+    ),
+    (err: unknown) => err instanceof BridgeError && err.status === 400,
+  );
+  const upgraded = await r.bridge.intent(
+    STATION_ID,
+    caller,
+    intent('member.tier_change', {
+      direction: 'upgrade',
+      memberId,
+      verificationId: '018f0000-0000-7000-8000-0000000000ea',
+      toTier: 'thai',
+      evidenceType: 'Residence certificate',
+    }),
+  );
+  assert.equal((upgraded.result?.member as { tierCode: string }).tierCode, 'thai');
+  const [, factTier] = (await r.t.store.takeBatch(BOX_ID)).events;
+  assert.equal(factTier!.type, 'member.tier_changed');
+  assert.equal(factTier!.payload.evidenceExpiresAt, undefined);
+  r.t.close();
+});

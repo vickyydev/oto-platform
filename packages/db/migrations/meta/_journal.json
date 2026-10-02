@@ -379,6 +379,13 @@
       "when": 1790950000000,
       "tag": "0053_band_gate_access",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1790960000000,
+      "tag": "0054_sale_tier_claim_expiry_optional",
+      "breakpoints": true
     }
   ]
 }

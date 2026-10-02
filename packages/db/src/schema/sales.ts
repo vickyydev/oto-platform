@@ -561,8 +561,12 @@ export const saleTierClaim = pos.table(
     toTier: text('to_tier').notNull(),
     /** `Passport`, `Residence certificate` — a KIND, never a number. */
     evidenceType: text('evidence_type').notNull(),
-    /** The document's own expiry. One that has passed prices nothing. */
-    evidenceExpiresAt: date('evidence_expires_at').notNull(),
+    /**
+     * The document's own expiry, when it carries one. One that has passed
+     * prices nothing; none recorded means it never expires, as at the
+     * member verification step.
+     */
+    evidenceExpiresAt: date('evidence_expires_at'),
     /**
      * The sale this claim priced, once one did. Set by a conditional update
      * inside the sale's transaction — `where spent_by_sale_id is null` — so two

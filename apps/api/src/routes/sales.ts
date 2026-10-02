@@ -3,6 +3,8 @@ import type { FastifyRequest } from 'fastify';
 import { and, eq } from 'drizzle-orm';
 import { member, sale } from '@oto/db';
 import {
+  CartBandHolderSchema,
+  CartPrepaidSchema,
   REFUND_MODES,
   SALE_REPRINT_KINDS,
   TaxableCategorySchema,
@@ -152,6 +154,11 @@ const CartItemLine = z.object({
     .nullish(),
   /** What the screen showed. Reconciled against the platform's price, never charged. */
   lineTotalSatang: z.number().int().min(0).optional(),
+  /**
+   * SCRUM-494 — served from the band holder's prepaid items: priced at ฿0 and
+   * checked against what is left on the child's stay.
+   */
+  prepaid: CartPrepaidSchema.nullish(),
 });
 
 /**
@@ -247,7 +254,11 @@ const Cart = z.object({
    */
   channel: z.enum(['till', 'fnb', 'shop']).optional(),
   memberId: z.string().uuid().nullish(),
-  /** Ignored for pricing; reported back when it differs from the platform's. */
+  /**
+   * The tier staff picked. Prices the cart only when it is the operator's
+   * default tier (`resolveTier` in services/sale.ts); otherwise reported back
+   * when it differs from the platform's.
+   */
   tier: z.string().max(40).optional(),
   /**
    * SCRUM-307 — the action id of a document check reception recorded through
@@ -289,6 +300,12 @@ const Cart = z.object({
   customerPhone: z.string().max(40).nullish(),
   customerNickname: z.string().max(120).nullish(),
   expectedTotalSatang: z.number().int().min(0).optional(),
+  /**
+   * SCRUM-494 — the child's stay behind the band the F&B order was taken
+   * against (`GET /wallets/scan`), and the food-consent override when staff
+   * recorded one. The prep ticket prints that child's own allergy line.
+   */
+  bandHolder: CartBandHolderSchema.nullish(),
 });
 
 /** The till sends the cart nested under `cart`; a curl sends it flat. */
@@ -571,6 +588,8 @@ export async function saleRoutes(app: App): Promise<void> {
             body.actionId ?? (typeof headerActionId === 'string' ? headerActionId : null) ?? null,
           ...(body.pickupCode ? { pickupCode: body.pickupCode } : {}),
           ...(body.wallet ? { wallet: body.wallet } : {}),
+          // SCRUM-494 — the counter is confirming now: a prepaid line it can no longer serve is refused.
+          prepaidGate: 'refuse',
         });
         const { drawerKick: kick, ...response } = result;
         drawerKick = kick;

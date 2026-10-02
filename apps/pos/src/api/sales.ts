@@ -228,11 +228,12 @@ export interface SaleCartPayload {
    * `POST /sales/tier-claims`, when this cart is for a visitor who is not a
    * member yet.
    *
-   * It is what makes a discounted walk-in priceable at all: `tier` above is
-   * ignored by the platform, and with no member to read a tier from the cart
-   * would otherwise be priced at the default rate — which is how every Expat
-   * and Thai sale came back as `SALE_LINE_PRICE_MISMATCH`. What this names is
-   * a row the platform wrote under a permission check and stamped with the
+   * It is what makes a discounted walk-in priceable at all: `tier` above can
+   * only move a price down to the operator's default tier (the platform prices
+   * a member at the default rate when the till picks it, and any other tier it
+   * names prices nothing), so with no member to read a tier from the cart is
+   * priced at the default rate unless this names a claim. What this names is a
+   * row the platform wrote under a permission check and stamped with the
    * verifier and the branch; naming it is not the same as naming a price.
    */
   tierClaimActionId?: string | null;
@@ -274,6 +275,13 @@ export interface SaleCartPayload {
   customerNickname?: string | null;
   /** What the till last showed as the amount due. See `lineTotalSatang`. */
   expectedTotalSatang: number;
+  /**
+   * SCRUM-494 — the child's stay behind the band an F&B order was taken
+   * against, and the food-consent override when staff recorded one. The
+   * platform checks the stay, prints that child's allergy line on the prep
+   * ticket and serves the prepaid lines from it.
+   */
+  bandHolder?: { checkinId: string; foodOverride?: boolean };
 }
 
 export interface SaleCommitBody {
@@ -628,8 +636,8 @@ export interface SaleTierClaimBody {
   toTier: string;
   /** The KIND of document — `Passport`, `School card`. Never its number. */
   evidenceType: string;
-  /** The document's expiry, `YYYY-MM-DD`. */
-  evidenceExpiresAt: string;
+  /** The document's expiry, `YYYY-MM-DD`; absent when it carries none. */
+  evidenceExpiresAt?: string;
 }
 
 /** The claim as the platform answers it. The tier on it is the platform's. */
@@ -900,6 +908,8 @@ export function buildCartPayload(
 export interface ItemCartIdentity extends CartIdentity {
   channel: 'fnb' | 'shop';
   pickupCode?: string | null;
+  /** SCRUM-494 — the scanned band's stay (`Wristband.stayId`) and the food-consent override. */
+  bandHolder?: { checkinId: string; foodOverride?: boolean } | null;
 }
 
 /**
@@ -993,6 +1003,14 @@ export function buildItemCartPayload(
     customerPhone: identity.customerPhone ?? null,
     customerNickname: identity.customerNickname ?? null,
     expectedTotalSatang: toSatang(shownTotal),
+    ...(identity.bandHolder
+      ? {
+          bandHolder: {
+            checkinId: identity.bandHolder.checkinId,
+            ...(identity.bandHolder.foodOverride ? { foodOverride: true } : {}),
+          },
+        }
+      : {}),
   };
 }
 
@@ -1049,20 +1067,18 @@ export function localItemQuote(
 /**
  * Why this order has nothing the platform can be asked about. Null when it has.
  *
- * An order made up entirely of prepaid entitlement lines is the case: every row
- * is ฿0 because it was paid for at a booking, the platform has no wallet or
- * entitlement ledger to take it off (S2-14a), and a cart with no rows on it is
- * refused as empty. So the platform is not asked, the order stands on this till
- * and the confirmation says so — rather than reception being shown a refusal
- * they can do nothing about while a guest waits for an ice cream somebody has
- * already paid for.
+ * An order made up entirely of prepaid lines from a band the platform holds no
+ * stay for (`isOffLedgerFnbLine`) is the case: there is no entitlement on the
+ * platform to serve them from, and a cart with no rows on it is refused as
+ * empty. A prepaid-only order from a platform stay is not this case — it goes
+ * to the platform at ฿0 and closes with no tender (SCRUM-494).
  */
 export function offLedgerOnly(
   lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
 ): string | null {
   if (lines.length === 0) return null;
   if (itemCart(lines).length > 0) return null;
-  return 'Every item on this order was prepaid at booking, which the ledger cannot record yet (S2-14a).';
+  return 'Every item on this order is prepaid on a band the platform holds no stay for, so the ledger cannot record it — scan the band again.';
 }
 
 export interface ItemQuoteArgs {
@@ -1400,8 +1416,8 @@ export async function claimVerifiedTier(input: {
   tier: string;
   /** The document type as the modal named it. */
   proofType: string;
-  /** `YYYY-MM-DD`. */
-  expiresAt: string;
+  /** `YYYY-MM-DD`, when the document carries an expiry. */
+  expiresAt?: string;
 }): Promise<string> {
   const actionId = newId();
   await salesApi.tierClaim({
@@ -1409,7 +1425,7 @@ export async function claimVerifiedTier(input: {
     branchId: input.branchId,
     toTier: input.tier,
     evidenceType: input.proofType,
-    evidenceExpiresAt: input.expiresAt,
+    ...(input.expiresAt ? { evidenceExpiresAt: input.expiresAt } : {}),
   });
   return actionId;
 }

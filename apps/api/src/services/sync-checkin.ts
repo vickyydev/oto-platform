@@ -16,6 +16,7 @@ import {
   sale,
   saleLine,
   supervisionWaiver,
+  syncQuarantine,
   visit,
   type Db,
 } from '@oto/db';
@@ -31,6 +32,7 @@ import {
   normaliseBandCode,
   normalizePhone,
   parseBandCode,
+  prepaidPaidMismatchRefusal,
   verifyBandCode,
   type BridgeCheckinFamily,
   type BridgeGuardian,
@@ -252,12 +254,11 @@ async function applyCheckinCreated(
     }
   }
   const held = new Set(taken.map((t) => t.id));
+  const setAside: PrepaidSetAside[] = [];
   for (const c of payload.children) {
     if (held.has(c.checkinId)) continue;
-    const provision =
-      c.foodProvision && c.foodProvision.mode !== 'none' && c.foodProvision.paidSatang <= 0
-        ? { mode: 'none' as const, paidSatang: 0 }
-        : (c.foodProvision ?? null);
+    const { provision, mismatch } = provisionOfReplay(c.foodProvision ?? null);
+    if (mismatch) setAside.push({ checkinId: c.checkinId, childName: c.name.trim(), ...mismatch });
     const mayOrderFood = !!provision && provision.mode !== 'none' && provision.paidSatang > 0;
     await tx.insert(checkin).values({
       id: c.checkinId,
@@ -294,11 +295,151 @@ async function applyCheckinCreated(
         foodRestrictions: c.foodRestrictions?.trim() || null,
         mayOrderFood,
         foodProvision: provision,
+        ...(mismatch
+          ? { prepaidSetAside: { itemsSatang: mismatch.itemsSatang, paidSatang: mismatch.paidSatang, provision: mismatch.provision } }
+          : {}),
         ...extra,
       },
     });
   }
+  if (setAside.length > 0) await fileSetAsidePrepaid(tx, scope, event, payload, setAside);
   return { entityType: 'registration', entityId: payload.registrationId };
+}
+
+/** A child's prepaid food the platform did not keep as their entitlement. */
+interface PrepaidSetAside {
+  checkinId: string;
+  childName: string;
+  itemsSatang: number;
+  paidSatang: number;
+  provision: NonNullable<OfflineCheckinCreated['children'][number]['foodProvision']>;
+}
+
+/**
+ * The online registration's provision rules (`checkin.ts normaliseProvision`,
+ * `assertPrepaidItems`) for a registration the box already recorded: a prepaid
+ * mode that paid nothing is `none`, every prepaid item starts unserved, and
+ * prepaid items whose sum is not what was paid are not kept as the child's
+ * entitlement. The box refuses that mismatch at its counter; one that still
+ * arrives cannot be refused after the fact, so the stay is stored without the
+ * prepaid food and the mismatch is returned for quarantine.
+ */
+function provisionOfReplay(raw: OfflineCheckinCreated['children'][number]['foodProvision'] | null): {
+  provision: OfflineCheckinCreated['children'][number]['foodProvision'] | null;
+  mismatch: Omit<PrepaidSetAside, 'checkinId' | 'childName'> | null;
+} {
+  if (!raw) return { provision: null, mismatch: null };
+  const paid = raw.mode !== 'none' && raw.paidSatang <= 0 ? { mode: 'none' as const, paidSatang: 0 } : raw;
+  const provision =
+    paid.mode === 'prepaid_items' && paid.items
+      ? { ...paid, items: paid.items.map((it) => ({ ...it, redeemedQty: 0 })) }
+      : paid;
+  if (provision.mode !== 'prepaid_items') return { provision, mismatch: null };
+  const itemsSatang = (provision.items ?? []).reduce((s, it) => s + it.unitSatang * it.qty, 0);
+  if (itemsSatang === provision.paidSatang) return { provision, mismatch: null };
+  return { provision: null, mismatch: { itemsSatang, paidSatang: provision.paidSatang, provision } };
+}
+
+/**
+ * Files a registration whose prepaid food was set aside: the event itself is
+ * applied (the family is registered), and it is also held in quarantine
+ * (`conflict`) with a critical alert, so a person settles what the family paid
+ * against what they chose. One row per event, as `sync.ts fileQuarantine`.
+ */
+async function fileSetAsidePrepaid(
+  tx: Tx,
+  scope: BatchScope,
+  event: PreparedEvent,
+  payload: OfflineCheckinCreated,
+  setAside: readonly PrepaidSetAside[],
+): Promise<void> {
+  const env = event.envelope;
+  const alertKey = `checkin.prepaid_paid_mismatch:${payload.registrationId}`;
+  const message = setAside.map((s) => prepaidPaidMismatchRefusal(s.childName, s.itemsSatang, s.paidSatang)).join(' ');
+  const errorMessage =
+    `Registered offline, but the prepaid food was not kept: ${message} ` +
+    'The children are registered without prepaid food — settle what the family paid with them.';
+  const [open] = await tx
+    .select({ id: syncQuarantine.id })
+    .from(syncQuarantine)
+    .where(
+      and(
+        eq(syncQuarantine.boxId, scope.auth.boxId),
+        eq(syncQuarantine.eventId, env.eventId),
+        eq(syncQuarantine.journalEpoch, env.journalEpoch),
+        eq(syncQuarantine.status, 'open'),
+      ),
+    )
+    .limit(1);
+  if (!open) {
+    await tx.insert(syncQuarantine).values({
+      id: newId(),
+      boxId: scope.auth.boxId,
+      eventId: env.eventId,
+      journalEpoch: env.journalEpoch,
+      boxSeq: env.boxSeq,
+      type: env.type,
+      schemaVersion: env.schemaVersion,
+      reason: 'conflict',
+      status: 'open',
+      errorCode: 'SYNC_PREPAID_PAID_MISMATCH',
+      errorMessage,
+      payload: env as never,
+      payloadHash: env.payloadHash,
+      sig: env.sig,
+      occurredAt: event.occurredAt,
+      actionId: env.actionId ?? null,
+      alertKey,
+    });
+  }
+  for (const s of setAside) {
+    await audit.record(tx, {
+      ...auditBase(scope, event),
+      action: 'checkin.prepaid_set_aside',
+      entityType: 'checkin',
+      entityId: s.checkinId,
+      after: {
+        registrationId: payload.registrationId,
+        childName: s.childName,
+        itemsSatang: s.itemsSatang,
+        paidSatang: s.paidSatang,
+        provision: s.provision,
+        quarantined: true,
+        ...trail(scope, event, payload),
+      },
+    });
+  }
+  try {
+    await raiseAlert(
+      scope.db,
+      {
+        key: alertKey,
+        category: 'checkin.prepaid_paid_mismatch',
+        severity: 'critical',
+        subject: `Prepaid food for ${setAside.map((s) => s.childName).join(', ')}`,
+        summary:
+          `A registration recorded offline on ${scope.auth.name} (${scope.auth.slot}) carried prepaid food whose amount paid ` +
+          `is not the items' sum. ${message} The children are registered without the prepaid food; the registration is held ` +
+          'in quarantine — settle what the family paid with them.',
+        detail: {
+          registrationId: payload.registrationId,
+          eventId: env.eventId,
+          boxId: scope.auth.boxId,
+          children: setAside.map((s) => ({
+            checkinId: s.checkinId,
+            childName: s.childName,
+            itemsSatang: s.itemsSatang,
+            paidSatang: s.paidSatang,
+          })),
+        },
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  } catch (err) {
+    scope.log?.error({ err, registrationId: payload.registrationId }, 'a prepaid mismatch could not be alerted; its quarantine row names it');
+  }
 }
 
 // --- checkin.updated: check in now, leave as booked, the board's edits -------------------

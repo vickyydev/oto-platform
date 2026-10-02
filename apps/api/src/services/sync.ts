@@ -1616,7 +1616,9 @@ const HANDLERS: Record<string, EventHandler> = {
         toTier = target.code;
         evidence = {
           type: payload.evidenceType,
-          expiresAt: new Date(`${payload.evidenceExpiresAt}T00:00:00Z`),
+          expiresAt: payload.evidenceExpiresAt
+            ? new Date(`${payload.evidenceExpiresAt}T00:00:00Z`)
+            : null,
           note: payload.note ?? null,
         };
         action = 'member.tier_verify';
@@ -1669,7 +1671,9 @@ const HANDLERS: Record<string, EventHandler> = {
           memberId: m.id,
           toTier,
           evidenceType: evidence.type,
-          ...(payload.direction === 'upgrade' ? { evidenceExpiresAt: payload.evidenceExpiresAt } : { reason: payload.reason }),
+          ...(payload.direction === 'upgrade'
+            ? { evidenceExpiresAt: payload.evidenceExpiresAt ?? null }
+            : { reason: payload.reason }),
           boxId: scope.auth.boxId,
           ...freshMark(payload),
         },

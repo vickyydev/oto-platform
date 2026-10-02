@@ -120,7 +120,20 @@ export interface SalePrintSnapshot {
   /** In the order they were minted. */
   bands: SalePrintBand[];
   orderChildren: SalePrintChild[];
+  /**
+   * SCRUM-494 — the child whose band the F&B order was taken against (the
+   * design's `buildPrepTickets` reads the band holder). When present the prep
+   * ticket carries this child's own name and allergy line and nobody else's.
+   */
+  bandHolder?: SalePrintBandHolder | null;
   note: string | null;
+}
+
+/** The band holder of an F&B order, for the prep ticket. */
+export interface SalePrintBandHolder {
+  name: string;
+  /** Allergies and medical notes, joined; null when the parent declared none. */
+  allergiesMedical: string | null;
 }
 
 // --- The documents (`@oto/print` `templates/data.ts`, structurally) ----------------
@@ -328,12 +341,17 @@ export function salePrepDocument(
   ).find((t) => t.station === station);
   const pickup = lines[0]?.payload?.pickupCode;
   const at = new Date(snapshot.at);
+  // An order taken against a band prints that band's holder and their own
+  // allergy line (the design's `buildPrepTickets`), never a sibling's.
+  const holder = snapshot.bandHolder ?? null;
   return {
     title: ticket?.title ?? (station === 'kitchen' ? 'Kitchen' : 'Bar'),
     orderRef: pickup ?? snapshot.receiptNumber ?? snapshot.saleId.slice(-6),
     time: hhmm(at, snapshot.timezone),
-    holderName: snapshot.memberNickname || undefined,
-    allergiesMedical: allergyTextOf(snapshot.orderChildren),
+    holderName: holder ? holder.name || undefined : snapshot.memberNickname || undefined,
+    allergiesMedical: holder
+      ? holder.allergiesMedical?.trim() || undefined
+      : allergyTextOf(snapshot.orderChildren),
     lines: (ticket?.lines ?? []).map((l) => ({ qty: l.quantity, name: lineName(l), note: lineNote(l) })),
     orderNote: snapshot.note ?? undefined,
   };

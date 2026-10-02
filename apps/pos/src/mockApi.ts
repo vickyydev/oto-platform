@@ -403,23 +403,9 @@ export const chargeFnbCredit = (wristbandId: string, amount: number, by?: string
   return wb.creditBalanceTHB;
 };
 
-/**
- * Increment `redeemedQty` on a prepaid item entitlement. Mirrors chargeFnbCredit
- * — called once at order confirmation for each prepaid line, never at add-time.
- * Returns the remaining (unredeemed) quantity after the increment.
- */
-export const redeemPrepaidItem = (
-  wristbandId: string,
-  menuItemId: string,
-  qty: number
-): number => {
-  const wb = mockWristbands.find(w => w.id === wristbandId);
-  if (!wb?.foodProvision?.items) return 0;
-  const item = wb.foodProvision.items.find(i => i.menuItemId === menuItemId);
-  if (!item) return 0;
-  item.redeemedQty = Math.min(item.qty, item.redeemedQty + Math.max(0, qty));
-  return item.qty - item.redeemedQty;
-};
+// Prepaid item entitlements are served on the platform (SCRUM-494): the F&B
+// order's prepaid lines are taken off the child's stay when the order closes
+// (`apps/api/src/services/band-food.ts`, `redeemSalePrepaid`).
 
 // --- Operators / face-scan login (mocked) ---------------------------------
 // Stand-in for the HR face enrollments. In production these match the staff

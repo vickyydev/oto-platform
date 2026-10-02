@@ -2,10 +2,13 @@ import { z } from 'zod';
 import { and, eq, isNull } from 'drizzle-orm';
 import { branch, wallet } from '@oto/db';
 import {
+  BandScanQuerySchema,
   WalletLookupQuerySchema,
   WalletReactivateBodySchema,
   WalletReportQuerySchema,
+  type BandStayView,
 } from '@oto/shared';
+import { bandStayViewOf, stayForKey } from '../services/band-food';
 import type { FastifyRequest } from 'fastify';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
@@ -77,6 +80,57 @@ export async function walletRoutes(app: App): Promise<void> {
       return {
         wallet: await walletViewOf(app.db, found),
         ledger: await ledgerOf(app.db, auth.operatorId, found.id),
+      };
+    },
+  );
+
+  /**
+   * SCRUM-494 — THE F&B AND SHOP COUNTERS' SCAN. The wallet the key names, as
+   * `/lookup` answers it, and beside it the child's stay the band belongs to at
+   * this park, in the park: the allergy and medical alert, the food
+   * restrictions, whether the parent authorised food and the food they prepaid
+   * — what the design's band carried (`types.ts:Wristband`). Either may be
+   * absent; 404 only when the key names neither. The stay is read with
+   * `pos:checkin:read` at the park and left out for an account without it.
+   */
+  app.get(
+    '/scan',
+    {
+      config: { permission: 'pos:wallet:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description:
+          'The counter’s band scan: the wallet a key names (balance, keys, ledger) and the child’s in-park stay at this ' +
+          'park behind the band — allergies/medical, food restrictions, mayOrderFood and the prepaid food with each ' +
+          'prepaid item’s served count. Either half may be null; 404 when the key names neither.',
+        querystring: BandScanQuerySchema,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const branchId = req.query.branchId ?? auth.branchId ?? null;
+      let found = await walletFor(app.db, auth.operatorId, req.query.key);
+      if (found?.branchId) {
+        try {
+          await req.requirePermission('pos:wallet:read', { branchId: found.branchId });
+        } catch {
+          // A wallet at a park this session cannot read is answered as none.
+          found = null;
+        }
+      }
+      let stay: BandStayView | null = null;
+      if (branchId) {
+        const allowed = await req
+          .requirePermission('pos:checkin:read', { branchId })
+          .then(() => true)
+          .catch(() => false);
+        const row = allowed ? await stayForKey(app.db, auth.operatorId, branchId, req.query.key, found?.id ?? null) : null;
+        stay = row ? await bandStayViewOf(app.db, row) : null;
+      }
+      if (!found && !stay) throw notFound();
+      return {
+        wallet: found ? await walletViewOf(app.db, found) : null,
+        ledger: found ? await ledgerOf(app.db, auth.operatorId, found.id) : [],
+        stay,
       };
     },
   );

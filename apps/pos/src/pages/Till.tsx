@@ -1019,13 +1019,13 @@ export default function Till() {
     // handler resuming onto a fresh sale would set the tier and the claim id
     // on a family that showed no document. Same guard as handleCustomerDone.
     const epoch = saleEpochRef.current;
-    if (!verified && apiBranchId && verification.expiresAt) {
+    if (!verified && apiBranchId) {
       try {
         const claimed = await claimVerifiedTier({
           branchId: apiBranchId,
           tier: verification.tier,
           proofType: verification.proofType,
-          expiresAt: verification.expiresAt,
+          ...(verification.expiresAt ? { expiresAt: verification.expiresAt } : {}),
         });
         if (saleEpochRef.current !== epoch) return;
         setTierClaimActionId(claimed);

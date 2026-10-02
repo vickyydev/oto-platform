@@ -127,19 +127,17 @@ async function memberWithChildren(app: App, memberId: string, operatorId: string
     .where(eq(memberTierVerification.memberId, memberId))
     .orderBy(desc(memberTierVerification.createdAt))
     .limit(1);
-  // An expired document no longer entitles the discounted rate: the POS sees
-  // no verification and asks for fresh proof (the row itself stays for audit).
+  // A verification holds until it is revoked (the approved design's
+  // VerifyTierModal: "saved to the member profile so they won't be asked
+  // again"; lib/membership.ts resolveAutoTier). A recorded document expiry
+  // that has passed keeps the rate and raises `reverifyDue`, so the till and
+  // the sale read the same tier — `member.tier_code`, which only a grant or a
+  // revocation moves.
   //
-  // Nor does a revocation (SCRUM-241), which is the latest row from the moment
-  // it is written and entitles nothing — without this the member would read
-  // back as holding a verification OF the baseline tier, which is the rate
-  // that needs no document at all.
-  const active =
-    verification &&
-    !isTierRevocation(verification) &&
-    !isEvidenceExpired(verification.evidenceExpiresAt)
-      ? verification
-      : null;
+  // A revocation (SCRUM-241) is the latest row from the moment it is written
+  // and entitles nothing — without this the member would read back as holding
+  // a verification OF the baseline tier, the rate that needs no document.
+  const active = verification && !isTierRevocation(verification) ? verification : null;
   return {
     id: m.id,
     phone: m.phone,
@@ -156,6 +154,8 @@ async function memberWithChildren(app: App, memberId: string, operatorId: string
           verifiedAt: active.createdAt.toISOString(),
           verifiedBy: await staffName(app, active.verifiedByAccountId),
           expiresAt: active.evidenceExpiresAt?.toISOString().slice(0, 10) ?? null,
+          /** The recorded document expiry has passed: staff re-check it. The rate holds. */
+          reverifyDue: isEvidenceExpired(active.evidenceExpiresAt),
         }
       : null,
     children: children.map(serializeChild),
@@ -487,7 +487,15 @@ export async function memberRoutes(app: App): Promise<void> {
              * "Other" document gets described.
              */
             evidenceType: z.enum(TIER_PROOF_TYPES),
-            evidenceExpiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+            /**
+             * Optional, as the approved design's verification step asks for
+             * the proof type only. When recorded, its passing flags the member
+             * for re-verification (`reverifyDue`); it never ends the rate.
+             */
+            evidenceExpiresAt: z
+              .string()
+              .regex(/^\d{4}-\d{2}-\d{2}$/)
+              .nullish(),
             note: z.string().optional(),
           })
           .strict(),
@@ -516,8 +524,9 @@ export async function memberRoutes(app: App): Promise<void> {
         .limit(1);
       if (!tierRow) throw errors.badRequest(`Unknown tier "${req.body.toTier}"`);
 
-      const expires = new Date(`${req.body.evidenceExpiresAt}T00:00:00Z`);
-      if (isEvidenceExpired(expires)) {
+      const expiresOn = req.body.evidenceExpiresAt ?? null;
+      const expires = expiresOn ? new Date(`${expiresOn}T00:00:00Z`) : null;
+      if (expires && isEvidenceExpired(expires)) {
         throw errors.badRequest(
           'The document has already expired — it cannot verify a discounted rate',
         );
@@ -551,7 +560,7 @@ export async function memberRoutes(app: App): Promise<void> {
             memberId: m.id,
             toTier: req.body.toTier,
             evidenceType: req.body.evidenceType,
-            evidenceExpiresAt: req.body.evidenceExpiresAt,
+            evidenceExpiresAt: expiresOn,
           },
           requestId: req.id,
         });

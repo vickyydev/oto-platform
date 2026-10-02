@@ -10,6 +10,7 @@ import {
   guardian,
   nanny,
   nannyShift,
+  product,
   refund,
   registration,
   release,
@@ -49,6 +50,8 @@ let receptionId: string;
 let branchId: string;
 let stationId: string;
 let twoHoursId: string;
+/** Menu items on this park's menu at the prices the prepaid cases below pay. */
+const menuAt = new Map<number, string>();
 
 beforeAll(async () => {
   ctx = await createTestContext({ files: true, env: STORAGE_ENV });
@@ -79,6 +82,12 @@ beforeAll(async () => {
     startsAt: new Date(Date.now() - 3_600_000),
     endsAt: new Date(Date.now() + 3_600_000),
   });
+  // Registration checks prepaid items against the menu, so the cases' prices are menu items here.
+  for (const priceSatang of [4_500, 4_550, 12_525]) {
+    const id = newId();
+    await ctx.db.insert(product).values({ id, operatorId: hkt!.operatorId, branchId, kind: 'menu', name: `Release case ${priceSatang}`, priceSatang });
+    menuAt.set(priceSatang, id);
+  }
 }, 180_000);
 
 afterAll(async () => {
@@ -135,6 +144,11 @@ async function childInPark(
     },
   });
   expect(reg.statusCode, reg.body).toBe(200);
+  // Registration stores every prepaid item unserved; what the F&B counter has
+  // served since is written onto the stay, where the counter's confirm puts it.
+  if (food.items?.some((it) => it.redeemedQty > 0)) {
+    await ctx.db.update(checkin).set({ foodProvision: food }).where(eq(checkin.id, checkinId));
+  }
   const saleId = newId();
   const commit = await ctx.app.inject({
     method: 'POST',
@@ -493,8 +507,8 @@ describe('prepaid food reconciliation (seeded policy: refund)', () => {
       mode: 'prepaid_items',
       paidSatang: 4_550 * 2 + 12_525,
       items: [
-        { menuItemId: 'm-juice', menuItemName: 'Orange juice', unitSatang: 4_550, qty: 2, redeemedQty: 1 },
-        { menuItemId: 'm-sandwich', menuItemName: 'Ham sandwich', unitSatang: 12_525, qty: 1, redeemedQty: 0 },
+        { menuItemId: menuAt.get(4_550)!, menuItemName: 'Orange juice', unitSatang: 4_550, qty: 2, redeemedQty: 1 },
+        { menuItemId: menuAt.get(12_525)!, menuItemName: 'Ham sandwich', unitSatang: 12_525, qty: 1, redeemedQty: 0 },
       ],
     };
     const family = await childInPark({ food });
@@ -557,7 +571,7 @@ describe('prepaid food reconciliation (seeded policy: refund)', () => {
       food: {
         mode: 'prepaid_items',
         paidSatang: 9_000,
-        items: [{ menuItemId: 'm-juice', menuItemName: 'Juice', unitSatang: 4_500, qty: 2, redeemedQty: 2 }],
+        items: [{ menuItemId: menuAt.get(4_500)!, menuItemName: 'Juice', unitSatang: 4_500, qty: 2, redeemedQty: 2 }],
       },
     });
     const res = await releaseCall(used.checkinId, { collector: { kind: 'dropper_off' }, pickupPhotoFileId: await photo(used.registrationId) });

@@ -9,6 +9,7 @@ import {
   parseDayStart,
   isoDateInTz,
   newId,
+  refundScopeOf,
   refundStatusOf,
   refundableSatang,
   resolveRefundAmount,
@@ -250,16 +251,22 @@ export async function refundSale(
   // --- The lines it covers, and what goes back to stock ---------------------
   const covered =
     input.mode === 'whole' ? lines.filter((l) => l.quantity > 0 && !earlierLines.has(l.id)) : picked;
+  // The design's scope: full when this refund takes everything still left, in
+  // any mode. Earlier refunds were full-scope only if they emptied the sale,
+  // which the status checks above already refuse to refund again.
+  const scope = refundScopeOf(amount.amountSatang, remaining);
   const restock = new Set(
     restockLineIds({
       saleKind: saleKindOf(row, lines),
       mode: input.mode,
+      scope,
       coveredLineIds: covered.map((l) => l.id),
-      allLineIds: lines.map((l) => l.id),
+      allLineIds: lines.filter((l) => l.quantity > 0).map((l) => l.id),
       alreadyRestocked: restocked,
-      earlierWholeRefund: earlier.some((r) => r.mode === 'whole'),
+      earlierFullScope: row.refundedSatang >= row.grossSatang,
     }),
   );
+  const coveredIds = new Set(covered.map((l) => l.id));
   const lineEntries: RefundLineEntry[] = covered.map((l) => ({
     saleLineId: l.id,
     label: l.label,
@@ -267,6 +274,21 @@ export async function refundSale(
     grossSatang: l.grossSatang,
     restock: restock.has(l.id) && STOCKED_KINDS.has(l.kind),
   }));
+  // A full-scope refund also returns stocked lines whose money it does not
+  // carry — a custom amount, or a line an earlier partial refund covered. Each
+  // is named on this refund as returned to stock only, so `restocked` above
+  // finds it and no later read counts its money twice.
+  for (const l of lines) {
+    if (coveredIds.has(l.id) || !restock.has(l.id) || !STOCKED_KINDS.has(l.kind)) continue;
+    lineEntries.push({
+      saleLineId: l.id,
+      label: l.label,
+      quantity: l.quantity,
+      grossSatang: 0,
+      restock: true,
+      restockOnly: true,
+    });
+  }
 
   // --- Where the money goes back ---------------------------------------------
   const attempts = (

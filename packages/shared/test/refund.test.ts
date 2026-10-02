@@ -113,27 +113,27 @@ describe('the allocation — wallet, then the same tender newest first, then cas
 
 describe('restocking — which lines a refund returns (mockApi.ts:recordRefund)', () => {
   const all = ['l1', 'l2', 'l3'];
-  it('a shop refund returns the picked lines, never twice, and a custom amount none', () => {
+  it('a shop refund returns the picked lines, never twice, and a partial custom amount none', () => {
     expect(
-      restockLineIds({ saleKind: 'merch', mode: 'items', coveredLineIds: ['l2'], allLineIds: all, alreadyRestocked: new Set(), earlierWholeRefund: false }),
+      restockLineIds({ saleKind: 'merch', mode: 'items', scope: 'partial', coveredLineIds: ['l2'], allLineIds: all, alreadyRestocked: new Set(), earlierFullScope: false }),
     ).toEqual(['l2']);
     expect(
-      restockLineIds({ saleKind: 'merch', mode: 'whole', coveredLineIds: [], allLineIds: all, alreadyRestocked: new Set(['l2']), earlierWholeRefund: false }),
+      restockLineIds({ saleKind: 'merch', mode: 'whole', scope: 'full', coveredLineIds: [], allLineIds: all, alreadyRestocked: new Set(['l2']), earlierFullScope: false }),
     ).toEqual(['l1', 'l3']);
     expect(
-      restockLineIds({ saleKind: 'merch', mode: 'custom', coveredLineIds: [], allLineIds: all, alreadyRestocked: new Set(), earlierWholeRefund: false }),
+      restockLineIds({ saleKind: 'merch', mode: 'custom', scope: 'partial', coveredLineIds: [], allLineIds: all, alreadyRestocked: new Set(), earlierFullScope: false }),
     ).toEqual([]);
   });
 
-  it('a ticket or food refund restocks on the first whole refund only', () => {
+  it('a ticket or food refund restocks on the first full-scope refund only', () => {
     expect(
-      restockLineIds({ saleKind: 'ticket', mode: 'items', coveredLineIds: ['l1'], allLineIds: all, alreadyRestocked: new Set(), earlierWholeRefund: false }),
+      restockLineIds({ saleKind: 'ticket', mode: 'items', scope: 'partial', coveredLineIds: ['l1'], allLineIds: all, alreadyRestocked: new Set(), earlierFullScope: false }),
     ).toEqual([]);
     expect(
-      restockLineIds({ saleKind: 'fnb', mode: 'whole', coveredLineIds: [], allLineIds: all, alreadyRestocked: new Set(), earlierWholeRefund: false }),
+      restockLineIds({ saleKind: 'fnb', mode: 'whole', scope: 'full', coveredLineIds: [], allLineIds: all, alreadyRestocked: new Set(), earlierFullScope: false }),
     ).toEqual(all);
     expect(
-      restockLineIds({ saleKind: 'fnb', mode: 'whole', coveredLineIds: [], allLineIds: all, alreadyRestocked: new Set(), earlierWholeRefund: true }),
+      restockLineIds({ saleKind: 'fnb', mode: 'whole', scope: 'full', coveredLineIds: [], allLineIds: all, alreadyRestocked: new Set(), earlierFullScope: true }),
     ).toEqual([]);
   });
 });

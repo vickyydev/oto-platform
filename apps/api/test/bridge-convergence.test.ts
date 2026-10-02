@@ -505,6 +505,47 @@ describe('a tier changed at a counter with no internet (OD-11)', () => {
     });
     expect(evidence!.verifiedByAccountId).toBe(receptionAccountId);
   });
+
+  it('a document with no expiry date replays as evidence that never expires', async () => {
+    const [seeded] = await ctx.db.select().from(member).where(eq(member.phone, '+66844444444'));
+    const verificationId = newId();
+    link.cut = true;
+    await agentB.setOffline(true, { reason: 'tier change offline, no expiry' });
+    const bridge = agentB.bridge()!;
+    const opened = await bridge.unlock(counterId, {
+      token: tokenB.token,
+      password: RECEPTION.password,
+    });
+    const caller = (await bridge.authenticate(counterId, opened.session)) as BridgeTillCaller;
+    const answer = await bridge.intent(
+      counterId,
+      caller,
+      intent('member.tier_change', {
+        direction: 'upgrade',
+        memberId: seeded!.id,
+        verificationId,
+        toTier: 'thai',
+        evidenceType: 'Residence certificate',
+      }),
+    );
+    expect((answer.result as { member: { tierCode: string } }).member.tierCode).toBe('thai');
+    link.cut = false;
+    await agentB.setOffline(false);
+    await agentB.outbox()!.flush();
+    const [after] = await ctx.db.select().from(member).where(eq(member.id, seeded!.id));
+    expect(after!.tierCode).toBe('thai');
+    const [evidence] = await ctx.db
+      .select()
+      .from(memberTierVerification)
+      .where(eq(memberTierVerification.id, verificationId));
+    expect(evidence).toMatchObject({ toTier: 'thai', evidenceType: 'Residence certificate' });
+    expect(evidence!.evidenceExpiresAt).toBeNull();
+    const [row] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.entityId, verificationId), eq(auditLog.action, 'member.tier_verify')));
+    expect((row!.after as { evidenceExpiresAt: unknown }).evidenceExpiresAt).toBeNull();
+  });
 });
 
 describe('the deny-list refuses (OD-2, OD-6)', () => {

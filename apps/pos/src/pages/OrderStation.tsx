@@ -9,7 +9,6 @@ import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
 import {
-  redeemPrepaidItem,
   getDiscountByCode,
   getDiscountReasons,
   recordFnbOrder,
@@ -78,6 +77,7 @@ import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { FnbCart } from '@/components/fnb/FnbCart';
 import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
 import { walletKeyOf } from '@/api/wallet';
+import { bandHolderOf, withPrepaidServed } from '@/lib/bandFood';
 import { FnbConfirmation } from '@/components/fnb/FnbConfirmation';
 import { PickupCodeModal } from '@/components/fnb/PickupCodeModal';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
@@ -298,8 +298,11 @@ export default function OrderStation() {
       customerNickname: null,
       accountId: operator.id,
       accountName: operator.name,
+      // SCRUM-494 — the band's child, so the prep ticket prints their own
+      // allergy line and the prepaid lines are served from their stay.
+      bandHolder: bandHolderOf(wristband, foodOverride),
     };
-  }, [branch.id, station?.stationId, operator, pickupCode, wristband]);
+  }, [branch.id, station?.stationId, operator, pickupCode, wristband, foodOverride]);
 
   /**
    * THE PRICE THE PLATFORM QUOTES FOR THIS ORDER. Every figure the order panel,
@@ -466,6 +469,8 @@ export default function OrderStation() {
       selectedModifiers: [],
       lineTotal: 0,
       isPrepaid: true,
+      // SCRUM-494 — served from the platform stay the scan resolved.
+      ...(wristband?.stayId ? { prepaidStayId: wristband.stayId } : {}),
     };
     setCart((prev) => [...prev, line]);
   };
@@ -1124,14 +1129,11 @@ export default function OrderStation() {
 
     // S2-14a — the balance the platform left on the wallet, when credit paid.
     const balanceAfter = walletBalanceAfter(settlements) ?? wristband?.creditBalanceTHB ?? null;
-    const paidWristband = wristband && balanceAfter !== null ? { ...wristband, creditBalanceTHB: balanceAfter } : wristband;
-
-    // Commit prepaid item redemptions only after the sale is finalised.
-    if (wristband) {
-      for (const line of lines.filter((l) => l.isPrepaid)) {
-        redeemPrepaidItem(wristband.id, line.menuItem.id, line.qty);
-      }
-    }
+    // SCRUM-494 — the platform served the prepaid lines from the child's stay
+    // in the transaction that closed the order; this till's copy of the band
+    // shows the same counts.
+    const servedWristband = wristband ? withPrepaidServed(wristband, lines) : wristband;
+    const paidWristband = servedWristband && balanceAfter !== null ? { ...servedWristband, creditBalanceTHB: balanceAfter } : servedWristband;
 
     // Commit the staff benefit LAST, right before the order is finalized —
     // this is the one place usage/credit is actually consumed and audited
@@ -1240,7 +1242,8 @@ export default function OrderStation() {
     // and total are the platform's quote, and the credit the stage takes rides
     // the payment frame as a figure (`creditSatang`), so the separate display —
     // the production device (CLAUDE.md §7 rule 4) — shows "From your credit /
-    // Left to pay" like the in-till harness. Prepaid items stay this till's own.
+    // Left to pay" like the in-till harness. An order with a prepaid line stays
+    // on the in-till display.
     excluded: !!benefitOperator || !!voucher.held || !!voucherUsed || promoCodes.length > 0
       || !!offLedgerOnly(lines) || lines.some(line => line.isPrepaid),
     lines, orderNote, manualDiscounts: effectiveManualDiscounts, quote: order.quote,
@@ -1393,7 +1396,6 @@ export default function OrderStation() {
                 </span>
                 {/* S2-14b — the counts are the platform's once it has answered. */}
                 {!stockIsServerBacked() && <span>Stock counts and out-of-stock — S2-14b</span>}
-                <span>Prepaid items — S2-14a</span>
                 {!menuFromPlatform && (
                   <span className="text-amber-300">
                     Menu — this deployment has no menu route, so the ported catalogue is shown

@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Wristband } from '@/types';
 import { getWristbandByCode, getMockWristbands } from '@/mockApi';
 import { ApiError } from '@/api/client';
-import { BOX_CREDIT_REFUSAL_CODES, lookupWalletOnBox, scanWallet, wristbandOfBoxWallet } from '@/api/wallet';
+import { BOX_CREDIT_REFUSAL_CODES, lookupWalletOnBox, scanBand, wristbandOfBoxWallet } from '@/api/wallet';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { getActiveBranch } from '@/store/catalogStore';
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure } from '@/lib/lane';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -181,9 +183,18 @@ export function ScanWristband({
   );
 }
 
-/** A band from this till's own demo list, with no spendable credit on it. */
+/**
+ * A band from this till's own demo list, with no spendable credit on it and no
+ * prepaid items to serve: the only spendable balance is a platform wallet's,
+ * and the only servable entitlements are a platform stay's (SCRUM-494).
+ */
 function withoutLocalCredit(wb: Wristband): Wristband {
-  return { ...wb, creditBalanceTHB: 0, ledger: undefined };
+  return {
+    ...wb,
+    creditBalanceTHB: 0,
+    ledger: undefined,
+    ...(wb.foodProvision?.items ? { foodProvision: { ...wb.foodProvision, items: [] } } : {}),
+  };
 }
 
 /**
@@ -210,7 +221,9 @@ export async function loadScannedTab(value: string): Promise<{ wristband: Wristb
   const station = laneStation();
   if (station && currentLane() === 'box') return loadFromBox(station, value, local);
   try {
-    const wb = await scanWallet(value);
+    // SCRUM-494 — the wallet and, beside it, the child's stay at this park:
+    // the allergy alert, the food consent and the prepaid items.
+    const wb = await scanBand(value, apiBranchIdForSlug(getActiveBranch().id));
     if (wb) return { wristband: wb, error: null };
   } catch (err) {
     if (station && isBoxLaneTrigger(err)) {

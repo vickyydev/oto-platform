@@ -47,6 +47,7 @@ import {
 } from './bands';
 import { routeOnBox, templateTypeFor } from './print';
 import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf } from './wallet';
+import { bandHolderOfSale, isPrepaidSetAside } from './band-food';
 import { tillVoucherDocumentOf } from './voucher-promotions';
 import type { Exec, Tx } from './tx';
 
@@ -630,7 +631,8 @@ export async function reprintSale(
       },
     });
   } else if (input.kind === 'prep') {
-    const fnb = lines.filter((l) => l.kind === 'fnb_item');
+    // A prepaid line set aside at the close was never served: no prep ticket names it.
+    const fnb = lines.filter((l) => l.kind === 'fnb_item' && !isPrepaidSetAside(l));
     for (const ticket of groupPrepTickets(fnb.map((l) => ({ id: l.id, prepStation: prepStationOf(l) })))) {
       const kind: PrintKind = ticket.station === 'kitchen' ? 'kitchen_ticket' : 'bar_ticket';
       requests.push({
@@ -802,9 +804,9 @@ async function staffNameOf(db: Exec, accountId: string): Promise<string | undefi
 
 /**
  * The children on the order, for the kitchen's allergy line: the visit's, or —
- * with no visit — every child of the member the order is for. The prototype
- * read it off the scanned band's holder (`buildPrepTickets`); the band-scan
- * order is S2-14a, and this is the ledger's closest equivalent.
+ * with no visit — every child of the member the order is for. An order taken
+ * against a band prints the band holder instead (`bandHolderOfSale`), as the
+ * design's `buildPrepTickets` reads it off the scanned band.
  */
 async function orderChildren(db: Exec, saleRow: SaleRow) {
   if (saleRow.visitId) {
@@ -832,7 +834,10 @@ async function orderChildren(db: Exec, saleRow: SaleRow) {
  * it. Built at the moment the box asks, so a reprint picks up a correction.
  */
 export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<SalePrintSnapshot> {
-  const lines = await linesOf(db, saleRow.id);
+  // SCRUM-494 — a prepaid line set aside at the close (settled at pickup, or
+  // beyond what was left for the child) was not served, so no paper lists it:
+  // not the prep ticket, not the receipt (it is ฿0, the totals stand).
+  const lines = (await linesOf(db, saleRow.id)).filter((l) => !isPrepaidSetAside(l));
   const [names] = await db
     .select({ operatorName: operator.name, branchName: branch.name })
     .from(branch)
@@ -933,6 +938,8 @@ export async function salePrintSnapshotOf(db: Exec, saleRow: SaleRow): Promise<S
       };
     }),
     orderChildren: await orderChildren(db, saleRow),
+    // SCRUM-494 — an order taken against a band prints that child's own line.
+    bandHolder: await bandHolderOfSale(db, saleRow, lines),
     note: saleRow.note,
   };
 }

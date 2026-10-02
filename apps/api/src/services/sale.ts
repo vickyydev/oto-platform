@@ -112,7 +112,24 @@ import { refundsOfSale } from './refund-slices';
 import { assertCartStock, stockSharesForLines, takeStockForSale } from './stock';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
-import type { WalletGrantView, WalletTenderInstruction } from '@oto/shared';
+import type { CartBandHolderInput, CartPrepaidInput, WalletGrantView, WalletTenderInstruction } from '@oto/shared';
+import { BAND_FOOD_REFUSALS } from '@oto/shared';
+import {
+  assertSalePrepaidServable,
+  auditSettledAtPickup,
+  isPrepaidSettledAtPickup,
+  prepaidSettledAtPickup,
+  prepaidUsedUpAtClose,
+  redeemSalePrepaid,
+  resolveCartBandFood,
+  setAsideSettledPrepaid,
+  setAsideUsedUpPrepaid,
+  settledAtPickupPayload,
+  type CartBandFood,
+  type PrepaidGate,
+  type SettledPrepaidLine,
+  type UsedUpPrepaidLine,
+} from './band-food';
 import {
   assertSaleVouchersHeld,
   auditVoidReleases,
@@ -153,10 +170,12 @@ import {
  *      the only thing that does is make a disagreement LOUD: the sale is
  *      refused (`SALE_TOTAL_MISMATCH`) rather than either number being taken
  *      on trust.
- *   2. THE TIER IS RESOLVED FROM THE MEMBER. Never from the request body. The
- *      tier picks the price, and it is the one field a visitor would most like
- *      to change; a body-supplied tier is a price list anybody can choose from.
- *      A sale with no member is priced at the operator's default tier.
+ *   2. THE TIER IS RESOLVED FROM THE MEMBER. The tier picks the price, and it
+ *      is the one field a visitor would most like to change; a body-supplied
+ *      tier is a price list anybody can choose from. The one exception is the
+ *      operator's default tier, which needs no proof: staff picking it for a
+ *      verified member prices the cart at it (`resolveTier`). A sale with no
+ *      member is priced at the operator's default tier.
  */
 
 // --- Inputs -----------------------------------------------------------------
@@ -246,6 +265,12 @@ export interface CartItemLineInput {
   variant?: { variantId: string; variantLabel: string } | null;
   /** What the screen showed for this line. Reconciled against the platform's price, never charged. */
   lineTotalSatang?: number;
+  /**
+   * SCRUM-494 — served from the band holder's prepaid items (the design's
+   * `isPrepaid` line): priced at ฿0, checked against what is left on the stay,
+   * and taken off the stay when the order is confirmed (`band-food.ts`).
+   */
+  prepaid?: CartPrepaidInput | null;
 }
 
 export interface ManualDiscountInput {
@@ -339,7 +364,11 @@ export interface CartInput {
   channel?: SalesChannel;
   /** The rate mode the cart was priced under at the till. Compared, never used. */
   pricingMode?: 'weekday' | 'weekend';
-  /** The tier the till believed. Compared, never used: see rule 2 at the top. */
+  /**
+   * The tier the till believed. Prices the cart only when it is the
+   * operator's default tier (`resolveTier`); otherwise compared, never used —
+   * see rule 2 at the top.
+   */
   tier?: string;
   /**
    * SCRUM-307 — the action id of the document check reception recorded through
@@ -347,6 +376,14 @@ export interface CartInput {
    * here so the route cannot carry it on a cast alone.
    */
   tierClaimActionId?: string | null;
+  /**
+   * SCRUM-494 — the child's stay behind the band an F&B order was taken
+   * against, as `GET /wallets/scan` answered it. Checked to be at this park and
+   * in the park; recorded on the order's F&B lines so the prep ticket prints
+   * that child's own allergy line; and, for a child whose parent did not
+   * authorise food, the design's food-consent override (`foodOverride`).
+   */
+  bandHolder?: CartBandHolderInput | null;
 }
 
 /**
@@ -521,16 +558,37 @@ export async function resolvePricingScope(
 
 /**
  * The tier that prices this cart, from the MEMBER — or the operator's default
- * for a walk-in. Never from the request body: see rule 2 at the top.
+ * for a walk-in. See rule 2 at the top.
+ *
+ * `requestedTier` is the tier staff picked at the till. It moves the price in
+ * one direction only: down to the operator's default tier, which needs no
+ * proof (the approved design's StepCustomerType never asks to verify it, and
+ * Till.tsx handlePickTier restates the cart at it for a verified member).
+ * Any other tier the till names is not the member's to choose and prices
+ * nothing — the member's own tier stands, and a line priced at the other rate
+ * is refused as `SALE_LINE_PRICE_MISMATCH`.
  */
 async function resolveTier(
   db: Exec,
   operatorId: string,
   memberId: string | null | undefined,
+  requestedTier?: string,
 ): Promise<{ code: string; source: 'member' | 'default' }> {
   if (memberId) {
     const [m] = await db.select().from(member).where(eq(member.id, memberId)).limit(1);
     if (!m || m.operatorId !== operatorId) throw errors.notFound('Member not found');
+    if (requestedTier !== undefined && requestedTier !== m.tierCode) {
+      const [baseline] = await db
+        .select({ code: tier.code })
+        .from(tier)
+        .where(
+          and(eq(tier.operatorId, operatorId), eq(tier.isDefault, true), isNull(tier.archivedAt)),
+        )
+        .limit(1);
+      if (baseline && baseline.code === requestedTier) {
+        return { code: baseline.code, source: 'default' };
+      }
+    }
     return { code: m.tierCode, source: 'member' };
   }
   const [fallback] = await db
@@ -597,6 +655,31 @@ export interface SaleLinePayload {
    * receipt, a refund and a report can say why this line cost nothing.
    */
   voucher?: { id: string; code: string };
+  /**
+   * SCRUM-494 — on an F&B line served from a child's prepaid items: whose, and
+   * which item. Priced at ฿0; the stay's `redeemedQty` goes up when the sale closes.
+   * `unmatched` on an offline replay's line naming no stay of this park: filed
+   * as served, and nothing is redeemed or printed from the stay it names.
+   * `settledAtPickup` on a line closed after its stay was released: the pickup
+   * settled that food as unused, so the line is not served — quantity 0 with
+   * `orderedQty` the quantity ordered; nothing redeemed, printed or taken
+   * from stock. `usedUp` the same, on a line a counter's close set aside
+   * because fewer were left for the child than it serves.
+   */
+  prepaid?: {
+    checkinId: string;
+    menuItemId: string;
+    unmatched?: true;
+    settledAtPickup?: true;
+    usedUp?: true;
+    orderedQty?: number;
+  };
+  /**
+   * SCRUM-494 — on every F&B line of an order taken against a band: the
+   * child's stay, which the prep ticket prints the allergy line of, and the
+   * food-consent override when staff recorded one.
+   */
+  holder?: { checkinId: string; foodOverride?: { accountId: string; at: string } };
 }
 
 /** A priced unit, ready to become a `pos.sale_line` row. */
@@ -1108,6 +1191,10 @@ async function resolveItemLines(
   optionPrices: ReadonlyMap<string, { priceSatang: number; priceWeekendSatang: number | null }> | undefined,
   /** S2-14b — how an F&B size the catalogue does not list is treated (`ItemSizeMode`). */
   sizes: ItemSizeMode,
+  /** SCRUM-494 — the band holder and the prepaid lines, already checked (`resolveCartBandFood`). */
+  band: CartBandFood = { holder: null, prepaid: new Map() },
+  /** Who recorded a food-consent override, and when: the session's account. */
+  overrideBy: { accountId: string; at: string } | null = null,
 ): Promise<ResolvedItemLine[]> {
   const itemInputs = input.items ?? [];
   if (itemInputs.length === 0) return [];
@@ -1233,12 +1320,17 @@ async function resolveItemLines(
       })),
     );
     // Rule 1, priced by the shared item engine: the item's pair and every
-    // chosen option's pair, each resolved at this rate mode.
-    const priced = itemUnitPrice(
-      itemPricePair(row.priceSatang, row.priceWeekendSatang),
-      picked.map(({ option }) => itemPricePair(option.priceSatang, option.priceWeekendSatang)),
-      ctx.mode,
-    );
+    // chosen option's pair, each resolved at this rate mode. A line served
+    // from prepaid items is ฿0 — it was paid for at the door (the design's
+    // `isPrepaid` line, `lineTotal: 0`).
+    const prepaidFrom = kind === 'fnb_item' ? (band.prepaid.get(line.id) ?? null) : null;
+    const priced = prepaidFrom
+      ? { unit: 0, options: picked.map(() => 0) }
+      : itemUnitPrice(
+          itemPricePair(row.priceSatang, row.priceWeekendSatang),
+          picked.map(({ option }) => itemPricePair(option.priceSatang, option.priceWeekendSatang)),
+          ctx.mode,
+        );
     const unitSatang = priced.unit;
     const modifiers: NonNullable<SaleLinePayload['modifiers']> = picked.map(
       ({ group, option }, position) => ({
@@ -1271,6 +1363,26 @@ async function resolveItemLines(
       // (`types.ts:1213`), so a station on a shop line would be a fact about
       // nothing.
       ...(kind === 'fnb_item' ? { prepStation: prepStations.get(row.id) ?? 'kitchen' } : {}),
+      ...(prepaidFrom
+        ? {
+            prepaid: {
+              checkinId: prepaidFrom.checkinId,
+              menuItemId: row.id,
+              ...(prepaidFrom.matched ? {} : { unmatched: true as const }),
+              ...(prepaidFrom.settledAtPickup ? { settledAtPickup: true as const } : {}),
+            },
+          }
+        : {}),
+      ...(kind === 'fnb_item' && band.holder
+        ? {
+            holder: {
+              checkinId: band.holder.checkinId,
+              ...(band.holder.foodOverride && !band.holder.mayOrderFood && overrideBy
+                ? { foodOverride: overrideBy }
+                : {}),
+            },
+          }
+        : {}),
     };
 
     // The cart line the item becomes, and its total, from the shared item
@@ -1358,7 +1470,7 @@ export async function priceCart(
   const claimed = await resolveTierClaim(db, actor, scope.branchId, input, now);
   const resolvedTier: PricedCart['tier'] = priceBasis
     ? { code: priceBasis.tier, source: input.memberId ? 'member' : 'default' }
-    : claimed.claim ?? (await resolveTier(db, actor.operatorId, input.memberId));
+    : claimed.claim ?? (await resolveTier(db, actor.operatorId, input.memberId, input.tier));
   const catalogue = await loadCatalogue(db, scope, input);
   if (priceBasis) await applyPriceBasis(db, scope, catalogue, priceBasis);
 
@@ -1504,6 +1616,19 @@ export async function priceCart(
    * S2-09b — the F&B and shop lines, priced from the catalogue and appended to
    * the cart the engine totals, so one cascade covers the whole bill.
    */
+  /**
+   * SCRUM-494 — the band the F&B order was taken against, and the lines served
+   * from that child's prepaid items, checked before the lines are priced.
+   */
+  const bandFood = await resolveCartBandFood(
+    db,
+    actor.operatorId,
+    scope.branchId,
+    input,
+    sizes === 'file' ? 'file' : 'strict',
+    (productId) => catalogue.products.get(productId)?.row.name ?? 'That item',
+    voucherScope.mode === 'commit' ? { saleId: voucherScope.saleId, lock: true } : { saleId: null, lock: false },
+  );
   const itemLines = await resolveItemLines(
     db,
     scope,
@@ -1513,7 +1638,27 @@ export async function priceCart(
     resolvedTier.code,
     priceBasis ? new Map(priceBasis.options.map((o) => [o.id, o])) : undefined,
     sizes,
+    bandFood,
+    { accountId: actor.accountId, at: now.toISOString() },
   );
+  /**
+   * The design's food-consent rule (`OrderStation.tsx:handleAdd`): food is not
+   * ordered for a child whose parent did not authorise it until staff record
+   * the override, which then rides the order. Checked here so a till that
+   * skipped the modal cannot ring the order up either; an offline replay was
+   * served already and is filed as it was taken.
+   */
+  if (
+    sizes !== 'file' &&
+    bandFood.holder &&
+    !bandFood.holder.mayOrderFood &&
+    !bandFood.holder.foodOverride &&
+    itemLines.some((item) => item.kind === 'fnb_item' && !bandFood.prepaid.has(item.cartLineId))
+  ) {
+    throw errors.conflict('FOOD_NOT_AUTHORIZED', BAND_FOOD_REFUSALS.FOOD_NOT_AUTHORIZED, {
+      checkinId: bandFood.holder.checkinId,
+    });
+  }
   for (const item of itemLines) {
     const sent = (input.items ?? []).find((l) => l.id === item.cartLineId)?.lineTotalSatang;
     // The same reconciliation a ticket line gets, and yielding to a refused
@@ -1617,11 +1762,14 @@ export async function priceCart(
         ? [{ lineId: line.id, productId: line.promoItem.itemId, unitSatang: line.lineTotal }]
         : [],
     ),
-    ...itemLines.map((item) => ({
-      lineId: item.cartLineId,
-      productId: item.productId,
-      unitSatang: item.cartLine.addOns[0]?.price ?? 0,
-    })),
+    // A prepaid line was paid for at the door: a free-item code has nothing to take off it.
+    ...itemLines
+      .filter((item) => !bandFood.prepaid.has(item.cartLineId))
+      .map((item) => ({
+        lineId: item.cartLineId,
+        productId: item.productId,
+        unitSatang: item.cartLine.addOns[0]?.price ?? 0,
+      })),
   ];
   const resolvedPromos = await resolveCartPromos(
     db,
@@ -2144,8 +2292,8 @@ export interface SaleTierClaimView {
   documentKind: string;
   /** The tier the document supported — the one that priced this sale. */
   toTier: string;
-  /** The document's own expiry, as the check recorded it (`YYYY-MM-DD`). */
-  evidenceExpiresOn: string;
+  /** The document's own expiry, as the check recorded it (`YYYY-MM-DD`); null when none was recorded. */
+  evidenceExpiresOn: string | null;
   /** When reception checked it: the claim row's `created_at`. */
   verifiedAt: string;
 }
@@ -3160,7 +3308,10 @@ export async function commitSale(
   const occurrences = new Map<string, number>();
   for (const [index, line] of priced.lines.entries()) {
     const key = `${line.cartLineId}|${line.componentKey ?? line.kind}`;
-    const shares = stockShares[index] ?? null;
+    // SCRUM-494 — a prepaid line settled at pickup is written with nothing
+    // served: quantity 0 (the quantity ordered on its payload), no stock.
+    const settled = isPrepaidSettledAtPickup({ kind: line.kind, payload: line.payload });
+    const shares = settled ? null : (stockShares[index] ?? null);
     const occurrence = occurrences.get(key) ?? 0;
     occurrences.set(key, occurrence + 1);
     await tx.insert(saleLine).values({
@@ -3178,7 +3329,7 @@ export async function commitSale(
       label: line.label,
       revenueCategory: line.revenueCategory,
       taxableCategory: line.taxableCategory,
-      quantity: line.quantity,
+      quantity: settled ? 0 : line.quantity,
       unitSatang: line.unitSatang,
       baseSatang: line.baseSatang,
       discountSatang: line.discountSatang,
@@ -3197,8 +3348,30 @@ export async function commitSale(
       stayHours: line.stayHours,
       stayDurationLabel: line.stayDurationLabel,
       // S2-14b — the stock it takes, frozen here and never on the answer.
-      payload: shares ? { ...(line.payload ?? {}), stock: shares } : line.payload,
+      payload: settled
+        ? settledAtPickupPayload(line.payload, line.quantity)
+        : shares
+          ? { ...(line.payload ?? {}), stock: shares }
+          : line.payload,
     });
+  }
+  /**
+   * SCRUM-494 — an offline replay whose prepaid lines name a stay released
+   * before the replay arrived: those lines are written settled at pickup (not
+   * served), and the audit row names them.
+   */
+  if (priced.lines.some((line) => isPrepaidSettledAtPickup({ kind: line.kind, payload: line.payload }))) {
+    await auditSettledAtPickup(
+      tx,
+      {
+        id: saleId,
+        operatorId: actor.operatorId,
+        branchId: priced.scope.branchId,
+        stationId: st.id,
+        receiptNumber: receipt?.number ?? null,
+      },
+      { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+    );
   }
 
   const appliedByName = priced.manualDiscounts.length > 0 ? await displayNameOf(tx, actor.accountId) : null;
@@ -3407,6 +3580,15 @@ export async function commitSale(
       offline: options.printing === 'skip',
       now: clock.occurredAt,
     });
+    // SCRUM-494 — a prepaid-only order closes here with no tender, and is served
+    // here; a counter's close refuses what it cannot serve, a replay files it.
+    await redeemSalePrepaid(
+      tx,
+      written,
+      { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+      clock.occurredAt,
+      options.printing === 'skip' ? 'file' : 'refuse',
+    );
   }
   /**
    * S2-14a — a ฿0 close earns like any other (the credit is read from the list
@@ -3516,6 +3698,14 @@ export interface FinaliseSaleInput {
    * Online only: the box's replay never passes it (round 4).
    */
   wallet?: WalletTenderInstruction | null;
+  /**
+   * SCRUM-494 — `refuse` when a counter is confirming the order now (the
+   * sales route): a prepaid line that cannot be served any more refuses the
+   * press before any tender is recorded — while no money has been taken for
+   * the order; after that the close files. Omitted, the close files what it
+   * can (`redeemSalePrepaid`'s `file`).
+   */
+  prepaidGate?: PrepaidGate;
 }
 
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
@@ -3701,9 +3891,43 @@ export async function finaliseSale(
     }
   }
 
+  /**
+   * SCRUM-494 — A COUNTER CONFIRMING AN ORDER WITH PREPAID LINES is told,
+   * before any tender is recorded, when one cannot be served any more: the
+   * child was collected while the order was open (their prepaid food was
+   * settled at pickup), or the item was served since. The stays stay locked
+   * to the end of this transaction, so the redemption below reads what this
+   * read. Only the counter's own confirm asks for it, and only while no money
+   * has been taken for the order: once a tender is in (a card approved before
+   * the confirm, a part payment), refusing would leave money taken against an
+   * order nobody can close. A close that cannot be refused — that one, a paid
+   * QR, a box's replay, a booking's redemption — files what it can, and sets
+   * aside unserved the prepaid lines of a stay released meanwhile (the pickup
+   * settled that food as unused, and that settlement stands). Except on a box's
+   * replay, it also sets aside unserved a prepaid line beyond what is left for
+   * the child, rather than serving it short.
+   */
+  const owedBefore = await outstandingOf(tx, row);
+  const moneyTaken = owedBefore < row.grossSatang;
+  const prepaidGate: PrepaidGate =
+    input.prepaidGate === 'refuse' && input.printing !== 'skip' && row.origin !== 'box' && !moneyTaken
+      ? 'refuse'
+      : 'file';
+  let settledAtPickup: SettledPrepaidLine[] = [];
+  let usedUp: UsedUpPrepaidLine[] = [];
+  if (prepaidGate === 'refuse') await assertSalePrepaidServable(tx, row);
+  else {
+    settledAtPickup = await prepaidSettledAtPickup(tx, row);
+    // A box's replay served the food offline already: its redemption files any
+    // shortfall. Any other close sets aside, unserved, a prepaid line beyond
+    // what is left for the child.
+    const boxReplay = input.printing === 'skip' || row.origin === 'box';
+    if (!boxReplay) usedUp = await prepaidUsedUpAtClose(tx, row);
+  }
+
   const [st] = await tx.select().from(station).where(eq(station.id, row.stationId)).limit(1);
 
-  let owed = await outstandingOf(tx, row);
+  let owed = owedBefore;
   if (owed <= 0) {
     const attempts = await tx.select({ payload: paymentAttempt.payload }).from(paymentAttempt)
       .where(eq(paymentAttempt.saleId, saleId));
@@ -4037,6 +4261,26 @@ export async function finaliseSale(
     receipt = await allocateReceipt(tx, seriesScope);
   }
 
+  /**
+   * SCRUM-494 — the prepaid lines of a stay released while the order was open
+   * are set aside here, while the lines can still be written: not served, no
+   * stock, no prep ticket, the audit row naming them. The rest closes as usual.
+   */
+  await setAsideSettledPrepaid(
+    tx,
+    row,
+    settledAtPickup,
+    { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+    receipt.number,
+  );
+  await setAsideUsedUpPrepaid(
+    tx,
+    row,
+    usedUp,
+    { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+    receipt.number,
+  );
+
   const updated = await tx
     .update(sale)
     .set({
@@ -4065,6 +4309,19 @@ export async function finaliseSale(
     offline: input.printing === 'skip' || after.origin === 'box',
     now,
   });
+
+  /**
+   * SCRUM-494 — THE PREPAID LINES ARE SERVED, in this transaction, once the
+   * order is confirmed: the design's `redeemPrepaidItem` per prepaid line, on
+   * the child's stay, never past what was paid for, audited.
+   */
+  await redeemSalePrepaid(
+    tx,
+    after,
+    { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+    now,
+    prepaidGate,
+  );
 
   await audit.record(tx, {
     actorAccountId: actor.accountId,

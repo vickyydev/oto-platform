@@ -1,5 +1,21 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 2 October 2026 (night, 4) - SCRUM-494 all nine entries on main
+
+Entries 1-3 (member tier: expiry optional everywhere incl. the box offline
+and walk-in claims, migration 0054; the tier staff pick honoured; full-scope
+refund restock once) and 8-9 (band safety data and prepaid meals at F&B and
+Shop) landed together after three fix cycles (workflows wf_7e59b225-3d6,
+wf_432e37cc-cac; final review MERGE, 63 files). Nothing is both refunded at
+pickup and served; a late payment after pickup sets the prepaid line aside;
+a card-approved counter confirm sets a used-up line aside (a box replay
+records it served short); box registrations get the same prepaid checks
+(mismatch quarantined with an alert). Tests: api 358, box-agent 679, db 160,
+tsc x5, eslint clean.
+Follow-ups: SCRUM-498 (box lane band details and prepaid offline), SCRUM-497
+questions. Next: deploy staging, SCRUM-494 evidence for all nine, then End
+of Day rounds 2-4.
+
 ## Platform lane checkpoint - 2 October 2026 (night, 3) - SCRUM-494 gate access landed
 
 SCRUM-494 entry 4 (workflow wf_50f6dbb9-910, MERGE): each adult band

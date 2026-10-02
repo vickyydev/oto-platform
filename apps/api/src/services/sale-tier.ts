@@ -22,14 +22,15 @@ import type { Exec, Tx } from './tx';
  *
  * WHAT IS NOT THE FIX: believing `cart.tier`. The tier picks the price and is
  * the one field a visitor would most like to choose, so a body-supplied tier
- * is a price list anybody can pick from (`sale.ts`, rule 2). It stays ignored.
+ * is a price list anybody can pick from (`sale.ts`, rule 2). It can only move
+ * a price down to the operator's default tier, which needs no proof.
  *
  * WHAT THIS IS. Reception's document check becomes a record on this side of
  * the wire before it can price anything:
  *
  *   1. The till posts `/sales/tier-claims` with the action id of the tap that
  *      confirmed the document, the tier it supports, the document type and its
- *      expiry. The route is guarded on `pos:member:update` — the same
+ *      expiry when it carries one. The route is guarded on `pos:member:update` — the same
  *      permission that records a verification against a member — and the
  *      VERIFIER, the BRANCH and the OPERATOR are stamped from the session.
  *      Nothing about who checked it comes from the caller.
@@ -97,8 +98,11 @@ export interface TierClaimInput {
   toTier: string;
   /** `Passport`, `Residence certificate`, `School card` — a kind, never a number. */
   evidenceType: string;
-  /** The document's expiry, `YYYY-MM-DD`. */
-  evidenceExpiresAt: string;
+  /**
+   * The document's expiry, `YYYY-MM-DD`, when it carries one. Optional, as at
+   * the design's verify step: a document with no expiry date never expires.
+   */
+  evidenceExpiresAt?: string | null;
 }
 
 /** A claim as the till and the tests read it back. */
@@ -108,7 +112,8 @@ export interface TierClaimView {
   branchId: string;
   toTier: string;
   evidenceType: string;
-  evidenceExpiresAt: string;
+  /** `YYYY-MM-DD`, or null when the document carries no expiry. */
+  evidenceExpiresAt: string | null;
   /** The account the session authenticated — never a name the caller sent. */
   verifiedByAccountId: string;
   createdAt: string;
@@ -122,7 +127,7 @@ export interface TierClaimView {
 interface ClaimPayload {
   toTier: string;
   evidenceType: string;
-  evidenceExpiresAt: string;
+  evidenceExpiresAt: string | null;
   expiresAt: string;
 }
 
@@ -218,13 +223,19 @@ export async function recordTierClaim(
     .limit(1);
   if (!tierRow) throw errors.badRequest(`Unknown tier "${input.toTier}"`);
 
-  const evidenceExpiresAt = parseExpiry(input.evidenceExpiresAt);
-  if (!evidenceExpiresAt) throw errors.badRequest('That document expiry is not a date');
-  if (isEvidenceExpired(evidenceExpiresAt)) {
-    throw errors.badRequest(
-      'The document has already expired — it cannot price a discounted rate',
-    );
+  // No expiry date is a document that never expires; one that is given must
+  // be a date that has not passed.
+  const expiresOn = input.evidenceExpiresAt ?? null;
+  if (expiresOn !== null) {
+    const evidenceExpiresAt = parseExpiry(expiresOn);
+    if (!evidenceExpiresAt) throw errors.badRequest('That document expiry is not a date');
+    if (isEvidenceExpired(evidenceExpiresAt)) {
+      throw errors.badRequest(
+        'The document has already expired — it cannot price a discounted rate',
+      );
+    }
   }
+  const claimInput = { ...input, evidenceExpiresAt: expiresOn };
 
   /**
    * The same tap arriving twice is the same claim. A DIFFERENT claim under the
@@ -238,7 +249,7 @@ export async function recordTierClaim(
    * database is about to refuse.
    */
   const existing = await claimByAction(tx, actor.operatorId, input.actionId);
-  if (existing) return sameTapOrRefuse(existing, actor, input);
+  if (existing) return sameTapOrRefuse(existing, actor, claimInput);
 
   const id = newId();
   const expiresAt = new Date(now.getTime() + TIER_CLAIM_WINDOW_MS);
@@ -252,7 +263,7 @@ export async function recordTierClaim(
       actionId: input.actionId,
       toTier: input.toTier,
       evidenceType: input.evidenceType,
-      evidenceExpiresAt: input.evidenceExpiresAt,
+      evidenceExpiresAt: expiresOn,
       createdAt: now,
     })
     // Two requests for one tap, arriving together: the loser of the unique
@@ -268,13 +279,13 @@ export async function recordTierClaim(
         'That document check could not be recorded — try it again',
       );
     }
-    return sameTapOrRefuse(raced, actor, input);
+    return sameTapOrRefuse(raced, actor, claimInput);
   }
 
   const payload: ClaimPayload = {
     toTier: input.toTier,
     evidenceType: input.evidenceType,
-    evidenceExpiresAt: input.evidenceExpiresAt,
+    evidenceExpiresAt: expiresOn,
     expiresAt: expiresAt.toISOString(),
   };
   await audit.record(tx, {
@@ -305,7 +316,7 @@ export async function recordTierClaim(
 function sameTapOrRefuse(
   existing: TierClaimView,
   actor: TierClaimActor,
-  input: TierClaimInput,
+  input: TierClaimInput & { evidenceExpiresAt: string | null },
 ): TierClaimView {
   if (
     existing.verifiedByAccountId !== actor.accountId ||
@@ -436,7 +447,9 @@ export async function resolveTierClaim(
   // A document that expired between the check and the sale stops pricing it.
   // The claim is still a true record of what was checked; it has just run out
   // of what it was evidence of.
-  if (isEvidenceExpired(parseExpiry(claim.evidenceExpiresAt))) return nothing;
+  if (claim.evidenceExpiresAt !== null && isEvidenceExpired(parseExpiry(claim.evidenceExpiresAt))) {
+    return nothing;
+  }
   // The claim named a tier this operator sold when it was made. If that tier
   // has since been withdrawn, pricing falls back rather than charging against
   // a rate that is no longer in the catalogue.

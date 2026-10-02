@@ -16,6 +16,7 @@ import {
   BOX_WALLET_REFUSALS,
   BRIDGE_WALLET_INTENTS,
   walletOfflineCapMessage,
+  type BandStayView,
   type BridgeWalletBalance,
   type WalletCreditDay,
   type WalletEntryView,
@@ -25,7 +26,7 @@ import {
   type WalletReportSummary,
   type WalletView,
 } from '@oto/shared';
-import type { Wristband, WalletEntry } from '@/types';
+import type { ChildFoodProvision, Wristband, WalletEntry } from '@/types';
 import { bridgeApi } from './bridge';
 import { ApiError, api, idemKey } from './client';
 
@@ -128,6 +129,99 @@ export async function scanWallet(key: string): Promise<Wristband | null> {
   if (!trimmed) return null;
   try {
     return wristbandOfWallet(await lookupWallet(trimmed), trimmed);
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 404 || err.status === 400)) return null;
+    throw err;
+  }
+}
+
+// --- SCRUM-494: the band's child at the F&B and shop counters ----------------------
+
+/** `GET /wallets/scan`: the wallet a key names and the child's in-park stay behind the band. */
+export interface ApiBandScan {
+  wallet: WalletView | null;
+  ledger: WalletEntryView[];
+  stay: BandStayView | null;
+}
+
+export function scanBandOnPlatform(key: string, branchApiId: string | null): Promise<ApiBandScan> {
+  const q = new URLSearchParams({ key: key.trim() });
+  if (branchApiId) q.set('branchId', branchApiId);
+  return api.get<ApiBandScan>(`/wallets/scan?${q}`);
+}
+
+/**
+ * The stay's food, in the design's band fields (`types.ts:Wristband`): the
+ * allergy / medical alert, the restriction, whether the parent authorised
+ * food, and the prepaid food with each item's served count — baht at this
+ * edge, as the design's `ChildFoodProvision` carries it.
+ */
+export function bandFoodOf(stay: BandStayView): Pick<
+  Wristband,
+  'holderName' | 'allergiesMedical' | 'foodRestrictions' | 'mayOrderFood' | 'foodProvision' | 'stayId'
+> {
+  const fp = stay.foodProvision;
+  const foodProvision: ChildFoodProvision | undefined = fp
+    ? {
+        mode: fp.mode,
+        paidTHB: fp.paidSatang / 100,
+        ...(fp.creditSatang !== null ? { creditAmountTHB: fp.creditSatang / 100 } : {}),
+        ...(fp.mode === 'prepaid_items'
+          ? {
+              items: fp.items.map((it) => ({
+                menuItemId: it.menuItemId,
+                menuItemName: it.menuItemName,
+                unitPriceTHB: it.unitSatang / 100,
+                qty: it.qty,
+                redeemedQty: it.redeemedQty,
+              })),
+            }
+          : {}),
+      }
+    : undefined;
+  return {
+    holderName: stay.childName,
+    ...(stay.allergiesMedical ? { allergiesMedical: stay.allergiesMedical } : {}),
+    ...(stay.foodRestrictions ? { foodRestrictions: stay.foodRestrictions } : {}),
+    mayOrderFood: stay.mayOrderFood,
+    ...(foodProvision ? { foodProvision } : {}),
+    stayId: stay.checkinId,
+  };
+}
+
+/**
+ * THE TILL'S TAB FOR A COUNTER SCAN: the wallet's tab (`wristbandOfWallet`)
+ * with the child's stay folded in, or — a band with no wallet — a tab with ฿0
+ * credit carrying the stay alone, so the safety banners and the prepaid items
+ * still reach the order.
+ */
+export function wristbandOfScan(read: ApiBandScan, scannedKey: string): Wristband | null {
+  const food = read.stay ? bandFoodOf(read.stay) : null;
+  if (read.wallet) {
+    const tab = wristbandOfWallet({ wallet: read.wallet, ledger: read.ledger }, scannedKey);
+    return food ? { ...tab, ...food } : tab;
+  }
+  if (!read.stay || !food) return null;
+  return {
+    id: read.stay.checkinId,
+    code: scannedKey.trim(),
+    customerNickname: read.stay.childName,
+    creditBalanceTHB: 0,
+    gateAccess: false,
+    ...food,
+  };
+}
+
+/**
+ * The F&B and shop counters' scan: the platform's wallet and stay for a key.
+ * Null when it names neither (the station then falls back to its own band
+ * list); any other failure is thrown, so a fault is never read as "no tab".
+ */
+export async function scanBand(key: string, branchApiId: string | null): Promise<Wristband | null> {
+  const trimmed = key.trim();
+  if (!trimmed) return null;
+  try {
+    return wristbandOfScan(await scanBandOnPlatform(trimmed, branchApiId), trimmed);
   } catch (err) {
     if (err instanceof ApiError && (err.status === 404 || err.status === 400)) return null;
     throw err;

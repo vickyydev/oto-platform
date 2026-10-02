@@ -43,6 +43,7 @@ export * from './supervision';
 export * from './release';
 export * from './checkin-offline';
 export * from './wallet';
+export * from './band-food';
 export * from './voucher-promo';
 export * from './stock';
 export * from './end-of-day';

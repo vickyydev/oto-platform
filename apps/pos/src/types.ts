@@ -65,7 +65,8 @@ export interface TierVerification {
   verifiedBy: string; // operator name (from auth context)
   verifiedById: string;
   verifiedAt: string; // ISO
-  expiresAt?: string; // document expiry, YYYY-MM-DD (required by the platform API)
+  expiresAt?: string; // document expiry, YYYY-MM-DD, when one was recorded
+  reverifyDue?: boolean; // the recorded expiry has passed: re-check the document; the rate holds
 }
 
 // Single source of truth for the messaging channels the POS/parent app can use
@@ -1172,6 +1173,12 @@ export interface Wristband {
   // items array carries the entitlements (redeemedQty reconciled at pickup).
   foodProvision?: ChildFoodProvision;
   checkInId?: string; // links back to the originating drop-off CheckIn
+  /**
+   * SCRUM-494 — the platform's stay (`pos.checkin.id`) the counter's scan
+   * resolved this band to. Set only from `GET /wallets/scan`; the F&B order
+   * names it as its band holder and its prepaid lines are served from it.
+   */
+  stayId?: string;
   // --- Gate access + group linkage (entrance gate / occupancy) ------------
   /**
    * Whether this band operates the entrance gate. TRUE for adult bands, FALSE
@@ -1227,6 +1234,8 @@ export interface FnbOrderLine {
   // lineTotal is always ฿0 (already paid at booking), and redeemedQty on the
   // band is incremented at order confirmation. Never drawn from F&B credit balance.
   isPrepaid?: boolean;
+  /** SCRUM-494 — the platform stay a prepaid line is served from (`Wristband.stayId`). */
+  prepaidStayId?: string;
 }
 
 export interface FnbOrder {
