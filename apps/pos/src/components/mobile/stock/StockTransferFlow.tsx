@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { ArrowRight, Check, Search, X } from 'lucide-react';
-import { InventoryItem, InventoryVariant, StockLocation, StockTransfer } from '@/types';
+import { InventoryItem, InventoryVariant, StockLocation } from '@/types';
 import { UnitQuantityInput } from './UnitQuantityInput';
-import { transferStockBetweenLocations } from '@/store/catalogStore';
-import { useOperator } from '@/auth/OperatorContext';
-import { useBranch } from '@/branch/BranchContext';
-import { addStockTransfer } from '@/mockApi';
+import { stockApi, stockErrorWords } from '@/api/stock';
 
 interface TransferItem {
   item: InventoryItem;
@@ -15,6 +12,8 @@ interface TransferItem {
 }
 
 interface StockTransferFlowProps {
+  /** The platform branch the transfer is written to. */
+  branchId: string | null;
   inventory: InventoryItem[];
   locations: StockLocation[];
   // Pre-fill from suggestion tap
@@ -29,14 +28,12 @@ interface StockTransferFlowProps {
 }
 
 export function StockTransferFlow({
+  branchId,
   inventory,
   locations,
   prefill,
   onDone,
 }: StockTransferFlowProps) {
-  const { operator } = useOperator();
-  const { branch } = useBranch();
-
   const [fromLocId, setFromLocId] = useState(prefill?.fromLocationId ?? locations[1]?.id ?? '');
   const [toLocId, setToLocId] = useState(prefill?.toLocationId ?? locations[2]?.id ?? '');
   const [search, setSearch] = useState('');
@@ -46,6 +43,10 @@ export function StockTransferFlow({
       : [],
   );
   const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  /** Lines that actually moved, as the platform answered — the clamp included. */
+  const [movedLines, setMovedLines] = useState<Array<{ name: string; requested: number; moved: number }>>([]);
 
   const activeLocations = locations.filter((l) => l.active);
 
@@ -73,47 +74,47 @@ export function StockTransferFlow({
   const removeItem = (idx: number) => setItems((prev) => prev.filter((_, i) => i !== idx));
 
   const canSubmit =
+    !!branchId &&
+    !busy &&
     fromLocId &&
     toLocId &&
     fromLocId !== toLocId &&
     items.length > 0 &&
     items.every((t) => t.eaches > 0);
 
-  const handleSubmit = () => {
-    if (!canSubmit || !operator) return;
-    for (const t of items) {
-      // transferStockBetweenLocations clamps to available stock and returns the
-      // ACTUAL qty moved. Log that exact figure — never the requested qty —
-      // so the transfer ledger is always accurate.
-      const movedQty = transferStockBetweenLocations(
-        t.item.id,
-        t.variant.id,
-        fromLocId,
-        toLocId,
-        t.eaches,
+  const handleSubmit = async () => {
+    if (!canSubmit || !branchId) return;
+    setBusy(true);
+    setError('');
+    try {
+      // The platform clamps each line to what the source holds at this moment
+      // and records what ACTUALLY moved — never the requested qty — so the
+      // ledger is always accurate (the prototype's rule, now server-side).
+      const result = await stockApi.transfer(branchId, {
+        fromLocationId: fromLocId,
+        toLocationId: toLocId,
+        lines: items.map((t) => ({ stockItemId: t.variant.id, quantity: t.eaches })),
+      });
+      setMovedLines(
+        result.lines.map((line) => {
+          const t = items.find((x) => x.variant.id === line.stockItemId);
+          const name = t ? `${t.item.name}${t.item.variants.length > 1 ? ` · ${t.variant.label}` : ''}` : '';
+          return { name, requested: line.requested, moved: line.moved };
+        }),
       );
-      if (movedQty > 0) {
-        const transfer: StockTransfer = {
-          id: `txfr-${Math.random().toString(36).slice(2, 9)}`,
-          inventoryItemId: t.item.id,
-          variantId: t.variant.id,
-          fromLocationId: fromLocId,
-          toLocationId: toLocId,
-          qty: movedQty,          // ← actual qty moved, not t.eaches (requested)
-          operator: operator.name,
-          operatorId: operator.id,
-          at: new Date().toISOString(),
-          branchId: branch?.id,
-        };
-        addStockTransfer(transfer);
-      }
+      setDone(true);
+    } catch (err) {
+      setError(stockErrorWords(err));
+    } finally {
+      setBusy(false);
     }
-    setDone(true);
   };
 
   if (done) {
     const fromName = activeLocations.find((l) => l.id === fromLocId)?.name ?? fromLocId;
     const toName   = activeLocations.find((l) => l.id === toLocId)?.name ?? toLocId;
+    const moved = movedLines.filter((l) => l.moved > 0);
+    const short = movedLines.filter((l) => l.moved < l.requested);
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4 text-center px-6">
         <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
@@ -122,9 +123,14 @@ export function StockTransferFlow({
         <div>
           <p className="font-semibold text-lg">Transfer done</p>
           <p className="text-sm text-foreground/50 mt-1">
-            {items.length} item{items.length !== 1 ? 's' : ''} moved<br />
+            {moved.length} item{moved.length !== 1 ? 's' : ''} moved<br />
             {fromName} → {toName}
           </p>
+          {short.map((l) => (
+            <p key={l.name} className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+              {l.name}: only {l.moved} of {l.requested} were at {fromName}
+            </p>
+          ))}
         </div>
         <button
           type="button"
@@ -256,10 +262,11 @@ export function StockTransferFlow({
       )}
 
       <div className="fixed bottom-20 left-0 right-0 px-4">
+        {error && <p role="alert" className="mb-2 text-xs text-destructive text-center">{error}</p>}
         <button
           type="button"
           disabled={!canSubmit}
-          onClick={handleSubmit}
+          onClick={() => void handleSubmit()}
           className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm
                      disabled:opacity-40 transition-opacity"
         >

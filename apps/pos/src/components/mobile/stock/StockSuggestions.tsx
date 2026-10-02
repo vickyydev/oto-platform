@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { ArrowRight, Package, TrendingDown, ShoppingCart, AlertTriangle, Truck, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
-import { InventoryItem, InventoryVariant, StockLocation } from '@/types';
+import { ArrowRight, Package, TrendingDown, ShoppingCart, AlertTriangle, Truck, ClipboardList, ChevronDown, ChevronUp, PackageX } from 'lucide-react';
+import type { StockAttentionView } from '@oto/shared';
+import { InventoryItem, InventoryVariant, PurchaseOrder, StockLocation } from '@/types';
 import { getReorderAlerts, ReorderAlert } from '@/lib/inventory';
-import { getPurchaseOrders } from '@/mockApi';
 
 /** Open purchase-order status for one inventory item (outstanding qty only). */
 interface OnOrderStatus {
@@ -14,9 +14,9 @@ interface OnOrderStatus {
 }
 
 /** Map itemId → open PO status so alert cards can show "already on order". */
-function buildOnOrderMap(): Map<string, OnOrderStatus> {
+function buildOnOrderMap(orders: readonly PurchaseOrder[]): Map<string, OnOrderStatus> {
   const map = new Map<string, OnOrderStatus>();
-  for (const po of getPurchaseOrders()) {
+  for (const po of orders) {
     if (po.state === 'received') continue;
     for (const line of po.lines) {
       const outstanding = line.orderedQty - line.receivedQty;
@@ -63,6 +63,15 @@ interface Suggestion {
 interface StockSuggestionsProps {
   inventory: InventoryItem[];
   locations: StockLocation[];
+  /** The branch's purchase orders, from the platform — "already on order". */
+  orders: PurchaseOrder[];
+  /**
+   * The platform's open stock attention. The low-stock rows are the cards below,
+   * computed from the same counts; the rows a SALE raised — sold more than the
+   * record held, or with no size — are shown above them, to be looked at.
+   */
+  attention: StockAttentionView[];
+  onResolveAttention: (attentionId: string) => void;
   onStartTransfer: (suggestion: Suggestion) => void;
   onReorder: (item: InventoryItem) => void;
 }
@@ -154,10 +163,11 @@ interface AttentionEntry {
 function buildAttentionList(
   inventory: InventoryItem[],
   locations: StockLocation[],
+  orders: readonly PurchaseOrder[],
 ): AttentionEntry[] {
   const suggestions = buildSuggestions(inventory, locations);
   const reorderAlerts = getReorderAlerts(inventory);
-  const onOrderMap = buildOnOrderMap();
+  const onOrderMap = buildOnOrderMap(orders);
 
   const byItem = new Map<string, AttentionEntry>();
 
@@ -206,10 +216,19 @@ function buildAttentionList(
   return entries.sort((a, b) => a.urgency - b.urgency || b.severity - a.severity);
 }
 
-export function StockSuggestions({ inventory, locations, onStartTransfer, onReorder }: StockSuggestionsProps) {
-  const entries = buildAttentionList(inventory, locations);
+export function StockSuggestions({
+  inventory,
+  locations,
+  orders,
+  attention,
+  onResolveAttention,
+  onStartTransfer,
+  onReorder,
+}: StockSuggestionsProps) {
+  const entries = buildAttentionList(inventory, locations, orders);
+  const fromSales = attention.filter((a) => a.kind === 'stock_shortfall' || a.kind === 'size_unknown');
 
-  if (entries.length === 0) {
+  if (entries.length === 0 && fromSales.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
         <Package className="w-10 h-10 text-foreground/20" />
@@ -220,6 +239,22 @@ export function StockSuggestions({ inventory, locations, onStartTransfer, onReor
 
   return (
     <div className="flex flex-col gap-3 p-4">
+      {fromSales.map((a) => (
+        <div
+          key={a.id}
+          className="rounded-2xl border border-red-500/40 bg-red-500/[0.06] px-3 py-2.5 flex items-start gap-2"
+        >
+          <PackageX className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
+          <p className="flex-1 min-w-0 text-xs text-foreground/70">{a.summary}</p>
+          <button
+            type="button"
+            onClick={() => onResolveAttention(a.id)}
+            className="shrink-0 text-xs font-medium text-primary underline"
+          >
+            Done
+          </button>
+        </div>
+      ))}
       <div className="flex items-center gap-2">
         <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
         <p className="text-xs text-foreground/50 font-medium uppercase tracking-wider">

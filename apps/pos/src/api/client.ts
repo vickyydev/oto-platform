@@ -154,7 +154,8 @@ export const api = {
   ) => request<T>('POST', path, body, opts),
   postBlob: (path: string, body?: unknown, signal?: AbortSignal) =>
     requestBlob('POST', path, body, signal),
-  put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
+  put: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string; headers?: Record<string, string> }) =>
+    request<T>('PUT', path, body, opts),
   patch: <T>(path: string, body?: unknown, opts?: { idempotencyKey?: string; signal?: AbortSignal }) =>
     request<T>('PATCH', path, body, opts),
   /**

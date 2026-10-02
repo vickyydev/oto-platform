@@ -4,12 +4,15 @@ import {
   InventoryItem, InventoryVariant, StockLocation, PurchaseOrder, PurchaseOrderLine,
 } from '@/types';
 import { UnitQuantityInput } from './UnitQuantityInput';
-import { recordInventoryAdjustment, getPurchaseOrders, receivePurchaseOrderLine } from '@/mockApi';
-import { useOperator } from '@/auth/OperatorContext';
+import { stockApi, stockErrorWords } from '@/api/stock';
 
 interface StockReplenishFlowProps {
+  /** The platform branch deliveries are written to. */
+  branchId: string | null;
   inventory: InventoryItem[];
   locations: StockLocation[];
+  /** The branch's purchase orders, from the platform. */
+  orders: PurchaseOrder[];
   onDone: () => void;
   /** Pre-select this outstanding order (deep link from the Purchase tab). */
   prefillOrderId?: string;
@@ -42,12 +45,14 @@ function OrderLineReceiveRow({
   line: PurchaseOrderLine;
   inventory: InventoryItem[];
   locations: StockLocation[];
-  onReceive: (lineId: string, qty: number, locationId: string) => void;
+  onReceive: (lineId: string, qty: number, locationId: string) => Promise<string | null>;
 }) {
   const [qtyRaw, setQtyRaw] = useState('');
   const [eaches, setEaches] = useState(0);
   // No pre-set default — staff pick the destination every time.
   const [locId, setLocId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   const invItem = inventory.find((i) => i.id === line.inventoryItemId);
   const remaining = line.orderedQty - line.receivedQty;
@@ -69,7 +74,7 @@ function OrderLineReceiveRow({
     );
   }
 
-  const canCommit = eaches > 0 && !!locId;
+  const canCommit = eaches > 0 && !!locId && !busy;
 
   return (
     <div className="rounded-xl border border-foreground/10 px-3 py-3 flex flex-col gap-2.5">
@@ -106,11 +111,19 @@ function OrderLineReceiveRow({
         </select>
       </div>
 
+      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       <button
         type="button"
         disabled={!canCommit}
-        onClick={() => {
-          onReceive(line.id, eaches, locId);
+        onClick={async () => {
+          setBusy(true);
+          const refused = await onReceive(line.id, eaches, locId);
+          setBusy(false);
+          if (refused) {
+            setError(refused);
+            return;
+          }
+          setError('');
           setQtyRaw('');
           setEaches(0);
           setLocId('');
@@ -138,7 +151,7 @@ function OutstandingOrderCard({
   locations: StockLocation[];
   expanded: boolean;
   onToggle: () => void;
-  onReceiveLine: (orderId: string, lineId: string, qty: number, locationId: string) => void;
+  onReceiveLine: (orderId: string, lineId: string, qty: number, locationId: string) => Promise<string | null>;
 }) {
   const overdue = isOverdue(order);
   const totalOrdered = order.lines.reduce((s, l) => s + l.orderedQty, 0);
@@ -206,9 +219,14 @@ function OutstandingOrderCard({
 
 // ── Manual receive (no purchase order) ───────────────────────────────────────
 
-function ManualReceiveSection({ inventory, locations, onDone }: StockReplenishFlowProps) {
-  const { operator } = useOperator();
-
+function ManualReceiveSection({
+  branchId,
+  inventory,
+  locations,
+  onDone,
+}: Pick<StockReplenishFlowProps, 'branchId' | 'inventory' | 'locations' | 'onDone'>) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const [targetLocId, setTargetLocId] = useState(locations.find((l) => l.active)?.id ?? '');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<InventoryVariant | null>(null);
@@ -228,22 +246,27 @@ function ManualReceiveSection({ inventory, locations, onDone }: StockReplenishFl
   const finalReason = reason === '__custom__' ? customReason.trim() : reason;
 
   const canSubmit =
-    targetLocId && selectedItem && selectedVariant && eaches > 0 && finalReason.length > 0;
+    !!branchId && !busy && targetLocId && selectedItem && selectedVariant && eaches > 0 && finalReason.length > 0;
 
-  const handleSubmit = () => {
-    if (!canSubmit || !operator || !selectedItem || !selectedVariant) return;
-    // Single canonical stock write: recordInventoryAdjustment adjusts the
-    // location-aware stock AND appends the RestockLog entry in one call.
-    recordInventoryAdjustment({
-      inventoryItemId: selectedItem.id,
-      variantId: selectedVariant.id,
-      delta: eaches,
-      reason: finalReason,
-      operator: operator.name,
-      operatorId: operator.id,
-      locationId: targetLocId,
-    });
-    setDone(true);
+  const handleSubmit = async () => {
+    if (!canSubmit || !branchId || !selectedItem || !selectedVariant) return;
+    // One write to the platform: a `receive` movement into the chosen place,
+    // with its reason, stamped with who took it in and when.
+    setBusy(true);
+    setError('');
+    try {
+      await stockApi.receive(branchId, {
+        stockItemId: selectedVariant.id,
+        locationId: targetLocId,
+        quantity: eaches,
+        reason: finalReason,
+      });
+      setDone(true);
+    } catch (err) {
+      setError(stockErrorWords(err));
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (done) {
@@ -429,10 +452,11 @@ function ManualReceiveSection({ inventory, locations, onDone }: StockReplenishFl
             )}
           </div>
 
+          {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
           <button
             type="button"
             disabled={!canSubmit}
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
             className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm
                        disabled:opacity-40 transition-opacity"
           >
@@ -449,27 +473,23 @@ function ManualReceiveSection({ inventory, locations, onDone }: StockReplenishFl
 // receive path for deliveries without a PO. The Purchase tab is status-only
 // and deep-links here with an order pre-selected.
 
-export function StockReplenishFlow({ inventory, locations, onDone, prefillOrderId }: StockReplenishFlowProps) {
-  const { operator } = useOperator();
-  const [tick, setTick] = useState(0);
+export function StockReplenishFlow({ branchId, inventory, locations, orders, onDone, prefillOrderId }: StockReplenishFlowProps) {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(prefillOrderId ?? null);
 
-  void tick;
-
   // Outstanding = placed with the supplier but not fully received yet.
-  const outstanding = getPurchaseOrders().filter((o) => o.state === 'ordered');
+  const outstanding = orders.filter((o) => o.state === 'ordered');
 
-  const handleReceiveLine = (orderId: string, lineId: string, qty: number, locationId: string) => {
-    if (!operator) return;
-    receivePurchaseOrderLine({
-      orderId,
-      lineId,
-      receivedQty: qty,
-      locationId,
-      operator: operator.name,
-      operatorId: operator.id,
-    });
-    setTick((t) => t + 1);
+  /** Receive against a line; answers the platform's refusal in words, or null. */
+  const handleReceiveLine = async (orderId: string, lineId: string, qty: number, locationId: string) => {
+    if (!branchId) return 'This branch is not on the platform yet.';
+    try {
+      // The platform clamps to what is outstanding on the line and closes the
+      // order once every line is in.
+      await stockApi.receiveOrderLine(branchId, orderId, lineId, { quantity: qty, locationId });
+      return null;
+    } catch (err) {
+      return stockErrorWords(err);
+    }
   };
 
   return (
@@ -509,7 +529,7 @@ export function StockReplenishFlow({ inventory, locations, onDone, prefillOrderI
             Stock arriving without a purchase order (top-ups, opening stock, corrections).
           </p>
         </div>
-        <ManualReceiveSection inventory={inventory} locations={locations} onDone={onDone} />
+        <ManualReceiveSection branchId={branchId} inventory={inventory} locations={locations} onDone={onDone} />
       </div>
     </div>
   );

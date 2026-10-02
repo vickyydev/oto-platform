@@ -243,6 +243,8 @@ const NEXT_PASS =
   "an administrator's create outside round 1's named list (plan §4): it takes an optional body id the same way, in the pass that follows";
 const ACTION_KEYED = 'keyed by the press the caller minted (`x-oto-action-id`), which is what makes a retry the same act';
 const CODE_NAMED = 'named by the code the Console mints from the label, which is what every reader refers to it by';
+const STOCK_MOVE =
+  'derived: stock movements in the ledger, online only, one press per Idempotency-Key; nothing outside the platform refers to the id';
 
 const PLATFORM_NAMED: Record<string, string> = {
   'POST /admin/apps/:app/users': NEXT_PASS,
@@ -258,6 +260,15 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /boxes/:id/commands': ACTION_KEYED,
   'POST /boxes/:id/simulate': ACTION_KEYED,
   'POST /branches/:branchId/menu/products': NEXT_PASS,
+  // S2-14b round 2 — the stock module's writes. Each is a set of ledger
+  // movements whose action ids derive from the id minted here; the stock module
+  // is online only (plan §2.4: the box's offline path is its SALES, replayed by
+  // their own sale-line ids), so a press is made once by its Idempotency-Key.
+  'POST /branches/:branchId/stock/adjustments': STOCK_MOVE,
+  'POST /branches/:branchId/stock/locations': NEXT_PASS,
+  'POST /branches/:branchId/stock/receipts': STOCK_MOVE,
+  'POST /branches/:branchId/stock/stock-takes': `${STOCK_MOVE}; a count's lines are its own, and the opening is decided under a branch lock`,
+  'POST /branches/:branchId/stock/transfers': `${STOCK_MOVE}; the out-and-in pair shares the transfer id`,
   'POST /members/:id/tier-verification':
     'the evidence row behind a tier change; round 3 makes it the till’s `member.tier_changed` fact (plan §2.3, OD-11)',
   'POST /menu/categories': NEXT_PASS,

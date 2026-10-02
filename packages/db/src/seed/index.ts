@@ -33,7 +33,7 @@ import { and, eq, isNull, notInArray, sql } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
 import { reconcileAppBranches } from '../schema/otoapp';
 import { seedMenu } from './menu';
-import { seedStock } from './stock';
+import { seedStock, syncStockSetup } from './stock';
 import { seedSupervision } from './supervision';
 import { seedWalletPolicies } from './wallet';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
@@ -128,6 +128,16 @@ export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole,
   if (converged.length > 0) {
     console.log(
       `Payment methods: wrote the ${DEFAULT_TENDERS.length} default tenders for ${converged.length} park(s) that had none.`,
+    );
+  }
+
+  // Stock (S2-14b round 2, H4): a branch with no stock places or items gets the
+  // seed's — places, items, sizes, packs and links — and never an opening
+  // quantity: the opening is a count somebody does in the app (OD-S5).
+  const stock = await syncStockSetup(db);
+  if (stock.branchesWithPlaces > 0 || stock.branchesWithItems > 0) {
+    console.log(
+      `Stock: laid places at ${stock.branchesWithPlaces} branch(es) and ${stock.items} stocked size(s) at ${stock.branchesWithItems} branch(es) that had none — opening counts are done in the app.`,
     );
   }
 
@@ -1851,7 +1861,7 @@ if (isMain) {
   const platformOnly = forcedPlatform || (!forcedDemo && profile === 'production');
   console.log(
     platformOnly
-      ? `Platform sync only (SEED_PROFILE=${profile}): system roles, permissions and tenders.`
+      ? `Platform sync only (SEED_PROFILE=${profile}): system roles, permissions, tenders and stock setup.`
       : `Full seed (SEED_PROFILE=${profile}): platform rows plus the demo tenant.`,
   );
   (platformOnly ? platformSync() : seed())

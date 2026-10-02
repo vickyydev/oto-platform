@@ -40,8 +40,20 @@ levels. Gate handovers, all routed into round 2's brief: pack entry must
 refuse non-finite input; AddOnsGrid needs the catalogue-size fallback;
 partially stock-linked products; and platform:sync must lay down the stock
 structure (staging gets 0048 with no places or items, because seedStock
-runs only in the full seed). Next: rounds 2 (stock module live) and 3
-(offline) in parallel, then round 4 and the staging walkthrough.
+runs only in the full seed). Round 1 CI green (36935741043).
+Round 2 (the stock module live) lands with this checkpoint after three
+gate cycles: transfers, receive (ad hoc and against PO lines), purchase
+orders, stock take with the opening count, admin items/units/places,
+low-stock attention with the rule and PO suppression, the header strip on
+real data, and the four round-1 handovers (platform-sync now lays down the
+stock places and items with no quantities). The gates closed two real
+holes: stock landing on a removed size via a refund or a race; every
+positive movement now locks the item and refuses a removed size.
+Round 3 (offline) is in its fourth gate cycle (box epoch rule). Its gate
+also found SCRUM-486 (High, offline sales generally: a box that misses a
+reset reply keeps its old era), starting once round 3 lands. Queued for
+round 4: show the box's stock refusals on the till, the no-places
+shortfall, two round-2 notes and one refusal wording.
 
 Migrations landed through 0048. To resume: read this block, then the
 SCRUM-213 comments, then `git log main`.

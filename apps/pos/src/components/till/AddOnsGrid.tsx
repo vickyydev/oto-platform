@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { SelectedAddOn, AddOnVariantQty } from '@/types';
+import { SelectedAddOn, AddOnVariantQty, type AddOn, type InventoryItem } from '@/types';
 import { getAddOns } from '@/mockApi';
 import { inventoryFor, useSellableStockVersion } from '@/api/stock';
+import { catalogueSizesOf } from '@/api/menu';
 import { addOnVariantSummary } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
@@ -25,6 +26,41 @@ interface AddOnsGridProps {
 }
 
 /**
+ * The most of one size the picker offers when its count is not known — the
+ * grid's own cap for an add-on that is not stock-tracked.
+ */
+const UNCOUNTED_CAP = 99;
+
+/**
+ * What the grid knows about a stocked add-on's sizes (S2-14b round 2, H2).
+ *
+ * The platform's counts when it has answered (`inventoryFor`). When it has not —
+ * the sellable-stock read failed or has not come back — a tracked add-on sold
+ * in sizes still has its sizes in the CATALOGUE (`catalogueSizesOf`), so the
+ * till offers those, uncounted, rather than a stepper with no size: a line
+ * with no size is refused at commit (`STOCK_SIZE_REQUIRED`), which left the
+ * counter with nothing it could press. "Unknown" is not "none left"; the
+ * platform's guard at commit is still the rule.
+ */
+export function addOnStockView(addon: Pick<AddOn, 'id' | 'inventoryItemId'>): { inv: InventoryItem | null; counted: boolean } {
+  if (!addon.inventoryItemId) return { inv: null, counted: false };
+  const inv = inventoryFor(addon.inventoryItemId);
+  if (inv) return { inv, counted: true };
+  const sizes = catalogueSizesOf(addon.id);
+  if (sizes.length === 0) return { inv: null, counted: false };
+  return {
+    counted: false,
+    inv: {
+      id: addon.inventoryItemId,
+      name: '',
+      linkedKind: 'addon',
+      linkedId: addon.id,
+      variants: sizes.map((s) => ({ id: s.id, label: s.label, stock: UNCOUNTED_CAP })),
+    },
+  };
+}
+
+/**
  * The shared "Extras & Add-ons" grid. Reused by StepAddTicket and DropOffLineConfig
  * so both surfaces offer the SAME list from getAddOns() (including Regular Socks
  * which moved here from the Participants section). Each add-on takes any quantity;
@@ -40,9 +76,7 @@ export function AddOnsGrid({ selected, onSetQuantity, onSetVariants }: AddOnsGri
   const [sizeAddOnId, setSizeAddOnId] = useState<string | null>(null);
 
   const sizeAddOn = sizeAddOnId ? allAddOns.find((a) => a.id === sizeAddOnId) ?? null : null;
-  const sizeInvItem = sizeAddOn?.inventoryItemId
-    ? inventoryFor(sizeAddOn.inventoryItemId) ?? null
-    : null;
+  const sizeInvItem = sizeAddOn ? addOnStockView(sizeAddOn).inv : null;
   const sizeInitial = sizeAddOnId
     ? selected.find((a) => a.id === sizeAddOnId)?.variantBreakdown ?? []
     : [];
@@ -52,7 +86,7 @@ export function AddOnsGrid({ selected, onSetQuantity, onSetVariants }: AddOnsGri
     if (!addOn) return;
 
     if (addOn.inventoryItemId) {
-      const invItem = inventoryFor(addOn.inventoryItemId);
+      const invItem = addOnStockView(addOn).inv;
       if (invItem && invItem.variants.length === 1) {
         // Single-variant: enforce stock limit before delegating.
         const singleVar = invItem.variants[0];
@@ -78,12 +112,11 @@ export function AddOnsGrid({ selected, onSetQuantity, onSetVariants }: AddOnsGri
           const selectedEntry = selected.find((a) => a.id === addon.id);
           const qty = selectedEntry?.quantity ?? 0;
 
-          // Resolve stock from inventory for display (if linked)
-          const invItem = addon.inventoryItemId
-            ? inventoryFor(addon.inventoryItemId) ?? null
-            : null;
+          // Resolve stock from inventory for display (if linked); the catalogue's
+          // sizes, uncounted, when the platform's counts have not answered (H2).
+          const { inv: invItem, counted } = addOnStockView(addon);
           const isMultiVariant = (invItem?.variants.length ?? 0) > 1;
-          const totalStock = invItem
+          const totalStock = invItem && counted
             ? invItem.variants.reduce((sum, v) => sum + v.stock, 0)
             : null;
           const isOos = totalStock !== null && totalStock <= 0;

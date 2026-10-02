@@ -22,6 +22,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { partialStockLinkProblem } from '@oto/shared';
+import { catalogueSizesOf } from '@/api/menu';
 
 interface InventoryItemFormDialogProps {
   open: boolean;
@@ -99,8 +101,20 @@ const fromUnit = (u: StockUnit): UnitRow => ({
 const blankUnitRow = (): UnitRow => ({
   id: `u-${Math.random().toString(36).slice(2, 7)}`,
   label: '',
-  eaches: '1',
+  eaches: '2',
 });
+
+/** The sellables of one kind an inventory item can link to. */
+function linkedOptionsFor(
+  kind: 'merch' | 'addon' | 'menu',
+  merchItems: MerchItem[],
+  addOns: AddOn[],
+  menuItems: MenuItem[],
+): Array<{ id: string; label: string }> {
+  if (kind === 'merch') return merchItems.map((m) => ({ id: m.id, label: m.name }));
+  if (kind === 'addon') return addOns.map((a) => ({ id: a.id, label: a.name }));
+  return menuItems.map((m) => ({ id: m.id, label: m.name }));
+}
 
 /**
  * Create/edit dialog for a unified InventoryItem. Supports:
@@ -312,10 +326,23 @@ export function InventoryItemFormDialog({
   const addUnit = () => setUnits((prev) => [...prev, blankUnitRow()]);
   const removeUnit = (idx: number) => setUnits((prev) => prev.filter((_, i) => i !== idx));
 
+  // The linked product's sizes (S2-14b): each inventory variant names one, and
+  // a product sold in sizes is stocked in ALL of them or none (H3).
+  const productSizes = linkedId ? catalogueSizesOf(linkedId) : [];
+  const linkedName = linkedOptionsFor(linkedKind, merchItems, addOns, menuItems).find((o) => o.id === linkedId)?.label ?? '';
+
   const validate = (): InventoryItem | null => {
     const next: Record<string, string> = {};
     if (!name.trim()) next.name = 'Name is required.';
     if (!linkedId.trim()) next.linkedId = 'Linked product is required.';
+    else {
+      const problem = partialStockLinkProblem(
+        linkedName || name.trim(),
+        productSizes,
+        variants.map((v) => ({ variantId: productSizes.length > 0 ? v.productVariantRef.trim() || null : null })),
+      );
+      if (problem) next.linkedId = problem;
+    }
 
     for (let i = 0; i < variants.length; i++) {
       const v = variants[i];
@@ -333,8 +360,9 @@ export function InventoryItemFormDialog({
     for (let i = 0; i < units.length; i++) {
       const u = units[i];
       if (!u.label.trim()) next[`u${i}label`] = 'Unit name required.';
-      if (!u.eaches.trim() || isNaN(Number(u.eaches)) || Number(u.eaches) < 1)
-        next[`u${i}eaches`] = 'Must be ≥ 1.';
+      // A pack of one each is just an each: the platform keeps packs of two or more.
+      if (!u.eaches.trim() || !Number.isInteger(Number(u.eaches)) || Number(u.eaches) < 2)
+        next[`u${i}eaches`] = 'Must be ≥ 2.';
     }
 
     if (reorderEnabled) {
@@ -427,15 +455,24 @@ export function InventoryItemFormDialog({
     if (result) onSave(result);
   };
 
+  // One size, not mapped to a product size: the prototype's single "default"
+  // variant (a platform size's id is its stock item's, so the label tells).
   const isSingleDefault =
-    variants.length === 1 && variants[0].id === INVENTORY_DEFAULT_VARIANT_ID;
+    variants.length === 1 &&
+    (variants[0].id === INVENTORY_DEFAULT_VARIANT_ID || (!variants[0].productVariantRef && variants[0].label === 'Default'));
 
   // Linked product options by kind
-  const linkedOptions = linkedKind === 'merch'
-    ? merchItems.map((m) => ({ id: m.id, label: m.name }))
-    : linkedKind === 'addon'
-    ? addOns.map((a) => ({ id: a.id, label: a.name }))
-    : menuItems.map((m) => ({ id: m.id, label: m.name }));
+  const linkedOptions = linkedOptionsFor(linkedKind, merchItems, addOns, menuItems);
+
+  /** Picking a product sold in sizes fills a blank form with one row per size. */
+  const pickLinked = (id: string) => {
+    setLinkedId(id);
+    const sizes = id ? catalogueSizesOf(id) : [];
+    const blank = variants.length === 1 && !variants[0].label.trim() && !variants[0].productVariantRef.trim();
+    if (sizes.length > 0 && blank) {
+      setVariants(sizes.map((s) => ({ ...blankVariantRow(`v-${s.id}`), label: s.label, productVariantRef: s.id })));
+    }
+  };
 
   const costIsUnset = unitCostTHB.trim() === '' || Number(unitCostTHB) <= 0;
 
@@ -589,7 +626,7 @@ export function InventoryItemFormDialog({
                 <select
                   id="inv-linkedid"
                   value={linkedId}
-                  onChange={(e) => setLinkedId(e.target.value)}
+                  onChange={(e) => pickLinked(e.target.value)}
                   className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
                 >
                   <option value="">— pick a product —</option>
@@ -645,20 +682,39 @@ export function InventoryItemFormDialog({
                   </div>
                   <div className="w-36 flex flex-col gap-1">
                     <Label className="text-[10px] text-foreground/40 uppercase tracking-wider">Product variant ref</Label>
-                    <Input
-                      value={v.productVariantRef}
-                      onChange={(e) => updateVariant(i, 'productVariantRef', e.target.value)}
-                      placeholder="e.g. Medium"
-                      title="The label or ID of the product variant this inventory variant maps to. Used when the linked product has formal variants."
-                    />
+                    {productSizes.length > 0 ? (
+                      // The linked product is sold in sizes: this row stocks one of them.
+                      <select
+                        value={v.productVariantRef}
+                        onChange={(e) => updateVariant(i, 'productVariantRef', e.target.value)}
+                        title="The size of the linked product this inventory variant stocks. Every size is stocked, or none."
+                        className="h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                      >
+                        <option value="">— size —</option>
+                        {productSizes.map((s) => (
+                          <option key={s.id} value={s.id}>{s.label}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        value={v.productVariantRef}
+                        onChange={(e) => updateVariant(i, 'productVariantRef', e.target.value)}
+                        placeholder="e.g. Medium"
+                        title="The label or ID of the product variant this inventory variant maps to. Used when the linked product has formal variants."
+                      />
+                    )}
                   </div>
                   <div className="w-20 flex flex-col gap-1">
                     <Label className="text-[10px] text-foreground/40 uppercase tracking-wider">Total stock</Label>
+                    {/* Stock moves only through the ledger — a count, a delivery, a
+                        transfer — so it is shown here, never typed (OD-S5). */}
                     <Input
                       type="number"
                       min={0}
                       value={v.stock}
-                      onChange={(e) => updateVariant(i, 'stock', e.target.value)}
+                      readOnly
+                      disabled
+                      title="Count or receive stock in the Stock module to change it"
                     />
                     {errors[`v${i}stock`] && (
                       <p className="text-xs text-destructive">{errors[`v${i}stock`]}</p>

@@ -1,22 +1,18 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useState } from 'react';
 import {
   ShoppingCart, ChevronDown, ChevronUp, Check, Clock, Truck,
   Edit2, Trash2, AlertTriangle, Plus, ArrowRight,
 } from 'lucide-react';
 import { InventoryItem, PurchaseOrder, PurchaseOrderLine } from '@/types';
-import {
-  getPurchaseOrders,
-  markPurchaseOrderOrdered,
-  updatePurchaseOrderLine,
-  removePurchaseOrderLine,
-  addToPurchaseOrder,
-} from '@/mockApi';
-import { subscribeCatalog } from '@/store/catalogStore';
+import { stockApi, stockErrorWords } from '@/api/stock';
 import { UnitQuantityInput } from './UnitQuantityInput';
-import { useOperator } from '@/auth/OperatorContext';
 
 interface StockPurchasingProps {
+  /** The platform branch orders are written to. */
+  branchId: string | null;
   inventory: InventoryItem[];
+  /** The branch's purchase orders, from the platform (newest first). */
+  orders: PurchaseOrder[];
   /** Navigate to the Receive tab with this order pre-selected. Purchase never mutates stock. */
   onGoToReceive: (orderId: string) => void;
 }
@@ -284,20 +280,29 @@ function LineRow({
 // ── Order card ───────────────────────────────────────────────────────────────
 
 function OrderCard({
+  branchId,
   order,
   inventory,
-  operator,
-  operatorId,
-  onRefresh,
   onGoToReceive,
 }: {
+  branchId: string | null;
   order: PurchaseOrder;
   inventory: InventoryItem[];
-  operator: string;
-  operatorId: string;
-  onRefresh: () => void;
   onGoToReceive: (orderId: string) => void;
 }) {
+  const [error, setError] = useState('');
+  /** Run one write to the platform; its refusal shows on the card. */
+  const run = async (write: (branch: string) => Promise<unknown>): Promise<boolean> => {
+    if (!branchId) return false;
+    setError('');
+    try {
+      await write(branchId);
+      return true;
+    } catch (err) {
+      setError(stockErrorWords(err));
+      return false;
+    }
+  };
   const [expanded, setExpanded] = useState(order.state !== 'received');
   const [markOrdering, setMarkOrdering] = useState(false);
   const [arrivalDate, setArrivalDate] = useState(
@@ -317,26 +322,22 @@ function OrderCard({
 
   const overdue = isOverdue(order);
 
-  const handleMarkOrdered = () => {
-    markPurchaseOrderOrdered({
-      orderId: order.id,
-      expectedArrivalDate: arrivalDate,
-      operator,
-      operatorId,
-      ...(notes.trim() ? { notes: notes.trim() } : {}),
-    });
-    setMarkOrdering(false);
-    onRefresh();
+  const handleMarkOrdered = async () => {
+    const ok = await run((branch) =>
+      stockApi.markOrdered(branch, order.id, {
+        expectedArrivalDate: arrivalDate,
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
+      }),
+    );
+    if (ok) setMarkOrdering(false);
   };
 
   const handleUpdateQty = (lineId: string, qty: number) => {
-    updatePurchaseOrderLine({ orderId: order.id, lineId, orderedQty: qty });
-    onRefresh();
+    void run((branch) => stockApi.setOrderLineQuantity(branch, order.id, lineId, qty));
   };
 
   const handleRemoveLine = (lineId: string) => {
-    removePurchaseOrderLine(order.id, lineId);
-    onRefresh();
+    void run((branch) => stockApi.removeOrderLine(branch, order.id, lineId));
   };
 
   const totalLines = order.lines.length;
@@ -401,6 +402,8 @@ function OrderCard({
             <p className="text-xs text-foreground/50 italic">"{order.notes}"</p>
           )}
 
+          {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+
           {/* Mark as Ordered CTA */}
           {order.state === 'to_order' && (
             <>
@@ -437,7 +440,7 @@ function OrderCard({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={handleMarkOrdered}
+                      onClick={() => void handleMarkOrdered()}
                       className="flex-1 h-10 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500"
                     >
                       Confirm ordered
@@ -488,18 +491,13 @@ function OrderCard({
 
 // ── Main StockPurchasing panel ───────────────────────────────────────────────
 
-export function StockPurchasing({ inventory, onGoToReceive }: StockPurchasingProps) {
-  const { operator } = useOperator();
-  // Subscribe to catalog changes so receipt → stock update flows through
-  useSyncExternalStore(subscribeCatalog, () => null);
-
-  const [tick, setTick] = useState(0);
+export function StockPurchasing({ branchId, inventory, orders, onGoToReceive }: StockPurchasingProps) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [filterState, setFilterState] = useState<'all' | 'active' | 'received'>('active');
+  const [error, setError] = useState('');
 
-  const refresh = () => setTick((t) => t + 1);
-
-  const allOrders = getPurchaseOrders();
+  // The platform's orders, read back after every write (`api/stock.ts`).
+  const allOrders = orders;
 
   const filtered =
     filterState === 'active'
@@ -508,21 +506,14 @@ export function StockPurchasing({ inventory, onGoToReceive }: StockPurchasingPro
       ? allOrders.filter((o) => o.state === 'received')
       : allOrders;
 
-  const handleAddItem = (item: InventoryItem, variantId: string, qty: number) => {
-    if (!operator) return;
-    const variant = item.variants.find((v) => v.id === variantId);
-    addToPurchaseOrder({
-      inventoryItemId: item.id,
-      variantId,
-      itemName: item.name,
-      variantLabel: variant?.label ?? 'Default',
-      orderedQty: qty,
-      supplierName: item.reorderSettings?.supplierName ?? 'Unknown supplier',
-      supplierContact: item.reorderSettings?.supplierContact,
-      operator: operator.name,
-      operatorId: operator.id,
+  const handleAddItem = (_item: InventoryItem, variantId: string, qty: number) => {
+    if (!branchId) return;
+    // The platform puts it on the supplier's open order — the item's own
+    // supplier, "Unknown supplier" when none is set — and merges a repeat size.
+    setError('');
+    stockApi.addToOrders(branchId, [{ stockItemId: variantId, quantity: qty }]).catch((err: unknown) => {
+      setError(stockErrorWords(err));
     });
-    refresh();
   };
 
   return (
@@ -562,6 +553,8 @@ export function StockPurchasing({ inventory, onGoToReceive }: StockPurchasingPro
         </button>
       </div>
 
+      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+
       {/* Add item panel */}
       {showAddItem && (
         <AddItemPanel
@@ -587,12 +580,10 @@ export function StockPurchasing({ inventory, onGoToReceive }: StockPurchasingPro
 
       {filtered.map((order) => (
         <OrderCard
-          key={order.id + tick}
+          key={order.id}
+          branchId={branchId}
           order={order}
           inventory={inventory}
-          operator={operator?.name ?? 'Unknown'}
-          operatorId={operator?.id ?? ''}
-          onRefresh={refresh}
           onGoToReceive={onGoToReceive}
         />
       ))}

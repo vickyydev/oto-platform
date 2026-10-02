@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, ChevronUp } from 'lucide-react';
-import { InventoryItem, InventoryVariant, StockLocation, StockTakeRecord } from '@/types';
+import { STOCK_TAKE_FLAG_THRESHOLD } from '@oto/shared';
+import { InventoryItem, InventoryVariant, StockLocation } from '@/types';
 import { UnitQuantityInput } from './UnitQuantityInput';
-import { addStockTakeRecord, recordInventoryAdjustment } from '@/mockApi';
-import { useOperator } from '@/auth/OperatorContext';
-import { useBranch } from '@/branch/BranchContext';
+import { stockApi, stockErrorWords } from '@/api/stock';
 
-// Discrepancy threshold: flag if |discrepancy| > this many eaches
-const DISCREPANCY_THRESHOLD = 3;
+// Discrepancy threshold: flag if |discrepancy| > this many eaches (OD-S1; the
+// platform applies the same figure and is the one that records it).
+const DISCREPANCY_THRESHOLD = STOCK_TAKE_FLAG_THRESHOLD;
 
 interface CountRow {
   item: InventoryItem;
@@ -28,15 +28,18 @@ interface AdjustedRow {
 }
 
 interface StockTakeFlowProps {
+  /** The platform branch the count is committed to. */
+  branchId: string | null;
   inventory: InventoryItem[];
   locations: StockLocation[];
   onDone: () => void;
 }
 
-export function StockTakeFlow({ inventory, locations, onDone }: StockTakeFlowProps) {
-  const { operator } = useOperator();
-  const { branch } = useBranch();
-
+export function StockTakeFlow({ branchId, inventory, locations, onDone }: StockTakeFlowProps) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  /** True when the platform recorded this count as the branch's opening (OD-S5). */
+  const [opening, setOpening] = useState(false);
   const [locationId, setLocationId] = useState(locations.find((l) => l.active)?.id ?? '');
   const [phase, setPhase] = useState<'count' | 'review' | 'done'>('count');
   const [rows, setRows] = useState<CountRow[]>([]);
@@ -81,8 +84,9 @@ export function StockTakeFlow({ inventory, locations, onDone }: StockTakeFlowPro
       return next;
     });
 
-  // Rows that have been counted (qtyRaw not empty)
-  const countedRows = rows.filter((r) => r.qtyRaw.trim() !== '');
+  // Rows that have been counted (qtyRaw not empty, and a whole number of eaches —
+  // a refused entry shows its reason under the field and is not counted).
+  const countedRows = rows.filter((r) => r.qtyRaw.trim() !== '' && Number.isInteger(r.eaches));
 
   const rowsWithDiscrepancy = countedRows.map((r) => ({
     ...r,
@@ -93,58 +97,44 @@ export function StockTakeFlow({ inventory, locations, onDone }: StockTakeFlowPro
   const flaggedRows = rowsWithDiscrepancy.filter((r) => r.flagged);
   const cleanRows = rowsWithDiscrepancy.filter((r) => !r.flagged);
 
-  const handleCommit = () => {
-    if (!operator) return;
-
-    const committed: AdjustedRow[] = [];
-
-    for (const r of rowsWithDiscrepancy) {
-      // Auto-adjust ALL rows with a discrepancy (no manager approval gate).
-      // recordInventoryAdjustment applies the delta to the catalog store AND
-      // appends a stamped variance entry to the restock ledger in one call.
-      if (r.discrepancy !== 0) {
-        recordInventoryAdjustment({
-          inventoryItemId: r.item.id,
-          variantId: r.variant.id,
-          delta: r.discrepancy,
-          reason: `Stock take variance — expected ${r.expectedQty}, counted ${r.eaches}${r.flagged ? ' (flagged)' : ''}`,
-          operator: operator.name,
-          operatorId: operator.id,
-          locationId,
-        });
+  const handleCommit = async () => {
+    if (!branchId || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      // Auto-adjust ALL rows with a discrepancy (no manager approval gate,
+      // OD-S1). The platform sets each counted shelf to what was counted,
+      // against the record AT COMMIT — a sale rung up while the count was under
+      // way is not counted twice — flags a difference above three, writes a
+      // take line for every counted shelf (exact matches included, so the
+      // Discrepancies report has the full history) and audits it.
+      const take = await stockApi.commitStockTake(
+        branchId,
+        rowsWithDiscrepancy.map((r) => ({ stockItemId: r.variant.id, locationId, countedQuantity: r.eaches })),
+      );
+      const committed: AdjustedRow[] = [];
+      for (const line of take.lines) {
+        if (line.difference === 0) continue;
+        const r = rowsWithDiscrepancy.find((x) => x.variant.id === line.stockItemId);
+        if (!r) continue;
         committed.push({
           itemName: r.item.name,
           variantLabel: r.variant.label,
           multiVariant: r.item.variants.length > 1,
-          expectedQty: r.expectedQty,
-          countedQty: r.eaches,
-          delta: r.discrepancy,
-          flagged: r.flagged,
+          expectedQty: line.expectedQuantity,
+          countedQty: line.countedQuantity,
+          delta: line.difference,
+          flagged: line.flagged,
         });
       }
-
-      // Always write a stock-take record (exact matches included) so the
-      // Discrepancies report has a full count history, not just variances.
-      const record: StockTakeRecord = {
-        id: `stktak-${Math.random().toString(36).slice(2, 9)}`,
-        inventoryItemId: r.item.id,
-        variantId: r.variant.id,
-        locationId,
-        expectedQty: r.expectedQty,
-        countedQty: r.eaches,
-        discrepancy: r.discrepancy,
-        flagged: r.flagged,
-        status: 'adjusted',
-        countedBy: operator.name,
-        countedById: operator.id,
-        countedAt: new Date().toISOString(),
-        branchId: branch?.id,
-      };
-      addStockTakeRecord(record);
+      setOpening(take.opening);
+      setAdjustedRows(committed);
+      setPhase('done');
+    } catch (err) {
+      setError(stockErrorWords(err));
+    } finally {
+      setBusy(false);
     }
-
-    setAdjustedRows(committed);
-    setPhase('done');
   };
 
   if (phase === 'done') {
@@ -160,6 +150,9 @@ export function StockTakeFlow({ inventory, locations, onDone }: StockTakeFlowPro
             <p className="text-sm text-foreground/50 mt-1">
               {countedRows.length} item{countedRows.length !== 1 ? 's' : ''} counted at {locName}
             </p>
+            {opening && (
+              <p className="text-xs text-foreground/40 mt-1">Recorded as this branch’s opening count.</p>
+            )}
           </div>
         </div>
 
@@ -299,10 +292,12 @@ export function StockTakeFlow({ inventory, locations, onDone }: StockTakeFlowPro
         )}
 
         <div className="fixed bottom-20 left-0 right-0 px-4">
+          {error && <p role="alert" className="mb-2 text-xs text-destructive text-center">{error}</p>}
           <button
             type="button"
-            onClick={handleCommit}
-            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
+            disabled={busy || !branchId}
+            onClick={() => void handleCommit()}
+            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40"
           >
             Commit stock take
           </button>

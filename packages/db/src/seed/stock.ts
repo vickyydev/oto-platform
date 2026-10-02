@@ -35,7 +35,7 @@
  * Runs once per branch: a branch that already has a place is left alone.
  */
 import { isoDateInTz, newId, satangFromBaht } from '@oto/shared';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { Db } from '../index';
 import * as s from '../schema/index';
 import type { ProductVariant } from '../schema/catalog';
@@ -330,5 +330,164 @@ export async function seedStock(
       }
     }
   });
+  return counts;
+}
+
+export interface StockSetupCounts {
+  /** Branches that were given their three places this run. */
+  branchesWithPlaces: number;
+  /** Branches that were given their stocked items this run. */
+  branchesWithItems: number;
+  items: number;
+}
+
+/**
+ * THE DEPLOY'S STOCK SETUP (round 2, handover H4) — run by `platformSync`.
+ *
+ * Staging's pre-deploy runs migrations plus `platform:sync`, never the full
+ * seed (`render.yaml`; the S2-01b rule), so a database that predates 0048 came
+ * up with the stock tables and nothing in them: no places, no items, no sizes,
+ * no links, and so a till that tracked nothing. This lays down, per live
+ * branch, what the seed would have:
+ *
+ *   - the three places — Store (bulk), BOH (back of house), FOH (the sell
+ *     point) — when the branch has NO place at all;
+ *   - the stocked items, one row per size, their pack, pars at the sell point,
+ *     cost and reorder settings, and the link to the product each stocks — when
+ *     the branch has NO stock item at all; the two products the prototype
+ *     counts in sizes are given those sizes once, if they have none.
+ *
+ * And NO OPENING QUANTITIES (OD-S5): the opening is a stock take done in the
+ * app by somebody standing at the shelf. Nothing here writes a level or a
+ * movement, so every level still starts as the sum of movements.
+ *
+ * Idempotent by construction: each half acts only on a branch that has none of
+ * what it lays down, so a second run, or a park whose manager has since
+ * renamed, retired or unlinked anything, is left exactly as it is.
+ */
+export async function syncStockSetup(db: Db): Promise<StockSetupCounts> {
+  const counts: StockSetupCounts = { branchesWithPlaces: 0, branchesWithItems: 0, items: 0 };
+  const branches = await db
+    .select({ id: s.branch.id, operatorId: s.branch.operatorId })
+    .from(s.branch)
+    .where(isNull(s.branch.archivedAt));
+  for (const br of branches) {
+    await db.transaction(async (tx) => {
+      // Two deploys racing must not both decide the branch is empty.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`stock_setup:${br.id}`}))`);
+      const [anyPlace] = await tx
+        .select({ id: s.stockLocation.id })
+        .from(s.stockLocation)
+        .where(eq(s.stockLocation.branchId, br.id))
+        .limit(1);
+      if (!anyPlace) {
+        await tx.insert(s.stockLocation).values([
+          { id: newId(), operatorId: br.operatorId, branchId: br.id, name: 'Store', type: 'bulk' as const },
+          { id: newId(), operatorId: br.operatorId, branchId: br.id, name: 'BOH', type: 'back_of_house' as const },
+          { id: newId(), operatorId: br.operatorId, branchId: br.id, name: 'FOH', type: 'rotation' as const, sellPoint: true },
+        ]);
+        counts.branchesWithPlaces += 1;
+      }
+
+      const [anyItem] = await tx
+        .select({ id: s.stockItem.id })
+        .from(s.stockItem)
+        .where(eq(s.stockItem.branchId, br.id))
+        .limit(1);
+      if (anyItem) return;
+
+      // This branch's products by code — its own first, then any the operator sells everywhere.
+      const products = await tx
+        .select({ id: s.product.id, code: s.product.code, variants: s.product.variants, branchId: s.product.branchId })
+        .from(s.product)
+        .where(
+          and(
+            eq(s.product.operatorId, br.operatorId),
+            inArray(
+              s.product.code,
+              STOCK.map((x) => x.productCode),
+            ),
+            isNull(s.product.archivedAt),
+            or(eq(s.product.branchId, br.id), isNull(s.product.branchId)),
+          ),
+        );
+      const byCode = new Map<string, (typeof products)[number]>();
+      for (const p of products) {
+        const held = byCode.get(p.code!);
+        if (!held || (held.branchId === null && p.branchId === br.id)) byCode.set(p.code!, p);
+      }
+      if (byCode.size === 0) return;
+
+      for (const [code, variants] of Object.entries(STOCK_SIZED_PRODUCTS)) {
+        const row = byCode.get(code);
+        if (!row || row.variants.length > 0) continue;
+        await tx.update(s.product).set({ variants }).where(eq(s.product.id, row.id));
+        row.variants = variants;
+      }
+
+      const [sellPoint] = await tx
+        .select({ id: s.stockLocation.id })
+        .from(s.stockLocation)
+        .where(
+          and(
+            eq(s.stockLocation.branchId, br.id),
+            eq(s.stockLocation.sellPoint, true),
+            eq(s.stockLocation.active, true),
+            isNull(s.stockLocation.archivedAt),
+          ),
+        )
+        .limit(1);
+
+      let laid = 0;
+      for (const seedItem of STOCK) {
+        const productRow = byCode.get(seedItem.productCode);
+        if (!productRow) continue;
+        const sized = productRow.variants.length > 0;
+        const sizes = seedItem.sizes.filter((size) =>
+          sized ? !!size.variantId && productRow.variants.some((v) => v.id === size.variantId) : !size.variantId,
+        );
+        // All of a sized product's sizes or none (H3): a product whose sizes the
+        // seed does not name exactly is left untracked for a manager to set up.
+        if (sized && sizes.length !== productRow.variants.length) continue;
+        if (sizes.length === 0) continue;
+        const productItems: string[] = [];
+        for (const size of sizes) {
+          const variant = size.variantId ? productRow.variants.find((v) => v.id === size.variantId) : undefined;
+          const itemId = newId();
+          productItems.push(itemId);
+          await tx.insert(s.stockItem).values({
+            id: itemId,
+            operatorId: br.operatorId,
+            branchId: br.id,
+            name: seedItem.name,
+            productId: productRow.id,
+            variantId: size.variantId ?? null,
+            variantLabel: variant?.label ?? null,
+            unitCostSatang: seedItem.costBaht === undefined ? null : b(seedItem.costBaht),
+            lowStockThreshold: size.threshold,
+            parByLocation: size.par === undefined || !sellPoint ? {} : { [sellPoint.id]: size.par },
+            reorderPoint: seedItem.reorder?.point ?? null,
+            reorderQuantity: seedItem.reorder?.quantity ?? null,
+            leadTimeDays: seedItem.reorder?.leadDays ?? null,
+            supplierName: seedItem.reorder?.supplier ?? null,
+            supplierContact: seedItem.reorder?.contact ?? null,
+          });
+          if (seedItem.pack) {
+            await tx.insert(s.stockUnit).values({ id: newId(), operatorId: br.operatorId, stockItemId: itemId, ...seedItem.pack });
+          }
+          laid += 1;
+        }
+        // The prototype's "set = stock-tracked" marker, as the seed and the link writer keep it.
+        await tx
+          .update(s.product)
+          .set({ stockItemId: productItems[0]!, updatedAt: new Date() })
+          .where(eq(s.product.id, productRow.id));
+      }
+      if (laid > 0) {
+        counts.branchesWithItems += 1;
+        counts.items += laid;
+      }
+    });
+  }
   return counts;
 }

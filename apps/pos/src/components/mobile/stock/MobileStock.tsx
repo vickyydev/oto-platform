@@ -3,7 +3,6 @@ import {
   ArrowLeftRight, Download, Boxes, TrendingDown, ChevronLeft,
   ShoppingCart, Menu, X, BarChart2,
 } from 'lucide-react';
-import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { StockSuggestions, Suggestion } from './StockSuggestions';
 import { StockTransferFlow } from './StockTransferFlow';
 import { StockReplenishFlow } from './StockReplenishFlow';
@@ -12,8 +11,8 @@ import { StockOverview } from './StockOverview';
 import { StockPurchasing } from './StockPurchasing';
 import { StockReports } from './StockReports';
 import { InventoryItem } from '@/types';
-import { addToPurchaseOrder } from '@/mockApi';
-import { useOperator } from '@/auth/OperatorContext';
+import { stockApi, stockErrorWords, useStockModule } from '@/api/stock';
+import { useBranch } from '@/branch/BranchContext';
 
 type Tab = 'stock' | 'suggestions' | 'transfer' | 'replenish' | 'purchasing' | 'reports';
 
@@ -47,8 +46,15 @@ const NARROW_THRESHOLD = 360;
  * Switching widths mid-flow preserves the active section and any prefill state.
  */
 export function MobileStock() {
-  const { inventory, stockLocations } = useCatalogStore();
-  const { operator } = useOperator();
+  // S2-14b round 2 — the platform's stock, not the ported in-memory inventory:
+  // every count, transfer, delivery and order here is a write to the branch's
+  // ledger (`api/stock.ts`). Retired items and places stay out of staff stock
+  // operations (`types.ts` InventoryItem.active).
+  const { branch } = useBranch();
+  const branchId = branch?.apiId ?? null;
+  const stock = useStockModule(branchId);
+  const inventory = stock.inventory.filter((i) => i.active !== false);
+  const stockLocations = stock.locations.filter((l) => l.active);
   const [tab, setTab] = useState<Tab>('suggestions');
   // Stock-take flow launched from the Stock overview (button, not a tab)
   const [stockTakeActive, setStockTakeActive] = useState(false);
@@ -106,8 +112,8 @@ export function MobileStock() {
    *   per variant, with any remainder added to the first variant so the total
    *   always equals reorderQty (no over-ordering).
    */
-  const handleReorder = (item: InventoryItem) => {
-    if (!operator) return;
+  const handleReorder = async (item: InventoryItem) => {
+    if (!branchId) return;
     const rs = item.reorderSettings;
     if (!rs) return;
 
@@ -115,23 +121,17 @@ export function MobileStock() {
     const baseQty = Math.floor(rs.reorderQty / n);
     const remainder = rs.reorderQty - baseQty * n;
 
-    item.variants.forEach((variant, idx) => {
-      const qty = baseQty + (idx === 0 ? remainder : 0);
-      if (qty <= 0) return;
-      addToPurchaseOrder({
-        inventoryItemId: item.id,
-        variantId: variant.id,
-        itemName: item.name,
-        variantLabel: variant.label,
-        orderedQty: qty,
-        supplierName: rs.supplierName,
-        supplierContact: rs.supplierContact,
-        operator: operator.name,
-        operatorId: operator.id,
-      });
-    });
-
-    setTab('purchasing');
+    // One write for every size: the platform puts them on the supplier's open
+    // order (creating it when there is none) and merges a size already on it.
+    const lines = item.variants
+      .map((variant, idx) => ({ stockItemId: variant.id, quantity: baseQty + (idx === 0 ? remainder : 0) }))
+      .filter((line) => line.quantity > 0);
+    try {
+      await stockApi.addToOrders(branchId, lines);
+      setTab('purchasing');
+    } catch (err) {
+      window.alert(stockErrorWords(err));
+    }
   };
 
   const handleTabChange = (t: Tab) => {
@@ -213,6 +213,17 @@ export function MobileStock() {
 
       {/* ── Content ────────────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* The platform's answer, or why there is none: never the seed's figures. */}
+        {(stock.error || (!stock.loaded && branchId)) && (
+          <p role="status" className="mx-4 mt-3 rounded-lg border border-foreground/10 px-3 py-2 text-xs text-foreground/50">
+            {stock.error ?? 'Loading stock…'}
+          </p>
+        )}
+        {!branchId && (
+          <p role="status" className="mx-4 mt-3 rounded-lg border border-foreground/10 px-3 py-2 text-xs text-foreground/50">
+            This branch is not on the platform yet, so it has no stock to show.
+          </p>
+        )}
         {tab === 'stock' && !stockTakeActive && (
           <StockOverview
             inventory={inventory}
@@ -233,6 +244,7 @@ export function MobileStock() {
               </button>
             </div>
             <StockTakeFlow
+              branchId={branchId}
               inventory={inventory}
               locations={stockLocations}
               onDone={() => setStockTakeActive(false)}
@@ -243,8 +255,14 @@ export function MobileStock() {
           <StockSuggestions
             inventory={inventory}
             locations={stockLocations}
+            orders={stock.orders}
+            attention={stock.attention}
+            onResolveAttention={(id) => {
+              if (!branchId) return;
+              stockApi.resolveAttention(branchId, id).catch((err: unknown) => window.alert(stockErrorWords(err)));
+            }}
             onStartTransfer={handleSuggestionTransfer}
-            onReorder={handleReorder}
+            onReorder={(item) => void handleReorder(item)}
           />
         )}
         {tab === 'transfer' && (
@@ -262,6 +280,7 @@ export function MobileStock() {
               </div>
             )}
             <StockTransferFlow
+              branchId={branchId}
               inventory={inventory}
               locations={stockLocations}
               prefill={prefillTransfer}
@@ -271,15 +290,19 @@ export function MobileStock() {
         )}
         {tab === 'replenish' && (
           <StockReplenishFlow
+            branchId={branchId}
             inventory={inventory}
             locations={stockLocations}
+            orders={stock.orders}
             onDone={() => setTab('suggestions')}
             prefillOrderId={prefillReceiveOrderId}
           />
         )}
         {tab === 'purchasing' && (
           <StockPurchasing
+            branchId={branchId}
             inventory={inventory}
+            orders={stock.orders}
             onGoToReceive={handleGoToReceive}
           />
         )}

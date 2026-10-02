@@ -16,11 +16,22 @@ describe('re-check — parsePackQuantity answers whole eaches or refuses', () =>
     }
   });
 
-  // DEFECT (low): an exponent past the float range parses to Infinity and is
-  // answered `ok` — Math.abs(Infinity - Infinity) is NaN, which the whole-each
-  // check (`> 1e-9`) lets through. No round-1 writer takes it (applyMovements
-  // refuses a non-integer quantity), but round 2's receive and count screens do.
-  it.fails('refuses "1e400", which is not a number of things', () => {
+  // Was a DEFECT (low), fixed in round 2 (handover H1): an exponent past the
+  // float range parsed to Infinity and was answered `ok` — Math.abs(Infinity -
+  // Infinity) is NaN, which the whole-each check (`> 1e-9`) let through. Round
+  // 2's receive and count screens take this parser's answer.
+  it('refuses "1e400", which is not a number of things', () => {
     expect(parsePackQuantity('1e400', DOZEN).ok).toBe(false);
+  });
+
+  it('refuses "Infinity" and "1e400 dozen" the same way', () => {
+    expect(parsePackQuantity('Infinity', DOZEN).ok).toBe(false);
+    expect(parsePackQuantity('1e400 dozen', DOZEN).ok).toBe(false);
+    expect(parsePackQuantity('2 + Infinity', DOZEN).ok).toBe(false);
+  });
+
+  it('refuses a finite figure no shelf holds', () => {
+    expect(parsePackQuantity('1e20', DOZEN).ok).toBe(false);
+    expect(parsePackQuantity('1000000', DOZEN)).toEqual({ ok: true, eaches: 1_000_000 });
   });
 });
