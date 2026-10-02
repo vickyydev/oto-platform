@@ -1,6 +1,6 @@
 # Handover - where this is, and what to do next
 
-## STOP POINT — 2 October 2026, late — S2-14 Deployed; S2-15a in progress; SCRUM-493 next
+## STOP POINT — 2 October 2026, late — S2-14 Deployed; S2-15a in progress; SCRUM-494 after its round 1
 
 **Done:** S2-14 wallets and stock (SCRUM-211) Deployed with staging evidence
 on both subtasks; SCRUM-486 Deployed.
@@ -11,10 +11,11 @@ the day; the existing End of Day behaviour for everything else). Plan:
 docs/progress/plans/cash/PLAN.md. Round 1 is being built; rounds 2 to 4
 follow.
 
-**Priority set by the owner side (2 October):** as soon as S2-15a is
-complete, take up SCRUM-493 (till behaviour consistency across delivered
-areas) before any other story: SCRUM-494 first, then SCRUM-495 and
-SCRUM-496, applying SCRUM-497's confirmed details as each part runs.
+**Priority set by the owner side (2 October):** as soon as S2-15a round 1
+lands, take up SCRUM-494 (band details and services carried through, part
+of SCRUM-493, till behaviour consistency across delivered areas). Then
+S2-15a rounds 2-4, then SCRUM-495 and SCRUM-496 before any other story,
+applying SCRUM-497's confirmed details as each part runs.
 Register: docs/progress/plans/consistency/REGISTER.md. After it, S2-15b and
 the agreed order.
 

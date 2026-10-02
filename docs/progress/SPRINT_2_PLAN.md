@@ -4500,15 +4500,15 @@ the owner's console and his own data, then on-site readiness):
 
 S2-01a → S2-01b → S2-01c → S2-02 → S2-03 → S2-17a → **CP1** → S2-04 → S2-05 →
 S2-06 → S2-07a → S2-07b → **CP2** → S2-08 → S2-09a → S2-09b → S2-10a →
-S2-10b → S2-11 → **CP3** → S2-12 → S2-13 → S2-14a → S2-14b → S2-15a →
-**SCRUM-493** → S2-15b → **CP4** → S2-20 → S2-21 → **CP5** → S2-17b → S2-17c → S2-18 →
+S2-10b → S2-11 → **CP3** → S2-12 → S2-13 → S2-14a → S2-14b → S2-15a (round 1) →
+**SCRUM-494** → S2-15a (rounds 2-4) → **SCRUM-495** → **SCRUM-496** → S2-15b → **CP4** → S2-20 → S2-21 → **CP5** → S2-17b → S2-17c → S2-18 →
 S2-19 → **CP6** → S2-23 → S2-22 → **CP7** → S2-24 → S2-16 → **CP8**.
 
 **SCRUM-493 (till behaviour consistency, added 2 October 2026 by the
-owner's priority):** taken up immediately after S2-15a is complete and
-before any other story. Its parts run in order: SCRUM-494 (band details
-and services carried through) first, then SCRUM-495 and SCRUM-496, with
-SCRUM-497's confirmed details applied as each part runs. Register:
+owner's priority):** SCRUM-494 (band details and services carried
+through) is taken up immediately after S2-15a round 1 lands; S2-15a
+rounds 2-4 follow; then SCRUM-495 and SCRUM-496, before any other story.
+SCRUM-497's confirmed details are applied as each part runs. Register:
 docs/progress/plans/consistency/REGISTER.md.
 
 S2-17a sits before CP1 because the owner wants the shared database and one

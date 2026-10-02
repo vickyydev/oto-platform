@@ -5,10 +5,10 @@ wallets and stock) is Deployed. S2-15a (SCRUM-215, End of Day) is In
 Progress: re-planned to the owner's 2 October ruling (one combined cash
 count for the day, the existing End of Day behaviour otherwise;
 docs/progress/plans/cash/PLAN.md); round 1 is being built. PRIORITY: the
-moment S2-15a is complete, SCRUM-493 (till behaviour consistency:
-SCRUM-494 first, then SCRUM-495, SCRUM-496, with SCRUM-497's confirmed
-details) is taken up before any other story; then S2-15b and the agreed
-order. The newest checkpoint in SPRINT_2_PROGRESS.md carries the detail._
+moment S2-15a round 1 lands, SCRUM-494 (band details and services
+carried through, part of SCRUM-493); then S2-15a rounds 2-4; then
+SCRUM-495 and SCRUM-496 (with SCRUM-497's confirmed details) before any
+other story; then S2-15b and the agreed order. The newest checkpoint in SPRINT_2_PROGRESS.md carries the detail._
 
 
 ## Active OTO App lane - 30 September 2026
