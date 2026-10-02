@@ -72,7 +72,11 @@ not reviewed. What it has:
   - `sale-printing.ts`: `queueEndOfDayReceipt`;
   - routes `POST .../end-of-day/stranded/resolve` and
     `POST .../end-of-day/reprint`.
-- **Still to do**: its tests and the till screens.
+- **Till screens and first tests** (snapshot 66bdcdf8, 29 files):
+  ProvisionalBanner, StrandedList, EodReceiptCard, the End of Day tabs and
+  hook, and  tests in api, pos and db. None of it is reviewed yet.
+- **Leave out** . It is an older,
+  unrelated file that the snapshot picked up.
 
 To continue:
 
