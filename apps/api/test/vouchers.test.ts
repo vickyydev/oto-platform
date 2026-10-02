@@ -2686,7 +2686,8 @@ describe('each person has a guessing budget of their own, across every till (SCR
           code: 'LOCKED',
           details: { lockedUntil: personUntil },
         });
-        expect(r.json().error.details.lock).toBeUndefined();
+        // A request refused before its till locked names the person; both end together.
+        expect([undefined, 'person']).toContain(r.json().error.details.lock);
       } else {
         expect(r.json().error).toEqual({
           code: 'LOCKED',

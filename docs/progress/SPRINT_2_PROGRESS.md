@@ -9,6 +9,11 @@ it as it refuses kids' bands, and occupancy counts such a band with its
 group, as the design does. Migration 0053 (renumbered from 0054: no 0053
 was needed by the food unit). eod-r1-migration no longer asserts 0052 is
 the newest. Tests: db 157/157, box-agent 677/677, api gate suites 27/27.
+CI on 4fc79674 red, two causes, both fixed: packages/db migration suites
+ran files side by side against one Postgres (now --no-file-parallelism in
+its test script; 160/160 locally), and a vouchers.test.ts burst race (a
+request refused before its till locked names the person; both end
+together; 102/102 three times).
 Questions for SCRUM-497: the reader's wording for a no-gate adult; such an
 adult shown under kids on the occupancy chip (design behaviour); refused on
 exit as kids are.

@@ -20,7 +20,7 @@
     "snapshot": "tsx scripts/snapshot.ts",
     "verify-schema": "tsx scripts/verify-schema.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run --no-file-parallelism"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",
