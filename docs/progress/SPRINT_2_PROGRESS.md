@@ -1,5 +1,34 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 2 October 2026 (late) - S2-15a re-planned to the owner's ruling
+
+SCRUM-488 ruling (Tony, 2 Oct, via Antonie): count all drawers together
+as one combined total for the day; for everything else follow the
+existing End of Day process (the prototype's Today > End of Day, which
+SCRUM-214 names as its source) and do not invent parallel rules unless
+something is clearly missing or broken.
+
+Done: the per-drawer round 1 (workflow wfg37uw41) was stopped before
+landing and saved on branch wip/cash-round-1-per-drawer (010fabfc), for
+reference only. docs/progress/plans/cash/PLAN.md is rewritten
+prototype-first: one combined count per day, float carry-over or
+B6,000, B1 tolerance per line, any signed-in staff member may close,
+close allowed with off/pending lines, closed day frozen, refunds on the
+original sale's day, credit as its own line inside the totals. Fixed
+only where the prototype is clearly broken: branch leak, UTC day, card
+TID by hash, NO-TERMINAL drop, nothing persisted, non-till money. From
+SCRUM-215 where the prototype has nothing: paid-out (approver) and safe
+drop (witness) against the day, provisional close, stranded occupancy,
+EOD receipt, audit, settlement.
+
+Working tree note: the tree still holds the stopped per-drawer files
+(untracked cash.ts, 0052_cash_sessions, cash-r1 tests). Round 1 is
+rebuilt from origin/main; do not land those files.
+
+Next: round 1 of the revised plan (migration 0052 end_of_day +
+cash_movement; End of Day service and screens on real data; Cash
+action). Migrations landed through 0051.
+
 ## Platform lane checkpoint - 2 October 2026 (night) - S2-14 wallets and stock DEPLOYED
 
 The story SCRUM-211 (S2-14, wallets and stock) is Deployed: both subtasks

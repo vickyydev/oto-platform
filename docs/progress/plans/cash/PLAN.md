@@ -1,210 +1,131 @@
-# Cash sessions and End of Day — the build plan for S2-15a
+# Cash and End of Day: the build plan for S2-15a (revised)
 
-_Written 2026-10-02 from the requirement (SPRINT_2_PLAN §S2-15a, lines
-2290-2347; dependants at 2860, 3582-3583, 3781-3782; coverage 6.8), the
-rules R-38, R-44, R-45, R-47, R-101..R-106 and C17
-(POS_RULES_RECONCILIATION), the brief (PROJECT_CONTEXT 149-150), the 2C2P
-file format (PAYMENT_GATEWAY 535-560), and two read-only studies: the
-prototype's cash and End of Day domain and the platform's landed seams.
-The prototype's End of Day is one branch-wide screen with no sessions, no
-movements, no settlement and no permission check, and several of its
-expected-cash rules are bugs. This plan follows the requirement for
-what the prototype lacks, keeps the prototype's screens and words, and
-does not port the bugs it names (section 6). S2-14 is Deployed. Wallet
-credit and paid-online bookings already have their own tender codes,
-and every payment attempt carries its business date, station and terminal._
+_Revised 2026-10-02 after the owner's ruling on SCRUM-488 (Tony's call,
+2 October): count all drawers together as one combined total for the day,
+and for everything else follow the End of Day process that already exists.
+Do not invent a parallel set of rules unless something is clearly missing
+or broken. This replaces the first plan (c9185429), which proposed a
+drawer-by-drawer count, manager-only close, refunds on the day the money
+left, late corrections and credit outside the totals. Those proposals are
+withdrawn. The per-drawer round 1 that was built before the ruling is kept
+for reference on branch `wip/cash-round-1-per-drawer` and is not landed._
 
-## 1. Closing the day, in the park's terms
+## 1. The reference
 
-A counter opens its drawer with a float: the float the drawer was left
-with last night, or the default ฿6,000. Through the day, cash comes in at
-that drawer, change goes out, and a manager can take a paid-out (signed
-by an approver) or a safe drop (witnessed). At the end of a shift or day,
-the person at the drawer counts it. The system already knows what should
-be there, from the payments recorded at that station: the float, plus
-cash taken, minus cash given back, minus paid-outs and drops. Any
-difference is held against the person who closed the drawer and signed.
-The manager then closes the branch's day. Every payment type is
-reconciled: cash per drawer, card per terminal, QR. Wallet credit and
-online bookings are shown beside the takings, never inside them. The day
-cannot close while a counter's box still holds sales it has not
-delivered, or while someone is still recorded as inside the park.
-Closing locks the day, stamps who closed it, and prints the End of Day
-slip on that counter's own series. A card terminal's batch is settled
-and exported per terminal, and the gateway's settlement file is matched
-line by line, with anything unmatched flagged.
+The existing process is the prototype's Today > End of Day screen. The
+SCRUM-214 story names it as its source:
 
-## 2. The architecture
+- `imports/oto-pos/artifacts/oto-till/src/lib/endOfDay.ts`:
+  RECON_TOLERANCE_THB, DEFAULT_FLOAT_THB, lineFlag, reconVerdict,
+  recomputeEndOfDay, channelLabel.
+- `mockApi.ts`: getFloatCarryover (2210), getEndOfDay (2239) and
+  closeEndOfDay (2348).
+- `components/eod/`: EndOfDayTab, CashCountCard ("whole branch drawer"),
+  ReconTable, ReconSummary, AmountInput, and the mobile
+  MobileEndOfDayTab.
 
-### 2.1 Data model (migration 0052, round 1)
+Where the prototype has nothing, SCRUM-215's own acceptance criteria
+apply: paid-out and safe drop, the provisional close, the End of Day
+receipt, the audit, settlement, and the stranded-occupancy list.
 
-- `pos.cash_session`: one per station drawer, open to close. Fields:
-  branch, station, business_date it opened on, opened_by,
-  opening_float_satang, closed_by, counted_satang, expected_satang
-  (stored at close), variance_satang, status (open / closed), notes, and
-  a sign-off with timestamp. A station with routing `cash: 'none'` has no
-  session.
-- `pos.cash_movement`: append-only, action-keyed. Kinds: float, paid_out
-  (approver required), safe_drop (witness required), top_up, refund_out.
-  Each row carries its session, amount, reason, actor, approver or
-  witness, and business_date.
-- `pos.refund` gains `business_date`: the day the money left the
-  drawer, not the day of the original sale. The prototype's
-  original-date rule is a bug and is not ported. Each cash refund slice
-  writes a refund_out movement to the session of the drawer that paid
-  it.
-- `pos.end_of_day`: one per branch and business_date. Fields: status
-  (open / provisional / closed), closed_by, closed_at, totals, notes, the
-  printed slip's number, and a snapshot of the lines at close.
-- `pos.recon_line`: per end_of_day. The channel is one of: cash per
-  session, card per TID, qr, transfer, wallet_credit (beside the
-  takings), paid_online (beside), booking_web (beside, the website's
-  card/QR money, which is not till money). Each line has expected,
-  actual where it is counted, difference and status.
-- `pos.eod_correction`: append-only. A fact that arrives after its day
-  has closed (a late offline sync, a gateway settle, a refund fallback)
-  is recorded here against the closed day. It shows on that day and
-  needs a manager's acknowledgement. A closed day's figures are never
-  rewritten.
-- `pos.settlement_batch` + `pos.settlement_line`: per TID per day, from
-  the terminal's settle(), plus imported gateway settlement lines.
-- `analytics.fact_cash_daily`: per branch, date and channel, following
-  the landed daily-fact pattern.
+## 2. The existing behaviour, ported as it is
 
-### 2.2 Cash sessions (round 1)
+| Rule | The prototype's behaviour (kept) |
+|---|---|
+| Cash count | One count for the whole branch per day. Every drawer is counted together into one total. This is also Tony's call. |
+| Float | Carried over from the "float left in drawer" at the previous close, or ฿6,000 when there is no earlier close. Shown read-only with where it came from. |
+| Cash income | Counted minus float. The cash line's actual is this figure, so staff never type it. |
+| Lines | Cash; PromptPay / QR; card per terminal (TID); each configured "other" method; e-wallet; bank transfer; party prepayments; credit. Expected comes from recorded sales net of refunds. Staff enter the actual for each line; cash comes from the count. |
+| Tolerance | ฿1 on every line. A line is pending (not entered), ok or off, and the day's verdict is off, pending or ok. |
+| Who closes | Any signed-in staff member who can open End of Day. |
+| Closing | Allowed with lines that are off or pending. Notes are optional ("Explain any discrepancy"). At close the totals are worked out again (the caller's maths is never trusted), and the closer and time are stamped. |
+| Second close | Refused; the screen reloads the locked day. |
+| Closed day | Read-only, exactly as saved. Nothing rewrites it. |
+| Refunds | A refund reduces its original sale, on that sale's day. On a multi-tender order, credit restored comes off the credit line and the rest is split pro rata across the order's cash, card and QR. |
+| Credit | Its own line: credit redeemed minus credit restored. It is included in the day's totals, as the prototype does. |
+| Also on the screen | Vouchers handed out and redeemed (staff counts); float left for tomorrow; "cash to bank tonight" = counted − float left. |
+| Open day | Worked out fresh from the records each time it is opened. Only a closed day is stored. |
 
-A session opens when a cashier takes a drawer at a station, from the
-till header's "Cash" action. The float carries over from the drawer's
-last close, or the default. Only cash attempts at that station count
-toward expected cash: platform-written wallet and paid-online tenders
-never do (countsAsTillTakings, now actually called), and nor does a
-booking-site attempt (station_id null). Paid-outs and safe drops need
-their second person. Closing takes the count, stores expected and
-variance, and is held against the closer. The prototype's
-CashCountCard, AmountInput and EndOfDayTab keep their look and move from
-mock data to the platform. The `pos:cash:*` permissions are enforced on
-the server.
+## 3. Fixed, because the prototype is clearly broken there
 
-### 2.3 The branch End of Day (round 2)
+These are faults in where the figures come from, not changes of rule:
 
-The recon lines are built from payment_attempt, refunds and cash
-movements by business_date, in satang:
-- cash per closed session;
-- card per TID;
-- qr, and transfer;
-- wallet_credit and paid_online beside the takings (the prototype
-  counted credit inside them: fixed);
-- booking_web beside.
+- **Other branches leak in.** The prototype does not filter by branch, so
+  the platform reads only the branch's own records.
+- **Wrong calendar day.** The prototype uses the UTC date, which in
+  Thailand puts 00:00 to 07:00 on the wrong day. The platform uses the
+  branch's business date, which every payment attempt already carries.
+- **Card money is spread by a hash.** The prototype guesses each card
+  sale's terminal from the transaction id (its own comment says production
+  records the real TID). The platform uses the attempt's real TID.
+- **Money with no terminal disappears.** In the prototype, card money with
+  no terminal goes to "NO-TERMINAL" and drops out of the lines. The
+  platform shows it on its own card line.
+- **Nothing is kept.** The prototype holds everything in memory, so a
+  closed day vanishes on reload. The platform persists the closed day.
+- **Money that is not the till's.** Booking-site payments (no station) and
+  the platform-written wallet and paid-online tenders do not exist in the
+  prototype's ledger. They stay out of the till lines (countsAsTillTakings),
+  so the lines match what the prototype would have shown.
 
-Close is refused, with the reason, while:
-- any box of the branch has an undelivered outbox, or an open quarantine
-  or anomaly for this branch's day (the stationLink depth bug is fixed:
-  a Pi's depth comes from its heartbeat);
-- any session of the day is still open;
-- anyone is recorded as inside the park.
+## 4. From SCRUM-215, where the prototype has nothing
 
-The stranded-occupancy list offers an audited manual resolution
-(gate.manual_resolution, with operator and reason), and a manager may
-override with a reason. Closing locks the day and stamps the closer
-(pos:cash:day_close). The End of Day slip prints on the closing
-counter's own series (R-47). Later facts become eod_correction rows.
+- **Paid-out and safe drop.** Recorded against the branch's day, from a
+  "Cash" action on the till header. A paid-out needs an approver and a
+  safe drop needs a witness. Both reduce the cash expected in the one
+  combined count.
+- **Provisional close.** While any box of the branch still holds sales it
+  has not delivered, or has unresolved low clock trust, the day shows as
+  provisional and close is refused with the reason.
+- **Stranded occupancy.** Bands still counted inside the park, and
+  children still checked in, are listed at close. A manual resolution with
+  the operator and a reason (gate.manual_resolution) clears each row.
+  Unresolved rows block the close until a manager overrides with a reason.
+- **End of Day receipt.** Printed at close, on the closing counter's own
+  series.
+- **Audit.** Every close, paid-out, safe drop and settlement run is
+  recorded.
+- **Settlement.** Unchanged from the first plan: terminal settle(), the
+  batch and its lines, awaiting_settlement becoming approved, a CSV per
+  terminal per day, the 2C2P settlement import on a fixture, and the
+  match view.
 
-### 2.4 Settlement (round 3)
+## 5. Known effects of following the prototype
 
-- Terminals: the terminal contract gains settle(). The simulator returns
-  a batch, and the real Digio/GHL protocols are coded to their specs.
-  The batch number and rrn are kept, no longer dropped by the allow-list.
-- Attempts: awaiting_settlement attempts in a settled batch become
-  approved.
-- Export: a CSV per terminal per day with one line per approved card/QR
-  attempt (TID, approval code, invoice, amount).
-- Gateway file: the 2C2P H/D settlement import runs as a job. It reads a
-  fixture now; the real file waits on the sandbox (the invoiceNo column
-  is uncertain, so the column map is a setting). It matches on
-  invoiceNo or tranRef and flags unmatched lines both ways.
-- Screen: a Console /money match view.
+These are flagged here, not changed:
 
-### 2.5 Closing (round 4)
+- A cash refund for a sale from an earlier day comes off that earlier
+  day. If that day is closed, its saved figures stay as they are, so
+  today's drawer counts short by the refund. Staff explain it in Notes.
+- Credit is included in the day's totals. Credit was paid for when the
+  ticket was sold, so the total row counts that money twice. The cash,
+  card and QR lines themselves are unaffected.
+- A fact that reaches the platform after its day closed (for example, a
+  late gateway fallback) does not appear on the closed day. The
+  provisional close keeps the common case, an offline box, from arising.
 
-- seed:demo-day gains the wallet, voucher and refund scenarios.
-- The closing audit walks the whole flow: open session → cash and card
-  sales → paid-out → refund in cash after a sale from the previous day →
-  offline sale arriving after the close → count and variance → day
-  close → correction → settlement → export.
-- Then the staging walkthrough.
+## 6. The data model (migration 0052)
 
-### 2.6 Not this story
+- `pos.end_of_day`: one row per branch and business_date, written at
+  close. It holds the lines snapshot, the count, the float, where the
+  float came from, the float left, voucher counts, notes, totals, closer,
+  time and receipt number. It is unique on (branch, business_date).
+- `pos.cash_movement`: append-only. Kinds paid_out and safe_drop, each
+  with branch, business_date, amount, reason, actor, and approver or
+  witness.
+- `pos.settlement_batch` + `pos.settlement_line` (round 3).
+- No drawer sessions, no refund business_date column, no correction table.
 
-- Analytics summaries and Today > Performance (S2-15b).
-- Party prepay: parties are not on the platform yet, so the channel
-  arrives with the party story.
-- Xero posting (waits on the owner's connection).
+## 7. The rounds
 
-## 3. The rounds
+| Round | Scope |
+|---|---|
+| 1 | Migration 0052. The End of Day service: expected lines per section 2 from payment attempts and refunds by the branch's business date; float carry-over; close with the server re-deriving the figures; second close refused; who may close. The Today > End of Day screens on real data, with the prototype's look and words unchanged. Paid-out and safe drop with the Cash action. Audit. |
+| 2 | Provisional close (box depth, including the Pi heartbeat depth fix, and clock trust); the stranded-occupancy list with manual resolution and override; the End of Day receipt. |
+| 3 | Settlement (as in section 4). |
+| 4 | seed:demo-day scenarios, the closing audit, the staging walkthrough. |
 
-| Round | Scope | Lands |
-|---|---|---|
-| 1 | Migration 0052; cash sessions and movements; expected cash from the ledger; refund business_date and refund_out; count and variance; the till's Cash action; the drawer screens on real data; permissions | first |
-| 2 | Branch End of Day: recon lines; the provisional gate (box depth incl. the stationLink fix, quarantine, open sessions, stranded occupancy); lock and closer; corrections; the End of Day slip | after 1, in parallel with 3 |
-| 3 | Settlement: terminal settle() (simulator + real protocols); batches and lines; awaiting_settlement → approved; CSV export; the 2C2P import job on a fixture; the Console match view | after 1, in parallel with 2 |
-| 4 | Demo-day scenarios, the closing audit, the staging walkthrough | last |
-
-File fences for rounds 2 and 3: round 2 owns the End of Day services,
-routes and screens, ops/station link, occupancy closure and print.
-Round 3 owns the terminal/payments adapters, settlement services and
-routes, jobs entries for imports, and apps/console. Neither touches
-sale.ts beyond round 1.
-
-## 4. Open decisions (the recommended answer holds unless the owner objects)
-
-**OD-CS1: Several drawers, one day.** The requirement's sessions are per
-drawer or station, but its acceptance is per branch and day.
-Recommended: each drawer has its own session, count and variance, held
-against whoever closes that drawer. The branch End of Day rolls up the
-closed sessions plus the non-cash lines, and is closed by a manager.
-
-**OD-CS2: Who closes the day.** The prototype lets any signed-in person
-close. The permission seed gives pos:cash:day_close to managers.
-Recommended: managers only (the permission). Reception can still close
-their own drawer session.
-
-**OD-CS3: Tolerance.** The prototype uses ฿1 for every line.
-Recommended: ฿1 per session, as a branch setting.
-
-**OD-CS4: Refunds land on the day the money leaves.** The prototype
-lands them on the original sale's day. Recommended: the refund's own
-business day, from the drawer that paid it.
-
-**OD-CS5: A closed day is never rewritten.** Late facts become visible
-corrections on the day they belong to, acknowledged by a manager.
-Recommended as written.
-
-**OD-CS6: Wallet credit and online bookings sit beside the takings.**
-The prototype added credit into the expected total. Recommended:
-separate lines that are never counted against the drawer.
-
-## 5. Known hazards (from the seams study; each gets a test)
-
-- Booking-site attempts (station null) leaking into till card/QR totals.
-- countsAsTillTakings having no callers: it must now be the one gate.
-- Refunds having no business_date, and cash slices living in jsonb.
-- Gateway/void fallbacks paying cash later with no session.
-- Offline tenders dated to a closed day.
-- The stationLink depth reading 0 on a Pi.
-- Card attempts with null TID (manual entry) needing their own line.
-- Partial-approval reversals still pending.
-- The box's tookCash rule differs from the cloud's kind lookup.
-- Tendered and change not captured by the till (cash received = amount
-  due today): the count works from amounts, and capturing real tendered
-  cash is listed as a follow-up.
-
-## 6. Prototype bugs not ported
-
-- Branch leak in the expected figures.
-- UTC date instead of business date.
-- Card revenue spread across TIDs by a hash.
-- NO-TERMINAL silently dropping revenue.
-- Credit counted inside takings.
-- Refunds landing on the original sale's date.
-- Close with pending or off lines, by anyone, with no note: an
-  out-of-balance close needs a note.
+Permissions: `pos:cash:day_close` goes to every role that can open End of
+Day, reception included, because the prototype lets any signed-in staff
+member close. `pos:cash:movement` records a paid-out or safe drop.
+`pos:cash:approve` approves or witnesses one.
