@@ -74,8 +74,20 @@ the box's stock refusals verbatim; a sale at a branch with no live place
 records its shortfall; the sizes-seeded audit; GET attention read-only;
 the PO race wording), and the whole-story closing audit. Known bound: a
 late movement dated more than 7 days back leaves older stored days stale
-until rewritten. Next: the stock walkthrough on staging with evidence,
-then SCRUM-213 Deployed and the story SCRUM-211 closes. Queued for
+until rewritten. Round 4 CI green (36954346407); staging live 50bcea4.
+Staging walkthrough (evidence in scratchpad stock-drive/): all eight
+steps PASS - opening count, guard refusals, sale T1-000052 and refund
+T1-R-000004 exactly once, transfer, PO ordered and received in two
+deliveries, reports, offline sales T1-000053/54 with the box refusing an
+oversell and each sale taking stock once; level == sum everywhere. Two
+medium defects keep SCRUM-213 In Progress, fix round running: F1 the
+opening is per branch but counts are per place (the second place's
+opening read as variance and shrinkage); F3 the Alerts screen computes on
+the device instead of reading the platform attention (trend rule never
+shown, suppressed items shown, stale "future releases" text). Plus F2
+(review wording) and F4 (retired item in the strip). Then a repeat
+walkthrough of those parts, evidence cards, Deployed, and SCRUM-211
+closes. Queued for
 round 4: show the box's stock refusals on the till, the no-places
 shortfall, two round-2 notes and one refusal wording.
 
