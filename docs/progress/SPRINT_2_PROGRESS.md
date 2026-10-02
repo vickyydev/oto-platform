@@ -1,5 +1,14 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 2 October 2026 (night, 2) - staging deployed; End of Day round 1 evidence
+
+Staging was still on 35a8ed68 (deploys do not follow main). Deployed all
+five services at 6b5f08f8 (render.mjs deploy all). On staging as Khun Lek
+at Reception Till 1: Today > End of Day reads the day (cash expected
+B360), one whole-branch count with the B6,000 float; a ZZ TEST paid-out of
+B60 approved by Khun Anan took expected cash to B300. Card attached to
+SCRUM-215 (stays In Progress: rounds 2-4 remain).
+
 ## Platform lane checkpoint - 2 October 2026 (night) - SCRUM-494 check-in and phone till landed
 
 SCRUM-494 entries 5, 6, 7 (workflows wf_f85be821-c40, wf_3654455e-4e4,

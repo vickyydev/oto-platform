@@ -27,7 +27,7 @@ _Updated: 2 October 2026, night (Bangkok)._
 | SCRUM-494 (register entries 1-9) | Entries 5, 6, 7 on main (b165a118). Entries 8-9 (food counters) and then 4 (gate access) and 1-3 (tier, restock) were being built in the local session |
 | SCRUM-495, SCRUM-496 | To do, in that order, after End of Day rounds 2-4 |
 | SCRUM-497 | Owner confirmations; each item keeps the design's behaviour until answered |
-| Staging | Live at 35a8ed68. Nothing landed today is deployed yet: deploy before the walkthroughs (section 6) |
+| Staging | Live at 6b5f08f8 (End of Day round 1 and SCRUM-494 entries 5-7 included; migration 0052 applied). Round 1 evidence on SCRUM-215 (one ZZ TEST paid-out of B60 recorded on 2 Oct). Deploy again after each landing before its walkthrough |
 
 **Check for unlanded work first.** If the local session stopped mid-build,
 its edits were pushed to a branch named `wip/<topic>` (`git branch -r | grep
