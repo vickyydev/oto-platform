@@ -1,14 +1,12 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-10-02, late Bangkok. Platform lane: S2-14 (SCRUM-211,
-wallets and stock) is Deployed. S2-15a (SCRUM-215, End of Day) is In
-Progress: re-planned to the owner's 2 October ruling (one combined cash
-count for the day, the existing End of Day behaviour otherwise;
-docs/progress/plans/cash/PLAN.md); round 1 is being built. PRIORITY: the
-moment S2-15a round 1 lands, SCRUM-494 (band details and services
-carried through, part of SCRUM-493); then S2-15a rounds 2-4; then
-SCRUM-495 and SCRUM-496 (with SCRUM-497's confirmed details) before any
-other story; then S2-15b and the agreed order. The newest checkpoint in SPRINT_2_PROGRESS.md carries the detail._
+_Last updated: 2026-10-02, late night Bangkok (hand-over point from the local
+session). Platform lane: main and staging at 9a14af81, CI green, migrations
+through 0054. SCRUM-494 (all nine till-consistency items) is in Testing,
+with its staging evidence half done. S2-15a End of Day: round 1 is on
+staging; round 2 is in flight on wip/eod-round-2-inflight. A hosted
+(cloud) session resumes from docs/handover/CLOUD_HANDOVER.md, which gives
+the order of work (section 3) and the work in flight (section 10)._
 
 
 ## Active OTO App lane - 30 September 2026

@@ -17,34 +17,42 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-_Updated: 2 October 2026, night (Bangkok)._
+_Updated: 2 October 2026, late night (Bangkok). This is the hand-over point
+from the local session._
 
 | Item | State |
 |---|---|
+| Main | 9a14af81, CI green. Migrations through 0054 |
+| Staging | All five platform services live at 9a14af81 (migrations 0053 and 0054 applied) |
 | S2-14 wallets and stock (SCRUM-211) | Deployed |
-| S2-15a End of Day (SCRUM-215) | Round 1 on main (320c396d, test fix e239454d). Rounds 2-4 to do. Plan: `docs/progress/plans/cash/PLAN.md` |
-| SCRUM-493 till consistency | In Progress. Register: `docs/progress/plans/consistency/REGISTER.md` |
-| SCRUM-494 (register entries 1-9) | All nine on main: 5-7 (b165a118), 4 gate access (4fc79674, migration 0053), 1-3 and 8-9 (this landing, migration 0054). Next: deploy staging and take the evidence for all nine, then Deployed |
-| SCRUM-495, SCRUM-496, SCRUM-498 | To do, in that order, after End of Day rounds 2-4. SCRUM-498: food-counter band details through the counter box when the internet is down (High) |
-| SCRUM-497 | Owner confirmations; each item keeps the design's behaviour until answered |
-| Staging | Live at 6b5f08f8 (End of Day round 1 and SCRUM-494 entries 5-7 included; migration 0052 applied). Round 1 evidence on SCRUM-215 (one ZZ TEST paid-out of B60 recorded on 2 Oct). Deploy again after each landing before its walkthrough |
+| S2-15a End of Day (SCRUM-215, In Progress) | Round 1 on main and on staging, screenshot on the ticket. **Round 2 in flight**: partial build on `wip/eod-round-2-inflight`, brief in `docs/progress/plans/cash/ROUND_2_BRIEF.md`. Rounds 3 (settlement) and 4 (demo-day, closing walkthrough) to do |
+| SCRUM-493 till consistency (In Progress) | Register: `docs/progress/plans/consistency/REGISTER.md` |
+| SCRUM-494 (Testing) | All nine register entries on main and on staging. **Staging evidence in flight** (section 10): items 1 (no-expiry half) and 2 captured; items 3-9 to capture. Then attach, comment and move to Deployed |
+| SCRUM-495, SCRUM-496, SCRUM-498 (To Do) | In that order, after End of Day rounds 2-4. SCRUM-498: food-counter band details through the counter box when the internet is down (High) |
+| SCRUM-497 (To Do) | Details for the owner to confirm; each keeps the design's behaviour until answered |
+| SCRUM-488 (To Do) | Owner's End of Day ruling (applied) plus four round-1 points to confirm |
 
-**Check for unlanded work first.** If the local session stopped mid-build,
-its edits were pushed to a branch named `wip/<topic>` (`git branch -r | grep
-wip/`). Compare such a branch with main and the register entry before
-deciding whether to finish it or rebuild from the entry.
+**Unlanded work lives on `wip/` branches.** `wip/eod-round-2-inflight` is
+the only current one. `wip/scrum-494-inflight` and
+`wip/cash-round-1-per-drawer` are superseded: everything they held is on
+main or was withdrawn. Ignore them.
 
 ## 3. Order of work (owner priority, 2 October)
 
-1. SCRUM-494: all nine entries are on main. Deploy staging and take the
-   staging evidence for all nine entries, then SCRUM-494 to Deployed.
-2. S2-15a End of Day rounds 2, 3, 4 (plan section 7): provisional close and
-   stranded occupancy and the End of Day receipt; settlement; demo-day and
-   the staging walkthrough. SCRUM-215 then SCRUM-214 to Deployed.
-3. SCRUM-495, then SCRUM-496 (register entries in their sections), then
-   SCRUM-498, applying SCRUM-497 answers as each runs.
-4. Only then S2-15b and the rest of `docs/progress/SPRINT_2_PLAN.md`'s
-   execution order.
+1. SCRUM-494 staging evidence for all nine items (section 10), then
+   SCRUM-494 to Deployed. If anything turns out BROKEN on staging, fix it
+   first. Then SCRUM-493's first part is done.
+2. S2-15a End of Day:
+   - round 2: finish from `wip/eod-round-2-inflight` against
+     `ROUND_2_BRIEF.md`, review, land, then deploy and screenshot;
+   - round 3: settlement, as in plan section 4;
+   - round 4: demo-day scenarios and the closing walkthrough.
+
+   Then SCRUM-215 and SCRUM-214 go to Deployed.
+3. SCRUM-495, then SCRUM-496 (the register entries in their sections),
+   then SCRUM-498, applying SCRUM-497 answers as each runs.
+4. Only then S2-15b (SCRUM-216) and the rest of
+   `docs/progress/SPRINT_2_PLAN.md`'s execution order.
 
 ## 4. How behaviour is decided
 
@@ -167,3 +175,57 @@ deciding whether to finish it or rebuild from the entry.
 - When a gate hands something over, act on it at once: put it in the next
   round's brief, or file a ticket.
 - `gh run list` truncates titles, so always match CI by commit SHA.
+
+## 10. Work in flight at the hand-over
+
+### SCRUM-494 staging evidence (status Testing)
+
+Drive each item on staging, as a person would:
+- sign in with `scripts/agent/evidence.mjs` (`posSignIn` as RECEPTION or
+  MANAGER);
+- at "Pick your station", choose **Reception Till 1** (never FWBooth1);
+- prefix every record you create with "ZZ TEST" and pay with cash only.
+
+Then group the screenshots into at most five evidence cards, built with
+`card()`, in `docs/qa/jira-comments/attachments/SCRUM-494/`:
+- tier (items 1-2);
+- restock (item 3);
+- gate (item 4);
+- check-in (items 5-7);
+- food (items 8-9).
+
+Open every image before using it. Attach the cards, comment in plain
+words, then `walkTo('SCRUM-494', 'Deployed')`. The walk refuses without
+an image.
+
+| # | What to show | State at hand-over |
+|---|---|---|
+| 1 | A tier verified with no document expiry; an expired document keeps the tier with "Document expired - re-verify" | No-expiry half captured (ZZ TEST Tier Thai, +66894940001, verified Thai by Som with no expiry). Expired half is blocked on staging: nothing can record a past expiry there, by design. Show it as a test-run card from `apps/api/test/s494-money*.test.ts` and `apps/pos/test/s494-money-gate.test.ts` |
+| 2 | A verified member sold at Tourist when staff pick Tourist | WORKS: receipt T1-000055, ฿1,040 cash, the member keeps Thai |
+| 3 | A refund covering the rest of a sale restocks once | Being captured at hand-over; redo it |
+| 4 | Gate access off on a package: its adult bands carry `gate_access=false` | Staging has no gate screen. Show the package setting plus a read-back (`render.mjs job`) of the bands' flag |
+| 5 | Phone till (390x844) redeems a ZZ TEST booking once, with real band codes | To do |
+| 6 | Drop-Off switched to Nanny on the cart: the board shows Nanny | To do. A nanny must be on shift |
+| 7 | Phone-size check-in and release show on the desktop board | To do |
+| 8 | At F&B, a child's band shows the allergy banner; a no-food child shows "Parent did not authorize food orders for this child."; the kitchen ticket carries that child's allergy line | To do |
+| 9 | A prepaid meal is served once, a second attempt is refused, and release refunds only unserved meals | To do |
+
+ZZ TEST data created so far: member ZZ TEST Tier Thai; sale T1-000055
+(bands T1-N69MZ5, T1-ZA4CGQ); one paid-out of ฿60 on 2 Oct (SCRUM-215
+round 1 evidence).
+
+### End of Day round 2 (SCRUM-215)
+
+See `docs/progress/plans/cash/ROUND_2_BRIEF.md`, including its "State at
+hand-over".
+
+### Questions already raised (do not re-ask; wait for the answers)
+
+- SCRUM-497:
+  - the 22 register details, plus details added on 2 October: Leave as
+    booked; Mark Arrived; the gate reader's wording; a no-gate adult
+    counted under kids; refusal on exit; the re-verify wording; the
+    prepaid hold wording; refunded prepaid meals; prepaid lines on the
+    receipt.
+- SCRUM-488: the four End of Day round-1 points.
+- SCRUM-498: the counter-box items (1)-(5).

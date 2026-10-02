@@ -1,5 +1,20 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 2 October 2026 (late night) - HAND-OVER POINT
+
+The local session winds up here. Resume from docs/handover/CLOUD_HANDOVER.md
+(sections 2, 3 and 10).
+- main and staging: 9a14af81, CI green, migrations through 0054.
+- SCRUM-494: Testing. All nine items on main and on staging. Evidence half
+  done: item 1 no-expiry WORKS, and its expired half shown as a test-run card
+  (no way to record a past expiry on staging); item 2 WORKS (T1-000055);
+  items 3-9 to capture.
+- SCRUM-215: round 1 on staging; round 2 partial on
+  wip/eod-round-2-inflight (migration 0055, provisional, stranded, receipt
+  server side), brief in docs/progress/plans/cash/ROUND_2_BRIEF.md; rounds
+  3-4 to do.
+- Then SCRUM-495, SCRUM-496, SCRUM-498; then S2-15b.
+
 ## Platform lane checkpoint - 2 October 2026 (night, 4) - SCRUM-494 all nine entries on main
 
 Entries 1-3 (member tier: expiry optional everywhere incl. the box offline

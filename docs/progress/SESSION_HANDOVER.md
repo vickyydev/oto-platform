@@ -1,5 +1,23 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT — 2 October 2026, late night — local session hands over
+
+Main and staging are at 9a14af81, CI green. Landed today:
+- End of Day round 1 (one combined count);
+- SCRUM-494, all nine till-consistency items: phone till redemption,
+  Drop-Off/Nanny to check-in, phone-size check-in, gate access (0053),
+  allergy and prepaid meals at the food counters, tier expiry and pick
+  (0054), and refund restock;
+- CI stability fixes;
+- the hosted-session handover kit.
+
+In flight:
+- SCRUM-494 staging evidence (2 of 9 items captured);
+- End of Day round 2 (wip/eod-round-2-inflight).
+
+Everything needed to continue is in docs/handover/CLOUD_HANDOVER.md
+(sections 2, 3 and 10) and docs/progress/plans/cash/ROUND_2_BRIEF.md.
+
 ## STOP POINT — 2 October 2026, late — S2-14 Deployed; S2-15a in progress; SCRUM-494 after its round 1
 
 **Done:** S2-14 wallets and stock (SCRUM-211) Deployed with staging evidence
