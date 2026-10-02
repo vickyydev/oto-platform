@@ -4,6 +4,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { ReconSummary } from '@/components/eod/ReconSummary';
 import { AmountInput } from '@/components/eod/AmountInput';
 import { CashMovementList } from '@/components/eod/CashMovementList';
+import { EodReceiptCard } from '@/components/eod/EodReceiptCard';
+import { ProvisionalBanner } from '@/components/eod/ProvisionalBanner';
+import { StrandedList } from '@/components/eod/StrandedList';
 import { useEndOfDay } from '@/components/eod/useEndOfDay';
 import {
   edcTerminalsOf,
@@ -31,10 +34,30 @@ import { cn } from '@/lib/utils';
  * expected side, the carried float and the lock from `GET /branches/:id/end-of-day`,
  * Close Day through `POST …/end-of-day/close`, entries recomputed in satang with the
  * platform's own `recomputeEndOfDay`.
+ *
+ * S2-15a round 2 — the same additions as the iPad tab, stacked for one hand:
+ * the provisional banner, who is still counted inside with a resolve per row
+ * and the manager's override, and a closed day's receipt with Reprint.
  */
 export function MobileEndOfDayTab({ date, branch }: { date: string; branch: string }) {
-  const { operator } = useOperator();
-  const { record: apiRecord, setRecord, error, closeError, closing, close } = useEndOfDay(date, branch);
+  const { operator, can } = useOperator();
+  const {
+    record: apiRecord,
+    setRecord,
+    error,
+    closeError,
+    closing,
+    close,
+    overrideReason,
+    setOverrideReason,
+    resolving,
+    resolveError,
+    resolve,
+    recheck,
+    reprinting,
+    reprintError,
+    reprint,
+  } = useEndOfDay(date, branch);
 
   if (!apiRecord) {
     return (
@@ -71,6 +94,11 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
   const banked =
     counted !== null && record.floatLeftTHB !== null ? counted - record.floatLeftTHB : null;
 
+  const provisional = readOnly ? [] : (apiRecord.provisional ?? []);
+  const stranded = readOnly ? [] : (apiRecord.stranded ?? []);
+  const canOverride = can('pos:cash:approve');
+  const closeBlocked = provisional.length > 0 || (stranded.length > 0 && !(canOverride && overrideReason.trim()));
+
   return (
     <div className="space-y-3 pb-4">
       {/* Locked banner */}
@@ -86,6 +114,18 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
           </div>
         </Card>
       )}
+
+      {/* S2-15a round 2 — the receipt of a closed day; the provisional banner of an open one */}
+      {readOnly && (
+        <EodReceiptCard
+          compact
+          receipt={apiRecord.receipt ?? null}
+          reprinting={reprinting}
+          error={reprintError}
+          onReprint={() => void reprint()}
+        />
+      )}
+      <ProvisionalBanner compact boxes={provisional} onRecheck={() => void recheck()} />
 
       {/* Summary verdict */}
       <ReconSummary record={record} />
@@ -302,6 +342,20 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
         </div>
       </Card>
 
+      {/* S2-15a round 2 — who is still counted inside, resolved here; the override on a closed day */}
+      <StrandedList
+        compact
+        rows={stranded}
+        override={apiRecord.override ?? null}
+        readOnly={readOnly}
+        resolving={resolving}
+        error={resolveError}
+        canOverride={canOverride}
+        overrideReason={overrideReason}
+        onOverrideReason={setOverrideReason}
+        onResolve={(row, reason) => void resolve(row, reason)}
+      />
+
       {/* Close Day button */}
       {!readOnly && closeError && (
         <p role="alert" className="text-xs text-amber-600">
@@ -313,7 +367,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
           size="lg"
           className="w-full h-14 gap-2 text-base"
           onClick={onClose}
-          disabled={!operator || closing}
+          disabled={!operator || closing || closeBlocked}
         >
           <Lock className="w-4 h-4" />
           Close Day

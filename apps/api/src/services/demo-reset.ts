@@ -9,6 +9,7 @@ import {
   cashMovement,
   child,
   endOfDay,
+  occupancyResolution,
   member,
   memberAlias,
   memberTierVerification,
@@ -104,6 +105,8 @@ const FACT_ENTITY_TYPES = [
   // S2-15a: a closed day and the paid-outs and safe drops of a day of play.
   'end_of_day',
   'cash_movement',
+  // S2-15a round 2: a manual resolution of somebody still counted inside at close.
+  'occupancy_resolution',
 ];
 
 /** Rows removed per table, for the response and the audit entry. */
@@ -211,6 +214,7 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   await tx.execute(sql`select set_config('oto.cash_ledger_purge', 'on', true)`);
   counts.end_of_day = (await tx.delete(endOfDay).returning({ id: endOfDay.id })).length;
   counts.cash_movement = (await tx.delete(cashMovement).returning({ id: cashMovement.id })).length;
+  counts.occupancy_resolution = (await tx.delete(occupancyResolution).returning({ id: occupancyResolution.id })).length;
   await tx.execute(sql`select set_config('oto.cash_ledger_purge', 'off', true)`);
 
   counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;

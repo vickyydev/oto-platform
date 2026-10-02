@@ -1,16 +1,19 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
 import {
   account,
+  box,
   branch,
   cashMovement,
   device,
   endOfDay,
+  occupancyResolution,
   paymentAttempt,
   refund,
   role,
   roleAssignment,
   rolePermission,
   sale,
+  station,
 } from '@oto/db';
 import {
   DEFAULT_FLOAT,
@@ -21,21 +24,34 @@ import {
   newId,
   parseDayStart,
   recomputeEndOfDay,
+  wallClockMinutesInTz,
   type CashMovementBody,
   type CashMovementView,
   type CashPerson,
   type EndOfDayCloseBody,
   type EndOfDayRecord,
+  type EndOfDayReprintBody,
   type EodLine,
+  type EodOverride,
+  type EodProvisionalBox,
+  type EodReceipt,
+  type EodStrandedRow,
   type EodTerminal,
   type Permission,
   type RefundAllocationEntry,
+  type StrandedResolveAnswer,
+  type StrandedResolveBody,
 } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { holdsGrantAt } from './access-control';
+import { strandedOf } from './occupancy';
 import { hasPermission, type EffectivePermission } from './permissions';
 import { accountNames } from './refund-slices';
+import { allocateReceipt } from './sale';
+import { endOfDayReceiptJobs, queueEndOfDayReceipt } from './sale-printing';
+import { boxBacklogOf } from './station-session';
+import { boxOutboxState } from './sync';
 import type { Exec, Tx } from './tx';
 import { creditRedeemedOn } from './wallet';
 
@@ -68,6 +84,19 @@ import { creditRedeemedOn } from './wallet';
  * with no TID on a line of its own rather than dropped; money that is not the
  * till's — the booking site's (no station), the platform-written credit and
  * paid-online tenders — kept off the till lines by `countsAsTillTakings`.
+ *
+ * Round 2 (SCRUM-215, plan §4), where the prototype has nothing:
+ *
+ *   provisional    while any box of the branch holds facts it has not
+ *                  delivered, or its clock is out and unmeasured, the open day
+ *                  lists it and Close Day is refused with its name;
+ *   stranded       who is still counted inside is listed at close; each row is
+ *                  cleared by a manual resolution (`gate.manual_resolution`),
+ *                  and while any is left only a holder of `pos:cash:approve`
+ *                  closes, with a reason (`end_of_day.override`), kept on the
+ *                  closed day;
+ *   receipt        printed at close on the closing counter's printer, numbered
+ *                  on its own `end_of_day` series; reprinted from the closed day.
  */
 
 /** The prototype's sentinel for card money with no terminal (`pickTerminalTid`). */
@@ -350,9 +379,50 @@ async function openRecordOf(db: Exec, clock: BranchClock, date: string): Promise
   });
 }
 
+/** The closed day's receipt: its number, its counter and every print of it. */
+async function receiptOf(db: Exec, row: typeof endOfDay.$inferSelect): Promise<EodReceipt> {
+  const [counter] = row.receiptStationId
+    ? await db.select({ name: station.name, boxId: station.boxId }).from(station).where(eq(station.id, row.receiptStationId)).limit(1)
+    : [];
+  const jobs = await endOfDayReceiptJobs(db, row.id);
+  const last = jobs[jobs.length - 1];
+  const note = !row.receiptNumber
+    ? 'End of Day receipt not printed — the day was not closed at a counter'
+    : !last
+      ? counter && !counter.boxId
+        ? `End of Day receipt not printed — ${counter.name} is not attached to a box`
+        : 'The End of Day receipt could not be queued — reprint it from the closed day'
+      : last.status === 'skipped' || last.status === 'failed'
+        ? `End of Day receipt not printed — ${last.errorMessage ?? 'the printer did not take it'}`
+        : null;
+  return {
+    number: row.receiptNumber,
+    stationId: row.receiptStationId,
+    stationName: counter?.name ?? null,
+    jobs: jobs.map((j) => ({
+      id: j.id,
+      status: j.status,
+      reprint: j.reprintReason !== null || j.reprintOf !== null,
+      deviceLabel: j.deviceLabel,
+      errorMessage: j.errorMessage,
+      queuedAt: j.queuedAt,
+    })),
+    note,
+  };
+}
+
 /** A CLOSED day, exactly as it was saved. */
 async function closedRecordOf(db: Exec, row: typeof endOfDay.$inferSelect): Promise<EndOfDayRecord> {
-  const nameOf = await accountNames(db, [row.closedByAccountId]);
+  const nameOf = await accountNames(db, [row.closedByAccountId, row.overrideByAccountId].filter((id): id is string => !!id));
+  const override: EodOverride | null =
+    row.overrideByAccountId && row.overrideReason
+      ? {
+          by: { accountId: row.overrideByAccountId, name: nameOf(row.overrideByAccountId) },
+          reason: row.overrideReason,
+          at: row.closedAt.toISOString(),
+          stranded: row.overrideStranded ?? [],
+        }
+      : null;
   return {
     id: row.id,
     branchId: row.branchId,
@@ -375,6 +445,8 @@ async function closedRecordOf(db: Exec, row: typeof endOfDay.$inferSelect): Prom
     closedAt: row.closedAt.toISOString(),
     terminals: await terminalsOf(db, row.branchId),
     cashMovements: await movementsOf(db, row.branchId, row.businessDate),
+    override,
+    receipt: await receiptOf(db, row),
   };
 }
 
@@ -387,11 +459,262 @@ async function closedRow(db: Exec, branchId: string, date: string) {
   return row ?? null;
 }
 
-/** One branch-day: the saved record when closed, a fresh open one otherwise. */
-export async function getEndOfDay(db: Exec, operatorId: string, branchId: string, date: string): Promise<EndOfDayRecord> {
+/**
+ * One branch-day: the saved record when closed, a fresh open one otherwise,
+ * with what keeps it provisional and who is still counted inside.
+ */
+export async function getEndOfDay(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+  date: string,
+  now: Date = new Date(),
+): Promise<EndOfDayRecord> {
   const clock = await branchClockFor(db, operatorId, branchId);
   const saved = await closedRow(db, branchId, date);
-  return saved ? closedRecordOf(db, saved) : openRecordOf(db, clock, date);
+  if (saved) return closedRecordOf(db, saved);
+  const open = await openRecordOf(db, clock, date);
+  return {
+    ...open,
+    provisional: await provisionalBoxesOf(db, clock, now),
+    stranded: (await strandedOf(db, { operatorId, branchId, date, now })).rows,
+  };
+}
+
+// --- Round 2: the provisional close --------------------------------------------
+
+/**
+ * The tolerance the sync path holds a box's clock to (`CLOCK_TOLERANCE_MS` in
+ * services/sync.ts and services/ops.ts): past it, what the box stamps is not
+ * trusted to date anything.
+ */
+const CLOCK_TOLERANCE_MS = 60_000;
+
+function hhmmAt(at: Date, timezone: string): string {
+  const minutes = wallClockMinutesInTz(at, timezone);
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/**
+ * Every box of the branch that keeps the day provisional: one that holds
+ * facts it has not delivered (its outbox, or a Pi's heartbeat depth), or one
+ * whose last report has its clock out of tolerance and not measured by the
+ * box, so what it stamps may land on the wrong day. A box taken out of
+ * service, never registered or archived is expected to be quiet and is not
+ * listed.
+ */
+export async function provisionalBoxesOf(db: Exec, clock: BranchClock, now: Date = new Date()): Promise<EodProvisionalBox[]> {
+  const boxes = await db
+    .select({ id: box.id, name: box.name, role: box.role, lastStatus: box.lastStatus })
+    .from(box)
+    .where(and(eq(box.branchId, clock.id), isNull(box.archivedAt), ne(box.status, 'disabled'), isNotNull(box.registeredAt)))
+    .orderBy(asc(box.name), asc(box.id));
+  const out: EodProvisionalBox[] = [];
+  for (const b of boxes) {
+    const backlog = boxBacklogOf(b.role, await boxOutboxState(db, b.id), b.lastStatus);
+    if (backlog.depth > 0) {
+      const since = backlog.since && backlog.since.getTime() <= now.getTime() ? backlog.since : null;
+      out.push({
+        boxId: b.id,
+        name: b.name,
+        reason: 'outbox',
+        waiting: backlog.depth,
+        since: since?.toISOString() ?? null,
+        message: `${b.name} has ${backlog.depth} record${backlog.depth === 1 ? '' : 's'} it has not sent yet${since ? `, waiting since ${hhmmAt(since, clock.timezone)}` : ''}.`,
+      });
+    }
+    const status = b.lastStatus && typeof b.lastStatus === 'object' ? (b.lastStatus as Record<string, unknown>) : null;
+    const offset = typeof status?.clockOffsetMs === 'number' ? status.clockOffsetMs : null;
+    if (offset !== null && Math.abs(offset) > CLOCK_TOLERANCE_MS && status?.clockMeasuredBy !== 'box') {
+      const readAt = typeof status?.clockMeasuredAt === 'string' ? status.clockMeasuredAt : typeof status?.receivedAt === 'string' ? status.receivedAt : null;
+      const minutes = Math.max(1, Math.round(Math.abs(offset) / 60_000));
+      out.push({
+        boxId: b.id,
+        name: b.name,
+        reason: 'clock',
+        waiting: null,
+        since: readAt,
+        message: `${b.name}'s clock is ${minutes} minute${minutes === 1 ? '' : 's'} ${offset > 0 ? 'ahead' : 'behind'} and it has not corrected it, so what it recorded may be on the wrong day.`,
+      });
+    }
+  }
+  return out;
+}
+
+const dayProvisional = (boxes: readonly EodProvisionalBox[]) =>
+  new AppError(
+    409,
+    'DAY_PROVISIONAL',
+    `The day is still provisional — ${boxes.map((b) => b.message).join(' ')} Close Day once every box has caught up.`,
+  );
+
+// --- Round 2: stranded occupancy -----------------------------------------------
+
+const strandedRefusal = (rows: readonly EodStrandedRow[]) =>
+  new AppError(
+    409,
+    'STRANDED_OCCUPANCY',
+    `${rows.length} ${rows.length === 1 ? 'is' : 'are'} still counted inside the park — resolve each one, or a manager closes the day with a reason.`,
+  );
+
+/**
+ * Clear one row still counted inside: left without scanning, band lost, or a
+ * gate fault, recorded with who did it. From `resolved_at` on the row is off
+ * the count; the gate's journal and the check-in are untouched. Refused once
+ * the day is closed, and for a row that is no longer counted inside.
+ */
+export async function resolveStranded(
+  tx: Tx,
+  actor: CashActor,
+  branchId: string,
+  input: StrandedResolveBody,
+  now: Date = new Date(),
+): Promise<StrandedResolveAnswer> {
+  const clock = await branchClockFor(tx, actor.operatorId, branchId);
+  if (input.date > currentBusinessDate(clock, now)) throw errors.badRequest('That day has not started yet.');
+  const actionId = input.actionId ?? newId();
+  const listNow = async () => (await strandedOf(tx, { operatorId: actor.operatorId, branchId, date: input.date, now })).rows;
+
+  // The press is the key: a retry of the same press answers what it recorded.
+  const [already] = await tx
+    .select()
+    .from(occupancyResolution)
+    .where(and(eq(occupancyResolution.operatorId, actor.operatorId), eq(occupancyResolution.actionId, actionId)))
+    .limit(1);
+  if (already) {
+    const subject = already.kind === 'band' ? already.bandId : already.checkinId;
+    if (already.branchId !== branchId || already.kind !== input.kind || subject !== input.subjectId) {
+      throw errors.conflict('ACTION_ID_REUSED', 'That press already resolved somebody else.');
+    }
+    return { resolutionId: already.id, replayed: true, stranded: await listNow() };
+  }
+
+  await lockDay(tx, branchId, input.date);
+  if (await closedRow(tx, branchId, input.date)) throw dayClosed();
+  const { rows, at } = await strandedOf(tx, { operatorId: actor.operatorId, branchId, date: input.date, now });
+  const target = rows.find((r) => r.kind === input.kind && r.subjectId === input.subjectId);
+  if (!target) {
+    throw errors.conflict(
+      'NOT_STRANDED',
+      input.kind === 'band' ? 'That band is no longer counted inside.' : 'That child is no longer counted as checked in.',
+    );
+  }
+  const note = input.note?.trim() ? input.note.trim() : null;
+  const resolutionId = newId();
+  await tx.insert(occupancyResolution).values({
+    id: resolutionId,
+    operatorId: actor.operatorId,
+    branchId,
+    businessDate: input.date,
+    kind: input.kind,
+    bandId: input.kind === 'band' ? input.subjectId : null,
+    checkinId: input.kind === 'checkin' ? input.subjectId : null,
+    reason: input.reason,
+    note,
+    resolvedByAccountId: actor.accountId,
+    resolvedAt: at,
+    actionId,
+    createdAt: now,
+  });
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId,
+    action: 'gate.manual_resolution',
+    entityType: 'occupancy_resolution',
+    entityId: resolutionId,
+    actionId,
+    requestId: actor.requestId,
+    before: { businessDate: input.date, stranded: target },
+    after: {
+      businessDate: input.date,
+      kind: input.kind,
+      subjectId: input.subjectId,
+      reason: input.reason,
+      note,
+      resolvedAt: at.toISOString(),
+    },
+  });
+  return { resolutionId, replayed: false, stranded: await listNow() };
+}
+
+// --- Round 2: the closing counter and the receipt -------------------------------
+
+/** A counter of this branch, inside the caller's operator; null when none is named. */
+async function counterAt(db: Exec, operatorId: string, branchId: string, stationId: string | null, strict: boolean) {
+  if (!stationId) return null;
+  const [row] = await db
+    .select()
+    .from(station)
+    .where(and(eq(station.id, stationId), eq(station.operatorId, operatorId), isNull(station.archivedAt)))
+    .limit(1);
+  if (!row || row.branchId !== branchId) {
+    if (strict) throw new AppError(404, 'STATION_NOT_FOUND', 'No such counter at this branch.');
+    return null;
+  }
+  return row;
+}
+
+/**
+ * Print the closed day's receipt again, at the asking counter (or the one that
+ * closed it). A copy names the original job and carries the figures exactly as
+ * they were locked.
+ */
+export async function reprintEndOfDayReceipt(
+  tx: Tx,
+  actor: CashActor,
+  branchId: string,
+  input: EndOfDayReprintBody,
+  now: Date = new Date(),
+): Promise<EndOfDayRecord> {
+  await branchClockFor(tx, actor.operatorId, branchId);
+  const row = await closedRow(tx, branchId, input.date);
+  if (!row) {
+    throw errors.conflict('DAY_NOT_CLOSED', 'This day is not closed yet — its End of Day receipt prints when it closes.');
+  }
+  const counter =
+    (await counterAt(tx, actor.operatorId, branchId, input.stationId ?? null, true)) ??
+    (await counterAt(tx, actor.operatorId, branchId, actor.stationId ?? null, false)) ??
+    (await counterAt(tx, actor.operatorId, branchId, row.receiptStationId, false));
+  if (!counter) throw errors.conflict('NO_COUNTER', 'Reprint from a counter — this device is not at one.');
+  if (!counter.boxId) {
+    throw errors.conflict('STATION_HAS_NO_BOX', `${counter.name} is not attached to a box, so nothing on it can print.`);
+  }
+  const reason = input.reason?.trim() || 'Reprint from the closed day';
+  const actionId = newId();
+  const printed = await queueEndOfDayReceipt(tx, {
+    operatorId: actor.operatorId,
+    branchId,
+    endOfDayId: row.id,
+    stationRow: counter,
+    actorAccountId: actor.accountId,
+    actionId,
+    requestId: actor.requestId,
+    now,
+    reprintReason: reason,
+  });
+  if (!printed.job) throw errors.conflict('RECEIPT_NOT_QUEUED', printed.note ?? 'The End of Day receipt could not be queued.');
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId,
+    action: 'print_job.reprint',
+    entityType: 'print_job',
+    entityId: printed.job.id,
+    actionId,
+    requestId: actor.requestId,
+    after: {
+      reprintOf: printed.job.reprintOf,
+      reason,
+      kind: printed.job.kind,
+      endOfDayId: row.id,
+      businessDate: row.businessDate,
+      subjectType: 'end_of_day',
+      subjectId: row.id,
+      status: printed.job.status,
+    },
+  });
+  return closedRecordOf(tx, row);
 }
 
 // --- Writing -------------------------------------------------------------------
@@ -400,6 +723,10 @@ export interface CashActor {
   accountId: string;
   operatorId: string;
   requestId?: string;
+  /** The counter the session is at, when it is at one. */
+  stationId?: string | null;
+  /** Holds `pos:cash:approve` at the branch: may close over rows still counted inside. */
+  canApprove?: boolean;
 }
 
 /**
@@ -417,7 +744,10 @@ export const dayClosed = () =>
 /**
  * Close Day (`closeEndOfDay`): rebuild the expected side here, put staff's
  * entries on it, recompute, stamp who and when, store it, audit it — one
- * transaction. Allowed with lines off or pending and with no notes.
+ * transaction. Allowed with lines off or pending and with no notes. Refused
+ * while the day is provisional, and while anybody is still counted inside
+ * unless a holder of `pos:cash:approve` closes with a reason. The receipt is
+ * numbered on the closing counter's series and queued on its printer.
  */
 export async function closeEndOfDay(
   tx: Tx,
@@ -432,6 +762,31 @@ export async function closeEndOfDay(
   }
   await lockDay(tx, branchId, input.date);
   if (await closedRow(tx, branchId, input.date)) throw dayClosed();
+
+  const provisional = await provisionalBoxesOf(tx, clock, now);
+  if (provisional.length > 0) throw dayProvisional(provisional);
+  const { rows: stranded } = await strandedOf(tx, { operatorId: actor.operatorId, branchId, date: input.date, now });
+  const overrideReason = stranded.length > 0 ? (input.override?.reason?.trim() ?? '') : '';
+  if (stranded.length > 0) {
+    if (!overrideReason) throw strandedRefusal(stranded);
+    if (!actor.canApprove) {
+      throw new AppError(
+        403,
+        'OVERRIDE_NOT_ALLOWED',
+        'Only a manager can close the day with people still counted inside — resolve each one, or ask a manager.',
+      );
+    }
+  }
+  const counter =
+    (await counterAt(tx, actor.operatorId, branchId, input.stationId ?? null, true)) ??
+    (await counterAt(tx, actor.operatorId, branchId, actor.stationId ?? null, false));
+  const receipt = counter?.codePrefix
+    ? await allocateReceipt(
+        tx,
+        { operatorId: actor.operatorId, branchId, stationId: counter.id, series: `${counter.codePrefix}-EOD` },
+        'end_of_day',
+      )
+    : null;
 
   const open = await openRecordOf(tx, clock, input.date);
   const filled = applyEndOfDayEntries(open, {
@@ -462,6 +817,11 @@ export async function closeEndOfDay(
       totalDifferenceSatang: filled.totalDifferenceSatang,
       closedByAccountId: actor.accountId,
       closedAt: now,
+      overrideByAccountId: overrideReason ? actor.accountId : null,
+      overrideReason: overrideReason || null,
+      overrideStranded: overrideReason ? stranded : null,
+      receiptNumber: receipt?.number ?? null,
+      receiptStationId: receipt && counter ? counter.id : null,
       createdAt: now,
       updatedAt: now,
     })
@@ -469,6 +829,33 @@ export async function closeEndOfDay(
     .returning();
   const row = inserted[0];
   if (!row) throw dayClosed();
+
+  if (overrideReason) {
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId,
+      action: 'end_of_day.override',
+      entityType: 'end_of_day',
+      entityId: id,
+      requestId: actor.requestId,
+      before: { businessDate: input.date, stranded },
+      after: { businessDate: input.date, reason: overrideReason, strandedCount: stranded.length },
+    });
+  }
+  const printed =
+    receipt && counter
+      ? await queueEndOfDayReceipt(tx, {
+          operatorId: actor.operatorId,
+          branchId,
+          endOfDayId: id,
+          stationRow: counter,
+          actorAccountId: actor.accountId,
+          actionId: newId(),
+          requestId: actor.requestId,
+          now,
+        })
+      : null;
 
   await audit.record(tx, {
     actorAccountId: actor.accountId,
@@ -492,6 +879,10 @@ export async function closeEndOfDay(
       totalDifferenceSatang: filled.totalDifferenceSatang,
       notes,
       cashMovementIds: filled.cashMovements.map((m) => m.id),
+      receiptNumber: receipt?.number ?? null,
+      receiptStationId: row.receiptStationId,
+      receiptPrintJobId: printed?.job?.id ?? null,
+      overridden: !!overrideReason,
     },
   });
   return closedRecordOf(tx, row);

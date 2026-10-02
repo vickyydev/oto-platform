@@ -116,8 +116,10 @@ export type SaleClockTrust = (typeof SALE_CLOCK_TRUSTS)[number];
  * Which document series a number came out of. `sale` is the abbreviated tax
  * invoice the till prints; `refund` is the credit note S2-11 will print, and it
  * has its own series so that a credit note never consumes a sale's number.
+ * `end_of_day` (S2-15a round 2) numbers the End of Day receipt on the closing
+ * counter, on a series of its own for the same reason.
  */
-export const RECEIPT_SERIES_KINDS = ['sale', 'refund'] as const;
+export const RECEIPT_SERIES_KINDS = ['sale', 'refund', 'end_of_day'] as const;
 export type ReceiptSeriesKind = (typeof RECEIPT_SERIES_KINDS)[number];
 
 /**
@@ -197,7 +199,7 @@ export const receiptSeries = pos.table(
     uniqueIndex('receipt_series_unique').on(t.stationId, t.series, t.kind),
     index('receipt_series_branch_idx').on(t.branchId, t.kind),
     index('receipt_series_operator_idx').on(t.operatorId),
-    check('receipt_series_kind_check', sql`${t.kind} in ('sale','refund')`),
+    check('receipt_series_kind_check', sql`${t.kind} in ('sale','refund','end_of_day')`),
     check('receipt_series_next_check', sql`${t.nextSeq} > 0`),
     check('receipt_series_padding_check', sql`${t.seqPadding} between 1 and 12`),
   ],

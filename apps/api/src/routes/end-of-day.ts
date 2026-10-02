@@ -7,6 +7,9 @@ import {
   EndOfDayCloseBodySchema,
   EndOfDayQuerySchema,
   EndOfDayRecordSchema,
+  EndOfDayReprintBodySchema,
+  StrandedResolveAnswerSchema,
+  StrandedResolveBodySchema,
 } from '@oto/shared';
 import type { FastifyRequest } from 'fastify';
 import type { App } from '../app';
@@ -15,8 +18,11 @@ import {
   getEndOfDay,
   listCashMovements,
   recordMovement,
+  reprintEndOfDayReceipt,
+  resolveStranded,
   type CashActor,
 } from '../services/end-of-day';
+import { hasPermission } from '../services/permissions';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -34,7 +40,14 @@ const BranchParams = z.object({ branchId: z.string().uuid() });
 
 function actorOf(req: FastifyRequest): CashActor {
   const auth = req.requireAuth();
-  return { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id };
+  return { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id, stationId: auth.stationId };
+}
+
+/** The actor, and whether it holds `pos:cash:approve` at this branch (a manager's override). */
+async function closerOf(req: FastifyRequest, branchId: string): Promise<CashActor> {
+  const actor = actorOf(req);
+  const effective = await req.effectivePermissions();
+  return { ...actor, canApprove: hasPermission(effective, 'pos:cash:approve', { operatorId: actor.operatorId, branchId }) };
 }
 
 export async function endOfDayRoutes(app: App): Promise<void> {
@@ -48,7 +61,9 @@ export async function endOfDayRoutes(app: App): Promise<void> {
           'an open one is worked out fresh from the records: the expected side per channel — cash (every station, one ' +
           'combined count, less the day’s paid-outs and safe drops), PromptPay / QR, a card line per terminal TID, card ' +
           'money with no TID, other tenders, e-wallet, bank transfer, party prepayments and credit — net of refunds on ' +
-          "their original sale's day, with the float carried from the latest earlier close or the standard ฿6,000.",
+          "their original sale's day, with the float carried from the latest earlier close or the standard ฿6,000. " +
+          'An open day also lists the boxes that keep it provisional (undelivered records, an unmeasured clock) and ' +
+          'who is still counted inside; a closed day carries any manager override and its End of Day receipt.',
         params: BranchParams,
         querystring: EndOfDayQuerySchema,
         response: { 200: EndOfDayRecordSchema },
@@ -56,7 +71,7 @@ export async function endOfDayRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      return getEndOfDay(app.db, auth.operatorId, req.params.branchId, req.query.date);
+      return getEndOfDay(app.db, auth.operatorId, req.params.branchId, req.query.date, new Date());
     },
   );
 
@@ -69,16 +84,65 @@ export async function endOfDayRoutes(app: App): Promise<void> {
           'Close Day: lock the branch’s business day. Only what staff entered is read — the actual per channel, the ' +
           'counted cash, the float left for tomorrow, the voucher counts and the notes; the expected side and the ' +
           'totals are worked out again here. Allowed with lines off or not entered, and without notes. 409 when the day ' +
-          'is already closed (reload it to see the locked record).',
+          'is already closed (reload it to see the locked record), while any box keeps it provisional, and while ' +
+          'anybody is still counted inside unless `override.reason` is given by a holder of pos:cash:approve (403 for ' +
+          'anybody else; audited end_of_day.override). The End of Day receipt is numbered on the closing counter’s ' +
+          '(`stationId`, else the session’s) own series and queued on its receipt printer.',
         params: BranchParams,
         body: EndOfDayCloseBodySchema,
         response: { 200: EndOfDayRecordSchema },
       },
     },
     async (req) => {
-      const actor = actorOf(req);
+      const actor = await closerOf(req, req.params.branchId);
       return withTx(app.db, opCtx(req), 'end_of_day.close', (tx) =>
         closeEndOfDay(tx, actor, req.params.branchId, req.body, new Date()),
+      );
+    },
+  );
+
+  app.post(
+    '/branches/:branchId/end-of-day/stranded/resolve',
+    {
+      config: { permission: 'pos:cash:day_close', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          'Clear one row still counted inside at close — a band whose last passage was an entry, or a child still ' +
+          'checked in — with the reason (left without scanning, band lost, gate fault); who did it is recorded from ' +
+          'the session and the resolution is audited gate.manual_resolution. The row leaves the count from now on; ' +
+          'the gate journal, the check-in and the count before now are kept. Answers the list as it now stands. 409 ' +
+          'when the day is closed or the row is no longer counted inside.',
+        params: BranchParams,
+        body: StrandedResolveBodySchema,
+        response: { 200: StrandedResolveAnswerSchema },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      return withTx(app.db, opCtx(req), 'gate.manual_resolution', (tx) =>
+        resolveStranded(tx, actor, req.params.branchId, req.body, new Date()),
+      );
+    },
+  );
+
+  app.post(
+    '/branches/:branchId/end-of-day/reprint',
+    {
+      config: { permission: 'pos:cash:day_close', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          "Print a closed day's End of Day receipt again, at the counter named (or this session's, or the one that " +
+          'closed it), as a copy of the original carrying the figures exactly as they were locked. Answers the closed ' +
+          'day. 409 when the day is not closed or the counter cannot print.',
+        params: BranchParams,
+        body: EndOfDayReprintBodySchema,
+        response: { 200: EndOfDayRecordSchema },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      return withTx(app.db, opCtx(req), 'print_job.reprint', (tx) =>
+        reprintEndOfDayReceipt(tx, actor, req.params.branchId, req.body, new Date()),
       );
     },
   );

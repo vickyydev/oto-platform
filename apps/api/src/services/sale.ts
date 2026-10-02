@@ -2438,8 +2438,11 @@ async function voidedByNameOf(db: Exec, row: typeof sale.$inferSelect): Promise<
 export async function allocateReceipt(
   tx: Tx,
   scope: { operatorId: string; branchId: string; stationId: string; series: string },
-  /** S2-11 — `refund` numbers a credit note from its own series; `sale` is the default. */
-  kind: 'sale' | 'refund' = 'sale',
+  /**
+   * S2-11 — `refund` numbers a credit note from its own series; `sale` is the
+   * default. S2-15a round 2 — `end_of_day` numbers the End of Day receipt.
+   */
+  kind: 'sale' | 'refund' | 'end_of_day' = 'sale',
 ): Promise<{ series: string; seq: number; number: string }> {
   const existing = await tx
     .select()

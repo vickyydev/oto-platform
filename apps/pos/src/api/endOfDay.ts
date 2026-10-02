@@ -17,6 +17,9 @@ import type {
   CashMovementsAnswer,
   EndOfDayCloseBody,
   EndOfDayRecord,
+  EndOfDayReprintBody,
+  StrandedResolveAnswer,
+  StrandedResolveBody,
 } from '@oto/shared';
 import { recomputeEndOfDay } from '@oto/shared';
 import type { EdcTerminal, EndOfDay } from '@/types';
@@ -37,6 +40,27 @@ export function getEndOfDay(branchApiId: string, date: string): Promise<ApiEndOf
  */
 export function closeEndOfDay(branchApiId: string, body: EndOfDayCloseBody, idempotencyKey: string = idemKey()): Promise<ApiEndOfDay> {
   return api.post<ApiEndOfDay>(`${branchPath(branchApiId)}/end-of-day/close`, body, { idempotencyKey });
+}
+
+/**
+ * S2-15a round 2 — clear one row still counted inside at close. One key per
+ * press; `body.actionId` is the press, so a retry records once.
+ */
+export function resolveStrandedRow(
+  branchApiId: string,
+  body: StrandedResolveBody,
+  idempotencyKey: string = idemKey(),
+): Promise<StrandedResolveAnswer> {
+  return api.post<StrandedResolveAnswer>(`${branchPath(branchApiId)}/end-of-day/stranded/resolve`, body, { idempotencyKey });
+}
+
+/** S2-15a round 2 — print the closed day's receipt again, at this counter. */
+export function reprintEndOfDayReceipt(
+  branchApiId: string,
+  body: EndOfDayReprintBody,
+  idempotencyKey: string = idemKey(),
+): Promise<ApiEndOfDay> {
+  return api.post<ApiEndOfDay>(`${branchPath(branchApiId)}/end-of-day/reprint`, body, { idempotencyKey });
 }
 
 /** Today's paid-outs and safe drops, and who can be named as the second person. */
@@ -123,9 +147,18 @@ export function withNotes(rec: ApiEndOfDay, notes: string): ApiEndOfDay {
   return { ...rec, notes };
 }
 
-/** What Close Day sends: only what staff entered. */
-export function closeBodyOf(rec: ApiEndOfDay): EndOfDayCloseBody {
+/**
+ * What Close Day sends: only what staff entered, the counter it is closed at
+ * (the receipt prints there) and a manager's override reason when one is given.
+ */
+export function closeBodyOf(
+  rec: ApiEndOfDay,
+  extra: { stationId?: string | null; overrideReason?: string | null } = {},
+): EndOfDayCloseBody {
+  const reason = extra.overrideReason?.trim();
   return {
+    ...(extra.stationId ? { stationId: extra.stationId } : {}),
+    ...(reason ? { override: { reason } } : {}),
     date: rec.date,
     actuals: rec.lines
       .filter((l) => l.channel !== 'cash')
