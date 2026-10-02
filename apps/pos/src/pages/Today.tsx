@@ -6,10 +6,14 @@ import { PerformanceTab } from '@/components/floor/PerformanceTab';
 import { EndOfDayTab } from '@/components/eod/EndOfDayTab';
 import { useBranch } from '@/branch/BranchContext';
 import { LineChart, Calculator } from 'lucide-react';
+import { branchTradingDate, serverTradingDate } from '@/lib/pricingMode';
 
-// UTC date slice keeps the picker default consistent with how parties/check-ins are
-// seeded and how the ledger is matched (mockApi matches on the same slice).
-const todayKey = (): string => new Date().toISOString().slice(0, 10);
+// S2-15a — the day the picker opens on is the branch's BUSINESS date (its trading day,
+// `business_day_start` in its timezone), the date the End of Day is recorded under:
+// the platform's answer for today when the till has one, else this device's clock
+// placed on the branch's calendar. Not a UTC slice, which put 00:00-07:00 in Thailand
+// on the wrong day.
+const todayKey = (): string => serverTradingDate() ?? branchTradingDate();
 
 type TodayTab = 'performance' | 'eod';
 

@@ -289,6 +289,11 @@ const READ_COUNTER: Permission[] = [
   'pos:checkin:read',
   'pos:wallet:read',
   'pos:stock:read',
+  /**
+   * S2-15a — the End of Day on the Today screen, which every counter role
+   * opens: the prototype lets any signed-in staff member run it.
+   */
+  'pos:cash:read',
   ...READ_CATALOG,
 ];
 
@@ -412,6 +417,9 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:cash:session_open',
     'pos:cash:session_close',
     'pos:cash:movement',
+    // S2-15a (SCRUM-488, the owner's ruling): any signed-in staff member who
+    // can open End of Day closes it, as in the prototype — reception included.
+    'pos:cash:day_close',
     'pos:checkin:create',
     'pos:checkin:update',
     'pos:checkin:release',
@@ -427,5 +435,7 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'app:booth:access',
     'booth:staff:sign_in',
   ],
-  staff: [...READ_COUNTER, 'app:pos:access', 'app:booth:access', 'booth:staff:sign_in'],
+  // `pos:cash:day_close` (S2-15a): `staff` opens the Today screen too, and the
+  // prototype lets anybody who can open End of Day close it.
+  staff: [...READ_COUNTER, 'pos:cash:day_close', 'app:pos:access', 'app:booth:access', 'booth:staff:sign_in'],
 };

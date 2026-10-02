@@ -1,5 +1,28 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 2 October 2026 (evening) - End of Day round 1 landed
+
+S2-15a round 1 (SCRUM-215), built to the revised plan and gated MERGE
+after one fix cycle (workflow wf_a80cd2d3-559): migration 0052
+(pos.end_of_day, pos.cash_movement); services/end-of-day.ts and
+routes/end-of-day.ts (day record from payment attempts and refunds by
+business date, one combined cash count, float carry-over or B6,000, B1
+per line, server re-derives at close, second close 409, closed day
+frozen, any pos:cash:day_close holder closes, paid-out with approver and
+safe drop with witness reducing expected cash, audit, idempotency); the
+POS End of Day tabs on the API with the prototype's look; a Cash action
+on the station header (UI addition) and the day's movement list.
+Tests: API 94/94 (eod-r1, gate, recheck, wallet, id-conformance,
+demo-reset), shared 478/478, in-package tsc x4, eslint on the list.
+
+Open points for the owner, defaulting as built: the approver/witness is
+named, not signed with their own PIN; staff role may close (prototype:
+anyone); no paid-out or safe drop on a closed day; a refund comes off the
+tender it was actually paid back through.
+Note: packages/db migration suites need --no-file-parallelism locally.
+
+NEXT (priority): SCRUM-494, then End of Day rounds 2-4.
+
 ## Platform lane checkpoint - 2 October 2026 (late, 2) - till consistency register
 
 Each delivered area was compared line by line with the approved till

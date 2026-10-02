@@ -99,8 +99,19 @@ export type WalletTenderInstruction = z.infer<typeof WalletTenderInstructionSche
  * ticket that granted it was paid, and at the counter it moves a liability,
  * not the drawer. A terminal e-wallet (Alipay, WeChat) IS till takings — it is
  * recorded as `qr` money, so it never reads as stored value here.
+ *
+ * S2-15a — THE ONE GATE THE END OF DAY READS. Given the attempt's station, an
+ * attempt with none is not the till's either: money that reached the park with
+ * no counter in its path (the booking site's own QR) was never in a drawer or
+ * on a branch terminal's batch. Callers that do not pass `stationId` are
+ * answered on the tender alone, as before.
  */
-export function countsAsTillTakings(attempt: { method?: string | null; methodCode?: string | null }): boolean {
+export function countsAsTillTakings(attempt: {
+  method?: string | null;
+  methodCode?: string | null;
+  stationId?: string | null;
+}): boolean {
+  if ('stationId' in attempt && !attempt.stationId) return false;
   if (attempt.methodCode === PAID_ONLINE_TENDER_CODE) return false;
   return !isStoredValueTender(attempt);
 }

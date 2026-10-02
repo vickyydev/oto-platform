@@ -7,6 +7,7 @@ import { ThemeMenu } from '@/components/shared/ThemeMenu';
 import { BranchSwitcher } from '@/components/shared/BranchSwitcher';
 import { PricingModeIndicator } from '@/components/shared/PricingModeIndicator';
 import { PrinterHealthIndicator } from '@/components/shared/PrinterHealthIndicator';
+import { CashMovementButton } from '@/components/shared/CashMovementButton';
 import { StationLinkBanner } from '@/components/shared/StationLinkBanner';
 import { useStation } from '@/station/StationContext';
 import { sellableRestockAlerts, useSellableStockVersion } from '@/api/stock';
@@ -219,6 +220,9 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
             one is out of paper or stops answering (S2-06, PROJECT_CONTEXT
             §7.3) — before anybody notices a receipt that never came out. */}
         <PrinterHealthIndicator />
+        {/* S2-15a — the Cash action: record a paid-out or a safe drop against the
+            branch's one combined count (UI addition). */}
+        <CashMovementButton className={idleBtn} />
         <PricingModeIndicator />
         {rightExtra}
         <div className="shrink-0">

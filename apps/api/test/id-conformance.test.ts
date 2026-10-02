@@ -269,6 +269,15 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /branches/:branchId/stock/receipts': STOCK_MOVE,
   'POST /branches/:branchId/stock/stock-takes': `${STOCK_MOVE}; a count's lines are its own, and the opening is decided under a branch lock`,
   'POST /branches/:branchId/stock/transfers': `${STOCK_MOVE}; the out-and-in pair shares the transfer id`,
+  // S2-15a round 1 — the End of Day. Online only, and neither row is ever
+  // written by a box. A close is keyed by (branch, business date), unique, so a
+  // retry is refused as already closed or replayed by its idempotency key; a
+  // paid-out or safe drop is keyed by the press's action id (unique per
+  // operator), which the till sends.
+  'POST /branches/:branchId/end-of-day/close':
+    'one row per (branch, business date), unique — the day is the key; written only at Close Day, online',
+  'POST /branches/:branchId/cash-movements':
+    'keyed by the press’s action id (unique per operator) the till sends; the row id is the platform’s, online only',
   'POST /members/:id/tier-verification':
     'the evidence row behind a tier change; round 3 makes it the till’s `member.tier_changed` fact (plan §2.3, OD-11)',
   'POST /menu/categories': NEXT_PASS,

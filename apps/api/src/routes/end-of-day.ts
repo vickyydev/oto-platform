@@ -1,0 +1,126 @@
+import { z } from 'zod';
+import {
+  CashMovementAnswerSchema,
+  CashMovementBodySchema,
+  CashMovementsAnswerSchema,
+  CashMovementsQuerySchema,
+  EndOfDayCloseBodySchema,
+  EndOfDayQuerySchema,
+  EndOfDayRecordSchema,
+} from '@oto/shared';
+import type { FastifyRequest } from 'fastify';
+import type { App } from '../app';
+import {
+  closeEndOfDay,
+  getEndOfDay,
+  listCashMovements,
+  recordMovement,
+  type CashActor,
+} from '../services/end-of-day';
+import { opCtx, withTx } from '../services/tx';
+
+/**
+ * S2-15a round 1 — the End of Day and the cash taken out of the drawers
+ * (plan docs/progress/plans/cash/PLAN.md, revised 2 Oct).
+ *
+ * Branch-scoped, all of them: the guard checks the permission against the
+ * branch in the path, and the service loads that branch inside the caller's
+ * operator before anything is read or written. The writes are one
+ * transaction each, audited, and behind the global idempotency key: the same
+ * key and body replay the first answer, the same key with another body is 409.
+ */
+
+const BranchParams = z.object({ branchId: z.string().uuid() });
+
+function actorOf(req: FastifyRequest): CashActor {
+  const auth = req.requireAuth();
+  return { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id };
+}
+
+export async function endOfDayRoutes(app: App): Promise<void> {
+  app.get(
+    '/branches/:branchId/end-of-day',
+    {
+      config: { permission: 'pos:cash:read', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          "One business day's End of Day for the branch. A closed day is answered exactly as it was saved (read-only); " +
+          'an open one is worked out fresh from the records: the expected side per channel — cash (every station, one ' +
+          'combined count, less the day’s paid-outs and safe drops), PromptPay / QR, a card line per terminal TID, card ' +
+          'money with no TID, other tenders, e-wallet, bank transfer, party prepayments and credit — net of refunds on ' +
+          "their original sale's day, with the float carried from the latest earlier close or the standard ฿6,000.",
+        params: BranchParams,
+        querystring: EndOfDayQuerySchema,
+        response: { 200: EndOfDayRecordSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return getEndOfDay(app.db, auth.operatorId, req.params.branchId, req.query.date);
+    },
+  );
+
+  app.post(
+    '/branches/:branchId/end-of-day/close',
+    {
+      config: { permission: 'pos:cash:day_close', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          'Close Day: lock the branch’s business day. Only what staff entered is read — the actual per channel, the ' +
+          'counted cash, the float left for tomorrow, the voucher counts and the notes; the expected side and the ' +
+          'totals are worked out again here. Allowed with lines off or not entered, and without notes. 409 when the day ' +
+          'is already closed (reload it to see the locked record).',
+        params: BranchParams,
+        body: EndOfDayCloseBodySchema,
+        response: { 200: EndOfDayRecordSchema },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      return withTx(app.db, opCtx(req), 'end_of_day.close', (tx) =>
+        closeEndOfDay(tx, actor, req.params.branchId, req.body, new Date()),
+      );
+    },
+  );
+
+  app.get(
+    '/branches/:branchId/cash-movements',
+    {
+      config: { permission: 'pos:cash:read', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          "The paid-outs and safe drops of one business day at the branch (today's when no date is given), and the " +
+          'people who can be named as the second person on the next one — whether each can approve a paid-out.',
+        params: BranchParams,
+        querystring: CashMovementsQuerySchema,
+        response: { 200: CashMovementsAnswerSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return listCashMovements(app.db, auth.operatorId, req.params.branchId, req.query.date);
+    },
+  );
+
+  app.post(
+    '/branches/:branchId/cash-movements',
+    {
+      config: { permission: 'pos:cash:movement', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          "Record cash taken out of the branch's drawers today: a paid-out, approved by somebody else holding " +
+          'pos:cash:approve at the branch, or a safe drop, witnessed by somebody else at the branch. Either reduces the ' +
+          'cash the day’s count expects. 409 once the day is closed.',
+        params: BranchParams,
+        body: CashMovementBodySchema,
+        response: { 200: CashMovementAnswerSchema },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req);
+      return withTx(app.db, opCtx(req), `cash_movement.${req.body.kind}`, (tx) =>
+        recordMovement(tx, actor, req.params.branchId, req.body, new Date()),
+      );
+    },
+  );
+}

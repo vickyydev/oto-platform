@@ -6,7 +6,9 @@ import {
   bandEvent,
   booking,
   bookingRedemption,
+  cashMovement,
   child,
+  endOfDay,
   member,
   memberAlias,
   memberTierVerification,
@@ -41,7 +43,8 @@ import type { Exec, Tx } from './tx';
  * separates the two by OWNER rather than by age:
  *
  *   facts         what a day of play produces — visits, bookings, sales,
- *                 payments, wallets, bands, stock counts, and the members
+ *                 payments, wallets, bands, stock counts, closed days and
+ *                 the cash taken out of the drawers, and the members
  *                 walked up to the counter during the session
  *   configuration what someone sat down and set up — operators, branches,
  *                 departments, employees, accounts, roles and assignments,
@@ -98,6 +101,9 @@ const FACT_ENTITY_TYPES = [
   // S2-11: a refund is a fact of the sale it refunds, and goes with it.
   'refund',
   'stock_level',
+  // S2-15a: a closed day and the paid-outs and safe drops of a day of play.
+  'end_of_day',
+  'cash_movement',
 ];
 
 /** Rows removed per table, for the response and the audit entry. */
@@ -195,6 +201,17 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   // ends, not this savepoint, so left on it would keep the ledger deletable for
   // whatever the caller does after the reset returns.
   await tx.execute(sql`select set_config('oto.stock_ledger_purge', 'off', true)`);
+
+  /**
+   * S2-15a: the End of Day's closed days and the day's paid-outs and safe
+   * drops are a day of play too. Both refuse UPDATE and DELETE by trigger; the
+   * purge flag, local to this transaction, is the one door through, and it is
+   * shut again straight after.
+   */
+  await tx.execute(sql`select set_config('oto.cash_ledger_purge', 'on', true)`);
+  counts.end_of_day = (await tx.delete(endOfDay).returning({ id: endOfDay.id })).length;
+  counts.cash_movement = (await tx.delete(cashMovement).returning({ id: cashMovement.id })).length;
+  await tx.execute(sql`select set_config('oto.cash_ledger_purge', 'off', true)`);
 
   counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
   counts.wallet_key = (await tx.delete(walletKey).returning({ id: walletKey.id })).length;

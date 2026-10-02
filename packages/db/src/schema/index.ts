@@ -29,3 +29,6 @@ export * from './wallet';
 // Stock (S2-14b): after the catalogue it stocks and the sales ledger whose
 // lines and refunds its movements point back at.
 export * from './stock';
+// The End of Day (S2-15a): one combined cash count per branch-day, and the
+// paid-outs and safe drops it expects less of.
+export * from './cash';
