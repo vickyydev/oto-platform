@@ -1,105 +1,53 @@
 # Sprint 2 progress
 
-## Platform lane checkpoint - 2 October 2026 (evening) - S2-14a wallets DEPLOYED
+## Platform lane checkpoint - 2 October 2026 (night) - S2-14 wallets and stock DEPLOYED
 
-S2-14a (SCRUM-212) is Deployed, with seven staging evidence cards attached
-(docs/qa/jira-comments/attachments/SCRUM-212). Plan:
-docs/progress/plans/wallet/PLAN.md. The ledger is the single source of
-truth; every test wallet's balance equals the sum of its entries.
+The story SCRUM-211 (S2-14, wallets and stock) is Deployed: both subtasks
+closed with staging evidence (docs/qa/jira-comments/attachments/SCRUM-212
+and SCRUM-213, seven cards each).
 
-Commits: plan 40c9798e; rounds 966e77a9 (model + grants, migration 0045),
-bc09ec24 (platform-written tender, last baht, refunds), bbe30fcd (expiry,
-reactivation, Wallet view, figures), 1f117138 (offline cap, migration
-0046), 463d78e9 (promotional vouchers, migration 0047, closing audit);
-CI repairs e9e22ec9 (lint) and 08bbdb73 (test helper teardown
-disconnect); walkthrough fixes 8a58ad4c (credit-grants print block, guest
-"left to pay", the till's offline credit through the box, voucher issue
-and redeem guards). Final CI green at 8a58ad4c (run 36914307534); staging
-live there.
+S2-14a wallets (SCRUM-212): plan docs/progress/plans/wallet/PLAN.md;
+rounds 966e77a9, bc09ec24, bbe30fcd, 1f117138, 463d78e9; CI repairs
+e9e22ec9 and 08bbdb73; walkthrough fixes 8a58ad4c. The ledger is the
+truth; the platform writes the wallet tender (never the drawer, never
+takings); last-baht race; wallet-first refunds; same-day expiry with
+audited reactivation; B300/day offline cap with the overdraft anomaly;
+promotional vouchers. Migrations 0045-0047.
 
-Lessons now standing (memory): CI watched by exact commit SHA, eslint over
-every landing list before push, every reviewer hand-over actioned at once,
-workflow agents on Opus 5.5 while the Fable limit is spent. Docs-only
-commits trigger no CI run.
+S2-14b stock (SCRUM-213): plan docs/progress/plans/stock/PLAN.md; rounds
+27c0651e (ledger + sales, 0048), af0bb635 (stock screens), 6bdca9a7
+(offline, 0049), 50bcea40 (reports + trend rule, 0050); walkthrough
+fixes 35a8ed68 (per-place opening decided under the locks, Alerts from
+the platform, 0051). Staging walkthrough: opening counts, guard
+refusals, sale T1-000052 + refund T1-R-000004 once, transfer, PO
+received in two deliveries, the platform's low-stock list with its rule,
+reports from the ledger, offline sales T1-000053/54 with the box
+refusing an oversell; level == sum(movements) everywhere. Known bound:
+the daily stock fact is rewritten for the last 7 days only.
 
-Open tickets from the story: SCRUM-483 (Medium: the offline balance
-preview reads the platform, not the box; the money is always right),
-SCRUM-484 (Low: three display touches), SCRUM-481 and SCRUM-482 (owner
-rulings). Still waiting on the owner: SCRUM-480 (R2 CORS for photos),
-Xero, 2C2P sandbox, pricing rulings, SCRUM-467, SCRUM-469, OD-W1..W5.
+Also Deployed in this arc: SCRUM-486 (High: the box adopts the
+platform's era durably; no offline sale lost) with a test-run card.
 
-S2-14b stock (SCRUM-213, In Progress). Plan: docs/progress/plans/stock/PLAN.md
-(f538e415); owner rulings filed as SCRUM-485 (count approval, seed figures,
-booth prizes, who moves stock, the opening count), with the recommended
-answers in force. Round 1 (ledger + sales) lands with this checkpoint:
-migration 0048, stock_movement ledger with levels as a locked projection,
-the commit guard per size, finalise decrements that never refuse a paid
-sale (all seven callers checked), refund restock to the place of origin,
-sizes and unit cost carried on the sale line, the till grids on real
-levels. Gate handovers, all routed into round 2's brief: pack entry must
-refuse non-finite input; AddOnsGrid needs the catalogue-size fallback;
-partially stock-linked products; and platform:sync must lay down the stock
-structure (staging gets 0048 with no places or items, because seedStock
-runs only in the full seed). Round 1 CI green (36935741043).
-Round 2 (the stock module live) lands with this checkpoint after three
-gate cycles: transfers, receive (ad hoc and against PO lines), purchase
-orders, stock take with the opening count, admin items/units/places,
-low-stock attention with the rule and PO suppression, the header strip on
-real data, and the four round-1 handovers (platform-sync now lays down the
-stock places and items with no quantities). The gates closed two real
-holes: stock landing on a removed size via a refund or a race; every
-positive movement now locks the item and refuses a removed size.
-Round 3 (offline) lands with this checkpoint after four gate cycles: a
-volatile stock cache scope kept out of the catalogue hash, the box guard
-(snapshot minus this box's sales the platform has not yet filed, judged
-by the platform's filed mark within the box's own era), the write-ahead
-decrement, exactly-once platform decrements on replay, and the
-stock_oversold anomaly with one critical alert (migration 0049). Its
-gates found SCRUM-486 (High, offline sales generally: a box that misses a
-reset reply keeps its old era). Rounds 2 and 3 CI green (36945341349,
-36945433666). SCRUM-486 lands with this checkpoint: the box adopts the
-platform's era into its store durably from every answer (heartbeat, ack,
-push, reset) with a compare-and-set, a re-sent already-applied sale is
-answered as a duplicate, and an old-era sale is set aside with a critical
-"PAID SALE" note naming its money and goods - never lost. SCRUM-486 is
-Deployed (CI 36950176617, staging live 90b72e9, test-run card attached);
-follow-up SCRUM-487 (Low). Stock round 4 lands with this checkpoint
-after three gate cycles: Usage, Shrinkage, Purchases, Value and
-Discrepancies from the ledger (sign-exact against hand sums), cost of
-goods into profitability, the daily stock fact (opening + movements =
-closing, rewritten for the last 7 days so late offline movements correct
-their day; migration 0050 lets the fact carry signed figures), the OD-27
-trend reorder rule from day 30, the five queued handovers (the till shows
-the box's stock refusals verbatim; a sale at a branch with no live place
-records its shortfall; the sizes-seeded audit; GET attention read-only;
-the PO race wording), and the whole-story closing audit. Known bound: a
-late movement dated more than 7 days back leaves older stored days stale
-until rewritten. Round 4 CI green (36954346407); staging live 50bcea4.
-Staging walkthrough (evidence in scratchpad stock-drive/): all eight
-steps PASS - opening count, guard refusals, sale T1-000052 and refund
-T1-R-000004 exactly once, transfer, PO ordered and received in two
-deliveries, reports, offline sales T1-000053/54 with the box refusing an
-oversell and each sale taking stock once; level == sum everywhere. Two
-medium defects keep SCRUM-213 In Progress, fix round running: F1 the
-opening is per branch but counts are per place (the second place's
-opening read as variance and shrinkage); F3 the Alerts screen computes on
-the device instead of reading the platform attention (trend rule never
-shown, suppressed items shown, stale "future releases" text). Plus F2
-(review wording) and F4 (retired item in the strip). The fix round
-lands with this checkpoint after three gate cycles: the opening is per
-place, decided under the level locks (a place that ever held stock is
-never at its opening, so a real loss always reaches Discrepancies and
-Shrinkage), with the answer stored per count line (migration 0051) and
-older lines judged by the same rule at read time; the Alerts screen shows
-exactly the platform's attention rows (suppression and the 30-day rule
-label included); the review screen names an opening; the strip ignores
-retired items. Next: CI, a repeat walkthrough of these parts, evidence
-cards, Deployed, and SCRUM-211 closes. Queued for
-round 4: show the box's stock refusals on the till, the no-places
-shortfall, two round-2 notes and one refusal wording.
+Open tickets from the arc: SCRUM-481, SCRUM-482, SCRUM-485 (owner
+rulings); SCRUM-483, SCRUM-484, SCRUM-487 (small fixes). Still waiting on
+the owner: SCRUM-480 (R2 CORS for photos), Xero, 2C2P sandbox, pricing
+rulings, SCRUM-467, SCRUM-469.
+
+Working rules now standing (memory): CI watched by exact commit SHA;
+eslint over every landing list before push; every gate handover actioned
+the moment it is read (brief or ticket); every workflow agent on Opus 5.5
+while the Fable limit is spent; docs-only commits trigger no CI; the
+progress update rides in the same commit as each landing.
+
+Next by the agreed order: S2-15a (cash sessions, End of Day
+reconciliation per tender and terminal, settlement export -
+SPRINT_2_PLAN.md line 2290). The wallet work left it a correct
+countsAsTillTakings (wallet and paid-online are never till takings) and
+business_date on every payment attempt. Then S2-15b, S2-23, S2-22, S2-16;
+S2-24 rolling.
 
 Migrations landed through 0051. To resume: read this block, then the
-SCRUM-213 comments, then `git log main`.
+latest Jira story comments, then `git log main`.
 
 ## Platform lane checkpoint - 1 October 2026 (evening) - S2-13 Deployed whole
 
