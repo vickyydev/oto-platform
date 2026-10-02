@@ -58,6 +58,9 @@ import type {
  */
 export const BOX_STORE_SCHEMA_VERSION = 1;
 
+/** When `advanceEpoch` may move the store's epoch: only forwards, or to any other value. */
+export type EpochAdvance = 'newer' | 'different';
+
 export interface BoxStateRecord {
   boxId: string;
   offline: boolean;
@@ -499,6 +502,21 @@ export interface BoxStore extends PrintJobStore {
   stampClockWith(boxId: string, stamp: (() => ClockStamp) | null): void;
   /** A `reset_store` lands here: the new epoch, and the sequence back to 1. */
   setEpoch(boxId: string, journalEpoch: number, now?: string): Promise<BoxStateRecord>;
+  /**
+   * SCRUM-486 — `setEpoch` as a compare-and-set: the epoch (and the sequence
+   * back at 1) moves only when the row's epoch, as the UPDATE finds it, is
+   * older than `journalEpoch` (`newer`) or merely different (`different`).
+   * Answers whether it moved, and the row as it now stands. What every
+   * adoption of a platform epoch uses: a read before an unconditional reset
+   * lets two adoptions racing on separate timers restart the sequence twice,
+   * the second time under a fact already sealed on the new epoch.
+   */
+  advanceEpoch(
+    boxId: string,
+    journalEpoch: number,
+    when: EpochAdvance,
+    now?: string,
+  ): Promise<{ moved: boolean; state: BoxStateRecord }>;
   setAppliedConfigVersion(boxId: string, configVersion: string | null): Promise<BoxStateRecord>;
 
   /** Allocate the next sequence and write the sealed envelope, in one transaction. */

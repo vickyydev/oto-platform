@@ -1300,8 +1300,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     const boxId = state.boxId;
     const at = new Date(clock()).toISOString();
     await store.atomically(async (tx) => {
-      const persisted = await tx.readState(boxId);
-      if (persisted.journalEpoch !== epoch) await tx.setEpoch(boxId, epoch, at);
+      // A compare-and-set, not a read and then a reset (SCRUM-486): a
+      // heartbeat adopting this same epoch on its own timer may already have
+      // moved the store and sealed a fact at (epoch, 1); resetting the
+      // sequence again would put it back under that fact.
+      await tx.advanceEpoch(boxId, epoch, 'different', at);
       await keepJournalEpochNote(tx, boxId, { state: 'taken', epoch, from: 'reset_store', at });
     });
     if (state.journalAwaitingEpoch) {
@@ -1313,6 +1316,84 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     state.journalAwaitingEpoch = false;
     journalRefusals = 0;
     journalRefusalNotedAt = null;
+  }
+
+  /**
+   * SCRUM-486 — THE PLATFORM'S CURRENT EPOCH, WHEREVER THE BOX LEARNS IT.
+   *
+   * The platform mints a new epoch in the transaction that accepts a
+   * `reset_store` result, and the answer that carries it can be lost. Every
+   * other answer names the platform's current epoch too — the heartbeat, the
+   * config pull, an ordinary command's acknowledgement, a push — and a box
+   * that took it only into memory went on SEALING on the old one: a quiet box
+   * pushes nothing, so the next offline sale it took came back
+   * `epoch_regressed`, set aside out of the ledger and out of the stock level.
+   *
+   * So whichever answer brings it, an epoch NEWER than the store's is adopted
+   * into the STORE (the sequence back at 1 with it, as `advanceEpoch` does
+   * when it moves), durably, before the next fact can be sealed; and every comparison
+   * is against the store's epoch, never against what memory last heard.
+   *
+   * Two things it never does. It never adopts an OLDER epoch than the store
+   * holds — a platform answering from a restored database or a stale replica
+   * would otherwise restart the sequence on addresses the cloud may already
+   * hold, and a re-sent fact landing on one is counted a duplicate and lost.
+   * And it never releases a store that WAITS for a minted epoch (NO NEW FACT
+   * BEFORE A FRESH EPOCH, above `JOURNAL_EPOCH_KEY`): the epoch such a store
+   * hears on a heartbeat is the one its predecessor sealed under, and only a
+   * `reset_store` answer (`takeMintedEpoch`) names a fresh one.
+   *
+   * Leaves `state.epoch` saying what the box stamps with — the store's epoch.
+   * Answers whether it adopted.
+   */
+  async function adoptPlatformEpoch(
+    epoch: unknown,
+    from: 'heartbeat' | 'config' | 'command_ack' | 'push',
+  ): Promise<boolean> {
+    if (typeof epoch !== 'number' || !Number.isInteger(epoch) || epoch < 1) return false;
+    if (!store || !state.boxId || !outbox) {
+      // No journal attached to seal anything under — no store, or one not
+      // attached yet (`attachStore` makes the outbox after the row, and reads
+      // the row's epoch back into memory itself). Memory is all there is.
+      state.epoch = epoch;
+      return false;
+    }
+    const boxId = state.boxId;
+    if (state.journalAwaitingEpoch) {
+      state.epoch = (await store.readState(boxId)).journalEpoch;
+      return false;
+    }
+    const at = new Date(clock()).toISOString();
+    const outcome = await store.atomically(async (tx) => {
+      const persisted = await tx.readState(boxId);
+      if (epoch <= persisted.journalEpoch) {
+        return { adopted: false, held: persisted.journalEpoch, was: persisted.journalEpoch };
+      }
+      // The read above takes no lock (on the platform's Postgres edge store a
+      // plain SELECT never does), and the heartbeat, the push answer and a
+      // command ack adopt on separate timers. So the move is a compare-and-set:
+      // an adoption that read the old epoch while another committed the new
+      // one — and a fact was sealed at (epoch, 1) between them — moves
+      // nothing, rather than putting the sequence back under that fact and
+      // wedging every later fact on the journal's unique address.
+      const moved = await tx.advanceEpoch(boxId, epoch, 'newer', at);
+      return { adopted: moved.moved, held: moved.state.journalEpoch, was: persisted.journalEpoch };
+    });
+    state.epoch = outcome.held;
+    if (outcome.adopted) {
+      note('warn', 'the platform is on a newer journal epoch than this store; adopted it', {
+        from,
+        storeEpoch: outcome.was,
+        platformEpoch: epoch,
+      });
+    } else if (epoch < outcome.held) {
+      note('error', 'the platform named an OLDER journal epoch than this store holds; not adopted', {
+        from,
+        storeEpoch: outcome.held,
+        platformEpoch: epoch,
+      });
+    }
+    return outcome.adopted;
   }
 
   /** The wait, on the heartbeat, as a fingerprint and a count like every other fault. */
@@ -1922,9 +2003,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       intervalMs: options.syncIntervalMs ?? 5_000,
       now: () => new Date(clock()),
       log,
-      onEpoch: (epoch) => {
-        state.epoch = epoch;
-      },
+      // A push answer's epoch goes through the same adoption as every other
+      // answer's (SCRUM-486): into the store when newer, never backwards, and
+      // never past a journal that waits for a minted epoch.
+      adoptEpoch: (epoch) => adoptPlatformEpoch(epoch, 'push'),
     });
 
     sessions = new StationSessionManager({
@@ -2445,7 +2527,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       });
     }
     state.configVersion = body.configVersion;
-    state.epoch = body.box.epoch;
+    // The bundle names the platform's current epoch as well (SCRUM-486).
+    await adoptPlatformEpoch(body.box.epoch, 'config');
     heartbeatIntervalMs = options.heartbeatIntervalMs ?? body.heartbeatIntervalS * 1000;
     if (changed) {
       note('info', 'config applied', {
@@ -3295,7 +3378,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
     state.lastHeartbeatAt = payload.reportedAt;
     state.lastAckAt = ack.receivedAt;
-    state.epoch = ack.epoch;
+    // Into the STORE when it is newer, before anything below can seal a fact
+    // (SCRUM-486): a lost `reset_store` answer is otherwise never made good on
+    // a quiet box, whose empty outbox never pushes.
+    await adoptPlatformEpoch(ack.epoch, 'heartbeat');
     await adoptServerTime(ack.serverTime, sent, answered);
     if (ack.configVersion !== state.configVersion) {
       await syncConfig();
@@ -3448,14 +3534,17 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           // it is what a store waiting for a new epoch waits for (NO NEW FACT
           // BEFORE A FRESH EPOCH, above `JOURNAL_EPOCH_KEY`).
           await takeMintedEpoch(ack.epoch);
-        } else if (store && state.boxId && ack.epoch !== state.epoch) {
+          if (store && state.boxId) state.epoch = (await store.readState(state.boxId)).journalEpoch;
+          else state.epoch = ack.epoch;
+        } else {
           // Written to the store, not just to memory: the epoch and the
           // sequence generator are one thing, and a box that adopted a new
           // epoch in memory and then lost power would come back stamping the
-          // old one over sequences it had already used.
-          await store.setEpoch(state.boxId, ack.epoch, new Date(clock()).toISOString());
+          // old one over sequences it had already used. Compared against the
+          // STORE's epoch (SCRUM-486): the heartbeat used to set the in-memory
+          // one to the platform's, which made this check see nothing to do.
+          await adoptPlatformEpoch(ack.epoch, 'command_ack');
         }
-        state.epoch = ack.epoch;
       } else {
         note('warn', 'command result was not accepted', {
           status: resultStatus,

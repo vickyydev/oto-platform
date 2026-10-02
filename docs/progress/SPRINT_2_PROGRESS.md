@@ -56,8 +56,13 @@ by the platform's filed mark within the box's own era), the write-ahead
 decrement, exactly-once platform decrements on replay, and the
 stock_oversold anomaly with one critical alert (migration 0049). Its
 gates found SCRUM-486 (High, offline sales generally: a box that misses a
-reset reply keeps its old era); that fix starts now that round 3 has
-landed. Queued for
+reset reply keeps its old era). Rounds 2 and 3 CI green (36945341349,
+36945433666). SCRUM-486 lands with this checkpoint: the box adopts the
+platform's era into its store durably from every answer (heartbeat, ack,
+push, reset) with a compare-and-set, a re-sent already-applied sale is
+answered as a duplicate, and an old-era sale is set aside with a critical
+"PAID SALE" note naming its money and goods - never lost. Stock round 4
+(reports, trend rule, five handovers, closing audit) is building. Queued for
 round 4: show the box's stock refusals on the till, the no-places
 shortfall, two round-2 notes and one refusal wording.
 

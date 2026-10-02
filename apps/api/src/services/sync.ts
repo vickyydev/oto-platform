@@ -139,6 +139,7 @@ import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
 import { CHECKIN_HANDLERS, checkinCacheItem } from './sync-checkin';
 import { WALLET_HANDLERS, walletCacheItem } from './sync-wallet';
 import { stockCacheItem, withStockOversold } from './sync-stock';
+import { describeRegressedPaidFact, type RegressedPaidFact } from './sync-epoch-regressed';
 import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
@@ -2823,7 +2824,12 @@ export async function pushEvents(
     actionId?: string | null;
     detail?: Record<string, unknown>;
   }> = [];
-  const quarantined: Array<{ reason: SyncQuarantineReason; eventId: string }> = [];
+  const quarantined: Array<{
+    reason: SyncQuarantineReason;
+    eventId: string;
+    /** SCRUM-486 — set on an `epoch_regressed` fact that carries a sale's money. */
+    paid?: RegressedPaidFact['detail'];
+  }> = [];
   /**
    * Sequences counted as duplicates on the cursor's word alone, with no row
    * anywhere to back it up. Never silent: see where it is filled, and the alert
@@ -3017,16 +3023,39 @@ export async function pushEvents(
 
       // --- The epoch, first, because it decides whether the rest means anything.
       if (address.journalEpoch !== epoch) {
+        /**
+         * SCRUM-486 — already applied on its own epoch? A push the platform
+         * applied whose answer was lost leaves the box holding the event, and
+         * a reset that runs before the re-send puts it on a replaced epoch.
+         * It is in the ledger already — its sale, its money, its stock
+         * movement — so it is answered as the duplicate it is, before anything
+         * files it as money a person must record by hand (and records twice).
+         * Not accounted on THIS epoch's cursor: its position is the old one's.
+         */
+        if (await appliedOnItsOwnEpoch(tx, auth, address)) {
+          duplicates += 1;
+          outcome.result = 'duplicate';
+          results.push(outcome);
+          continue;
+        }
         const ahead = address.journalEpoch > epoch;
         outcome.result = 'quarantined';
         outcome.reason = 'epoch_regressed';
         outcome.errorCode = ahead ? 'SYNC_EPOCH_AHEAD' : 'SYNC_EPOCH_REGRESSED';
+        /**
+         * SCRUM-486 — a fact that carries a sale's money is never only "a batch
+         * from an old epoch": it is money out of the ledger and, for the sale
+         * itself, goods off the shelf that the stock level still counts. The
+         * row is set aside as every regressed event is, and says which.
+         */
+        const paid = await describeRegressedPaidFact(tx, auth.operatorId, address.type, address.raw);
+        const why = ahead
+          ? `This box sent epoch ${address.journalEpoch}; the cloud has it on ${epoch}`
+          : `A batch from epoch ${address.journalEpoch}, which was replaced by ${epoch} when the store was reset`;
         await fileQuarantine(tx, auth, address, {
           reason: 'epoch_regressed',
           errorCode: outcome.errorCode,
-          errorMessage: ahead
-            ? `This box sent epoch ${address.journalEpoch}; the cloud has it on ${epoch}`
-            : `A batch from epoch ${address.journalEpoch}, which was replaced by ${epoch} when the store was reset`,
+          errorMessage: paid ? `${why}. ${paid.message}` : why,
           batchId,
           alertKey: `sync.epoch_regressed:${auth.boxId}`,
         });
@@ -3034,9 +3063,20 @@ export async function pushEvents(
           kind: 'epoch_regressed',
           eventId: address.eventId,
           actionId: address.actionId,
-          detail: { sentEpoch: address.journalEpoch, currentEpoch: epoch, boxSeq: address.boxSeq },
+          detail: {
+            sentEpoch: address.journalEpoch,
+            currentEpoch: epoch,
+            boxSeq: address.boxSeq,
+            ...(paid ? { paid: paid.detail } : {}),
+          },
         });
-        quarantined.push({ reason: 'epoch_regressed', eventId: address.eventId });
+        // A paid fact the ledger already holds is noted on its row and anomaly
+        // but is not money out of the ledger: not counted, not critical.
+        quarantined.push({
+          reason: 'epoch_regressed',
+          eventId: address.eventId,
+          ...(paid && !paid.detail.inLedger ? { paid: paid.detail } : {}),
+        });
         results.push(outcome);
         continue;
       }
@@ -3621,15 +3661,35 @@ export async function pushEvents(
   if (quarantined.length > 0) {
     const epochRegressed = quarantined.filter((q) => q.reason === 'epoch_regressed').length;
     if (epochRegressed > 0) {
+      /**
+       * SCRUM-486 — paid facts among them make it money out of the ledger and
+       * goods the stock level still counts: critical, and said in the summary,
+       * so nobody reads it as a harmless replay. Each row on Failures names
+       * its sale, its money and its goods.
+       */
+      const paid = quarantined
+        .filter((q) => q.reason === 'epoch_regressed' && q.paid)
+        .map((q) => q.paid!);
+      const paidSatang = paid.reduce((sum, p) => sum + p.takenSatang, 0);
       await raiseAlert(
         db,
         {
           key: `sync.epoch_regressed:${auth.boxId}`,
           category: 'sync.epoch_regressed',
-          severity: 'warning',
+          severity: paid.length > 0 ? 'critical' : 'warning',
           subject: `${auth.name} (${auth.slot})`,
-          summary: `${auth.name} sent ${epochRegressed} event(s) from a journal epoch the cloud has replaced — a replay from a store that was reset`,
-          detail: { boxId: auth.boxId, epoch, count: epochRegressed },
+          summary:
+            paid.length > 0
+              ? `${auth.name} sent ${epochRegressed} event(s) from a journal epoch the cloud has replaced, ${paid.length} of them PAID (${formatTHB(paidSatang)}): set aside on Failures > Quarantine, not in the ledger, their goods not taken off the stock level — each row says what to record by hand`
+              : `${auth.name} sent ${epochRegressed} event(s) from a journal epoch the cloud has replaced — a replay from a store that was reset`,
+          detail: {
+            boxId: auth.boxId,
+            epoch,
+            count: epochRegressed,
+            ...(paid.length > 0
+              ? { paidCount: paid.length, paidSatang, paidSaleIds: [...new Set(paid.map((p) => p.saleId))].slice(0, 20) }
+              : {}),
+          },
           operatorId: auth.operatorId,
           branchId: auth.branchId,
         },
@@ -3940,6 +4000,35 @@ async function loadHeldPositions(
   // itself, and a head BELOW the mark would make the check under it meaningless.
   const head = Math.max(mark, ledgerHead?.boxSeq ?? 0, filedHead?.boxSeq ?? 0);
   return { sealed, known, head };
+}
+
+/**
+ * SCRUM-486 — whether an event sent on an epoch other than the box's current
+ * one is a fact this ledger already applied AT THAT VERY ADDRESS: the same
+ * event id, from this box, on the epoch and sequence it names, with the same
+ * content. Only then is it a re-send rather than news. An id the ledger holds
+ * with other content, or at another address, is not vouched for here and goes
+ * on to be set aside like any other regressed event.
+ */
+async function appliedOnItsOwnEpoch(tx: Tx, auth: BoxAuth, address: EventAddress): Promise<boolean> {
+  if (!address.addressable || !address.payloadHash) return false;
+  const [held] = await tx
+    .select({
+      boxId: syncEvent.boxId,
+      journalEpoch: syncEvent.journalEpoch,
+      boxSeq: syncEvent.boxSeq,
+      payloadHash: syncEvent.payloadHash,
+    })
+    .from(syncEvent)
+    .where(eq(syncEvent.eventId, address.eventId))
+    .limit(1);
+  return (
+    !!held &&
+    held.boxId === auth.boxId &&
+    held.journalEpoch === address.journalEpoch &&
+    held.boxSeq === address.boxSeq &&
+    held.payloadHash === address.payloadHash
+  );
 }
 
 /**

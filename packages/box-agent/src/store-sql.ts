@@ -22,6 +22,7 @@ import {
   type ClockStamp,
   type CounterKey,
   type EnvelopeSealer,
+  type EpochAdvance,
   type LeaseWrite,
   type OutboxBatch,
   type OutboxDepth,
@@ -451,6 +452,28 @@ export class SqlBoxStore implements BoxStore {
       [journalEpoch, at, at, boxId],
     );
     return this.readState(boxId);
+  }
+
+  async advanceEpoch(
+    boxId: string,
+    journalEpoch: number,
+    when: EpochAdvance,
+    now?: string,
+  ): Promise<{ moved: boolean; state: BoxStateRecord }> {
+    const at = now ?? this.nowIso();
+    // SCRUM-486 — the condition is in the UPDATE, not in a read before it: a
+    // plain read takes no lock on Postgres, so two adoptions that both read the
+    // old epoch would both restart the sequence, the second one under a fact
+    // already sealed on the new epoch. The row lock the UPDATE takes makes the
+    // second one re-check against what the first committed and move nothing.
+    const rows = await this.driver.query(
+      `update ${this.table('box_state')}
+          set journal_epoch = ?, next_box_seq = 1, last_reset_at = ?, updated_at = ?
+        where box_id = ? and journal_epoch ${when === 'newer' ? '<' : '<>'} ?
+        returning box_id`,
+      [journalEpoch, at, at, boxId, journalEpoch],
+    );
+    return { moved: rows.length > 0, state: await this.readState(boxId) };
   }
 
   async setAppliedConfigVersion(

@@ -48,6 +48,14 @@ export interface OutboxOptions {
   log?: AgentLog;
   /** Called when the cloud reports an epoch this box is not on. */
   onEpoch?: (epoch: number) => void;
+  /**
+   * SCRUM-486 — the one adoption path of the agent that owns this outbox,
+   * which every answer naming the platform's epoch goes through (heartbeat,
+   * config, command acknowledgement, push). When it is given, a push answer is
+   * handed to it and the outbox writes no epoch of its own; without it the
+   * outbox adopts a NEWER epoch itself, and never an older one.
+   */
+  adoptEpoch?: (epoch: number) => Promise<unknown>;
 }
 
 export type FlushOutcome =
@@ -101,6 +109,7 @@ export function createOutbox(options: OutboxOptions): Outbox {
     maxBytes = SYNC_PUSH_MAX_BYTES,
     intervalMs = 5_000,
     onEpoch,
+    adoptEpoch,
   } = options;
   const clock = options.now ?? (() => new Date());
   const log = options.log ?? silentLog;
@@ -179,18 +188,31 @@ export function createOutbox(options: OutboxOptions): Outbox {
       retryAt: (attempts) => new Date(clock().getTime() + backoffMs(attempts)).toISOString(),
     });
 
-    const state = await store.readState(boxId);
-    if (body.epoch !== state.journalEpoch) {
-      // The cloud has moved the journal on — a `reset_store` somebody pressed
-      // on the Console. Adopting it is right and the events still queued from
-      // the old epoch are NOT quietly dropped: they go up, come back
-      // `epoch_regressed`, and land on Failures where a person decides.
-      log.warn(
-        { boxId, localEpoch: state.journalEpoch, cloudEpoch: body.epoch, module: 'outbox' },
-        'the cloud is on a different journal epoch; adopting it',
-      );
-      await store.setEpoch(boxId, body.epoch, clock().toISOString());
-      onEpoch?.(body.epoch);
+    if (adoptEpoch) {
+      await adoptEpoch(body.epoch);
+    } else {
+      const state = await store.readState(boxId);
+      if (body.epoch > state.journalEpoch) {
+        // The cloud has moved the journal on — a `reset_store` somebody pressed
+        // on the Console. Adopting it is right and the events still queued from
+        // the old epoch are NOT quietly dropped: they go up, come back
+        // `epoch_regressed`, and land on Failures where a person decides.
+        log.warn(
+          { boxId, localEpoch: state.journalEpoch, cloudEpoch: body.epoch, module: 'outbox' },
+          'the cloud is on a newer journal epoch; adopting it',
+        );
+        // A compare-and-set (SCRUM-486): another adoption may have moved the
+        // store since the read above and a fact been sealed at (epoch, 1).
+        const moved = await store.advanceEpoch(boxId, body.epoch, 'newer', clock().toISOString());
+        if (moved.moved) onEpoch?.(body.epoch);
+      } else if (body.epoch < state.journalEpoch) {
+        // Never backwards (SCRUM-486): an older epoch would restart the
+        // sequence on addresses the cloud may already hold.
+        log.error(
+          { boxId, localEpoch: state.journalEpoch, cloudEpoch: body.epoch, module: 'outbox' },
+          'the cloud named an OLDER journal epoch than this store holds; not adopted',
+        );
+      }
     }
 
     return {
