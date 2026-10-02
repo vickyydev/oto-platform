@@ -1,26 +1,24 @@
 # Sprint 2 progress
 
-## Platform lane checkpoint - 2 October 2026 (late, 2) - prototype parity audit
+## Platform lane checkpoint - 2 October 2026 (late, 2) - till consistency register
 
-After the SCRUM-488 ruling the user asked that every earlier story be
-checked for the same mistake (our rule replacing the prototype's). A
-read-only audit (8 module auditors + 8 refuting reviewers, code on main
-against imports/oto-pos) confirmed 74 departures, 65 after merging:
-docs/progress/plans/parity/AUDIT-2026-10-02.md.
-- SCRUM-489 (High): 9 safety and money items first: allergy and food
-  safety on real bands at F&B/Shop, prepaid meals, the phone till
-  issuing a redemption twice, Gate access ignored, the Drop-Off/Nanny
-  switch lost, phone-size check-in on the mock, the restock trigger, the
-  tier expiry and the tier pick.
-- SCRUM-490 / SCRUM-491: 34 places to put the prototype's rule back.
-- SCRUM-492: 22 owner decisions; the prototype is the default when each
-  round runs unless the owner rules otherwise.
-Standing rule (memory oto-prototype-rules-not-bugs): a plan may fix only
-data-source faults on its own authority; every rule choice is asked first
-with the prototype as the default.
+Each delivered area was compared line by line with the approved till
+design (imports/oto-pos), so the whole till follows one set of rules:
+docs/progress/plans/consistency/REGISTER.md (65 entries). Story
+SCRUM-493 with four subtasks:
+- SCRUM-494 (High, first): band details at food counters (allergies,
+  food permission, prepaid meals), the phone till's redemption, Gate
+  access on adult bands, the Drop-Off/Nanny change, phone-size check-in,
+  the full-refund restock, the tier expiry and the tier pick.
+- SCRUM-495 / SCRUM-496: 34 details brought back to the design.
+- SCRUM-497: 22 details for the owner to confirm; the design's behaviour
+  stays unless the owner chooses otherwise.
+Planning rule (memory oto-prototype-rules-not-bugs): a plan changes only
+data reliability on its own; every rule choice is confirmed first, with
+the design as the default.
 
-Order: End of Day round 1 (workflow running) -> SCRUM-489 -> S2-15a rounds
-2-4 -> SCRUM-490 -> SCRUM-491; S2-15b after.
+Order: End of Day round 1 (workflow running) -> SCRUM-494 -> S2-15a
+rounds 2-4 -> SCRUM-495 -> SCRUM-496; S2-15b after.
 
 ## Platform lane checkpoint - 2 October 2026 (late) - S2-15a re-planned to the owner's ruling
 
