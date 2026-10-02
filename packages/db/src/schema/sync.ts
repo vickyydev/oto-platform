@@ -526,6 +526,15 @@ export const SYNC_ANOMALY_KINDS = [
    * critical alert (migration 0046).
    */
   'wallet_overdraft',
+  /**
+   * S2-14b round 3 — a sale a box took offline reached the platform wanting
+   * more of an item than the record held: two boxes sold the same last units
+   * in one outage, or a counter online sold them meanwhile. The sale is filed
+   * (it was paid), the level floors at zero with the rest recorded as the
+   * movement's shortfall, and the item, size, place, box, station and short
+   * quantity are named here with a critical alert (migration 0049).
+   */
+  'stock_oversold',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 
@@ -565,7 +574,7 @@ export const syncAnomaly = edge.table(
     index('sync_anomaly_detected_idx').on(t.detectedAt),
     check(
       'sync_anomaly_kind_check',
-      sql`${t.kind} in ('clock_recomputed','duplicate_replay','sequence_gap','merge','epoch_regressed','late_arrival','receipt_collision','revoked_actor','wallet_overdraft')`,
+      sql`${t.kind} in ('clock_recomputed','duplicate_replay','sequence_gap','merge','epoch_regressed','late_arrival','receipt_collision','revoked_actor','wallet_overdraft','stock_oversold')`,
     ),
   ],
 );

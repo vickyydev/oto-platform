@@ -302,6 +302,8 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
       // S2-14a round 4: and its wallet balance snapshots, written only when
       // they moved (or the copy is old enough to need confirming).
       '/box/v1/cache?schemaVersion=1&scopes=wallets',
+      // S2-14b round 3: and its stock level snapshot, on the same terms.
+      '/box/v1/cache?schemaVersion=1&scopes=stock',
     ]);
 
     const staffAfter = await freshStore().readBundle(boxId, 'staff');

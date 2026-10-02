@@ -1556,6 +1556,8 @@ describe('the cache bundle', () => {
       'receipt_series',
       'staff',
       'station_config',
+      // S2-14b round 3: stock level snapshots per size and place.
+      'stock',
       // S2-14a round 4: wallet balance snapshots and the offline cap.
       'wallets',
     ]);
@@ -1870,6 +1872,8 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     'receipt_series',
     'staff',
     'station_config',
+    // S2-14b round 3: stock level snapshots per size and place.
+    'stock',
     // S2-14a round 4: wallet balance snapshots and the offline cap.
     'wallets',
   ];

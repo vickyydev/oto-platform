@@ -11,6 +11,7 @@ import {
 } from './booth';
 import { planCacheApply, type CacheFaultReason } from './cache-apply';
 import { WALLET_SNAPSHOT_REWRITE_AFTER_MS } from './wallet-lane';
+import { STOCK_SNAPSHOT_REWRITE_AFTER_MS } from './stock-lane';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
 import { createOutbox, type Outbox } from './outbox';
@@ -576,6 +577,8 @@ export interface BoxAgent {
   syncCheckin(): Promise<boolean>;
   /** S2-14a round 4 — pull the `wallets` scope (balance snapshots + the cap) on its own. Also run on the cache tick. */
   syncWallets(): Promise<boolean>;
+  /** S2-14b round 3 — pull the `stock` scope (level snapshots + this box's filed sales) on its own. Also run on the cache tick. */
+  syncStock(): Promise<boolean>;
   /**
    * Seals facts with this box's signing key, or null before registration.
    *
@@ -2532,6 +2535,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     await pullWalletScope(boxId).catch((err: unknown) => {
       note('warn', 'the wallet balance copy could not be refreshed', { err: String(err) });
     });
+    // S2-14b round 3: the stock levels move with every sale anywhere in the
+    // branch, so they are read on their own every tick as the balances are.
+    await pullStockScope(boxId).catch((err: unknown) => {
+      note('warn', 'the stock count copy could not be refreshed', { err: String(err) });
+    });
     await photoUploader?.tick().catch((err: unknown) => {
       note('warn', 'the photo upload pass failed', { err: String(err) });
     });
@@ -2643,6 +2651,60 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       appliedAt: new Date(now).toISOString(),
     });
     cacheScopesHeld.add('wallets');
+    return true;
+  }
+
+  /**
+   * The `stock` scope, read on its own (S2-14b round 3, plan §2.4): the
+   * branch's level SNAPSHOT per stocked size and place, with what this box's
+   * own offline sales the platform has already filed. Volatile — every sale
+   * moves it — so it rides neither the catalogue nor the bundle's version.
+   * Written when it moved, or when the copy held is older than
+   * `STOCK_SNAPSHOT_REWRITE_AFTER_MS` even though it did not: the copy's
+   * `appliedAt` is what a counter judges the snapshot's age by
+   * (`STOCK_SNAPSHOT_REFUSE_AFTER_S`).
+   */
+  async function pullStockScope(boxId: string): Promise<boolean> {
+    if (!store || !credential || state.offline) return false;
+    // Only a counter sells counted stock: a booth or a gate box is not sent levels.
+    if (!bundle?.stations.some((s) => s.kind === 'till')) return false;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=stock`, { method: 'GET' });
+    if (status === 401) {
+      await reregisterAfterRefusal('cache');
+      return false;
+    }
+    if (status !== 200 || !body) return false;
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const held = plan.apply.includes('stock') ? body.scopes.stock : undefined;
+    if (!held) return false;
+    const versionOf = (items: unknown): string | null => {
+      const first = Array.isArray(items) ? (items[0] as { version?: unknown } | undefined) : undefined;
+      return typeof first?.version === 'string' ? first.version : null;
+    };
+    const now = clock();
+    const before = await store.readBundle(boxId, 'stock').catch(() => null);
+    const incoming = versionOf(held.items);
+    if (
+      before &&
+      incoming &&
+      versionOf((before.payload as { items?: unknown }).items) === incoming &&
+      now - Date.parse(before.appliedAt) < STOCK_SNAPSHOT_REWRITE_AFTER_MS
+    ) {
+      return false;
+    }
+    await store.writeBundle(boxId, {
+      scope: 'stock',
+      schemaVersion: body.schemaVersion,
+      cursorSeq: cacheCursorSeq,
+      payload: { items: held.items },
+      appliedAt: new Date(now).toISOString(),
+    });
+    cacheScopesHeld.add('stock');
     return true;
   }
 
@@ -4202,6 +4264,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       photoUploader ? photoUploader.tick() : { linked: 0, waiting: 0, failed: 0, purged: 0 },
     syncCheckin: async () => (state.boxId ? pullCheckinScope(state.boxId) : false),
     syncWallets: async () => (state.boxId ? pullWalletScope(state.boxId) : false),
+    syncStock: async () => (state.boxId ? pullStockScope(state.boxId) : false),
     sealer: () => {
       const key = syncPrivateKeyPem;
       const id = state.boxId;

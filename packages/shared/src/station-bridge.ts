@@ -5,6 +5,7 @@ import { PAYMENT_METHOD_KINDS, type PaymentAttemptView } from './payments';
 import { SALE_REPRINT_KINDS } from './print';
 import { TIER_PROOF_TYPES } from './tier-proof';
 import { STAFF_OFFLINE_SIGN_IN_DAYS, STAFF_TOKEN_TTL_S } from './staff-token';
+import type { StockLocationType } from './stock';
 
 /**
  * THE STATION BRIDGE — how a till and a customer display reach their box
@@ -474,6 +475,21 @@ const BridgeCartLineSchema = z.object({
         unitSatang: z.number().int().min(0).max(100_000_000).optional(),
         quantity: z.number().int().min(1).max(99),
         taxCategoryOverride: z.string().max(40).optional(),
+        /**
+         * S2-14b round 3 — an add-on split across sizes, as the till's own
+         * commit carries it (`cartWire.ts`), so the box's stock guard counts
+         * each size against its snapshot as the platform's guard does.
+         */
+        variantBreakdown: z
+          .array(
+            z.object({
+              variantId: z.string().min(1).max(100),
+              variantLabel: z.string().max(60).optional(),
+              quantity: z.number().int().min(0).max(99),
+            }),
+          )
+          .max(20)
+          .optional(),
       }),
     )
     .max(20)
@@ -1100,6 +1116,112 @@ export const BOX_WALLET_REFUSALS = {
     code: 'WALLET_OFFLINE_UNAVAILABLE',
     message:
       'This counter’s box cannot count credit while it is offline — take the order in cash or card.',
+  },
+} as const;
+
+// --- Stock on the box lane (S2-14b round 3) --------------------------------------------------
+//
+// Plan `docs/progress/plans/stock/PLAN.md` §2.4. The `stock` cache scope ships
+// the branch's level SNAPSHOT per stocked size and per place (the sell point
+// and the others), with what this box's own offline sales the platform has
+// already filed against each size. A counter with the link down refuses what
+// is not there:
+//
+//     available = snapshot total − (this box's own stock-taking sales whose
+//                                    journal position is above the snapshot's
+//                                    filed mark for the box — `boxFiled`)
+//
+// counted per size, honouring an add-on's `variantBreakdown`, in the counter's
+// words ("Only 3 Grip Socks S left"). Its own sales are counted write-ahead in
+// the sale's store transaction, so a restart forgets nothing. The platform
+// takes the stock when the sale replays through finalise, once per sale line;
+// a replay that wants more than the record holds is filed with the shortfall
+// and raised ONCE as a `stock_oversold` anomaly with a critical alert.
+//
+// The scope is volatile — every sale moves it — so it rides neither the
+// `catalogue` scope nor the bundle's version: a sale never churns the
+// catalogue hash.
+
+/**
+ * How old a stock snapshot may be before a counter stops selling counted
+ * items from it. The scope is refreshed on every agent tick, so a day without
+ * one means the box has been cut off since before the park opened; past that
+ * the counter cannot honestly say what is on the shelf.
+ */
+export const STOCK_SNAPSHOT_REFUSE_AFTER_S = 24 * 60 * 60;
+
+/** One live place of the branch, as the `stock` scope names it. */
+export interface StockSnapshotPlace {
+  id: string;
+  name: string;
+  type: StockLocationType;
+  sellPoint: boolean;
+}
+
+/** One stocked size as the `stock` scope carries it. */
+export interface StockSnapshotEntry {
+  stockItemId: string;
+  /** The sellable it stocks. */
+  productId: string;
+  /** The size's id; null for an item sold in one size. */
+  variantId: string | null;
+  /** The product's name, as the counter names it ("Grip Socks"). */
+  itemName: string;
+  /** The size's label ("S"), or null for one size. */
+  sizeLabel: string | null;
+  /** What each place held when the snapshot was built, by place id. */
+  levels: Record<string, number>;
+  /** The sum of `levels`: what the branch held everywhere. */
+  total: number;
+}
+
+/**
+ * THE PLATFORM'S FILED MARK FOR THE BOX THE SNAPSHOT WAS BUILT FOR: the
+ * highest journal position (`box_seq`) of that box's current epoch the
+ * platform has applied — read in the same instant as the levels. Every sale
+ * of this box at or below it is in the levels (or was filed aside and never
+ * will be); every one above it is not yet. The box keeps each counted sale's
+ * shares with that sale's own position, so it subtracts exactly the sales
+ * above the mark — never an all-time total, which drifts for ever as soon as
+ * one sale is counted on one side and not the other.
+ */
+export interface StockFiledMark {
+  journalEpoch: number;
+  boxSeq: number;
+}
+
+/** The `stock` scope's one item. */
+export interface StockSnapshotItem {
+  version: string;
+  generatedAt: string;
+  branchId: string;
+  sellPointId: string | null;
+  places: StockSnapshotPlace[];
+  /** Every live stocked size of the branch that stocks a sellable: complete, never truncated. */
+  items: StockSnapshotEntry[];
+  /**
+   * What of THIS box's journal the levels already reflect. Null when the
+   * platform has no mark to give (an older platform): the box then treats
+   * every counted sale it still holds as not yet reflected.
+   */
+  boxFiled: StockFiledMark | null;
+}
+
+/** The box-lane refusals of counted stock, in the counter's words. */
+export const BOX_STOCK_REFUSALS = {
+  /** The guard's own shortage: "Only 3 Grip Socks S left". The message is built per cart. */
+  short: { code: 'STOCK_SHORT' },
+  /** A size the line does not name, or one this branch does not stock. */
+  size: { code: 'STOCK_SIZE_REQUIRED' },
+  unknown: {
+    code: 'BOX_STOCK_UNKNOWN',
+    message:
+      'This counter is offline and has no stock count for that item, so it cannot be sold here — sell it when the connection is back.',
+  },
+  stale: {
+    code: 'BOX_STOCK_STALE',
+    message:
+      'This counter has not had a stock count from the internet for over a day, so items the park counts cannot be sold offline — sell them when the connection is back.',
   },
 } as const;
 

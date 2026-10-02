@@ -49,13 +49,19 @@ real data, and the four round-1 handovers (platform-sync now lays down the
 stock places and items with no quantities). The gates closed two real
 holes: stock landing on a removed size via a refund or a race; every
 positive movement now locks the item and refuses a removed size.
-Round 3 (offline) is in its fourth gate cycle (box epoch rule). Its gate
-also found SCRUM-486 (High, offline sales generally: a box that misses a
-reset reply keeps its old era), starting once round 3 lands. Queued for
+Round 3 (offline) lands with this checkpoint after four gate cycles: a
+volatile stock cache scope kept out of the catalogue hash, the box guard
+(snapshot minus this box's sales the platform has not yet filed, judged
+by the platform's filed mark within the box's own era), the write-ahead
+decrement, exactly-once platform decrements on replay, and the
+stock_oversold anomaly with one critical alert (migration 0049). Its
+gates found SCRUM-486 (High, offline sales generally: a box that misses a
+reset reply keeps its old era); that fix starts now that round 3 has
+landed. Queued for
 round 4: show the box's stock refusals on the till, the no-places
 shortfall, two round-2 notes and one refusal wording.
 
-Migrations landed through 0048. To resume: read this block, then the
+Migrations landed through 0049. To resume: read this block, then the
 SCRUM-213 comments, then `git log main`.
 
 ## Platform lane checkpoint - 1 October 2026 (evening) - S2-13 Deployed whole

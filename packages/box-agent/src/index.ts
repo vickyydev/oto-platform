@@ -74,3 +74,8 @@ export * from './photo-upload';
  * bridge spends by.
  */
 export * from './wallet-lane';
+/**
+ * S2-14b round 3 — counted stock on the box lane: the snapshot reader and the
+ * guard's arithmetic the bridge sells by.
+ */
+export * from './stock-lane';

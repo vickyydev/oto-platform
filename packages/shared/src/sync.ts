@@ -254,6 +254,14 @@ export const SYNC_ANOMALY_KINDS = [
    * named here with a critical alert.
    */
   'wallet_overdraft',
+  /**
+   * S2-14b round 3 — a sale a box took offline wanted more of an item than
+   * the record held when it reached the platform (two boxes selling the same
+   * last units in one outage): the sale is filed, the level floors at zero
+   * with the rest as the movement's shortfall, and the item, size, place, box,
+   * station and short quantity are named here with a critical alert.
+   */
+  'stock_oversold',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 
@@ -284,6 +292,16 @@ export const SYNC_CHANGE_SCOPES = [
    * travel as digests, never as the codes a guest holds.
    */
   'wallets',
+  /**
+   * S2-14b round 3 — the branch's stock LEVEL SNAPSHOTS, per stocked size and
+   * per place (the sell point and the others), with what this box's own
+   * offline sales the platform has already filed: what a counter needs to
+   * refuse what is not there with the link down. A cache scope only, like
+   * `wallets`: served whole by `GET /box/v1/cache`, never written to
+   * `edge.sync_change`, and volatile — kept out of the `catalogue` scope and
+   * out of the bundle's version, because every sale moves it.
+   */
+  'stock',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

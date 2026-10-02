@@ -21,6 +21,10 @@ import {
   type BridgeBookingView,
   type OfflineBookingRedeemed,
   BOX_WALLET_REFUSALS,
+  BOX_STOCK_REFUSALS,
+  STOCK_SNAPSHOT_REFUSE_AFTER_S,
+  type StockFiledMark,
+  type StockSnapshotItem,
   BRIDGE_WALLET_INTENTS,
   BridgeWalletLookupSchema,
   BridgeWalletSpendSchema,
@@ -123,6 +127,23 @@ import {
   type OfflineAllowance,
   type OfflineSpendRefusal,
 } from './wallet-lane';
+import {
+  PROTOTYPE_SOCKS_ADD_ON_ID,
+  STOCK_TAKEN_TOTAL_DAY,
+  STOCK_TAKEN_TOTAL_SCOPE,
+  planStock,
+  readStockShares,
+  readStockSnapshot,
+  shareReflected,
+  stockAsksOf,
+  stockAvailable,
+  stockOpenKey,
+  stockShortages,
+  stockShortRefusal,
+  stockSizeRefusal,
+  unreflectedUnits,
+  type StockShortage,
+} from './stock-lane';
 import { uuidv7 } from './signing';
 import type { TerminalCommandOutcome, TerminalController, TerminalProtocol } from './terminal/index';
 import { boxBlobs, type BlobStore } from './blob-store';
@@ -142,6 +163,7 @@ import type {
   BoxStore,
   CachedBundle,
   EnvelopeSealer,
+  OutboxRecord,
   OverlayRecord,
   OverlayWrite,
   QueuedFact,
@@ -591,7 +613,23 @@ interface PreparedSale {
   snapshot: Omit<SalePrintSnapshot, 'saleId' | 'receiptNumber' | 'at' | 'bands' | 'tenders'>;
   /** The cart as the fact carries it: what was sold, and what the box charged. */
   factCart: Record<string, unknown> & { expectedTotalSatang: number };
+  /** S2-14b round 3: the counted sizes this sale takes, against the box's stock snapshot. */
+  stock: BoxStock;
 }
+
+/**
+ * S2-14b round 3 — WHAT A SALE TAKES OF THE COUNTED SHELVES, against the
+ * snapshot it was guarded with. `demand` holds only sizes the snapshot names;
+ * the platform takes the stock itself when the sale replays through finalise.
+ */
+interface BoxStock {
+  snapshot: StockSnapshotItem | null;
+  /** Units per stock item. */
+  demand: Map<string, number>;
+}
+
+/** The runtime value naming what a sale took of the counted shelves on this box. */
+const stockTakenKey = (saleId: string) => `stock_taken:${saleId}`;
 
 /** What the box keeps beside a sale in its log, to answer the till the same way twice. */
 interface SaleMemo {
@@ -2125,6 +2163,15 @@ export class StationBridge {
       at?: Date;
       overlay?: (catalogue: OfflineCatalogue) => OfflineCatalogue;
       redeeming?: boolean;
+      /**
+       * S2-14b round 3 — the stock guard. `refuse` (the default for a fresh
+       * press) refuses a cart the box's snapshot cannot fill before anything
+       * is numbered or taken; `skip` (a held tender closed at the price it was
+       * charged, a booking's redemption, credit already written ahead) only
+       * plans what the sale takes, as the platform skips its guard for a
+       * booking or an offline replay — the money is already promised.
+       */
+      stockGuard?: 'refuse' | 'skip';
     } = {},
   ): Promise<PreparedSale> {
     // S2-12 closing audit — the booking marker is what the platform reads to
@@ -2267,6 +2314,11 @@ export class StationBridge {
         dietary: child?.dietary ?? null,
       });
     }
+    const stock = await this.stockFor(
+      cart,
+      opts.stockGuard ?? (opts.at || opts.redeeming ? 'skip' : 'refuse'),
+      now,
+    );
     const orderChildren = (body.visitId ? banded : [...(shown?.children ?? [])])
       .map((c) => ({ name: c.name, allergies: c.allergies, medicalNotes: c.medicalNotes }))
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -2315,7 +2367,192 @@ export class StationBridge {
         ...(body.note ? { note: body.note } : {}),
         expectedTotalSatang: gross,
       },
+      stock,
     };
+  }
+
+  // --- counted stock on the box lane (S2-14b round 3) ----------------------------------------
+
+  /** The `stock` scope as this box holds it, with when it was written. */
+  private async stockSnapshot(): Promise<{ snapshot: StockSnapshotItem | null; appliedAt: string | null }> {
+    const bundle = await this.bundle('stock');
+    return { snapshot: bundle ? readStockSnapshot(bundle.payload) : null, appliedAt: bundle?.appliedAt ?? null };
+  }
+
+  /**
+   * This box's own counted sales of one size that the snapshot does not yet
+   * reflect: the open shares whose journal position is above its filed mark,
+   * judged against the epoch the box seals on now (`shareReflected`).
+   * A first look, before the sale's transaction; `takeStockAhead` asks again
+   * inside it, under the size's lock, and that answer is the one that holds.
+   */
+  private async unreflectedOnBox(stockItemId: string, mark: StockFiledMark | null): Promise<number> {
+    if (!this.host.store.features().boothRuntime) return 0;
+    const raw = await this.host.store.readRuntimeValue(this.host.boxId, stockOpenKey(stockItemId)).catch(() => null);
+    const boxEpoch = await this.host.store
+      .readState(this.host.boxId)
+      .then((state) => state.journalEpoch)
+      .catch(() => null);
+    return unreflectedUnits(readStockShares(raw), mark, boxEpoch);
+  }
+
+  /**
+   * THE GUARD, on the box: the counted sizes this cart takes, refused in the
+   * counter's words when the snapshot less this box's own sales since cannot
+   * fill them (`stock-lane.ts`).
+   *
+   * WHAT IS COUNTED. With a fresh snapshot (younger than
+   * `STOCK_SNAPSHOT_REFUSE_AFTER_S`) the snapshot alone decides, exactly as the
+   * platform does: an active stock item at this branch. A product it does not
+   * stock — tracking switched off, or counted only at another branch — sells
+   * uncounted. The catalogue's `stockItemId` marker is one column per product
+   * (operator-wide) and survives tracking being switched off, so it is used
+   * only when there is no fresh snapshot.
+   *
+   * HONEST WHEN IT CANNOT KNOW. With no snapshot, a stale one, or a store that
+   * cannot keep a count, an item the old snapshot or the catalogue marker calls
+   * counted is refused, never silently allowed. An item nobody counts sells as
+   * it always did. `skip` plans without refusing anything.
+   */
+  private async stockFor(cart: BridgeCart, guard: 'refuse' | 'skip', now: Date): Promise<BoxStock> {
+    const item = await this.catalogueItem();
+    const rows = (Array.isArray(item?.products) ? item.products : [])
+      .map(rec)
+      .filter((p): p is Record<string, unknown> => !!p && !p.archivedAt);
+    const byId = new Map(rows.map((p) => [s(p.id) ?? '', p]));
+    const productOf = (id: string) => {
+      const row = byId.get(id);
+      return row ? { id, name: s(row.name) ?? 'This item' } : null;
+    };
+    const socksAddOn = cart.socks?.addOnId ?? null;
+    const socksProductId = socksAddOn
+      ? (productOf(socksAddOn)?.id ?? (socksAddOn === PROTOTYPE_SOCKS_ADD_ON_ID ? await this.socksProductId() : null))
+      : null;
+    const asks = stockAsksOf(cart, { socksProductId, productOf });
+    const { snapshot, appliedAt } = await this.stockSnapshot();
+    if (asks.length === 0) return { snapshot, demand: new Map() };
+    if (guard === 'skip') return { snapshot, demand: snapshot ? planStock(asks, snapshot).demand : new Map() };
+
+    const inSnapshot = new Set((snapshot?.items ?? []).map((e) => e.productId));
+    const runtime = this.host.store.features().boothRuntime;
+    const age = ageOf(appliedAt, now);
+    const fresh = runtime && !!snapshot && age !== null && age < STOCK_SNAPSHOT_REFUSE_AFTER_S;
+    if (!fresh) {
+      // No trustworthy count: the catalogue's operator-wide marker is the only
+      // hint left, so anything it (or an old copy) calls counted is refused.
+      const tracked = asks.filter((a) => inSnapshot.has(a.productId) || !!s(byId.get(a.productId)?.stockItemId));
+      if (tracked.length > 0) {
+        const names = [...new Set(tracked.map((a) => a.label))];
+        if (!runtime || !snapshot) {
+          throw new BridgeError(409, BOX_STOCK_REFUSALS.unknown.code, BOX_STOCK_REFUSALS.unknown.message, { items: names });
+        }
+        throw new BridgeError(409, BOX_STOCK_REFUSALS.stale.code, BOX_STOCK_REFUSALS.stale.message, {
+          appliedAt,
+          items: names,
+        });
+      }
+    }
+    // A fresh snapshot alone decides what is counted here — the platform's
+    // rule (an ACTIVE stock item at THIS branch). A product it does not stock
+    // sells uncounted, as the platform sells it.
+    if (!snapshot) return { snapshot, demand: new Map() };
+    const plan = planStock(asks, snapshot);
+    if (plan.sizeProblems.length > 0) {
+      throw new BridgeError(409, BOX_STOCK_REFUSALS.size.code, stockSizeRefusal(plan.sizeProblems), {
+        problems: plan.sizeProblems,
+      });
+    }
+    const unreflected = new Map<string, number>();
+    for (const id of plan.demand.keys()) unreflected.set(id, await this.unreflectedOnBox(id, snapshot.boxFiled));
+    const shortages = stockShortages(plan.demand, snapshot, (id) => unreflected.get(id) ?? 0);
+    if (shortages.length > 0) {
+      throw new BridgeError(409, BOX_STOCK_REFUSALS.short.code, stockShortRefusal(shortages), { shortages });
+    }
+    return { snapshot, demand: plan.demand };
+  }
+
+  /**
+   * THE BOX'S OWN DECREMENT, WRITTEN AHEAD: in the sale's store transaction,
+   * once its facts are queued, each size's open shares gain this sale's share
+   * WITH THE SALE'S JOURNAL POSITION (the highest of its facts) — all or
+   * nothing with the sale, its number and its fact. The size's all-days count
+   * is bumped first, one statement per size in a fixed order: that row is the
+   * lock that makes two tills on this box selling the last unit at once
+   * queue, so the second reads the first's share. Under `refuse` the open
+   * shares above the snapshot's mark are checked again and a sale that no
+   * longer fits rolls back with everything else. Under `record` (money already
+   * taken) it never refuses — the platform records the shortfall when the sale
+   * arrives. Shares the snapshot already reflects are dropped as it writes.
+   */
+  private async takeStockAhead(
+    tx: BoxStore,
+    stock: BoxStock,
+    mode: 'refuse' | 'record',
+    sale: { saleId: string; at: string; records: readonly OutboxRecord[] },
+  ): Promise<void> {
+    const snapshot = stock.snapshot;
+    if (!snapshot || stock.demand.size === 0 || !tx.features().boothRuntime) return;
+    const position = await this.positionOf(tx, sale.records);
+    const mark = snapshot.boxFiled;
+    // The epoch this box seals on NOW: a share on it is reflected only by a
+    // mark on the same epoch (`shareReflected`), so a snapshot whose mark is on
+    // an epoch the box has not adopted neither hides this box's sales nor
+    // prunes the share this sale writes.
+    const boxEpoch = (await tx.readState(this.host.boxId)).journalEpoch;
+    const shortages: StockShortage[] = [];
+    const shares: Array<{ stockItemId: string; quantity: number; takenOnBox: number }> = [];
+    for (const [stockItemId, quantity] of [...stock.demand].sort(([a], [b]) => a.localeCompare(b))) {
+      const after = await tx.bumpCounter(
+        this.host.boxId,
+        { scope: STOCK_TAKEN_TOTAL_SCOPE, key: stockItemId, businessDate: STOCK_TAKEN_TOTAL_DAY },
+        quantity,
+        sale.at,
+      );
+      shares.push({ stockItemId, quantity, takenOnBox: after });
+      const open = readStockShares(await tx.readRuntimeValue(this.host.boxId, stockOpenKey(stockItemId))).filter(
+        (s) => s.saleId !== sale.saleId && !shareReflected(s, mark, boxEpoch),
+      );
+      const unreflected = unreflectedUnits(open, mark, boxEpoch);
+      open.push({ saleId: sale.saleId, journalEpoch: position.journalEpoch, boxSeq: position.boxSeq, quantity });
+      await tx.writeRuntimeValue(this.host.boxId, stockOpenKey(stockItemId), JSON.stringify(open), sale.at);
+      if (mode !== 'refuse') continue;
+      const entry = snapshot.items.find((e) => e.stockItemId === stockItemId);
+      if (!entry) continue;
+      const available = stockAvailable(entry, unreflected);
+      if (quantity > available) {
+        shortages.push({
+          stockItemId,
+          name: entry.sizeLabel ? `${entry.itemName} ${entry.sizeLabel}` : entry.itemName,
+          requested: quantity,
+          available,
+        });
+      }
+    }
+    if (shortages.length > 0) {
+      throw new BridgeError(409, BOX_STOCK_REFUSALS.short.code, stockShortRefusal(shortages), { shortages });
+    }
+    await tx.writeRuntimeValue(
+      this.host.boxId,
+      stockTakenKey(sale.saleId),
+      JSON.stringify({ at: sale.at, snapshotVersion: snapshot.version, ...position, shares }),
+      sale.at,
+    );
+  }
+
+  /**
+   * Where a sale sits in this box's journal: its epoch and the HIGHEST
+   * position its facts took — the platform holds the sale whole (a wallet's
+   * credit closing it included) only once its mark reaches the last of them.
+   * From the box's own state when the queue returned nothing to read.
+   */
+  private async positionOf(tx: BoxStore, records: readonly OutboxRecord[]): Promise<StockFiledMark> {
+    let top: StockFiledMark | null = null;
+    for (const r of records) {
+      if (!top || r.envelope.boxSeq > top.boxSeq) top = { journalEpoch: r.envelope.journalEpoch, boxSeq: r.envelope.boxSeq };
+    }
+    if (top) return top;
+    const state = await tx.readState(this.host.boxId);
+    return { journalEpoch: state.journalEpoch, boxSeq: Math.max(1, state.nextBoxSeq) };
   }
 
   /** The children a sale's visit names: the visit this counter recorded, else what the till confirmed. */
@@ -2491,9 +2728,22 @@ export class StationBridge {
       at?: string;
       alongside?: OfflineSaleRequest['alongside'];
       wallet?: SaleMemo['wallet'];
+      /**
+       * S2-14b round 3 — the counted stock this sale takes, written ahead in
+       * its transaction: `refuse` checks the count again (a fresh press, no
+       * money taken yet); `record` (the default: a card approved, a booking,
+       * credit already held) never refuses.
+       */
+      stock?: 'refuse' | 'record';
     } = {},
   ): Promise<BridgeSaleAnswer> {
     const queue = this.saleQueue();
+    const stockMode = opts.stock ?? 'record';
+    // The stock is taken once the sale's facts have their journal positions,
+    // still inside the sale's own transaction: each share is kept with them.
+    const afterQueued: NonNullable<OfflineSaleRequest['afterQueued']> = async (tx, queued) => {
+      await this.takeStockAhead(tx, sale.stock, stockMode, queued);
+    };
     const at = opts.at ?? this.host.now().toISOString();
     const memo: SaleMemo = {
       view: this.saleViewOf(station, body.saleId, sale, at),
@@ -2546,6 +2796,7 @@ export class StationBridge {
         },
         memo: memo as unknown as Record<string, unknown>,
         ...(opts.alongside ? { alongside: opts.alongside } : {}),
+        afterQueued,
       });
     } catch (err) {
       if (err instanceof OfflineSaleRefused) this.refuse('voucher');
@@ -2610,13 +2861,15 @@ export class StationBridge {
       }
       if (tender.kind !== 'cash') this.refuse('noTerminal');
     }
-    const sale = await this.prepareSale(station, caller, body);
     /**
      * S2-14a round 4 — credit already written ahead for this sale on this box
      * (`payment.wallet` that did not cover it): the press that takes the rest
      * in cash closes the sale with both, the credit's fact queued behind it.
+     * S2-14b round 3: that sale was guarded for stock when its credit was
+     * taken, so it is not refused for stock now.
      */
     const hold = await this.readWalletHold(body.saleId);
+    const sale = await this.prepareSale(station, caller, body, hold && !hold.closed ? { stockGuard: 'skip' } : {});
     if (hold && !hold.closed) return this.closeWithCredit(station, caller, body, sale, hold, tender, false);
     const now = this.host.now().toISOString();
     if (sale.gross === 0) {
@@ -2628,7 +2881,7 @@ export class StationBridge {
         );
       }
       // A ฿0 comp: closed with no tender, as the platform closes one (S2-09a).
-      return this.closeSale(station, caller, body, sale, [], null);
+      return this.closeSale(station, caller, body, sale, [], null, { stock: 'refuse' });
     }
     if (!tender) {
       throw new BridgeError(400, 'VALIDATION', 'A sale that owes money needs its payment');
@@ -2667,7 +2920,7 @@ export class StationBridge {
       paidAt: now,
       createdAt: now,
     });
-    return this.closeSale(station, caller, body, sale, [fact], attempt);
+    return this.closeSale(station, caller, body, sale, [fact], attempt, { stock: 'refuse' });
   }
 
   // --- credit on the box lane, under the cap (S2-14a round 4) ------------------------------
@@ -3040,6 +3293,8 @@ export class StationBridge {
         return [this.walletSpentFact(caller, hold, recorded.receipt, recorded.at)];
       },
       wallet: memoWallet,
+      // A fresh press took no money yet; a held credit was guarded when it was taken.
+      stock: fresh ? 'refuse' : 'record',
     });
   }
 
@@ -3116,9 +3371,12 @@ export class StationBridge {
         // Money already moving on the counter's terminal for this sale comes first.
         const held = await this.readHeld(body.saleId);
         if (held && (SETTLED.has(held.status) || UNRESOLVED.has(held.status))) throw paymentInFlight();
-        const sale = await this.prepareSale(station, caller, body);
-        const tender = body.tender ?? null;
+        // S2-14b round 3: credit already held for this sale was guarded for
+        // stock when it was taken, so a press repeated after the shelf moved is
+        // answered from the hold, not refused for stock.
         const earlier = await this.readWalletHold(body.saleId);
+        const sale = await this.prepareSale(station, caller, body, earlier && !earlier.closed ? { stockGuard: 'skip' } : {});
+        const tender = body.tender ?? null;
         if (earlier && !earlier.closed) {
           // Credit already taken for this sale on this box: said again, never
           // counted again. Cash for the rest in this press closes it.
@@ -3532,7 +3790,10 @@ export class StationBridge {
         const earlier = await this.readHeld(body.saleId);
         if (earlier && SETTLED.has(earlier.status)) return this.closeHeld(station, caller, earlier);
         if (body.tender.method === 'wallet') this.refuse('wallet');
-        const sale = await this.prepareSale(station, caller, body);
+        // S2-14b round 3: a tender still in flight may already hold the
+        // guest's money, so its sale is answered, never refused for stock.
+        const inFlight = !!earlier && UNRESOLVED.has(earlier.status);
+        const sale = await this.prepareSale(station, caller, body, inFlight ? { stockGuard: 'skip' } : {});
         if (earlier && UNRESOLVED.has(earlier.status)) return this.openAnswer(station, earlier, sale);
         // S2-14a round 4: credit taken offline for this sale is closed with cash
         // on this lane — one payment beside the credit, as the box closes a sale.

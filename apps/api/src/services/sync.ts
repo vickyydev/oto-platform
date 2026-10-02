@@ -138,6 +138,7 @@ import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
  */
 import { CHECKIN_HANDLERS, checkinCacheItem } from './sync-checkin';
 import { WALLET_HANDLERS, walletCacheItem } from './sync-wallet';
+import { stockCacheItem, withStockOversold } from './sync-stock';
 import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
@@ -3285,7 +3286,20 @@ export async function pushEvents(
             );
           }
 
-          const result = await handler.apply(sp, scope, prepared, parsed.data as never);
+          /**
+           * S2-14b round 3 — a fact that can close a box's sale has taken its
+           * stock at finalise (`takeStockForSale`, once per sale line); a line
+           * filed short of the record is raised once as `stock_oversold`
+           * (`sync-stock.ts`). Nothing for any other fact.
+           */
+          const result = await withStockOversold(
+            sp,
+            scope,
+            prepared,
+            envelope.type,
+            parsed.data,
+            await handler.apply(sp, scope, prepared, parsed.data as never),
+          );
 
           await sp.insert(syncEvent).values({
             eventId: envelope.eventId,
@@ -4281,11 +4295,13 @@ export async function pullChanges(
   const asked: readonly SyncChangeScope[] | undefined = query.scopes?.length
     ? query.scopes
     : undefined;
-  // `checkin` (S2-13 round 4) and `wallets` (S2-14a round 4) are cache scopes
-  // only: never written to the change feed, so a feed narrowed to one of them
-  // is narrowed to nothing of it.
+  // `checkin` (S2-13 round 4), `wallets` (S2-14a round 4) and `stock` (S2-14b
+  // round 3) are cache scopes only: never written to the change feed, so a
+  // feed narrowed to one of them is narrowed to nothing of it.
   const feedOnly = (names: readonly string[]): SyncChangeScope[] =>
-    names.filter((name): name is SyncChangeScope => name !== 'checkin' && name !== 'wallets');
+    names.filter(
+      (name): name is SyncChangeScope => name !== 'checkin' && name !== 'wallets' && name !== 'stock',
+    );
   const scopes =
     role === 'counter'
       ? asked && feedOnly(asked)
@@ -4371,6 +4387,14 @@ export const CACHE_SCOPES = [
    * `walletCacheItem` in `sync-wallet.ts`. Volatile.
    */
   'wallets',
+  /**
+   * S2-14b round 3 — the branch's stock LEVEL SNAPSHOTS per stocked size and
+   * per place, with this box's filed offline sales of each. Built by
+   * `stockCacheItem` in `sync-stock.ts`. Volatile, and never part of the
+   * `catalogue` scope: a sale moves it and must not move the price list's
+   * version (OD-8).
+   */
+  'stock',
 ] as const;
 export type CacheScope = (typeof CACHE_SCOPES)[number];
 
@@ -4419,6 +4443,12 @@ export const CACHE_VOLATILE_SCOPES = [
    * (`?scopes=wallets`, `pullWalletScope` in `@oto/box-agent`).
    */
   'wallets',
+  /**
+   * S2-14b round 3 — every sale anywhere in the branch moves a level, so the
+   * stock snapshot may not move the etag; the agent reads it on its own tick
+   * (`?scopes=stock`, `pullStockScope` in `@oto/box-agent`).
+   */
+  'stock',
 ] as const satisfies readonly CacheScope[];
 
 function isVolatileScope(name: string): boolean {
@@ -4807,6 +4837,12 @@ export async function cacheBundle(
     if (scope === 'wallets') {
       // One item, applied whole: balances, the cap, this box's filed spends.
       put('wallets', [await walletCacheItem(db, auth)]);
+      continue;
+    }
+
+    if (scope === 'stock') {
+      // One item, applied whole: every counted size and place, this box's filed sales.
+      put('stock', [await stockCacheItem(db, auth)]);
       continue;
     }
 

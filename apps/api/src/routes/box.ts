@@ -356,11 +356,11 @@ export async function boxRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = boxAuth(req);
-      // `checkin` (S2-13 round 4) and `wallets` (S2-14a round 4) are served by
-      // `/cache` alone and never fed.
+      // `checkin` (S2-13 round 4), `wallets` (S2-14a round 4) and `stock`
+      // (S2-14b round 3) are served by `/cache` alone and never fed.
       const scopes = parseList(req.query.scopes, SYNC_CHANGE_SCOPES).filter(
-        (name): name is Exclude<(typeof SYNC_CHANGE_SCOPES)[number], 'checkin' | 'wallets'> =>
-          name !== 'checkin' && name !== 'wallets',
+        (name): name is Exclude<(typeof SYNC_CHANGE_SCOPES)[number], 'checkin' | 'wallets' | 'stock'> =>
+          name !== 'checkin' && name !== 'wallets' && name !== 'stock',
       );
       return pullChanges(app.db, auth, {
         cursorSeq: req.query.cursorSeq,

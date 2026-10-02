@@ -23,7 +23,7 @@ import {
 import type { PrintingController } from './printing/index';
 import { ROLE_FOR_KIND, type PrintJobOutcome } from './printing/queue';
 import { uuidv7 } from './signing';
-import type { BoxStore, EnvelopeSealer, PrintJobRecord, QueuedFact } from './store';
+import type { BoxStore, EnvelopeSealer, OutboxRecord, PrintJobRecord, QueuedFact } from './store';
 
 /**
  * TAKING MONEY WITH THE LINK DOWN (S2-10a, Slice G; offline plan §2.4, Round 4).
@@ -161,6 +161,18 @@ export interface OfflineSaleRequest extends Omit<OfflineSaleFact, 'saleId' | 're
     tx: BoxStore,
     sale: { saleId: string; receipt: OfflineReceiptFact; at: string },
   ) => Promise<QueuedFact[]>;
+  /**
+   * S2-14b round 3 — called inside the sale's own store transaction once its
+   * facts are queued, with the journal positions they took (`records`, in
+   * queue order). What it writes commits or rolls back with the sale; a throw
+   * refuses the whole sale, number, facts and all. The stock lane keeps each
+   * counted sale's share with these positions, so it can tell which of its
+   * sales a platform snapshot already reflects.
+   */
+  afterQueued?: (
+    tx: BoxStore,
+    sale: { saleId: string; at: string; records: readonly OutboxRecord[] },
+  ) => Promise<void>;
 }
 
 export interface OfflineTenderRequest {
@@ -828,7 +840,7 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
 
         const alongside = request.alongside ? await request.alongside(tx, { saleId, receipt, at }) : [];
         extraFacts = alongside.length;
-        const [queued] = await tx.enqueueMany(
+        const queuedAll = await tx.enqueueMany(
           boxId,
           [
             saleFinalisedFact({
@@ -850,6 +862,8 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
           seal,
           at,
         );
+        const queued = queuedAll[0];
+        if (request.afterQueued) await request.afterQueued(tx, { saleId, at, records: queuedAll });
         await crash('after_fact');
 
         logged = {
