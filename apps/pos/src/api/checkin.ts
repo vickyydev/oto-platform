@@ -381,7 +381,16 @@ export const checkinApi = {
       },
     ),
 
-  checkInNow: (body: { saleId: string; entries: { checkinId: string; nannyId?: string | null }[] }) =>
+  /**
+   * `service` on an entry is the Drop-Off / Nanny switch as the paid cart
+   * line carried it: the platform, and the box with the link down, apply it
+   * to the stay in the check-in's own write and check the nanny against it;
+   * the box's `checkin.updated` fact carries it to the platform on replay.
+   */
+  checkInNow: (body: {
+    saleId: string;
+    entries: { checkinId: string; nannyId?: string | null; service?: SupervisionRequirement }[];
+  }) =>
     viaLane(
       () =>
         api.post<CheckInNowAnswer>('/checkin/check-in-now', body, { idempotencyKey: idemKey() }),
@@ -405,6 +414,34 @@ export const checkinApi = {
         }),
     ),
 };
+
+/**
+ * THE BOARD'S "CHECK IN" HAND-OVER, READ FROM THE PLATFORM (the prototype read
+ * `getCheckIns()` from its in-memory store). One registration's children still
+ * waiting to be checked in and not yet paid for, in the prototype's `CheckIn`
+ * shape the till's drop-off line builder reads. A child already paid for
+ * ("Leave as booked") is checked in from the board without a payment, so the
+ * till never loads one onto a second sale. Read through the waiting list, so
+ * the box answers it while the link is down. `nannies` names a nanny already
+ * assigned (the roster the till holds).
+ */
+export async function waitingStaysOf(
+  branchId: string,
+  registrationId: string,
+  nannies: readonly ApiNanny[] = [],
+): Promise<CheckIn[]> {
+  const { registrations } = await checkinApi.awaiting(branchId);
+  const reg = registrations.find((r) => r.id === registrationId);
+  if (!reg) return [];
+  return reg.children
+    .filter((c) => c.status === 'registered' && !c.saleId)
+    .map((c) => {
+      const base = apiCheckinToCheckIn(c, reg);
+      if (!c.nannyId) return base;
+      const name = nannies.find((n) => n.id === c.nannyId)?.name;
+      return { ...base, assignedNannyId: c.nannyId, ...(name ? { assignedNannyName: name } : {}) };
+    });
+}
 
 /** What "Check in now" answers, on either lane. */
 export interface CheckInNowAnswer {

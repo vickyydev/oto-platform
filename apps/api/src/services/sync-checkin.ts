@@ -423,7 +423,10 @@ async function applyCheckinUpdated(
     const issued = payload.band ? await recordCheckinBand(tx, scope, event, stay, saleRow, payload.band) : null;
     const bookedMinutes =
       payload.bookedMinutes ?? (issued?.stayHours && issued.stayHours > 0 ? issued.stayHours * 60 : stay.bookedMinutes);
-    const nannyId = stay.service === 'nanny' ? (payload.nannyId ?? stay.nannyId) : null;
+    // The service the box checked the child in on (the paid line's Drop-Off /
+    // Nanny switch); a fact without one keeps the stay's own.
+    const service = payload.service ?? stay.service;
+    const nannyId = service === 'nanny' ? (payload.nannyId ?? stay.nannyId) : null;
     if (nannyId) await nannyAtBranch(tx, stay.branchId, nannyId);
     await tx
       .update(checkin)
@@ -433,6 +436,7 @@ async function applyCheckinUpdated(
         checkedInByAccountId: actorOf(event),
         scheduledFor: null,
         bookedMinutes,
+        service,
         nannyId,
         saleId: saleRow.id,
         bandId: issued?.bandId ?? stay.bandId,
@@ -448,6 +452,7 @@ async function applyCheckinUpdated(
       before: {
         status: stay.status,
         saleId: stay.saleId,
+        service: stay.service,
         nannyId: stay.nannyId,
         scheduledFor: stay.scheduledFor?.toISOString() ?? null,
         bookedMinutes: stay.bookedMinutes,
@@ -455,6 +460,7 @@ async function applyCheckinUpdated(
       after: {
         status: 'in_park',
         saleId: saleRow.id,
+        service,
         nannyId,
         scheduledFor: null,
         bookedMinutes,

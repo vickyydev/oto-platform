@@ -511,7 +511,20 @@ export const CheckInNowSchema = z
   .object({
     saleId: uuid,
     entries: z
-      .array(z.object({ checkinId: uuid, nannyId: uuid.nullable().optional() }).strict())
+      .array(
+        z
+          .object({
+            checkinId: uuid,
+            nannyId: uuid.nullable().optional(),
+            /**
+             * The service the paid cart line carried (the Drop-Off / Nanny
+             * switch on the till's line). Applied to the stay in the check-in's
+             * own transaction; absent = the stay keeps the service it has.
+             */
+            service: z.enum(SUPERVISION_REQUIREMENTS).optional(),
+          })
+          .strict(),
+      )
       .min(1)
       .max(20),
   })

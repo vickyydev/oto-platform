@@ -758,7 +758,10 @@ export interface CheckInNowResult {
 export async function checkInNow(
   tx: Tx,
   actor: Actor,
-  input: { saleId: string; entries: readonly { checkinId: string; nannyId?: string | null }[] },
+  input: {
+    saleId: string;
+    entries: readonly { checkinId: string; nannyId?: string | null; service?: SupervisionRequirement }[];
+  },
   now: Date = new Date(),
   opts: { event?: 'check_in_now' | 'check_in_booked' } = {},
 ): Promise<CheckInNowResult> {
@@ -785,12 +788,20 @@ export async function checkInNow(
   }
   const { saleRow, stays, lineOf } = await loadChoice(tx, actor, input.saleId, input.entries.map((e) => e.checkinId));
   const nannyByEntry = new Map(input.entries.map((e) => [e.checkinId, e.nannyId ?? null]));
+  /**
+   * The service each child was PAID for: the Drop-Off / Nanny switch on the
+   * till's cart line (prototype `checkInFamilyWithPayment` sets
+   * `serviceType` from the paid input). Sent with the entry, it is the stay's
+   * service from this check-in on; an entry without one keeps the stay's own.
+   */
+  const serviceByEntry = new Map(input.entries.map((e) => [e.checkinId, e.service]));
+  const serviceOf = (s: CheckinRow): SupervisionRequirement => serviceByEntry.get(s.id) ?? s.service;
 
   // The nannies, all before any write (prototype checkInFamilyWithPayment):
   // on this park's roster AND on shift here now — the same rule every other
-  // assignment path applies (`checkNannyFor`).
+  // assignment path applies (`checkNannyFor`), against the paid service.
   for (const s of stays) {
-    if (s.service !== 'nanny') continue;
+    if (serviceOf(s) !== 'nanny') continue;
     const id = nannyByEntry.get(s.id) ?? s.nannyId;
     if (!id) throw errors.conflict('NANNY_REQUIRED', `Assign a nanny to ${s.childName} before checking them in.`);
     await checkNannyFor(tx, saleRow.branchId, id, s.id, now);
@@ -798,13 +809,16 @@ export async function checkInNow(
 
   for (const s of stays) {
     const line = lineOf.get(s.id)!;
-    const nannyId = s.service === 'nanny' ? (nannyByEntry.get(s.id) ?? s.nannyId) : null;
+    const service = serviceOf(s);
+    // Plain drop-off has no nanny: the table holds one on nanny-service stays only.
+    const nannyId = service === 'nanny' ? (nannyByEntry.get(s.id) ?? s.nannyId) : null;
     const patch = {
       status: 'in_park' as const,
       checkedInAt: now,
       checkedInByAccountId: actor.accountId,
       scheduledFor: null,
       bookedMinutes: line.stayHours && line.stayHours > 0 ? line.stayHours * 60 : s.bookedMinutes,
+      service,
       nannyId,
       saleId: saleRow.id,
       updatedAt: now,
@@ -822,6 +836,7 @@ export async function checkInNow(
       before: {
         status: s.status,
         saleId: s.saleId,
+        service: s.service,
         nannyId: s.nannyId,
         scheduledFor: s.scheduledFor?.toISOString() ?? null,
         bookedMinutes: s.bookedMinutes,
@@ -831,6 +846,7 @@ export async function checkInNow(
       after: {
         status: 'in_park',
         saleId: saleRow.id,
+        service,
         nannyId,
         scheduledFor: null,
         bookedMinutes: patch.bookedMinutes,

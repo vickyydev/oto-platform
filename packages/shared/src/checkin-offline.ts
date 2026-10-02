@@ -176,6 +176,12 @@ export const OfflineCheckinUpdatedSchema = z.object({
   scheduledFor: IsoDateTime.nullish(),
   bookedMinutes: z.number().int().min(1).max(24 * 60).nullish(),
   nannyId: Uuid.nullish(),
+  /**
+   * `check_in_now` only: the service the stay was checked in on (the paid
+   * line's Drop-Off / Nanny switch). Absent on a fact that does not carry
+   * it = the stay's own service.
+   */
+  service: z.enum(SUPERVISION_REQUIREMENTS).nullish(),
   band: OfflineCheckinBandSchema.nullish(),
   fields: z
     .object({
@@ -262,7 +268,15 @@ export const BridgeCheckinUpdateSchema = z.discriminatedUnion('event', [
     .object({
       event: z.literal('check_in_now'),
       saleId: Uuid,
-      entries: z.array(z.object({ checkinId: Uuid, nannyId: Uuid.nullish() })).min(1).max(20),
+      /**
+       * `service` is the Drop-Off / Nanny switch the paid cart line carried
+       * (the platform's `CheckInNowSchema` entry); absent = the stay keeps
+       * the service it has.
+       */
+      entries: z
+        .array(z.object({ checkinId: Uuid, nannyId: Uuid.nullish(), service: z.enum(SUPERVISION_REQUIREMENTS).optional() }).strict())
+        .min(1)
+        .max(20),
       /** Printed beside the band's name; never sent to the platform. */
       staffName: z.string().max(120).nullish(),
     })

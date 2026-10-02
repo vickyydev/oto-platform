@@ -959,7 +959,10 @@ export class CheckinDesk {
     const stays = body.entries.map((e) => {
       const found = this.findStay(view, e.checkinId);
       if (!found) throw refuse(404, BOX_CHECKIN_REFUSALS.noCopy, { checkinId: e.checkinId });
-      return { ...found, nannyId: e.nannyId ?? null };
+      // The service the child was PAID for (the till line's Drop-Off / Nanny
+      // switch), as the platform's checkInNow applies it; an entry without
+      // one keeps the stay's own.
+      return { ...found, nannyId: e.nannyId ?? null, service: e.service ?? found.child.service };
     });
     // A retry of a check-in that landed: every child in the park on THIS sale with a band.
     if (stays.every((s) => s.child.status === 'in_park' && s.child.saleId === body.saleId && !!s.child.bandId)) {
@@ -994,7 +997,7 @@ export class CheckinDesk {
     }
     const nannyOf = new Map<string, { id: string; name: string } | null>();
     for (const s of stays) {
-      if (s.child.service !== 'nanny') {
+      if (s.service !== 'nanny') {
         nannyOf.set(s.child.id, null);
         continue;
       }
@@ -1028,7 +1031,7 @@ export class CheckinDesk {
         allergies: s.child.allergies,
         medicalNotes: plan?.medicalNotes ?? null,
         dietary: s.child.foodRestrictions,
-        supervisionBadge: supervisionBadgeOf(s.child.service),
+        supervisionBadge: supervisionBadgeOf(s.service),
         nannyName: nanny?.name ?? null,
         stayHours: hours,
       };
@@ -1053,6 +1056,7 @@ export class CheckinDesk {
               checkedInAt: at,
               scheduledFor: null,
               bookedMinutes,
+              service: s.service,
               nannyId: nanny?.id ?? null,
               nannyName: nanny?.name ?? null,
               saleId: body.saleId,
@@ -1066,6 +1070,7 @@ export class CheckinDesk {
               scheduledFor: null,
               bookedMinutes: bookedMinutes ?? null,
               nannyId: nanny?.id ?? null,
+              service: s.service,
               band: {
                 id: band.id,
                 code: band.code,

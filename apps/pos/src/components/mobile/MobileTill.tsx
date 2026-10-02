@@ -14,13 +14,12 @@ import {
   computeLineTotal,
   computeLineBreakdown,
   isTierPriced,
-  priceForTier,
   unpricedCartLines,
   unpricedLineReason,
   unpricedReason,
 } from '@/lib/pricing';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
-import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
+import { resolveGroupRequirements, resolveSupervisionOutcome, confirmationsSatisfied } from '@/lib/supervision';
 import { buildSale } from '@/lib/sale';
 import { shownBaht, taxRowsOf, ticketTotals } from '@/lib/cartWire';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
@@ -28,11 +27,9 @@ import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import {
   getDiscountReasons,
-  recordSale, getTicketTypes, getDropOffPricing,
-  getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier,
-  getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver,
-  getPrintTemplate, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, getDiscountByCode, incrementPromoUsage,
-  type CheckInPaymentInput,
+  recordSale, getTicketTypes, getDropOffPricing, getDefaultTier,
+  getSupervisionPolicy,
+  getPrintTemplate, ensureSaleGrantWallet, issueWalkInBands, getDiscountByCode, incrementPromoUsage,
 } from '@/mockApi';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { paymentMethodLabel } from '@/lib/payments';
@@ -41,15 +38,12 @@ import { subscribeCatalog } from '@/store/catalogStore';
 import { useOperator } from '@/auth/OperatorContext';
 import { useBranch } from '@/branch/BranchContext';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
-import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
+import { ApiError, isMissingRoute } from '@/api/client';
+import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { membersApi } from '@/api/platform';
 import { lookupMember } from '@/api/members';
-import {
-  bookingsApi,
-  redemptionFromConflict,
-  type PlatformBooking,
-  type RedeemOutcome,
-} from '@/api/bookings';
+import { type PlatformBooking, type RedeemOutcome } from '@/api/bookings';
+import { announceBookingRedemption, redeemBookingOnPlatform, redeemedOutcome } from '@/lib/bookingRedemption';
 import {
   buildCartPayload,
   claimVerifiedTier,
@@ -360,6 +354,10 @@ export default function MobileTill() {
 
   // ── Booking redemption flow ───────────────────────────────────────────────
   const [showRedeemModal, setShowRedeemModal] = useState(false);
+  // One idempotency key per booking per open dialog: a retry after a dropped
+  // answer replays the platform's stored redemption instead of being told the
+  // booking was already redeemed by this very press.
+  const redeemKeyRef = useRef<{ bookingId: string; key: string } | null>(null);
   const [pendingDropOffRegistration, setPendingDropOffRegistration] = useState<{
     registrationId: string;
     childNames: string[];
@@ -377,6 +375,60 @@ export default function MobileTill() {
   // policy flow into the mobile till instead of a stale mount-time snapshot.
   useSyncExternalStore(subscribeCatalog, () => null);
   const supervisionPolicy = getSupervisionPolicy();
+
+  /**
+   * The park's nanny roster, from the platform (`GET /checkin/config`), as the
+   * counter till reads it: a nanny already assigned on a handed-over
+   * registration is named from it. Re-read when the gate opens.
+   */
+  const [nannyRoster, setNannyRoster] = useState<ApiNanny[]>([]);
+  const refreshNannyRoster = () => {
+    // The park in the PLATFORM's id — `branch.id` is the catalogue slug.
+    const platformBranchId = apiBranchIdForSlug(branch.id);
+    if (!platformBranchId) {
+      setNannyRoster([]);
+      return;
+    }
+    void checkinApi
+      .config(platformBranchId)
+      .then((config) => setNannyRoster(config.nannies))
+      .catch(() => setNannyRoster([]));
+  };
+  useEffect(() => {
+    refreshNannyRoster();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-read only when the park changes
+  }, [branch?.id]);
+
+  /**
+   * The ids the gate writes under, minted once per gate (OD-12): the
+   * registration, each supervised child's stay (also its drop-off line's id)
+   * and each waiver. A Continue pressed again after a failure re-sends the
+   * same ids, and the platform answers with what already exists.
+   */
+  const gateRegistrationIdRef = useRef<string | null>(null);
+  const gateStayIdsRef = useRef(new Map<string, string>());
+  const gateWaiverIdsRef = useRef(new Map<string, string>());
+  const gateIdFor = (ids: Map<string, string>, slotId: string): string => {
+    const known = ids.get(slotId);
+    if (known) return known;
+    const id = checkinApi.newId();
+    ids.set(slotId, id);
+    return id;
+  };
+  /** True while the gate's registration and waivers are being written. */
+  const [gateSaving, setGateSaving] = useState(false);
+  /** True while the paid children are being checked in on the platform. */
+  const checkInBusyRef = useRef(false);
+
+  /**
+   * A drop-off line under its STAY's id: the platform's sale line carries the
+   * cart line id, and the check-in finds each child's paid line by it
+   * (`cart_line_id = checkin.id`).
+   */
+  const stayLine = (args: Parameters<typeof makeDropOffLine>[0]): CartLine => ({
+    ...makeDropOffLine(args),
+    id: args.ci.id,
+  });
 
   // ── Handoff corrections (same as Till.tsx) ────────────────────────────────
 
@@ -405,12 +457,26 @@ export default function MobileTill() {
   // as the counter's membership check does. A Cancel pressed while the lookup
   // is out wins (`saleEpochRef`).
   const loadDropOffRegistration = async (registrationId: string) => {
-    const children = getCheckInsByRegistration(registrationId).filter(
-      (c) => c.status === 'registered',
-    );
+    // The registration is the platform's: its waiting, unpaid children are
+    // read back (`waitingStaysOf`), as the counter till reads them.
+    const epoch = saleEpochRef.current;
+    const platformBranchId = apiBranchIdForSlug(branch.id);
+    let children: CheckIn[];
+    try {
+      if (!platformBranchId) throw new Error(TILL_NOT_LINKED);
+      children = await waitingStaysOf(platformBranchId, registrationId, nannyRoster);
+    } catch (err) {
+      if (saleEpochRef.current !== epoch) return;
+      toast({
+        title: 'Could not load the registration',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (saleEpochRef.current !== epoch) return;
     if (children.length === 0) return;
     const phone = children[0]?.phone ?? '';
-    const epoch = saleEpochRef.current;
     let found: Member | null = null;
     if (phone) {
       try {
@@ -434,7 +500,7 @@ export default function MobileTill() {
     setTier(resolvedTier);
     const dropOffLines = normalizeDropOffFees(
       children.map((ci) =>
-        makeDropOffLine({
+        stayLine({
           ci,
           ticket: defaultTicket,
           tier: resolvedTier,
@@ -550,15 +616,21 @@ export default function MobileTill() {
     setSuperParentName('');
     setSuperConsentAck(false);
     setSupervisionResolved(false);
+    gateRegistrationIdRef.current = null;
+    gateStayIdsRef.current = new Map();
+    gateWaiverIdsRef.current = new Map();
     setShowCartSheet(false);
   };
 
-  // Staff confirmed a paid booking in the RedeemBookingModal. Claim the booking
-  // on the platform, then build + record the regular-guest sale (drop-off lines
-  // are excluded — they get their own check-in flow), issue wristbands, dispatch
-  // print jobs, then offer to check in any drop-off children via the existing
-  // registration flow. Mirrors handleRedeemConfirm in the iPad Till.tsx exactly,
-  // claim first included (SCRUM-234).
+  // Staff confirmed a paid booking in the RedeemBookingModal. The platform does
+  // the rest in one transaction (`POST /bookings/:id/redeem`, or the counter's
+  // box with the link down): it claims the booking, records the regular-guest
+  // sale from what the family paid (drop-off lines are excluded — they get
+  // their own check-in flow), mints the wristbands and prints through the
+  // station. The phone says what was printed and what was not, then offers to
+  // check in any drop-off children via the existing registration flow. The
+  // same helpers as the counter's handleRedeemConfirm (`pages/Till.tsx`), so the
+  // sale, the bands and the paper are the platform's alone (SCRUM-494).
   const handleRedeemConfirm = async (
     booking: Booking,
     platform: PlatformBooking,
@@ -575,66 +647,15 @@ export default function MobileTill() {
       };
     }
 
-    const sale = buildSale({
-      operatorId: operator.id,
-      operatorName: operator.name,
-      tier: booking.tier,
-      lines: regularLines,
-      discounts: booking.promoDiscount ? [booking.promoDiscount] : [],
-      manualDiscounts: [],
-      memberId: booking.memberId,
-      customerPhone: '',
-      customerNickname: '',
-      paymentMethod: booking.paymentMethod,
-      bookingReference: booking.reference,
-    });
+    const claimed = await redeemBookingOnPlatform(
+      platform.id,
+      station?.stationId ? { stationId: station.stationId } : {},
+      redeemKeyRef,
+    );
+    if (!claimed.ok) return claimed;
+    const redeemed = claimed.redeemed;
 
-    try {
-      await bookingsApi.redeem(
-        platform.id,
-        { stationId: station?.stationId },
-        bookingsApi.newRedeemKey(),
-      );
-    } catch (err) {
-      const first = redemptionFromConflict(err);
-      if (first) return { ok: false, redemption: first };
-      if (err instanceof NetworkError) {
-        return {
-          ok: false,
-          message: 'No connection to the platform, so this booking cannot be redeemed here. Nothing has been issued.',
-        };
-      }
-      if (isMissingRoute(err)) {
-        return {
-          ok: false,
-          message: 'This deployment cannot record a booking redemption yet (SCRUM-234). Nothing has been issued.',
-        };
-      }
-      return {
-        ok: false,
-        message: err instanceof ApiError ? err.message : 'The booking could not be redeemed. Nothing has been issued.',
-      };
-    }
-
-    recordSale(sale);
-    // Track usage for promo codes embedded in the booking at redemption time.
-    if (booking.promoDiscount) {
-      incrementPromoUsage(booking.promoDiscount.code, customerPhone || member?.phone || undefined);
-    }
-
-    // Mint every wristband for the booking from each ticket's own package
-    // (mirrors Till.tsx): credit-earning persons get a scannable wallet band,
-    // everyone else a 0-balance gate/plain band; gate access from the ticket.
-    const mintedCodes = issueBookingBands(sale, operator?.name);
-
-    if (station) {
-      dispatchPrintJobs(ticketPrintJobs(station, sale));
-    }
-
-    toast({
-      title: 'Booking redeemed',
-      description: `${booking.reference} — ${mintedCodes.length} wristband(s) issued.`,
-    });
+    announceBookingRedemption(booking.reference, redeemed);
 
     // If the booking has drop-off children, prompt staff to check them in now.
     if (booking.registrationId) {
@@ -642,7 +663,7 @@ export default function MobileTill() {
       setPendingDropOffRegistration({ registrationId: booking.registrationId, childNames: dropOffNames });
     }
 
-    return { ok: true };
+    return redeemedOutcome(redeemed);
   };
 
   const restateLinesToTier = (t: CustomerTier) => {
@@ -892,7 +913,7 @@ export default function MobileTill() {
       const additions = children
         .filter((ci) => !present.has(ci.id))
         .map((ci) =>
-          makeDropOffLine({
+          stayLine({
             ci,
             ticket: template ? template.ticketType : defaultTicket,
             tier: activeTier,
@@ -1075,6 +1096,10 @@ export default function MobileTill() {
     }
     setSuperSlots(slots);
     setSuperParentName('');
+    gateRegistrationIdRef.current = null;
+    gateStayIdsRef.current = new Map();
+    gateWaiverIdsRef.current = new Map();
+    refreshNannyRoster();
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
     setMStep('supervision');
@@ -1134,7 +1159,16 @@ export default function MobileTill() {
     }
 
     // All consent captured — resolve supervision (same logic as Till.tsx).
+    // The registration is written on the platform, so the press is parked
+    // until it answers.
+    if (gateSaving) return;
+    setGateSaving(true);
+    void resolveMobileSupervisionGate().finally(() => setGateSaving(false));
+  };
+
+  const resolveMobileSupervisionGate = async () => {
     if (!tier || !operator) return;
+    const epoch = saleEpochRef.current;
     const policy = supervisionPolicy;
     const resolved2 = resolveGroupRequirements(
       superSlots.map((s) => ({ id: s.id, age: slotAge(s) ?? -1 })),
@@ -1166,37 +1200,114 @@ export default function MobileTill() {
       }
     }
 
-    const created = registerWalkInChildren(
-      supervised.map(({ slot, service }) => ({
-        name: slot.name,
-        age: slotAge(slot) ?? 0,
-        dateOfBirth: slot.dateOfBirth,
-        service,
-        parentName: superParentName,
-        allergiesMedical: slot.allergiesMedical,
-        foodRestrictions: slot.foodRestrictions,
-        mayOrderFood: slot.mayOrderFood,
-        foodProvision: slot.foodProvision,
-        childPhotoUrl: slot.childPhotoUrl,
-      })),
-      {
-        operatorName: operator.name,
-        acknowledgedConfirmations: buildAcknowledgedConfirmations(supervisionPolicy, superAcknowledgedConfirmationIds),
-      },
-    );
-
-    for (const { slot, covering } of waiversToAudit) {
-      recordSupervisionWaiver(
-        {
-          childName: slot.name.trim() || 'Child',
-          childAge: slotAge(slot) ?? 0,
-          waivedRequirement: (reqById.get(slot.id) ?? 'drop_off') as 'drop_off' | 'nanny',
-          coveringSiblingName: covering.name.trim() || 'Sibling',
-          coveringSiblingAge: slotAge(covering) ?? 0,
-        },
-        { operatorName: operator.name, operatorId: operator.id },
-      );
+    /**
+     * The park in the PLATFORM's id: the registration and the waivers name the
+     * platform's branch row. A phone with no platform branch is refused here,
+     * before anything is written.
+     */
+    const platformBranchId = apiBranchIdForSlug(branch.id) ?? '';
+    if (!platformBranchId && (supervised.length > 0 || waiversToAudit.length > 0)) {
+      toast({
+        title: "Couldn't register these children",
+        description: `${TILL_NOT_LINKED} Nobody has been checked in or charged — the details are still on screen.`,
+        variant: 'destructive',
+      });
+      return;
     }
+
+    /**
+     * The registration and the waivers, on the platform — the counter till's
+     * `checkinApi` calls (`pages/Till.tsx`). Both are written BEFORE the cart
+     * changes: a refusal (an age the policy disagrees with, a waiver the
+     * policy will not allow, consent not finished) leaves the gate as it was,
+     * with nothing charged. The guardian's number and channel are the ones the
+     * consent screen captured on this phone.
+     */
+    let created: CheckIn[] = [];
+    let registrationId: string | null = null;
+    try {
+      if (supervised.length > 0) {
+        const regId = gateRegistrationIdRef.current ?? checkinApi.newId();
+        gateRegistrationIdRef.current = regId;
+        const stayIds = supervised.map(({ slot }) => gateIdFor(gateStayIdsRef.current, slot.id));
+        const reg = await checkinApi.createRegistration({
+          id: regId,
+          branchId: platformBranchId,
+          stationId: station?.stationId ?? null,
+          memberId: member?.id ?? null,
+          visitId: null,
+          guardianName: superParentName.trim(),
+          guardianPhone: customerPhone.trim() || null,
+          contactChannel: customerContactChannel,
+          consentAcknowledged: superConsentAck,
+          acknowledgedConfirmationIds: superAcknowledgedConfirmationIds,
+          children: supervised.map(({ slot, service }, i) => ({
+            checkinId: stayIds[i]!,
+            childId: null,
+            name: slot.name.trim(),
+            ageYears: slotAge(slot) ?? 0,
+            dateOfBirth: slot.dateOfBirth ?? null,
+            service,
+            allergies: slot.allergiesMedical.trim() || null,
+            foodRestrictions: slot.foodRestrictions.trim() || null,
+            foodProvision: foodProvisionToWire(slot.foodProvision),
+          })),
+        });
+        registrationId = reg.id;
+        created = supervised.map(({ slot }, i) => {
+          const stay = reg.children.find((c) => c.id === stayIds[i]);
+          if (!stay) throw new Error(`${slot.name.trim() || 'A child'} is missing from the registration — press Continue again.`);
+          return apiCheckinToCheckIn(stay, reg, { childPhotoUrl: slot.childPhotoUrl });
+        });
+        // The consent photo goes to file storage under the registration. A
+        // photo that does not upload does not undo the registration — it is
+        // said, so staff can retake it before pickup.
+        for (const [i, { slot }] of supervised.entries()) {
+          const stayId = stayIds[i]!;
+          if (!slot.childPhotoUrl?.startsWith('data:')) continue;
+          if (reg.children.find((c) => c.id === stayId)?.photoFileId) continue;
+          try {
+            await checkinApi.uploadPhoto(reg.id, slot.childPhotoUrl, [stayId]);
+          } catch (err) {
+            if (err instanceof ApiError && err.code === 'CHILD_PHOTOS_DISABLED') {
+              toast({
+                title: `${slot.name.trim() || 'The child'}: photo not kept`,
+                description: `${err.message} The registration is saved.`,
+              });
+              continue;
+            }
+            toast({
+              title: `${slot.name.trim() || 'The child'}: photo not saved`,
+              description: `${err instanceof Error ? err.message : 'Unknown error'} The registration is saved; take the photo again before pickup.`,
+              variant: 'destructive',
+            });
+          }
+        }
+      }
+
+      // Each staff-accepted sibling waiver, audited on the platform; the
+      // policy is checked again there.
+      for (const { slot, covering } of waiversToAudit) {
+        await checkinApi.recordWaiver({
+          id: gateIdFor(gateWaiverIdsRef.current, slot.id),
+          branchId: platformBranchId,
+          stationId: station?.stationId ?? null,
+          registrationId,
+          child: { name: slot.name.trim() || 'Child', ageYears: slotAge(slot) ?? 0, childId: null },
+          sibling: { name: covering.name.trim() || 'Sibling', ageYears: slotAge(covering) ?? 0, childId: null },
+          waivedRequirement: (reqById.get(slot.id) ?? 'drop_off') as 'drop_off' | 'nanny',
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Couldn't register these children",
+        description: `${err instanceof Error ? err.message : 'Unknown error'} Nobody has been checked in or charged — the details are still on screen.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    // A Cancel pressed while the registration was being written wins.
+    if (saleEpochRef.current !== epoch) return;
 
     const sourceIds = new Set(superSlots.map((s) => s.sourceLineId));
     const carryExtras = new Map<string, { socks: number; addOns: SelectedAddOn[] }>();
@@ -1209,8 +1320,8 @@ export default function MobileTill() {
 
     const usedCarry = new Set<string>();
     const dropLines: CartLine[] = supervised.map(({ slot, service }, i) => {
-      let line = makeDropOffLine({
-        ci: created[i],
+      let line = stayLine({
+        ci: created[i]!,
         ticket: slot.ticketType,
         tier,
         service,
@@ -1436,16 +1547,80 @@ export default function MobileTill() {
       recorded.status !== 'finalised' ||
       completedPaymentRef.current === recorded.id
     ) return;
+    if (checkInBusyRef.current) return;
     const methods = [...new Set(settlements.map((part) => part.method))];
     const method = recorded.totals.grossSatang === 0 ? undefined : methods.length > 1
       ? methods.map((token) => paymentMethodLabel(token)).join(' + ')
       : methods[0] ?? pendingPaymentMethod ?? undefined;
-    if (finalizeSale(recorded.id, quotedPricing(cart.quote, recorded), saleNumberOf(recorded), method)) {
-      completedPaymentRef.current = recorded.id;
-      setCompletionRetry(null);
-    } else {
-      setCompletionRetry({ sale: recorded, settlements, epoch: paymentEpoch, scope: paymentScope });
+    const epoch = paymentEpoch;
+    const scope = paymentScope;
+    const finish = () => {
+      if (finalizeSale(recorded.id, quotedPricing(cart.quote, recorded), saleNumberOf(recorded), method)) {
+        completedPaymentRef.current = recorded.id;
+        setCompletionRetry(null);
+      } else {
+        setCompletionRetry({ sale: recorded, settlements, epoch, scope });
+      }
+    };
+    if (!tier || !operator || !station || (!method && recorded.totals.grossSatang !== 0)) {
+      setCompletionRetry({ sale: recorded, settlements, epoch, scope });
+      return;
     }
+    const dropOffLines = lines.filter((l) => l.dropOff);
+    if (dropOffLines.length === 0) {
+      finish();
+      return;
+    }
+    /**
+     * The phone checks its drop-off children in with the payment, as the
+     * prototype's phone till did (`checkInFamilyWithPayment` +
+     * `linkCheckInSaleId`). On the platform that is ONE write after the sale
+     * is paid (`POST /checkin/check-in-now`): the children go in the park,
+     * the sale is linked to each, their bands are minted and queued. Each
+     * entry carries the service its paid line carried. A refusal leaves the
+     * payment recorded and the "Complete check-in" retry on screen.
+     */
+    checkInBusyRef.current = true;
+    void checkinApi
+      .checkInNow({
+        saleId: recorded.id,
+        entries: dropOffLines.map((l) => {
+          const d = l.dropOff!;
+          return {
+            checkinId: d.checkInId,
+            nannyId: d.service === 'nanny' ? (d.nannyId ?? null) : null,
+            service: d.service,
+          };
+        }),
+      })
+      .then((done) => {
+        if (saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) return;
+        // With the link down the box answers and names each band's short
+        // code, so a band that did not print can be read out at the counter.
+        const codes = done.bands.map((b) => b.shortCode).filter((c): c is string => !!c);
+        if (codes.length > 0 || done.notes.length > 0) {
+          toast({
+            title: 'Checked in',
+            description: [
+              `${dropOffLines.map((l) => l.dropOff!.childName).join(', ')} — band(s) issued${codes.length ? `: ${codes.join(', ')}` : ''}.`,
+              ...done.notes,
+            ].join(' '),
+          });
+        }
+        finish();
+      })
+      .catch((err: unknown) => {
+        if (saleEpochRef.current !== epoch || paymentScopeRef.current.scope !== scope) return;
+        toast({
+          title: 'Could not check in',
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+        setCompletionRetry({ sale: recorded, settlements, epoch, scope });
+      })
+      .finally(() => {
+        checkInBusyRef.current = false;
+      });
   };
 
   const handleRetrySaleWrite = () => {
@@ -1457,7 +1632,8 @@ export default function MobileTill() {
   };
 
   /**
-   * Check the drop-off children in, record the sale locally, mint and print.
+   * Record the sale locally, mint and print, once its drop-off children are
+   * checked in on the platform (`completeSale`).
    *
    * `quoted` is the money as the platform charged it, carried onto the sale so
    * nothing downstream re-totals it (S2-09a).
@@ -1475,40 +1651,8 @@ export default function MobileTill() {
   ): boolean => {
     if (!tier || !operator || !station || (!paymentMethod && quoted.total !== 0)) return false;
 
-    const dropOffLines = lines.filter((l) => l.dropOff);
-    if (dropOffLines.length > 0) {
-      const items = dropOffLines.map((l) => {
-        const d = l.dropOff!;
-        const input: CheckInPaymentInput = {
-          ticketTypeId: l.ticketType.id,
-          ticketName: l.ticketType.name,
-          tier,
-          ticketPriceTHB: priceForTier(l.ticketType, tier),
-          serviceType: d.service,
-          serviceFeeTHB: d.serviceFeeTHB,
-          durationHours: l.ticketType.hours,
-          totalTHB: l.lineTotal,
-          paymentMethod: paymentMethod ?? '',
-          nannyId: d.service === 'nanny' ? d.nannyId : undefined,
-          foodProvision: d.foodProvision,
-        };
-        return { checkInId: d.checkInId, input };
-      });
-      const checkedIn = checkInFamilyWithPayment(items, {
-        operatorName: operator.name,
-        operatorId: operator.id,
-      });
-      if (!checkedIn) {
-        toast({
-          title: 'Could not check in',
-          description:
-            'A nanny is no longer available, or a child was already checked in.',
-          variant: 'destructive',
-        });
-        return false;
-      }
-    }
-
+    // The drop-off children are already checked in on the platform, on this
+    // sale (`completeSale`), before this runs.
     const newSale = buildSale({
       id: saleId,
       operatorId: operator.id,
@@ -1529,11 +1673,6 @@ export default function MobileTill() {
     discounts.forEach((d) =>
       incrementPromoUsage(d.code, customerPhone || member?.phone || undefined)
     );
-    // Stamp each drop-off child's checkInSale with the real sale ID so the
-    // checkout flow can issue a deterministic refund via linkCheckInSaleId.
-    for (const l of lines) {
-      if (l.dropOff?.checkInId) linkCheckInSaleId(l.dropOff.checkInId, newSale.id);
-    }
     // Walk-in F&B credit: mint ONE QR-keyed wallet per fnb_credit grant at sale time
     // (mirrors Till.tsx). The printed voucher is scannable at F&B immediately.
     newSale.creditGrants.forEach((grant, i) => {
@@ -1550,8 +1689,17 @@ export default function MobileTill() {
     setMStep('done');
     // S2-11 — the platform printed this sale when it closed it; the toast says
     // what it queued and where. The till's own routing stands in only for a
-    // deployment whose sale read carries no print jobs.
-    void announceSalePrinting(saleId, () => dispatchPrintJobs(ticketPrintJobs(station, newSale)));
+    // deployment whose sale read carries no print jobs. Drop-off children's
+    // bands were queued by their check-in, so the stand-in prints the others.
+    const nonDropOffKids = lines.filter((l) => !l.dropOff).reduce((s, l) => s + l.kids, 0);
+    void announceSalePrinting(saleId, () =>
+      dispatchPrintJobs(
+        ticketPrintJobs(station, {
+          ...newSale,
+          bracelets: { children: nonDropOffKids, adults: newSale.bracelets.adults },
+        }),
+      ),
+    );
     return true;
   };
 
@@ -1819,6 +1967,7 @@ export default function MobileTill() {
               onToggleWaiver={handleToggleWaiver}
               onBack={() => setMStep('tickets')}
               onContinue={handleMobileSupervisionContinue}
+              busy={gateSaving}
             />
           </div>
         );
@@ -2116,7 +2265,10 @@ export default function MobileTill() {
 
       <RedeemBookingModal
         open={showRedeemModal}
-        onOpenChange={setShowRedeemModal}
+        onOpenChange={(next) => {
+          setShowRedeemModal(next);
+          if (!next) redeemKeyRef.current = null;
+        }}
         branchId={apiBranchIdForSlug(branch.id)}
         onConfirm={handleRedeemConfirm}
       />

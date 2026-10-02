@@ -3,7 +3,8 @@ import { useLocation } from 'wouter';
 import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
 import { useStation } from '@/station/StationContext';
-import { announceSalePrinting, dispatchPlatformPrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
+import { announceSalePrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
+import { announceBookingRedemption, redeemBookingOnPlatform, redeemedOutcome } from '@/lib/bookingRedemption';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
@@ -23,9 +24,9 @@ import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { inventoryFor, refreshSellableStock } from '@/api/stock';
 import { isSocksAddOnId } from '@/api/menu';
-import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, getDefaultTier, getSupervisionPolicy, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getDefaultTier, getSupervisionPolicy, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
-import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, type ApiNanny } from '@/api/checkin';
+import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
 import { prefillSlots, slotPatchFromSavedChild } from '@/lib/savedChildren';
@@ -42,14 +43,11 @@ import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { membersApi, visitsApi } from '@/api/platform';
 import { childrenApi, lookupMember } from '@/api/members';
-import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
+import { ApiError, isMissingRoute } from '@/api/client';
 import {
-  bookingsApi,
   looksLikeBookingQr,
   typedBookingQr,
   readBookingScan,
-  redemptionFromConflict,
-  type BookingRedeemResult,
   type PlatformBooking,
   type ScannedBooking,
   type RedeemOutcome,
@@ -490,10 +488,26 @@ export default function Till() {
   });
 
   const loadDropOffRegistration = async (registrationId: string) => {
-    const children = getCheckInsByRegistration(registrationId).filter((c) => c.status === 'registered');
+    // The registration is the platform's: its waiting, unpaid children are
+    // read back (`waitingStaysOf`), never this browser's store.
+    const epoch = saleEpochRef.current;
+    const platformBranchId = apiBranchIdForSlug(branch.id);
+    let children: CheckIn[];
+    try {
+      if (!platformBranchId) throw new Error(TILL_NOT_LINKED);
+      children = await waitingStaysOf(platformBranchId, registrationId, nannyRoster);
+    } catch (err) {
+      if (saleEpochRef.current !== epoch) return;
+      toast({
+        title: 'Could not load the registration',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (saleEpochRef.current !== epoch) return;
     if (children.length === 0) return;
     const phone = children[0]?.phone ?? '';
-    const epoch = saleEpochRef.current;
     let found: Member | null = null;
     if (phone) {
       try {
@@ -871,12 +885,8 @@ export default function Till() {
   // unredeemed, which left a losing race holding printed wristbands. The second
   // counter to confirm the same booking is told who redeemed it and when, and
   // nothing has been issued for it.
-  const redeemKeyFor = (bookingId: string): string => {
-    if (redeemKeyRef.current?.bookingId !== bookingId) {
-      redeemKeyRef.current = { bookingId, key: bookingsApi.newRedeemKey() };
-    }
-    return redeemKeyRef.current.key;
-  };
+  //
+  // The phone till redeems through the same helpers (`lib/bookingRedemption`).
   const handleRedeemConfirm = async (
     booking: Booking,
     platform: PlatformBooking,
@@ -899,58 +909,22 @@ export default function Till() {
     const visitId =
       confirmedVisitId && platform.memberId && member?.id === platform.memberId ? confirmedVisitId : undefined;
 
-    let redeemed: BookingRedeemResult;
-    try {
-      redeemed = await bookingsApi.redeem(
-        platform.id,
-        { ...(station?.stationId ? { stationId: station.stationId } : {}), ...(visitId ? { visitId } : {}) },
-        redeemKeyFor(platform.id),
-      );
-    } catch (err) {
-      // Only a lost answer is retried under the same key; a definite refusal
-      // leaves the next press free to ask again fresh.
-      if (!(err instanceof NetworkError)) redeemKeyRef.current = null;
-      const first = redemptionFromConflict(err);
-      if (first) return { ok: false, redemption: first };
-      if (err instanceof NetworkError) {
-        return {
-          ok: false,
-          message: 'No connection to the platform, so this booking cannot be redeemed here. Nothing has been issued.',
-        };
-      }
-      if (isMissingRoute(err)) {
-        return {
-          ok: false,
-          message: 'This deployment cannot record a booking redemption yet (SCRUM-234). Nothing has been issued.',
-        };
-      }
-      return {
-        ok: false,
-        message: err instanceof ApiError ? err.message : 'The booking could not be redeemed. Nothing has been issued.',
-      };
-    }
+    // Only a lost answer is retried under the same key; a definite refusal
+    // leaves the next press free to ask again fresh.
+    const claimed = await redeemBookingOnPlatform(
+      platform.id,
+      { ...(station?.stationId ? { stationId: station.stationId } : {}), ...(visitId ? { visitId } : {}) },
+      redeemKeyRef,
+    );
+    if (!claimed.ok) return claimed;
+    const redeemed = claimed.redeemed;
 
     // The platform printed the sale when it closed it — the receipt and the
     // signed bands — so the till announces what was queued and where, and what
-    // was not printed, as it does for a walk-in sale.
-    const printing = redeemed.printing;
-    if (printing) {
-      dispatchPlatformPrinting(
-        printing.jobs.filter((job) => job.reprintOf === null),
-        printing.failed ? [...printing.notes, printing.failed.message] : printing.notes,
-      );
-    }
-    // S2-12 round 5 — redeemed by this counter's box with the link down: the
-    // box printed from its own queue, so only what did not print is said.
-    for (const note of redeemed.box?.notes ?? []) {
-      toast({ title: 'Not printed', description: note, variant: 'destructive' });
-    }
-
-    toast({
-      title: redeemed.box ? 'Booking redeemed offline' : 'Booking redeemed',
-      // A deployment from before round 3 answers the claim alone, with no bands.
-      description: `${booking.reference} — ${(redeemed.bands ?? []).length} wristband(s) issued.`,
-    });
+    // was not printed, as it does for a walk-in sale. S2-12 round 5 — redeemed
+    // by this counter's box with the link down: the box printed from its own
+    // queue, so only what did not print is said.
+    announceBookingRedemption(booking.reference, redeemed);
 
     // Event passes sold online are registered (not checked in) attendees. On
     // redemption, check each one into its event — minting bracelets and marking
@@ -985,16 +959,7 @@ export default function Till() {
 
     // On the box lane the dialog stays open on the codes, for reading aloud
     // should a band not print — as an offline sale's confirmation does.
-    return redeemed.box
-      ? {
-          ok: true,
-          issued: {
-            receiptNumber: redeemed.sale?.receiptNumber ?? null,
-            bands: redeemed.bands ?? [],
-            notes: redeemed.box.notes,
-          },
-        }
-      : { ok: true };
+    return redeemedOutcome(redeemed);
   };
 
   // Re-price every line to a newly-picked tier. Normal lines recompute via
@@ -2806,6 +2771,9 @@ export default function Till() {
         entries: group.entries.map((e) => ({
           checkinId: e.checkInId,
           nannyId: e.input.serviceType === 'nanny' ? (e.input.nannyId ?? null) : null,
+          // The Drop-Off / Nanny switch as the paid line carried it: the
+          // platform applies it to the stay and checks the nanny against it.
+          service: e.input.serviceType,
         })),
       })
       .then((done) => {

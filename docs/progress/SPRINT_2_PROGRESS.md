@@ -1,5 +1,20 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 2 October 2026 (night) - SCRUM-494 check-in and phone till landed
+
+SCRUM-494 entries 5, 6, 7 (workflows wf_f85be821-c40, wf_3654455e-4e4,
+both MERGE; check-in after three cycles): the phone till redeems a
+booking once through the platform (shared lib/bookingRedemption.ts, the
+desktop unchanged); the Drop-Off/Nanny service paid on the cart line is
+applied at check-in on the platform, on the box and on replay, with the
+nanny check; the phone board, release, registration, waiver, hand-over
+and paid check-in all run on the platform. 18 files.
+Open (prototype behaviour kept, for SCRUM-497): "Leave as booked" keeps
+the registration's service; the phone's "Mark Arrived" opens the
+payment-free booked check-in.
+Still running: food counters (entries 8-9), then gate (4) and money
+(1-3). End of Day rounds 2-4 follow SCRUM-494.
+
 ## Platform lane checkpoint - 2 October 2026 (evening) - End of Day round 1 landed
 
 S2-15a round 1 (SCRUM-215), built to the revised plan and gated MERGE

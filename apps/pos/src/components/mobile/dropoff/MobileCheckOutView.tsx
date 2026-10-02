@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckIn, AuthorizedPickup, AuthorizedPickupSource } from '@/types';
 import { CameraCapture } from '@/components/shared/CameraCapture';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,18 @@ import {
   User,
   UserX,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
-import { getAuthorizedPickups, addGuardianToRegistration } from '@/mockApi';
-import { useOperator } from '@/auth/OperatorContext';
+import { BOX_CHECKIN_REFUSALS, type PickupView, type ReleaseView } from '@oto/shared';
 import { type PrepaidFoodReconciliation } from '@/lib/dropoff';
 import { FoodReconciliationSummary } from '@/components/shared/FoodReconciliationSummary';
+import {
+  pickupFromView,
+  reconciliationFromWire,
+  releaseApi,
+  type ReleaseCollector,
+  type ReleaseContext,
+} from '@/api/release';
 
 type Step = 'select' | 'verify' | 'on_spot' | 'capture';
 
@@ -36,11 +43,15 @@ interface OnSpotForm {
 
 interface MobileCheckOutViewProps {
   checkIn: CheckIn;
-  /** Pre-computed food reconciliation — null when no food provision or mode=none. */
-  reconciliation: PrepaidFoodReconciliation | null;
-  /** Configured policy for unused prepaid food. */
+  /** Configured policy for unused prepaid food — shown until the platform's answers. */
   prepaidFoodPolicy: 'refund' | 'forfeit';
-  onConfirm: (pickupPhotoUrl: string, collectorInput: CollectorInput) => void;
+  /**
+   * Called once the platform has RELEASED the child: the release is written by
+   * this view (`releaseApi.release` — R-92 checked, the pickup photo stored,
+   * the prepaid food settled) and `release` carries what was recorded. The
+   * board refreshes; it must not release a second time.
+   */
+  onConfirm: (pickupPhotoUrl: string, collectorInput: CollectorInput, release: ReleaseView) => void;
   onCancel: () => void;
 }
 
@@ -91,33 +102,109 @@ function PickupCard({
  *  2. Verify a different authorized person against their photo.
  *  3. Add an unlisted person on the spot (name / relationship / phone).
  *  4. Capture a pickup photo before releasing the child.
+ *
+ * The data is the platform's, through the same calls as the desktop release
+ * modal (`releaseApi`): the pickup list, the stored sign-up photo and the
+ * prepaid food come from `releaseApi.context`; an on-the-spot collector is
+ * added to the platform's list with the photo stored; the live pickup photo is
+ * stored; and "Confirm pickup" RELEASES the child on the platform, which
+ * enforces R-92 itself and answers a refusal in the counter's words. Every
+ * stored photo shown here is read through the access-logged path (R-94).
+ * On the box lane the context carries `photosEnabled`; while it is false the
+ * camera steps carry the box's own note and the confirm does not wait for a
+ * photo. The platform never answers it, so online a photo is required.
  */
 export function MobileCheckOutView({
   checkIn,
-  reconciliation,
   prepaidFoodPolicy,
   onConfirm,
   onCancel,
 }: MobileCheckOutViewProps) {
-  const { operator } = useOperator();
   const [step, setStep] = useState<Step>('select');
   const [pickups, setPickups] = useState<AuthorizedPickup[]>([]);
   const [selectedPickup, setSelectedPickup] = useState<AuthorizedPickup | null>(null);
   const [onSpotForm, setOnSpotForm] = useState<OnSpotForm>({ name: '', relationship: '', phone: '' });
   const [onSpotPhotoUrl, setOnSpotPhotoUrl] = useState<string | undefined>();
   const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string | undefined>();
+  // The platform's side of the same screen.
+  const [context, setContext] = useState<ReleaseContext | null>(null);
+  const [signUpPhotoUrl, setSignUpPhotoUrl] = useState<string | undefined>();
+  const [onSpotFileId, setOnSpotFileId] = useState<string | null>(null);
+  const [pickupFileId, setPickupFileId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // One opening, one release id — a retried press is the same release.
+  const releaseIdRef = useRef<string>(releaseApi.newId());
+  // Each stored photo is read (and so access-logged) once per opening, not per render.
+  const photoUrlsRef = useRef(new Map<string, string>());
 
+  const photoUrlOf = async (fileId: string | null): Promise<string | undefined> => {
+    if (!fileId) return undefined;
+    const known = photoUrlsRef.current.get(fileId);
+    if (known) return known;
+    try {
+      const url = await releaseApi.photoUrl(fileId);
+      photoUrlsRef.current.set(fileId, url);
+      return url;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const showPickups = async (views: PickupView[]) => {
+    const list = await Promise.all(views.map(async (p) => pickupFromView(p, await photoUrlOf(p.photoFileId))));
+    setPickups(list);
+  };
+
+  // The pickup list, the sign-up photo and the food, from the platform.
   useEffect(() => {
+    let live = true;
     setStep('select');
-    setPickups(getAuthorizedPickups(checkIn.registrationId));
+    setPickups([]);
     setSelectedPickup(null);
     setOnSpotForm({ name: '', relationship: '', phone: '' });
     setOnSpotPhotoUrl(undefined);
     setPickupPhotoUrl(undefined);
-  }, [checkIn.id, checkIn.registrationId]);
+    setOnSpotFileId(null);
+    setPickupFileId(null);
+    setContext(null);
+    setSignUpPhotoUrl(undefined);
+    setError(null);
+    setBusy(false);
+    releaseIdRef.current = releaseApi.newId();
+    photoUrlsRef.current = new Map();
+    void (async () => {
+      try {
+        const ctx = await releaseApi.context(checkIn.id);
+        if (!live) return;
+        setContext(ctx);
+        const signUp = await photoUrlOf(ctx.signUpPhotoFileId);
+        if (!live) return;
+        setSignUpPhotoUrl(signUp);
+        await showPickups(ctx.pickups);
+      } catch (err) {
+        if (live) setError(err instanceof Error ? err.message : 'The pickup list could not be loaded.');
+      }
+    })();
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- photoUrlOf and showPickups read refs and setters only; the stay is what reloads it
+  }, [checkIn.id]);
+
+  const reconciliation = useMemo<PrepaidFoodReconciliation | null>(
+    () => (context?.reconciliation ? reconciliationFromWire(context.reconciliation) : null),
+    [context?.reconciliation],
+  );
+  // Required unless the box said photos are switched off; the platform never says so.
+  const photosEnabled = context?.photosEnabled !== false;
+  const policy = context?.prepaidPolicy ?? prepaidFoodPolicy;
+  const registrationId = context?.registrationId ?? checkIn.registrationId;
+  const uploadPhoto = (dataUrl: string) => releaseApi.uploadPhoto(registrationId, dataUrl);
 
   const handleSelectPickup = (p: AuthorizedPickup) => {
     setSelectedPickup(p);
+    setError(null);
     if (p.isDropperOff) {
       setStep('capture');
     } else {
@@ -125,50 +212,75 @@ export function MobileCheckOutView({
     }
   };
 
-  const handleOnSpotProceed = () => {
+  const handleOnSpotProceed = async () => {
     if (!onSpotForm.name.trim()) return;
     // Persist the on-the-spot collector so they appear in the authorized list.
-    if (!onSpotPhotoUrl) return;
-    const guardian = addGuardianToRegistration(
-      checkIn.registrationId,
-      {
+    // The platform refuses one without a name and a photo (R-92); the box
+    // takes one without a photo only while photos are switched off there.
+    const withPhoto = photosEnabled ? onSpotFileId : null;
+    if (photosEnabled && (!onSpotPhotoUrl || !withPhoto)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const guardian = await releaseApi.addGuardian(registrationId, {
+        id: releaseApi.newId(),
         name: onSpotForm.name.trim(),
-        phone: onSpotForm.phone.trim() || undefined,
-        relationship: onSpotForm.relationship.trim() || undefined,
-        photoUrl: onSpotPhotoUrl,
+        phone: onSpotForm.phone.trim() || null,
+        relationship: onSpotForm.relationship.trim() || null,
+        photoFileId: withPhoto,
         source: 'on_the_spot',
-      },
-      { operatorName: operator?.name ?? 'Unknown', operatorId: operator?.id },
-    );
-    if (!guardian) return;
-    const persisted: AuthorizedPickup = {
-      id: guardian.id,
-      registrationId: guardian.registrationId,
-      name: guardian.name,
-      relationship: guardian.relationship,
-      phone: guardian.phone || undefined,
-      isDropperOff: false,
-      source: 'on_the_spot',
-      addedAt: guardian.addedAt,
-    };
-    // Refresh the list so the new guardian shows if user navigates back to select.
-    setPickups(getAuthorizedPickups(checkIn.registrationId));
-    setSelectedPickup(persisted);
-    setStep('capture');
+      });
+      if (withPhoto && onSpotPhotoUrl) photoUrlsRef.current.set(withPhoto, onSpotPhotoUrl);
+      const persisted = pickupFromView(guardian, withPhoto ? onSpotPhotoUrl : undefined);
+      // Refresh the list so the new guardian shows if user navigates back to select.
+      const fresh = await releaseApi.pickups(registrationId).catch(() => null);
+      if (fresh) await showPickups(fresh.pickups);
+      setSelectedPickup(persisted);
+      setStep('capture');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The collector could not be added.');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleConfirmCheckOut = () => {
-    if (!pickupPhotoUrl || !selectedPickup) return;
-    onConfirm(pickupPhotoUrl, {
-      pickupId: selectedPickup.id,
-      name: selectedPickup.name,
-      relationship: selectedPickup.relationship,
-      isDropperOff: selectedPickup.isDropperOff,
-      source: selectedPickup.source,
-    });
+  const handleConfirmCheckOut = async () => {
+    // The live pickup photo, unless the box said photos are switched off.
+    const photo = photosEnabled ? pickupFileId : null;
+    if (photosEnabled && (!pickupPhotoUrl || !photo)) return;
+    if (!selectedPickup) return;
+    const collector: ReleaseCollector = selectedPickup.isDropperOff
+      ? { kind: 'dropper_off' }
+      : { kind: 'guardian', guardianId: selectedPickup.id };
+    setBusy(true);
+    setError(null);
+    try {
+      const { release } = await releaseApi.release(checkIn.id, {
+        id: releaseIdRef.current,
+        collector,
+        pickupPhotoFileId: photo,
+      });
+      onConfirm(
+        photo ? (pickupPhotoUrl ?? '') : '',
+        {
+          pickupId: selectedPickup.id,
+          name: selectedPickup.name,
+          relationship: selectedPickup.relationship,
+          isDropperOff: selectedPickup.isDropperOff,
+          source: selectedPickup.source,
+        },
+        release,
+      );
+    } catch (err) {
+      // R-92's refusals arrive in the counter's words; show them as they came.
+      setError(err instanceof Error ? err.message : 'The child could not be released.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const goBack = () => {
+    setError(null);
     if (step === 'verify' || step === 'on_spot') setStep('select');
     else if (step === 'capture') {
       // on_the_spot guardians are already persisted — go back to select (they'll be in list).
@@ -182,10 +294,11 @@ export function MobileCheckOutView({
     select: 'Who is collecting?',
     verify: 'Verify identity',
     on_spot: 'Add unlisted collector',
-    capture: 'Capture pickup photo',
+    capture: photosEnabled ? 'Capture pickup photo' : 'Confirm pickup',
   };
 
   const stepNum = { select: 1, verify: 2, on_spot: 2, capture: 3 }[step];
+  const signUpUrl = signUpPhotoUrl ?? checkIn.childPhotoUrl;
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-background text-foreground animate-in fade-in duration-200">
@@ -212,6 +325,13 @@ export function MobileCheckOutView({
           <span className="text-sm text-muted-foreground shrink-0 truncate">· {checkIn.parentName}</span>
         </div>
 
+        {error && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 flex items-start gap-2 text-red-300 text-xs">
+            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* ── STEP: select ─────────────────────────────────── */}
         {step === 'select' && (
           <>
@@ -219,18 +339,28 @@ export function MobileCheckOutView({
               Select the person collecting this child from the authorized list.
             </p>
             <div className="space-y-2">
+              {!context && !error && (
+                <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading the pickup list…
+                </div>
+              )}
               {pickups.map((p) => (
                 <PickupCard key={p.id} pickup={p} onClick={() => handleSelectPickup(p)} />
               ))}
             </div>
             <button
               type="button"
+              disabled={!context}
               onClick={() => {
                 setSelectedPickup(null);
                 setOnSpotForm({ name: '', relationship: '', phone: '' });
+                setOnSpotPhotoUrl(undefined);
+                setOnSpotFileId(null);
+                setError(null);
                 setStep('on_spot');
               }}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-dashed border-amber-500/40 text-amber-400 h-12 text-sm font-semibold hover:bg-amber-500/5 transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-dashed border-amber-500/40 text-amber-400 h-12 text-sm font-semibold hover:bg-amber-500/5 transition-colors disabled:opacity-50"
             >
               <UserX className="w-4 h-4" />
               Person not on the list
@@ -315,16 +445,22 @@ export function MobileCheckOutView({
                   className="h-12"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                  Collector photo <span className="text-red-400">*</span>
-                </label>
-                <CameraCapture
-                  value={onSpotPhotoUrl}
-                  onCapture={setOnSpotPhotoUrl}
-                  onClear={() => setOnSpotPhotoUrl(undefined)}
-                />
-              </div>
+              {photosEnabled ? (
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                    Collector photo <span className="text-red-400">*</span>
+                  </label>
+                  <CameraCapture
+                    value={onSpotPhotoUrl}
+                    onCapture={setOnSpotPhotoUrl}
+                    onClear={() => setOnSpotPhotoUrl(undefined)}
+                    upload={uploadPhoto}
+                    onUploaded={setOnSpotFileId}
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">{BOX_CHECKIN_REFUSALS.photosOff.message}</p>
+              )}
             </div>
           </>
         )}
@@ -352,56 +488,69 @@ export function MobileCheckOutView({
               </span>
             </div>
 
-            {/* Sign-up photo + pickup capture side by side */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-                  <Baby className="w-3 h-3" /> Sign-up photo
-                </p>
-                <div className="aspect-square rounded-xl overflow-hidden bg-muted flex items-center justify-center">
-                  {checkIn.childPhotoUrl ? (
-                    <img
-                      src={checkIn.childPhotoUrl}
-                      alt={checkIn.childName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-3xl font-black text-muted-foreground">
-                      {checkIn.childName.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground mb-2">Pickup photo</p>
-                <div className="aspect-square rounded-xl overflow-hidden bg-muted flex items-center justify-center">
-                  {pickupPhotoUrl ? (
-                    <div className="flex flex-col items-center gap-1.5 text-emerald-400">
-                      <Check className="w-8 h-8" />
-                      <span className="text-xs font-semibold">Captured</span>
+            {photosEnabled ? (
+              <>
+                {/* Sign-up photo + pickup capture side by side */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                      <Baby className="w-3 h-3" /> Sign-up photo
+                    </p>
+                    <div className="aspect-square rounded-xl overflow-hidden bg-muted flex items-center justify-center">
+                      {signUpUrl ? (
+                        <img
+                          src={signUpUrl}
+                          alt={checkIn.childName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-3xl font-black text-muted-foreground">
+                          {checkIn.childName.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
-                  ) : (
-                    <span className="text-3xl font-black text-muted-foreground">?</span>
-                  )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Pickup photo</p>
+                    <div className="aspect-square rounded-xl overflow-hidden bg-muted flex items-center justify-center">
+                      {pickupPhotoUrl ? (
+                        <div className="flex flex-col items-center gap-1.5 text-emerald-400">
+                          <Check className="w-8 h-8" />
+                          <span className="text-xs font-semibold">Captured</span>
+                        </div>
+                      ) : (
+                        <span className="text-3xl font-black text-muted-foreground">?</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Camera capture */}
-            <div className="rounded-xl border border-border bg-muted/20 p-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-3">Capture pickup photo</p>
-              <CameraCapture
-                value={pickupPhotoUrl}
-                onCapture={(url) => setPickupPhotoUrl(url)}
-                onClear={() => setPickupPhotoUrl(undefined)}
-              />
-            </div>
+                {/* Camera capture */}
+                <div className="rounded-xl border border-border bg-muted/20 p-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-3">Capture pickup photo</p>
+                  <CameraCapture
+                    value={pickupPhotoUrl}
+                    onCapture={(url) => setPickupPhotoUrl(url)}
+                    onClear={() => setPickupPhotoUrl(undefined)}
+                    upload={uploadPhoto}
+                    onUploaded={setPickupFileId}
+                  />
+                </div>
+              </>
+            ) : (
+              // The box's own words: photos are switched off at this park, so no
+              // pickup photo is taken or required — the collector is checked by eye.
+              <div className="rounded-xl border border-border bg-muted/20 px-3 py-2.5 flex items-start gap-2 text-xs text-muted-foreground">
+                <ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>{BOX_CHECKIN_REFUSALS.photosOff.message}</span>
+              </div>
+            )}
 
             {/* Food reconciliation */}
             {reconciliation !== null && (
               <FoodReconciliationSummary
                 reconciliation={reconciliation}
-                policy={prepaidFoodPolicy}
+                policy={policy}
               />
             )}
           </>
@@ -436,10 +585,11 @@ export function MobileCheckOutView({
           <Button
             size="lg"
             className="w-full h-14 text-base gap-2 rounded-2xl"
-            disabled={!onSpotForm.name.trim() || !onSpotPhotoUrl}
-            onClick={handleOnSpotProceed}
+            disabled={!onSpotForm.name.trim() || (photosEnabled && (!onSpotPhotoUrl || !onSpotFileId)) || busy}
+            onClick={() => void handleOnSpotProceed()}
           >
-            Proceed to pickup photo
+            {busy && <Loader2 className="w-5 h-5 animate-spin" />}
+            {photosEnabled ? 'Proceed to pickup photo' : 'Proceed to confirm pickup'}
           </Button>
         )}
 
@@ -448,11 +598,17 @@ export function MobileCheckOutView({
             variant="destructive"
             size="lg"
             className="w-full h-14 text-lg gap-2 rounded-2xl"
-            disabled={!pickupPhotoUrl}
-            onClick={handleConfirmCheckOut}
+            disabled={(photosEnabled && (!pickupPhotoUrl || !pickupFileId)) || busy}
+            onClick={() => void handleConfirmCheckOut()}
           >
-            <LogOut className="w-5 h-5" />
-            {pickupPhotoUrl ? 'Confirm pickup & check out' : 'Capture a photo first'}
+            {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogOut className="w-5 h-5" />}
+            {!photosEnabled
+              ? 'Confirm pickup & check out'
+              : !pickupPhotoUrl
+                ? 'Capture a photo first'
+                : !pickupFileId
+                  ? 'Saving photo…'
+                  : 'Confirm pickup & check out'}
           </Button>
         )}
       </div>
