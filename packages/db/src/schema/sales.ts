@@ -1346,6 +1346,15 @@ export const band = pos.table(
     /** The child it was issued to, when the visit named one. Kids bands only. */
     childId: uuid('child_id').references(() => child.id, { onDelete: 'restrict' }),
     kind: text('kind').$type<BandKind>().notNull(),
+    /**
+     * Whether this band operates the entrance gate (SCRUM-494). Taken from the
+     * ticket package of the line it was issued against when it is minted —
+     * online, on the box, or recorded from the box — and never changed after:
+     * an adult band carries its package's Gate access, a kids band never has
+     * it. The gate admits only bands with it; a band without it follows its
+     * group in the occupancy count (`mockApi.ts:getLiveOccupancy`).
+     */
+    gateAccess: boolean('gate_access').notNull().default(false),
     /** The signed code, as `normaliseBandCode` stores it. A gate credential. */
     code: text('code').notNull(),
     status: text('status').$type<BandStatus>().notNull().default('active'),
@@ -1367,6 +1376,8 @@ export const band = pos.table(
     check('band_status_check', sql`${t.status} in ('active','replaced','revoked')`),
     /** An adult band names no child; the allergy line is the kids band's alone. */
     check('band_child_kind_check', sql`${t.childId} is null or ${t.kind} = 'kid'`),
+    /** Kids' bands never operate the gate (`mockApi.ts:issueWalkInBands`). */
+    check('band_gate_access_kind_check', sql`not ${t.gateAccess} or ${t.kind} = 'adult'`),
   ],
 );
 

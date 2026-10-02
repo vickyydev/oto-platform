@@ -89,6 +89,8 @@ interface PackageRow {
   /** How long a band from it admits: the receipt and the band print it. */
   hours: number | null;
   durationLabel: string | null;
+  /** The ticket's Gate access setting: its adult bands operate the entrance gate. */
+  gateAccess: boolean;
 }
 
 interface CategoryRow {
@@ -200,6 +202,7 @@ export function readOfflineCatalogue(
       archivedAt: str(row.archivedAt),
       hours: int(row.hours),
       durationLabel: str(row.durationLabel),
+      gateAccess: row.gateAccess === true,
     });
   }
 
@@ -946,6 +949,8 @@ export interface OfflineLedgerLine extends SalePrintLine {
   kidCount: number;
   adultCount: number;
   freeAdultCount: number;
+  /** The line's ticket package's Gate access, which its adult bands carry (SCRUM-494). */
+  gateAccess: boolean;
 }
 
 /**
@@ -996,6 +1001,7 @@ export function offlineLedgerLines(
       kidCount: cartLine?.kids ?? 0,
       adultCount: cartLine?.adults ?? 0,
       freeAdultCount: row?.key === 'adults-free' ? row.quantity : 0,
+      gateAccess: pkg?.gateAccess === true,
     };
   });
 }

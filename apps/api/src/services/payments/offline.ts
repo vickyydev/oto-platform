@@ -14,7 +14,7 @@ import {
 import { z } from 'zod';
 import { AppError, errors } from '../../lib/errors';
 import { audit } from '../audit';
-import { currentBandKey, planBands } from '../bands';
+import { currentBandKey, packageGateAccess, planBands } from '../bands';
 import type { PromoDifference } from '../promo-codes';
 import {
   commitSale,
@@ -395,6 +395,8 @@ export const OfflineSalePayloadSchema = z.object({
         cartLineId: z.string().max(100),
         saleLineId: z.string().uuid().nullish(),
         childId: z.string().uuid().nullish(),
+        /** Gate access from the band's line's ticket package, as the box minted it. */
+        gateAccess: z.boolean().optional(),
       }),
     )
     .max(200)
@@ -685,7 +687,9 @@ async function recordBoxBands(
     .where(eq(saleLine.saleId, saleId))
     .orderBy(asc(saleLine.lineNo));
   const lineIds = new Set(lines.map((l) => l.id));
-  const planned = planBands(lines);
+  const gateByPackage = await packageGateAccess(tx, lines);
+  const planned = planBands(lines, gateByPackage);
+  const packageOfLine = new Map(lines.map((l) => [l.id, l.ticketPackageId]));
   const existing = await tx.select().from(band).where(eq(band.saleId, saleId));
   const held = new Set(existing.map((b) => b.id));
   const key = currentBandKey();
@@ -737,6 +741,19 @@ async function recordBoxBands(
     const saleLineId =
       minted.saleLineId && lineIds.has(minted.saleLineId) ? minted.saleLineId : (fallback?.saleLineId ?? null);
     const childId = minted.kind === 'kid' && minted.childId && children.has(minted.childId) ? minted.childId : null;
+    /**
+     * Gate access as the box minted it, from its line's ticket package in the
+     * box's catalogue. A box that sent none is answered from the package of
+     * the line the band admits against. A kids band never has it.
+     */
+    const linePackage = saleLineId ? packageOfLine.get(saleLineId) : null;
+    const gateAccess =
+      minted.kind === 'adult' &&
+      (typeof minted.gateAccess === 'boolean'
+        ? minted.gateAccess
+        : linePackage
+          ? gateByPackage.get(linePackage) === true
+          : fallback?.gateAccess === true);
     await tx.insert(band).values({
       id: minted.id,
       operatorId: row.operatorId,
@@ -746,6 +763,7 @@ async function recordBoxBands(
       memberId: row.memberId,
       childId,
       kind: minted.kind,
+      gateAccess,
       code: normaliseBandCode(minted.code),
       status: 'active',
       // A millisecond apart, in the order the box minted them.
@@ -759,7 +777,7 @@ async function recordBoxBands(
       stationId: scope.stationId,
       boxId: scope.boxId,
       // The facts of the issue. Never the code: it is a gate credential.
-      detail: { saleId, saleLineId, childId, origin: 'box', sourceEventId: scope.eventId },
+      detail: { saleId, saleLineId, childId, gateAccess, origin: 'box', sourceEventId: scope.eventId },
       createdAt: new Date(at),
     });
     at += 1;

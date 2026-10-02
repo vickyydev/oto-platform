@@ -45,6 +45,11 @@ export const GATE_DENY_REASONS = [
   'BAND_UNKNOWN_OFFLINE',
   /** Kids' bands never operate the gate (C8, OD-A6). */
   'KID_BAND',
+  /**
+   * An adult band whose ticket has Gate access off (SCRUM-494): the gate
+   * checks that flag only (BL §7.1, R-83), and such a band follows its group.
+   */
+  'NO_GATE_ACCESS',
   /** Entry while the band is already inside. */
   'ANTI_PASSBACK',
   /** An open is already pending on that side of the lane. */

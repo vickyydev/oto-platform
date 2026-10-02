@@ -836,6 +836,8 @@ function bookingCatalogue(
       archivedAt: null,
       hours: held?.hours ?? null,
       durationLabel: held?.durationLabel ?? null,
+      // Gate access is the ticket's own setting, not the booking's price.
+      gateAccess: held?.gateAccess ?? false,
     });
   }
   const products = new Map(catalogue.products);
@@ -2307,6 +2309,7 @@ export class StationBridge {
         kind: planned.kind,
         cartLineId,
         saleLineId: planned.saleLineId,
+        gateAccess: planned.gateAccess,
         childId: child?.id ?? null,
         childName: child?.name ?? null,
         allergies: child?.allergies ?? null,

@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNull, like } from 'drizzle-orm';
-import { band, bandEvent, checkin, child, saleLine, visitChild, type sale } from '@oto/db';
+import { band, bandEvent, checkin, child, saleLine, ticketPackage, visitChild, type sale } from '@oto/db';
 import {
   BAND_CODE_BODY_LENGTH,
   BAND_CODE_SIGNATURE_LENGTH,
@@ -55,11 +55,13 @@ export function currentBandKey(): string | null {
 type SaleLineRow = typeof saleLine.$inferSelect;
 type BandRow = typeof band.$inferSelect;
 
-/** One band a sale owes: which kind, and which ticket unit it is issued against. */
+/** One band a sale owes: which kind, which ticket unit it is issued against, and its gate access. */
 export interface PlannedBand {
   kind: 'kid' | 'adult';
   saleLineId: string | null;
   cartLineId: string | null;
+  /** From the line's ticket package for an adult band; never for a kids band. */
+  gateAccess: boolean;
 }
 
 /**
@@ -68,8 +70,16 @@ export interface PlannedBand {
  * adult band against `adults_paid` for the paid adults and `adults_free` for
  * the free ones, falling back to any unit of the line when that row is absent
  * (a line whose adults were all free has no paid row).
+ *
+ * `gateAccess` is each ticket package's Gate access setting by package id
+ * (`packageGateAccess`). An adult band takes its line's; a package missing
+ * from the map reads as off, as the approved design's
+ * `line.ticketType.gateAccess ?? false` does (`lib/sale.ts:buildPersonGrants`).
  */
-export function planBands(lines: readonly SaleLineRow[]): PlannedBand[] {
+export function planBands(
+  lines: readonly SaleLineRow[],
+  gateAccess: ReadonlyMap<string, boolean> = new Map(),
+): PlannedBand[] {
   // The one rule, shared with a box that mints the bands of a sale it takes
   // with no internet (offline plan OD-13): the same lines owe the same bands.
   return planLedgerBands(
@@ -81,8 +91,28 @@ export function planBands(lines: readonly SaleLineRow[]): PlannedBand[] {
       kidCount: line.kidCount,
       adultCount: line.adultCount,
       freeAdultCount: line.freeAdultCount,
+      gateAccess: line.ticketPackageId ? gateAccess.get(line.ticketPackageId) === true : false,
     })),
   );
+}
+
+/**
+ * The Gate access setting of every ticket package the lines name, by package
+ * id — read when the bands are minted, so a band keeps the setting its ticket
+ * had when it was issued (`mockApi.ts:issueWalkInBands`: "from the adult's
+ * ticket package").
+ */
+export async function packageGateAccess(
+  db: Exec,
+  lines: readonly Pick<SaleLineRow, 'ticketPackageId'>[],
+): Promise<Map<string, boolean>> {
+  const ids = [...new Set(lines.map((l) => l.ticketPackageId).filter((id): id is string => !!id))];
+  if (ids.length === 0) return new Map();
+  const rows = await db
+    .select({ id: ticketPackage.id, gateAccess: ticketPackage.gateAccess })
+    .from(ticketPackage)
+    .where(inArray(ticketPackage.id, ids));
+  return new Map(rows.map((r) => [r.id, r.gateAccess]));
 }
 /** The children a sale's visit named, in the order reception confirmed them. */
 async function visitChildrenOf(db: Exec, visitId: string | null): Promise<string[]> {
@@ -179,7 +209,7 @@ export async function mintSaleBands(
     : allLines.filter((l) => !isSupervised(l));
   const lineIds = new Set(lines.map((l) => l.id));
   const existing = allExisting.filter((b) => (b.saleLineId ? lineIds.has(b.saleLineId) : !requested));
-  const plan = planBands(lines);
+  const plan = planBands(lines, await packageGateAccess(tx, lines));
   const have = { kid: existing.filter((b) => b.kind === 'kid').length, adult: existing.filter((b) => b.kind === 'adult').length };
   const seen = { kid: 0, adult: 0 };
   const owed = requested
@@ -222,6 +252,7 @@ export async function mintSaleBands(
         memberId: saleRow.memberId,
         childId,
         kind: planned.kind,
+        gateAccess: planned.gateAccess,
         code: mintBandCode(stationPrefix, ulidFromUuid(id), key),
         status: 'active',
         // A millisecond apart, so "oldest first" is the order they were minted.
@@ -238,7 +269,7 @@ export async function mintSaleBands(
       stationId: scope.stationId,
       boxId: scope.boxId,
       // The facts of the issue. Never the code: it is a gate credential.
-      detail: { saleId: saleRow.id, saleLineId: planned.saleLineId, childId },
+      detail: { saleId: saleRow.id, saleLineId: planned.saleLineId, childId, gateAccess: planned.gateAccess },
       createdAt: new Date(row.createdAt.getTime()),
     });
     minted.push(row);

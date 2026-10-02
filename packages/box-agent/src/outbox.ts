@@ -374,6 +374,11 @@ export interface OfflineBandFact {
   cartLineId: string;
   saleLineId: string | null;
   childId: string | null;
+  /**
+   * Whether the band operates the entrance gate, from its line's ticket
+   * package in the box's catalogue (SCRUM-494). Never on a kids band.
+   */
+  gateAccess?: boolean;
 }
 
 export interface OfflineSaleFact {

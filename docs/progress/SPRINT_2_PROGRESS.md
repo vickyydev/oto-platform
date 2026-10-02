@@ -1,5 +1,20 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 2 October 2026 (night, 3) - SCRUM-494 gate access landed
+
+SCRUM-494 entry 4 (workflow wf_50f6dbb9-910, MERGE): each adult band
+carries its ticket's Gate access from the moment it is issued (online, at
+the till, and offline on the box), the gate refuses an adult band without
+it as it refuses kids' bands, and occupancy counts such a band with its
+group, as the design does. Migration 0053 (renumbered from 0054: no 0053
+was needed by the food unit). eod-r1-migration no longer asserts 0052 is
+the newest. Tests: db 157/157, box-agent 677/677, api gate suites 27/27.
+Questions for SCRUM-497: the reader's wording for a no-gate adult; such an
+adult shown under kids on the occupancy chip (design behaviour); refused on
+exit as kids are.
+Entries 1-3 (money) MERGE and 8-9 (food) one blocker: a fix round runs,
+then both land together (shared sale.ts).
+
 ## Platform lane checkpoint - 2 October 2026 (night, 2) - staging deployed; End of Day round 1 evidence
 
 Staging was still on 35a8ed68 (deploys do not follow main). Deployed all

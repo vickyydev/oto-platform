@@ -111,6 +111,11 @@ export interface OfflineBandPlan {
   allergies: string | null;
   medicalNotes: string | null;
   dietary: string | null;
+  /**
+   * The Gate access of the band's line's ticket package (SCRUM-494). Absent
+   * reads as off; a kids band never has it.
+   */
+  gateAccess?: boolean;
 }
 
 /**
@@ -562,6 +567,8 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
         cartLineId: band.cartLineId,
         saleLineId: band.saleLineId,
         childId: band.childId,
+        // Kids' bands never operate the gate; an adult's comes from its ticket.
+        gateAccess: band.kind === 'adult' && band.gateAccess === true,
         childName: band.childName,
         allergies: band.allergies,
         medicalNotes: band.medicalNotes,
@@ -848,13 +855,14 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
               saleId,
               receipt,
               occurredAt: at,
-              bands: bands.map(({ id, code, kind, cartLineId, saleLineId, childId }) => ({
+              bands: bands.map(({ id, code, kind, cartLineId, saleLineId, childId, gateAccess }) => ({
                 id,
                 code,
                 kind,
                 cartLineId,
                 saleLineId,
                 childId,
+                gateAccess,
               })),
             }),
             ...alongside,

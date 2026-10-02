@@ -221,6 +221,12 @@ export interface LedgerBandLine {
   kidCount: number;
   adultCount: number;
   freeAdultCount: number;
+  /**
+   * The line's ticket package's Gate access setting (`ticket_package.gate_access`).
+   * Absent reads as off: the approved design's `line.ticketType.gateAccess ?? false`
+   * (`lib/sale.ts:buildPersonGrants`).
+   */
+  gateAccess?: boolean;
 }
 
 /** One band a sale owes: which kind, and which ticket unit it is issued against. */
@@ -228,6 +234,12 @@ export interface PlannedLedgerBand {
   kind: 'kid' | 'adult';
   saleLineId: string | null;
   cartLineId: string | null;
+  /**
+   * Whether the band operates the entrance gate: an adult band takes it from
+   * its line's ticket package, a kids band never has it (`lib/sale.ts:
+   * buildPersonGrants`, `mockApi.ts:issueWalkInBands` / `issueBookingBands`).
+   */
+  gateAccess: boolean;
 }
 
 /**
@@ -263,11 +275,16 @@ export function planLedgerBands(lines: readonly LedgerBandLine[]): PlannedLedger
     const paidRow = group.find((l) => l.kind === 'adults_paid');
     const freeRow = group.find((l) => l.kind === 'adults_free');
     for (let i = 0; i < kids; i += 1) {
-      plan.push({ kind: 'kid', saleLineId: kidsRow.id, cartLineId });
+      plan.push({ kind: 'kid', saleLineId: kidsRow.id, cartLineId, gateAccess: false });
     }
     for (let i = 0; i < adults; i += 1) {
       const row = i < adults - free ? (paidRow ?? freeRow ?? first) : (freeRow ?? paidRow ?? first);
-      plan.push({ kind: 'adult', saleLineId: row.id, cartLineId });
+      plan.push({
+        kind: 'adult',
+        saleLineId: row.id,
+        cartLineId,
+        gateAccess: (row.gateAccess ?? first.gateAccess) === true,
+      });
     }
   }
   return plan;

@@ -17,6 +17,9 @@
  *     printed after the last pull is absent too;
  *   - kids' bands never operate the gate, in either direction (C8, R-83,
  *     OD-A6): "adult band please";
+ *   - the gate checks the band's Gate access flag (BL §7.1, R-83; SCRUM-494):
+ *     an adult band from a ticket with Gate access off is refused in either
+ *     direction, as a kids band is, and follows its group instead;
  *   - anti-passback moves only on a COMMITTED passage — the board's "passed"
  *     feedback, credited by the controller — never on the open. Entry while
  *     inside is refused `ANTI_PASSBACK`; a timeout changes nothing;
@@ -45,12 +48,18 @@ import type { GateSide } from './ge-x2';
 
 export type BandKind = 'kid' | 'adult';
 
-/** What the box knows of one band. */
+/**
+ * What the box knows of one band.
+ *
+ * `gateAccess` is the band's own flag, taken from its ticket package when it
+ * was minted (SCRUM-494). Absent when the copy came from a platform that does
+ * not send it; the kind rule alone then decides.
+ */
 export type BandLookup =
   /** In the `bands` copy: active. */
-  | { state: 'active'; kind: BandKind }
+  | { state: 'active'; kind: BandKind; gateAccess?: boolean }
   /** On the deny list, or in the copy with a status other than active. */
-  | { state: 'revoked'; kind: BandKind | null }
+  | { state: 'revoked'; kind: BandKind | null; gateAccess?: boolean }
   /** In neither. */
   | { state: 'unknown' };
 
@@ -105,6 +114,7 @@ export const GATE_MESSAGES = {
   BAND_NOT_FOUND: 'Band not valid, see reception / สายรัดข้อมือใช้ไม่ได้ กรุณาติดต่อเคาน์เตอร์',
   BAND_UNKNOWN_OFFLINE: 'Please see reception / กรุณาติดต่อเคาน์เตอร์',
   KID_BAND: 'Adult band please / กรุณาใช้สายรัดผู้ใหญ่',
+  NO_GATE_ACCESS: 'Band not valid, see reception / สายรัดข้อมือใช้ไม่ได้ กรุณาติดต่อเคาน์เตอร์',
   ANTI_PASSBACK: 'Already entered / สายรัดนี้เข้าแล้ว',
   GATE_BUSY: 'Please wait / กรุณารอสักครู่',
   GATE_NOT_READY: 'Gate not ready, see reception / ประตูยังไม่พร้อม กรุณาติดต่อเคาน์เตอร์',
@@ -141,6 +151,8 @@ export function decideGate(input: GateDecisionInput): GateDecision {
   // kind is not known is treated as not a kid's: the deny list carries the
   // kind, so this only happens for a list from an older platform.
   if (known.kind === 'kid') return deny('KID_BAND', bandId);
+  // The ticket's Gate access is off: the band follows its group (SCRUM-494).
+  if (known.gateAccess === false) return deny('NO_GATE_ACCESS', bandId);
 
   if (input.direction === 'entry') {
     if (known.state === 'revoked') return deny('BAND_REVOKED', bandId);

@@ -5245,10 +5245,11 @@ export async function cacheBundle(
        * `bands` scope's own window: a band older than that is unknown to the
        * gate's copy anyway, and refused as such offline (OD-A5). The kind
        * rides along so the gate can tell a refunded adult leaving (let out,
-       * OD-A4) from a kid's band (never operates the gate).
+       * OD-A4) from a kid's band (never operates the gate); `gateAccess` with
+       * it, since the gate checks that flag (SCRUM-494).
        */
       const stoppedBands = await db
-        .select({ id: band.id, kind: band.kind })
+        .select({ id: band.id, kind: band.kind, gateAccess: band.gateAccess })
         .from(band)
         .where(
           and(

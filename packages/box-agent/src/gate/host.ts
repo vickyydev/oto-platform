@@ -75,42 +75,60 @@ export interface BandCopy {
 
 /**
  * The band copy from the two cached scopes: `bands` (active bands, with their
- * kind) and `deny_list` (revoked bands, named explicitly with their kind). The
- * deny list wins: a band on it is revoked whatever an older `bands` copy says.
+ * kind and Gate access) and `deny_list` (revoked bands, named explicitly with
+ * their kind and Gate access). The deny list wins: a band on it is revoked
+ * whatever an older `bands` copy says.
+ *
+ * `gateAccess` is read only when it is a boolean: a copy from a platform that
+ * does not send it leaves the flag absent, and the kind rule alone decides.
  */
 export function bandCopyFrom(
   bandItems: readonly unknown[],
   denyItems: readonly unknown[],
 ): BandCopy {
-  const active = new Map<string, { kind: BandKind; status: string }>();
+  const flag = (value: unknown): { gateAccess?: boolean } =>
+    typeof value === 'boolean' ? { gateAccess: value } : {};
+  const active = new Map<string, { kind: BandKind; status: string; gateAccess?: boolean }>();
   for (const row of bandItems) {
-    const r = row as { id?: unknown; kind?: unknown; status?: unknown };
+    const r = row as { id?: unknown; kind?: unknown; status?: unknown; gateAccess?: unknown };
     if (typeof r.id !== 'string') continue;
     if (r.kind !== 'kid' && r.kind !== 'adult') continue;
     active.set(r.id.toLowerCase(), {
       kind: r.kind,
       status: typeof r.status === 'string' ? r.status : 'active',
+      ...flag(r.gateAccess),
     });
   }
-  const revoked = new Map<string, BandKind | null>();
+  const revoked = new Map<string, { kind: BandKind | null; gateAccess?: boolean }>();
   for (const item of denyItems) {
     const list = (item as { revokedBands?: unknown }).revokedBands;
     if (!Array.isArray(list)) continue;
     for (const entry of list) {
-      const e = entry as { id?: unknown; kind?: unknown };
+      const e = entry as { id?: unknown; kind?: unknown; gateAccess?: unknown };
       if (typeof e.id !== 'string') continue;
-      revoked.set(e.id.toLowerCase(), e.kind === 'kid' || e.kind === 'adult' ? e.kind : null);
+      revoked.set(e.id.toLowerCase(), {
+        kind: e.kind === 'kid' || e.kind === 'adult' ? e.kind : null,
+        ...flag(e.gateAccess),
+      });
     }
   }
   return {
     lookup(bandId) {
       const id = bandId.toLowerCase();
-      if (revoked.has(id))
-        return { state: 'revoked', kind: revoked.get(id) ?? active.get(id)?.kind ?? null };
+      const stopped = revoked.get(id);
       const row = active.get(id);
+      if (stopped) {
+        const gateAccess = stopped.gateAccess ?? row?.gateAccess;
+        return {
+          state: 'revoked',
+          kind: stopped.kind ?? row?.kind ?? null,
+          ...(gateAccess === undefined ? {} : { gateAccess }),
+        };
+      }
       if (!row) return { state: 'unknown' };
-      if (row.status !== 'active') return { state: 'revoked', kind: row.kind };
-      return { state: 'active', kind: row.kind };
+      const gate = row.gateAccess === undefined ? {} : { gateAccess: row.gateAccess };
+      if (row.status !== 'active') return { state: 'revoked', kind: row.kind, ...gate };
+      return { state: 'active', kind: row.kind, ...gate };
     },
   };
 }

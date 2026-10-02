@@ -36,13 +36,21 @@ import type { Exec } from './tx';
  *     and the total can never go below zero. A band read in twice (a gate box
  *     swapped mid-visit) is still one person.
  *
+ *     Only a band with Gate access is counted this way (SCRUM-494): the
+ *     prototype's adults are "gate-access bands whose latest gate event today
+ *     is 'in'" (`mockApi.ts:getAdultsInsideNow`).
+ *
  *   KIDS — kids' bands never operate the gate (C8, OD-A6), so a child on a
  *     regular ticket counts while at least one adult band OF THE SAME SALE is
  *     inside (OD-A1, R-84; the prototype's `groupId` is the sale here). The
  *     last adult of a sale going out takes that sale's children with them; an
- *     adult coming back brings them back. Only `active` kids' bands count: a
+ *     adult coming back brings them back. Only `active` bands count: a
  *     replaced band's successor is on the same sale and would double the
- *     child, and a revoked one was refunded.
+ *     child, and a revoked one was refunded. EVERY band without Gate access
+ *     follows its group this way — an adult on a ticket with Gate access off
+ *     as well as a kid — and is counted with the kids, as the prototype
+ *     counts it (`getLiveOccupancy`: `!w.gateAccess && !w.checkInId &&
+ *     groupsWithAdultInside.has(w.groupId)`).
  *
  *   DROP-OFF KIDS (S2-13 round 2, OD-A1) — a child left with the park counts
  *     inside from their check-in to their check-out (`pos.checkin`
@@ -218,14 +226,14 @@ export async function countAt(
       select b.id, b.sale_id
       from latest l
       join pos.band b on b.id = l.band_id
-      where l.kind = 'entry' and b.kind = 'adult'
+      where l.kind = 'entry' and b.gate_access
         and l.at >= ${from.toISOString()}::timestamptz
     )
     select
       coalesce((select json_agg(i.id order by i.id) from inside i), '[]'::json) as "adultBandIds",
       coalesce((select json_agg(distinct i.sale_id) from inside i), '[]'::json) as "saleIds",
       (select count(*)::int from pos.band k
-        where k.kind = 'kid' and k.status = 'active'
+        where not k.gate_access and k.status = 'active'
           and k.sale_id in (select i.sale_id from inside i)
           and not exists (select 1 from pos.checkin c where c.band_id = k.id)) as "kids",
       (select count(*)::int from pos.checkin c

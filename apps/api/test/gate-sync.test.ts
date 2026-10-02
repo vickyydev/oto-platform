@@ -223,7 +223,7 @@ describe('the deny list names revoked bands (S2-12 round 2)', () => {
       held?.payload as { items: Array<{ revokedBands?: Array<{ id: string; kind: string }> }> }
     ).items;
     expect(items[0]!.revokedBands).toEqual(
-      expect.arrayContaining([{ id: kidBandId, kind: 'kid' }]),
+      expect.arrayContaining([{ id: kidBandId, kind: 'kid', gateAccess: false }]),
     );
     expect(items[0]!.revokedBands!.some((b) => b.id === adultBandId)).toBe(false);
   });

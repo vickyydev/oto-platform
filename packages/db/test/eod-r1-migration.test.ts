@@ -98,7 +98,7 @@ describe('migration 0052 — the End of Day', () => {
     const e52 = journal.entries.find((e) => e.idx === 52)!;
     expect(e52.tag).toBe('0052_end_of_day');
     expect(e52.when).toBeGreaterThan(e51.when);
-    expect(Math.max(...journal.entries.map((e) => e.idx))).toBe(52);
+    expect(journal.entries.indexOf(e52)).toBe(journal.entries.indexOf(e51) + 1);
   });
 
   it('builds from empty twice, and migrating a built database again is a no-op', async () => {
