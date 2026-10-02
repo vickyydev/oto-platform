@@ -1,8 +1,9 @@
-import { and, asc, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne, notInArray, sql } from 'drizzle-orm';
 import {
   account,
   branch,
   employee,
+  factStockDaily,
   product,
   purchaseOrder,
   purchaseOrderLine,
@@ -15,6 +16,7 @@ import {
   stockTake,
   stockTakeLine,
   stockUnit,
+  type Db,
   type sale,
   type StockAttentionKind,
   type StockMovementKind,
@@ -25,9 +27,13 @@ import {
   newId,
   parseDayStart,
   partialStockLinkProblem,
+  reorderPointFor,
   STOCK_CASCADE_TYPE_ORDER,
   STOCK_MAX_EACHES,
   STOCK_RULE_REORDER,
+  STOCK_RULE_REORDER_TREND,
+  STOCK_TREND_HISTORY_DAYS,
+  STOCK_TREND_SAFETY_DAYS,
   stockRuleBelowPar,
   stockShortMessage,
   stockSizeName,
@@ -41,13 +47,20 @@ import {
   type StockAdjustBody,
   type StockAdjustResult,
   type StockAttentionView,
+  type StockCostOfGoods,
+  type StockDiscrepancyRow,
   type StockItemBody,
   type StockLevels,
   type StockLocationType,
   type StockLocationView,
   type StockMovementView,
+  type StockPurchaseOrderRow,
   type StockReceiveBody,
   type StockReceiveResult,
+  type StockReports,
+  type StockShrinkageRow,
+  type StockUsageRow,
+  type StockValueRow,
   type StockTakeBody,
   type StockTakeResult,
   type StockTransferBody,
@@ -345,6 +358,26 @@ export async function availableFor(
     out.set(row.stockItemId, entry);
   }
   return out;
+}
+
+/**
+ * The place a paid sale's shortfall is recorded at when the branch has NO live
+ * place (round 4, Q2): its retired places, the one a sale would have taken from
+ * first — the old sell point, then back of house, bulk, any other shelf — by
+ * name within a type. Null only for a branch that has never had a place.
+ */
+async function retiredShortfallPlace(db: Exec, branchId: string): Promise<LocationRow | null> {
+  const rows = await db
+    .select()
+    .from(stockLocation)
+    .where(and(eq(stockLocation.branchId, branchId), isNull(stockLocation.archivedAt)));
+  rows.sort((a, b) => {
+    if (a.sellPoint !== b.sellPoint) return a.sellPoint ? -1 : 1;
+    const rank = typeRank(a.type) - typeRank(b.type);
+    if (rank !== 0) return rank;
+    return a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+  });
+  return rows[0] ?? null;
 }
 
 // --- A sale line's stock --------------------------------------------------------------
@@ -704,6 +737,21 @@ export async function takeStockForSale(
   );
   const sellPoint = locations.find((l) => l.sellPoint) ?? null;
   const kind: StockMovementKind = ctx.offline ? 'offline_sale' : 'sale';
+  /**
+   * WHERE A SHORTFALL IS RECORDED (round 4, handover Q2). A branch with no live
+   * place is still a branch that TRACKS the item: round 1's guard counts what
+   * every live place holds, finds nothing, and refuses the cart at commit
+   * ("Oto Cap is out of stock"), and a box's snapshot of no places refuses it
+   * offline too. So a paid sale that reaches finalise there anyway — its guard
+   * was skipped for a tender already in flight, or every place was retired
+   * between commit and close — sold units the record did not hold, and that is
+   * a shortfall, not an untracked sale: it is recorded where the record last
+   * was, the branch's retired place a sale would have taken from first, so the
+   * ledger keeps it and the offline oversold check (which reads these
+   * movements) raises it. Only a branch that has never had a place has nowhere
+   * for a movement to be: its shortfall is the attention row below alone.
+   */
+  const shortfallPlace = sellPoint ?? locations[0] ?? (await retiredShortfallPlace(tx, saleRow.branchId));
 
   const drafts: MovementDraft[] = [];
   const shortfallsToRaise: { line: (typeof todo)[number]; share: SaleLineStockShare; shortfall: number }[] = [];
@@ -732,8 +780,9 @@ export async function takeStockForSale(
       }
       if (remaining > 0) {
         // What the record did not hold is recorded where the sale takes from
-        // first: the sell point, or the first place in the cascade.
-        const where = sellPoint ?? locations[0] ?? null;
+        // first: the sell point, or the first place in the cascade, or — no
+        // live place at all — the retired place the record last was.
+        const where = shortfallPlace;
         if (where) {
           const existing = lineDrafts.find((d) => d.stockLocationId === where.id);
           if (existing) existing.shortfall = remaining;
@@ -827,6 +876,14 @@ export async function takeStockForSale(
       },
     });
   }
+  // Round 4 (Q4): the low-stock rows move with the sale — for the items it
+  // moved only, in this transaction — so the attention read never has to write.
+  await syncStockAttention(
+    tx,
+    { operatorId: saleRow.operatorId, branchId: saleRow.branchId, accountId: ctx.actorAccountId },
+    ctx.now,
+    [...new Set(result.movements.map((m) => m.stockItemId))],
+  );
   return result;
 }
 
@@ -960,6 +1017,13 @@ export async function restockForRefund(
       },
     });
   }
+  // Round 4 (Q4): what came back may lift a low-stock row — the items moved only.
+  await syncStockAttention(
+    tx,
+    { operatorId: input.operatorId, branchId: input.branchId, accountId: input.actorAccountId },
+    input.now,
+    [...new Set(applied.map((m) => m.stockItemId))],
+  );
   return applied;
 }
 
@@ -1346,7 +1410,9 @@ const REMOVED_REFUSAL = {
   counted: 'it cannot be counted',
   added: 'nothing can be added to it',
   moved: 'it cannot be moved',
-  used:'it cannot be used',
+  /** Round 4 (handover Q5): an order for a size removed while the add waited. */
+  ordered: 'it cannot be ordered',
+  used: 'it cannot be used',
 } as const;
 
 /**
@@ -1750,16 +1816,12 @@ export async function addToPurchaseOrders(
 ): Promise<PurchaseOrderView[]> {
   const wanted = new Map<string, number>();
   for (const line of body.lines) wanted.set(line.stockItemId, (wanted.get(line.stockItemId) ?? 0) + line.quantity);
-  // FOR SHARE, in id order: a size removal in flight (`saveStockItem`, FOR NO
-  // KEY UPDATE) finishes first and the read below no longer finds the size, or
-  // this add commits first and the removal sees the line and refuses.
-  await tx
-    .select({ id: stockItem.id })
-    .from(stockItem)
-    .where(and(inArray(stockItem.id, [...wanted.keys()]), eq(stockItem.branchId, actor.branchId)))
-    .orderBy(asc(stockItem.id))
-    .for('share');
-  const items = await loadBranchItems(tx, actor, [...wanted.keys()]);
+  // FOR SHARE, in id order (`loadBranchItems` with `lockFor`): a size removal
+  // in flight (`saveStockItem`, FOR NO KEY UPDATE) finishes first and the size
+  // it removed is refused in the counter's words — STOCK_ITEM_REMOVED, "it
+  // cannot be ordered" — not as an unknown item (round 4, handover Q5); or this
+  // add commits first and the removal sees the line and refuses.
+  const items = await loadBranchItems(tx, actor, [...wanted.keys()], { lockFor: 'ordered' });
   const bySupplier = new Map<string, { name: string; contact: string | null; lines: Array<[ItemRow, number]> }>();
   for (const [stockItemId, quantity] of wanted) {
     const item = items.get(stockItemId)!;
@@ -2674,6 +2736,60 @@ export async function saveStockItem(
 
 // --- Attention ------------------------------------------------------------------------------
 
+/** The branch's trading day at `now` — its clock, its day start. */
+async function branchToday(db: Exec, branchId: string, now: Date): Promise<string> {
+  const [br] = await db
+    .select({ timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(eq(branch.id, branchId))
+    .limit(1);
+  if (!br) throw errors.notFound('Branch not found');
+  return businessDate(now, br.timezone, parseDayStart(br.dayStart));
+}
+
+/**
+ * Per stock item: the business date of its first sale movement, and the units
+ * it used in the trend window — the `STOCK_TREND_HISTORY_DAYS` business days
+ * before `today` (today itself is not over) — sales, a unit sold past the
+ * record included, net of refunds.
+ */
+async function usageForTrend(
+  db: Exec,
+  branchId: string,
+  stockItemIds: readonly string[],
+  today: string,
+): Promise<Map<string, { firstSaleDate: string | null; usedInWindow: number }>> {
+  const out = new Map<string, { firstSaleDate: string | null; usedInWindow: number }>();
+  if (stockItemIds.length === 0) return out;
+  const from = addDaysToIsoDate(today, -STOCK_TREND_HISTORY_DAYS);
+  const to = addDaysToIsoDate(today, -1);
+  const { rows } = await db.execute<{ stock_item_id: string; first_sale: string | null; used: string | number | null }>(sql`
+    select m.stock_item_id,
+           (min(m.business_date) filter (where m.kind in ('sale','offline_sale')))::text as first_sale,
+           coalesce(sum(case when m.kind in ('sale','offline_sale') then -m.quantity + m.shortfall
+                             when m.kind = 'refund' then -m.quantity else 0 end)
+                    filter (where m.business_date between ${from}::date and ${to}::date), 0)::bigint as used
+      from pos.stock_movement m
+     where m.branch_id = ${branchId}::uuid
+       and m.stock_item_id in (${sql.join(stockItemIds.map((id) => sql`${id}::uuid`), sql`, `)})
+       and m.kind in ('sale','offline_sale','refund')
+     group by m.stock_item_id`);
+  for (const r of rows) out.set(r.stock_item_id, { firstSaleDate: r.first_sale, usedInWindow: Number(r.used ?? 0) });
+  return out;
+}
+
+/** JSON with every object's keys sorted, so a jsonb read back compares equal to what was written. */
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map((v) => canonicalJson(v === undefined ? null : v)).join(',')}]`;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(',')}}`;
+}
+
+const sameJson = (a: unknown, b: unknown): boolean => canonicalJson(a) === canonicalJson(b);
+
 /**
  * RE-READ THE BRANCH'S LOW-STOCK ATTENTION, so the rows a person looks at move
  * with the stock. One open row per stocked item and branch (all its sizes are
@@ -2688,13 +2804,30 @@ export async function saveStockItem(
  * still outstanding) covers any of its sizes: the order is the answer, and a
  * second nag for it is noise. A row whose rule no longer fires is resolved;
  * the round-1 rows (`stock_shortfall`, `size_unknown`) are not touched here.
+ *
+ * ROUND 4 — THE REORDER POINT FOLLOWS THE ITEM'S USAGE (OD-27,
+ * `reorderPointFor`): the static point until the item has 30 days of sale
+ * history, then its 30-day usage × (lead time + a safety day); the row's rule
+ * says which fired ("≤ reorder point" or "≤ reorder point (30-day usage)").
+ *
+ * WHO CALLS IT (round 4, handover Q4): every path that moves stock — the stock
+ * module's own writes for the whole branch, and a sale's decrement and a
+ * refund's restock for just the items they moved (`only`) — plus the daily
+ * stock job for the whole branch, as the 30-day window slides with no movement
+ * at all. The attention READ (`listStockAttention`) writes nothing.
+ *
+ * Rows are written in `dedupe_key` order, so two acts re-reading overlapping
+ * items lock the same rows in the same order and never deadlock.
  */
 export async function syncStockAttention(
   tx: Tx,
   scope: { operatorId: string; branchId: string; accountId?: string | null },
   now: Date,
+  /** Only the items whose groups these stock items belong to; the whole branch when absent. */
+  only?: readonly string[],
 ): Promise<void> {
-  const items = await tx
+  if (only && only.length === 0) return;
+  const branchItems = await tx
     .select()
     .from(stockItem)
     .where(
@@ -2705,6 +2838,11 @@ export async function syncStockAttention(
         isNull(stockItem.archivedAt),
       ),
     );
+  const scopedGroups = only
+    ? new Set(branchItems.filter((i) => only.includes(i.id)).map((i) => stockGroupKey(i)))
+    : null;
+  const items = scopedGroups ? branchItems.filter((i) => scopedGroups.has(stockGroupKey(i))) : branchItems;
+  if (scopedGroups && items.length === 0) return;
   const places = await branchLocations(tx, scope.branchId);
   const placeById = new Map(places.map((p) => [p.id, p]));
   const levels = items.length
@@ -2713,6 +2851,8 @@ export async function syncStockAttention(
         .from(stockLevel)
         .where(inArray(stockLevel.stockItemId, items.map((i) => i.id)))
     : [];
+  const today = await branchToday(tx, scope.branchId, now);
+  const usage = await usageForTrend(tx, scope.branchId, items.map((i) => i.id), today);
   const levelOf = new Map(levels.map((l) => [pairKey(l.stockItemId, l.stockLocationId), l.quantity]));
   const covered = new Set(
     (
@@ -2751,8 +2891,20 @@ export async function syncStockAttention(
       (sum, s) => sum + places.reduce((n, p) => n + (levelOf.get(pairKey(s.id, p.id)) ?? 0), 0),
       0,
     );
-    const reorderPoint = sizes.find((s) => s.reorderPoint !== null)?.reorderPoint ?? null;
+    const firstSales = sizes.flatMap((s) => {
+      const first = usage.get(s.id)?.firstSaleDate;
+      return first ? [first] : [];
+    });
+    const point = reorderPointFor({
+      staticPoint: sizes.find((s) => s.reorderPoint !== null)?.reorderPoint ?? null,
+      leadTimeDays: sizes.find((s) => s.leadTimeDays !== null)?.leadTimeDays ?? null,
+      firstSaleDate: firstSales.length ? firstSales.sort()[0]! : null,
+      today,
+      usedInWindow: sizes.reduce((n, s) => n + (usage.get(s.id)?.usedInWindow ?? 0), 0),
+    });
+    const reorderPoint = point.reorderPoint;
     const reorder = reorderPoint !== null && total <= reorderPoint;
+    const reorderRule = point.rule === 'trend' ? STOCK_RULE_REORDER_TREND : STOCK_RULE_REORDER;
     const belowPar: Array<{ stockItemId: string; size: string | null; place: string; level: number; par: number }> = [];
     for (const s of sizes) {
       for (const [locationId, par] of Object.entries(s.parByLocation ?? {})) {
@@ -2765,33 +2917,48 @@ export async function syncStockAttention(
     if (!reorder && belowPar.length === 0) continue;
     if (sizes.some((s) => covered.has(s.id))) continue;
     const rules = [
-      ...(reorder ? [STOCK_RULE_REORDER] : []),
+      ...(reorder ? [reorderRule] : []),
       ...[...new Set(belowPar.map((b) => b.place))].map(stockRuleBelowPar),
     ];
     const name = sizes[0]!.name;
+    const lead = sizes.find((s) => s.leadTimeDays !== null)?.leadTimeDays ?? null;
     wanted.set(`low_stock:${scope.branchId}:${key}`, {
       stockItemId: sizes[0]!.id,
       kind: reorder ? 'reorder' : 'low_stock',
       rule: rules.join(' · '),
       quantity: reorder ? Math.max(0, reorderPoint! - total) : Math.max(...belowPar.map((b) => b.par - b.level)),
       summary: reorder
-        ? `${name}: ${total} on hand, at or below its reorder point of ${reorderPoint}`
+        ? point.rule === 'trend'
+          ? `${name}: ${total} on hand, at or below its reorder point of ${reorderPoint} — ${point.usedInWindow} used in the last ${STOCK_TREND_HISTORY_DAYS} days, ${lead} days' lead time + ${STOCK_TREND_SAFETY_DAYS}`
+          : `${name}: ${total} on hand, at or below its reorder point of ${reorderPoint}`
         : `${name}: below par at ${[...new Set(belowPar.map((b) => b.place))].join(', ')}`,
-      detail: { groupId: key, total, reorderPoint, belowPar },
+      detail: {
+        groupId: key,
+        total,
+        reorderPoint,
+        reorderRule: point.rule,
+        staticReorderPoint: point.staticPoint,
+        usedInWindow: point.usedInWindow,
+        belowPar,
+      },
     });
   }
+  const scopedKeys = scopedGroups ? new Set([...scopedGroups].map((g) => `low_stock:${scope.branchId}:${g}`)) : null;
 
-  const open = await tx
-    .select()
-    .from(stockAttention)
-    .where(
-      and(
-        eq(stockAttention.operatorId, scope.operatorId),
-        eq(stockAttention.branchId, scope.branchId),
-        inArray(stockAttention.kind, ['low_stock', 'reorder']),
-        isNull(stockAttention.resolvedAt),
-      ),
-    );
+  const open = (
+    await tx
+      .select()
+      .from(stockAttention)
+      .where(
+        and(
+          eq(stockAttention.operatorId, scope.operatorId),
+          eq(stockAttention.branchId, scope.branchId),
+          inArray(stockAttention.kind, ['low_stock', 'reorder']),
+          isNull(stockAttention.resolvedAt),
+          scopedKeys ? inArray(stockAttention.dedupeKey, [...scopedKeys]) : undefined,
+        ),
+      )
+  ).sort((a, b) => a.dedupeKey.localeCompare(b.dedupeKey) || a.id.localeCompare(b.id));
   for (const row of open) {
     const want = wanted.get(row.dedupeKey);
     if (!want) {
@@ -2802,7 +2969,15 @@ export async function syncStockAttention(
       continue;
     }
     wanted.delete(row.dedupeKey);
-    if (row.kind !== want.kind || row.rule !== want.rule || row.quantity !== want.quantity || row.summary !== want.summary) {
+    if (
+      row.kind !== want.kind ||
+      row.rule !== want.rule ||
+      row.quantity !== want.quantity ||
+      row.summary !== want.summary ||
+      // The detail too (which rule set the point, the points, the window's usage):
+      // compared key-order free, since jsonb hands its keys back in its own order.
+      !sameJson(row.detail, want.detail)
+    ) {
       await tx
         .update(stockAttention)
         .set({
@@ -2817,7 +2992,7 @@ export async function syncStockAttention(
         .where(eq(stockAttention.id, row.id));
     }
   }
-  for (const [dedupeKey, want] of wanted) {
+  for (const [dedupeKey, want] of [...wanted].sort(([a], [b]) => a.localeCompare(b))) {
     await tx
       .insert(stockAttention)
       .values({
@@ -2892,4 +3067,624 @@ export async function resolveStockAttention(tx: Tx, actor: StockActor, attention
     before: { kind: row.kind, summary: row.summary },
     after: { resolved: true },
   });
+}
+
+// =====================================================================================
+// ROUND 4 — REPORTS, THE DAILY FACT AND COST OF GOODS, FROM THE LEDGER (plan §2.5).
+//
+// Every figure below is read from `pos.stock_movement` — and the counts and
+// orders its rows point at — so each report adds up to the movements it names:
+//
+//   - Discrepancies: the counted shelves of every stock take (openings left
+//     out: a starting figure is not a variance); a non-zero line's difference IS
+//     its `count` movement.
+//   - Usage: per size, sales net of refunds over business dates — a unit a paid
+//     sale took past the record counts as used (the guest has it), and a refund
+//     counts only what it put back on a shelf (the restock decision's).
+//   - Shrinkage: count variances (openings left out) plus corrections down.
+//   - Purchases: the purchase orders, each line's received units read back from
+//     its `receive` movements.
+//   - Value: what each size holds at the live places now × its cost, "no cost
+//     set" flagged.
+//
+// The prototype mocked Usage and Shrinkage (`StockReports.tsx:241-320`); its
+// Discrepancies, Purchases and Value were session figures. Cost figures are a
+// manager's (`seesCost` in the routes): null to anyone else.
+// =====================================================================================
+
+interface ReportItem {
+  id: string;
+  name: string;
+  variantLabel: string | null;
+  groupId: string;
+  productKind: string | null;
+  unitCostSatang: number | null;
+  archived: boolean;
+}
+
+/** Every stock item of the branch, removed sizes too — a past movement may name one. */
+async function reportItems(db: Exec, operatorId: string, branchId: string): Promise<Map<string, ReportItem>> {
+  const rows = await db
+    .select()
+    .from(stockItem)
+    .where(and(eq(stockItem.operatorId, operatorId), eq(stockItem.branchId, branchId)))
+    .orderBy(asc(stockItem.name), asc(stockItem.variantId), asc(stockItem.id));
+  const productIds = [...new Set(rows.flatMap((r) => (r.productId ? [r.productId] : [])))];
+  const kinds = new Map(
+    (productIds.length
+      ? await db.select({ id: product.id, kind: product.kind }).from(product).where(inArray(product.id, productIds))
+      : []
+    ).map((p) => [p.id, p.kind as string]),
+  );
+  return new Map(
+    rows.map((r) => [
+      r.id,
+      {
+        id: r.id,
+        name: r.name,
+        variantLabel: r.variantLabel,
+        groupId: stockGroupKey(r),
+        productKind: r.productId ? (kinds.get(r.productId) ?? null) : null,
+        unitCostSatang: r.unitCostSatang,
+        archived: r.archivedAt !== null,
+      },
+    ]),
+  );
+}
+
+const sizeOf = (item: ReportItem) => ({
+  stockItemId: item.id,
+  name: item.name,
+  variantLabel: item.variantLabel,
+  groupId: item.groupId,
+  productKind: item.productKind,
+});
+
+async function branchClock(db: Exec, branchId: string): Promise<{ operatorId: string; timezone: string; dayStartMinutes: number }> {
+  const [br] = await db
+    .select({ operatorId: branch.operatorId, timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(eq(branch.id, branchId))
+    .limit(1);
+  if (!br) throw errors.notFound('Branch not found');
+  return { operatorId: br.operatorId, timezone: br.timezone, dayStartMinutes: parseDayStart(br.dayStart) };
+}
+
+const int = (v: string | number | null | undefined): number => Number(v ?? 0);
+
+type ReportScope = { operatorId: string; branchId: string; from: string; to: string; withCost: boolean };
+
+/** Discrepancies: every counted shelf of a stock take in the range, newest first. */
+export async function stockDiscrepancies(
+  db: Exec,
+  scope: Omit<ReportScope, 'withCost'>,
+  items?: Map<string, ReportItem>,
+): Promise<StockDiscrepancyRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const clock = await branchClock(db, scope.branchId);
+  const rows = await db
+    .select({
+      id: stockTakeLine.id,
+      stockItemId: stockTakeLine.stockItemId,
+      locationId: stockTakeLine.stockLocationId,
+      locationName: stockLocation.name,
+      expected: stockTakeLine.expectedQuantity,
+      counted: stockTakeLine.countedQuantity,
+      difference: stockTakeLine.difference,
+      flagged: stockTakeLine.flagged,
+      countedAt: stockTakeLine.countedAt,
+    })
+    .from(stockTakeLine)
+    .innerJoin(stockTake, eq(stockTake.id, stockTakeLine.stockTakeId))
+    .innerJoin(stockLocation, eq(stockLocation.id, stockTakeLine.stockLocationId))
+    .where(
+      and(
+        eq(stockTake.operatorId, scope.operatorId),
+        eq(stockTake.branchId, scope.branchId),
+        eq(stockTake.status, 'committed'),
+        eq(stockTake.opening, false),
+      ),
+    )
+    .orderBy(desc(stockTakeLine.countedAt), asc(stockTakeLine.id));
+  const out: StockDiscrepancyRow[] = [];
+  for (const r of rows) {
+    const day = businessDate(r.countedAt, clock.timezone, clock.dayStartMinutes);
+    if (day < scope.from || day > scope.to) continue;
+    const item = byId.get(r.stockItemId);
+    if (!item) continue;
+    out.push({
+      id: r.id,
+      ...sizeOf(item),
+      locationId: r.locationId,
+      locationName: r.locationName,
+      expectedQuantity: r.expected,
+      countedQuantity: r.counted,
+      difference: r.difference,
+      flagged: r.flagged,
+      countedAt: r.countedAt.toISOString(),
+      businessDate: day,
+    });
+  }
+  return out;
+}
+
+/** Usage: per size, what sales took over the range, net of what refunds put back. */
+export async function stockUsage(
+  db: Exec,
+  scope: ReportScope,
+  items?: Map<string, ReportItem>,
+): Promise<StockUsageRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const { rows } = await db.execute<{
+    stock_item_id: string;
+    sold: string | number;
+    sold_offline: string | number;
+    refunded: string | number;
+    cost: string | number | null;
+    cost_missing: boolean;
+  }>(sql`
+    select m.stock_item_id,
+           sum(case when m.kind in ('sale','offline_sale') then -m.quantity + m.shortfall else 0 end)::bigint as sold,
+           sum(case when m.kind = 'offline_sale' then -m.quantity + m.shortfall else 0 end)::bigint as sold_offline,
+           sum(case when m.kind = 'refund' then m.quantity else 0 end)::bigint as refunded,
+           sum(case when m.kind in ('sale','offline_sale') then (-m.quantity + m.shortfall) * m.unit_cost_satang
+                    else -m.quantity * m.unit_cost_satang end)::bigint as cost,
+           bool_or(m.unit_cost_satang is null) as cost_missing
+      from pos.stock_movement m
+     where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
+       and m.business_date between ${scope.from}::date and ${scope.to}::date
+       and m.kind in ('sale','offline_sale','refund')
+     group by m.stock_item_id`);
+  const out: StockUsageRow[] = [];
+  for (const r of rows) {
+    const item = byId.get(r.stock_item_id);
+    if (!item) continue;
+    const sold = int(r.sold);
+    const refunded = int(r.refunded);
+    out.push({
+      ...sizeOf(item),
+      sold,
+      refunded,
+      net: sold - refunded,
+      soldOffline: int(r.sold_offline),
+      costSatang: scope.withCost && !r.cost_missing ? int(r.cost) : null,
+    });
+  }
+  return out.sort((a, b) => b.net - a.net || a.name.localeCompare(b.name) || a.stockItemId.localeCompare(b.stockItemId));
+}
+
+/** Shrinkage: per size, count variances (openings left out) plus corrections down. */
+export async function stockShrinkage(
+  db: Exec,
+  scope: ReportScope,
+  items?: Map<string, ReportItem>,
+): Promise<StockShrinkageRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const { rows } = await db.execute<{
+    stock_item_id: string;
+    count_variance: string | number;
+    counted_short: string | number;
+    adjusted_down: string | number;
+    moved_cost: string | number | null;
+    cost_missing: boolean;
+  }>(sql`
+    select m.stock_item_id,
+           sum(case when m.kind = 'count' then m.quantity else 0 end)::bigint as count_variance,
+           count(*) filter (where m.kind = 'count' and m.quantity < 0)::bigint as counted_short,
+           sum(case when m.kind = 'adjust' then m.quantity else 0 end)::bigint as adjusted_down,
+           sum(m.quantity * m.unit_cost_satang)::bigint as moved_cost,
+           bool_or(m.unit_cost_satang is null) as cost_missing
+      from pos.stock_movement m
+      left join pos.stock_take_line l on l.id = m.stock_take_line_id
+      left join pos.stock_take t on t.id = l.stock_take_id
+     where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
+       and m.business_date between ${scope.from}::date and ${scope.to}::date
+       and ((m.kind = 'count' and coalesce(t.opening, false) = false)
+            or (m.kind = 'adjust' and m.quantity < 0))
+     group by m.stock_item_id`);
+  const out: StockShrinkageRow[] = [];
+  for (const r of rows) {
+    const item = byId.get(r.stock_item_id);
+    if (!item) continue;
+    const countVariance = int(r.count_variance);
+    const adjustedDown = int(r.adjusted_down);
+    if (countVariance === 0 && adjustedDown === 0) continue;
+    out.push({
+      ...sizeOf(item),
+      countVariance,
+      countedShort: int(r.counted_short),
+      adjustedDown,
+      total: countVariance + adjustedDown,
+      lossSatang: scope.withCost ? -int(r.moved_cost) : null,
+      costMissing: r.cost_missing,
+    });
+  }
+  return out.sort((a, b) => a.total - b.total || a.name.localeCompare(b.name) || a.stockItemId.localeCompare(b.stockItemId));
+}
+
+/** Purchases: the orders created in the range, each line's receipts read back from the ledger. */
+export async function stockPurchases(
+  db: Exec,
+  scope: ReportScope,
+  items?: Map<string, ReportItem>,
+): Promise<StockPurchaseOrderRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const clock = await branchClock(db, scope.branchId);
+  const orders = (await listPurchaseOrders(db, scope.operatorId, scope.branchId)).filter((o) => {
+    const day = businessDate(new Date(o.createdAt), clock.timezone, clock.dayStartMinutes);
+    return day >= scope.from && day <= scope.to;
+  });
+  const lineIds = orders.flatMap((o) => o.lines.map((l) => l.id));
+  const received = new Map<string, { quantity: number; cost: number; costMissing: boolean }>();
+  if (lineIds.length > 0) {
+    const { rows } = await db.execute<{ line_id: string; quantity: string | number; cost: string | number | null; cost_missing: boolean }>(sql`
+      select m.purchase_order_line_id as line_id,
+             sum(m.quantity)::bigint as quantity,
+             sum(m.quantity * m.unit_cost_satang)::bigint as cost,
+             bool_or(m.unit_cost_satang is null) as cost_missing
+        from pos.stock_movement m
+       where m.operator_id = ${scope.operatorId}::uuid and m.kind = 'receive'
+         and m.purchase_order_line_id in (${sql.join(lineIds.map((id) => sql`${id}::uuid`), sql`, `)})
+       group by m.purchase_order_line_id`);
+    for (const r of rows) received.set(r.line_id, { quantity: int(r.quantity), cost: int(r.cost), costMissing: r.cost_missing });
+  }
+  return orders.map((o) => ({
+    id: o.id,
+    supplierName: o.supplierName,
+    state: o.state,
+    createdAt: o.createdAt,
+    createdBy: o.createdBy,
+    expectedArrivalDate: o.expectedArrivalDate,
+    lines: o.lines.map((l) => {
+      const item = byId.get(l.stockItemId);
+      const got = received.get(l.id);
+      // Nothing received yet costs nothing; a receipt with no frozen cost is unknown.
+      const receivedCost = !got ? 0 : got.costMissing ? null : got.cost;
+      return {
+        id: l.id,
+        stockItemId: l.stockItemId,
+        groupId: item?.groupId ?? l.stockItemId,
+        productKind: item?.productKind ?? null,
+        itemName: l.itemName,
+        variantLabel: l.variantLabel,
+        orderedQuantity: l.orderedQuantity,
+        receivedQuantity: l.receivedQuantity,
+        receivedInLedger: got?.quantity ?? 0,
+        unitCostSatang: scope.withCost ? (item?.unitCostSatang ?? null) : null,
+        receivedCostSatang: scope.withCost ? receivedCost : null,
+      };
+    }),
+  }));
+}
+
+/**
+ * Value: what each size holds now, × its cost; a size with no cost is flagged,
+ * never valued at nothing. "Holds" is the RECORD — every place of the branch,
+ * a retired one included (a manager may retire a shelf while stock sits on it,
+ * and `assertSizesRemovable` still counts it as held) — so `onHand` is
+ * Σ stock_level = the day's fact closing, and `valueSatang` its value. A
+ * retired place appears in `byLocation` only when it holds something, and its
+ * units are told apart in `retiredOnHand`.
+ */
+export async function stockValue(
+  db: Exec,
+  scope: Pick<ReportScope, 'operatorId' | 'branchId' | 'withCost'>,
+  items?: Map<string, ReportItem>,
+): Promise<StockValueRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const live = [...byId.values()].filter((i) => !i.archived);
+  const places = await branchLocations(db, scope.branchId);
+  const ids = live.map((i) => i.id);
+  const levels = ids.length
+    ? await db
+        .select({
+          stockItemId: stockLevel.stockItemId,
+          stockLocationId: stockLevel.stockLocationId,
+          quantity: stockLevel.quantity,
+          retired: sql<boolean>`(not ${stockLocation.active} or ${stockLocation.archivedAt} is not null)`,
+        })
+        .from(stockLevel)
+        .innerJoin(stockLocation, eq(stockLocation.id, stockLevel.stockLocationId))
+        .where(and(inArray(stockLevel.stockItemId, ids), eq(stockLocation.branchId, scope.branchId)))
+        .orderBy(asc(stockLocation.name), asc(stockLocation.id))
+    : [];
+  return live.map((item) => {
+    const byLocation: Record<string, number> = {};
+    for (const p of places) byLocation[p.id] = 0;
+    let retiredOnHand = 0;
+    for (const l of levels) {
+      if (l.stockItemId !== item.id) continue;
+      if (l.retired) {
+        if (l.quantity === 0) continue;
+        retiredOnHand += l.quantity;
+      }
+      byLocation[l.stockLocationId] = l.quantity;
+    }
+    const onHand = Object.values(byLocation).reduce((n, q) => n + q, 0);
+    const cost = scope.withCost ? item.unitCostSatang : null;
+    return {
+      ...sizeOf(item),
+      byLocation,
+      onHand,
+      retiredOnHand,
+      unitCostSatang: cost,
+      valueSatang: cost === null ? null : onHand * cost,
+      noCostSet: item.unitCostSatang === null,
+    };
+  });
+}
+
+/** The stock module's five reports, one read (`GET /branches/:branchId/stock/reports`). */
+export async function stockReports(db: Exec, scope: ReportScope): Promise<StockReports> {
+  if (scope.from > scope.to) throw errors.badRequest('The range ends before it starts');
+  const items = await reportItems(db, scope.operatorId, scope.branchId);
+  return {
+    branchId: scope.branchId,
+    from: scope.from,
+    to: scope.to,
+    withCost: scope.withCost,
+    discrepancies: await stockDiscrepancies(db, scope, items),
+    usage: await stockUsage(db, scope, items),
+    shrinkage: await stockShrinkage(db, scope, items),
+    purchases: await stockPurchases(db, scope, items),
+    value: await stockValue(db, scope, items),
+  };
+}
+
+/**
+ * COST OF GOODS, per product, over business dates: the units its sales took
+ * net of the units refunds put back, at the cost frozen on the sale line when it
+ * sold (`sale_line.payload.stock`, carried onto every movement). Attributed to
+ * the product the LINE sold, so relinking or removing a size later does not
+ * move past cost. A unit with no frozen cost makes `costTracked` false: the
+ * figure is understated, never silently "free" (prototype `lib/reporting.ts`).
+ */
+export async function stockCostOfGoods(
+  db: Exec,
+  scope: Omit<ReportScope, 'withCost'>,
+): Promise<StockCostOfGoods> {
+  if (scope.from > scope.to) throw errors.badRequest('The range ends before it starts');
+  const { rows } = await db.execute<{
+    product_id: string;
+    name: string;
+    kind: string | null;
+    quantity: string | number;
+    cogs: string | number | null;
+    untracked: boolean;
+  }>(sql`
+    select l.product_id, p.name, p.kind,
+           sum(case when m.kind in ('sale','offline_sale') then -m.quantity + m.shortfall else -m.quantity end)::bigint as quantity,
+           sum(case when m.kind in ('sale','offline_sale') then (-m.quantity + m.shortfall) * m.unit_cost_satang
+                    else -m.quantity * m.unit_cost_satang end)::bigint as cogs,
+           bool_or(m.unit_cost_satang is null) as untracked
+      from pos.stock_movement m
+      join pos.sale_line l on l.id = m.sale_line_id
+      join pos.product p on p.id = l.product_id
+     where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
+       and m.business_date between ${scope.from}::date and ${scope.to}::date
+       and m.kind in ('sale','offline_sale','refund')
+     group by l.product_id, p.name, p.kind
+     order by p.name, l.product_id`);
+  return {
+    branchId: scope.branchId,
+    from: scope.from,
+    to: scope.to,
+    rows: rows.map((r) => ({
+      productId: r.product_id,
+      name: r.name,
+      productKind: r.kind,
+      quantity: int(r.quantity),
+      cogsSatang: int(r.cogs),
+      costTracked: !r.untracked,
+    })),
+  };
+}
+
+// --- The daily fact ---------------------------------------------------------------------
+
+export interface StockDayFact {
+  stockItemId: string;
+  businessDate: string;
+  opening: number;
+  sold: number;
+  refunded: number;
+  received: number;
+  transferred: number;
+  adjusted: number;
+  counted: number;
+  shortfall: number;
+  closing: number;
+  valueSatang: number | null;
+}
+
+/**
+ * ONE BRANCH'S STOCK DAY, per size, from the ledger. SIGN-EXACT by
+ * construction: every figure is the SIGNED sum of its kind's movements dated
+ * that day (sold ≤ 0, refunded and received ≥ 0, adjusted and counted either
+ * way), opening is every movement dated before it, and so
+ *
+ *     closing = opening + sold + refunded + received + adjusted + counted
+ *
+ * exactly; `transferred` is the gross units moved between places, whose out and
+ * in legs net to nothing inside the branch (checked, not assumed). `shortfall`
+ * is the units paid sales took past the record — told, never in the
+ * arithmetic. `value_satang` is closing × the cost frozen on the size's latest
+ * costed movement on or before the day, so a past day is valued at its own
+ * cost and a rerun after a price change writes nothing.
+ *
+ * A size is written for a day when it moved that day or held something at its
+ * start; a size that never moved has no row.
+ */
+export async function stockDayFacts(db: Exec, branchId: string, day: string): Promise<StockDayFact[]> {
+  const { rows } = await db.execute<{
+    stock_item_id: string;
+    opening: string | number;
+    sold: string | number;
+    refunded: string | number;
+    received: string | number;
+    transfer_out: string | number;
+    transfer_in: string | number;
+    adjusted: string | number;
+    counted: string | number;
+    shortfall: string | number;
+    today_moves: string | number;
+    cost: string | number | null;
+  }>(sql`
+    select m.stock_item_id,
+           coalesce(sum(m.quantity) filter (where m.business_date < ${day}::date), 0)::bigint as opening,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind in ('sale','offline_sale')), 0)::bigint as sold,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'refund'), 0)::bigint as refunded,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'receive'), 0)::bigint as received,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'transfer_out'), 0)::bigint as transfer_out,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'transfer_in'), 0)::bigint as transfer_in,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'adjust'), 0)::bigint as adjusted,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'count'), 0)::bigint as counted,
+           coalesce(sum(m.shortfall) filter (where m.business_date = ${day}::date), 0)::bigint as shortfall,
+           count(*) filter (where m.business_date = ${day}::date)::bigint as today_moves,
+           (array_agg(m.unit_cost_satang order by m.business_date desc, m.occurred_at desc, m.created_at desc, m.id desc)
+              filter (where m.unit_cost_satang is not null))[1] as cost
+      from pos.stock_movement m
+     where m.branch_id = ${branchId}::uuid and m.business_date <= ${day}::date
+     group by m.stock_item_id
+     order by m.stock_item_id`);
+  const out: StockDayFact[] = [];
+  for (const r of rows) {
+    const opening = int(r.opening);
+    const transferOut = int(r.transfer_out);
+    const transferIn = int(r.transfer_in);
+    if (transferOut + transferIn !== 0) {
+      // Both legs of a transfer are one act on one day: a ledger where they do
+      // not net is not one this arithmetic can describe — say so, loudly.
+      throw new Error(`stock fact ${branchId} ${day}: the transfers of ${r.stock_item_id} do not net (${transferOut} out, ${transferIn} in)`);
+    }
+    if (opening === 0 && int(r.today_moves) === 0) continue;
+    const sold = int(r.sold);
+    const refunded = int(r.refunded);
+    const received = int(r.received);
+    const adjusted = int(r.adjusted);
+    const counted = int(r.counted);
+    const closing = opening + sold + refunded + received + adjusted + counted;
+    out.push({
+      stockItemId: r.stock_item_id,
+      businessDate: day,
+      opening,
+      sold,
+      refunded,
+      received,
+      transferred: transferIn,
+      adjusted,
+      counted,
+      shortfall: int(r.shortfall),
+      closing,
+      valueSatang: r.cost === null ? null : closing * Number(r.cost),
+    });
+  }
+  return out;
+}
+
+/**
+ * WRITE ONE BRANCH'S STOCK DAY (`analytics.fact_stock_daily`), idempotent per
+ * branch and date: recomputed from the ledger and upserted, and a row whose
+ * figures are unchanged is not written (the wallet liability fact's pattern) —
+ * so a rerun writes nothing, and a late offline sale corrects the day it
+ * belongs to and every stored day after it — including deleting the row of a
+ * size that sale emptied (it no longer opens with anything nor moves), which
+ * counts as written.
+ */
+export async function writeStockDailyFacts(
+  db: Exec,
+  branchId: string,
+  day: string,
+  now: Date = new Date(),
+): Promise<{ written: number; facts: StockDayFact[] }> {
+  const { operatorId } = await branchClock(db, branchId);
+  const facts = await stockDayFacts(db, branchId, day);
+  const f = factStockDaily;
+  let written = 0;
+  for (const fact of facts) {
+    const values = {
+      opening: fact.opening,
+      sold: fact.sold,
+      refunded: fact.refunded,
+      received: fact.received,
+      transferred: fact.transferred,
+      adjusted: fact.adjusted,
+      counted: fact.counted,
+      shortfall: fact.shortfall,
+      closing: fact.closing,
+      valueSatang: fact.valueSatang,
+    };
+    const rows = await db
+      .insert(f)
+      .values({ id: newId(), operatorId, branchId, stockItemId: fact.stockItemId, businessDate: day, ...values, createdAt: now, updatedAt: now })
+      .onConflictDoUpdate({
+        target: [f.branchId, f.stockItemId, f.businessDate],
+        set: { ...values, updatedAt: now },
+        setWhere: sql`(${f.opening}, ${f.sold}, ${f.refunded}, ${f.received}, ${f.transferred}, ${f.adjusted}, ${f.counted}, ${f.shortfall}, ${f.closing}, ${f.valueSatang})
+          is distinct from (excluded.opening, excluded.sold, excluded.refunded, excluded.received, excluded.transferred, excluded.adjusted, excluded.counted, excluded.shortfall, excluded.closing, excluded.value_satang)`,
+      })
+      .returning({ id: f.id });
+    written += rows.length;
+  }
+  // A size the ledger no longer has anything to say about that day (a late
+  // offline sale emptied it on an earlier day, so it opens at nothing and does
+  // not move) loses the row an earlier run wrote for it: a stored day must say
+  // what the ledger says of it, or not exist. Nothing to drop writes nothing.
+  const kept = facts.map((x) => x.stockItemId);
+  const dropped = await db
+    .delete(f)
+    .where(
+      and(
+        eq(f.branchId, branchId),
+        eq(f.businessDate, day),
+        ...(kept.length > 0 ? [notInArray(f.stockItemId, kept)] : []),
+      ),
+    )
+    .returning({ id: f.id });
+  written += dropped.length;
+  return { written, facts };
+}
+
+/** How many ended days back the stock job writes, so a job that was down closes the days it missed (the wallet jobs' week). */
+export const STOCK_FACT_LOOKBACK_DAYS = 7;
+
+/** The job's name, once: the runner, the tests and the Health page. */
+export const STOCK_DAILY_JOB = 'job:stock.daily';
+
+/**
+ * `job:stock.daily` — for every live branch: the ended days' facts (a week
+ * back, rewritten only where a figure moved), then the branch's low-stock
+ * attention re-read whole, because the usage window behind the trend reorder
+ * point (OD-27) slides every day whether or not anything moves. A branch that
+ * fails does not stop the others; the job then fails loudly with the count.
+ */
+export async function runStockDailyJob(db: Db, now: Date): Promise<Record<string, number>> {
+  let days = 0;
+  let rowsWritten = 0;
+  let branches = 0;
+  let failed = 0;
+  let firstError: unknown = null;
+  const live = await db
+    .select({ id: branch.id, operatorId: branch.operatorId, timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(isNull(branch.archivedAt))
+    .orderBy(asc(branch.id));
+  for (const br of live) {
+    try {
+      const today = businessDate(now, br.timezone, parseDayStart(br.dayStart));
+      for (let back = STOCK_FACT_LOOKBACK_DAYS; back >= 1; back -= 1) {
+        days += 1;
+        rowsWritten += (await writeStockDailyFacts(db, br.id, addDaysToIsoDate(today, -back), now)).written;
+      }
+      await db.transaction((tx) => syncStockAttention(tx, { operatorId: br.operatorId, branchId: br.id }, now));
+      branches += 1;
+    } catch (err) {
+      failed += 1;
+      firstError ??= err;
+    }
+  }
+  if (failed > 0) {
+    throw new Error(`stock daily: ${failed} of ${live.length} branches could not be written`, { cause: firstError });
+  }
+  return { branches, days, rowsWritten };
 }

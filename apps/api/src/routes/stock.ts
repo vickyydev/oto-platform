@@ -21,8 +21,11 @@ import {
   StockLocationsSchema,
   StockLocationViewSchema,
   StockMovementsSchema,
+  StockCostOfGoodsSchema,
   StockReceiveBodySchema,
   StockReceiveResultSchema,
+  StockReportQuerySchema,
+  StockReportsSchema,
   StockTakeBodySchema,
   StockTakeResultSchema,
   StockTransferBodySchema,
@@ -50,8 +53,9 @@ import {
   sellableStock,
   setPurchaseOrderLineQuantity,
   setSellPoint,
+  stockCostOfGoods,
   stockLevelsOf,
-  syncStockAttention,
+  stockReports,
   transferStock,
   updateLocation,
   type StockActor,
@@ -205,6 +209,58 @@ export async function stockRoutes(app: App): Promise<void> {
       const withCost = await seesCost(req, auth.operatorId, req.params.branchId);
       const movements = await movementsOf(app.db, auth.operatorId, req.params.branchId, req.query, { withCost });
       return { movements };
+    },
+  );
+
+  // --- Reports from the ledger (round 4, plan §2.5) ----------------------------------------
+
+  app.get(
+    '/branches/:branchId/stock/reports',
+    {
+      config: { permission: 'pos:stock:read', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          "The stock module's reports over business dates, each from the ledger: discrepancies (counts), usage (sales net of refunds), shrinkage (count variances and corrections down), purchases (orders and their receipts) and value (on hand × cost, no cost flagged). Cost figures only to a manager",
+        params: BranchParams,
+        querystring: StockReportQuerySchema,
+        response: { 200: StockReportsSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      await loadStockBranch(app, req.params.branchId, auth.operatorId);
+      const withCost = await seesCost(req, auth.operatorId, req.params.branchId);
+      return stockReports(app.db, {
+        operatorId: auth.operatorId,
+        branchId: req.params.branchId,
+        from: req.query.from,
+        to: req.query.to,
+        withCost,
+      });
+    },
+  );
+
+  app.get(
+    '/branches/:branchId/stock/reports/cost-of-goods',
+    {
+      config: { permission: 'analytics:read', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          'Cost of goods per product over business dates: units sold net of refunds at the cost frozen on each sale line — the profitability report reads this',
+        params: BranchParams,
+        querystring: StockReportQuerySchema,
+        response: { 200: StockCostOfGoodsSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      await loadStockBranch(app, req.params.branchId, auth.operatorId);
+      return stockCostOfGoods(app.db, {
+        operatorId: auth.operatorId,
+        branchId: req.params.branchId,
+        from: req.query.from,
+        to: req.query.to,
+      });
     },
   );
 
@@ -507,11 +563,10 @@ export async function stockRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       await loadStockBranch(app, req.params.branchId, auth.operatorId);
-      // A sale moves stock without re-reading the rules (the finalise path stays
-      // as lean as round 1 left it), so the read brings them up to date first.
-      await app.db.transaction((tx) =>
-        syncStockAttention(tx, { operatorId: auth.operatorId, branchId: req.params.branchId }, new Date()),
-      );
+      // A READ, and nothing but (round 4, handover Q4): the rows are kept up
+      // to date where stock moves — every stock write, a sale's decrement and a
+      // refund's restock (`syncStockAttention`) — and by the daily stock job as
+      // the usage window slides (`runStockDailyJob`).
       return { attention: await listStockAttention(app.db, auth.operatorId, req.params.branchId) };
     },
   );

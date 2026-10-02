@@ -183,6 +183,34 @@ const STOCK: StockSeed[] = [
   },
 ];
 
+/** Who wrote it, on the record: the deploy's platform sync, not a person (round 4, handover Q3). */
+export const PLATFORM_SYNC_ACTOR = 'platform sync';
+export const PRODUCT_SIZES_AUDIT_ACTION = 'product.sizes_seeded';
+
+/**
+ * THE AUDIT ROW FOR A PRODUCT GIVEN ITS SIZES by the stock setup — a change to
+ * what the till sells (the size picker), so it is on the record like every
+ * other catalogue write: no account (nobody pressed anything), the platform
+ * sync named as the actor, the sizes before (none) and after.
+ */
+async function auditSizesSeeded(
+  tx: Pick<Db, 'insert'>,
+  input: { operatorId: string; branchId: string | null; productId: string; code: string; variants: ProductVariant[] },
+): Promise<void> {
+  await tx.insert(s.auditLog).values({
+    id: newId(),
+    operatorId: input.operatorId,
+    branchId: input.branchId,
+    actorAccountId: null,
+    requestId: 'platform:sync',
+    action: PRODUCT_SIZES_AUDIT_ACTION,
+    entityType: 'product',
+    entityId: input.productId,
+    before: { variants: [] },
+    after: { variants: input.variants, code: input.code, by: PLATFORM_SYNC_ACTOR },
+  });
+}
+
 export interface StockSeedCounts {
   locations: number;
   items: number;
@@ -198,7 +226,7 @@ export async function seedStock(
 
   const codes = STOCK.map((x) => x.productCode);
   const products = await db
-    .select({ id: s.product.id, code: s.product.code, variants: s.product.variants })
+    .select({ id: s.product.id, code: s.product.code, variants: s.product.variants, branchId: s.product.branchId })
     .from(s.product)
     .where(and(eq(s.product.operatorId, operatorId), inArray(s.product.code, codes)));
   const byCode = new Map(products.map((p) => [p.code!, p]));
@@ -209,6 +237,7 @@ export async function seedStock(
     const row = byCode.get(code);
     if (!row || row.variants.length > 0) continue;
     await db.update(s.product).set({ variants }).where(eq(s.product.id, row.id));
+    await auditSizesSeeded(db, { operatorId, branchId: row.branchId, productId: row.id, code, variants });
     row.variants = variants;
   }
 
@@ -422,6 +451,8 @@ export async function syncStockSetup(db: Db): Promise<StockSetupCounts> {
         const row = byCode.get(code);
         if (!row || row.variants.length > 0) continue;
         await tx.update(s.product).set({ variants }).where(eq(s.product.id, row.id));
+        // Round 4 (Q3): the size picker changed, so the record says so.
+        await auditSizesSeeded(tx, { operatorId: br.operatorId, branchId: row.branchId, productId: row.id, code, variants });
         row.variants = variants;
       }
 

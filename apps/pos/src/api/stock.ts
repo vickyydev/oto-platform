@@ -22,10 +22,12 @@ import type {
   SellableStockProduct,
   StockAdjustResult,
   StockAttentionView,
+  StockCostOfGoods,
   StockItemBody,
   StockLevels,
   StockLocationView,
   StockReceiveResult,
+  StockReports,
   StockTakeResult,
   StockTransferResult,
 } from '@oto/shared';
@@ -482,4 +484,27 @@ export function inventoryItemToStockBody(
       parByLocation: v.parByLocation ?? {},
     })),
   };
+}
+
+// =====================================================================================
+// S2-14b round 4 — THE REPORTS, FROM THE LEDGER (plan §2.5).
+//
+// The Reports tab of the stock module used to read the prototype's session log
+// and two mocked lists (Usage, Shrinkage). It reads the platform's ledger now:
+// `GET /branches/:branchId/stock/reports` answers all five over a range of
+// business dates, every figure adding up to the movements it names, costs only
+// to a manager. The profitability report's cost of goods reads
+// `/stock/reports/cost-of-goods`: the cost frozen on each sale line.
+// =====================================================================================
+
+/** The five stock reports over inclusive business dates. */
+export function fetchStockReports(branchId: string, from: string, to: string): Promise<StockReports> {
+  const q = new URLSearchParams({ from, to });
+  return api.get<StockReports>(`${stockBase(branchId)}/reports?${q.toString()}`);
+}
+
+/** Cost of goods per product over inclusive business dates, at the cost frozen on each sale line. */
+export function fetchCostOfGoods(branchId: string, from: string, to: string): Promise<StockCostOfGoods> {
+  const q = new URLSearchParams({ from, to });
+  return api.get<StockCostOfGoods>(`${stockBase(branchId)}/reports/cost-of-goods?${q.toString()}`);
 }

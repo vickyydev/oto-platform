@@ -528,6 +528,13 @@ export const stockAttention = pos.table(
  * figure is in eaches; `transferred` is the units moved between this branch's
  * places that day (gross — within a branch they net to nothing); `value_satang`
  * is closing × unit cost, null when no cost is set.
+ *
+ * SIGNED, by business date (round 4, migration 0050): every other figure is the
+ * signed sum of its kind's movements dated that day, so
+ * `opening + sold + refunded + received + adjusted + counted = closing`
+ * exactly. Opening and closing may be below zero: a movement that ARRIVES
+ * after a later-dated one (yesterday's offline sale synced after today's
+ * delivery) leaves its own day short on the record, which is the truth.
  */
 export const factStockDaily = analytics.table(
   'fact_stock_daily',
@@ -560,6 +567,5 @@ export const factStockDaily = analytics.table(
     index('fact_stock_daily_operator_idx').on(t.operatorId),
     index('fact_stock_daily_item_idx').on(t.stockItemId),
     index('fact_stock_daily_branch_date_idx').on(t.branchId, t.businessDate),
-    check('fact_stock_daily_closing_check', sql`${t.opening} >= 0 and ${t.closing} >= 0`),
   ],
 );

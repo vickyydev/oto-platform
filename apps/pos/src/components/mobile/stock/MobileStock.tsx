@@ -308,6 +308,7 @@ export function MobileStock() {
         )}
         {tab === 'reports' && (
           <StockReports
+            branchId={branchId}
             inventory={inventory}
             locations={stockLocations}
           />

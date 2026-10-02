@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { addDaysToIsoDate } from './business-date';
 
 /**
  * S2-14b — stock, the parts the till, the api and a box all need to agree on.
@@ -593,3 +594,231 @@ export const StockAttentionsSchema = z.object({ attention: z.array(StockAttentio
 /** The words a low-stock attention carries for the rule that fired. */
 export const STOCK_RULE_REORDER = '≤ reorder point';
 export const stockRuleBelowPar = (placeName: string): string => `Below par at ${placeName}`;
+
+// --- Round 4: the consumption-trend reorder rule (OD-27, plan §2.5) ------------------
+
+/** Days of sale history an item needs before its reorder point comes from its usage. */
+export const STOCK_TREND_HISTORY_DAYS = 30;
+/** The day of cover added to the lead time, so an order lands before the shelf is bare. */
+export const STOCK_TREND_SAFETY_DAYS = 1;
+/** The rule's words on an attention row when the point came from the item's usage. */
+export const STOCK_RULE_REORDER_TREND = '≤ reorder point (30-day usage)';
+
+export interface ReorderPointAnswer {
+  /** Which rule set the point: the item's own figure, or its last 30 days of usage. */
+  rule: 'static' | 'trend';
+  /** The point the item's total is held against; null when the item has no reorder settings. */
+  reorderPoint: number | null;
+  /** The static figure the item carries, kept for the attention's detail. */
+  staticPoint: number | null;
+  /** Units used in the 30 days before today (sales net of refunds), when the trend fired. */
+  usedInWindow: number | null;
+}
+
+/**
+ * OD-27 — WHICH REORDER POINT HOLDS TODAY. Before an item has
+ * `STOCK_TREND_HISTORY_DAYS` of sale history (its first sale movement at least
+ * 30 business days before today) the static reorder point stands. From then on
+ * the point is its average daily usage over the 30 days before today, times
+ * its lead time plus one safety day, rounded UP to a whole each:
+ *
+ *     ceil(used in the 30 days × (lead time + 1) / 30)
+ *
+ * Integer arithmetic throughout, so the same history always gives the same
+ * point. An item with no reorder settings (no static point, or no lead time to
+ * multiply by) has no reorder rule at all, as before.
+ */
+export function reorderPointFor(input: {
+  staticPoint: number | null;
+  leadTimeDays: number | null;
+  /** The business date of the item's earliest sale movement; null when it has never sold. */
+  firstSaleDate: string | null;
+  /** Today's business date at the branch. */
+  today: string;
+  /** Units used in the 30 business days before today. */
+  usedInWindow: number;
+}): ReorderPointAnswer {
+  const staticAnswer: ReorderPointAnswer = {
+    rule: 'static',
+    reorderPoint: input.staticPoint,
+    staticPoint: input.staticPoint,
+    usedInWindow: null,
+  };
+  if (input.staticPoint === null || input.leadTimeDays === null || input.firstSaleDate === null) return staticAnswer;
+  const historyFrom = addDaysToIsoDate(input.firstSaleDate, STOCK_TREND_HISTORY_DAYS);
+  if (historyFrom > input.today) return staticAnswer;
+  const used = Math.max(0, Math.trunc(input.usedInWindow));
+  const cover = input.leadTimeDays + STOCK_TREND_SAFETY_DAYS;
+  return {
+    rule: 'trend',
+    reorderPoint: Math.ceil((used * cover) / STOCK_TREND_HISTORY_DAYS),
+    staticPoint: input.staticPoint,
+    usedInWindow: used,
+  };
+}
+
+// --- Round 4: reports from the ledger (plan §2.5) ------------------------------------
+//
+// Every figure is read from `pos.stock_movement` (and the counts and orders the
+// movements point at), so each report adds up to the movements it names. Cost
+// figures are a manager's (`StockPlaceViewSchema`'s note): null to anyone else.
+
+const ReportDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'A date, yyyy-mm-dd');
+
+export const StockReportQuerySchema = z.object({
+  /** Inclusive business dates. */
+  from: ReportDate,
+  to: ReportDate,
+});
+export type StockReportQuery = z.infer<typeof StockReportQuerySchema>;
+
+const ReportSize = {
+  stockItemId: z.string().uuid(),
+  /** The item's name ("Grip Socks"). */
+  name: z.string(),
+  /** The size's label, or null for an item in one size. */
+  variantLabel: z.string().nullable(),
+  /** The sizes of one item share this key (the stock screens' item). */
+  groupId: z.string(),
+  /** What the linked product is — `merch`, `addon`, `menu` — or null when unlinked. */
+  productKind: z.string().nullable(),
+};
+
+/**
+ * One counted shelf of a stock take in the range — matched or not, as the
+ * prototype's log keeps every take (`getStockTakeLog`). An opening count is a
+ * starting figure, not a variance, and is left out (OD-S5).
+ */
+export const StockDiscrepancyRowSchema = z.object({
+  id: z.string().uuid(),
+  ...ReportSize,
+  locationId: z.string().uuid(),
+  locationName: z.string(),
+  expectedQuantity: z.number().int(),
+  countedQuantity: z.number().int(),
+  difference: z.number().int(),
+  flagged: z.boolean(),
+  countedAt: z.string(),
+  businessDate: z.string(),
+});
+export type StockDiscrepancyRow = z.infer<typeof StockDiscrepancyRowSchema>;
+
+/** Sales net of refunds, per size. `sold` counts the units a paid sale took past the record too. */
+export const StockUsageRowSchema = z.object({
+  ...ReportSize,
+  sold: z.number().int(),
+  refunded: z.number().int(),
+  net: z.number().int(),
+  /** Of `sold`, what was sold with the link down. */
+  soldOffline: z.number().int(),
+  /** Cost of the net units at the cost frozen on each movement; null to a non-manager or when no cost was frozen. */
+  costSatang: z.number().int().nullable(),
+});
+export type StockUsageRow = z.infer<typeof StockUsageRowSchema>;
+
+/** Count variances and corrections down, per size: what left the shelves unsold. */
+export const StockShrinkageRowSchema = z.object({
+  ...ReportSize,
+  /** Signed sum of the count movements (counted − expected), openings excluded. */
+  countVariance: z.number().int(),
+  /** How many counts found the shelf short. */
+  countedShort: z.number().int(),
+  /** Sum of the corrections down (negative). */
+  adjustedDown: z.number().int(),
+  /** countVariance + adjustedDown. */
+  total: z.number().int(),
+  /** −Σ quantity × frozen cost over those movements; null to a non-manager. */
+  lossSatang: z.number().int().nullable(),
+  /** True when one of those movements carried no cost: the loss is understated. */
+  costMissing: z.boolean(),
+});
+export type StockShrinkageRow = z.infer<typeof StockShrinkageRowSchema>;
+
+export const StockPurchaseLineSchema = z.object({
+  id: z.string().uuid(),
+  stockItemId: z.string().uuid(),
+  groupId: z.string(),
+  productKind: z.string().nullable(),
+  itemName: z.string(),
+  variantLabel: z.string().nullable(),
+  orderedQuantity: z.number().int(),
+  receivedQuantity: z.number().int(),
+  /** Units the ledger received against this line: equals `receivedQuantity`. */
+  receivedInLedger: z.number().int(),
+  /** The item's cost per each now, for the ordered value; null to a non-manager or when none is set. */
+  unitCostSatang: z.number().int().nullable(),
+  /** The received units at the cost frozen on each receipt; null to a non-manager. */
+  receivedCostSatang: z.number().int().nullable(),
+});
+export type StockPurchaseLine = z.infer<typeof StockPurchaseLineSchema>;
+
+export const StockPurchaseOrderRowSchema = z.object({
+  id: z.string().uuid(),
+  supplierName: z.string(),
+  state: z.enum(PURCHASE_ORDER_STATE_VALUES),
+  createdAt: z.string(),
+  createdBy: z.string().nullable(),
+  expectedArrivalDate: z.string().nullable(),
+  lines: z.array(StockPurchaseLineSchema),
+});
+export type StockPurchaseOrderRow = z.infer<typeof StockPurchaseOrderRowSchema>;
+
+/** What a size holds now and what it is worth: cost × on hand, "no cost set" flagged. */
+export const StockValueRowSchema = z.object({
+  ...ReportSize,
+  /**
+   * place id → what it holds: every live place, and a retired place that still
+   * holds some (a manager may retire a shelf that is not the sell point while
+   * stock sits on it — the record still holds those units).
+   */
+  byLocation: z.record(z.string(), z.number().int()),
+  /** Σ of `byLocation`: what the record holds, so it equals the day's fact closing. */
+  onHand: z.number().int(),
+  /** Of `onHand`, the units on a retired place (0 when none) — told, so the total is never a surprise. */
+  retiredOnHand: z.number().int(),
+  unitCostSatang: z.number().int().nullable(),
+  valueSatang: z.number().int().nullable(),
+  /** No cost is set on the item (a manager sees this; to anyone else the cost is simply not shown). */
+  noCostSet: z.boolean(),
+});
+export type StockValueRow = z.infer<typeof StockValueRowSchema>;
+
+export const StockReportsSchema = z.object({
+  branchId: z.string().uuid(),
+  from: z.string(),
+  to: z.string(),
+  /** False when the caller is not answered cost figures. */
+  withCost: z.boolean(),
+  discrepancies: z.array(StockDiscrepancyRowSchema),
+  usage: z.array(StockUsageRowSchema),
+  shrinkage: z.array(StockShrinkageRowSchema),
+  purchases: z.array(StockPurchaseOrderRowSchema),
+  value: z.array(StockValueRowSchema),
+});
+export type StockReports = z.infer<typeof StockReportsSchema>;
+
+/**
+ * COST OF GOODS from the ledger, per product: the units its sales took net of
+ * refunds and their cost at the figure frozen on the sale line (and so on each
+ * movement) when it sold — the profitability report's COGS (prototype
+ * `lib/reporting.ts:423-475`, which read today's cost instead).
+ */
+export const StockCostOfGoodsRowSchema = z.object({
+  productId: z.string().uuid(),
+  name: z.string(),
+  productKind: z.string().nullable(),
+  /** Units sold net of refunds (a unit sold past the record counts: the guest has it). */
+  quantity: z.number().int(),
+  cogsSatang: z.number().int(),
+  /** False when some of those units carried no frozen cost: the COGS is understated. */
+  costTracked: z.boolean(),
+});
+export type StockCostOfGoodsRow = z.infer<typeof StockCostOfGoodsRowSchema>;
+
+export const StockCostOfGoodsSchema = z.object({
+  branchId: z.string().uuid(),
+  from: z.string(),
+  to: z.string(),
+  rows: z.array(StockCostOfGoodsRowSchema),
+});
+export type StockCostOfGoods = z.infer<typeof StockCostOfGoodsSchema>;

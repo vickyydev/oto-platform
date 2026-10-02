@@ -63,12 +63,23 @@ push, reset) with a compare-and-set, a re-sent already-applied sale is
 answered as a duplicate, and an old-era sale is set aside with a critical
 "PAID SALE" note naming its money and goods - never lost. SCRUM-486 is
 Deployed (CI 36950176617, staging live 90b72e9, test-run card attached);
-follow-up SCRUM-487 (Low). Stock round 4 (reports, trend rule, five
-handovers, closing audit) is building. Queued for
+follow-up SCRUM-487 (Low). Stock round 4 lands with this checkpoint
+after three gate cycles: Usage, Shrinkage, Purchases, Value and
+Discrepancies from the ledger (sign-exact against hand sums), cost of
+goods into profitability, the daily stock fact (opening + movements =
+closing, rewritten for the last 7 days so late offline movements correct
+their day; migration 0050 lets the fact carry signed figures), the OD-27
+trend reorder rule from day 30, the five queued handovers (the till shows
+the box's stock refusals verbatim; a sale at a branch with no live place
+records its shortfall; the sizes-seeded audit; GET attention read-only;
+the PO race wording), and the whole-story closing audit. Known bound: a
+late movement dated more than 7 days back leaves older stored days stale
+until rewritten. Next: the stock walkthrough on staging with evidence,
+then SCRUM-213 Deployed and the story SCRUM-211 closes. Queued for
 round 4: show the box's stock refusals on the till, the no-places
 shortfall, two round-2 notes and one refusal wording.
 
-Migrations landed through 0049. To resume: read this block, then the
+Migrations landed through 0050. To resume: read this block, then the
 SCRUM-213 comments, then `git log main`.
 
 ## Platform lane checkpoint - 1 October 2026 (evening) - S2-13 Deployed whole

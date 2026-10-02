@@ -26,6 +26,7 @@ import { itemOrderTotals, ticketTotals, toSatang } from '@/lib/cartWire';
 import { summarizeTax, type Satang, type TaxBreakdown } from '@oto/shared';
 import { getRateModeForDate, resolveRate, RateMode } from '@/lib/pricingMode';
 import { getWalletReport } from '@/api/wallet';
+import { fetchCostOfGoods } from '@/api/stock';
 
 /*
  * SCRUM-271 — EVERY FIGURE HERE IS SATANG. These reports used to re-derive each
@@ -489,6 +490,67 @@ export function merchProfitability(filters: ReportFilters): ProfitabilityRow[] {
       marginSatang: margin,
       marginPercent: row.revenueSatang > 0 ? (margin / row.revenueSatang) * 100 : 0,
       costTracked,
+    };
+  });
+}
+
+/**
+ * S2-14b round 4 — COST OF GOODS FROM THE STOCK LEDGER, per product: what the
+ * platform's sales of it took net of refunds, at the cost FROZEN on each sale
+ * line when it sold (`GET /branches/:id/stock/reports/cost-of-goods`) — not the
+ * catalogue's cost today, which the prototype read (`lib/reporting.ts:423-475`)
+ * and which moves under every past sale when a manager edits it.
+ */
+export interface LedgerCost {
+  quantity: number;
+  cogsSatang: Satang;
+  costTracked: boolean;
+}
+
+/**
+ * The ledger's cost of goods over the report's range: one branch, or every
+ * branch the platform knows ('all'). Null when there is nothing to read (a
+ * branch known only on this device) — the rows then keep the catalogue's cost.
+ */
+export async function platformCostOfGoods(filters: ReportFilters): Promise<Map<string, LedgerCost> | null> {
+  const branches = getBranches().filter((b) => (filters.branchId === 'all' || b.id === filters.branchId) && b.apiId);
+  if (branches.length === 0) return null;
+  const answers = await Promise.all(
+    branches.map((b) => fetchCostOfGoods(b.apiId!, filters.startDate, filters.endDate)),
+  );
+  const out = new Map<string, LedgerCost>();
+  for (const answer of answers) {
+    for (const row of answer.rows) {
+      const held = out.get(row.productId) ?? { quantity: 0, cogsSatang: 0, costTracked: true };
+      held.quantity += row.quantity;
+      held.cogsSatang += row.cogsSatang;
+      held.costTracked = held.costTracked && row.costTracked;
+      out.set(row.productId, held);
+    }
+  }
+  return out;
+}
+
+/**
+ * THE PROFITABILITY ROWS ON THE LEDGER'S COST. A row the ledger holds takes
+ * its frozen cost: exactly the ledger's figure when the units agree, else the
+ * ledger's cost per unit over the row's own units (the sales this report's
+ * revenue reads may be fewer than the ledger's). A row the ledger does not hold
+ * keeps the catalogue's cost, flagged as before when there is none.
+ */
+export function withLedgerCost(rows: readonly ProfitabilityRow[], ledger: ReadonlyMap<string, LedgerCost> | null): ProfitabilityRow[] {
+  if (!ledger) return [...rows];
+  return rows.map((row) => {
+    const held = ledger.get(row.itemId);
+    if (!held || held.quantity <= 0) return row;
+    const cogs = held.quantity === row.qty ? held.cogsSatang : Math.round((held.cogsSatang * row.qty) / held.quantity);
+    const margin = row.revenueSatang - cogs;
+    return {
+      ...row,
+      cogsSatang: cogs,
+      marginSatang: margin,
+      marginPercent: row.revenueSatang > 0 ? (margin / row.revenueSatang) * 100 : 0,
+      costTracked: held.costTracked,
     };
   });
 }

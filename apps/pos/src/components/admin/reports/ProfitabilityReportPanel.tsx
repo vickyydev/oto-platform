@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -9,7 +9,15 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { downloadCsv } from '@/lib/csv';
-import { defaultReportFilters, fnbProfitability, merchProfitability, ProfitabilityRow } from '@/lib/reporting';
+import {
+  defaultReportFilters,
+  fnbProfitability,
+  merchProfitability,
+  platformCostOfGoods,
+  withLedgerCost,
+  type LedgerCost,
+  type ProfitabilityRow,
+} from '@/lib/reporting';
 import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
 
 function ProfitabilityTable({ rows, exportName, filters }: { rows: ProfitabilityRow[]; exportName: string; filters: { startDate: string; endDate: string } }) {
@@ -85,8 +93,21 @@ function ProfitabilityTable({ rows, exportName, filters }: { rows: Profitability
  */
 export function ProfitabilityReportPanel() {
   const [filters, setFilters] = useState(defaultReportFilters());
-  const fnbRows = useMemo(() => fnbProfitability(filters), [filters]);
-  const merchRows = useMemo(() => merchProfitability(filters), [filters]);
+  // S2-14b round 4 — cost of goods from the stock ledger, at the cost frozen on
+  // each sale line; the catalogue's cost only where the ledger holds nothing.
+  const [ledger, setLedger] = useState<Map<string, LedgerCost> | null>(null);
+  useEffect(() => {
+    let live = true;
+    setLedger(null);
+    platformCostOfGoods(filters)
+      .then((answer) => live && setLedger(answer))
+      .catch(() => live && setLedger(null));
+    return () => {
+      live = false;
+    };
+  }, [filters]);
+  const fnbRows = useMemo(() => withLedgerCost(fnbProfitability(filters), ledger), [filters, ledger]);
+  const merchRows = useMemo(() => withLedgerCost(merchProfitability(filters), ledger), [filters, ledger]);
   const anyUntracked = [...fnbRows, ...merchRows].some((r) => !r.costTracked && r.qty > 0);
 
   return (

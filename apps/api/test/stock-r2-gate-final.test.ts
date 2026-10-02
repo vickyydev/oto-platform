@@ -251,10 +251,12 @@ describe('FINAL-2 — a PO receive racing the removal of the size it delivers', 
     await sleep(800);
     removal.release();
     await removal.done;
-    const err = await addSettled;
-    // Refused: addToPurchaseOrders reads live sizes only, so the removed size is
-    // "not one of this branch's" (its own comment: "no longer finds the size").
-    expect(err?.code).toBe('NOT_FOUND');
+    const err = (await addSettled) as { code?: string; message?: string } | null;
+    // Refused in the counter's words (round 4, handover Q5): the add waits on
+    // the removal (FOR SHARE, `lockFor: 'ordered'`), then names the size it
+    // removed — no longer a bare "not one of this branch's" 404.
+    expect(err?.code).toBe('STOCK_ITEM_REMOVED');
+    expect(err?.message).toMatch(/was removed from stock — it cannot be ordered; add the size back under Inventory first$/);
     const { rows: openLines } = await ctx.db.execute(sql`
       select 1 from pos.purchase_order_line l join pos.purchase_order o on o.id = l.purchase_order_id
        where l.stock_item_id = ${item.b} and o.state in ('to_order', 'ordered') and l.ordered_quantity > l.received_quantity`);

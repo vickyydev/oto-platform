@@ -7,6 +7,7 @@ import { salesApi, spendWalletOnSale, type ApiSale, type SaleFinaliseResult, typ
 import type { SaleWriteOutcome } from './saleWriter';
 import { currentLane } from './lane';
 import { findPaymentMethod, getEnabledPaymentMethods } from './payments';
+import { isStockRefusalCode, stockRefusalWords } from './stockRefusal';
 import { lookup } from '@/i18n/dictionary';
 
 /** Staff chrome stays English; customer displays select their own locale. */
@@ -362,6 +363,15 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     update({ phase: 'busy', error: null, retryable: false });
     const running = Promise.resolve().then(() => current(ctx) ? operation(ctx) : undefined).catch((err: unknown) => {
       if (!current(ctx) || stateRef.current.phase === 'complete') return;
+      // S2-14b round 4 (Q1): the cart's stock refused — by the counter's box at
+      // a card or credit press — took nothing. Its words, as they came; never
+      // retried, because the same cart meets the same shelf.
+      const stockWords = stockRefusalWords(err);
+      if (stockWords !== null) {
+        retryOperation.current = null;
+        update({ phase: 'failed', retryable: false, error: stockWords });
+        return;
+      }
       const reserved = err instanceof ApiError && err.code === 'PAYMENT_IN_FLIGHT';
       const retryable = err instanceof NetworkError || !(err instanceof ApiError) || err.status >= 500 || err.code === 'IDEMPOTENCY_IN_FLIGHT';
       update({ phase: retryable || reserved ? 'blocked' : 'failed', retryable,
@@ -451,7 +461,12 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
             answer = await spendWalletOnSale(sale.id, walletAction, { key: wallet.key, useCredit: true });
           }
         } catch (err) {
-          if (err instanceof ApiError && refusals.includes(err.code)) creditLane.current.delete(sale.id);
+          // A refusal took nothing, so the sale's credit is not held to the lane
+          // it was sent on — the wallet's refusals, and (round 4, Q1) the box's
+          // refusal of the cart's stock, which the stage then says verbatim.
+          if (err instanceof ApiError && (refusals.includes(err.code) || isStockRefusalCode(err.code))) {
+            creditLane.current.delete(sale.id);
+          }
           if (!(err instanceof ApiError) || !refusals.includes(err.code) || !current(ctx)) throw err;
           // Refused, nothing taken: the platform's words on the card, the toggle off.
           const cash = getEnabledPaymentMethods().find((m) => m.kind === 'cash');
@@ -517,6 +532,13 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         const tender: SaleTenderPayload = { method: method.id, kind: 'cash', amountSatang: amount, tenderedSatang: tendered, changeSatang: tendered - amount };
         const result = await optionsRef.current.finaliseSale(tender, actionId);
         if (!current(ctx)) { retain(ctx, { saleId: result.saleId, ...(result.ok && result.written ? { attempt: result.attempt } : {}) }); return; }
+        if (!result.ok && isStockRefusalCode(result.code)) {
+          // Round 4 (Q1): the counter's box refused the cart's stock at the cash
+          // press — nothing taken, nothing saved; its words exactly, no retry.
+          retryOperation.current = null;
+          update({ phase: 'failed', retryable: false, error: result.message });
+          return;
+        }
         if (!result.ok || !result.written) {
           update({ phase: !result.ok && (result.retryable || result.code === 'PAYMENT_IN_FLIGHT') ? 'blocked' : 'failed', retryable: !result.ok && result.retryable,
             error: result.ok ? 'This payment has not been recorded.' : result.message });

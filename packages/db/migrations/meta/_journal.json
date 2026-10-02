@@ -351,6 +351,13 @@
       "when": 1790894518552,
       "tag": "0049_sync_anomaly_stock_oversold",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1790920000000,
+      "tag": "0050_fact_stock_daily_signed",
+      "breakpoints": true
     }
   ]
 }

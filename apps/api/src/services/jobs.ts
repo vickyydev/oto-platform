@@ -33,6 +33,7 @@ import {
   purgeOldSyncEvents,
   syncSettings,
 } from './sync';
+import { runStockDailyJob, STOCK_DAILY_JOB } from './stock';
 import { runWalletExpiryJob, runWalletLiabilityJob } from './wallet';
 
 /** S2-14a round 3 — the wallet day-end jobs, named once (the runner, the tests, the Health page). */
@@ -562,6 +563,26 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       description: "Writes each branch's daily wallet liability (granted, spent, refunded, expired, outstanding) from the ledger",
       intervalSeconds: 300,
       run: async ({ db, now }) => ({ detail: await runWalletLiabilityJob(db, now) }),
+    },
+    /**
+     * `job:stock.daily` — THE OFFICE'S DAILY STOCK FACT AND THE SLIDING
+     * REORDER POINT (S2-14b round 4, plan §2.5).
+     *
+     * Every five minutes, for each live branch, the trading days that have
+     * ENDED — a week back, as the wallet jobs do — recomputed from the stock
+     * ledger into `analytics.fact_stock_daily` per size (opening, sold,
+     * refunded, received, transferred, adjusted, counted, closing, value) and
+     * upserted only where a figure moved, so a quiet tick writes nothing and a
+     * late offline sale corrects the day it belongs to; closing = opening +
+     * the day's movements, sign-exact (`stockDayFacts`). Then the branch's
+     * low-stock attention is re-read whole: the 30-day usage window behind the
+     * trend reorder point (OD-27) slides with the date, not with a movement.
+     */
+    {
+      name: STOCK_DAILY_JOB,
+      description: "Writes each branch's daily stock fact per size from the ledger and re-reads its low-stock alerts as the 30-day usage window slides",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runStockDailyJob(db, now) }),
     },
   ];
 }
