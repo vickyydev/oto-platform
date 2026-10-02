@@ -1,8 +1,13 @@
-import { asc, eq, inArray } from 'drizzle-orm';
-import { account, employee, refund } from '@oto/db';
+import { asc, eq } from 'drizzle-orm';
+import { branch, refund } from '@oto/db';
 import type { RefundAllocationEntry, RefundLineEntry } from '@oto/shared';
+import type { FastifyBaseLogger } from 'fastify';
+import { accountNames } from './account-names';
 import { audit } from './audit';
+import { branchBusinessDate, recordRefundOut } from './cash';
 import type { Exec, Tx } from './tx';
+
+export { accountNames };
 
 /**
  * S2-11 — the one writer of a refund slice's LATER answer.
@@ -16,6 +21,16 @@ import type { Exec, Tx } from './tx';
  * Locks the refund row, finds the slice, and leaves any slice that is no longer
  * `pending` exactly as it is: the box re-sends an answer whenever an
  * acknowledgement is lost, and a second `approved` must not rewrite the first.
+ *
+ * S2-15a — THE ONE WRITER OF A LATE CASH FALLBACK. A slice settled `failed`
+ * with `fallback: 'cash'` (the terminal refused its void, the gateway refused
+ * its refund, or there was no invoice to refund) is money staff hand back from
+ * the drawer the refund was made at, so its `refund_out` is written here, in
+ * the same transaction, on that drawer's open session. Keyed on the slice's
+ * void action id (or its attempt), so a replayed answer writes nothing twice.
+ * The answer has already happened and cannot be refused: with no open drawer
+ * nothing is written and the slice's `fallback: 'cash'` is what the End of Day
+ * picks up (round 2's correction).
  */
 export async function settleRefundSlice(
   tx: Tx,
@@ -27,6 +42,7 @@ export async function settleRefundSlice(
     actorAccountId: string | null;
     requestId?: string;
     action: string;
+    log?: FastifyBaseLogger;
   },
 ): Promise<RefundAllocationEntry | null> {
   const [row] = await tx.select().from(refund).where(eq(refund.id, input.refundId)).for('update').limit(1);
@@ -52,6 +68,34 @@ export async function settleRefundSlice(
     before: { slice: before },
     after: { slice: after, saleId: row.saleId },
   });
+
+  if (after.status === 'failed' && after.fallback === 'cash' && after.amountSatang > 0) {
+    const now = new Date();
+    const [br] = await tx.select().from(branch).where(eq(branch.id, row.branchId)).limit(1);
+    const written = br
+      ? await recordRefundOut(tx, {
+          operatorId: row.operatorId,
+          branchId: row.branchId,
+          stationId: row.stationId,
+          refundId: row.id,
+          // Handed back in cash: the slice as the drawer sees it.
+          slices: [{ ...after, route: 'cash', status: 'done' }],
+          keySuffix: `fallback:${after.actionId ?? after.attemptId ?? index}`,
+          businessDate: branchBusinessDate(br, now),
+          // The box's or the gateway's answer has no actor: the refund's own maker.
+          actorAccountId: row.createdByAccountId,
+          requestId: input.requestId,
+          now,
+          strict: false,
+        })
+      : null;
+    if (!written) {
+      input.log?.warn(
+        { refundId: row.id, stationId: row.stationId, reqId: input.requestId },
+        'cash fallback with no open drawer session',
+      );
+    }
+  }
   return after;
 }
 
@@ -98,19 +142,6 @@ export function refundViewOf(
     pending: allocation.some((entry) => entry.status === 'pending'),
     createdAt: row.createdAt.toISOString(),
   };
-}
-
-/** Names for a set of accounts, the way a History row names its seller. */
-export async function accountNames(db: Exec, ids: readonly string[]): Promise<(id: string) => string | null> {
-  const unique = [...new Set(ids)];
-  if (unique.length === 0) return () => null;
-  const rows = await db
-    .select({ id: account.id, name: employee.name, nickname: employee.nickname, phone: account.phone })
-    .from(account)
-    .leftJoin(employee, eq(employee.id, account.employeeId))
-    .where(inArray(account.id, unique));
-  const names = new Map(rows.map((r) => [r.id, r.nickname ?? r.name ?? r.phone ?? null]));
-  return (id) => names.get(id) ?? null;
 }
 
 /** Every refund of a sale, oldest first — the prototype's "Refund history". */

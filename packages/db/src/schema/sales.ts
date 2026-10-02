@@ -1464,10 +1464,18 @@ export const refund = pos.table(
       .default([]),
     /** `x-oto-action-id`: one press of Refund, however many HTTP attempts it took. */
     actionId: text('action_id'),
+    /**
+     * S2-15a (OD-CS4) — the trading day the money LEFT, at the branch, from its
+     * day start: not the original sale's day (the prototype's rule, a bug not
+     * ported) and never the UTC slice. Written by the service; a BEFORE INSERT
+     * trigger (migration 0052) fills it from `created_at` for any other writer.
+     */
+    businessDate: date('business_date', { mode: 'string' }).notNull(),
     ...timestamps,
   },
   (t) => [
     uniqueIndex('refund_number_unique').on(t.branchId, t.number),
+    index('refund_branch_date_idx').on(t.branchId, t.businessDate),
     uniqueIndex('refund_action_unique')
       .on(t.operatorId, t.actionId)
       .where(sql`action_id is not null`),

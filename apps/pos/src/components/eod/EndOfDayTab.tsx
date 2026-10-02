@@ -9,6 +9,8 @@ import { AmountInput } from '@/components/eod/AmountInput';
 import { getEdcTerminals, getEndOfDay, getFloatCarryover, closeEndOfDay } from '@/mockApi';
 import { recomputeEndOfDay, withCreditLine } from '@/lib/endOfDay';
 import { creditLineKey, useCreditLine } from '@/components/eod/useCreditLine';
+import { useCashDrawer } from '@/components/eod/useCashDrawer';
+import { DrawerCountSection } from '@/components/eod/DrawerCountSection';
 import { useOperator } from '@/auth/OperatorContext';
 import { EndOfDay as EndOfDayRecord } from '@/types';
 import { Lock, Vault } from 'lucide-react';
@@ -42,6 +44,12 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
   }, [credit, date, branch, record.id, record.status]);
 
   const readOnly = record.status === 'closed';
+
+  // S2-15a round 1 — the drawer part reads this counter's cash session on the
+  // platform; today's open session, or the one opened on a past day. Without a
+  // platform station it keeps the prototype's branch-wide figures.
+  const isToday = date === new Date().toISOString().slice(0, 10);
+  const drawer = useCashDrawer(isToday ? undefined : date);
 
   const setActual = (channel: string, value: number | null) =>
     setRecord((prev) =>
@@ -115,14 +123,26 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
         )}
       </Card>
 
-      {/* Cash count */}
-      <CashCountCard
-        cashCount={record.cashCount}
-        expectedCashTHB={expectedCash}
-        floatSourceLabel={floatSourceLabel}
-        readOnly={readOnly}
-        onCounted={setCounted}
-      />
+      {/* Cash count — this counter's drawer session on the platform (S2-15a) */}
+      {drawer.view ? (
+        <DrawerCountSection view={drawer.view} canOpen={isToday} />
+      ) : (
+        <>
+          {drawer.error && (
+            <p role="status" className="text-xs text-amber-600">
+              The drawer could not be read from the platform — {drawer.error}
+            </p>
+          )}
+          <CashCountCard
+            countedSatang={record.cashCount.countedTHB === null ? null : record.cashCount.countedTHB * 100}
+            floatSatang={(record.cashCount.floatTHB ?? 0) * 100}
+            expectedCashSatang={expectedCash * 100}
+            floatSourceLabel={floatSourceLabel}
+            readOnly={readOnly}
+            onCounted={(v) => setCounted(v === null ? null : Math.round(v / 100))}
+          />
+        </>
+      )}
 
       {/* Voucher counts */}
       <Card className="p-5 bg-card/50">
@@ -163,32 +183,34 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
         />
       </Card>
 
-      {/* Close out the drawer */}
-      <Card className="p-5 bg-card/50">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-4">
-          <Vault className="w-4 h-4 text-primary" />
-          Close out the drawer
-          <span className="font-normal">· seeds tomorrow's float</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-          <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-            Float left in drawer (for tomorrow)
-            <AmountInput
-              ariaLabel="Float left in drawer for tomorrow"
-              value={record.floatLeftTHB}
-              disabled={readOnly}
-              onChange={(v) => setRecord((prev) => ({ ...prev, floatLeftTHB: v }))}
-            />
-          </label>
-          <div className="rounded-xl bg-muted/50 px-4 py-3">
-            <div className="text-sm text-muted-foreground">Cash to bank tonight</div>
-            <div className="text-lg font-bold tabular-nums">
-              {banked === null ? '—' : `฿${banked.toLocaleString()}`}
-            </div>
-            <div className="text-xs text-muted-foreground">counted − float left</div>
+      {/* Close out the drawer — on the platform it is part of the drawer section above */}
+      {!drawer.view && (
+        <Card className="p-5 bg-card/50">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-4">
+            <Vault className="w-4 h-4 text-primary" />
+            Close out the drawer
+            <span className="font-normal">· seeds tomorrow's float</span>
           </div>
-        </div>
-      </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+            <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+              Float left in drawer (for tomorrow)
+              <AmountInput
+                ariaLabel="Float left in drawer for tomorrow"
+                value={record.floatLeftTHB}
+                disabled={readOnly}
+                onChange={(v) => setRecord((prev) => ({ ...prev, floatLeftTHB: v }))}
+              />
+            </label>
+            <div className="rounded-xl bg-muted/50 px-4 py-3">
+              <div className="text-sm text-muted-foreground">Cash to bank tonight</div>
+              <div className="text-lg font-bold tabular-nums">
+                {banked === null ? '—' : `฿${banked.toLocaleString()}`}
+              </div>
+              <div className="text-xs text-muted-foreground">counted − float left</div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Close day */}
       {!readOnly && (

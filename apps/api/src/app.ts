@@ -40,6 +40,7 @@ import { catalogRoutes } from './routes/catalog';
 import { branchCloneRoutes } from './routes/branch-clone';
 import { menuRoutes } from './routes/menu';
 import { stockRoutes } from './routes/stock';
+import { cashRoutes } from './routes/cash';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
 import { checkinRoutes } from './routes/checkin';
@@ -402,6 +403,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(menuRoutes);
   // S2-14b — the stock read routes the till and the stock screens read.
   await app.register(stockRoutes);
+  // S2-15a — the drawer: its session, movements and count. Paths declared in
+  // full, like the stock routes, because they hang off `/stations/:stationId`.
+  await app.register(cashRoutes);
   // No prefix, like the catalogue: the fleet's branch-scoped resources are
   // nested under /branches/:branchId/… and its by-id routes are not, so the
   // paths are declared in full rather than assembled from two places.

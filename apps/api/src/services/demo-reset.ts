@@ -6,7 +6,11 @@ import {
   bandEvent,
   booking,
   bookingRedemption,
+  cashMovement,
+  cashSession,
   child,
+  endOfDay,
+  eodCorrection,
   member,
   memberAlias,
   memberTierVerification,
@@ -14,11 +18,14 @@ import {
   paymentNotification,
   purchaseOrder,
   purchaseOrderLine,
+  reconLine,
   refund,
   sale,
   saleDiscount,
   saleLine,
   saleTierClaim,
+  settlementBatch,
+  settlementLine,
   stockAttention,
   stockMovement,
   stockTake,
@@ -98,6 +105,13 @@ const FACT_ENTITY_TYPES = [
   // S2-11: a refund is a fact of the sale it refunds, and goes with it.
   'refund',
   'stock_level',
+  /**
+   * S2-15a: a drawer's session and its ledger are a day of play's cash, and go
+   * with it. A branch's cash settings (default float, tolerance) are
+   * configuration on `core.branch` and stay.
+   */
+  'cash_session',
+  'cash_movement',
 ];
 
 /** Rows removed per table, for the response and the audit entry. */
@@ -199,6 +213,38 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
   counts.wallet_key = (await tx.delete(walletKey).returning({ id: walletKey.id })).length;
   counts.wallet = (await tx.delete(wallet).returning({ id: wallet.id })).length;
+
+  /**
+   * S2-15a: the drawers' day. A cash movement points at the refund it handed
+   * money back for (`refund_id`, ON DELETE RESTRICT) and at its session, a
+   * recon line at the session it counted, a correction at its End of Day, and
+   * a settlement line at the payment attempt it matched — all restricting, so
+   * they go before the refunds and attempts below. The cash ledger is
+   * append-only by trigger like the stock ledger; `oto.cash_ledger_purge`,
+   * local to this transaction, is its one door, shut again straight after.
+   * A session names the close its float was carried from
+   * (`float_source_session_id`, restricting, to itself), so that edge is cut
+   * before the sessions go.
+   */
+  counts.recon_line = (await tx.delete(reconLine).returning({ id: reconLine.id })).length;
+  counts.eod_correction = (
+    await tx.delete(eodCorrection).returning({ id: eodCorrection.id })
+  ).length;
+  counts.end_of_day = (await tx.delete(endOfDay).returning({ id: endOfDay.id })).length;
+  await tx.execute(sql`select set_config('oto.cash_ledger_purge', 'on', true)`);
+  counts.cash_movement = (await tx.delete(cashMovement).returning({ id: cashMovement.id })).length;
+  await tx.execute(sql`select set_config('oto.cash_ledger_purge', 'off', true)`);
+  await tx
+    .update(cashSession)
+    .set({ floatSourceSessionId: null })
+    .where(isNotNull(cashSession.floatSourceSessionId));
+  counts.cash_session = (await tx.delete(cashSession).returning({ id: cashSession.id })).length;
+  counts.settlement_line = (
+    await tx.delete(settlementLine).returning({ id: settlementLine.id })
+  ).length;
+  counts.settlement_batch = (
+    await tx.delete(settlementBatch).returning({ id: settlementBatch.id })
+  ).length;
 
   counts.band_event = (await tx.delete(bandEvent).returning({ id: bandEvent.id })).length;
   counts.band = (await tx.delete(band).returning({ id: band.id })).length;

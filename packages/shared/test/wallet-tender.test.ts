@@ -25,22 +25,24 @@ describe('the stored-value tender', () => {
     expect([...PAYMENT_METHOD_KINDS]).toEqual(['cash', 'card', 'qr', 'other']);
   });
 
-  it('countsAsTillTakings: cash, card and qr are takings; paid-online and stored value are not', () => {
-    const table: [{ method: string; methodCode: string | null }, boolean][] = [
-      [{ method: 'cash', methodCode: 'cash' }, true],
-      [{ method: 'card', methodCode: 'card' }, true],
-      [{ method: 'qr', methodCode: 'promptpay' }, true],
-      // A terminal e-wallet (Alipay) is qr money the till took.
-      [{ method: 'qr', methodCode: 'alipay' }, true],
-      [{ method: 'transfer', methodCode: PAID_ONLINE_TENDER_CODE }, false],
-      [{ method: 'wallet', methodCode: WALLET_TENDER_CODE }, false],
+  it('countsAsTillTakings (S2-15a, the one drawer gate): cash at a station only', () => {
+    const at = 'station-1';
+    const table: [{ method: string; methodCode: string | null; stationId: string | null }, boolean][] = [
+      [{ method: 'cash', methodCode: 'cash', stationId: at }, true],
+      // Card, QR and a terminal e-wallet (Alipay) are reconciled per terminal
+      // and as QR on the End of Day — never counted out of a cash drawer.
+      [{ method: 'card', methodCode: 'card', stationId: at }, false],
+      [{ method: 'qr', methodCode: 'promptpay', stationId: at }, false],
+      [{ method: 'qr', methodCode: 'alipay', stationId: at }, false],
+      [{ method: 'transfer', methodCode: PAID_ONLINE_TENDER_CODE, stationId: at }, false],
+      [{ method: 'wallet', methodCode: WALLET_TENDER_CODE, stationId: at }, false],
+      // A booking-site attempt has no station: never till money.
+      [{ method: 'cash', methodCode: 'cash', stationId: null }, false],
     ];
     for (const [attempt, expected] of table) {
       expect(countsAsTillTakings(attempt), JSON.stringify(attempt)).toBe(expected);
     }
-    // The pre-S2-14a call shape still answers.
-    expect(countsAsTillTakings({ methodCode: PAID_ONLINE_TENDER_CODE })).toBe(false);
-    expect(countsAsTillTakings({ methodCode: 'cash' })).toBe(true);
+    expect(countsAsTillTakings({ methodCode: PAID_ONLINE_TENDER_CODE, stationId: at })).toBe(false);
   });
 
   it('tells stored value from a terminal e-wallet by method and code', () => {

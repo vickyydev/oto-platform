@@ -365,6 +365,13 @@
       "when": 1790930000000,
       "tag": "0051_stock_take_line_opening",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1790940000000,
+      "tag": "0052_cash_sessions",
+      "breakpoints": true
     }
   ]
 }

@@ -29,3 +29,6 @@ export * from './wallet';
 // Stock (S2-14b): after the catalogue it stocks and the sales ledger whose
 // lines and refunds its movements point back at.
 export * from './stock';
+// Cash sessions and the End of Day (S2-15a): after the sales ledger and the
+// fleet, whose refunds, attempts, stations and devices they point at.
+export * from './cash';

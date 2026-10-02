@@ -1,5 +1,5 @@
 import { and, asc, eq } from 'drizzle-orm';
-import { device, paymentAttempt, refund, sale, saleLine, station } from '@oto/db';
+import { branch, device, paymentAttempt, refund, sale, saleLine, station } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   WALLET_TENDER_CODE,
@@ -26,6 +26,7 @@ import { revokeSaleBands } from './bands';
 import { queueTerminalCommand } from './payments/terminal';
 import { accountNames, refundViewOf, settleRefundSlice, type RefundView } from './refund-slices';
 import { allocateReceipt, saleViewOf, type SaleView } from './sale';
+import { branchBusinessDate, recordRefundOut } from './cash';
 import { restoreForRefund, walletTenderOf } from './wallet';
 import { restockForRefund } from './stock';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
@@ -316,6 +317,15 @@ export async function refundSale(
     'refund',
   );
 
+  /**
+   * S2-15a (OD-CS4) — the trading day the money LEAVES, at the branch, from
+   * its day start: the refund's own day, not the original sale's (the
+   * prototype's rule, a bug not ported) and never the UTC slice.
+   */
+  const [branchRow] = await tx.select().from(branch).where(eq(branch.id, row.branchId)).limit(1);
+  if (!branchRow) throw new Error('the sale’s branch is missing');
+  const refundBusinessDate = branchBusinessDate(branchRow, now);
+
   const refundId = newId();
   // A terminal void is queued now, in this transaction, so it cannot exist
   // without the refund it serves; its answer finds the slice by action id.
@@ -358,6 +368,7 @@ export async function refundSale(
       lines: lineEntries,
       tenderAllocation: slices,
       actionId: input.actionId ?? null,
+      businessDate: refundBusinessDate,
       createdAt: now,
       updatedAt: now,
     })
@@ -426,6 +437,27 @@ export async function refundSale(
     if (updated) finalRow = updated;
     slices.splice(0, slices.length, ...settled);
   }
+
+  /**
+   * S2-15a — THE CASH LEAVES THE DRAWER, in this transaction: every slice
+   * handed back in cash — the cash tender's own, a terminal that could not be
+   * reached for its void, what a wallet tender could not take back — is a
+   * `refund_out` on the open session of the drawer the refund is made at
+   * (`refund.station_id`). No open drawer there and the refund is refused, in
+   * the counter's words, before anything of it is kept.
+   */
+  await recordRefundOut(tx, {
+    operatorId: row.operatorId,
+    branchId: row.branchId,
+    stationId: series.id,
+    refundId,
+    slices,
+    businessDate: refundBusinessDate,
+    actorAccountId: actor.accountId,
+    requestId: actor.requestId,
+    now,
+    strict: true,
+  });
 
   /**
    * S2-14b — THE STOCK GOES BACK, in this transaction: each line the restock
@@ -639,16 +671,23 @@ export async function settleGatewayRefunds(
             settledAt: new Date().toISOString(),
           };
     }
-    await withTx(db, { ...ctx, idempotency: undefined }, 'refund.gateway', (tx) =>
-      settleRefundSlice(tx, {
+    await withTx(db, { ...ctx, idempotency: undefined }, 'refund.gateway', async (tx) => {
+      /**
+       * S2-15a — a refused gateway refund is handed back IN CASH, from the
+       * drawer the refund was made at: `settleRefundSlice` is the one writer of
+       * that late fallback's `refund_out` (the terminal's refused void goes
+       * through the same place).
+       */
+      await settleRefundSlice(tx, {
         refundId,
         match: (entry) => entry.route === 'gateway_refund' && entry.attemptId === slice.attemptId,
         update,
         actorAccountId: ctx.actorAccountId ?? null,
         requestId: ctx.requestId,
         action: update.status === 'done' ? 'refund.gateway_refunded' : 'refund.gateway_refused',
-      }),
-    );
+        log: ctx.log,
+      });
+    });
   }
 }
 

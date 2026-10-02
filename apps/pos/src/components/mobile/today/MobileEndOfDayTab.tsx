@@ -7,6 +7,8 @@ import { AmountInput } from '@/components/eod/AmountInput';
 import { getEdcTerminals, getEndOfDay, getFloatCarryover, closeEndOfDay } from '@/mockApi';
 import { recomputeEndOfDay, channelLabel, lineFlag, RECON_TOLERANCE_THB, withCreditLine } from '@/lib/endOfDay';
 import { creditLineKey, useCreditLine } from '@/components/eod/useCreditLine';
+import { useCashDrawer } from '@/components/eod/useCashDrawer';
+import { DrawerCountSection } from '@/components/eod/DrawerCountSection';
 import { useOperator } from '@/auth/OperatorContext';
 import { EndOfDay as EndOfDayRecord } from '@/types';
 import { Lock, Vault, Banknote } from 'lucide-react';
@@ -38,6 +40,11 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
   }, [credit, date, branch, record.id, record.status]);
 
   const readOnly = record.status === 'closed';
+
+  // S2-15a round 1 — the drawer part reads this counter's cash session, as on
+  // the iPad tab; without a platform station it keeps the prototype's figures.
+  const isToday = date === new Date().toISOString().slice(0, 10);
+  const drawer = useCashDrawer(isToday ? undefined : date);
 
   const setActual = (channel: string, value: number | null) =>
     setRecord((prev) =>
@@ -153,86 +160,90 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
         </div>
       </Card>
 
-      {/* Cash count */}
-      <Card className="p-4 bg-card/50">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
-          <Banknote className="w-4 h-4 text-primary" />
-          Cash count
-          <span className="font-normal">· whole branch drawer</span>
-        </div>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-              Counted cash
-              <AmountInput
-                ariaLabel="Counted cash"
-                value={record.cashCount.countedTHB}
-                disabled={readOnly}
-                onChange={setCounted}
-              />
-            </label>
-            <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-              Float (start)
-              <div
-                className="h-11 rounded-xl bg-muted/30 border border-border/60 px-4 flex items-center justify-end text-base text-foreground tabular-nums"
-                aria-label="Start-of-day float"
-              >
-                ฿{(record.cashCount.floatTHB ?? 0).toLocaleString()}
+      {/* Cash count — this counter's drawer session on the platform (S2-15a) */}
+      {drawer.view ? (
+        <DrawerCountSection view={drawer.view} compact canOpen={isToday} />
+      ) : (
+        <Card className="p-4 bg-card/50">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
+            <Banknote className="w-4 h-4 text-primary" />
+            Cash count
+            <span className="font-normal">· whole branch drawer</span>
+          </div>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+                Counted cash
+                <AmountInput
+                  ariaLabel="Counted cash"
+                  value={record.cashCount.countedTHB}
+                  disabled={readOnly}
+                  onChange={setCounted}
+                />
+              </label>
+              <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+                Float (start)
+                <div
+                  className="h-11 rounded-xl bg-muted/30 border border-border/60 px-4 flex items-center justify-end text-base text-foreground tabular-nums"
+                  aria-label="Start-of-day float"
+                >
+                  ฿{(record.cashCount.floatTHB ?? 0).toLocaleString()}
+                </div>
+                <span className="text-xs">{floatSourceLabel}</span>
               </div>
-              <span className="text-xs">{floatSourceLabel}</span>
+            </div>
+            {/* Cash income / expected / diff — 3-up row */}
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              {(() => {
+                const income = record.cashCount.cashIncomeTHB;
+                const diff = income === null ? null : income - expectedCash;
+                const cashFlag =
+                  diff === null
+                    ? 'pending'
+                    : Math.abs(diff) <= RECON_TOLERANCE_THB
+                      ? 'ok'
+                      : 'off';
+                return (
+                  <>
+                    <div className="rounded-xl bg-muted/50 px-3 py-2">
+                      <div className="text-muted-foreground">Income</div>
+                      <div className="text-base font-bold tabular-nums">
+                        {income === null ? '—' : `฿${income.toLocaleString()}`}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">counted − float</div>
+                    </div>
+                    <div className="rounded-xl bg-muted/50 px-3 py-2">
+                      <div className="text-muted-foreground">Expected</div>
+                      <div className="text-base font-bold tabular-nums">
+                        ฿{expectedCash.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">from POS</div>
+                    </div>
+                    <div className="rounded-xl bg-muted/50 px-3 py-2">
+                      <div className="text-muted-foreground">Diff</div>
+                      <div
+                        className={cn(
+                          'text-base font-bold tabular-nums',
+                          cashFlag === 'ok' && 'text-emerald-400',
+                          cashFlag === 'off' && 'text-rose-400',
+                          cashFlag === 'pending' && 'text-muted-foreground',
+                        )}
+                      >
+                        {diff === null
+                          ? '—'
+                          : `${diff > 0 ? '+' : diff < 0 ? '-' : ''}฿${Math.abs(diff).toLocaleString()}`}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {cashFlag === 'ok' ? 'balanced' : cashFlag === 'off' ? 'over/short' : '—'}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
-          {/* Cash income / expected / diff — 3-up row */}
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            {(() => {
-              const income = record.cashCount.cashIncomeTHB;
-              const diff = income === null ? null : income - expectedCash;
-              const cashFlag =
-                diff === null
-                  ? 'pending'
-                  : Math.abs(diff) <= RECON_TOLERANCE_THB
-                    ? 'ok'
-                    : 'off';
-              return (
-                <>
-                  <div className="rounded-xl bg-muted/50 px-3 py-2">
-                    <div className="text-muted-foreground">Income</div>
-                    <div className="text-base font-bold tabular-nums">
-                      {income === null ? '—' : `฿${income.toLocaleString()}`}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">counted − float</div>
-                  </div>
-                  <div className="rounded-xl bg-muted/50 px-3 py-2">
-                    <div className="text-muted-foreground">Expected</div>
-                    <div className="text-base font-bold tabular-nums">
-                      ฿{expectedCash.toLocaleString()}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">from POS</div>
-                  </div>
-                  <div className="rounded-xl bg-muted/50 px-3 py-2">
-                    <div className="text-muted-foreground">Diff</div>
-                    <div
-                      className={cn(
-                        'text-base font-bold tabular-nums',
-                        cashFlag === 'ok' && 'text-emerald-400',
-                        cashFlag === 'off' && 'text-rose-400',
-                        cashFlag === 'pending' && 'text-muted-foreground',
-                      )}
-                    >
-                      {diff === null
-                        ? '—'
-                        : `${diff > 0 ? '+' : diff < 0 ? '-' : ''}฿${Math.abs(diff).toLocaleString()}`}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {cashFlag === 'ok' ? 'balanced' : cashFlag === 'off' ? 'over/short' : '—'}
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Voucher counts */}
       <Card className="p-4 bg-card/50">
@@ -273,32 +284,34 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
         />
       </Card>
 
-      {/* Close out the drawer */}
-      <Card className="p-4 bg-card/50">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
-          <Vault className="w-4 h-4 text-primary" />
-          Close out the drawer
-          <span className="font-normal">· seeds tomorrow's float</span>
-        </div>
-        <div className="space-y-3">
-          <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-            Float left in drawer (for tomorrow)
-            <AmountInput
-              ariaLabel="Float left in drawer for tomorrow"
-              value={record.floatLeftTHB}
-              disabled={readOnly}
-              onChange={(v) => setRecord((prev) => ({ ...prev, floatLeftTHB: v }))}
-            />
-          </label>
-          <div className="rounded-xl bg-muted/50 px-4 py-3">
-            <div className="text-sm text-muted-foreground">Cash to bank tonight</div>
-            <div className="text-xl font-bold tabular-nums">
-              {banked === null ? '—' : `฿${banked.toLocaleString()}`}
-            </div>
-            <div className="text-xs text-muted-foreground">counted − float left</div>
+      {/* Close out the drawer — on the platform it is part of the drawer section above */}
+      {!drawer.view && (
+        <Card className="p-4 bg-card/50">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
+            <Vault className="w-4 h-4 text-primary" />
+            Close out the drawer
+            <span className="font-normal">· seeds tomorrow's float</span>
           </div>
-        </div>
-      </Card>
+          <div className="space-y-3">
+            <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+              Float left in drawer (for tomorrow)
+              <AmountInput
+                ariaLabel="Float left in drawer for tomorrow"
+                value={record.floatLeftTHB}
+                disabled={readOnly}
+                onChange={(v) => setRecord((prev) => ({ ...prev, floatLeftTHB: v }))}
+              />
+            </label>
+            <div className="rounded-xl bg-muted/50 px-4 py-3">
+              <div className="text-sm text-muted-foreground">Cash to bank tonight</div>
+              <div className="text-xl font-bold tabular-nums">
+                {banked === null ? '—' : `฿${banked.toLocaleString()}`}
+              </div>
+              <div className="text-xs text-muted-foreground">counted − float left</div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Close Day button */}
       {!readOnly && (

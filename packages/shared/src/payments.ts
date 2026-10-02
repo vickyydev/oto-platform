@@ -92,17 +92,34 @@ export const WalletTenderInstructionSchema = z
 export type WalletTenderInstruction = z.infer<typeof WalletTenderInstructionSchema>;
 
 /**
- * Whether a tender is money the till itself took, for the till's cash-up and
- * takings (OD-A10). The paid-online tender is not: it was counted on the day
- * the booking was paid, and counting it again at the counter would report the
- * same baht twice. Nor is stored-value credit (S2-14a): it was money when the
- * ticket that granted it was paid, and at the counter it moves a liability,
- * not the drawer. A terminal e-wallet (Alipay, WeChat) IS till takings — it is
- * recorded as `qr` money, so it never reads as stored value here.
+ * S2-15a (plan docs/progress/plans/cash/PLAN.md §2.2) — THE ONE GATE on what
+ * a drawer's expected cash counts: true ONLY for cash taken at a counter.
+ *
+ *   - cash at a station (`station_id` set)           counts;
+ *   - the paid-online tender                         never: it was counted on
+ *     the day the booking was paid (OD-A10), and counting it at the counter
+ *     would report the same baht twice;
+ *   - stored-value credit (S2-14a)                   never: it moves a
+ *     liability, not the drawer;
+ *   - a booking-site attempt (no station)            never: the website's money
+ *     is not till money, whatever its method (the prototype's branch leak);
+ *   - card, QR and a terminal e-wallet (Alipay)      never into the DRAWER:
+ *     they are reconciled per terminal and as QR on the End of Day, not
+ *     counted out of a cash drawer.
+ *
+ * `stationId` is required in the argument on purpose: a caller that does not
+ * know where the money was taken cannot say it went into a drawer. Every
+ * payment attempt row carries it.
  */
-export function countsAsTillTakings(attempt: { method?: string | null; methodCode?: string | null }): boolean {
+export function countsAsTillTakings(attempt: {
+  method?: string | null;
+  methodCode?: string | null;
+  stationId: string | null;
+}): boolean {
   if (attempt.methodCode === PAID_ONLINE_TENDER_CODE) return false;
-  return !isStoredValueTender(attempt);
+  if (isStoredValueTender(attempt)) return false;
+  if (!attempt.stationId) return false;
+  return attempt.method === 'cash';
 }
 
 /**
