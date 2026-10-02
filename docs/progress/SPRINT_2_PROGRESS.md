@@ -17,8 +17,10 @@ Planning rule (memory oto-prototype-rules-not-bugs): a plan changes only
 data reliability on its own; every rule choice is confirmed first, with
 the design as the default.
 
-Order: End of Day round 1 (workflow running) -> SCRUM-494 -> S2-15a
-rounds 2-4 -> SCRUM-495 -> SCRUM-496; S2-15b after.
+PRIORITY (2 Oct): finish S2-15a (End of Day rounds 1-4, workflow for
+round 1 running), then SCRUM-493 immediately, before any other story:
+SCRUM-494 -> SCRUM-495 -> SCRUM-496, applying SCRUM-497 as confirmed.
+Then S2-15b and the agreed order (SPRINT_2_PLAN execution order).
 
 ## Platform lane checkpoint - 2 October 2026 (late) - S2-15a re-planned to the owner's ruling
 

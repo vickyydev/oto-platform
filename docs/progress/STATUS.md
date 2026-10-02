@@ -1,14 +1,14 @@
 # Current status - read this first when resuming
 
-_Last updated: 2026-10-02, early Bangkok. The arrival story S2-12 (SCRUM-209)
-is DEPLOYED WHOLE: all five rounds on staging evidence, the closing audit
-clean, residuals in SCRUM-477 with the bench-day hardware checklist on the
-story. The console redesign (SCRUM-474) is complete and live; 473, 475 and
-476 Deployed alongside. CI queues on main now; landing sweeps content-diff
-untracked files; the only trusted typecheck runs inside the package. Next:
-a quick round for SCRUM-477, then S2-13 child check-in per the agreed order,
-while the app lane runs 17b, 17c then Radar. The newest STOP POINT block in
-SESSION_HANDOVER.md carries the detail._
+_Last updated: 2026-10-02, late Bangkok. Platform lane: S2-14 (SCRUM-211,
+wallets and stock) is Deployed. S2-15a (SCRUM-215, End of Day) is In
+Progress: re-planned to the owner's 2 October ruling (one combined cash
+count for the day, the existing End of Day behaviour otherwise;
+docs/progress/plans/cash/PLAN.md); round 1 is being built. PRIORITY: the
+moment S2-15a is complete, SCRUM-493 (till behaviour consistency:
+SCRUM-494 first, then SCRUM-495, SCRUM-496, with SCRUM-497's confirmed
+details) is taken up before any other story; then S2-15b and the agreed
+order. The newest checkpoint in SPRINT_2_PROGRESS.md carries the detail._
 
 
 ## Active OTO App lane - 30 September 2026
