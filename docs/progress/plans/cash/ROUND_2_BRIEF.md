@@ -74,8 +74,8 @@ not reviewed. What it has:
     `POST .../end-of-day/reprint`.
 - **Till screens and first tests** (snapshot 66bdcdf8, 29 files):
   ProvisionalBanner, StrandedList, EodReceiptCard, the End of Day tabs and
-  hook, and  tests in api, pos and db. None of it is reviewed yet.
-- **Leave out** . It is an older,
+  hook, and `eod-r2*` tests in api, pos and db. None of it is reviewed yet.
+- **Leave out** `apps/api/test/arrival-r5-audit.test.ts`. It is an older,
   unrelated file that the snapshot picked up.
 
 To continue:
