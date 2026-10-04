@@ -1011,6 +1011,8 @@ export interface BoothCacheItem {
     termsEn: string | null;
     termsTh: string | null;
     expiryDays: number | null;
+    /** A fixed-code type's shared code, printed on every slip; null prints the minted code. */
+    fixedCode: string | null;
   }>;
 }
 
@@ -1117,6 +1119,7 @@ export async function boothCacheItems(db: Db, auth: BoxAuth): Promise<BoothCache
             termsEn: voucherDefinition.termsEn,
             termsTh: voucherDefinition.termsTh,
             expiryDays: voucherDefinition.expiryDays,
+            fixedCode: voucherDefinition.fixedCode,
           })
           .from(voucherDefinition)
           .where(

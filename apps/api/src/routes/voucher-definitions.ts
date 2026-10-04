@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { VOUCHER_KINDS, VOUCHER_OFFLINE_POLICIES, VOUCHER_VALUE_TYPES } from '@oto/db';
+import { VOUCHER_CODE_MODES, VOUCHER_KINDS, VOUCHER_OFFLINE_POLICIES, VOUCHER_VALUE_TYPES } from '@oto/db';
 import { VoucherPromoRulesSchema, VoucherTargetSchema } from '@oto/shared';
 import type { App } from '../app';
 import {
@@ -88,6 +88,19 @@ const DefinitionBody = z.object({
   termsTh: Words(2000),
   active: z.boolean().optional(),
   /**
+   * `generated` (default): each voucher prints its own minted code. `fixed`:
+   * every slip prints `fixedCode`, and a till redeems that code against this
+   * type. Letters, digits and hyphens, 4 to 32; stored in capitals.
+   */
+  codeMode: z.enum(VOUCHER_CODE_MODES).optional(),
+  fixedCode: z
+    .string()
+    .trim()
+    .transform((c) => c.toUpperCase())
+    .pipe(z.string().regex(/^[0-9A-Z-]{4,32}$/, 'A fixed code is 4 to 32 letters, digits or hyphens'))
+    .nullable()
+    .optional(),
+  /**
    * S2-14a round 5 — the promotional rules: what a discount comes off (a
    * category or an item, in the pricing engine's scopes), the global and
    * per-customer redemption limits, and the window on the redeeming branch's
@@ -127,6 +140,8 @@ const DefinitionSchema = z.object({
   termsEn: z.string().nullable(),
   termsTh: z.string().nullable(),
   active: z.boolean(),
+  codeMode: z.enum(VOUCHER_CODE_MODES),
+  fixedCode: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
   archivedAt: z.string().nullable(),

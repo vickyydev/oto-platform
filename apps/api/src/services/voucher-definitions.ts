@@ -8,6 +8,7 @@ import {
   voucher,
   voucherDefinition,
   type Db,
+  type VoucherCodeMode,
   type VoucherKind,
   type VoucherOfflinePolicy,
   type VoucherValueType,
@@ -112,6 +113,10 @@ export interface VoucherDefinitionInput {
   termsEn?: string | null;
   termsTh?: string | null;
   active?: boolean;
+  /** `fixed`: every slip prints `fixedCode` and a till redeems it against this type. */
+  codeMode?: VoucherCodeMode;
+  /** Capitals, digits and hyphens, 4 to 32 (the route normalises it). */
+  fixedCode?: string | null;
   /**
    * S2-14a round 5 — the promotional rules (`VoucherPromoRulesSchema` in
    * `@oto/shared`): what a discount comes off, the global and per-customer
@@ -186,6 +191,8 @@ export interface VoucherDefinitionView {
   termsEn: string | null;
   termsTh: string | null;
   active: boolean;
+  codeMode: VoucherCodeMode;
+  fixedCode: string | null;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -487,6 +494,8 @@ async function viewsOf(
       termsEn: row.termsEn,
       termsTh: row.termsTh,
       active: row.active,
+      codeMode: row.codeMode,
+      fixedCode: row.fixedCode,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       archivedAt: row.archivedAt?.toISOString() ?? null,
@@ -682,6 +691,32 @@ export async function voucherDefinitionLinkOptions(
 
 type Actor = { accountId: string; operatorId: string };
 
+const FIXED_CODE_TAKEN = 'That code is already in use by another voucher type or voucher';
+
+/**
+ * The code mode as it will be after a create or an edit. `fixed` needs its
+ * code; `generated` keeps none. A fixed code may not be any voucher's own code,
+ * or a till could not tell which one a scan meant.
+ */
+async function settleCodeMode(
+  db: Exec,
+  operatorId: string,
+  mode: VoucherCodeMode,
+  fixedCode: string | null,
+): Promise<{ codeMode: VoucherCodeMode; fixedCode: string | null }> {
+  if (mode === 'generated') return { codeMode: 'generated', fixedCode: null };
+  if (!fixedCode) {
+    throw new AppError(422, 'VOUCHER_FIXED_CODE_REQUIRED', 'Enter the fixed code this voucher type prints');
+  }
+  const [clash] = await db
+    .select({ id: voucher.id })
+    .from(voucher)
+    .where(and(eq(voucher.operatorId, operatorId), eq(voucher.code, fixedCode)))
+    .limit(1);
+  if (clash) throw new AppError(409, 'VOUCHER_FIXED_CODE_TAKEN', FIXED_CODE_TAKEN);
+  return { codeMode: 'fixed', fixedCode };
+}
+
 export async function createVoucherDefinition(
   db: Db,
   ctx: OpContext,
@@ -708,6 +743,12 @@ export async function createVoucherDefinition(
     promoRulesAfter(null, input),
     input.target !== undefined,
   );
+  const codes = await settleCodeMode(
+    db,
+    actor.operatorId,
+    input.codeMode ?? 'generated',
+    input.fixedCode ?? null,
+  );
   const id = newId();
   try {
     return await withTx(db, ctx, 'voucher_definition.create', async (tx) => {
@@ -719,6 +760,7 @@ export async function createVoucherDefinition(
         nameTh: words(input.nameTh) ?? null,
         ...value,
         ...rules,
+        ...codes,
         expiryDays: input.expiryDays ?? null,
         offlinePolicy: input.offlinePolicy ?? 'allow',
         singleUse: input.singleUse ?? true,
@@ -798,11 +840,21 @@ export async function updateVoucherDefinition(
     promoRulesAfter(before, patch),
     patch.target !== undefined,
   );
+  const codes =
+    patch.codeMode !== undefined || patch.fixedCode !== undefined
+      ? await settleCodeMode(
+          db,
+          actor.operatorId,
+          patch.codeMode ?? before.codeMode,
+          patch.fixedCode !== undefined ? patch.fixedCode : before.fixedCode,
+        )
+      : {};
   try {
     return await withTx(db, ctx, 'voucher_definition.update', async (tx) => {
       const set: Partial<typeof voucherDefinition.$inferInsert> = {
         ...value,
         ...rules,
+        ...codes,
         updatedAt: new Date(),
       };
       if (patch.code !== undefined) set.code = patch.code;
@@ -931,6 +983,9 @@ export async function restoreVoucherDefinition(
  */
 function definitionConflict(err: unknown): unknown {
   const pg = pgErrorOf(err);
+  if (pg?.code === '23505' && pg.constraint === 'voucher_definition_fixed_code_unique') {
+    return new AppError(409, 'VOUCHER_FIXED_CODE_TAKEN', FIXED_CODE_TAKEN);
+  }
   if (pg?.code === '23505' && pg.constraint === 'voucher_definition_code_unique') {
     return new AppError(
       409,

@@ -309,6 +309,9 @@ export interface VoucherDefinitionRow {
   instructionTh?: string | null;
   termsEn?: string | null;
   termsTh?: string | null;
+  /** 'fixed': every slip prints fixedCode (a code set up in another till system, say). */
+  codeMode?: string;
+  fixedCode?: string | null;
   archivedAt?: string | null;
   updatedAt?: string;
   product?: VoucherLink | null;
@@ -342,6 +345,8 @@ export interface VoucherDefinitionInput {
   termsEn: string | null;
   termsTh: string | null;
   active: boolean;
+  codeMode?: 'generated' | 'fixed';
+  fixedCode?: string | null;
 }
 
 /** `GET /voucher-definitions/link-options`: what a voucher type can point at. */

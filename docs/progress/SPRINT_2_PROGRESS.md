@@ -1,5 +1,18 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 4 October 2026 - SCRUM-499 fixed-code vouchers landed
+
+At the user's request (the owner wants the Lucky Wheel live with Papaya codes
+before the new till is): a voucher type can print one fixed code on every
+slip (migration 0055: voucher_definition.code_mode / fixed_code; voucher source
+'fixed'). The box prints and shows the fixed code (cache carries fixedCode);
+the till redeems the code against the type (a 'fixed' row minted at the hold,
+window and limits as for any voucher); code batches refused for fixed types;
+Console editor "Code on the slip". Tests: vouchers + definitions 117, db 160,
+box-agent 679. Then: deploy staging, evidence, then the box update at the
+park. End of Day round 2 is now on wip/eod-round-2-inflight (13f7b3c6) and
+must renumber its migration to 0056.
+
 ## Platform lane checkpoint - 2 October 2026 (late night) - HAND-OVER POINT
 
 The local session winds up here. Resume from docs/handover/CLOUD_HANDOVER.md

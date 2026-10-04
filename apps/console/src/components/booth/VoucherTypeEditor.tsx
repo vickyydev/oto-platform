@@ -442,6 +442,37 @@ export function VoucherTypeEditor({
         </Section>
 
         <Section
+          title="Code on the slip"
+          detail="Generated: every slip prints its own code, used once. Fixed: every slip prints the code you enter (for example one already set up in another till system), and a till redeems it against this type within its window and limits."
+        >
+          <ChoiceRow
+            value={form.codeMode}
+            onChange={(codeMode) => set({ codeMode: codeMode as VoucherForm['codeMode'] })}
+            disabled={locked}
+            options={[
+              { value: 'generated', label: 'Generated codes' },
+              { value: 'fixed', label: 'Fixed code' },
+            ]}
+          />
+          {form.codeMode === 'fixed' && (
+            <Field
+              label="Fixed code"
+              hint={warn(
+                problems.fixedCode,
+                'Letters, digits and hyphens, 4 to 32. Every slip of this type prints it; set a usage limit to cap how often it is redeemed.',
+              )}
+            >
+              <TextInput
+                value={form.fixedCode}
+                onChange={(fixedCode) => set({ fixedCode: fixedCode.toUpperCase() })}
+                maxLength={32}
+                disabled={locked}
+              />
+            </Field>
+          )}
+        </Section>
+
+        <Section
           title="How long it lasts"
           detail="Counted in days from the day a voucher is won: the slip prints the last day, and the voucher is good to the end of that day in the park’s time zone. A change applies to vouchers won after the box’s next pull; slips already printed keep their date."
         >

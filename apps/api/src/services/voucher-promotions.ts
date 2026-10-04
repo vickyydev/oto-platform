@@ -703,6 +703,13 @@ export async function mintVoucherCampaign(
     .limit(1);
   if (!br) throw new AppError(404, 'NOT_FOUND', 'Branch not found');
   const def = await issuableDefinition(tx, actor.operatorId, input.definitionId, br.id, now);
+  if (def.codeMode === 'fixed') {
+    throw new AppError(
+      422,
+      'VOUCHER_FIXED_CODE_CAMPAIGN',
+      'This voucher type prints one fixed code, so it has no batch of codes to make',
+    );
+  }
   const campaignId = newId();
   const name = input.name.trim();
   await tx.insert(voucherCampaign).values({
@@ -1012,7 +1019,7 @@ export async function tillVoucherDocumentOf(
       .filter(Boolean)
       .join('\n'),
     terms: termsOf(def),
-    voucherCode: v.code,
+    voucherCode: def.fixedCode ?? v.code,
     issuedAt: formatVoucherDateTime(v.issuedAt, row.timezone),
     booth: st ? `${row.branchName} · ${st.name}` : row.branchName,
     staff,

@@ -124,6 +124,12 @@ export const BoothVoucherDefinitionSchema = z.object({
   termsTh: z.string().nullable().default(null),
   /** Null means this definition's vouchers never expire. */
   expiryDays: z.number().int().positive().nullable().default(null),
+  /**
+   * A fixed-code type's shared code: every slip prints it in place of the
+   * minted code, which still identifies the win. Null (or a cloud older than
+   * the field) prints the minted code.
+   */
+  fixedCode: z.string().nullable().default(null),
 });
 export type BoothVoucherDefinition = z.infer<typeof BoothVoucherDefinitionSchema>;
 
@@ -2029,7 +2035,11 @@ export function createBooth(options: BoothOptions): BoothModule {
       prizeIndex: outcome.index,
       prizeId: outcome.prize.id,
       configVersion: entry.version,
-      voucherCode,
+      // The code the family is handed: a fixed-code type's shared code, as on the slip.
+      voucherCode:
+        applied?.voucherDefinitions.find(
+          (candidate) => candidate.id === outcome.prize.voucherDefinitionId,
+        )?.fixedCode ?? voucherCode,
       expiresAt,
       printState: printJob ? 'queued' : 'no_printer',
       staffAccountId,
@@ -2363,7 +2373,10 @@ export function createBooth(options: BoothOptions): BoothModule {
          * definition.
          */
         terms: splitTerms(termsFrom),
-        voucherCode: detail.voucherCode,
+        voucherCode:
+          applied?.voucherDefinitions.find(
+            (candidate) => candidate.id === detail.prize.voucherDefinitionId,
+          )?.fixedCode ?? detail.voucherCode,
         issuedAt: formatStamp(new Date(detail.issuedAtMs), branch.timezone),
         booth: `${branch.name} · ${station.name}`,
         /**

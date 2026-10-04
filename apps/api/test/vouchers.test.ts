@@ -3606,3 +3606,62 @@ describe('the staging demo reset, after a redemption', () => {
     });
   });
 });
+
+describe('a fixed-code voucher type at the till', () => {
+  it('is looked up by its shared code without writing, and a hold mints its own fixed row', async () => {
+    const def = await define({
+      nameEn: 'ZZ TEST fixed 50',
+      valueType: 'amount',
+      valueSatang: b(50),
+      codeMode: 'fixed',
+      fixedCode: 'ZZFIXED-50',
+    });
+    const before = await ctx.db.select().from(voucher).where(eq(voucher.voucherDefinitionId, def));
+    const seen = await lookup(tillA, 'zzfixed-50');
+    expect(seen.statusCode).toBe(200);
+    expect(await ctx.db.select().from(voucher).where(eq(voucher.voucherDefinitionId, def))).toHaveLength(before.length);
+
+    const held = await hold(tillA, newId(), 'ZZFIXED-50');
+    expect(held.statusCode).toBe(200);
+    const rows = await ctx.db.select().from(voucher).where(eq(voucher.voucherDefinitionId, def));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ source: 'fixed', status: 'issued' });
+    expect(rows[0]!.heldSaleId).not.toBeNull();
+  });
+
+  it('honours the type usage limit across every redemption of the shared code', async () => {
+    const def = await define({
+      nameEn: 'ZZ TEST fixed limited',
+      valueType: 'amount',
+      valueSatang: b(50),
+      codeMode: 'fixed',
+      fixedCode: 'ZZFIXED-ONE',
+      usageLimit: 1,
+    });
+    await ctx.db.insert(voucher).values({
+      id: newId(),
+      operatorId,
+      branchId: hktId,
+      voucherDefinitionId: def,
+      code: `FX${newId().replace(/-/g, '').slice(-9).toUpperCase()}`,
+      source: 'fixed',
+      status: 'redeemed',
+      redeemedAt: new Date(),
+    });
+    const seen = await lookup(tillA, 'ZZFIXED-ONE');
+    expect(seen.statusCode).toBe(409);
+    expect(seen.json().error.code).toBe('VOUCHER_LIMIT_REACHED');
+  });
+
+  it('is never used once switched off: the code is then nobody\'s', async () => {
+    await define({
+      nameEn: 'ZZ TEST fixed off',
+      valueType: 'amount',
+      valueSatang: b(50),
+      codeMode: 'fixed',
+      fixedCode: 'ZZFIXED-OFF',
+      active: false,
+    });
+    expect((await lookup(tillB, 'ZZFIXED-OFF')).statusCode).toBe(422);
+  });
+});

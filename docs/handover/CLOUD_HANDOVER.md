@@ -22,10 +22,11 @@ from the local session._
 
 | Item | State |
 |---|---|
-| Main | 9a14af81, CI green. Migrations through 0054 |
+| Main | SCRUM-499 fixed-code vouchers landed 4 Oct (migration 0055). Migrations through 0055 |
+| SCRUM-499 (Lucky Wheel fixed-code vouchers) | Built and landed; deploy staging, screenshot a slip with the fixed code and a redemption, then Deployed. The park's booth Pi needs the new box-agent build |
 | Staging | All five platform services live at 9a14af81 (migrations 0053 and 0054 applied) |
 | S2-14 wallets and stock (SCRUM-211) | Deployed |
-| S2-15a End of Day (SCRUM-215, In Progress) | Round 1 on main and on staging, screenshot on the ticket. **Round 2 in flight**: partial build on `wip/eod-round-2-inflight`, brief in `docs/progress/plans/cash/ROUND_2_BRIEF.md`. Rounds 3 (settlement) and 4 (demo-day, closing walkthrough) to do |
+| S2-15a End of Day (SCRUM-215, In Progress) | Round 1 on main and on staging, screenshot on the ticket. **Round 2 in flight**: partial build on `wip/eod-round-2-inflight` (head 13f7b3c6; its migration must become 0056), brief in `docs/progress/plans/cash/ROUND_2_BRIEF.md`. Rounds 3 (settlement) and 4 (demo-day, closing walkthrough) to do |
 | SCRUM-493 till consistency (In Progress) | Register: `docs/progress/plans/consistency/REGISTER.md` |
 | SCRUM-494 (Testing) | All nine register entries on main and on staging. **Staging evidence in flight** (section 10): items 1 (no-expiry half) and 2 captured; items 3-9 to capture. Then attach, comment and move to Deployed |
 | SCRUM-495, SCRUM-496, SCRUM-498 (To Do) | In that order, after End of Day rounds 2-4. SCRUM-498: food-counter band details through the counter box when the internet is down (High) |

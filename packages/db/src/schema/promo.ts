@@ -107,6 +107,8 @@ export type VoucherValueType = (typeof VOUCHER_VALUE_TYPES)[number];
  */
 export const VOUCHER_OFFLINE_POLICIES = ['allow', 'refuse'] as const;
 export type VoucherOfflinePolicy = (typeof VOUCHER_OFFLINE_POLICIES)[number];
+export const VOUCHER_CODE_MODES = ['generated', 'fixed'] as const;
+export type VoucherCodeMode = (typeof VOUCHER_CODE_MODES)[number];
 
 export const voucherDefinition = promo.table(
   'voucher_definition',
@@ -197,11 +199,30 @@ export const voucherDefinition = promo.table(
     /** The window, inclusive, on the redeeming branch's trading day. Null is unbounded. */
     validFrom: date('valid_from', { mode: 'string' }),
     validUntil: date('valid_until', { mode: 'string' }),
+    // --- Fixed codes (migration 0055) ----------------------------------------
+    /**
+     * `generated` (the default): every voucher of the type prints its own
+     * minted code. `fixed`: every slip prints `fixed_code`, one code the park
+     * chose (for example a code already set up in another till system), and a
+     * till redeems that code against this type with its window and limits.
+     * Each win is still its own voucher row with a minted code; only the
+     * printed code is shared.
+     */
+    codeMode: text('code_mode').$type<VoucherCodeMode>().notNull().default('generated'),
+    fixedCode: text('fixed_code'),
     ...timestamps,
     ...archivedAt,
   },
   (t) => [
     index('voucher_definition_operator_idx').on(t.operatorId),
+    uniqueIndex('voucher_definition_fixed_code_unique')
+      .on(t.operatorId, t.fixedCode)
+      .where(sql`fixed_code is not null and archived_at is null`),
+    check('voucher_definition_code_mode_check', sql`${t.codeMode} in ('generated','fixed')`),
+    check(
+      'voucher_definition_fixed_code_check',
+      sql`(${t.codeMode} = 'fixed') = (${t.fixedCode} is not null) and (${t.fixedCode} is null or ${t.fixedCode} ~ '^[0-9A-Z-]{4,32}$')`,
+    ),
     /**
      * The slug is the handle a seed and an import re-run against, so it is
      * unique for the life of the operator rather than only while the
@@ -286,7 +307,8 @@ export const voucherCampaign = promo.table(
  * `legacy` is the S2-10b import of Radar's 4-digit ledger and the older
  * `campaign_qrs`, which is why the code CHECK below is deliberately loose.
  */
-export const VOUCHER_SOURCES = ['booth', 'legacy', 'manual', 'campaign'] as const;
+/** `fixed`: minted at a till when a fixed-code type's shared code is redeemed. */
+export const VOUCHER_SOURCES = ['booth', 'legacy', 'manual', 'campaign', 'fixed'] as const;
 export type VoucherSource = (typeof VOUCHER_SOURCES)[number];
 
 export const VOUCHER_STATUSES = ['issued', 'redeemed', 'expired', 'void'] as const;
@@ -433,7 +455,7 @@ export const voucher = promo.table(
       .where(sql`expires_at is not null and status = 'issued'`),
     check(
       'voucher_source_check',
-      sql`${t.source} in ('booth','legacy','manual','campaign')`,
+      sql`${t.source} in ('booth','legacy','manual','campaign','fixed')`,
     ),
     check(
       'voucher_status_check',

@@ -426,6 +426,9 @@ export interface VoucherForm {
   termsEn: string;
   termsTh: string;
   active: boolean;
+  /** 'generated': each slip its own code. 'fixed': every slip prints fixedCode. */
+  codeMode: 'generated' | 'fixed';
+  fixedCode: string;
 }
 
 export function blankForm(): VoucherForm {
@@ -448,6 +451,8 @@ export function blankForm(): VoucherForm {
     termsEn: '',
     termsTh: '',
     active: true,
+    codeMode: 'generated',
+    fixedCode: '',
   };
 }
 
@@ -471,6 +476,8 @@ export function formFrom(row: VoucherDefinitionRow): VoucherForm {
     termsEn: row.termsEn ?? '',
     termsTh: row.termsTh ?? '',
     active: row.active,
+    codeMode: row.codeMode === 'fixed' ? 'fixed' : 'generated',
+    fixedCode: row.fixedCode ?? '',
   };
 }
 
@@ -504,6 +511,9 @@ export function formProblems(form: VoucherForm, isNew: boolean): Partial<Record<
       out.expiryDays = 'Whole days, at least 1 — or choose “Never”.';
     }
   }
+  if (form.codeMode === 'fixed' && !/^[0-9A-Z-]{4,32}$/.test(form.fixedCode.trim().toUpperCase())) {
+    out.fixedCode = '4 to 32 letters, digits or hyphens.';
+  }
   return out;
 }
 
@@ -530,6 +540,8 @@ export function inputFrom(
     termsEn: words(form.termsEn),
     termsTh: words(form.termsTh),
     active: form.active,
+    codeMode: form.codeMode,
+    fixedCode: form.codeMode === 'fixed' ? form.fixedCode.trim().toUpperCase() : null,
     ...(isNew ? { code: form.code } : {}),
   };
   if (!choice) {

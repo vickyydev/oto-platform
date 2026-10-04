@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { and, asc, desc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
@@ -29,6 +29,7 @@ import {
   computeTicketCartTotals,
   isLegacyBoothCode,
   isoDateInTz,
+  mintBoothCode,
   newId,
   normaliseBoothCode,
   priceForTier,
@@ -1528,6 +1529,95 @@ export async function lookupVoucher(
   return { voucher: await viewOf(db, v, def, effect, state, legacyFormat) };
 }
 
+/** The two characters a till-minted row for a fixed-code redemption starts with. */
+const FIXED_REDEMPTION_PREFIX = 'FX';
+
+/**
+ * A fixed-code voucher type's shared code (`voucher_definition.fixed_code`):
+ * the active type that prints it, or none. Checked only after no voucher row
+ * has the code, so a voucher's own code always wins.
+ */
+async function fixedCodeDefinition(
+  tx: Exec,
+  operatorId: string,
+  rawCode: string,
+): Promise<DefinitionRow | null> {
+  const code = rawCode.trim().toUpperCase();
+  if (!/^[0-9A-Z-]{4,32}$/.test(code)) return null;
+  const [def] = await tx
+    .select()
+    .from(voucherDefinition)
+    .where(
+      and(
+        eq(voucherDefinition.operatorId, operatorId),
+        eq(voucherDefinition.codeMode, 'fixed'),
+        eq(voucherDefinition.fixedCode, code),
+        eq(voucherDefinition.active, true),
+        isNull(voucherDefinition.archivedAt),
+      ),
+    )
+    .limit(1);
+  return def ?? null;
+}
+
+/**
+ * The voucher a fixed code is redeemed as. For a hold (`mint`) it is a new
+ * `fixed` row with a minted code, issued to nobody and never expiring on its
+ * own: the type's window and limits are what apply, as for any voucher of it.
+ * For a look-up nothing is written, and the row only describes what a hold
+ * would create.
+ */
+async function fixedRedemptionRow(
+  tx: Exec,
+  actor: RedemptionActor,
+  at: RedemptionStation,
+  def: DefinitionRow,
+  mint: boolean,
+  now: Date,
+): Promise<VoucherRow> {
+  const base = {
+    operatorId: actor.operatorId,
+    branchId: at.branchId,
+    voucherDefinitionId: def.id,
+    source: 'fixed' as const,
+    status: 'issued' as const,
+    costSatang: def.costSatang,
+    issuedByAccountId: actor.accountId,
+    issuedAt: now,
+    expiresAt: null,
+  };
+  if (!mint) {
+    return {
+      ...base,
+      id: newId(),
+      code: def.fixedCode!,
+      memberId: null,
+      printCount: 0,
+      redeemedAt: null,
+      redeemedByAccountId: null,
+      redeemedBranchId: null,
+      saleId: null,
+      redeemedStationId: null,
+      heldSaleId: null,
+      heldStationId: null,
+      heldByAccountId: null,
+      heldAt: null,
+      campaignId: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const [row] = await tx
+      .insert(voucher)
+      .values({ ...base, id: newId(), code: mintBoothCode(FIXED_REDEMPTION_PREFIX, (max) => randomInt(max)) })
+      .onConflictDoNothing({ target: [voucher.operatorId, voucher.code] })
+      .returning();
+    if (row) return row;
+  }
+  throw new Error('Five minted codes in a row collided — the random source is not random');
+}
+
 /** What checking a code decided, with everything the check wrote committed (`findForRedemption`). */
 type CodeCheck =
   | { kind: 'found'; v: VoucherRow; def: DefinitionRow; legacyFormat: boolean }
@@ -1566,6 +1656,7 @@ async function findForRedemption(
   at: RedemptionStation,
   rawCode: string,
   now: Date,
+  mintFixed = false,
 ): Promise<{ v: VoucherRow; def: DefinitionRow; legacyFormat: boolean }> {
   await assertRedemptionUnlocked(db, at.id, actor.accountId, now);
   const code = classifyVoucherCode(rawCode);
@@ -1592,6 +1683,12 @@ async function findForRedemption(
         const legacyFormat = code.kind === 'legacy_booth';
         return { kind: 'found', v: row.v, def: row.def, legacyFormat };
       }
+    }
+    // A fixed-code type's shared code: redeemed against that type.
+    const fixedDef = await fixedCodeDefinition(tx, actor.operatorId, rawCode);
+    if (fixedDef) {
+      const v = await fixedRedemptionRow(tx, actor, at, fixedDef, mintFixed, now);
+      return { kind: 'found', v, def: fixedDef, legacyFormat: false };
     }
     // Only an eleven-character code with a right check can be a booth that has
     // not synced. A ten-character one is a current code with a character
@@ -1642,7 +1739,7 @@ export async function prepareHold(
   rawCode: string,
   now: Date = new Date(),
 ): Promise<{ voucherId: string; legacyFormat: boolean }> {
-  const { v, legacyFormat } = await findForRedemption(db, actor, at, rawCode, now);
+  const { v, legacyFormat } = await findForRedemption(db, actor, at, rawCode, now, true);
   return { voucherId: v.id, legacyFormat };
 }
 
