@@ -1,0 +1,245 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { and, eq } from 'drizzle-orm';
+import { schema } from '@oto/db';
+import { addDaysToIsoDate, businessDate, newId, type EndOfDayRecord } from '@oto/shared';
+import {
+  BRANCH_MANAGER,
+  CENTRAL_BRANCH_CODE,
+  CHALONG_BRANCH_CODE,
+  RECEPTION,
+  branchIdByCode,
+  createTestContext,
+  operatorIdByName,
+  signInAs,
+  teardownAll,
+  OTO_OPERATOR_NAME,
+  type TestContext,
+} from './helpers';
+
+/**
+ * Gate reproductions for S2-15a round 2: the provisional close, the override
+ * and the receipt, attacked from the box states and request shapes the
+ * round's own suite does not build.
+ */
+
+const TZ = 'Asia/Bangkok';
+const D = businessDate(new Date(), TZ, 5 * 60);
+const day = (n: number) => addDaysToIsoDate(D, -n);
+
+let ctx: TestContext;
+let operatorId: string;
+let central: string;
+let chalong: string;
+let till1: { id: string; boxId: string; codePrefix: string };
+let chalongStation: string;
+let receptionCookie: string;
+let managerCookie: string;
+
+const getDay = async (date: string) => {
+  const res = await ctx.app.inject({ method: 'GET', url: `/branches/${central}/end-of-day?date=${date}`, headers: { cookie: receptionCookie } });
+  expect(res.statusCode, res.body).toBe(200);
+  return res.json() as EndOfDayRecord;
+};
+
+const close = (cookie: string, payload: Record<string, unknown>, key: string = newId()) =>
+  ctx.app.inject({
+    method: 'POST',
+    url: `/branches/${central}/end-of-day/close`,
+    headers: { cookie, 'idempotency-key': key },
+    payload: { actuals: [], countedSatang: null, floatLeftSatang: null, ...payload },
+  });
+
+async function outboxRow(boxId: string, state: 'queued' | 'sending' | 'failed' | 'quarantined'): Promise<string> {
+  const eventId = newId();
+  await ctx.db.insert(schema.boxOutbox).values({
+    eventId,
+    boxId,
+    journalEpoch: 1,
+    boxSeq: Math.floor(Math.random() * 1e9),
+    type: 'sale.finalised',
+    occurredAt: new Date(Date.now() - 10 * 60_000),
+    payload: {},
+    payloadHash: 'b'.repeat(64),
+    sig: 'x',
+    state,
+    createdAt: new Date(Date.now() - 10 * 60_000),
+  });
+  return eventId;
+}
+
+beforeAll(async () => {
+  ctx = await createTestContext();
+  operatorId = await operatorIdByName(ctx.db, OTO_OPERATOR_NAME);
+  central = await branchIdByCode(ctx.db, CENTRAL_BRANCH_CODE);
+  chalong = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
+  const [t1] = await ctx.db
+    .select()
+    .from(schema.station)
+    .where(and(eq(schema.station.branchId, central), eq(schema.station.codePrefix, 'T1')))
+    .limit(1);
+  till1 = { id: t1!.id, boxId: t1!.boxId!, codePrefix: t1!.codePrefix! };
+  const [t3] = await ctx.db.select().from(schema.station).where(eq(schema.station.branchId, chalong)).limit(1);
+  chalongStation = t3!.id;
+  // The virtual box the counter sells through, registered as the running agent registers it.
+  await ctx.db.update(schema.box).set({ registeredAt: new Date(), status: 'online' }).where(eq(schema.box.id, till1.boxId));
+  receptionCookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+  managerCookie = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
+}, 300_000);
+
+afterAll(async () => {
+  await ctx?.close();
+  await teardownAll();
+});
+
+describe('eod-r2-gate provisional: box states that must hold the day', () => {
+  it('a virtual box holding a sale the platform refused and the box will retry (outbox state failed) keeps the day provisional', async () => {
+    // The box's own depth counts queued, sending AND failed (store-sql.ts depth()):
+    // a failed row is a fact not on the platform's ledger, waiting for its retry.
+    const eventId = await outboxRow(till1.boxId, 'failed');
+    try {
+      const rec = await getDay(day(1));
+      expect(rec.provisional, 'a failed outbox row is undelivered').toEqual([
+        expect.objectContaining({ boxId: till1.boxId, reason: 'outbox', waiting: 1 }),
+      ]);
+      const res = await close(receptionCookie, { date: day(1) });
+      expect(res.statusCode, res.body).toBe(409);
+      expect(res.json().error.code).toBe('DAY_PROVISIONAL');
+    } finally {
+      await ctx.db.delete(schema.boxOutbox).where(eq(schema.boxOutbox.eventId, eventId));
+    }
+  });
+
+  it("a box of another branch with records waiting does not hold this branch's day", async () => {
+    const otherBox = newId();
+    await ctx.db.insert(schema.box).values({
+      id: otherBox,
+      operatorId,
+      branchId: chalong,
+      name: 'Chalong Pi',
+      slot: 'gate-chalong-pi',
+      role: 'counter',
+      status: 'online',
+      registeredAt: new Date(),
+      lastHeartbeatAt: new Date(),
+      lastStatus: { receivedAt: new Date().toISOString(), outboxDepth: 7, oldestUnackedAgeS: 60, clockOffsetMs: 30 * 60_000, clockMeasuredBy: 'platform' },
+    });
+    const rec = await getDay(day(1));
+    expect(rec.provisional).toEqual([]);
+    await ctx.db.update(schema.box).set({ archivedAt: new Date() }).where(eq(schema.box.id, otherBox));
+  });
+
+  it('a Pi the watchdog marked offline still holds the day with the depth it last reported', async () => {
+    const pi = newId();
+    await ctx.db.insert(schema.box).values({
+      id: pi,
+      operatorId,
+      branchId: central,
+      name: 'Dark Pi',
+      slot: 'gate-dark-pi',
+      role: 'counter',
+      status: 'offline',
+      registeredAt: new Date(),
+      lastHeartbeatAt: new Date(Date.now() - 3_600_000),
+      lastStatus: { receivedAt: new Date(Date.now() - 3_600_000).toISOString(), outboxDepth: 2, oldestUnackedAgeS: 30 },
+    });
+    const rec = await getDay(day(1));
+    expect(rec.provisional).toEqual([expect.objectContaining({ boxId: pi, reason: 'outbox', waiting: 2 })]);
+    await ctx.db.update(schema.box).set({ archivedAt: new Date() }).where(eq(schema.box.id, pi));
+    expect((await getDay(day(1))).provisional).toEqual([]);
+  });
+
+  it('a clock out by two minutes on an agent too old to say who measured it is low trust', async () => {
+    const pi = newId();
+    await ctx.db.insert(schema.box).values({
+      id: pi,
+      operatorId,
+      branchId: central,
+      name: 'Old Pi',
+      slot: 'gate-old-pi',
+      role: 'counter',
+      status: 'online',
+      registeredAt: new Date(),
+      lastHeartbeatAt: new Date(),
+      lastStatus: { receivedAt: new Date().toISOString(), outboxDepth: 0, clockOffsetMs: -2 * 60_000 },
+    });
+    const rec = await getDay(day(1));
+    expect(rec.provisional).toEqual([expect.objectContaining({ boxId: pi, reason: 'clock' })]);
+    expect(rec.provisional![0]!.message).toContain('behind');
+    await ctx.db.update(schema.box).set({ archivedAt: new Date() }).where(eq(schema.box.id, pi));
+  });
+
+  it('QUESTION (recorded, current behaviour): a disabled box holding records does not hold the day', async () => {
+    const pi = newId();
+    await ctx.db.insert(schema.box).values({
+      id: pi,
+      operatorId,
+      branchId: central,
+      name: 'Disabled Pi',
+      slot: 'gate-disabled-pi',
+      role: 'counter',
+      status: 'disabled',
+      registeredAt: new Date(),
+      lastStatus: { receivedAt: new Date().toISOString(), outboxDepth: 4, oldestUnackedAgeS: 30 },
+    });
+    expect((await getDay(day(1))).provisional).toEqual([]);
+    await ctx.db.update(schema.box).set({ archivedAt: new Date() }).where(eq(schema.box.id, pi));
+  });
+});
+
+describe('eod-r2-gate close: counter, override and receipt request shapes', () => {
+  it("a counter of another branch is refused, and nothing is written", async () => {
+    const res = await close(managerCookie, { date: day(2), stationId: chalongStation });
+    expect(res.statusCode, res.body).toBe(404);
+    expect(res.json().error.code).toBe('STATION_NOT_FOUND');
+    expect(await ctx.db.select().from(schema.endOfDay).where(eq(schema.endOfDay.businessDate, day(2)))).toHaveLength(0);
+  });
+
+  it('a whitespace override reason is refused by the schema', async () => {
+    const res = await close(managerCookie, { date: day(2), override: { reason: '   ' } });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('an override reason with nobody inside records no override and no override audit', async () => {
+    const res = await close(managerCookie, { date: day(2), stationId: till1.id, override: { reason: 'just in case' } });
+    expect(res.statusCode, res.body).toBe(200);
+    const rec = res.json() as EndOfDayRecord;
+    expect(rec.override).toBeNull();
+    expect(
+      await ctx.db.select().from(schema.auditLog).where(and(eq(schema.auditLog.action, 'end_of_day.override'), eq(schema.auditLog.entityId, rec.id))),
+    ).toHaveLength(0);
+    expect(rec.receipt).toMatchObject({ number: `${till1.codePrefix}-EOD-000001`, stationId: till1.id });
+  });
+
+  it('a second close with a new key prints nothing and takes no number', async () => {
+    const res = await close(managerCookie, { date: day(2), stationId: till1.id });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('DAY_CLOSED');
+    const [row] = await ctx.db.select().from(schema.endOfDay).where(eq(schema.endOfDay.businessDate, day(2)));
+    expect(await ctx.db.select().from(schema.printJob).where(eq(schema.printJob.subjectId, row!.id))).toHaveLength(1);
+    const [series] = await ctx.db
+      .select()
+      .from(schema.receiptSeries)
+      .where(and(eq(schema.receiptSeries.stationId, till1.id), eq(schema.receiptSeries.kind, 'end_of_day')));
+    expect(series!.nextSeq).toBe(2);
+  });
+
+  it('two closes racing with different keys lock one day, one number, one print', async () => {
+    const [a, b] = await Promise.all([
+      close(managerCookie, { date: day(3), stationId: till1.id }),
+      close(receptionCookie, { date: day(3), stationId: till1.id }),
+    ]);
+    expect([a.statusCode, b.statusCode].sort()).toEqual([200, 409]);
+    const rows = await ctx.db.select().from(schema.endOfDay).where(eq(schema.endOfDay.businessDate, day(3)));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.receiptNumber).toBe(`${till1.codePrefix}-EOD-000002`);
+    expect(await ctx.db.select().from(schema.printJob).where(eq(schema.printJob.subjectId, rows[0]!.id))).toHaveLength(1);
+  });
+
+  it('a close with no counter locks the day and says the receipt was not printed', async () => {
+    const res = await close(receptionCookie, { date: day(4) });
+    expect(res.statusCode, res.body).toBe(200);
+    const rec = res.json() as EndOfDayRecord;
+    expect(rec.receipt).toMatchObject({ number: null, stationId: null, jobs: [] });
+    expect(rec.receipt!.note).toContain('not closed at a counter');
+  });
+});
