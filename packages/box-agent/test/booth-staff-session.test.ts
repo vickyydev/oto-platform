@@ -78,6 +78,7 @@ function entry(over: Partial<BoothCacheEntry> & { staffSessionMinutes?: number }
         termsEn: 'Cannot be combined with other offers.',
         termsTh: null,
         expiryDays: 14,
+        fixedCode: null,
       },
     ],
     bundle: {

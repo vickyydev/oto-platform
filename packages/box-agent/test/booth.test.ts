@@ -521,12 +521,14 @@ test('the slip prints the words and terms as published, not as edited since; an 
           termsEn: 'Edited after the publish.',
           termsTh: null,
           expiryDays: null,
+          fixedCode: null,
         },
         {
           id: plain.voucherDefinitionId!,
           termsEn: 'No cash value.\nOne per family.',
           termsTh: 'ไม่สามารถแลกเป็นเงินสดได้',
           expiryDays: 30,
+          fixedCode: null,
         },
       ],
       bundle: {
