@@ -310,7 +310,7 @@ export const releaseApi = {
     ),
 };
 
-/** The platform lane's photo: registered under the registration, PUT straight to storage. */
+/** The platform lane's photo: registered under the registration, stored through the same-origin API. */
 async function uploadToStorage(registrationId: string, dataUrl: string): Promise<string> {
   const blob = await blobOf(dataUrl);
   const file = await api.post<{ id: string; uploadUrl: string }>(
@@ -324,7 +324,6 @@ async function uploadToStorage(registrationId: string, dataUrl: string): Promise
     },
     { idempotencyKey: idemKey() },
   );
-  const put = await fetch(file.uploadUrl, { method: 'PUT', body: blob, headers: { 'content-type': blob.type || 'image/jpeg' } });
-  if (!put.ok) throw new Error(`The photo did not save (${put.status}) — take it again.`);
+  await api.put<void>(`/files/${encodeURIComponent(file.id)}/content`, blob);
   return file.id;
 }

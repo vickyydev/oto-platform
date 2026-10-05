@@ -62,19 +62,20 @@ async function request<T>(
   opts: { idempotencyKey?: string; headers?: Record<string, string>; signal?: AbortSignal } = {},
 ): Promise<T> {
   let res: Response;
+  const binary = body instanceof Blob;
   try {
     res = await fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
       headers: {
-        ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+        ...(binary ? { 'content-type': body.type } : body !== undefined ? { 'content-type': 'application/json' } : {}),
         ...(opts.idempotencyKey ? { 'idempotency-key': opts.idempotencyKey } : {}),
         // Route-specific correlation headers — `x-oto-action-id` on a sale, so
         // one press of Pay carries one action id however many times the request
         // is retried.
         ...(opts.headers ?? {}),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: binary ? body : body !== undefined ? JSON.stringify(body) : undefined,
       signal: opts.signal,
     });
   } catch (err) {

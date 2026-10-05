@@ -47,6 +47,7 @@ const fakeStorage: FileStorage = {
   bucket: 'oto-files-test',
   presignedPut: async (objectKey) => `memory://oto-files-test/${objectKey}`,
   presignedGet: async (objectKey) => `memory://oto-files-test/${objectKey}?get`,
+  put: async () => {},
   probe: async () => ({ state: 'ready' }),
 };
 

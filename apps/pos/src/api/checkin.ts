@@ -452,7 +452,7 @@ export interface CheckInNowAnswer {
   notes: string[];
 }
 
-/** The platform lane's consent photo: registered under the registration, PUT to storage, attached. */
+/** The platform lane's consent photo: registered under the registration, stored through the same-origin API, attached. */
 async function uploadConsentPhoto(registrationId: string, dataUrl: string, checkinIds: string[]): Promise<ApiRegistration> {
   const blob = blobOfDataUrl(dataUrl);
   const file = await api.post<{ id: string; uploadUrl: string }>(
@@ -466,8 +466,7 @@ async function uploadConsentPhoto(registrationId: string, dataUrl: string, check
     },
     { idempotencyKey: idemKey() },
   );
-  const put = await fetch(file.uploadUrl, { method: 'PUT', body: blob, headers: { 'content-type': blob.type } });
-  if (!put.ok) throw new Error(`The photo did not upload (${put.status})`);
+  await api.put<void>(`/files/${encodeURIComponent(file.id)}/content`, blob);
   return api.post<ApiRegistration>(
     `/checkin/registrations/${registrationId}/photo`,
     { fileId: file.id, checkinIds },

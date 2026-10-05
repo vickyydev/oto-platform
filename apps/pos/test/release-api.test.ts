@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PickupView, PrepaidReconciliation } from '@oto/shared';
+import { checkinApi } from '@/api/checkin';
 import { pickupFromView, reconciliationFromWire, releaseApi } from '@/api/release';
 
 /**
@@ -10,8 +11,8 @@ import { pickupFromView, reconciliationFromWire, releaseApi } from '@/api/releas
  *
  * The four components the round owns no longer read the prototype's
  * in-memory store; they call `releaseApi`, which this file drives against a
- * stubbed `fetch`: the photo is registered under the registration and PUT to
- * storage on the presigned URL, the release names it by id, and the
+ * stubbed `fetch`: the photo is registered under the registration and stored
+ * through the same-origin API, the release names it by id, and the
  * platform's satang come back to the summary as the prototype's baht, exactly.
  */
 
@@ -63,26 +64,45 @@ describe('the four components dropped the prototype store', () => {
 });
 
 describe('releaseApi', () => {
-  it('stores a photo under the registration: register, PUT on the presigned URL, answer the file id', async () => {
+  it('stores consent photos on the same origin before attaching them', async () => {
+    answers.push(
+      (c) => json({ id: (c.body as { id: string }).id, uploadUrl: 'https://storage.example/unused' }),
+      () => new Response(null, { status: 204 }),
+      () => json({ id: REG, children: [] }),
+    );
+    await checkinApi.uploadPhoto(REG, 'data:image/jpeg;base64,/9j/AA==', [STAY]);
+    const id = (calls[0]!.body as { id: string }).id;
+    expect(calls.map((call) => `${call.method} ${call.url}`)).toEqual([
+      'POST /api/files', `PUT /api/files/${id}/content`, `POST /api/checkin/registrations/${REG}/photo`,
+    ]);
+    expect(calls[1]!.body).toBeInstanceOf(Blob);
+    expect(calls[1]!.headers['idempotency-key']).toBeUndefined();
+    expect(calls[2]!.body).toMatchObject({ fileId: id, checkinIds: [STAY] });
+  });
+
+  it('stores a photo under the registration through the signed-in API', async () => {
     answers.push(
       (c) => json({ id: (c.body as { id: string }).id, uploadUrl: 'https://storage.example/put?sig=1' }),
-      () => new Response(null, { status: 200 }),
+      () => new Response(null, { status: 204 }),
     );
     const id = await releaseApi.uploadPhoto(REG, 'data:image/jpeg;base64,/9j/AA==');
     expect(calls).toHaveLength(2);
     expect(calls[0]).toMatchObject({ url: '/api/files', method: 'POST' });
     expect(calls[0]!.body).toMatchObject({ contentType: 'image/jpeg', ownerEntityType: 'registration', ownerEntityId: REG });
     expect(calls[0]!.headers['idempotency-key']).toBeTruthy();
-    expect(calls[1]).toMatchObject({ url: 'https://storage.example/put?sig=1', method: 'PUT' });
+    expect(calls[1]).toMatchObject({ url: `/api/files/${id}/content`, method: 'PUT' });
+    expect(calls[1]!.body).toBeInstanceOf(Blob);
+    expect(calls[1]!.headers['content-type']).toBe('image/jpeg');
+    expect(calls[1]!.headers['idempotency-key']).toBeUndefined();
     expect(id).toBe((calls[0]!.body as { id: string }).id);
   });
 
-  it('says so in plain words when storage refuses the photo', async () => {
+  it('passes on the platform refusal when the photo cannot be stored', async () => {
     answers.push(
       () => json({ id: 'f', uploadUrl: 'https://storage.example/put' }),
-      () => new Response(null, { status: 403 }),
+      () => json({ error: { code: 'STORAGE_UNAVAILABLE', message: 'File storage is unavailable — try again in a moment' } }, 503),
     );
-    await expect(releaseApi.uploadPhoto(REG, 'data:image/jpeg;base64,AA==')).rejects.toThrow('The photo did not save (403)');
+    await expect(releaseApi.uploadPhoto(REG, 'data:image/jpeg;base64,AA==')).rejects.toThrow('File storage is unavailable');
   });
 
   it('releases with the collector and the stored pickup photo, and surfaces a refusal in the counter’s words', async () => {
@@ -111,7 +131,7 @@ describe('releaseApi', () => {
     answers.push(
       () => new Response(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' }), { status: 200 }),
       (c) => json({ id: (c.body as { id: string }).id, uploadUrl: 'https://storage.example/put' }),
-      () => new Response(null, { status: 200 }),
+      () => new Response(null, { status: 204 }),
       (c) =>
         json({
           id: (c.body as { id: string }).id,
@@ -130,6 +150,7 @@ describe('releaseApi', () => {
     expect(added.source).toBe('from_chat');
     expect(calls[0]!.url).toBe('https://chat.example/photo.png');
     expect(calls[1]!.body).toMatchObject({ contentType: 'image/png', ownerEntityType: 'registration' });
+    expect(calls[2]!.url).toBe(`/api/files/${(calls[1]!.body as { id: string }).id}/content`);
     expect(calls[3]).toMatchObject({ url: `/api/checkin/pickups/registrations/${REG}/guardians`, method: 'POST' });
     expect(calls[3]!.body).toMatchObject({ name: 'Aunt Noi', source: 'from_chat', photoFileId: (calls[1]!.body as { id: string }).id });
   });

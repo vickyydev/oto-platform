@@ -1,9 +1,12 @@
 import { Client } from 'minio';
+import { eq } from 'drizzle-orm';
+import { branch } from '@oto/db';
+import { newId } from '@oto/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { App } from '../src/app';
 import { loadEnv } from '../src/env';
 import { buildFileStorage } from '../src/services/files';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { ADMIN, CHALONG_MANAGER, RECEPTION, SECOND_OPERATOR_ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
  * SCRUM-16 — needs a reachable MinIO (docker compose locally; nothing runs
@@ -63,6 +66,66 @@ async function ensureTestBucket(app: App): Promise<boolean> {
 }
 
 describe('SCRUM-16 / SCRUM-25 — permission-bound files', () => {
+  it('stores a registered check-in photo on the same origin, with ownership and size checks', async () => {
+    const cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const [park] = await ctx.db.select().from(branch).where(eq(branch.code, 'hkt-central'));
+    const registrationId = newId();
+    const checkinId = newId();
+    const registration = await ctx.app.inject({
+      method: 'POST', url: '/checkin/registrations', headers: { cookie },
+      payload: {
+        id: registrationId, branchId: park!.id, guardianName: 'ZZ TEST Photo',
+        contactChannel: 'whatsapp', consentAcknowledged: true,
+        acknowledgedConfirmationIds: ['confirm-15min', 'confirm-no-refund', 'confirm-evac'],
+        children: [{ checkinId, name: 'ZZ TEST Photo Child', ageYears: 6, service: 'drop_off', foodProvision: { mode: 'none', paidSatang: 0 } }],
+      },
+    });
+    expect(registration.statusCode, registration.body).toBe(200);
+
+    const originalStorage = ctx.app.fileStorage;
+    const saved = new Map<string, Buffer>();
+    ctx.app.fileStorage = {
+      bucket: 'test-photos',
+      presignedPut: async () => 'memory://unused',
+      presignedGet: async () => 'memory://unused',
+      put: async (key, bytes) => { saved.set(key, Buffer.from(bytes)); },
+      probe: async () => ({ state: 'ready' }),
+    };
+    try {
+      const reg = await ctx.app.inject({
+        method: 'POST', url: '/files', headers: { cookie },
+        payload: { contentType: 'image/jpeg', ownerEntityType: 'registration', ownerEntityId: registrationId, filename: 'consent.jpg' },
+      });
+      expect(reg.statusCode, reg.body).toBe(200);
+      const fileId = reg.json().id as string;
+      const path = `/files/${fileId}/content`;
+      const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2]);
+      const send = (headers: Record<string, string>, payload: Buffer) =>
+        ctx.app.inject({ method: 'PUT', url: path, headers, payload });
+
+      expect((await send({ 'content-type': 'image/jpeg' }, bytes)).statusCode).toBe(401);
+      const otherPark = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
+      expect((await send({ cookie: otherPark, 'content-type': 'image/jpeg' }, bytes)).statusCode).toBe(403);
+      const otherOperator = await signInAs(ctx.app, SECOND_OPERATOR_ADMIN.phone, SECOND_OPERATOR_ADMIN.password);
+      expect((await send({ cookie: otherOperator, 'content-type': 'image/jpeg' }, bytes)).statusCode).toBe(404);
+      expect((await send({ cookie, 'content-type': 'image/png' }, bytes)).statusCode).toBe(400);
+      expect((await send({ cookie, 'content-type': 'image/jpeg' }, Buffer.from([1, 2, 3]))).statusCode).toBe(400);
+      expect((await send({ cookie, 'content-type': 'image/jpeg' }, Buffer.alloc(2 * 1024 * 1024 + 1))).statusCode).toBe(413);
+
+      const uploaded = await send({ cookie, 'content-type': 'image/jpeg' }, bytes);
+      expect(uploaded.statusCode, uploaded.body).toBe(204);
+      expect([...saved.values()].map((value) => [...value])).toContainEqual([...bytes]);
+      const attached = await ctx.app.inject({
+        method: 'POST', url: `/checkin/registrations/${registrationId}/photo`, headers: { cookie },
+        payload: { fileId, checkinIds: [checkinId] },
+      });
+      expect(attached.statusCode, attached.body).toBe(200);
+      expect((await send({ cookie, 'content-type': 'image/jpeg' }, bytes)).statusCode).toBe(409);
+    } finally {
+      ctx.app.fileStorage = originalStorage;
+    }
+  });
+
   it('uploads and retrieves a profile photo end to end', async (t) => {
     if (!storageUp) return t.skip();
     const cookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);

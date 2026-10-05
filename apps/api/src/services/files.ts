@@ -37,6 +37,7 @@ export interface FileStorage {
   bucket: string;
   presignedPut(objectKey: string, expirySeconds?: number): Promise<string>;
   presignedGet(objectKey: string, expirySeconds?: number): Promise<string>;
+  put(objectKey: string, bytes: Buffer, contentType: string): Promise<void>;
   /** Boot and test probe — deliberately never on the request path. */
   probe(): Promise<StorageProbe>;
 }
@@ -120,6 +121,10 @@ export function buildFileStorage(env: Env): FileStorage {
       bounded(() => client.presignedPutObject(bucket, objectKey, expirySeconds)),
     presignedGet: (objectKey, expirySeconds = 5 * 60) =>
       bounded(() => client.presignedGetObject(bucket, objectKey, expirySeconds)),
+    put: (objectKey, bytes, contentType) =>
+      bounded(async () => {
+        await client.putObject(bucket, objectKey, bytes, bytes.length, { 'Content-Type': contentType });
+      }),
     async probe() {
       try {
         return (await bounded(() => client.bucketExists(bucket)))

@@ -144,6 +144,14 @@ async function checkinOwnerBranch(
 }
 
 const CHECKIN_OWNERS = new Set(['registration', 'guardian', 'release']);
+const PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+
+function validPhoto(bytes: Buffer, contentType: string): boolean {
+  if (contentType === 'image/jpeg') return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (contentType === 'image/png') return bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  if (contentType === 'image/webp') return bytes.length >= 12 && bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
+  return false;
+}
 
 async function assertOwnerInOperator(
   db: Db,
@@ -192,6 +200,13 @@ async function assertOwnerInOperator(
 }
 
 export async function fileRoutes(app: App): Promise<void> {
+  // Staging object storage does not allow browser CORS. Keep check-in photos on
+  // the same origin while preserving the existing private file ownership model.
+  app.addContentTypeParser(
+    ['image/jpeg', 'image/png', 'image/webp'],
+    { parseAs: 'buffer', bodyLimit: PHOTO_MAX_BYTES },
+    (_req, body, done) => done(null, body),
+  );
   /**
    * One probe at boot, and nothing on the request path (S2-01d, finding B1).
    *
@@ -321,6 +336,47 @@ export async function fileRoutes(app: App): Promise<void> {
         });
       });
       return { id, uploadUrl };
+    },
+  );
+
+  app.put(
+    '/:id/content',
+    {
+      config: { dynamicPermission: true },
+      bodyLimit: PHOTO_MAX_BYTES,
+      onRequest: async (req) => { req.requireAuth(); },
+      schema: {
+        description: 'Store a check-in photo through the authenticated same-origin API',
+        params: z.object({ id: z.string().uuid() }),
+        body: z.any(),
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const [row] = await app.db.select().from(fileObject).where(eq(fileObject.id, req.params.id)).limit(1);
+      if (!row || row.operatorId !== auth.operatorId || row.ownerEntityType !== 'registration') {
+        throw errors.notFound('File not found');
+      }
+      await checkOwnerAccess(req, auth, 'registration', row.ownerEntityId, 'write', app.db);
+      const contentType = String(req.headers['content-type'] ?? '').split(';', 1)[0]!.toLowerCase();
+      const bytes = req.body as Buffer;
+      if (!Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > PHOTO_MAX_BYTES ||
+          row.contentType !== contentType || !validPhoto(bytes, contentType)) {
+        throw errors.badRequest('Send a JPEG, PNG or WebP photo matching the registered file type.');
+      }
+      const attached = await Promise.all([
+        app.db.select({ id: registration.id }).from(registration).where(eq(registration.photoFileId, row.id)).limit(1),
+        app.db.select({ id: checkin.id }).from(checkin).where(eq(checkin.photoFileId, row.id)).limit(1),
+        app.db.select({ id: guardian.id }).from(guardian).where(eq(guardian.photoFileId, row.id)).limit(1),
+        app.db.select({ id: release.id }).from(release).where(eq(release.pickupPhotoFileId, row.id)).limit(1),
+      ]);
+      if (attached.some((matches) => matches.length > 0)) {
+        throw errors.conflict('FILE_ALREADY_ATTACHED', 'This photo is already attached. Take a new photo to replace it.');
+      }
+      const storage = app.fileStorage;
+      if (!storage) throw notConfigured();
+      await withStorageLog(req, 'upload photo', () => storage.put(row.objectKey, bytes, contentType));
+      return reply.code(204).send();
     },
   );
 

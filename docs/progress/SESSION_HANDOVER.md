@@ -1,5 +1,20 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 5 October 2026, late evening - SCRUM-494 photo repair ready
+
+The staging browser cannot PUT photos to R2 directly because its preflight is
+403 without CORS headers. A signed-in same-origin photo-content route is now
+implemented for consent and pickup photos, with operator, branch and owner
+checks, image type and 2 MiB limit, and an attached-file overwrite guard. POS
+uses the route for both online flows; the offline box path stays as before.
+Existing API file tests (5), affected check-in tests (16), and POS release API
+tests (11) pass. API/POS typecheck, scoped lint, POS build and diff check pass;
+the API has no build script. CI `37322129021` attempt 2 succeeded for the
+previous checkpoint. This repair is local only and SCRUM-494 stays Testing.
+Next: commit and push with same-turn Jira status/comment, deploy API first and
+POS second, then retry the labelled staging registration and finish all nine
+proof items. No band credential, secret or photo belongs in Jira or logs.
+
 ## STOP POINT - 5 October 2026, late evening - SCRUM-494 staging photo upload
 
 POS staging is live at `14d03c97`. The restriction-only warning needs a real
