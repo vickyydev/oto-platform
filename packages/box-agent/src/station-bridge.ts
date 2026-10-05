@@ -3015,6 +3015,12 @@ export class StationBridge {
     if (!bundle || !snapshot) {
       throw new BridgeError(409, BOX_WALLET_REFUSALS.unknown.code, BOX_WALLET_REFUSALS.unknown.message);
     }
+    // A re-bound box must not spend against the previous park's cap or day.
+    // The wallet identities may be operator-wide, but this copy's policy is
+    // always for the station that is taking the payment.
+    if (snapshot.branchId !== station.branchId) {
+      throw new BridgeError(409, BOX_WALLET_REFUSALS.stale.code, BOX_WALLET_REFUSALS.stale.message);
+    }
     const age = ageOf(bundle.appliedAt, now);
     if (age === null || age >= WALLET_SNAPSHOT_REFUSE_AFTER_S) {
       throw new BridgeError(409, BOX_WALLET_REFUSALS.stale.code, BOX_WALLET_REFUSALS.stale.message, {

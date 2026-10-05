@@ -136,6 +136,10 @@ export function WalletPromoReportPanel() {
           </div>
         ))}
       </div>
+      <p className="text-xs text-muted-foreground">
+        Movements are recorded at the park where they happened. Live balance is the credit remaining
+        on wallets issued by the selected parks, including spending at other parks.
+      </p>
       {(summary.reactivatedSatang ?? 0) > 0 && (
         <p className="-mt-3 text-xs text-foreground/50">
           Includes {thbFromSatang(summary.reactivatedSatang ?? 0)} of expired credit a manager reactivated in this range.

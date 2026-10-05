@@ -538,9 +538,9 @@ export interface SaleSpendResult {
  */
 export async function debitForSale(tx: Tx, actor: WalletActor, input: SaleSpendInput): Promise<SaleSpendResult> {
   const found = await walletFor(tx, actor.operatorId, input.key);
-  // A wallet another park issued is answered exactly like a key that names
-  // nothing, as the lookup route answers it.
-  if (!found || (found.branchId && found.branchId !== input.branchId)) throw walletNotFound();
+  // Wallet identity belongs to the operator, not the issuing park. The sale
+  // and spend entry below name the park that actually took this credit.
+  if (!found) throw walletNotFound();
   const [locked] = await tx.select().from(wallet).where(eq(wallet.id, found.id)).for('update').limit(1);
   if (!locked || locked.operatorId !== actor.operatorId) throw walletNotFound();
   const now = input.now ?? new Date();

@@ -446,6 +446,8 @@ test('honest refusals: an unknown key, an empty or expired wallet, a stale copy,
       { saleId: o.saleId, actionId: o.actionId, cart: o.cart, tender: { ...cash(o.total), method: 'wallet' } },
       'BOX_LANE_WALLET_REFUSED',
     );
+    await box.write('wallets', [snapshot({ branchId: uuidv7() })]);
+    await refusedAs(box, 'payment.wallet', { ...o, wallet: credit(QR) }, 'WALLET_SNAPSHOT_STALE');
     // A copy a day old is not trusted.
     await box.write('wallets', [snapshot()], new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString());
     await refusedAs(box, 'payment.wallet', { ...o, wallet: credit(QR) }, 'WALLET_SNAPSHOT_STALE');

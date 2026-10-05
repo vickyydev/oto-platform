@@ -124,7 +124,8 @@ function sha256Hex(value: string): string {
 /**
  * THE BALANCES A COUNTER SPENDS FROM WITH THE LINK DOWN — one item, applied
  * whole: the branch's active wallets with credit on them, newest first and at
- * most `WALLET_SNAPSHOT_LIMIT`; each with the credit it can actually spend
+ * most `WALLET_SNAPSHOT_LIMIT`; operator-wide, with this box's own park first
+ * so a bounded copy cannot displace its local wallets. Each carries credit it can actually spend
  * (its balance less what has already lapsed by the clock), the expiry its
  * latest credit recorded (a grant or a manager's reactivation, as the online
  * counter shows it), its key digests and this box's filed offline spends on
@@ -153,12 +154,11 @@ async function walletCacheItemIn(db: Exec, auth: Pick<BoxAuth, 'boxId' | 'operat
     .where(
       and(
         eq(wallet.operatorId, auth.operatorId),
-        eq(wallet.branchId, auth.branchId),
         eq(wallet.status, 'active'),
         sql`${wallet.balanceSatang} > 0`,
       ),
     )
-    .orderBy(desc(wallet.updatedAt), desc(wallet.id))
+    .orderBy(sql`case when ${wallet.branchId} = ${auth.branchId} then 0 else 1 end`, desc(wallet.updatedAt), desc(wallet.id))
     .limit(WALLET_SNAPSHOT_LIMIT + 1);
   const truncated = rows.length > WALLET_SNAPSHOT_LIMIT;
   const live = rows.slice(0, WALLET_SNAPSHOT_LIMIT);
@@ -595,8 +595,8 @@ async function applyWalletSpent(
     throw conflict('SALE_CLOSED', `This sale is ${row.status} and cannot take a tender`, { saleId: row.id });
   }
   const [locked] = await tx.select().from(wallet).where(eq(wallet.id, payload.walletId)).for('update').limit(1);
-  if (!locked || locked.operatorId !== operatorId || (locked.branchId && locked.branchId !== branchId)) {
-    throw poison('SYNC_WALLET_UNKNOWN', 'That wallet is not one this park issued at this branch');
+  if (!locked || locked.operatorId !== operatorId) {
+    throw poison('SYNC_WALLET_UNKNOWN', 'That wallet does not belong to this operator');
   }
   const owed = await outstandingAfter(tx, row);
   if (payload.amountSatang > owed) {
