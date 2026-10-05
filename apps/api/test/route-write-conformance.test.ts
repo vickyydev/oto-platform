@@ -261,6 +261,12 @@ const NO_DIRECT_WRITE = [
   'POST /box/v1/station/:stationId/lease/renew',
   'POST /box/v1/station/:stationId/lock',
   'POST /sales/quote',
+  /**
+   * SCRUM-494: POST /files already records the file and audit together. This
+   * signed-in PUT sends only its photo bytes to private object storage; it
+   * does not change a database row or its audit trail.
+   */
+  'PUT /files/:id/content',
   'POST /stations/:id/button',
   'POST /stations/:id/intents',
   'POST /stations/:id/lease',
