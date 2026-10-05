@@ -1,5 +1,31 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 5 October 2026, afternoon - staging booth-switch repair
+
+**5 October staging follow-up:** API, Console and Booth source `7eca6612` is
+live; CI 37289763344 is still running. Real UI testing found that switching
+booths could leave the previous draft editable while the next read was out.
+The Console now hides another booth's draft, ignores superseded draft reads
+and closes editors on selection change. The existing browser spec's delayed
+read case passes, along with Console typecheck, lint and build. This repair
+needs its Console deployment and fresh proof. An old proof-booth draft changed
+by the temporary test must be restored from its exact audit `before`; no park
+publish occurred. Temporary QA fixtures were archived. The three existing
+fixed-code till redemption cases also pass. SCRUM-499/500 remain Testing.
+
+Continue the isolated staging harness after deploying the Console repair.
+It now waits for the selected QA booth's own draft, and restores the older
+proof booth's voucher settings only if they still match the exact QA audit
+snapshot. Its first setup had a temporary logger-shape error; cleanup was
+corrected to omit JSON Content-Type on empty DELETE requests. All those exact
+QA fixtures are archived. Earlier screenshots show the wrong proof booth and
+must be replaced, not attached as final proof. API/Booth/Pi source is 7eca6612;
+this follow-up changes only Console selection handling and its existing browser
+spec. The final Pi artifact can use 7eca6612 once CI succeeds. The six real prize
+mappings and showcase should be saved as the park booth's DRAFT, not published
+until the physical Pi has the compatible software. See the next STOP POINT for
+implementation, test and release detail. No actual QR contents may enter logs.
+
 ## STOP POINT - 5 October 2026, afternoon - six current-POS prize QRs verified locally
 
 Continue in sibling worktree `oto-pos-voucher-slip`, branch

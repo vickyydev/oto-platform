@@ -71,6 +71,36 @@ async function openBooth1(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Booth staff', exact: true })).toBeVisible();
 }
 
+test('Booths: changing booth hides the previous slip while the new draft loads', async ({ page }) => {
+  const nextId = '018f1d2c-0000-7000-8000-000000009999';
+  let firstId = '';
+  await page.route(/\/api\/branches\/[^/]+\/booths(?:\?|$)/, async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const first = body.booths[0];
+    firstId = first.id;
+    await route.fulfill({ response, json: { ...body, booths: [...body.booths, { ...first, id: nextId, name: 'Loading booth' }] } });
+  });
+  await signInAndWait(page);
+  await openBooth1(page);
+  let release!: () => void;
+  const waiting = new Promise<void>((resolve) => { release = resolve; });
+  await page.route(`**/booths/${nextId}/draft*`, async (route) => {
+    await waiting;
+    const response = await route.fetch({ url: route.request().url().replace(nextId, firstId) });
+    const body = await response.json();
+    await route.fulfill({ response, json: { ...body, booth: { ...body.booth, id: nextId, name: 'Loading booth' } } });
+  });
+  await page.getByRole('button', { name: /^Loading booth/ }).click();
+  try {
+    await expect(page.getByRole('button', { name: 'Customise slip', exact: true })).toHaveCount(0);
+  } finally {
+    release();
+  }
+  await page.getByRole('button', { name: 'Customise slip', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('Loading booth');
+});
+
 test('Voucher types: a 50 THB off type is created, Kids Pizza is linked and worded with no expiry, and a type is archived', async ({
   page,
 }) => {

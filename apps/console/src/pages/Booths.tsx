@@ -224,18 +224,23 @@ export function Booths() {
   }, []);
 
   /** The booth's draft, with its archived slices while "Show archived prizes" is ticked. */
+  const draftReadSequence = useRef(0);
   const readDraft = useCallback(async (id: string) => {
+    const sequence = ++draftReadSequence.current;
     setDraft((held) => reading(held));
     await boothApi
       .draft(id, showArchivedRef.current)
-      .then((d) => setDraft(readOk<BoothDraft | null>(d)))
-      .catch((reason: unknown) =>
+      .then((d) => {
+        if (sequence === draftReadSequence.current) setDraft(readOk<BoothDraft | null>(d));
+      })
+      .catch((reason: unknown) => {
+        if (sequence !== draftReadSequence.current) return;
         setDraft((held) =>
           isMissingRoute(reason)
             ? readAbsent<BoothDraft | null>(null)
             : readFailed(held, readFailureMessage(reason), null),
-        ),
-      );
+        );
+      });
   }, []);
 
   const loadBooth = useCallback(async (id: string) => {
@@ -334,6 +339,9 @@ export function Booths() {
     // Nor another booth's day on this one's tiles, nor its checklist's fold.
     setToday(null);
     setSetupOpen(null);
+    setSlipOpen(false);
+    setSettingsOpen(false);
+    setEditing(null);
   }, [selectedId, loadBooth]);
 
   /**
@@ -383,7 +391,8 @@ export function Booths() {
     }
   };
 
-  const selected = draft.value;
+  // A previous booth's draft cannot offer edits while the next one loads.
+  const selected = draft.value?.booth.id === selectedId ? draft.value : null;
   const selectedRow = booths.value.find((b) => b.id === selectedId) ?? null;
   /** The name on the bar: the draft's once read, the list's meanwhile. */
   const boothName = selected?.booth.name ?? selectedRow?.name ?? null;

@@ -1,5 +1,16 @@
 # Current status - read this first when resuming
 
+**5 October staging follow-up:** API, Console and Booth source `7eca6612` is
+live; CI 37289763344 is still running. Real UI testing found that switching
+booths could leave the previous draft editable while the next read was out.
+The Console now hides another booth's draft, ignores superseded draft reads
+and closes editors on selection change. The existing browser spec's delayed
+read case passes, along with Console typecheck, lint and build. This repair
+needs its Console deployment and fresh proof. An old proof-booth draft changed
+by the temporary test must be restored from its exact audit `before`; no park
+publish occurred. Temporary QA fixtures were archived. The three existing
+fixed-code till redemption cases also pass. SCRUM-499/500 remain Testing.
+
 **5 October 2026, temporary Lucky Wheel prize QR:** the bilingual slip source
 `b6b77d71` passed CI 37283125632, including its Pi pack. SCRUM-499 is In Progress
 for the approved current-POS bridge; SCRUM-500 is Testing, with deployment held
