@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Wristband } from '@/types';
 import { isCreditSettlement, type PaymentSettlement, type usePaymentStage } from '@/lib/usePaymentStage';
 import { Button } from '@/components/ui/button';
@@ -69,20 +69,25 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
   const remainderSatang = creditSelected ? Math.max(0, outstandingSatang - creditPending) : outstandingSatang;
   const creditCoversAll = creditSelected && stage.creditCoversAll;
   const baht = (satang: number) => (satang / 100).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const card = methods.find((method) => method.kind === 'card');
+  const cash = methods.find((method) => method.kind === 'cash');
+  const defaultRemainder = card ?? cash ?? methods[0];
+  const wasCreditSelected = useRef(false);
 
   /**
-   * OD-W3 — THE REMAINDER DEFAULTS TO CASH (the prototype defaulted to card;
-   * the requirement changes it), and the tender panel's amount is the
-   * remainder, not the order, while credit is selected.
+   * The approved design preselects card for the part credit did not cover.
+   * Choosing a button after that stays the staff member's choice; only the
+   * transition into credit selection applies the default.
    */
-  const cash = methods.find((method) => method.kind === 'cash');
   useEffect(() => {
-    if (!creditSelected || stage.locked) return;
-    if (remainderSatang > 0 && !stage.state.method && cash) stage.selectMethod(cash.id);
+    if (!creditSelected) { wasCreditSelected.current = false; return; }
+    if (stage.locked) return;
+    if (!wasCreditSelected.current && remainderSatang > 0 && defaultRemainder) stage.selectMethod(defaultRemainder.id);
+    wasCreditSelected.current = true;
     if (stage.state.amountSatang !== remainderSatang) stage.setAmountSatang(remainderSatang);
     // The stage's own setters read current refs; the figures are the triggers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creditSelected, remainderSatang, stage.state.method, stage.locked, cash?.id]);
+  }, [creditSelected, remainderSatang, stage.state.amountSatang, stage.locked, defaultRemainder?.id]);
 
   /**
    * S2-14a round 2 — CREDIT REFUSED ON THE BOX LANE: the stage said so before
@@ -172,9 +177,19 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
                 )}
               </div>
               {creditSelected && remainderSatang > 0 && (
-                <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
-                  Credit covers ฿{baht(creditUsedSatang)}. Collect remaining{' '}
-                  <span className="font-bold text-foreground tabular-nums">฿{baht(remainderSatang)}</span> by:
+                <div className="mt-4 border-t pt-4">
+                  <div className="mb-3 text-sm text-muted-foreground">Credit covers ฿{baht(creditUsedSatang)}. Collect remaining{' '}
+                    <span className="font-bold text-foreground tabular-nums">฿{baht(remainderSatang)}</span> by:</div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {methods.map((method) => {
+                      const Icon = paymentMethodIcon(method.kind);
+                      return <button key={method.id} type="button" disabled={stage.locked}
+                        onClick={(event) => { event.stopPropagation(); stage.selectMethod(method.id); }}
+                        className={cn('flex h-12 items-center justify-center gap-2 rounded-xl border font-bold transition-all active:scale-95',
+                          stage.state.method === method.id ? 'border-primary bg-primary text-primary-foreground' : 'bg-background hover:border-primary/50')}
+                      ><Icon className="h-5 w-5" />{method.label}</button>;
+                    })}
+                  </div>
                 </div>
               )}
             </Card>
@@ -203,9 +218,10 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
                 <div className="w-12 h-12 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0"><CheckCircle2 className="w-6 h-6" /></div>
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-lg">No payment needed</div>
-                  <div className="text-sm text-muted-foreground">This order is fully covered — nothing to collect.</div>
+                  <div className="text-sm text-muted-foreground">This order is fully covered — nothing to collect. Tap below to send it to the kitchen.</div>
                 </div>
               </div>
+              <Button className="mt-4 w-full" size="lg" disabled={!stage.canSubmit} onClick={() => void stage.submit()}>Complete Order</Button>
             </Card>
           ) : methods.map((method) => {
             const Icon = paymentMethodIcon(method.kind);
@@ -230,7 +246,7 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-lg">{method.label}</div>
                     <div className="text-sm text-muted-foreground">
-                      {method.kind === 'cash' ? 'Collect cash, with the amount handed over and change.' : method.kind === 'card' ? 'Take card through this station’s payment route.' : 'Show the payment QR and wait for the payment result.'}
+                      {method.kind === 'cash' ? `Collect ฿${baht(remainderSatang)} in cash` : method.kind === 'card' ? `Charge ฿${baht(remainderSatang)} to card` : `Customer scans to pay ฿${baht(remainderSatang)}`}
                     </div>
                   </div>
                   {selected && <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0"><Check className="w-5 h-5" /></div>}
@@ -247,7 +263,7 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
           )}
         </div>
 
-        <div className="mt-6"><PaymentTenderPanel stage={stage} /></div>
+        <div className="mt-6"><PaymentTenderPanel stage={stage} showSubmit={!free && !creditCoversAll} /></div>
         <div className="mt-4">
           <Button variant="outline" size="lg" className="h-16 px-6 gap-2" disabled={!stage.canBack} onClick={onBack}><ArrowLeft className="w-5 h-5" />Back</Button>
         </div>

@@ -46,18 +46,16 @@ import { MerchGrid } from '@/components/merch/MerchGrid';
 import { MerchCart } from '@/components/merch/MerchCart';
 import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
 import { walletKeyOf } from '@/api/wallet';
-import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
-import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
-import { useLanguage } from '@/i18n/LanguageContext';
 import { MerchConfirmation } from '@/components/merch/MerchConfirmation';
 import { MerchCustomerDisplay, MerchCustomerStage } from '@/components/merch/MerchCustomerDisplay';
 import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustomerDisplay';
+import { InlineMerchPaymentDisplay } from '@/components/merch/InlineMerchPaymentDisplay';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { announceSalePrinting } from '@/lib/printRouting';
 import { Button } from '@/components/ui/button';
-import { Monitor, Wallet } from 'lucide-react';
+import { Monitor } from 'lucide-react';
 
 type Stage = 'scan' | 'order' | 'payment' | 'confirmation';
 
@@ -72,7 +70,6 @@ export default function MerchStation() {
     (typeof navigator !== 'undefined' && navigator.onLine === false) || offlineUnlock !== null;
   const { branch } = useBranch();
   const { station } = useStation();
-  const { t } = useLanguage();
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
@@ -797,25 +794,7 @@ export default function MerchStation() {
               stage={customerStage} cart={separateDisplay.presentation.cart}
               totals={separateDisplay.presentation.totals} payment={paymentStage.display}
             /> : stage === 'payment' ? (
-              <div className="relative h-full bg-[image:var(--cd-gradient)] text-foreground flex flex-col items-center justify-center gap-6 px-10 text-center">
-                <div className="absolute top-4 right-4"><LanguageSwitcher variant="dark" /></div>
-                <h2 className="text-4xl font-black">{t('merch.payment.amountToPay')}</h2>
-                {paymentStage.display.online && paymentStage.display.status === 'pending' && (paymentStage.display.qrPayload || paymentStage.display.qrImageUrl) && (
-                  <div className="rounded-3xl bg-white p-6"><PaymentQr payload={paymentStage.display.qrPayload} imageUrl={paymentStage.display.qrImageUrl} className="h-64 w-64" /></div>
-                )}
-                {(paymentStage.display.creditSatang ?? 0) > 0 && (
-                  <div className="flex w-full max-w-md items-center justify-between rounded-2xl border border-foreground/10 bg-foreground/5 px-6 py-4">
-                    <span className="flex items-center gap-3 text-xl text-foreground/80"><Wallet className="h-6 w-6 text-primary" />{t('merch.payment.fromCredit')}</span>
-                    <span className="text-2xl font-black tabular-nums text-primary">฿{(paymentStage.display.creditSatang ?? 0) / 100}</span>
-                  </div>
-                )}
-                {(paymentStage.display.creditSatang ?? 0) > 0 && <p className="text-xl text-foreground/70">{t('merch.payment.leftToPay')}</p>}
-                <div className="text-6xl font-black tabular-nums text-primary">฿{paymentStage.display.amountSatang / 100}</div>
-                {paymentStage.display.status === 'pending' && <PaymentExpiry expiresAt={paymentStage.display.expiresAt} />}
-                <p className="text-xl text-foreground/60">
-                  {!paymentStage.display.online ? t('till.payment.reconnect') : paymentStage.display.offline ? t('till.payment.offlineRecorded') : paymentStage.display.status === 'pending' ? t('merch.payment.waiting') : paymentStage.display.status === 'paid' ? t('till.payment.received') : paymentStage.display.status === 'failed' || paymentStage.display.status === 'blocked' ? t('till.payment.checking') : t('merch.payment.confirmWithStaff')}
-                </p>
-              </div>
+              <InlineMerchPaymentDisplay payment={paymentStage.display} totalSatang={Math.round(total * 100)} />
             ) : <MerchCustomerDisplay
               stage={customerStage}
               wristband={wristband}

@@ -11,6 +11,7 @@ import { FnbPayment } from '@/components/fnb/FnbPayment';
 import { FnbCustomerDisplay } from '@/components/fnb/FnbCustomerDisplay';
 import { loadScannedTab } from '@/components/fnb/ScanWristband';
 import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustomerDisplay';
+import { InlineMerchPaymentDisplay } from '@/components/merch/InlineMerchPaymentDisplay';
 import type { FnbOrder, MerchOrder, Wristband } from '@/types';
 
 /**
@@ -100,6 +101,16 @@ describe('the public displays draw the rows from the figure', () => {
     const qr = renderToStaticMarkup(React.createElement(PublicMerchCustomerDisplay, { stage: 'payment', cart, totals,
       payment: { ...payment, status: 'pending', qrPayload: '00020101' } }));
     expect(qr).toContain('merch.payment.paidFromCredit');
+    const inline = renderToStaticMarkup(React.createElement(InlineMerchPaymentDisplay, { payment, totalSatang: 9_000 }));
+    expect(inline).toContain('merch.payment.fromCredit');
+    expect(inline).toContain('merch.payment.leftToPay');
+    expect(inline).toContain('฿40');
+    const inlineQr = renderToStaticMarkup(React.createElement(InlineMerchPaymentDisplay, {
+      payment: { ...payment, status: 'pending', qrPayload: '00020101' }, totalSatang: 9_000,
+    }));
+    expect(inlineQr).toContain('merch.payment.thaiQrPromptpay');
+    expect(inlineQr).toContain('merch.payment.openBankingApp');
+    expect(inlineQr).toContain('merch.payment.waiting');
   });
 
   it('shop, thank-you: the credit beside the cash', () => {

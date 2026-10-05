@@ -20,7 +20,7 @@ import { WALLET_TENDER_CODE, countsAsTillTakings, mintVoucherQr, newId } from '@
 import { classify } from '../src/services/refunds';
 import { tenderMethodOf } from '../src/services/payments/attempt';
 import { createWalletWithGrant, debitWallet, loadWallet, prepaidBalanceOf } from '../src/services/wallet';
-import { BRANCH_MANAGER, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { BRANCH_MANAGER, CHALONG_BRANCH_CODE, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
  * S2-14a round 2 — SPEND AND REFUNDS (plan docs/progress/plans/wallet/PLAN.md
@@ -98,12 +98,12 @@ async function assertLedgerTruth(): Promise<void> {
 }
 
 /** A wallet with this much credit on it, found by its voucher QR. */
-async function walletWith(amountSatang: number): Promise<{ id: string; qr: string }> {
+async function walletWith(amountSatang: number, issuedAtBranchId = branchId): Promise<{ id: string; qr: string }> {
   const qr = mintVoucherQr();
   const made = await ctx.db.transaction((tx) =>
     createWalletWithGrant(tx, { accountId: null, operatorId }, {
       actionId: `test-grant:${newId()}`,
-      branchId,
+      branchId: issuedAtBranchId,
       holderName: 'Walk-in guest',
       amountSatang,
       source: 'ticket_sale',
@@ -159,6 +159,19 @@ async function drawerKicks(): Promise<number> {
 // --- Spend --------------------------------------------------------------------------
 
 describe('credit at the F&B counter is a tender the platform writes', () => {
+  it('spends credit issued by another park of the same operator at this park', async () => {
+    const [chalong] = await ctx.db.select().from(branch).where(eq(branch.code, CHALONG_BRANCH_CODE));
+    const w = await walletWith(20_000, chalong!.id);
+    const { saleId } = await fnbOrder();
+    const res = await finalise(saleId, { wallet: { key: w.qr, useCredit: true }, actionId: newId() });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json().walletSpend).toMatchObject({ walletId: w.id, amountSatang: 9_000, balanceAfterSatang: 11_000 });
+    const entries = await ctx.db.select().from(walletEntry).where(eq(walletEntry.walletId, w.id));
+    expect(entries.find((entry) => entry.kind === 'grant')?.branchId).toBe(chalong!.id);
+    expect(entries.find((entry) => entry.kind === 'spend')?.branchId).toBe(branchId);
+    await assertLedgerTruth();
+  });
+
   it('use credit covering the whole order: one wallet attempt, one spend entry, the sale closed, the drawer shut', async () => {
     const w = await walletWith(20_000);
     const { saleId, owed } = await fnbOrder();

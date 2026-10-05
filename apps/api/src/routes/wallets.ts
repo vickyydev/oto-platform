@@ -31,9 +31,8 @@ import {
  * The Wallet view: scan or type a key — a band's signed code or its short
  * code, a voucher's `QR-…` — and get the wallet it names, its balance, status,
  * expiry and its ledger; or open a wallet by id. Both behind
- * `pos:wallet:read`, at the session's park and again at the park that issued
- * the wallet: a wallet at another park is answered exactly like a key that
- * names nothing, so a scan cannot be used to learn that one exists.
+ * `pos:wallet:read` at the session's park. Identity is operator-wide; the
+ * issuing park does not restrict spending or counter lookup.
  *
  * Round 3 adds: bringing expired credit back (`POST /:id/reactivate`, behind
  * `pos:wallet:reactivate` at the wallet's park, with a typed reason, audited),
@@ -68,7 +67,7 @@ export async function walletRoutes(app: App): Promise<void> {
       schema: {
         description:
           'The wallet a scanned or typed key names — a band (full or short code) or a voucher QR — with its balance, ' +
-          'status, credit expiry, its keys (a band by its short code only) and its ledger, oldest first. 404 when nothing at this park carries it.',
+          'status, credit expiry, its keys (a band by its short code only) and its ledger, oldest first. 404 when no wallet of this operator carries it.',
         querystring: WalletLookupQuerySchema,
       },
     },
@@ -76,7 +75,6 @@ export async function walletRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const found = await walletFor(app.db, auth.operatorId, req.query.key);
       if (!found) throw notFound();
-      await assertWalletBranch(req, found.branchId);
       return {
         wallet: await walletViewOf(app.db, found),
         ledger: await ledgerOf(app.db, auth.operatorId, found.id),
@@ -108,15 +106,7 @@ export async function walletRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       const branchId = req.query.branchId ?? auth.branchId ?? null;
-      let found = await walletFor(app.db, auth.operatorId, req.query.key);
-      if (found?.branchId) {
-        try {
-          await req.requirePermission('pos:wallet:read', { branchId: found.branchId });
-        } catch {
-          // A wallet at a park this session cannot read is answered as none.
-          found = null;
-        }
-      }
+      const found = await walletFor(app.db, auth.operatorId, req.query.key);
       let stay: BandStayView | null = null;
       if (branchId) {
         const allowed = await req
@@ -215,7 +205,7 @@ export async function walletRoutes(app: App): Promise<void> {
     {
       config: { permission: 'pos:wallet:read' },
       schema: {
-        description: "One wallet by id: its balance, keys and ledger. 404 for a wallet at a park this session cannot read.",
+        description: 'One operator wallet by id: its balance, keys and ledger, readable from the current park.',
         params: z.object({ id: z.string().uuid() }),
       },
     },
@@ -227,7 +217,6 @@ export async function walletRoutes(app: App): Promise<void> {
         .where(and(eq(wallet.id, req.params.id), eq(wallet.operatorId, auth.operatorId)))
         .limit(1);
       if (!found) throw notFound();
-      await assertWalletBranch(req, found.branchId);
       return {
         wallet: await walletViewOf(app.db, found),
         ledger: await ledgerOf(app.db, auth.operatorId, found.id),
