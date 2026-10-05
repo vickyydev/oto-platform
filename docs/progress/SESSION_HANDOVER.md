@@ -1,5 +1,28 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026 - verified round-2 source ready to land
+
+Work from clean oto-pos-eod-round-2 on feat/eod-round-2-review. Rebased
+round-2 source 057e7023 is application/package-identical to green CI
+37356476121 at 9d5a50cd. Migration 0058 follows applied 0057. Main CI
+37352932512 is green and source 59cb2cf5 is live on platform staging.
+SCRUM-494 and SCRUM-213 are now Deployed with named staging cards attached;
+stock follow-up card 11264 explicitly labels the date-boundary test proof.
+No real park stock was reseeded or changed.
+
+Receipt review: locked figures, date and channel keys are immutable;
+descriptive terminal, method and account names are resolved like existing
+receipts. No extra schema change is required by the round-2 brief.
+Next: push this verified slice to main with a SCRUM-215 comment/status
+check, deploy API before POS, then use labelled staging fixtures for
+provisional close, manual occupancy resolution, manager override, receipt
+and reprint. Do not close the park's real day for a test. Attach actual
+desktop and phone evidence. Rounds 3 (settlement) and 4 (demo-day walkthrough)
+remain before SCRUM-215/214 can close. The prepared 495 source map confirms
+17 remaining entries; continue by the recorded priority after End of Day.
+SCRUM-497 has no answers; preserve prototype defaults and record uncertainty.
+
+
 ## STOP POINT - 6 October 2026, 01:33 Bangkok - SCRUM-494 proof filed
 
 Use clean `oto-pos-voucher-slip` on `feat/till-consistency-493` for the
