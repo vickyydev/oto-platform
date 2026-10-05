@@ -27,3 +27,9 @@ SCRUM-215 can move to Deployed only after the relevant staging screenshot/test c
 ## Follow-up after the audit
 
 581c7c4a is live on API/POS/Console. The isolated QA park completed the safe-drop, paid-out and deliberate THB50/corrected close sequence. Health control visibility is captured; disposable tests cover the seed write path. The fixture-job gap is now implemented locally as a real on-demand operation with atomic import/audit/run records; 8 existing API checks pass. Deployment and named screenshots remain. CI schema parent mapping is repaired (14 checks); the separate worker timeout is not called green.
+
+## Final staging export and cleanup
+
+API dep-db21n8rtqb8s73bnum5g and POS dep-db21r0rtqb8s73bobim0 are live at 63d7307e. The real signed-in Download CSV control returned settlement-2026-10-05-all.csv, exactly three approved rows (PAX QR, NEXGO card, gateway QR with blank TID), matching the API response byte-for-byte. Reviewed screenshot 11-staging-all-payment-export.png is attachment 11274. Earlier single-TID exports remain one row each. The on-demand import job and cash/Health/Activity cards 11271-11273 close the remaining functional evidence gaps. CI37378514082 is pending, not green.
+
+Revoked QA role assignment 01a10df8-dfdc-7d99-9b4b-06ba0c146448; disabled then archived QA box, archived its station and three devices, and archived ZZ TEST End of Day 1006. Simulator stopped. Closed financial rows, audit and override history were preserved. The physical park box and earlier unresolved payments were untouched.

@@ -17,7 +17,7 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-Current checkpoint: SCRUM-494 is Deployed with staging evidence. SCRUM-215 rounds 2 and 3 are live with proof (11265-11270); round 4 and the park-switch follow-up are verified locally for release. SCRUM-495 is In Progress in an isolated worktree; 496/498 remain, and 497 keeps prototype defaults pending answers. API abc007af / POS and Console de2f90ce are the verified settlement releases. Migration 0059 is applied. The older table below describes the original handover, not current status.
+Current checkpoint: SCRUM-494 is Deployed. SCRUM-215 rounds 2-4 and all-payments export are live with attached evidence through 11274; isolated QA fleet/grant cleanup is complete. API/POS 63d7307e and Console 581c7c4a are verified live. SCRUM-215 stays Testing pending current CI. SCRUM-495 pricing/proof/UI and History/tender slices are under verification; Add time must offer both selected bands and count-only, per the owner. SCRUM-496/498 remain; 497 keeps other prototype defaults. The older table below describes the original handover, not current status.
 
 _Updated: 6 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block carry exact deployments and checkpoints._
 

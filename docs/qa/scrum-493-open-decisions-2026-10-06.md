@@ -23,3 +23,11 @@ ordinary lines when their identity cannot be recovered. The implementation
 is inspecting real stay/entitlement relationships and will require explicit
 re-entry where the original detail was never retained. This is a data
 limitation to disclose, not permission to invent a different sale.
+
+## Owner answer received
+
+The owner answered: "GIVE AN OPTION FOR BOTH". Provide selected/scanned-band
+extensions and a count-only payment/audit option. Count-only must clearly
+state that unidentified band validity is not changed. Selected-band changes
+need the existing signed-band/gate contract checked before implementation.
+The answer is commented on SCRUM-495 and SCRUM-497.

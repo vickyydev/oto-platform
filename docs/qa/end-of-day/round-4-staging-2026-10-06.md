@@ -62,3 +62,9 @@ contract is fixed in b61448cf (14/14 checks). Print raster test files now
 run sequentially, retaining every test and timeout; 268/268 pass locally
 with print typecheck/lint. This configuration still needs landing and CI.
 Neither prior CI run is green.
+
+## Final staging export and cleanup
+
+API dep-db21n8rtqb8s73bnum5g and POS dep-db21r0rtqb8s73bobim0 are live at 63d7307e. The real signed-in Download CSV control returned settlement-2026-10-05-all.csv, exactly three approved rows (PAX QR, NEXGO card, gateway QR with blank TID), matching the API response byte-for-byte. Reviewed screenshot 11-staging-all-payment-export.png is attachment 11274. Earlier single-TID exports remain one row each. The on-demand import job and cash/Health/Activity cards 11271-11273 close the remaining functional evidence gaps. CI37378514082 is pending, not green.
+
+Revoked QA role assignment 01a10df8-dfdc-7d99-9b4b-06ba0c146448; disabled then archived QA box, archived its station and three devices, and archived ZZ TEST End of Day 1006. Simulator stopped. Closed financial rows, audit and override history were preserved. The physical park box and earlier unresolved payments were untouched.
