@@ -148,6 +148,7 @@ async function requestBlob(
 
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
+  getBlob: (path: string) => requestBlob('GET', path),
   post: <T>(
     path: string,
     body?: unknown,

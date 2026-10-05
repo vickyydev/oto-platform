@@ -7,6 +7,8 @@ import { closeBodyOf, reprintEndOfDayReceipt, resolveStrandedRow } from '@/api/e
 import { EodReceiptCard } from '@/components/eod/EodReceiptCard';
 import { ProvisionalBanner } from '@/components/eod/ProvisionalBanner';
 import { StrandedList } from '@/components/eod/StrandedList';
+import { settlementsApi, type SettlementSummary } from '@/api/settlements';
+import { SettlementResults } from '@/components/eod/SettlementPanel';
 
 /**
  * S2-15a round 2 — the UI additions on the End of Day tab: the provisional
@@ -23,6 +25,41 @@ afterEach(() => {
 const BRANCH = '0192f000-0000-7000-8000-00000000b001';
 const MANAGER = '0192f000-0000-7000-8000-00000000a004';
 const STATION = '0192f000-0000-7000-8000-00000000c001';
+
+describe('End of Day settlement evidence', () => {
+  it('keeps unmatched, differing and unsupported evidence visibly separate from success', () => {
+    const data: SettlementSummary = {
+      branchId: BRANCH, date: '2026-10-06', devices: [],
+      batches: [{ id: STATION, source: 'terminal', state: 'unsupported', deviceId: STATION,
+        tid: 'TID-TEST', createdAt: '2026-10-06T10:00:00Z', completedAt: null, matched: 0, unmatched: 0, mismatched: 0 }],
+      lines: [{ id: 'line', batchId: 'batch', attemptId: null, method: 'card', amountSatang: 12550, tid: 'TID-TEST', approvalCode: null,
+        invoiceNo: 'fixture-invoice', terminalRef: null, tranRef: null, transactionType: 'payment', match: 'amount_mismatch' }],
+      unmatchedAttempts: [{ id: 'attempt', method: 'qr', amountSatang: 5000, tid: null, invoiceNo: null, status: 'awaiting_settlement' }],
+    };
+    const html = markup(React.createElement(SettlementResults, { data }));
+    expect(html).toContain('Not supported by this terminal');
+    expect(html).toContain('No payments were marked settled.');
+    expect(html).toContain('Amount differs');
+    expect(html).toContain('125.50');
+    expect(html).toContain('Payments without a matched settlement (1)');
+    expect(html).toContain('Awaiting settlement');
+  });
+
+  it('sends the selected park, day and device with the same identity on a retry', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({});
+    await settlementsApi.run(BRANCH, '2026-10-06', STATION, 'one-press');
+    await settlementsApi.run(BRANCH, '2026-10-06', STATION, 'one-press');
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(post).toHaveBeenNthCalledWith(2, `/branches/${BRANCH}/settlements/terminal-runs`,
+      { date: '2026-10-06', deviceId: STATION }, { idempotencyKey: 'one-press' });
+  });
+
+  it('exports one selected terminal and encodes its TID without widening the date filter', async () => {
+    const get = vi.spyOn(api, 'getBlob').mockResolvedValue(new Blob(['fixture']));
+    await settlementsApi.export(BRANCH, '2026-10-06', 'TID & 1');
+    expect(get).toHaveBeenCalledWith(`/branches/${BRANCH}/settlements/export?date=2026-10-06&tid=TID+%26+1`);
+  });
+});
 
 const markup = (el: React.ReactElement) =>
   renderToStaticMarkup(el).replace(/&#x27;/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"');

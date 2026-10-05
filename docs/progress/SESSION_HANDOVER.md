@@ -1,5 +1,34 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026 - settlement integrated for release
+
+Root checkout oto-pos-eod-round-2 now holds all 37 explicit files from the
+three settlement worktrees, plus demo-reset.ts to delete settlement facts
+before their referenced payment attempts. No prohibited paths are staged.
+Migration 0059 was generated on 0058 and remains unapplied on staging.
+
+Integrated checks: API EOD 39/39, POS 27/27, box terminal/runner 36/36,
+six touched-package typechecks, scoped ESLint and POS/Console builds pass.
+The final settlement run including the reset follow-up passes 8/8. Earlier box regression coverage was
+143/143 and the disposable Console import phone smoke passed 1/1.
+Exact contracts/limits are in ROUND_3_API_NOTES, ROUND_3_BOX_NOTES and
+ROUND_3_UI_NOTES under docs/progress/plans/cash.
+
+The review fixed durable callbacks without queue redelivery, matching
+and reference retention, concurrent duplicate evidence, original-command
+box ownership, schema-sized callback bodies, and uncertain UI retry IDs.
+The original receipt status poll is included. Physical Digio/GHL settlement
+still returns unsupported honestly; this release proves simulated batches
+and the documented H/D fixture, not real bank settlement files.
+
+Next: final reset check, explicit source commit, pull latest main and push
+with Jira SCRUM-215 progress/status update. Deploy API first (0059), then
+POS/Console, replace the local staging simulator with this source, prove
+terminal batch, PAX confirmation, fixture mismatch/import, CSV, audit and
+receipt status refresh. Finish seed:demo-day wallet/voucher/refund coverage
+and the round-4 close walkthrough. SCRUM-215 and SCRUM-493 remain In Progress;
+SCRUM-494 is Deployed, 495/496/498 still require the prototype mismatch work.
+
 ## STOP POINT - 6 October 2026 - round-2 staging evidence saved
 
 Use oto-pos-eod-round-2 on feat/eod-round-2-review; main source 33681345 is

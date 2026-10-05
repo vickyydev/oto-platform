@@ -57,6 +57,7 @@ import {
 } from './store';
 import {
   BOX_AGENT_VERSION,
+  BOX_COMMAND_KINDS,
   BOX_CLOCK_SKEW_ERROR,
   BOX_HEARTBEAT_STALE_ERROR,
   boxCredential,
@@ -89,11 +90,13 @@ import {
 } from './printing/index';
 import {
   TerminalCommandPayloadSchema,
+  TerminalSettlementCommandSchema,
   createTerminals,
   type SerialOpener,
   type TerminalController,
   type TerminalProgress,
   type TerminalResult,
+  type TerminalSettlementResult,
 } from './terminal/index';
 import {
   BOOTH_STAFF_VERIFY_ERRORS,
@@ -3489,8 +3492,69 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
    * print queued behind the `go_online` is never handed out and never marked
    * running: it is still queued, un-attempted, when the box is back.
    */
-  async function runPendingCommands(): Promise<number> {
+  const pendingSettlementKey = 'terminal.pending-settlement-commands';
+  const maxPendingSettlements = 100;
+  let commandTick: Promise<number> | null = null;
+
+  function runPendingCommands(): Promise<number> {
+    // A command may heartbeat, whose reply may itself request a poll.
+    // Coalesce that nested tick instead of awaiting our own command promise.
+    if (commandTick) return Promise.resolve(0);
+    commandTick = runPendingCommandsOnce().finally(() => { commandTick = null; });
+    return commandTick;
+  }
+
+  async function readPendingSettlements(): Promise<BoxCommandHandout[]> {
+    if (!store || !state.boxId) return [];
+    const saved = await store.readRuntimeValue(state.boxId, pendingSettlementKey);
+    return saved ? JSON.parse(saved) as BoxCommandHandout[] : [];
+  }
+
+  async function savePendingSettlements(pending: BoxCommandHandout[]): Promise<void> {
+    if (!store || !state.boxId) throw new Error('Settlement recovery requires the box store');
+    await store.writeRuntimeValue(state.boxId, pendingSettlementKey, JSON.stringify(pending));
+  }
+
+  async function drainPendingSettlements(): Promise<number> {
+    if (!credential || state.offline) return 0;
+    const pending = await readPendingSettlements();
+    let completed = 0;
+    // Bounded work on each normal command tick, including the startup tick.
+    const attempted = pending.slice(0, 5);
+    for (const command of attempted) {
+      try {
+        const outcome = await executeCommand(command);
+        const ack = await request<BoxCommandResultResponse>(`/box/v1/commands/${command.id}/result`, {
+          method: 'POST', body: outcome,
+          headers: command.actionId ? { 'x-oto-action-id': command.actionId } : {},
+        });
+        if (ack.status !== 200 || !ack.body) continue;
+        await adoptPlatformEpoch(ack.body.epoch, 'command_ack');
+        pending.splice(pending.indexOf(command), 1);
+        await savePendingSettlements(pending);
+        completed += 1;
+        state.commandsRun += 1;
+      } catch {
+        note('warn', 'a settlement report remains on the box for the next command tick', {
+          commandId: command.id,
+        });
+      }
+    }
+    if (pending.length) {
+      const tried = new Set(attempted.map((command) => command.id));
+      await savePendingSettlements([
+        ...pending.filter((command) => !tried.has(command.id)),
+        ...pending.filter((command) => tried.has(command.id)),
+      ]);
+    }
+    return completed;
+  }
+
+  async function runPendingCommandsOnce(): Promise<number> {
     if (!credential) return 0;
+    const recovered = await drainPendingSettlements();
+    const heldSettlements = await readPendingSettlements();
+    const settlementQueueFull = heldSettlements.length > maxPendingSettlements - 5;
     /**
      * Read before the request rather than per command: a `go_online` in this
      * batch flips it half way through the loop, and what the box asked the
@@ -3499,15 +3563,28 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     const askedOffline = state.offline;
     const { status, body } = await request<BoxCommandPollResponse>('/box/v1/commands/poll', {
       method: 'POST',
-      body: askedOffline ? { max: 1, kinds: OFFLINE_COMMAND_KINDS } : { max: 5 },
+      body: askedOffline ? { max: 1, kinds: OFFLINE_COMMAND_KINDS }
+        : settlementQueueFull ? { max: 5, kinds: BOX_COMMAND_KINDS.filter((kind) => kind !== 'terminal_settle') }
+          : { max: 5 },
     });
     if (status === 401) {
       await reregisterAfterRefusal('command poll');
       return 0;
     }
     if (status !== 200 || !body) return 0;
-    let ran = 0;
+    // The platform only hands out queued commands. Recovery therefore lives
+    // on the box: persist handouts before executing, rather than relying on
+    // a running command being delivered again after a lost callback.
+    const settlements = body.commands.filter((command) => command.kind === 'terminal_settle');
+    if (settlements.length && store && state.boxId && !state.offline) {
+      for (const command of settlements) {
+        if (!heldSettlements.some((held) => held.id === command.id)) heldSettlements.push(command);
+      }
+      await savePendingSettlements(heldSettlements);
+    }
+    let ran = recovered;
     for (const command of body.commands) {
+      if (command.kind === 'terminal_settle' && heldSettlements.some((held) => held.id === command.id)) continue;
       const outcome = offlineRefusal(command) ?? (await executeCommand(command));
       const { status: resultStatus, body: ack } = await request<BoxCommandResultResponse>(
         `/box/v1/commands/${command.id}/result`,
@@ -3554,6 +3631,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       ran += 1;
       state.commandsRun += 1;
     }
+    if (settlements.length) ran += await drainPendingSettlements();
     return ran;
   }
 
@@ -3736,6 +3814,34 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           errorCode: outcome.errorCode ?? undefined,
           errorMessage: outcome.errorMessage ?? undefined,
         };
+      }
+      case 'terminal_settle': {
+        const parsed = TerminalSettlementCommandSchema.safeParse(payload);
+        if (!parsed.success) return { state: 'failed', errorCode: 'BAD_SETTLEMENT' };
+        const settlement = parsed.data;
+        const resultKey = `terminal.pending-result.${settlement.batchId}`;
+        const saved = store && state.boxId ? await store.readRuntimeValue(state.boxId, resultKey) : null;
+        const result: TerminalSettlementResult = saved ? JSON.parse(saved) as TerminalSettlementResult
+          : terminals ? await terminals.settle(settlement) : {
+            outcome: 'failed', deviceId: settlement.deviceId,
+            errorCode: 'TERMINALS_DISABLED', lines: [],
+          };
+        if (!saved && store && state.boxId) {
+          await store.writeRuntimeValue(state.boxId, resultKey, JSON.stringify(result));
+        }
+        // The batch result is durable before this callback. A lost reply can
+        // be retried with the same batch id without settling the terminal twice.
+        const reported = await request(`/settlements/batches/${settlement.batchId}/terminal-result`, {
+          method: 'POST', body: result,
+          headers: command.actionId ? { 'x-oto-action-id': command.actionId } : {},
+        });
+        if (reported.status !== 200 && reported.status !== 202) {
+          // The persisted handout is retried by the next box command tick.
+          throw new Error('The platform has not accepted the terminal settlement result');
+        }
+        return { state: result.outcome === 'settled' ? 'succeeded' : 'failed',
+          result: { batchId: settlement.batchId, outcome: result.outcome },
+          errorCode: result.errorCode ?? undefined };
       }
       case 'terminal_sale': {
         if (!terminals) {

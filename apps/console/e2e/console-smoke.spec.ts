@@ -9,6 +9,58 @@ import {
   signInAndWait,
 } from './console';
 
+test('Integrations: settlement import bounds the file and carries its selected park and day', async ({ page }) => {
+  await signInAndWait(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  let writes = 0;
+  let submitted: { date: string; fileName: string; csv: string } | null = null;
+  let submittedPath = '';
+  let identity = '';
+  const identities: string[] = [];
+  await page.route('**/api/branches/*/settlements?*', async (route) => {
+    const url = new URL(route.request().url());
+    await route.fulfill({ json: { branchId: url.pathname.split('/')[3], date: url.searchParams.get('date'), devices: [], batches: [], lines: [], unmatchedAttempts: [] } });
+  });
+  await page.route('**/api/branches/*/settlements/2c2p-import', async (route) => {
+    writes++;
+    submitted = route.request().postDataJSON();
+    submittedPath = new URL(route.request().url()).pathname;
+    identity = route.request().headers()['idempotency-key'] ?? '';
+    identities.push(identity);
+    if (writes === 1) {
+      await route.fulfill({ status: 409, json: { error: { code: 'IDEMPOTENCY_IN_FLIGHT', message: 'The original import is still running.' } } });
+      return;
+    }
+    await route.fulfill({ json: { batchId: crypto.randomUUID(), replayed: false, state: 'attention', matched: 1, unmatched: 1, mismatched: 1 } });
+  });
+  // Direct navigation also covers access from a phone's collapsed menu.
+  await page.goto('/integrations');
+  await expect(page.getByRole('heading', { name: '2C2P settlement import', exact: true })).toBeVisible();
+  const branch = page.getByLabel('Settlement park');
+  await branch.selectOption({ label: CENTRAL_FLORESTA });
+  const branchId = await branch.inputValue();
+  await page.getByLabel('Settlement business date').fill('2026-10-06');
+  const file = page.getByLabel('2C2P settlement CSV');
+  const submit = page.getByRole('button', { name: 'Import settlement', exact: true });
+  await file.setInputFiles({ name: 'too-large.csv', mimeType: 'text/csv', buffer: Buffer.alloc(2_000_001, 'x') });
+  await submit.click();
+  await expect(page.getByText('Choose a non-empty CSV no larger than 2 MB.', { exact: true })).toBeVisible();
+  expect(writes).toBe(0);
+  const csv = 'TYPE_TABLE,invoiceNo,tranRef,paymentID,amount,currencyCode,transactionType,method\nH,,,,,,,\nD,fixture-invoice,fixture-reference,fixture-payment,100.00,THB,payment,qr';
+  await file.setInputFiles({ name: 'fixture.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await submit.click();
+  await expect(page.getByText('The original import is still running.', { exact: true })).toBeVisible();
+  await submit.click();
+  await expect(page.getByText(/Import recorded\. 1 matched/)).toBeVisible();
+  expect(writes).toBe(2);
+  expect(identities[1]).toBe(identities[0]);
+  expect(submittedPath).toBe(`/api/branches/${branchId}/settlements/2c2p-import`);
+  expect(submitted).toEqual({ date: '2026-10-06', fileName: 'fixture.csv', csv });
+  expect(identity.length).toBeGreaterThan(0);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(overflow).toBe(false);
+});
+
 /**
  * The Console, on the three things it is opened for and the one thing it has
  * to refuse.

@@ -112,7 +112,7 @@ export function createGhlSimulator(options: GhlSimulatorOptions): TerminalSimula
 
   function remember(entry: SimulatedTransaction): void {
     taken.push(entry);
-    if (taken.length > keep) taken.splice(0, taken.length - keep);
+    // Transactions are retained for settlement; only the diagnostic tape is bounded.
   }
 
   function respond(emit: (bytes: Uint8Array, afterMs?: number) => void, fields: GhlFields): void {
@@ -224,6 +224,7 @@ export function createGhlSimulator(options: GhlSimulatorOptions): TerminalSimula
       kind: tradeType,
       at: at(),
       voided: false,
+      tid: options.terminalId ?? null, mid: options.merchantId ?? null,
     });
     respond(emit, {
       pos_ref_no: ref,
@@ -322,7 +323,7 @@ export function createGhlSimulator(options: GhlSimulatorOptions): TerminalSimula
       fail('the approval code does not match the invoice number');
       return;
     }
-    if (settledSince(found.at)) {
+    if (found.settled || settledSince(found.at)) {
       fail(
         tradeType === GHL_CARD_TRADE_TYPE
           ? 'a card must be voided before settlement (p.15)'
@@ -396,7 +397,12 @@ export function createGhlSimulator(options: GhlSimulatorOptions): TerminalSimula
         }
       });
     },
-    transactions: () => taken.slice(),
+    transactions: () => taken.map((row) => ({ ...row })),
+    restoreTransactions(transactions) {
+      taken.splice(0, taken.length, ...transactions.map((row) => ({ ...row })));
+      invoiceSeq = transactions.reduce((max, row) => Math.max(max, Number(row.tranRef) || 0), invoiceSeq);
+      approvalSeq = Math.max(approvalSeq, transactions.length);
+    },
     events: (limit = keep * 2) => log.slice(-limit),
   };
 }

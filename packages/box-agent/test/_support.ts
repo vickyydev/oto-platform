@@ -222,9 +222,10 @@ const quietLog = { info() {}, warn() {}, error() {} };
  */
 export async function openTestAgent(
   cloud: FakeBoxCloud,
-  options: Pick<BoxAgentOptions, 'bands'> = {},
+  options: Pick<BoxAgentOptions, 'bands' | 'terminal'> = {},
+  existingStore?: TestStore,
 ): Promise<{ agent: BoxAgent; harness: TestStore; close(): void }> {
-  const harness = openTestStore();
+  const harness = existingStore ?? openTestStore();
   await harness.store.init(BOX_ID);
   const agent = createBoxAgent({
     apiBaseUrl: 'http://cloud.test',
@@ -248,7 +249,7 @@ export async function openTestAgent(
     harness,
     close() {
       agent.stop();
-      harness.close();
+      if (!existingStore) harness.close();
     },
   };
 }

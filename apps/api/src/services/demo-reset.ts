@@ -7,6 +7,9 @@ import {
   booking,
   bookingRedemption,
   cashMovement,
+  boxCommand,
+  settlementBatch,
+  settlementLine,
   child,
   endOfDay,
   occupancyResolution,
@@ -105,6 +108,7 @@ const FACT_ENTITY_TYPES = [
   // S2-15a: a closed day and the paid-outs and safe drops of a day of play.
   'end_of_day',
   'cash_movement',
+  'settlement_batch',
   // S2-15a round 2: a manual resolution of somebody still counted inside at close.
   'occupancy_resolution',
 ];
@@ -216,6 +220,15 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   counts.cash_movement = (await tx.delete(cashMovement).returning({ id: cashMovement.id })).length;
   counts.occupancy_resolution = (await tx.delete(occupancyResolution).returning({ id: occupancyResolution.id })).length;
   await tx.execute(sql`select set_config('oto.cash_ledger_purge', 'off', true)`);
+
+  // Settlement lines restrict their payment attempts; remove test evidence first.
+  const settlementCommands = await tx.select({ id: settlementBatch.commandId }).from(settlementBatch);
+  const commandIds = settlementCommands.map((r) => r.id).filter((id): id is string => id !== null);
+  counts.settlement_line = (await tx.delete(settlementLine).returning({ id: settlementLine.id })).length;
+  counts.settlement_batch = (await tx.delete(settlementBatch).returning({ id: settlementBatch.id })).length;
+  counts.settlement_command = commandIds.length
+    ? (await tx.delete(boxCommand).where(inArray(boxCommand.id, commandIds)).returning({ id: boxCommand.id })).length
+    : 0;
 
   counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
   counts.wallet_key = (await tx.delete(walletKey).returning({ id: walletKey.id })).length;

@@ -47,3 +47,4 @@ export * from './band-food';
 export * from './voucher-promo';
 export * from './stock';
 export * from './end-of-day';
+export * from './settlement';

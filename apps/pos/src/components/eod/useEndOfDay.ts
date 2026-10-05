@@ -101,6 +101,35 @@ export function useEndOfDay(date: string, branch: string): EndOfDayState {
     void load();
   }, [load]);
 
+  const latestReceiptJob = record?.receipt?.jobs.at(-1);
+  const pendingReceiptJobId = record?.status === 'closed' && record.date === date && latestReceiptJob?.status === 'queued'
+    ? latestReceiptJob.id : null;
+  useEffect(() => {
+    const apiId = apiIdOf();
+    if (!apiId || !pendingReceiptJobId) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const refreshReceipt = async () => {
+      try {
+        const fresh = await getEndOfDay(apiId, date);
+        if (active && current.current === key && fresh.status === 'closed' && fresh.branchId === apiId && fresh.date === date) {
+          setRecordState((prev) => prev?.status === 'closed' && prev.branchId === apiId && prev.date === date &&
+            prev.receipt?.jobs.at(-1)?.id === pendingReceiptJobId
+            ? { ...prev, receipt: fresh.receipt } : prev);
+        }
+      } catch {
+        // Keep the last print status during a lost connection, then try again.
+      } finally {
+        if (active) timer = setTimeout(() => void refreshReceipt(), 3_000);
+      }
+    };
+    timer = setTimeout(() => void refreshReceipt(), 3_000);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [apiIdOf, date, key, pendingReceiptJobId]);
+
   const setRecord = useCallback((update: (prev: ApiEndOfDay) => ApiEndOfDay) => {
     closeKey.current = null;
     setRecordState((prev) => (prev ? update(prev) : prev));

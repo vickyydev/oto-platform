@@ -9,6 +9,7 @@ import { AmountInput } from '@/components/eod/AmountInput';
 import { EodReceiptCard } from '@/components/eod/EodReceiptCard';
 import { ProvisionalBanner } from '@/components/eod/ProvisionalBanner';
 import { StrandedList } from '@/components/eod/StrandedList';
+import { SettlementPanel } from '@/components/eod/SettlementPanel';
 import { useEndOfDay } from '@/components/eod/useEndOfDay';
 import {
   edcTerminalsOf,
@@ -127,6 +128,8 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
 
       {/* Summary bar */}
       <ReconSummary record={record} />
+
+      <SettlementPanel key={`${apiRecord.branchId}:${date}`} branchId={apiRecord.branchId} date={date} canSettle={can('pos:payment:settle')} />
 
       {/* Reconciliation table */}
       <Card className="p-5 bg-card/50">
