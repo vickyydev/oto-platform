@@ -1,26 +1,27 @@
 # Current status - read this first when resuming
 
-**5 October 2026, Lucky Wheel voucher follow-up:** SCRUM-499 remains In Progress:
-fixed-code definition and box-cache changes are on main at `33e1831e`, with CI
-run 37187660326 passing the workspace checks and staging services reporting that
-source. The physical park Pi has not received that release, so a real fixed-code
-paper print is still unverified. SCRUM-500 is In Progress for the bilingual
-80 mm slip and editable per-booth wording. Work is in the clean
-`feat/booth-slip-design` worktree; source and affected existing tests pass,
-including an embedded-Postgres API publish/box test, print at 576 and 512 dots,
-box reprint, shared bundle and Console editor. All seven touched packages
-typecheck; scoped lint is clear. No code from this branch is deployed yet.
-Next: commit/push with both Jira progress comments, run CI, deploy API before
-Console/Booth, capture real staging evidence, package a checksum-verified Pi
-release locally, and leave the park Pi update for the next physical visit.
+**5 October 2026, temporary Lucky Wheel prize QR:** the bilingual slip source
+`b6b77d71` passed CI 37283125632, including its Pi pack. SCRUM-499 is In Progress
+for the approved current-POS bridge; SCRUM-500 is Testing, with deployment held
+for this verified addition. Six supplied prize pictures decoded as URLs. The
+new per-type `legacyQrPayload` replaces only the printed/fallback QR, preserving
+the internal voucher code and ledger. Save and publish freezes it with the wheel;
+clearing and publishing restores the normal QR. Offline prints and reprints
+keep their saved payload. Redemption in the existing POS does not update the
+platform ledger. Payloads are not copied into logs, Jira or committed evidence.
 
-**5 October CI follow-up:** `0edb2aac` landed on main and both SCRUM-499 and
-SCRUM-500 moved to Testing with push comments. CI run 37282116890 passed
-typecheck, lint and empty-database migration apply twice, then failed in the
-existing migration-0039 schema test because its exact voucher-column list did
-not include the new nullable design column. That one existing test is updated
-and passes locally (5/5), with db typecheck and scoped lint clear. A follow-up
-push and fresh CI run are next; do not call this commit CI green.
+The clean `feat/booth-slip-design` worktree now passes the affected API tests
+(65), print (33), box slip (4), shared slip (8), Console type/slip tests (38,
+2 inherited todo), seven package typechecks, scoped lint and Console/Booth builds.
+Migration 0057 adds an optional QR field and passes schema verification. Its
+first local check exposed PostgreSQL's regex repetition limit; the unshipped
+constraint now checks length separately and the API rerun passes. Software
+scans of all six rendered slips match the originals at both 512 and 576 dots.
+Physical Pi printing and scanning on the current POS remain unverified.
+Next: push with Jira comments, deploy verified API before Console/Booth, capture
+staging proof, configure the six requested mappings, and deliver the final
+CI-packed Pi release with its verified checksum. The park Pi must be updated
+on the next visit; it cannot gain this software feature through settings alone.
 
 _Last updated: 2026-10-02, late night Bangkok (hand-over point from the local
 session). Platform lane: main and staging at 9a14af81, CI green, migrations

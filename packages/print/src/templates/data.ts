@@ -149,13 +149,14 @@ export interface BoothVoucherData {
   terms: string[];
   /**
    * Ten characters: two of booth prefix and eight drawn from the unambiguous
-   * alphabet (D8, `boothCode` in `@oto/shared`). Printed twice — as the QR's
-   * payload and as text under it — from this one string, so the two can never
-   * disagree.
+   * alphabet (D8, `boothCode` in `@oto/shared`), or the type's fixed code.
+   * Also the QR payload unless a temporary existing-POS override is set.
    */
   voucherCode: string;
   /** A fixed code is shared across wins; only generated codes are single-use. */
   codeMode?: 'generated' | 'fixed';
+  /** Exact existing-POS payload. Replaces only the QR, never the tracking code. */
+  legacyQrPayload?: string | null;
   /** Frozen with the job so a reprint keeps the version that won. */
   design?: {
     layout: 'classic' | 'showcase';

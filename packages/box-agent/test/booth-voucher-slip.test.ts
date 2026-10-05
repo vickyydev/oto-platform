@@ -205,11 +205,21 @@ test('a reprint after a new publish is the same slip as its first copy', async (
     termsLabel: 'TERMS / เงื่อนไข',
     singleUseLabel: 'Voucher can be used only once. / คูปองสามารถใช้ได้เพียง 1 ครั้ง',
   };
-  await publish(h, entry({ voucherFooterText: 'First footer', voucherDesign: firstDesign }));
+  const original = entry({ voucherFooterText: 'First footer', voucherDesign: firstDesign });
+  const legacyQrPayload = 'https://example.invalid/Claim?Prize=100&Code=Ab%2Bc';
+  original.bundle.voucherDefinitions = [
+    { id: DEFINITION_ID, legacyQrPayload },
+    { id: '018f1d2c-0000-7000-8000-00000000fd02', legacyQrPayload: 'https://example.invalid/different-prize' },
+  ];
+  await publish(h, original);
   const spin = await h.booth.spin({ idempotencyKey: 'press-1' });
   await h.booth.print({ spinId: spin.spinId });
   assert.equal(voucherData(h.submitted[0]).footerLine, 'First footer');
   assert.deepEqual(voucherData(h.submitted[0]).design, firstDesign);
+  assert.equal(voucherData(h.submitted[0]).legacyQrPayload, legacyQrPayload);
+  assert.equal(spin.qrPayload, legacyQrPayload);
+  assert.equal(voucherData(h.submitted[0]).voucherCode, spin.voucherCode);
+  assert.notEqual(spin.voucherCode, legacyQrPayload);
 
   await publish(h, entry({ voucherFooterText: 'Second footer', voucherShowLogo: false }, 2), 2);
   assert.deepEqual(await h.booth.signIn({ pin: '73910' }), { ok: true, accountId: ACCOUNT_ID });
@@ -219,6 +229,7 @@ test('a reprint after a new publish is the same slip as its first copy', async (
   assert.equal(copy.footerLine, 'First footer');
   assert.equal(copy.showLogo, true);
   assert.deepEqual(copy.design, firstDesign);
+  assert.equal(copy.legacyQrPayload, legacyQrPayload);
   assert.match(copy.reprintNote ?? '', /^Reprint · /);
 
   // The next voucher is the new slip.
@@ -228,5 +239,7 @@ test('a reprint after a new publish is the same slip as its first copy', async (
   assert.equal(fresh.footerLine, 'Second footer');
   assert.equal(fresh.showLogo, false);
   assert.equal(fresh.design?.layout, 'classic');
+  assert.equal(fresh.legacyQrPayload, null);
+  assert.equal(next.qrPayload, undefined);
   h.db.close();
 });

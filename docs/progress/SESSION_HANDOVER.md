@@ -1,5 +1,44 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 5 October 2026, afternoon - six current-POS prize QRs verified locally
+
+Continue in sibling worktree `oto-pos-voucher-slip`, branch
+`feat/booth-slip-design`; the original checkout is dirty and not this landing.
+`b6b77d71` passed CI run 37283125632 but was not deployed. The owner added six
+existing prize QRs (200 THB, Bracelet Workshop, 150 THB, Kids Pizza, 100 THB,
+1+1 Kids Ticket). They are URLs, not compatible with the short fixed-code field.
+SCRUM-499 returned to In Progress with comment 11509 for this follow-up;
+SCRUM-500 remains Testing. The optional `legacyQrPayload` on voucher definitions
+is carried in the published bundle and saved print job, with an optional
+`qrPayload` in the spin answer for printer-failure fallback. The internal code
+and ledger stay unchanged; external-POS redemptions are not mirrored. Clearing
+the setting and publishing restores generated/fixed QR behaviour. Audits redact
+both configurable redeemable values. No actual QR payload is in source/evidence.
+
+Migration 0057 is additive. Existing affected tests pass: API 65, print 33,
+box slip 4, shared 8, Console 38 plus 2 old todo. All seven packages typecheck,
+scoped lint passes, both frontend builds pass and schema verification passes.
+The first database test caught a PostgreSQL regex repeat-limit error, fixed in
+the unshipped migration with a separate length check; rerun is green. All six
+supplied images and both 512/576-dot software renders were decoded and compared
+in memory, with exact matches. `docs/qa/voucher-slip/qr-scan-verification.json`
+records booleans only. Physical print/current-POS scan remains pending.
+
+Next: commit/push this verified slice and same-turn Jira status/comments; deploy
+API before Console/Booth; run the isolated staging harness, attach reviewed real
+screenshots and name them in Jira. Adapt the harness to prove legacy QR as well
+as fixed codes; never log its generated credentials or QR values. Temporary
+`packages/box-agent/tmp-staging-voucher-proof.ts` and original checkout's
+`scripts/agent/tmp-voucher-stage.mjs` must be removed, never committed. Configure
+the six supplied URLs through authenticated Console API after staging verification;
+read the URLs only from this conversation's supplied images, not from documents.
+Do not guess values. The active park booth is FWBooth1, published/running v11,
+physical box online; no SSH. Preserve its prize odds and existing settings.
+Download final successful CI's packed release, verify checksum, move older
+Desktop releases into old-oto-box-releases and place the new archive/checksum on
+the Desktop. Final checkpoint/push and Jira evidence remain. No physical update
+has happened; the owner will update the Pi at the park.
+
 ## STOP POINT — 5 October 2026, afternoon — CI schema expectation corrected
 
 Main contains `0edb2aac` for SCRUM-499 and SCRUM-500; both Jira tickets are

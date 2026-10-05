@@ -314,6 +314,7 @@ export interface VoucherDefinitionRow {
   /** 'fixed': every slip prints fixedCode (a code set up in another till system, say). */
   codeMode?: string;
   fixedCode?: string | null;
+  legacyQrPayload?: string | null;
   archivedAt?: string | null;
   updatedAt?: string;
   product?: VoucherLink | null;
@@ -348,6 +349,7 @@ export interface VoucherDefinitionInput {
   termsTh: string | null;
   active: boolean;
   codeMode?: 'generated' | 'fixed';
+  legacyQrPayload?: string | null;
   fixedCode?: string | null;
 }
 

@@ -62,7 +62,7 @@ After the first install, **reboot once** (`sudo reboot`): the desktop logs in by
 1. **Printer**: Devices → the box → **Add a device**: What it is **Receipt printer**, a **Label** (e.g. "Booth printer"), How the box reaches it **LAN**, Address: on the direct cable `192.168.192.168:9100` — the address the Pi gives the printer (section 1), the same at every booth; on the router path, the address reserved on the router followed by `:9100` (the printer's self-test page shows it). Model and Protocol can stay empty. **Add it**.
 2. **Booth**: Devices → **New station**:
    - **Box**: this box.
-   - **Name** (e.g. "Booth 2"), Kind **Booth**, and a **Code prefix** of exactly two capital letters or digits that no other station at the park uses, e.g. `B2`. Every voucher code the booth prints starts with it, and the Console does not save a booth without one.
+   - **Name** (e.g. "Booth 2"), Kind **Booth**, and a **Code prefix** of exactly two capital letters or digits that no other station at the park uses, e.g. `B2`. Every generated voucher code starts with it; a voucher type using a fixed code prints that shared code instead. The Console does not save a booth without a prefix.
    - **Receipt printer**: the printer from step 1.
    - **How money reaches it**: leave it as it is; a booth takes no money.
    - **Who may use it**: **Only the people I name**, with nobody named. This list is who sees the booth in the POS's station picker, not who works at the booth (that is step 4); left on "All staff at this branch", the booth shows up in the station picker of everybody at the park.
@@ -76,6 +76,19 @@ After the first install, **reboot once** (`sudo reboot`): the desktop logs in by
 **Until the booth's first publish the television has no wheel to show.** While the box is online it says "This booth is being set up — please ask our staff", with a note for staff under it, "No wheel published for this booth yet", that says to publish it in Console → Booths. With no internet it says "Booth not set up, connect to internet". The wheel appears by itself within about two minutes of the publish.
 
 **Spin duration:** Booth settings → **Spin duration (seconds)** defaults to 10 and accepts whole seconds from 2 to 20. Save settings, then Review and publish. The box keeps the published duration for offline play; a change takes effect on the next spin. Install the new Pi release using section 7's Update step before publishing a non-default duration. A cloud deployment alone does not replace the Pi's wheel screen.
+
+**Voucher paper:** install the release carrying SCRUM-500 using section 7's Update step once. Then Console → Booths → the booth → **Customise slip** → **Bilingual showcase**. Edit the park name, winner headings and paper labels; choose the logo, Staff row and terms, and set any header/footer. The English/Thai prize title, redemption instructions and terms are edited under **Voucher types** for each prize. **Save slip**, then **Review and publish**. An online updated box fetches the publish automatically within a few seconds; check **The box** for the reported running version. The screen takes the new wheel between spins. Offline boxes keep their last published design and take the new one after reconnecting. Wording changes after this one software update need no SSH or file replacement.
+
+**Fixed codes:** Voucher types can use one shared code for every slip of that type. Set the campaign's usage limit and terms accordingly: a shared code is not one use per printed copy. The new paper omits the generated-code single-use promise for fixed codes. Reprinting a voucher keeps the original code and design.
+
+**Temporary current-POS QRs:** in **Voucher types**, open the matching prize and
+paste its existing QR contents into **QR for current POS (temporary)**. Preserve
+case and punctuation exactly. Save, then publish the linked booth. Only the QR
+changes; the text code remains the platform reference. The updated box uses the
+published QR offline and keeps it on reprints. Clear the field and publish to
+restore the normal voucher QR. Redemption and repeat-use limits belong to the
+current POS while this bridge is used; its scans do not update this platform's
+voucher ledger. The standard single-use promise is omitted in this mode.
 
 ## 6. At the booth
 

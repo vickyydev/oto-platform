@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { VOUCHER_CODE_MODES, VOUCHER_KINDS, VOUCHER_OFFLINE_POLICIES, VOUCHER_VALUE_TYPES } from '@oto/db';
-import { VoucherPromoRulesSchema, VoucherTargetSchema } from '@oto/shared';
+import { BoothLegacyQrPayloadSchema, VoucherPromoRulesSchema, VoucherTargetSchema } from '@oto/shared';
 import type { App } from '../app';
 import {
   archiveVoucherDefinition,
@@ -93,6 +93,7 @@ const DefinitionBody = z.object({
    * type. Letters, digits and hyphens, 4 to 32; stored in capitals.
    */
   codeMode: z.enum(VOUCHER_CODE_MODES).optional(),
+  legacyQrPayload: BoothLegacyQrPayloadSchema.nullable().optional(),
   fixedCode: z
     .string()
     .trim()
@@ -142,6 +143,7 @@ const DefinitionSchema = z.object({
   active: z.boolean(),
   codeMode: z.enum(VOUCHER_CODE_MODES),
   fixedCode: z.string().nullable(),
+  legacyQrPayload: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
   archivedAt: z.string().nullable(),

@@ -210,6 +210,8 @@ export const voucherDefinition = promo.table(
      */
     codeMode: text('code_mode').$type<VoucherCodeMode>().notNull().default('generated'),
     fixedCode: text('fixed_code'),
+    /** Printed QR only; redemption remains in the existing POS. */
+    legacyQrPayload: text('legacy_qr_payload'),
     ...timestamps,
     ...archivedAt,
   },
@@ -219,6 +221,7 @@ export const voucherDefinition = promo.table(
       .on(t.operatorId, t.fixedCode)
       .where(sql`fixed_code is not null and archived_at is null`),
     check('voucher_definition_code_mode_check', sql`${t.codeMode} in ('generated','fixed')`),
+    check('voucher_definition_legacy_qr_check', sql`${t.legacyQrPayload} is null or (length(${t.legacyQrPayload}) between 1 and 512 and ${t.legacyQrPayload} ~ '^[!-~]+$')`),
     check(
       'voucher_definition_fixed_code_check',
       sql`(${t.codeMode} = 'fixed') = (${t.fixedCode} is not null) and (${t.fixedCode} is null or ${t.fixedCode} ~ '^[0-9A-Z-]{4,32}$')`,

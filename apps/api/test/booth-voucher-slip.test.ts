@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { desc, eq, sql } from 'drizzle-orm';
-import { auditLog, boothSettings, station, type Db } from '@oto/db';
+import { auditLog, boothPrize, boothSettings, station, voucherDefinition, type Db } from '@oto/db';
 import {
   ADMIN,
   BRANCH_MANAGER,
@@ -74,7 +74,7 @@ async function patchSettings(payload: Record<string, unknown>, cookie = adminCoo
 
 async function draft(): Promise<{
   settings: Record<string, unknown>;
-  bundle: { settings: Record<string, unknown> };
+  bundle: { settings: Record<string, unknown>; voucherDefinitions?: Array<{ id: string; legacyQrPayload?: string }> };
   bundleHash: string;
   changed: boolean;
   publishedBundle: { settings: Record<string, unknown> } | null;
@@ -87,6 +87,23 @@ async function draft(): Promise<{
   expect(res.statusCode, res.body).toBe(200);
   return res.json();
 }
+
+it('publishes a prize QR exactly and clearing it changes the next draft', async () => {
+  const [prize] = await db.select().from(boothPrize).where(eq(boothPrize.stationId, boothId)).limit(1);
+  const id = prize!.voucherDefinitionId!;
+  const legacyQrPayload = 'https://example.invalid/Claim?Prize=100&Code=Ab%2Bc';
+  await db.update(voucherDefinition).set({ legacyQrPayload }).where(eq(voucherDefinition.id, id));
+  try {
+    const configured = await draft();
+    expect(configured.bundle.voucherDefinitions?.find((d) => d.id === id)?.legacyQrPayload).toBe(legacyQrPayload);
+    await db.update(voucherDefinition).set({ legacyQrPayload: null }).where(eq(voucherDefinition.id, id));
+    const cleared = await draft();
+    expect(cleared.bundleHash).not.toBe(configured.bundleHash);
+    expect(cleared.bundle.voucherDefinitions?.find((d) => d.id === id)?.legacyQrPayload).toBeUndefined();
+  } finally {
+    await db.update(voucherDefinition).set({ legacyQrPayload: null }).where(eq(voucherDefinition.id, id));
+  }
+});
 
 async function preview(payload: Record<string, unknown>, cookie: string | null = adminCookie) {
   return ctx.app.inject({

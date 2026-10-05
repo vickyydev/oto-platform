@@ -37,6 +37,12 @@ import { z } from 'zod';
  */
 export const BOOTH_BUNDLE_SCHEMA_VERSION = 1;
 
+/** Temporary QR for an existing POS. Preserve case and punctuation exactly. */
+export const BoothLegacyQrPayloadSchema = z.string().regex(
+  /^[!-~]{1,512}$/,
+  'Use 1 to 512 visible characters, without spaces or line breaks',
+);
+
 /**
  * Who is allowed a spin. Mirrors `BOOTH_ELIGIBILITY_MODES` in `@oto/db` and
  * the CHECK on `booth.booth_settings.eligibility`.
@@ -422,6 +428,8 @@ export const BoothConfigBundleSchema = z.object({
         instructionTh: z.string().nullable().optional(),
         termsEn: z.string().nullable().optional(),
         termsTh: z.string().nullable().optional(),
+        /** Only the QR changes; the platform voucher keeps its own code. */
+        legacyQrPayload: BoothLegacyQrPayloadSchema.nullable().optional(),
       }),
     )
     .optional(),
@@ -492,6 +500,8 @@ export interface SpinResponse {
    * in front of it.
    */
   voucherCode: string | null;
+  /** Temporary existing-POS QR, also shown if paper cannot print. */
+  qrPayload?: string;
   /** ISO 8601. Null when the voucher never expires. */
   expiresAt: string | null;
   printState: BoothPrintState;

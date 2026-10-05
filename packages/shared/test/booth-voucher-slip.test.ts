@@ -3,10 +3,20 @@ import {
   BOOTH_VOUCHER_SLIP_DEFAULTS,
   BOOTH_VOUCHER_DESIGN_DEFAULTS,
   BoothConfigBundleSchema,
+  BoothLegacyQrPayloadSchema,
   boothVoucherSlip,
   boothVoucherSlipBundleFields,
   boothVoucherText,
 } from '../src/booth';
+
+it('preserves the exact current-POS QR through the bundle schema', () => {
+  const legacyQrPayload = 'https://example.invalid/Claim?Code=Ab%2Bc';
+  expect(BoothLegacyQrPayloadSchema.parse(legacyQrPayload)).toBe(legacyQrPayload);
+  expect(BoothLegacyQrPayloadSchema.safeParse('x'.repeat(513)).success).toBe(false);
+  expect(BoothLegacyQrPayloadSchema.safeParse('two\nlines').success).toBe(false);
+  const bundle = { ...historical, voucherDefinitions: [{ id: '018f1d2c-0000-7000-8000-00000000fd01', legacyQrPayload }] };
+  expect(BoothConfigBundleSchema.parse(bundle)).toEqual(bundle);
+});
 
 /**
  * SCRUM-471 — the booth's own voucher slip, as the published wheel carries it.

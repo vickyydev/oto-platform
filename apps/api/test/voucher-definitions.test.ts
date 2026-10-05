@@ -129,6 +129,23 @@ async function seededDefinition(code: string) {
 }
 
 describe('creating a voucher type (SCRUM-400)', () => {
+  it('preserves an existing-POS QR exactly, audits no payload, and clears it', async () => {
+    const legacyQrPayload = 'https://example.invalid/Claim?Prize=100&Code=Ab%2Bc';
+    const res = await post(admin, { code: 'test-legacy-qr', nameEn: 'QR sample', kind: 'manual', legacyQrPayload });
+    expect(res.statusCode).toBe(201);
+    const created = res.json().definition;
+    expect(created.legacyQrPayload).toBe(legacyQrPayload);
+    expect(created.codeMode).toBe('generated');
+    expect((await auditFor('voucher_definition.create', created.id))[0]!.after).toMatchObject({ legacyQrPayload: '[redacted]' });
+    for (const invalid of ['x'.repeat(513), 'two\nlines', ' spaced ']) {
+      expect((await patch(admin, created.id, { legacyQrPayload: invalid })).statusCode).toBe(400);
+    }
+    expect((await patch(foreignAdmin, created.id, { legacyQrPayload: null })).statusCode).toBe(404);
+    const cleared = await patch(admin, created.id, { legacyQrPayload: null });
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json().definition.legacyQrPayload).toBeNull();
+    expect((await auditFor('voucher_definition.update', created.id))[0]!.before).toMatchObject({ legacyQrPayload: '[redacted]' });
+  });
   it('creates a 50 THB off type, audits it, and answers a replay of the same key with the same type', async () => {
     const payload = {
       code: 'test-50-thb-off',

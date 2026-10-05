@@ -473,6 +473,15 @@ export function VoucherTypeEditor({
         </Section>
 
         <Section
+          title="QR for current POS (temporary)"
+          detail="Paste the exact text or URL read from the existing prize QR. Only the QR changes; the code underneath remains the platform reference. Save, then publish each linked booth. Its updated box keeps the QR offline. Clear this field and publish to restore the normal QR. Redemption in the current POS does not update this platform's voucher ledger."
+        >
+          <Field label="Existing QR content" hint={problems.legacyQrPayload ?? 'Case and punctuation are preserved. Leave empty for the normal voucher QR.'}>
+            <TextInput value={form.legacyQrPayload} onChange={(legacyQrPayload) => set({ legacyQrPayload })} maxLength={512} disabled={locked} />
+          </Field>
+        </Section>
+
+        <Section
           title="How long it lasts"
           detail="Counted in days from the day a voucher is won: the slip prints the last day, and the voucher is good to the end of that day in the park’s time zone. A change applies to vouchers won after the box’s next pull; slips already printed keep their date."
         >

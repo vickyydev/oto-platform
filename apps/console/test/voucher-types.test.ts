@@ -16,6 +16,15 @@ import {
   type Worth,
 } from '@/components/booth/voucherTypes';
 
+it('keeps a current-POS QR exact and allows clearing it without changing code mode', () => {
+  const form = { ...blankForm(), nameEn: 'QR sample', amountText: '100', legacyQrPayload: 'https://example.invalid/Claim?Prize=100&Code=Ab%2Bc' };
+  expect(formProblems(form, false).legacyQrPayload).toBeUndefined();
+  expect(inputFrom(form, null, false)).toMatchObject({ codeMode: 'generated', legacyQrPayload: form.legacyQrPayload });
+  expect(inputFrom({ ...form, legacyQrPayload: '' }, null, false).legacyQrPayload).toBeNull();
+  expect(formProblems({ ...form, legacyQrPayload: 'x'.repeat(513) }, false).legacyQrPayload).toBeTruthy();
+  expect(formProblems({ ...form, legacyQrPayload: 'two\nlines' }, false).legacyQrPayload).toBeTruthy();
+});
+
 /**
  * A VOUCHER TYPE'S WORTH — `src/components/booth/voucherTypes.ts`
  * (SCRUM-256).

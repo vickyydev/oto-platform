@@ -140,7 +140,7 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
   // cannot honour either way.
   blocks.push({
     k: 'qr',
-    value: data.voucherCode,
+    value: data.legacyQrPayload ?? data.voucherCode,
     moduleDots: QR_MODULE_DOTS,
     ecc: 'M',
     align: 'center',
@@ -160,7 +160,7 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
   blocks.push(divider());
   // A shared fixed code can be redeemed more than once under its type's
   // campaign limit. Calling each printed copy single-use would be false.
-  if (data.codeMode !== 'fixed') {
+  if (data.codeMode !== 'fixed' && !data.legacyQrPayload) {
     blocks.push(text('Single use · ใช้ได้ 1 ครั้ง', smallBold, 'center'));
   }
   /**
@@ -209,7 +209,7 @@ function buildShowcaseVoucher(data: BoothVoucherData, device: DeviceProfile): Pr
     blocks.push(text(line, { sizeDots: SIZE.body, weight: 'bold' }, 'center'));
   }
   blocks.push(space(8), {
-    k: 'qr', value: data.voucherCode, moduleDots: 10, ecc: 'M', align: 'center',
+    k: 'qr', value: data.legacyQrPayload ?? data.voucherCode, moduleDots: 10, ecc: 'M', align: 'center',
   });
   if (design.codeLabel.trim()) blocks.push(text(design.codeLabel, smallBold, 'center'));
   blocks.push(text(data.voucherCode, { sizeDots: SIZE.header, weight: 'bold' }, 'center'));
@@ -225,7 +225,7 @@ function buildShowcaseVoucher(data: BoothVoucherData, device: DeviceProfile): Pr
   if (data.showTerms !== false) {
     if (design.termsLabel.trim()) blocks.push(text(design.termsLabel, smallBold, 'center'));
     let n = 1;
-    if (data.codeMode !== 'fixed' && design.singleUseLabel.trim()) {
+    if (data.codeMode !== 'fixed' && !data.legacyQrPayload && design.singleUseLabel.trim()) {
       blocks.push(text(`${n++}. ${design.singleUseLabel}`, small, 'left'));
     }
     const en = data.termsEn ?? data.terms;

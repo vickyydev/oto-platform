@@ -257,7 +257,7 @@ function isNonNull<T>(value: T | null): value is T {
  */
 function slipWording(draft: BoothDraft): Array<Record<string, string | null>> {
   const worded = [...draft.definitions.values()].filter((d) =>
-    [d.titleEn, d.titleTh, d.instructionEn, d.instructionTh].some((w) => w !== null && w !== ''),
+    [d.titleEn, d.titleTh, d.instructionEn, d.instructionTh, d.legacyQrPayload].some((w) => w !== null && w !== ''),
   );
   return worded
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -269,6 +269,7 @@ function slipWording(draft: BoothDraft): Array<Record<string, string | null>> {
       instructionTh: d.instructionTh,
       termsEn: d.termsEn,
       termsTh: d.termsTh,
+      ...(d.legacyQrPayload !== null ? { legacyQrPayload: d.legacyQrPayload } : {}),
     }));
 }
 

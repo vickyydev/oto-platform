@@ -91,6 +91,16 @@ import {
 
 type DefinitionRow = typeof voucherDefinition.$inferSelect;
 
+/** Audit configuration changes without copying redeemable values into history. */
+function definitionAudit(row: DefinitionRow | undefined) {
+  if (!row) return undefined;
+  return {
+    ...row,
+    fixedCode: row.fixedCode === null ? null : '[redacted]',
+    legacyQrPayload: row.legacyQrPayload === null ? null : '[redacted]',
+  };
+}
+
 export interface VoucherDefinitionInput {
   code: string;
   nameEn: string;
@@ -117,6 +127,8 @@ export interface VoucherDefinitionInput {
   codeMode?: VoucherCodeMode;
   /** Capitals, digits and hyphens, 4 to 32 (the route normalises it). */
   fixedCode?: string | null;
+  /** Temporary printed QR for the existing POS; null restores the normal QR. */
+  legacyQrPayload?: string | null;
   /**
    * S2-14a round 5 — the promotional rules (`VoucherPromoRulesSchema` in
    * `@oto/shared`): what a discount comes off, the global and per-customer
@@ -193,6 +205,7 @@ export interface VoucherDefinitionView {
   active: boolean;
   codeMode: VoucherCodeMode;
   fixedCode: string | null;
+  legacyQrPayload: string | null;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -496,6 +509,7 @@ async function viewsOf(
       active: row.active,
       codeMode: row.codeMode,
       fixedCode: row.fixedCode,
+      legacyQrPayload: row.legacyQrPayload,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       archivedAt: row.archivedAt?.toISOString() ?? null,
@@ -761,6 +775,7 @@ export async function createVoucherDefinition(
         ...value,
         ...rules,
         ...codes,
+        legacyQrPayload: input.legacyQrPayload ?? null,
         expiryDays: input.expiryDays ?? null,
         offlinePolicy: input.offlinePolicy ?? 'allow',
         singleUse: input.singleUse ?? true,
@@ -784,7 +799,7 @@ export async function createVoucherDefinition(
         action: 'voucher_definition.create',
         entityType: 'voucher_definition',
         entityId: id,
-        after: row,
+        after: definitionAudit(row),
         requestId: ctx.requestId,
       });
       return { definition: await viewOne(tx, actor.operatorId, row!) };
@@ -871,6 +886,7 @@ export async function updateVoucherDefinition(
       if (patch.termsEn !== undefined) set.termsEn = words(patch.termsEn);
       if (patch.termsTh !== undefined) set.termsTh = words(patch.termsTh);
       if (patch.active !== undefined) set.active = patch.active;
+      if (patch.legacyQrPayload !== undefined) set.legacyQrPayload = patch.legacyQrPayload;
       await tx.update(voucherDefinition).set(set).where(eq(voucherDefinition.id, before.id));
       const [row] = await tx
         .select()
@@ -883,8 +899,8 @@ export async function updateVoucherDefinition(
         action: 'voucher_definition.update',
         entityType: 'voucher_definition',
         entityId: before.id,
-        before,
-        after: row,
+        before: definitionAudit(before),
+        after: definitionAudit(row),
         requestId: ctx.requestId,
       });
       return { definition: await viewOne(tx, actor.operatorId, row!) };
@@ -932,8 +948,8 @@ export async function archiveVoucherDefinition(
       action: 'voucher_definition.archive',
       entityType: 'voucher_definition',
       entityId: before.id,
-      before,
-      after: row,
+      before: definitionAudit(before),
+      after: definitionAudit(row),
       requestId: ctx.requestId,
     });
     return { definition: await viewOne(tx, actor.operatorId, row!) };
@@ -967,8 +983,8 @@ export async function restoreVoucherDefinition(
       action: 'voucher_definition.restore',
       entityType: 'voucher_definition',
       entityId: before.id,
-      before,
-      after: row,
+      before: definitionAudit(before),
+      after: definitionAudit(row),
       requestId: ctx.requestId,
     });
     return { definition: await viewOne(tx, actor.operatorId, row!) };

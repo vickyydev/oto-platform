@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-10-05",
+  "method": "ZXing decoded supplied images and software-rendered slips; values compared in memory only",
+  "physicalPosScanVerified": false,
+  "results": [
+    {
+      "prize": "200 THB",
+      "originalDecoded": true,
+      "printed512Matches": true,
+      "printed576Matches": true
+    },
+    {
+      "prize": "Free Bracelet Workshop",
+      "originalDecoded": true,
+      "printed512Matches": true,
+      "printed576Matches": true
+    },
+    {
+      "prize": "150 THB",
+      "originalDecoded": true,
+      "printed512Matches": true,
+      "printed576Matches": true
+    },
+    {
+      "prize": "Kids Pizza",
+      "originalDecoded": true,
+      "printed512Matches": true,
+      "printed576Matches": true
+    },
+    {
+      "prize": "100 THB",
+      "originalDecoded": true,
+      "printed512Matches": true,
+      "printed576Matches": true
+    },
+    {
+      "prize": "1+1 Kids Ticket",
+      "originalDecoded": true,
+      "printed512Matches": true,
+      "printed576Matches": true
+    }
+  ]
+}

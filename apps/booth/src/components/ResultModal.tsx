@@ -150,7 +150,7 @@ export function ResultModal({ spin, prize, open, printing = false, promptText, o
             <p className="k-code" data-voucher-code={spin.voucherCode}>
               {groupBoothCode(spin.voucherCode ?? '')}
             </p>
-            <QrCode value={spin.voucherCode ?? ''} size={QR_SIZE} />
+            <QrCode value={spin.qrPayload ?? spin.voucherCode ?? ''} size={QR_SIZE} />
             <p className="k-scan">{COPY.scanToClaim.en}</p>
             <p className="k-scan k-th">{COPY.scanToClaim.th}</p>
           </>

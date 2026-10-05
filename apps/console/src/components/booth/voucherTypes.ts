@@ -18,7 +18,7 @@
  * button is closed on a free product with no product rather than opening onto
  * a refusal.
  */
-import { formatTHB } from '@oto/shared';
+import { BoothLegacyQrPayloadSchema, formatTHB } from '@oto/shared';
 import type { VoucherDefinitionInput, VoucherDefinitionRow } from './boothApi';
 import { hundredthsToText, parseBahtToSatang, parsePercentToBp } from './odds';
 
@@ -429,6 +429,7 @@ export interface VoucherForm {
   /** 'generated': each slip its own code. 'fixed': every slip prints fixedCode. */
   codeMode: 'generated' | 'fixed';
   fixedCode: string;
+  legacyQrPayload: string;
 }
 
 export function blankForm(): VoucherForm {
@@ -453,6 +454,7 @@ export function blankForm(): VoucherForm {
     active: true,
     codeMode: 'generated',
     fixedCode: '',
+    legacyQrPayload: '',
   };
 }
 
@@ -478,6 +480,7 @@ export function formFrom(row: VoucherDefinitionRow): VoucherForm {
     active: row.active,
     codeMode: row.codeMode === 'fixed' ? 'fixed' : 'generated',
     fixedCode: row.fixedCode ?? '',
+    legacyQrPayload: row.legacyQrPayload ?? '',
   };
 }
 
@@ -514,6 +517,9 @@ export function formProblems(form: VoucherForm, isNew: boolean): Partial<Record<
   if (form.codeMode === 'fixed' && !/^[0-9A-Z-]{4,32}$/.test(form.fixedCode.trim().toUpperCase())) {
     out.fixedCode = '4 to 32 letters, digits or hyphens.';
   }
+  if (form.legacyQrPayload && !BoothLegacyQrPayloadSchema.safeParse(form.legacyQrPayload).success) {
+    out.legacyQrPayload = 'Use up to 512 visible characters, without spaces or line breaks.';
+  }
   return out;
 }
 
@@ -541,6 +547,7 @@ export function inputFrom(
     termsTh: words(form.termsTh),
     active: form.active,
     codeMode: form.codeMode,
+    legacyQrPayload: form.legacyQrPayload || null,
     fixedCode: form.codeMode === 'fixed' ? form.fixedCode.trim().toUpperCase() : null,
     ...(isNew ? { code: form.code } : {}),
   };

@@ -2035,6 +2035,8 @@ export function createBooth(options: BoothOptions): BoothModule {
       prizeIndex: outcome.index,
       prizeId: outcome.prize.id,
       configVersion: entry.version,
+      ...(slip.job.kind === 'booth_voucher' && slip.job.data.legacyQrPayload
+        ? { qrPayload: slip.job.data.legacyQrPayload } : {}),
       // The code the family is handed: a fixed-code type's shared code, as on the slip.
       voucherCode:
         applied?.voucherDefinitions.find(
@@ -2375,6 +2377,7 @@ export function createBooth(options: BoothOptions): BoothModule {
         terms: splitTerms(termsFrom),
         termsEn: splitTermBlock(termsFrom?.termsEn),
         termsTh: splitTermBlock(termsFrom?.termsTh),
+        legacyQrPayload: words?.legacyQrPayload ?? null,
         voucherCode:
           applied?.voucherDefinitions.find(
             (candidate) => candidate.id === detail.prize.voucherDefinitionId,

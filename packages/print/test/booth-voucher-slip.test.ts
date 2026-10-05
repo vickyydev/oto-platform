@@ -46,6 +46,16 @@ function hasLogo(data: Partial<BoothVoucherData>): boolean {
 }
 
 describe('the booth voucher slip, customised per booth', () => {
+  it('replaces only the QR for an existing POS and keeps the platform reference', () => {
+    const legacyQrPayload = 'https://example.invalid/Claim?Prize=200&Code=Ab%2Bc';
+    const doc = buildDocument(job({ legacyQrPayload }), undefined, device);
+    expect(doc.blocks.find((b) => b.k === 'qr')).toMatchObject({ value: legacyQrPayload });
+    expect(texts(doc.blocks)).toContain(base.voucherCode);
+    expect(texts(doc.blocks).some((line) => line.includes('Single use'))).toBe(false);
+    for (const profile of [PROFILES.escpos512!, device]) {
+      expect(renderJob(job({ legacyQrPayload }), { device: profile }).bitmap.height).toBeGreaterThan(0);
+    }
+  });
   it('prints byte for byte the committed voucher when every choice is its default', () => {
     const expected = readFileSync(`${dir}booth-voucher.escpos576.bin`);
     const explicitDefaults = renderJob(
