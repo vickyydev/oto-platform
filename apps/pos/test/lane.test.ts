@@ -2,6 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '@/api/client';
 import { membersApi, visitsApi } from '@/api/platform';
 import { salesApi } from '@/api/sales';
+import * as React from 'react';
+import { renderHook } from './support/hooks';
+import * as branchContext from '@/branch/BranchContext';
+import * as operatorContext from '@/auth/OperatorContext';
+import { StationProvider } from '@/station/StationContext';
+import { authApi, stationsApi } from '@/api/platform';
+import * as catalog from '@/store/catalogStore';
+import * as catalogBridge from '@/api/catalogBridge';
+import * as notifications from '@/hooks/use-toast';
+import type { Branch } from '@/types';
 import {
   currentLane,
   paymentRefusalMessage,
@@ -9,6 +19,14 @@ import {
   setLaneStation,
   viaLane,
 } from '@/lib/lane';
+
+vi.mock('react', async (original) => ({
+  ...await original<typeof import('react')>(),
+  ...await import('./support/hooks'),
+  useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
+}));
+vi.mock('@/auth/OperatorContext', () => ({ useOperator: vi.fn() }));
+Object.assign(globalThis, { React });
 
 /**
  * THE LANE ARBITER (offline plan OD-1, Round 3).
@@ -44,6 +62,7 @@ beforeEach(() => {
 afterEach(() => {
   setLaneStation(null);
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('which lane a call takes', () => {
@@ -172,5 +191,101 @@ describe('what paying says when no lane took it (round 4 sells on the box lane)'
   it('any other refusal is not the lane’s to reword', () => {
     expect(paymentRefusalMessage(new ApiError(409, 'SALE_LINES_DIFFER', 'no'))).toBeNull();
     expect(currentLane()).toBe('platform');
+  });
+});
+
+describe('the selected park and its station lane', () => {
+  const parks = [
+    { id: 'park-a', apiId: 'api-a', active: true },
+    { id: 'park-b', apiId: 'api-b', active: true },
+    { id: 'park-c', apiId: 'api-c', active: true },
+  ] as Branch[];
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('confirms the server choice before publishing it and serialises rapid selections', async () => {
+    vi.spyOn(catalog, 'getBranches').mockReturnValue(parks);
+    vi.spyOn(catalog, 'getActiveBranch').mockReturnValue(parks[0]!);
+    const store = vi.spyOn(catalog, 'setActiveBranch').mockImplementation(() => {});
+    const hydrate = vi.spyOn(catalogBridge, 'loadCatalogFromApi').mockResolvedValue();
+    let finish!: (value: { ok: true }) => void;
+    const change = vi.spyOn(authApi, 'switchBranch')
+      .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }))
+      .mockResolvedValue({ ok: true });
+    const hook = renderHook(() => branchContext.BranchProvider({ children: null }));
+    const value = () => hook.result.current.props.value as ReturnType<typeof branchContext.useBranch>;
+    try {
+      value().setActiveBranchId('park-b');
+      await flush();
+      expect(value().branch.id).toBe('park-a');
+      expect(value().switching).toBe(true);
+      expect(store).not.toHaveBeenCalled();
+      value().setActiveBranchId('park-c');
+      expect(change).toHaveBeenCalledTimes(1);
+      finish({ ok: true });
+      await flush();
+      expect(change.mock.calls.map(([id]) => id)).toEqual(['api-b', 'api-c']);
+      expect(hydrate.mock.calls.map(([id]) => id)).toEqual(['park-b', 'park-c']);
+      expect(value().branch.id).toBe('park-c');
+      expect(value().switching).toBe(false);
+    } finally { hook.unmount(); }
+  });
+
+  it('keeps the previous park and shows the refusal when the session change fails', async () => {
+    vi.spyOn(catalog, 'getBranches').mockReturnValue(parks);
+    vi.spyOn(catalog, 'getActiveBranch').mockReturnValue(parks[0]!);
+    const store = vi.spyOn(catalog, 'setActiveBranch').mockImplementation(() => {});
+    vi.spyOn(authApi, 'switchBranch').mockRejectedValue(new ApiError(403, 'FORBIDDEN', 'This park is not available to this account.'));
+    const toast = vi.spyOn(notifications, 'toast');
+    const hook = renderHook(() => branchContext.BranchProvider({ children: null }));
+    const value = () => hook.result.current.props.value as ReturnType<typeof branchContext.useBranch>;
+    try {
+      value().setActiveBranchId('park-b');
+      await flush();
+      expect(value().branch.id).toBe('park-a');
+      expect(value().switching).toBe(false);
+      expect(store).not.toHaveBeenCalled();
+      expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Park could not be changed', description: 'This park is not available to this account.' }));
+    } finally { hook.unmount(); }
+  });
+
+  it('waits for park selection and ignores an old list or pick after the park changes', async () => {
+    type Context = ReturnType<typeof branchContext.useBranch>;
+    let selected: Context = { branch: parks[0]!, branches: parks, switching: true, setActiveBranchId: () => {} };
+    vi.spyOn(branchContext, 'useBranch').mockImplementation(() => selected);
+    vi.spyOn(operatorContext, 'useOperator').mockReturnValue({ operator: { id: 'operator' }, mustChangePassword: false } as ReturnType<typeof operatorContext.useOperator>);
+    const memory = new Map<string, string>();
+    vi.stubGlobal('window', { localStorage: { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => memory.set(key, value), removeItem: (key: string) => memory.delete(key) } });
+    type List = Awaited<ReturnType<typeof stationsApi.mine>>;
+    type Pick = Awaited<ReturnType<typeof stationsApi.pick>>;
+    const oldList = { stations: [{ id: 'station-a' }] } as List;
+    const newList = { stations: [{ id: 'station-b' }] } as List;
+    let finishList!: (value: List) => void;
+    let finishPick!: (value: Pick) => void;
+    const mine = vi.spyOn(stationsApi, 'mine').mockResolvedValueOnce(oldList)
+      .mockImplementationOnce(() => new Promise((resolve) => { finishList = resolve; }))
+      .mockResolvedValue(newList);
+    vi.spyOn(stationsApi, 'pick').mockImplementation(() => new Promise((resolve) => { finishPick = resolve; }));
+    const hook = renderHook(() => StationProvider({ children: null }));
+    const value = () => hook.result.current.props.value as ReturnType<typeof import('@/station/StationContext').useStation>;
+    try {
+      await flush();
+      expect(mine).not.toHaveBeenCalled();
+      expect(value().resolved).toBe(false);
+      selected = { ...selected, switching: false };
+      hook.rerender();
+      await flush();
+      expect(value().stations?.[0]?.id).toBe('station-a');
+      const reload = value().reload();
+      const pick = value().pick('station-a');
+      selected = { ...selected, branch: parks[1]! };
+      hook.rerender();
+      await flush();
+      finishList(oldList);
+      finishPick({ station: { id: 'station-a' }, staffToken: null } as Pick);
+      await Promise.all([reload, pick]);
+      expect(value().stations?.[0]?.id).toBe('station-b');
+      expect(value().station).toBeNull();
+      expect(memory.size).toBe(0);
+    } finally { hook.unmount(); }
   });
 });

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   type ReactNode,
 } from 'react';
 import { ScannerMode, StationProfile } from '@/types';
@@ -136,8 +137,14 @@ const failure = (err: unknown): string =>
   err instanceof Error ? err.message : 'Could not reach the platform';
 
 export function StationProvider({ children }: { children: ReactNode }) {
-  const { branch } = useBranch();
+  const { branch, switching } = useBranch();
   const { operator, mustChangePassword } = useOperator();
+  const scopeKey = `${branch.id}:${operator?.id ?? ''}:${mustChangePassword}:${switching}`;
+  const scope = useRef({ key: scopeKey, generation: 0 });
+  if (scope.current.key !== scopeKey) scope.current = { key: scopeKey, generation: scope.current.generation + 1 };
+  const generation = scope.current.generation;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const [stations, setStations] = useState<PickableStation[] | null>(null);
   const [active, setActive] = useState<ApiStation | null>(null);
@@ -167,21 +174,26 @@ export function StationProvider({ children }: { children: ReactNode }) {
 
   const pick = useCallback(
     async (stationId: string, scannerMode?: ScannerMode) => {
+      if (!mounted.current || switching || scope.current.generation !== generation) throw new Error('Wait for the park selection to finish, then pick a station.');
       const picked = await stationsApi.pick(stationId);
+      if (!mounted.current || scope.current.generation !== generation) return;
       keepStaffToken(picked);
       adopt(picked.station, scannerMode);
     },
-    [adopt],
+    [adopt, generation, switching],
   );
 
   const readList = useCallback(async (): Promise<void> => {
+    if (!mounted.current || switching || scope.current.generation !== generation) return;
     setLoading(true);
     setError(null);
     try {
       const { stations: list } = await stationsApi.mine();
+      if (!mounted.current || scope.current.generation !== generation) return;
       setStations(list);
       setFleetAvailable(true);
     } catch (err) {
+      if (!mounted.current || scope.current.generation !== generation) return;
       if (isMissingRoute(err)) {
         // The fleet routes are not deployed here yet. Rather than block the
         // till behind a picker that can never fill, the POS falls back to the
@@ -193,9 +205,9 @@ export function StationProvider({ children }: { children: ReactNode }) {
         setError(failure(err));
       }
     } finally {
-      setLoading(false);
+      if (mounted.current && scope.current.generation === generation) setLoading(false);
     }
-  }, []);
+  }, [generation, switching]);
 
   // Read the list and re-assert the remembered station. Runs on sign-in and on
   // a branch change, which are the two moments the answer can differ — the
@@ -210,12 +222,14 @@ export function StationProvider({ children }: { children: ReactNode }) {
   // person fixed the thing they were told to fix and the screen did not move.
   const accountId = operator?.id ?? null;
   useEffect(() => {
-    if (!accountId || mustChangePassword) {
+    if (!accountId || mustChangePassword || switching) {
       setStations(null);
       setActive(null);
       setPicked(null);
       setNotice(null);
       setResolved(false);
+      setLoading(switching);
+      forgetStationDevices();
       return;
     }
     let cancelled = false;
@@ -285,7 +299,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [accountId, mustChangePassword, branch.id, adopt]);
+  }, [accountId, mustChangePassword, branch.id, adopt, switching]);
 
   const setStation = useCallback(
     (profile: StationProfile) => {

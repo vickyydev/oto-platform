@@ -538,7 +538,7 @@ describe('S2-03 — the staging-only controls', () => {
     }>();
     expect(platform.available).toBe(true);
     expect(platform.controls.map((c) => c.key)).toEqual(
-      expect.arrayContaining(['watchdog.run', 'alert.test', 'job.fail']),
+      expect.arrayContaining(['watchdog.run', 'alert.test', 'job.fail', 'demo.day']),
     );
 
     // Reception is not platform-wide. The answer is "nothing for you", with a
@@ -552,6 +552,23 @@ describe('S2-03 — the staging-only controls', () => {
     });
     expect((await post('/ops/test-controls/watchdog.run', receptionCookie)).statusCode).toBe(403);
     expect((await post('/ops/test-controls/nonsense')).statusCode).toBe(404);
+  });
+
+  it('adds the demo day once and refuses it without both staging and platform access', async () => {
+    expect((await post('/ops/test-controls/demo.day', receptionCookie)).statusCode).toBe(403);
+    const enabled = ctx.app.env.OPS_TEST_CONTROLS;
+    try {
+      ctx.app.env.OPS_TEST_CONTROLS = false;
+      expect((await post('/ops/test-controls/demo.day')).statusCode).toBe(403);
+    } finally { ctx.app.env.OPS_TEST_CONTROLS = enabled; }
+    const first = await post('/ops/test-controls/demo.day');
+    expect(first.statusCode, first.body).toBe(200);
+    expect(first.json<{ message: string }>().message).toContain('sales added');
+    const again = await post('/ops/test-controls/demo.day');
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.json<{ message: string }>().message).toContain('0 sales added');
+    const rows = await ctx.db.select().from(auditLog).where(eq(auditLog.action, 'ops.test_control'));
+    expect(rows.filter((r) => (r.after as { control?: string } | null)?.control === 'demo.day')).toHaveLength(2);
   });
 
   it('records a failed run that reaches the Failures page', async () => {

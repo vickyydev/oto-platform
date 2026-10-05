@@ -1,5 +1,9 @@
 # Sprint 2 progress
 
+## Platform checkpoint - 6 October 2026 - End of Day settlement proof
+
+**6 October 2026, settlement evidence saved and final End of Day source verified:** Real staging cards 11268-11270 prove simulated terminal matching, pending-payment confirmation without changing its payment time, filtered CSV, fixture import/replay, immutable closed totals and automatic receipt refresh. Round-4 demo scenarios now include real wallet, voucher and partial-refund records with concurrent/repeated seed safety; the guarded Health control is covered by existing disposable-database tests. EOD/ops tests pass 52/52 and POS lane/receipt checks 23/23; touched package typechecks, scoped lint and both frontend builds pass. The park-switch race is fixed locally. Next: land/deploy this verified slice, capture Health and corrected park-switch screens, finish cash-movement/closing audit evidence, then complete 495/496/498 and retain prototype defaults for 497. SCRUM-215/493 remain In Progress; 495 has started in an isolated workflow. SCRUM-214 also has undeployed analytics child216 and must remain open. Current main CI37373685349 is running, not green.
+
 ## Platform lane checkpoint - 4 October 2026 - SCRUM-499 fixed-code vouchers landed
 
 At the user's request (the owner wants the Lucky Wheel live with Papaya codes

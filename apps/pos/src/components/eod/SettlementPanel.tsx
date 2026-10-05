@@ -64,7 +64,7 @@ export function SettlementPanel({
       await settlementsApi.run(branchId, date, deviceId, idempotencyKey);
       runKeys.current.delete(key);
       if (current.current === scope) {
-        setNotice('Settlement requested. Waiting for the terminal result.');
+        setNotice('Settlement requested. The batch status below updates automatically.');
         await load();
       }
     } catch (err) {

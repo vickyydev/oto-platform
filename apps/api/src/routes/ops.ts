@@ -536,6 +536,12 @@ export async function opsRoutes(app: App): Promise<void> {
    */
   const TEST_CONTROLS = [
     {
+      key: 'demo.day',
+      label: 'Add demo sales to Central (today)',
+      description: 'Adds the labelled trading-day scenarios once. Keeps existing records and closed days unchanged.',
+      sticky: true,
+    },
+    {
       key: 'watchdog.run',
       label: 'Run the watchdog now',
       description: 'Compares what should have run with what did, without waiting for the next tick.',
@@ -673,6 +679,12 @@ export async function opsRoutes(app: App): Promise<void> {
     req: FastifyRequest,
     accountId: string,
   ): Promise<string> {
+    if (key === 'demo.day') {
+      const { seedDemoDay } = await import('@oto/db/seed');
+      // Each scenario commits atomically; repeating finishes an interrupted seed.
+      const counts = await seedDemoDay(app.db);
+      return `Demo day ${counts.businessDate}: ${counts.sales} sales added, ${counts.skipped} already present. Existing records and closed-day totals were kept.`;
+    }
     if (key === 'watchdog.run') {
       const outcome = await jobRunner().runJob(WATCHDOG_JOB, { force: true });
       if (outcome === 'disabled') {

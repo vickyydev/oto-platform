@@ -415,7 +415,7 @@ function TestControls({ canManage, onRan }: { canManage: boolean; onRan: () => v
       span={12}
       icon={FlaskConical}
       title="Test controls"
-      note="This deployment is a playground. These make something fail on purpose, so the alerting can be watched doing its job."
+      note="Staging-only controls add demo scenarios or simulate failures. Existing records are kept when adding the demo day."
     >
       <div className="flex flex-wrap gap-2">
         {controls.map((control) => (

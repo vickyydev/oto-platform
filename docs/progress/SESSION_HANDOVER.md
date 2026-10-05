@@ -1,5 +1,31 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026 - settlement proof and round-4 release checkpoint
+
+Use oto-pos-eod-round-2, feat/eod-round-2-review. API abc007af and
+POS/Console de2f90ce are live. Settlement proof is attached on SCRUM-215
+as 05-staging-terminal-settlement.png (11268), 06-staging-settlement-import.png
+(11269), 07-staging-receipt-refresh-phone.png (11270). Exact fixtures and
+limits: docs/qa/end-of-day/round-3-staging-2026-10-06.md. Physical terminal
+settlement is unsupported; bank import uses the documented fixture only.
+
+Round-4 source adds wallet/voucher/refund demo scenarios, transactional
+advisory-lock seed replay safety and the guarded/audited Health demo.day
+control. The staging park-switch race is repaired with server-confirmed
+selection and stale station response guards. Existing EOD/ops tests 52/52,
+POS lane/receipt 23/23; touched typechecks/lint/build pass. No staging
+demo seed/reset was run. Land this explicit slice, deploy API before
+POS/Console, verify Health visibility and park-switch behavior, then finish
+isolated cash-movement/closing audit proof. Keep prior unresolved payment
+fixtures and real park records untouched. CI37373685349 is running.
+
+SCRUM-495 is In Progress in oto-pos-s495-small, independently preparing
+small prototype parity repairs; do not land before the End of Day release.
+SCRUM-496/498 still follow; 497 defaults remain until answers arrive.
+SCRUM-214 cannot close just because 215 closes: child216 analytics is To Do.
+Older CLOUD_HANDOVER close214 wording is superseded by this live Jira audit.
+Parent493 stays In Progress until all of its mismatch work is verified.
+
 ## STOP POINT - 6 October 2026 - settlement staging walkthrough running
 
 API, POS and Console abc007af are live; 0059 applied. The local simulated

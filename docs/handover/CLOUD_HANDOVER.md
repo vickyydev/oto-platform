@@ -17,8 +17,9 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-_Updated: 2 October 2026, late night (Bangkok). This is the hand-over point
-from the local session._
+Current checkpoint: SCRUM-494 is Deployed with staging evidence. SCRUM-215 rounds 2 and 3 are live with proof (11265-11270); round 4 and the park-switch follow-up are verified locally for release. SCRUM-495 is In Progress in an isolated worktree; 496/498 remain, and 497 keeps prototype defaults pending answers. API abc007af / POS and Console de2f90ce are the verified settlement releases. Migration 0059 is applied. The older table below describes the original handover, not current status.
+
+_Updated: 6 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block carry exact deployments and checkpoints._
 
 | Item | State |
 |---|---|
@@ -49,7 +50,7 @@ main or was withdrawn. Ignore them.
    - round 3: settlement, as in plan section 4;
    - round 4: demo-day scenarios and the closing walkthrough.
 
-   Then SCRUM-215 and SCRUM-214 go to Deployed.
+   Then SCRUM-215 goes to Deployed after its proof. SCRUM-214 remains open: its analytics child SCRUM-216 is still To Do, confirmed from Jira on 6 October.
 3. SCRUM-495, then SCRUM-496 (the register entries in their sections),
    then SCRUM-498, applying SCRUM-497 answers as each runs.
 4. Only then S2-15b (SCRUM-216) and the rest of
