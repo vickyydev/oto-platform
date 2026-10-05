@@ -1,5 +1,25 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 5 October 2026, late evening - SCRUM-494 paid food walkthrough
+
+API and POS staging are live at `8db35d3e`. The same-origin photo route
+returned 204 and the existing three-child ZZ TEST registration attached its
+labelled image with 200. A cash-only test sale (receipt T1-000059) was
+finalised and its three children checked in through the platform with 200;
+all now read `in_park`, paid, banded and photographed. Phone and desktop
+Check-in boards show them. The phone F&B screen recognizes their bands and
+shows a restriction-only warning, an allergy warning, prepaid choices and a
+no-food refusal. Real captures revealed pale text on light-theme safety and
+prepaid panels. A contrast correction is local in the shared banner and both
+counter layouts; `s494-food` 10/10, POS typecheck, scoped lint, production
+build and diff check pass. This correction is not yet pushed or staged.
+Two exact unpaid rehearsal sales were voided; an older unrelated tendering
+sale was untouched. SCRUM-494 stays Testing. Next: push this correction with
+same-turn Jira status/comment, deploy POS, recapture safe screenshots, then
+serve prepaid items once, prove second-use refusal and kitchen allergy, and
+release with the correct unserved-meal refund. Finish the remaining nine-item
+cards before the ticket can move to Deployed. Never record band credentials.
+
 ## STOP POINT - 5 October 2026, late evening - SCRUM-494 photo repair ready
 
 The staging browser cannot PUT photos to R2 directly because its preflight is

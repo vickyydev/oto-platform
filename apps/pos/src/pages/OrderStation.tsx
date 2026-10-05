@@ -1296,11 +1296,11 @@ export default function OrderStation() {
                   rendered on the customer display. */}
               <FoodSafetyBanner wristband={wristband} />
               {wristband?.mayOrderFood === false && (
-                <div className="mb-4 shrink-0 rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-3 text-amber-200">
+                <div className="mb-4 shrink-0 rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-3 text-amber-900 dark:text-amber-100">
                   <div className="flex items-start gap-2.5">
-                    <Ban className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+                    <Ban className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
                     <div className="min-w-0">
-                      <div className="text-sm font-bold uppercase tracking-wide text-amber-300">
+                      <div className="text-sm font-bold uppercase tracking-wide text-amber-800 dark:text-amber-200">
                         Food not authorized
                       </div>
                       <div className="text-sm">
@@ -1316,8 +1316,8 @@ export default function OrderStation() {
               {wristband?.foodProvision?.mode === 'prepaid_items' && wristband.foodProvision.items && wristband.foodProvision.items.length > 0 && (
                 <div className="mb-4 shrink-0 rounded-xl border border-violet-500/40 bg-violet-500/10 px-4 py-3">
                   <div className="flex items-center gap-2 mb-2.5">
-                    <Gift className="w-4 h-4 text-violet-400 shrink-0" />
-                    <span className="text-xs font-bold uppercase tracking-wide text-violet-300">
+                    <Gift className="w-4 h-4 text-violet-700 dark:text-violet-300 shrink-0" />
+                    <span className="text-xs font-bold uppercase tracking-wide text-violet-800 dark:text-violet-200">
                       Prepaid entitlements · {wristband.holderName ?? wristband.customerNickname}
                     </span>
                   </div>
@@ -1334,13 +1334,13 @@ export default function OrderStation() {
                           onClick={() => handleRedeemPrepaidItem(ent)}
                           className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all
                             ${fullyUsed
-                              ? 'cursor-not-allowed border-violet-500/20 text-violet-500/40 bg-violet-500/5'
-                              : 'border-violet-500/50 text-violet-200 bg-violet-500/15 hover:bg-violet-500/25 active:scale-[0.97]'
+                              ? 'cursor-not-allowed border-violet-500/20 text-violet-600/70 dark:text-violet-400/60 bg-violet-500/5'
+                              : 'border-violet-500/50 text-violet-900 dark:text-violet-100 bg-violet-500/15 hover:bg-violet-500/25 active:scale-[0.97]'
                             }`}
                         >
                           <Gift className="w-3.5 h-3.5 shrink-0" />
                           <span>{ent.menuItemName}</span>
-                          <span className={`tabular-nums text-xs ${fullyUsed ? 'text-violet-500/40' : 'text-violet-400'}`}>
+                          <span className={`tabular-nums text-xs ${fullyUsed ? 'text-violet-600/70 dark:text-violet-400/60' : 'text-violet-700 dark:text-violet-300'}`}>
                             {fullyUsed ? 'Served' : `${remaining} left`}
                           </span>
                         </button>
@@ -1353,12 +1353,12 @@ export default function OrderStation() {
               {wristband?.foodProvision?.mode === 'prepaid_credit' && (
                 <div className="mb-4 shrink-0 rounded-xl border border-violet-500/40 bg-violet-500/10 px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-violet-400 shrink-0" />
+                    <Gift className="w-4 h-4 text-violet-700 dark:text-violet-300 shrink-0" />
                     <div className="min-w-0">
-                      <span className="text-xs font-bold uppercase tracking-wide text-violet-300">
+                      <span className="text-xs font-bold uppercase tracking-wide text-violet-800 dark:text-violet-200">
                         Prepaid credit · {wristband.holderName ?? wristband.customerNickname}
                       </span>
-                      <div className="text-sm text-violet-200/80 mt-0.5">
+                      <div className="text-sm text-violet-900 dark:text-violet-100 mt-0.5">
                         ฿{wristband.creditBalanceTHB} remaining — spends like credit at checkout.
                       </div>
                     </div>
