@@ -1,5 +1,28 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 5 October 2026, near midnight - SCRUM-494 meal and pickup
+
+POS staging `b4299ea4` now shows readable safety and prepaid panels. The
+allergy child's prepaid Hot Dog was served once on the phone counter; a fresh
+scan shows it `Served` with the control disabled. Cash receipt T1-000060 is
+finalised; its kitchen ticket is printed and a masked simulator preview shows
+the Peanut allergy line. All three labelled children were released through
+signed-in pickup-photo uploads (204) and release writes (200); all now read
+`out`. The original cash sale T1-000059 has one ฿95 refund for A's two
+unserved items, none for B's served ฿110 meal or C's no-food state. Two exact
+unpaid rehearsal sales were voided; the older unrelated tendering record was
+left alone. The pickup summary's light-theme color fix is local.
+
+CI `37337702987` failed its static route-conformance check: the new
+storage-only PUT needed inclusion in the no-database-write list. That
+classification is corrected locally; its existing 12 tests, POS release tests
+(11), API/POS typecheck, scoped lint, POS build and diff check pass. These
+changes are not yet pushed or staged. SCRUM-494 stays Testing. Next: push with
+same-turn Jira status/comment, deploy POS, obtain CI evidence, then complete
+the nanny switch and phone check-in/release with a safe synthetic on-shift
+nanny. Assemble at most five reviewed screenshot cards for all nine items,
+attach and name them in Jira before Deployed. Never record band or pickup codes.
+
 ## STOP POINT - 5 October 2026, late evening - SCRUM-494 paid food walkthrough
 
 API and POS staging are live at `8db35d3e`. The same-origin photo route

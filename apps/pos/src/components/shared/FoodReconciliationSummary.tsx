@@ -41,7 +41,7 @@ export function FoodReconciliationSummary({
                 <span className="shrink-0 tabular-nums">
                   {item.redeemedQty}/{item.qty} redeemed
                   {item.unredeemedQty > 0 && (
-                    <span className={isRefund ? 'text-rose-400 ml-1' : 'text-amber-400 ml-1'}>
+                    <span className={isRefund ? 'text-rose-700 dark:text-rose-300 ml-1' : 'text-amber-700 dark:text-amber-300 ml-1'}>
                       · ฿{item.unredeemedValueTHB} unused
                     </span>
                   )}
@@ -62,7 +62,7 @@ export function FoodReconciliationSummary({
         {/* Redeemed total */}
         <div className="flex items-center justify-between text-sm border-t pt-2.5">
           <span className="text-muted-foreground">Redeemed</span>
-          <span className="font-semibold tabular-nums text-emerald-400">
+          <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
             ฿{reconciliation.totalRedeemedTHB}
           </span>
         </div>
@@ -78,22 +78,22 @@ export function FoodReconciliationSummary({
           >
             <span className="flex items-center gap-2 text-sm font-semibold">
               {isRefund ? (
-                <Undo2 className="w-4 h-4 text-rose-400 shrink-0" />
+                <Undo2 className="w-4 h-4 text-rose-700 dark:text-rose-300 shrink-0" />
               ) : (
-                <Ban className="w-4 h-4 text-amber-400 shrink-0" />
+                <Ban className="w-4 h-4 text-amber-700 dark:text-amber-300 shrink-0" />
               )}
-              <span className={isRefund ? 'text-rose-300' : 'text-amber-300'}>
+              <span className={isRefund ? 'text-rose-800 dark:text-rose-200' : 'text-amber-800 dark:text-amber-200'}>
                 {isRefund ? 'Refund to parent' : 'Forfeited'}
               </span>
             </span>
             <span
-              className={`text-xl font-black tabular-nums ${isRefund ? 'text-rose-400' : 'text-amber-400'}`}
+              className={`text-xl font-black tabular-nums ${isRefund ? 'text-rose-700 dark:text-rose-300' : 'text-amber-700 dark:text-amber-300'}`}
             >
               {isRefund ? '−' : ''}฿{reconciliation.totalUnusedTHB}
             </span>
           </div>
         ) : (
-          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 flex items-center gap-2 text-sm text-emerald-300">
+          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 flex items-center gap-2 text-sm text-emerald-800 dark:text-emerald-200">
             <Check className="w-4 h-4 shrink-0" />
             All prepaid food was fully redeemed — no outstanding balance.
           </div>
