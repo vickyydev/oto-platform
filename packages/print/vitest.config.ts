@@ -3,6 +3,9 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
+    // Raster suites share the runner with database and box tests. Keep their
+    // CPU-heavy files sequential so worker result reporting stays responsive.
+    fileParallelism: false,
     /**
      * Thirty seconds, where vitest's default is five.
      *

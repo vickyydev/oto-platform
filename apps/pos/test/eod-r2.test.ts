@@ -59,6 +59,8 @@ describe('End of Day settlement evidence', () => {
     const get = vi.spyOn(api, 'getBlob').mockResolvedValue(new Blob(['fixture']));
     await settlementsApi.export(BRANCH, '2026-10-06', 'TID & 1');
     expect(get).toHaveBeenCalledWith(`/branches/${BRANCH}/settlements/export?date=2026-10-06&tid=TID+%26+1`);
+    await settlementsApi.export(BRANCH, '2026-10-06');
+    expect(get).toHaveBeenLastCalledWith(`/branches/${BRANCH}/settlements/export?date=2026-10-06`);
   });
 });
 

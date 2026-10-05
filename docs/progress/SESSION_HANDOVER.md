@@ -1,5 +1,24 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026 - all-payments export ready for final proof
+
+**6 October 2026, complete settlement export verified locally:** The all-card-and-QR CSV now includes approved till gateway payments with no terminal ID and preserves per-TID exports. Existing API checks 9/9 and POS 21/21 pass; API/POS/shared typecheck, lint and POS build pass. Sequential print raster files pass 268/268 without changing test assertions or timeouts, addressing two repeated CI worker-reporting timeouts. Final staging cards 11271-11273 cover cash movement, discrepancy/corrected close, Health, Activity and the live import job. Next: deploy API then POS for all-payments export, capture its three-row fixture CSV, archive only the QA fleet/revoke the temporary QA grant, then complete SCRUM-215 when final verification is green. SCRUM-493 stays In Progress; SCRUM-495 pricing/proof/UI and History/tender slices are progressing in isolated worktrees. The partial Add-time band selection question is recorded on SCRUM-497 and in docs/qa/scrum-493-open-decisions-2026-10-06.md.
+
+Integration worktree: oto-pos-eod-round-2. API b61448cf is live;
+POS/Console 581c7c4a are live. The latest CSV slice is seven explicit
+files; print vitest config is the bounded CI resource follow-up.
+Exact staging facts: docs/qa/end-of-day/round-4-staging-2026-10-06.md.
+Temporary QA grant 01a10df8-dfdc-7d99-9b4b-06ba0c146448 must be revoked
+from seeded manager 01a0c9ae-5377-7b34-a9ab-22bf8086f5f7 after proof.
+Only archive the branch/box/station/devices named in the round-2/3 notes.
+Keep immutable QA finance/audit history and all earlier unresolved payments.
+
+SCRUM-495 small source is in oto-pos-s495-small, including engine bump and
+legacy offline rounding preservation; not yet landed. History/corrected
+orders are in their separate workflow. Other tenders/used-method archive
+now own forward-only migration 0060; no other workflow may allocate 0060.
+The original checkout remains read-only. Parent 493 cannot close yet.
+
 ## STOP POINT - 6 October 2026 - final End of Day import job ready
 
 **6 October 2026, final End of Day follow-up:** API/POS/Console 581c7c4a are live. The isolated QA park recorded a witnessed THB100 safe drop and approved THB60 paid-out; a THB50 count difference was corrected before the day closed with expected/actual minus THB160 and its own receipt. The Health demo control is visible; its mutations remain tested on disposable databases. The fixture importer now runs as an actual on-demand operations job with atomic import/audit/run success, harmless replay and safe failure recording; 8 affected API tests pass. CI37373685349 exposed a missing settlement-line parent mapping in the schema contract (fixed; 14/14 checks pass) and a print-worker reporting timeout. Current CI is not green. Next: deploy the import job, capture final Activity/Health/close and job evidence, finish QA cleanup and SCRUM-215 closure, then land SCRUM-495 prototype parity with versioned offline rounding compatibility.
@@ -47,7 +66,7 @@ small prototype parity repairs; do not land before the End of Day release.
 SCRUM-496/498 still follow; 497 defaults remain until answers arrive.
 SCRUM-214 cannot close just because 215 closes: child216 analytics is To Do.
 Older CLOUD_HANDOVER close214 wording is superseded by this live Jira audit.
-Parent493 stays In Progress until all of its mismatch work is verified.
+Parent 493 stays In Progress until all of its mismatch work is verified.
 
 ## STOP POINT - 6 October 2026 - settlement staging walkthrough running
 

@@ -225,16 +225,16 @@ function csvCell(value: string | number | null): string {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-/** A snapshot of approved till card/QR attempts for one actual TID. */
-export async function settlementExport(db: Exec, operatorId: string, branchId: string, date: string, tid: string) {
+/** Approved till card/QR attempts, either all or one actual TID. */
+export async function settlementExport(db: Exec, operatorId: string, branchId: string, date: string, tid?: string) {
   await branchClockFor(db, operatorId, branchId);
   const attempts = (await eligibleAttempts(db, operatorId, branchId, date))
-    .filter((a) => a.status === 'approved' && a.tid === tid && countsAsTillTakings(a));
+    .filter((a) => a.status === 'approved' && (!tid || a.tid === tid) && countsAsTillTakings(a));
   if (attempts.length > 100_000) throw errors.badRequest('The settlement export is too large');
   const rows = ['business_date,tid,method,amount_satang,approval_code,invoice_no,tran_ref,status'];
   for (const a of attempts) rows.push([date, a.tid, a.method, a.amountSatang, a.approvalCode,
     a.invoiceNo, a.tranRef, a.status].map(csvCell).join(','));
-  return { filename: `settlement_${date}_${hash(tid).slice(0, 8)}.csv`, csv: `\uFEFF${rows.join('\r\n')}\r\n` };
+  return { filename: `settlement_${date}_${tid ? hash(tid).slice(0, 8) : 'all'}.csv`, csv: `\uFEFF${rows.join('\r\n')}\r\n` };
 }
 
 const GATEWAY_FIXTURE_HEADER = [
