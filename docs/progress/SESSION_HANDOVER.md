@@ -1,5 +1,32 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026, 01:33 Bangkok - SCRUM-494 proof filed
+
+Use clean `oto-pos-voucher-slip` on `feat/till-consistency-493` for the
+SCRUM-494 evidence checkpoint. Five reviewed real-staging cards for all nine
+items are in `docs/qa/jira-comments/attachments/SCRUM-494/` and attached to
+the Jira ticket with a comment naming every file. They redact booking and
+band credentials. Card 1 labels the expired-document half as existing-test
+evidence because staging UI cannot create a past-expiry verification. POS
+staging is live at `9673107c`; its signed-in phone empty F&B cart no longer
+shows a false pricing warning. SCRUM-494 is Testing, awaiting CI for
+`59cb2cf5` before Deployed; the CI run is still in progress, not green.
+
+The separate stock trading-day seed repair is on main at `59cb2cf5` under
+SCRUM-213, which is In Progress. Its two affected API suites pass 16/16
+locally. CI must pass before the stock ticket returns to Deployed. The
+database platform-sync suite could not start its embedded database in the
+first local attempt and was not claimed passing.
+
+SCRUM-215 round 2 was saved separately at `9d5a50cd` on
+`feat/eod-round-2-review` in `oto-pos-eod-round-2`. It is not on main or
+staging; the branch's own newest STOP POINT and ROUND_2_BRIEF.md carry the
+details. Next: finish CI for SCRUM-494/213, move them only with honest staging
+evidence, then rebase/review the End of Day branch and land its verified
+round-2 slice before rounds 3 and 4. Every push gets a same-turn Jira comment
+and status check. Never print or attach credentials or secret values.
+
+
 ## STOP POINT - 6 October 2026, 01:00 Bangkok - stock CI repair
 
 Work in `oto-pos-voucher-slip` on `feat/till-consistency-493`; the original
