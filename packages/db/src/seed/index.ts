@@ -808,7 +808,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
   await seedMenu(db, { operatorId, branchId });
   // Stock (S2-14b): the prototype's places, items and figures, opened by a
   // count — once per branch, after the menu whose products it stocks.
-  await seedStock(db, { operatorId, branchId, timezone: 'Asia/Bangkok' });
+  await seedStock(db, { operatorId, branchId });
   // A product the tax-override resolver can point at. Found by name so the
   // menu's own Ice Cream Cone counts — this must not mint a second row — and,
   // if the menu somehow seeded none, created at the menu's price, not another.

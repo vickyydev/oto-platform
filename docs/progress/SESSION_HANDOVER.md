@@ -1,5 +1,35 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026, 01:00 Bangkok - stock CI repair
+
+Work in `oto-pos-voucher-slip` on `feat/till-consistency-493`; the original
+checkout is read only. POS staging is live at `9673107c`; the signed-in phone
+F&B empty cart no longer displays the false platform-pricing warning. Five
+reviewed real-staging cards for SCRUM-494 items 1-9 are ready in
+`docs/qa/jira-comments/attachments/SCRUM-494/`. Booking references and band
+credentials are covered; the expired-document branch in card 1 is supported
+by existing tests because staging cannot create a past-expiry verification.
+
+CI `37342943714` failed two stock fact tests. Their 18-unit gap reproduced
+after midnight in Bangkok: the full stock seed used calendar date for opening
+movements, while stock activity and reports use the branch's 05:00 trading
+boundary. `packages/db/src/seed/stock.ts` now uses the branch timezone and
+business-day start with the shared date helper; its one caller no longer
+passes a hard-coded timezone. Both affected API suites pass (16/16), database
+and API typecheck and scoped lint pass. The database platform-sync test suite
+could not start its embedded database locally; its seven tests were skipped,
+not passed. CI for prior POS head `9673107c` is still running. This follow-up
+belongs under SCRUM-213, not SCRUM-494.
+
+Next: checkpoint the stock fix with a same-turn SCRUM-213 status/comment,
+push, and inspect CI. Attach all five cards to SCRUM-494, name them in a
+plain-language comment, and move SCRUM-494 to Deployed only after its source
+and staging evidence are verified. Then proceed with SCRUM-215 rounds 2-4
+per CLOUD_HANDOVER section 3. Every push needs same-turn Jira status and
+comment. Never print or attach secret values, band credentials, booking
+references, or pickup codes.
+
+
 ## STOP POINT - 6 October 2026, after midnight - SCRUM-494 nine-item proof
 
 Continue in the clean sibling worktree `oto-pos-voucher-slip` on

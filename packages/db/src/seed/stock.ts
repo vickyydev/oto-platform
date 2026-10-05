@@ -34,7 +34,7 @@
  *
  * Runs once per branch: a branch that already has a place is left alone.
  */
-import { isoDateInTz, newId, satangFromBaht } from '@oto/shared';
+import { businessDate as tradingDate, newId, parseDayStart, satangFromBaht } from '@oto/shared';
 import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { Db } from '../index';
 import * as s from '../schema/index';
@@ -219,7 +219,7 @@ export interface StockSeedCounts {
 
 export async function seedStock(
   db: Db,
-  scope: { operatorId: string; branchId: string; timezone: string },
+  scope: { operatorId: string; branchId: string },
 ): Promise<StockSeedCounts> {
   const { operatorId, branchId } = scope;
   const counts: StockSeedCounts = { locations: 0, items: 0, movements: 0 };
@@ -249,6 +249,12 @@ export async function seedStock(
   if (existing) return counts;
 
   await db.transaction(async (tx) => {
+    const [branch] = await tx
+      .select({ timezone: s.branch.timezone, businessDayStart: s.branch.businessDayStart })
+      .from(s.branch)
+      .where(eq(s.branch.id, branchId));
+    if (!branch) throw new Error('Stock seed branch not found');
+
     const store = newId();
     const boh = newId();
     const foh = newId();
@@ -260,7 +266,7 @@ export async function seedStock(
     counts.locations = 3;
 
     const now = new Date();
-    const businessDate = isoDateInTz(now, scope.timezone);
+    const businessDate = tradingDate(now, branch.timezone, parseDayStart(branch.businessDayStart));
     const takeId = newId();
     await tx.insert(s.stockTake).values({
       id: takeId,
