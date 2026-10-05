@@ -257,7 +257,7 @@ function SettlementImportForm({
                   <li key={line.id} className="py-2 text-sm break-words">
                     <div className="flex flex-wrap justify-between gap-2">
                       <span>
-                        {line.invoiceNo ?? line.tranRef ?? 'No reference'} ·{' '}
+                        {line.invoiceNo ?? line.tranRef ?? line.terminalRef ?? 'No reference'} ·{' '}
                         {line.method.toUpperCase()} · {line.transactionType ?? 'payment'}
                       </span>
                       <strong>{formatTHB(line.amountSatang)}</strong>

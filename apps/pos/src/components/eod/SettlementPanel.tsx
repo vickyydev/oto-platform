@@ -239,7 +239,7 @@ export function SettlementResults({ data }: { data: SettlementSummary }) {
                 <p>{settlementWord(line.match)}</p>
                 <p className="text-xs text-muted-foreground break-all">
                   Invoice: {line.invoiceNo ?? '—'} · Approval: {line.approvalCode ?? '—'} ·
-                  Reference: {line.tranRef ?? '—'}
+                  Reference: {line.tranRef ?? line.terminalRef ?? '—'}
                 </p>
               </li>
             ))}

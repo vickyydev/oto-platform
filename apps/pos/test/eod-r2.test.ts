@@ -33,13 +33,14 @@ describe('End of Day settlement evidence', () => {
       batches: [{ id: STATION, source: 'terminal', state: 'unsupported', deviceId: STATION,
         tid: 'TID-TEST', createdAt: '2026-10-06T10:00:00Z', completedAt: null, matched: 0, unmatched: 0, mismatched: 0 }],
       lines: [{ id: 'line', batchId: 'batch', attemptId: null, method: 'card', amountSatang: 12550, tid: 'TID-TEST', approvalCode: null,
-        invoiceNo: 'fixture-invoice', terminalRef: null, tranRef: null, transactionType: 'payment', match: 'amount_mismatch' }],
+        invoiceNo: 'fixture-invoice', terminalRef: 'terminal-reference-only', tranRef: null, transactionType: 'payment', match: 'amount_mismatch' }],
       unmatchedAttempts: [{ id: 'attempt', method: 'qr', amountSatang: 5000, tid: null, invoiceNo: null, status: 'awaiting_settlement' }],
     };
     const html = markup(React.createElement(SettlementResults, { data }));
     expect(html).toContain('Not supported by this terminal');
     expect(html).toContain('No payments were marked settled.');
     expect(html).toContain('Amount differs');
+    expect(html).toContain('terminal-reference-only');
     expect(html).toContain('125.50');
     expect(html).toContain('Payments without a matched settlement (1)');
     expect(html).toContain('Awaiting settlement');

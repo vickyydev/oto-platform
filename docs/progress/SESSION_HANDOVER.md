@@ -1,5 +1,23 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026 - settlement staging walkthrough running
+
+API, POS and Console abc007af are live; 0059 applied. The local simulated
+box has been restarted from the matching source. Two terminal simulations
+approved; guarded fixture job job-db21156i0phs73cspo0g recorded the exact
+references plus one gateway fixture in the isolated ZZ TEST park. Earlier
+fixture attempts failed the invoice-format constraint and rolled back;
+the corrected fixture succeeded. No real payment or real park record changed.
+
+The match views now retain a visible terminal reference when no gateway
+reference exists. POS 11/11 and both app typechecks/lint/build pass. Land
+this small follow-up and redeploy only frontends. Then drive settlement,
+fixture import, CSV and queued-receipt refresh from the signed-in screens.
+Round-4 seed work is isolated with the API lane: wallet/voucher/refund
+scenarios, no migration. 495/496/498 remain after End of Day; prototype
+source maps are prepared. SCRUM-215 and parent493 stay In Progress.
+
+
 ## STOP POINT - 6 October 2026 - settlement integrated for release
 
 Root checkout oto-pos-eod-round-2 now holds all 37 explicit files from the
