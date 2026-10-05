@@ -6,6 +6,9 @@ import { CashCountCard } from '@/components/eod/CashCountCard';
 import { CashMovementList } from '@/components/eod/CashMovementList';
 import { ReconSummary } from '@/components/eod/ReconSummary';
 import { AmountInput } from '@/components/eod/AmountInput';
+import { EodReceiptCard } from '@/components/eod/EodReceiptCard';
+import { ProvisionalBanner } from '@/components/eod/ProvisionalBanner';
+import { StrandedList } from '@/components/eod/StrandedList';
 import { useEndOfDay } from '@/components/eod/useEndOfDay';
 import {
   edcTerminalsOf,
@@ -33,10 +36,32 @@ import { Lock, Vault } from 'lucide-react';
  * entries are kept in satang and recomputed with the platform's own
  * `recomputeEndOfDay`, so what is on screen is what gets locked. One combined cash
  * count for the whole branch, as the prototype has it.
+ *
+ * S2-15a round 2 — UI additions in the same cards and words: the provisional
+ * banner (a box still holding records, or an uncorrected clock, refuses the
+ * close), the list of who is still counted inside with a resolve per row and
+ * the manager's override reason, and on a closed day the End of Day receipt
+ * with Reprint and the override it was closed under.
  */
 export function EndOfDayTab({ date, branch }: { date: string; branch: string }) {
-  const { operator } = useOperator();
-  const { record: apiRecord, setRecord, error, closeError, closing, close } = useEndOfDay(date, branch);
+  const { operator, can } = useOperator();
+  const {
+    record: apiRecord,
+    setRecord,
+    error,
+    closeError,
+    closing,
+    close,
+    overrideReason,
+    setOverrideReason,
+    resolving,
+    resolveError,
+    resolve,
+    recheck,
+    reprinting,
+    reprintError,
+    reprint,
+  } = useEndOfDay(date, branch);
 
   if (!apiRecord) {
     return (
@@ -73,6 +98,11 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
   const banked =
     counted !== null && record.floatLeftTHB !== null ? counted - record.floatLeftTHB : null;
 
+  const provisional = readOnly ? [] : (apiRecord.provisional ?? []);
+  const stranded = readOnly ? [] : (apiRecord.stranded ?? []);
+  const canOverride = can('pos:cash:approve');
+  const closeBlocked = provisional.length > 0 || (stranded.length > 0 && !(canOverride && overrideReason.trim()));
+
   return (
     <div className="space-y-4">
       {/* Locked banner */}
@@ -88,6 +118,12 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
           </div>
         </Card>
       )}
+
+      {/* S2-15a round 2 — the receipt of a closed day; the provisional banner of an open one */}
+      {readOnly && (
+        <EodReceiptCard receipt={apiRecord.receipt ?? null} reprinting={reprinting} error={reprintError} onReprint={() => void reprint()} />
+      )}
+      <ProvisionalBanner boxes={provisional} onRecheck={() => void recheck()} />
 
       {/* Summary bar */}
       <ReconSummary record={record} />
@@ -187,6 +223,19 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
         </div>
       </Card>
 
+      {/* S2-15a round 2 — who is still counted inside, resolved here; the override on a closed day */}
+      <StrandedList
+        rows={stranded}
+        override={apiRecord.override ?? null}
+        readOnly={readOnly}
+        resolving={resolving}
+        error={resolveError}
+        canOverride={canOverride}
+        overrideReason={overrideReason}
+        onOverrideReason={setOverrideReason}
+        onResolve={(row, reason) => void resolve(row, reason)}
+      />
+
       {/* Close day */}
       {!readOnly && (
         <div className="flex flex-col items-end gap-2 pb-2">
@@ -195,7 +244,7 @@ export function EndOfDayTab({ date, branch }: { date: string; branch: string }) 
               {closeError}
             </p>
           )}
-          <Button size="lg" className="h-12 px-8 gap-2" onClick={onClose} disabled={!operator || closing}>
+          <Button size="lg" className="h-12 px-8 gap-2" onClick={onClose} disabled={!operator || closing || closeBlocked}>
             <Lock className="w-4 h-4" />
             Close Day
           </Button>

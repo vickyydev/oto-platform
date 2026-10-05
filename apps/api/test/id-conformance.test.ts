@@ -278,6 +278,11 @@ const PLATFORM_NAMED: Record<string, string> = {
     'one row per (branch, business date), unique — the day is the key; written only at Close Day, online',
   'POST /branches/:branchId/cash-movements':
     'keyed by the press’s action id (unique per operator) the till sends; the row id is the platform’s, online only',
+  // S2-15a round 2. Online only, never written by a box.
+  'POST /branches/:branchId/end-of-day/stranded/resolve':
+    'keyed by the press’s action id (unique per operator) the till sends; the resolution row id is the platform’s, online only',
+  'POST /branches/:branchId/end-of-day/reprint':
+    'a print job of a closed day, queued by the platform online; one press per Idempotency-Key',
   'POST /members/:id/tier-verification':
     'the evidence row behind a tier change; round 3 makes it the till’s `member.tier_changed` fact (plan §2.3, OD-11)',
   'POST /menu/categories': NEXT_PASS,

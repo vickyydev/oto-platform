@@ -5668,7 +5668,7 @@ export async function boxOutboxState(
   const [row] = await exec
     .select({ depth: sql<number>`count(*)::int`, oldest })
     .from(boxOutbox)
-    .where(and(eq(boxOutbox.boxId, boxId), sql`${boxOutbox.state} in ('queued','sending')`));
+    .where(and(eq(boxOutbox.boxId, boxId), sql`${boxOutbox.state} in ('queued','sending','failed')`));
   return { depth: row?.depth ?? 0, oldestCreatedAt: row?.oldest ?? null };
 }
 

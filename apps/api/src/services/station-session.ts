@@ -220,6 +220,8 @@ export async function stationLink(db: Db, stationId: string): Promise<StationLin
       boxId: station.boxId,
       boxName: box.name,
       boxStatus: box.status,
+      boxRole: box.role,
+      lastStatus: box.lastStatus,
       lastHeartbeatAt: box.lastHeartbeatAt,
       currentEpoch: box.currentEpoch,
     })
@@ -271,10 +273,10 @@ export async function stationLink(db: Db, stationId: string): Promise<StationLin
      * database, which is what makes the number on the banner the same number the
      * box would give if it were asked.
      */
-    const outbox = await boxOutboxState(db, row.boxId);
+    const outbox = boxBacklogOf(row.boxRole ?? null, await boxOutboxState(db, row.boxId), row.lastStatus);
     const now = Date.now();
-    const oldest = outbox.oldestCreatedAt
-      ? Math.max(0, Math.round((now - outbox.oldestCreatedAt.getTime()) / 1000))
+    const oldest = outbox.since
+      ? Math.max(0, Math.round((now - outbox.since.getTime()) / 1000))
       : null;
     const cacheAt = state?.lastCacheAppliedAt ?? null;
 
@@ -296,6 +298,37 @@ export async function stationLink(db: Db, stationId: string): Promise<StationLin
   } catch {
     return degradedStationLink(base);
   }
+}
+
+export interface BoxBacklog {
+  /** Facts waiting on the box. */
+  depth: number;
+  /** When the oldest of them was queued, as far as anybody knows. */
+  since: Date | null;
+}
+
+/**
+ * How much a box still holds undelivered, from whichever side can see it.
+ *
+ * The virtual box's outbox is `edge.box_outbox` in this database and is read
+ * directly. A Pi's outbox is a SQLite file on the Pi, so the rows here are
+ * empty for it and the depth it reported on its last heartbeat
+ * (`box.last_status.outboxDepth`, with `oldestUnackedAgeS` measured at
+ * `receivedAt`) is the only honest source; rows here, when there are any, win.
+ */
+export function boxBacklogOf(
+  role: string | null,
+  ours: { depth: number; oldestCreatedAt: Date | null },
+  lastStatus: unknown,
+): BoxBacklog {
+  if (role === 'virtual' || ours.depth > 0) return { depth: ours.depth, since: ours.oldestCreatedAt };
+  const status = lastStatus && typeof lastStatus === 'object' ? (lastStatus as Record<string, unknown>) : null;
+  const reported = typeof status?.outboxDepth === 'number' && Number.isFinite(status.outboxDepth) ? status.outboxDepth : null;
+  if (reported === null) return { depth: ours.depth, since: ours.oldestCreatedAt };
+  const receivedAt = typeof status?.receivedAt === 'string' ? Date.parse(status.receivedAt) : NaN;
+  const age = typeof status?.oldestUnackedAgeS === 'number' ? status.oldestUnackedAgeS : null;
+  const since = reported > 0 && Number.isFinite(receivedAt) && age !== null ? new Date(receivedAt - age * 1000) : null;
+  return { depth: reported, since };
 }
 
 /**

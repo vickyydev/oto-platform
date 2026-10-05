@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import type { Satang } from './money';
+import { wallClockMinutesInTz } from './business-date';
+import { isoDateInTz } from './dates';
+import { formatTHB, type Satang } from './money';
 
 /**
  * S2-15a round 1 — THE END OF DAY, the prototype's rules in satang.
@@ -102,6 +104,92 @@ export const CashMovementViewSchema = z.object({
 });
 export type CashMovementView = z.infer<typeof CashMovementViewSchema>;
 
+// --- Round 2: provisional close, stranded occupancy, the receipt (SCRUM-215) -----
+
+/**
+ * Why a box keeps the day provisional: it still holds facts it has not
+ * delivered (`outbox`), or its clock is out and it has not measured it, so
+ * what it stamps may be on the wrong day (`clock`).
+ */
+export const EOD_PROVISIONAL_REASONS = ['outbox', 'clock'] as const;
+export type EodProvisionalReason = (typeof EOD_PROVISIONAL_REASONS)[number];
+
+export const EodProvisionalBoxSchema = z.object({
+  boxId: z.string().uuid(),
+  name: z.string(),
+  reason: z.enum(EOD_PROVISIONAL_REASONS),
+  /** How many facts are waiting on the box; null for a clock reason. */
+  waiting: z.number().int().nullable(),
+  /** Since when: the oldest waiting fact, or when the clock was last read. */
+  since: z.string().nullable(),
+  /** The sentence the counter reads. */
+  message: z.string(),
+});
+export type EodProvisionalBox = z.infer<typeof EodProvisionalBoxSchema>;
+
+/** Why staff cleared somebody still counted inside. */
+export const STRANDED_RESOLUTION_REASONS = ['left_without_scanning', 'band_lost', 'gate_fault'] as const;
+export type StrandedResolutionReason = (typeof STRANDED_RESOLUTION_REASONS)[number];
+
+export const STRANDED_REASON_LABEL: Record<StrandedResolutionReason, string> = {
+  left_without_scanning: 'Left without scanning',
+  band_lost: 'Band lost',
+  gate_fault: 'Gate fault',
+};
+
+export const STRANDED_KINDS = ['band', 'checkin'] as const;
+export type StrandedKind = (typeof STRANDED_KINDS)[number];
+
+/**
+ * Somebody the branch still counts inside at close: an adult band whose last
+ * passage today was an entry, or a child checked in and not checked out.
+ */
+export const EodStrandedRowSchema = z.object({
+  kind: z.enum(STRANDED_KINDS),
+  /** The band's id, or the check-in's. */
+  subjectId: z.string().uuid(),
+  bandCode: z.string().nullable(),
+  childName: z.string().nullable(),
+  /** Children of the same sale counted inside with this band. */
+  childrenWithBand: z.number().int().min(0),
+  lastGateEvent: z
+    .object({ kind: z.string(), at: z.string(), stationName: z.string().nullable() })
+    .nullable(),
+  checkedInAt: z.string().nullable(),
+  sale: z.object({ saleId: z.string().uuid(), receiptNumber: z.string().nullable() }).nullable(),
+  guardian: z.object({ name: z.string().nullable(), phone: z.string().nullable() }).nullable(),
+});
+export type EodStrandedRow = z.infer<typeof EodStrandedRowSchema>;
+
+/** A manager's close over rows still counted inside, as the closed day shows it. */
+export const EodOverrideSchema = z.object({
+  by: PersonSchema,
+  reason: z.string(),
+  at: z.string(),
+  stranded: z.array(EodStrandedRowSchema),
+});
+export type EodOverride = z.infer<typeof EodOverrideSchema>;
+
+export const EodReceiptJobSchema = z.object({
+  id: z.string().uuid(),
+  status: z.string(),
+  reprint: z.boolean(),
+  deviceLabel: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+  queuedAt: z.string(),
+});
+
+/** The End of Day receipt: its number on the closing counter's series, and its paper. */
+export const EodReceiptSchema = z.object({
+  number: z.string().nullable(),
+  stationId: z.string().uuid().nullable(),
+  stationName: z.string().nullable(),
+  jobs: z.array(EodReceiptJobSchema),
+  /** Why nothing printed, in the counter's words; null when a job was queued. */
+  note: z.string().nullable(),
+});
+export type EodReceipt = z.infer<typeof EodReceiptSchema>;
+
 /**
  * A whole day's reconciliation for one branch. OPEN is worked out fresh from
  * the records every time it is read; CLOSED is the row written at close, read
@@ -131,6 +219,14 @@ export const EndOfDayRecordSchema = z.object({
   terminals: z.array(EodTerminalSchema),
   /** The day's paid-outs and safe drops, already taken off the expected cash. */
   cashMovements: z.array(CashMovementViewSchema),
+  /** Open day only: the boxes that keep it provisional. Close is refused while any is listed. */
+  provisional: z.array(EodProvisionalBoxSchema).optional(),
+  /** Open day only: who is still counted inside. Close needs a manager's override while any is listed. */
+  stranded: z.array(EodStrandedRowSchema).optional(),
+  /** Closed day only: the manager's override, when the day closed over stranded rows. */
+  override: EodOverrideSchema.nullable().optional(),
+  /** Closed day only: the End of Day receipt. */
+  receipt: EodReceiptSchema.nullable().optional(),
 });
 export type EndOfDayRecord = z.infer<typeof EndOfDayRecordSchema>;
 
@@ -235,8 +331,132 @@ export const EndOfDayCloseBodySchema = z.object({
   floatLeftSatang: Count,
   vouchers: z.object({ handedOut: Count, redeemed: Count }).default({ handedOut: null, redeemed: null }),
   notes: z.string().max(4000).nullable().optional(),
+  /** The counter closing the day: the receipt prints on its printer and its series. */
+  stationId: z.string().uuid().nullable().optional(),
+  /** A manager's reason for closing while people are still counted inside (`pos:cash:approve`). */
+  override: z
+    .object({ reason: z.string().trim().min(1, 'Say why the day is closing with people still counted inside').max(500) })
+    .nullable()
+    .optional(),
 });
 export type EndOfDayCloseBody = z.infer<typeof EndOfDayCloseBodySchema>;
+
+/** Clear one stranded row from the count: who is recorded from the session. */
+export const StrandedResolveBodySchema = z.object({
+  date: DATE,
+  kind: z.enum(STRANDED_KINDS),
+  subjectId: z.string().uuid(),
+  reason: z.enum(STRANDED_RESOLUTION_REASONS),
+  note: z.string().trim().max(500).nullable().optional(),
+  /** One per press of Resolve; a retry of the same press records once. */
+  actionId: z.string().min(1).max(200).optional(),
+});
+export type StrandedResolveBody = z.infer<typeof StrandedResolveBodySchema>;
+
+export const StrandedResolveAnswerSchema = z.object({
+  resolutionId: z.string().uuid(),
+  replayed: z.boolean(),
+  stranded: z.array(EodStrandedRowSchema),
+});
+export type StrandedResolveAnswer = z.infer<typeof StrandedResolveAnswerSchema>;
+
+/** Print the closed day's receipt again, at the asking counter. */
+export const EndOfDayReprintBodySchema = z.object({
+  date: DATE,
+  stationId: z.string().uuid().nullable().optional(),
+  reason: z.string().trim().max(200).nullable().optional(),
+});
+export type EndOfDayReprintBody = z.infer<typeof EndOfDayReprintBodySchema>;
+
+// --- The End of Day receipt, composed for the receipt printer -------------------
+
+export interface EodReceiptInput {
+  receiptNumber: string | null;
+  branchName: string | null;
+  date: string;
+  closedAt: Date;
+  timezone: string;
+  closedByName: string | null;
+  lines: readonly EodLine[];
+  /** Label for each channel, in the till's words. */
+  labelOf: (channel: string) => string;
+  countedSatang: number | null;
+  floatSatang: number | null;
+  floatLeftSatang: number | null;
+  totalExpectedSatang: number;
+  totalActualSatang: number;
+  totalDifferenceSatang: number;
+  override: { reason: string; byName: string | null } | null;
+  copy: boolean;
+}
+
+/** The receipt template's input (`ReceiptData` in `@oto/print`), as far as this receipt fills it. */
+export interface EodReceiptDocument {
+  kind: 'receipt';
+  data: {
+    title: string;
+    taxInvoiceLines?: string[];
+    receiptNumber?: string;
+    dateTime?: string;
+    lines: { qty: number; name: string; price?: string; note?: string }[];
+    total: string;
+    tenders?: { label: string; amount: string }[];
+    orderNote?: string;
+  };
+}
+
+function stampIn(instant: Date, timezone: string): string {
+  const minutes = wallClockMinutesInTz(instant, timezone);
+  const hh = String(Math.floor(minutes / 60)).padStart(2, '0');
+  const mm = String(minutes % 60).padStart(2, '0');
+  return `${isoDateInTz(instant, timezone)} ${hh}:${mm}`;
+}
+
+const baht = formatTHB;
+
+const signed = (satang: number): string => (satang > 0 ? `+${baht(satang)}` : satang < 0 ? `-${baht(-satang)}` : baht(0));
+
+/**
+ * The End of Day receipt on the receipt template: the day's lines (actual
+ * against expected), the count, the float, the float left, the cash to bank,
+ * who closed it and when. Label/value rows only, so every agent prints it.
+ */
+export function endOfDayReceiptDocument(input: EodReceiptInput): EodReceiptDocument {
+  const rows: { label: string; amount: string }[] = [];
+  for (const line of input.lines) {
+    rows.push({ label: `${input.labelOf(line.channel)} · exp ${baht(line.expectedSatang)}`, amount: line.actualSatang === null ? '—' : baht(line.actualSatang) });
+    if (line.actualSatang !== null && line.differenceSatang !== 0) {
+      rows.push({ label: '  difference', amount: signed(line.differenceSatang) });
+    }
+  }
+  rows.push({ label: 'Total expected', amount: baht(input.totalExpectedSatang) });
+  rows.push({ label: 'Difference', amount: signed(input.totalDifferenceSatang) });
+  const money = (v: number | null) => (v === null ? '—' : baht(v));
+  rows.push({ label: 'Counted cash', amount: money(input.countedSatang) });
+  rows.push({ label: 'Float (start)', amount: money(input.floatSatang) });
+  rows.push({ label: 'Float left in drawer', amount: money(input.floatLeftSatang) });
+  rows.push({
+    label: 'Cash to bank tonight',
+    amount: input.countedSatang !== null && input.floatLeftSatang !== null ? baht(input.countedSatang - input.floatLeftSatang) : '—',
+  });
+  const when = stampIn(input.closedAt, input.timezone);
+  const notes = [`Closed by ${input.closedByName ?? 'Unknown'} · ${when}`];
+  if (input.override) notes.push(`Closed over people still counted inside — ${input.override.reason} (${input.override.byName ?? 'manager'})`);
+  if (input.copy) notes.push('COPY');
+  return {
+    kind: 'receipt',
+    data: {
+      title: 'End of Day',
+      taxInvoiceLines: [input.branchName, `Business day ${input.date}`].filter((v): v is string => !!v),
+      ...(input.receiptNumber ? { receiptNumber: input.receiptNumber } : {}),
+      dateTime: when,
+      lines: [],
+      total: baht(input.totalActualSatang),
+      tenders: rows,
+      orderNote: notes.join('. '),
+    },
+  };
+}
 
 export const CashMovementsQuerySchema = z.object({ date: DATE.optional() });
 

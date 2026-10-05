@@ -254,6 +254,8 @@ export const PRINT_SUBJECT_TYPES = [
   'station',
   /** S2-14a — a credit voucher prints one wallet: its QR and its balance. */
   'wallet',
+  /** S2-15a round 2 — the End of Day receipt prints one closed day. */
+  'end_of_day',
 ] as const;
 export type PrintSubjectType = (typeof PRINT_SUBJECT_TYPES)[number];
 

@@ -1,11 +1,25 @@
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { auditLog, branch, box, factOccupancy15min, station, type Db } from '@oto/db';
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lte, ne, or, sql } from 'drizzle-orm';
+import {
+  auditLog,
+  band,
+  bandEvent,
+  branch,
+  box,
+  checkin,
+  factOccupancy15min,
+  member,
+  registration,
+  sale,
+  station,
+  type Db,
+} from '@oto/db';
 import {
   OCCUPANCY_STALE_AFTER_S,
   addDaysToIsoDate,
   businessDate,
   newId,
   parseDayStart,
+  type EodStrandedRow,
   type LiveOccupancyView,
 } from '@oto/shared';
 import { errors } from '../lib/errors';
@@ -70,6 +84,11 @@ import type { Exec } from './tx';
  * (`@oto/shared` business-date.ts). A group still "inside" at the boundary is
  * not carried into the next day: the window simply starts again, and
  * `clearTradingDay` writes the audit row that says who was stranded.
+ *
+ * MANUAL RESOLUTION (S2-15a round 2). A band or a check-in cleared at close
+ * (`pos.occupancy_resolution`) is not counted from its `resolved_at` on; a
+ * band that passes the gate again after that is counted as usual. Nothing in
+ * the journal or the check-in changes, so a count at an earlier instant stands.
  *
  * WHICH CLOCK places a passage. `band_event.created_at` is the box's own
  * stamp, kept exactly as sent. A Pi has no clock battery, so after a power cut
@@ -228,6 +247,12 @@ export async function countAt(
       join pos.band b on b.id = l.band_id
       where l.kind = 'entry' and b.gate_access
         and l.at >= ${from.toISOString()}::timestamptz
+        and not exists (
+          select 1 from pos.occupancy_resolution r
+          where r.band_id = b.id
+            and r.resolved_at >= l.at
+            and r.resolved_at <= ${at.toISOString()}::timestamptz
+        )
     )
     select
       coalesce((select json_agg(i.id order by i.id) from inside i), '[]'::json) as "adultBandIds",
@@ -242,7 +267,11 @@ export async function countAt(
           and c.checked_in_at is not null
           and c.checked_in_at >= ${from.toISOString()}::timestamptz
           and c.checked_in_at <= ${at.toISOString()}::timestamptz
-          and (c.checked_out_at is null or c.checked_out_at > ${at.toISOString()}::timestamptz)) as "dropOffKids"
+          and (c.checked_out_at is null or c.checked_out_at > ${at.toISOString()}::timestamptz)
+          and not exists (
+            select 1 from pos.occupancy_resolution r
+            where r.checkin_id = c.id and r.resolved_at <= ${at.toISOString()}::timestamptz
+          )) as "dropOffKids"
   `);
   const row = (result as unknown as {
     rows: Array<{ adultBandIds: string[]; saleIds: string[]; kids: number; dropOffKids: number }>;
@@ -250,6 +279,148 @@ export async function countAt(
   const adults = row.adultBandIds.length;
   const kids = Number(row.kids) + Number(row.dropOffKids);
   return { adults, kids, total: adults + kids, saleIds: row.saleIds, adultBandIds: row.adultBandIds };
+}
+
+// --- Stranded at close (S2-15a round 2) ---------------------------------------
+
+/**
+ * Who the branch still counts inside on one trading day, as the End of Day
+ * lists them: every adult band `countAt` holds inside, and every child checked
+ * in and not checked out, at the end of that day or now, whichever is sooner.
+ * A row cleared by a manual resolution (`pos.occupancy_resolution`) is not
+ * counted, so it is not listed.
+ */
+export async function strandedOf(
+  exec: Exec,
+  input: { operatorId: string; branchId: string; date: string; now: Date },
+): Promise<{ rows: EodStrandedRow[]; at: Date }> {
+  const clock = await branchClock(exec, input.branchId, input.operatorId);
+  const from = await tradingDayStart(exec, clock, input.date);
+  const end = await tradingDayStart(exec, clock, addDaysToIsoDate(input.date, 1));
+  const at = new Date(Math.min(input.now.getTime(), end.getTime() - 1));
+  if (at.getTime() < from.getTime()) return { rows: [], at };
+  const count = await countAt(exec, clock.id, from, at);
+
+  const bands = count.adultBandIds.length
+    ? await exec
+        .select({ id: band.id, code: band.code, saleId: band.saleId, memberId: band.memberId })
+        .from(band)
+        .where(inArray(band.id, count.adultBandIds))
+        .orderBy(asc(band.code))
+    : [];
+  const checkins = await exec
+    .select({
+      id: checkin.id,
+      childName: checkin.childName,
+      checkedInAt: checkin.checkedInAt,
+      saleId: checkin.saleId,
+      bandCode: band.code,
+      guardianName: registration.guardianName,
+      guardianPhone: registration.guardianPhone,
+    })
+    .from(checkin)
+    .innerJoin(registration, eq(registration.id, checkin.registrationId))
+    .leftJoin(band, eq(band.id, checkin.bandId))
+    .where(
+      and(
+        eq(checkin.branchId, clock.id),
+        ne(checkin.status, 'registered'),
+        isNotNull(checkin.checkedInAt),
+        gte(checkin.checkedInAt, from),
+        lte(checkin.checkedInAt, at),
+        or(isNull(checkin.checkedOutAt), gt(checkin.checkedOutAt, at)),
+        sql`not exists (select 1 from pos.occupancy_resolution r where r.checkin_id = ${checkin.id} and r.resolved_at <= ${at.toISOString()}::timestamptz)`,
+      ),
+    )
+    .orderBy(asc(checkin.checkedInAt), asc(checkin.id));
+
+  const saleIds = [...new Set([...bands.map((b) => b.saleId), ...checkins.map((c) => c.saleId).filter((id): id is string => !!id)])];
+  const sales = saleIds.length
+    ? await exec.select({ id: sale.id, receiptNumber: sale.receiptNumber, memberId: sale.memberId }).from(sale).where(inArray(sale.id, saleIds))
+    : [];
+  const saleById = new Map(sales.map((s) => [s.id, s]));
+  const memberIds = [
+    ...new Set([...bands.map((b) => b.memberId), ...sales.map((s) => s.memberId)].filter((id): id is string => !!id)),
+  ];
+  const members = memberIds.length
+    ? await exec.select({ id: member.id, nickname: member.nickname, name: member.name, phone: member.phone }).from(member).where(inArray(member.id, memberIds))
+    : [];
+  const memberById = new Map(members.map((m) => [m.id, m]));
+
+  const bandIds = bands.map((b) => b.id);
+  const events = bandIds.length
+    ? await exec
+        .select({ bandId: bandEvent.bandId, kind: bandEvent.kind, createdAt: bandEvent.createdAt, stationName: station.name })
+        .from(bandEvent)
+        .innerJoin(station, eq(station.id, bandEvent.stationId))
+        .where(
+          and(
+            inArray(bandEvent.bandId, bandIds),
+            inArray(bandEvent.kind, ['entry', 'exit']),
+            eq(station.branchId, clock.id),
+            lte(bandEvent.createdAt, at),
+          ),
+        )
+        .orderBy(desc(bandEvent.createdAt), desc(bandEvent.id))
+    : [];
+  const lastEvent = new Map<string, (typeof events)[number]>();
+  for (const e of events) if (!lastEvent.has(e.bandId)) lastEvent.set(e.bandId, e);
+
+  const bandSaleIds = [...new Set(bands.map((b) => b.saleId))];
+  const kids = bandSaleIds.length
+    ? await exec
+        .select({ saleId: band.saleId, n: sql<number>`count(*)::int` })
+        .from(band)
+        .where(
+          and(
+            inArray(band.saleId, bandSaleIds),
+            eq(band.gateAccess, false),
+            eq(band.status, 'active'),
+            sql`not exists (select 1 from pos.checkin c where c.band_id = ${band.id})`,
+          ),
+        )
+        .groupBy(band.saleId)
+    : [];
+  const kidsBySale = new Map(kids.map((k) => [k.saleId, Number(k.n)]));
+  /** A sale's children go with its first listed band, so none is counted twice. */
+  const kidsShown = new Set<string>();
+
+  const guardianOf = (memberId: string | null) => {
+    const m = memberId ? memberById.get(memberId) : undefined;
+    return m ? { name: m.nickname || m.name, phone: m.phone } : null;
+  };
+  const rows: EodStrandedRow[] = bands.map((b) => {
+    const s = saleById.get(b.saleId);
+    const ev = lastEvent.get(b.id);
+    const first = !kidsShown.has(b.saleId);
+    kidsShown.add(b.saleId);
+    return {
+      kind: 'band',
+      subjectId: b.id,
+      bandCode: b.code,
+      childName: null,
+      childrenWithBand: first ? (kidsBySale.get(b.saleId) ?? 0) : 0,
+      lastGateEvent: ev ? { kind: ev.kind, at: ev.createdAt.toISOString(), stationName: ev.stationName } : null,
+      checkedInAt: null,
+      sale: { saleId: b.saleId, receiptNumber: s?.receiptNumber ?? null },
+      guardian: guardianOf(b.memberId ?? s?.memberId ?? null),
+    };
+  });
+  for (const c of checkins) {
+    const s = c.saleId ? saleById.get(c.saleId) : undefined;
+    rows.push({
+      kind: 'checkin',
+      subjectId: c.id,
+      bandCode: c.bandCode,
+      childName: c.childName,
+      childrenWithBand: 0,
+      lastGateEvent: null,
+      checkedInAt: c.checkedInAt?.toISOString() ?? null,
+      sale: c.saleId ? { saleId: c.saleId, receiptNumber: s?.receiptNumber ?? null } : null,
+      guardian: { name: c.guardianName, phone: c.guardianPhone },
+    });
+  }
+  return { rows, at };
 }
 
 // --- Freshness ---------------------------------------------------------------

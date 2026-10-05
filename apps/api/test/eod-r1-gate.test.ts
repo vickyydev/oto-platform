@@ -22,6 +22,7 @@ import {
   createTestContext,
   operatorIdByName,
   signInAs,
+  takeStation,
   teardownAll,
   type TestContext,
 } from './helpers';
@@ -244,6 +245,9 @@ beforeAll(async () => {
   managerCookie = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
   chalongCookie = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
   staffCookie = await signInAs(ctx.app, '+66900000881', 'staff1234');
+  await takeStation(ctx.app, receptionCookie, till1);
+  await takeStation(ctx.app, managerCookie, till1);
+  await takeStation(ctx.app, staffCookie, till1);
 }, 300_000);
 
 afterAll(async () => {

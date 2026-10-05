@@ -1,5 +1,19 @@
 # End of Day round 2 — the build brief (S2-15a, SCRUM-215)
 
+## Continuation checkpoint (6 October 2026)
+
+The partial WIP has been transplanted into `feat/eod-round-2-review` in the
+isolated `oto-pos-eod-round-2` worktree. Its old 0055 migration conflicted
+with applied voucher migrations; the schema and append-only trigger now have
+forward-only migration 0058, generated from the 0057 snapshot. The unrelated
+arrival audit test was left out. Failed outbox records, disabled boxes with
+pending work, action-ID reuse with changed details and receipt counter
+ownership were repaired. Focused round-2 and round-1 checks pass, as recorded
+in the latest STATUS and STOP POINT. This branch is not landed or deployed.
+Review the receipt's live label lookups before landing, then rebase on main,
+deploy API before POS and capture actual staging screenshots. Settlement and
+demo-day rounds remain separate work after round 2.
+
 _Written 2 October 2026 for the round-2 build, and kept so the work can be
 continued from any session. Plan: `PLAN.md` sections 2-4 and 7._
 

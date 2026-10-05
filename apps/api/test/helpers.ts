@@ -105,6 +105,17 @@ export async function signInAs(app: App, phone: string, password: string): Promi
   return cookie!.split(';')[0]!;
 }
 
+/** Take the same counter a signed-in till session uses before a close or print. */
+export async function takeStation(app: App, cookie: string, stationId: string): Promise<void> {
+  const res = await app.inject({
+    method: 'PUT',
+    url: '/me/session/station',
+    headers: { cookie },
+    payload: { stationId },
+  });
+  if (res.statusCode !== 200) throw new Error(`station pick failed (${res.statusCode})`);
+}
+
 export const ADMIN = { phone: '+66900000001', password: 'admin1234' };
 export const RECEPTION = { phone: '+66900000002', password: 'reception1234' };
 /**

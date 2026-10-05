@@ -26,6 +26,38 @@ evidence, then rebase/review the End of Day branch and land its verified
 round-2 slice before rounds 3 and 4. Every push gets a same-turn Jira comment
 and status check. Never print or attach credentials or secret values.
 
+## STOP POINT - 6 October 2026, 01:27 Bangkok - End of Day round 2 isolated
+
+The clean `oto-pos-eod-round-2` worktree on `feat/eod-round-2-review` holds
+the round-2 transplant from `wip/eod-round-2-inflight`; do not use the
+original dirty checkout. The branch remains based on main `59cb2cf5` and
+has not been landed or deployed. The unrelated arrival audit file in the WIP
+snapshot was excluded. Migration 0058 was generated against main's 0057
+snapshot, then given the manual append-only occupancy trigger; 0055-0057
+were not changed. Its four database migration checks pass.
+
+The focused review found and fixed these round-2 close gates: a failed
+outbox row is still undelivered; a disabled box with pending records must
+hold the day; a manual-resolution action ID cannot replay with a different
+day, reason or note; and close/reprint must print on the counter taken by
+the signed-in session. Round-2 API checks pass 28/28, round-1 API checks
+44/44, POS End of Day checks 19/19, shared End of Day checks 11/11. Database,
+API, POS and shared typecheck, scoped lint, POS build and diff check pass.
+No staging deployment or screenshot exists for round 2 yet. The reviewer
+also observed that the receipt renderer looks up present-day terminal and
+payment-method labels; decide whether to freeze those names at close before
+landing. Historical manual resolutions use the day-end effective timestamp
+and the actual action time in `createdAt`; keep that distinction explicit.
+
+Next: inspect the full landing list and receipt behavior, checkpoint/push
+this branch with a same-turn SCRUM-215 progress comment, then rebase on
+latest main after SCRUM-494's proof commit. Land only after review and tests,
+deploy API before POS, drive signed-in desktop and phone staging flows,
+attach and name screenshots on SCRUM-215. Then build rounds 3 and 4 from
+the cash plan. SCRUM-494 remains Testing with five real staging cards already
+attached; CI at `59cb2cf5` is still running. No ticket is Deployed from this
+branch checkpoint.
+
 
 ## STOP POINT - 6 October 2026, 01:00 Bangkok - stock CI repair
 

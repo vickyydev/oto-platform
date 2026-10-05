@@ -48,6 +48,7 @@ import {
 import { routeOnBox, templateTypeFor } from './print';
 import { attachSaleBandKeys, creditVoucherDocumentOf, creditVoucherWalletsOf } from './wallet';
 import { bandHolderOfSale, isPrepaidSetAside } from './band-food';
+import { endOfDayReceiptDocumentOf } from './end-of-day-receipt';
 import { tillVoucherDocumentOf } from './voucher-promotions';
 import type { Exec, Tx } from './tx';
 
@@ -193,7 +194,7 @@ export interface SalePrintingResult {
 
 interface JobRequest {
   kind: PrintKind;
-  subjectType: 'sale' | 'band' | 'sale_line' | 'wallet';
+  subjectType: 'sale' | 'band' | 'sale_line' | 'wallet' | 'end_of_day';
   subjectId: string;
   reprintOf?: string | null;
   reprintReason?: string | null;
@@ -206,8 +207,9 @@ interface JobScope {
    * The sale these jobs print, carried on every command (offline plan §2.5):
    * a box that already printed this sale from its own queue while it was
    * offline refuses a late FIRST print of it, and needs the sale's id to know.
+   * Null for paper that is not a sale's (the End of Day receipt).
    */
-  saleId: string;
+  saleId: string | null;
   stationRow: StationRow;
   actorAccountId: string | null;
   actionId: string;
@@ -295,7 +297,7 @@ async function writeJob(tx: Tx, scope: JobScope, request: JobRequest, offsetMs: 
         /** The box fetches this job's content from the platform before it prints. */
         document: 'platform',
         subjectType: request.subjectType,
-        saleId: scope.saleId,
+        ...(scope.saleId ? { saleId: scope.saleId } : {}),
         ...(request.reprintOf ? { reprintOf: request.reprintOf } : {}),
         /**
          * A copy somebody asked for. Said on its own because a sale the box
@@ -790,6 +792,77 @@ export async function printJobsOfSale(db: Exec, saleId: string): Promise<SalePri
   );
 }
 
+// --- The End of Day receipt (S2-15a round 2) ------------------------------------
+
+export interface EndOfDayReceiptJobInput {
+  operatorId: string;
+  branchId: string;
+  endOfDayId: string;
+  stationRow: StationRow;
+  actorAccountId: string;
+  actionId: string;
+  requestId?: string;
+  now: Date;
+  /** A reprint's reason; the original is found here and named on the copy. */
+  reprintReason?: string | null;
+}
+
+/**
+ * Queue the End of Day receipt: one `receipt` job about the closed day, on the
+ * counter's receipt printer, written as every sale's job is (`writeJob`).
+ * Under a savepoint and never throws: a receipt that cannot be queued is a
+ * note, and the close it belongs to stands.
+ */
+export async function queueEndOfDayReceipt(
+  tx: Tx,
+  input: EndOfDayReceiptJobInput,
+): Promise<{ job: SalePrintJobView | null; note: string | null }> {
+  if (!input.stationRow.boxId) {
+    return { job: null, note: `End of Day receipt not printed — ${input.stationRow.name} is not attached to a box` };
+  }
+  try {
+    const job = await tx.transaction(async (sp) => {
+      const original = input.reprintReason ? await latestJob(sp, 'end_of_day', input.endOfDayId, ['receipt']) : null;
+      return writeJob(
+        sp,
+        {
+          operatorId: input.operatorId,
+          branchId: input.branchId,
+          saleId: null,
+          stationRow: input.stationRow,
+          actorAccountId: input.actorAccountId,
+          actionId: input.actionId,
+          requestId: input.requestId,
+          now: input.now,
+        },
+        {
+          kind: 'receipt',
+          subjectType: 'end_of_day',
+          subjectId: input.endOfDayId,
+          reprintOf: original ? reprintRootOf({ id: original.id, reprintOf: original.reprintOf }) : null,
+          reprintReason: input.reprintReason ?? null,
+        },
+        0,
+      );
+    });
+    const note = job.status === 'skipped' ? 'End of Day receipt not printed — no receipt printer at this station' : null;
+    return { job, note };
+  } catch {
+    return { job: null, note: 'The End of Day receipt could not be queued — reprint it from the closed day' };
+  }
+}
+
+/** Every print of one closed day's receipt, oldest first. */
+export async function endOfDayReceiptJobs(db: Exec, endOfDayId: string): Promise<SalePrintJobView[]> {
+  const rows = await db
+    .select({ job: printJob, deviceLabel: device.label })
+    .from(printJob)
+    .leftJoin(device, eq(device.id, printJob.deviceId))
+    .where(and(eq(printJob.subjectType, 'end_of_day'), eq(printJob.subjectId, endOfDayId)))
+    .orderBy(asc(printJob.queuedAt), asc(printJob.id));
+  return rows.map((r) => jobViewOf(r.job, r.deviceLabel));
+}
+
 // --- The document the box prints ------------------------------------------------
 
 async function staffNameOf(db: Exec, accountId: string): Promise<string | undefined> {
@@ -1017,6 +1090,12 @@ export async function buildPrintDocument(
    * platform job to name — it carries the reason it was asked for.
    */
   const copy = row.reprintOf !== null || row.reprintReason !== null;
+  /** S2-15a round 2 — the End of Day receipt prints one closed day, as it was locked. */
+  if (row.subjectType === 'end_of_day' && row.kind === 'receipt' && row.subjectId) {
+    const data = await endOfDayReceiptDocumentOf(db, row.subjectId, copy);
+    if (!data) throw noDocument();
+    return { ...base, job: data as RenderJob };
+  }
   const saleIdOf = async (): Promise<string | null> => {
     if (!row.subjectId) return null;
     if (row.subjectType === 'sale') return row.subjectId;
