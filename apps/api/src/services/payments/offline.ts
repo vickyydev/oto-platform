@@ -963,7 +963,10 @@ async function recordTenders(
       }
     }
 
-    const method = await tenderMethodOf(tx, scope.operatorId, tender.methodCode, tender.kind);
+    const method = await tenderMethodOf(tx, scope.operatorId, tender.methodCode, tender.kind, { offlineRecorded: true });
+    if (method === 'other' && (tender.tenderedSatang !== undefined || tender.changeSatang !== undefined)) {
+      throw errors.badRequest('Other payment must not carry cash received or change');
+    }
     const opened = await openAttempt(tx, {
       operatorId: scope.operatorId,
       branchId: scope.branchId,

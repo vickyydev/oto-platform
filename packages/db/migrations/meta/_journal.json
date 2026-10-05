@@ -421,6 +421,13 @@
       "when": 1791231924328,
       "tag": "0059_eod_settlement",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1791237292171,
+      "tag": "0060_payment_method_other",
+      "breakpoints": true
     }
   ]
 }

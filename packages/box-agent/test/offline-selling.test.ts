@@ -110,6 +110,12 @@ function catalogueItem(kidWeekday = 35000) {
       { id: OAT, modifierGroupId: MILK, name: 'Oat', priceSatang: 1500, priceWeekendSatang: null, sortOrder: 0 },
     ],
     modifierLinks: [],
+    paymentMethods: [
+      { code: 'cash', kind: 'cash', enabled: true },
+      { code: 'partner_tender', kind: 'other', enabled: true },
+      { code: 'disabled_partner', kind: 'other', enabled: false },
+      { code: 'card_partner', kind: 'card', enabled: true },
+    ],
     tiers: [{ code: 'tourist', isDefault: true, archivedAt: null }],
     holidays: [],
     taxConfig: {
@@ -152,6 +158,7 @@ interface SellingBox {
   caller: BridgeTillCaller;
   crash: { at: FinaliseCrashPoint | null };
   write(scope: CachedBundle['scope'], items: unknown[]): Promise<void>;
+  restart(): Promise<void>;
   close(): void;
 }
 
@@ -165,7 +172,8 @@ async function openSellingBox(opts: { mark?: number; terminals?: 'both' | 'card'
   const harness = openTestStore(new Date().toISOString());
   await harness.store.init(BOX_ID);
   const crash: SellingBox['crash'] = { at: null };
-  const agent = createBoxAgent({
+  const makeAgent = async () => {
+    const agent = createBoxAgent({
     apiBaseUrl: 'http://cloud.test',
     credentials: memoryCredentialStore({
       boxId: BOX_ID,
@@ -189,9 +197,12 @@ async function openSellingBox(opts: { mark?: number; terminals?: 'both' | 'card'
         }
       },
     },
-  });
-  await agent.ensureRegistered();
-  await agent.syncConfig();
+    });
+    await agent.ensureRegistered();
+    await agent.syncConfig();
+    return agent;
+  };
+  const agent = await makeAgent();
   const write = async (scope: CachedBundle['scope'], items: unknown[]) => {
     await harness.store.writeBundle(BOX_ID, {
       scope,
@@ -229,7 +240,7 @@ async function openSellingBox(opts: { mark?: number; terminals?: 'both' | 'card'
     offlineFresh: false,
     jti: JTI,
   };
-  return {
+  const box: SellingBox = {
     agent,
     harness,
     cloud,
@@ -237,11 +248,19 @@ async function openSellingBox(opts: { mark?: number; terminals?: 'both' | 'card'
     caller,
     crash,
     write,
+    async restart() {
+      box.agent.stop();
+      box.agent = await makeAgent();
+      const nextBridge = box.agent.bridge();
+      assert.ok(nextBridge);
+      box.bridge = nextBridge;
+    },
     close() {
-      agent.stop();
+      box.agent.stop();
       harness.close();
     },
   };
+  return box;
 }
 
 const intent = (type: string, payload: Record<string, unknown>) => ({
@@ -416,6 +435,64 @@ test('the same sale sent again is answered from the box log: one sale, one numbe
     assert.equal(receipts(box), 1, 'nor print twice');
     const next = await send(box, 'sale.finalise', (await ticketSale(box)).body);
     assert.equal(next.sale.receiptNumber, 'T1-000044');
+  } finally {
+    box.close();
+  }
+});
+
+test('Other payment stays distinct from cash through box restart and replay', async () => {
+  const box = await openSellingBox();
+  try {
+    const { total, body } = await ticketSale(box);
+    const tender = { actionId: `other-${uuidv7().slice(-12)}`, method: 'partner_tender', kind: 'other', amountSatang: total };
+    const first = await send(box, 'sale.finalise', { ...body, tender });
+    assert.equal(first.finalised, true);
+    assert.equal(first.attempt?.method, 'other');
+    assert.equal(first.attempt?.tenderedSatang, null);
+    assert.equal(first.attempt?.changeSatang, null);
+    assert.equal(first.drawer, 'not_asked');
+    assert.equal(receipts(box), 1);
+    const batch = await box.harness.store.takeBatch(BOX_ID, { maxEvents: 5, maxBytes: 1_000_000, now: new Date().toISOString() });
+    const [fact] = batch.events;
+    assert.equal(fact?.type, 'sale.finalised');
+    assert.deepEqual((fact?.payload as { tenders: unknown[] }).tenders, [{
+      actionId: tender.actionId, methodCode: 'partner_tender', kind: 'other', provider: 'manual', amountSatang: total,
+      paidAt: first.attempt?.paidAt,
+    }]);
+    await box.harness.store.releaseBatch(BOX_ID, batch.events.map((event) => event.eventId), {
+      errorCode: 'TEST_PEEK', errorMessage: 'peeked', retryAt: new Date(0).toISOString(),
+    });
+    await box.restart();
+    const again = await send(box, 'sale.finalise', { ...body, tender });
+    assert.equal(again.replay, true);
+    assert.equal(again.sale.receiptNumber, first.sale.receiptNumber);
+    assert.equal(again.drawer, 'not_asked');
+    assert.equal((await box.agent.outbox()!.depth()).queued, 1);
+  } finally {
+    box.close();
+  }
+});
+
+test('the box refuses reserved or cash-shaped Other without numbering a sale', async () => {
+  const box = await openSellingBox();
+  try {
+    const { total, body } = await ticketSale(box);
+    for (const tender of [
+      { method: 'cash', kind: 'other', amountSatang: total },
+      { method: 'partner_tender', kind: 'other', amountSatang: total, tenderedSatang: total },
+      { method: 'paid_online', kind: 'other', amountSatang: total },
+      { method: 'unknown_partner', kind: 'other', amountSatang: total },
+      { method: 'disabled_partner', kind: 'other', amountSatang: total },
+      { method: 'card_partner', kind: 'other', amountSatang: total },
+      { method: 'partner_tender', kind: 'unknown', amountSatang: total },
+    ]) {
+      await assert.rejects(
+        send(box, 'sale.finalise', { ...body, tender: { actionId: `bad-${uuidv7().slice(-12)}`, ...tender } }),
+        (error: unknown) => error instanceof BridgeError && ['VALIDATION', 'PAYMENT_METHOD_UNAVAILABLE'].includes(error.code),
+      );
+    }
+    assert.equal((await box.agent.outbox()!.depth()).queued, 0);
+    assert.equal(await box.agent.sales()!.recorded(body.saleId), null);
   } finally {
     box.close();
   }

@@ -376,6 +376,7 @@ const METHOD_LABEL: Record<PaymentAttemptView['method'], string> = {
   wallet: 'Credit',
   voucher: 'Voucher',
   transfer: 'Transfer',
+  other: 'Other',
 };
 
 /**
@@ -458,7 +459,7 @@ export function PaymentRow({
 }) {
   const status = STATUS_LABEL[attempt.status];
   const Icon =
-    attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : attempt.method === 'wallet' ? Wallet : CreditCard;
+    attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : attempt.method === 'wallet' || attempt.method === 'other' ? Wallet : CreditCard;
   const detail = [
     attempt.changeSatang !== null && attempt.changeSatang > 0
       ? `฿${baht(attempt.tenderedSatang ?? 0)} given, ฿${baht(attempt.changeSatang)} change`

@@ -4115,6 +4115,9 @@ export async function finaliseSale(
       const method = online
         ? PAID_ONLINE_TENDER_METHOD
         : await tenderMethodOf(tx, row.operatorId, methodCode, tender.kind);
+      if (method === 'other' && (tender.tenderedSatang !== undefined || tender.changeSatang !== undefined)) {
+        throw errors.badRequest('Other payment must not carry cash received or change');
+      }
       const changeSatang = changeFor(amountSatang, tender.tenderedSatang);
       /**
        * OPENED, THEN SETTLED — the lifecycle every tender shares, run here in

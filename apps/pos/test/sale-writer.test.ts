@@ -639,7 +639,7 @@ describe('payment request identities', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-09-25T04:00:00.000Z'));
     vi.spyOn(paymentMethods, 'findPaymentMethod').mockImplementation((id) => {
-      const kind = id === 'park-cash' ? 'cash' : id === 'park-card' ? 'card' : id === 'park-qr' ? 'qr' : null;
+      const kind = id === 'park-cash' ? 'cash' : id === 'park-card' ? 'card' : id === 'park-qr' ? 'qr' : id === 'park-other' ? 'other' : null;
       return kind ? { id, kind, label: id, enabled: true, sortOrder: 0 } : undefined;
     });
     const prepareSale = vi.fn<PaymentStageOptions['prepareSale']>().mockResolvedValue(outcome());
@@ -680,6 +680,22 @@ describe('payment request identities', () => {
     await test.result.current.submit();
     expect(test.finaliseSale.mock.calls[2]![1]).not.toBe(test.finaliseSale.mock.calls[1]![1]);
     expect(test.onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('records Other as an approved manual tender without cash change or a terminal request', async () => {
+    const test = mountPayment();
+    const otherAttempt = cashAttempt('sale-1');
+    test.finaliseSale.mockResolvedValueOnce(outcome(apiSale({ status: 'finalised' }), {
+      finalised: true, outstandingSatang: 0,
+      attempt: { ...otherAttempt, method: 'other', tenderedSatang: null, changeSatang: null },
+    }));
+    test.result.current.selectMethod('park-other');
+    expect(test.result.current.canSubmit).toBe(true);
+    await test.result.current.submit();
+    expect(test.finaliseSale).toHaveBeenCalledWith({ method: 'park-other', kind: 'other', amountSatang: 54_000 }, expect.any(String));
+    expect(test.start).not.toHaveBeenCalled();
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+    expect(test.onComplete.mock.calls[0]![1]).toMatchObject([{ method: 'park-other', kind: 'other' }]);
   });
 
   it('keeps partial money open, then closes confirmed QR money with NO_TENDER exactly once', async () => {

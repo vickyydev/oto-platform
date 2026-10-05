@@ -1,13 +1,10 @@
 import { useState } from 'react';
 import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
-import { PAYMENT_METHODS, PAYMENT_METHOD_KINDS } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { paymentMethodUsage } from '@/api/catalogBridge';
-import { toast } from '@/hooks/use-toast';
 import type { PaymentMethod, PaymentMethodKind } from '@/types';
 import { paymentMethodIcon, normalizePaymentMethod } from '@/lib/payments';
-import { AdminNoticeBanner } from '../NotSavedNotice';
 import { TextInput } from '../discounts/fields';
 
 const KIND_OPTIONS: { value: PaymentMethodKind; label: string }[] = [
@@ -16,28 +13,6 @@ const KIND_OPTIONS: { value: PaymentMethodKind; label: string }[] = [
   { value: 'qr', label: 'QR / PromptPay' },
   { value: 'other', label: 'Other' },
 ];
-
-/**
- * The kinds the platform can file money under today (SCRUM-206).
- *
- * `pos.payment_attempt.method` is the word the ledger groups money by, and
- * `other` is the one tender kind with no word waiting for it — so a sale
- * tendered against an `other` method is refused at the counter, after the
- * customer has paid. Derived from the two vocabularies rather than typed out,
- * so the day a kind gains a ledger word this list grows with it.
- */
-const LEDGER_BACKED_KINDS: readonly string[] = PAYMENT_METHOD_KINDS.filter((kind) =>
-  (PAYMENT_METHODS as readonly string[]).includes(kind),
-);
-
-const kindNames = LEDGER_BACKED_KINDS.join(', ');
-
-const KIND_REFUSAL =
-  `A tender has to be a kind the platform can file money under, and today those are ${kindNames}. ` +
-  `Nothing records money against an “other” tender yet, so the till would take the payment and ` +
-  `then refuse the sale.`;
-
-const isTenderable = (kind: PaymentMethodKind): boolean => LEDGER_BACKED_KINDS.includes(kind);
 
 // Slug a label into a stable token id, kept unique against existing methods.
 // Run through normalizePaymentMethod so a label like "Credit Card" can never
@@ -71,28 +46,19 @@ export function PaymentMethodsSection() {
    * press Enter.
    */
   const [draft, setDraft] = useState<{ id: string; label: string } | null>(null);
-  // The prototype's new-method kind started at "other", which cost nothing when
-  // the list lived in browser memory. It is now the one kind that cannot be
-  // saved, so the box opens on the first kind that can — otherwise every visit
-  // to this panel starts on a refusal.
-  const [newKind, setNewKind] = useState<PaymentMethodKind>('cash');
+  const [newKind, setNewKind] = useState<PaymentMethodKind>('other');
 
   const sorted = [...paymentMethods].sort((a, b) => a.sortOrder - b.sortOrder);
-
-  const refuseKind = () => {
-    toast({ title: 'That kind of tender cannot be saved yet', description: KIND_REFUSAL });
-  };
 
   const add = () => {
     const label = newLabel.trim();
     if (!label) return;
-    if (!isTenderable(newKind)) return refuseKind();
     const taken = new Set(paymentMethods.map((m) => m.id));
     const id = makeId(label, taken);
     const sortOrder = sorted.length ? sorted[sorted.length - 1].sortOrder + 1 : 0;
     mutators.upsertPaymentMethod({ id, label, kind: newKind, enabled: true, sortOrder });
     setNewLabel('');
-    setNewKind('cash');
+    setNewKind('other');
   };
 
   const patch = (m: PaymentMethod, fields: Partial<PaymentMethod>) =>
@@ -106,37 +72,28 @@ export function PaymentMethodsSection() {
   };
 
   const changeKind = (m: PaymentMethod, kind: PaymentMethodKind) => {
-    // Refused here as well as at the door, so a tender the platform would send
-    // back never appears in the method grid even for the moment it takes the
-    // panel to hear the refusal and reload.
-    if (!isTenderable(kind)) return refuseKind();
     patch(m, { kind });
   };
 
   /**
-   * Remove a tender, or offer to disable it (SCRUM-206, decision O-7).
+   * Remove a tender after the approved warning (SCRUM-495, item 15).
    *
-   * The prototype warned and let the delete through, because its transactions
-   * were browser memory. The platform's are a ledger: it counts the money rows
-   * naming the token and refuses the delete with that count, so the panel makes
-   * the same offer the prototype's warning was already recommending — disable
-   * it, which hides it at checkout and keeps every past sale readable.
+   * The platform archives the row, so the active till list loses it while the
+   * old ledger rows keep their original method code.
    *
    * The count is the platform's, read on the last hydration. It is used to
-   * choose the question, never to authorise the delete: that answer is the
-   * server's, and a race between two managers ends in its refusal, not here.
+   * choose the question, never to authorise the archive: the server still
+   * checks who may change the operator's method list.
    */
   const remove = (m: PaymentMethod) => {
     const used = paymentMethodUsage(m.id);
     if (used > 0) {
       const ok = window.confirm(
         `“${m.label}” is referenced by ${used} transaction${used === 1 ? '' : 's'}. ` +
-          `Deleting it would leave those records labelled by their raw token in reports, so it ` +
-          `cannot be deleted. Disable it instead? (Disabling hides it at checkout but keeps ` +
-          `reporting clean.)`,
+          `Deleting it may leave those records labelled by their raw token in reports. ` +
+          `Delete anyway? (Disabling it instead hides it at checkout but keeps reporting clean.)`,
       );
-      if (ok) patch(m, { enabled: false });
-      return;
+      if (!ok) return;
     }
     mutators.deletePaymentMethod(m.id);
   };
@@ -189,19 +146,13 @@ export function PaymentMethodsSection() {
         </select>
         <Button
           onClick={add}
-          disabled={!newLabel.trim() || !isTenderable(newKind)}
+          disabled={!newLabel.trim()}
           className="shrink-0"
         >
           <Plus className="w-4 h-4" />
           Add
         </Button>
       </div>
-
-      {!isTenderable(newKind) && (
-        <div className="mt-3">
-          <AdminNoticeBanner>{KIND_REFUSAL}</AdminNoticeBanner>
-        </div>
-      )}
 
       {/* Methods list */}
       <div className="mt-4 flex flex-col gap-2">

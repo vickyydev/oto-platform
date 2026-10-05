@@ -15,6 +15,7 @@ export function paymentSubmitLabel(stage: PaymentStageController, confirmationLa
   if (stage.state.outstandingSatang === 0 || stage.creditCoversAll) return label('complete');
   const kind = stage.state.method ? findPaymentMethod(stage.state.method)?.kind : null;
   if (confirmationLabel && (kind === 'cash' || !stage.state.method)) return confirmationLabel;
+  if (kind === 'other') return confirmationLabel ?? 'Confirm Payment Received';
   return label(kind === 'cash' ? 'recordCash' : kind === 'qr' ? 'startQr' : kind === 'card' ? 'startCard' : 'selectMethod');
 }
 

@@ -605,6 +605,7 @@ describe('expectedLinesOf and channelOfRefundSlice', () => {
       attempts: [
         { id: 'a', method: 'voucher', methodCode: 'gift', stationId: 's', tid: null, amountSatang: 70_00 },
         { id: 'b', method: 'card', methodCode: 'card', stationId: 's', tid: 'OLD-TID', amountSatang: 10_00 },
+        { id: 'c', method: 'other', methodCode: 'partner_token', stationId: 's', tid: null, amountSatang: 30_00 },
       ],
       refundSlices: [],
       terminals: [{ tid: 'T1', label: 'EDC 1' }],
@@ -617,6 +618,7 @@ describe('expectedLinesOf and channelOfRefundSlice', () => {
       ['card:T1', 0],
       ['card:OLD-TID', 10_00],
       ['method:gift', 70_00],
+      ['method:partner_token', 30_00],
       ['ewallet', 0],
       ['bank_transfer', 0],
       ['party_prepay', 0],
@@ -631,6 +633,7 @@ describe('expectedLinesOf and channelOfRefundSlice', () => {
     expect(channelOfRefundSlice({ ...slice, route: 'terminal_void', status: 'done', fallback: null }, card, true)).toBe('card:T1');
     expect(channelOfRefundSlice({ ...slice, route: 'wallet', status: 'done', fallback: null }, null, true)).toBeNull();
     expect(channelOfRefundSlice({ method: 'cash', methodCode: null, route: 'cash', status: 'done', fallback: null }, null, true)).toBe('cash');
+    expect(channelOfRefundSlice({ method: 'other', methodCode: 'partner_token', route: 'manual', status: 'done', fallback: null }, null, true)).toBe('method:partner_token');
     // A paid-online tender was never on the till's lines, so its refund is not taken off them.
     expect(channelOfRefundSlice({ method: 'transfer', methodCode: 'paid_online', route: 'manual', status: 'done', fallback: null }, { ...card, method: 'transfer', methodCode: 'paid_online', tid: null }, false)).toBeNull();
   });

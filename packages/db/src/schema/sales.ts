@@ -886,7 +886,7 @@ export const saleDiscount = pos.table(
  *
  * Each word is documented once, in `@oto/shared/payments.ts`. Read it there.
  */
-export const PAYMENT_METHODS = ['cash', 'card', 'qr', 'wallet', 'voucher', 'transfer'] as const;
+export const PAYMENT_METHODS = ['cash', 'card', 'qr', 'wallet', 'voucher', 'transfer', 'other'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const PAYMENT_PROVIDERS = ['simulator', 'ghl', 'digio', '2c2p', 'manual'] as const;
@@ -1129,7 +1129,7 @@ export const paymentAttempt = pos.table(
       .where(sql`device_id is not null and terminal_ref is not null`),
     check(
       'payment_attempt_method_check',
-      sql`${t.method} in ('cash','card','qr','wallet','voucher','transfer')`,
+      sql`${t.method} in ('cash','card','qr','wallet','voucher','transfer','other')`,
     ),
     check(
       'payment_attempt_provider_check',
