@@ -6,6 +6,7 @@ import { BRANCH_MANAGER, CENTRAL_BRANCH_CODE, RECEPTION, branchIdByCode,
   createTestContext, operatorIdByName, signInAs, teardownAll, OTO_OPERATOR_NAME,
   type TestContext } from './helpers';
 import { matchSettlementEvidence, parse2c2pFixture, recordTerminalSettlement } from '../src/services/settlement';
+import { SETTLEMENT_FIXTURE_IMPORT_JOB } from '../src/services/settlement-import-job';
 import { resetDemoData } from '../src/services/demo-reset';
 import type { BoxAuth } from '../src/services/box';
 
@@ -150,16 +151,40 @@ describe('S2-15a settlement ledger', () => {
       'H,,,,,,,\r\nD,TESTINVOICE1,TESTTRAN1,,150.00,THB,payment,qr\r\n' +
       'D,UNKNOWN,,,95.00,THB,refund,qr\r\n';
     const url = `/branches/${branchId}/settlements/2c2p-import`;
-    const res = await ctx.app.inject({ method: 'POST', url, headers: { cookie: managerCookie,
+    const runs = () => ctx.db.select().from(schema.opsRun)
+      .where(and(eq(schema.opsRun.name, SETTLEMENT_FIXTURE_IMPORT_JOB), eq(schema.opsRun.branchId, branchId)));
+    const before = await runs();
+    const denied = await ctx.app.inject({ method: 'POST', url, headers: { cookie: receptionCookie,
       'idempotency-key': newId() }, payload: { date, fileName: 'fixture.csv', csv } });
+    expect(denied.statusCode).toBe(403);
+    expect(await runs()).toHaveLength(before.length);
+    const firstKey = newId();
+    const res = await ctx.app.inject({ method: 'POST', url, headers: { cookie: managerCookie,
+      'idempotency-key': firstKey }, payload: { date, fileName: 'fixture.csv', csv } });
     expect(res.statusCode, res.body).toBe(200);
     expect(res.json()).toMatchObject({ state: 'attention', matched: 1, unmatched: 1, mismatched: 0 });
+    const sameRequest = await ctx.app.inject({ method: 'POST', url, headers: { cookie: managerCookie,
+      'idempotency-key': firstKey }, payload: { date, fileName: 'fixture.csv', csv } });
+    expect(sameRequest.json()).toEqual(res.json());
+    expect(await runs()).toHaveLength(before.length + 1);
     const replay = await ctx.app.inject({ method: 'POST', url, headers: { cookie: managerCookie,
       'idempotency-key': newId() }, payload: { date, fileName: 'fixture.csv', csv } });
     expect(replay.json()).toMatchObject({ replayed: true, batchId: res.json().batchId });
     const duplicate = await ctx.app.inject({ method: 'POST', url, headers: { cookie: managerCookie,
       'idempotency-key': newId() }, payload: { date, fileName: 'fixture-again.csv', csv: `${csv}\r\n` } });
     expect(duplicate.json()).toMatchObject({ state: 'attention', matched: 0, mismatched: 1 });
+    const failed = await ctx.app.inject({ method: 'POST', url, headers: { cookie: managerCookie,
+      'idempotency-key': newId() }, payload: { date, fileName: 'bad.csv', csv: 'PRIVATELOOKUPMARKER' } });
+    expect(failed.statusCode).toBe(400);
+    const newRuns = (await runs()).filter((run) => !before.some((old) => old.id === run.id));
+    expect(newRuns.map((run) => run.outcome).sort()).toEqual(['failed', 'ok', 'ok', 'skipped']);
+    expect(newRuns.map((run) => run.kind)).toEqual(['job', 'job', 'job', 'job']);
+    expect(newRuns.find((run) => run.outcome === 'skipped'))
+      .toMatchObject({ actionId: res.json().batchId, operatorId, branchId });
+    expect(newRuns.find((run) => run.outcome === 'failed'))
+      .toMatchObject({ errorCode: 'BAD_REQUEST', branchId });
+    expect(JSON.stringify(newRuns)).not.toContain('PRIVATELOOKUPMARKER');
+    expect(JSON.stringify(newRuns)).not.toContain('TESTINVOICE1');
     const [gateway] = await ctx.db.select({ status: schema.paymentAttempt.status, paidAt: schema.paymentAttempt.paidAt })
       .from(schema.paymentAttempt).where(eq(schema.paymentAttempt.id, gatewayAttemptId));
     expect(gateway).toEqual({ status: 'approved', paidAt });

@@ -1,5 +1,28 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026 - final End of Day import job ready
+
+**6 October 2026, final End of Day follow-up:** API/POS/Console 581c7c4a are live. The isolated QA park recorded a witnessed THB100 safe drop and approved THB60 paid-out; a THB50 count difference was corrected before the day closed with expected/actual minus THB160 and its own receipt. The Health demo control is visible; its mutations remain tested on disposable databases. The fixture importer now runs as an actual on-demand operations job with atomic import/audit/run success, harmless replay and safe failure recording; 8 affected API tests pass. CI37373685349 exposed a missing settlement-line parent mapping in the schema contract (fixed; 14/14 checks pass) and a print-worker reporting timeout. Current CI is not green. Next: deploy the import job, capture final Activity/Health/close and job evidence, finish QA cleanup and SCRUM-215 closure, then land SCRUM-495 prototype parity with versioned offline rounding compatibility.
+
+Worktree remains oto-pos-eod-round-2. Only the settlement import job/API route/test,
+schema-shape parent contract and checkpoint/audit docs belong to this slice.
+No migration. Source tests8, DB shape14, API/DB typecheck and scoped lint pass.
+The staged job preserves Console response and uses a real one-shot ops_run;
+no automatic SFTP or production file support is claimed. API deploy follows
+push; frontends already at 581c7c4a need no new deployment for this API-only change.
+
+QA branch clock was changed to 00:00 by guarded job-db21dgek1f9s738o8gk0
+to permit an isolated 6 October close without touching the prior 5 October close.
+A temporary branch-manager grant on this QA branch permitted witness/approver
+selection; revoke it during cleanup. Source/staging specifics and screenshots
+are in round-3 note and pending round-4 note. Physical box credentials live only in memory.
+Do not seed/reset shared Central or alterprior unresolved payments.
+
+SCRUM-495 small slice is ready in oto-pos-s495-small, under compatibility review:
+manual rounding needs an engine version bump and acceptance of already-queued legacy
+facts. No SCRUM-495 source has landed yet. Mobile History/corrected order follows in its
+isolated workflow. SCRUM-214 still needs 216; 493 still needs 495/496/498/497.
+
 ## STOP POINT - 6 October 2026 - settlement proof and round-4 release checkpoint
 
 Use oto-pos-eod-round-2, feat/eod-round-2-review. API abc007af and

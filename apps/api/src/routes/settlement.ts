@@ -7,8 +7,9 @@ import {
 } from '@oto/shared';
 import type { App } from '../app';
 import { boxAuthOf } from '../plugins/credential';
+import { runSettlementFixtureImportJob } from '../services/settlement-import-job';
 import {
-  import2c2pFixture, recordTerminalSettlement, settlementExport, settlementSummary, startTerminalSettlement,
+  recordTerminalSettlement, settlementExport, settlementSummary, startTerminalSettlement,
 } from '../services/settlement';
 import { opCtx, withTx } from '../services/tx';
 
@@ -69,10 +70,10 @@ export async function settlementRoutes(app: App): Promise<void> {
       response: { 200: SettlementResultAnswerSchema } },
   }, async (req) => {
     const auth = req.requireAuth();
-    return withTx(app.db, opCtx(req), 'settlement.run', (tx) => import2c2pFixture(tx, {
+    return runSettlementFixtureImportJob(app.db, opCtx(req), {
       operatorId: auth.operatorId, branchId: req.params.branchId, date: req.body.date,
       fileName: req.body.fileName, csv: req.body.csv, accountId: auth.accountId,
       requestId: req.id,
-    }));
+    });
   });
 }
