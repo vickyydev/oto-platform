@@ -14,6 +14,14 @@ Next: commit/push with both Jira progress comments, run CI, deploy API before
 Console/Booth, capture real staging evidence, package a checksum-verified Pi
 release locally, and leave the park Pi update for the next physical visit.
 
+**5 October CI follow-up:** `0edb2aac` landed on main and both SCRUM-499 and
+SCRUM-500 moved to Testing with push comments. CI run 37282116890 passed
+typecheck, lint and empty-database migration apply twice, then failed in the
+existing migration-0039 schema test because its exact voucher-column list did
+not include the new nullable design column. That one existing test is updated
+and passes locally (5/5), with db typecheck and scoped lint clear. A follow-up
+push and fresh CI run are next; do not call this commit CI green.
+
 _Last updated: 2026-10-02, late night Bangkok (hand-over point from the local
 session). Platform lane: main and staging at 9a14af81, CI green, migrations
 through 0054. SCRUM-494 (all nine till-consistency items) is in Testing,

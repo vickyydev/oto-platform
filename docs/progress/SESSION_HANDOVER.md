@@ -1,5 +1,20 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT — 5 October 2026, afternoon — CI schema expectation corrected
+
+Main contains `0edb2aac` for SCRUM-499 and SCRUM-500; both Jira tickets are
+Testing with progress comments 11506 and 11507. CI run 37282116890 passed
+typecheck, lint and empty-database migration apply twice but failed its Test
+step: migration-0039's exact current voucher-column list omitted the new
+nullable design column. The existing test now includes it and passes 5/5
+locally; db typecheck and scoped lint pass. This fix and this checkpoint await
+commit/push, followed by fresh CI. No SCRUM-500 staging deploy or Pi release
+has been verified. Staging sign-in through the existing headless browser was
+re-established without printing credential values; temporary browser helper
+`scripts/agent/tmp-voucher-stage.mjs` in the original checkout must be removed
+after evidence capture and must never be committed. Continue from the next
+STOP POINT below for the full feature context.
+
 ## STOP POINT — 5 October 2026, afternoon — Lucky Wheel slip build verified locally
 
 SCRUM-499 is In Progress: fixed-code source `33e1831e` is on main and staging,

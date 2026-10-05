@@ -83,13 +83,14 @@ async function booth(): Promise<string> {
 }
 
 describe('booth.booth_settings — the voucher slip (0039)', () => {
-  it('adds three switches that default on and two texts that default to nothing', async () => {
+  it('keeps the classic switches and text defaults with an optional design', async () => {
     const { rows } = await client.query(
       `select column_name, data_type, is_nullable, column_default from information_schema.columns
         where table_schema = 'booth' and table_name = 'booth_settings' and column_name like 'voucher_%'
         order by column_name`,
     );
     expect(rows).toEqual([
+      { column_name: 'voucher_design', data_type: 'jsonb', is_nullable: 'YES', column_default: null },
       { column_name: 'voucher_footer_text', data_type: 'text', is_nullable: 'YES', column_default: null },
       { column_name: 'voucher_header_text', data_type: 'text', is_nullable: 'YES', column_default: null },
       { column_name: 'voucher_show_logo', data_type: 'boolean', is_nullable: 'NO', column_default: 'true' },
@@ -101,7 +102,7 @@ describe('booth.booth_settings — the voucher slip (0039)', () => {
   it('gives a booth written without them today’s slip', async () => {
     const stationId = await booth();
     const { rows } = await client.query(
-      `select voucher_show_logo, voucher_header_text, voucher_footer_text, voucher_show_staff, voucher_show_terms
+      `select voucher_show_logo, voucher_header_text, voucher_footer_text, voucher_show_staff, voucher_show_terms, voucher_design
          from booth.booth_settings where station_id = $1`,
       [stationId],
     );
@@ -111,6 +112,7 @@ describe('booth.booth_settings — the voucher slip (0039)', () => {
       voucher_footer_text: null,
       voucher_show_staff: true,
       voucher_show_terms: true,
+      voucher_design: null,
     });
   });
 
