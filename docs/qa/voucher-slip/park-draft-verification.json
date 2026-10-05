@@ -1,0 +1,84 @@
+{
+  "source": "7eca6612",
+  "consoleSource": "0c641b7e",
+  "boothId": "01a0be8c-89c4-7ef7-a0e7-22ca6a797f47",
+  "boothName": "FWBooth1",
+  "results": [
+    {
+      "prize": "200 THB Voucher",
+      "definitionId": "01a0c2c6-ca52-78f6-a72c-f6a9455837e8",
+      "saved": true,
+      "exactMatch": true
+    },
+    {
+      "prize": "Free Bracelet Workshop",
+      "definitionId": "01a0c2c6-ca4a-7b77-8afb-582cef9cc47d",
+      "saved": true,
+      "exactMatch": true
+    },
+    {
+      "prize": "150 THB Voucher",
+      "definitionId": "01a0c2c6-ca4e-700b-94a3-5da8c24acf0d",
+      "saved": true,
+      "exactMatch": true
+    },
+    {
+      "prize": "Kids Pizza",
+      "definitionId": "01a0c2c6-ca56-7dc4-b057-920de2f45246",
+      "saved": true,
+      "exactMatch": true
+    },
+    {
+      "prize": "100 THB Voucher",
+      "definitionId": "01a0c2c6-ca46-7bec-9c55-231163ef5540",
+      "saved": true,
+      "exactMatch": true
+    },
+    {
+      "prize": "1+1 Kids Ticket",
+      "definitionId": "01a0c2c6-ca5a-7c33-ac2f-2a4710c30d7f",
+      "saved": true,
+      "exactMatch": true
+    }
+  ],
+  "publishedVersion": 11,
+  "runningVersion": 11,
+  "boxOnline": true,
+  "draftOnly": true,
+  "showcaseSaved": true,
+  "notOnCurrentWheel": [],
+  "physicalPiUpdated": false,
+  "physicalPosScanVerified": false,
+  "sevenPrizeDraft": true,
+  "prizeOdds": [
+    {
+      "name": "100 THB Voucher",
+      "chancePercent": 25
+    },
+    {
+      "name": "Free Bracelet Workshop",
+      "chancePercent": 30.5
+    },
+    {
+      "name": "150 THB Voucher",
+      "chancePercent": 17.5
+    },
+    {
+      "name": "1+1 Kids Ticket",
+      "chancePercent": 2.5
+    },
+    {
+      "name": "200 THB Voucher",
+      "chancePercent": 14.5
+    },
+    {
+      "name": "300 THB Voucher",
+      "chancePercent": 5
+    },
+    {
+      "name": "Kids Pizza",
+      "chancePercent": 5
+    }
+  ],
+  "unchangedOtherPrizes": true
+}

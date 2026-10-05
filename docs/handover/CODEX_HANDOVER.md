@@ -5,6 +5,10 @@ in the same working folder, and for the owner setting it up. Everything below wa
 when it was written; verify the live state from `docs/progress/STATUS.md` and the newest
 STOP POINT block of `docs/progress/SESSION_HANDOVER.md` before acting.
 
+## Resume note - 5 October 2026 - Lucky Wheel park update
+
+The latest task is SCRUM-499/500: editable bilingual slips and six temporary current-POS prize QRs, plus the approved seventh Kids Pizza prize. Staging software is deployed with attached evidence; the owner is at the park installing the verified 7eca661 Pi package. Read STATUS and the newest STOP POINT first. Physical install/publish/print/scan confirmation and Console CI rerun conclusion remain. The exact commands and static/dynamic QR steps are in docs/qa/voucher-slip/update-at-park.md. Preserve the saved draft until the Pi has compatible software.
+
 ## Resume note - 1 October 2026 - SCRUM-193 break checkpoint
 
 The owner requested a break after saving all current OTO App work. SCRUM-193

@@ -1,30 +1,16 @@
 # Handover - where this is, and what to do next
 
-## STOP POINT - 5 October 2026, afternoon - staging booth-switch repair
+## STOP POINT - 5 October 2026, evening - staging proof and park update package
 
-**5 October staging follow-up:** API, Console and Booth source `7eca6612` is
-live; CI 37289763344 is still running. Real UI testing found that switching
-booths could leave the previous draft editable while the next read was out.
-The Console now hides another booth's draft, ignores superseded draft reads
-and closes editors on selection change. The existing browser spec's delayed
-read case passes, along with Console typecheck, lint and build. This repair
-needs its Console deployment and fresh proof. An old proof-booth draft changed
-by the temporary test must be restored from its exact audit `before`; no park
-publish occurred. Temporary QA fixtures were archived. The three existing
-fixed-code till redemption cases also pass. SCRUM-499/500 remain Testing.
+**5 October 2026, evening - Lucky Wheel slip and prize QRs:** SCRUM-499 and SCRUM-500 are Deployed for verified staging software, with named screenshots attached (11252-11258) and comments 11515/11516. Physical print/current-POS scan remains an on-site acceptance step. API/Booth/Pi source 7eca6612 passed CI 37289763344; Console 0c641b7e is live and locally/staging verified. Its separate CI 37292071118 attempt 1 hit a print-worker onTaskUpdate timeout; attempt 2 is pending, not called green. The earlier proof-booth draft was restored from its guarded audit snapshot; all temporary QA fixtures are archived.
 
-Continue the isolated staging harness after deploying the Console repair.
-It now waits for the selected QA booth's own draft, and restores the older
-proof booth's voucher settings only if they still match the exact QA audit
-snapshot. Its first setup had a temporary logger-shape error; cleanup was
-corrected to omit JSON Content-Type on empty DELETE requests. All those exact
-QA fixtures are archived. Earlier screenshots show the wrong proof booth and
-must be replaced, not attached as final proof. API/Booth/Pi source is 7eca6612;
-this follow-up changes only Console selection handling and its existing browser
-spec. The final Pi artifact can use 7eca6612 once CI succeeds. The six real prize
-mappings and showcase should be saved as the park booth's DRAFT, not published
-until the physical Pi has the compatible software. See the next STOP POINT for
-implementation, test and release detail. No actual QR contents may enter logs.
+FWBooth1 has six exact current-POS QR mappings and bilingual showcase saved as a draft. The approved seventh prize, Kids Pizza, shares the former 300 THB 10% slot: each has 5%; all other chances remain, total 100%. 300 THB stays generated. Published/running version was still 11; do not publish until the park Pi update. The owner is now at the park with SSH to 192.168.0.240 and is copying the package. Physical update, reboot, draft publish and scan have not yet been confirmed.
+
+The green CI-packed oto-box-0.1.0-7eca661.tgz and checksum are on the Desktop; hash verified twice: 970d5340b45f892174de2167ef5806c2858480e3a5239cf031f7a69e4cdf063e. Older 0468c38/d10d78f pairs moved into old-oto-box-releases. Exact CMD/PowerShell copy, Pi install/reboot, five-second polling explanation and static/dynamic QR switching steps are in docs/qa/voucher-slip/update-at-park.md and a Desktop copy. CMD requires %USERPROFILE%, not PowerShell $env:USERPROFILE.
+
+See docs/qa/voucher-slip/README.md for checks, source, fixture cleanup and evidence limits. Six original QRs and twelve printer renders matched exactly; no actual redeemable values are in source, Jira or evidence. Normal publish queues config_apply; the box and TV poll every five seconds. No supported standalone five-second fetch CLI exists. An idle-box service restart reloads published settings. Current-POS redemptions do not update the platform ledger.
+
+Continue in sibling worktree oto-pos-voucher-slip, branch feat/booth-slip-design; do not land unrelated changes from the original dirty checkout. Next: help with the on-site install, confirm the release path and active services, publish FWBooth1 only after compatibility is confirmed, verify its reported running version, and record new paper/current-POS scan results under SCRUM-499/500. Check the Console CI rerun and record its actual conclusion. Do not start another story. The legacy OTO App work and platform work remain separate.
 
 ## STOP POINT - 5 October 2026, afternoon - six current-POS prize QRs verified locally
 

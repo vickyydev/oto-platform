@@ -1,0 +1,35 @@
+{
+  "source": "7eca6612",
+  "consoleSource": "0c641b7e",
+  "kind": "Staging API with local box and simulated 80 mm printer",
+  "editorSave": true,
+  "applyDelayMs": 2050,
+  "offlineFixedCodePrint": true,
+  "qrAndPrintedCodeMatch": true,
+  "fixedCodeOmitsSingleUse": true,
+  "simulatedPrintouts": 1,
+  "twoSpinsShareFixedCode": true,
+  "reportedRunningVersion": 1,
+  "syncedSpinCount": 2,
+  "legacyQr": {
+    "consoleSave": true,
+    "automaticApply": true,
+    "offlinePrint": true,
+    "fallbackMatches": true,
+    "platformCodeUnchanged": true,
+    "synced": true
+  },
+  "legacyQrRemoved": true,
+  "nonConsumingLookup": {
+    "status": 409,
+    "kind": null,
+    "error": "NO_STATION_PICKED"
+  },
+  "cleanup": {
+    "prize": "archived",
+    "station": "archived",
+    "definition": "archived",
+    "device": "archived",
+    "box": "archived"
+  }
+}

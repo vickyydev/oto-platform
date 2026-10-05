@@ -1,38 +1,12 @@
 # Current status - read this first when resuming
 
-**5 October staging follow-up:** API, Console and Booth source `7eca6612` is
-live; CI 37289763344 is still running. Real UI testing found that switching
-booths could leave the previous draft editable while the next read was out.
-The Console now hides another booth's draft, ignores superseded draft reads
-and closes editors on selection change. The existing browser spec's delayed
-read case passes, along with Console typecheck, lint and build. This repair
-needs its Console deployment and fresh proof. An old proof-booth draft changed
-by the temporary test must be restored from its exact audit `before`; no park
-publish occurred. Temporary QA fixtures were archived. The three existing
-fixed-code till redemption cases also pass. SCRUM-499/500 remain Testing.
+**5 October 2026, evening - Lucky Wheel slip and prize QRs:** SCRUM-499 and SCRUM-500 are Deployed for verified staging software, with named screenshots attached (11252-11258) and comments 11515/11516. Physical print/current-POS scan remains an on-site acceptance step. API/Booth/Pi source 7eca6612 passed CI 37289763344; Console 0c641b7e is live and locally/staging verified. Its separate CI 37292071118 attempt 1 hit a print-worker onTaskUpdate timeout; attempt 2 is pending, not called green. The earlier proof-booth draft was restored from its guarded audit snapshot; all temporary QA fixtures are archived.
 
-**5 October 2026, temporary Lucky Wheel prize QR:** the bilingual slip source
-`b6b77d71` passed CI 37283125632, including its Pi pack. SCRUM-499 is In Progress
-for the approved current-POS bridge; SCRUM-500 is Testing, with deployment held
-for this verified addition. Six supplied prize pictures decoded as URLs. The
-new per-type `legacyQrPayload` replaces only the printed/fallback QR, preserving
-the internal voucher code and ledger. Save and publish freezes it with the wheel;
-clearing and publishing restores the normal QR. Offline prints and reprints
-keep their saved payload. Redemption in the existing POS does not update the
-platform ledger. Payloads are not copied into logs, Jira or committed evidence.
+FWBooth1 has six exact current-POS QR mappings and bilingual showcase saved as a draft. The approved seventh prize, Kids Pizza, shares the former 300 THB 10% slot: each has 5%; all other chances remain, total 100%. 300 THB stays generated. Published/running version was still 11; do not publish until the park Pi update. The owner is now at the park with SSH to 192.168.0.240 and is copying the package. Physical update, reboot, draft publish and scan have not yet been confirmed.
 
-The clean `feat/booth-slip-design` worktree now passes the affected API tests
-(65), print (33), box slip (4), shared slip (8), Console type/slip tests (38,
-2 inherited todo), seven package typechecks, scoped lint and Console/Booth builds.
-Migration 0057 adds an optional QR field and passes schema verification. Its
-first local check exposed PostgreSQL's regex repetition limit; the unshipped
-constraint now checks length separately and the API rerun passes. Software
-scans of all six rendered slips match the originals at both 512 and 576 dots.
-Physical Pi printing and scanning on the current POS remain unverified.
-Next: push with Jira comments, deploy verified API before Console/Booth, capture
-staging proof, configure the six requested mappings, and deliver the final
-CI-packed Pi release with its verified checksum. The park Pi must be updated
-on the next visit; it cannot gain this software feature through settings alone.
+The green CI-packed oto-box-0.1.0-7eca661.tgz and checksum are on the Desktop; hash verified twice: 970d5340b45f892174de2167ef5806c2858480e3a5239cf031f7a69e4cdf063e. Older 0468c38/d10d78f pairs moved into old-oto-box-releases. Exact CMD/PowerShell copy, Pi install/reboot, five-second polling explanation and static/dynamic QR switching steps are in docs/qa/voucher-slip/update-at-park.md and a Desktop copy. CMD requires %USERPROFILE%, not PowerShell $env:USERPROFILE.
+
+See docs/qa/voucher-slip/README.md for checks, source, fixture cleanup and evidence limits. Six original QRs and twelve printer renders matched exactly; no actual redeemable values are in source, Jira or evidence. Normal publish queues config_apply; the box and TV poll every five seconds. No supported standalone five-second fetch CLI exists. An idle-box service restart reloads published settings. Current-POS redemptions do not update the platform ledger.
 
 _Last updated: 2026-10-02, late night Bangkok (hand-over point from the local
 session). Platform lane: main and staging at 9a14af81, CI green, migrations
