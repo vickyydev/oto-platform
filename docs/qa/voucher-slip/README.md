@@ -53,3 +53,10 @@ The CI-packed oto-box-0.1.0-7eca661.tgz and its .sha256 are on the Windows Deskt
 970d5340b45f892174de2167ef5806c2858480e3a5239cf031f7a69e4cdf063e
 
 The 0468c38 and d10d78f archive/checksum pairs moved into Desktop/old-oto-box-releases. Console-only 0c641b7e changes no Pi files; 7eca661 is the correct compatible Pi release. Follow update-at-park.md: copy both files, check checksum, install, reboot, then publish the draft and confirm running version. Print a new winning slip and scan it on the current POS. Do not use a reprint of an old slip to test the new design. Record physical results under these tickets. Check Console CI attempt 2 and document its actual conclusion when available.
+
+## On-site follow-up - 18:35 Bangkok
+
+**5 October, park QR follow-up:** the owner reports the Pi update completed, but a NEW 100 THB spin still printed a QR scanning to the previous URL after an override edit and publish. SCRUM-499 is reopened In Progress for diagnosis. Live version 14 had saved/published plain codes for 100/200/300 THB and the physical box reported running 14; config_apply succeeded. During checking, the owner cleared the 100 THB override and published version 15, now also reported running; no settings were changed by the investigation. Latest observed 100 THB print was 18:34 Bangkok, before version 15. Direct SSH from this environment timed out. A read-only Pi command has been requested to report release path and whether the last eight remembered print jobs contain URLs or plain codes, never actual QR values. Await this evidence; do not assume a restart fixes the cause. Keep the owner's latest draft/prize edits.
+
+Console CI 37292071118 attempt 2 is now SUCCESS; API, Console, Booth, POS and Launcher staging are observed live at 0c641b7e. The CI-packed 7eca661 Pi archive is still correct. SCRUM-500 stays Deployed; its English/Thai terms fields were verified live as enabled multiline controls, 2000 characters each, with Print the terms on in the latest park draft. Physical paper/current-POS acceptance is still not claimed.
+
