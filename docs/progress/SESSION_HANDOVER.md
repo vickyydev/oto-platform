@@ -1,5 +1,23 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 5 October 2026, late evening - SCRUM-494 staging photo upload
+
+POS staging is live at `14d03c97`. The restriction-only warning needs a real
+staging screenshot. A Reception Till 1 browser rehearsal saved a labelled
+three-child ZZ TEST registration with consent, photos taken through a synthetic
+test camera, a restriction-only child, an allergy child, prepaid item choices
+and a no-food child. It did not take cash or check anyone in. The registration
+and its three children remain `registered`, with no stored consent photo.
+Browser PUT to the R2 presigned URL failed: OPTIONS returned 403 and no CORS
+headers. The same signed PUT from Node returned 200. The bucket has no CORS
+policy, and the available R2 object credential and Cloudflare token were denied
+permission to set one. Implement and test a permission-bound same-origin upload
+path, deploy API before POS, then retry the photo and complete the cash,
+check-in, F&B and release walkthrough. Avoid recording band credentials or
+photos in logs or Jira. CI `37322129021` attempt 1 failed on a print Vitest
+worker timeout after its 268 tests passed; attempt 2 is running. SCRUM-494
+stays Testing. The earlier STOP POINT below carries the other evidence work.
+
 ## STOP POINT - 5 October 2026, evening - SCRUM-494 restriction-only warning
 
 SCRUM-494 stays Testing. Review of its food-counter acceptance found that a
