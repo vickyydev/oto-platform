@@ -163,6 +163,7 @@ export interface BoothSettingsDraft {
   voucherFooterText?: string | null;
   voucherShowStaff?: boolean;
   voucherShowTerms?: boolean;
+  voucherDesign?: import('@oto/shared').BoothVoucherDesign | null;
 }
 
 /** The five slip fields, as the settings route and the preview route take them. */
@@ -172,6 +173,7 @@ export interface VoucherSlipInput {
   voucherFooterText: string | null;
   voucherShowStaff: boolean;
   voucherShowTerms: boolean;
+  voucherDesign: import('@oto/shared').BoothVoucherDesign | null;
 }
 
 /** A drawn sample slip: the PNG, and its width in printer dots. */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BOOTH_VOUCHER_SLIP_DEFAULTS,
+  BOOTH_VOUCHER_DESIGN_DEFAULTS,
   BoothConfigBundleSchema,
   boothVoucherSlip,
   boothVoucherSlipBundleFields,
@@ -32,6 +33,7 @@ describe('the voucher slip in the published wheel', () => {
       footerText: null,
       showStaff: true,
       showTerms: true,
+      design: BOOTH_VOUCHER_DESIGN_DEFAULTS,
     });
   });
 
@@ -57,7 +59,16 @@ describe('the voucher slip in the published wheel', () => {
     };
     const parsed = BoothConfigBundleSchema.parse(JSON.parse(JSON.stringify(bundle)));
     expect(parsed.settings).toEqual(bundle.settings);
-    expect(boothVoucherSlip(parsed.settings)).toEqual(slip);
+    expect(boothVoucherSlip(parsed.settings)).toEqual({ ...slip, design: BOOTH_VOUCHER_DESIGN_DEFAULTS });
+  });
+
+  it('carries an edited showcase design only after it is published', () => {
+    const design = { ...BOOTH_VOUCHER_DESIGN_DEFAULTS, layout: 'showcase' as const, venueLine: 'OTO PLAY PARK CENTRAL' };
+    const slip = { ...BOOTH_VOUCHER_SLIP_DEFAULTS, design };
+    const fields = boothVoucherSlipBundleFields(slip);
+    expect(fields).toEqual({ voucherDesign: design });
+    const parsed = BoothConfigBundleSchema.parse({ ...historical, settings: { ...historical.settings, ...fields } });
+    expect(boothVoucherSlip(parsed.settings).design).toEqual(design);
   });
 
   it('carries only the fields that differ from their defaults', () => {

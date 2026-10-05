@@ -22,11 +22,13 @@ import {
   BOOTH_CODE_PREFIX_LENGTH,
   BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
   BOOTH_VOUCHER_SLIP_DEFAULTS,
+  BOOTH_VOUCHER_DESIGN_DEFAULTS,
   boothVoucherSlipBundleFields,
   boothVoucherText,
   businessDate,
   newId,
   parseDayStart,
+  type BoothVoucherDesign,
 } from '@oto/shared';
 import { escposProfile, renderPreviewPng } from '@oto/print';
 import { AppError } from '../lib/errors';
@@ -139,6 +141,7 @@ const SETTINGS_DEFAULTS = {
   voucherFooterText: BOOTH_VOUCHER_SLIP_DEFAULTS.footerText as string | null,
   voucherShowStaff: BOOTH_VOUCHER_SLIP_DEFAULTS.showStaff,
   voucherShowTerms: BOOTH_VOUCHER_SLIP_DEFAULTS.showTerms,
+  voucherDesign: null as BoothVoucherDesign | null,
 };
 
 export interface BoothDraft {
@@ -214,6 +217,7 @@ async function loadDraft(exec: Exec, row: BoothStationRow): Promise<BoothDraft> 
       voucherFooterText: settingsRow?.voucherFooterText ?? SETTINGS_DEFAULTS.voucherFooterText,
       voucherShowStaff: settingsRow?.voucherShowStaff ?? SETTINGS_DEFAULTS.voucherShowStaff,
       voucherShowTerms: settingsRow?.voucherShowTerms ?? SETTINGS_DEFAULTS.voucherShowTerms,
+      voucherDesign: settingsRow?.voucherDesign ?? SETTINGS_DEFAULTS.voucherDesign,
       updatedAt: settingsRow?.updatedAt ?? null,
     },
     layout,
@@ -312,6 +316,7 @@ function bundleFrom(draft: BoothDraft): Record<string, unknown> | null {
         footerText: draft.settings.voucherFooterText,
         showStaff: draft.settings.voucherShowStaff,
         showTerms: draft.settings.voucherShowTerms,
+        design: draft.settings.voucherDesign ?? BOOTH_VOUCHER_DESIGN_DEFAULTS,
       }),
     },
     layout: {
@@ -749,6 +754,7 @@ export async function boothDraft(
       voucherFooterText: draft.settings.voucherFooterText,
       voucherShowStaff: draft.settings.voucherShowStaff,
       voucherShowTerms: draft.settings.voucherShowTerms,
+      voucherDesign: draft.settings.voucherDesign,
     },
     prizes: draft.prizes.map((p) => prizeView(p, draft.definitions)),
     ...(opts.includeArchived
@@ -1050,6 +1056,7 @@ export interface BoothSettingsPatch {
   voucherFooterText?: string | null;
   voucherShowStaff?: boolean;
   voucherShowTerms?: boolean;
+  voucherDesign?: BoothVoucherDesign | null;
 }
 
 /**
@@ -1065,6 +1072,7 @@ export interface BoothVoucherSlipSettings {
   voucherFooterText: string | null;
   voucherShowStaff: boolean;
   voucherShowTerms: boolean;
+  voucherDesign: BoothVoucherDesign | null;
 }
 
 /**
@@ -1152,6 +1160,7 @@ export async function updateBoothSettings(
             voucherFooterText: before.voucherFooterText,
             voucherShowStaff: before.voucherShowStaff,
             voucherShowTerms: before.voucherShowTerms,
+            voucherDesign: before.voucherDesign,
           }
         : null,
       after: next,
@@ -1203,6 +1212,8 @@ function mergedSettings(
       patch.voucherShowStaff ?? before?.voucherShowStaff ?? SETTINGS_DEFAULTS.voucherShowStaff,
     voucherShowTerms:
       patch.voucherShowTerms ?? before?.voucherShowTerms ?? SETTINGS_DEFAULTS.voucherShowTerms,
+    voucherDesign:
+      patch.voucherDesign !== undefined ? patch.voucherDesign : (before?.voucherDesign ?? null),
   };
 }
 
@@ -1266,6 +1277,7 @@ export async function renderBoothVoucherPreview(
       voucherFooterText: boothSettings.voucherFooterText,
       voucherShowStaff: boothSettings.voucherShowStaff,
       voucherShowTerms: boothSettings.voucherShowTerms,
+      voucherDesign: boothSettings.voucherDesign,
     })
     .from(boothSettings)
     .where(eq(boothSettings.stationId, row.stationId))
@@ -1281,11 +1293,22 @@ export async function renderBoothVoucherPreview(
       data: {
         ...BOOTH_VOUCHER_PREVIEW_SAMPLE,
         terms: [...BOOTH_VOUCHER_PREVIEW_SAMPLE.terms],
+        ...(pick('voucherDesign')?.layout === 'showcase'
+          ? {
+              prizeLine: '100 THB DISCOUNT',
+              prizeLineThai: 'ส่วนลด 100 บาท',
+              redemptionLine: 'Show this QR at OTO Reception to redeem your voucher.\nแสดงคิวอาร์โค้ดนี้ที่เคาน์เตอร์ OTO เพื่อใช้สิทธิ์',
+              termsEn: ['Valid only at OTO Play Park Central.', 'Valid only with an admission ticket.'],
+              termsTh: ['คูปองใช้ได้เฉพาะที่ OTO Play Park Central เท่านั้น', 'ใช้ได้เมื่อซื้อบัตรเข้าชมสวนสนุกเท่านั้น'],
+            }
+          : {}),
         showLogo: pick('voucherShowLogo'),
         headerLine: boothVoucherText(pick('voucherHeaderText')),
         footerLine: boothVoucherText(pick('voucherFooterText')) ?? '',
         showStaff: pick('voucherShowStaff'),
         showTerms: pick('voucherShowTerms'),
+        design: pick('voucherDesign') ?? BOOTH_VOUCHER_DESIGN_DEFAULTS,
+        issuedDate: '01 Jan 2026',
       },
     },
     { device: BOOTH_VOUCHER_PREVIEW_DEVICE },

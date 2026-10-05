@@ -474,6 +474,13 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
     expect(body.version!.version).toBe(2);
     expect(body.version!.publishedByAccountId).toBeTruthy();
     expect(body.activePrizes).toBe(1);
+    const commands = await ctx.app.inject({
+      method: 'GET', url: `/boxes/${agent.state.boxId!}/commands`, headers: asAdmin(),
+    });
+    expect(commands.statusCode).toBe(200);
+    expect((commands.json().commands as Array<{ kind: string; state: string }>).some(
+      (command) => command.kind === 'config_apply' && command.state === 'queued',
+    )).toBe(true);
 
     /**
      * The seam. Everything above this line is the cloud talking to itself.
@@ -570,8 +577,8 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
     const publishedVersion = minted.body.version!.version;
     expect(publishedVersion).toBeGreaterThan(runningBefore);
 
-    // Nothing pulled the cache, so the box is still on the older wheel.
-    await agent.heartbeat();
+    // Nothing pulled the cache yet; a heartbeat would see the queued apply
+    // command and run it, so inspect the last reported version first.
     expect(booth.config()!.version, 'a publish alone moved the box').toBe(runningBefore);
 
     const behind = await ctx.app.inject({
@@ -641,7 +648,8 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
     const actionId = queued.json().actionId as string;
 
     // The box's own poll, called by hand because its timers are not running.
-    expect(await agent.runPendingCommands()).toBe(1);
+    // Publish now queues an apply as well as the explicit Devices command.
+    expect(await agent.runPendingCommands()).toBeGreaterThanOrEqual(1);
     expect(
       booth.config()!.version,
       'Apply config succeeded and the box is still on the old wheel',
@@ -656,7 +664,12 @@ describe('publishing, and the box that then runs it (S2-07b)', () => {
       (c) => c.actionId === actionId,
     );
     expect(ran).toMatchObject({ kind: 'config_apply', state: 'succeeded' });
-    expect((ran!.result as { cacheScopes: string[] }).cacheScopes).toContain('booth');
+    const applied = (history.json().commands as Array<Record<string, unknown>>).find(
+      (c) => c.kind === 'config_apply' &&
+        c.actionId !== actionId &&
+        (c.result as { cacheScopes?: string[] } | null)?.cacheScopes?.includes('booth'),
+    );
+    expect(applied, 'the publish apply did not pull the booth cache').toBeTruthy();
 
     // Nothing has changed since: the next tick is a 304 and applies nothing.
     expect(await agent.syncCache()).toEqual([]);

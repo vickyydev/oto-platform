@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { BoothVoucherDesign } from '@oto/shared';
 import {
   boolean,
   check,
@@ -231,6 +232,8 @@ export const boothSettings = booth.table(
     voucherFooterText: text('voucher_footer_text'),
     voucherShowStaff: boolean('voucher_show_staff').notNull().default(true),
     voucherShowTerms: boolean('voucher_show_terms').notNull().default(true),
+    /** Null keeps every existing booth on its unchanged paper layout. */
+    voucherDesign: jsonb('voucher_design').$type<BoothVoucherDesign | null>(),
     /**
      * Who is on this booth today, as the OTO App's scheduling says (SCRUM-473,
      * migration 0040, plan decision D4). Two pieces of free text, compared
@@ -282,6 +285,10 @@ export const boothSettings = booth.table(
     check(
       'booth_settings_voucher_footer_text_check',
       sql`${t.voucherFooterText} is null or char_length(${t.voucherFooterText}) <= 400`,
+    ),
+    check(
+      'booth_settings_voucher_design_check',
+      sql`${t.voucherDesign} is null or jsonb_typeof(${t.voucherDesign}) = 'object'`,
     ),
     check(
       'booth_settings_duty_group_text_check',

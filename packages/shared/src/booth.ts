@@ -102,6 +102,32 @@ export function boothSpinDurationSeconds(settings: { spinDurationSeconds?: numbe
     : BOOTH_SPIN_DURATION_DEFAULT_SECONDS;
 }
 
+/** Static text on paper. Prize words, instructions and terms belong to the voucher type. */
+export interface BoothVoucherDesign {
+  layout: 'classic' | 'showcase';
+  /** Null uses the branch's current name. */
+  venueLine: string | null;
+  winnerLine: string;
+  winnerLineThai: string;
+  codeLabel: string;
+  issuedLabel: string;
+  expiresLabel: string;
+  termsLabel: string;
+  singleUseLabel: string;
+}
+
+export const BoothVoucherDesignSchema = z.object({
+  layout: z.enum(['classic', 'showcase']),
+  venueLine: z.string().max(200).nullable(),
+  winnerLine: z.string().max(100),
+  winnerLineThai: z.string().max(100),
+  codeLabel: z.string().max(100),
+  issuedLabel: z.string().max(100),
+  expiresLabel: z.string().max(100),
+  termsLabel: z.string().max(100),
+  singleUseLabel: z.string().max(200),
+});
+
 export const BoothConfigSettingsSchema = z.object({
   eligibility: z.enum(BOOTH_ELIGIBILITY_MODES),
   /**
@@ -170,6 +196,8 @@ export const BoothConfigSettingsSchema = z.object({
   voucherFooterText: z.string().nullable().optional(),
   voucherShowStaff: z.boolean().optional(),
   voucherShowTerms: z.boolean().optional(),
+  /** Optional until a booth chooses the new paper design. */
+  voucherDesign: BoothVoucherDesignSchema.optional(),
 });
 export type BoothConfigSettings = z.infer<typeof BoothConfigSettingsSchema>;
 
@@ -187,6 +215,24 @@ export interface BoothVoucherSlip {
   footerText: string | null;
   showStaff: boolean;
   showTerms: boolean;
+  design: BoothVoucherDesign;
+}
+
+export const BOOTH_VOUCHER_DESIGN_DEFAULTS: Readonly<BoothVoucherDesign> = Object.freeze({
+  layout: 'classic',
+  venueLine: null,
+  winnerLine: '★ YOU WON ★',
+  winnerLineThai: 'คุณได้รับรางวัล',
+  codeLabel: 'VOUCHER CODE',
+  issuedLabel: 'Issued / วันที่ออก',
+  expiresLabel: 'Expires / วันหมดอายุ',
+  termsLabel: 'TERMS / เงื่อนไข',
+  singleUseLabel: 'Voucher can be used only once. / คูปองสามารถใช้ได้เพียง 1 ครั้ง',
+});
+
+export function sameBoothVoucherDesign(a: BoothVoucherDesign, b: BoothVoucherDesign): boolean {
+  return (Object.keys(BOOTH_VOUCHER_DESIGN_DEFAULTS) as Array<keyof BoothVoucherDesign>)
+    .every((key) => a[key] === b[key]);
 }
 
 /**
@@ -200,6 +246,7 @@ export const BOOTH_VOUCHER_SLIP_DEFAULTS: Readonly<BoothVoucherSlip> = Object.fr
   footerText: null,
   showStaff: true,
   showTerms: true,
+  design: BOOTH_VOUCHER_DESIGN_DEFAULTS,
 });
 
 /** A text as the slip stores it: trimmed, and "nothing" spelled null. */
@@ -220,6 +267,7 @@ export function boothVoucherSlip(settings: {
   voucherFooterText?: string | null;
   voucherShowStaff?: boolean;
   voucherShowTerms?: boolean;
+  voucherDesign?: Partial<BoothVoucherDesign> | null;
 }): BoothVoucherSlip {
   const flag = (value: unknown, fallback: boolean): boolean =>
     typeof value === 'boolean' ? value : fallback;
@@ -229,6 +277,7 @@ export function boothVoucherSlip(settings: {
     footerText: boothVoucherText(settings.voucherFooterText),
     showStaff: flag(settings.voucherShowStaff, BOOTH_VOUCHER_SLIP_DEFAULTS.showStaff),
     showTerms: flag(settings.voucherShowTerms, BOOTH_VOUCHER_SLIP_DEFAULTS.showTerms),
+    design: { ...BOOTH_VOUCHER_DESIGN_DEFAULTS, ...(settings.voucherDesign ?? {}) },
   };
 }
 
@@ -237,21 +286,25 @@ export function boothVoucherSlip(settings: {
  * from their defaults, so an untouched booth's bundle — and its hash — are
  * what they were before the fields existed. The inverse of `boothVoucherSlip`.
  */
-export function boothVoucherSlipBundleFields(slip: BoothVoucherSlip): {
+export function boothVoucherSlipBundleFields(slip: Omit<BoothVoucherSlip, 'design'> & { design?: BoothVoucherDesign }): {
   voucherShowLogo?: boolean;
   voucherHeaderText?: string;
   voucherFooterText?: string;
   voucherShowStaff?: boolean;
   voucherShowTerms?: boolean;
+  voucherDesign?: BoothVoucherDesign;
 } {
   const header = boothVoucherText(slip.headerText);
   const footer = boothVoucherText(slip.footerText);
+  const design = slip.design ?? BOOTH_VOUCHER_DESIGN_DEFAULTS;
   return {
     ...(slip.showLogo !== BOOTH_VOUCHER_SLIP_DEFAULTS.showLogo ? { voucherShowLogo: slip.showLogo } : {}),
     ...(header !== null ? { voucherHeaderText: header } : {}),
     ...(footer !== null ? { voucherFooterText: footer } : {}),
     ...(slip.showStaff !== BOOTH_VOUCHER_SLIP_DEFAULTS.showStaff ? { voucherShowStaff: slip.showStaff } : {}),
     ...(slip.showTerms !== BOOTH_VOUCHER_SLIP_DEFAULTS.showTerms ? { voucherShowTerms: slip.showTerms } : {}),
+    ...(!sameBoothVoucherDesign(design, BOOTH_VOUCHER_DESIGN_DEFAULTS)
+      ? { voucherDesign: design } : {}),
   };
 }
 

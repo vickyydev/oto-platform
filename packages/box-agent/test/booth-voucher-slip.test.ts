@@ -32,7 +32,7 @@ let nextSeed = 471;
 
 type Settings = BoothCacheEntry['bundle']['settings'];
 
-function entry(settings: Partial<Settings> = {}, version = 1): BoothCacheEntry {
+function entry(settings: Partial<Settings> = {}, version = 1, fixedCode: string | null = null): BoothCacheEntry {
   return {
     stationId: STATION_ID,
     configVersionId: CONFIG_VERSION_ID,
@@ -41,7 +41,7 @@ function entry(settings: Partial<Settings> = {}, version = 1): BoothCacheEntry {
     allowedStaff: [ACCOUNT_ID],
     dutyRoster: null,
     voucherDefinitions: [
-      { id: DEFINITION_ID, expiryDays: 14, termsEn: 'Cannot be combined with other offers.', termsTh: null },
+      { id: DEFINITION_ID, expiryDays: 14, termsEn: 'Cannot be combined with other offers.', termsTh: null, fixedCode },
     ] as BoothCacheEntry['voucherDefinitions'],
     bundle: {
       schemaVersion: 1,
@@ -153,6 +153,22 @@ test('the print job carries the slip the booth published', async () => {
   h.db.close();
 });
 
+test('a fixed-code type prints and shows its shared code without a single-use promise', async () => {
+  const h = open();
+  await publish(h, entry({}, 1, 'ZZ-SHARED'));
+  const spin = await h.booth.spin({ idempotencyKey: 'fixed-press' });
+  await h.booth.print({ spinId: spin.spinId });
+  const data = voucherData(h.submitted[0]);
+  assert.equal(spin.voucherCode, 'ZZ-SHARED');
+  assert.equal(data.voucherCode, spin.voucherCode);
+  assert.equal(data.codeMode, 'fixed');
+  const rendered = renderJob({ kind: 'booth_voucher', data }, {
+    device: escposProfile({ id: 'fixed', label: 'Booth printer', model: 'sample', widthDots: 576 }),
+  });
+  assert.ok(rendered.bytes.length > 0);
+  h.db.close();
+});
+
 test('a wheel published before the slip fields existed prints today’s slip', async () => {
   const h = open();
   await publish(h, entry());
@@ -178,10 +194,22 @@ test('a wheel published before the slip fields existed prints today’s slip', a
 
 test('a reprint after a new publish is the same slip as its first copy', async () => {
   const h = open();
-  await publish(h, entry({ voucherFooterText: 'First footer' }));
+  const firstDesign = {
+    layout: 'showcase' as const,
+    venueLine: 'OTO PLAY PARK CENTRAL',
+    winnerLine: '★ YOU WON ★',
+    winnerLineThai: 'คุณได้รับรางวัล',
+    codeLabel: 'VOUCHER CODE',
+    issuedLabel: 'Issued / วันที่ออก',
+    expiresLabel: 'Expires / วันหมดอายุ',
+    termsLabel: 'TERMS / เงื่อนไข',
+    singleUseLabel: 'Voucher can be used only once. / คูปองสามารถใช้ได้เพียง 1 ครั้ง',
+  };
+  await publish(h, entry({ voucherFooterText: 'First footer', voucherDesign: firstDesign }));
   const spin = await h.booth.spin({ idempotencyKey: 'press-1' });
   await h.booth.print({ spinId: spin.spinId });
   assert.equal(voucherData(h.submitted[0]).footerLine, 'First footer');
+  assert.deepEqual(voucherData(h.submitted[0]).design, firstDesign);
 
   await publish(h, entry({ voucherFooterText: 'Second footer', voucherShowLogo: false }, 2), 2);
   assert.deepEqual(await h.booth.signIn({ pin: '73910' }), { ok: true, accountId: ACCOUNT_ID });
@@ -190,6 +218,7 @@ test('a reprint after a new publish is the same slip as its first copy', async (
   const copy = voucherData(h.submitted[h.submitted.length - 1]);
   assert.equal(copy.footerLine, 'First footer');
   assert.equal(copy.showLogo, true);
+  assert.deepEqual(copy.design, firstDesign);
   assert.match(copy.reprintNote ?? '', /^Reprint · /);
 
   // The next voucher is the new slip.
@@ -198,5 +227,6 @@ test('a reprint after a new publish is the same slip as its first copy', async (
   const fresh = voucherData(h.submitted[h.submitted.length - 1]);
   assert.equal(fresh.footerLine, 'Second footer');
   assert.equal(fresh.showLogo, false);
+  assert.equal(fresh.design?.layout, 'classic');
   h.db.close();
 });

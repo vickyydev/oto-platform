@@ -14,9 +14,13 @@
 import {
   BOOTH_VOUCHER_FOOTER_MAX_CHARS,
   BOOTH_VOUCHER_HEADER_MAX_CHARS,
+  BOOTH_VOUCHER_DESIGN_DEFAULTS,
+  BoothVoucherDesignSchema,
   boothVoucherSlip,
   boothVoucherText,
+  sameBoothVoucherDesign,
   type BoothVoucherSlip,
+  type BoothVoucherDesign,
 } from '@oto/shared';
 import type { BoothDraft, BoothSettingsDraft, VoucherSlipInput } from './boothApi';
 
@@ -29,6 +33,7 @@ export interface VoucherSlipEdit {
   footerText: string;
   showStaff: boolean;
   showTerms: boolean;
+  design: BoothVoucherDesign;
 }
 
 /**
@@ -45,6 +50,7 @@ export function slipFromSettings(settings: BoothSettingsDraft): VoucherSlipEdit 
     footerText: slip.footerText ?? '',
     showStaff: slip.showStaff,
     showTerms: slip.showTerms,
+    design: { ...slip.design },
   };
 }
 
@@ -61,6 +67,8 @@ export function slipInput(edit: VoucherSlipEdit): VoucherSlipInput {
     voucherFooterText: boothVoucherText(edit.footerText),
     voucherShowStaff: edit.showStaff,
     voucherShowTerms: edit.showTerms,
+    voucherDesign: sameBoothVoucherDesign(edit.design, BOOTH_VOUCHER_DESIGN_DEFAULTS)
+      ? null : edit.design,
   };
 }
 
@@ -72,6 +80,7 @@ export function sameSlip(a: BoothVoucherSlip, b: BoothVoucherSlip): boolean {
     boothVoucherText(a.footerText) === boothVoucherText(b.footerText) &&
     a.showStaff === b.showStaff &&
     a.showTerms === b.showTerms
+    && sameBoothVoucherDesign(a.design, b.design)
   );
 }
 
@@ -84,6 +93,7 @@ export function editedSlip(edit: VoucherSlipEdit): BoothVoucherSlip {
     footerText: input.voucherFooterText,
     showStaff: input.voucherShowStaff,
     showTerms: input.voucherShowTerms,
+    design: edit.design,
   };
 }
 
@@ -93,14 +103,16 @@ export function slipDirty(edit: VoucherSlipEdit, settings: BoothSettingsDraft): 
 }
 
 /** Why the form cannot be saved, per field, or nothing. */
-export function slipProblems(edit: VoucherSlipEdit): { header?: string; footer?: string } {
-  const problems: { header?: string; footer?: string } = {};
+export function slipProblems(edit: VoucherSlipEdit): { header?: string; footer?: string; design?: string } {
+  const problems: { header?: string; footer?: string; design?: string } = {};
   if (edit.headerText.trim().length > BOOTH_VOUCHER_HEADER_MAX_CHARS) {
     problems.header = `At most ${BOOTH_VOUCHER_HEADER_MAX_CHARS} characters.`;
   }
   if (edit.footerText.trim().length > BOOTH_VOUCHER_FOOTER_MAX_CHARS) {
     problems.footer = `At most ${BOOTH_VOUCHER_FOOTER_MAX_CHARS} characters.`;
   }
+  const design = BoothVoucherDesignSchema.safeParse(edit.design);
+  if (!design.success) problems.design = design.error.issues[0]?.message ?? 'Check the slip wording.';
   return problems;
 }
 
@@ -109,7 +121,7 @@ export function slipProblems(edit: VoucherSlipEdit): { header?: string; footer?:
  * resolves it, or null when nothing has been published.
  *
  * Published, not printed: the box prints it only once it has taken that
- * version (on this build, when its agent restarts), and a box on older
+ * version, and a box on older
  * software ignores the fields and prints the standard slip. What a booth is
  * running is the box's own report on `GET /booths/:id/status`, which this
  * card does not read (see `publishPlan.ts`, "It says PUBLISHED and never
@@ -125,6 +137,8 @@ export function publishedSlip(draft: BoothDraft): BoothVoucherSlip | null {
     voucherFooterText: typeof settings.voucherFooterText === 'string' ? settings.voucherFooterText : null,
     voucherShowStaff: typeof settings.voucherShowStaff === 'boolean' ? settings.voucherShowStaff : undefined,
     voucherShowTerms: typeof settings.voucherShowTerms === 'boolean' ? settings.voucherShowTerms : undefined,
+    voucherDesign: settings.voucherDesign && typeof settings.voucherDesign === 'object'
+      ? settings.voucherDesign as BoothVoucherDesign : undefined,
   });
 }
 
@@ -169,6 +183,7 @@ export function slipSummary(settings: BoothSettingsDraft): string | null {
     slip.footerText === null ? null : 'a footer line',
     slip.showStaff ? null : 'no Staff row',
     slip.showTerms ? null : 'no terms',
+    slip.design.layout === 'showcase' ? 'bilingual showcase layout' : null,
   ].filter((part): part is string => part !== null);
   return parts.length === 0 ? 'the standard slip' : parts.join(' · ');
 }

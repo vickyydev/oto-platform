@@ -113,6 +113,50 @@ describe('the booth voucher slip, customised per booth', () => {
     const none = documentTexts({ footerLine: '' });
     expect(none[none.length - 1]).toBe(base.terms[base.terms.length - 1]);
   });
+
+  it('does not promise one use per paper copy when the code is shared', () => {
+    expect(documentTexts({ codeMode: 'generated' })).toContain('Single use · ใช้ได้ 1 ครั้ง');
+    expect(documentTexts({ codeMode: 'fixed' })).not.toContain('Single use · ใช้ได้ 1 ครั้ง');
+    const shared = buildDocument(job({ codeMode: 'fixed', voucherCode: 'ZZ-SHARED' }), undefined, device);
+    const qr = shared.blocks.find((block) => block.k === 'qr');
+    expect(qr).toMatchObject({ value: 'ZZ-SHARED' });
+    expect(texts(shared.blocks)).toContain('ZZ-SHARED');
+  });
+
+  it('lays out the bilingual showcase with matching QR, dates and prize terms', () => {
+    const design = {
+      layout: 'showcase' as const,
+      venueLine: 'OTO PLAY PARK CENTRAL',
+      winnerLine: '★ YOU WON ★',
+      winnerLineThai: 'คุณได้รับรางวัล',
+      codeLabel: 'VOUCHER CODE',
+      issuedLabel: 'Issued / วันที่ออก',
+      expiresLabel: 'Expires / วันหมดอายุ',
+      termsLabel: 'TERMS / เงื่อนไข',
+      singleUseLabel: 'Voucher can be used only once. / คูปองสามารถใช้ได้เพียง 1 ครั้ง',
+    };
+    const data: Partial<BoothVoucherData> = {
+      design, codeMode: 'fixed', voucherCode: 'ZZ-SHARED',
+      prizeLine: '100 THB DISCOUNT', prizeLineThai: 'ส่วนลด 100 บาท',
+      redemptionLine: 'Show this QR at OTO Reception.\nแสดงคิวอาร์โค้ดนี้ที่เคาน์เตอร์ OTO',
+      issuedDate: '01 Jan 2026', expiresAt: '01 Feb 2026',
+      termsEn: ['Valid only at OTO Play Park Central.'],
+      termsTh: ['คูปองใช้ได้เฉพาะที่ OTO Play Park Central เท่านั้น'],
+    };
+    const doc = buildDocument(job(data), undefined, device);
+    const lines = texts(doc.blocks);
+    expect(doc.blocks.find((block) => block.k === 'qr')).toMatchObject({ value: 'ZZ-SHARED' });
+    expect(lines).toContain('ZZ-SHARED');
+    expect(lines).toContain('100 THB DISCOUNT');
+    expect(lines).toContain('ส่วนลด 100 บาท');
+    expect(lines.some((line) => line.includes('Issued / วันที่ออก\n01 Jan 2026'))).toBe(true);
+    expect(lines.some((line) => line.includes('Expires / วันหมดอายุ\n01 Feb 2026'))).toBe(true);
+    expect(lines.some((line) => line.includes('Voucher can be used only once'))).toBe(false);
+    expect(lines).toContain('1. Valid only at OTO Play Park Central.');
+    expect(lines).toContain('คูปองใช้ได้เฉพาะที่ OTO Play Park Central เท่านั้น');
+    expect(renderJob(job(data), { device }).bitmap.height).toBeGreaterThan(0);
+    expect(renderJob(job(data), { device: PROFILES.escpos512! }).bitmap.height).toBeGreaterThan(0);
+  });
 });
 
 /**

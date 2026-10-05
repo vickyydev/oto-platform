@@ -1,5 +1,19 @@
 # Current status - read this first when resuming
 
+**5 October 2026, Lucky Wheel voucher follow-up:** SCRUM-499 remains In Progress:
+fixed-code definition and box-cache changes are on main at `33e1831e`, with CI
+run 37187660326 passing the workspace checks and staging services reporting that
+source. The physical park Pi has not received that release, so a real fixed-code
+paper print is still unverified. SCRUM-500 is In Progress for the bilingual
+80 mm slip and editable per-booth wording. Work is in the clean
+`feat/booth-slip-design` worktree; source and affected existing tests pass,
+including an embedded-Postgres API publish/box test, print at 576 and 512 dots,
+box reprint, shared bundle and Console editor. All seven touched packages
+typecheck; scoped lint is clear. No code from this branch is deployed yet.
+Next: commit/push with both Jira progress comments, run CI, deploy API before
+Console/Booth, capture real staging evidence, package a checksum-verified Pi
+release locally, and leave the park Pi update for the next physical visit.
+
 _Last updated: 2026-10-02, late night Bangkok (hand-over point from the local
 session). Platform lane: main and staging at 9a14af81, CI green, migrations
 through 0054. SCRUM-494 (all nine till-consistency items) is in Testing,

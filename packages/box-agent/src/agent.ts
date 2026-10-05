@@ -4063,6 +4063,12 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         // box on last week's prizes with a green tick on the Console (SCRUM-275).
         const changed = await syncConfig();
         const cacheScopes = await syncCache();
+        // Let the Console see the running wheel version now, rather than at
+        // the next minute's heartbeat. A failed report does not undo a wheel
+        // already applied; the ordinary heartbeat timer will retry it.
+        await heartbeat().catch((err) =>
+          note('warn', 'the applied wheel awaits its next heartbeat', { err: String(err) }),
+        );
         return {
           state: 'succeeded',
           result: { configVersion: state.configVersion, changed, cacheScopes },

@@ -2373,11 +2373,18 @@ export function createBooth(options: BoothOptions): BoothModule {
          * definition.
          */
         terms: splitTerms(termsFrom),
+        termsEn: splitTermBlock(termsFrom?.termsEn),
+        termsTh: splitTermBlock(termsFrom?.termsTh),
         voucherCode:
           applied?.voucherDefinitions.find(
             (candidate) => candidate.id === detail.prize.voucherDefinitionId,
           )?.fixedCode ?? detail.voucherCode,
+        codeMode: applied?.voucherDefinitions.some(
+          (candidate) =>
+            candidate.id === detail.prize.voucherDefinitionId && candidate.fixedCode !== null,
+        ) ? 'fixed' : 'generated',
         issuedAt: formatStamp(new Date(detail.issuedAtMs), branch.timezone),
+        issuedDate: formatStamp(new Date(detail.issuedAtMs), branch.timezone, { time: false }),
         booth: `${branch.name} · ${station.name}`,
         /**
          * Name and staff code — "Nok (S-7KMQ)" — of whoever was on duty
@@ -2397,6 +2404,7 @@ export function createBooth(options: BoothOptions): BoothModule {
         headerLine: slip.headerText,
         showStaff: slip.showStaff,
         showTerms: slip.showTerms,
+        design: slip.design,
       },
     };
     const nowIso = new Date(detail.issuedAtMs).toISOString();
@@ -2424,18 +2432,14 @@ export function createBooth(options: BoothOptions): BoothModule {
   }
 
   /** A published entry's terms or a cached definition's: the same two fields. */
+  function splitTermBlock(block: string | null | undefined): string[] {
+    return block?.split('\n').map((line) => line.trim()).filter(Boolean) ?? [];
+  }
+
   function splitTerms(
     source: { termsEn?: string | null; termsTh?: string | null } | undefined,
   ): string[] {
-    const lines: string[] = [];
-    for (const block of [source?.termsEn, source?.termsTh]) {
-      if (!block) continue;
-      for (const line of block.split('\n')) {
-        const trimmed = line.trim();
-        if (trimmed !== '') lines.push(trimmed);
-      }
-    }
-    return lines;
+    return [...splitTermBlock(source?.termsEn), ...splitTermBlock(source?.termsTh)];
   }
 
   /**

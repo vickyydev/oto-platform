@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BOOTH_VOUCHER_DESIGN_DEFAULTS } from '@oto/shared';
 import type { BoothDraft, BoothSettingsDraft } from '@/components/booth/boothApi';
 import {
   SLIP_STANDING,
@@ -70,6 +71,7 @@ describe('the voucher slip card (SCRUM-471)', () => {
       footerText: '',
       showStaff: true,
       showTerms: true,
+      design: BOOTH_VOUCHER_DESIGN_DEFAULTS,
     });
     expect(slipFromSettings(settings({ voucherFooterText: 'Bye', voucherShowStaff: false }))).toMatchObject({
       footerText: 'Bye',
@@ -96,6 +98,7 @@ describe('the voucher slip card (SCRUM-471)', () => {
       voucherFooterText: null,
       voucherShowStaff: true,
       voucherShowTerms: true,
+      voucherDesign: null,
     });
   });
 
@@ -123,6 +126,7 @@ describe('the voucher slip card (SCRUM-471)', () => {
       footerText: null,
       showStaff: true,
       showTerms: true,
+      design: BOOTH_VOUCHER_DESIGN_DEFAULTS,
     });
     expect(publishedSlip(draft(settings(), { voucherShowTerms: false, voucherFooterText: 'Bye' }))).toMatchObject({
       showTerms: false,

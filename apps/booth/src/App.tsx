@@ -57,7 +57,7 @@ interface AppliedConfig {
 /** How often the corner of the screen and the diagnostics are refreshed. */
 const STATUS_POLL_MS = 5000;
 /** How often a newer published wheel is looked for. */
-const CONFIG_POLL_MS = 30_000;
+const CONFIG_POLL_MS = 5_000;
 /** Nobody at the prize card for this long and the next player starts fresh. */
 const IDLE_RESULT_MS = 60_000;
 /** The second press of the double-press must land inside this window. */
@@ -829,7 +829,7 @@ export default function App() {
             // And the wheel now, not at the poll's next tick: the effect's
             // first tick 401'd while the screen was unpaired and its next is
             // CONFIG_POLL_MS away, which left a paired television on an
-            // empty wheel reading "Starting…" for up to thirty seconds —
+            // empty wheel reading "Starting…" until the next poll —
             // long enough for staff to decide the pairing failed.
             void fetchConfig()
               .then((next) => applyConfig(next))

@@ -1,5 +1,33 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT — 5 October 2026, afternoon — Lucky Wheel slip build verified locally
+
+SCRUM-499 is In Progress: fixed-code source `33e1831e` is on main and staging,
+with CI workspace checks green, but the park Pi has not been updated and no
+fixed-code paper proof exists. SCRUM-500 is In Progress for the editable
+bilingual 80 mm slip. Clean sibling worktree `oto-pos-voucher-slip`, branch
+`feat/booth-slip-design`, starts at `33e1831e`; the original checkout is dirty
+with other work and must not be used to land this feature. Migration 0056 adds
+nullable `booth_settings.voucher_design`; an untouched booth retains its prior
+published bundle and classic paper. The box print job captures the design and
+code mode for stable reprints; a fixed/shared code omits the one-use promise.
+Publish queues `config_apply`, which pulls the box cache and reports its running
+version; the TV checks its local box every five seconds and applies a new wheel
+between spins. The Console edits shared slip text and layout, while each
+voucher type owns its prize title, instructions and terms.
+
+The affected existing tests pass: print 32, box slip 4, shared slip 7,
+Console slip 9, embedded-Postgres API booth-admin 37. All seven touched
+packages typecheck, and scoped lint is clear. A sample render was visually
+inspected at 576 dots; 512-dot rendering passed. No push, CI or staging deploy
+of SCRUM-500 has happened yet. Next: review/commit by explicit file list,
+pull current main, push with Jira comments and status in the same turn, run CI,
+then deploy API before Console/Booth. Capture real staging screenshots on
+SCRUM-500 and test the fixed-code flow on a virtual booth for SCRUM-499;
+do not call either Deployed without its named staging evidence. Prepare a
+checksum-verified Pi release on the Desktop but do not claim a park print until
+the physical Pi is updated and a real slip is checked.
+
 ## STOP POINT — 2 October 2026, late night — local session hands over
 
 Main and staging are at 9a14af81, CI green. Landed today:

@@ -393,6 +393,13 @@
       "when": 1790960001000,
       "tag": "0055_voucher_fixed_code",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1791186380717,
+      "tag": "0056_booth_voucher_design",
+      "breakpoints": true
     }
   ]
 }

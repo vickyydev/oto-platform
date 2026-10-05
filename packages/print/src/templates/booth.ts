@@ -89,6 +89,7 @@ const FACT_LABEL_DOTS = 90;
 const QR_MODULE_DOTS = 8;
 
 export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDocument {
+  if (data.design?.layout === 'showcase') return buildShowcaseVoucher(data, device);
   /**
    * The booth's own choices (SCRUM-471), each absent on a job stored before
    * they existed and each defaulting to the slip every booth printed before —
@@ -157,7 +158,11 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
   blocks.push(fact('Expires', data.expiresAt ?? 'No expiry'));
 
   blocks.push(divider());
-  blocks.push(text('Single use · ใช้ได้ 1 ครั้ง', smallBold, 'center'));
+  // A shared fixed code can be redeemed more than once under its type's
+  // campaign limit. Calling each printed copy single-use would be false.
+  if (data.codeMode !== 'fixed') {
+    blocks.push(text('Single use · ใช้ได้ 1 ครั้ง', smallBold, 'center'));
+  }
   /**
    * The foot of the slip is the voucher definition's terms (SCRUM-223), a
    * line each, English then Thai — "Cannot be combined with other offers." —
@@ -178,6 +183,61 @@ export function buildBoothVoucher({ data, device }: BoothVoucherInput): PrintDoc
     blocks.push(text(data.footerLine, small, 'center'));
   }
 
+  return {
+    media: { kind: 'receipt', widthDots: device.widthDots, dpi: 203 },
+    paddingDots: 8,
+    blocks,
+    finish: { feedDots: 96, cut: 'partial' },
+  };
+}
+
+/** The owner's bilingual, prize-first voucher on 80 mm paper. */
+function buildShowcaseVoucher(data: BoothVoucherData, device: DeviceProfile): PrintDocument {
+  const design = data.design!;
+  const blocks: Block[] = [];
+  if (data.showLogo !== false) blocks.push(logoBlock(), space(4));
+  blocks.push(text(design.venueLine?.trim() || data.venueLine, { sizeDots: SIZE.body, weight: 'bold' }, 'center'));
+  if (data.headerLine?.trim()) blocks.push(text(data.headerLine.trim(), small, 'center'));
+  if (data.reprintNote) blocks.push(text(data.reprintNote, smallBold, 'center'));
+  blocks.push(space(8));
+  if (design.winnerLine.trim()) blocks.push(text(design.winnerLine, { sizeDots: 36, weight: 'bold' }, 'center'));
+  if (design.winnerLineThai.trim()) blocks.push(text(design.winnerLineThai, { sizeDots: SIZE.body, weight: 'bold' }, 'center'));
+  blocks.push(space(5), text(data.prizeLine, { sizeDots: 42, weight: 'bold' }, 'center'));
+  if (data.prizeLineThai) blocks.push(text(data.prizeLineThai, { sizeDots: 34, weight: 'bold' }, 'center'));
+  blocks.push(space(9), divider(), space(6));
+  for (const line of data.redemptionLine.split('\n').map((line) => line.trim()).filter(Boolean)) {
+    blocks.push(text(line, { sizeDots: SIZE.body, weight: 'bold' }, 'center'));
+  }
+  blocks.push(space(8), {
+    k: 'qr', value: data.voucherCode, moduleDots: 10, ecc: 'M', align: 'center',
+  });
+  if (design.codeLabel.trim()) blocks.push(text(design.codeLabel, smallBold, 'center'));
+  blocks.push(text(data.voucherCode, { sizeDots: SIZE.header, weight: 'bold' }, 'center'));
+  blocks.push(space(7), divider(), space(5));
+  blocks.push({
+    k: 'columns', gapDots: 12,
+    cells: [
+      { runs: [{ text: `${design.issuedLabel}\n${data.issuedDate ?? data.issuedAt}` }], align: 'center', style: smallBold, flex: 1 },
+      { runs: [{ text: `${design.expiresLabel}\n${data.expiresAt ?? 'No expiry'}` }], align: 'center', style: smallBold, flex: 1 },
+    ],
+  });
+  blocks.push(space(6), divider(), space(5));
+  if (data.showTerms !== false) {
+    if (design.termsLabel.trim()) blocks.push(text(design.termsLabel, smallBold, 'center'));
+    let n = 1;
+    if (data.codeMode !== 'fixed' && design.singleUseLabel.trim()) {
+      blocks.push(text(`${n++}. ${design.singleUseLabel}`, small, 'left'));
+    }
+    const en = data.termsEn ?? data.terms;
+    const th = data.termsTh ?? [];
+    for (let i = 0; i < Math.max(en.length, th.length); i += 1) {
+      if (en[i]) blocks.push(text(`${n++}. ${en[i]}`, small, 'left'));
+      else if (th[i]) blocks.push(text(`${n++}. ${th[i]}`, small, 'left'));
+      if (th[i] && en[i]) blocks.push(text(th[i]!, small, 'left'));
+    }
+  }
+  if (data.showStaff !== false && data.staff) blocks.push(text(`Staff: ${data.staff}`, small, 'left'));
+  if (data.footerLine.trim()) blocks.push(space(5), text(data.footerLine, small, 'center'));
   return {
     media: { kind: 'receipt', widthDots: device.widthDots, dpi: 203 },
     paddingDots: 8,

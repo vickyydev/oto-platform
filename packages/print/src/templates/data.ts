@@ -154,6 +154,25 @@ export interface BoothVoucherData {
    * disagree.
    */
   voucherCode: string;
+  /** A fixed code is shared across wins; only generated codes are single-use. */
+  codeMode?: 'generated' | 'fixed';
+  /** Frozen with the job so a reprint keeps the version that won. */
+  design?: {
+    layout: 'classic' | 'showcase';
+    venueLine: string | null;
+    winnerLine: string;
+    winnerLineThai: string;
+    codeLabel: string;
+    issuedLabel: string;
+    expiresLabel: string;
+    termsLabel: string;
+    singleUseLabel: string;
+  };
+  /** Date-only stamp for the showcase's side-by-side dates. */
+  issuedDate?: string;
+  /** Separate languages let the showcase number each term once. */
+  termsEn?: string[];
+  termsTh?: string[];
   /**
    * When it was printed, date and time together, e.g. "17 Sep 2026 15:04".
    *

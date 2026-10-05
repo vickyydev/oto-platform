@@ -105,9 +105,9 @@ export function VoucherSlipPanel({
         </div>
       </div>
       <RailNote>
-        The logo, a header line, a footer line, the Staff row and the terms are this booth’s own;
-        the prize’s words come from its voucher type. Saved to the booth’s draft, and printed
-        after the next publish, once its box has taken that version.
+        The layout, shared wording, logo, header and footer belong to this booth. Each prize’s
+        title, instructions and terms come from its voucher type. Save, then publish; the box
+        fetches the new version automatically. Check The box below for its reported version.
       </RailNote>
     </CardShell>
   );
@@ -172,7 +172,7 @@ export function VoucherSlipEditor({
               <Button
                 className="rounded-full px-4 font-bold"
                 onClick={() => onSave(slipInput(edit))}
-                disabled={!dirty || saving || problems.header !== undefined || problems.footer !== undefined}
+                disabled={!dirty || saving || Object.keys(problems).length > 0}
               >
                 {saving ? 'Saving…' : 'Save slip'}
               </Button>
@@ -198,7 +198,7 @@ export function VoucherSlipEditor({
                 Changing it needs <code className="font-mono">admin:booth:manage</code>.
               </>
             ) : (
-              'Saved to this booth’s draft; the booth prints it after the next publish, once its box has taken that version.'
+              'Saved to this booth’s draft; publish to send it to the box, then check its reported version.'
             )}
           </span>
         </div>
@@ -230,9 +230,50 @@ export function VoucherSlipEditor({
             disabled={locked}
             onChange={(showTerms) => set({ showTerms })}
             label="Print the terms"
-            detail="The voucher type’s terms at the foot. “Single use” always prints."
+            detail="The voucher type’s terms at the foot. A single-use promise prints only for generated codes."
           />
         </div>
+
+        <Field label="Paper layout" hint="Choose the bilingual design for this booth. The current paper remains until you save and publish.">
+          <ChoiceRow
+            value={edit.design.layout}
+            onChange={(layout) => set({ design: { ...edit.design, layout: layout as 'classic' | 'showcase' } })}
+            disabled={locked}
+            options={[
+              { value: 'classic', label: 'Classic' },
+              { value: 'showcase', label: 'Bilingual showcase' },
+            ]}
+          />
+        </Field>
+
+        {edit.design.layout === 'showcase' && (
+          <div className="flex flex-col gap-3 rounded-[14px] border border-border p-3">
+            <p className="text-sm font-semibold">Words on the paper</p>
+            <p className="text-xs text-muted-foreground">
+              These words are shared by this booth’s slips. Each prize’s English and Thai title,
+              redemption instruction and terms are edited on its Voucher Type.
+            </p>
+            <Field label="Park name" hint="Blank uses the branch name.">
+              <TextInput value={edit.design.venueLine ?? ''} disabled={locked}
+                onChange={(venueLine) => set({ design: { ...edit.design, venueLine: venueLine || null } })} />
+            </Field>
+            {([
+              ['winnerLine', 'Winner headline'],
+              ['winnerLineThai', 'Winner headline (Thai)'],
+              ['codeLabel', 'Code label'],
+              ['issuedLabel', 'Issued label'],
+              ['expiresLabel', 'Expires label'],
+              ['termsLabel', 'Terms heading'],
+              ['singleUseLabel', 'Generated-code single-use line'],
+            ] as const).map(([key, label]) => (
+              <Field key={key} label={label}>
+                <TextInput value={edit.design[key]} disabled={locked}
+                  onChange={(value) => set({ design: { ...edit.design, [key]: value } })} />
+              </Field>
+            ))}
+            {problems.design && <p className="text-xs text-status-down">{problems.design}</p>}
+          </div>
+        )}
 
         <Field
           label="Header line"

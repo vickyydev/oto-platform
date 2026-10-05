@@ -8,6 +8,8 @@ import {
   BOOTH_STAFF_SESSION_MAX_MINUTES,
   BOOTH_VOUCHER_FOOTER_MAX_CHARS,
   BOOTH_VOUCHER_HEADER_MAX_CHARS,
+  BoothVoucherDesignSchema,
+  newId,
 } from '@oto/shared';
 import type { App } from '../app';
 import { boothDeviceOf } from '../plugins/credential';
@@ -55,7 +57,7 @@ import {
   syncBoothDuty,
   updateBoothDutyRule,
 } from '../services/booth-duty';
-import { loadBranchForOperator } from '../services/fleet';
+import { loadBox, loadBranchForOperator, queueCommand } from '../services/fleet';
 import { opCtx } from '../services/tx';
 import { listBoothSpins } from '../services/voucher-ledger';
 
@@ -477,6 +479,7 @@ export async function boothRoutes(app: App): Promise<void> {
       .optional(),
     voucherShowStaff: z.boolean().optional(),
     voucherShowTerms: z.boolean().optional(),
+    voucherDesign: BoothVoucherDesignSchema.nullable().optional(),
   };
 
   const SettingsBody = z
@@ -885,13 +888,29 @@ export async function boothRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:booth:publish', { branchId: row.branchId });
-      return publishBoothConfig(
+      const published = await publishBoothConfig(
         app.db,
         opCtx(req),
         { accountId: auth.accountId, operatorId: auth.operatorId },
         row,
         req.body,
       );
+      // The box polls commands every five seconds. Ask it to pull now; if it
+      // is offline or the command cannot be queued, its normal cache poll and
+      // reconnect path still apply the immutable published version.
+      if (row.boxId) {
+        try {
+          const box = await loadBox(app.db, auth.operatorId, row.boxId);
+          if (box.registeredAt && box.status !== 'disabled') {
+            await queueCommand(app.db, opCtx(req),
+              { accountId: auth.accountId, operatorId: auth.operatorId }, box,
+              { kind: 'config_apply', actionId: newId() });
+          }
+        } catch (err) {
+          req.log.warn({ reason: String(err) }, 'the published wheel awaits the box’s normal pull');
+        }
+      }
+      return published;
     },
   );
 
