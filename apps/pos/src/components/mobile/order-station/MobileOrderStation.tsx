@@ -637,7 +637,9 @@ export function MobileOrderStation() {
             {/* Order note bar */}
             <div className="shrink-0 px-4 pt-2 pb-1">
               <OrderNoteBar value={orderNote} onChange={setOrderNote} />
-              <PriceSourceNote quote={orderQuote.quote} pending={orderQuote.pending} />
+              {lines.length > 0 && (
+                <PriceSourceNote quote={orderQuote.quote} pending={orderQuote.pending} />
+              )}
             </div>
 
             {/* Menu — fills remaining space */}

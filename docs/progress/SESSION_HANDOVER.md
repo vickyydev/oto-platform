@@ -1,5 +1,41 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026, after midnight - SCRUM-494 nine-item proof
+
+Continue in the clean sibling worktree `oto-pos-voucher-slip` on
+`feat/till-consistency-493`; keep the original dirty checkout untouched.
+API staging is `8db35d3e`, POS staging is `326ad33c`. The signed-in normal
+customer-display registration and photo flow passed: file creation 200,
+same-origin photo content PUT 204, registration photo attach 200. A labelled
+Nanny child was attached to a Tourist cash sale, switched from Drop-Off to an
+on-shift synthetic Nanny, and paid ฿1,020 (฿690 play plus one ฿330 hour).
+The staff chose Check in now. Read-back showed in_park, Nanny assigned, band
+and photo; phone and desktop boards showed NANNY. Phone pickup took a fresh
+photo and released the child; desktop Out board showed the same child. The
+temporary Nanny shift was archived after release. An earlier unpaid test
+registration remains labelled ZZ TEST because its browser closed during the
+photo upload; it has no photo and was never added to a sale.
+
+Five review cards are drafted in `docs/qa/jira-comments/attachments/SCRUM-494/`
+for items 1-9. They use real staging captures; booking references and band
+codes are covered. Item 1's expired-document half is existing-test evidence
+because staging cannot create a past-expiry verification. Check card 4's
+redaction and adjust the booking line so the Already redeemed heading remains
+fully visible. The food screens exposed a phone-only empty-cart notice saying
+the platform did not price a cart with no lines. A one-line suppression is
+local in `MobileOrderStation.tsx`; existing `s494-food` 10/10, POS typecheck,
+scoped lint and production build pass. Deploy the verified POS fix, recapture
+the three F&B warning states, rebuild and inspect the five cards, attach them
+to SCRUM-494, name each in a plain-language comment, then move it to Deployed.
+
+CI `37342943714` for `326ad33c` failed two stock closing/gate-recheck test
+assertions after typecheck, lint and 177 other API test files passed. Do not
+call it green. Investigate whether those tests reproduce independently before
+deciding on a fix or retry; do not fold unrelated changes into SCRUM-494.
+Every push gets a same-turn Jira status check/change and progress comment.
+Then proceed with SCRUM-215 rounds 2-4 per CLOUD_HANDOVER section 3. Never
+print or attach band credentials, booking references, pickup codes or secrets.
+
 ## STOP POINT - 5 October 2026, near midnight - SCRUM-494 meal and pickup
 
 POS staging `b4299ea4` now shows readable safety and prepaid panels. The
