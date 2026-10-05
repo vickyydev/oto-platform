@@ -1,5 +1,39 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026 - round-2 staging evidence saved
+
+Use oto-pos-eod-round-2 on feat/eod-round-2-review; main source 33681345 is
+live on API and POS. Original checkout remains read-only. Real staging
+proof is attached on SCRUM-215 as 02-staging-close-safeguards.png (11265),
+03-staging-close-reprint.png (11266), and 04-staging-receipt-output.png
+(11267). The latter is explicitly simulated printer output, not paper.
+QA details and exact isolated fixture IDs are in
+ docs/qa/end-of-day/round-2-staging-2026-10-06.md.
+
+Round-2 source passed CI 37356476121 before the docs-only rebase. Main run
+37368987245 could not acquire a hosted runner and has been retried. Do not
+call that run green. SCRUM-215 remains In Progress; rounds 3 and 4 remain.
+The closed-receipt queued-status refresh defect was repaired in the UI
+slice and passes 11 existing hook checks; staging retest follows landing.
+
+Uncommitted settlement work is isolated in oto-pos-eod-settlement-api,
+oto-pos-eod-settlement-box and oto-pos-eod-settlement-ui, all based on
+33681345. API owns migration 0059; do not generate another migration with
+that number. Review found reference-matching/preservation, box reassignment
+ownership and concurrent matching edges; the API slice is fixing them.
+Box durable callback retry now survives a restart with an empty platform
+command queue; 143 affected checks pass. Physical terminal settlement is
+explicitly unsupported until verified vendor wire responses are available.
+Fixture import is not a claim of production 2C2P file compatibility.
+
+Next: finish integration review, copy explicit paths into this checkout,
+run affected tests/typecheck/lint/build, commit/push with Jira update,
+deploy API before POS/Console, and capture real settlement/import/CSV and
+receipt-refresh evidence. Keep the isolated simulated box online for this
+walkthrough; archive its QA branch/station/devices/box afterward. Do not
+close or reseed real park records. Then complete round 4 and SCRUM-214/215,
+followed by 495, 496, 498 and 497 per CLOUD_HANDOVER before closing 493.
+
 ## STOP POINT - 6 October 2026 - verified round-2 source ready to land
 
 Work from clean oto-pos-eod-round-2 on feat/eod-round-2-review. Rebased
