@@ -1,5 +1,17 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 5 October 2026, evening - SCRUM-494 restriction-only warning
+
+SCRUM-494 stays Testing. Review of its food-counter acceptance found that a
+child with a food restriction but no separate allergy/medical note had no
+visible warning on desktop or phone. A shared F&B safety banner now shows the
+restriction on its own and preserves the combined allergy/restriction case.
+The existing `s494-food` test file passes 10 tests; POS typecheck, scoped
+lint and production build pass. This fix awaits push, POS deployment and a
+real staging screenshot using an owned ZZ TEST child band. The preceding
+SCRUM-493 takeover stop point lists all other remaining evidence and the
+later End of Day work. Do not transition SCRUM-494 to Deployed yet.
+
 ## STOP POINT - 5 October 2026, evening - SCRUM-493 takeover, SCRUM-494 evidence
 
 The owner approved completing SCRUM-493 in the hosted handover's order:

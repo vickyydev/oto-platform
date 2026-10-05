@@ -36,6 +36,7 @@ import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { toast } from '@/hooks/use-toast';
 
 import { ScanWristband } from '@/components/fnb/ScanWristband';
+import { FoodSafetyBanner } from '@/components/fnb/FoodSafetyBanner';
 import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
 import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
@@ -50,7 +51,6 @@ import { MobileFnbCartSheet } from './MobileFnbCartSheet';
 
 import { Button } from '@/components/ui/button';
 import {
-  AlertTriangle,
   Ban,
   Hash,
   Wallet,
@@ -548,27 +548,9 @@ export function MobileOrderStation() {
         <>
           <div className="flex-1 min-h-0 flex flex-col">
             {/* Staff-only safety banners — NEVER shown in customer-facing content */}
-            {(wristband?.allergiesMedical || wristband?.mayOrderFood === false) && (
+            {(wristband?.allergiesMedical || wristband?.foodRestrictions || wristband?.mayOrderFood === false) && (
               <div className="shrink-0 px-4 pt-3 space-y-2">
-                {wristband.allergiesMedical && (
-                  <div className="rounded-xl border border-red-500/50 bg-red-500/15 px-4 py-3 text-red-200">
-                    <div className="flex items-start gap-2.5">
-                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold uppercase tracking-wide text-red-300">
-                          Allergy / medical alert
-                          {wristband.holderName ? ` · ${wristband.holderName}` : ''}
-                        </div>
-                        <div className="font-semibold text-sm">{wristband.allergiesMedical}</div>
-                        {wristband.foodRestrictions && (
-                          <div className="text-xs text-red-200/80">
-                            Restriction: {wristband.foodRestrictions}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <FoodSafetyBanner wristband={wristband} compact />
                 {wristband?.mayOrderFood === false && (
                   <div className="rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-3 text-amber-200">
                     <div className="flex items-start gap-2.5">

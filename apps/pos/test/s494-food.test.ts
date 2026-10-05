@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import type { BandStayView } from '@oto/shared';
 import { api, ApiError } from '@/api/client';
 import { buildItemCartPayload, offLedgerOnly } from '@/api/sales';
 import { bandFoodOf, wristbandOfScan, type ApiBandScan } from '@/api/wallet';
 import { loadScannedTab } from '@/components/fnb/ScanWristband';
+import { FoodSafetyBanner } from '@/components/fnb/FoodSafetyBanner';
 import { bandHolderOf, withPrepaidServed } from '@/lib/bandFood';
 import { engineItemLines, itemCart } from '@/lib/cartWire';
 import type { FnbOrderLine, MenuItem, Wristband } from '@/types';
@@ -79,6 +82,18 @@ describe('s494 — the scan carries the child’s stay onto the tab', () => {
 
   it('a child whose parent authorised no food reads mayOrderFood false', () => {
     expect(bandFoodOf(stay({ mayOrderFood: false, foodProvision: null }))).toMatchObject({ mayOrderFood: false, stayId: STAY });
+  });
+
+  it('shows a food restriction even when the child has no allergy note', () => {
+    const tab = wristbandOfScan({ wallet: null, ledger: [], stay: stay({ allergiesMedical: null, foodRestrictions: 'No shellfish' }) }, 'k')!;
+    for (const compact of [false, true]) {
+      const html = renderToStaticMarkup(createElement(FoodSafetyBanner, { wristband: tab, compact }));
+      expect(html).toContain('Food restriction');
+      expect(html).toContain('Restriction: No shellfish');
+      expect(html).not.toContain('Allergy / medical alert');
+    }
+    const clear = wristbandOfScan({ wallet: null, ledger: [], stay: stay({ allergiesMedical: null, foodRestrictions: null }) }, 'k')!;
+    expect(renderToStaticMarkup(createElement(FoodSafetyBanner, { wristband: clear }))).toBe('');
   });
 
   it('loadScannedTab asks the counter scan and opens the stay’s tab', async () => {
