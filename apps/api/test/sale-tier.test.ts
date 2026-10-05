@@ -623,7 +623,7 @@ describe('the record the claim leaves', () => {
     expect(res.statusCode).toBe(400);
 
     // Nor through the one free-looking field: the kind of document is one of
-    // the four names the till offers, so "Passport AA1234567" is refused and
+    // the three names the till offers, so "Passport AA1234567" is refused and
     // nothing of it is written. Found by the gate — the comment above claimed
     // this while `evidenceType` was still free text.
     const smuggled = await claim({
@@ -632,6 +632,8 @@ describe('the record the claim leaves', () => {
       evidenceType: 'Passport AA1234567',
     });
     expect(smuggled.statusCode).toBe(400);
+    const unlisted = await claim({ actionId: newId(), toTier: 'expat', evidenceType: 'Other' });
+    expect(unlisted.statusCode).toBe(400);
     const [row] = await ctx.db
       .select({ after: auditLog.after })
       .from(auditLog)

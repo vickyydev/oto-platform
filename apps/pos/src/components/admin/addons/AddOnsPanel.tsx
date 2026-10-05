@@ -56,14 +56,9 @@ export function AddOnsPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* The add-on and its price persist (SCRUM-204); the Track stock switch
-          mints an inventory item, and that half is still in this tab. Written
-          out for the reason given on the Merch panel. */}
       <AdminNoticeBanner>
-        <strong className="font-semibold">Stock counts are this tab only — SCRUM-204.</strong>{' '}
-        The add-on and its weekday and weekend prices save to the database and
-        survive a reload. The Track stock switch, and the counts behind it, stay
-        in this browser tab.
+        To start stock tracking, link the item in Inventory. Turning Track stock
+        on here alone does not create that link. Manage stock counts in Inventory.
       </AdminNoticeBanner>
 
       <div className="flex items-center justify-between gap-3">

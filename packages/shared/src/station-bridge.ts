@@ -213,7 +213,9 @@ export const OfflineMemberTierChangedSchema = z.discriminatedUnion('direction', 
     memberId: Uuid,
     verificationId: Uuid,
     toTier: z.string().min(1).max(64),
-    evidenceType: z.enum(TIER_PROOF_TYPES),
+    // Previously accepted box events must still replay after an upgrade.
+    // New checks use TIER_PROOF_TYPES at the receiving counter.
+    evidenceType: z.enum([...TIER_PROOF_TYPES, 'Other']),
     // Optional, as at the online verify step: a document with no expiry date
     // never expires.
     evidenceExpiresAt: IsoDate.nullish(),

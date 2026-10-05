@@ -1,5 +1,11 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026 - SCRUM-495 first verified slice
+
+**6 October 2026, SCRUM-495 first verified slice:** Manual percentage discounts use the prototype whole-baht rounding; fixed discounts, promos and taxes retain their existing policies. Versioned offline replay preserves earlier satang-priced sales and quarantines unknown future engine versions before writing money. The exact three document choices, retained promo inputs, cash confirmation wording, kitchen order notes and stock guidance are restored; the inert badge/PIN unlock field is removed. Root verification: shared pricing 131, POS 87, API 57 and box 37 existing tests pass; all four package typechecks, changed-file lint, POS production build and diff check pass. This source is not yet deployed. SCRUM-495 remains In Progress for History, payment methods, Add time, wallet and shop-display work. The owner approved both Add time modes. EOD source 63d7307e is staging-verified; CI remains pending.
+
+## STOP POINT - 6 October 2026 - all-payments export ready for final proof
+
 ## STOP POINT - 6 October 2026 - final export proof and QA cleanup
 
 **6 October 2026, final End of Day staging proof saved:** API and POS 63d7307e are live. The actual all-payments CSV download contains three approved simulated card/QR rows, including the gateway invoice with blank TID; reviewed screenshot 11-staging-all-payment-export.png is attached to SCRUM-215 as 11274. The temporary QA manager grant was revoked; the isolated box was disabled and archived, its station/three devices and park archived. Financial/audit records and prior unresolved payments remain. SCRUM-215 stays Testing pending CI37378514082; no green CI claim. SCRUM-493/495 remain In Progress. The owner approved both selected/scanned-band and count-only Add time options, recorded on 495/497. Next: finish CI gate, then land verified SCRUM-495 slices and continue the remaining mismatch groups.

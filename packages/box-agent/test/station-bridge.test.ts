@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { generateKeyPairSync } from 'node:crypto';
 import { test } from 'node:test';
 
-import { OFFLINE_POLICY } from '@oto/shared';
+import { OFFLINE_POLICY, OfflineMemberTierChangedSchema } from '@oto/shared';
 import { BridgeError, StationBridge, type BridgeHost } from '../src/station-bridge';
 import { StationSessionManager } from '../src/station-session';
 import { encodeStaffToken, type StaffSigningKey, type StaffTokenClaims } from '../src/staff-token';
@@ -693,6 +693,14 @@ test('OD-11: a tier upgraded on a document at the counter prices the next cart; 
     caller,
     intent('member.create', { memberId, phone: '+66817778888', nickname: 'Resident' }),
   );
+  await assert.rejects(
+    r.bridge.intent(STATION_ID, caller, intent('member.tier_change', {
+      direction: 'upgrade', memberId,
+      verificationId: '018f0000-0000-7000-8000-0000000000e6',
+      toTier: 'thai', evidenceType: 'Other',
+    })),
+    (err: unknown) => err instanceof BridgeError && err.status === 400,
+  );
   const upgraded = await r.bridge.intent(
     STATION_ID,
     caller,
@@ -736,6 +744,8 @@ test('OD-11: a tier upgraded on a document at the counter prices the next cart; 
   const [, factTier] = (await r.t.store.takeBatch(BOX_ID)).events;
   assert.equal(factTier!.type, 'member.tier_changed');
   assert.equal(factTier!.payload.toTier, 'thai');
+  assert.equal(OfflineMemberTierChangedSchema.safeParse({ ...factTier!.payload, evidenceType: 'Other' }).success, true,
+    'queued verifications accepted by earlier boxes remain replayable');
   r.t.close();
 });
 

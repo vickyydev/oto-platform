@@ -623,6 +623,24 @@ describe('the ordering of discounts is load-bearing', () => {
 });
 
 describe('rounding', () => {
+  it('rounds manual percentages to whole baht while fixed, comp and promo amounts keep satang', () => {
+    const discount: ManualDiscount = { id: 'manual', scope: 'order', type: 'percent', value: 10, reason: 'Service recovery' };
+    expect(resolveManualDiscountAmount(discount, 97300)).toBe(9700);
+    expect(resolveManualDiscountAmount(discount, 97500)).toBe(9800);
+    expect(computeManualDiscount([discount], 97300, {}).total).toBe(9700);
+    expect(resolveManualDiscountAmount({ ...discount, type: 'fixed', value: 9730 }, 97300)).toBe(9730);
+    expect(resolveManualDiscountAmount({ ...discount, type: 'comp' }, 97301)).toBe(97301);
+    expect(resolveManualDiscountAmount({ ...discount, value: 100 }, 151)).toBe(151);
+    expect(percentOf(97300, 10)).toBe(9730);
+
+    const ctx = contextFor('weekday');
+    const line = buildLine(cartCases[0]!.lines[0]!, ctx);
+    const priced = { ...line, kids: 0, adults: 0, socks: 0,
+      addOns: [{ id: 'test-item', name: 'Test item', price: 97300, quantity: 1 }], lineTotal: 97300 };
+    const totals = computeTicketCartTotals([priced], [], [discount], taxConfigFor(cartCases[0]!.taxConfig), ctx);
+    expect(totals.manualAmounts.manual).toBe(9700);
+  });
+
   it('rounds half-up at the satang', () => {
     expect(roundHalfUpSatang(0.5)).toBe(1);
     expect(roundHalfUpSatang(1.5)).toBe(2);

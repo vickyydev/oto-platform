@@ -65,8 +65,8 @@ export interface RoundingPolicy {
 export const DEFAULT_ROUNDING: RoundingPolicy = { unit: 'satang', mode: 'half_up' };
 
 /**
- * The prototype's whole-baht manual-discount rounding, kept so the divergence
- * is testable instead of asserted. Not the default.
+ * The whole-baht default for manual percentage discounts. Promo discounts,
+ * tax and service charges continue to use the satang policy.
  */
 export const PROTOTYPE_BAHT_ROUNDING: RoundingPolicy = { unit: 'baht', mode: 'half_up' };
 

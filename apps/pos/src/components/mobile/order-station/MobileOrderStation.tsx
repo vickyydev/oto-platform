@@ -370,7 +370,7 @@ export function MobileOrderStation() {
     const cartPayload = buildItemCartPayload(displayLines, manualDiscounts, orderIdentity, total, {
       mode: orderQuote.quote.pricingMode, modeReason: orderQuote.quote.pricingModeReason,
     });
-    const outcome = await saleWriter.commit({ cart: cartPayload, finalise: false });
+    const outcome = await saleWriter.commit({ cart: cartPayload, note: orderNote.trim() || undefined, finalise: false });
     if ((orderEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
       toast({ title: 'An order was saved for the previous guest', description: `Order ${outcome.sale.receiptNumber ?? outcome.saleId} is recorded; nothing was printed for it. Find it in the sale list.`, variant: 'destructive' });
     }

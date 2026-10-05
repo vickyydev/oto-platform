@@ -57,6 +57,7 @@ import {
   OfflineChildUpdatedSchema,
   OfflineMemberCreatedSchema,
   OfflineMemberTierChangedSchema,
+  TIER_PROOF_TYPES,
   OfflineMemberUpdatedSchema,
   OfflineVisitCreatedSchema,
   bandShortCode,
@@ -1884,6 +1885,9 @@ export class StationBridge {
         : memberRecord(found.member);
       let toTier: string;
       if (body.direction === 'upgrade') {
+        if (!TIER_PROOF_TYPES.some((type) => type === body.evidenceType)) {
+          throw new BridgeError(400, 'VALIDATION', 'Select Passport, Residence certificate or School card.');
+        }
         if (!(await this.tierCodes()).includes(body.toTier)) {
           throw new BridgeError(400, 'VALIDATION', `Unknown tier "${body.toTier}"`);
         }
@@ -2788,6 +2792,7 @@ export class StationBridge {
         occurredAt: at,
         actionId: body.actionId,
         catalogueVersion: sale.pricing.basis.catalogueVersion,
+        engineVersion: sale.pricing.quote.engineVersion,
         priceBasis: sale.pricing.basis as unknown as Record<string, unknown>,
         printout: {
           snapshot: {

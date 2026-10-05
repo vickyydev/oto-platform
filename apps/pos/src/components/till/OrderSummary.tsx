@@ -214,17 +214,10 @@ function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: numb
 export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal, voucherLine, voucher }: OrderSummaryProps) {
   const [promoInput, setPromoInput] = useState('');
 
-  /**
-   * SCRUM-442 — hand the typed code to the till and empty the box, whether the
-   * till takes the code or refuses it, as the F&B station's box does
-   * (`components/fnb/PromoCodeEntry`): an applied code has its badge above and
-   * a refusal has its line beneath, so the box has nothing left to say.
-   */
   const applyPromoInput = () => {
     const code = promoInput.trim();
     if (!code || !onApplyPromoCode) return;
     onApplyPromoCode(code);
-    setPromoInput('');
   };
 
   const { subtotal, scannedDiscounts, manualAmounts, total, taxBreakdown } =

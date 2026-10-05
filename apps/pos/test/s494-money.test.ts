@@ -3,6 +3,7 @@ import { membersApi, type ApiMember } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { resolveAutoTier } from '@/lib/membership';
+import { TIER_PROOF_TYPES } from '@oto/shared';
 
 /**
  * SCRUM-494 unit "money", register entry 1 — at the till.
@@ -49,6 +50,15 @@ function apiMember(over: Partial<ApiMember> = {}): ApiMember {
 }
 
 describe('s494 money — an expired document keeps the rate and flags re-verify', () => {
+  it('offers three document kinds for new checks and still reads historical Other verifications', () => {
+    expect(TIER_PROOF_TYPES).toEqual(['Passport', 'Residence certificate', 'School card']);
+    const existing = apiMember();
+    existing.tierVerification!.proofType = 'Other';
+    const mapped = apiMemberToMember(existing);
+    expect(mapped.tierVerification?.proofType).toBe('Other');
+    expect(resolveAutoTier(mapped)).toBe('expat');
+  });
+
   it('carries the flag onto the till member and still auto-applies the verified tier', () => {
     const member = apiMemberToMember(apiMember());
     expect(member.tierVerification).toMatchObject({ tier: 'expat', reverifyDue: true, expiresAt: '2024-01-01' });

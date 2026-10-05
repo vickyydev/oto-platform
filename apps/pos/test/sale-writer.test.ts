@@ -128,6 +128,17 @@ afterEach(() => {
 });
 
 describe('pressing Pay twice produces one sale', () => {
+  it('persists the whole-order prep note and retains it when an unanswered write is retried', async () => {
+    const { result } = mountWriter();
+    const input = { ...order(1), note: 'Serve at 16:00; candles on the side' };
+    commit.mockRejectedValueOnce(new NetworkError(new TypeError('Failed to fetch')));
+    await result.current.commit(input);
+    await result.current.commit(input);
+    expect(sent()).toHaveLength(2);
+    expect(sent()[0]!.note).toBe(input.note);
+    expect(sent()[1]).toEqual(sent()[0]);
+  });
+
   it('joins a press to the one still going out: one request, one answer', async () => {
     let answer!: (result: SaleCommitResult) => void;
     commit.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));

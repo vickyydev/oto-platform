@@ -1,6 +1,6 @@
 import type { Satang } from './money';
 import type { RoundingPolicy } from './rounding';
-import { DEFAULT_ROUNDING, roundToPolicy } from './rounding';
+import { PROTOTYPE_BAHT_ROUNDING, roundToPolicy } from './rounding';
 import type {
   DiscountComponentTarget,
   LineBreakdownItem,
@@ -23,7 +23,7 @@ import {
  * sequentially against what remains. Reversing it moves the total — on the
  * worked example WE-6 by ฿20 on a ฿2,130 bill.
  *
- * THE THREE PLACES IT DELIBERATELY DIVERGES FROM THE PROTOTYPE, named here
+ * THE TWO PLACES IT DELIBERATELY DIVERGES FROM THE PROTOTYPE, named here
  * because "faithful port" in a file header is what a later reader trusts:
  *
  *   1. `rowMatchesTarget` answers TRUE for the `everything` scope, where the
@@ -32,9 +32,6 @@ import {
  *      why, and for what a caller porting prototype logic has to know.
  *   2. `computeManualDiscount` REFUSES a repeated discount id, which the
  *      prototype silently accepts (and mis-totals — see that function).
- *   3. Percent amounts round to the satang rather than to the whole baht, which
- *      is the platform rule and is a policy argument here — see
- *      `resolveManualDiscountAmount` and `PROTOTYPE_BAHT_ROUNDING`.
  *
  * Everything else here is the prototype's arithmetic, its clamps and its edge
  * cases, with money in satang and the rounding unit made a policy argument.
@@ -123,16 +120,13 @@ export interface ManualDiscountRecord extends ManualDiscount {
  * to 0–100 first, then rounded. A zero or negative base yields 0 — that guard
  * is what stops a stacked discount from turning into a credit.
  *
- * The rounding unit is the only place THIS FUNCTION diverges from the prototype:
- * `lib/manualDiscount.ts:11` does `Math.round(base * pct/100)` on BAHT, so its
- * 10 % of ฿973 is ฿97. The platform rounds half-up to the satang (฿97.30) per
- * SPRINT_2_PLAN.md "Money and time"; pass PROTOTYPE_BAHT_ROUNDING to get the
- * prototype's figure back.
+ * Manual percentages round to whole baht, as `lib/manualDiscount.ts:11`:
+ * 10 % of ฿973 is ฿97. Fixed amounts and comps retain their satang amounts.
  */
 export function resolveManualDiscountAmount(
   discount: ManualDiscount,
   base: Satang,
-  rounding: RoundingPolicy = DEFAULT_ROUNDING,
+  rounding: RoundingPolicy = PROTOTYPE_BAHT_ROUNDING,
 ): Satang {
   if (base <= 0) return 0;
   if (discount.type === 'comp') return base;
@@ -190,7 +184,7 @@ export function computeManualDiscount(
   subtotal: Satang,
   lineAmounts: Record<string, Satang>,
   componentBases: Record<string, Record<string, Satang>> = {},
-  rounding: RoundingPolicy = DEFAULT_ROUNDING,
+  rounding: RoundingPolicy = PROTOTYPE_BAHT_ROUNDING,
 ): ManualDiscountResult {
   const duplicate = findDuplicateDiscountId(manualDiscounts);
   if (duplicate !== null) {

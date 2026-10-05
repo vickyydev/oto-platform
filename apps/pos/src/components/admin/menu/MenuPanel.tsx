@@ -106,19 +106,9 @@ export function MenuPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* The item, its price, its category and its modifier groups persist
-          (SCRUM-341). Track stock does not: `product.stock_item_id` points at a
-          `stock_item` table with no routes, so the switch is dropped the moment
-          this screen re-reads the item it just saved. Written out rather than
-          using `NotSavedNotice`, whose sentence ends "a page reload discards
-          them" — true of the switch, and the opposite of true of the item
-          beside it. The Merch and Add-ons panels say the same thing. */}
       <AdminNoticeBanner>
-        <strong className="font-semibold">Stock counts are this tab only — SCRUM-204.</strong>{' '}
-        The item, its weekday and weekend prices, its category and its modifier groups
-        save to the database and survive a reload, whether you edit them here or through
-        Import. The Track stock switch reaches no route: it is dropped again as soon as
-        the saved item is read back.
+        To start stock tracking, link the item in Inventory. Turning Track stock
+        on here alone does not create that link. Manage stock counts in Inventory.
       </AdminNoticeBanner>
 
       {!apiBranchId && (

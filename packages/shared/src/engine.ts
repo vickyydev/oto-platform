@@ -96,7 +96,11 @@
  *
  * Format is `YYYY.MM.DD-n`, n counting same-day bumps.
  */
-export const PRICING_ENGINE_VERSION = '2026.09.20-5';
+export const LEGACY_SATANG_ENGINE_VERSION = '2026.09.20-5';
+export const PRICING_ENGINE_VERSION = '2026.10.06-1';
+
+// Manual percentage discounts round to whole baht. Offline facts created by
+// the previous engine retain its satang policy when replayed into the ledger.
 
 /*
  * -5 (2026-09-20). THE FOUR RULINGS on the questions the engine was pinned

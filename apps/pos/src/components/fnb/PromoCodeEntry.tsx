@@ -48,7 +48,6 @@ export function PromoCodeEntry({ applied, error, disabled, onApply, onRemove }: 
     const code = input.trim();
     if (!code) return;
     onApply(code);
-    setInput('');
   };
 
   return (

@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import {
   BOX_LANE_REFUSALS,
+  PRICING_ENGINE_VERSION,
   bandShortCode,
   mintBoothCode,
   saleReceiptDocument,
@@ -321,6 +322,7 @@ test('cash on the box lane: numbered from the mark, banded with the park key, pr
     });
     const fact = batch.events[0]!;
     assert.equal(fact.type, 'sale.finalised');
+    assert.equal(fact.payload.engineVersion, PRICING_ENGINE_VERSION);
     assert.equal(fact.actorAccountId, ACCOUNT);
     const payload = fact.payload as {
       saleId: string;

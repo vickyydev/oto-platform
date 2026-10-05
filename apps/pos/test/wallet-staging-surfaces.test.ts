@@ -22,6 +22,8 @@ import { FnbPayment } from '@/components/fnb/FnbPayment';
 import { loadScannedTab } from '@/components/fnb/ScanWristband';
 import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustomerDisplay';
 import { IssueVoucherRow, definitionUsedUp } from '@/components/till/RedeemVoucher';
+import { paymentSubmitLabel } from '@/components/till/PaymentTenderPanel';
+import * as paymentMethods from '@/lib/payments';
 
 /**
  * THE STAGING WALKTHROUGH'S FINDINGS ON THE TILL'S SURFACES (wallet story):
@@ -50,6 +52,28 @@ afterEach(() => {
 });
 
 const html = (el: React.ReactElement) => renderToStaticMarkup(el).replace(/&#x27;/g, "'");
+
+it('keeps the ticket confirmation wording for cash and no selection while preserving device and completion states', () => {
+  vi.spyOn(paymentMethods, 'findPaymentMethod').mockImplementation((id) => ({
+    id, label: id, kind: id as 'cash' | 'card' | 'qr', enabled: true, sortOrder: 0,
+  }));
+  const stage = { busy: false, creditCoversAll: false, state: { method: null, outstandingSatang: 10000 } } as unknown as ReturnType<typeof usePaymentStage>;
+  const caption = () => paymentSubmitLabel(stage, 'Confirm Payment Received');
+  expect(caption()).toBe('Confirm Payment Received');
+  stage.state.method = 'cash';
+  expect(caption()).toBe('Confirm Payment Received');
+  stage.state.method = 'card';
+  expect(caption()).toBe('Start card payment');
+  stage.state.method = 'qr';
+  expect(caption()).toBe('Show payment QR');
+  stage.busy = true;
+  expect(caption()).toBe(paymentSubmitLabel(stage));
+  expect(caption()).not.toBe('Confirm Payment Received');
+  stage.busy = false;
+  stage.state.outstandingSatang = 0;
+  expect(caption()).toBe(paymentSubmitLabel(stage));
+  expect(caption()).not.toBe('Confirm Payment Received');
+});
 
 // --- F1 ------------------------------------------------------------------------------
 
