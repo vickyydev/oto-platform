@@ -224,6 +224,8 @@ export function isVoucherDiscount(d: Pick<ApiSaleDiscount, 'kind' | 'label'>): b
 }
 
 export interface ApiSaleDetail {
+  /** A separate paid extension of an existing admission, never a new admission cart. */
+  timeExtension?: { id: string; sourceSaleId: string; status: 'pending' | 'applied' | 'voided'; minutesAdded: number; braceletCount: number } | null;
   /** Exact recorded food-order holder, by the non-secret code printed under its QR. */
   correctionBandShortCode?: string | null;
   sale: ApiSale;
@@ -909,3 +911,43 @@ export function bandLabel(band: Pick<ApiSaleBand, 'shortCode' | 'childName'>): s
   const code = band.shortCode ?? 'No code';
   return band.childName ? `${code} · ${band.childName}` : code;
 }
+
+
+// Paid play extensions are separate charges: the original receipt stays unchanged.
+export type ExtensionSelection =
+  | { mode: 'bands'; bandIds: string[] }
+  | { mode: 'count'; braceletCount: number };
+export interface SaleExtensionOption { id: string; label: string; minutes: number; unitSatang: number }
+export interface ExtensionBand { id: string; shortCode: string; kind: string }
+export interface SaleExtension {
+  id: string;
+  chargeSaleId: string;
+  optionId: string;
+  label: string;
+  minutesAdded: number;
+  braceletCount: number;
+  amountSatang: number;
+  selection: ExtensionSelection;
+  status: 'pending' | 'applied' | 'voided';
+  createdAt: string;
+  createdByName: string | null;
+  appliedAt: string | null;
+}
+export interface SaleExtensionsRead {
+  options: SaleExtensionOption[];
+  eligibleBands: ExtensionBand[];
+  extensions: SaleExtension[];
+}
+export interface SaleExtensionBody {
+  actionId: string;
+  stationId: string;
+  optionId: string;
+  selection: ExtensionSelection;
+}
+export const readSaleExtensions = (saleId: string) =>
+  api.get<SaleExtensionsRead>(`/sales/${encodeURIComponent(saleId)}/extensions`);
+export const createSaleExtension = (saleId: string, body: SaleExtensionBody) =>
+  api.post<{ extension: SaleExtension; sale: import('./sales').ApiSale; replay?: boolean }>(
+    `/sales/${encodeURIComponent(saleId)}/extensions`, body,
+    { idempotencyKey: `extension:${saleId}:${body.actionId}`, headers: { 'x-oto-action-id': body.actionId } },
+  );

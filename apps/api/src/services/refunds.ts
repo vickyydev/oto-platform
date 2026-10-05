@@ -1,4 +1,5 @@
 import { and, asc, eq } from 'drizzle-orm';
+import { assertNoPendingExtensions, assertExtensionRefund, cancelSaleExtension } from './sale-extension-lifecycle';
 import { device, paymentAttempt, refund, sale, saleLine, station } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
@@ -210,6 +211,7 @@ export async function refundSale(
     );
   }
   const reason = input.reason.trim();
+  await assertNoPendingExtensions(tx, row.id);
   if (!reason) throw errors.badRequest('A refund needs a reason');
   const remaining = refundableSatang(row.grossSatang, row.refundedSatang);
   if (remaining <= 0) throw errors.conflict('NOTHING_TO_REFUND', 'Nothing is left to refund on this sale');
@@ -247,6 +249,7 @@ export async function refundSale(
     customSatang: input.amountSatang,
   });
   if (amount.amountSatang <= 0) throw errors.badRequest('A refund has to give something back');
+  await assertExtensionRefund(tx, row.id, amount.amountSatang, remaining);
 
   // --- The lines it covers, and what goes back to stock ---------------------
   const covered =
@@ -481,6 +484,7 @@ export async function refundSale(
     .where(eq(sale.id, saleId))
     .returning();
   if (!after) throw new Error('the sale was not updated');
+  if (full) await cancelSaleExtension(tx, after, actor, now);
 
   // A refund that empties the sale kills its bands: the admission it paid for
   // is gone, so the bands go with it in the same transaction. A partial refund

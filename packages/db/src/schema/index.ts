@@ -32,3 +32,4 @@ export * from './stock';
 // The End of Day (S2-15a): one combined cash count per branch-day, and the
 // paid-outs and safe drops it expects less of.
 export * from './cash';
+export * from './sale-extensions';

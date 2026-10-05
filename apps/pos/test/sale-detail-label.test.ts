@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BOOKED_ONLINE_LABEL,
+  createSaleExtension,
+  type SaleExtensionsRead,
   historyDateRange,
   listSales,
   type ApiSaleDetail,
@@ -33,6 +35,8 @@ import { api, ApiError } from '@/api/client';
 import { settle } from './support/fixtures';
 import { stationLinkApi } from '@/station/link';
 import { renderHook } from './support/hooks';
+import { ExtensionPayment, extensionBandFromScan } from '@/components/history/SaleExtensions';
+import { PaymentTenderPanel } from '@/components/till/PaymentTenderPanel';
 import { MobileRefundFlow } from '@/components/mobile/history/MobileRefundFlow';
 import { MobileReprintFlow } from '@/components/mobile/history/MobileReprintFlow';
 import { useSaleDetail, DiscountLabel, refundSliceWords, tenderLabel, voucherLabelParts } from '@/components/history/SaleDetail';
@@ -51,6 +55,7 @@ import {
 // the address). Nothing here renders the page, only its discount line, so the
 // hook is replaced by the one thing the module imports from it.
 vi.mock('react', async (original) => ({ ...await original<typeof import('react')>(), ...await import('./support/hooks') }));
+vi.mock('@/station/StationContext', () => ({ useStation: () => ({ active: { id: 'station-1' } }) }));
 vi.mock('wouter', () => ({ useLocation: () => ['/', vi.fn()] }));
 vi.mock('@/auth/OperatorContext', () => ({
   useOperator: () => ({ operator: null, can: () => true, offlineUnlock: null }),
@@ -725,6 +730,21 @@ describe('phone refund and reprint ledger contracts', () => {
 
 
 describe('shared History controller used on desktop and phone', () => {
+  it('labels an extension charge and never turns its synthetic line into a corrected admission', async () => {
+    takeCorrectedOrder();
+    const txn = row('extension-charge', '2026-10-01T06:00:00Z');
+    const detail: ApiSaleDetail = { sale: txn.ledger, lines: [], discounts: [], taxBreakdown: null,
+      timeExtension: { id: 'extension-1', sourceSaleId: 'original-sale', status: 'applied', minutesAdded: 30, braceletCount: 2 } };
+    const get = vi.spyOn(api, 'get').mockResolvedValue(detail);
+    const link = vi.spyOn(stationLinkApi, 'read').mockResolvedValue({ stationId: 'station-1', boxId: null, offline: false });
+    const hook = renderHook(() => useSaleDetail({ txn, onBack: vi.fn() }));
+    await settle();
+    expect(hook.result.current.heading).toBe('Extra-time charge');
+    await hook.result.current.startCorrectedOrder();
+    expect(takeCorrectedOrder()).toBeNull();
+    hook.unmount(); get.mockRestore(); link.mockRestore();
+  });
+
   it('ignores a detail answer after moving to another sale', async () => {
     const first = row('sale-1', '2026-10-01T06:00:00Z');
     const second = row('sale-2', '2026-10-01T06:10:00Z');
@@ -767,5 +787,46 @@ describe('shared History controller used on desktop and phone', () => {
     expect(post.mock.calls[2]?.[2]).toEqual(post.mock.calls[3]?.[2]);
     expect(hook.result.current.reprintOpen).toBe(false);
     hook.unmount(); get.mockRestore(); post.mockRestore(); link.mockRestore();
+  });
+});
+
+
+describe('paid Add time selection and charge confirmation', () => {
+  const data: SaleExtensionsRead = {
+    options: [{ id: 'ext-30', label: '+30 minutes', minutes: 30, unitSatang: 6000 }],
+    eligibleBands: [{ id: 'band-1', shortCode: 'T1-7KMQ4X', kind: 'kids' }, { id: 'band-2', shortCode: 'T1-9ABCDE', kind: 'kids' }], extensions: [],
+  };
+  it('matches only eligible short codes and preserves a supplied extension action on retry', async () => {
+    expect(extensionBandFromScan('t1 7kmq4x', data.eligibleBands)?.id).toBe('band-1');
+    expect(extensionBandFromScan('T1-1ZZZZZ', data.eligibleBands)).toBeNull();
+    const body = { actionId: 'action-1', stationId: 'station-1', optionId: 'ext-30', selection: { mode: 'count' as const, braceletCount: 2 } };
+    const post = vi.spyOn(api, 'post').mockResolvedValue({});
+    await createSaleExtension('original-sale', body);
+    await createSaleExtension('original-sale', body);
+    expect(post.mock.calls[0]).toEqual(post.mock.calls[1]);
+    expect(post.mock.calls[0]?.[0]).toBe('/sales/original-sale/extensions');
+    expect(post.mock.calls[0]?.[2]).toMatchObject({ idempotencyKey: 'extension:original-sale:action-1' });
+    post.mockRestore();
+  });
+  it('keeps count-only explicit, retries an uncertain create with the same selection, and shows the server total before payment', async () => {
+    const post = vi.spyOn(api, 'post').mockRejectedValueOnce(new ApiError(409, 'IDEMPOTENCY_IN_FLIGHT', 'Still preparing'));
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 12_840 } }, attempts: [] });
+    const hook = renderHook(() => ExtensionPayment({ saleId: 'source-1', stationId: 'station-1', data, resume: null, operatorName: 'Som', onClose: vi.fn() }));
+    press(hook.result.current, 'Count only');
+    expect(words(hook.result.current)).toContain('No individual bracelet is selected or changed.');
+    const duration = elements(hook.result.current).find((node) => typeof node.props.onClick === 'function' && words(node.props.children).startsWith('+30 minutes'))!;
+    (duration.props.onClick as () => void)();
+    press(hook.result.current, 'Continue to payment');
+    await settle();
+    expect(elements(hook.result.current).find((node) => node.type === 'fieldset')?.props.disabled).toBe(true);
+    post.mockResolvedValueOnce({ sale: { id: 'charge-1', status: 'tendering', totals: { grossSatang: 12_840 } }, extension: {}, replay: true });
+    press(hook.result.current, 'Check original charge');
+    await settle();
+    expect(post.mock.calls[0]).toEqual(post.mock.calls[1]);
+    expect(post.mock.calls[0]?.[1]).toMatchObject({ selection: { mode: 'count', braceletCount: 2 } });
+    expect(words(hook.result.current)).toContain('128.4');
+    const panel = elements(hook.result.current).find((node) => node.type === PaymentTenderPanel);
+    expect(panel?.props.stage).toMatchObject({ state: { outstandingSatang: 12_840 }, canSubmit: false });
+    hook.unmount(); post.mockRestore(); get.mockRestore();
   });
 });

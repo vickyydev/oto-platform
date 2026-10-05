@@ -428,6 +428,13 @@
       "when": 1791237292171,
       "tag": "0060_payment_method_other",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1791238619494,
+      "tag": "0061_sale_extensions",
+      "breakpoints": true
     }
   ]
 }

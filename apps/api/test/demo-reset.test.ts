@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, band, member, operator, station, ticketPackage, visit } from '@oto/db';
+import { auditLog, band, member, operator, saleExtension, saleExtensionBand, station, ticketPackage, visit } from '@oto/db';
 import { newId } from '@oto/shared';
 import {
   ADMIN,
@@ -8,6 +8,7 @@ import {
   createTestContext,
   signInAs,
   teardownAll,
+  takeStation,
   type TestContext,
 } from './helpers';
 
@@ -84,6 +85,12 @@ async function makeMess(): Promise<{ memberId: string; visitId: string }> {
   });
   expect(paid.statusCode, paid.body).toBe(200);
   expect(await ctx.db.select().from(band).where(eq(band.saleId, saleId))).toHaveLength(2);
+
+  await takeStation(ctx.app, receptionCookie, till!.id);
+  const [issuedBand] = await ctx.db.select({ id: band.id }).from(band).where(eq(band.saleId, saleId));
+  const extended = await ctx.app.inject({ method: 'POST', url: `/sales/${saleId}/extensions`, headers: { cookie: receptionCookie },
+    payload: { actionId: newId(), stationId: till!.id, optionId: 'ext-30', selection: { mode: 'bands', bandIds: [issuedBand!.id] } } });
+  expect(extended.statusCode).toBe(200);
 
   return { memberId: created.json().member.id as string, visitId: visitRes.json().id as string };
 }
@@ -181,10 +188,14 @@ describe('demo reset — the happy path', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json().deleted.visit).toBeGreaterThan(0);
     expect(res.json().deleted.band).toBeGreaterThan(0);
+    expect(res.json().deleted.sale_extension).toBeGreaterThan(0);
+    expect(res.json().deleted.sale_extension_band).toBeGreaterThan(0);
 
     // The facts are gone.
     expect(await ctx.db.select().from(visit)).toHaveLength(0);
     expect(await ctx.db.select().from(band)).toHaveLength(0);
+    expect(await ctx.db.select().from(saleExtension)).toHaveLength(0);
+    expect(await ctx.db.select().from(saleExtensionBand)).toHaveLength(0);
     expect(await ctx.db.select().from(member).where(eq(member.id, memberId))).toHaveLength(0);
 
     // The configuration is not.

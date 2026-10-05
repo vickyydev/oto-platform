@@ -18,6 +18,7 @@ import {
   registration,
   sale,
   saleDiscount,
+  saleExtension,
   saleLine,
   saleTierClaim,
   station,
@@ -114,6 +115,7 @@ import {
 import type { Exec, Tx } from './tx';
 import { bandsOfSale } from './bands';
 import { refundsOfSale } from './refund-slices';
+import { applySaleExtension, cancelSaleExtension } from './sale-extension-lifecycle';
 import { assertCartStock, stockSharesForLines, takeStockForSale } from './stock';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
@@ -4311,6 +4313,7 @@ export async function finaliseSale(
     .returning();
   const after = updated[0];
   if (!after) throw new Error('the sale was not finalised');
+  await applySaleExtension(tx, after, actor, now);
 
   /**
    * S2-14b — THE STOCK LEAVES THE SHELF, in this transaction, once the sale is
@@ -4548,6 +4551,7 @@ export async function voidSale(
     .where(eq(sale.id, saleId))
     .returning();
   if (!after) throw new Error('the sale was not voided');
+  await cancelSaleExtension(tx, after, actor, now);
   // The trigger in 0021 has released `held` and written their ledger rows in
   // the statement above; these are the audit rows that name who asked.
   await auditVoidReleases(
@@ -4808,6 +4812,9 @@ export async function getSaleDetail(
    * this answer, and a voided sale's voucher is free again.
    */
   const voucherCodes = await saleVoucherCodes(db, operatorId, saleId);
+  const [timeExtension] = await db.select({ id: saleExtension.id, sourceSaleId: saleExtension.sourceSaleId,
+    status: saleExtension.status, minutesAdded: saleExtension.minutesAdded, braceletCount: saleExtension.braceletCount })
+    .from(saleExtension).where(eq(saleExtension.chargeSaleId, saleId)).limit(1);
   // A supervised cart line names its existing stay, including a zero-fee stay.
   const supervisedLines = lines.length === 0 ? [] : await db.select({ id: checkin.id }).from(checkin)
     .where(and(inArray(checkin.id, [...new Set(lines.map((line) => line.cartLineId))]),
@@ -4819,6 +4826,7 @@ export async function getSaleDetail(
     .where(and(eq(checkin.id, holderIds[0]!), eq(checkin.operatorId, operatorId), eq(checkin.branchId, row.branchId))) : [];
 
   return {
+    timeExtension: timeExtension ?? null,
     sale: {
       ...viewOf(row, voidedByName),
       tierClaim: claims.get(row.id) ?? null,

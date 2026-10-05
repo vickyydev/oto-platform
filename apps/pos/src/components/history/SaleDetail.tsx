@@ -1,3 +1,4 @@
+import { SaleExtensions } from '@/components/history/SaleExtensions';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
@@ -83,7 +84,6 @@ import {
   Users,
   Clock,
   Printer,
-  Timer,
   MonitorSmartphone,
   Info,
   WifiOff,
@@ -119,8 +119,7 @@ import {
  * station offline the Refund button says so and its dialog notes the request
  * on this till instead (`lib/refundRequests.ts`), for a manager to make once
  * it is back online. The refunds and the reprints are listed under the money,
- * as the prototype listed its own. Add time stays disabled: paid time
- * extensions are deferred.
+ * as the prototype listed its own. Paid time additions use separate charges.
  *
  * ONE ACTION WORKS: VOID, for an unpaid sale that took no money (audit C1, the
  * owner's answer to Q3: any cashier with the till's void permission, giving a
@@ -459,7 +458,7 @@ export function PaymentRow({
 }) {
   const status = STATUS_LABEL[attempt.status];
   const Icon =
-    attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : attempt.method === 'wallet' || attempt.method === 'other' ? Wallet : CreditCard;
+    attempt.method === 'cash' ? Banknote : attempt.method === 'qr' ? QrCode : attempt.method === 'wallet' ? Wallet : CreditCard;
   const detail = [
     attempt.changeSatang !== null && attempt.changeSatang > 0
       ? `฿${baht(attempt.tenderedSatang ?? 0)} given, ฿${baht(attempt.changeSatang)} change`
@@ -818,7 +817,7 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
 
   const kind = txn.isDropOff ? 'dropoff' : txn.kind;
   const heading =
-    kind === 'dropoff'
+    detail?.timeExtension ? 'Extra-time charge' : kind === 'dropoff'
       ? 'Drop-off charge'
       : kind === 'merch'
         ? 'Retail sale'
@@ -1068,7 +1067,7 @@ export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
   };
 
   const startCorrectedOrder = async () => {
-    if (!detail || correcting || txn.kind === 'merch') return;
+    if (!detail || detail.timeExtension || correcting || txn.kind === 'merch') return;
     setCorrecting(true);
     setFlash(null);
     try {
@@ -1439,6 +1438,9 @@ export function SaleDetail(props: SaleDetailProps) {
                 <span className="tabular-nums">−฿{baht(totals.refundedSatang)}</span>
               </div>
             )}
+            {detail?.timeExtension && <p className="border-t pt-2 text-sm text-muted-foreground">
+              Separate charge for {detail.timeExtension.minutesAdded} minutes × {detail.timeExtension.braceletCount} bracelets. The original admission receipt stays unchanged.
+            </p>}
             {sale.note && (
               <div className="border-t pt-2 text-sm text-muted-foreground">{sale.note}</div>
             )}
@@ -1480,6 +1482,8 @@ export function SaleDetail(props: SaleDetailProps) {
             fmt={fmt}
           />
 
+          {txn.kind === 'ticket' && !detail?.timeExtension && <SaleExtensions key={sale.id} saleId={sale.id} eligible={sale.status === 'finalised'} offline={offline} />}
+
           {/* Flash confirmation for a reprint or a noted request */}
           {flash && (
             <div
@@ -1500,8 +1504,7 @@ export function SaleDetail(props: SaleDetailProps) {
           )}
 
           {/* Actions — every one of these changes a recorded sale. A closed sale
-              can be reprinted and refunded (S2-11); Add time stays disabled
-              until paid extensions exist; an unpaid sale that took no money can
+              can be reprinted and refunded (S2-11); an unpaid sale that took no money can
               be voided, in Refund's place; a voided sale has nothing to refund
               and shows neither (SCRUM-430). */}
           {justRefunded ? (
@@ -1519,7 +1522,7 @@ export function SaleDetail(props: SaleDetailProps) {
                   </div>
                 );
               })}
-              {txn.kind !== 'merch' && <Button className="w-full h-12 gap-2" disabled={correcting} onClick={() => void startCorrectedOrder()}>
+              {txn.kind !== 'merch' && !detail?.timeExtension && <Button className="w-full h-12 gap-2" disabled={correcting} onClick={() => void startCorrectedOrder()}>
                 {correcting ? 'Opening…' : 'Start corrected order'}
               </Button>}
               <Button variant="outline" className="w-full h-12 gap-2" onClick={newSale}>
@@ -1532,7 +1535,7 @@ export function SaleDetail(props: SaleDetailProps) {
             </Card>
           ) : (
             <div className="shrink-0 space-y-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-2">
                 <Button
                   variant="outline"
                   className="h-14 text-base gap-2"
@@ -1544,15 +1547,7 @@ export function SaleDetail(props: SaleDetailProps) {
                   <Printer className="w-5 h-5" />
                   {reprintBusy ? 'Sending…' : 'Reprint'}
                 </Button>
-                <Button
-                  variant="outline"
-                  className="h-14 text-base gap-2"
-                  disabled
-                  title={LEDGER_ONLY_NOTICE}
-                >
-                  <Timer className="w-5 h-5" />
-                  Add time
-                </Button>
+
               </div>
               {tookNoMoney ? (
                 <>

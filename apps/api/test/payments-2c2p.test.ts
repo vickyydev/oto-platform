@@ -277,7 +277,7 @@ describe('the saved QR route at the counter (SCRUM-391)', () => {
       });
       expect(polled.statusCode, polled.body).toBe(200);
       expect(polled.json()).toMatchObject({
-        attempt: shown.attempt, qrPayload: shown.qrPayload, qrImageUrl: shown.qrImageUrl,
+          route: 'gateway', attempt: shown.attempt, qrPayload: shown.qrPayload, qrImageUrl: shown.qrImageUrl,
         expiresAt: shown.expiresAt, outstandingSatang: grossSatang,
       });
 
