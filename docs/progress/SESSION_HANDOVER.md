@@ -1,5 +1,39 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 5 October 2026, evening - SCRUM-493 takeover, SCRUM-494 evidence
+
+The owner approved completing SCRUM-493 in the hosted handover's order:
+SCRUM-494 staging evidence; SCRUM-215 End of Day rounds 2-4; SCRUM-495,
+SCRUM-496 and SCRUM-498; then resolve SCRUM-497's decisions and close the
+parent with evidence. The clean working branch is `feat/till-consistency-493`
+at `C:/Users/waqar/OneDrive/Desktop/Projects/oto-pos-voucher-slip`, based on
+current `origin/main` (`e8dd0b1e`). Do not touch the original dirty checkout.
+
+SCRUM-494 is still Testing. Its nine changes landed at `9a14af81` and remain
+on the current API/POS staging deployment `0c641b7e`. Existing focused
+`s494` tests passed on 5 October: POS 58, shared 19, box agent 12, API 72,
+database 6. The current staging POS accepted an administrator sign-in and
+opened Reception Till 1; no credential was printed or saved. Old authentic
+staging screenshots for items 1-5 live in the previous session's temporary
+`scratchpad/s494-evidence/shots` folder; they have not been attached or
+committed, and some show band codes that require redaction before use. Items
+6-9 remain to drive on staging. A prior expired-document case cannot be
+created through the staging UI; use the existing test-run evidence and label
+that limit. Do not call SCRUM-494 Deployed until all nine paths have named,
+reviewed evidence on the ticket.
+
+Read-only review of `wip/eod-round-2-inflight` found it unreviewed, based on
+pre-voucher main, and carrying migration `0055` while current main is at
+`0057`. Rebase its additive migration as `0058` with a fresh snapshot and
+journal. Review failed outbox rows, disabled boxes with pending facts, and
+close/receipt behavior; omit unrelated `arrival-r5-audit.test.ts`.
+
+Next: finish SCRUM-494 staging workflows and screenshot cards, attach and
+comment, then transition it to Deployed. Continue with SCRUM-215 only after
+that checkpoint, per `docs/handover/CLOUD_HANDOVER.md` section 3. Jira status
+and a plain-language comment travel with every pushed checkpoint. Never
+include a secret value, claim code or band credential in documents or Jira.
+
 ## STOP POINT - 5 October 2026, evening - staging proof and park update package
 
 ## STOP POINT - 5 October 2026, evening - 100 THB QR mismatch under investigation
