@@ -1,5 +1,9 @@
 # Sprint 2 progress
 
+## Platform checkpoint - 6 October 2026 - settlement route registry repair
+
+**6 October 2026, settlement CI registry repair:** CI37377006485 failed three conformance assertions because the terminal-run and authenticated box callback were missing from the explicit route/ID registries. Their existing retry contracts were verified and documented in those registries; all 30 affected checks pass. No runtime route or financial behavior changed. API typecheck and scoped lint pass. The final EOD staging evidence remains valid; SCRUM-215 stays Testing for a fresh successful CI run.
+
 ## Platform checkpoint - 6 October 2026 - SCRUM-495 pricing and till parity
 
 **6 October 2026, SCRUM-495 first verified slice:** Manual percentage discounts use the prototype whole-baht rounding; fixed discounts, promos and taxes retain their existing policies. Versioned offline replay preserves earlier satang-priced sales and quarantines unknown future engine versions before writing money. The exact three document choices, retained promo inputs, cash confirmation wording, kitchen order notes and stock guidance are restored; the inert badge/PIN unlock field is removed. Root verification: shared pricing 131, POS 87, API 57 and box 37 existing tests pass; all four package typechecks, changed-file lint, POS production build and diff check pass. This source is not yet deployed. SCRUM-495 remains In Progress for History, payment methods, Add time, wallet and shop-display work. The owner approved both Add time modes. EOD source 63d7307e is staging-verified; CI remains pending.

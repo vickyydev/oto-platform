@@ -276,6 +276,8 @@ const PLATFORM_NAMED: Record<string, string> = {
   // operator), which the till sends.
   'POST /branches/:branchId/end-of-day/close':
     'one row per (branch, business date), unique — the day is the key; written only at Close Day, online',
+  'POST /branches/:branchId/settlements/terminal-runs':
+    'online terminal request; platform batch id with operator-scoped Idempotency-Key/source key, replayed as the same batch',
   'POST /branches/:branchId/cash-movements':
     'keyed by the press’s action id (unique per operator) the till sends; the row id is the platform’s, online only',
   // S2-15a round 2. Online only, never written by a box.

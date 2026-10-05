@@ -499,6 +499,9 @@ const OUTSIDE_THE_REPLAY_STORE = [
    * replay. `payments-terminal.test.ts` plants exactly that.
    */
   'POST /payments/attempts/:id/result [credential:box]',
+  // The authenticated owning box completes a locked batch once; repeated
+  // callbacks return its saved result. eod-r3-settlement tests pin replay.
+  'POST /settlements/batches/:batchId/terminal-result [credential:box]',
   'POST /stations/:id/credentials [secretResponse]',
   'PUT /booths/:id/staff/:accountId/pin [secretResponse]',
   'PUT /me/session/station [secretResponse]',
