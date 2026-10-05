@@ -31,3 +31,7 @@ extensions and a count-only payment/audit option. Count-only must clearly
 state that unidentified band validity is not changed. Selected-band changes
 need the existing signed-band/gate contract checked before implementation.
 The answer is commented on SCRUM-495 and SCRUM-497.
+
+## Add time follow-up questions
+
+Two narrow questions are pending while independent work continues: whether selected-band extra play also extends the separate Drop-off/Nanny timer, and whether partial extension refunds are allowed while keeping all minutes or only a full refund cancels the extension. The prototype defines neither. Keep supervision separate; do not invent proportional minutes. These choices are not claimed as implemented or approved.

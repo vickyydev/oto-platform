@@ -234,10 +234,16 @@ export default function OrderStation() {
   useEffect(() => {
     const correction = takeCorrectedOrder();
     if (!correction || correction.kind !== 'fnb') return;
+    if (correction.branchId && correction.branchId !== branch.apiId) {
+      toast({ title: 'Switch to the original park before correcting this sale', variant: 'destructive' });
+      return;
+    }
+    setOrderNote(correction.note ?? '');
+    if (correction.notice) toast({ title: 'Complete the corrected order', description: correction.notice, duration: 20000 });
     setWristband(correction.wristband ?? null);
     setCart(correction.lines.map((l) => ({ ...l, id: `line-${lineCounter++}` })));
     setStage('order');
-  }, []);
+  }, [branch.apiId]);
 
   // Live preview of the scanned staff benefit against the current cart — a
   // pure recompute each time lines change, so quota/credit-remaining stays

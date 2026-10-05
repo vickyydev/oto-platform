@@ -5,6 +5,8 @@ import {
   businessDateToday,
   calendarDateIn,
   listSales,
+  historyDateRange,
+  type HistoryDateFilter,
   lookupSales,
   mergeLookup,
   parseHistorySearch,
@@ -23,7 +25,7 @@ import { TransactionCard } from '@/components/history/TransactionCard';
 import { MemberActivity } from '@/components/history/MemberActivity';
 import { ClientActivity } from '@/components/history/ClientActivity';
 import { Input } from '@/components/ui/input';
-import { SaleDetail } from '@/components/history/SaleDetail';
+import { MobileTransactionDetail } from './MobileTransactionDetail';
 import { LEDGER_ONLY_NOTICE } from '@/components/history/ledgerNotice';
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/shared/PhoneInput';
@@ -36,40 +38,10 @@ import {
   ArrowRight,
   ReceiptText,
   Info,
-  Calendar,
   AlertCircle,
 } from 'lucide-react';
 
-/**
- * ORDER HISTORY ON THE HANDHELD — the same sale ledger the counter reads
- * (SCRUM-320).
- *
- * WHAT WAS WRONG. `pages/History.tsx` was moved onto `GET /sales` by SCRUM-238;
- * this surface — everything under 768px, which is the phone in a floor
- * supervisor's hand — was left on `mockApi.getTransactions()`. So the same park,
- * on the same afternoon, showed its real takings on the iPad and eight invented
- * June orders (#D9N4T7, #A4K2P9) on the phone. A figure that changes with the
- * screen it is read on is worse than no figure.
- *
- * It now reads exactly what the counter reads, through the same `api/history`
- * seam: the branch's own TRADING day (05:00 boundary, not the browser's
- * midnight), a date control to look at another one, the same search, the same
- * cards, and `SaleDetail` for one sale. THERE IS NO MOCK FALLBACK — no
- * connection, a deployment without the route, or a refusal each say so and list
- * nothing, because a page that invents transactions when the platform is
- * unreachable is how a shift ends up counted twice.
- *
- * WHAT S2-11 (SCRUM-208) BROUGHT BACK, as on the counter's page:
- *   - The bracelet scan finds a sale by its band (`GET /sales/lookup?band=`),
- *     and the search box asks the same of a band code or a phone typed into it.
- *   - Refund and reprint work in `SaleDetail`, the one component both screens
- *     open a sale in. Add time stays disabled, with the same one sentence —
- *     `LEDGER_ONLY_NOTICE` — that the counter shows, so the two screens cannot
- *     drift apart.
- *   - "Yesterday / This week / All time" chips became one date control: the
- *     ledger read answers ONE trading day, and a chip that silently showed a
- *     different span than it named would be the same lie in a smaller place.
- */
+/** The phone reads the park's real ledger, scoped to its business dates. */
 
 type TabKey = 'all' | TxnKind;
 /**
@@ -127,7 +99,9 @@ export function MobileHistory() {
   const [selected, setSelected] = useState<HistoryTxn | null>(null);
 
   /** The trading day on screen. Empty until the branch's own day is known. */
-  const [date, setDate] = useState('');
+  const [dayScope, setDayScope] = useState<{ branchId: string | null; date: string } | null>(null);
+  const [dateFilter, setDateFilter] = useState<HistoryDateFilter>('today');
+  const date = dayScope?.branchId === branchApiId ? dayScope.date : '';
   const [txns, setTxns] = useState<HistoryTxn[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** Bumped to read the day again without changing the day — after a void (SCRUM-430). */
@@ -154,12 +128,17 @@ export function MobileHistory() {
   // tomorrow while the till is still ringing up today.
   useEffect(() => {
     let cancelled = false;
+    setSelected(null);
+    setTxns(null);
+    setView('list');
+    setMemberActivity(null);
+    setBandResult(null);
     if (!branchApiId) {
-      setDate(calendarDateIn(timeZone));
+      setDayScope({ branchId: branchApiId, date: calendarDateIn(timeZone) });
       return;
     }
     businessDateToday(branchApiId, timeZone).then((today) => {
-      if (!cancelled) setDate(today);
+      if (!cancelled) setDayScope({ branchId: branchApiId, date: today });
     });
     return () => {
       cancelled = true;
@@ -175,17 +154,17 @@ export function MobileHistory() {
       setError('This branch is not on the platform, so it has no recorded sales to show.');
       return;
     }
-    listSales(branchApiId, { date })
+    listSales(branchApiId, historyDateRange(date, dateFilter))
       .then((sales) => {
         if (!cancelled) setTxns(sales);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(explain(err, "the day's sales"));
+        if (!cancelled) setError(explain(err, 'the selected sales'));
       });
     return () => {
       cancelled = true;
     };
-  }, [branchApiId, date, reread]);
+  }, [branchApiId, date, dateFilter, reread]);
 
   /**
    * A sale voided on its page (SCRUM-430), as on the counter's History: the
@@ -379,14 +358,14 @@ export function MobileHistory() {
 
   if (selected) {
     return (
-      <div className="h-full p-3">
-        <SaleDetail
+      <div className="h-full">
+        <MobileTransactionDetail
+          key={selected.id}
           txn={selected}
           timeZone={timeZone}
           onBack={() => setSelected(null)}
           onVoided={onVoided}
           onRefunded={onRefunded}
-          layout="stacked"
         />
       </div>
     );
@@ -592,16 +571,16 @@ export function MobileHistory() {
           )}
         </div>
 
-        {/* The trading day on screen — what the date chips became. */}
-        <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          <input
-            type="date"
-            aria-label="Trading day"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full h-10 pl-9 pr-3 rounded-xl bg-muted/50 border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-          />
+        <div className="flex gap-2" aria-label="Trading dates">
+          {([{ key: 'today', label: 'Today' }, { key: 'yesterday', label: 'Yesterday' },
+            { key: 'week', label: 'This week' }, { key: 'all', label: 'All time' }] as const).map(({ key, label }) => (
+            <button key={key} type="button" onClick={() => setDateFilter(key)} aria-pressed={dateFilter === key}
+              className={`px-3 h-8 rounded-full border text-xs font-semibold transition-colors ${dateFilter === key
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border text-muted-foreground hover:text-foreground'}`}>
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* Lookup actions row */}
@@ -684,7 +663,7 @@ export function MobileHistory() {
             </div>
             <div className="text-center px-2">
               <div className="font-semibold text-foreground mb-1">
-                {q ? `No transactions match “${query.trim()}”` : `No sales recorded on ${date}`}
+                {q ? `No transactions match “${query.trim()}”` : 'No sales recorded in this period'}
               </div>
               {q && <p className="text-xs">Try a different name, receipt number, or amount.</p>}
               {!q && tab !== 'all' && txns.length > 0 && (

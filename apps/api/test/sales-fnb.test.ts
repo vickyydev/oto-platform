@@ -377,6 +377,9 @@ describe('what the line records', () => {
     ).lines[0]!;
     expect(shown.label).toBe('Grip Socks — M');
     expect(shown.variant).toEqual({ variantId: 'm', variantLabel: 'M' });
+    expect(shown).toMatchObject({ variantBreakdown: null, prepaid: null, holderCheckinId: null, supervised: false });
+    expect(shown).not.toHaveProperty('payload');
+    expect(shown).not.toHaveProperty('stock');
   });
 
   /**

@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BOOKED_ONLINE_LABEL,
+  historyDateRange,
+  listSales,
+  type ApiSaleDetail,
   bandLabel,
   bandsByCartLine,
   bookingReferenceOf,
@@ -24,7 +27,15 @@ import {
   type HistoryTxn,
   type RefundItemOption,
 } from '@/api/history';
-import { DiscountLabel, refundSliceWords, tenderLabel, voucherLabelParts } from '@/components/history/SaleDetail';
+import { correctionFromSale, setCorrectedOrder, takeCorrectedOrder } from '@/lib/correctedOrder';
+import type { TicketType, MenuItem } from '@/types';
+import { api, ApiError } from '@/api/client';
+import { settle } from './support/fixtures';
+import { stationLinkApi } from '@/station/link';
+import { renderHook } from './support/hooks';
+import { MobileRefundFlow } from '@/components/mobile/history/MobileRefundFlow';
+import { MobileReprintFlow } from '@/components/mobile/history/MobileReprintFlow';
+import { useSaleDetail, DiscountLabel, refundSliceWords, tenderLabel, voucherLabelParts } from '@/components/history/SaleDetail';
 import { platformPrintOutcome, prepStationsPrinted, reportsCreditVoucher } from '@/lib/salePrinting';
 import {
   REFUND_REQUESTS_KEY,
@@ -39,8 +50,10 @@ import {
 // The page's session hook reads `window` as its module loads (a hand-off in
 // the address). Nothing here renders the page, only its discount line, so the
 // hook is replaced by the one thing the module imports from it.
+vi.mock('react', async (original) => ({ ...await original<typeof import('react')>(), ...await import('./support/hooks') }));
+vi.mock('wouter', () => ({ useLocation: () => ['/', vi.fn()] }));
 vi.mock('@/auth/OperatorContext', () => ({
-  useOperator: () => ({ operator: null, can: () => false }),
+  useOperator: () => ({ operator: null, can: () => true, offlineUnlock: null }),
 }));
 
 // This runner has no React plugin (vitest.config.ts), so the component's JSX
@@ -615,5 +628,144 @@ describe('refund requests noted offline — lib/refundRequests.ts', () => {
     expect(readRefundRequests(garbled)).toEqual([]);
     garbled.setItem(REFUND_REQUESTS_KEY, JSON.stringify([{ id: 'x' }, note('n3', 'sale-3')]));
     expect(readRefundRequests(garbled).map((n) => n.id)).toEqual(['n3']);
+  });
+});
+
+
+describe('phone History periods and corrected drafts', () => {
+  it('uses park business dates and the design seven-day week', async () => {
+    expect(historyDateRange('2026-10-02', 'today')).toEqual({ from: '2026-10-02', to: '2026-10-02' });
+    expect(historyDateRange('2026-10-01', 'yesterday')).toEqual({ from: '2026-09-30', to: '2026-09-30' });
+    expect(historyDateRange('2026-10-02', 'week')).toEqual({ from: '2026-09-26', to: '2026-10-02' });
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ sales: [] });
+    await listSales('park-1', historyDateRange('2026-10-02', 'week'));
+    expect(get.mock.calls[0]?.[0]).toContain('branchId=park-1&from=2026-09-26&to=2026-10-02');
+    await listSales('park-1', historyDateRange('2026-10-02', 'all'));
+    expect(get.mock.calls[1]?.[0]).toBe('/sales?branchId=park-1&limit=200');
+    get.mockRestore();
+  });
+  const ticket: TicketType = { id: 'ticket-1', name: 'Two hours', durationLabel: '2h', hours: 2, prices: { tourist: { weekday: 100, weekend: 100 } } };
+  const food: MenuItem = { id: 'food-1', name: 'Pizza', category: 'food', price: { weekday: 80, weekend: 80 } };
+  const detail = (lines: ApiSaleLine[]): ApiSaleDetail => ({ sale: row('sale-1', '2026-10-01T06:00:00Z').ledger, lines, discounts: [], taxBreakdown: null });
+  it('copies each cart guest count once and hands off the fresh draft once', () => {
+    const common = { cartLineId: 'cart-1', ticketPackageId: ticket.id, kidCount: 2, adultCount: 1 };
+    const d = detail([saleLine({ id: 'kids', kind: 'kids', ...common }), saleLine({ id: 'adults', kind: 'adults', ...common })]);
+    const correction = correctionFromSale(d, 'ticket', { tickets: [ticket], menu: [], addOns: [] });
+    expect(correction.lines).toHaveLength(1);
+    expect(correction.lines[0]).toMatchObject({ kids: 2, adults: 1, ticketType: ticket, lineTotal: 300 });
+    expect(correction).not.toHaveProperty('discounts');
+    setCorrectedOrder(correction);
+    expect(takeCorrectedOrder()).toEqual(correction);
+    expect(takeCorrectedOrder()).toBeNull();
+  });
+  it('retains ordinary food quantities, notes and size; prepaid food requires its bracelet', () => {
+    const d = detail([
+      saleLine({ id: 'food', cartLineId: 'cart-food', kind: 'fnb_item', productId: food.id, quantity: 2, note: 'No cheese', variant: { variantId: 'large', variantLabel: 'Large' } }),
+      saleLine({ id: 'prepaid', cartLineId: 'cart-prepaid', kind: 'fnb_item', productId: food.id, prepaid: { checkinId: 'stay-1', menuItemId: food.id } }),
+    ]);
+    d.sale.note = 'Take away';
+    const correction = correctionFromSale(d, 'fnb', { tickets: [], menu: [food], addOns: [] });
+    expect(correction.lines).toHaveLength(1);
+    expect(correction.lines[0]).toMatchObject({ qty: 2, lineTotal: 160, note: 'No cheese', variantId: 'large' });
+    expect(correction).toMatchObject({ note: 'Take away', notice: expect.stringContaining('Prepaid food must be selected again') });
+  });
+  it('does not turn a supervised zero-fee child into an ordinary ticket', () => {
+    const d = detail([saleLine({ id: 'kid', cartLineId: 'stay-1', kind: 'kids', ticketPackageId: ticket.id, kidCount: 1, supervised: true })]);
+    const correction = correctionFromSale(d, 'ticket', { tickets: [ticket], menu: [], addOns: [] });
+    expect(correction.lines).toEqual([]);
+    expect(correction.notice).toContain('Re-enter the supervised child');
+  });
+});
+
+function elements(node: unknown): React.ReactElement<Record<string, unknown>>[] {
+  if (Array.isArray(node)) return node.flatMap(elements);
+  if (!React.isValidElement<Record<string, unknown>>(node)) return [];
+  return [node, ...elements(node.props.children)];
+}
+function words(node: unknown): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(words).join('');
+  return React.isValidElement<Record<string, unknown>>(node) ? words(node.props.children) : '';
+}
+function press(tree: unknown, label: string) {
+  const button = elements(tree).find((node) => typeof node.props.onClick === 'function' && words(node.props.children) === label);
+  expect(button, label).toBeDefined();
+  expect(button!.props.disabled).not.toBe(true);
+  (button!.props.onClick as () => void)();
+}
+describe('phone refund and reprint ledger contracts', () => {
+  it('keeps item ids and satang through three refund steps, and blocks a busy repeat', () => {
+    const confirm = vi.fn();
+    const hook = renderHook(({ busy }) => MobileRefundFlow({ maxRefund: 10.25, restorableCredit: 0, lines: [{ id: 'cart-1', label: 'Ticket', amount: 3.33 }], reasons: ['Wrong ticket'], operatorName: 'Som', onConfirm: confirm, onCancel: vi.fn(), busy }), { busy: false });
+    press(hook.result.current, 'By item');
+    const item = elements(hook.result.current).find((node) => typeof node.props.onClick === 'function' && words(node.props.children).includes('Ticket'))!;
+    (item.props.onClick as () => void)();
+    press(hook.result.current, 'Next — choose reason');
+    press(hook.result.current, 'Wrong ticket');
+    press(hook.result.current, 'Review refund');
+    press(hook.result.current, 'Confirm refund ฿3.33');
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ mode: 'item', lineIds: ['cart-1'], amountSatang: 333 }));
+    hook.rerender({ busy: true });
+    const submit = elements(hook.result.current).find((node) => words(node.props.children) === 'Recording…' && typeof node.props.onClick === 'function')!;
+    expect(submit.props.disabled).toBe(true);
+    (submit.props.onClick as () => void)();
+    expect(confirm).toHaveBeenCalledTimes(1);
+    hook.unmount();
+  });
+  it('passes actual reprint kind ids and keeps a failure visible', () => {
+    const confirm = vi.fn();
+    const hook = renderHook(() => MobileReprintFlow({ items: [{ id: 'receipt', label: 'Full receipt' }], operatorName: 'Som', onConfirm: confirm, onCancel: vi.fn(), error: 'Printer unavailable' }));
+    press(hook.result.current, 'Full receipt');
+    press(hook.result.current, 'Reprint 1 item');
+    expect(confirm).toHaveBeenCalledWith(['Full receipt'], ['receipt']);
+    expect(elements(hook.result.current).find((node) => node.props.role === 'alert')?.props.children).toBe('Printer unavailable');
+    hook.unmount();
+  });
+});
+
+
+describe('shared History controller used on desktop and phone', () => {
+  it('ignores a detail answer after moving to another sale', async () => {
+    const first = row('sale-1', '2026-10-01T06:00:00Z');
+    const second = row('sale-2', '2026-10-01T06:10:00Z');
+    let resolveFirst!: (answer: ApiSaleDetail) => void;
+    const get = vi.spyOn(api, 'get').mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockResolvedValueOnce({ sale: second.ledger, lines: [], discounts: [], taxBreakdown: null });
+    const link = vi.spyOn(stationLinkApi, 'read').mockResolvedValue({ stationId: 'station-1', boxId: null, offline: false });
+    const hook = renderHook(({ txn }) => useSaleDetail({ txn, onBack: vi.fn() }), { txn: first });
+    hook.rerender({ txn: second });
+    await settle();
+    resolveFirst({ sale: first.ledger, lines: [], discounts: [], taxBreakdown: null });
+    await settle();
+    expect(hook.result.current.detail?.sale.id).toBe(second.id);
+    hook.unmount(); get.mockRestore(); link.mockRestore();
+  });
+
+  it('retries one refund action and one reprint kind with their existing idempotency keys', async () => {
+    const txn = row('sale-1', '2026-10-01T06:00:00Z');
+    const d: ApiSaleDetail = { sale: txn.ledger, lines: [], discounts: [], taxBreakdown: null, refunds: [], printJobs: [] };
+    const get = vi.spyOn(api, 'get').mockResolvedValue(d);
+    const link = vi.spyOn(stationLinkApi, 'read').mockResolvedValue({ stationId: 'station-1', boxId: null, offline: false });
+    const post = vi.spyOn(api, 'post').mockRejectedValueOnce(new ApiError(409, 'IDEMPOTENCY_IN_FLIGHT', 'Still recording'));
+    const hook = renderHook(() => useSaleDetail({ txn, onBack: vi.fn() }));
+    await settle();
+    hook.result.current.openRefund();
+    const refundInput = { scope: 'partial' as const, mode: 'custom' as const, amountTHB: 10.25, amountSatang: 1025, creditRestoredTHB: 0, reason: 'Wrong amount' };
+    await hook.result.current.confirmRefund(refundInput);
+    expect(hook.result.current.refundOpen).toBe(true);
+    expect(hook.result.current.refundError).toBe('Still recording');
+    post.mockResolvedValueOnce({ refund: { id: 'refund-1', number: 'R1', amountSatang: 1025, tenderAllocation: [] }, sale: d.sale });
+    await hook.result.current.confirmRefund(refundInput);
+    expect(post.mock.calls[0]?.[2]).toEqual(post.mock.calls[1]?.[2]);
+    expect(hook.result.current.refundOpen).toBe(false);
+    hook.result.current.openReprint();
+    post.mockRejectedValueOnce(new ApiError(409, 'IDEMPOTENCY_IN_FLIGHT', 'Still printing'));
+    await hook.result.current.confirmReprint(['Full receipt'], ['receipt']);
+    expect(hook.result.current.reprintOpen).toBe(true);
+    post.mockResolvedValueOnce({ jobs: [], notes: [] });
+    await hook.result.current.confirmReprint(['Full receipt'], ['receipt']);
+    expect(post.mock.calls[2]?.[2]).toEqual(post.mock.calls[3]?.[2]);
+    expect(hook.result.current.reprintOpen).toBe(false);
+    hook.unmount(); get.mockRestore(); post.mockRestore(); link.mockRestore();
   });
 });

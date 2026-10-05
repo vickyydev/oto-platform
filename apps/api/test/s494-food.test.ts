@@ -15,7 +15,7 @@ import {
   station,
   ticketPackage,
 } from '@oto/db';
-import { newId, salePrepDocument } from '@oto/shared';
+import { newId, salePrepDocument, bandShortCode } from '@oto/shared';
 import { salePrintSnapshotOf } from '../src/services/sale-printing';
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
@@ -273,6 +273,12 @@ describe('s494 — prepaid meal entitlements are served on the platform', () => 
     const served = lines.find((l) => l.cartLineId === prepaidLine)!;
     expect(served).toMatchObject({ kind: 'fnb_item', grossSatang: 0, unitSatang: 0, quantity: 1 });
     expect(served.payload).toMatchObject({ prepaid: { checkinId: mia!.checkinId, menuItemId: item('FB-HOTDOG').id }, holder: { checkinId: mia!.checkinId } });
+    const history = await ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie } });
+    expect(history.statusCode).toBe(200);
+    expect(history.json().correctionBandShortCode).toBe(bandShortCode(mia!.bandCode));
+    expect(history.json().lines.find((line: { cartLineId: string }) => line.cartLineId === prepaidLine))
+      .toMatchObject({ prepaid: { checkinId: mia!.checkinId, menuItemId: item('FB-HOTDOG').id }, holderCheckinId: mia!.checkinId });
+    expect(history.body.includes(mia!.bandCode)).toBe(false);
     // Not served before the order is confirmed.
     expect((await itemsOf(mia!.checkinId)).map((i) => i.redeemedQty)).toEqual([0, 0]);
 

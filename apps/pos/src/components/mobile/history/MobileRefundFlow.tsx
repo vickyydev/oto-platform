@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { TouchKeypad } from '@/components/shared/TouchKeypad';
 import type { RefundLineOption, RefundResult } from '@/components/history/RefundModal';
+import { refundAmountFor, type RefundItemOption } from '@/api/history';
 import type { RefundMode } from '@/lib/payments';
 import { ArrowLeft, Undo2, RefreshCw, HandCoins, Wallet, Check } from 'lucide-react';
 
@@ -17,6 +18,9 @@ interface MobileRefundFlowProps {
   refundMode?: RefundMode;
   onConfirm: (result: RefundResult) => void;
   onCancel: () => void;
+  busy?: boolean;
+  error?: string | null;
+  offline?: boolean;
 }
 
 export function MobileRefundFlow({
@@ -28,6 +32,9 @@ export function MobileRefundFlow({
   refundMode,
   onConfirm,
   onCancel,
+  busy = false,
+  error = null,
+  offline = false,
 }: MobileRefundFlowProps) {
   const [step, setStep] = useState<Step>('scope');
   const [mode, setMode] = useState<Mode>('full');
@@ -50,34 +57,28 @@ export function MobileRefundFlow({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
-  const rawAmount = useMemo(() => {
-    if (mode === 'full') return maxRefund;
-    if (mode === 'item')
-      return lines
-        .filter((l) => selectedLineIds.includes(l.id))
-        .reduce((acc, l) => acc + l.amount, 0);
-    return Number(customValue) || 0;
+  const resolved = useMemo(() => {
+    const options: RefundItemOption[] = lines.map((line) => ({
+      id: line.id, label: line.label, lineIds: [line.id], amountSatang: Math.round(line.amount * 100),
+    }));
+    return refundAmountFor({ mode: mode === 'full' ? 'whole' : mode === 'item' ? 'items' : 'custom',
+      remainingSatang: Math.round(maxRefund * 100), options, selected: selectedLineIds,
+      customSatang: Math.round((Number(customValue) || 0) * 100) });
   }, [mode, maxRefund, lines, selectedLineIds, customValue]);
-
-  const amountTHB = Math.min(rawAmount, maxRefund);
+  const amountTHB = resolved.amountSatang / 100;
   const scope: 'full' | 'partial' = amountTHB >= maxRefund ? 'full' : 'partial';
   const creditRestoredTHB = Math.min(amountTHB, restorableCredit);
-
-  const canAdvanceScope =
-    mode === 'full'
-      ? true
-      : mode === 'item'
-        ? selectedLineIds.length > 0
-        : Number(customValue) > 0;
-
-  const canConfirm = !!reason && amountTHB > 0;
-
+  const canAdvanceScope = resolved.amountSatang > 0;
+  const canConfirm = !!reason.trim() && resolved.amountSatang > 0 && !busy;
   const handleConfirm = () => {
     if (!canConfirm) return;
-    onConfirm({ scope, amountTHB, creditRestoredTHB, reason, note: note.trim() || undefined });
+    onConfirm({ scope, amountTHB, creditRestoredTHB, reason, note: note.trim() || undefined,
+      mode, amountSatang: resolved.amountSatang,
+      lineIds: mode === 'full' ? lines.map((line) => line.id) : mode === 'item' ? selectedLineIds : undefined });
   };
 
   const stepBack = () => {
+    if (busy) return;
     if (step === 'scope') onCancel();
     else if (step === 'reason') setStep('scope');
     else setStep('reason');
@@ -90,6 +91,8 @@ export function MobileRefundFlow({
         <button
           type="button"
           onClick={stepBack}
+          disabled={busy}
+          aria-label="Back"
           className="w-9 h-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -287,7 +290,7 @@ export function MobileRefundFlow({
               </div>
             </div>
 
-            {creditRestoredTHB > 0 && (
+            {!offline && creditRestoredTHB > 0 && (
               <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 flex items-center gap-3">
                 <Wallet className="w-5 h-5 text-primary shrink-0" />
                 <div>
@@ -301,7 +304,7 @@ export function MobileRefundFlow({
               </div>
             )}
 
-            {refundMode && (
+            {!offline && refundMode && (
               <div
                 className={`rounded-xl border px-4 py-3 flex items-start gap-3 ${
                   refundMode === 'auto'
@@ -327,6 +330,8 @@ export function MobileRefundFlow({
         </div>
       )}
 
+      {offline && <p className="px-4 py-2 text-sm text-amber-400">Refunds are online only. This saves a request on this till; no money is refunded.</p>}
+      {error && <p role="alert" className="px-4 py-2 text-sm text-destructive">{error}</p>}
       {/* Footer CTA */}
       <div className="shrink-0 p-4 border-t bg-card/20">
         {step === 'scope' && (
@@ -353,7 +358,7 @@ export function MobileRefundFlow({
             disabled={!canConfirm}
             onClick={handleConfirm}
           >
-            Confirm refund ฿{amountTHB}
+            {busy ? 'Recording…' : offline ? 'Note refund request' : `Confirm refund ฿${amountTHB}`}
           </Button>
         )}
       </div>

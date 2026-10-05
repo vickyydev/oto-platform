@@ -1,5 +1,9 @@
 # Handover - where this is, and what to do next
 
+## STOP POINT - 6 October 2026 - SCRUM-495 History slice
+
+**6 October 2026, SCRUM-495 History verified locally:** Desktop and phone now share real sale actions, with the prototype phone detail/refund/reprint flow and date filters. Corrected orders recover stored ticket/F&B inputs, notes, modifiers, sizes and the exact linked band context; paid supervision and already-served prepaid items require explicit re-entry/reselection. Root checks: POS 128 and API 49 tests pass, API/POS typechecks, changed-file lint and POS build pass. The first pricing/input slice 4adb82c7 is live on API/POS; History awaits deployment and screenshots. The Other-payment slice is ready for integration with migration0060; Add time backend/UI are separate workflows, migration0061 reserved. Wallet/payment display parity is underway. SCRUM-493/495 remain In Progress; SCRUM-215 waits for CI after registry repair944646e7.
+
 ## STOP POINT - 6 October 2026 - settlement route registry repair
 
 **6 October 2026, settlement CI registry repair:** CI37377006485 failed three conformance assertions because the terminal-run and authenticated box callback were missing from the explicit route/ID registries. Their existing retry contracts were verified and documented in those registries; all 30 affected checks pass. No runtime route or financial behavior changed. API typecheck and scoped lint pass. The final EOD staging evidence remains valid; SCRUM-215 stays Testing for a fresh successful CI run.

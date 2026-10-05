@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
   PAID_ONLINE_TENDER_METHOD,
@@ -31,10 +31,14 @@ import {
   type HistoryTxn,
   type PaymentAttemptView,
 } from '@/api/history';
+import { correctionFromSale, setCorrectedOrder } from '@/lib/correctedOrder';
+import { membersApi } from '@/api/platform';
+import { apiMemberToMember } from '@/api/mappers';
+import { scanBand } from '@/api/wallet';
 import { salesApi } from '@/api/sales';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import { useOperator } from '@/auth/OperatorContext';
-import { getDiscountReasons, getTicketTypes } from '@/store/catalogStore';
+import { getDiscountReasons, getTicketTypes, getAddOns, getMenuItems } from '@/store/catalogStore';
 import { tierLabel } from '@/lib/membership';
 import { RECENT_SALE_MS } from '@/lib/tillVoucher';
 import { dispatchPlatformPrinting } from '@/lib/printRouting';
@@ -147,7 +151,7 @@ import {
  * of a sale that held one. Said of every void, it sent reception looking for
  * a slip that was never on the sale.
  */
-function voidSentence(
+export function voidSentence(
   record: { reason: string | null; at: string | null; byName: string | null },
   voucherHeld: boolean,
   fmt: (iso: string) => string,
@@ -227,7 +231,7 @@ function minutesAgo(ms: number): string {
  * still be being paid for at its till. The platform decides: money taken, a
  * tender in progress or a sale closed since are refused in its words, here.
  */
-function VoidSaleDialog({
+export function VoidSaleDialog({
   open,
   onOpenChange,
   txn,
@@ -442,7 +446,7 @@ const STATUS_LABEL: Record<PaymentAttemptView['status'], { label: string; tone: 
  * have nothing to say and complete on the ones that do. No PAN and no part of
  * one beyond the four digits the ledger is allowed to hold.
  */
-function PaymentRow({
+export function PaymentRow({
   attempt,
   sale,
   fmt,
@@ -532,7 +536,7 @@ export function refundSliceWords(
 }
 
 /** The prototype's "Refund history" card (`TransactionDetail.tsx`), from the platform's refunds. */
-function RefundHistory({ refunds, fmt }: { refunds: readonly ApiRefund[]; fmt: (iso: string) => string }) {
+export function RefundHistory({ refunds, fmt }: { refunds: readonly ApiRefund[]; fmt: (iso: string) => string }) {
   if (refunds.length === 0) return null;
   return (
     <Card className="p-4 shrink-0 bg-card/50" data-testid="refund-history">
@@ -585,7 +589,7 @@ function RefundHistory({ refunds, fmt }: { refunds: readonly ApiRefund[]; fmt: (
  * `requestedByName` where the read carries it (SCRUM-208), the name this screen
  * just made a copy under until then, and nothing where neither has one.
  */
-function ReprintHistory({
+export function ReprintHistory({
   jobs,
   bands,
   madeBy,
@@ -652,7 +656,7 @@ function ReprintHistory({
 }
 
 /** Refunds asked for while the station was offline, kept on this till until one is made. */
-function RefundRequests({
+export function RefundRequests({
   requests,
   fmt,
   onClear,
@@ -696,39 +700,21 @@ function RefundRequests({
 /** Whether the browser itself knows it has no network. */
 const browserOffline = (): boolean => typeof navigator !== 'undefined' && navigator.onLine === false;
 
-export function SaleDetail({
-  txn,
-  timeZone,
-  onBack,
-  onVoided,
-  onRefunded,
-  layout = 'columns',
-}: {
+export interface SaleDetailProps {
   txn: HistoryTxn;
   timeZone?: string;
   onBack: () => void;
-  /** A void made on this screen went through: the page's list is stale (SCRUM-430). */
   onVoided?: (saleId: string) => void;
-  /**
-   * S2-11 — a refund made on this screen went through: the page's list is
-   * stale, and this is the sale as the platform now holds it.
-   */
   onRefunded?: (saleId: string, sale: ApiSale) => void;
-  /**
-   * `columns` is the counter: contents on the left, money on the right, each
-   * scrolling in its own pane inside a fixed-height page.
-   *
-   * `stacked` is the handheld (SCRUM-320). Same cards, same order, one column —
-   * but the page scrolls as ONE thing rather than nesting a scroller inside a
-   * scroller, which on a 390px screen means a guest's items scrolling under a
-   * thumb while the total stays off-screen below. Nothing is hidden and nothing
-   * is restyled; only which element owns the scrollbar changes.
-   */
   layout?: 'columns' | 'stacked';
-}) {
-  const stacked = layout === 'stacked';
+}
+
+/** Desktop and phone share the same ledger reads and financial actions. */
+export function useSaleDetail({ txn, timeZone, onRefunded }: SaleDetailProps) {
   const { operator, can, offlineUnlock } = useOperator();
   const [, setLocation] = useLocation();
+  const activeSaleRef = useRef<string | null>(txn.id);
+  const [correcting, setCorrecting] = useState(false);
   const [detail, setDetail] = useState<ApiSaleDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** The void this screen just made: the reason it was given, and the vouchers it let go. */
@@ -745,6 +731,7 @@ export function SaleDetail({
   const [refundActionId, setRefundActionId] = useState('');
   const [justRefunded, setJustRefunded] = useState<ApiRefund | null>(null);
   const [reprintOpen, setReprintOpen] = useState(false);
+  const reprintKeys = useRef(new Map<SaleReprintKind, string>());
   const [reprintBusy, setReprintBusy] = useState(false);
   const [flash, setFlash] = useState<{ text: string; tone: 'ok' | 'bad' } | null>(null);
   /** Who made each reprint on this screen — the fallback until the read carries `requestedByName` (SCRUM-208). */
@@ -755,11 +742,19 @@ export function SaleDetail({
 
   useEffect(() => {
     let cancelled = false;
+    activeSaleRef.current = txn.id;
+    setCorrecting(false);
     setDetail(null);
     setError(null);
     setVoided(null);
     setShowVoid(false);
     setJustRefunded(null);
+    setRefundOpen(false);
+    setRefundBusy(false);
+    setReprintBusy(false);
+    setReprintOpen(false);
+    reprintKeys.current.clear();
+    setStationOffline(false);
     setFlash(null);
     setMadeBy({});
     setRequests(refundRequestsFor(txn.id));
@@ -779,6 +774,7 @@ export function SaleDetail({
       });
     return () => {
       cancelled = true;
+      activeSaleRef.current = null;
     };
   }, [txn.id]);
 
@@ -805,7 +801,7 @@ export function SaleDetail({
   /** Read the sale again after it changed here, without blanking the screen. */
   const refresh = useCallback(() => {
     getSale(txn.id)
-      .then(setDetail)
+      .then((next) => setDetail((current) => current?.sale.id === next.sale.id ? next : current))
       .catch(() => undefined);
   }, [txn.id]);
 
@@ -992,6 +988,7 @@ export function SaleDetail({
         note: result.note ?? null,
         actionId: refundActionId || newActionId(),
       });
+      if (activeSaleRef.current !== sale.id) return;
       clearRefundRequests(sale.id);
       setRequests([]);
       setJustRefunded(answer.refund);
@@ -999,6 +996,7 @@ export function SaleDetail({
       refresh();
       onRefunded?.(sale.id, answer.sale);
     } catch (err) {
+      if (activeSaleRef.current !== sale.id) return;
       if (err instanceof NetworkError || (err instanceof ApiError && err.code === 'STATION_FORCED_OFFLINE')) {
         // Refunds are online only: the dialog turns to the note.
         setStationOffline(true);
@@ -1011,8 +1009,14 @@ export function SaleDetail({
         setRefundError(err instanceof Error ? err.message : 'The refund could not be recorded.');
       }
     } finally {
-      setRefundBusy(false);
+      if (activeSaleRef.current === sale.id) setRefundBusy(false);
     }
+  };
+
+  const openReprint = () => {
+    reprintKeys.current.clear();
+    setFlash(null);
+    setReprintOpen(true);
   };
 
   const confirmReprint = async (labels: string[], ids: string[]) => {
@@ -1027,10 +1031,16 @@ export function SaleDetail({
     const refused: string[] = [];
     for (const reprintKind of kinds) {
       try {
-        const answer = await reprintSale(sale.id, reprintKind, newActionId());
+        const answer = await reprintSale(sale.id, reprintKind, (() => {
+          const key = reprintKeys.current.get(reprintKind) ?? newActionId();
+          reprintKeys.current.set(reprintKind, key);
+          return key;
+        })());
+        if (activeSaleRef.current !== sale.id) return;
         jobs.push(...answer.jobs);
         notes.push(...answer.notes);
       } catch (err) {
+        if (activeSaleRef.current !== sale.id) return;
         refused.push(
           err instanceof NetworkError
             ? 'No connection to the platform, so nothing was sent to the printer.'
@@ -1053,6 +1063,37 @@ export function SaleDetail({
         : { text: `Sent ${labels.length} item${labels.length > 1 ? 's' : ''} to the printer`, tone: 'ok' },
     );
     if (sent > 0) refresh();
+    if (refused.length === 0) setReprintOpen(false);
+  };
+
+  const startCorrectedOrder = async () => {
+    if (!detail || correcting || txn.kind === 'merch') return;
+    setCorrecting(true);
+    setFlash(null);
+    try {
+      const correction = correctionFromSale(detail, txn.kind, { tickets: getTicketTypes(), addOns: getAddOns(), menu: getMenuItems() });
+      if (correction.kind === 'ticket' && correction.memberId) {
+        const member = apiMemberToMember((await membersApi.get(correction.memberId)).member);
+        correction.member = member;
+        correction.customerPhone = member.phone;
+        correction.customerNickname = member.nickname;
+      }
+      if (correction.kind === 'fnb' && detail.correctionBandShortCode) {
+        try {
+          const wristband = await scanBand(detail.correctionBandShortCode, detail.sale.branchId);
+          if (wristband) correction.wristband = wristband;
+        } catch {
+          correction.notice = [correction.notice, 'The original bracelet could not be reloaded. Scan it again before using its credit or prepaid food.'].filter(Boolean).join(' ');
+        }
+      }
+      if (activeSaleRef.current !== txn.id) return;
+      setCorrectedOrder(correction);
+      setLocation(txn.kind === 'fnb' ? '/order-station' : '/');
+    } catch (err) {
+      if (activeSaleRef.current === txn.id) setFlash({ tone: 'bad', text: err instanceof Error ? err.message : 'The corrected order could not be opened.' });
+    } finally {
+      if (activeSaleRef.current === txn.id) setCorrecting(false);
+    }
   };
 
   const newSale = () =>
@@ -1061,6 +1102,124 @@ export function SaleDetail({
   const bands = (detail?.bands ?? []).filter((b) => b.status !== 'revoked');
   const kidBands = bands.filter((b) => b.kind === 'kid');
   const adultBands = bands.filter((b) => b.kind === 'adult');
+
+  return {
+    correcting,
+    startCorrectedOrder,
+    operator,
+    detail,
+    error,
+    voided,
+    setVoided,
+    showVoid,
+    setShowVoid,
+    refundOpen,
+    setRefundOpen,
+    refundBusy,
+    refundError,
+    justRefunded,
+    reprintOpen,
+    setReprintOpen,
+    reprintBusy,
+    flash,
+    setFlash,
+    madeBy,
+    requests,
+    setRequests,
+    sale,
+    fmt,
+    kind,
+    heading,
+    groups,
+    packageName,
+    attempts,
+    status,
+    totals,
+    badge,
+    tookNoMoney,
+    mayVoid,
+    voidRecord,
+    voucherHeld,
+    tierClaim,
+    taxTotal,
+    taxName,
+    closed,
+    remainingSatang,
+    mayRefund,
+    mayReprint,
+    offline,
+    refundOptions,
+    reprintItems,
+    refundHint,
+    openRefund,
+    openReprint,
+    confirmRefund,
+    confirmReprint,
+    newSale,
+    bands,
+    kidBands,
+    adultBands,
+  };
+}
+
+export function SaleDetail(props: SaleDetailProps) {
+  const { txn, onBack, onVoided, layout = 'columns' } = props;
+  const stacked = layout === 'stacked';
+  const {
+    correcting,
+    startCorrectedOrder,
+    operator,
+    detail,
+    error,
+    setVoided,
+    showVoid,
+    setShowVoid,
+    refundOpen,
+    setRefundOpen,
+    refundBusy,
+    refundError,
+    justRefunded,
+    reprintOpen,
+    setReprintOpen,
+    reprintBusy,
+    flash,
+    madeBy,
+    requests,
+    setRequests,
+    sale,
+    fmt,
+    kind,
+    heading,
+    groups,
+    packageName,
+    attempts,
+    status,
+    totals,
+    badge,
+    tookNoMoney,
+    mayVoid,
+    voidRecord,
+    voucherHeld,
+    tierClaim,
+    taxTotal,
+    taxName,
+    closed,
+    remainingSatang,
+    mayRefund,
+    mayReprint,
+    offline,
+    refundOptions,
+    reprintItems,
+    refundHint,
+    openRefund,
+    openReprint,
+    confirmRefund,
+    confirmReprint,
+    newSale,
+    bands,
+    kidBands,
+    adultBands,
+  } = useSaleDetail(props);
 
   const contents = error ? (
     <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -1359,6 +1518,9 @@ export function SaleDetail({
                   </div>
                 );
               })}
+              {txn.kind !== 'merch' && <Button className="w-full h-12 gap-2" disabled={correcting} onClick={() => void startCorrectedOrder()}>
+                {correcting ? 'Opening…' : 'Start corrected order'}
+              </Button>}
               <Button variant="outline" className="w-full h-12 gap-2" onClick={newSale}>
                 <Plus className="w-4 h-4" />
                 New sale
@@ -1375,10 +1537,7 @@ export function SaleDetail({
                   className="h-14 text-base gap-2"
                   disabled={!closed || !mayReprint || reprintBusy || reprintItems.length === 0}
                   title={!mayReprint ? 'Reprinting needs the till’s reprint permission.' : undefined}
-                  onClick={() => {
-                    setFlash(null);
-                    setReprintOpen(true);
-                  }}
+                  onClick={openReprint}
                   data-testid="reprint-sale"
                 >
                   <Printer className="w-5 h-5" />
