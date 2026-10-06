@@ -1,5 +1,23 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 7 October 2026 - queue held by the check system's account
+
+GitHub Actions refuses new runs (account billing), so finished work queues
+on branches; nothing deploys from an unchecked commit. The queue, in landing
+order once checks run again:
+- main 87a439cb (SCRUM-498, landed; its run never started; verified locally:
+  typecheck, lint, build, all suites - one file failed only under full-machine
+  load and passes alone);
+- lane/s216-analytics 272194ae (SCRUM-216 rounds 1-2, reviewed MERGE; the
+  late check-in mark closed and tested; migration 0064);
+- lane/s495-fix17 f0dc7f31 (SCRUM-495 entry 17: Card preselected for the rest
+  after credit; cause was effect order; reviewed MERGE).
+Evidence: SCRUM-495/496 walkthrough done; the image check's caption repairs
+and the real End of Day close-away-from-counter proof (ZZ TEST park 1007) are
+being captured. Plans for S2-20 and S2-21 are on main with owner questions;
+both need the directory groundwork first (views, employee mirror, write-back).
+Next free migration: 0065.
+
 ## Platform lane checkpoint - 6 October 2026 - SCRUM-498 on main
 
 Lane C landed (reviewed MERGE first time): with the internet down, the food
