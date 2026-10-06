@@ -393,11 +393,11 @@ describe('C — the trend window’s edges inside the attention re-read', () => 
       .select()
       .from(stockAttention)
       .where(and(eq(stockAttention.stockItemId, keyring), isNull(stockAttention.resolvedAt), eq(stockAttention.kind, 'reorder')));
-    // used 30 (only the day-30 sale), cover 14 + 1 → ceil(30 × 15 / 30) = 15.
+    // used 30 (only the day-30 sale), lead 14 → ceil(30 × 14 / 30) = 14.
     expect(row).toBeDefined();
     expect(row!.rule?.startsWith(STOCK_RULE_REORDER_TREND)).toBe(true);
-    expect(row!.detail).toMatchObject({ reorderRule: 'trend', reorderPoint: 15, staticReorderPoint: 5, usedInWindow: 30, total: 0 });
-    expect(row!.quantity).toBe(15);
+    expect(row!.detail).toMatchObject({ reorderRule: 'trend', reorderPoint: 14, staticReorderPoint: 5, usedInWindow: 30, total: 0 });
+    expect(row!.quantity).toBe(14);
     // The read is a read: nothing changes under GET.
     const before = row!.updatedAt.getTime();
     const got = await call(managerCookie, 'GET', `/branches/${branchId}/stock/attention`);

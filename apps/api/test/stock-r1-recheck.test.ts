@@ -176,7 +176,8 @@ describe('re-check (1) — a refund replayed restocks once', () => {
     );
     expect(second.replay).toBe(true);
     expect(second.refund.id).toBe(first.refund.id);
-    expect(await held('MR-BOTTLE')).toEqual({ Store: 0, BOH: 22, FOH: 8 });
+    // Returned goods go back to the sell point, whichever place the sale drew from.
+    expect(await held('MR-BOTTLE')).toEqual({ Store: 0, BOH: 20, FOH: 10 });
     await expectLedgerAddsUp();
   });
 });

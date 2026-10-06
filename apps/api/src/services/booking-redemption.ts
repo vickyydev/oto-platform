@@ -250,8 +250,8 @@ export async function redeemBookingAtCounter(
     throw errors.badRequest('Redeem a booking at a till: this session is not standing at one');
   }
 
-  // 2. THE SALE, from the lines the family paid for — the regular lines only;
-  // a booking carries no drop-off line today (S2-13 puts them on the row).
+  // 2. THE SALE, from every line the family paid for. A supervised child's line
+  // is filed under its stay's id, so finalising mints no band for it.
   const lines = linesOf(claimed).filter((l) => l.packageId && (l.kids > 0 || l.adults > 0));
   if (lines.length === 0) {
     throw errors.conflict(

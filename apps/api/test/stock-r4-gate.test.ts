@@ -345,13 +345,13 @@ describe('gate r4 — offline sale, its refund, a count and a correction up: eve
 });
 
 describe('gate r4 — the trend rule edges', () => {
-  it('reorderPointFor: day 29 static, day 30 trend; zero usage is a point of 0; net-negative usage clamps to 0; lead 0 still has a day of cover', () => {
+  it('reorderPointFor: day 29 static, day 30 trend; zero usage is a point of 0; net-negative usage clamps to 0; lead 0 is a point of 0', () => {
     const base = { staticPoint: 20, leadTimeDays: 10, firstSaleDate: '2026-01-01' };
     expect(reorderPointFor({ ...base, today: addDaysToIsoDate('2026-01-01', 29), usedInWindow: 99 })).toMatchObject({ rule: 'static', reorderPoint: 20 });
-    expect(reorderPointFor({ ...base, today: addDaysToIsoDate('2026-01-01', 30), usedInWindow: 30 })).toMatchObject({ rule: 'trend', reorderPoint: 11 });
+    expect(reorderPointFor({ ...base, today: addDaysToIsoDate('2026-01-01', 30), usedInWindow: 30 })).toMatchObject({ rule: 'trend', reorderPoint: 10 });
     expect(reorderPointFor({ ...base, today: '2026-03-01', usedInWindow: 0 })).toMatchObject({ rule: 'trend', reorderPoint: 0 });
     expect(reorderPointFor({ ...base, today: '2026-03-01', usedInWindow: -12 })).toMatchObject({ rule: 'trend', reorderPoint: 0, usedInWindow: 0 });
-    expect(reorderPointFor({ ...base, leadTimeDays: 0, today: '2026-03-01', usedInWindow: 31 })).toMatchObject({ rule: 'trend', reorderPoint: 2 });
+    expect(reorderPointFor({ ...base, leadTimeDays: 0, today: '2026-03-01', usedInWindow: 31 })).toMatchObject({ rule: 'trend', reorderPoint: 0 });
     expect(reorderPointFor({ ...base, firstSaleDate: null, today: '2026-03-01', usedInWindow: 0 })).toMatchObject({ rule: 'static', reorderPoint: 20 });
   });
 

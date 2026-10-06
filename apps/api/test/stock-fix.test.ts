@@ -366,7 +366,7 @@ describe('F1 — staging-shaped data written before the fix reads correctly, not
 // --- F3 --------------------------------------------------------------------------------------
 
 describe('F3 — the attention rows carry what the Alerts screen shows', () => {
-  it('a below-par row names the place by id, with its level and par; an item an open order covers has no row', async () => {
+  it('a below-par row names the place by id, with its level and par; an open order keeps the row listed', async () => {
     const plush = await itemIdOf('MR-PLUSH');
     const keyring = await itemIdOf('MR-KEYRING');
     await ctx.db.transaction((tx) => syncStockAttention(tx, { operatorId, branchId }, new Date()));
@@ -383,13 +383,14 @@ describe('F3 — the attention rows carry what the Alerts screen shows', () => {
     }
     expect(rows.filter((r) => r.kind === 'stock_shortfall' || r.kind === 'size_unknown').every((r) => r.lowStock === null)).toBe(true);
 
-    // The plush is under its FOH par (4 of 8): flagged — until an open order covers it.
+    // The plush is under its FOH par (4 of 8): flagged, and still listed once an
+    // open order covers it, so the card can show the order beside the transfer.
     const flagged = low.find((r) => r.stockItemId === plush || r.stockItemId === keyring);
     expect(flagged).toBeDefined();
     await ctx.db.transaction((tx) => addToPurchaseOrders(tx, actor(), { lines: [{ stockItemId: flagged!.stockItemId!, quantity: 6 }] }, new Date()));
     const after = await attention();
-    expect(after.some((r) => r.id === flagged!.id || r.stockItemId === flagged!.stockItemId)).toBe(false);
-    expect(after.filter((r) => r.kind === 'low_stock' || r.kind === 'reorder')).toHaveLength(low.length - 1);
+    expect(after.some((r) => r.id === flagged!.id)).toBe(true);
+    expect(after.filter((r) => r.kind === 'low_stock' || r.kind === 'reorder')).toHaveLength(low.length);
   });
 
   it('the 30-day usage rule reaches the row: reorderRule "trend", the point and the usage', async () => {
@@ -413,7 +414,7 @@ describe('F3 — the attention rows carry what the Alerts screen shows', () => {
     await ctx.db.transaction((tx) => syncStockAttention(tx, { operatorId, branchId }, at(0), [bottle]));
     const row = (await attention()).find((r) => r.stockItemId === bottle)!;
     expect(row.rule).toContain('≤ reorder point (30-day usage)');
-    expect(row.lowStock).toMatchObject({ reorder: true, reorderRule: 'trend', staticReorderPoint: 20, usedInWindow: 25, reorderPoint: 10 });
+    expect(row.lowStock).toMatchObject({ reorder: true, reorderRule: 'trend', staticReorderPoint: 20, usedInWindow: 25, reorderPoint: 9 });
     await expectLedgerAddsUp();
   });
 });

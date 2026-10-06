@@ -55,10 +55,9 @@ export interface ReorderAlert {
  * The prototype's static rule, on the device. The platform's own rule is the
  * one staff see: the mobile Alerts screen reads its attention rows
  * (`GET /branches/:id/stock/attention`, stock walkthrough F3), which follow
- * the item's average daily usage over the last 30 days × (lead time + 1 day),
- * rounded up, once it has that much
- * history (OD-27) and keep quiet while an open order covers the item. Nothing
- * on a staff screen reads this any more.
+ * the item's average daily usage over the last 30 days × lead time, rounded
+ * up, once it has that much history (OD-27), and stay listed while an open
+ * order covers the item. Nothing on a staff screen reads this any more.
  */
 export function getReorderAlerts(inventory: InventoryItem[]): ReorderAlert[] {
   const alerts: ReorderAlert[] = [];

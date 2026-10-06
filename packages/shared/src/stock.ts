@@ -666,8 +666,6 @@ export const stockRuleBelowPar = (placeName: string): string => `Below par at ${
 
 /** Days of sale history an item needs before its reorder point comes from its usage. */
 export const STOCK_TREND_HISTORY_DAYS = 30;
-/** Kept for callers of the former rule; the approved rule adds no safety day. */
-export const STOCK_TREND_SAFETY_DAYS = 0;
 /** The rule's words on an attention row when the point came from the item's usage. */
 export const STOCK_RULE_REORDER_TREND = '≤ reorder point (30-day usage)';
 
