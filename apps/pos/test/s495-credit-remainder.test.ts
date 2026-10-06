@@ -112,6 +112,15 @@ const creditCard = (tree: ReactElement) => {
   if (!card) throw new Error('no credit card');
   return card.props.onClick as () => void;
 };
+/** The method card below the credit card (the prototype's PayMethodRow). */
+const methodCard = (tree: ReactElement, id: string) => {
+  const card = elements(tree).find((el) => el.type !== 'button' && el.key === id && el.props.role === 'button');
+  if (!card) throw new Error(`no method card for ${id}`);
+  return {
+    click: card.props.onClick as () => void,
+    press: card.props.onKeyDown as (event: { key: string; preventDefault: () => void }) => void,
+  };
+};
 
 beforeEach(() => {
   // FnbPayment's markup is compiled to React.createElement; it is built, never rendered.
@@ -189,6 +198,43 @@ describe('the rest after credit starts on card the first time the payment screen
     creditCard(test.tree)();
     expect(test.stage.state.method).toBe('park-cash');
     expect(test.stage.state.amountSatang).toBe(5_000);
+  });
+
+  it('a method card chosen while credit is on is the rest; credit off keeps it for the whole amount', () => {
+    const test = counter('F&B phone', 350, { onPayment: false, useCredit: true, totalSatang: 40_000 });
+    test.show({ onPayment: true });
+    expect(test.stage.state.method).toBe('park-card');
+
+    methodCard(test.tree, 'park-qr').click();
+    expect(test.stage.state.method).toBe('park-qr');
+    expect(test.stage.state.amountSatang).toBe(5_000);
+
+    // Credit off: nothing re-picked, the whole amount on what staff chose.
+    creditCard(test.tree)();
+    expect(test.stage.state.method).toBe('park-qr');
+    expect(test.stage.state.amountSatang).toBe(40_000);
+    // Credit on again: the rest is still that choice.
+    creditCard(test.tree)();
+    expect(test.stage.state.method).toBe('park-qr');
+    expect(test.stage.state.amountSatang).toBe(5_000);
+  });
+
+  it('a method chosen for the whole amount with credit off leaves the rest on the earlier choice (payRemainder)', () => {
+    const test = counter('shop', 350, { onPayment: false, useCredit: true, totalSatang: 50_000 });
+    test.show({ onPayment: true });
+    remainderButton(test.tree, 'park-cash')({ stopPropagation: () => undefined });
+    expect(test.stage.state.method).toBe('park-cash');
+
+    creditCard(test.tree)();
+    methodCard(test.tree, 'park-qr').press({ key: 'Enter', preventDefault: () => undefined });
+    expect(test.stage.state.method).toBe('park-qr');
+    expect(test.stage.state.amountSatang).toBe(50_000);
+    expect(paymentSubmitLabel(test.stage)).toBe('Show payment QR');
+
+    // The prototype changes payRemainder only from the buttons under credit.
+    creditCard(test.tree)();
+    expect(test.stage.state.method).toBe('park-cash');
+    expect(test.stage.state.amountSatang).toBe(15_000);
   });
 
   it('credit off and on with nothing chosen for the rest: card, as staging showed after the toggle', () => {
