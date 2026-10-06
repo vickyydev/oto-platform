@@ -682,8 +682,8 @@ describe('payment request identities', () => {
     expect(test.onComplete).toHaveBeenCalledTimes(1);
   });
 
-  it('resumes a partial charge from the actual remaining balance before another collection', async () => {
-    const paid = cashAttempt('sale-1');
+  it.each(['cash', 'other'] as const)('resumes a partial %s charge from the actual remaining balance before another collection', async (kind) => {
+    const paid = { ...cashAttempt('sale-1'), method: kind };
     const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: apiSale(), attempts: [paid] });
     const test = mountPayment({ resumeSaleId: 'sale-1' });
     test.reading.mockResolvedValue(read(paid, 27_000));
@@ -691,9 +691,9 @@ describe('payment request identities', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(test.result.current.state.outstandingSatang).toBe(27_000);
     expect(test.result.current.state.settlements).toHaveLength(1);
-    test.result.current.selectMethod('park-cash');
+    test.result.current.selectMethod(`park-${kind}`);
     await test.result.current.submit();
-    expect(test.finaliseSale.mock.calls[0]![0]).toMatchObject({ amountSatang: 27_000 });
+    expect(test.finaliseSale.mock.calls[0]![0]).toMatchObject({ kind, amountSatang: 27_000 });
     expect(test.start).not.toHaveBeenCalled();
     get.mockRestore();
   });

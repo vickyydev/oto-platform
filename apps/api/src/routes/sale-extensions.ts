@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { opCtx, withTx } from '../services/tx';
-import { createSaleExtension, readSaleExtensions } from '../services/sale-extensions';
+import { createSaleExtension, readSaleExtensions, reselectExtensionBands } from '../services/sale-extensions';
 
 const Params = z.object({ id: z.string().uuid() });
 const Body = z.object({
@@ -25,4 +25,15 @@ export async function saleExtensionRoutes(app: App) {
     return withTx(app.db, opCtx(req), 'sale.extension.create', (tx) => createSaleExtension(tx,
       { ...auth, requestId: req.id, assertBranchAllowed: async (branchId) => { await req.requirePermission('pos:sale:create', { branchId }); } }, req.params.id, req.body));
   });
+  app.post('/sales/:id/extensions/:extensionId/bands', {
+    config: { permission: 'pos:sale:create', stationTrading: true },
+    schema: { params: Params.extend({ extensionId: z.string().uuid() }),
+      body: z.object({ actionId: z.string().min(1).max(160), stationId: z.string().uuid(), bandIds: z.array(z.string().uuid()).min(1).max(500) }).strict() },
+  }, async (req) => {
+    const auth = req.requireAuth();
+    if (auth.stationId !== req.body.stationId) throw errors.conflict('EXTENSION_COUNTER_REQUIRED', 'Choose this counter before updating replacement bracelets.');
+    return withTx(app.db, opCtx(req), 'sale.extension.reselect', (tx) => reselectExtensionBands(tx,
+      { ...auth, requestId: req.id, assertBranchAllowed: async (branchId) => { await req.requirePermission('pos:sale:create', { branchId }); } }, req.params.id, req.params.extensionId, req.body));
+  });
+
 }

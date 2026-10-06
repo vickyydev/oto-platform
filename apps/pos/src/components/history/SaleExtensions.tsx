@@ -6,6 +6,7 @@ import {
   newActionId,
   parseHistorySearch,
   readSaleExtensions,
+  reselectExtensionBands,
   type ExtensionBand,
   type ExtensionSelection,
   type SaleExtension,
@@ -105,7 +106,7 @@ export function SaleExtensions({
                 {entry.createdByName ?? 'Recorded staff'} ·{' '}
                 {new Date(entry.createdAt).toLocaleString()}
               </p>
-              {entry.status === 'pending' && (
+              {(entry.status === 'pending' || entry.needsReselection) && (
                 <Button
                   variant="outline"
                   disabled={!allowed}
@@ -114,7 +115,7 @@ export function SaleExtensions({
                     setOpen(true);
                   }}
                 >
-                  Resume payment
+                  {entry.needsReselection ? 'Update replacement bracelets' : 'Resume payment'}
                 </Button>
               )}
             </div>
@@ -155,7 +156,11 @@ export function SaleExtensions({
           Resume the unfinished payment before adding more time.
         </p>
       )}
-      {open && data && station && (
+      {open && data && station && resume?.needsReselection && (
+        <ExtensionBandRecovery key={`${saleId}:${station.id}:${resume.id}`} saleId={saleId} stationId={station.id}
+          entry={resume} bands={data.eligibleBands} onClose={() => { setOpen(false); setRevision((value) => value + 1); }} />
+      )}
+      {open && data && station && !resume?.needsReselection && (
         <ExtensionPayment
           key={`${saleId}:${station.id}:${resume?.id ?? 'new'}`}
           saleId={saleId}
@@ -193,7 +198,7 @@ export function ExtensionPayment({
   const [mode, setMode] = useState<'bands' | 'count'>(resume?.selection.mode ?? 'bands');
   const [bandIds, setBandIds] = useState<string[]>(
     resume?.selection.mode === 'bands'
-      ? resume.selection.bandIds
+      ? (resume.currentBandIds ?? resume.selection.bandIds)
       : data.eligibleBands.map((band) => band.id),
   );
   const [count, setCount] = useState(resume?.braceletCount ?? data.eligibleBands.length);
@@ -300,6 +305,9 @@ export function ExtensionPayment({
       if (current.current) onClose();
     },
   });
+  useEffect(() => {
+    if (stage.state.error?.includes('Choose the replacement bracelets')) onClose();
+  }, [stage.state.error, onClose]);
   const locked =
     frozen || preparing || operatorLocked || Boolean(offlineUnlock) || stage.busy || stage.locked;
   const addScan = () => {
@@ -482,4 +490,47 @@ export function ExtensionPayment({
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Repair only the invalid credential slots on the existing paid or pending
+ * charge. Its original selection and money remain on the ledger. */
+export function ExtensionBandRecovery({ saleId, stationId, entry, bands, onClose }: {
+  saleId: string; stationId: string; entry: SaleExtension; bands: ExtensionBand[]; onClose: () => void;
+}) {
+  const { locked, offlineUnlock } = useOperator();
+  const fixed = (entry.currentBandIds ?? []).filter((id) => bands.some((band) => band.id === id));
+  const [selected, setSelected] = useState<string[]>(fixed);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const frozen = useRef<{ actionId: string; stationId: string; bandIds: string[] } | null>(null);
+  const current = useRef(true);
+  useEffect(() => { current.current = true; return () => { current.current = false; }; }, []);
+  const submit = async () => {
+    if (busy || locked || offlineUnlock || selected.length !== entry.braceletCount) return;
+    frozen.current ??= { actionId: newActionId(), stationId, bandIds: selected };
+    setBusy(true); setError(null);
+    try {
+      await reselectExtensionBands(saleId, entry.id, frozen.current);
+      if (current.current) onClose();
+    } catch (err) {
+      if (!current.current) return;
+      setError(err instanceof Error ? err.message : 'The replacement bracelets could not be saved.');
+      if (err instanceof ApiError && err.status < 500 && err.code !== 'IDEMPOTENCY_IN_FLIGHT') frozen.current = null;
+    } finally { if (current.current) setBusy(false); }
+  };
+  return <Dialog open onOpenChange={(open) => { if (!open && !busy && !frozen.current) onClose(); }}>
+    <DialogContent><DialogHeader><DialogTitle>Update replacement bracelets</DialogTitle>
+      <DialogDescription>Select {entry.braceletCount} bracelets for this time addition. Active selections stay fixed. The amount and paid minutes do not change.</DialogDescription>
+    </DialogHeader>
+    <div className="space-y-2">{bands.map((band) => <label key={band.id} className="flex gap-3 items-center p-3 border rounded">
+      <input type="checkbox" checked={selected.includes(band.id)} disabled={busy || Boolean(frozen.current) || locked || Boolean(offlineUnlock) || fixed.includes(band.id)}
+        onChange={() => setSelected((ids) => ids.includes(band.id) ? ids.filter((id) => id !== band.id) : [...ids, band.id])} />
+      {band.shortCode}{fixed.includes(band.id) ? ' (still active)' : ''}
+    </label>)}</div>
+    {error && <p role="alert" className="text-destructive">{error}</p>}
+    <Button disabled={busy || locked || Boolean(offlineUnlock) || selected.length !== entry.braceletCount} onClick={() => void submit()}>
+      {busy ? 'Saving replacement bracelets...' : 'Save replacement bracelets'}
+    </Button>
+    </DialogContent>
+  </Dialog>;
 }

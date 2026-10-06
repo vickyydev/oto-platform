@@ -30,6 +30,7 @@ import { audit } from '../audit';
 import { boxSettings } from '../box';
 import { recordRun } from '../ops';
 import { assertSaleVouchersHeld } from '../vouchers';
+import { assertSaleExtensionCollectable } from '../sale-extension-lifecycle';
 import { settleRefundSlice } from '../refund-slices';
 import {
   attemptView,
@@ -566,6 +567,7 @@ export async function startTerminalTender(
    * the attempt is written or the box is told anything. The sale is locked
    * above; `assertSaleVouchersHeld` locks the voucher after it.
    */
+  await assertSaleExtensionCollectable(tx, saleRow.id);
   await assertSaleVouchersHeld(
     tx,
     {
@@ -1425,6 +1427,7 @@ export async function recordManualTender(
    * not recorded against a sale priced with a voucher that is no longer held
    * for it (VOUCHER_NOT_HELD).
    */
+  await assertSaleExtensionCollectable(tx, saleRow.id);
   await assertSaleVouchersHeld(
     tx,
     {
