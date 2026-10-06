@@ -1,5 +1,6 @@
 import {
   Activity,
+  BarChart3,
   Building2,
   CalendarCheck,
   FerrisWheel,
@@ -84,6 +85,17 @@ export const consoleNav: ConsoleNavGroup[] = [
         // themselves — so somebody who may look at the odds gets the page
         // rather than a locked door.
         permission: 'admin:booth:read',
+      },
+      {
+        id: 'booth-report',
+        label: 'Booth report',
+        icon: BarChart3,
+        description:
+          'What each booth’s wheel did over a range of trading days: spins, prizes won, vouchers issued and redeemed, and what the prizes cost.',
+        // S2-15b round 5: the booth figures are the park's takings' cousin, and
+        // `GET /analytics/booths` asks `analytics:read` per branch — the same
+        // bar as the Reports panels.
+        permission: 'analytics:read',
       },
       {
         id: 'devices',

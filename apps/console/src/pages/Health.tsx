@@ -241,6 +241,12 @@ export function Health() {
               {rollups.map((row) => (
                 <RollupRow key={row.branchId} row={row} timezone={timezone} />
               ))}
+              {/* S2-15b round 5: the booth figures' own line per park, where the API reports it. */}
+              {rollups
+                .filter((row) => row.boothLastRolledUpAt !== undefined)
+                .map((row) => (
+                  <BoothRollupRow key={`booth-${row.branchId}`} row={row} timezone={timezone} />
+                ))}
             </StripedList>
           </CardShell>
         )}
@@ -329,6 +335,24 @@ function RollupRow({ row, timezone }: { row: RollupFreshness; timezone?: string 
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">
         {row.lastRolledUpAt ? `last rolled up ${formatWhen(row.lastRolledUpAt, timezone)}` : 'not rolled up yet'}
+        {` · trading day ${row.today}`}
+      </p>
+    </li>
+  );
+}
+
+/** One park's booth figures (`job:rollup.booth`), drawn as its rollup row is. */
+function BoothRollupRow({ row, timezone }: { row: RollupFreshness; timezone?: string | null }) {
+  const at = row.boothLastRolledUpAt ?? null;
+  return (
+    <li className="px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <StatusMark tone={at ? 'ok' : 'idle'} />
+        <span className="min-w-0 text-[13.5px] font-semibold break-words">{row.name} · booth figures</span>
+        <span className="ml-auto text-[12.5px] text-muted-foreground tabular-nums">{at ? timeAgo(at) : '—'}</span>
+      </div>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {at ? `last rolled up ${formatWhen(at, timezone)}` : 'not rolled up yet'}
         {` · trading day ${row.today}`}
       </p>
     </li>

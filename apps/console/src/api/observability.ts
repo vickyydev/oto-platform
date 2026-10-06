@@ -278,6 +278,11 @@ export interface RollupFreshness {
   today: string;
   /** ISO, or null when the rollup has never brought this park up to date. */
   lastRolledUpAt: string | null;
+  /**
+   * S2-15b round 5: when the booth figures (`job:rollup.booth`) were last
+   * brought up to date here. Optional: an older API answers without it.
+   */
+  boothLastRolledUpAt?: string | null;
 }
 
 /** What `/ready` answers. Public, and the one call that works on every deployment. */

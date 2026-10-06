@@ -15,6 +15,7 @@ import { useTheme } from '@/lib/theme';
 import { Activity } from '@/pages/Activity';
 import { Bookings } from '@/pages/Bookings';
 import { Booths } from '@/pages/Booths';
+import { BoothReport } from '@/pages/BoothReport';
 import { Branches } from '@/pages/Branches';
 import { Devices } from '@/pages/Devices';
 import { Failures } from '@/pages/Failures';
@@ -159,6 +160,11 @@ function Routes() {
       <Route path="/booths">
         <Section id="booths">
           <Booths />
+        </Section>
+      </Route>
+      <Route path="/booth-report">
+        <Section id="booth-report">
+          <BoothReport />
         </Section>
       </Route>
       <Route path="/vouchers"><Section id="vouchers"><Vouchers /></Section></Route>
