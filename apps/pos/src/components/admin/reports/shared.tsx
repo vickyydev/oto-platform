@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Download, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ReportFilters, getBranchOptions } from '@/lib/reporting';
+import { ReportFilters, getBranchOptions, platformReportQuery } from '@/lib/reporting';
+import type { ReportQuery } from '@/api/analyticsReports';
 
 /**
  * ฿ formatting shared by every report table/card — THE SCREEN EDGE. Every
@@ -150,4 +151,62 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export function categoryLabel(category: string): string {
   return CATEGORY_LABELS[category] ?? category;
+}
+
+/** A platform report as a panel holds it: the answer (empty until one arrives) and why it could not be read. */
+export interface PlatformReportState<T> {
+  data: T;
+  error: string | null;
+  loading: boolean;
+}
+
+/**
+ * S2-15b round 4 — read one platform report for the filter bar's dates and
+ * branch, again whenever they (or `extraKey`) change. A branch only this
+ * device knows answers `empty` with no request; a refusal keeps `empty` on
+ * screen and says why, as the wallet report does.
+ */
+export function usePlatformReport<T>(
+  filters: ReportFilters,
+  load: (query: ReportQuery) => Promise<T>,
+  empty: T,
+  extraKey = '',
+): PlatformReportState<T> {
+  const [state, setState] = useState<PlatformReportState<T>>({ data: empty, error: null, loading: true });
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  const emptyRef = useRef(empty);
+  emptyRef.current = empty;
+  useEffect(() => {
+    let live = true;
+    const query = platformReportQuery(filters);
+    if (!query) {
+      setState({ data: emptyRef.current, error: null, loading: false });
+      return;
+    }
+    setState((held) => ({ ...held, error: null, loading: true }));
+    loadRef
+      .current(query)
+      .then((data) => {
+        if (live) setState({ data, error: null, loading: false });
+      })
+      .catch((err: unknown) => {
+        if (!live) return;
+        setState({
+          data: emptyRef.current,
+          error: err instanceof Error ? err.message : 'The figures could not be loaded.',
+          loading: false,
+        });
+      });
+    return () => {
+      live = false;
+    };
+  }, [filters, extraKey]);
+  return state;
+}
+
+/** The figures could not be read: the panel stays empty and says why (S2-15b round 4). */
+export function ReportLoadError({ error }: { error: string | null }) {
+  if (!error) return null;
+  return <ShellBanner>The figures could not be loaded from the platform — {error}</ShellBanner>;
 }

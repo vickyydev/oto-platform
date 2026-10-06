@@ -233,10 +233,11 @@ export const adminNav: AdminNavEntry[] = [
     kind: 'group',
     id: 'reports',
     label: 'Reporting',
-    // Every report reads mock figures today, so `analytics:read` governs only
-    // who is offered them. It is the permission the rollups behind them will
-    // ask for (S2-18), and it keeps the takings off a counter account's screen
-    // in the meantime — which is the same bar these panels had before.
+    // S2-15b round 4: every report reads the platform — the Sales,
+    // Profitability, Discounts & Comps and Tax & VAT panels the rollup's daily
+    // report rows (`GET /analytics/reports/*`), Wallet & Promo the wallet
+    // ledger — and each of those routes asks `analytics:read` per branch, so
+    // the nav offers them to the same people the server answers.
     panels: [
       {
         id: 'reports-sales',
@@ -244,7 +245,6 @@ export const adminNav: AdminNavEntry[] = [
         icon: BarChart3,
         description: 'Revenue by category, tier, F&B and merch items — filterable by branch and date range.',
         permission: 'analytics:read',
-        localOnly: true,
       },
       {
         id: 'reports-profitability',
@@ -252,7 +252,6 @@ export const adminNav: AdminNavEntry[] = [
         icon: TrendingUp,
         description: 'F&B and merch margin against catalog cost-to-park (COGS).',
         permission: 'analytics:read',
-        localOnly: true,
       },
       {
         id: 'reports-wallet',
@@ -280,7 +279,6 @@ export const adminNav: AdminNavEntry[] = [
         icon: PercentCircle,
         description: 'Manual discount and comp impact, by operator.',
         permission: 'analytics:read',
-        localOnly: true,
       },
       {
         id: 'reports-tax',
@@ -288,7 +286,6 @@ export const adminNav: AdminNavEntry[] = [
         icon: FileSpreadsheet,
         description: 'Bulk tax-receipt export and a category-level VAT summary.',
         permission: 'analytics:read',
-        localOnly: true,
       },
     ],
   },

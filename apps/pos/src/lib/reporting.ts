@@ -26,6 +26,7 @@ import { itemOrderTotals, ticketTotals, toSatang } from '@/lib/cartWire';
 import { summarizeTax, type Satang, type TaxBreakdown } from '@oto/shared';
 import { getRateModeForDate, resolveRate, RateMode } from '@/lib/pricingMode';
 import { getWalletReport } from '@/api/wallet';
+import type { ReportQuery } from '@/api/analyticsReports';
 import { fetchCostOfGoods } from '@/api/stock';
 
 /*
@@ -1100,4 +1101,23 @@ export function vatSummary(filters: ReportFilters, period: VatSummaryPeriod = 'r
     if (a.period !== b.period) return (a.period ?? '').localeCompare(b.period ?? '');
     return b.grossSatang - a.grossSatang;
   });
+}
+
+// ── S2-15b round 4 — the platform's report rows ─────────────────────────
+// The Sales, Profitability, Discounts & Comps and Tax & VAT panels read the
+// platform (`GET /analytics/reports/*`, `api/analyticsReports.ts`): the daily
+// report rows the rollup writes from the sales ledger, and two date-bounded
+// per-transaction lists. The functions above are the prototype's mock path,
+// kept for the parity fixture; the panels no longer read them.
+
+/**
+ * The platform request a filter bar's state stands for. `all` asks for every
+ * park this account reads reports for. A branch this device knows only
+ * locally (no platform id) has no platform figures: null, and the panel reads
+ * as empty — as the wallet report does.
+ */
+export function platformReportQuery(filters: ReportFilters): ReportQuery | null {
+  if (filters.branchId === 'all') return { from: filters.startDate, to: filters.endDate };
+  const apiId = getBranches().find((b) => b.id === filters.branchId)?.apiId;
+  return apiId ? { branches: [apiId], from: filters.startDate, to: filters.endDate } : null;
 }

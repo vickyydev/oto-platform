@@ -15,43 +15,112 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import type { TaxReceipts, VatReport } from '@oto/shared';
 import { downloadCsv } from '@/lib/csv';
-import {
-  defaultReportFilters,
-  taxReceiptRows,
-  taxReceiptPaymentMethods,
-  vatSummary,
-  VatSummaryPeriod,
-} from '@/lib/reporting';
+import { defaultReportFilters, type ReportFilters, type VatSummaryPeriod } from '@/lib/reporting';
+import { analyticsReportsApi, type ReportQuery } from '@/api/analyticsReports';
 import { TaxableCategory } from '@/types';
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang, categoryLabel } from './shared';
+import {
+  ReportFilterBar,
+  ReportCard,
+  ExportCsvButton,
+  EmptyRow,
+  ReportLoadError,
+  ShellBanner,
+  csvBaht,
+  thbFromSatang,
+  categoryLabel,
+  usePlatformReport,
+} from './shared';
 
 const CATEGORY_OPTIONS: TaxableCategory[] = ['tickets', 'fnb', 'bar', 'drop_off', 'parties', 'addons', 'merch'];
 
+/** No figures yet, or none for the range. */
+export const EMPTY_VAT_REPORT: VatReport = { from: '', to: '', branches: [], omitted: [], period: 'range', rows: [] };
+export const EMPTY_TAX_RECEIPTS: TaxReceipts = { from: '', to: '', branches: [], omitted: [], rows: [] };
+
+type ReceiptRow = TaxReceipts['rows'][number];
+
 /**
- * Bulk tax-receipt export + a category-level VAT summary. Every row is
- * recomputed live through the satang engine (`ticketTotals` / `itemOrderTotals`,
- * lib/cartWire.ts, since SCRUM-271) — this is not a stored/duplicated tax
- * ledger, so it always matches what the tax engine would print on the original
- * receipt, and every figure is summed in satang before it is shown.
+ * The bulk export's narrowing, as the prototype's `taxReceiptRows` applied it:
+ * transactions that touched the category, and were paid by the tender.
+ */
+export function filterTaxReceipts(rows: readonly ReceiptRow[], category: string, paymentMethod: string): ReceiptRow[] {
+  return rows.filter(
+    (r) =>
+      (category === 'all' || r.categories.includes(category)) &&
+      (paymentMethod === 'all' || r.paymentMethod === paymentMethod),
+  );
+}
+
+/** Every tender token on the range's receipts, for the Payment filter (`taxReceiptPaymentMethods`). */
+export function taxReceiptPaymentMethodsOf(rows: readonly ReceiptRow[]): string[] {
+  return [...new Set(rows.map((r) => r.paymentMethod))].sort();
+}
+
+/**
+ * Bulk tax-receipt export + a category-level VAT summary. S2-15b round 4: the
+ * VAT summary is the platform's daily category rows
+ * (`GET /analytics/reports/tax/vat`), and the receipts are every finalised and
+ * refunded sale of the range with the tax figures its receipt printed
+ * (`GET /analytics/reports/tax/receipts`) — not a stored/duplicated tax
+ * ledger, and every figure is summed in satang before it is shown.
  */
 export function TaxVatReportPanel() {
   const [filters, setFilters] = useState(defaultReportFilters());
+  const [period, setPeriod] = useState<VatSummaryPeriod>('range');
+  const loadVat = useMemo(() => (query: ReportQuery) => analyticsReportsApi.vat(query, period), [period]);
+  const vat = usePlatformReport(filters, loadVat, EMPTY_VAT_REPORT, period);
+  const receipts = usePlatformReport(filters, analyticsReportsApi.taxReceipts, EMPTY_TAX_RECEIPTS);
+  return (
+    <TaxVatReportView
+      filters={filters}
+      onFiltersChange={setFilters}
+      period={period}
+      onPeriodChange={setPeriod}
+      vat={vat.data}
+      receipts={receipts.data}
+      error={vat.error ?? receipts.error}
+    />
+  );
+}
+
+/** The panel as drawn from its two answers. */
+export function TaxVatReportView({
+  filters,
+  onFiltersChange,
+  period,
+  onPeriodChange,
+  vat: vatReport,
+  receipts: receiptReport,
+  error = null,
+}: {
+  filters: ReportFilters;
+  onFiltersChange: (next: ReportFilters) => void;
+  period: VatSummaryPeriod;
+  onPeriodChange: (next: VatSummaryPeriod) => void;
+  vat: VatReport;
+  receipts: TaxReceipts;
+  error?: string | null;
+}) {
   const [category, setCategory] = useState<TaxableCategory | 'all'>('all');
   const [paymentMethod, setPaymentMethod] = useState<string>('all');
-  const [period, setPeriod] = useState<VatSummaryPeriod>('range');
+  const setPeriod = onPeriodChange;
 
-  const paymentMethodOptions = useMemo(() => taxReceiptPaymentMethods(filters), [filters]);
-  const receiptFilters = useMemo(() => ({ ...filters, category, paymentMethod }), [filters, category, paymentMethod]);
-  const receipts = useMemo(() => taxReceiptRows(receiptFilters), [receiptFilters]);
-  const vat = useMemo(() => vatSummary(filters, period), [filters, period]);
+  const paymentMethodOptions = useMemo(() => taxReceiptPaymentMethodsOf(receiptReport.rows), [receiptReport]);
+  const receipts = useMemo(
+    () => filterTaxReceipts(receiptReport.rows, category, paymentMethod),
+    [receiptReport, category, paymentMethod],
+  );
+  const vat = vatReport.rows;
 
   const totalTax = vat.reduce((s, r) => s + r.exclusiveTaxSatang + r.inclusiveTaxSatang, 0);
   const totalGross = vat.reduce((s, r) => s + r.grossSatang, 0);
 
   return (
     <div className="flex flex-col gap-5">
-      <ReportFilterBar filters={filters} onChange={setFilters} />
+      <ReportFilterBar filters={filters} onChange={onFiltersChange} />
+      <ReportLoadError error={error} />
 
       <ReportCard
         title={`VAT summary — ${thbFromSatang(totalTax)} tax on ${thbFromSatang(totalGross)} gross`}
@@ -178,7 +247,7 @@ export function TaxVatReportPanel() {
                     r.kind,
                     r.transactionId,
                     r.createdAt,
-                    r.branchId ?? '',
+                    r.branchName,
                     r.operatorName,
                     r.categories.map((c) => categoryLabel(c)).join('; '),
                     r.paymentMethod,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -9,16 +9,30 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { downloadCsv } from '@/lib/csv';
+import type { ProfitabilityReport } from '@oto/shared';
+import { defaultReportFilters, type ProfitabilityRow, type ReportFilters } from '@/lib/reporting';
+import { analyticsReportsApi } from '@/api/analyticsReports';
 import {
-  defaultReportFilters,
-  fnbProfitability,
-  merchProfitability,
-  platformCostOfGoods,
-  withLedgerCost,
-  type LedgerCost,
-  type ProfitabilityRow,
-} from '@/lib/reporting';
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
+  ReportFilterBar,
+  ReportCard,
+  ExportCsvButton,
+  EmptyRow,
+  ReportLoadError,
+  ShellBanner,
+  csvBaht,
+  thbFromSatang,
+  usePlatformReport,
+} from './shared';
+
+/** No figures yet, or none for the range. */
+export const EMPTY_PROFITABILITY_REPORT: ProfitabilityReport = {
+  from: '',
+  to: '',
+  branches: [],
+  omitted: [],
+  fnb: [],
+  merch: [],
+};
 
 function ProfitabilityTable({ rows, exportName, filters }: { rows: ProfitabilityRow[]; exportName: string; filters: { startDate: string; endDate: string } }) {
   const totalRevenue = rows.reduce((s, r) => s + r.revenueSatang, 0);
@@ -87,32 +101,39 @@ function ProfitabilityTable({ rows, exportName, filters }: { rows: Profitability
 }
 
 /**
- * Profitability report — F&B and merch margin against the catalog's optional
- * cost-to-park field (MenuItem.cost / MerchItem.cost). Items with no cost set
+ * Profitability report — F&B and merch margin against the cost of goods.
+ * S2-15b round 4: the platform's daily item rows
+ * (`GET /analytics/reports/profitability`): revenue as sold, and the cost
+ * frozen on the stock ledger when each line sold — the catalogue's cost where
+ * nothing moved (S2-14b round 4's rule). Items with units of no known cost
  * are flagged rather than silently treated as free.
  */
 export function ProfitabilityReportPanel() {
   const [filters, setFilters] = useState(defaultReportFilters());
-  // S2-14b round 4 — cost of goods from the stock ledger, at the cost frozen on
-  // each sale line; the catalogue's cost only where the ledger holds nothing.
-  const [ledger, setLedger] = useState<Map<string, LedgerCost> | null>(null);
-  useEffect(() => {
-    let live = true;
-    setLedger(null);
-    platformCostOfGoods(filters)
-      .then((answer) => live && setLedger(answer))
-      .catch(() => live && setLedger(null));
-    return () => {
-      live = false;
-    };
-  }, [filters]);
-  const fnbRows = useMemo(() => withLedgerCost(fnbProfitability(filters), ledger), [filters, ledger]);
-  const merchRows = useMemo(() => withLedgerCost(merchProfitability(filters), ledger), [filters, ledger]);
+  const { data, error } = usePlatformReport(filters, analyticsReportsApi.profitability, EMPTY_PROFITABILITY_REPORT);
+  return <ProfitabilityReportView filters={filters} onFiltersChange={setFilters} report={data} error={error} />;
+}
+
+/** The panel as drawn from one answer. */
+export function ProfitabilityReportView({
+  filters,
+  onFiltersChange,
+  report,
+  error = null,
+}: {
+  filters: ReportFilters;
+  onFiltersChange: (next: ReportFilters) => void;
+  report: ProfitabilityReport;
+  error?: string | null;
+}) {
+  const fnbRows: ProfitabilityRow[] = report.fnb;
+  const merchRows: ProfitabilityRow[] = report.merch;
   const anyUntracked = [...fnbRows, ...merchRows].some((r) => !r.costTracked && r.qty > 0);
 
   return (
     <div className="flex flex-col gap-5">
-      <ReportFilterBar filters={filters} onChange={setFilters} />
+      <ReportFilterBar filters={filters} onChange={onFiltersChange} />
+      <ReportLoadError error={error} />
       {anyUntracked && (
         <ShellBanner>
           Some items sold in this range have no cost-to-park set in the catalog. Their COGS shows

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -7,54 +7,89 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import type { SalesReport } from '@oto/shared';
 import { downloadCsv } from '@/lib/csv';
-import {
-  defaultReportFilters,
-  salesByCategory,
-  paymentMix,
-  ticketSalesByTier,
-  fnbSalesByItem,
-  merchSalesByItem,
-  ticketTypeSalesRows,
-  ticketWeekdayWeekendSplit,
-  eventCampRevenueRows,
-  dropOffNannyRevenueRows,
-} from '@/lib/reporting';
+import { defaultReportFilters, type EventCampRevenueRow, type ReportFilters } from '@/lib/reporting';
+import { analyticsReportsApi } from '@/api/analyticsReports';
 import {
   ReportFilterBar,
   ReportCard,
   ExportCsvButton,
   EmptyRow,
+  ReportLoadError,
   ShellBanner,
   csvBaht,
   thbFromSatang,
   categoryLabel,
+  usePlatformReport,
 } from './shared';
+
+/** No figures yet, or none for the range. */
+export const EMPTY_SALES_REPORT: SalesReport = {
+  from: '',
+  to: '',
+  branches: [],
+  omitted: [],
+  categories: [],
+  payments: [],
+  tiers: [],
+  ticketTypes: [],
+  weekdayWeekend: [],
+  dropOffNanny: [],
+  fnbItems: [],
+  merchItems: [],
+};
+
+/**
+ * Event / camp revenue. The prototype estimated it from its mock events
+ * (attendees × today's entry price); the plan does not port the estimate
+ * (§4), and the platform has no event or camp pass sale to read yet — no
+ * register sells one (`event_pass` matches nothing, `@oto/shared`
+ * discount.ts). The card keeps its place and words, with no rows.
+ */
+const EVENT_CAMP_ROWS: EventCampRevenueRow[] = [];
 
 /**
  * Sales report — revenue by taxable category, payment mix, ticket tier split
- * and top F&B/merch items. Every number is re-derived from the same satang
- * engine used at checkout (lib/cartWire.ts, SCRUM-271), summed in satang and
- * drawn in baht only by `thbFromSatang`; nothing here is a parallel total.
+ * and top F&B/merch items. S2-15b round 4: every figure is the platform's,
+ * read from the daily report rows the rollup writes from the sales ledger
+ * (`GET /analytics/reports/sales`), summed in satang and drawn in baht only by
+ * `thbFromSatang`; the look, words and columns are the prototype's.
  */
 export function SalesReportPanel() {
   const [filters, setFilters] = useState(defaultReportFilters());
+  const { data, error } = usePlatformReport(filters, analyticsReportsApi.sales, EMPTY_SALES_REPORT);
+  return <SalesReportView filters={filters} onFiltersChange={setFilters} report={data} error={error} />;
+}
 
-  const categories = useMemo(() => salesByCategory(filters), [filters]);
-  const payments = useMemo(() => paymentMix(filters), [filters]);
-  const tiers = useMemo(() => ticketSalesByTier(filters), [filters]);
-  const fnbItems = useMemo(() => fnbSalesByItem(filters).slice(0, 15), [filters]);
-  const merchItems = useMemo(() => merchSalesByItem(filters).slice(0, 15), [filters]);
-  const ticketTypes = useMemo(() => ticketTypeSalesRows(filters), [filters]);
-  const weekdayWeekend = useMemo(() => ticketWeekdayWeekendSplit(filters), [filters]);
-  const events = useMemo(() => eventCampRevenueRows(filters), [filters]);
-  const dropOffNanny = useMemo(() => dropOffNannyRevenueRows(filters), [filters]);
+/** The panel as drawn from one answer. */
+export function SalesReportView({
+  filters,
+  onFiltersChange,
+  report,
+  error = null,
+}: {
+  filters: ReportFilters;
+  onFiltersChange: (next: ReportFilters) => void;
+  report: SalesReport;
+  error?: string | null;
+}) {
+  const categories = report.categories;
+  const payments = report.payments;
+  const tiers = report.tiers;
+  const fnbItems = report.fnbItems.slice(0, 15);
+  const merchItems = report.merchItems.slice(0, 15);
+  const ticketTypes = report.ticketTypes;
+  const weekdayWeekend = report.weekdayWeekend;
+  const events = EVENT_CAMP_ROWS;
+  const dropOffNanny = report.dropOffNanny;
 
   const totalGross = categories.reduce((s, c) => s + c.grossRevenueSatang, 0);
 
   return (
     <div className="flex flex-col gap-5">
-      <ReportFilterBar filters={filters} onChange={setFilters} />
+      <ReportFilterBar filters={filters} onChange={onFiltersChange} />
+      <ReportLoadError error={error} />
 
       <ReportCard
         title={`Revenue by category — ${thbFromSatang(totalGross)} total`}

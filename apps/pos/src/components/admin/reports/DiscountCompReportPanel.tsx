@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -8,23 +8,56 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import type { DiscountReport, DiscountTransactions } from '@oto/shared';
 import { downloadCsv } from '@/lib/csv';
+import { defaultReportFilters, type ReportFilters } from '@/lib/reporting';
+import { analyticsReportsApi } from '@/api/analyticsReports';
 import {
-  defaultReportFilters,
-  discountAndCompImpact,
-  discountImpactByOperator,
-  promoDiscountImpact,
-  promoDiscountImpactByType,
-} from '@/lib/reporting';
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
+  ReportFilterBar,
+  ReportCard,
+  ExportCsvButton,
+  EmptyRow,
+  ReportLoadError,
+  ShellBanner,
+  csvBaht,
+  thbFromSatang,
+  usePlatformReport,
+} from './shared';
+
+/** No figures yet, or none for the range. */
+export const EMPTY_DISCOUNT_REPORT: DiscountReport = {
+  from: '',
+  to: '',
+  branches: [],
+  omitted: [],
+  compSatang: 0,
+  manualDiscountSatang: 0,
+  promoSatang: 0,
+  freeItemBenefitSatang: 0,
+  promoByType: [],
+  byOperator: [],
+};
+
+export const EMPTY_DISCOUNT_TRANSACTIONS: DiscountTransactions = {
+  from: '',
+  to: '',
+  branches: [],
+  omitted: [],
+  rows: [],
+  promoRows: [],
+};
 
 /**
  * Discount / comp impact report — every manual discount and comp applied at
  * the till, F&B, or merch station, plus a per-operator rollup ("who's
- * granting comps") and scanned promo-code impact. Manual rows come straight
- * off the recorded Sale/FnbOrder/MerchOrder.manualDiscounts; promo rows are
- * re-derived from the engine's applied promos (`ticketTotals`) — no separate
- * ledger. Every figure is satang until it is drawn (SCRUM-271).
+ * granting comps") and scanned promo-code impact.
+ *
+ * S2-15b round 4: the tiles, the promo impact by type and the per-operator
+ * rollup are the platform's daily discount rows
+ * (`GET /analytics/reports/discounts`); the two per-transaction lists are read
+ * from the sales ledger through a date-bounded report query
+ * (`GET /analytics/reports/discounts/transactions`). Every figure is satang
+ * until it is drawn (SCRUM-271).
  *
  * "Benefit" impact (guests getting a free menu/merch item via a scanned
  * `free_item` promo code) is scanned-promo revenue foregone, not a manual
@@ -33,19 +66,47 @@ import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, cs
  */
 export function DiscountCompReportPanel() {
   const [filters, setFilters] = useState(defaultReportFilters());
-  const rows = useMemo(() => discountAndCompImpact(filters), [filters]);
-  const byOperator = useMemo(() => discountImpactByOperator(filters), [filters]);
-  const promoRows = useMemo(() => promoDiscountImpact(filters), [filters]);
-  const promoByType = useMemo(() => promoDiscountImpactByType(filters), [filters]);
+  const summary = usePlatformReport(filters, analyticsReportsApi.discounts, EMPTY_DISCOUNT_REPORT);
+  const lists = usePlatformReport(filters, analyticsReportsApi.discountTransactions, EMPTY_DISCOUNT_TRANSACTIONS);
+  return (
+    <DiscountCompReportView
+      filters={filters}
+      onFiltersChange={setFilters}
+      report={summary.data}
+      transactions={lists.data}
+      error={summary.error ?? lists.error}
+    />
+  );
+}
 
-  const totalComp = rows.filter((r) => r.type === 'comp').reduce((s, r) => s + r.amountSatang, 0);
-  const totalDiscount = rows.filter((r) => r.type !== 'comp').reduce((s, r) => s + r.amountSatang, 0);
-  const totalPromo = promoRows.reduce((s, r) => s + r.amountSatang, 0);
-  const totalBenefit = promoByType.find((p) => p.type === 'free_item')?.amountSatang ?? 0;
+/** The panel as drawn from its two answers. */
+export function DiscountCompReportView({
+  filters,
+  onFiltersChange,
+  report,
+  transactions,
+  error = null,
+}: {
+  filters: ReportFilters;
+  onFiltersChange: (next: ReportFilters) => void;
+  report: DiscountReport;
+  transactions: DiscountTransactions;
+  error?: string | null;
+}) {
+  const rows = transactions.rows;
+  const byOperator = report.byOperator;
+  const promoRows = transactions.promoRows;
+  const promoByType = report.promoByType;
+
+  const totalComp = report.compSatang;
+  const totalDiscount = report.manualDiscountSatang;
+  const totalPromo = report.promoSatang;
+  const totalBenefit = report.freeItemBenefitSatang;
 
   return (
     <div className="flex flex-col gap-5">
-      <ReportFilterBar filters={filters} onChange={setFilters} />
+      <ReportFilterBar filters={filters} onChange={onFiltersChange} />
+      <ReportLoadError error={error} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3">
