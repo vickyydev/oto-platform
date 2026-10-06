@@ -1,3 +1,4 @@
+import { SaleExtensions } from '@/components/history/SaleExtensions';
 import { useState } from 'react';
 import {
   ArrowLeft,
@@ -5,7 +6,6 @@ import {
   ChevronUp,
   Clock,
   Printer,
-  Timer,
   Undo2,
   User as UserIcon,
   Ban,
@@ -19,7 +19,6 @@ import { clearRefundRequests } from '@/lib/refundRequests';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/history/StatusBadge';
-import { LEDGER_ONLY_NOTICE } from '@/components/history/ledgerNotice';
 import {
   DiscountLabel,
   PaymentRow,
@@ -265,6 +264,9 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                 <span>−฿{baht(totals.refundedSatang)}</span>
               </div>
             )}
+            {detail?.timeExtension && <p className="border-t pt-2 text-muted-foreground">
+              Separate charge for {detail.timeExtension.minutesAdded} minutes × {detail.timeExtension.braceletCount} bracelets. The original admission receipt stays unchanged.
+            </p>}
             {sale.note && <p className="border-t pt-2 text-muted-foreground">{sale.note}</p>}
           </Card>
           {attempts.length > 0 && (
@@ -290,6 +292,8 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
             madeBy={state.madeBy}
             fmt={fmt}
           />
+          {txn.kind === 'ticket' && !detail?.timeExtension && <SaleExtensions key={sale.id} saleId={sale.id} eligible={sale.status === 'finalised'} offline={offline} />}
+
           {state.flash && (
             <p
               role="status"
@@ -319,7 +323,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                   <span>฿{baht(slice.amountSatang)}</span>
                 </div>
               ))}
-              {txn.kind !== 'merch' && (
+              {txn.kind !== 'merch' && !detail?.timeExtension && (
                 <Button
                   className="w-full h-12"
                   disabled={state.correcting}
@@ -338,7 +342,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
             </Card>
           ) : (
             <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-2">
                 <Button
                   variant="outline"
                   className="h-12 gap-2"
@@ -353,15 +357,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                   <Printer className="w-4 h-4" />
                   Reprint
                 </Button>
-                <Button
-                  variant="outline"
-                  className="h-12 gap-2"
-                  disabled
-                  title={LEDGER_ONLY_NOTICE}
-                >
-                  <Timer className="w-4 h-4" />
-                  Add time
-                </Button>
+
               </div>
               {state.tookNoMoney ? (
                 <Button

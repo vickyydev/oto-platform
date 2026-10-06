@@ -38,6 +38,8 @@ export interface PaymentStartResult extends PaymentQrMetadata {
 }
 
 export interface PaymentAttemptRead extends PaymentQrMetadata {
+  /** Frozen collection route, used when reopening an unfinished charge. */
+  route?: 'card_terminal' | 'manual' | 'gateway';
   attempt: PaymentAttemptView;
   deviceLabel: string | null;
   responseText: string | null;

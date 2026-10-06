@@ -11,3 +11,9 @@ Fresh context with service workers blocked verifies current POS905fe6c0 phone Hi
 ## Remaining
 
 Deploy migration0060/API before POS, then actual Other payment, archive warning, refund and corrected-order proof. Add time UI/backend not integrated yet; timer and partial refund choices are pending. Wallet/display parity is separate active work. SCRUM-496 stock workflow is independent. All parent work is still open.
+
+## Add time integration review checkpoint
+
+**6 October 2026, Add time integration checkpoint (not deployed):** Both selected/scanned-band and count-only modes are integrated with separate charges, unfinished-payment recovery and forward migration0061. Root checks pass: API180, POS120, DB shape14, API/POS/DB typechecks, scoped lint, POS build and migration verification. Focused review reproduced a late offline band-replacement case that strands a partially paid extension; correction and regression coverage are underway before main landing. This checkpoint is on the feature branch only. API/POS8c21b5e8 are live for Other payments. Real phone History screenshot11276 is attached to495; no refund was submitted in that preview. A labelled staging Other method zztest_495_other_1006 was created for controlled proof and must be archived afterward. Stock0062 and booking22-28 slices are verified in isolated workflows; wallet/display and offline wallet-cache slices await integration. SCRUM-493/495/496 stay In Progress;498 work is starting and215 still awaits CI. No new green CI claim.
+
+02-staging-phone-history.png (11276) is a reviewed real staging refund preview. Actual new-sale Other/refund/correction proof remains. Temporary method: zztest_495_other_1006. In-progress browser cart: one adult 1 Hour Play THB350, not yet paid.

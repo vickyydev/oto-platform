@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BOX_WALLET_REFUSALS, newId, PAYMENT_ATTEMPT_TAKEN_STATUSES, PAYMENT_ATTEMPT_TERMINAL_STATUSES, WALLET_TENDER_CODE, type PaymentAttemptView } from '@oto/shared';
-import { ApiError, NetworkError } from '@/api/client';
+import { api, ApiError, NetworkError } from '@/api/client';
 import { apiSaleOfBox, laneSale, spendWalletOnBox, type BoxLaneSale } from '@/api/boxSales';
 import { paymentsApi, type ManualPaymentBody, type PaymentConfirmationBody, type PaymentQrMetadata, type PaymentStartBody } from '@/api/payments';
 import { salesApi, spendWalletOnSale, type ApiSale, type SaleFinaliseResult, type SaleTenderPayload } from '@/api/sales';
@@ -84,6 +84,8 @@ export interface PaymentStageOptions {
   /** A staff lock pauses work without discarding this visitor's money state. */
   paused?: boolean;
   totalSatang: number;
+  /** Read a durable unfinished charge before allowing any new collection. */
+  resumeSaleId?: string;
   prepareSale: () => Promise<SaleWriteOutcome>;
   finaliseSale: (tender?: SaleTenderPayload, actionId?: string) => Promise<SaleWriteOutcome>;
   onComplete: (sale: ApiSale, settlements: readonly PaymentSettlement[]) => void | Promise<void>;
@@ -232,6 +234,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   const creditLane = useRef(new Map<string, 'platform' | 'box'>());
   const completed = useRef<string | null>(null);
   const readSequence = useRef(0);
+  const resumedSale = useRef<string | null>(null);
   const isComplete = () => stateRef.current.phase === 'complete';
   const update = (patch: Partial<PaymentStageState>) => {
     stateRef.current = { ...stateRef.current, ...patch };
@@ -260,7 +263,9 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
     resumeEvidence.current = null;
     closeAction.current = null;
     completed.current = null;
+    resumedSale.current = null;
     stateRef.current = initial(optionsRef.current.totalSatang);
+    if (optionsRef.current.resumeSaleId) stateRef.current.phase = 'blocked';
     setState(stateRef.current);
   }, [options.scope, options.active]);
   useEffect(() => {
@@ -402,7 +407,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
 
   const submit = (): Promise<void> => {
     const snapshot = stateRef.current;
-    if (optionsRef.current.paused || !onlineRef.current || ['complete', 'blocked', 'pending', 'manual', 'busy'].includes(snapshot.phase) || unresolved(snapshot.attempt)) return Promise.resolve();
+    if ((optionsRef.current.resumeSaleId && resumedSale.current !== optionsRef.current.resumeSaleId) || optionsRef.current.paused || !onlineRef.current || ['complete', 'blocked', 'pending', 'manual', 'busy'].includes(snapshot.phase) || unresolved(snapshot.attempt)) return Promise.resolve();
     const configured = snapshot.method ? findPaymentMethod(snapshot.method) : undefined;
     // A deliberate gesture freezes the current configuration, not the earlier
     // selection. Its body, kind and action stay unchanged if it needs a retry.
@@ -682,6 +687,60 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   }, [options.paused, options.active, options.scope, online]);
 
   useEffect(() => {
+    const saleId = options.resumeSaleId;
+    if (!saleId || resumedSale.current === saleId || !online || options.paused || options.active === false) return;
+    const ctx = context();
+    ctx.saleId = saleId;
+    update({ phase: 'blocked', saleId, error: 'Checking the unfinished payment.', retryable: false });
+    const recover: Operation = async (ctx) => {
+      const detail = await api.get<{ sale: ApiSale; attempts?: PaymentAttemptView[] }>(`/sales/${encodeURIComponent(saleId)}`);
+      if (!current(ctx)) return;
+      if (detail.sale.id !== saleId) throw new Error('The payment answer belongs to another sale.');
+      if (detail.sale.status === 'voided' || detail.sale.status === 'refunded') {
+        update({ phase: 'blocked', error: 'This charge is no longer open for payment.', retryable: false });
+        return;
+      }
+      if (detail.sale.status === 'finalised') { resumedSale.current = saleId; await finish(ctx, detail.sale); return; }
+      if (!detail.attempts) throw new Error('The recorded payments could not be confirmed.');
+      if (detail.attempts.some((attempt) => attempt.saleId !== saleId)) throw new Error('The payment answer belongs to another sale.');
+      for (const attempt of detail.attempts) {
+        const method = findPaymentMethod(attempt.method) ?? getEnabledPaymentMethods().find((item) => item.kind === attempt.method);
+        settlement(attempt, method?.id ?? attempt.method, method?.kind ?? 'other');
+      }
+      const unresolvedAttempts = detail.attempts.filter(unresolved);
+      if (unresolvedAttempts.length > 1) throw new Error('More than one payment needs review. Resolve the recorded payments before collecting again.');
+      const pending = unresolvedAttempts[0];
+      const latest = pending ?? detail.attempts.at(-1);
+      if (latest) {
+        const answer = await paymentsApi.read(latest.id);
+        if (!current(ctx)) return;
+        if (answer.attempt.saleId !== saleId || answer.attempt.id !== latest.id) throw new Error('The payment answer belongs to another sale.');
+        if (!money(answer.outstandingSatang ?? -1)) throw new Error('The payment balance has not been confirmed.');
+        if (pending) {
+          if (!answer.route) throw new Error('The payment route has not been confirmed.');
+          const method = findPaymentMethod(answer.attempt.method) ?? getEnabledPaymentMethods().find((item) => item.kind === answer.attempt.method);
+          update({ method: method?.id ?? answer.attempt.method, kind: method?.kind ?? null, route: answer.route });
+          retryOperation.current = (ctx) => refresh(ctx, latest.id);
+          resumedSale.current = saleId;
+          await adopt(ctx, answer.attempt, answer.outstandingSatang, answer);
+          return;
+        }
+        const outstanding = answer.outstandingSatang!;
+        resumedSale.current = saleId;
+        update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false });
+      } else {
+        const outstanding = detail.sale.status === 'paid' ? 0 : detail.sale.totals.grossSatang;
+        resumedSale.current = saleId;
+        update({ phase: 'ready', outstandingSatang: outstanding, amountSatang: outstanding, tenderedSatang: outstanding, method: null, error: null, retryable: false });
+      }
+      resumedSale.current = saleId;
+    };
+    void perform(recover, ctx);
+    // Recovery owns this charge and uses the same cancellation guards as collection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options.resumeSaleId, options.scope, options.active, options.paused, online]);
+
+  useEffect(() => {
     if (!online || options.paused || options.active === false || !state.attempt || state.phase === 'busy' || state.phase === 'complete'
       || (!unresolved(state.attempt) && !state.retryable)) return;
     const ctx = context();
@@ -700,7 +759,8 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
   }, [online, options.paused, options.active, options.scope, state.attempt?.id, state.attempt?.status, state.attempt?.reversalPending, state.phase, state.retryable]);
 
   const busy = state.phase === 'busy';
-  const locked = Boolean(options.paused) || busy || unresolved(state.attempt) || state.phase === 'blocked';
+  const recovering = Boolean(options.resumeSaleId && resumedSale.current !== options.resumeSaleId);
+  const locked = recovering || Boolean(options.paused) || busy || unresolved(state.attempt) || state.phase === 'blocked';
   const method = state.method ? findPaymentMethod(state.method) : undefined;
   const walletOption = options.wallet ?? null;
   const creditRefusal = state.saleId && state.creditRefusedSaleId === state.saleId ? (state.creditRefusalMessage ?? null) : null;
@@ -722,7 +782,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
       status: state.phase === 'complete' ? 'paid' : locked ? state.phase === 'blocked' ? 'blocked' : 'pending' : state.phase === 'failed' ? 'failed' : 'idle',
       offline: state.attempt?.offline ?? false, online, creditSatang: state.creditSatang + creditPendingSatang },
     selectMethod: (token) => {
-      if (optionsRef.current.paused || stateRef.current.phase === 'busy' || stateRef.current.phase === 'blocked' || unresolved(stateRef.current.attempt) || stateRef.current.phase === 'complete') return;
+      if ((optionsRef.current.resumeSaleId && resumedSale.current !== optionsRef.current.resumeSaleId) || optionsRef.current.paused || stateRef.current.phase === 'busy' || stateRef.current.phase === 'blocked' || unresolved(stateRef.current.attempt) || stateRef.current.phase === 'complete') return;
       const selected = findPaymentMethod(token);
       if (!selected?.enabled) return;
       retryOperation.current = null;

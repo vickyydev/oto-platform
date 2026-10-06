@@ -390,6 +390,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // writes them; these read and redeem them.
   await app.register(bookingRoutes, { prefix: '/bookings' });
   await app.register(saleRoutes, { prefix: '/sales' });
+  await app.register((await import('./routes/sale-extensions')).saleExtensionRoutes);
   // A document reception checked for a visitor who is not a member yet
   // (SCRUM-307), so the cart can be priced at that tier without the tier ever
   // being taken from the cart.

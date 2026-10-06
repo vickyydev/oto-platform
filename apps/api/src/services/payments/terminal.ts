@@ -261,6 +261,7 @@ export async function loadAttemptForBox(
 }
 
 export interface AttemptReadView {
+  route: 'card_terminal' | 'manual' | 'gateway';
   attempt: PaymentAttemptView;
   /** The EMVCo payload the display draws for a gateway or terminal QR. */
   qrPayload: string | null;
@@ -293,6 +294,7 @@ export async function readAttempt(
     if (saleRow) outstandingSatang = await outstandingAfter(db, saleRow);
   }
   return {
+    route: row.deviceId ? 'card_terminal' : row.invoiceNo && row.method === 'qr' ? 'gateway' : 'manual',
     attempt: attemptView(row),
     qrPayload: row.qrPayload,
     qrImageUrl: typeof qrImageUrl === 'string' ? qrImageUrl : null,

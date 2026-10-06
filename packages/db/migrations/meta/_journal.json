@@ -435,6 +435,13 @@
       "when": 1791288247702,
       "tag": "0061_end_of_day_receipt_after_close",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1791288248702,
+      "tag": "0062_sale_extensions",
+      "breakpoints": true
     }
   ]
 }

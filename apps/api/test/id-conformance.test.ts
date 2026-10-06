@@ -294,6 +294,7 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /payments/attempts/:id/inquire': 'derived: an inquiry of an attempt the caller already named',
   'POST /print-jobs/:id/reprint': 'a print job: the box names its own offline (OD-12); online the platform queues it',
   'POST /sales/:id/refunds': `${ACTION_KEYED} (\`refund_action_unique\`); refunds are online only (decision 8)`,
+  'POST /sales/:id/extensions': `${ACTION_KEYED} (\`sale_extension_action_unique\`); paid time extensions are online only`,
   'POST /sales/tier-claims': `${ACTION_KEYED} (\`sale_tier_claim_action_unique\`)`,
   'POST /stations/:id/displays/claim': 'derived: the credential a paired display is answered with, once',
   'POST /tiers': CODE_NAMED,

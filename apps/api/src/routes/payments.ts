@@ -273,6 +273,7 @@ export async function paymentRoutes(app: App): Promise<void> {
         params: IdParams,
         response: {
           200: z.object({
+            route: z.enum(['card_terminal', 'manual', 'gateway']),
             attempt: AttemptSchema,
             qrPayload: z.string().nullable(),
             qrImageUrl: z.string().nullable(),

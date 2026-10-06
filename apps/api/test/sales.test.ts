@@ -20,6 +20,10 @@ import {
   sale,
   saleDiscount,
   saleLine,
+  band,
+  saleExtension,
+  saleExtensionBand,
+  printJob,
   station,
   ticketPackage,
   voucher,
@@ -35,7 +39,7 @@ import {
   parseDayStart,
   PRICING_ENGINE_VERSION,
 } from '@oto/shared';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { ADMIN, RECEPTION, createTestContext, signInAs, takeStation, teardownAll, type TestContext } from './helpers';
 
 /**
  * S2-09a (SCRUM-203) — the till's money path, driven through the REAL routes
@@ -2043,6 +2047,7 @@ describe('the seam between this and the till', () => {
       '/sales/{id}/refunds',
       '/sales/{id}/reprints',
       '/sales/{id}',
+      '/sales/{id}/extensions',
       // SCRUM-307 — the document check that prices a walk-in's cart.
       '/sales/tier-claims',
       // S2-10b — a voucher held on the cart the till is ringing up, and taken
@@ -2084,10 +2089,12 @@ describe('the seam between this and the till', () => {
       'DELETE /sales/:id/vouchers/:voucherId dynamic no-target',
       'GET /sales dynamic no-target',
       'GET /sales/:id pos:sale:read no-target',
+      'GET /sales/:id/extensions pos:sale:read no-target',
       // S2-11 — the lookup is dynamic for the list's reason; a refund and a
       // reprint check their branch on the sale row, as finalise does.
       'GET /sales/lookup dynamic no-target',
       'POST /sales pos:sale:create body.branchId',
+      'POST /sales/:id/extensions pos:sale:create no-target',
       'POST /sales/:id/finalise pos:sale:update no-target',
       'POST /sales/:id/refunds pos:refund:create no-target',
       'POST /sales/:id/reprints pos:print:reprint no-target',
@@ -2096,5 +2103,145 @@ describe('the seam between this and the till', () => {
       'POST /sales/quote pos:sale:create body.branchId',
       'POST /sales/tier-claims pos:member:update body.branchId',
     ]);
+  });
+});
+
+describe('SCRUM-495 paid time extensions', () => {
+  async function admission() {
+    await takeStation(ctx.app, cookie, stationId);
+    const made = await commit({ id: newId(), lines: [line(twoHoursId, 0, 2)] });
+    expect(made.statusCode).toBe(200);
+    const id = made.json().sale.id as string;
+    const closed = await ctx.app.inject({ method: 'POST', url: `/sales/${id}/finalise`, headers: { cookie }, payload: { actionId: newId() } });
+    expect(closed.statusCode).toBe(200);
+    const bands = await ctx.db.select({ id: band.id }).from(band).where(eq(band.saleId, id));
+    expect(bands.length).toBe(2);
+    return { id, bands, gross: closed.json().sale.totals.grossSatang as number };
+  }
+  async function extension(sourceId: string, selection: { mode: 'bands'; bandIds: string[] } | { mode: 'count'; braceletCount: number }, actionId = newId(), optionId = 'ext-30') {
+    return ctx.app.inject({ method: 'POST', url: `/sales/${sourceId}/extensions`, headers: { cookie }, payload: { actionId, stationId, optionId, selection } });
+  }
+  async function finish(id: string, amountSatang?: number) {
+    return ctx.app.inject({ method: 'POST', url: `/sales/${id}/finalise`, headers: { cookie }, payload: { actionId: newId(), ...(amountSatang !== undefined ? { amountSatang } : {}) } });
+  }
+
+  it('charges selected bands separately, applies only once after full payment, and refunds without losing history', async () => {
+    const original = await admission();
+    const selection = { mode: 'bands' as const, bandIds: [original.bands[0]!.id] };
+    const actionId = newId();
+    const made = await extension(original.id, selection, actionId);
+    expect(made.statusCode).toBe(200);
+    const chargeId = made.json().sale.id as string;
+    const extensionId = made.json().extension.id as string;
+    expect(made.json().extension).toMatchObject({ status: 'pending', amountSatang: 6000, minutesAdded: 30, selection });
+    expect((await extension(original.id, selection, actionId)).json()).toMatchObject({ replay: true, sale: { id: chargeId } });
+    expect((await extension(original.id, selection, actionId, 'ext-60')).statusCode).toBe(409);
+    expect((await extension(original.id, selection)).json().error.code).toBe('EXTENSION_PENDING');
+    expect((await finish(chargeId, 3000)).json().finalised).toBe(false);
+    const resumed = await ctx.app.inject({ method: 'GET', url: `/sales/${chargeId}`, headers: { cookie } });
+    expect(resumed.statusCode).toBe(200);
+    expect(resumed.json().timeExtension).toEqual({ id: extensionId, sourceSaleId: original.id, status: 'pending', minutesAdded: 30, braceletCount: 1 });
+    expect(resumed.json().attempts).toEqual(expect.arrayContaining([expect.objectContaining({ method: 'cash', amountSatang: 3000, status: 'approved' })]));
+    expect((await ctx.db.select().from(saleExtension).where(eq(saleExtension.id, extensionId)))[0]!.status).toBe('pending');
+    expect((await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, extensionId)))[0]!.appliedAt).toBeNull();
+    const adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const sourceRefund = await ctx.app.inject({ method: 'POST', url: `/sales/${original.id}/refunds`, headers: { cookie: adminCookie }, payload: { actionId: newId(), mode: 'whole', reason: 'Fixture refund' } });
+    expect(sourceRefund.json().error.code).toBe('EXTENSION_PENDING');
+    expect((await finish(chargeId)).json().finalised).toBe(true);
+    expect((await finish(chargeId)).json().replay).toBe(true);
+    const applied = (await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, extensionId)))[0]!;
+    expect(applied.appliedAt).not.toBeNull();
+    expect(applied.minutesAdded).toBe(30);
+    expect(await ctx.db.select({ id: band.id }).from(band).where(eq(band.saleId, chargeId))).toEqual([]);
+    const printKinds = await ctx.db.select({ kind: printJob.kind }).from(printJob).where(eq(printJob.subjectId, chargeId));
+    expect(printKinds.every((p) => p.kind === 'receipt')).toBe(true);
+    const lines = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, chargeId));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ taxableCategory: 'tickets', revenueCategory: 'tickets', kidCount: 0, adultCount: 0, ticketPackageId: null, productId: null });
+    const [unchanged] = await ctx.db.select().from(sale).where(eq(sale.id, original.id));
+    expect(unchanged!.grossSatang).toBe(original.gross);
+    const partial = await ctx.app.inject({ method: 'POST', url: `/sales/${chargeId}/refunds`, headers: { cookie: adminCookie }, payload: { actionId: newId(), mode: 'custom', amountSatang: 1000, reason: 'Fixture refund' } });
+    expect(partial.json().error.code).toBe('EXTENSION_FULL_REFUND_ONLY');
+    const refunded = await ctx.app.inject({ method: 'POST', url: `/sales/${chargeId}/refunds`, headers: { cookie: adminCookie }, payload: { actionId: newId(), mode: 'whole', reason: 'Fixture refund' } });
+    expect(refunded.statusCode).toBe(200);
+    expect((await ctx.db.select().from(saleExtension).where(eq(saleExtension.id, extensionId)))[0]!.status).toBe('voided');
+    const [revoked] = await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, extensionId));
+    expect(revoked!.appliedAt).toEqual(applied.appliedAt);
+    expect(revoked!.revokedAt).not.toBeNull();
+    const attempts = await ctx.db.select({ id: paymentAttempt.id }).from(paymentAttempt).where(eq(paymentAttempt.saleId, chargeId));
+    const read = await ctx.app.inject({ method: 'GET', url: `/payments/attempts/${attempts[0]!.id}`, headers: { cookie } });
+    expect(read.json().route).toBe('manual');
+  });
+
+  it('count-only records no individual minutes, and void releases a pending extension', async () => {
+    const original = await admission();
+    const made = await extension(original.id, { mode: 'count', braceletCount: 2 });
+    expect(made.statusCode).toBe(200);
+    expect(made.json().extension).toMatchObject({ braceletCount: 2, amountSatang: 12000 });
+    const chargeId = made.json().sale.id as string;
+    const voided = await ctx.app.inject({ method: 'POST', url: `/sales/${chargeId}/void`, headers: { cookie }, payload: { reason: 'Fixture cancelled' } });
+    expect(voided.statusCode).toBe(200);
+    const next = await extension(original.id, { mode: 'count', braceletCount: 1 });
+    expect(next.statusCode).toBe(200);
+    expect((await finish(next.json().sale.id)).json().finalised).toBe(true);
+    expect(await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, next.json().extension.id))).toEqual([]);
+    const read = await ctx.app.inject({ method: 'GET', url: `/sales/${original.id}/extensions`, headers: { cookie } });
+    expect(read.json().extensions.map((row: { status: string }) => row.status)).toEqual(['voided', 'applied']);
+  });
+
+  it('refuses duplicate, foreign, revoked and excessive bracelets without a charge', async () => {
+    const original = await admission();
+    const bandId = original.bands[0]!.id;
+    expect((await extension(original.id, { mode: 'bands', bandIds: [bandId, bandId] })).statusCode).toBe(409);
+    expect((await extension(original.id, { mode: 'bands', bandIds: [newId()] })).statusCode).toBe(409);
+    expect((await extension(original.id, { mode: 'count', braceletCount: 3 })).statusCode).toBe(400);
+    await ctx.db.update(band).set({ status: 'revoked' }).where(eq(band.id, bandId));
+    expect((await extension(original.id, { mode: 'bands', bandIds: [bandId] })).statusCode).toBe(409);
+    expect((await extension(original.id, { mode: 'count', braceletCount: 1 })).statusCode).toBe(409);
+    expect(await ctx.db.select().from(saleExtension).where(eq(saleExtension.sourceSaleId, original.id))).toEqual([]);
+  });
+
+  it('serialises concurrent presses and replays a lost response without collecting twice', async () => {
+    const original = await admission();
+    const selection = { mode: 'count' as const, braceletCount: 1 };
+    const actionId = newId();
+    const same = await Promise.all([extension(original.id, selection, actionId), extension(original.id, selection, actionId)]);
+    expect(same.map((res) => res.statusCode)).toEqual([200, 200]);
+    expect(same[0]!.json().sale.id).toBe(same[1]!.json().sale.id);
+    expect(same.filter((res) => res.json().replay)).toHaveLength(1);
+    await ctx.app.inject({ method: 'POST', url: `/sales/${same[0]!.json().sale.id}/void`, headers: { cookie }, payload: { reason: 'Fixture cancelled' } });
+    const competing = await Promise.all([extension(original.id, selection), extension(original.id, selection)]);
+    expect(competing.map((res) => res.statusCode).sort()).toEqual([200, 409]);
+    expect(await ctx.db.select().from(saleExtension).where(and(eq(saleExtension.sourceSaleId, original.id), eq(saleExtension.status, 'pending')))).toHaveLength(1);
+  });
+
+  it('quotes the branch ticket taxes on the separate charge while leaving the admission frozen', async () => {
+    const original = await admission();
+    const [prior] = await ctx.db.select().from(branchTaxConfig).where(eq(branchTaxConfig.branchId, branchId));
+    const config = { rates: [{ id: 'fixture-vat', name: 'VAT', percent: 7 }], categoryRules: [{ category: 'tickets', taxRateId: 'fixture-vat', taxMode: 'exclusive', serviceChargePercent: 10, taxOnServiceCharge: true }], discountPlacement: 'before_tax' };
+    await ctx.db.update(branchTaxConfig).set({ config }).where(eq(branchTaxConfig.branchId, branchId));
+    try {
+      const made = await extension(original.id, { mode: 'count', braceletCount: 2 });
+      expect(made.statusCode).toBe(200);
+      expect(made.json().extension.amountSatang).toBe(14124);
+      expect(made.json().sale.totals.grossSatang).toBe(14124);
+      const [charge] = await ctx.db.select().from(sale).where(eq(sale.id, made.json().sale.id));
+      expect(charge).toMatchObject({ subtotalSatang: 12000, serviceChargeSatang: 1200, taxExclusiveSatang: 924, grossSatang: 14124 });
+      const [unchanged] = await ctx.db.select().from(sale).where(eq(sale.id, original.id));
+      expect(unchanged!.grossSatang).toBe(original.gross);
+    } finally {
+      await ctx.db.update(branchTaxConfig).set({ config: prior!.config }).where(eq(branchTaxConfig.branchId, branchId));
+    }
+  });
+
+  it('requires sign-in, a finalised admission and the session counter', async () => {
+    await takeStation(ctx.app, cookie, stationId);
+    const made = await commit({ id: newId(), lines: [line(twoHoursId, 0, 2)] });
+    const id = made.json().sale.id as string;
+    expect((await extension(id, { mode: 'count', braceletCount: 1 })).json().error.code).toBe('EXTENSION_SOURCE_UNAVAILABLE');
+    expect((await ctx.app.inject({ method: 'GET', url: `/sales/${id}/extensions` })).statusCode).toBe(401);
+    const otherCounter = await ctx.app.inject({ method: 'POST', url: `/sales/${id}/extensions`, headers: { cookie }, payload: { actionId: newId(), stationId: newId(), optionId: 'ext-30', selection: { mode: 'count', braceletCount: 1 } } });
+    expect(otherCounter.json().error.code).toBe('EXTENSION_COUNTER_REQUIRED');
+    expect(await ctx.db.select().from(saleExtension).where(eq(saleExtension.sourceSaleId, id))).toEqual([]);
   });
 });

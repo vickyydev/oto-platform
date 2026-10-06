@@ -81,11 +81,7 @@ export async function startPaymentTender(
         return {
           route: 'started',
           result: {
-            route: existing.deviceId
-              ? 'card_terminal'
-              : existing.invoiceNo && existing.method === 'qr'
-                ? 'gateway'
-                : 'manual',
+            route: read.route,
             attempt: read.attempt,
             replayed: true,
             outstandingSatang: read.outstandingSatang ?? 0,
