@@ -204,12 +204,16 @@ export function ConsentCapture({
                     <p className="mt-1 text-sm text-foreground/50">
                       {t('superviseConsent.photoInstructions')}
                     </p>
-                    {photoAtReception ? <p className="mt-2 text-sm text-foreground/70">Reception will take the child and guardian photo when you arrive, for pickup verification.</p> : <CameraCapture
-                      className="mt-2"
-                      value={slot.childPhotoUrl}
-                      onCapture={(dataUrl) => onUpdateChild(slot.id, { childPhotoUrl: dataUrl })}
-                      onClear={() => onUpdateChild(slot.id, { childPhotoUrl: undefined })}
-                    />}
+                    {photoAtReception ? (
+                      <p className="mt-2 text-sm text-foreground/70">{t('superviseConsent.photoAtReception')}</p>
+                    ) : (
+                      <CameraCapture
+                        className="mt-2"
+                        value={slot.childPhotoUrl}
+                        onCapture={(dataUrl) => onUpdateChild(slot.id, { childPhotoUrl: dataUrl })}
+                        onClear={() => onUpdateChild(slot.id, { childPhotoUrl: undefined })}
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-4">

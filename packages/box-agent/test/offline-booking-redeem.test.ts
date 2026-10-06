@@ -57,6 +57,7 @@ const STATION_2 = '018f0000-0000-7000-8000-0000000057a2';
 const PAID = '018f0000-0000-7000-8000-0000000b0001';
 const PENDING = '018f0000-0000-7000-8000-0000000b0002';
 const REDEEMED_ONLINE = '018f0000-0000-7000-8000-0000000b0003';
+const SUPERVISED = '018f0000-0000-7000-8000-0000000b0004';
 
 /** Two kids at ฿350 and two adults (one free, one at ฿150), two pairs of socks at ฿50: ฿950. */
 const TOTAL = 2 * 35000 + 15000 + 2 * 5000;
@@ -233,6 +234,7 @@ async function openRedeemBox(): Promise<RedeemBox> {
   await write('bookings', [
     bookingRow(PAID, 'OTO-PAID-0001', 'paid'),
     bookingRow(PENDING, 'OTO-PEND-0002', 'pending'),
+    bookingRow(SUPERVISED, 'OTO-SUPV-0004', 'supervised_online_only'),
     bookingRow(REDEEMED_ONLINE, 'OTO-DONE-0003', 'redeemed', {
       redeemedAt: '2026-10-01T03:05:00.000Z',
       branchId: BRANCH_ID,
@@ -448,6 +450,13 @@ test('a cached pending booking is refused as not paid; an unknown one says see r
       assert.ok(err instanceof BridgeError);
       assert.equal(err.code, 'BOOKING_ALREADY_REDEEMED');
       assert.match(err.message, /OTO-DONE-0003 was already redeemed on 2026-10-01 10:05 at HKT Central, Reception Till 1/);
+      return true;
+    });
+    // SCRUM-496 entry 21: a supervised child's check-in runs on the platform.
+    await assert.rejects(redeem(box, press({ bookingId: SUPERVISED })), (err: unknown) => {
+      assert.ok(err instanceof BridgeError);
+      assert.equal(err.code, 'BOOKING_NEEDS_INTERNET');
+      assert.match(err.message, /needs the internet/);
       return true;
     });
     assert.equal((await facts(box)).length, 0, 'nothing sold, nothing queued');

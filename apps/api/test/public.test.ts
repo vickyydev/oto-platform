@@ -121,8 +121,11 @@ describe('public catalogue exposure (SCRUM-252)', () => {
 
   it('answers exactly the branch, tier, rate-mode and holiday fields', async () => {
     const body = await catalog();
-    expect(keys(body)).toEqual(['addOns', 'branch', 'holidays', 'packages', 'rateMode', 'taxConfig', 'tiers']);
+    expect(keys(body)).toEqual(['addOns', 'branch', 'holidays', 'packages', 'rateMode', 'supervision', 'taxConfig', 'tiers']);
     expect(keys(body.branch)).toEqual(['businessDayStart', 'code', 'name', 'timezone']);
+    // SCRUM-496 entry 21: what the site prices a supervised child with, and the confirmations it shows.
+    expect(keys(body.supervision)).toEqual(['photoRetentionDays', 'policy', 'pricing']);
+    expect(keys(body.supervision.policy)).toEqual(['bands', 'confirmations', 'siblingWaiver']);
     for (const tier of body.tiers) {
       // `id` here is the tier CODE, not the row's uuid.
       expect(keys(tier)).toEqual(['id', 'isDefault', 'name', 'requiresVerification']);
