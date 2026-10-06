@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { toPosBooking, type PlatformBooking } from '@/api/bookings';
 import { publicAddOnToStore } from '@/api/catalogBridge';
 import { getTicketTypes } from '@/store/catalogStore';
+import { setPricingDate } from '@/lib/pricingMode';
 
 /**
  * S2-12 (SCRUM-209, arrival round 1) — the till and the booking site read the
@@ -55,6 +56,16 @@ function platformBooking(over: Partial<PlatformBooking> = {}): PlatformBooking {
 }
 
 describe('toPosBooking — what reception is told', () => {
+  it('shows the ticket credit and the verified payment method at redemption', () => {
+    setPricingDate('2026-10-06');
+    try {
+      const mapped = toPosBooking(platformBooking({ paymentMethod: 'promptpay' }));
+      expect(mapped.booking.willIssue.creditTotalTHB).toBe(350);
+      expect(mapped.booking.paymentMethod).toBe('promptpay');
+    } finally {
+      setPricingDate(null);
+    }
+  });
   it('a paid booking is paid, and carries the extras at the prices paid', () => {
     const mapped = toPosBooking(platformBooking());
     expect(mapped.paid).toBe(true);

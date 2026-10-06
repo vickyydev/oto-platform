@@ -1,3 +1,4 @@
+import type { BookingSupervisionInput, PublicSupervisionConfig } from '@oto/shared';
 // Typed calls to the Sprint 1 API surface, with mapping between the API's
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
 import { newId as newRecordId } from '@oto/shared';
@@ -503,6 +504,7 @@ export interface ApiPaymentMethod {
 
 // --- public booking site (no session) ---------------------------------------
 export interface PublicCatalog {
+  supervision?: PublicSupervisionConfig;
   branch: { code: string; name: string; timezone: string; businessDayStart?: string };
   tiers: Array<{ id: string; name: string; isDefault: boolean; requiresVerification: boolean }>;
   packages: ApiTicketPackage[];
@@ -558,7 +560,10 @@ export const publicApi = {
     parentName: string;
     tier: string;
     visitDate?: string;
+    consentAck?: boolean;
+    acknowledgedConfirmationIds?: string[];
     lines: Array<{
+      supervision?: BookingSupervisionInput;
       packageId: string;
       kids: number;
       adults: number;

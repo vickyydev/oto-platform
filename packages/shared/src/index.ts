@@ -48,3 +48,4 @@ export * from './voucher-promo';
 export * from './stock';
 export * from './end-of-day';
 export * from './settlement';
+export * from './booking-supervision';

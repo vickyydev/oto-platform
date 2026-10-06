@@ -29,6 +29,8 @@ import {
 const DEFAULT_PROVISION: ChildFoodProvision = { mode: 'none', paidTHB: 0 };
 
 interface ConsentCaptureProps {
+  /** Public booking captures the protected visit photo at reception. */
+  photoAtReception?: boolean;
   // EVERY child on the unaccompanied sale — the parent types names + ages here on
   // their own screen, and those flow (via the lifted draft) straight into the
   // staff gate's requirement resolution. Consent fields then appear per child for
@@ -67,6 +69,7 @@ interface ConsentCaptureProps {
  * acknowledgement once for the whole booking.
  */
 export function ConsentCapture({
+  photoAtReception = false,
   slots,
   parentName,
   consentAck,
@@ -201,12 +204,12 @@ export function ConsentCapture({
                     <p className="mt-1 text-sm text-foreground/50">
                       {t('superviseConsent.photoInstructions')}
                     </p>
-                    <CameraCapture
+                    {photoAtReception ? <p className="mt-2 text-sm text-foreground/70">Reception will take the child and guardian photo when you arrive, for pickup verification.</p> : <CameraCapture
                       className="mt-2"
                       value={slot.childPhotoUrl}
                       onCapture={(dataUrl) => onUpdateChild(slot.id, { childPhotoUrl: dataUrl })}
                       onClear={() => onUpdateChild(slot.id, { childPhotoUrl: undefined })}
-                    />
+                    />}
                   </div>
 
                   <div className="space-y-4">

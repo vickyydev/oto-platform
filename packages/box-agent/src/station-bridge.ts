@@ -4369,6 +4369,9 @@ export class StationBridge {
     }
     const already = await this.redemptionOf(booking, null);
     if (already) throw this.alreadyRedeemed(booking, already);
+    if (booking.status === 'supervised_online_only') {
+      throw new BridgeRefusal('BOOKING_NEEDS_INTERNET', 'This supervised booking needs the internet. Reconnect at reception to redeem it and check the children in.');
+    }
     if (booking.status !== 'paid') {
       // The platform's own words (`redeemBooking` in `services/bookings.ts`).
       throw new BridgeError(

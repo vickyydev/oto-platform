@@ -563,11 +563,7 @@ describe('the contact-channel test', () => {
   it('sends, confirms, and fails, each an audit row the board reads back', async () => {
     const reg = await register([childBody({ name: 'Chip', ageYears: 6 })], { guardianName: 'Wan' });
     const famOf = async () => (await board()).families.find((f) => f.registrationId === reg.id)!;
-    expect((await famOf()).contact).toBeNull();
-
-    const early = await ctx.app.inject({ method: 'POST', url: `/checkin/registrations/${reg.id}/contact-status`, headers: { cookie: reception }, payload: { status: 'confirmed' } });
-    expect(early.statusCode).toBe(409);
-    expect(early.json().error.code).toBe('CONTACT_NOT_PENDING');
+    expect((await famOf()).contact).toMatchObject({ status: 'pending' });
 
     const sent = await ctx.app.inject({ method: 'POST', url: `/checkin/registrations/${reg.id}/contact-test`, headers: { cookie: reception } });
     expect(sent.statusCode, sent.body).toBe(200);
@@ -582,7 +578,7 @@ describe('the contact-channel test', () => {
     expect(failed.statusCode).toBe(200);
     expect((await famOf()).contact).toMatchObject({ status: 'failed' });
     const rows = (await auditOf('registration', reg.id)).filter((r) => r.action === 'registration.contact');
-    expect(rows.map((r) => (r.after as { status: string }).status)).toEqual(['pending', 'confirmed', 'failed']);
+    expect(rows.map((r) => (r.after as { status: string }).status)).toEqual(['pending', 'pending', 'confirmed', 'failed']);
   });
 });
 

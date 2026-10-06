@@ -1,4 +1,7 @@
+import type { BookingSupervisionSnapshot } from '@oto/shared';
+import { foodProvisionFromWire } from './checkin';
 import type { Booking, CartLine, SelectedAddOn } from '@/types';
+import { buildCreditGrants } from '@/lib/sale';
 import { getTicketTypes } from '@/store/catalogStore';
 import { SOCKS_ADDON_ID, SOCKS_LABEL, toBaht } from '@/lib/cartWire';
 import {
@@ -40,6 +43,7 @@ import type { ApiSalePrintJob } from './history';
 
 /** A priced line as `POST /public/bookings` computed and stored it. */
 export interface PlatformBookingLine {
+  supervision?: BookingSupervisionSnapshot;
   packageId: string;
   /** The package name frozen at booking time. */
   name: string;
@@ -77,6 +81,7 @@ export interface PlatformRedemption {
 }
 
 export interface PlatformBooking {
+  registrationId?: string;
   id: string;
   reference: string;
   branchId: string;
@@ -405,6 +410,7 @@ export interface MappedBooking {
 
 /** The platform's booking status, as reception reads it. */
 function notPaidReasonFor(p: PlatformBooking): string | null {
+  if (p.status === 'supervised_online_only') return 'This supervised booking needs the internet. Reconnect at reception to redeem it and check the children in.';
   if (p.status === 'paid' || p.status === 'redeemed' || p.redemption) return null;
   if (p.status === 'pending') {
     return `Booking ${p.reference} is not paid yet — the family has not finished paying online. Nothing can be issued against it.`;
@@ -454,9 +460,6 @@ function paidAddOns(line: PlatformBookingLine): SelectedAddOn[] {
  * platform actually took money for. Drop-off and passes on a booking are S2-13
  * and S2-20.
  *
- * `willIssue.creditTotalTHB` is 0 for the same reason: the credit a ticket grants
- * is a catalogue rule the sale applies at redemption (`lib/sale.ts`), and stating
- * a figure here that the sale then disagrees with is worse than stating none.
  */
 export function toPosBooking(p: PlatformBooking): MappedBooking {
   const catalogue = getTicketTypes();
@@ -475,7 +478,15 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
       continue;
     }
     lines.push({
-      id: `bk-${p.reference}-${line.packageId}`,
+      id: line.supervision?.checkinId ?? `bk-${p.reference}-${line.packageId}-${lines.length}`,
+      ...(line.supervision && p.registrationId ? { dropOff: {
+        registrationId: p.registrationId, checkInId: line.supervision.checkinId ?? '',
+        childName: line.supervision.childName, childAge: line.supervision.ageYears,
+        dateOfBirth: line.supervision.dateOfBirth, allergiesMedical: line.supervision.allergies,
+        foodRestrictions: line.supervision.foodRestrictions, foodProvision: foodProvisionFromWire(line.supervision.foodProvision),
+        service: line.supervision.service, serviceFeeTHB: toBaht(line.supervision.serviceFeeSatang),
+        hours: line.supervision.minutes / 60, lengthChosen: true, nannyStartTime: line.supervision.nannyStartTime,
+      } } : {}),
       ticketType,
       tier: p.tier,
       kids: line.kids,
@@ -488,19 +499,19 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
 
   const childBracelets = p.lines.reduce((s, l) => s + l.kids, 0);
   const adultBracelets = p.lines.reduce((s, l) => s + l.adults, 0);
+  const creditTotalTHB = buildCreditGrants(lines).filter((grant) => grant.type === 'fnb_credit').reduce((sum, grant) => sum + (grant.valueTHB ?? 0), 0);
 
   return {
     booking: {
       id: p.id,
       reference: p.reference,
       memberId: p.memberId ?? undefined,
+      registrationId: p.registrationId,
       tier: p.tier,
       lines,
       total: toBaht(p.totalSatang),
-      // The booking site does not record a tender yet (S2-10a owns that), and
-      // the modal's payment row is hidden when this is empty.
       paymentMethod: p.paymentMethod ?? '',
-      willIssue: { childBracelets, adultBracelets, creditTotalTHB: 0 },
+      willIssue: { childBracelets, adultBracelets, creditTotalTHB },
       createdAt: p.createdAt,
       // The till's `Booking` knows two states; a booking that is not paid is
       // told apart by `paid` below, never shown as paid.

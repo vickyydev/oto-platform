@@ -1,7 +1,7 @@
 import { and, asc, eq, isNull, lt } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Logger } from 'pino';
-import { booking, type Db } from '@oto/db';
+import { booking, paymentAttempt, registration, type Db } from '@oto/db';
 import {
   BOOKING_QR_HEADER,
   BOOKING_QR_SEPARATOR,
@@ -11,6 +11,8 @@ import {
   ulidFromUuid,
 } from '@oto/shared';
 import { resolveBandKey, type Env } from '../env';
+import { registerPaidBookingChildren } from './booking-supervision';
+import { autoSendRegistrationContact } from './checkin';
 import { audit } from './audit';
 import { raiseAlert } from './ops';
 import { buildSmsSender } from './sms';
@@ -124,10 +126,15 @@ export async function confirmBookingPaid(
   const key = resolveBandKey(env);
   const signature = key ? mintBookingQr(row.id, key).split(BOOKING_QR_SEPARATOR)[1]! : null;
 
+  const [paidAttempt] = await tx.select({ methodCode: paymentAttempt.methodCode }).from(paymentAttempt)
+    .where(eq(paymentAttempt.id, input.attemptId)).limit(1);
+  const payload = await registerPaidBookingChildren(tx, row, now, input.requestId ?? null);
+
   const [after] = await tx
     .update(booking)
     .set({
       status: 'paid',
+      payload: { ...payload, paymentMethod: paidAttempt?.methodCode ?? null },
       paidAt: now,
       qrSignature: signature,
       qrKeyId: key ? bookingQrKeyId(key) : null,
@@ -215,6 +222,16 @@ export async function afterBookingPaid(
       },
       { flapWindowSeconds: env.ALERT_FLAP_WINDOW_S },
     );
+  }
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  if (typeof payload.registrationId === 'string') {
+    try {
+      await withTx(db, { actorAccountId: null, operatorId: row.operatorId, branchId: row.branchId }, 'booking.contact', async (tx) => {
+        const [reg] = await tx.select().from(registration).where(eq(registration.id, payload.registrationId as string)).limit(1);
+        if (reg) await autoSendRegistrationContact(tx, { accountId: null, operatorId: row.operatorId }, reg,
+          buildSmsSender({ adapter: 'console' }, log as unknown as Logger));
+      });
+    } catch (err) { log.warn({ err, bookingId: row.id }, 'the registration contact could not be sent'); }
   }
   await sendBookingConfirmation(log, row);
 }

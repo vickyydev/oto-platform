@@ -408,7 +408,7 @@ describe('a drop-off child’s whole stay with the link down (S2-13 round 4)', (
       .where(inArray(auditLog.entityId, [registrationId, checkinId, releaseId]));
     const actions = trail.map((a) => a.action).sort();
     expect(actions).toEqual(
-      ['checkin.create', 'checkin.update', 'checkin.update', 'checkin.update', 'registration.create', 'release.create'].sort(),
+      ['checkin.create', 'checkin.update', 'checkin.update', 'checkin.update', 'registration.create', 'registration.contact', 'release.create'].sort(),
     );
     expect(trail.every((a) => !!a.sourceEventId)).toBe(true);
     const checkedIn = trail.find((a) => a.action === 'checkin.update' && (a.after as { event?: string }).event === 'check_in_now');

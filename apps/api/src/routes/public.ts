@@ -8,6 +8,8 @@ import {
   tier,
 } from '@oto/db';
 import {
+  BookingSupervisionInputSchema,
+  PublicSupervisionConfigSchema,
   TaxConfigSchema,
   TaxableCategorySchema,
   TicketCreditRuleSchema,
@@ -32,6 +34,7 @@ import {
   publicBasketInputs,
   publicBookingStatus,
 } from '../services/booking-checkout';
+import { supervisionConfigOf } from '../services/checkin';
 import { opCtx } from '../services/tx';
 
 /**
@@ -105,6 +108,7 @@ type PublicPackage = z.infer<typeof PublicPackageSchema>;
  * had to notice.
  */
 const PublicCatalogSchema = z.object({
+  supervision: PublicSupervisionConfigSchema,
   branch: z.object({
     code: z.string(),
     name: z.string(),
@@ -235,6 +239,7 @@ export async function publicRoutes(app: App): Promise<void> {
         holidays: holidays.map((h) => ({ name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })),
         addOns: basket.addOns,
         taxConfig: basket.taxConfig,
+        supervision: await supervisionConfigOf(app.db, br.id),
       };
     },
   );
@@ -278,6 +283,7 @@ export async function publicRoutes(app: App): Promise<void> {
   );
 
   const BookingLine = z.object({
+    supervision: BookingSupervisionInputSchema.optional(),
     packageId: z.string().uuid(),
     kids: z.number().int().min(0).max(20),
     adults: z.number().int().min(0).max(20),
@@ -327,6 +333,8 @@ export async function publicRoutes(app: App): Promise<void> {
           tier: z.string(),
           visitDate: z.string().optional(),
           lines: z.array(BookingLine).min(1).max(10),
+          consentAck: z.boolean().optional(),
+          acknowledgedConfirmationIds: z.array(z.string().max(100)).max(100).optional(),
           contactChannel: z.enum(['whatsapp', 'telegram', 'line']).optional(),
           locale: z.string().max(8).optional(),
           /** Client-side extras snapshot (drop-off, passes) — stored, not priced here. */

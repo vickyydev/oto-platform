@@ -887,7 +887,8 @@ export function bookingChange(
     memberId: row.memberId,
     reference: row.reference,
     bookingDate: row.bookingDate,
-    status: row.status,
+    // Older boxes refuse every status except paid: no ordinary bands for a supervised booking.
+    status: row.status === 'paid' && typeof bag?.registrationId === 'string' ? 'supervised_online_only' : row.status,
     totalSatang: row.totalSatang,
     createdAt: row.createdAt.toISOString(),
     /** The lines, the tier, the name and phone, and the redemption once there is one. */

@@ -3596,7 +3596,7 @@ export default function Till() {
               <span className="font-medium text-foreground">
                 {pendingDropOffRegistration?.childNames.join(', ')}
               </span>
-              . Load the registration into the till to complete check-in now.
+              . Payment is complete. Open the Drop-Off board to confirm the visit photo, assign a nanny where needed and check in without paying again.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-3 pt-2">
@@ -3611,7 +3611,7 @@ export default function Till() {
               className="flex-1"
               onClick={() => {
                 if (pendingDropOffRegistration) {
-                  void loadDropOffRegistration(pendingDropOffRegistration.registrationId);
+                  navigate('/drop-off');
                   setPendingDropOffRegistration(null);
                 }
               }}
