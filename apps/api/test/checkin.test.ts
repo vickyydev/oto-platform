@@ -253,6 +253,7 @@ describe('POST /checkin/registrations', () => {
     expect(rows).toHaveLength(1);
     expect(await ctx.db.select().from(checkin).where(eq(checkin.registrationId, body.id))).toHaveLength(1);
     expect((await auditOf('registration', body.id)).map((a) => a.action)).toContain('registration.create');
+    expect((await auditOf('registration', body.id)).filter((a) => a.action === 'registration.contact')).toHaveLength(1);
     expect((await auditOf('checkin', reg.children[0].id)).map((a) => a.action)).toContain('checkin.create');
   });
 
@@ -294,7 +295,17 @@ describe('POST /checkin/registrations', () => {
 });
 
 describe('POST /checkin/registrations/:id/children (add a sibling)', () => {
-  it('adds a sibling to a waiting registration and refuses a mismatched service', async () => {
+  it('lists the latest waiting registration first', async () => {
+    const older = (await register([childBody({ name: 'Earlier' })])).json();
+    const newer = (await register([childBody({ name: 'Latest' })])).json();
+    await ctx.db.update(registration).set({ createdAt: new Date('2026-01-01T00:00:00Z') }).where(eq(registration.id, older.id));
+    await ctx.db.update(registration).set({ createdAt: new Date('2030-01-01T00:00:00Z') }).where(eq(registration.id, newer.id));
+    const waiting = await ctx.app.inject({ method: 'GET', url: `/checkin/registrations?branchId=${branchId}`, headers: { cookie: reception } });
+    const ids = waiting.json().registrations.map((row: { id: string }) => row.id);
+    expect(ids[0]).toBe(newer.id);
+    expect(ids.indexOf(older.id)).toBeGreaterThan(ids.indexOf(newer.id));
+  });
+  it('keeps the staff service choice when adding a sibling to a waiting registration', async () => {
     const reg = (await register([childBody()])).json();
     const ok = await ctx.app.inject({
       method: 'POST',
@@ -310,7 +321,11 @@ describe('POST /checkin/registrations/:id/children (add a sibling)', () => {
       headers: { cookie: reception },
       payload: { children: [childBody({ name: 'Nam', ageYears: 4, service: 'drop_off' })] },
     });
-    expect(bad.statusCode).toBe(409);
+    expect(bad.statusCode).toBe(200);
+    expect(bad.json().children.find((c: { childName: string }) => c.childName === 'Nam').service).toBe('drop_off');
+    const older = await ctx.app.inject({ method: 'POST', url: `/checkin/registrations/${reg.id}/children`, headers: { cookie: reception },
+      payload: { children: [childBody({ name: 'Nine', ageYears: 9, service: 'nanny' })] } });
+    expect(older.statusCode).toBe(200);
 
     const waiting = await ctx.app.inject({ method: 'GET', url: `/checkin/registrations?branchId=${branchId}`, headers: { cookie: reception } });
     expect(waiting.statusCode).toBe(200);

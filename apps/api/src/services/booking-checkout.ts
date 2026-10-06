@@ -565,7 +565,7 @@ export async function createPublicBooking(
   }
 
   const id = input.id ?? newId();
-  const reference = `OTO-${String(randomInt(0, 36 ** 4)).padStart(4, '0')}-${randomInt(1000, 9999)}`;
+  const reference = `OTO-${randomInt(0, 36 ** 4).toString(36).padStart(4, '0').toUpperCase()}-${randomInt(0, 36 ** 4).toString(36).padStart(4, '0').toUpperCase()}`;
   const now = new Date();
   const expiresAt = new Date(now.getTime() + env.PAYMENT_PENDING_MIN * 60_000);
   const packages = [...new Set(quote.lines.map((l) => l.packageId))];

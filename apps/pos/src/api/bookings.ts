@@ -1,4 +1,5 @@
 import type { Booking, CartLine, SelectedAddOn } from '@/types';
+import { buildCreditGrants } from '@/lib/sale';
 import { getTicketTypes } from '@/store/catalogStore';
 import { SOCKS_ADDON_ID, SOCKS_LABEL, toBaht } from '@/lib/cartWire';
 import {
@@ -454,9 +455,6 @@ function paidAddOns(line: PlatformBookingLine): SelectedAddOn[] {
  * platform actually took money for. Drop-off and passes on a booking are S2-13
  * and S2-20.
  *
- * `willIssue.creditTotalTHB` is 0 for the same reason: the credit a ticket grants
- * is a catalogue rule the sale applies at redemption (`lib/sale.ts`), and stating
- * a figure here that the sale then disagrees with is worse than stating none.
  */
 export function toPosBooking(p: PlatformBooking): MappedBooking {
   const catalogue = getTicketTypes();
@@ -488,6 +486,7 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
 
   const childBracelets = p.lines.reduce((s, l) => s + l.kids, 0);
   const adultBracelets = p.lines.reduce((s, l) => s + l.adults, 0);
+  const creditTotalTHB = buildCreditGrants(lines).filter((grant) => grant.type === 'fnb_credit').reduce((sum, grant) => sum + (grant.valueTHB ?? 0), 0);
 
   return {
     booking: {
@@ -497,10 +496,8 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
       tier: p.tier,
       lines,
       total: toBaht(p.totalSatang),
-      // The booking site does not record a tender yet (S2-10a owns that), and
-      // the modal's payment row is hidden when this is empty.
       paymentMethod: p.paymentMethod ?? '',
-      willIssue: { childBracelets, adultBracelets, creditTotalTHB: 0 },
+      willIssue: { childBracelets, adultBracelets, creditTotalTHB },
       createdAt: p.createdAt,
       // The till's `Booking` knows two states; a booking that is not paid is
       // told apart by `paid` below, never shown as paid.

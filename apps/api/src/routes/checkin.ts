@@ -130,7 +130,7 @@ export async function checkinRoutes(app: App): Promise<void> {
       }
       const config = await supervisionConfigOf(app.db, req.body.branchId);
       return withTx(app.db, { ...opCtx(req), branchId: req.body.branchId }, 'registration.create', (tx) =>
-        createRegistration(tx, actor, { ...req.body, id: claim.id }, config),
+        createRegistration(tx, actor, { ...req.body, id: claim.id }, config, consoleMessenger(req)),
       );
     },
   );
@@ -166,9 +166,8 @@ export async function checkinRoutes(app: App): Promise<void> {
       const actor = actorOf(req);
       const reg = await loadRegistration(app.db, actor.operatorId, req.params.id);
       await req.requirePermission('pos:checkin:create', { branchId: reg.branchId });
-      const config = await supervisionConfigOf(app.db, reg.branchId);
       return withTx(app.db, { ...opCtx(req), branchId: reg.branchId }, 'checkin.create', (tx) =>
-        addRegistrationChildren(tx, actor, reg, req.body.children, config),
+        addRegistrationChildren(tx, actor, reg, req.body.children),
       );
     },
   );

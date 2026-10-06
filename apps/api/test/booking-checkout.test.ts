@@ -155,6 +155,7 @@ async function book(over: Record<string, unknown> = {}) {
 async function bookOk(over: Record<string, unknown> = {}) {
   const res = await book(over);
   expect(res.statusCode, res.body).toBe(200);
+  expect(res.json().reference).toMatch(/^OTO-[A-Z0-9]{4}-[A-Z0-9]{4}$/);
   return res.json() as { id: string; reference: string; totalSatang: number; status: string; expiresAt: string };
 }
 
@@ -476,6 +477,10 @@ describe('a booking is paid only by the notification and its inquiry, or by the 
     const row = await bookingRow(made.id);
     expect(row.status).toBe('paid');
     expect(row.paidAt).not.toBeNull();
+    expect((row.payload as { paymentMethod: string }).paymentMethod).toBe('promptpay');
+    const receptionView = await ctx.app.inject({ method: 'GET', url: `/bookings/${made.id}`, headers: { cookie: reception } });
+    expect(receptionView.statusCode).toBe(200);
+    expect(receptionView.json().paymentMethod).toBe('promptpay');
     expect((await attemptRow(opened.attemptId)).status).toBe('approved');
     // It went through the REAL webhook: there is a notification row for it.
     const invoiceNo = (await attemptRow(opened.attemptId)).invoiceNo!;

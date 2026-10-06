@@ -310,7 +310,7 @@ export async function registrationsAwaitingCheckIn(
     .select()
     .from(registration)
     .where(inArray(registration.id, waiting.map((w) => w.id)))
-    .orderBy(asc(registration.createdAt));
+    .orderBy(desc(registration.createdAt), desc(registration.id));
   const out: RegistrationView[] = [];
   for (const row of rows) out.push(await registrationViewOf(db, row));
   return out;
@@ -533,6 +533,7 @@ export async function createRegistration(
   actor: Actor,
   input: CreateRegistrationInput & { id: string },
   config: SupervisionConfig,
+  sms: SmsSender | null = null,
 ): Promise<RegistrationView> {
   const [br] = await tx.select().from(branch).where(eq(branch.id, input.branchId)).limit(1);
   if (!br || br.operatorId !== actor.operatorId) throw errors.notFound('Branch not found');
@@ -612,6 +613,7 @@ export async function createRegistration(
     },
   });
   await insertStays(tx, actor, { id: input.id, branchId: input.branchId, visitId: input.visitId ?? null }, input.children);
+  await autoSendRegistrationContact(tx, actor, row, sms);
   return getRegistration(tx, actor.operatorId, input.id);
 }
 
@@ -621,12 +623,10 @@ export async function addRegistrationChildren(
   actor: Actor,
   reg: RegistrationRow,
   children: readonly RegistrationChildInput[],
-  config: SupervisionConfig,
 ): Promise<RegistrationView> {
   if (!reg.consentRecordedAt) {
     throw errors.conflict('CONSENT_REQUIRED', 'This registration has no consent on file — take the consent before adding a child.');
   }
-  for (const c of children) assertService(c, config.policy);
   await assertChildrenOfMember(tx, actor.operatorId, reg.memberId, children);
   await insertStays(tx, actor, { id: reg.id, branchId: reg.branchId, visitId: null }, children);
   return getRegistration(tx, actor.operatorId, reg.id);
@@ -1892,9 +1892,11 @@ function nameList(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
+type ContactActor = Omit<Actor, 'accountId'> & { accountId: string | null; sourceEventId?: string };
+
 async function recordContact(
   tx: Tx,
-  actor: Actor,
+  actor: ContactActor,
   reg: Pick<RegistrationRow, 'id' | 'branchId' | 'contactChannel'>,
   next: { status: ContactStatus | 'unverified'; sentAt: string | null; confirmedAt: string | null },
   prev: ContactConnection | null,
@@ -1907,10 +1909,27 @@ async function recordContact(
     entityType: 'registration',
     entityId: reg.id,
     requestId: actor.requestId,
+    sourceEventId: actor.sourceEventId ?? null,
     actionId: actor.actionId ?? null,
     before: prev ? { ...prev } : { status: 'unverified' },
     after: { ...next, channel: reg.contactChannel },
   });
+}
+
+/** One contact check per family; failed delivery leaves registration available for staff. */
+export async function autoSendRegistrationContact(
+  tx: Tx,
+  actor: ContactActor,
+  reg: Pick<RegistrationRow, 'id' | 'branchId' | 'guardianName' | 'guardianPhone' | 'contactChannel'>,
+  sms: SmsSender | null,
+) {
+  if (!sms || !reg.guardianPhone || (await contactsOf(tx, [reg.id])).has(reg.id)) return;
+  try {
+    await sendContactTest(tx, actor, reg, sms);
+  } catch (error) {
+    if (!(error instanceof AppError)) throw error;
+    await recordContact(tx, actor, reg, { status: 'failed', sentAt: null, confirmedAt: null }, null);
+  }
 }
 
 /**
@@ -1922,7 +1941,7 @@ async function recordContact(
  */
 export async function sendContactTest(
   tx: Tx,
-  actor: Actor,
+  actor: ContactActor,
   reg: Pick<RegistrationRow, 'id' | 'branchId' | 'guardianName' | 'guardianPhone' | 'contactChannel'>,
   sms: SmsSender | null,
   now: Date = new Date(),
