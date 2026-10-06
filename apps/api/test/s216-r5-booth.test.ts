@@ -238,7 +238,7 @@ describe('S2-15b round 5 — the booth fact', () => {
     expect(expected.get(keyOf(T, null, bracelet.id))).toEqual({ spins: 2, issued: 2, redeemed: 0, lag: 0, cost: 0 });
   });
 
-  it('a simulated spin marks nothing and changes nothing', async () => {
+  it('H12 — a simulated spin marks nothing and changes nothing', async () => {
     const before = await factRows();
     await press(T, staffA, p150, { simulated: true });
     await press(T, null, null, { simulated: true });

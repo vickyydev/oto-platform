@@ -48,7 +48,7 @@ describe('formula version 1', () => {
     expect(analyticsChannelOfVoucherSource('campaign')).toBe('campaign');
   });
 
-  it('a ticket sale counts its total less its refunds, whole, in Tickets or in Drop-off', () => {
+  it('H15 — a ticket sale counts its total less its refunds, whole, in Tickets or in Drop-off', () => {
     expect(analyticsSaleRevenueV1(sale({ grossSatang: 124_000, refundedSatang: 24_000 }))).toEqual({
       bucket: 'tickets',
       amountSatang: 100_000,

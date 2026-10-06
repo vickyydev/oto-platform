@@ -8,6 +8,7 @@ import {
   dailySummary,
   dimDate,
   dirtyDate,
+  endOfDay,
   factWalletLiabilityDaily,
   hourlySummary,
   opsRun,
@@ -36,6 +37,7 @@ import {
   ROLLUP_HOURLY_JOB,
   rollupDailyBranchDay,
   runDailyRollupJob,
+  saleFactsOf,
   runHourlyRollupJob,
   type RollupBranchClock,
 } from '../src/services/analytics-rollup';
@@ -90,6 +92,18 @@ let today: string;
 /** The hand-built day, and the day before it. */
 let H: string;
 let P: string;
+/** The hand-built sales by their letter in the list above; `lateNight` is the day before's 01:30 sale. */
+const ids: Record<'s1' | 's2' | 's3' | 's4' | 's5' | 's8' | 's9' | 's10' | 'lateNight', string> = {
+  s1: '',
+  s2: '',
+  s3: '',
+  s4: '',
+  s5: '',
+  s8: '',
+  s9: '',
+  s10: '',
+  lateNight: '',
+};
 
 const bkk = (date: string, hhmm: string): Date => new Date(`${date}T${hhmm}:00+07:00`);
 
@@ -338,7 +352,7 @@ async function buildTheDay(): Promise<void> {
 
   // S2 — 1 Hour, three children on ONE cart line, as three units carrying the line's count.
   const l2 = cart();
-  await ring({
+  ids.s2 = (await ring({
     date: H,
     at: bkk(H, '10:40'),
     taxSatang: 14_523,
@@ -348,7 +362,7 @@ async function buildTheDay(): Promise<void> {
       { kind: 'addon', cartLineId: l2, grossSatang: 6_000, taxable: 'addons', packageId: oneHourId, hours: 1, kids: 3, componentKey: 'a-locker' },
     ],
     tenders: [{ method: 'card', methodCode: 'card', amountSatang: 222_000 }],
-  });
+  })).saleId;
 
   // S3 — Full Day, a child and two adults, QR, and it redeemed a booth voucher.
   const l3 = cart();
@@ -390,7 +404,7 @@ async function buildTheDay(): Promise<void> {
 
   // S4 — a ticket line and the drop-off service on one sale: all of it Drop-off.
   const l4 = cart();
-  await ring({
+  ids.s4 = (await ring({
     date: H,
     at: bkk(H, '13:30'),
     units: [
@@ -398,7 +412,7 @@ async function buildTheDay(): Promise<void> {
       { kind: 'service_fee', cartLineId: l4, grossSatang: 30_000, taxable: 'drop_off', packageId: twoHoursId, hours: 2, kids: 1, componentKey: 'dropoff-service' },
     ],
     tenders: [{ method: 'cash', methodCode: 'cash', amountSatang: 119_000 }],
-  });
+  })).saleId;
 
   // S5 — F&B ฿450: ฿200 credit, ฿250 cash; refunded ฿150 that day, ฿50 back to the wallet.
   const s5 = await ring({
@@ -441,27 +455,27 @@ async function buildTheDay(): Promise<void> {
   });
 
   // S8 voided and S9 still being paid for: never counted.
-  await ring({
+  ids.s8 = (await ring({
     date: H,
     at: bkk(H, '11:00'),
     status: 'voided',
     units: [{ kind: 'kids', cartLineId: cart(), grossSatang: 99_900, taxable: 'tickets', packageId: twoHoursId, hours: 2, kids: 5 }],
-  });
-  await ring({
+  })).saleId;
+  ids.s9 = (await ring({
     date: H,
     at: bkk(H, '11:30'),
     status: 'tendering',
     units: [{ kind: 'kids', cartLineId: cart(), grossSatang: 69_000, taxable: 'tickets', packageId: oneHourId, hours: 1, kids: 2 }],
-  });
+  })).saleId;
 
   // S10 — a booking's redemption, settled by the paid-online tender; its online payment carries no sale.
-  await ring({
+  ids.s10 = (await ring({
     date: H,
     at: bkk(H, '16:00'),
     channel: 'booking',
     units: [{ kind: 'kids', cartLineId: cart(), grossSatang: 89_000, taxable: 'tickets', packageId: twoHoursId, hours: 2, kids: 1 }],
     tenders: [{ method: 'transfer', methodCode: 'paid_online', amountSatang: 89_000 }],
-  });
+  })).saleId;
   await ctx.db.insert(paymentAttempt).values({
     id: newId(),
     operatorId,
@@ -506,12 +520,15 @@ async function buildTheDay(): Promise<void> {
     tenders: [{ method: 'cash', methodCode: 'cash', amountSatang: 100_000 }],
   });
   await refundOf(y1.saleId, 40_000, bkk(H, '13:00'));
-  await ring({
+  ids.lateNight = (await ring({
     date: P,
     at: bkk(H, '01:30'),
     units: [{ kind: 'adults_paid', cartLineId: cart(), grossSatang: 50_000, taxable: 'tickets', packageId: oneHourId, hours: 1, adults: 1 }],
     tenders: [{ method: 'cash', methodCode: 'cash', amountSatang: 50_000 }],
-  });
+  })).saleId;
+  ids.s1 = s1.saleId;
+  ids.s3 = s3.saleId;
+  ids.s5 = s5.saleId;
 }
 
 // --- Reading the rows back --------------------------------------------------------------
@@ -635,7 +652,7 @@ describe('the daily and hourly rollup (SCRUM-216 round 2)', () => {
     expect(await ctx.db.select().from(hourlySummary).orderBy(hourlySummary.id)).toEqual(hoursBefore);
   });
 
-  it('a late box sale is corrected on the next run, on its own day and hour', async () => {
+  it('H5 — a late box sale is corrected on the next run, on its own day and hour', async () => {
     const late = await ring({
       date: H,
       at: bkk(H, '18:10'),
@@ -665,7 +682,7 @@ describe('the daily and hourly rollup (SCRUM-216 round 2)', () => {
     expect(hoursAsRows(await hourRows(H))).toEqual(HAND_HOURS);
   });
 
-  it('two rollups racing write one row with the right figures', async () => {
+  it('H9 — two rollups racing write one row with the right figures', async () => {
     await ctx.db.delete(dailySummary).where(and(eq(dailySummary.branchId, branchId), eq(dailySummary.businessDate, H)));
     await ctx.db.delete(hourlySummary).where(and(eq(hourlySummary.branchId, branchId), eq(hourlySummary.businessDate, H)));
     const now = new Date();
@@ -689,7 +706,7 @@ describe('the daily and hourly rollup (SCRUM-216 round 2)', () => {
     expect(hoursAsRows(await hourRows(H))).toEqual(HAND_HOURS);
   });
 
-  it('never writes a frozen day or another source’s row, and spends the frozen day’s mark', async () => {
+  it('H10 — never writes a frozen day or another source’s row, and spends the frozen day’s mark', async () => {
     const F = addDaysToIsoDate(today, -6);
     await ctx.db.insert(dailySummary).values({
       id: newId(),
@@ -817,5 +834,150 @@ describe('the daily and hourly rollup (SCRUM-216 round 2)', () => {
       .where(and(eq(factWalletLiabilityDaily.branchId, branchId), sql`business_date > ${old}::date and business_date < ${today}::date`));
     expect(between.length).toBe(9);
     expect(await ctx.db.select().from(dirtyDate).where(and(eq(dirtyDate.kind, 'wallet'), eq(dirtyDate.businessDate, old)))).toEqual([]);
+  });
+});
+
+// --- The plan's hazards, each by name (round 6 closing sweep) ----------------------------
+
+/**
+ * Plan §10: every hazard has a test of its own, named for it. These read the
+ * hand-built day above, after the round's own tests have run on it (it is back
+ * at its hand sum, `HAND`, by then).
+ */
+describe('the plan’s hazards on the hand-built day (SCRUM-216 round 6)', () => {
+  const factsOf = async (date: string) => saleFactsOf(ctx.db, branchId, date);
+
+  it('H1 — a sale rung up at 01:30 is the previous business day’s, in the hour it was rung up', async () => {
+    const [late] = await ctx.db.select().from(sale).where(eq(sale.id, ids.lateNight));
+    expect(late!.businessDate).toBe(P);
+    const facts = await factsOf(P);
+    expect(facts.find((f) => f.saleId === ids.lateNight)).toMatchObject({ hour: 1, grossSatang: 50_000 });
+    expect((await factsOf(H)).some((f) => f.saleId === ids.lateNight)).toBe(false);
+    expect(hoursAsRows(await hourRows(P))[0]).toEqual([1, 50_000, 0, 0, 0, 50_000, 1, 1]);
+  });
+
+  it('H3 — a refund of a ten-day-old sale marks that day, the next run corrects it, and its closed End of Day stays as it was', async () => {
+    const OLD = addDaysToIsoDate(today, -11);
+    const old = await ring({
+      date: OLD,
+      at: bkk(OLD, '12:00'),
+      units: [{ kind: 'kids', cartLineId: cart(), grossSatang: 89_000, taxable: 'tickets', packageId: twoHoursId, hours: 2, kids: 1 }],
+      tenders: [{ method: 'cash', methodCode: 'cash', amountSatang: 89_000 }],
+    });
+    await runDailyRollupJob(ctx.db, new Date());
+    expect(await dayRow(OLD)).toMatchObject({ ticketsSatang: 89_000, revenueSatang: 89_000, refundsSatang: 0, txnCount: 1 });
+    // The day was closed at End of Day with what it took.
+    const [closed] = await ctx.db
+      .insert(endOfDay)
+      .values({
+        id: newId(),
+        operatorId,
+        branchId,
+        businessDate: OLD,
+        lines: [],
+        floatSatang: 0,
+        totalExpectedSatang: 89_000,
+        totalActualSatang: 89_000,
+        totalDifferenceSatang: 0,
+        closedByAccountId: receptionId,
+        closedAt: bkk(OLD, '22:00'),
+      })
+      .returning();
+
+    // Refunded today, ten days and more after it was sold.
+    await refundOf(old.saleId, 30_000, new Date());
+    const marked = await ctx.db
+      .select()
+      .from(dirtyDate)
+      .where(and(eq(dirtyDate.kind, 'sales'), eq(dirtyDate.branchId, branchId), eq(dirtyDate.businessDate, OLD)));
+    expect(marked).toHaveLength(1);
+    await runDailyRollupJob(ctx.db, new Date());
+    expect(await dayRow(OLD)).toMatchObject({ ticketsSatang: 59_000, revenueSatang: 59_000, refundsSatang: 30_000, txnCount: 1 });
+    expect(await ctx.db.select().from(endOfDay).where(eq(endOfDay.id, closed!.id))).toEqual([closed]);
+  });
+
+  it('H4 — credit is counted once: the ticket that granted it in full, the order it paid for only in cash, the spend beside', async () => {
+    const facts = await factsOf(H);
+    // S1 granted ฿350 of credit with its ticket: its whole ฿1,240 is ticket revenue.
+    expect(facts.find((f) => f.saleId === ids.s1)).toMatchObject({ kind: 'ticket', grossSatang: 124_000 });
+    // S5 paid ฿200 of its ฿450 in credit: F&B counts the ฿250 cash less the cash refunded (฿100).
+    expect(facts.find((f) => f.saleId === ids.s5)).toMatchObject({
+      kind: 'fnb',
+      nonCreditSatang: 25_000,
+      creditUsedSatang: 20_000,
+      creditRestoredSatang: 5_000,
+    });
+    expect(await dayRow(H)).toMatchObject({ fnbSatang: 15_000, creditPaidSatang: 15_000 });
+  });
+
+  it('H6 — one cart line of three kid units counts three guests, not nine', async () => {
+    const units = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, ids.s2));
+    // The line's units each carry the line's count of three.
+    expect(units.length).toBeGreaterThan(1);
+    expect(units.every((u) => u.kidCount === 3)).toBe(true);
+    expect((await factsOf(H)).find((f) => f.saleId === ids.s2)).toMatchObject({ kids: 3, adults: 0, mixOneHour: 3 });
+  });
+
+  it('H7 — a voided sale and one still being paid for are left out; a partly refunded sale counts net', async () => {
+    const counted = (await factsOf(H)).map((f) => f.saleId);
+    expect(counted).not.toContain(ids.s8);
+    expect(counted).not.toContain(ids.s9);
+    const [voided] = await ctx.db.select({ status: sale.status }).from(sale).where(eq(sale.id, ids.s8));
+    const [open] = await ctx.db.select({ status: sale.status }).from(sale).where(eq(sale.id, ids.s9));
+    expect([voided!.status, open!.status]).toEqual(['voided', 'tendering']);
+    // S5, refunded ฿150 of ฿450, still counts as a transaction, net of its refund.
+    expect(counted).toContain(ids.s5);
+    expect(await dayRow(H)).toMatchObject({ txnCount: HAND.txnCount, refundsSatang: 15_000 });
+  });
+
+  it('H8 — a booking is counted once, on its own date: the redemption’s sale, never its gateway payment again', async () => {
+    const facts = await factsOf(H);
+    expect(facts.filter((f) => f.saleId === ids.s10)).toHaveLength(1);
+    expect(facts.find((f) => f.saleId === ids.s10)).toMatchObject({ kind: 'ticket', grossSatang: 89_000 });
+    // The booking's own gateway payment carries no sale and adds no transaction.
+    expect(facts).toHaveLength(HAND.txnCount);
+    expect((await dayRow(H))!.ticketsSatang).toBe(HAND.ticketsSatang);
+  });
+
+  it('H9 — two job instances at one tick: one claims the run, one row per day is written', async () => {
+    const env = loadEnv({ NODE_ENV: 'test', DATABASE_URL: 'postgres://oto:oto@localhost:1/unused', PROCESS_ROLES: 'api,jobs' });
+    const one = createJobRunner({ db: ctx.db, env, log: ctx.app.log, channels: [] });
+    const two = createJobRunner({ db: ctx.db, env, log: ctx.app.log, channels: [] });
+    // Due for both, and a day marked for them to race over.
+    await ctx.db.execute(sql`update core.ops_last set last_started_at = now() - interval '1 day' where name = ${ROLLUP_DAILY_JOB}`);
+    await ctx.db.execute(sql`select analytics.mark_dirty_date(${operatorId}::uuid, ${branchId}::uuid, ${H}::date, 'sales', 'h9')`);
+    const runsBefore = await ctx.db.select({ id: opsRun.id }).from(opsRun).where(eq(opsRun.name, ROLLUP_DAILY_JOB));
+    const outcomes = await Promise.all([one.runJob(ROLLUP_DAILY_JOB), two.runJob(ROLLUP_DAILY_JOB)]);
+    expect(outcomes.filter((o) => o === 'ok')).toHaveLength(1);
+    expect(outcomes.filter((o) => o === 'locked' || o === 'not_due')).toHaveLength(1);
+    const runsAfter = await ctx.db.select({ id: opsRun.id }).from(opsRun).where(eq(opsRun.name, ROLLUP_DAILY_JOB));
+    expect(runsAfter).toHaveLength(runsBefore.length + 1);
+    const rows = await ctx.db
+      .select()
+      .from(dailySummary)
+      .where(and(eq(dailySummary.branchId, branchId), eq(dailySummary.businessDate, H), eq(dailySummary.source, 'oto_pos')));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject(HAND);
+  });
+
+  it('H13 — no counted line is without a revenue category, and every row’s five buckets add up to its revenue', async () => {
+    const { rows: uncategorised } = await ctx.db.execute<{ n: number }>(
+      sql`select count(*)::int as n from pos.sale_line l join pos.sale s on s.id = l.sale_id
+           where s.status in ('finalised', 'refunded') and l.revenue_category is null`,
+    );
+    expect(Number(uncategorised[0]!.n)).toBe(0);
+    const days = await ctx.db.select().from(dailySummary).where(eq(dailySummary.source, 'oto_pos'));
+    expect(days.length).toBeGreaterThan(0);
+    for (const d of days) {
+      expect(d.revenueSatang, d.businessDate).toBe(d.ticketsSatang + d.fnbSatang + d.merchSatang + d.partiesSatang + d.dropoffSatang);
+    }
+  });
+
+  it('H15 — a sale with a ticket line and the drop-off service is Drop-off whole, never split by line', async () => {
+    const s4 = (await factsOf(H)).find((f) => f.saleId === ids.s4)!;
+    expect(s4).toMatchObject({ kind: 'ticket', dropOff: true, grossSatang: 119_000 });
+    // ฿890 of ticket and ฿300 of service fee: all ฿1,190 in Drop-off (with S11's stay), none in Tickets.
+    expect(HAND.dropoffSatang).toBe(119_000 + 89_000);
+    expect(await dayRow(H)).toMatchObject({ dropoffSatang: HAND.dropoffSatang, ticketsSatang: HAND.ticketsSatang });
   });
 });

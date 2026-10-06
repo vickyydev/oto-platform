@@ -257,7 +257,7 @@ describe('migration 0064 — analytics round 1', () => {
     expect(rows).toEqual([]);
   });
 
-  it('gives every sale line a revenue category, filling a missing one from its taxable category', async () => {
+  it('H13 — gives every sale line a revenue category, filling a missing one from its taxable category', async () => {
     const p = await park();
     const open = await saleOn(p, '2026-09-10', 'tendering');
     expect(await lineOf(p, open, '2026-09-10', { kind: 'kids', taxable: 'tickets' })).toBeNull();

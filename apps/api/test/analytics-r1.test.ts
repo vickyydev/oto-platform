@@ -354,7 +354,7 @@ function mint(b: TestBox, type: string, payload: Record<string, unknown>, occurr
 }
 
 describe('the sync apply path marks the day a box sale was sold (SCRUM-216 round 1)', () => {
-  it('a box sale synced two days late marks its own business date, not the day it arrived', async () => {
+  it('H5 — a box sale synced two days late marks its own business date, not the day it arrived', async () => {
     const b = await freshBox();
     const soldOn = addDaysToIsoDate(today, -2);
     const occurredAt = new Date(`${soldOn}T14:30:00+07:00`);

@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { account, branch, discountDefinition, sale, station, ticketPackage } from '@oto/db';
@@ -24,6 +27,8 @@ import {
  *                   (`GET /menu/discounts` `usedCount`, the count its limit is
  *                   held to) and the range's value read from the platform's
  *                   promo rows
+ *   the hazards     every hazard of the plan (H1-H15) names a test in the
+ *                   analytics suites, so none can quietly lose its test
  */
 
 let ctx: TestContext | null = null;
@@ -108,5 +113,23 @@ describe('S2-15b round 6 — the promo code card reads the platform, not this br
     const [keptRow] = await db.db.select({ receiptNumber: sale.receiptNumber }).from(sale).where(eq(sale.id, kept));
     expect(rows.map((r) => r.transactionId)).toEqual([keptRow!.receiptNumber]);
     expect(rows[0]!.amountSatang).toBeGreaterThan(0);
+  });
+});
+
+describe('S2-15b round 6 — every hazard of the plan has a test named for it', () => {
+  it('H1 to H15 each name at least one test in the analytics suites', () => {
+    const root = fileURLToPath(new URL('../../../', import.meta.url));
+    const dirs = ['apps/api/test', 'packages/db/test', 'packages/shared/test', 'apps/pos/test', 'apps/console/test'];
+    const named = new Set<number>();
+    for (const dir of dirs) {
+      for (const file of readdirSync(join(root, dir)).filter((f) => f.endsWith('.test.ts'))) {
+        const text = readFileSync(join(root, dir, file), 'utf8');
+        for (const m of text.matchAll(/\bit(?:\.fails)?\(\s*'((?:H\d+, )*H\d+) — /g)) {
+          for (const tag of m[1]!.split(', ')) named.add(Number(tag.slice(1)));
+        }
+      }
+    }
+    const missing = Array.from({ length: 15 }, (_, i) => i + 1).filter((n) => !named.has(n));
+    expect(missing, 'hazards with no test named for them').toEqual([]);
   });
 });

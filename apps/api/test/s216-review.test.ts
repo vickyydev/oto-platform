@@ -429,7 +429,7 @@ interface Built {
 let built: Built;
 
 describe('lane G review: the figures, the business day and double counting', () => {
-  it('a box sale synced two days late, and one rung up at 01:30, mark the day they were sold and nothing else', async () => {
+  it('H1, H5 — a box sale synced two days late, and one rung up at 01:30, mark the day they were sold and nothing else', async () => {
     expect(await salesMarks()).toEqual([]);
     const O1 = await boxSale(new Date(`${O}T14:30:00+07:00`), { packageId: twoHoursId, kids: 1, adults: 1 });
     // 01:30 the morning after O is still O's trading day (day start 05:00).
@@ -685,7 +685,7 @@ describe('lane G review: the figures, the business day and double counting', () 
     expect(await salesMarks()).toEqual([]);
   });
 
-  it('credit is counted once: granted with the ticket, never again when it is spent', async () => {
+  it('H4 — credit is counted once: granted with the ticket, never again when it is spent', async () => {
     const today = (await dayRow(T))!;
     // Revenue is the money that came in for the day's counted sales, less what
     // went back out as money: credit spent, and credit restored, are neither.
@@ -705,7 +705,7 @@ describe('lane G review: the figures, the business day and double counting', () 
     expect(today.creditPaidSatang).toBe(built.creditUsedC - built.refundC);
   });
 
-  it('the booking is counted once: its gateway payment carries no sale and adds nothing', async () => {
+  it('H8 — the booking is counted once: its gateway payment carries no sale and adds nothing', async () => {
     const bookingAttempts = await ctx.db
       .select()
       .from(paymentAttempt)
@@ -724,7 +724,7 @@ describe('lane G review: the figures, the business day and double counting', () 
 // --- The frozen flag -------------------------------------------------------------------
 
 describe('lane G review: a frozen day is never rewritten by any job or hook', () => {
-  it('O frozen: a further refund, a late box sale, every job and the Health control leave its rows exactly as they were', async () => {
+  it('H10 — O frozen: a further refund, a late box sale, every job and the Health control leave its rows exactly as they were', async () => {
     await ctx.db
       .update(dailySummary)
       .set({ frozen: true })
@@ -896,7 +896,7 @@ describe('lane G review: races and replays', () => {
     expect(await dayRow(M)).toMatchObject({ revenueSatang: 150_000, txnCount: 4 });
   });
 
-  it('two whole runs at once, with marks on several days, write one row per day with the right figures', async () => {
+  it('H9 — two whole runs at once, with marks on several days, write one row per day with the right figures', async () => {
     for (const date of [O, M, T]) {
       await ctx.db.execute(sql`select analytics.mark_dirty_date(${operatorId}::uuid, ${branchId}::uuid, ${date}::date, 'sales', 'review')`);
     }
