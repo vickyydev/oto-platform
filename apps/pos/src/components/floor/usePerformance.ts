@@ -86,8 +86,18 @@ export function usePerformance(date: string, branch: string, scope: PerformanceS
         value: {
           report: floorReportOf(row, date, branch),
           provisional: row.provisional,
-          // An open day is as fresh as the last rollup; a closed one as its last rewrite.
-          updatedAt: row.provisional ? answer.lastRolledUpAt : row.computedAt,
+          // An open day is as fresh as the last rollup; a closed one as its
+          // last rewrite. An ENDED day still provisional with a stored row is
+          // a day whose own write keeps failing: its figures are only as old
+          // as that row, so the earlier of the two times is the honest one.
+          updatedAt: !row.provisional
+            ? row.computedAt
+            : row.computedAt &&
+                answer.branches[0]?.today &&
+                date < answer.branches[0].today &&
+                (answer.lastRolledUpAt === null || row.computedAt < answer.lastRolledUpAt)
+              ? row.computedAt
+              : answer.lastRolledUpAt,
           timezone: answer.branches[0]?.timezone ?? null,
           // So the freshness line can tell an update earlier today from one
           // left over from an earlier day (a stalled rollup).
