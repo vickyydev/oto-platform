@@ -56,7 +56,7 @@ import { autoSendRegistrationContact, boardOf, supervisionConfigOf } from './che
 import { buildSmsSender } from './sms';
 import type { FileStorage } from './files';
 import { raiseAlert } from './ops';
-import type { OpContext, Tx } from './tx';
+import type { Exec, OpContext, Tx } from './tx';
 import type { BatchScope, EventHandler, PreparedEvent } from './sync';
 
 /**
@@ -1102,6 +1102,21 @@ export async function checkinCacheItem(
   now: Date = new Date(),
   /** The box the copy is for: its filed prepaid units ride on its in-park stays (SCRUM-498). */
   boxId: string | null = null,
+): Promise<CheckinCacheItem> {
+  // One snapshot: a box replay committing between the board read and the filed
+  // prepaid count would otherwise let the box serve one meal too many.
+  return db.transaction((tx) => checkinCacheItemAt(tx, operatorId, branchId, now, boxId), {
+    isolationLevel: 'repeatable read',
+    accessMode: 'read only',
+  });
+}
+
+async function checkinCacheItemAt(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+  now: Date,
+  boxId: string | null,
 ): Promise<CheckinCacheItem> {
   const board = await boardOf(db, operatorId, branchId, now);
   const config = await supervisionConfigOf(db, branchId);
