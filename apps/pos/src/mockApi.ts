@@ -2028,8 +2028,12 @@ export const getAllEventsForReporting = (): OtoEvent[] =>
  * SEAM: in-memory only, so figures reset on reload. A real backend would query
  * the sales ledger for the date + branch. Dates are matched on the UTC date slice
  * to stay consistent with how parties/check-ins are seeded.
+ *
+ * S2-15b round 3: the Performance tabs no longer read this — they read the
+ * platform's rolled-up day (`GET /analytics/summary`, `components/floor/
+ * usePerformance.ts`). Kept as the prototype's reference copy of the rule.
  */
-export const getFloorReport = (date: string, branchId: string): FloorReport => {
+export const getFloorReport =(date: string, branchId: string): FloorReport => {
   const onDate = (iso: string): boolean => iso.slice(0, 10) === date;
   const ticketHoursById = new Map(getTicketTypes().map((t) => [t.id, t.hours]));
 

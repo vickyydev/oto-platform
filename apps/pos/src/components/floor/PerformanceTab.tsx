@@ -1,46 +1,94 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/floor/StatCard';
 import { RevenueBars } from '@/components/floor/RevenueBars';
-import { getFloorReport } from '@/mockApi';
-import { apiBranchIdForSlug } from '@/api/catalogBridge';
-import { boardApi } from '@/api/checkin';
+import { PerformanceFreshness } from '@/components/floor/PerformanceFreshness';
+import {
+  useDropOffInPark,
+  usePerformance,
+  type PerformanceScope,
+  type PerformanceState,
+} from '@/components/floor/usePerformance';
+import type { FloorReport } from '@/types';
 import { Banknote, Users, PartyPopper, Baby, Ticket } from 'lucide-react';
 
 /**
  * Performance tab of the "Today" section: a small, glanceable per-day snapshot for any
- * logged-in operator — revenue, guests, the revenue split, and live ops. Reads the
- * in-memory ledger via getFloorReport for the section's selected date + branch. Not an
+ * logged-in operator — revenue, guests, the revenue split, and live ops. Not an
  * analytics dashboard. (Date/branch are owned by the Today section, not this tab.)
+ *
+ * S2-15b round 3: the figures are the platform's rolled-up day for the section's date
+ * and branch (`usePerformance`), the same on every till and phone, instead of this
+ * browser's copy of the sales (`getFloorReport`). `scope` reads every branch this
+ * account may read, added up on the platform; `onReadable` tells the section which
+ * branches those are, so it offers "All branches" only to somebody with more than one.
  */
 export function PerformanceTab({
   date,
   branch,
   isToday,
+  scope = 'branch',
+  onReadable,
 }: {
   date: string;
   branch: string;
   isToday: boolean;
+  scope?: PerformanceScope;
+  onReadable?: (readable: PerformanceState['readable']) => void;
 }) {
-  const report = useMemo(() => getFloorReport(date, branch), [date, branch]);
+  const performance = usePerformance(date, branch, scope, isToday);
   // S2-13 round 2: the drop-off children in the park now are the platform's
   // check-ins, not the mock store's — live, not date-bound, as the card says.
-  const [dropOffInPark, setDropOffInPark] = useState<number | null>(null);
+  const dropOffInPark = useDropOffInPark(performance.branchIds);
+  const { readable } = performance;
   useEffect(() => {
-    const platformId = apiBranchIdForSlug(branch);
-    if (!platformId) {
-      setDropOffInPark(null);
-      return;
-    }
-    let live = true;
-    boardApi
-      .today(platformId)
-      .then((r) => live && setDropOffInPark(r.inPark))
-      .catch(() => live && setDropOffInPark(null));
-    return () => {
-      live = false;
-    };
-  }, [branch]);
+    onReadable?.(readable);
+  }, [onReadable, readable]);
+  return <PerformanceView performance={performance} dropOffInPark={dropOffInPark} isToday={isToday} />;
+}
+
+/** The tab as drawn, from figures already read. */
+export function PerformanceView({
+  performance,
+  dropOffInPark,
+  isToday,
+}: {
+  performance: Pick<PerformanceState, 'report' | 'provisional' | 'updatedAt' | 'timezone' | 'error'>;
+  dropOffInPark: number | null;
+  isToday: boolean;
+}) {
+  const { report, error } = performance;
+  if (!report) {
+    return (
+      <Card className="p-5 bg-card/50">
+        <p role="status" className={error ? 'text-sm text-amber-600' : 'text-sm text-muted-foreground'}>
+          {error ? `The figures could not be read from the platform — ${error}` : 'Loading Performance…'}
+        </p>
+      </Card>
+    );
+  }
+  return (
+    <div>
+      <PerformanceFreshness
+        provisional={performance.provisional}
+        updatedAt={performance.updatedAt}
+        timezone={performance.timezone}
+        className="mb-3"
+      />
+      <PerformanceFigures report={report} dropOffInPark={dropOffInPark} isToday={isToday} />
+    </div>
+  );
+}
+
+function PerformanceFigures({
+  report,
+  dropOffInPark,
+  isToday,
+}: {
+  report: FloorReport;
+  dropOffInPark: number | null;
+  isToday: boolean;
+}) {
   const { guests, ticketMix } = report;
   const totalGuests = guests.kids + guests.adults;
   const hasTicketMix = ticketMix.oneHour + ticketMix.twoHour + ticketMix.fullDay > 0;

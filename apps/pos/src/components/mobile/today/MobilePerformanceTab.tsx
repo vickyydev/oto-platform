@@ -1,32 +1,79 @@
-import { useMemo } from 'react';
+import { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/floor/StatCard';
 import { RevenueBars } from '@/components/floor/RevenueBars';
-import { getFloorReport } from '@/mockApi';
+import { PerformanceFreshness } from '@/components/floor/PerformanceFreshness';
+import {
+  useDropOffInPark,
+  usePerformance,
+  type PerformanceScope,
+  type PerformanceState,
+} from '@/components/floor/usePerformance';
 import { Banknote, Users, PartyPopper, Baby, Ticket } from 'lucide-react';
 
 /**
  * Portrait-phone version of the Performance floor-report tab.
  * Renders the same figures as the iPad PerformanceTab but stacked vertically
  * as single-column cards — no grid breakpoints, no horizontal scrolling.
- * All data comes from getFloorReport; no logic is re-derived here.
+ * No logic is re-derived here.
+ *
+ * S2-15b round 3: the figures are the platform's rolled-up day (`usePerformance`),
+ * the same ones the iPad tab reads, instead of this browser's copy of the sales.
  */
 export function MobilePerformanceTab({
   date,
   branch,
   isToday,
+  scope = 'branch',
+  onReadable,
 }: {
   date: string;
   branch: string;
   isToday: boolean;
+  scope?: PerformanceScope;
+  onReadable?: (readable: PerformanceState['readable']) => void;
 }) {
-  const report = useMemo(() => getFloorReport(date, branch), [date, branch]);
+  const performance = usePerformance(date, branch, scope, isToday);
+  const dropOffInPark = useDropOffInPark(performance.branchIds);
+  const { readable } = performance;
+  useEffect(() => {
+    onReadable?.(readable);
+  }, [onReadable, readable]);
+  return <MobilePerformanceView performance={performance} dropOffInPark={dropOffInPark} isToday={isToday} />;
+}
+
+/** The phone tab as drawn, from figures already read. */
+export function MobilePerformanceView({
+  performance,
+  dropOffInPark,
+  isToday,
+}: {
+  performance: Pick<PerformanceState, 'report' | 'provisional' | 'updatedAt' | 'timezone' | 'error'>;
+  dropOffInPark: number | null;
+  isToday: boolean;
+}) {
+  const { report, error } = performance;
+  if (!report) {
+    return (
+      <Card className="p-4 bg-card/50">
+        <p role="status" className={error ? 'text-sm text-amber-600' : 'text-sm text-muted-foreground'}>
+          {error ? `The figures could not be read from the platform — ${error}` : 'Loading Performance…'}
+        </p>
+      </Card>
+    );
+  }
   const { guests, ticketMix } = report;
   const totalGuests = guests.kids + guests.adults;
   const hasTicketMix = ticketMix.oneHour + ticketMix.twoHour + ticketMix.fullDay > 0;
 
   return (
     <div className="space-y-3">
+      <PerformanceFreshness
+        provisional={performance.provisional}
+        updatedAt={performance.updatedAt}
+        timezone={performance.timezone}
+      />
+
       {/* Hero: revenue */}
       <StatCard
         size="lg"
@@ -66,7 +113,7 @@ export function MobilePerformanceTab({
       <StatCard
         icon={<Baby className="w-5 h-5" />}
         label="Drop-off kids in park"
-        value={report.dropOffInParkNow.toLocaleString()}
+        value={dropOffInPark === null ? '—' : dropOffInPark.toLocaleString()}
         sub="In the park right now"
       />
 
