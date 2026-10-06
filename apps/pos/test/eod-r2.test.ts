@@ -179,16 +179,18 @@ describe('eod-r2 the End of Day receipt', () => {
     expect(html).toContain('Reprint');
   });
 
-  it('says why nothing printed', () => {
+  it('a day closed away from a printing counter shows the waiting receipt with Reprint', () => {
     const html = markup(
       React.createElement(EodReceiptCard, {
-        receipt: { number: null, stationId: null, stationName: null, jobs: [], note: 'End of Day receipt not printed — the day was not closed at a counter' },
+        receipt: { number: null, stationId: null, stationName: null, jobs: [], note: 'Receipt not printed — reprint it from a counter' },
         reprinting: false,
         error: null,
         onReprint: () => {},
       }),
     );
-    expect(html).toContain('the day was not closed at a counter');
+    expect(html).toContain('End of Day receipt</div>');
+    expect(html).toContain('<div class="text-amber-600">Receipt not printed — reprint it from a counter</div>');
+    expect(html).toContain('Reprint');
   });
 });
 

@@ -86,8 +86,10 @@ export async function endOfDayRoutes(app: App): Promise<void> {
           'totals are worked out again here. Allowed with lines off or not entered, and without notes. 409 when the day ' +
           'is already closed (reload it to see the locked record), while any box keeps it provisional, and while ' +
           'anybody is still counted inside unless `override.reason` is given by a holder of pos:cash:approve (403 for ' +
-          'anybody else; audited end_of_day.override). The End of Day receipt is numbered on the closing counter’s ' +
-          'session’s own series and queued on its receipt printer; a different or unpicked counter is refused.',
+          'anybody else; audited end_of_day.override). The End of Day receipt is numbered on the series of the ' +
+          'counter this session took and queued on its receipt printer. With no counter taken, or a counter without ' +
+          'a box or a receipt series, the day still closes and its receipt waits: the closed day says so, and a ' +
+          'reprint from a counter numbers and prints it. A counter of another branch is refused (404).',
         params: BranchParams,
         body: EndOfDayCloseBodySchema,
         response: { 200: EndOfDayRecordSchema },
@@ -132,7 +134,8 @@ export async function endOfDayRoutes(app: App): Promise<void> {
       schema: {
         description:
           "Print a closed day's End of Day receipt again at the counter this session took, " +
-          'as a copy of the original carrying the figures exactly as they were locked. Answers the closed ' +
+          'as a copy of the original carrying the figures exactly as they were locked. A day closed without a ' +
+          'receipt is numbered here, on this counter’s series, and printed as its first receipt. Answers the closed ' +
           'day. 409 when the day is not closed or the counter cannot print.',
         params: BranchParams,
         body: EndOfDayReprintBodySchema,

@@ -15,7 +15,9 @@ const STATUS_WORD: Record<string, string> = {
  * S2-15a round 2 — UI ADDITION. The End of Day receipt of a closed day: its
  * number on the closing counter's series, where it printed and how the last
  * print went, and Reprint. Shown under the locked banner, read-only like the
- * rest of a closed day.
+ * rest of a closed day. A day closed away from a printing counter has no
+ * number yet: the card says the receipt is waiting, and Reprint at a counter
+ * numbers and prints it there.
  */
 export function EodReceiptCard({
   receipt,
@@ -33,6 +35,7 @@ export function EodReceiptCard({
   if (!receipt) return null;
   const last = receipt.jobs[receipt.jobs.length - 1];
   const copies = receipt.jobs.filter((j) => j.reprint).length;
+  const waiting = !receipt.number && !last;
   return (
     <Card className={cn(compact ? 'p-4' : 'p-5', 'bg-card/50')}>
       <div className={cn('flex gap-3', compact ? 'flex-col' : 'items-center justify-between')}>
@@ -42,12 +45,16 @@ export function EodReceiptCard({
             <div className="font-semibold">
               End of Day receipt{receipt.number ? ` ${receipt.number}` : ''}
             </div>
-            <div className="text-muted-foreground">
-              {last
-                ? `${receipt.stationName ?? 'Counter'} · ${STATUS_WORD[last.status] ?? last.status}${last.deviceLabel ? ` on ${last.deviceLabel}` : ''}`
-                : (receipt.note ?? 'Not printed')}
-              {copies > 0 && ` · ${copies} ${copies === 1 ? 'copy' : 'copies'}`}
-            </div>
+            {waiting ? (
+              <div className="text-amber-600">{receipt.note ?? 'Receipt not printed — reprint it from a counter'}</div>
+            ) : (
+              <div className="text-muted-foreground">
+                {last
+                  ? `${receipt.stationName ?? 'Counter'} · ${STATUS_WORD[last.status] ?? last.status}${last.deviceLabel ? ` on ${last.deviceLabel}` : ''}`
+                  : (receipt.note ?? 'Not printed')}
+                {copies > 0 && ` · ${copies} ${copies === 1 ? 'copy' : 'copies'}`}
+              </div>
+            )}
             {last && receipt.note && <div className="text-xs text-amber-600">{receipt.note}</div>}
           </div>
         </div>
