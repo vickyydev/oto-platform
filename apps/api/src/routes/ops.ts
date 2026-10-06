@@ -19,6 +19,7 @@ import { PermissionDeniedError } from '../plugins/session';
 import { branchReach, type BranchReach } from '../services/access-control';
 import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
+import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB } from '../services/analytics-rollup';
 import { boxAuthFromRow, boxSettings, virtualBoxAgent } from '../services/box';
 import { loadBox, queueCommand } from '../services/fleet';
 import {
@@ -548,6 +549,13 @@ export async function opsRoutes(app: App): Promise<void> {
       sticky: false,
     },
     {
+      key: 'rollup.run',
+      label: 'Run the analytics rollup now',
+      description:
+        'Rolls today, every day a late fact marked and every ended day still provisional into the daily and hourly summaries, without waiting for the next tick.',
+      sticky: false,
+    },
+    {
       key: 'alert.test',
       label: 'Send a test alert',
       description: 'Raises an info alert and delivers it through every configured channel. It stays open until acknowledged.',
@@ -694,6 +702,17 @@ export async function opsRoutes(app: App): Promise<void> {
         );
       }
       return `The watchdog ran (${outcome}).`;
+    }
+    if (key === 'rollup.run') {
+      const daily = await jobRunner().runJob(ROLLUP_DAILY_JOB, { force: true });
+      if (daily === 'disabled') {
+        throw errors.conflict(
+          'JOBS_ROLE_ABSENT',
+          'This api instance does not carry the jobs role, so nothing ran',
+        );
+      }
+      const hourly = await jobRunner().runJob(ROLLUP_HOURLY_JOB, { force: true });
+      return `The analytics rollup ran (daily ${daily}, hourly ${hourly}).`;
     }
 
     if (key === 'alert.test') {

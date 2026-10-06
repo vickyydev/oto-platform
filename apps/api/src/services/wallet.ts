@@ -44,6 +44,7 @@ import {
   type WalletView,
 } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
+import { claimDirtyDates, consumeDirtyClaim, releaseDirtyClaim } from './analytics-rollup';
 import { audit } from './audit';
 import { findBandsByCode } from './bands';
 import type { Exec, Tx } from './tx';
@@ -1915,21 +1916,51 @@ export async function runWalletLiabilityJob(db: Exec, now: Date): Promise<Record
   let written = 0;
   let failed = 0;
   let firstError: unknown = null;
+  /**
+   * S2-15b — THE DIRTY-DAY HOOK. A wallet movement marks its day
+   * (`analytics.dirty_date` kind `wallet`, at the commit that wrote it). An
+   * ended day marked before this job's week-back window — an offline spend
+   * synced late, a refund put back onto an old day — is recomputed here from
+   * that day on, because the outstanding balance carries every day after it.
+   */
+  const claimedBy = `job:wallet.liability:${newId()}`;
+  const claims = await claimDirtyDates(db, 'wallet', claimedBy, now, { endedOnly: true });
+  const earliestMarked = new Map<string, string>();
+  for (const claim of claims) {
+    const seen = earliestMarked.get(claim.branchId);
+    if (!seen || claim.businessDate < seen) earliestMarked.set(claim.branchId, claim.businessDate);
+  }
+  const failedBranches = new Set<string>();
   for (const clock of await walletBranchClocks(db)) {
-    for (const date of endedWalletDays(clock, now)) {
+    const window = endedWalletDays(clock, now);
+    const marked = earliestMarked.get(clock.id);
+    const dates = marked && window[0] && marked < window[0] ? [...datesBetween(marked, window[0]).slice(0, -1), ...window] : window;
+    for (const date of dates) {
       days += 1;
       try {
         if ((await writeWalletLiabilityFact(db, clock.id, date, now)).written) written += 1;
       } catch (err) {
         failed += 1;
         firstError ??= err;
+        failedBranches.add(clock.id);
       }
     }
+  }
+  for (const claim of claims) {
+    if (failedBranches.has(claim.branchId)) await releaseDirtyClaim(db, claim, claimedBy);
+    else await consumeDirtyClaim(db, claim, claimedBy);
   }
   if (failed > 0) {
     throw new Error(`wallet liability: ${failed} of ${days} branch-days could not be written`, { cause: firstError });
   }
-  return { days, written };
+  return { days, written, marked: claims.length };
+}
+
+/** Every date from `from` to `to`, both included, oldest first. */
+function datesBetween(from: string, to: string): string[] {
+  const dates: string[] = [];
+  for (let date = from; date <= to; date = addDaysToIsoDate(date, 1)) dates.push(date);
+  return dates;
 }
 
 /** The branch's wallet rules as the policy read answers them. */

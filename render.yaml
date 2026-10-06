@@ -259,6 +259,11 @@ services:
         # holds this service at one instance, so undoing it is what buys
         # horizontal scale.
         value: api,edge,jobs
+      - key: ROLLUP_INTERVAL_S
+        # How often the analytics rollup runs (S2-15b): today's figures on
+        # Today > Performance and in Radar refresh within this interval, and a
+        # day a late fact marked is corrected on the next run.
+        value: '300'
 
       # -- how the api sits behind Render's proxy ----------------------------
       - key: TRUST_PROXY

@@ -4,6 +4,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { opsExpectation, opsLast, type AlertSeverity, type Db } from '@oto/db';
 import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
+import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB, runDailyRollupJob, runHourlyRollupJob } from './analytics-rollup';
 import { BOOTH_DUTY_JOB, runMorningBoothDutySync } from './booth-duty';
 import {
   expireStaleCommands,
@@ -583,6 +584,38 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       description: "Writes each branch's daily stock fact per size from the ledger and re-reads its low-stock alerts as the 30-day usage window slides",
       intervalSeconds: 300,
       run: async ({ db, now }) => ({ detail: await runStockDailyJob(db, now) }),
+    },
+    /**
+     * `job:rollup.daily` — THE DAY'S FIGURES, KEPT (S2-15b round 2, plan
+     * docs/progress/plans/analytics/PLAN.md §8).
+     *
+     * Every `ROLLUP_INTERVAL_S`: today at every live branch, written as a
+     * provisional `analytics.daily_summary` row under formula version 1 (the
+     * prototype's Performance rule); every day a late fact marked in
+     * `analytics.dirty_date` — a refund of an old sale, a box sale synced
+     * days late — recomputed; and every provisional day that has since ended
+     * rewritten without the flag. A row is written only when its figures
+     * moved, a frozen legacy day never, and each branch-day under its own
+     * lock (`services/analytics-rollup.ts`). Then the calendar
+     * (`analytics.dim_date`) is brought up to date with the branch holidays.
+     */
+    {
+      name: ROLLUP_DAILY_JOB,
+      description:
+        "Rolls each branch's trading days into the daily summary: today as provisional, every day a late fact marked, and each day once it has ended",
+      intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
+      run: async ({ db, now }) => ({ detail: await runDailyRollupJob(db, now) }),
+    },
+    /**
+     * `job:rollup.hourly` — the same money buckets per wall-clock hour, after
+     * the daily rollup (array order is run order in `runDue`): today, and every
+     * day the daily rollup recomputed, into `analytics.hourly_summary`.
+     */
+    {
+      name: ROLLUP_HOURLY_JOB,
+      description: "Rolls each branch's trading days into the hourly summary: today, and every day the daily rollup recomputed",
+      intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
+      run: async ({ db, now }) => ({ detail: await runHourlyRollupJob(db, now) }),
     },
   ];
 }

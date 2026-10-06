@@ -326,6 +326,12 @@ const EnvSchema = z.object({
   /** How often the sweeps run: expired idempotency keys, hand-off tokens, old runs. */
   HOUSEKEEPING_INTERVAL_S: z.coerce.number().int().min(60).default(3600),
   /**
+   * How often the analytics rollup runs (S2-15b): today's figures on Today >
+   * Performance and in Radar refresh within this interval, and a day a late
+   * fact marked is corrected on the next run.
+   */
+  ROLLUP_INTERVAL_S: z.coerce.number().int().min(30).default(300),
+  /**
    * A condition that clears and comes back inside this window reuses its alert
    * row and is not delivered again. Something flipping every minute must not
    * put sixty messages in front of whoever is on shift: the reliable response
