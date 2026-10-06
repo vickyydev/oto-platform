@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq, isNull } from 'drizzle-orm';
 import { schema } from '@oto/db';
+import { seedDemoDay } from '@oto/db/seed';
 import {
   DEFAULT_FLOAT,
   addDaysToIsoDate,
@@ -637,6 +638,62 @@ describe('expectedLinesOf and channelOfRefundSlice', () => {
 
 // --- The demo reset --------------------------------------------------------------------
 
+describe('seed:demo-day End of Day fixture', () => {
+  it('seeds each tender and a real voucher, wallet spend and cash refund once on an isolated day', async () => {
+    const date = addDaysToIsoDate(D, -7);
+    const first = await seedDemoDay(ctx.db, { on: date });
+    expect(first.sales).toBe(11);
+    const second = await seedDemoDay(ctx.db, { on: date });
+    expect(second).toMatchObject({ sales: 0, attempts: 0, skipped: 11 });
+
+    const attempts = await ctx.db.select().from(schema.paymentAttempt)
+      .where(and(eq(schema.paymentAttempt.branchId, central), eq(schema.paymentAttempt.businessDate, date)));
+    const taken = attempts.filter((a) => a.status === 'approved' || a.status === 'awaiting_settlement');
+    const walletAttempt = taken.find((a) => a.method === 'wallet');
+    expect(walletAttempt).toMatchObject({ methodCode: 'wallet_credit', stationId: till1 });
+    const entries = await ctx.db.select().from(schema.walletEntry)
+      .where(and(eq(schema.walletEntry.branchId, central), eq(schema.walletEntry.businessDate, date)));
+    expect(entries.map((e) => [e.kind, e.source])).toEqual([
+      ['grant', 'ticket_sale'], ['spend', 'merch_order'],
+    ]);
+    expect(entries[1]?.paymentAttemptId).toBe(walletAttempt?.id);
+    const [wallet] = await ctx.db.select().from(schema.wallet).where(eq(schema.wallet.id, entries[0]!.walletId));
+    expect(wallet?.balanceSatang).toBe(entries.reduce((sum, e) => sum + e.amountSatang, 0));
+
+    const [voucherSale] = await ctx.db.select().from(schema.sale)
+      .where(eq(schema.sale.actionId, `demo-day/${date}/voucher-discount`));
+    expect(voucherSale).toMatchObject({ promoDiscountSatang: 10_000, manualDiscountSatang: 0 });
+    const [voucher] = await ctx.db.select({ id: schema.voucher.id, status: schema.voucher.status })
+      .from(schema.voucher).where(eq(schema.voucher.saleId, voucherSale!.id));
+    expect(voucher?.status).toBe('redeemed');
+    const consumed = await ctx.db.select().from(schema.voucherRedemption)
+      .where(and(eq(schema.voucherRedemption.voucherId, voucher!.id), eq(schema.voucherRedemption.kind, 'consumed')));
+    expect(consumed).toHaveLength(1);
+
+    const [cashRefund] = await ctx.db.select().from(schema.refund)
+      .where(eq(schema.refund.actionId, `demo-day/${date}/open-cash/refund`));
+    expect(cashRefund).toMatchObject({ amountSatang: 10_000, mode: 'custom' });
+    expect(cashRefund?.tenderAllocation).toMatchObject([{ method: 'cash', route: 'cash', status: 'done' }]);
+
+    const response = await getDay(managerCookie, date);
+    expect(response.statusCode, response.body).toBe(200);
+    const day = response.json() as EndOfDayRecord;
+    const cashTaken = taken.filter((a) => a.method === 'cash').reduce((sum, a) => sum + a.amountSatang, 0);
+    expect(lineOf(day, 'cash')?.expectedSatang).toBe(cashTaken - 10_000);
+    expect(lineOf(day, 'credit')?.expectedSatang).toBe(-entries[1]!.amountSatang);
+    expect(lineOf(day, 'promptpay')?.expectedSatang).toBe(taken.filter((a) => a.method === 'qr')
+      .reduce((sum, a) => sum + a.amountSatang, 0));
+    expect(new Set(taken.filter((a) => a.method === 'card').map((a) => a.tid)).size).toBe(2);
+    expect(taken.filter((a) => a.method === 'card').every((a) => a.tid !== null)).toBe(true);
+    for (const tid of new Set(taken.filter((a) => a.method === 'card').map((a) => a.tid))) {
+      expect(lineOf(day, `card:${tid ?? NO_TERMINAL_TID}`)?.expectedSatang).toBe(taken.filter((a) => a.method === 'card' && a.tid === tid)
+        .reduce((sum, a) => sum + a.amountSatang, 0));
+    }
+  });
+});
+
+// --- The demo reset --------------------------------------------------------------------
+
 describe('demo reset', () => {
   it('clears the closed days and the cash movements with the rest of a day of play', async () => {
     const counts = await resetDemoData(ctx.db);
@@ -644,5 +701,8 @@ describe('demo reset', () => {
     expect(counts.cash_movement).toBe(2);
     expect(await ctx.db.select().from(schema.endOfDay)).toHaveLength(0);
     expect(await ctx.db.select().from(schema.cashMovement)).toHaveLength(0);
+    // The reset retains redeemed voucher history; a fresh demo on the same
+    // business date must use a new voucher sale identity and still seed cleanly.
+    expect((await seedDemoDay(ctx.db, { on: addDaysToIsoDate(D, -7) })).sales).toBe(11);
   });
 });

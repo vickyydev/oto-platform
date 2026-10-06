@@ -10,11 +10,10 @@
  * said S2-09a would start this file and `SPRINT_2_PROGRESS.md:1504` still
  * lists it as missing; this is it.
  *
- * WHAT IT WRITES. Nine finalised sales at Reception Till 1, one trading day,
- * covering cash (including a split), card on BOTH of the park's terminals, the
- * QR gateway, and the four states a payment can be left in that are not
- * "approved" — declined, unknown, awaiting staff confirmation and awaiting
- * settlement. The two terminals are the park's real ones from
+ * WHAT IT WRITES. Eleven sales at Reception Till 1, one trading day: cash
+ * (including a split), card on both terminals, QR, one stored-value spend,
+ * a redeemed discount voucher and a partial cash refund. The unresolved
+ * attempts remain. The two terminals are the park's real ones from
  * `DEVICE_INVENTORY.md:38-41`, seeded by `seed/index.ts` as EDC 1 (NEXGO N5,
  * `ghl_linkpos`, TID 65703235) and EDC 3 (PAX A920Pro, `digio_tlv`), so a
  * demo of the Attempts list shows two dialects and not one.
@@ -25,18 +24,19 @@
  * the till gave up. Those rows exist here so the states are on somebody's
  * screen before a guest is standing at the counter in one of them.
  *
- * IDEMPOTENT, PER SALE. Every sale's id is derived from its scenario key and
- * the business date, so a second run inserts nothing: the primary key refuses
- * it and the run reports zero written. That is per SALE rather than per run on
+ * IDEMPOTENT, PER SALE. Existing sale ids derive from their scenario keys and
+ * the business date. The voucher sale also names its receipt generation because
+ * a demo reset retains voucher history. A rerun finds each action and writes
+ * nothing. That is per sale rather than per run on
  * purpose — S2-10b, S2-13 and S2-15a are all expected to add scenarios to the
  * list below, and adding one has to write that one on the next run without
- * rewriting the eight already in the ledger.
+ * rewriting the sales already in the ledger.
  *
- * NOT A FIXTURE FOR TESTS. Tests build their own rows through the services, so
- * that what they assert is what the service does. This is for a person looking
- * at a screen.
+ * The added scenarios are checked as an End of Day fixture on an isolated test
+ * date. The physical PAX TID is not configured in the seed, so only new demo
+ * attempts carry a clearly marked fixture TID; no device setting is changed.
  */
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import {
   businessDate as businessDateOf,
   computeTaxBreakdown,
@@ -53,6 +53,7 @@ import { closeDb, getDb, type Db } from '../index';
 import * as s from '../schema/index';
 
 const b = satangFromBaht;
+type SeedWriter = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 /** Central Floresta's till. The one station in the seed with a code prefix and a receipt series. */
 const STATION_NAME = 'Reception Till 1';
@@ -132,6 +133,8 @@ interface DemoSale {
   lines: DemoLine[];
   /** Staff discount off the whole order, in satang. */
   discountSatang?: number;
+  /** A real, seeded discount definition applied to this sale, not a tender. */
+  voucherDefinitionCode?: string;
   tenders: DemoTender[];
   /** What the day looks like on the Sale list. `tendering` is a sale still owed money. */
   status: 'finalised' | 'tendering';
@@ -349,6 +352,27 @@ const DAY: DemoSale[] = [
     status: 'finalised',
   },
   {
+    key: 'merch-wallet',
+    atMinutes: 8 * HOUR + 40,
+    tier: 'tourist',
+    lines: [{ kind: 'socks', label: 'Regular Socks', taxableCategory: 'addons', quantity: 1, unitSatang: b(80) }],
+    tenders: [{ method: 'wallet', methodCode: 'wallet_credit', provider: 'manual', status: 'approved' }],
+    status: 'finalised',
+    note: 'Paid from credit granted on the earlier paid-adult ticket.',
+  },
+  {
+    key: 'voucher-discount',
+    atMinutes: 8 * HOUR + 55,
+    tier: 'tourist',
+    lines: [{ kind: 'kids', label: '2 Hours Play — Kids', taxableCategory: 'tickets', quantity: 1,
+      unitSatang: b(450), kidCount: 1, adultCount: 1, freeAdultCount: 1,
+      stayHours: 2, stayDurationLabel: '2 Hours' }],
+    discountSatang: b(100),
+    voucherDefinitionCode: 'spin-voucher-100',
+    tenders: [{ method: 'cash', methodCode: 'cash', provider: 'manual', status: 'approved' }],
+    status: 'finalised',
+  },
+  {
     key: 'card-staff-confirmed',
     atMinutes: 9 * HOUR + 10,
     tier: 'tourist',
@@ -502,6 +526,7 @@ export async function seedDemoDay(
   if (!station?.codePrefix) {
     throw new Error(`No station "${STATION_NAME}" with a code prefix at ${BRANCH_NAME}.`);
   }
+  const stationCodePrefix = station.codePrefix;
 
   const [taxRow] = await db
     .select({ config: s.branchTaxConfig.config })
@@ -562,197 +587,325 @@ export async function seedDemoDay(
   };
 
   for (const scenario of DAY) {
-    const occurredAt = instantAt(scenario.atMinutes);
-    const saleId = stableId(`${on}/${scenario.key}`, occurredAt);
+    await db.transaction(async (writer) => {
+      const occurredAt = instantAt(scenario.atMinutes);
+      const actionId = `demo-day/${on}/${scenario.key}`;
+      const baseSaleId = stableId(`${on}/${scenario.key}`, occurredAt);
 
-    const [already] = await db
-      .select({ id: s.sale.id })
-      .from(s.sale)
-      .where(eq(s.sale.id, saleId))
-      .limit(1);
-    if (already) {
-      counts.skipped += 1;
-      continue;
-    }
+      const [already] = await writer
+        .select({ id: s.sale.id })
+        .from(s.sale)
+        .where(scenario.voucherDefinitionCode ? eq(s.sale.actionId, actionId) : eq(s.sale.id, baseSaleId))
+        .limit(1);
+      if (already) {
+        counts.skipped += 1;
+        return;
+      }
 
-    const money = priceScenario(scenario, taxConfig);
+      const money = priceScenario(scenario, taxConfig);
 
-    // The receipt number comes out of the station's own series, bumped in the
-    // same statement that reads it — the demo must not leave the high-water
-    // mark behind the numbers it has printed, or the next real sale reuses one.
-    let receipt: { series: string; seq: number; number: string } | null = null;
-    if (scenario.status === 'finalised') {
-      receipt = await allocateReceipt(db, {
-        operatorId,
-        branchId,
-        stationId: station.id,
-        series: station.codePrefix,
-        at: occurredAt,
-      });
-    }
-
-    await db.insert(s.sale).values({
-      id: saleId,
-      operatorId,
-      branchId,
-      stationId: station.id,
-      businessDate: on,
-      businessDayStart: dayStart,
-      timezone,
-      occurredAt,
-      receivedAt: occurredAt,
-      origin: 'cloud',
-      salesChannel: 'till',
-      actionId: `demo-day/${on}/${scenario.key}`,
-      createdByAccountId: cashier.id,
-      memberId: scenario.memberNickname ? (members.get(scenario.memberNickname) ?? null) : null,
-      pricingMode: 'weekday',
-      pricingModeReason: 'Weekday pricing',
-      customerTier: scenario.tier,
-      engineVersion: PRICING_ENGINE_VERSION,
-      taxConfig,
-      taxBreakdown: money.breakdown,
-      subtotalSatang: money.subtotal,
-      manualDiscountSatang: money.discount,
-      promoDiscountSatang: 0,
-      discountSatang: money.discount,
-      netSatang: money.net,
-      serviceChargeSatang: money.serviceCharge,
-      taxInclusiveSatang: money.taxInclusive,
-      taxExclusiveSatang: money.taxExclusive,
-      grossSatang: money.gross,
-      unappliedDiscountSatang: money.breakdown.unappliedDiscount,
-      status: scenario.status,
-      receiptSeries: receipt?.series ?? null,
-      receiptSeq: receipt?.seq ?? null,
-      receiptNumber: receipt?.number ?? null,
-      finalisedAt: receipt ? occurredAt : null,
-      note: scenario.note ?? null,
-    });
-    counts.sales += 1;
-
-    let lineNo = 0;
-    for (const line of money.lines) {
-      lineNo += 1;
-      await db.insert(s.saleLine).values({
-        id: newId(),
-        saleId,
-        operatorId,
-        branchId,
-        businessDate: on,
-        lineNo,
-        cartLineId: newId(),
-        kind: line.kind,
-        label: line.label,
-        taxableCategory: line.taxableCategory,
-        quantity: line.quantity,
-        unitSatang: line.unitSatang,
-        baseSatang: line.base,
-        discountSatang: line.discount,
-        netSatang: line.net,
-        serviceChargeSatang: line.serviceCharge,
-        taxSatang: line.tax,
-        taxMode: line.taxMode,
-        taxRateBp: line.taxRateBp,
-        taxRateId: line.taxRateId ?? null,
-        taxName: line.taxName ?? null,
-        grossSatang: line.gross,
-        customerTier: scenario.tier,
-        kidCount: line.kidCount ?? 0,
-        adultCount: line.adultCount ?? 0,
-        freeAdultCount: line.freeAdultCount ?? 0,
-        stayHours: line.stayHours ?? null,
-        stayDurationLabel: line.stayDurationLabel ?? null,
-      });
-      counts.lines += 1;
-    }
-
-    // What is left to cover once every tender before this one has taken its
-    // share. The last tender takes the remainder, which is how a split adds up
-    // to the gross exactly rather than to the gross plus a rounding.
-    let outstanding = money.gross;
-    for (const [i, tender] of scenario.tenders.entries()) {
-      const takes = tender.status === 'approved' || tender.status === 'awaiting_settlement';
-      const amount = tender.amountSatang ?? outstanding;
-      if (takes) outstanding -= amount;
-
-      const attemptAt = new Date(occurredAt.getTime() + i * 30_000);
-      const attemptId = stableId(`${on}/${scenario.key}/tender/${i}`, attemptAt);
-      const deviceId = tender.terminal ? terminals[tender.terminal] : null;
-      const invoiceNo = tender.invoiceSeq
-        ? `DEMO${station.codePrefix.replace(/[^A-Z0-9]/g, '')}${on.slice(2).replace(/-/g, '')}${String(tender.invoiceSeq).padStart(4, '0')}`
-        : null;
-      const paidAt =
-        takes && tender.paidAfterMin !== undefined
-          ? new Date(attemptAt.getTime() + tender.paidAfterMin * 60_000)
-          : takes
-            ? attemptAt
-            : null;
-
-      await db.insert(s.paymentAttempt).values({
-        id: attemptId,
-        operatorId,
-        branchId,
-        saleId,
-        stationId: station.id,
-        deviceId,
-        businessDate: on,
-        method: tender.method,
-        methodCode: tender.methodCode,
-        provider: tender.provider,
-        status: tender.status,
-        amountSatang: amount,
-        tenderedSatang: tender.tenderedSatang ?? null,
-        changeSatang: tender.tenderedSatang !== undefined ? tender.tenderedSatang - amount : null,
-        terminalRef: tender.terminalRef ?? null,
-        // GHL's card wire carries neither TID nor MID, so they are read off the
-        // device row — which is exactly what the real adapter does.
-        tid: deviceId ? await terminalIdOf(db, deviceId) : null,
-        mid: deviceId ? await merchantIdOf(db, deviceId) : null,
-        approvalCode: tender.approvalCode ?? null,
-        last4: tender.last4 ?? null,
-        invoiceNo,
-        tranRef: tender.tranRef ?? null,
-        qrPayload: null,
-        expiresAt:
-          tender.method === 'qr' && tender.provider === '2c2p'
-            ? new Date(attemptAt.getTime() + 20 * 60_000)
-            : null,
-        paidAt,
-        staffConfirmedByAccountId: tender.note === 'staff_confirmed' ? cashier.id : null,
-        offline: scenario.key === 'qr-terminal-offline',
-        actionId: `demo-day/${on}/${scenario.key}/${i}`,
-        payload: tender.note ? { note: tender.note } : null,
-        createdAt: attemptAt,
-        updatedAt: paidAt ?? attemptAt,
-      });
-      counts.attempts += 1;
-
-      if (tender.notifiedRespCode && invoiceNo) {
-        await db.insert(s.paymentNotification).values({
-          id: newId(),
+      // The receipt number comes out of the station's own series, bumped in the
+      // same statement that reads it — the demo must not leave the high-water
+      // mark behind the numbers it has printed, or the next real sale reuses one.
+      let receipt: { series: string; seq: number; number: string } | null = null;
+      if (scenario.status === 'finalised') {
+        receipt = await allocateReceipt(writer, {
           operatorId,
-          attemptId,
+          branchId,
+          stationId: station.id,
+          series: stationCodePrefix,
+          at: occurredAt,
+        });
+      }
+      // A demo reset keeps voucher redemption history. Give a new voucher sale
+      // a new identity when its old sale was removed, while a normal rerun above
+      // still finds this day's existing action and writes nothing.
+      const saleId = scenario.voucherDefinitionCode
+        ? stableId(`${on}/${scenario.key}/${receipt!.number}`, occurredAt)
+        : baseSaleId;
+
+      await writer.insert(s.sale).values({
+        id: saleId,
+        operatorId,
+        branchId,
+        stationId: station.id,
+        businessDate: on,
+        businessDayStart: dayStart,
+        timezone,
+        occurredAt,
+        receivedAt: occurredAt,
+        origin: 'cloud',
+        salesChannel: 'till',
+        actionId,
+        createdByAccountId: cashier.id,
+        memberId: scenario.memberNickname ? (members.get(scenario.memberNickname) ?? null) : null,
+        pricingMode: 'weekday',
+        pricingModeReason: 'Weekday pricing',
+        customerTier: scenario.tier,
+        engineVersion: PRICING_ENGINE_VERSION,
+        taxConfig,
+        taxBreakdown: money.breakdown,
+        subtotalSatang: money.subtotal,
+        manualDiscountSatang: scenario.voucherDefinitionCode ? 0 : money.discount,
+        promoDiscountSatang: scenario.voucherDefinitionCode ? money.discount : 0,
+        discountSatang: money.discount,
+        netSatang: money.net,
+        serviceChargeSatang: money.serviceCharge,
+        taxInclusiveSatang: money.taxInclusive,
+        taxExclusiveSatang: money.taxExclusive,
+        grossSatang: money.gross,
+        unappliedDiscountSatang: money.breakdown.unappliedDiscount,
+        status: scenario.status,
+        receiptSeries: receipt?.series ?? null,
+        receiptSeq: receipt?.seq ?? null,
+        receiptNumber: receipt?.number ?? null,
+        finalisedAt: receipt ? occurredAt : null,
+        note: scenario.note ?? null,
+      });
+      counts.sales += 1;
+
+      let lineNo = 0;
+      for (const line of money.lines) {
+        lineNo += 1;
+        await writer.insert(s.saleLine).values({
+          id: newId(),
+          saleId,
+          operatorId,
+          branchId,
+          businessDate: on,
+          lineNo,
+          cartLineId: newId(),
+          kind: line.kind,
+          label: line.label,
+          taxableCategory: line.taxableCategory,
+          quantity: line.quantity,
+          unitSatang: line.unitSatang,
+          baseSatang: line.base,
+          discountSatang: line.discount,
+          netSatang: line.net,
+          serviceChargeSatang: line.serviceCharge,
+          taxSatang: line.tax,
+          taxMode: line.taxMode,
+          taxRateBp: line.taxRateBp,
+          taxRateId: line.taxRateId ?? null,
+          taxName: line.taxName ?? null,
+          grossSatang: line.gross,
+          customerTier: scenario.tier,
+          kidCount: line.kidCount ?? 0,
+          adultCount: line.adultCount ?? 0,
+          freeAdultCount: line.freeAdultCount ?? 0,
+          stayHours: line.stayHours ?? null,
+          stayDurationLabel: line.stayDurationLabel ?? null,
+        });
+        counts.lines += 1;
+      }
+
+      // What is left to cover once every tender before this one has taken its
+      // share. The last tender takes the remainder, which is how a split adds up
+      // to the gross exactly rather than to the gross plus a rounding.
+      let outstanding = money.gross;
+      for (const [i, tender] of scenario.tenders.entries()) {
+        const takes = tender.status === 'approved' || tender.status === 'awaiting_settlement';
+        const amount = tender.amountSatang ?? outstanding;
+        if (takes) outstanding -= amount;
+
+        const attemptAt = new Date(occurredAt.getTime() + i * 30_000);
+        const attemptId = stableId(`${on}/${scenario.key}/tender/${i}`, attemptAt);
+        const deviceId = tender.terminal ? terminals[tender.terminal] : null;
+        const configuredTid = deviceId ? await terminalIdOf(writer, deviceId) : null;
+        // The seeded PAX has no configured physical TID yet. New fixture rows
+        // get an unmistakable demo TID so the two-terminal EOD view can be tried
+        // without inventing a real device setting or rewriting old attempts.
+        const fixtureTid = tender.terminal === 'edc3' && !configuredTid ? 'DEMOPAX1' : null;
+        const invoiceNo = tender.invoiceSeq
+          ? `DEMO${stationCodePrefix.replace(/[^A-Z0-9]/g, '')}${on.slice(2).replace(/-/g, '')}${String(tender.invoiceSeq).padStart(4, '0')}`
+          : null;
+        const paidAt =
+          takes && tender.paidAfterMin !== undefined
+            ? new Date(attemptAt.getTime() + tender.paidAfterMin * 60_000)
+            : takes
+              ? attemptAt
+              : null;
+
+        await writer.insert(s.paymentAttempt).values({
+          id: attemptId,
+          operatorId,
+          branchId,
+          saleId,
+          stationId: station.id,
+          deviceId,
+          businessDate: on,
+          method: tender.method,
+          methodCode: tender.methodCode,
+          provider: tender.provider,
+          status: tender.status,
+          amountSatang: amount,
+          tenderedSatang: tender.tenderedSatang ?? null,
+          changeSatang: tender.tenderedSatang !== undefined ? tender.tenderedSatang - amount : null,
+          terminalRef: tender.terminalRef ?? null,
+          // GHL's card wire carries neither TID nor MID, so they are read off the
+          // device row — which is exactly what the real adapter does.
+          tid: configuredTid ?? fixtureTid,
+          mid: deviceId ? await merchantIdOf(writer, deviceId) : null,
+          approvalCode: tender.approvalCode ?? null,
+          last4: tender.last4 ?? null,
           invoiceNo,
           tranRef: tender.tranRef ?? null,
-          paymentId: null,
-          respCode: tender.notifiedRespCode,
-          receivedAt: paidAt ?? attemptAt,
-          raw: {
-            invoiceNo,
-            tranRef: tender.tranRef,
-            respCode: tender.notifiedRespCode,
-            amount: (amount / 100).toFixed(2),
-            currencyCode: 'THB',
-            note: 'Seeded by seed:demo-day — not a delivery from the gateway.',
-          },
+          qrPayload: null,
+          expiresAt:
+            tender.method === 'qr' && tender.provider === '2c2p'
+              ? new Date(attemptAt.getTime() + 20 * 60_000)
+              : null,
+          paidAt,
+          staffConfirmedByAccountId: tender.note === 'staff_confirmed' ? cashier.id : null,
+          offline: scenario.key === 'qr-terminal-offline',
+          actionId: `demo-day/${on}/${scenario.key}/${i}`,
+          payload: tender.note || fixtureTid ? { ...(tender.note ? { note: tender.note } : {}),
+            ...(fixtureTid ? { fixtureTid: true } : {}) } : null,
+          createdAt: attemptAt,
+          updatedAt: paidAt ?? attemptAt,
         });
-        counts.notifications += 1;
+        counts.attempts += 1;
+
+        if (tender.notifiedRespCode && invoiceNo) {
+          await writer.insert(s.paymentNotification).values({
+            id: newId(),
+            operatorId,
+            attemptId,
+            invoiceNo,
+            tranRef: tender.tranRef ?? null,
+            paymentId: null,
+            respCode: tender.notifiedRespCode,
+            receivedAt: paidAt ?? attemptAt,
+            raw: {
+              invoiceNo,
+              tranRef: tender.tranRef,
+              respCode: tender.notifiedRespCode,
+              amount: (amount / 100).toFixed(2),
+              currencyCode: 'THB',
+              note: 'Seeded by seed:demo-day — not a delivery from the gateway.',
+            },
+          });
+          counts.notifications += 1;
+        }
       }
-    }
+      if (scenario.key === 'merch-wallet') {
+        await seedDemoWalletSpend(writer, { on, saleId, operatorId, branchId, stationId: station.id,
+          occurredAt, sourceSaleId: stableId(`${on}/card-pax`, instantAt(8 * HOUR + 30)),
+          expiresAt: instantAt(24 * HOUR), spentSatang: money.gross });
+      }
+      if (scenario.voucherDefinitionCode) {
+        await seedDemoVoucherDiscount(writer, { on, saleId, operatorId, branchId,
+          stationId: station.id, accountId: cashier.id, occurredAt,
+          definitionCode: scenario.voucherDefinitionCode, discountSatang: money.discount });
+      }
+    });
   }
 
+  await seedDemoCashRefund(db, { on, operatorId, branchId, stationId: station.id,
+    series: stationCodePrefix, sourceSaleId: stableId(`${on}/open-cash`, instantAt(5 * HOUR)),
+    occurredAt: instantAt(10 * HOUR + 30), createdByAccountId: cashier.id });
+
   return counts;
+}
+
+async function seedDemoWalletSpend(writer: SeedWriter, input: {
+  on: string; saleId: string; sourceSaleId: string; operatorId: string; branchId: string;
+  stationId: string; occurredAt: Date; expiresAt: Date; spentSatang: number;
+}): Promise<void> {
+  // The earlier card-pax sale has one paid adult ticket at the list price of
+  // THB 350. The seeded adult full-price credit is spent on this socks sale.
+  const grantSatang = b(350);
+  if (input.spentSatang > grantSatang) throw new Error('Demo wallet spend exceeds its grant');
+  const walletId = stableId(`${input.on}/card-pax/wallet`, input.occurredAt);
+  const attemptId = stableId(`${input.on}/merch-wallet/tender/0`, input.occurredAt);
+  await writer.insert(s.wallet).values({ id: walletId, operatorId: input.operatorId,
+    branchId: input.branchId, holderName: 'Demo admission credit',
+    balanceSatang: grantSatang - input.spentSatang });
+  await writer.insert(s.walletKey).values({ id: stableId(`${walletId}/key`, input.occurredAt),
+    operatorId: input.operatorId, walletId, kind: 'voucher_qr', value: `QR-${walletId}` });
+  await writer.insert(s.walletEntry).values([
+    { id: stableId(`${walletId}/grant`, input.occurredAt), walletId, operatorId: input.operatorId,
+      actionId: `demo-day/${input.on}/card-pax/wallet-grant`, amountSatang: grantSatang,
+      kind: 'grant', source: 'ticket_sale', saleId: input.sourceSaleId, branchId: input.branchId,
+      stationId: input.stationId, businessDate: input.on, expiresAt: input.expiresAt,
+      balanceAfter: grantSatang, createdAt: new Date(input.occurredAt.getTime() - 10 * 60_000) },
+    { id: stableId(`${walletId}/spend`, input.occurredAt), walletId, operatorId: input.operatorId,
+      actionId: `wallet:spend:${attemptId}`, amountSatang: -input.spentSatang,
+      kind: 'spend', source: 'merch_order', saleId: input.saleId, paymentAttemptId: attemptId,
+      branchId: input.branchId, stationId: input.stationId, businessDate: input.on,
+      balanceAfter: grantSatang - input.spentSatang, createdAt: input.occurredAt },
+  ]);
+}
+
+async function seedDemoVoucherDiscount(writer: SeedWriter, input: {
+  on: string; saleId: string; operatorId: string; branchId: string; stationId: string;
+  accountId: string; occurredAt: Date; definitionCode: string; discountSatang: number;
+}): Promise<void> {
+  const [definition] = await writer.select({ id: s.voucherDefinition.id, name: s.voucherDefinition.nameEn,
+    kind: s.voucherDefinition.kind, valueSatang: s.voucherDefinition.valueSatang,
+    costSatang: s.voucherDefinition.costSatang, expiryDays: s.voucherDefinition.expiryDays })
+    .from(s.voucherDefinition).where(and(eq(s.voucherDefinition.operatorId, input.operatorId),
+      eq(s.voucherDefinition.code, input.definitionCode))).limit(1);
+  if (!definition || definition.kind !== 'discount' || definition.valueSatang !== input.discountSatang) {
+    throw new Error('The seeded demo discount voucher definition is missing or has changed');
+  }
+  const voucherId = stableId(`${input.saleId}/voucher`, input.occurredAt);
+  const code = `DEMO${randomBytes(10).toString('hex').toUpperCase()}`;
+  await writer.insert(s.voucher).values({ id: voucherId, operatorId: input.operatorId,
+    branchId: input.branchId, voucherDefinitionId: definition.id, code, source: 'manual',
+    status: 'redeemed', costSatang: definition.costSatang, issuedByAccountId: input.accountId,
+    issuedAt: input.occurredAt,
+    expiresAt: definition.expiryDays ? new Date(input.occurredAt.getTime() + definition.expiryDays * 86_400_000) : null,
+    redeemedAt: input.occurredAt, redeemedByAccountId: input.accountId,
+    redeemedBranchId: input.branchId, redeemedStationId: input.stationId, saleId: input.saleId });
+  await writer.insert(s.voucherRedemption).values(['applied', 'consumed'].map((kind) => ({
+    id: stableId(`${voucherId}/${kind}`, input.occurredAt), operatorId: input.operatorId,
+    voucherId, kind: kind as 'applied' | 'consumed', saleId: input.saleId,
+    branchId: input.branchId, stationId: input.stationId, accountId: input.accountId,
+    occurredAt: input.occurredAt,
+  })));
+  await writer.insert(s.saleDiscount).values({ id: stableId(`${input.saleId}/discount`, input.occurredAt),
+    saleId: input.saleId, operatorId: input.operatorId, branchId: input.branchId,
+    businessDate: input.on, sequence: 1, kind: 'promo', discountType: 'fixed',
+    valueSatang: input.discountSatang, amountSatang: input.discountSatang,
+    scope: 'order', code, label: definition.name, appliedByAccountId: input.accountId,
+    appliedAt: input.occurredAt });
+}
+
+async function seedDemoCashRefund(db: Db, input: {
+  on: string; operatorId: string; branchId: string; stationId: string; series: string;
+  sourceSaleId: string; occurredAt: Date; createdByAccountId: string;
+}): Promise<void> {
+  await db.transaction(async (writer) => {
+    const actionId = `demo-day/${input.on}/open-cash/refund`;
+    const [prior] = await writer.select({ id: s.refund.id }).from(s.refund)
+      .where(and(eq(s.refund.operatorId, input.operatorId), eq(s.refund.actionId, actionId))).limit(1);
+    if (prior) return;
+    const [sale] = await writer.select({ id: s.sale.id }).from(s.sale)
+      .where(and(eq(s.sale.id, input.sourceSaleId), eq(s.sale.branchId, input.branchId))).limit(1);
+    const [cashAttempt] = await writer.select({ id: s.paymentAttempt.id }).from(s.paymentAttempt)
+      .where(and(eq(s.paymentAttempt.saleId, input.sourceSaleId), eq(s.paymentAttempt.method, 'cash'),
+        eq(s.paymentAttempt.status, 'approved'))).limit(1);
+    const [manager] = await writer.select({ id: s.account.id }).from(s.account)
+      .innerJoin(s.employee, eq(s.employee.id, s.account.employeeId))
+      .where(and(eq(s.account.operatorId, input.operatorId), eq(s.employee.name, 'Khun Lek (Manager)'))).limit(1);
+    if (!sale || !cashAttempt || !manager) throw new Error('The demo cash refund needs its original sale, cash tender and branch manager');
+    const number = await allocateReceipt(writer, { operatorId: input.operatorId, branchId: input.branchId,
+      stationId: input.stationId, series: `${input.series}-R`, at: input.occurredAt }, 'refund');
+    const amountSatang = b(100);
+    await writer.insert(s.refund).values({ id: stableId(actionId, input.occurredAt),
+      operatorId: input.operatorId, branchId: input.branchId, saleId: input.sourceSaleId,
+      stationId: input.stationId, number: number.number, amountSatang, mode: 'custom',
+      reason: 'Demo partial cash refund', approvedByAccountId: manager.id,
+      createdByAccountId: input.createdByAccountId, actionId,
+      tenderAllocation: [{ attemptId: cashAttempt.id, method: 'cash', methodCode: 'cash',
+        provider: 'manual', route: 'cash', amountSatang, status: 'done',
+        settledAt: input.occurredAt.toISOString() }],
+      createdAt: input.occurredAt, updatedAt: input.occurredAt });
+    await writer.update(s.sale).set({ refundedSatang: sql`${s.sale.refundedSatang} + ${amountSatang}` })
+      .where(eq(s.sale.id, input.sourceSaleId));
+  });
 }
 
 // --- The arithmetic ---------------------------------------------------------
@@ -888,8 +1041,9 @@ function priceScenario(scenario: DemoSale, config: TaxConfigShape): PricedSale {
  * `SELECT … FOR UPDATE` inside the finalise transaction.
  */
 async function allocateReceipt(
-  db: Db,
+  db: SeedWriter,
   at: { operatorId: string; branchId: string; stationId: string; series: string; at: Date },
+  kind: 'sale' | 'refund' = 'sale',
 ): Promise<{ series: string; seq: number; number: string }> {
   await db
     .insert(s.receiptSeries)
@@ -899,7 +1053,7 @@ async function allocateReceipt(
       branchId: at.branchId,
       stationId: at.stationId,
       series: at.series,
-      kind: 'sale',
+      kind,
     })
     .onConflictDoNothing({
       target: [s.receiptSeries.stationId, s.receiptSeries.series, s.receiptSeries.kind],
@@ -911,7 +1065,7 @@ async function allocateReceipt(
       and(
         eq(s.receiptSeries.stationId, at.stationId),
         eq(s.receiptSeries.series, at.series),
-        eq(s.receiptSeries.kind, 'sale'),
+        eq(s.receiptSeries.kind, kind),
       ),
     )
     .returning({ nextSeq: s.receiptSeries.nextSeq, padding: s.receiptSeries.seqPadding });
@@ -920,7 +1074,7 @@ async function allocateReceipt(
   return { series: at.series, seq, number: `${at.series}-${String(seq).padStart(row.padding, '0')}` };
 }
 
-async function terminalIdOf(db: Db, deviceId: string): Promise<string | null> {
+async function terminalIdOf(db: SeedWriter, deviceId: string): Promise<string | null> {
   const [row] = await db
     .select({ value: s.device.terminalId })
     .from(s.device)
@@ -929,7 +1083,7 @@ async function terminalIdOf(db: Db, deviceId: string): Promise<string | null> {
   return row?.value ?? null;
 }
 
-async function merchantIdOf(db: Db, deviceId: string): Promise<string | null> {
+async function merchantIdOf(db: SeedWriter, deviceId: string): Promise<string | null> {
   const [row] = await db
     .select({ value: s.device.merchantId })
     .from(s.device)

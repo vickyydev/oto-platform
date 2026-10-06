@@ -414,6 +414,13 @@
       "when": 1791223692826,
       "tag": "0058_end_of_day_round_2",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1791231924328,
+      "tag": "0059_eod_settlement",
+      "breakpoints": true
     }
   ]
 }

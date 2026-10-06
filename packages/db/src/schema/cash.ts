@@ -2,10 +2,11 @@ import { sql } from 'drizzle-orm';
 import { bigint, check, date, index, integer, jsonb, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import type { CashMovementKind, EodLine, EodStrandedRow, StrandedKind, StrandedResolutionReason } from '@oto/shared';
 import { checkin } from './checkin';
-import { station } from './fleet';
+import { device, station } from './fleet';
 import { idPk, pos, timestamps } from './helpers';
-import { band } from './sales';
+import { band, paymentAttempt } from './sales';
 import { account, branch, operator } from './tenancy';
+import { boxCommand } from './edge';
 
 // --- The End of Day (schema `pos`) — S2-15a round 1 (migration 0052) ----------
 //
@@ -154,6 +155,73 @@ export const cashMovement = pos.table(
           or (${t.kind} = 'safe_drop' and ${t.witnessAccountId} is not null and ${t.approverAccountId} is null
              and ${t.witnessAccountId} <> ${t.actorAccountId})`,
     ),
+  ],
+);
+
+/** A terminal run or one imported 2C2P reconciliation file. The closed day is untouched. */
+export const settlementBatch = pos.table(
+  'settlement_batch',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id').notNull().references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id').notNull().references(() => branch.id, { onDelete: 'restrict' }),
+    businessDate: date('business_date', { mode: 'string' }).notNull(),
+    source: text('source').$type<'terminal' | '2c2p'>().notNull(),
+    state: text('state').$type<'pending' | 'matched' | 'attention' | 'failed' | 'unsupported'>().notNull(),
+    /** Action id for a terminal; SHA-256 of the uploaded file for 2C2P. */
+    sourceKey: text('source_key').notNull(),
+    deviceId: uuid('device_id').references(() => device.id, { onDelete: 'restrict' }),
+    commandId: uuid('command_id').references(() => boxCommand.id, { onDelete: 'restrict' }),
+    tid: text('tid'),
+    mid: text('mid'),
+    batchRef: text('batch_ref'),
+    fileName: text('file_name'),
+    /** Hash of the allowlisted box result, for exact retry versus changed-body refusal. */
+    resultHash: text('result_hash'),
+    matched: integer('matched').notNull().default(0),
+    unmatched: integer('unmatched').notNull().default(0),
+    mismatched: integer('mismatched').notNull().default(0),
+    errorCode: text('error_code'),
+    createdByAccountId: uuid('created_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+  },
+  (t) => [
+    uniqueIndex('settlement_batch_source_unique').on(t.operatorId, t.branchId, t.source, t.sourceKey),
+    uniqueIndex('settlement_batch_command_unique').on(t.commandId).where(sql`command_id is not null`),
+    index('settlement_batch_branch_date_idx').on(t.branchId, t.businessDate),
+    check('settlement_batch_source_check', sql`${t.source} in ('terminal','2c2p')`),
+    check('settlement_batch_state_check', sql`${t.state} in ('pending','matched','attention','failed','unsupported')`),
+    check('settlement_batch_counts_check', sql`${t.matched} >= 0 and ${t.unmatched} >= 0 and ${t.mismatched} >= 0`),
+  ],
+);
+
+/** A parsed, allowlisted transaction line; never a raw provider file or card payload. */
+export const settlementLine = pos.table(
+  'settlement_line',
+  {
+    id: idPk(),
+    batchId: uuid('batch_id').notNull().references(() => settlementBatch.id, { onDelete: 'restrict' }),
+    lineNo: integer('line_no').notNull(),
+    attemptId: uuid('attempt_id').references(() => paymentAttempt.id, { onDelete: 'restrict' }),
+    method: text('method').$type<'card' | 'qr'>().notNull(),
+    amountSatang: bigint('amount_satang', { mode: 'number' }).notNull(),
+    tid: text('tid'),
+    approvalCode: text('approval_code'),
+    terminalRef: text('terminal_ref'),
+    invoiceNo: text('invoice_no'),
+    tranRef: text('tran_ref'),
+    paymentId: text('payment_id'),
+    transactionType: text('transaction_type'),
+    match: text('match').$type<'matched' | 'unmatched' | 'amount_mismatch' | 'ambiguous' | 'reference_mismatch'>().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('settlement_line_batch_no_unique').on(t.batchId, t.lineNo),
+    index('settlement_line_attempt_idx').on(t.attemptId),
+    check('settlement_line_method_check', sql`${t.method} in ('card','qr')`),
+    check('settlement_line_match_check', sql`${t.match} in ('matched','unmatched','amount_mismatch','ambiguous','reference_mismatch')`),
+    check('settlement_line_amount_check', sql`${t.amountSatang} > 0`),
   ],
 );
 

@@ -451,6 +451,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // S2-15a round 1 — the End of Day (one combined count per branch-day) and
   // the paid-outs and safe drops it expects less of. Paths declared in full.
   await app.register((await import('./routes/end-of-day')).endOfDayRoutes);
+  await app.register((await import('./routes/settlement')).settlementRoutes);
   await app.register(opsRoutes, { prefix: '/ops' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a

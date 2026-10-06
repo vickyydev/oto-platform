@@ -76,6 +76,7 @@ export const BOX_COMMAND_KINDS = [
   'reset_store',
   'simulate',
   'terminal_sale',
+  'terminal_settle',
   'drawer_kick',
 ] as const;
 export type BoxCommandKind = (typeof BOX_COMMAND_KINDS)[number];
@@ -165,7 +166,7 @@ export const boxCommand = edge.table(
     index('box_command_requested_by_idx').on(t.requestedByAccountId),
     check(
       'box_command_kind_check',
-      sql`${t.kind} in ('test_print','config_apply','clear_cache','collect_logs','restart','go_offline','go_online','reset_store','simulate','terminal_sale','drawer_kick')`,
+      sql`${t.kind} in ('test_print','config_apply','clear_cache','collect_logs','restart','go_offline','go_online','reset_store','simulate','terminal_sale','terminal_settle','drawer_kick')`,
     ),
     check(
       'box_command_state_check',
