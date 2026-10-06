@@ -1,5 +1,15 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 7 October 2026 - SCRUM-496 Deployed; evidence final
+
+The check system runs again (the repository is public). SCRUM-496 is
+Deployed on six staging cards; SCRUM-215 gained the close-away-from-counter
+proof, driven on a throwaway ZZ TEST park (1007, archived after). SCRUM-495's
+six cards are attached; it stays Testing until the card-after-credit fix is
+live on staging and imaged. Every card passed an independent image check;
+wallet codes are masked in card text. The landing queue proceeds as CI
+confirms each step.
+
 ## Platform lane checkpoint - 7 October 2026 - queue held by the check system's account
 
 GitHub Actions refuses new runs (account billing), so finished work queues
