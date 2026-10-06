@@ -14,8 +14,9 @@ plan): the End of Day closed-at note on Performance (needs migration
 0065 - end_of_day refuses UPDATE), who may open All branches, old
 Central demo rows. Rounds 4-5 (the four admin Reports panels on the
 platform with CSV exports; fact_booth_daily and the Console booth
-report) are building on lane/s216-r45. Staging still runs 6523d202;
-next deploy from the next green head. Next free migration: 0065
+report) are building on lane/s216-r45. The round-3 run passed
+(run 37534047834) and staging runs c578ebb0 on all five
+platform services. Next free migration: 0065
 (reserved first for the reports lane if the plan's report tables are
 not already in 0064).
 

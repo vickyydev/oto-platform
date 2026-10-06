@@ -17,13 +17,13 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-Current checkpoint: SCRUM-493's four build parts (494, 495, 496, 498) are all Deployed with staging cards; 493 waits only on SCRUM-497 answers. S2-15b analytics (SCRUM-216) is in build: rounds 1-3 are on main (main head c578ebb0 - Performance screens on real platform figures), rounds 4-5 (admin Reports panels + booth report) build on `lane/s216-r45`. Staging runs 6523d202; deploy next from the next green head.
+Current checkpoint: SCRUM-493's four build parts (494, 495, 496, 498) are all Deployed with staging cards; 493 waits only on SCRUM-497 answers. S2-15b analytics (SCRUM-216) is in build: rounds 1-3 are on main (main head c578ebb0 - Performance screens on real platform figures), rounds 4-5 (admin Reports panels + booth report) build on `lane/s216-r45`. Staging runs c578ebb0 (all five platform services).
 
 _Updated: 7 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block carry exact deployments and checkpoints._
 
 | Item | State |
 |---|---|
-| Main | Green through 6523d202; c578ebb0 (analytics round 3) under its CI run. Migrations through 0064 (0061 End of Day receipt, 0062 sale extensions, 0063 stock packs, 0064 analytics summaries incl. the late check-in mark). Next free: 0065, reserved first for the analytics reports lane |
+| Main | Green through c578ebb0 (analytics round 3, run 37534047834). Migrations through 0064 (0061 End of Day receipt, 0062 sale extensions, 0063 stock packs, 0064 analytics summaries incl. the late check-in mark). Next free: 0065, reserved first for the analytics reports lane |
 | SCRUM-494 (till consistency, band details and services) | Deployed. Register entries 1-9 are on main and live |
 | SCRUM-215 (S2-15a End of Day) | Deployed. Follow-up work is on branch `lane/eod-followups` |
 | SCRUM-499 (Lucky Wheel fixed-code vouchers) and SCRUM-500 | Deployed |
