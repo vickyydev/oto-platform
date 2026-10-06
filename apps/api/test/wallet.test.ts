@@ -18,7 +18,7 @@ import { bandShortCode, mintVoucherQr, newId } from '@oto/shared';
 import { quoteBooking } from '../src/services/booking-checkout';
 import { buildPrintDocument } from '../src/services/sale-printing';
 import { createWalletWithGrant, debitWallet, prepaidBalanceOf } from '../src/services/wallet';
-import { CHALONG_MANAGER, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { CHALONG_BRANCH_CODE, CHALONG_MANAGER, RECEPTION, SECOND_OPERATOR_ADMIN, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
  * S2-14a round 1 — the wallet model and the grants (plan docs/progress/plans/
@@ -491,7 +491,7 @@ describe('GET /wallets — the lookup the Wallet view builds on', () => {
     expect(byId.json().wallet.id).toBe(grant.walletId);
   });
 
-  it('refuses in the counter’s words: an unknown key, another park’s wallet, no session', async () => {
+  it('shares an operator wallet across parks, but refuses an unknown key and no session', async () => {
     const unknown = await ctx.app.inject({ method: 'GET', url: '/wallets/lookup?key=QR-NOPE', headers: { cookie: reception } });
     expect(unknown.statusCode).toBe(404);
     expect(unknown.json().error).toMatchObject({ code: 'WALLET_NOT_FOUND', message: 'No wallet carries that band or voucher — check the code and scan again.' });
@@ -499,10 +499,18 @@ describe('GET /wallets — the lookup the Wallet view builds on', () => {
     const { done } = await ticketSale(twoHoursId, 0, 1);
     const grant = (done.grants as Grant[])[0]!;
     const otherPark = await ctx.app.inject({ method: 'GET', url: `/wallets/lookup?key=${grant.qrCode}`, headers: { cookie: chalongManager } });
-    expect(otherPark.statusCode).toBe(404);
-    expect(otherPark.json().error.code).toBe('WALLET_NOT_FOUND');
+    expect(otherPark.statusCode).toBe(200);
+    expect(otherPark.json().wallet.id).toBe(grant.walletId);
     const otherParkById = await ctx.app.inject({ method: 'GET', url: `/wallets/${grant.walletId}`, headers: { cookie: chalongManager } });
-    expect(otherParkById.statusCode).toBe(404);
+    expect(otherParkById.statusCode).toBe(200);
+    const [chalong] = await ctx.db.select().from(branch).where(eq(branch.code, CHALONG_BRANCH_CODE));
+    const scanned = await ctx.app.inject({ method: 'GET', url: `/wallets/scan?key=${grant.qrCode}&branchId=${chalong!.id}`, headers: { cookie: chalongManager } });
+    expect(scanned.statusCode).toBe(200);
+    expect(scanned.json().wallet.id).toBe(grant.walletId);
+    expect(scanned.json().stay).toBeNull();
+    const anotherOperator = await signInAs(ctx.app, SECOND_OPERATOR_ADMIN.phone, SECOND_OPERATOR_ADMIN.password);
+    const foreign = await ctx.app.inject({ method: 'GET', url: `/wallets/lookup?key=${grant.qrCode}`, headers: { cookie: anotherOperator } });
+    expect(foreign.statusCode).toBe(404);
 
     const anonymous = await ctx.app.inject({ method: 'GET', url: `/wallets/lookup?key=${grant.qrCode}` });
     expect(anonymous.statusCode).toBe(401);

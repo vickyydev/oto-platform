@@ -353,16 +353,13 @@ export async function voucherRoutes(app: App): Promise<void> {
         description:
           'The wallet a wallet-credit voucher loaded when the sale carrying it closed: its balance, keys, expiry and ' +
           'its ONE voucher QR. `wallet` is null while the voucher has loaded nothing. Read at the till this session ' +
-          'stands at, with pos:voucher:redeem there; a wallet another park issued answers 404.',
+          'stands at, with pos:voucher:redeem there; wallets are shared across this operator’s parks.',
         params: z.object({ id: z.string().uuid() }),
       },
     },
     async (req) => {
-      const { actor, at } = await standing(req);
+      const { actor } = await standing(req);
       const credit = await voucherCreditOf(app.db, actor.operatorId, req.params.id);
-      if (credit.wallet?.branchId && credit.wallet.branchId !== at.branchId) {
-        return { voucherId: req.params.id, wallet: null, qrCode: null };
-      }
       return credit;
     },
   );

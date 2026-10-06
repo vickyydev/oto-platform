@@ -127,6 +127,24 @@ describe('the F&B credit card takes the toggle off on every refusal', () => {
     } as unknown as ReturnType<typeof usePaymentStage>;
   }
 
+  it('preselects configured Card once for the credit remainder, then keeps the staff choice', () => {
+    vi.stubGlobal('React', ReactModule);
+    vi.spyOn(paymentMethods, 'getEnabledPaymentMethods').mockReturnValue(METHODS);
+    const stage = stageWith(null, 0);
+    stage.state.phase = 'ready';
+    stage.state.method = 'park-cash';
+    stage.creditPendingSatang = 5_000;
+    stage.state.outstandingSatang = 9_000;
+    const props = { total: 90, wristband: null, pickupCode: '', stage, onBack: () => undefined,
+      useCredit: true, onUseCreditChange: () => undefined, creditBalanceOverride: 50 };
+    const hook = renderHook((p: typeof props) => { FnbPayment(p); }, props);
+    unmounts.push(hook.unmount);
+    expect(stage.selectMethod).toHaveBeenCalledWith('park-card');
+    vi.mocked(stage.selectMethod).mockClear();
+    hook.rerender(props);
+    expect(stage.selectMethod).not.toHaveBeenCalled();
+  });
+
   it('off on the first refusal, and off again when staff put it back and are refused in the same words', () => {
     // The card's markup is compiled to React.createElement; it is built, never rendered.
     vi.stubGlobal('React', ReactModule);
