@@ -672,10 +672,12 @@ export const saleLine = pos.table(
     /** What the receipt showed, frozen: "2 Hours Play — Kids", "Regular Socks". */
     label: text('label').notNull(),
     /**
-     * Reporting grouping from the catalogue. Null until S2-09b adds the
-     * revenue category and sub-category columns to packages and add-ons; the
-     * taxable category below is populated from day one because the engine
-     * needs it to price.
+     * The reporting bucket this unit's money lands in. Never null (S2-15b,
+     * migration 0064): a line written without one takes the taxable category
+     * it was charged under, by the `pos.sale_line_revenue_category` trigger,
+     * which is what the platform's own writer records — tickets (an event or
+     * camp pass is a ticket), drop_off, fnb, merch, stored_value, addons. The
+     * CHECK below holds it for every writer.
      */
     revenueCategory: text('revenue_category'),
     revenueSubCategory: text('revenue_sub_category'),
@@ -751,6 +753,8 @@ export const saleLine = pos.table(
       sql`${t.kind} in ('kids','adults_paid','adults_free','socks','addon','service_fee','food_provision','promo_item','fnb_item','merch_item')`,
     ),
     check('sale_line_tax_mode_check', sql`${t.taxMode} in ('inclusive','exclusive','none')`),
+    /** Every line lands in a revenue bucket (S2-15b); the insert trigger fills one in. */
+    check('sale_line_revenue_category_check', sql`${t.revenueCategory} is not null`),
     check('sale_line_quantity_check', sql`${t.quantity} >= 0 and ${t.lineNo} > 0`),
     check(
       'sale_line_totals_check',
