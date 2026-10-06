@@ -1,6 +1,7 @@
 import {
   BOX_CHECKIN_REFUSALS,
   BRIDGE_CHECKIN_INTENTS,
+  BridgeBandFoodLookupSchema,
   BridgeCheckinCreateSchema,
   BridgeCheckinUpdateSchema,
   BridgeGuardianCreateSchema,
@@ -14,6 +15,10 @@ import {
   PhotoCaptureSchema,
   RELEASE_REFUSALS,
   bandShortCode,
+  allergiesMedicalOf,
+  normaliseBandCode,
+  parseBandCode,
+  parseBandShortCode,
   buildAcknowledgedConfirmations,
   confirmationsSatisfied,
   normalizePhone,
@@ -25,6 +30,8 @@ import {
   supervisionBadgeOf,
   waiverRefusal,
   type BridgeCheckinChild,
+  type BridgeBandFoodAnswer,
+  type BridgeCart,
   type BridgeCheckinCreate,
   type BridgeCheckinFamily,
   type BridgeCheckinUpdate,
@@ -301,6 +308,102 @@ export class CheckinDesk {
     return null;
   }
 
+  /** The food counter receives one child's safety fields, never the family board or pickup list. */
+  private async bandFood(station: DeskStation, caller: DeskCaller, payload: Record<string, unknown>): Promise<BridgeBandFoodAnswer> {
+    this.require(caller, 'pos:checkin:read');
+    const { key } = BridgeBandFoodLookupSchema.parse(payload);
+    const view = await this.view();
+    if (view.item && view.item.branchId !== station.branchId) throw refuse(409, BOX_CHECKIN_REFUSALS.noCopy);
+    const full = parseBandCode(key) ? normaliseBandCode(key) : null;
+    const short = parseBandShortCode(key);
+    if (!full && !short) return { stay: null, cacheAppliedAt: view.appliedAt, prepaidItemsOnlineOnly: true };
+    const matches = new Map<string, string>();
+    const matchCode = (code: string): boolean =>
+      (full !== null && normaliseBandCode(code) === full) ||
+      (short !== null && bandShortCode(code) === `${short.prefix}-${short.tail}`);
+    const bundle = await this.host.store.readBundle(this.host.boxId, 'bands').catch(() => null);
+    const rows = rec(bundle?.payload)?.items;
+    for (const raw of Array.isArray(rows) ? rows : []) {
+      const row = rec(raw);
+      const id = row?.id;
+      const code = row?.code;
+      if (row?.branchId !== station.branchId || row.kind !== 'kid' || row.status !== 'active' ||
+          typeof id !== 'string' || typeof code !== 'string' || !matchCode(code)) continue;
+      matches.set(id, code);
+    }
+    // A band minted at this box while offline is in the durable sale log before
+    // the platform has had a chance to include it in the bands cache.
+    const localSales = new Set<string>();
+    for (const family of view.families.values()) {
+      if (family.branchId !== station.branchId) continue;
+      for (const child of family.children) if (child.status === 'in_park' && child.saleId) localSales.add(child.saleId);
+    }
+    const saleQueue = this.host.sales();
+    if (saleQueue) for (const saleId of localSales) {
+      const recorded = await saleQueue.recorded(saleId);
+      if (!recorded) continue;
+      for (const band of recorded.bands) {
+        if (band.kind === 'kid' && matchCode(band.code)) matches.set(band.id, band.code);
+      }
+    }
+    if (matches.size > 1) throw new DeskRefusal(409, 'BAND_CODE_AMBIGUOUS', 'More than one band matches that short code. Scan the full QR.');
+    const bandId = [...matches.keys()][0];
+    if (!bandId) {
+      if (!view.item) throw refuse(409, BOX_CHECKIN_REFUSALS.noCopy);
+      return { stay: null, cacheAppliedAt: view.appliedAt, prepaidItemsOnlineOnly: true };
+    }
+    const found = [...view.families.values()]
+      .filter((family) => family.branchId === station.branchId)
+      .flatMap((family) => family.children.map((child) => ({ family, child })))
+      .find(({ child }) => child.bandId === bandId && child.status === 'in_park');
+    if (!found) return { stay: null, cacheAppliedAt: view.appliedAt, prepaidItemsOnlineOnly: true };
+    const { child, family } = found;
+    const provision = child.foodProvision;
+    return {
+      stay: {
+        checkinId: child.id,
+        branchId: family.branchId,
+        childName: child.childName,
+        allergiesMedical: allergiesMedicalOf(child.allergies?.trim() || child.savedAllergies, child.savedMedicalNotes),
+        foodRestrictions: child.foodRestrictions?.trim() || child.savedDietary?.trim() || null,
+        mayOrderFood: child.mayOrderFood,
+        foodProvision: provision ? {
+          mode: provision.mode,
+          paidSatang: provision.paidSatang,
+          creditSatang: provision.creditSatang ?? null,
+          items: (provision.items ?? []).map((item) => ({
+            menuItemId: item.menuItemId,
+            menuItemName: item.menuItemName,
+            unitSatang: item.unitSatang,
+            qty: item.qty,
+            redeemedQty: item.redeemedQty ?? 0,
+          })),
+        } : null,
+      },
+      cacheAppliedAt: view.appliedAt,
+      prepaidItemsOnlineOnly: true,
+    };
+  }
+
+  /** A box cannot reserve prepaid units against another offline box or a pickup. */
+  async assertFoodOrder(station: DeskStation, caller: DeskCaller, cart: BridgeCart): Promise<void> {
+    if (cart.items.some((item) => item.prepaid)) {
+      throw new DeskRefusal(409, 'PREPAID_ONLINE_REQUIRED',
+        'Prepaid meals need the platform connection so this meal cannot be served twice or refunded after pickup. Nothing was taken.');
+    }
+    if (cart.channel !== 'fnb' || !cart.bandHolder || cart.items.length === 0) return;
+    this.require(caller, 'pos:checkin:read');
+    const view = await this.view();
+    const found = this.findStay(view, cart.bandHolder.checkinId);
+    if (!found || found.family.branchId !== station.branchId || found.child.status !== 'in_park') {
+      throw new DeskRefusal(409, 'BAND_STAY_NOT_IN_PARK',
+        'This child is not checked in at this park on this box. Scan the band again before serving food.');
+    }
+    if (!found.child.mayOrderFood && !cart.bandHolder.foodOverride) {
+      throw new DeskRefusal(409, 'FOOD_NOT_AUTHORIZED', 'Parent did not authorize food orders for this child.');
+    }
+  }
+
   /** The cart lines that are supervised children's stays — their bands wait for "Check in now". */
   async supervisedLineIds(lineIds: readonly string[]): Promise<Set<string>> {
     const wanted = new Set(lineIds);
@@ -478,6 +581,8 @@ export class CheckinDesk {
         const now = this.host.now();
         return { ...this.boardOf(await this.view(), now) };
       }
+      case BRIDGE_CHECKIN_INTENTS.bandFood:
+        return this.bandFood(station, caller, payload);
       case BRIDGE_CHECKIN_INTENTS.config: {
         this.require(caller, 'pos:checkin:read');
         const view = await this.view();

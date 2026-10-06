@@ -1428,7 +1428,7 @@ export class StationBridge {
       if (!caller.can('pos:sale:create')) {
         throw new BridgeError(403, 'FORBIDDEN', 'Missing permission: pos:sale:create');
       }
-      const quote = await this.quote(station, intent.payload);
+      const quote = await this.quote(station, caller, intent.payload);
       return { document: await this.host.sessions.open(stationId), result: { quote } };
     }
     if (caller.kind === 'till' && intent.type === BRIDGE_WALLET_INTENTS.spend) {
@@ -1629,6 +1629,7 @@ export class StationBridge {
 
   private async quote(
     station: BridgeStation,
+    caller: BridgeTillCaller,
     payload: Record<string, unknown>,
   ): Promise<OfflineQuote> {
     const policy = await this.policy(station.id);
@@ -1664,6 +1665,7 @@ export class StationBridge {
         issue: String(err),
       });
     }
+    await this.assertFoodOrder(station, caller, cart);
     // The member's tier as this counter knows it: a tier changed here offline
     // (OD-11) prices the cart that follows, as it would online.
     const owner = cart.memberId ? await this.resolveMember(cart.memberId) : null;
@@ -1692,6 +1694,15 @@ export class StationBridge {
           err.details,
         );
       }
+      throw err;
+    }
+  }
+
+  private async assertFoodOrder(station: BridgeStation, caller: BridgeTillCaller, cart: BridgeCart): Promise<void> {
+    try {
+      await this.desk.assertFoodOrder(station, caller, cart);
+    } catch (err) {
+      if (err instanceof DeskRefusal) throw new BridgeError(err.status, err.code, err.message, err.details);
       throw err;
     }
   }
@@ -2226,6 +2237,7 @@ export class StationBridge {
     } catch (err) {
       throw new BridgeError(400, 'VALIDATION', 'That cart could not be read', { issue: String(err) });
     }
+    await this.assertFoodOrder(station, caller, cart);
     if (cart.expectedTotalSatang === undefined) {
       throw new BridgeError(
         400,

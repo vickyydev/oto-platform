@@ -533,6 +533,7 @@ const BridgeCartItemSchema = z.object({
     .object({ variantId: z.string().min(1).max(100), variantLabel: z.string().min(1).max(60) })
     .nullish(),
   lineTotalSatang: z.number().int().min(0).optional(),
+  prepaid: z.object({ checkinId: z.string().uuid() }).strict().optional(),
 });
 
 const BridgeManualDiscountSchema = z.object({
@@ -575,6 +576,7 @@ const BridgeCartBodySchema = z.object({
     .optional(),
   lines: z.array(BridgeCartLineSchema).max(50).default([]),
   items: z.array(BridgeCartItemSchema).max(100).default([]),
+  bandHolder: z.object({ checkinId: z.string().uuid(), foodOverride: z.boolean().optional() }).strict().nullish(),
   pickupCode: z.string().max(12).optional(),
   manualDiscounts: z.array(BridgeManualDiscountSchema).max(20).default([]),
   promos: z.array(BridgePromoSchema).max(10).default([]),

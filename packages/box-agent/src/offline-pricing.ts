@@ -555,23 +555,21 @@ export function priceOfflineSale(
   const rate = getRateModeForDate(date, catalogue.holidays);
   /**
    * The tier that prices this cart. A recognised member's cart is priced at the
-   * tier the TILL chose (`cart.tier`), falling back to the member's own cached
-   * tier when the till named none. The till gates which tiers a member may be
-   * sold at — a higher unverified tier is refused there — and on the box lane
-   * the box prices what the till displayed, so a Thai member the staff rang up
-   * at the Tourist rate is priced at Tourist and the line totals match rather
-   * than refusing at Pay with `SALE_LINE_PRICE_MISMATCH`. That is the same sale
-   * the platform files on replay: `priceCart` reads this tier straight from the
-   * price basis the box carries (OD-8), not from the member.
+   * member's cached verified tier. Staff can choose the operator's default
+   * rate without proof; a different discounted tier must be recorded on the
+   * member first. The till picker is not the authority for a box sale.
    *
    * A walk-in has no member to price for and no way to record a document check
    * offline, so the operator's default stands and a tier named on the cart is
    * ignored — exactly as the platform prices a walk-in with no claim at the
    * default tier.
    */
-  const tierCode =
-    context.memberTier !== null ? (cart.tier ?? context.memberTier) : catalogue.defaultTier;
-  const tierSource: OfflineQuote['tierSource'] = context.memberTier !== null ? 'member' : 'default';
+  if (context.memberTier !== null && cart.tier && cart.tier !== context.memberTier && cart.tier !== catalogue.defaultTier) {
+    throw new OfflinePriceError('TIER_NOT_VERIFIED', 'This member has not been verified for the selected tier. Choose their verified rate or the default rate.');
+  }
+  const defaultChosen = context.memberTier !== null && cart.tier === catalogue.defaultTier;
+  const tierCode = context.memberTier !== null && !defaultChosen ? context.memberTier : catalogue.defaultTier;
+  const tierSource: OfflineQuote['tierSource'] = context.memberTier !== null && !defaultChosen ? 'member' : 'default';
 
   const socksProduct = cart.socks ? catalogue.products.get(cart.socks.addOnId) : undefined;
   const ctx: PricingContext = {

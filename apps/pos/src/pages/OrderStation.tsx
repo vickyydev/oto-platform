@@ -464,6 +464,7 @@ export default function OrderStation() {
     cart.filter((l) => l.isPrepaid && l.menuItem.id === menuItemId).reduce((s, l) => s + l.qty, 0);
 
   const handleRedeemPrepaidItem = (entitlement: { menuItemId: string; qty: number; redeemedQty: number }) => {
+    if (wristband?.prepaidItemsOnlineOnly) return;
     const remaining = entitlement.qty - entitlement.redeemedQty - pendingPrepaidQty(entitlement.menuItemId);
     if (remaining <= 0) return;
     const menuItem = menuItems.find((m) => m.id === entitlement.menuItemId);
@@ -1328,6 +1329,11 @@ export default function OrderStation() {
                       Prepaid entitlements · {wristband.holderName ?? wristband.customerNickname}
                     </span>
                   </div>
+                  {wristband.prepaidItemsOnlineOnly && (
+                    <p role="status" className="mb-2 text-sm text-violet-900 dark:text-violet-100">
+                      These meals are visible for staff, but serving one needs the platform connection so another counter or pickup cannot use it twice.
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-2">
                     {wristband.foodProvision.items.map((ent) => {
                       const alreadyPending = pendingPrepaidQty(ent.menuItemId);
@@ -1337,10 +1343,10 @@ export default function OrderStation() {
                         <button
                           key={ent.menuItemId}
                           type="button"
-                          disabled={fullyUsed}
+                          disabled={fullyUsed || wristband.prepaidItemsOnlineOnly}
                           onClick={() => handleRedeemPrepaidItem(ent)}
                           className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all
-                            ${fullyUsed
+                            ${fullyUsed || wristband.prepaidItemsOnlineOnly
                               ? 'cursor-not-allowed border-violet-500/20 text-violet-600/70 dark:text-violet-400/60 bg-violet-500/5'
                               : 'border-violet-500/50 text-violet-900 dark:text-violet-100 bg-violet-500/15 hover:bg-violet-500/25 active:scale-[0.97]'
                             }`}

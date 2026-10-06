@@ -1091,6 +1091,15 @@ export async function checkinCacheItem(db: Db, operatorId: string, branchId: str
   const config = await supervisionConfigOf(db, branchId);
   const regIds = board.families.map((f) => f.registrationId);
   const stayIds = board.families.flatMap((f) => f.children.map((c) => c.id));
+  const savedChildIds = [...new Set(
+    board.families.flatMap((f) => f.children.map((c) => c.childId).filter((id): id is string => !!id)),
+  )];
+  const savedChildren = savedChildIds.length
+    ? await db.select({ id: child.id, allergies: child.allergies, medicalNotes: child.medicalNotes, dietary: child.dietary })
+      .from(child).innerJoin(member, eq(child.memberId, member.id))
+      .where(and(eq(member.operatorId, operatorId), inArray(child.id, savedChildIds)))
+    : [];
+  const savedChildOf = new Map(savedChildren.map((c) => [c.id, c]));
   const guardians = regIds.length
     ? await db.select().from(guardian).where(inArray(guardian.registrationId, regIds)).orderBy(asc(guardian.createdAt), asc(guardian.id))
     : [];
@@ -1135,7 +1144,15 @@ export async function checkinCacheItem(db: Db, operatorId: string, branchId: str
   const families: Array<Omit<BridgeCheckinFamily, 'origin'>> = board.families.map((f) => ({
     ...f,
     tab: f.tab,
-    children: f.children,
+    children: f.children.map((c) => {
+      const saved = c.childId ? savedChildOf.get(c.childId) : null;
+      return {
+        ...c,
+        savedAllergies: saved?.allergies ?? null,
+        savedMedicalNotes: saved?.medicalNotes ?? null,
+        savedDietary: saved?.dietary ?? null,
+      };
+    }),
     guardians: byReg.get(f.registrationId) ?? [],
   }));
   const releaseRecords: BridgeReleaseRecord[] = releases.map((r) => ({

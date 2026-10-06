@@ -170,7 +170,7 @@ async function updatedFacts(box: Box) {
 const ALL = DEFAULT_SUPERVISION_POLICY.confirmations.map((c) => c.id);
 
 /** Register one child on `service`, pay on the box, return the ids. */
-async function registeredAndPaid(box: Box, child: { name: string; ageYears: number; service: 'drop_off' | 'nanny' }) {
+async function registeredAndPaid(box: Box, child: { name: string; ageYears: number; service: 'drop_off' | 'nanny'; allergies?: string }) {
   const checkinId = uuidv7();
   await ask(box, 'checkin.create', {
     registrationId: uuidv7(),
@@ -195,6 +195,46 @@ async function registeredAndPaid(box: Box, child: { name: string; ageYears: numb
   });
   return { checkinId, saleId };
 }
+
+test('s498 food scan reads only an in-park child on this box, and offline prepaid/unauthorised food cannot be sold', async () => {
+  const box = await openBox();
+  try {
+    const { checkinId, saleId } = await registeredAndPaid(box, {
+      name: 'Mint', ageYears: 6, service: 'drop_off', allergies: 'Peanuts',
+    });
+    const checkedIn = await ask(box, 'checkin.update', {
+      event: 'check_in_now', saleId, entries: [{ checkinId }],
+    });
+    const key = checkedIn.bands[0].shortCode as string;
+    const read = await ask(box, 'checkin.band_food', { key });
+    assert.deepEqual(Object.keys(read).sort(), ['cacheAppliedAt', 'prepaidItemsOnlineOnly', 'stay']);
+    assert.equal(read.stay.checkinId, checkinId);
+    assert.equal(read.stay.allergiesMedical, 'Peanuts');
+    assert.equal(read.stay.mayOrderFood, false);
+    assert.equal(read.prepaidItemsOnlineOnly, true);
+    assert.equal((await ask(box, 'checkin.band_food', { key: 'T1-AAAAAA' })).stay, null);
+    await ask(box, 'checkin.update', { event: 'edit', checkinId, fields: { allergies: 'Shellfish' } });
+    assert.equal((await ask(box, 'checkin.band_food', { key })).stay.allergiesMedical, 'Shellfish',
+      'a safety correction on the offline board reaches the food scan at once');
+
+    const item = { id: uuidv7(), productId: uuidv7(), quantity: 1 };
+    const denied = await refusal(ask(box, 'cart.quote', {
+      channel: 'fnb', bandHolder: { checkinId }, items: [item],
+    }));
+    assert.equal(denied.code, 'FOOD_NOT_AUTHORIZED');
+    const prepaid = await refusal(ask(box, 'cart.quote', {
+      channel: 'fnb', bandHolder: { checkinId }, items: [{ ...item, prepaid: { checkinId } }],
+    }));
+    assert.equal(prepaid.code, 'PREPAID_ONLINE_REQUIRED');
+    const saleRefused = await refusal(ask(box, 'sale.finalise', {
+      saleId: uuidv7(), actionId: 's498-food-press',
+      cart: { channel: 'fnb', bandHolder: { checkinId }, items: [{ ...item, prepaid: { checkinId } }], expectedTotalSatang: 0 },
+    }));
+    assert.equal(saleRefused.code, 'PREPAID_ONLINE_REQUIRED');
+  } finally {
+    box.close();
+  }
+});
 
 test('s494-checkin box: a Drop-Off stay paid as Nanny needs a nanny on shift and goes in as nanny, and the fact carries the service', async () => {
   const box = await openBox();

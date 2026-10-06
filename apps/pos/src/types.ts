@@ -1172,6 +1172,8 @@ export interface Wristband {
   // is prepaid_credit the credit is in creditBalanceTHB; when prepaid_items the
   // items array carries the entitlements (redeemedQty reconciled at pickup).
   foodProvision?: ChildFoodProvision;
+  /** The box shows entitlements for staff but cannot reserve them across offline counters. */
+  prepaidItemsOnlineOnly?: boolean;
   checkInId?: string; // links back to the originating drop-off CheckIn
   /**
    * SCRUM-494 — the platform's stay (`pos.checkin.id`) the counter's scan

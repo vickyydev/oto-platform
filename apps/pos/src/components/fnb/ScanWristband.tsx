@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Wristband } from '@/types';
 import { getWristbandByCode, getMockWristbands } from '@/mockApi';
 import { ApiError } from '@/api/client';
-import { BOX_CREDIT_REFUSAL_CODES, lookupWalletOnBox, scanBand, wristbandOfBoxWallet } from '@/api/wallet';
+import { BOX_CREDIT_REFUSAL_CODES, lookupBandFoodOnBox, lookupWalletOnBox, scanBand, wristbandOfBoxScan } from '@/api/wallet';
+import type { BridgeBandFoodAnswer } from '@oto/shared';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { getActiveBranch } from '@/store/catalogStore';
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure } from '@/lib/lane';
@@ -253,11 +254,17 @@ async function loadFromBox(
 ): Promise<{ wristband: Wristband | null; error: string | null }> {
   const key = value.trim();
   if (!key) return { wristband: null, error: null };
+  let food: BridgeBandFoodAnswer | null = null;
   try {
+    food = await lookupBandFoodOnBox(stationId, key);
     const read = await lookupWalletOnBox(stationId, key);
-    return { wristband: wristbandOfBoxWallet(read, key, local ? withoutLocalCredit(local) : null), error: null };
+    return { wristband: wristbandOfBoxScan(food, read, key, local ? withoutLocalCredit(local) : null), error: null };
   } catch (err) {
     if (err instanceof ApiError && BOX_CREDIT_REFUSAL_CODES.includes(err.code)) {
+      if (food?.stay) {
+        const tab = wristbandOfBoxScan(food, null, key);
+        return { wristband: tab ? { ...tab, creditNote: err.message } : null, error: null };
+      }
       if (local) return { wristband: { ...withoutLocalCredit(local), creditNote: err.message }, error: null };
       const walletId = (err.details as { walletId?: unknown } | undefined)?.walletId;
       if (typeof walletId === 'string') {
@@ -266,6 +273,10 @@ async function loadFromBox(
           creditNote: err.message }, error: null };
       }
       return { wristband: null, error: err.message };
+    }
+    if (food?.stay) {
+      const tab = wristbandOfBoxScan(food, null, key);
+      return { wristband: tab ? { ...tab, creditNote: 'This box could not confirm credit; take another payment.' } : null, error: null };
     }
     if (local) return { wristband: withoutLocalCredit(local), error: null };
     const said = err instanceof ApiError ? err.message : null;

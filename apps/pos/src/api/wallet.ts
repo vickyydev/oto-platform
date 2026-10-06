@@ -14,9 +14,11 @@
 // confirm press sends to spend it (`api/sales.ts`, `spendWalletOnSale`).
 import {
   BOX_WALLET_REFUSALS,
+  BRIDGE_CHECKIN_INTENTS,
   BRIDGE_WALLET_INTENTS,
   walletOfflineCapMessage,
   type BandStayView,
+  type BridgeBandFoodAnswer,
   type BridgeWalletBalance,
   type WalletCreditDay,
   type WalletEntryView,
@@ -250,6 +252,26 @@ export async function lookupWalletOnBox(stationId: string, key: string): Promise
     key: key.trim(),
   });
   return answer.result!.wallet;
+}
+
+/** A narrow safety read from the box's in-park check-in copy. */
+export async function lookupBandFoodOnBox(stationId: string, key: string): Promise<BridgeBandFoodAnswer> {
+  const answer = await bridgeApi.intent<BridgeBandFoodAnswer>(stationId, BRIDGE_CHECKIN_INTENTS.bandFood, { key: key.trim() });
+  return answer.result!;
+}
+
+export function wristbandOfBoxScan(
+  food: BridgeBandFoodAnswer,
+  wallet: BridgeWalletBalance | null,
+  scannedKey: string,
+  base?: Wristband | null,
+): Wristband | null {
+  const stayTab = food.stay ? wristbandOfScan({ wallet: null, ledger: [], stay: food.stay }, scannedKey) : null;
+  if (!wallet && !stayTab && !base) return null;
+  const tab = wallet
+    ? wristbandOfBoxWallet(wallet, scannedKey, stayTab ?? base)
+    : (stayTab ?? base)!;
+  return food.stay ? { ...tab, ...bandFoodOf(food.stay), prepaidItemsOnlineOnly: true } : tab;
 }
 
 /**

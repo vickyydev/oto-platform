@@ -520,7 +520,7 @@ test('a cart is priced from the cached catalogue; after seven days the box refus
   r.t.close();
 });
 
-test('offline finding 1: the box prices a member at the tier the till sent, both ways', async () => {
+test('offline tier: a member may use their verified or the default rate, never an unverified discount', async () => {
   const r = await rig();
   const { caller } = await r.bridge.unlock(STATION_ID, {
     token: token(r.now.at),
@@ -547,7 +547,7 @@ test('offline finding 1: the box prices a member at the tier the till sent, both
     lineTotals: Record<string, number>;
   };
   assert.equal(touristQuote.tier, 'tourist', 'the tier the till sent prices the member');
-  assert.equal(touristQuote.tierSource, 'member', 'still the member paying, at the rate on their cart');
+  assert.equal(touristQuote.tierSource, 'default', 'the default rate needs no member proof');
   assert.equal(touristQuote.lineTotals[lineId], 2 * 35000);
 
   // The other way: the same member at their own Thai rate is still priced Thai.
@@ -564,7 +564,7 @@ test('offline finding 1: the box prices a member at the tier the till sent, both
   assert.equal(thaiQuote.tier, 'thai');
   assert.equal(thaiQuote.lineTotals[lineId], 2 * 25000);
 
-  // The box prices the SENT tier, so a Tourist cart carrying a Thai line total is
+  // The box prices the allowed default tier, so a Tourist cart carrying a Thai line total is
   // a real disagreement and is still refused — proof it is not quietly pricing
   // the member's own tier under the covers.
   await assert.rejects(
@@ -694,6 +694,13 @@ test('OD-11: a tier upgraded on a document at the counter prices the next cart; 
     intent('member.create', { memberId, phone: '+66817778888', nickname: 'Resident' }),
   );
   await assert.rejects(
+    r.bridge.intent(STATION_ID, caller, intent('cart.quote', {
+      memberId, tier: 'thai', lines: [{ id: '018f0000-0000-7000-8000-0000000001b0', packageId: PACKAGE, kids: 1, adults: 0 }],
+    })),
+    (err: unknown) => err instanceof BridgeError && err.code === 'TIER_NOT_VERIFIED',
+    'a till-selected discounted tier cannot override the cached member tier',
+  );
+  await assert.rejects(
     r.bridge.intent(STATION_ID, caller, intent('member.tier_change', {
       direction: 'upgrade', memberId,
       verificationId: '018f0000-0000-7000-8000-0000000000e6',
@@ -726,6 +733,10 @@ test('OD-11: a tier upgraded on a document at the counter prices the next cart; 
   const quote = priced.result?.quote as { tier: string; lineTotals: Record<string, number> };
   assert.equal(quote.tier, 'thai');
   assert.equal(quote.lineTotals[lineId], 25000);
+  const baseline = await r.bridge.intent(STATION_ID, caller, intent('cart.quote', {
+    memberId, tier: 'tourist', lines: [{ id: lineId, packageId: PACKAGE, kids: 1, adults: 0 }],
+  }));
+  assert.equal((baseline.result?.quote as { tier: string }).tier, 'tourist', 'the default needs no proof');
 
   // Reception holds no `pos:member:tier_downgrade`, offline as online.
   await assert.rejects(

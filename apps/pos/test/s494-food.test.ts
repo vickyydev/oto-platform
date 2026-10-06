@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import type { BandStayView } from '@oto/shared';
 import { api, ApiError } from '@/api/client';
 import { buildItemCartPayload, offLedgerOnly } from '@/api/sales';
-import { bandFoodOf, wristbandOfScan, type ApiBandScan } from '@/api/wallet';
+import { bandFoodOf, wristbandOfBoxScan, wristbandOfScan, type ApiBandScan } from '@/api/wallet';
 import { loadScannedTab } from '@/components/fnb/ScanWristband';
 import { FoodSafetyBanner } from '@/components/fnb/FoodSafetyBanner';
 import { bandHolderOf, withPrepaidServed } from '@/lib/bandFood';
@@ -70,6 +70,13 @@ describe('s494 — the scan carries the child’s stay onto the tab', () => {
       foodProvision: { mode: 'prepaid_items', paidTHB: 110, items: [{ menuItemId: HOTDOG, unitPriceTHB: 110, qty: 1, redeemedQty: 0 }] },
     });
     expect(wristbandOfScan({ wallet: null, ledger: [], stay: null }, 'x')).toBeNull();
+  });
+
+  it('an offline prepaid-items band has its safety details but marks meals online-only', () => {
+    const tab = wristbandOfBoxScan({ stay: stay(), cacheAppliedAt: '2026-10-06T00:00:00Z', prepaidItemsOnlineOnly: true }, null, 'T1-7KMQ4X');
+    expect(tab).toMatchObject({ stayId: STAY, creditBalanceTHB: 0, allergiesMedical: 'Peanuts; EpiPen in bag',
+      mayOrderFood: true, prepaidItemsOnlineOnly: true, foodProvision: { mode: 'prepaid_items' } });
+    expect(wristbandOfBoxScan({ stay: null, cacheAppliedAt: null, prepaidItemsOnlineOnly: true }, null, 'x')).toBeNull();
   });
 
   it('a prepaid-credit child: the wallet’s credit beside the stay’s food', () => {

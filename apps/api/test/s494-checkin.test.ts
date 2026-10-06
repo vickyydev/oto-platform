@@ -1,7 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, band, branch, checkin, nanny, nannyShift, station, ticketPackage } from '@oto/db';
+import { auditLog, band, branch, checkin, child, member, nanny, nannyShift, station, ticketPackage } from '@oto/db';
 import { newId } from '@oto/shared';
+import { checkinCacheItem } from '../src/services/sync-checkin';
 import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
@@ -124,6 +125,20 @@ async function stay(id: string) {
   const [row] = await ctx.db.select().from(checkin).where(eq(checkin.id, id));
   return row!;
 }
+
+it('the branch check-in cache carries the same saved medical and dietary warnings as an online band scan', async () => {
+  const stayId = await register(`Cache Food ${newId().slice(0, 6)}`, 6, 'drop_off');
+  const [owner] = await ctx.db.select({ id: member.id }).from(member).where(eq(member.operatorId, operatorId)).limit(1);
+  expect(owner).toBeDefined();
+  const childId = newId();
+  await ctx.db.insert(child).values({ id: childId, memberId: owner!.id, name: 'Cache Child',
+    allergies: 'Saved peanuts', medicalNotes: 'Inhaler in bag', dietary: 'No nuts' });
+  await ctx.db.update(checkin).set({ childId, allergies: 'Peanuts today', foodRestrictions: null }).where(eq(checkin.id, stayId));
+  const cached = await checkinCacheItem(ctx.db, operatorId, branchId);
+  const found = cached.families.flatMap((f) => f.children).find((c) => c.id === stayId);
+  expect(found).toMatchObject({ allergies: 'Peanuts today', savedAllergies: 'Saved peanuts',
+    savedMedicalNotes: 'Inhaler in bag', savedDietary: 'No nuts' });
+});
 
 async function checkInAudits(id: string) {
   return (

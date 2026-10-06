@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BOX_WALLET_REFUSALS,
+  BRIDGE_CHECKIN_INTENTS,
   BRIDGE_WALLET_INTENTS,
   walletOfflineCapMessage,
   type BridgeWalletBalance,
@@ -145,6 +146,7 @@ const balance = (over: Partial<BridgeWalletBalance> = {}): BridgeWalletBalance =
   walletId: '01a0f899-49d8-70f6-81d8-52e8e5c213ff', balanceSatang: 35_000, capLeftSatang: 30_000, capSatang: 30_000,
   spendableSatang: 30_000, snapshotAt: '2026-10-01T18:10:32.987Z', source: 'snapshot', ...over,
 });
+const noStay = { stay: null, cacheAppliedAt: '2026-10-01T18:10:32.987Z', prepaidItemsOnlineOnly: true };
 
 /** The till on its box: a station picked, and a dropped link already met. */
 function onBoxLane(): void {
@@ -157,9 +159,12 @@ describe('F3 — a band scanned on the box lane is looked up on the box', () => 
   it('asks the box (wallet.lookup), never the platform, and offers what the box will take here', async () => {
     onBoxLane();
     const get = vi.spyOn(api, 'get');
-    const intent = vi.spyOn(bridgeApi, 'intent').mockResolvedValue({ document: {} as never, result: { wallet: balance() } });
+    const intent = vi.spyOn(bridgeApi, 'intent')
+      .mockResolvedValueOnce({ document: {} as never, result: noStay })
+      .mockResolvedValueOnce({ document: {} as never, result: { wallet: balance() } });
     const found = await loadScannedTab(KEY);
     expect(get).not.toHaveBeenCalled();
+    expect(intent).toHaveBeenCalledWith('station-1', BRIDGE_CHECKIN_INTENTS.bandFood, { key: KEY });
     expect(intent).toHaveBeenCalledWith('station-1', BRIDGE_WALLET_INTENTS.lookup, { key: KEY });
     expect(found.error).toBeNull();
     // ฿350 held, ฿300 under the cap: the tab offers ฿300 and spends by the scanned key.
@@ -170,17 +175,21 @@ describe('F3 — a band scanned on the box lane is looked up on the box', () => 
   it('a platform call that meets a dropped link moves this scan to the box', async () => {
     setLaneStation('station-1');
     vi.spyOn(api, 'get').mockRejectedValue(new NetworkError('offline'));
-    const intent = vi.spyOn(bridgeApi, 'intent').mockResolvedValue({ document: {} as never, result: { wallet: balance() } });
+    const intent = vi.spyOn(bridgeApi, 'intent')
+      .mockResolvedValueOnce({ document: {} as never, result: noStay })
+      .mockResolvedValueOnce({ document: {} as never, result: { wallet: balance() } });
     const found = await loadScannedTab(KEY);
-    expect(intent).toHaveBeenCalledTimes(1);
+    expect(intent).toHaveBeenCalledTimes(2);
     expect(currentLane()).toBe('box');
     expect(found.wristband?.creditBalanceTHB).toBe(300);
   });
 
   it('the day’s cap reached: the tab opens at ฿0 with the box’s cap sentence, which the credit card shows verbatim', async () => {
     onBoxLane();
-    vi.spyOn(bridgeApi, 'intent').mockResolvedValue({ document: {} as never,
-      result: { wallet: balance({ balanceSatang: 29_000, capLeftSatang: 0, spendableSatang: 0 }) } });
+    vi.spyOn(bridgeApi, 'intent')
+      .mockResolvedValueOnce({ document: {} as never, result: noStay })
+      .mockResolvedValueOnce({ document: {} as never,
+        result: { wallet: balance({ balanceSatang: 29_000, capLeftSatang: 0, spendableSatang: 0 }) } });
     const found = await loadScannedTab(KEY);
     const words = walletOfflineCapMessage(30_000);
     expect(found.wristband).toMatchObject({ creditBalanceTHB: 0, creditNote: words });
@@ -203,16 +212,18 @@ describe('F3 — a band scanned on the box lane is looked up on the box', () => 
   it('an expired wallet opens at ฿0 with the box’s words; a key the box has no copy of is refused in its words', async () => {
     onBoxLane();
     const expired = "This wallet's credit has expired — only a manager can bring it back. Take the order in cash or card.";
-    vi.spyOn(bridgeApi, 'intent').mockRejectedValueOnce(new ApiError(409, 'WALLET_EXPIRED', expired, { walletId: 'w-old' }));
+    const intent = vi.spyOn(bridgeApi, 'intent')
+      .mockResolvedValueOnce({ document: {} as never, result: noStay })
+      .mockRejectedValueOnce(new ApiError(409, 'WALLET_EXPIRED', expired, { walletId: 'w-old' }));
     const old = await loadScannedTab('QR-OLDOLDOLDOLDOLDOLDOL');
     expect(old).toEqual({ wristband: expect.objectContaining({ id: 'w-old', creditBalanceTHB: 0, creditNote: expired }), error: null });
 
-    vi.spyOn(bridgeApi, 'intent').mockRejectedValueOnce(
+    intent.mockResolvedValueOnce({ document: {} as never, result: noStay }).mockRejectedValueOnce(
       new ApiError(404, BOX_WALLET_REFUSALS.unknown.code, BOX_WALLET_REFUSALS.unknown.message));
     expect(await loadScannedTab('QR-NOTONTHEBOXATALL000')).toEqual({ wristband: null, error: BOX_WALLET_REFUSALS.unknown.message });
 
     // A band the station holds itself still opens, its notes kept, with the box's words.
-    vi.spyOn(bridgeApi, 'intent').mockRejectedValueOnce(
+    intent.mockResolvedValueOnce({ document: {} as never, result: noStay }).mockRejectedValueOnce(
       new ApiError(404, BOX_WALLET_REFUSALS.unknown.code, BOX_WALLET_REFUSALS.unknown.message));
     const held = await loadScannedTab('1001');
     expect(held.wristband).toMatchObject({ code: '1001', creditBalanceTHB: 0, creditNote: BOX_WALLET_REFUSALS.unknown.message });
