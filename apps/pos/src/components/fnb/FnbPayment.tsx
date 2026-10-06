@@ -71,22 +71,43 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
   const baht = (satang: number) => (satang / 100).toLocaleString('en-US', { maximumFractionDigits: 2 });
   const defaultRemainder = methods.find((method) => method.kind === 'card');
   const wasCreditSelected = useRef(false);
+  /**
+   * The method staff chose for the rest while credit was selected: the
+   * approved design's `payRemainder`, card until staff choose, kept across the
+   * credit toggle and started afresh with each payment screen.
+   */
+  const remainderChoice = useRef<string | null>(null);
+  const chooseMethod = (id: string) => {
+    if (creditSelected) remainderChoice.current = id;
+    stage.selectMethod(id);
+  };
 
   /**
-   * The approved design preselects card for the part credit did not cover;
-   * with no card tender configured nothing is preselected and staff choose.
-   * Choosing a button after that stays the staff member's choice; only the
-   * transition into credit selection applies the default.
+   * The approved design preselects card for the part credit did not cover
+   * (`useState<FnbRemainder>('card')`, register entry 17, OD-W3); with no card
+   * tender configured nothing is preselected and staff choose. Selecting
+   * credit puts the rest back on that choice. Otherwise the default fills only
+   * an empty method — which is what the screen first meets: the station's
+   * stage starts afresh in its own effect after this one has run (React runs
+   * the screen's effects before the station's), and its first figures are
+   * the ones from before the payment screen opened. A method staff chose is
+   * never replaced, and nothing is picked over a payment error.
    */
   useEffect(() => {
     if (!creditSelected) { wasCreditSelected.current = false; return; }
     if (stage.locked) return;
-    if (!wasCreditSelected.current && remainderSatang > 0 && defaultRemainder) stage.selectMethod(defaultRemainder.id);
-    wasCreditSelected.current = true;
+    if (remainderSatang > 0) {
+      const entering = !wasCreditSelected.current;
+      wasCreditSelected.current = true;
+      const preferred = remainderChoice.current ?? defaultRemainder?.id ?? null;
+      const unchosen = stage.state.method === null && stage.state.error === null;
+      if (preferred && (entering || unchosen)) stage.selectMethod(preferred);
+    }
     if (stage.state.amountSatang !== remainderSatang) stage.setAmountSatang(remainderSatang);
-    // The stage's own setters read current refs; the figures are the triggers.
+    // The stage's own setters read current refs; every new stage state is a
+    // trigger, so a stage that starts afresh is filled again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creditSelected, remainderSatang, stage.state.amountSatang, stage.locked, defaultRemainder?.id]);
+  }, [stage.state, creditSelected, remainderSatang, stage.locked, defaultRemainder?.id]);
 
   /**
    * S2-14a round 2 — CREDIT REFUSED ON THE BOX LANE: the stage said so before
@@ -183,7 +204,7 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
                     {methods.map((method) => {
                       const Icon = paymentMethodIcon(method.kind);
                       return <button key={method.id} type="button" disabled={stage.locked}
-                        onClick={(event) => { event.stopPropagation(); stage.selectMethod(method.id); }}
+                        onClick={(event) => { event.stopPropagation(); chooseMethod(method.id); }}
                         className={cn('flex h-12 items-center justify-center gap-2 rounded-xl border font-bold transition-all active:scale-95',
                           stage.state.method === method.id ? 'border-primary bg-primary text-primary-foreground' : 'bg-background hover:border-primary/50')}
                       ><Icon className="h-5 w-5" />{method.label}</button>;
@@ -231,11 +252,11 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
                 role="button"
                 tabIndex={stage.locked ? -1 : 0}
                 aria-disabled={stage.locked}
-                onClick={() => { if (!stage.locked) stage.selectMethod(method.id); }}
+                onClick={() => { if (!stage.locked) chooseMethod(method.id); }}
                 onKeyDown={(event) => {
                   if (!stage.locked && (event.key === 'Enter' || event.key === ' ')) {
                     event.preventDefault();
-                    stage.selectMethod(method.id);
+                    chooseMethod(method.id);
                   }
                 }}
                 className={cn('p-5 select-none transition-all', stage.locked ? 'cursor-default' : 'cursor-pointer active:scale-[0.99]', selected ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'hover:border-primary/50')}
