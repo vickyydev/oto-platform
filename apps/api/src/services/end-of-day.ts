@@ -97,6 +97,9 @@ import { creditRedeemedOn } from './wallet';
  *                  closed day;
  *   receipt        printed at close on the closing counter's printer, numbered
  *                  on its own `end_of_day` series; reprinted from the closed day.
+ *                  Closed with no counter that can print, the day still closes
+ *                  and the receipt waits: the first print from a counter numbers
+ *                  it on that counter's series.
  */
 
 /** The prototype's sentinel for card money with no terminal (`pickTerminalTid`). */
@@ -379,6 +382,12 @@ async function openRecordOf(db: Exec, clock: BranchClock, date: string): Promise
   });
 }
 
+/**
+ * What a day closed away from a printing counter says: the close stands, the
+ * receipt waits, and a reprint from a counter numbers and prints it.
+ */
+export const RECEIPT_PENDING = 'Receipt not printed — reprint it from a counter';
+
 /** The closed day's receipt: its number, its counter and every print of it. */
 async function receiptOf(db: Exec, row: typeof endOfDay.$inferSelect): Promise<EodReceipt> {
   const [counter] = row.receiptStationId
@@ -387,7 +396,7 @@ async function receiptOf(db: Exec, row: typeof endOfDay.$inferSelect): Promise<E
   const jobs = await endOfDayReceiptJobs(db, row.id);
   const last = jobs[jobs.length - 1];
   const note = !row.receiptNumber
-    ? 'End of Day receipt not printed — the day was not closed at a counter'
+    ? RECEIPT_PENDING
     : !last
       ? counter && !counter.boxId
         ? `End of Day receipt not printed — ${counter.name} is not attached to a box`
@@ -659,8 +668,23 @@ async function counterAt(db: Exec, operatorId: string, branchId: string, station
   return row;
 }
 
-/** Print on the counter this session took, never an arbitrary branch counter. */
+/**
+ * The counter a close prints on: the one this session took, when it belongs to
+ * this branch and can print (a receipt series and a box). A named counter of
+ * another branch is refused; otherwise having no counter that can print is
+ * not a refusal. Any holder of pos:cash:day_close may close (PLAN.md §2, "Who
+ * closes"): the day closes and its receipt waits for a reprint from a counter.
+ */
 async function closingCounter(tx: Tx, actor: CashActor, branchId: string, requestedId: string | null) {
+  const requested = requestedId ? await counterAt(tx, actor.operatorId, branchId, requestedId, true) : null;
+  const taken = await counterAt(tx, actor.operatorId, branchId, actor.stationId ?? null, false);
+  // Print on the counter this session took, never an arbitrary branch counter.
+  const counter = requested ? (requested.id === taken?.id ? taken : null) : taken;
+  return counter?.codePrefix && counter.boxId ? { ...counter, codePrefix: counter.codePrefix } : null;
+}
+
+/** A reprint prints on the counter this session took, and refuses one that cannot print. */
+async function printingCounter(tx: Tx, actor: CashActor, branchId: string, requestedId: string | null) {
   if (requestedId) {
     const requested = await counterAt(tx, actor.operatorId, branchId, requestedId, true);
     if (requested?.id !== actor.stationId) {
@@ -668,7 +692,7 @@ async function closingCounter(tx: Tx, actor: CashActor, branchId: string, reques
     }
   }
   if (!actor.stationId) {
-    throw errors.conflict('NO_COUNTER', 'Take a counter before closing or reprinting End of Day.');
+    throw errors.conflict('NO_COUNTER', 'Take a counter before reprinting End of Day.');
   }
   const counter = await counterAt(tx, actor.operatorId, branchId, actor.stationId, true);
   if (!counter?.codePrefix) {
@@ -677,13 +701,14 @@ async function closingCounter(tx: Tx, actor: CashActor, branchId: string, reques
   if (!counter.boxId) {
     throw errors.conflict('STATION_HAS_NO_BOX', `${counter.name} is not attached to a box, so nothing on it can print.`);
   }
-  return counter;
+  return { ...counter, codePrefix: counter.codePrefix };
 }
 
 /**
  * Print the closed day's receipt again at the session's counter. A copy names
  * the original job and carries the figures exactly as
- * they were locked.
+ * they were locked. A day closed without a receipt is numbered here, once, on
+ * this counter's series, and this print is its first (not a copy).
  */
 export async function reprintEndOfDayReceipt(
   tx: Tx,
@@ -693,12 +718,16 @@ export async function reprintEndOfDayReceipt(
   now: Date = new Date(),
 ): Promise<EndOfDayRecord> {
   await branchClockFor(tx, actor.operatorId, branchId);
-  const row = await closedRow(tx, branchId, input.date);
+  // One print of a day at a time: two first prints of a waiting receipt take one number.
+  await lockDay(tx, branchId, input.date);
+  let row = await closedRow(tx, branchId, input.date);
   if (!row) {
     throw errors.conflict('DAY_NOT_CLOSED', 'This day is not closed yet — its End of Day receipt prints when it closes.');
   }
-  const counter = await closingCounter(tx, actor, branchId, input.stationId ?? null);
-  const reason = input.reason?.trim() || 'Reprint from the closed day';
+  const counter = await printingCounter(tx, actor, branchId, input.stationId ?? null);
+  const first = !row.receiptNumber;
+  if (first) row = await numberWaitingReceipt(tx, actor, row, counter, now);
+  const reason = first ? null : input.reason?.trim() || 'Reprint from the closed day';
   const actionId = newId();
   const printed = await queueEndOfDayReceipt(tx, {
     operatorId: actor.operatorId,
@@ -712,6 +741,27 @@ export async function reprintEndOfDayReceipt(
     reprintReason: reason,
   });
   if (!printed.job) throw errors.conflict('RECEIPT_NOT_QUEUED', printed.note ?? 'The End of Day receipt could not be queued.');
+  if (first) {
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId,
+      action: 'end_of_day.receipt',
+      entityType: 'end_of_day',
+      entityId: row.id,
+      actionId,
+      requestId: actor.requestId,
+      before: { businessDate: row.businessDate, receiptNumber: null, receiptStationId: null },
+      after: {
+        businessDate: row.businessDate,
+        receiptNumber: row.receiptNumber,
+        receiptStationId: row.receiptStationId,
+        receiptPrintJobId: printed.job.id,
+        status: printed.job.status,
+      },
+    });
+    return closedRecordOf(tx, row);
+  }
   await audit.record(tx, {
     actorAccountId: actor.accountId,
     operatorId: actor.operatorId,
@@ -733,6 +783,31 @@ export async function reprintEndOfDayReceipt(
     },
   });
   return closedRecordOf(tx, row);
+}
+
+/**
+ * Number a closed day's waiting receipt on this counter's End of Day series:
+ * the one write the closed day takes after its close (migration 0061).
+ */
+async function numberWaitingReceipt(
+  tx: Tx,
+  actor: CashActor,
+  row: typeof endOfDay.$inferSelect,
+  counter: { id: string; codePrefix: string },
+  now: Date,
+): Promise<typeof endOfDay.$inferSelect> {
+  const receipt = await allocateReceipt(
+    tx,
+    { operatorId: actor.operatorId, branchId: row.branchId, stationId: counter.id, series: `${counter.codePrefix}-EOD` },
+    'end_of_day',
+  );
+  const [numbered] = await tx
+    .update(endOfDay)
+    .set({ receiptNumber: receipt.number, receiptStationId: counter.id, updatedAt: now })
+    .where(and(eq(endOfDay.id, row.id), isNull(endOfDay.receiptNumber)))
+    .returning();
+  if (!numbered) throw errors.conflict('RECEIPT_ALREADY_NUMBERED', 'This End of Day receipt was just numbered — reload the day.');
+  return numbered;
 }
 
 // --- Writing -------------------------------------------------------------------
@@ -765,7 +840,9 @@ export const dayClosed = () =>
  * transaction. Allowed with lines off or pending and with no notes. Refused
  * while the day is provisional, and while anybody is still counted inside
  * unless a holder of `pos:cash:approve` closes with a reason. The receipt is
- * numbered on the closing counter's series and queued on its printer.
+ * numbered on the closing counter's series and queued on its printer; with no
+ * counter that can print, the day still closes and the receipt waits
+ * (`RECEIPT_PENDING`) for a reprint from a counter.
  */
 export async function closeEndOfDay(
   tx: Tx,
@@ -796,11 +873,13 @@ export async function closeEndOfDay(
     }
   }
   const counter = await closingCounter(tx, actor, branchId, input.stationId ?? null);
-  const receipt = await allocateReceipt(
-    tx,
-    { operatorId: actor.operatorId, branchId, stationId: counter.id, series: `${counter.codePrefix}-EOD` },
-    'end_of_day',
-  );
+  const receipt = counter
+    ? await allocateReceipt(
+        tx,
+        { operatorId: actor.operatorId, branchId, stationId: counter.id, series: `${counter.codePrefix}-EOD` },
+        'end_of_day',
+      )
+    : null;
 
   const open = await openRecordOf(tx, clock, input.date);
   const filled = applyEndOfDayEntries(open, {
@@ -834,8 +913,8 @@ export async function closeEndOfDay(
       overrideByAccountId: overrideReason ? actor.accountId : null,
       overrideReason: overrideReason || null,
       overrideStranded: overrideReason ? stranded : null,
-      receiptNumber: receipt.number,
-      receiptStationId: counter.id,
+      receiptNumber: receipt?.number ?? null,
+      receiptStationId: receipt && counter ? counter.id : null,
       createdAt: now,
       updatedAt: now,
     })
@@ -857,16 +936,18 @@ export async function closeEndOfDay(
       after: { businessDate: input.date, reason: overrideReason, strandedCount: stranded.length },
     });
   }
-  const printed = await queueEndOfDayReceipt(tx, {
-    operatorId: actor.operatorId,
-    branchId,
-    endOfDayId: id,
-    stationRow: counter,
-    actorAccountId: actor.accountId,
-    actionId: newId(),
-    requestId: actor.requestId,
-    now,
-  });
+  const printed = counter
+    ? await queueEndOfDayReceipt(tx, {
+        operatorId: actor.operatorId,
+        branchId,
+        endOfDayId: id,
+        stationRow: counter,
+        actorAccountId: actor.accountId,
+        actionId: newId(),
+        requestId: actor.requestId,
+        now,
+      })
+    : null;
 
   await audit.record(tx, {
     actorAccountId: actor.accountId,

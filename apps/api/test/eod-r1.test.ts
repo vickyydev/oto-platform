@@ -21,7 +21,6 @@ import {
   createTestContext,
   operatorIdByName,
   signInAs,
-  takeStation,
   teardownAll,
   OTO_OPERATOR_NAME,
   type TestContext,
@@ -229,8 +228,6 @@ beforeAll(async () => {
   receptionCookie = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
   managerCookie = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
   chalongCookie = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
-  await takeStation(ctx.app, receptionCookie, till1);
-  await takeStation(ctx.app, managerCookie, till1);
 }, 300_000);
 
 afterAll(async () => {

@@ -195,19 +195,6 @@ describe('eod-r2-gate provisional: box states that must hold the day', () => {
 });
 
 describe('eod-r2-gate close: counter, override and receipt request shapes', () => {
-  it('a signed-in session cannot close on another counter in its branch', async () => {
-    const res = await close(managerCookie, { date: day(2), stationId: otherCentralStation });
-    expect(res.statusCode, res.body).toBe(403);
-    expect(res.json().error.code).toBe('STATION_NOT_PICKED');
-  });
-
-  it('a session with no counter cannot close a day without a receipt', async () => {
-    const unseated = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
-    const res = await close(unseated, { date: day(5) });
-    expect(res.statusCode, res.body).toBe(409);
-    expect(res.json().error.code).toBe('NO_COUNTER');
-  });
-
   it("a counter of another branch is refused, and nothing is written", async () => {
     const res = await close(managerCookie, { date: day(2), stationId: chalongStation });
     expect(res.statusCode, res.body).toBe(404);
@@ -262,5 +249,139 @@ describe('eod-r2-gate close: counter, override and receipt request shapes', () =
     const rec = res.json() as EndOfDayRecord;
     expect(rec.receipt).toMatchObject({ stationId: till1.id });
     expect(rec.receipt!.number).toMatch(/^T1-EOD-/);
+  });
+});
+
+// --- Who closes: any holder of pos:cash:day_close, at a counter or not (PLAN.md §2) ---
+
+describe('eod-r2-gate close away from a printing counter: the day closes, the receipt waits', () => {
+  const reprint = (cookie: string, payload: Record<string, unknown>, key: string = newId()) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/branches/${central}/end-of-day/reprint`,
+      headers: { cookie, 'idempotency-key': key },
+      payload,
+    });
+  const eodSeries = async () => {
+    const [series] = await ctx.db
+      .select()
+      .from(schema.receiptSeries)
+      .where(and(eq(schema.receiptSeries.stationId, till1.id), eq(schema.receiptSeries.kind, 'end_of_day')));
+    return series?.nextSeq ?? 1;
+  };
+  const jobsOf = async (id: string) => ctx.db.select().from(schema.printJob).where(eq(schema.printJob.subjectId, id));
+  let pending: EndOfDayRecord;
+
+  it('a session with no counter closes the day: 200, no number, nothing printed, the receipt waits', async () => {
+    const unseated = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const before = await eodSeries();
+    const res = await close(unseated, { date: day(5) });
+    expect(res.statusCode, res.body).toBe(200);
+    pending = res.json() as EndOfDayRecord;
+    expect(pending.status).toBe('closed');
+    expect(pending.receipt).toMatchObject({ number: null, stationId: null, jobs: [], note: 'Receipt not printed — reprint it from a counter' });
+    expect(await jobsOf(pending.id)).toHaveLength(0);
+    expect(await eodSeries()).toBe(before);
+    const audit = await ctx.db
+      .select()
+      .from(schema.auditLog)
+      .where(and(eq(schema.auditLog.action, 'end_of_day.close'), eq(schema.auditLog.entityId, pending.id)));
+    expect(audit).toHaveLength(1);
+    expect(audit[0]!.after).toMatchObject({ receiptNumber: null, receiptStationId: null, receiptPrintJobId: null });
+    // Reloading the closed day says the same.
+    expect((await getDay(day(5))).receipt).toMatchObject({ number: null, note: 'Receipt not printed — reprint it from a counter' });
+  });
+
+  it('a counter of another branch is refused for the reprint, and nothing is numbered', async () => {
+    const before = await eodSeries();
+    const res = await reprint(managerCookie, { date: day(5), stationId: chalongStation });
+    expect(res.statusCode, res.body).toBe(404);
+    expect(res.json().error.code).toBe('STATION_NOT_FOUND');
+    const [row] = await ctx.db.select().from(schema.endOfDay).where(and(eq(schema.endOfDay.branchId, central), eq(schema.endOfDay.businessDate, day(5))));
+    expect(row!.receiptNumber).toBeNull();
+    expect(await eodSeries()).toBe(before);
+  });
+
+  it('a session with no counter still cannot print the waiting receipt', async () => {
+    const unseated = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const res = await reprint(unseated, { date: day(5) });
+    expect(res.statusCode, res.body).toBe(409);
+    expect(res.json().error.code).toBe('NO_COUNTER');
+  });
+
+  it("the reprint from a counter with a box numbers the waiting receipt on that counter's series and prints it once", async () => {
+    const before = await eodSeries();
+    const key = newId();
+    const res = await reprint(receptionCookie, { date: day(5), stationId: till1.id }, key);
+    expect(res.statusCode, res.body).toBe(200);
+    const rec = res.json() as EndOfDayRecord;
+    const number = `${till1.codePrefix}-EOD-${String(before).padStart(6, '0')}`;
+    expect(rec.receipt).toMatchObject({ number, stationId: till1.id, note: null });
+    expect(rec.receipt!.jobs).toHaveLength(1);
+    expect(rec.receipt!.jobs[0]!.reprint).toBe(false);
+    const jobs = await jobsOf(pending.id);
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({ stationId: till1.id, boxId: till1.boxId, kind: 'receipt', subjectType: 'end_of_day', reprintOf: null });
+    expect(await eodSeries()).toBe(before + 1);
+    // The figures stay as they were locked; only the receipt was written.
+    expect({ ...rec, receipt: undefined }).toEqual({ ...pending, receipt: undefined });
+    const numbered = await ctx.db
+      .select()
+      .from(schema.auditLog)
+      .where(and(eq(schema.auditLog.action, 'end_of_day.receipt'), eq(schema.auditLog.entityId, pending.id)));
+    expect(numbered).toHaveLength(1);
+    expect(numbered[0]!.after).toMatchObject({ receiptNumber: number, receiptStationId: till1.id, receiptPrintJobId: jobs[0]!.id });
+
+    // A replay of the same press prints nothing more and takes no number.
+    const replay = await reprint(receptionCookie, { date: day(5), stationId: till1.id }, key);
+    expect(replay.statusCode).toBe(200);
+    expect(await jobsOf(pending.id)).toHaveLength(1);
+    expect(await eodSeries()).toBe(before + 1);
+
+    // The next reprint is a copy of that first print, on the same number.
+    const copy = await reprint(receptionCookie, { date: day(5), stationId: till1.id });
+    expect(copy.statusCode, copy.body).toBe(200);
+    const after = copy.json() as EndOfDayRecord;
+    expect(after.receipt!.number).toBe(number);
+    expect(after.receipt!.jobs.map((j) => j.reprint)).toEqual([false, true]);
+    expect(await eodSeries()).toBe(before + 1);
+  });
+
+  it('naming a counter of the branch this session did not take closes the day without printing on it', async () => {
+    const res = await close(managerCookie, { date: day(6), stationId: otherCentralStation });
+    expect(res.statusCode, res.body).toBe(200);
+    const rec = res.json() as EndOfDayRecord;
+    expect(rec.receipt).toMatchObject({ number: null, stationId: null, jobs: [] });
+    expect(await jobsOf(rec.id)).toHaveLength(0);
+  });
+
+  it('a counter with no box closes the day and its receipt waits', async () => {
+    const boxless = newId();
+    await ctx.db.insert(schema.station).values({ id: boxless, operatorId, branchId: central, name: 'Boxless till', kind: 'till', codePrefix: 'BX' });
+    const seated = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    await takeStation(ctx.app, seated, boxless);
+    const res = await close(seated, { date: day(7), stationId: boxless });
+    expect(res.statusCode, res.body).toBe(200);
+    const rec = res.json() as EndOfDayRecord;
+    expect(rec.receipt).toMatchObject({ number: null, stationId: null, note: 'Receipt not printed — reprint it from a counter' });
+    // That counter cannot print it either; the refusal says why.
+    const again = await reprint(seated, { date: day(7), stationId: boxless });
+    expect(again.statusCode, again.body).toBe(409);
+    expect(again.json().error.code).toBe('STATION_HAS_NO_BOX');
+    await ctx.db.update(schema.station).set({ archivedAt: new Date() }).where(eq(schema.station.id, boxless));
+  });
+
+  it('the closed day takes its receipt once and nothing else: the figures stay frozen', async () => {
+    const [row] = await ctx.db.select().from(schema.endOfDay).where(and(eq(schema.endOfDay.branchId, central), eq(schema.endOfDay.businessDate, day(5))));
+    await expect(
+      ctx.db.update(schema.endOfDay).set({ receiptNumber: 'X-EOD-999999', receiptStationId: till1.id }).where(eq(schema.endOfDay.id, row!.id)),
+    ).rejects.toThrow();
+    const [waiting] = await ctx.db.select().from(schema.endOfDay).where(and(eq(schema.endOfDay.branchId, central), eq(schema.endOfDay.businessDate, day(6))));
+    await expect(
+      ctx.db
+        .update(schema.endOfDay)
+        .set({ receiptNumber: 'X-EOD-999999', receiptStationId: till1.id, notes: 'rewritten' })
+        .where(eq(schema.endOfDay.id, waiting!.id)),
+    ).rejects.toThrow();
   });
 });
