@@ -27,6 +27,10 @@ export interface PerformanceState {
   updatedAt: string | null;
   /** The branch timezone the times are shown in. */
   timezone: string | null;
+  /** The business date in progress at the branch, as the platform answered it. */
+  today: string | null;
+  /** The branch's business day start, `HH:MM`. */
+  businessDayStart: string | null;
   /** Every branch this account may read, as the platform answered. */
   readable: ReadonlyArray<{ branchId: string; name: string }>;
   /** The platform ids of the branches the figures cover. */
@@ -40,6 +44,8 @@ const EMPTY: PerformanceState = {
   provisional: false,
   updatedAt: null,
   timezone: null,
+  today: null,
+  businessDayStart: null,
   readable: [],
   branchIds: [],
   error: null,
@@ -83,6 +89,10 @@ export function usePerformance(date: string, branch: string, scope: PerformanceS
           // An open day is as fresh as the last rollup; a closed one as its last rewrite.
           updatedAt: row.provisional ? answer.lastRolledUpAt : row.computedAt,
           timezone: answer.branches[0]?.timezone ?? null,
+          // So the freshness line can tell an update earlier today from one
+          // left over from an earlier day (a stalled rollup).
+          today: answer.branches[0]?.today ?? null,
+          businessDayStart: answer.branches[0]?.businessDayStart ?? null,
           readable: answer.readable,
           branchIds: answer.branches.map((b) => b.branchId),
           error: null,

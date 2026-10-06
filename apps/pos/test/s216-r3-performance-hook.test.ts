@@ -121,6 +121,21 @@ describe('usePerformance', () => {
     expect(result.current.updatedAt).toBe('2026-10-05T14:10:00.000Z');
   });
 
+  it('carries the branch’s trading day and day start, so the freshness line can tell a stale update (fix round)', async () => {
+    // A stalled rollup: today is the 7th at the branch, the last run a day old.
+    const stalled = answer({
+      branches: [{ ...answer().branches[0]!, today: '2026-10-07', lastRolledUpAt: '2026-10-05T18:42:00.000Z' }],
+      merged: [row({ revenueSatang: 0, rolledDays: 0, computedAt: null })],
+      lastRolledUpAt: '2026-10-05T18:42:00.000Z',
+    });
+    vi.spyOn(api, 'get').mockResolvedValue(stalled);
+    const { result } = renderHook(() => usePerformance('2026-10-07', 'hkt-central', 'branch', false));
+    await flush();
+    expect(result.current.today).toBe('2026-10-07');
+    expect(result.current.businessDayStart).toBe('05:00');
+    expect(result.current.updatedAt).toBe('2026-10-05T18:42:00.000Z');
+  });
+
   it('All branches names no branch, so the platform adds up every one this account may read', async () => {
     const both = answer({
       readable: [

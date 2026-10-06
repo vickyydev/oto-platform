@@ -19,8 +19,8 @@ import { PerformanceFreshness } from '@/components/floor/PerformanceFreshness';
  *              their shares the prototype's rounding.
  *   invented   no number on the screen that the row (or the live drop-off
  *              read, or the freshness time) does not carry.
- *   freshness  the last-updated line after a stalled rollup (one known
- *              defect, pinned with `it.fails`).
+ *   freshness  the last-updated line after a stalled rollup (a defect found
+ *              here, pinned with `it.fails` until the fix round flipped it).
  */
 
 Object.assign(globalThis, { React });
@@ -195,16 +195,15 @@ describe('review — the last-updated line after a stalled rollup', () => {
   });
 
   /**
-   * KNOWN DEFECT (review of round 3). When the rollup has stalled since an
-   * earlier day — every daily run failing, or none run — the API answers today
-   * as provisional with `lastRolledUpAt` a day old (apps/api/test/
-   * s216-r3-review.test.ts, "a stalled rollup reads as stalled"), and the line
-   * prints that instant as a bare time: at 03:42 on 7 Oct a run from 01:42 on
-   * 6 Oct reads "Updated 01:42", two hours old to anyone looking. Marked
-   * `it.fails` so it stays green while the defect stands; flip it to `it`
-   * when the line names the day of an update that is not today's.
+   * DEFECT FOUND IN REVIEW OF ROUND 3, FIXED IN THE FIX ROUND. When the rollup
+   * has stalled since an earlier day — every daily run failing, or none run —
+   * the API answers today as provisional with `lastRolledUpAt` a day old
+   * (apps/api/test/s216-r3-review.test.ts, "a stalled rollup reads as
+   * stalled"), and the line printed that instant as a bare time: at 03:42 on
+   * 7 Oct a run from 01:42 on 6 Oct read "Updated 01:42", two hours old to
+   * anyone looking. Was `it.fails`; the line now names the day.
    */
-  it.fails('an update from an earlier day names its day, not a bare time that reads as today', () => {
+  it('an update from an earlier day names its day, not a bare time that reads as today', () => {
     vi.useFakeTimers({ now: new Date('2026-10-06T20:42:00.000Z') }); // 03:42, 7 Oct, Bangkok
     const page = text(
       React.createElement(PerformanceFreshness, { provisional: true, updatedAt: '2026-10-05T18:42:00.000Z', timezone: 'Asia/Bangkok' }),

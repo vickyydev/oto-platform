@@ -2033,7 +2033,7 @@ export const getAllEventsForReporting = (): OtoEvent[] =>
  * platform's rolled-up day (`GET /analytics/summary`, `components/floor/
  * usePerformance.ts`). Kept as the prototype's reference copy of the rule.
  */
-export const getFloorReport =(date: string, branchId: string): FloorReport => {
+export const getFloorReport = (date: string, branchId: string): FloorReport => {
   const onDate = (iso: string): boolean => iso.slice(0, 10) === date;
   const ticketHoursById = new Map(getTicketTypes().map((t) => [t.id, t.hours]));
 

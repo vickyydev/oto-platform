@@ -47,13 +47,22 @@ export function PerformanceTab({
   return <PerformanceView performance={performance} dropOffInPark={dropOffInPark} isToday={isToday} />;
 }
 
+/**
+ * What the drawn tab needs of `usePerformance`. `today` and `businessDayStart`
+ * (the branch's trading day in progress, from the platform) let the freshness
+ * line tell an update from earlier today from one left over from an earlier
+ * day; without them, the date shown is taken as today when `isToday` says so.
+ */
+export type PerformanceViewState = Pick<PerformanceState, 'report' | 'provisional' | 'updatedAt' | 'timezone' | 'error'> &
+  Partial<Pick<PerformanceState, 'today' | 'businessDayStart'>>;
+
 /** The tab as drawn, from figures already read. */
 export function PerformanceView({
   performance,
   dropOffInPark,
   isToday,
 }: {
-  performance: Pick<PerformanceState, 'report' | 'provisional' | 'updatedAt' | 'timezone' | 'error'>;
+  performance: PerformanceViewState;
   dropOffInPark: number | null;
   isToday: boolean;
 }) {
@@ -73,6 +82,8 @@ export function PerformanceView({
         provisional={performance.provisional}
         updatedAt={performance.updatedAt}
         timezone={performance.timezone}
+        today={performance.today ?? (isToday ? report.date : null)}
+        dayStart={performance.businessDayStart ?? null}
         className="mb-3"
       />
       <PerformanceFigures report={report} dropOffInPark={dropOffInPark} isToday={isToday} />

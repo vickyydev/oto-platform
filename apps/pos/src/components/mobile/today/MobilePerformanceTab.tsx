@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/floor/StatCard';
 import { RevenueBars } from '@/components/floor/RevenueBars';
 import { PerformanceFreshness } from '@/components/floor/PerformanceFreshness';
+import type { PerformanceViewState } from '@/components/floor/PerformanceTab';
 import {
   useDropOffInPark,
   usePerformance,
@@ -48,7 +49,7 @@ export function MobilePerformanceView({
   dropOffInPark,
   isToday,
 }: {
-  performance: Pick<PerformanceState, 'report' | 'provisional' | 'updatedAt' | 'timezone' | 'error'>;
+  performance: PerformanceViewState;
   dropOffInPark: number | null;
   isToday: boolean;
 }) {
@@ -72,6 +73,8 @@ export function MobilePerformanceView({
         provisional={performance.provisional}
         updatedAt={performance.updatedAt}
         timezone={performance.timezone}
+        today={performance.today ?? (isToday ? report.date : null)}
+        dayStart={performance.businessDayStart ?? null}
       />
 
       {/* Hero: revenue */}
