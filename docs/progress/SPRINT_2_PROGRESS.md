@@ -1,5 +1,18 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 6 October 2026 - SCRUM-498 on main
+
+Lane C landed (reviewed MERGE first time): with the internet down, the food
+counter working through its box shows a band's allergies, medical notes,
+food restrictions, food permission and prepaid mode as online; prepaid meals
+are served once per box and recorded once on reconnect (never both refunded
+and served); a prepaid line added online is accepted by the box; the box
+prices a member at the verified tier; a box-origin sale counts as handed over
+only if the box completed it. The check-in copy for the box is built from one
+snapshot. Checks: box 700, pos 815, db 166, api 215 across 16 files.
+Follow-ups: SCRUM-502. Owner questions on SCRUM-497. Next: staging evidence for
+SCRUM-498, then SCRUM-493 can close; then S2-15b.
+
 ## Platform lane checkpoint - 6 October 2026 - SCRUM-496 on main
 
 Lane B landed (reviewed MERGE): stock alerts, reorder rule, refunds to the
