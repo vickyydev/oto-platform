@@ -267,6 +267,16 @@ describe('S2-15b round 3 — who reads which park', () => {
     expect((await get(admin, `branches=central&from=${T}&to=${T}`)).statusCode).toBe(400);
     expect((await get(admin, `from=2026-02-30&to=2026-03-01`)).statusCode).toBe(400);
   });
+
+  it('is in the OpenAPI document, guarded in the handler, and refuses a caller with no session', async () => {
+    const docs = await ctx.app.inject({ method: 'GET', url: '/docs/json', headers: { cookie: admin } });
+    expect(docs.statusCode).toBe(200);
+    const path = (docs.json() as { paths: Record<string, { get?: { description?: string } }> }).paths['/analytics/summary'];
+    expect(path?.get?.description).toContain('never the sales tables');
+    const entry = ctx.app.routeRegistry.find((r) => r.url === '/analytics/summary' && r.method === 'GET');
+    expect(entry?.config.dynamicPermission).toBe(true);
+    expect((await ctx.app.inject({ method: 'GET', url: `/analytics/summary?from=${T}&to=${T}` })).statusCode).toBe(401);
+  });
 });
 
 describe('S2-15b round 3 — the figures are the rolled rows', () => {
