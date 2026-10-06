@@ -33,7 +33,6 @@ import {
   STOCK_RULE_REORDER,
   STOCK_RULE_REORDER_TREND,
   STOCK_TREND_HISTORY_DAYS,
-  STOCK_TREND_SAFETY_DAYS,
   stockRuleBelowPar,
   stockShortMessage,
   stockSizeName,
@@ -101,8 +100,7 @@ import type { Exec, Tx } from './tx';
  *     `stock_shortfall` attention row. A paid sale is never refused for stock.
  *
  * A REFUND puts back what its restock decision says (`restockForRefund`), to
- * the place each unit was taken from — not always the sell point, which was the
- * prototype's limitation (`mockApi.ts:2876-2960`).
+ * the sell point, where the guest hands returned goods over.
  */
 
 /** Sale-line kinds that can hold stock; admission and fees never sit on a shelf. */
@@ -893,10 +891,9 @@ export async function takeStockForSale(
 
 /**
  * Put back what a refund's restock decision returns (`restockLineIds`,
- * `@oto/shared/refund.ts`) — to the PLACE each unit was taken from, the
- * sale's own movements read back. A unit the sale recorded as a shortfall goes
- * back where the shortfall was recorded (the sell point): the guest is handing
- * a real thing over the counter.
+ * `@oto/shared/refund.ts`) — to the sell point. The quantities and stable
+ * per-source movement identities come from the original sale, including
+ * recorded shortfalls: the guest hands a real thing over the counter.
  *
  * Once per sale line, whichever refund carries it: the action id is
  * `restock:<sale line>:<stock item>:<location>`. A line sold before the ledger
@@ -954,6 +951,8 @@ export async function restockForRefund(
       .filter((r) => r.archivedAt !== null)
       .map((r) => [r.id, stockSizeName(r.name, r.variantLabel)] as const),
   );
+  const refundPlaces = await branchLocations(tx, input.branchId);
+  const returnPlace = refundPlaces.find((place) => place.sellPoint) ?? refundPlaces[0];
   const drafts: MovementDraft[] = [];
   const skipped: Array<{ saleLineId: string | null; stockItemId: string; stockLocationId: string; quantity: number; item: string }> = [];
   for (const row of taken) {
@@ -970,9 +969,10 @@ export async function restockForRefund(
       });
       continue;
     }
+    if (!returnPlace) throw errors.conflict('STOCK_NO_PLACE', 'This branch has no stock place for returned items.');
     drafts.push({
       stockItemId: row.stockItemId,
-      stockLocationId: row.stockLocationId,
+      stockLocationId: returnPlace.id,
       kind: 'refund',
       quantity: back,
       actionId: `restock:${row.saleLineId}:${row.stockItemId}:${row.stockLocationId}`,
@@ -1628,8 +1628,8 @@ export async function receiveStock(
  * A MANAGER'S CORRECTION (the admin panel's Adjust). An increase lands in the
  * place named, else the sell point; a decrease takes from the place named, else
  * from the sell point first and then the cascade — the prototype's
- * `adjustInventoryStock` — and is refused, not clamped, past what is there: a
- * correction that silently corrected less than it said is not a correction.
+ * `adjustInventoryStock`: a decrease cascades from the chosen place and clamps
+ * each level at zero. The response and audit record the actual movement.
  */
 export async function adjustStock(
   tx: Tx,
@@ -1644,7 +1644,8 @@ export async function adjustStock(
     body.stockItemId,
   )!;
   const named = body.locationId ? await loadBranchLocation(tx, actor, body.locationId) : null;
-  const places = named ? [named] : await branchLocations(tx, actor.branchId);
+  const allPlaces = await branchLocations(tx, actor.branchId);
+  const places = named ? [named, ...allPlaces.filter((place) => place.id !== named.id)] : allPlaces;
   if (places.length === 0) {
     throw errors.conflict('STOCK_NO_PLACE', 'This branch has no stock place yet — add one under Inventory → Locations');
   }
@@ -1667,15 +1668,7 @@ export async function adjustStock(
       tx,
       places.map((p) => ({ stockItemId: item.id, stockLocationId: p.id })),
     );
-    const held = places.reduce((sum, p) => sum + (levels.get(pairKey(item.id, p.id)) ?? 0), 0);
     let remaining = -body.delta;
-    if (remaining > held) {
-      throw errors.conflict(
-        'STOCK_ADJUST_TOO_MANY',
-        `${named ? named.name : 'This branch'} holds only ${held} ${sizeName(item)} — nothing was changed`,
-        { held, delta: body.delta },
-      );
-    }
     for (const p of places) {
       if (remaining <= 0) break;
       const take = Math.min(remaining, levels.get(pairKey(item.id, p.id)) ?? 0);
@@ -1693,12 +1686,12 @@ export async function adjustStock(
     entityType: 'stock_item',
     entityId: item.id,
     requestId: actor.requestId ?? null,
-    after: { delta: body.delta, reason, movements: applied.map((m) => ({ locationId: m.stockLocationId, quantity: m.quantity })) },
+    after: { requestedDelta: body.delta, delta: applied.reduce((sum, move) => sum + move.quantity, 0), reason, movements: applied.map((m) => ({ locationId: m.stockLocationId, quantity: m.quantity })) },
   });
   await syncStockAttention(tx, actor, now);
   return {
     stockItemId: item.id,
-    delta: body.delta,
+    delta: applied.reduce((sum, move) => sum + move.quantity, 0),
     movements: applied.map((m) => ({ locationId: m.stockLocationId, quantity: m.quantity, levelAfter: m.levelAfter })),
   };
 }
@@ -2691,8 +2684,8 @@ async function assertSizesRemovable(tx: Tx, branchId: string, removed: readonly 
  * CREATE OR EDIT ONE STOCKED ITEM with its sizes — the admin Inventory form.
  *
  * One row per size, sharing a group (`payload.groupId`). A size's stock is
- * never written here: levels move only through movements, and a new item opens
- * with a count or a delivery (OD-S5). A size that still holds stock anywhere,
+ * never overwritten here: a new item's starting stock is an audited movement
+ * at the sell point, while existing levels change through stock operations. A size that still holds stock anywhere,
  * or is still wanted on an open order, cannot be removed (`assertSizesRemovable`). The link to the sellable goes through `setProductStockLinks`, so the
  * all-or-none rule for a sized product (H3) and the "one item per sellable"
  * rule are the catalogue link's own.
@@ -2804,6 +2797,15 @@ export async function saveStockItem(
     payload,
     updatedAt: now,
   };
+  if (groupId && body.sizes.some((size) => (size.startingStock ?? 0) > 0)) {
+    throw errors.badRequest('Starting stock belongs to a new item. Use Adjust or a stock count for an existing item.');
+  }
+  const openingDrafts: MovementDraft[] = [];
+  const openingPlaces = body.sizes.some((size) => (size.startingStock ?? 0) > 0) ? await branchLocations(tx, actor.branchId) : [];
+  const openingPlace = openingPlaces.find((place) => place.sellPoint) ?? openingPlaces[0];
+  if (!groupId && body.sizes.some((size) => (size.startingStock ?? 0) > 0) && !openingPlace) {
+    throw errors.conflict('STOCK_NO_PLACE', 'Add a stock place before entering starting stock.');
+  }
   const ids: string[] = [];
   const links: ProductStockLink[] = [];
   for (const size of body.sizes) {
@@ -2828,9 +2830,13 @@ export async function saveStockItem(
       });
     }
     ids.push(id);
+    if (!groupId && openingPlace && (size.startingStock ?? 0) > 0) {
+      openingDrafts.push({ stockItemId: id, stockLocationId: openingPlace.id, kind: 'adjust', quantity: size.startingStock!, actionId: `opening:${id}`, reason: 'Starting stock', unitCostSatang: body.unitCostSatang });
+    }
     if (productRow) links.push({ variantId: productRow.variants.length > 0 ? size.variantId : null, stockItemId: id });
   }
   if (productRow) await setProductStockLinks(tx, scope, productRow, links);
+  if (openingDrafts.length) await applyMovements(tx, await movementContext(tx, actor, now), openingDrafts);
 
   // Packs: the item's, on every size (the prototype shares them across variants).
   const wantUnits = body.units.map((u) => ({ code: packCode(u.label), label: u.label.trim(), eaches: u.eaches }));
@@ -2975,15 +2981,14 @@ const sameJson = (a: unknown, b: unknown): boolean => canonicalJson(a) === canon
  *   - "Below par at FOH" — a size under its par at a place
  *     (`StockSuggestions.tsx:buildSuggestions`).
  *
- * SUPPRESSED while an open purchase order (to order or ordered, something
- * still outstanding) covers any of its sizes: the order is the answer, and a
- * second nag for it is noise. A row whose rule no longer fires is resolved;
+ * Open orders do not hide these rows: staff still see the transfer action
+ * and the purchase reminder. A row whose rule no longer fires is resolved;
  * the round-1 rows (`stock_shortfall`, `size_unknown`) are not touched here.
  *
  * ROUND 4 — THE REORDER POINT FOLLOWS THE ITEM'S USAGE (OD-27,
  * `reorderPointFor`): the static point until the item has 30 days of sale
- * history, then its average daily usage over 30 days × (lead time + a safety
- * day), rounded up — ceil(used × (lead + 1) / 30); the row's rule
+ * history, then its average daily usage over 30 days × lead time,
+ * rounded up — ceil(used × lead / 30); the row's rule
  * says which fired ("≤ reorder point" or "≤ reorder point (30-day usage)").
  *
  * WHO CALLS IT (round 4, handover Q4): every path that moves stock — the stock
@@ -3030,23 +3035,6 @@ export async function syncStockAttention(
   const today = await branchToday(tx, scope.branchId, now);
   const usage = await usageForTrend(tx, scope.branchId, items.map((i) => i.id), today);
   const levelOf = new Map(levels.map((l) => [pairKey(l.stockItemId, l.stockLocationId), l.quantity]));
-  const covered = new Set(
-    (
-      await tx
-        .select({ stockItemId: purchaseOrderLine.stockItemId })
-        .from(purchaseOrderLine)
-        .innerJoin(purchaseOrder, eq(purchaseOrder.id, purchaseOrderLine.purchaseOrderId))
-        .where(
-          and(
-            eq(purchaseOrder.branchId, scope.branchId),
-            inArray(purchaseOrder.state, ['to_order', 'ordered']),
-            isNull(purchaseOrder.archivedAt),
-            sql`${purchaseOrderLine.orderedQuantity} > ${purchaseOrderLine.receivedQuantity}`,
-          ),
-        )
-    ).map((r) => r.stockItemId),
-  );
-
   const groups = new Map<string, ItemRow[]>();
   for (const item of items) {
     const key = stockGroupKey(item);
@@ -3090,7 +3078,6 @@ export async function syncStockAttention(
       }
     }
     if (!reorder && belowPar.length === 0) continue;
-    if (sizes.some((s) => covered.has(s.id))) continue;
     const rules = [
       ...(reorder ? [reorderRule] : []),
       ...[...new Set(belowPar.map((b) => b.place))].map(stockRuleBelowPar),
@@ -3104,7 +3091,7 @@ export async function syncStockAttention(
       quantity: reorder ? Math.max(0, reorderPoint! - total) : Math.max(...belowPar.map((b) => b.par - b.level)),
       summary: reorder
         ? point.rule === 'trend'
-          ? `${name}: ${total} on hand, at or below its reorder point of ${reorderPoint} — ${point.usedInWindow} used in the last ${STOCK_TREND_HISTORY_DAYS} days, ${lead} days' lead time + ${STOCK_TREND_SAFETY_DAYS}`
+          ? `${name}: ${total} on hand, at or below its reorder point of ${reorderPoint} — ${point.usedInWindow} used in the last ${STOCK_TREND_HISTORY_DAYS} days, ${lead} days' lead time`
           : `${name}: ${total} on hand, at or below its reorder point of ${reorderPoint}`
         : `${name}: below par at ${[...new Set(belowPar.map((b) => b.place))].join(', ')}`,
       detail: {

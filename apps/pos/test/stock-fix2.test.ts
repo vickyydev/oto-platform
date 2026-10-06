@@ -11,7 +11,7 @@ import type { InventoryItem, StockLocation } from '@/types';
  * THE STOCK FIX ROUND, SECOND PASS — the till's stock screens (gate finding F3):
  *
  *   - the Alerts and Purchase tabs describe the usage rule as the platform
- *     computes it: average DAILY usage over 30 days × (lead time + 1 day),
+ *     computes it: average DAILY usage over 30 days × lead time,
  *     rounded up — ceil(used × (lead + 1) / 30) — not "30 days × (lead + 1)";
  *   - the Stock tab's "Low" filter judges an item's reorder point by the
  *     platform's figure for today (`reorderPointNow`), as the Alerts rows do,
@@ -87,7 +87,7 @@ describe('F3 — the usage rule is described as the platform computes it', () =>
     },
   };
 
-  it('the Alerts tab: average daily usage × (lead time + 1 day), rounded up', () => {
+  it('the Alerts tab: average daily usage × lead time, rounded up', () => {
     const out = markup(
       React.createElement(StockSuggestions, {
         inventory: [socks],
@@ -99,7 +99,7 @@ describe('F3 — the usage rule is described as the platform computes it', () =>
         onReorder: () => {},
       }),
     );
-    expect(out).toContain('what it sells on an average day over the last 30 days × (lead time + 1 day), rounded up');
+    expect(out).toContain('what it sells on an average day over the last 30 days × lead time, rounded up');
     expect(out).not.toMatch(/its usage: the last 30 days ×/);
   });
 
@@ -107,7 +107,7 @@ describe('F3 — the usage rule is described as the platform computes it', () =>
     const out = markup(
       React.createElement(StockPurchasing, { branchId: BRANCH, inventory: [socks], orders: [], onGoToReceive: () => {} }),
     );
-    expect(out).toContain('what it sells on an average day over the last 30 days × (lead time + 1 day), rounded up');
+    expect(out).toContain('what it sells on an average day over the last 30 days × lead time, rounded up');
     expect(out).not.toMatch(/usage over the last 30 days ×/);
   });
 });
@@ -117,10 +117,11 @@ describe('F3 — the Stock tab’s "Low" filter uses the platform’s reorder po
     expect(isLowInScope(cap, 10, 'all')).toBe(false);
   });
 
-  it('an item at or under the platform’s point is low, even over the static one — on its total over every size', () => {
+  it('an item at or under the platform’s point is low, even over the static one — on each non-empty size', () => {
     expect(isLowInScope(socks, 30, 'all')).toBe(true);
     expect(isLowInScope(socks, 25, 'all')).toBe(true);
-    expect(isLowInScope(socks, 24, 'all')).toBe(false);
+    expect(isLowInScope(socks, 24, 'all')).toBe(true);
+    expect(isLowInScope(socks, 4, 'all')).toBe(false);
   });
 
   it('an item with no point is judged by its sizes’ low-stock thresholds alone; a place filter never applies the reorder point', () => {

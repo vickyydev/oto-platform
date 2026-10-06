@@ -10,8 +10,8 @@ import {
 
 /**
  * S2-14b round 1 — the stock rules every surface shares (plan §2.1, §5).
- * Packs are entry and display only; a quantity that is not a whole number of
- * eaches is refused, never rounded (the prototype's `parseUnitCombo` rounded).
+ * Packs are entry and display only; the approved parser rounds the combined
+ * total for review and floors negative segments at zero.
  */
 
 const DOZEN = [{ label: 'Dozen', eaches: 12 }];
@@ -32,30 +32,13 @@ describe('parsePackQuantity — whole eaches only', () => {
   });
 
   it.each([
-    ['1.3 dozen', DOZEN],
-    ['2.5', DOZEN],
-    ['0.1 case', CASE],
-  ])('refuses "%s", which is not a whole number of items', (raw, packs) => {
-    const parsed = parsePackQuantity(raw, packs);
-    expect(parsed.ok).toBe(false);
-    if (!parsed.ok) expect(parsed.reason).toContain('whole');
-  });
-
-  it.each([
-    ['0.5 + 0.5', DOZEN, 'whole'],
-    ['1 dozen + 0.5', DOZEN, 'whole'],
-    ['0.1 case + 0.1 case + 0.3 case', CASE, 'whole'],
-    ['-3', DOZEN, 'below nothing'],
-    ['-1 dozen', DOZEN, 'below nothing'],
-    ['2 dozen + -5', DOZEN, 'below nothing'],
-  ])('refuses "%s": every part is whole eaches on its own, and never below nothing', (raw, packs, why) => {
-    const parsed = parsePackQuantity(raw, packs);
-    expect(parsed.ok).toBe(false);
-    if (!parsed.ok) expect(parsed.reason).toContain(why);
-  });
-
-  it('refuses something that is not a quantity at all', () => {
-    expect(parsePackQuantity('lots', DOZEN)).toEqual({ ok: false, reason: '"lots" is not a quantity' });
+    ['1.3 dozen', DOZEN, 16], ['2.5', DOZEN, 3], ['0.1 case', CASE, 2],
+    ['0.5 + 0.5', DOZEN, 1], ['1 dozen + 0.5', DOZEN, 13],
+    ['0.1 case + 0.1 case + 0.3 case', CASE, 12],
+    ['-3', DOZEN, 0], ['-1 dozen', DOZEN, 0], ['2 dozen + -5', DOZEN, 24],
+    ['lots', DOZEN, 0],
+  ])('floors negative segments and rounds the total: "%s" is %s', (raw, packs, eaches) => {
+    expect(parsePackQuantity(raw, packs)).toEqual({ ok: true, eaches });
   });
 
   it('formats eaches back into packs, largest first', () => {

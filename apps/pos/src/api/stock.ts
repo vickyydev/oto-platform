@@ -446,11 +446,11 @@ export const stockApi = {
       api.post<StockLocationView>(`${stockBase(branchId)}/locations/${locationId}/sell-point`, undefined, once()),
     ),
 
-  saveItem: (branchId: string, groupId: string | null, body: StockItemBody) =>
+  saveItem: (branchId: string, groupId: string | null, body: StockItemBody, actionId = idemKey()) =>
     writeThenRead(branchId, () =>
       groupId
-        ? api.put<{ groupId: string; stockItemIds: string[] }>(`${stockBase(branchId)}/items/${groupId}`, body, once())
-        : api.post<{ groupId: string; stockItemIds: string[] }>(`${stockBase(branchId)}/items`, body, once()),
+        ? api.put<{ groupId: string; stockItemIds: string[] }>(`${stockBase(branchId)}/items/${groupId}`, body, { idempotencyKey: actionId })
+        : api.post<{ groupId: string; stockItemIds: string[] }>(`${stockBase(branchId)}/items`, body, { idempotencyKey: actionId }),
     ),
 
   resolveAttention: (branchId: string, attentionId: string) =>
@@ -459,12 +459,12 @@ export const stockApi = {
 
 /**
  * The admin form's item as the platform's body. A size keeps its stock item id
- * when it already exists on the platform; its stock is never sent — levels move
- * only through movements, and a new item opens with a count or a delivery.
+ * when it already exists on the platform. Only a new item sends starting stock,
+ * which the platform records as an audited movement rather than a level overwrite.
  */
 export function inventoryItemToStockBody(
   item: InventoryItem,
-  opts: { existingSizeIds: ReadonlySet<string>; productSized: boolean },
+  opts: { existingSizeIds: ReadonlySet<string>; productSized: boolean; newItem?: boolean },
 ): StockItemBody {
   const rs = item.reorderSettings;
   return {
@@ -490,6 +490,7 @@ export function inventoryItemToStockBody(
       ...(opts.existingSizeIds.has(v.id) ? { stockItemId: v.id } : {}),
       variantId: opts.productSized && v.productVariantRef ? v.productVariantRef : null,
       label: v.label,
+      ...(opts.newItem ? { startingStock: v.stock } : {}),
       sku: v.sku ?? null,
       lowStockThreshold: v.lowStockThreshold ?? null,
       parByLocation: v.parByLocation ?? {},

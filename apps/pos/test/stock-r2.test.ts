@@ -142,16 +142,17 @@ describe('the platform’s levels as the prototype’s inventory', () => {
     );
     expect(JSON.stringify(body)).not.toContain('"stock"');
     expect(body.units).toEqual([{ label: 'Dozen', eaches: 12 }]);
+    expect(body.sizes.every((size) => size.startingStock === undefined)).toBe(true);
+    const opening = inventoryItemToStockBody(socks, { existingSizeIds: new Set(), productSized: true, newItem: true });
+    expect(opening.sizes.map((size) => size.startingStock)).toEqual(socks.variants.map((size) => size.stock));
   });
 });
 
-describe('quantities are whole eaches, refused rather than rounded', () => {
+describe('quantity entry rounds the combined eaches for review', () => {
   const DOZEN = [{ id: 'dozen', label: 'Dozen', eaches: 12 }];
-  it('takes packs and eaches, and refuses a part pack that is not whole', () => {
+  it('takes packs and eaches, rounding a fractional total', () => {
     expect(entryEaches('1 dozen + 3', DOZEN)).toEqual({ eaches: 15, reason: null });
-    const refused = entryEaches('1.3 dozen', DOZEN);
-    expect(Number.isNaN(refused.eaches)).toBe(true);
-    expect(refused.reason).toContain('whole');
+    expect(entryEaches('1.3 dozen', DOZEN)).toEqual({ eaches: 16, reason: null });
     // H1: an exponent past the float range is not a number of things.
     expect(Number.isNaN(entryEaches('1e400', DOZEN).eaches)).toBe(true);
   });

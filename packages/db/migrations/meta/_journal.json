@@ -442,6 +442,13 @@
       "when": 1791288248702,
       "tag": "0062_sale_extensions",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1791288249702,
+      "tag": "0063_stock_single_each_pack",
+      "breakpoints": true
     }
   ]
 }

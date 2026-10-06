@@ -26,7 +26,7 @@ const kindLabel = (kind: InventoryItem['linkedKind']) => CATEGORY_LABEL[kind];
 
 /**
  * The "Low" quick filter. A size at or under its low-stock threshold in the
- * scope; or, across every place, the item's total at or under its reorder
+ * scope; or, across every place, each size at or under the item's reorder
  * point — the PLATFORM's point for today (`reorderPointNow`: the trend point
  * once the item has the sales history), as the Alerts tab's rows judge it, not
  * the static one set in Admin Inventory. An empty size is "Out", its own filter.
@@ -34,12 +34,11 @@ const kindLabel = (kind: InventoryItem['linkedKind']) => CATEGORY_LABEL[kind];
 export function isLowInScope(item: InventoryItem, reorderPointNow: number | null, locationFilter: string): boolean {
   const qtyOf = (v: InventoryItem['variants'][number]) =>
     locationFilter === 'all' ? v.stock : (v.stockByLocation?.[locationFilter] ?? 0);
-  const itemTotal = item.variants.reduce((n, v) => n + v.stock, 0);
-  if (locationFilter === 'all' && reorderPointNow !== null && itemTotal > 0 && itemTotal <= reorderPointNow) return true;
   return item.variants.some((v) => {
     const qty = qtyOf(v);
     if (qty === 0) return false; // "out" is its own filter
-    return v.lowStockThreshold != null && qty <= v.lowStockThreshold;
+    return (v.lowStockThreshold != null && qty <= v.lowStockThreshold)
+      || (locationFilter === 'all' && reorderPointNow !== null && qty <= reorderPointNow);
   });
 }
 

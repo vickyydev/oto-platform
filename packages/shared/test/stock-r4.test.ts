@@ -10,8 +10,8 @@ import {
 /**
  * S2-14b round 4 — OD-27, the consumption-trend reorder rule
  * (docs/progress/plans/stock/PLAN.md §2.5, §4): the static reorder point until
- * the item has 30 days of sale history, then its 30-day usage × (lead time + a
- * safety day), rounded up to a whole each.
+ * the item has 30 days of sale history, then its average daily usage × lead time,
+ * rounded up to a whole each.
  */
 describe('reorderPointFor (OD-27)', () => {
   const base = { staticPoint: 20, leadTimeDays: 10, usedInWindow: 25 };
@@ -25,10 +25,10 @@ describe('reorderPointFor (OD-27)', () => {
     });
   });
 
-  it('the trend point from the day the first sale is 30 days old: ceil(25 × 11 / 30) = 10', () => {
+  it('the trend point from the day the first sale is 30 days old: ceil(25 × 10 / 30) = 9', () => {
     expect(reorderPointFor({ ...base, firstSaleDate: '2026-09-01', today: '2026-10-01' })).toEqual({
       rule: 'trend',
-      reorderPoint: 10,
+      reorderPoint: 9,
       staticPoint: 20,
       usedInWindow: 25,
     });
@@ -36,7 +36,7 @@ describe('reorderPointFor (OD-27)', () => {
   });
 
   it('rounds UP to a whole each, and exactly on a whole figure stays there', () => {
-    expect(reorderPointFor({ ...base, usedInWindow: 30, firstSaleDate: '2026-01-01', today: '2026-10-01' }).reorderPoint).toBe(11);
+    expect(reorderPointFor({ ...base, usedInWindow: 30, firstSaleDate: '2026-01-01', today: '2026-10-01' }).reorderPoint).toBe(10);
     expect(reorderPointFor({ ...base, usedInWindow: 1, firstSaleDate: '2026-01-01', today: '2026-10-01' }).reorderPoint).toBe(1);
   });
 
