@@ -33,8 +33,9 @@ export function csvBaht(satang: number): string {
 
 /**
  * Date-range + branch filter bar shared by every report panel. Pure
- * controlled component — the panel owns the `ReportFilters` state and
- * re-runs its lib/reporting.ts query whenever it changes.
+ * controlled component — the panel owns the `ReportFilters` state and reads
+ * its report again whenever it changes (the platform's, through
+ * `usePlatformReport`, since S2-15b round 4).
  */
 export function ReportFilterBar({
   filters,
