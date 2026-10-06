@@ -38,8 +38,8 @@ Two narrow questions are pending while independent work continues: whether selec
 
 ## Offline prepaid serving
 
-Owner question sent 6 October: assign each child?s prepaid meals to one food-counter box for offline serving, or require internet for prepaid meals while keeping offline food/allergy details visible. Two independent cached meal counts cannot guarantee single use or concurrent pickup reconciliation. No exclusive allocation scheme is inferred.
+Owner question sent 6 October: assign each child’s prepaid meals to one food-counter box for offline serving, or require internet for prepaid meals while keeping offline food/allergy details visible. Two independent cached meal counts cannot guarantee single use or concurrent pickup reconciliation. No exclusive allocation scheme is inferred.
 
 ## Cross-park wallet liability
 
-Register30 requires global wallet spending with the spend recorded at the spending park. This is implemented in the isolated wallet and cache slices. Existing per-park wallet reports compare issuing-park wallet balances with spending-park ledger movements; those scopes diverge after cross-park use. Operator-wide totals remain coherent. A transfer/liability attribution policy is not inferred; reports must distinguish those scopes before claiming park-level reconciliation.
+Register entry 30 requires global wallet spending with the spend recorded at the spending park. This is implemented in the isolated wallet and cache slices. Existing per-park wallet reports compare issuing-park wallet balances with spending-park ledger movements; those scopes diverge after cross-park use. Operator-wide totals remain coherent. A transfer/liability attribution policy is not inferred; reports must distinguish those scopes before claiming park-level reconciliation.

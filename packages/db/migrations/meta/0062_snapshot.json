@@ -1,6 +1,6 @@
 {
-  "id": "c9e900a0-1075-4324-8f04-7916a542bd56",
-  "prevId": "61971365-41f9-4f59-b43a-325702e48d11",
+  "id": "678fe66a-75ae-4587-9233-966de556fd02",
+  "prevId": "91db7c5c-769c-448c-b621-5043e7b74342",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -30435,6 +30435,13 @@
           "notNull": true,
           "default": "now()"
         },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
         "created_by_account_id": {
           "name": "created_by_account_id",
           "type": "uuid",
@@ -30533,6 +30540,21 @@
           "columns": [
             {
               "expression": "branch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sale_extension_created_by_idx": {
+          "name": "sale_extension_created_by_idx",
+          "columns": [
+            {
+              "expression": "created_by_account_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -30674,6 +30696,20 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {

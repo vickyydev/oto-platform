@@ -2194,6 +2194,24 @@ describe('SCRUM-495 paid time extensions', () => {
     expect(read.json().extensions.map((row: { status: string }) => row.status)).toEqual(['voided', 'applied']);
   });
 
+  it('offers Add time after a part refund that leaves the bracelets active, and not after a whole refund', async () => {
+    const original = await admission();
+    const adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const part = await ctx.app.inject({ method: 'POST', url: `/sales/${original.id}/refunds`, headers: { cookie: adminCookie }, payload: { actionId: newId(), mode: 'custom', amountSatang: 1000, reason: 'Fixture refund' } });
+    expect(part.statusCode).toBe(200);
+    const read = await ctx.app.inject({ method: 'GET', url: `/sales/${original.id}/extensions`, headers: { cookie } });
+    expect(read.json().eligibleBands).toHaveLength(2);
+    expect(read.json().options.length).toBeGreaterThan(0);
+    const made = await extension(original.id, { mode: 'bands', bandIds: [original.bands[0]!.id] });
+    expect(made.statusCode).toBe(200);
+    expect((await finish(made.json().sale.id)).json().finalised).toBe(true);
+    const whole = await ctx.app.inject({ method: 'POST', url: `/sales/${original.id}/refunds`, headers: { cookie: adminCookie }, payload: { actionId: newId(), mode: 'whole', reason: 'Fixture refund' } });
+    expect(whole.statusCode).toBe(200);
+    expect((await extension(original.id, { mode: 'count', braceletCount: 1 })).json().error.code).toBe('EXTENSION_SOURCE_UNAVAILABLE');
+    const after = await ctx.app.inject({ method: 'GET', url: `/sales/${original.id}/extensions`, headers: { cookie } });
+    expect(after.json().options).toEqual([]);
+  });
+
   it('refuses duplicate, foreign, revoked and excessive bracelets without a charge', async () => {
     const original = await admission();
     const bandId = original.bands[0]!.id;

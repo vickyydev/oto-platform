@@ -28,10 +28,14 @@ function actorOf(req: FastifyRequest, permission: Permission): ActorContext {
 }
 
 export async function saleExtensionRoutes(app: App) {
-  app.get('/sales/:id/extensions', { config: { permission: 'pos:sale:read' }, schema: { params: Params } }, async (req) => {
+  app.get('/sales/:id/extensions', { config: { permission: 'pos:sale:read' }, schema: {
+    description: 'The Add time options, the eligible bracelets and the time already added for one admission sale',
+    params: Params } }, async (req) => {
     return readSaleExtensions(app.db, actorOf(req, 'pos:sale:read'), req.params.id);
   });
-  app.post('/sales/:id/extensions', { config: { permission: 'pos:sale:create', stationTrading: true }, schema: { params: Params, body: Body } }, async (req) => {
+  app.post('/sales/:id/extensions', { config: { permission: 'pos:sale:create', stationTrading: true }, schema: {
+    description: 'Open a separate charge for extra play time on an admission, at the session counter; replays by actionId',
+    params: Params, body: Body } }, async (req) => {
     const auth = req.requireAuth();
     if (auth.stationId !== req.body.stationId) throw errors.conflict('EXTENSION_COUNTER_REQUIRED', 'Choose this counter before taking an extra-time payment.');
     return withTx(app.db, opCtx(req), 'sale.extension.create', (tx) => createSaleExtension(tx,
@@ -39,7 +43,8 @@ export async function saleExtensionRoutes(app: App) {
   });
   app.post('/sales/:id/extensions/:extensionId/bands', {
     config: { permission: 'pos:sale:create', stationTrading: true },
-    schema: { params: Params.extend({ extensionId: z.string().uuid() }),
+    schema: { description: 'Move a time addition onto replacement bracelets of the same admission; replays by actionId',
+      params: Params.extend({ extensionId: z.string().uuid() }),
       body: z.object({ actionId: z.string().min(1).max(160), stationId: z.string().uuid(), bandIds: z.array(z.string().uuid()).min(1).max(500) }).strict() },
   }, async (req) => {
     const auth = req.requireAuth();

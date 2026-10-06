@@ -61,6 +61,7 @@ import { rateLimitPlugin } from './plugins/rate-limit';
 import { permissionPlugin } from './plugins/permission';
 import { stationOfflinePlugin } from './plugins/station-offline';
 import { displayRoutes } from './routes/display';
+import { saleExtensionRoutes } from './routes/sale-extensions';
 import { credentialPlugin } from './plugins/credential';
 import { telemetryPlugin } from './plugins/telemetry';
 import { pgErrorOf, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
@@ -390,7 +391,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // writes them; these read and redeem them.
   await app.register(bookingRoutes, { prefix: '/bookings' });
   await app.register(saleRoutes, { prefix: '/sales' });
-  await app.register((await import('./routes/sale-extensions')).saleExtensionRoutes);
+  await app.register(saleExtensionRoutes);
   // A document reception checked for a visitor who is not a member yet
   // (SCRUM-307), so the cart can be priced at that tier without the tier ever
   // being taken from the cart.

@@ -52,7 +52,7 @@ export async function assertSaleExtensionCollectable(tx: Tx, chargeSaleId: strin
   const [source] = await tx.select().from(sale).where(eq(sale.id, found.sourceSaleId)).for('update').limit(1);
   const [extension] = await tx.select().from(saleExtension).where(eq(saleExtension.id, found.id)).for('update').limit(1);
   if (!extension || extension.status !== 'pending') return extension;
-  if (!source || source.status !== 'finalised' || source.refundedSatang > 0) {
+  if (!source || source.status !== 'finalised') {
     throw errors.conflict('EXTENSION_SOURCE_CHANGED', 'This admission is no longer eligible for extra time.');
   }
   const selected = await tx.select({ state: band.status, sourceSaleId: band.saleId })

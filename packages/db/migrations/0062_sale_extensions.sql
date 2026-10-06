@@ -13,6 +13,7 @@ CREATE TABLE "pos"."sale_extension" (
 	"selection" jsonb NOT NULL,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"created_by_account_id" uuid NOT NULL,
 	"created_by_name" text,
 	"applied_at" timestamp with time zone,
@@ -29,6 +30,8 @@ CREATE TABLE "pos"."sale_extension_band" (
 	"minutes_added" integer NOT NULL,
 	"applied_at" timestamp with time zone,
 	"revoked_at" timestamp with time zone,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "sale_extension_band_minutes_check" CHECK ("pos"."sale_extension_band"."minutes_added" > 0)
 );
 --> statement-breakpoint
@@ -44,5 +47,6 @@ CREATE UNIQUE INDEX "sale_extension_charge_unique" ON "pos"."sale_extension" USI
 CREATE UNIQUE INDEX "sale_extension_pending_unique" ON "pos"."sale_extension" USING btree ("source_sale_id") WHERE "pos"."sale_extension"."status" = 'pending';--> statement-breakpoint
 CREATE INDEX "sale_extension_source_idx" ON "pos"."sale_extension" USING btree ("source_sale_id");--> statement-breakpoint
 CREATE INDEX "sale_extension_branch_idx" ON "pos"."sale_extension" USING btree ("branch_id");--> statement-breakpoint
+CREATE INDEX "sale_extension_created_by_idx" ON "pos"."sale_extension" USING btree ("created_by_account_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "sale_extension_band_unique" ON "pos"."sale_extension_band" USING btree ("extension_id","band_id");--> statement-breakpoint
 CREATE INDEX "sale_extension_band_band_idx" ON "pos"."sale_extension_band" USING btree ("band_id");

@@ -35,7 +35,10 @@ export async function readSaleExtensions(db: Exec, actor: ActorContext, sourceSa
   const rows = await db.select().from(saleExtension).where(eq(saleExtension.sourceSaleId, source.id)).orderBy(asc(saleExtension.createdAt));
   const bands = await db.select().from(band).where(and(eq(band.saleId, source.id), eq(band.status, 'active'))).orderBy(asc(band.createdAt));
   const lines = await db.select().from(saleLine).where(eq(saleLine.saleId, source.id));
-  const eligible = source.status === 'finalised' && source.refundedSatang === 0 && planBands(lines).length > 0;
+  // The approved History offers Add time on any admission with bracelets; a
+  // part refund leaves its bracelets active, so only a whole refund (status
+  // 'refunded', bracelets revoked) ends it.
+  const eligible = source.status === 'finalised' && planBands(lines).length > 0;
   const selected = rows.length ? await db.select().from(saleExtensionBand).where(inArray(saleExtensionBand.extensionId, rows.map((row) => row.id))) : [];
   // The 'Time added' card names the tender that took each charge, as the
   // approved History card does; money taken is read from the charge's attempts.
@@ -84,7 +87,7 @@ export async function createSaleExtension(tx: Tx, actor: ActorContext, sourceSal
     }
     return { extension: extensionView(already), sale: await saleViewOf(tx, charge), replay: true };
   }
-  if (source.status !== 'finalised' || source.refundedSatang > 0) throw errors.conflict('EXTENSION_SOURCE_UNAVAILABLE', 'Extra time needs a finalised admission that has not been refunded.');
+  if (source.status !== 'finalised') throw errors.conflict('EXTENSION_SOURCE_UNAVAILABLE', 'Extra time needs a finalised admission that has not been wholly refunded.');
   const [pending] = await tx.select({ chargeSaleId: saleExtension.chargeSaleId }).from(saleExtension)
     .where(and(eq(saleExtension.sourceSaleId, source.id), eq(saleExtension.status, 'pending'))).limit(1);
   if (pending) throw errors.conflict('EXTENSION_PENDING', 'Finish or void this admission’s pending time extension first.', pending);
@@ -173,7 +176,7 @@ export async function reselectExtensionBands(tx: Tx, actor: ActorContext, source
     if (previous.entityId !== extension.id || saved?.stationId !== input.stationId || JSON.stringify(saved.bandIds) !== JSON.stringify(bandIds)) throw errors.conflict('ACTION_ID_REUSED', 'This action already selected different bracelets.');
     return { replay: true };
   }
-  if (extension.status === 'voided' || extension.selection.mode !== 'bands' || source.status !== 'finalised' || source.refundedSatang > 0) throw errors.conflict('EXTENSION_RESELECTION_UNAVAILABLE', 'Only an active selected-bracelet time addition can be repaired.');
+  if (extension.status === 'voided' || extension.selection.mode !== 'bands' || source.status !== 'finalised') throw errors.conflict('EXTENSION_RESELECTION_UNAVAILABLE', 'Only an active selected-bracelet time addition can be repaired.');
   const current = await tx.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, extension.id));
   const active = await tx.select({ id: band.id }).from(band).where(and(eq(band.saleId, source.id), eq(band.status, 'active'))).for('update');
   const activeIds = new Set(active.map((row) => row.id));
