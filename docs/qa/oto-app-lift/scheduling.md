@@ -1,5 +1,19 @@
 # SCRUM-193: scheduling and My Shifts
 
+## Short-shift break fix on staging `dfe71536`, 1 October 2026
+
+At a real 820 × 1180 viewport, a fresh labelled synthetic employee was assigned to a 10:00–12:00 shift on 2 October. The authenticated `scope=me` rota returned one matching shift with no break start/end and `breakHasConflict: false`. Regenerating breaks for that exact shift row returned 200; a fresh rota read still showed no break and no conflict. My Shifts displayed the shift without an invalid break or “Break schedule needs review.” The visually reviewed screenshot is `scrum-193-staging-my-shifts-short-break-fixed.png`.
+
+A separate 10:00–17:00 control shift returned a valid 12:30–13:30 break with `breakHasConflict: false`, both after assignment and after exact-row regeneration. My Shifts displayed that break in the visually reviewed `scrum-193-staging-my-shifts-valid-break.png`. This confirms normal eligible breaks still generate. It does not exercise tenant-wide regeneration, which would rewrite other staging schedules.
+
+For each case, the prior week plan was absent. The synthetic assignment, shift row, shift group, week plan and linked employee were then deleted by exact ID with 204 responses. Final Data Admin searches found zero matching employees, shift rows or groups. Both screenshots capture the transient staging fixtures before cleanup.
+
+## Tablet retest after deployment 858df417, 1 October 2026
+
+At a real 820 × 1180 staging viewport, a normal click opened the branch selector on Scheduling, Policies and the blank employee editor; an option click succeeded on each page. The mode controls now show icons at this width and no longer cover the selector. The visually reviewed screenshots are `scrum-193-staging-tablet-scheduling-selector.png`, `scrum-193-staging-tablet-policies-selector.png` and `scrum-193-staging-tablet-employee-editor-selector.png`. The editor was blank and no employee was saved. This resolves the tablet header obstruction observed in the earlier walkthrough.
+
+A fresh, labelled `ZZ SCRUM193 UI` 10:00–12:00 shift on 2 October returned one matching My Shifts row with `breakHasConflict: true`; the real tablet screen displayed “Break schedule needs review” instead of the invalid generated break time. `scrum-193-staging-my-shifts-break-review.png` was visually reviewed. The synthetic assignment, shift row, group, new week plan and linked employee were deleted with 204 responses. Final Data Admin searches for the label found no employee, shift row or group. This verifies the warning presentation; it does not claim the underlying break-generation rule has changed.
+
 The isolated full-seed scheduling batch initially passed 14/16 existing checks. Both failures were My Shifts returning an empty rota for a linked employee with valid assignments. The seed's stored week plans begin on Sunday, while `/api/rota` had reconstructed only Monday starts from the requested date. The route now reads actual week plans overlapping the date range, then applies its existing branch, employee and date filters. The two failing checks passed on rerun, and the full 16-check batch passed afterward. It covers shift assignment, department eligibility, templates, future weeks, cross-branch My Shifts and linked-user My Shifts. No schema or write path changed.
 
 The OTO App production build passed. Typecheck remains at 578 inherited errors with zero diagnostics on the edited route lines. Scoped ESLint found zero diagnostics on those lines; the large inherited route file still has 383 unrelated diagnostics under this temporary config. Local browser tests used an isolated `otoapp` database. Commit `f0f1bf2f` is live on oto-app-staging as Render deployment `dep-dau3qph7lnhs73fah5u0`; staging health returned 200 and an anonymous rota request returned 401. The authenticated scheduling walkthrough is recorded below.

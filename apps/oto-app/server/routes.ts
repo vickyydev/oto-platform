@@ -120,7 +120,7 @@ import { registerBirthdayPackageRoutes } from "./birthday-package-routes";
 import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db } from "./db";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, eventStatuses, insertEventStatusSchema, branches, departments, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -6578,13 +6578,14 @@ OTO Company Limited`,
   // Activity log routes
   app.get("/api/activity-logs", requireAuth, async (req, res, next) => {
     try {
-      const user = req.user!;
+      const user = req.userWithAccess;
+      if (!user?.tenantId) return res.status(403).json({ message: "Tenant access required" });
       const { branchId, types, limit, offset, dateFrom, dateTo, search, employeeId, contractInstanceId, sinceDays } = req.query;
       
-      // Get user's accessible branches for RBAC scoping
-      const userBranches = await storage.getUserBranchAccess(user.id);
-      const hasAllBranches = user.role === "admin" || userBranches.some(b => b.branchId === null);
-      const accessibleBranchIds = userBranches.filter(b => b.branchId !== null).map(b => b.branchId!);
+      const tenantBranches = await db.select({ id: branches.id }).from(branches)
+        .where(eq(branches.tenantId, user.tenantId));
+      const accessibleBranchIds = tenantBranches.map(branch => branch.id)
+        .filter(id => canUserAccessBranch(user, id));
       
       const options: { 
         branchId?: string; 
@@ -6601,13 +6602,15 @@ OTO Company Limited`,
       
       // Apply branch filtering with RBAC scoping
       if (branchId && typeof branchId === "string") {
-        // If specific branch requested, verify user has access
-        if (!hasAllBranches && !accessibleBranchIds.includes(branchId)) {
+        if (!tenantBranches.some(branch => branch.id === branchId)) {
+          return res.status(404).json({ message: "Branch not found" });
+        }
+        if (!accessibleBranchIds.includes(branchId)) {
           return res.status(403).json({ message: "Access denied to this branch" });
         }
         options.branchId = branchId;
-      } else if (!hasAllBranches) {
-        // Non-admin users without all-branch access only see their accessible branches
+      } else {
+        // Branchless legacy rows cannot be assigned to a tenant safely.
         options.branchIds = accessibleBranchIds;
       }
       
@@ -6662,12 +6665,26 @@ OTO Company Limited`,
 
   app.get("/api/activity-logs/summary", requireAuth, async (req, res, next) => {
     try {
+      const user = req.userWithAccess;
+      if (!user?.tenantId) return res.status(403).json({ message: "Tenant access required" });
       const { branchId, sinceDays } = req.query;
       
-      const options: { branchId?: string; sinceDays?: number } = {};
+      const tenantBranches = await db.select({ id: branches.id }).from(branches)
+        .where(eq(branches.tenantId, user.tenantId));
+      const accessibleBranchIds = tenantBranches.map(branch => branch.id)
+        .filter(id => canUserAccessBranch(user, id));
+      const options: { branchId?: string; branchIds?: string[]; sinceDays?: number } = {};
       
       if (branchId && typeof branchId === "string") {
+        if (!tenantBranches.some(branch => branch.id === branchId)) {
+          return res.status(404).json({ message: "Branch not found" });
+        }
+        if (!accessibleBranchIds.includes(branchId)) {
+          return res.status(403).json({ message: "Access denied to this branch" });
+        }
         options.branchId = branchId;
+      } else {
+        options.branchIds = accessibleBranchIds;
       }
       
       if (sinceDays && typeof sinceDays === "string") {
@@ -6684,15 +6701,22 @@ OTO Company Limited`,
   // Backfill missing activity logs for departed employees (admin only)
   app.post("/api/activity-logs/backfill-departures", requireAuth, requireAdmin, async (req, res, next) => {
     try {
+      const user = req.userWithAccess!;
       // Get all employees who are resigned/terminated
-      const allEmployees = await storage.getEmployees();
+      const allEmployees = (await storage.getEmployees()).filter(employee =>
+        employee.tenantId === user.tenantId && canUserAccessBranch(user, employee.branchId));
       const departedEmployees = allEmployees.filter(e => 
         e.status === "resigned" || e.status === "terminated" ||
         e.endReason?.toLowerCase().includes("resign") || e.endReason?.toLowerCase().includes("terminat")
       );
       
       // Get existing employment_ended activity logs
-      const existingLogs = await storage.getActivityLogs({ types: ["employment_ended"] as any });
+      const existingLogs = departedEmployees.length > 0
+        ? await db.select({ employeeId: activityLog.employeeId }).from(activityLog).where(and(
+            eq(activityLog.activityType, "employment_ended"),
+            inArray(activityLog.employeeId, departedEmployees.map(employee => employee.id)),
+          ))
+        : [];
       const loggedEmployeeIds = new Set(existingLogs.map(l => l.employeeId));
       
       // Find employees without activity logs

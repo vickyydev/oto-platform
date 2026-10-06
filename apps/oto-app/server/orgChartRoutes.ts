@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db } from "./db";
 import { orgNodes, OrgNode, InsertOrgNode } from "./db/coreSchema";
-import { employees, branches, users, people, departments, staffCostAllocations } from "../shared/schema";
-import { eq, and, sql, inArray, count } from "drizzle-orm";
+import { employees, employeePayrollProfiles, branches, people, accessPolicies, departments, staffCostAllocations } from "../shared/schema";
+import { eq, and, or, isNull, sql, inArray, count } from "drizzle-orm";
 import { requireAuth } from "./auth";
 import { z } from "zod";
 
@@ -14,32 +14,15 @@ const isAdmin = (role: string | undefined): boolean =>
 const canViewSalaries = (role: string | undefined): boolean =>
   ["admin", "global_admin", "operator_admin"].includes(role || "");
 
-const hasBranchAccess = (
-  userBranchId: string | null | undefined,
-  accessScope: string | undefined,
-  targetBranchId: string | undefined | null
-): boolean => {
-  if (!targetBranchId) return true;
-  if (accessScope === "all_branches") return true;
-  return userBranchId === targetBranchId;
-};
-
 async function detectCycleForNewNode(
   tenantId: string,
   reportsToNodeId: string | null
 ): Promise<boolean> {
   if (!reportsToNodeId) return false;
   
-  // Handle virtual advisor nodes (not persisted to database)
+  // Virtual advisors are not positions and cannot supervise chart nodes.
   if (reportsToNodeId.startsWith("advisor-")) {
-    const advisorUserId = reportsToNodeId.replace("advisor-", "");
-    const [advisorUser] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(and(eq(users.id, advisorUserId), eq(users.tenantId, tenantId), eq(users.role, "advisor")))
-      .limit(1);
-    // If advisor exists, no cycle (advisors are always root nodes)
-    return !advisorUser;
+    return true;
   }
   
   const [parentNode] = await db
@@ -63,16 +46,9 @@ async function detectCycleForUpdate(
   if (!newReportsToId) return false;
   if (newReportsToId === nodeId) return true;
   
-  // Handle virtual advisor nodes (not persisted to database)
-  // Advisors are always root nodes with no parent, so no cycle possible
+  // Virtual advisors are not positions and cannot supervise chart nodes.
   if (newReportsToId.startsWith("advisor-")) {
-    const advisorUserId = newReportsToId.replace("advisor-", "");
-    const [advisorUser] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(and(eq(users.id, advisorUserId), eq(users.tenantId, tenantId), eq(users.role, "advisor")))
-      .limit(1);
-    return !advisorUser; // No cycle if advisor exists
+    return true;
   }
   
   const visited = new Set<string>();
@@ -135,24 +111,63 @@ const scopeSchema = z.object({
   { message: "scopeBranchId is required when scopeType is branch" }
 );
 
-function verifyBranchAccess(
+async function verifyBranchAccess(
   req: any,
   scopeBranchId: string | null | undefined
-): boolean {
-  if (!isAdmin(req.userWithAccess?.role)) {
-    return hasBranchAccess(
-      req.userWithAccess?.branchId,
-      req.userWithAccess?.accessScope,
-      scopeBranchId
-    );
+): Promise<boolean> {
+  if (!scopeBranchId || !req.userWithAccess?.tenantId) return false;
+  const [branch] = await db.select({ id: branches.id }).from(branches)
+    .where(and(eq(branches.id, scopeBranchId), eq(branches.tenantId, req.userWithAccess.tenantId)))
+    .limit(1);
+  return Boolean(branch && (
+    req.userWithAccess.hasAllBranchesAccess ||
+    req.userWithAccess.allowedBranchIds?.includes(scopeBranchId)
+  ));
+}
+
+async function validateNodeReferences(req: any, data: {
+  mode?: "live" | "draft";
+  scopeType?: "company" | "branch";
+  scopeBranchId?: string | null;
+  branchId?: string | null;
+  personEmployeeId?: string | null;
+  departmentId?: string | null;
+  reportsToNodeId?: string | null;
+}): Promise<boolean> {
+  const tenantId = req.userWithAccess?.tenantId;
+  if (!tenantId) return false;
+  if (data.scopeType === "company" && !req.userWithAccess?.hasAllBranchesAccess) return false;
+  if (data.scopeType === "branch" && !data.scopeBranchId) return false;
+  if (data.scopeType === "company" && data.scopeBranchId) return false;
+  if (data.scopeBranchId && !await verifyBranchAccess(req, data.scopeBranchId)) return false;
+  if (data.branchId && !await verifyBranchAccess(req, data.branchId)) return false;
+  if (data.scopeType === "branch" && data.branchId && data.scopeBranchId !== data.branchId) return false;
+
+  if (data.personEmployeeId) {
+    const [employee] = await db.select({ branchId: employees.branchId }).from(employees)
+      .where(and(eq(employees.id, data.personEmployeeId), eq(employees.tenantId, tenantId)))
+      .limit(1);
+    if (!employee || (!employee.branchId && !req.userWithAccess?.hasAllBranchesAccess) ||
+        (employee.branchId && !await verifyBranchAccess(req, employee.branchId))) return false;
+    if (data.branchId && employee.branchId !== data.branchId) return false;
+    if (data.scopeType === "branch" && employee.branchId !== data.scopeBranchId) return false;
   }
-  if (req.userWithAccess?.accessScope === "all_branches") return true;
-  if (!scopeBranchId) return true;
-  return hasBranchAccess(
-    req.userWithAccess?.branchId,
-    req.userWithAccess?.accessScope,
-    scopeBranchId
-  );
+
+  if (data.departmentId) {
+    const [department] = await db.select({ id: departments.id }).from(departments)
+      .where(and(eq(departments.id, data.departmentId), eq(departments.tenantId, tenantId)))
+      .limit(1);
+    if (!department) return false;
+  }
+  if (data.reportsToNodeId) {
+    const [parent] = await db.select().from(orgNodes)
+      .where(and(eq(orgNodes.id, data.reportsToNodeId), eq(orgNodes.tenantId, tenantId), eq(orgNodes.isDeleted, false)))
+      .limit(1);
+    if (!parent || parent.mode !== data.mode || parent.scopeType !== data.scopeType ||
+        parent.scopeBranchId !== (data.scopeBranchId || null) ||
+        (parent.branchId && !await verifyBranchAccess(req, parent.branchId))) return false;
+  }
+  return true;
 }
 
 router.get("/nodes", requireAuth, async (req, res) => {
@@ -167,12 +182,31 @@ router.get("/nodes", requireAuth, async (req, res) => {
     const scopeBranchId = req.query.scopeBranchId as string | undefined;
     const userRole = req.userWithAccess?.role;
 
+    if (!isAdmin(userRole) && userRole !== "manager") {
+      return res.status(403).json({ error: "Manager access required" });
+    }
+    if (!["live", "draft"].includes(mode) || !["company", "branch"].includes(scopeType) ||
+        (scopeType === "branch" && !scopeBranchId)) {
+      return res.status(400).json({ error: "Invalid chart scope" });
+    }
+
     if (mode === "draft" && !isAdmin(userRole)) {
       return res.status(403).json({ error: "Only admins can access draft mode" });
     }
 
-    if (scopeType === "branch" && scopeBranchId && !verifyBranchAccess(req, scopeBranchId)) {
+    if (scopeType === "branch" && !await verifyBranchAccess(req, scopeBranchId)) {
       return res.status(403).json({ error: "Access denied to this branch" });
+    }
+
+    const tenantBranches = await db.select({ id: branches.id }).from(branches)
+      .where(eq(branches.tenantId, tenantId));
+    const allowedBranchIds = req.userWithAccess?.hasAllBranchesAccess
+      ? tenantBranches.map(branch => branch.id)
+      : tenantBranches.map(branch => branch.id)
+          .filter(id => req.userWithAccess?.allowedBranchIds?.includes(id));
+
+    if (scopeType === "company" && allowedBranchIds.length === 0) {
+      return res.json([]);
     }
 
     const conditions = [
@@ -184,8 +218,13 @@ router.get("/nodes", requireAuth, async (req, res) => {
     if (scopeType === "branch" && scopeBranchId) {
       conditions.push(eq(orgNodes.scopeType, "branch"));
       conditions.push(eq(orgNodes.scopeBranchId, scopeBranchId));
+      conditions.push(or(isNull(orgNodes.personEmployeeId), eq(employees.branchId, scopeBranchId))!);
     } else {
       conditions.push(eq(orgNodes.scopeType, "company"));
+      if (!req.userWithAccess?.hasAllBranchesAccess) {
+        conditions.push(inArray(orgNodes.branchId, allowedBranchIds));
+        conditions.push(or(isNull(orgNodes.personEmployeeId), inArray(employees.branchId, allowedBranchIds))!);
+      }
     }
 
     const showSalaries = canViewSalaries(userRole);
@@ -240,7 +279,13 @@ router.get("/nodes", requireAuth, async (req, res) => {
       .orderBy(orgNodes.sortOrder);
 
     // Auto-sync: Ensure all active employees have nodes in this mode
-    const activeEmployees = await db
+    const employeeConditions = [eq(employees.tenantId, tenantId), eq(employees.status, "active")];
+    if (scopeType === "branch" && scopeBranchId) {
+      employeeConditions.push(eq(employees.branchId, scopeBranchId));
+    } else if (!req.userWithAccess?.hasAllBranchesAccess) {
+      employeeConditions.push(inArray(employees.branchId, allowedBranchIds));
+    }
+    const activeEmployees = isAdmin(userRole) && req.userWithAccess?.hasAllBranchesAccess ? await db
       .select({
         id: employees.id,
         nickname: employees.nickname,
@@ -250,10 +295,7 @@ router.get("/nodes", requireAuth, async (req, res) => {
         defaultMergeData: employees.defaultMergeData,
       })
       .from(employees)
-      .where(and(
-        eq(employees.tenantId, tenantId),
-        eq(employees.status, "active")
-      ));
+      .where(and(...employeeConditions)) : [];
 
     // Find employees missing from org chart
     const existingEmployeeIds = new Set(
@@ -316,7 +358,7 @@ router.get("/nodes", requireAuth, async (req, res) => {
     });
 
     // Fetch advisors from people table and add them as virtual nodes
-    // Note: people table doesn't have tenantId, so we filter by user's tenant
+    // Advisor people are owned by tenant-scoped access policies.
     const advisors = await db
       .select({
         id: people.id,
@@ -324,16 +366,25 @@ router.get("/nodes", requireAuth, async (req, res) => {
         fullName: people.fullName,
         preferredName: people.preferredName,
         isActive: people.isActive,
+        branchScope: accessPolicies.branchScope,
+        branchIds: accessPolicies.branchIds,
       })
       .from(people)
+      .innerJoin(accessPolicies, eq(accessPolicies.personId, people.id))
       .where(and(
+        eq(accessPolicies.tenantId, tenantId),
         eq(people.personType, "ADVISOR"),
         eq(people.isActive, true)
       ));
 
     // Create advisor nodes from people table
     // These are external consultants/advisors without employee records
-    const advisorNodes = advisors.map((advisor) => {
+    const advisorNodes = advisors.filter(advisor =>
+      advisor.branchScope === "ALL" ||
+      (advisor.branchIds || []).some(id => scopeType === "branch"
+        ? id === scopeBranchId
+        : allowedBranchIds.includes(id))
+    ).map((advisor) => {
       const displayName = advisor.preferredName || advisor.fullName || advisor.email;
 
       // Create virtual advisor node (advisors don't have employee records, so always create a node)
@@ -433,12 +484,8 @@ router.post("/nodes", requireAuth, async (req, res) => {
     }
 
     const validatedData = parseResult.data;
-    console.log("[ORG_CHART] Creating node with data:", JSON.stringify(validatedData, null, 2));
-
-    if (validatedData.scopeType === "branch" && validatedData.scopeBranchId) {
-      if (!verifyBranchAccess(req, validatedData.scopeBranchId)) {
-        return res.status(403).json({ error: "Access denied to this branch" });
-      }
+    if (!await validateNodeReferences(req, validatedData)) {
+      return res.status(403).json({ error: "Invalid chart reference or branch access" });
     }
 
     if (validatedData.reportsToNodeId) {
@@ -449,9 +496,7 @@ router.post("/nodes", requireAuth, async (req, res) => {
         });
       }
       
-      console.log("[ORG_CHART] Checking cycle for reportsToNodeId:", validatedData.reportsToNodeId);
       const hasCycle = await detectCycleForNewNode(tenantId, validatedData.reportsToNodeId);
-      console.log("[ORG_CHART] Cycle check result:", hasCycle);
       if (hasCycle) {
         return res.status(400).json({ error: "Invalid reporting structure" });
       }
@@ -493,6 +538,14 @@ router.patch("/nodes/:id", requireAuth, async (req, res) => {
     }
 
     const validatedData = parseResult.data;
+
+    const [currentNode] = await db.select().from(orgNodes)
+      .where(and(eq(orgNodes.id, nodeId), eq(orgNodes.tenantId, tenantId)))
+      .limit(1);
+    if (!currentNode) return res.status(404).json({ error: "Node not found" });
+    if (!await validateNodeReferences(req, { ...currentNode, ...validatedData })) {
+      return res.status(403).json({ error: "Invalid chart reference or branch access" });
+    }
 
     if (validatedData.reportsToNodeId !== undefined) {
       const hasCycle = await detectCycleForUpdate(tenantId, nodeId, validatedData.reportsToNodeId || null);
@@ -547,6 +600,14 @@ router.delete("/nodes/:id", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Only admins can delete org nodes" });
     }
 
+    const [currentNode] = await db.select().from(orgNodes)
+      .where(and(eq(orgNodes.id, nodeId), eq(orgNodes.tenantId, tenantId)))
+      .limit(1);
+    if (!currentNode) return res.status(404).json({ error: "Node not found" });
+    if (!await validateNodeReferences(req, currentNode)) {
+      return res.status(403).json({ error: "Branch access denied" });
+    }
+
     const [deletedNode] = await db
       .update(orgNodes)
       .set({
@@ -589,7 +650,11 @@ router.post("/clone-live-to-draft", requireAuth, async (req, res) => {
 
     const { scopeType, scopeBranchId } = scopeResult.data;
 
-    if (scopeType === "branch" && scopeBranchId && !verifyBranchAccess(req, scopeBranchId)) {
+    if (scopeType === "company" && !req.userWithAccess?.hasAllBranchesAccess) {
+      return res.status(403).json({ error: "Company chart changes require all-branch access" });
+    }
+
+    if (scopeType === "branch" && scopeBranchId && !await verifyBranchAccess(req, scopeBranchId)) {
       return res.status(403).json({ error: "Access denied to this branch" });
     }
 
@@ -683,7 +748,11 @@ router.post("/promote-draft-to-live", requireAuth, async (req, res) => {
 
     const { scopeType, scopeBranchId } = scopeResult.data;
 
-    if (scopeType === "branch" && scopeBranchId && !verifyBranchAccess(req, scopeBranchId)) {
+    if (scopeType === "company" && !req.userWithAccess?.hasAllBranchesAccess) {
+      return res.status(403).json({ error: "Company chart changes require all-branch access" });
+    }
+
+    if (scopeType === "branch" && scopeBranchId && !await verifyBranchAccess(req, scopeBranchId)) {
       return res.status(403).json({ error: "Access denied to this branch" });
     }
 
@@ -790,11 +859,22 @@ router.get("/budget", requireAuth, async (req, res) => {
     const scopeType = (req.query.scopeType as string) || "company";
     const scopeBranchId = req.query.scopeBranchId as string | undefined;
 
+    if (!["company", "branch"].includes(scopeType)) {
+      return res.status(400).json({ error: "Invalid chart scope" });
+    }
+
+    const tenantBranches = await db.select({ id: branches.id }).from(branches)
+      .where(eq(branches.tenantId, tenantId));
+    const allowedBranchIds = req.userWithAccess?.hasAllBranchesAccess
+      ? tenantBranches.map(branch => branch.id)
+      : tenantBranches.map(branch => branch.id)
+          .filter(id => req.userWithAccess?.allowedBranchIds?.includes(id));
+
     if (scopeType === "branch") {
       if (!scopeBranchId) {
         return res.status(400).json({ error: "scopeBranchId required for branch scope" });
       }
-      if (!verifyBranchAccess(req, scopeBranchId)) {
+      if (!await verifyBranchAccess(req, scopeBranchId)) {
         return res.status(403).json({ error: "Access denied to this branch" });
       }
     }
@@ -808,8 +888,13 @@ router.get("/budget", requireAuth, async (req, res) => {
       if (scopeType === "branch" && scopeBranchId) {
         conditions.push(eq(orgNodes.scopeType, "branch"));
         conditions.push(eq(orgNodes.scopeBranchId, scopeBranchId));
+        conditions.push(or(isNull(orgNodes.personEmployeeId), eq(employees.branchId, scopeBranchId))!);
       } else {
         conditions.push(eq(orgNodes.scopeType, "company"));
+        if (!req.userWithAccess?.hasAllBranchesAccess) {
+          conditions.push(allowedBranchIds.length ? inArray(orgNodes.branchId, allowedBranchIds) : sql`false`);
+          conditions.push(or(isNull(orgNodes.personEmployeeId), inArray(employees.branchId, allowedBranchIds))!);
+        }
       }
 
       return db
@@ -819,11 +904,15 @@ router.get("/budget", requireAuth, async (req, res) => {
           personEmployeeId: orgNodes.personEmployeeId,
           expectedMonthlySalary: orgNodes.expectedMonthlySalary,
           branchId: orgNodes.branchId,
-          employeeSalary: employees.baseSalaryMonthly,
+          employeeSalary: employeePayrollProfiles.baseSalaryMonthly,
           branchName: branches.name,
         })
         .from(orgNodes)
         .leftJoin(employees, eq(orgNodes.personEmployeeId, employees.id))
+        .leftJoin(employeePayrollProfiles, and(
+          eq(employeePayrollProfiles.employeeId, employees.id),
+          eq(employeePayrollProfiles.tenantId, tenantId),
+        ))
         .leftJoin(branches, eq(orgNodes.branchId, branches.id))
         .where(and(...conditions));
     };
@@ -838,9 +927,9 @@ router.get("/budget", requireAuth, async (req, res) => {
       const byBranch: Record<string, { name: string; salary: number; personCount: number; vacantCount: number }> = {};
 
       for (const node of nodes) {
-        const salary = node.nodeType === "person"
+        const salary = Number(node.nodeType === "person"
           ? (node.employeeSalary ?? 0)
-          : (node.expectedMonthlySalary ?? 0);
+          : (node.expectedMonthlySalary ?? 0));
         
         totalSalary += salary;
         
@@ -905,7 +994,11 @@ router.post("/initialize-from-employees", requireAuth, async (req, res) => {
 
     const { scopeType, scopeBranchId } = scopeResult.data;
 
-    if (scopeType === "branch" && scopeBranchId && !verifyBranchAccess(req, scopeBranchId)) {
+    if (scopeType === "company" && !req.userWithAccess?.hasAllBranchesAccess) {
+      return res.status(403).json({ error: "Company chart changes require all-branch access" });
+    }
+
+    if (scopeType === "branch" && scopeBranchId && !await verifyBranchAccess(req, scopeBranchId)) {
       return res.status(403).json({ error: "Access denied to this branch" });
     }
 
@@ -944,7 +1037,7 @@ router.post("/initialize-from-employees", requireAuth, async (req, res) => {
       nodeType: "person" as const,
       personEmployeeId: emp.id,
       title: emp.nickname || emp.fullName,
-      positionTitle: emp.positionTitle,
+      positionTitle: (emp.defaultMergeData as { positionTitle?: string } | null)?.positionTitle || null,
       branchId: emp.branchId,
       isVacant: false,
       isDeleted: false,
