@@ -50,3 +50,4 @@ export * from './end-of-day';
 export * from './settlement';
 export * from './booking-supervision';
 export * from './analytics';
+export * from './analytics-reports';

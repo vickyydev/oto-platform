@@ -16,6 +16,7 @@ import {
   type AnalyticsSummaryRow,
 } from '@oto/shared';
 import { ROLLUP_DAILY_JOB } from './analytics-rollup';
+import { lastBoothRolledUpAt } from './analytics-booth';
 import { hasPermission, type EffectivePermission } from './permissions';
 import type { Exec } from './tx';
 
@@ -366,20 +367,25 @@ export async function analyticsSummaryOf(
 /**
  * The Health page's line per branch (plan §1): when the rollup last brought
  * each branch in the caller's reach up to date, with the business date in
- * progress there. Live branches only, in name order.
+ * progress there, and (round 5) when the booth figures were. Live branches
+ * only, in name order.
  */
 export async function rollupFreshnessOf(
   db: Exec,
   branches: readonly SummaryBranch[],
   now: Date,
-): Promise<Array<{ branchId: string; name: string; today: string; lastRolledUpAt: string | null }>> {
+): Promise<
+  Array<{ branchId: string; name: string; today: string; lastRolledUpAt: string | null; boothLastRolledUpAt: string | null }>
+> {
   const live = branches.filter((b) => b.archivedAt === null);
   const fresh = await lastRolledUpAt(db, live, now);
+  const booth = await lastBoothRolledUpAt(db, live);
   return live.map((b) => ({
     branchId: b.id,
     name: b.name,
     today: summaryBranchToday(b, now),
     lastRolledUpAt: fresh.get(b.id)?.toISOString() ?? null,
+    boothLastRolledUpAt: booth.get(b.id)?.toISOString() ?? null,
   }));
 }
 

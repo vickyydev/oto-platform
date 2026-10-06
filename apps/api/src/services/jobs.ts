@@ -5,6 +5,7 @@ import { opsExpectation, opsLast, type AlertSeverity, type Db } from '@oto/db';
 import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
 import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB, runDailyRollupJob, runHourlyRollupJob } from './analytics-rollup';
+import { ROLLUP_BOOTH_JOB, runBoothRollupJob } from './analytics-booth';
 import { BOOTH_DUTY_JOB, runMorningBoothDutySync } from './booth-duty';
 import {
   expireStaleCommands,
@@ -616,6 +617,19 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       description: "Rolls each branch's trading days into the hourly summary: today, and every day the daily rollup recomputed",
       intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
       run: async ({ db, now }) => ({ detail: await runHourlyRollupJob(db, now) }),
+    },
+    /**
+     * `job:rollup.booth` — THE BOOTH'S DAY (S2-15b round 5, plan §5, §8):
+     * today at every live branch, and every day a booth fact marked (a spin
+     * filed, its voucher linked, a booth voucher redeemed — migration 0065),
+     * into `analytics.fact_booth_daily` per booth, staff member and prize. The
+     * `#debug` distribution run never reaches it.
+     */
+    {
+      name: ROLLUP_BOOTH_JOB,
+      description: "Rolls each branch's booth spins and vouchers into the booth fact: today, and every day a booth fact marked",
+      intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
+      run: async ({ db, now }) => ({ detail: await runBoothRollupJob(db, now) }),
     },
   ];
 }

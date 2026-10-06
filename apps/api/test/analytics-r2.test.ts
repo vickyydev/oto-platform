@@ -755,7 +755,17 @@ describe('the daily and hourly rollup (SCRUM-216 round 2)', () => {
     const dailyRun = runs.find((r) => r.name === ROLLUP_DAILY_JOB);
     expect(dailyRun).toMatchObject({ outcome: 'ok' });
     expect(Object.keys(dailyRun!.detail as Record<string, unknown>).sort()).toEqual(
-      ['branches', 'calendarDays', 'claimed', 'days', 'frozen', 'unchanged', 'written'].sort(),
+      [
+        'branches',
+        'calendarDays',
+        'claimed',
+        'days',
+        'frozen',
+        'reportRowsRemoved',
+        'reportRowsWritten',
+        'unchanged',
+        'written',
+      ].sort(),
     );
     expect(runs.find((r) => r.name === ROLLUP_HOURLY_JOB)).toMatchObject({ outcome: 'ok' });
   });
@@ -766,7 +776,7 @@ describe('the daily and hourly rollup (SCRUM-216 round 2)', () => {
     expect((listed.json() as { controls: Array<{ key: string }> }).controls.map((c) => c.key)).toContain('rollup.run');
     const res = await ctx.app.inject({ method: 'POST', url: '/ops/test-controls/rollup.run', headers: { cookie: admin } });
     expect(res.statusCode, res.body).toBe(200);
-    expect((res.json() as { message: string }).message).toBe('The analytics rollup ran (daily ok, hourly ok).');
+    expect((res.json() as { message: string }).message).toBe('The analytics rollup ran (daily ok, hourly ok, booth ok).');
     const reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
     expect((await ctx.app.inject({ method: 'POST', url: '/ops/test-controls/rollup.run', headers: { cookie: reception } })).statusCode).toBe(403);
   });

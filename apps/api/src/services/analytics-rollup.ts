@@ -15,8 +15,8 @@ import {
   summariseAnalyticsHoursV1,
   type AnalyticsDayFigures,
   type AnalyticsSaleFacts,
-  type AnalyticsSaleKind,
 } from '@oto/shared';
+import { rollupReportDay, saleKindOf } from './analytics-reports';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -185,21 +185,6 @@ async function lockBranchDay(tx: Tx, table: 'daily' | 'hourly', branchId: string
 
 // --- The facts ------------------------------------------------------------------------
 
-/**
- * WHAT KIND OF RECORD A SALE IS, in the prototype's terms. The lane the till
- * recorded it under decides (`sales_channel`: `fnb`, `shop`). Before SCRUM-343
- * every sale was recorded under `till`, F&B and shop orders included, so a
- * `till` sale with no ticket-side line and only F&B or merch items is read by
- * its lines.
- */
-function saleKindOf(row: { sales_channel: string; ticket_lines: number; fnb_lines: number; merch_lines: number }): AnalyticsSaleKind {
-  if (row.sales_channel === 'fnb') return 'fnb';
-  if (row.sales_channel === 'shop') return 'merch';
-  if (row.ticket_lines === 0 && row.fnb_lines > 0) return 'fnb';
-  if (row.ticket_lines === 0 && row.merch_lines > 0) return 'merch';
-  return 'ticket';
-}
-
 interface SaleFactRow extends Record<string, unknown> {
   id: string;
   sales_channel: string;
@@ -341,9 +326,11 @@ export function dailyFingerprint(figures: AnalyticsDayFigures, provisional: bool
 export type RollupDayOutcome = 'written' | 'unchanged' | 'frozen';
 
 /**
- * Recompute one branch-day into `daily_summary`, and hand it to the hourly
- * summariser. `claim`, when the day came off the dirty queue, is consumed in
- * the same transaction as the write.
+ * Recompute one branch-day into `daily_summary` and the Reports panels' rows
+ * (round 4, `analytics-reports.ts`), and hand it to the hourly summariser.
+ * `claim`, when the day came off the dirty queue, is consumed in the same
+ * transaction as the write. `reports`, when given, is told how many report
+ * rows were written and removed.
  */
 export async function rollupDailyBranchDay(
   db: Db,
@@ -351,6 +338,7 @@ export async function rollupDailyBranchDay(
   date: string,
   now: Date,
   claim?: { claim: DirtyClaim; claimedBy: string },
+  reports?: { written: number; removed: number },
 ): Promise<RollupDayOutcome> {
   return db.transaction(async (tx) => {
     await lockBranchDay(tx, 'daily', clock.id, date);
@@ -410,6 +398,13 @@ export async function rollupDailyBranchDay(
         setWhere: sql`not ${d.frozen} and ${d.inputFingerprint} is distinct from excluded.input_fingerprint`,
       })
       .returning({ id: d.id });
+    // The Reports panels' rows, of the same read of the ledger and under the
+    // same lock: each written only where a figure moved.
+    const reported = await rollupReportDay(tx, { operatorId: clock.operatorId, branchId: clock.id, date, now });
+    if (reports) {
+      reports.written += reported.written;
+      reports.removed += reported.removed;
+    }
     // A day whose facts moved goes to the hourly summariser; today is rolled
     // there on every run regardless.
     if (written.length > 0 || claim) await markDirty(tx, clock, date, 'hourly', 'rollup.daily');
@@ -575,6 +570,9 @@ export interface DailyRollupDetail extends Record<string, number> {
   frozen: number;
   claimed: number;
   calendarDays: number;
+  /** Report rows (round 4) written or removed because a figure moved. */
+  reportRowsWritten: number;
+  reportRowsRemoved: number;
 }
 
 interface PlannedDay {
@@ -632,7 +630,10 @@ export async function runDailyRollupJob(db: Db, now: Date): Promise<DailyRollupD
     frozen: 0,
     claimed: claims.length,
     calendarDays: 0,
+    reportRowsWritten: 0,
+    reportRowsRemoved: 0,
   };
+  const reports = { written: 0, removed: 0 };
   let failed = 0;
   let firstError: unknown = null;
   for (const day of ordered(plan)) {
@@ -644,6 +645,7 @@ export async function runDailyRollupJob(db: Db, now: Date): Promise<DailyRollupD
         day.date,
         now,
         day.claim ? { claim: day.claim, claimedBy } : undefined,
+        reports,
       );
       detail[outcome] += 1;
     } catch (err) {
@@ -652,6 +654,8 @@ export async function runDailyRollupJob(db: Db, now: Date): Promise<DailyRollupD
       if (day.claim) await releaseDirtyClaim(db, day.claim, claimedBy).catch(() => undefined);
     }
   }
+  detail.reportRowsWritten = reports.written;
+  detail.reportRowsRemoved = reports.removed;
   try {
     detail.calendarDays = await refreshDimDate(db, now);
   } catch (err) {

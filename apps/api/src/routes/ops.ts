@@ -21,6 +21,7 @@ import { operatorBranches, rollupFreshnessOf } from '../services/analytics-summa
 import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
 import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB } from '../services/analytics-rollup';
+import { ROLLUP_BOOTH_JOB } from '../services/analytics-booth';
 import { boxAuthFromRow, boxSettings, virtualBoxAgent } from '../services/box';
 import { loadBox, queueCommand } from '../services/fleet';
 import {
@@ -561,7 +562,7 @@ export async function opsRoutes(app: App): Promise<void> {
       key: 'rollup.run',
       label: 'Run the analytics rollup now',
       description:
-        'Rolls today, every day a late fact marked and every ended day still provisional into the daily and hourly summaries, without waiting for the next tick.',
+        'Rolls today, every day a late fact marked and every ended day still provisional into the daily and hourly summaries and the report rows, and the booth figures, without waiting for the next tick.',
       sticky: false,
     },
     {
@@ -721,7 +722,8 @@ export async function opsRoutes(app: App): Promise<void> {
         );
       }
       const hourly = await jobRunner().runJob(ROLLUP_HOURLY_JOB, { force: true });
-      return `The analytics rollup ran (daily ${daily}, hourly ${hourly}).`;
+      const booth = await jobRunner().runJob(ROLLUP_BOOTH_JOB, { force: true });
+      return `The analytics rollup ran (daily ${daily}, hourly ${hourly}, booth ${booth}).`;
     }
 
     if (key === 'alert.test') {
