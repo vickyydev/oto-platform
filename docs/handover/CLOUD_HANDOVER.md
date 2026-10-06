@@ -23,7 +23,7 @@ _Updated: 7 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block
 
 | Item | State |
 |---|---|
-| Main | Green through c578ebb0 (analytics round 3, run 37534047834). Migrations through 0064 (0061 End of Day receipt, 0062 sale extensions, 0063 stock packs, 0064 analytics summaries incl. the late check-in mark). Next free: 0065, reserved first for the analytics reports lane |
+| Main | Green through c578ebb0 (run 37534047834); 9183c986 (analytics rounds 4-5) under its run. Migrations through 0065 (0064 analytics summaries, 0065 analytics reports). Next free: 0066 |
 | SCRUM-494 (till consistency, band details and services) | Deployed. Register entries 1-9 are on main and live |
 | SCRUM-215 (S2-15a End of Day) | Deployed. Follow-up work is on branch `lane/eod-followups` |
 | SCRUM-499 (Lucky Wheel fixed-code vouchers) and SCRUM-500 | Deployed |
@@ -31,7 +31,7 @@ _Updated: 7 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block
 | SCRUM-496 (stock, booking and check-in consistency) | Deployed with staging cards |
 | SCRUM-497 | Details for the owner to confirm (register entries 44-65). Each keeps the approved design's behaviour until answered |
 | SCRUM-498 | Deployed with staging cards. SCRUM-493 waits only on SCRUM-497 answers |
-| SCRUM-216 (S2-15b analytics) | In build. Rounds 1-3 on main: analytics schema + rollup (migration 0064), the driven-day proof, the Performance tab on real figures with All branches and the demo control on Demo Branch 2. Rounds 4-5 (Reports panels + CSVs; fact_booth_daily + Console booth report) on `lane/s216-r45`; round 6 (frozen legacy days, branch_source_switch, walkthrough) after. Authority: docs/progress/plans/analytics/PLAN.md. Then SCRUM-214 to Deployed, then the rest of `docs/progress/SPRINT_2_PLAN.md`'s execution order |
+| SCRUM-216 (S2-15b analytics) | In build. Rounds 1-5 on main (head 9183c986, CI watched): schema + rollup (0064), driven-day proof, Performance on real figures, the four Reports panels + CSVs and the Console booth report (0065). Round 6 remains: frozen legacy days, branch_source_switch, closing walkthrough + evidence. Owner questions 1-17 in docs/progress/plans/analytics/PLAN.md section 9. Then SCRUM-214 to Deployed, then the rest of `docs/progress/SPRINT_2_PLAN.md`'s execution order |
 | SCRUM-488 | Owner's End of Day ruling applied; four round-1 points to confirm |
 
 **Unlanded work** is saved, unreviewed, under `wip/saved-20261006/*`. Treat those branches as reference only until a lane picks one up.

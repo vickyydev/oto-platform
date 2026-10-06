@@ -239,6 +239,23 @@ is shown to whoever can open Today today; see question 9.
 14. **Booth report figures with no prototype rule:** redemption lag
     (issue to redeem), uptime (heartbeat minutes), prize cost (prize cost
     price × prizes won). Defined by plan; confirm.
+15. **A stay's fee in the Ticket type breakdown:** the prototype's code
+    adds the drop-off/nanny fee and the food provision into the ticket
+    row's revenue (lib/dropoff.ts:87 lineTotal = price + service fee +
+    food, summed by ticketTypeSalesRows), while that row's own comment
+    says the revenue "excludes drop-off fee" (lib/reporting.ts:300).
+    Default built: the comment's reading - the ticket row carries only
+    the ticket's own price; the fee and food stay on the Drop-off/Nanny
+    session card. Counts and kids are identical either way. Confirm.
+16. **Old demo rows at HKT Central:** demo sales pressed before the demo
+    control moved to Demo Branch 2 still sit in the real branch's
+    history and days. Default: keep (recorded sales are never deleted);
+    say the word and they can be marked out of the rollup instead.
+17. **"End of Day closed at ฿X" under Revenue** (section 6): the closed
+    figure needs its own stored place - the closed day's row refuses
+    change, so wiring the note takes the next free migration. Default:
+    added with that migration; until then Performance shows the
+    rolled-up revenue without the note.
 
 ## 10. Hazards, each with its test
 
