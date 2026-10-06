@@ -3,6 +3,9 @@ import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { computeManualDiscount, formatDiscountDetail } from '@/lib/manualDiscount';
 import { QrCode } from '@/components/till/QrCode';
+import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
+import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
+import type { PaymentDisplayState } from '@/lib/usePaymentStage';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { resolveName } from '@/i18n/resolveTranslation';
@@ -37,6 +40,12 @@ interface MerchCustomerDisplayProps {
    * (plan §6); the display now shows only what the platform takes.
    */
   creditSatang?: number;
+  /**
+   * The payment stage's frame: the platform's QR, the amount still owed and
+   * the credit taken. When it is supplied the payment screen draws from it,
+   * as the F&B display does; the QR is never a locally drawn placeholder.
+   */
+  payment?: PaymentDisplayState;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -139,6 +148,7 @@ export function MerchCustomerDisplay({
   completedOrder,
   newBalance,
   creditSatang,
+  payment,
 }: MerchCustomerDisplayProps) {
   const { t, lang } = useLanguage();
   if (stage === 'welcome') {
@@ -246,10 +256,18 @@ export function MerchCustomerDisplay({
   }
 
   if (stage === 'payment') {
-    const creditUsed = Math.min((creditSatang ?? 0) / 100, total);
-    const remainderDue = roundTHB(total - creditUsed);
+    const orderSatang = Math.round(total * 100);
+    const creditUsed = payment
+      ? (payment.creditSatang ?? 0) / 100
+      : Math.min((creditSatang ?? 0) / 100, total);
+    const remainderDue = payment
+      ? guestLeftToPaySatang(payment, orderSatang) / 100
+      : roundTHB(total - creditUsed);
+    const qrDue = payment
+      ? payment.online && payment.status === 'pending' && Boolean(payment.qrPayload || payment.qrImageUrl)
+      : promptpayAmount !== null;
 
-    if (promptpayAmount !== null) {
+    if (qrDue) {
       return (
         <Shell>
           <div className="flex-1 flex flex-col items-center justify-center text-center px-10 animate-in fade-in zoom-in-95 duration-500">
@@ -261,16 +279,21 @@ export function MerchCustomerDisplay({
             </div>
             <h2 className="text-4xl font-black mb-6">{t('merch.payment.scanToPay')}</h2>
             <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
-              <QrCode seed={`merch-promptpay-${promptpayAmount}`} className="w-64 h-64" />
+              {payment ? (
+                <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" />
+              ) : (
+                <QrCode seed={`merch-promptpay-${promptpayAmount}`} className="w-64 h-64" />
+              )}
             </div>
             <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">
-              ฿{promptpayAmount}
+              ฿{payment ? remainderDue : promptpayAmount}
             </div>
             {creditUsed > 0 && (
               <p className="text-lg text-foreground/60 mt-3">
                 {t('merch.payment.paidFromCredit', { amount: String(creditUsed) })}
               </p>
             )}
+            {payment && <PaymentExpiry expiresAt={payment.expiresAt} />}
             <p className="text-xl text-foreground/60 mt-4 max-w-md">
               {t('merch.payment.openBankingApp')}
             </p>
@@ -310,7 +333,23 @@ export function MerchCustomerDisplay({
             </div>
           </div>
 
-          <p className="text-xl text-foreground/60 mt-8">{t('merch.payment.confirmWithStaff')}</p>
+          <p className="text-xl text-foreground/60 mt-8">
+            {!payment
+              ? t('merch.payment.confirmWithStaff')
+              : !payment.online
+                ? t('till.payment.reconnect')
+                : payment.offline
+                  ? t('till.payment.offlineRecorded')
+                  : payment.status === 'pending'
+                    ? t('merch.payment.waiting')
+                    : payment.status === 'paid'
+                      ? t('till.payment.received')
+                      : payment.status === 'blocked' || payment.status === 'failed'
+                        ? t('till.payment.checking')
+                        : creditCoversOrder(payment, orderSatang)
+                          ? t('merch.payment.coveredByCredit')
+                          : t('merch.payment.confirmWithStaff')}
+          </p>
         </div>
       </Shell>
     );

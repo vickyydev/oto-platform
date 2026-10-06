@@ -3,14 +3,24 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { box, boxCommand, branch, paymentAttempt, product, refund, station, ticketPackage, wallet, walletEntry } from '@oto/db';
 import { countsAsTillTakings, mintVoucherQr, newId } from '@oto/shared';
 import { createWalletWithGrant, debitWallet, loadWallet, prepaidActionId, prepaidBalanceOf } from '../src/services/wallet';
-import { BRANCH_MANAGER, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  BRANCH_MANAGER,
+  RECEPTION,
+  SECOND_OPERATOR_BRANCH_CODE,
+  createTestContext,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
 
 /**
  * S2-14a round 2 — the RE-CHECK gate's reproductions (invariants 1-4), kept.
  *
  * (1) no wallet refusal path writes an attempt, a kick or a takings row;
- * (2) refusals (expired, another park, the ticket counter, more than owed)
- *     leave balance == sum and nothing written;
+ * (2) refusals (expired, another operator, the ticket counter, more than
+ *     owed) leave balance == sum and nothing written; a wallet another park
+ *     of the same operator issued is spent here and recorded at this park
+ *     (SCRUM-495: wallet identity is shared across the operator's parks);
  * (3) a replayed refund — sequential and concurrent — restores once; two
  *     racing refunds of one wallet-only sale never pay credit out as cash; a
  *     mixed sale's cash slices never exceed the cash taken;
@@ -24,6 +34,8 @@ let manager: string;
 let operatorId: string;
 let branchId: string;
 let otherBranchId: string;
+let foreignOperatorId: string;
+let foreignBranchId: string;
 let stationId: string;
 let boxId: string;
 let twoHoursId: string;
@@ -38,6 +50,9 @@ beforeAll(async () => {
   operatorId = hkt!.operatorId;
   const [other] = await ctx.db.select().from(branch).where(and(eq(branch.operatorId, operatorId), ne(branch.id, branchId)));
   otherBranchId = other!.id;
+  const [foreign] = await ctx.db.select().from(branch).where(eq(branch.code, SECOND_OPERATOR_BRANCH_CODE));
+  foreignOperatorId = foreign!.operatorId;
+  foreignBranchId = foreign!.id;
   const [till] = await ctx.db.select().from(station).where(and(eq(station.branchId, branchId), eq(station.codePrefix, 'T1')));
   stationId = till!.id;
   boxId = till!.boxId!;
@@ -67,10 +82,14 @@ async function assertLedgerTruth(): Promise<void> {
   }
 }
 
-async function walletWith(amountSatang: number, at = () => branchId): Promise<{ id: string; qr: string }> {
+async function walletWith(
+  amountSatang: number,
+  at = () => branchId,
+  owner = () => operatorId,
+): Promise<{ id: string; qr: string }> {
   const qr = mintVoucherQr();
   const made = await ctx.db.transaction((tx) =>
-    createWalletWithGrant(tx, { accountId: null, operatorId }, {
+    createWalletWithGrant(tx, { accountId: null, operatorId: owner() }, {
       actionId: `gate-r2-recheck:${newId()}`,
       branchId: at(),
       holderName: 'Walk-in guest',
@@ -106,7 +125,7 @@ const refundOf = (saleId: string, body: Record<string, unknown>) =>
 type Slice = { route: string; amountSatang: number; status: string; attemptId: string | null };
 
 describe('(1)(2) refusals write nothing: no attempt, no kick, no entry', () => {
-  it('an expired wallet, another park’s wallet, the ticket counter and more than owed', async () => {
+  it('an expired wallet, another operator’s wallet, the ticket counter and more than owed', async () => {
     const before = await kicks();
     // Expired: refused in the counter's words, nothing taken.
     const expired = await walletWith(5_000);
@@ -118,8 +137,8 @@ describe('(1)(2) refusals write nothing: no attempt, no kick, no entry', () => {
     expect(await attemptsOf(s1)).toHaveLength(0);
     expect(await balanceOf(expired.id)).toBe(5_000);
 
-    // Another park's wallet reads as no wallet at all.
-    const elsewhere = await walletWith(5_000, () => otherBranchId);
+    // Another operator's wallet reads as no wallet at all.
+    const elsewhere = await walletWith(5_000, () => foreignBranchId, () => foreignOperatorId);
     const r2 = await finalise(s1, { wallet: { key: elsewhere.qr, useCredit: true }, actionId: newId() });
     expect(r2.statusCode).toBe(404);
     expect(r2.json().error.code).toBe('WALLET_NOT_FOUND');
@@ -147,6 +166,25 @@ describe('(1)(2) refusals write nothing: no attempt, no kick, no entry', () => {
     expect(await balanceOf(good.id)).toBe(100_000);
     expect(await ctx.db.select().from(walletEntry).where(eq(walletEntry.saleId, s1))).toHaveLength(0);
     expect(await kicks()).toBe(before);
+    await assertLedgerTruth();
+  });
+});
+
+describe('(2b) credit another park of this operator issued', () => {
+  it('is spent at this park and the spend is recorded here', async () => {
+    const issuedElsewhere = await walletWith(5_000, () => otherBranchId);
+    const saleId = await fnbOrder();
+    const res = await finalise(saleId, { wallet: { key: issuedElsewhere.qr, useCredit: true }, actionId: newId() });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(await balanceOf(issuedElsewhere.id)).toBe(0);
+    const spends = await ctx.db
+      .select()
+      .from(walletEntry)
+      .where(and(eq(walletEntry.walletId, issuedElsewhere.id), eq(walletEntry.kind, 'spend')));
+    expect(spends).toHaveLength(1);
+    expect(spends[0]!.amountSatang).toBe(-5_000);
+    expect(spends[0]!.branchId).toBe(branchId);
+    expect(spends[0]!.saleId).toBe(saleId);
     await assertLedgerTruth();
   });
 });

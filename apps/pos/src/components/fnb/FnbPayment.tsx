@@ -69,13 +69,12 @@ export function FnbPayment({ total, wristband, pickupCode, stage, onBack, credit
   const remainderSatang = creditSelected ? Math.max(0, outstandingSatang - creditPending) : outstandingSatang;
   const creditCoversAll = creditSelected && stage.creditCoversAll;
   const baht = (satang: number) => (satang / 100).toLocaleString('en-US', { maximumFractionDigits: 2 });
-  const card = methods.find((method) => method.kind === 'card');
-  const cash = methods.find((method) => method.kind === 'cash');
-  const defaultRemainder = card ?? cash ?? methods[0];
+  const defaultRemainder = methods.find((method) => method.kind === 'card');
   const wasCreditSelected = useRef(false);
 
   /**
-   * The approved design preselects card for the part credit did not cover.
+   * The approved design preselects card for the part credit did not cover;
+   * with no card tender configured nothing is preselected and staff choose.
    * Choosing a button after that stays the staff member's choice; only the
    * transition into credit selection applies the default.
    */

@@ -49,7 +49,6 @@ import { walletKeyOf } from '@/api/wallet';
 import { MerchConfirmation } from '@/components/merch/MerchConfirmation';
 import { MerchCustomerDisplay, MerchCustomerStage } from '@/components/merch/MerchCustomerDisplay';
 import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustomerDisplay';
-import { InlineMerchPaymentDisplay } from '@/components/merch/InlineMerchPaymentDisplay';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
@@ -793,9 +792,7 @@ export default function MerchStation() {
             {separateDisplay.presentation && !wristband ? <PublicMerchCustomerDisplay
               stage={customerStage} cart={separateDisplay.presentation.cart}
               totals={separateDisplay.presentation.totals} payment={paymentStage.display}
-            /> : stage === 'payment' ? (
-              <InlineMerchPaymentDisplay payment={paymentStage.display} totalSatang={Math.round(total * 100)} />
-            ) : <MerchCustomerDisplay
+            /> : <MerchCustomerDisplay
               stage={customerStage}
               wristband={wristband}
               lines={displayLines}
@@ -806,6 +803,7 @@ export default function MerchStation() {
               completedOrder={completedOrder}
               newBalance={newBalance}
               creditSatang={paymentStage.display.creditSatang ?? 0}
+              payment={stage === 'payment' ? paymentStage.display : undefined}
             />}
           </div>
         )}

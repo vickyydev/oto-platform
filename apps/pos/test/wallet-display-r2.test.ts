@@ -11,7 +11,7 @@ import { FnbPayment } from '@/components/fnb/FnbPayment';
 import { FnbCustomerDisplay } from '@/components/fnb/FnbCustomerDisplay';
 import { loadScannedTab } from '@/components/fnb/ScanWristband';
 import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustomerDisplay';
-import { InlineMerchPaymentDisplay } from '@/components/merch/InlineMerchPaymentDisplay';
+import { MerchCustomerDisplay } from '@/components/merch/MerchCustomerDisplay';
 import type { FnbOrder, MerchOrder, Wristband } from '@/types';
 
 /**
@@ -101,16 +101,26 @@ describe('the public displays draw the rows from the figure', () => {
     const qr = renderToStaticMarkup(React.createElement(PublicMerchCustomerDisplay, { stage: 'payment', cart, totals,
       payment: { ...payment, status: 'pending', qrPayload: '00020101' } }));
     expect(qr).toContain('merch.payment.paidFromCredit');
-    const inline = renderToStaticMarkup(React.createElement(InlineMerchPaymentDisplay, { payment, totalSatang: 9_000 }));
+    // The in-till harness draws the approved shop display's own payment stage from the same frame.
+    const tillDisplay = { stage: 'payment' as const, wristband: null, lines: [], manualDiscounts: [], total: 90,
+      taxBreakdown: { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0, inclusiveTaxTotal: 0, taxTotal: 0, grandTotal: 90,
+        serviceChargeTotal: 0, categories: [] } as never, promptpayAmount: null, completedOrder: null, newBalance: null };
+    const inline = renderToStaticMarkup(React.createElement(MerchCustomerDisplay, { ...tillDisplay, payment }));
     expect(inline).toContain('merch.payment.fromCredit');
     expect(inline).toContain('merch.payment.leftToPay');
     expect(inline).toContain('฿40');
-    const inlineQr = renderToStaticMarkup(React.createElement(InlineMerchPaymentDisplay, {
-      payment: { ...payment, status: 'pending', qrPayload: '00020101' }, totalSatang: 9_000,
+    const inlineQr = renderToStaticMarkup(React.createElement(MerchCustomerDisplay, {
+      ...tillDisplay, payment: { ...payment, status: 'pending', qrPayload: '00020101' },
     }));
     expect(inlineQr).toContain('merch.payment.thaiQrPromptpay');
     expect(inlineQr).toContain('merch.payment.openBankingApp');
     expect(inlineQr).toContain('merch.payment.waiting');
+    expect(inlineQr).toContain('฿40');
+    const inlinePlain = renderToStaticMarkup(React.createElement(MerchCustomerDisplay, {
+      ...tillDisplay, payment: { ...payment, amountSatang: 9_000, creditSatang: undefined },
+    }));
+    expect(inlinePlain).not.toContain('merch.payment.fromCredit');
+    expect(inlinePlain).toContain('merch.payment.toPay');
   });
 
   it('shop, thank-you: the credit beside the cash', () => {
