@@ -3,7 +3,7 @@
 // admin mutators call the write-through helpers so the DB is the source of
 // truth while every prototype screen keeps its exact rendering path.
 import type { AddOn, PaymentMethod, PricingOverride, TaxConfig, TicketType, TierDef } from '@/types';
-import { getActiveBranch, hydrateFromApi } from '@/store/catalogStore';
+import { getActiveBranch, hydrateFromApi, updateDropOffPricing } from '@/store/catalogStore';
 import { setBranchDayStart, setBranchRateMode, setBranchTimezone } from '@/lib/pricingMode';
 import { branchesApi, catalogApi, type ApiBranch, type ApiPaymentMethod, type PublicAddOn } from './platform';
 import { isMissingRoute } from './client';
@@ -218,6 +218,7 @@ export async function loadPublicCatalog(branchCode: string) {
         ticketTypes: cat.packages.map(apiPackageToTicketType),
         ...(cat.addOns ? { addOns: cat.addOns.map(publicAddOnToStore) } : {}),
         ...(cat.taxConfig ? { taxConfig: cat.taxConfig } : {}),
+        ...(cat.supervision ? { supervisionPolicy: cat.supervision.policy } : {}),
       },
     },
     pricingOverrides: cat.holidays.map((h, i) => ({
@@ -227,6 +228,15 @@ export async function loadPublicCatalog(branchCode: string) {
       endDate: h.endsOn,
     })),
   });
+  if (cat.supervision) {
+    const p = cat.supervision.pricing;
+    updateDropOffPricing({
+      oneTimeFeeTHB: { weekday: p.oneTimeFee.weekday / 100, weekend: p.oneTimeFee.weekend / 100 },
+      nannyHourlyRateTHB: { weekday: p.nannyHourly.weekday / 100, weekend: p.nannyHourly.weekend / 100 },
+      extraHourTHB: { weekday: p.extraHour.weekday / 100, weekend: p.extraHour.weekend / 100 },
+      fullDayHours: p.fullDayHours, nannyRatioSoftMax: p.nannyRatioSoftMax, prepaidFoodRefundPolicy: p.prepaidFoodUnused,
+    });
+  }
   return cat;
 }
 

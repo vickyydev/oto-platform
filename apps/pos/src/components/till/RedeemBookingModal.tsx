@@ -262,10 +262,8 @@ export function RedeemBookingModal({
     }
   }
 
-  // Drop-off children and event passes are not columns on `pos.booking` and are
-  // not priced by `POST /public/bookings`, so these are empty until S2-13 and
-  // S2-20 put them on the row. The panels below are the prototype's, unchanged,
-  // and light up when the booking carries them.
+  // Supervised children come from the booking's registration. Event passes are
+  // not sold online yet, so that panel stays empty until they are.
   const dropOffChildren = foundBooking
     ? foundBooking.lines.flatMap((l) => (l.dropOff ? [l.dropOff.childName] : []))
     : [];
@@ -357,6 +355,13 @@ export function RedeemBookingModal({
                           <span>
                             {b.lines.reduce((s, l) => s + l.kids + l.adults, 0)} guests
                           </span>
+                          {b.registrationId && (
+                            <>
+                              <span>·</span>
+                              <Baby className="w-3 h-3" />
+                              <span>drop-off</span>
+                            </>
+                          )}
                         </div>
                       </div>
                       <Badge variant="secondary" className="shrink-0 text-xs">

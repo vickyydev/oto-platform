@@ -1,3 +1,5 @@
+import type { BookingSupervisionSnapshot } from '@oto/shared';
+import { foodProvisionFromWire } from './checkin';
 import type { Booking, CartLine, SelectedAddOn } from '@/types';
 import { buildCreditGrants } from '@/lib/sale';
 import { getTicketTypes } from '@/store/catalogStore';
@@ -41,6 +43,7 @@ import type { ApiSalePrintJob } from './history';
 
 /** A priced line as `POST /public/bookings` computed and stored it. */
 export interface PlatformBookingLine {
+  supervision?: BookingSupervisionSnapshot;
   packageId: string;
   /** The package name frozen at booking time. */
   name: string;
@@ -78,6 +81,7 @@ export interface PlatformRedemption {
 }
 
 export interface PlatformBooking {
+  registrationId?: string;
   id: string;
   reference: string;
   branchId: string;
@@ -406,6 +410,7 @@ export interface MappedBooking {
 
 /** The platform's booking status, as reception reads it. */
 function notPaidReasonFor(p: PlatformBooking): string | null {
+  if (p.status === 'supervised_online_only') return 'This supervised booking needs the internet. Reconnect at reception to redeem it and check the children in.';
   if (p.status === 'paid' || p.status === 'redeemed' || p.redemption) return null;
   if (p.status === 'pending') {
     return `Booking ${p.reference} is not paid yet — the family has not finished paying online. Nothing can be issued against it.`;
@@ -449,11 +454,12 @@ function paidAddOns(line: PlatformBookingLine): SelectedAddOn[] {
  * and the family paid for them, so they are on the lines at the prices paid and
  * reception is told to hand them over.
  *
- * WHAT IT CANNOT KNOW, and so does not invent: drop-off children, event passes
- * and promo codes are not priced by `POST /public/bookings` — the booking site
- * does not send them. They stay empty here, so the summary shows what the
- * platform actually took money for. Drop-off and passes on a booking are S2-13
- * and S2-20.
+ * A supervised child's line carries its registration and stay, so the summary
+ * names the drop-off and the till offers the board's check-in.
+ *
+ * WHAT IT CANNOT KNOW, and so does not invent: event passes and promo codes
+ * are not priced by `POST /public/bookings`. They stay empty here, so the
+ * summary shows what the platform actually took money for.
  *
  */
 export function toPosBooking(p: PlatformBooking): MappedBooking {
@@ -473,7 +479,15 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
       continue;
     }
     lines.push({
-      id: `bk-${p.reference}-${line.packageId}`,
+      id: line.supervision?.checkinId ?? `bk-${p.reference}-${line.packageId}-${lines.length}`,
+      ...(line.supervision && p.registrationId ? { dropOff: {
+        registrationId: p.registrationId, checkInId: line.supervision.checkinId ?? '',
+        childName: line.supervision.childName, childAge: line.supervision.ageYears,
+        dateOfBirth: line.supervision.dateOfBirth, allergiesMedical: line.supervision.allergies,
+        foodRestrictions: line.supervision.foodRestrictions, foodProvision: foodProvisionFromWire(line.supervision.foodProvision),
+        service: line.supervision.service, serviceFeeTHB: toBaht(line.supervision.serviceFeeSatang),
+        hours: line.supervision.minutes / 60, lengthChosen: true, nannyStartTime: line.supervision.nannyStartTime,
+      } } : {}),
       ticketType,
       tier: p.tier,
       kids: line.kids,
@@ -493,6 +507,7 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
       id: p.id,
       reference: p.reference,
       memberId: p.memberId ?? undefined,
+      registrationId: p.registrationId,
       tier: p.tier,
       lines,
       total: toBaht(p.totalSatang),

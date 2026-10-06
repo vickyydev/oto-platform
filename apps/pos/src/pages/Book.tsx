@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { AddOn, Booking, CartLine, ContactChannel, CustomerTier, Member, OtoEvent, SelectedAddOn, TicketType } from '@/types';
 import {
-  createBooking,
   getAddOns,
   getDropOffPricing,
-  getActiveEventPasses,
   getActiveBranch,
   checkNannyAvailability,
 } from '@/mockApi';
 import { resolveAutoTier } from '@/lib/membership';
 import { computeLineTotal } from '@/lib/pricing';
 import { ticketTotals } from '@/lib/cartWire';
-import { resolveRequirement, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
+import { resolveRequirement, resolveSupervisionOutcome, confirmationsSatisfied } from '@/lib/supervision';
 import { dropOffServiceFee, normalizeDropOffFees, resolveDropOffPricing, type DropOffPricing as ResolvedDropOffPricing } from '@/lib/dropoff';
 import { getSupervisionPolicy, wwp, subscribeCatalog } from '@/store/catalogStore';
 import { branchTradingDate, resolveRateToday, setPricingDate } from '@/lib/pricingMode';
@@ -29,7 +27,6 @@ import { BookCheckingPayment } from '@/components/book/BookCheckingPayment';
 import { BookEventPassForm, type PassSelection } from '@/components/book/BookEventPasses';
 import {
   emptyAttendeeForm,
-  buildAttendeeInput,
   type AttendeeForm,
 } from '@/components/shared/AttendeeFormFields';
 import { Button } from '@/components/ui/button';
@@ -38,6 +35,8 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { paymentPageHref, publicApi, type PublicBookingStatus } from '@/api/platform';
 import { loadPublicCatalog } from '@/api/catalogBridge';
+import { foodProvisionToWire } from '@/api/checkin';
+import { buildCreditGrants } from '@/lib/sale';
 import { toast } from '@/hooks/use-toast';
 
 type Stage =
@@ -447,11 +446,9 @@ export default function Book() {
   // hands the rest of the app (the till's routes) back to today.
   useEffect(() => () => setPricingDate(null), []);
 
-  // Active events sellable as online passes (flat entryPriceTHB, parties excluded).
-  const activeEvents = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return getActiveEventPasses(today, getActiveBranch().id);
-  }, []);
+  // Online event passes need the event roster on the platform; until it is,
+  // the pass section stays empty rather than offering a pass Pay would refuse.
+  const activeEvents = useMemo<OtoEvent[]>(() => [], []);
 
   // Lifted per-child supervision draft (mirrors the reception flow's superSlots),
   // plus the booking-level consent the customer gives on the ConsentCapture step.
@@ -463,7 +460,7 @@ export default function Book() {
   // Slot ids the parent re-confirmed on the saved-children review stage.
   const [confirmedSavedIds, setConfirmedSavedIds] = useState<string[]>([]);
 
-  const dropOffPricing = useMemo(() => resolveDropOffPricing(getDropOffPricing()), []);
+  const dropOffPricing = resolveDropOffPricing(getDropOffPricing());
   const tier = useMemo(() => resolveAutoTier(member), [member]);
 
   // Adults present anywhere waive the mandatory supervision floor for ALL children.
@@ -537,14 +534,14 @@ export default function Book() {
   // Leaving the consent step: photo + booking-level consent + a reachable phone
   // for every child who still needs the supervised flow (mandatory or opted in).
   // photosOk uses needsConsent so an opted-in 9+ kid still needs their photo.
-  const photosOk = supRows.every((r) => !r.needsConsent || !!r.slot.childPhotoUrl);
+  // Pickup photos are captured at reception through the protected visit-photo flow.
   // Legacy consent fields (parent name / photo / phone / authorization) only
   // render when a child actually goes through the consent flow, so gate them on
   // needsSupervision — never on superSlots alone, or an all-9+ (no-consent)
   // group would be permanently blocked since those fields never show.
   const legacyConsentOk =
     !needsSupervision ||
-    (parentName.trim() !== '' && consentAck && photosOk && phone.trim() !== '');
+    (parentName.trim() !== '' && consentAck && phone.trim() !== '');
   // Confirmations are required for ANY unaccompanied registration, even one
   // where every child ends up needing no service (e.g. an all-9+ group).
   const confirmationsOk =
@@ -764,8 +761,14 @@ export default function Book() {
       // the platform refuses rather than charge a different one.
       const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(v);
       const serverLines = normalizedLines
-        .filter((l) => !l.promoItem && !l.dropOff && isUuid(l.ticketType.id) && (l.kids > 0 || l.adults > 0))
+        .filter((l) => !l.promoItem && isUuid(l.ticketType.id) && (l.kids > 0 || l.adults > 0))
         .map((l) => ({
+          ...(l.dropOff ? { supervision: {
+            childName: l.dropOff.childName, ageYears: l.dropOff.childAge,
+            dateOfBirth: l.dropOff.dateOfBirth, allergies: l.dropOff.allergiesMedical,
+            foodRestrictions: l.dropOff.foodRestrictions, foodProvision: foodProvisionToWire(l.dropOff.foodProvision),
+            nannyStartTime: l.dropOff.nannyStartTime,
+          } } : {}),
           packageId: l.ticketType.id,
           kids: l.kids,
           adults: l.adults,
@@ -774,16 +777,15 @@ export default function Book() {
             ? { addOns: l.addOns.map((a) => ({ id: a.id, quantity: a.quantity })) }
             : {}),
         }));
-      // Online payment covers play tickets, socks and extras (S2-12). A basket
-      // that also holds an event pass or a supervised child would be refused by
-      // the platform at the very end — its quote does not price them (S2-13,
-      // S2-20) — so it is told here, before anything is written, and in words.
-      const bookedAtReception = passes.length > 0 || normalizedLines.some((l) => l.dropOff);
+      // Online payment covers play tickets, socks, extras and supervised
+      // children. The platform quote does not price an event pass, so a basket
+      // holding one is told here, before anything is written, and in words.
+      const bookedAtReception = passes.length > 0;
       if (serverLines.length === 0 || bookedAtReception) {
         setBookingBusy(false);
         toast({
           title: 'Online payment covers play tickets',
-          description: 'Event passes and supervised children are booked at reception.',
+          description: 'Event passes are booked at reception.',
           variant: 'destructive',
         });
         return;
@@ -799,6 +801,8 @@ export default function Book() {
           visitDate,
           lines: serverLines,
           contactChannel,
+          consentAck,
+          acknowledgedConfirmationIds,
           locale: lang,
           clientSnapshot: { totalTHB: total, passCount: passes.length },
           displayedTotalSatang: Math.round(total * 100),
@@ -808,26 +812,16 @@ export default function Book() {
         // round trip. Children named on this booking are not saved to the
         // member's profile: the open route this page uses reads a member and
         // cannot write one (S2-09b, OD-A14).
-        const made = createBooking({
-          memberId: member?.id,
-          tier,
-          lines: normalizedLines,
-          total,
-          paymentMethod,
-          registrant: {
-            parentName: displayName,
-            phone,
-            contactMethod: contactChannel,
-            acknowledgedConfirmations: buildAcknowledgedConfirmations(policy, acknowledgedConfirmationIds),
+        const made: Booking = {
+          id: res.id, reference: res.reference, memberId: member?.id, tier,
+          lines: normalizedLines, total: res.totalSatang / 100, paymentMethod,
+          willIssue: {
+            childBracelets: normalizedLines.reduce((n, l) => n + l.kids, 0),
+            adultBracelets: normalizedLines.reduce((n, l) => n + l.adults, 0),
+            creditTotalTHB: buildCreditGrants(normalizedLines).filter((g) => g.type === 'fnb_credit').reduce((n, g) => n + (g.valueTHB ?? 0), 0),
           },
-          eventPasses: passes.map((p) => ({
-            eventId: p.event.id,
-            input: buildAttendeeInput(p.form),
-            priceTHB: resolveRateToday(p.event.entryPriceTHB),
-          })),
-        });
-        // The database reference is the one printed on the QR / told to reception.
-        made.reference = res.reference;
+          createdAt: new Date().toISOString(), status: 'paid',
+        };
         saveCheckout({ bookingId: res.id, reference: res.reference, name: nickname, booking: made });
         window.location.assign(paymentPageHref(pay.redirectUrl));
       } catch (err) {
@@ -978,6 +972,7 @@ export default function Book() {
           <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-300">
             <div className="flex-1 min-h-0">
               <ConsentCapture
+                photoAtReception
                 slots={superSlots}
                 parentName={parentName}
                 consentAck={consentAck}

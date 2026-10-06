@@ -16,6 +16,12 @@ import {
 } from '@oto/db';
 import {
   addDaysToIsoDate,
+  buildAcknowledgedConfirmations,
+  confirmationsSatisfied,
+  dropOffFees,
+  resolveDropOffPricing,
+  type BookingSupervisionInput,
+  type BookingSupervisionSnapshot,
   businessDate,
   computeTicketCartTotals,
   computeTicketLine,
@@ -34,6 +40,8 @@ import {
 } from '@oto/shared';
 import type { Env } from '../env';
 import { errors } from '../lib/errors';
+import { supervisionConfigOf } from './checkin';
+import { quoteBookingChild } from './booking-supervision';
 import { audit } from './audit';
 import { bookingQrOf, holdIsOpen, type BookingRow } from './booking-payment';
 import { resolveItemTaxCategories } from './menu';
@@ -81,6 +89,7 @@ import { withTx, type Exec, type OpContext } from './tx';
 // --- The quote ------------------------------------------------------------------
 
 export interface BookingLineInput {
+  supervision?: BookingSupervisionInput;
   packageId: string;
   kids: number;
   adults: number;
@@ -113,6 +122,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** One priced line as the booking stores it — the shape `bookingView` reads back. */
 export interface QuotedLine {
+  supervision?: BookingSupervisionSnapshot;
   packageId: string;
   name: string;
   kids: number;
@@ -320,6 +330,7 @@ export async function quoteBooking(
     },
   };
 
+  const supervision = wanted.some((l) => l.supervision) ? await supervisionConfigOf(exec, br.id) : null;
   const cartLines: TicketCartLine[] = [];
   const quoted: QuotedLine[] = [];
   let index = 0;
@@ -344,6 +355,10 @@ export async function quoteBooking(
     if (!prices[input.tier]) {
       throw errors.badRequest(`"${pkg.name}" has no ${input.tier} price, so it cannot be booked at that rate`);
     }
+    if (line.supervision && (line.kids !== 1 || line.adults !== 0)) throw errors.badRequest('Each supervised line must name exactly one child and no accompanying adult.');
+    const child = line.supervision && supervision
+      ? await quoteBookingChild(exec, br, line.supervision, input.visitDate, mode, supervision.policy, pkg.hours * 60)
+      : undefined;
     const socks = line.socks ?? 0;
     if (socks > 0 && !socksProduct) {
       throw errors.badRequest('Socks are not sold online at this park');
@@ -395,9 +410,25 @@ export async function quoteBooking(
       socksUnitSatang: ctx.socks.price,
       addOns: quotedAddOns,
       lineTotalSatang: cartLine.lineTotal,
+      ...(child ? { supervision: child } : {}),
     });
   }
 
+  if (supervision) {
+    const fees = dropOffFees(quoted.flatMap((l, i) => l.supervision ? [{ id: cartLines[i]!.id,
+      service: l.supervision.service, hours: l.supervision.minutes / 60, lengthChosen: true,
+      nannyId: l.supervision.service === 'nanny' ? 'online-pending' : null }] : []), resolveDropOffPricing(supervision.pricing, mode));
+    for (let i = 0; i < quoted.length; i++) {
+      const child = quoted[i]!.supervision;
+      if (!child) continue;
+      child.serviceFeeSatang = fees.get(cartLines[i]!.id) ?? 0;
+      cartLines[i]!.serviceFee = { label: child.service === 'nanny' ? 'Nanny' : 'Drop-off', amount: child.serviceFeeSatang };
+      const food = child.foodProvision;
+      if (food && food.mode !== 'none') cartLines[i]!.foodProvision = { mode: food.mode, paid: food.paidSatang };
+      cartLines[i]!.lineTotal = priceCartLine(cartLines[i]!, ctx);
+      quoted[i]!.lineTotalSatang = cartLines[i]!.lineTotal;
+    }
+  }
   const totals = computeTicketCartTotals(cartLines, [], [], cfg.config as TaxConfigShape, ctx);
   return {
     visitDate: input.visitDate,
@@ -426,6 +457,8 @@ export interface CreateBookingInput {
   visitDate?: string;
   lines: BookingLineInput[];
   contactChannel?: 'whatsapp' | 'telegram' | 'line';
+  consentAck?: boolean;
+  acknowledgedConfirmationIds?: string[];
   locale?: string;
   clientSnapshot?: unknown;
   /**
@@ -541,6 +574,16 @@ export async function createPublicBooking(
     }
   }
 
+  const supervised = input.lines.some((l) => l.supervision);
+  const consentConfig = supervised ? await supervisionConfigOf(db, br.id) : null;
+  const consentAt = new Date().toISOString();
+  if (supervised && (!input.parentName.trim() || !input.phone || !normalizePhone(input.phone) || !input.consentAck)) {
+    throw errors.badRequest('Guardian name, phone and consent are required for a supervised booking.');
+  }
+  if (consentConfig && !confirmationsSatisfied(consentConfig.policy, input.acknowledgedConfirmationIds ?? [])) {
+    throw errors.badRequest('Please accept the park confirmations before booking supervision.');
+  }
+  const acknowledged = consentConfig ? buildAcknowledgedConfirmations(consentConfig.policy, input.acknowledgedConfirmationIds ?? [], consentAt) : [];
   const quote = await quoteBooking(db, br, { tier: input.tier, visitDate, lines: input.lines });
   if (
     input.displayedTotalSatang !== undefined &&
@@ -548,7 +591,7 @@ export async function createPublicBooking(
   ) {
     throw errors.conflict(
       'BOOKING_TOTAL_CHANGED',
-      `The price for this booking is ฿${(quote.totalSatang / 100).toFixed(2)}, not the ฿${(input.displayedTotalSatang / 100).toFixed(2)} shown. Online payment covers play tickets, socks and extras; supervised children and event passes are booked at reception.`,
+      `The price for this booking is ฿${(quote.totalSatang / 100).toFixed(2)}, not the ฿${(input.displayedTotalSatang / 100).toFixed(2)} shown. Review the current park prices and try again.`,
       { displayedTotalSatang: input.displayedTotalSatang, totalSatang: quote.totalSatang },
     );
   }
@@ -607,6 +650,7 @@ export async function createPublicBooking(
           contactChannel: input.contactChannel ?? 'whatsapp',
           locale: input.locale ?? 'en',
           lines: storedLines,
+          ...(supervised ? { consentRecordedAt: consentAt, acknowledgedConfirmations: acknowledged } : {}),
           clientSnapshot: input.clientSnapshot ?? null,
         },
       })

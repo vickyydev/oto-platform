@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { bookingRedemption, paymentAttempt, product } from '@oto/db';
+import { checkin, bookingRedemption, paymentAttempt, product } from '@oto/db';
 import {
   newId,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
@@ -7,6 +7,7 @@ import {
   type PaymentAttemptView,
   type WalletGrantView,
 } from '@oto/shared';
+import { leaveAsBooked } from './checkin';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import type { BandView } from './bands';
@@ -175,7 +176,12 @@ export function priceBasisOfBooking(
 /** The cart the booking's lines make — ids minted here, figures from the booking. */
 export function cartLinesOfBooking(lines: readonly BookingLineView[]): CartLineInput[] {
   return lines.map((line) => ({
-    id: newId(),
+    id: line.supervision?.checkinId ?? newId(),
+    ...(line.supervision ? {
+      serviceFee: { label: line.supervision.service === 'nanny' ? 'Nanny' : 'Drop-off', amountSatang: line.supervision.serviceFeeSatang },
+      ...(line.supervision.foodProvision && line.supervision.foodProvision.mode !== 'none'
+        ? { foodProvision: { mode: line.supervision.foodProvision.mode, paidSatang: line.supervision.foodProvision.paidSatang } } : {}),
+    } : {}),
     packageId: line.packageId,
     kids: line.kids,
     adults: line.adults,
@@ -275,6 +281,7 @@ export async function redeemBookingAtCounter(
     memberId: claimed.memberId,
     visitId: args.visitId ?? null,
     bookingId: claimed.id,
+    ...(typeof payload.registrationId === 'string' ? { registrationId: payload.registrationId } : {}),
     lines: cartLinesOfBooking(lines),
     ...(lines.some((l) => l.socks > 0)
       ? {
@@ -332,6 +339,17 @@ export async function redeemBookingAtCounter(
       saleId,
       outstandingSatang: finalised.outstandingSatang,
     });
+  }
+
+  // Paid supervised children stay waiting: reception chooses check-in and the nanny.
+  const stayIds = lines.flatMap((l) => l.supervision?.checkinId ? [l.supervision.checkinId] : []);
+  if (stayIds.length) {
+    const stays = await tx.select().from(checkin).where(inArray(checkin.id, stayIds));
+    for (const stay of stays) {
+      await leaveAsBooked(tx, actor, { saleId, entries: [{ checkinId: stay.id }],
+        ...(stay.scheduledFor ? { scheduledFor: stay.scheduledFor.toISOString() } : {}),
+      }, now);
+    }
   }
 
   // 4. THE BANDS ON THE REDEMPTION — short codes only: a band's full code is a

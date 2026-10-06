@@ -645,8 +645,9 @@ export default function MobileTill() {
       return { ok: false, message: 'No operator is signed in at this till.' };
     }
 
-    const regularLines = booking.lines.filter((l) => !l.dropOff);
-    if (regularLines.length === 0) {
+    // The platform files every paid line, a supervised child's included; that
+    // child's band is minted when the board checks the child in.
+    if (booking.lines.length === 0) {
       return {
         ok: false,
         message: 'None of this booking’s tickets are in this branch’s catalogue, so nothing can be issued here.',
@@ -2295,7 +2296,7 @@ export default function MobileTill() {
               <span className="font-medium text-foreground">
                 {pendingDropOffRegistration?.childNames.join(', ')}
               </span>
-              . Load the registration into the till to complete check-in now.
+              . Payment is complete. Open the Drop-Off board to confirm the visit photo, assign a nanny where needed and check in without paying again.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-3 pt-2">
@@ -2310,7 +2311,7 @@ export default function MobileTill() {
               className="flex-1"
               onClick={() => {
                 if (pendingDropOffRegistration) {
-                  void loadDropOffRegistration(pendingDropOffRegistration.registrationId);
+                  navigate('/drop-off');
                   setPendingDropOffRegistration(null);
                 }
               }}

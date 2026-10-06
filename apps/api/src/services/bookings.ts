@@ -10,7 +10,7 @@ import {
   paymentAttempt,
   station,
 } from '@oto/db';
-import { isoDateInTz, newId, parseBookingQr, wallClockMinutesInTz } from '@oto/shared';
+import { BookingSupervisionSnapshotSchema, type BookingSupervisionSnapshot, isoDateInTz, newId, parseBookingQr, wallClockMinutesInTz } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { bookingChange, recordChange } from './sync';
@@ -153,6 +153,7 @@ export async function loadRedemptions(
 
 /** One priced line as `POST /public/bookings` computed and stored it. */
 export interface BookingLineView {
+  supervision?: BookingSupervisionSnapshot;
   packageId: string;
   /** The package name frozen at booking time. */
   name: string;
@@ -190,6 +191,7 @@ export interface RedemptionView {
 }
 
 export interface BookingView {
+  registrationId?: string;
   id: string;
   reference: string;
   branchId: string;
@@ -215,6 +217,7 @@ export function linesOf(row: BookingRow): BookingLineView[] {
   return raw.flatMap((entry) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
     const bag = entry as Record<string, unknown>;
+    const child = BookingSupervisionSnapshotSchema.safeParse(bag.supervision);
     return [
       {
         packageId: stringOrNull(bag.packageId) ?? '',
@@ -228,6 +231,7 @@ export function linesOf(row: BookingRow): BookingLineView[] {
         socksUnitSatang: numberOr(bag.socksUnitSatang, 0),
         addOns: addOnsOf(bag.addOns),
         lineTotalSatang: numberOr(bag.lineTotalSatang, 0),
+        ...(child.success ? { supervision: child.data } : {}),
       },
     ];
   });
@@ -375,6 +379,7 @@ export function bookingView(row: BookingRow, read: BookingReadModel = EMPTY_READ
     rateMode: stringOrNull(payload.rateMode),
     parentName: stringOrNull(payload.parentName),
     phone: stringOrNull(payload.phone),
+    ...(typeof payload.registrationId === 'string' ? { registrationId: payload.registrationId } : {}),
     paymentMethod: (row.paymentAttemptId ? read.paymentMethods?.get(row.paymentAttemptId) : null) ?? stringOrNull(payload.paymentMethod),
     lines: linesOf(row),
     redemption: stored ? redemptionView(stored, names) : null,

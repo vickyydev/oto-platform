@@ -66,6 +66,29 @@ describe('toPosBooking — what reception is told', () => {
       setPricingDate(null);
     }
   });
+  it('a supervised child booked online reaches the till as a drop-off on its registration (SCRUM-496 entry 21)', () => {
+    const checkinId = '0192f0a0-0000-7000-8000-0000000000c1';
+    const mapped = toPosBooking(platformBooking({
+      registrationId: '0192f0a0-0000-7000-8000-0000000000r1',
+      lines: [{
+        packageId: ticket.id, name: ticket.name, kids: 1, adults: 0, kidUnitSatang: 40_000, adultsFree: 0,
+        adultUnitSatang: 0, socks: 0, socksUnitSatang: 0, addOns: [], lineTotalSatang: 50_000,
+        supervision: {
+          childName: 'Ploy', ageYears: 6, allergies: 'Peanuts', service: 'drop_off', minutes: 60,
+          serviceFeeSatang: 10_000, foodProvision: { mode: 'none', paidSatang: 0 }, checkinId,
+        },
+      }],
+    }));
+    expect(mapped.booking.registrationId).toBe('0192f0a0-0000-7000-8000-0000000000r1');
+    const line = mapped.booking.lines[0]!;
+    expect(line.id).toBe(checkinId);
+    expect(line.dropOff).toMatchObject({ checkInId: checkinId, childName: 'Ploy', service: 'drop_off', serviceFeeTHB: 100 });
+  });
+  it('a supervised booking read from a box with the link down says it needs the internet', () => {
+    const mapped = toPosBooking(platformBooking({ status: 'supervised_online_only' }));
+    expect(mapped.paid).toBe(false);
+    expect(mapped.notPaidReason).toMatch(/needs the internet/);
+  });
   it('a paid booking is paid, and carries the extras at the prices paid', () => {
     const mapped = toPosBooking(platformBooking());
     expect(mapped.paid).toBe(true);
