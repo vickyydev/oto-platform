@@ -240,6 +240,13 @@ export const dailyCategorySummary = analytics.table(
     netSatang: bigint('net_satang', { mode: 'number' }).notNull().default(0),
     taxSatang: bigint('tax_satang', { mode: 'number' }).notNull().default(0),
     serviceSatang: bigint('service_satang', { mode: 'number' }).notNull().default(0),
+    /**
+     * `tax_satang` split by how it was charged (migration 0065, Reports round
+     * 4): VAT already inside the price and VAT added on top are different
+     * money, and the Tax & VAT panel shows them as two columns.
+     */
+    taxInclusiveSatang: bigint('tax_inclusive_satang', { mode: 'number' }).notNull().default(0),
+    taxExclusiveSatang: bigint('tax_exclusive_satang', { mode: 'number' }).notNull().default(0),
     txnCount: integer('txn_count').notNull().default(0),
     computedAt: timestamp('computed_at', { withTimezone: true, mode: 'date' }).notNull(),
     ...timestamps,
@@ -249,6 +256,10 @@ export const dailyCategorySummary = analytics.table(
     index('daily_category_summary_operator_date_idx').on(t.operatorId, t.businessDate),
     check('daily_category_summary_source_check', sql`${t.source} in ('oto_pos','pisell','papaya')`),
     check('daily_category_summary_count_check', sql`${t.txnCount} >= 0`),
+    check(
+      'daily_category_summary_tax_split_check',
+      sql`${t.taxInclusiveSatang} >= 0 and ${t.taxExclusiveSatang} >= 0`,
+    ),
   ],
 );
 
@@ -302,7 +313,14 @@ export const dailyItemSummary = analytics.table(
     label: text('label').notNull(),
     quantity: integer('quantity').notNull().default(0),
     revenueSatang: bigint('revenue_satang', { mode: 'number' }).notNull().default(0),
+    /** What the units cost the park, for the units whose cost is known. */
     costSatang: bigint('cost_satang', { mode: 'number' }).notNull().default(0),
+    /**
+     * Units sold with no cost known (migration 0065): no cost frozen on the
+     * stock movement and none on the product. Above zero, the Profitability
+     * panel flags the item "no cost set" and its margin is understated.
+     */
+    costUntrackedQuantity: integer('cost_untracked_quantity').notNull().default(0),
     computedAt: timestamp('computed_at', { withTimezone: true, mode: 'date' }).notNull(),
     ...timestamps,
   },
@@ -313,6 +331,70 @@ export const dailyItemSummary = analytics.table(
     check(
       'daily_item_summary_amounts_check',
       sql`${t.quantity} >= 0 and ${t.revenueSatang} >= 0 and ${t.costSatang} >= 0`,
+    ),
+    check('daily_item_summary_kind_check', sql`${t.kind} in ('fnb','merch')`),
+    check(
+      'daily_item_summary_untracked_check',
+      sql`${t.costUntrackedQuantity} >= 0 and ${t.costUntrackedQuantity} <= ${t.quantity}`,
+    ),
+  ],
+);
+
+/**
+ * THE TICKET SIDE OF THE SALES PANEL (migration 0065, Reports round 4), one
+ * row per branch, business date, source, kind and key:
+ *
+ *   tier         key = the customer tier the sale was priced at. `sale_count`
+ *                ticket sales; `revenue_satang` what they took less the
+ *                drop-off category, `dropoff_satang` the drop-off category
+ *                (the prototype's `ticketSalesByTier`). The two together are
+ *                the ticket sales' totals, which the weekday / weekend split
+ *                reads by the day's rate mode (`analytics.dim_date`).
+ *   ticket_type  key = the ticket package. `line_count` cart lines, `kids`,
+ *                `adults`, `revenue_satang` the lines' list price before
+ *                discounts (`ticketTypeSalesRows`); a child's drop-off stay is
+ *                not a ticket line here, as the prototype's drop-off line is not.
+ *   service      key = `drop_off` or `nanny`. `line_count` sessions, `hours`
+ *                the play hours chosen, `revenue_satang` the service fees
+ *                (`dropOffNannyRevenueRows`).
+ */
+export const DAILY_TICKET_SUMMARY_KINDS = ['tier', 'ticket_type', 'service'] as const;
+export type DailyTicketSummaryKind = (typeof DAILY_TICKET_SUMMARY_KINDS)[number];
+
+export const dailyTicketSummary = analytics.table(
+  'daily_ticket_summary',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    businessDate: date('business_date', { mode: 'string' }).notNull(),
+    source: text('source').$type<AnalyticsSummarySource>().notNull().default('oto_pos'),
+    kind: text('kind').$type<DailyTicketSummaryKind>().notNull(),
+    key: text('key').notNull(),
+    label: text('label').notNull(),
+    saleCount: integer('sale_count').notNull().default(0),
+    lineCount: integer('line_count').notNull().default(0),
+    kids: integer('kids').notNull().default(0),
+    adults: integer('adults').notNull().default(0),
+    hours: integer('hours').notNull().default(0),
+    /** Signed: a ticket sale's total less its drop-off category is not floored, as in the prototype. */
+    revenueSatang: bigint('revenue_satang', { mode: 'number' }).notNull().default(0),
+    dropoffSatang: bigint('dropoff_satang', { mode: 'number' }).notNull().default(0),
+    computedAt: timestamp('computed_at', { withTimezone: true, mode: 'date' }).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('daily_ticket_summary_unique').on(t.branchId, t.businessDate, t.source, t.kind, t.key),
+    index('daily_ticket_summary_operator_date_idx').on(t.operatorId, t.businessDate),
+    check('daily_ticket_summary_source_check', sql`${t.source} in ('oto_pos','pisell','papaya')`),
+    check('daily_ticket_summary_kind_check', sql`${t.kind} in ('tier','ticket_type','service')`),
+    check(
+      'daily_ticket_summary_counts_check',
+      sql`${t.saleCount} >= 0 and ${t.lineCount} >= 0 and ${t.kids} >= 0 and ${t.adults} >= 0 and ${t.hours} >= 0 and ${t.dropoffSatang} >= 0`,
     ),
   ],
 );
@@ -333,8 +415,19 @@ export const dailyDiscountSummary = analytics.table(
     /** `manual` | `promo`, as `pos.sale_discount.kind`. */
     kind: text('kind').notNull(),
     discountType: text('discount_type').notNull(),
+    /** A promo's code as scanned; a voucher's shown as its last four (`maskVoucherCode`). */
     code: text('code'),
     reason: text('reason'),
+    /** A promo's label as the receipt printed it (migration 0065). */
+    label: text('label'),
+    /**
+     * Who applied a manual discount, and their name as the sale froze it
+     * (migration 0065): the "By operator" card groups by the name.
+     */
+    appliedByAccountId: uuid('applied_by_account_id').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
+    appliedByName: text('applied_by_name'),
     amountSatang: bigint('amount_satang', { mode: 'number' }).notNull().default(0),
     useCount: integer('use_count').notNull().default(0),
     computedAt: timestamp('computed_at', { withTimezone: true, mode: 'date' }).notNull(),
@@ -343,6 +436,7 @@ export const dailyDiscountSummary = analytics.table(
   (t) => [
     uniqueIndex('daily_discount_summary_unique').on(t.branchId, t.businessDate, t.source, t.key),
     index('daily_discount_summary_operator_date_idx').on(t.operatorId, t.businessDate),
+    index('daily_discount_summary_applied_by_idx').on(t.appliedByAccountId),
     check('daily_discount_summary_source_check', sql`${t.source} in ('oto_pos','pisell','papaya')`),
     check('daily_discount_summary_kind_check', sql`${t.kind} in ('manual','promo')`),
     check(
