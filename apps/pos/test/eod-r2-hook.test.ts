@@ -6,8 +6,12 @@ import { useEndOfDay } from '@/components/eod/useEndOfDay';
 import { withCounted } from '@/api/endOfDay';
 import * as catalogStore from '@/store/catalogStore';
 import type { Branch } from '@/types';
+import * as React from 'react';
+import { SettlementPanel } from '@/components/eod/SettlementPanel';
+import { settlementsApi } from '@/api/settlements';
 
-vi.mock('react', () => import('./support/hooks'));
+vi.mock('react', async (original) => ({ ...await original<typeof import('react')>(), ...await import('./support/hooks') }));
+Object.assign(globalThis, { React });
 
 /**
  * S2-15a round 2 — the hook behind the additions: a resolved row leaves the
@@ -59,10 +63,111 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
+function receiptDay(status: string): EndOfDayRecord {
+  return day('closed', {
+    receipt: {
+      number: 'T1-EOD-000001', stationId: null, stationName: 'Reception Till 1', note: null,
+      jobs: [{ id: '0192f000-0000-7000-8000-00000000f001', status, reprint: false,
+        deviceLabel: 'Receipt printer', errorMessage: null, queuedAt: '2026-10-02T14:00:00.000Z' }],
+    },
+  });
+}
+
 describe('eod-r2 useEndOfDay', () => {
+  it('retains a terminal settlement identity while the original request is still in flight', async () => {
+    vi.stubGlobal('window', { setInterval, clearInterval });
+    vi.spyOn(settlementsApi, 'read').mockResolvedValue({
+      branchId: BRANCH_API, date: '2026-10-02', devices: [{ id: BRANCH_API, label: 'Test terminal', tid: null, provider: 'simulator' }],
+      batches: [], lines: [], unmatchedAttempts: [],
+    });
+    const run = vi.spyOn(settlementsApi, 'run')
+      .mockRejectedValueOnce(new ApiError(409, 'IDEMPOTENCY_IN_FLIGHT', 'The original request is still running'))
+      .mockResolvedValue({ batchId: BRANCH_API, commandId: BRANCH_API, state: 'pending' });
+    const hook = renderHook(() => SettlementPanel({ branchId: BRANCH_API, date: '2026-10-02', canSettle: true }));
+    type Props = { children?: React.ReactNode; 'aria-label'?: string; onChange?: (event: { target: { value: string } }) => void; onClick?: () => void };
+    const find = (node: React.ReactNode, matches: (props: Props) => boolean): Props | undefined => {
+      for (const child of React.Children.toArray(node)) {
+        if (!React.isValidElement<Props>(child)) continue;
+        if (matches(child.props)) return child.props;
+        const result = find(child.props.children, matches);
+        if (result) return result;
+      }
+    };
+    try {
+      await flush();
+      find(hook.result.current, (props) => props['aria-label'] === 'Settlement terminal')!.onChange!({ target: { value: BRANCH_API } });
+      find(hook.result.current, (props) => props.children === 'Run settlement')!.onClick!();
+      await flush();
+      find(hook.result.current, (props) => props.children === 'Run settlement')!.onClick!();
+      await flush();
+      expect(run).toHaveBeenCalledTimes(2);
+      expect(run.mock.calls[1]![3]).toBe(run.mock.calls[0]![3]);
+    } finally { hook.unmount(); }
+  });
+
+  it('refreshes a queued closed-day receipt until printed, then stops', async () => {
+    vi.useFakeTimers();
+    const get = vi.spyOn(api, 'get').mockResolvedValueOnce(receiptDay('queued')).mockResolvedValue(receiptDay('printed'));
+    const hook = renderHook(() => useEndOfDay('2026-10-02', 'hkt-central'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(hook.result.current.record?.receipt?.jobs.at(-1)?.status).toBe('queued');
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(hook.result.current.record?.receipt?.jobs.at(-1)?.status).toBe('printed');
+    await vi.advanceTimersByTimeAsync(12_000);
+    expect(get).toHaveBeenCalledTimes(2);
+    hook.unmount();
+  });
+
+  it.each(['date', 'branch'] as const)('ignores a late receipt read after changing %s and preserves the open count', async (change) => {
+    vi.useFakeTimers();
+    const otherBranch = '0192f000-0000-7000-8000-00000000b002';
+    vi.mocked(catalogStore.getBranches).mockReturnValue([
+      { id: 'hkt-central', apiId: BRANCH_API }, { id: 'hkt-other', apiId: otherBranch },
+    ] as unknown as Branch[]);
+    const next = change === 'date' ? { date: '2026-10-03', branch: 'hkt-central' }
+      : { date: '2026-10-02', branch: 'hkt-other' };
+    const nextBranchId = change === 'branch' ? otherBranch : BRANCH_API;
+    let finish!: (record: EndOfDayRecord) => void;
+    const get = vi.spyOn(api, 'get')
+      .mockResolvedValueOnce(receiptDay('queued'))
+      .mockImplementationOnce(() => new Promise<EndOfDayRecord>((resolve) => { finish = resolve; }))
+      .mockResolvedValue(day('open', { date: next.date, branchId: nextBranchId }));
+    const hook = renderHook(({ date, branch }) => useEndOfDay(date, branch), { date: '2026-10-02', branch: 'hkt-central' });
+    await vi.advanceTimersByTimeAsync(3_000);
+    hook.rerender(next);
+    await vi.advanceTimersByTimeAsync(0);
+    hook.result.current.setRecord((prev) => withCounted(prev, 6_100));
+    finish(receiptDay('printed'));
+    await vi.advanceTimersByTimeAsync(12_000);
+    expect(hook.result.current.record?.date).toBe(next.date);
+    expect(hook.result.current.record?.branchId).toBe(nextBranchId);
+    expect(hook.result.current.record?.status).toBe('open');
+    expect(hook.result.current.record?.cashCount.countedSatang).toBe(6_100_00);
+    expect(get).toHaveBeenCalledTimes(3);
+    hook.unmount();
+  });
+
+  it('cancels pending receipt polling and its in-flight answer on unmount', async () => {
+    vi.useFakeTimers();
+    let finish!: (record: EndOfDayRecord) => void;
+    const get = vi.spyOn(api, 'get').mockResolvedValueOnce(receiptDay('queued'))
+      .mockImplementationOnce(() => new Promise<EndOfDayRecord>((resolve) => { finish = resolve; }));
+    const hook = renderHook(() => useEndOfDay('2026-10-02', 'hkt-central'));
+    await vi.advanceTimersByTimeAsync(3_000);
+    const before = hook.result.current.record;
+    hook.unmount();
+    finish(receiptDay('printed'));
+    await vi.advanceTimersByTimeAsync(12_000);
+    expect(hook.result.current.record).toBe(before);
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('a resolved row leaves the list the platform answers with', async () => {
     vi.spyOn(api, 'get').mockResolvedValue(day('open', { stranded: [row], provisional: [] }));
     const post = vi.spyOn(api, 'post').mockResolvedValue({ resolutionId: '0192f000-0000-7000-8000-0000000f0001', replayed: false, stranded: [] });

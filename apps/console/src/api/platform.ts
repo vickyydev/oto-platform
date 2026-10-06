@@ -46,6 +46,7 @@ export interface BranchRow {
   name: string;
   code: string;
   timezone: string;
+  businessDayStart?: string;
   archived: boolean;
   /**
    * When this branch trades, per weekday (S2-04). Optional because the route

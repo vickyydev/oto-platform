@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
 import { StatusMark, type Tone } from '@/components/Status';
 import { GatewaySimulatorPanel } from '@/components/integrations/GatewaySimulatorPanel';
+import { SettlementImportPanel } from '@/components/integrations/SettlementImportPanel';
 import { CommandBar } from '@/components/redesign/CommandBar';
 import { BarChip, CodeTag, StatusChip, Tag, TitleChip } from '@/components/redesign/chips';
 import { CardShell, FactLine, FactList, PageGrid, StripedList } from '@/components/redesign/layout';
@@ -159,6 +160,7 @@ export function Integrations() {
          * rather than as one card among a dozen.
          */}
         <GatewaySimulatorPanel timezone={timezone} span={12} />
+        <SettlementImportPanel />
 
         {!missing && snapshot && (
           <CardShell

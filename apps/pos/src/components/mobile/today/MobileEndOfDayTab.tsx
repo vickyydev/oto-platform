@@ -7,6 +7,7 @@ import { CashMovementList } from '@/components/eod/CashMovementList';
 import { EodReceiptCard } from '@/components/eod/EodReceiptCard';
 import { ProvisionalBanner } from '@/components/eod/ProvisionalBanner';
 import { StrandedList } from '@/components/eod/StrandedList';
+import { SettlementPanel } from '@/components/eod/SettlementPanel';
 import { useEndOfDay } from '@/components/eod/useEndOfDay';
 import {
   edcTerminalsOf,
@@ -129,6 +130,8 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
 
       {/* Summary verdict */}
       <ReconSummary record={record} />
+
+      <SettlementPanel key={`${apiRecord.branchId}:${date}`} branchId={apiRecord.branchId} date={date} canSettle={can('pos:payment:settle')} />
 
       {/* Per-channel reconciliation — mobile card stack instead of table */}
       <Card className="p-4 bg-card/50">
