@@ -48,6 +48,7 @@ import {
   type BookingPaidOutcome,
 } from '../booking-payment';
 import { assertSaleVouchersHeld } from '../vouchers';
+import { assertSaleExtensionCollectable } from '../sale-extension-lifecycle';
 import {
   attemptView,
   failAttempt,
@@ -567,6 +568,7 @@ export async function openQrAttempt(
           `This sale is ${saleRow.status} and cannot take another tender`,
         );
       }
+      await assertSaleExtensionCollectable(tx, saleRow.id);
       await assertSaleVouchersHeld(
         tx,
         {

@@ -211,6 +211,7 @@ async function readAttempt(id: string) {
     headers: { cookie },
   });
   expect(res.statusCode, res.body).toBe(200);
+  expect(res.json().route).toBe('card_terminal');
   return res.json() as {
     attempt: { status: string; provider: string; inquirySupported: boolean; reversalPending?: boolean; approvalCode: string | null; last4: string | null; tid: string | null };
     qrPayload: string | null;

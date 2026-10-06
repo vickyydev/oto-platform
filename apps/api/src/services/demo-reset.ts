@@ -23,6 +23,8 @@ import {
   refund,
   sale,
   saleDiscount,
+  saleExtension,
+  saleExtensionBand,
   saleLine,
   saleTierClaim,
   stockAttention,
@@ -91,6 +93,7 @@ const FACT_ENTITY_TYPES = [
   'booking',
   'sale',
   'sale_line',
+  'sale_extension',
   'payment_attempt',
   /**
    * S2-10a. A gateway notification is a fact of a day of play, and its audit
@@ -234,6 +237,8 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   counts.wallet_key = (await tx.delete(walletKey).returning({ id: walletKey.id })).length;
   counts.wallet = (await tx.delete(wallet).returning({ id: wallet.id })).length;
 
+  counts.sale_extension_band = (await tx.delete(saleExtensionBand).returning({ id: saleExtensionBand.id })).length;
+  counts.sale_extension = (await tx.delete(saleExtension).returning({ id: saleExtension.id })).length;
   counts.band_event = (await tx.delete(bandEvent).returning({ id: bandEvent.id })).length;
   counts.band = (await tx.delete(band).returning({ id: band.id })).length;
   counts.refund = (await tx.delete(refund).returning({ id: refund.id })).length;

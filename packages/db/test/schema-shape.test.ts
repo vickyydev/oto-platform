@@ -171,6 +171,7 @@ const SCOPED_BY_PARENT: Record<string, { column: string; parent: string }> = {
   'pos.wallet_entry': { column: 'wallet_id', parent: 'pos.wallet' },
   // SCRUM-215: every settlement line belongs to its operator-scoped batch.
   'pos.settlement_line': { column: 'batch_id', parent: 'pos.settlement_batch' },
+  'pos.sale_extension_band': { column: 'extension_id', parent: 'pos.sale_extension' },
   // S2-11: an append-only event on a band, reached through the band it happened to.
   'pos.band_event': { column: 'band_id', parent: 'pos.band' },
   // `pos.payment_attempt` was here until S2-10a, scoped through its sale. It

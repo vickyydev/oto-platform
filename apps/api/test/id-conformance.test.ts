@@ -276,6 +276,8 @@ const PLATFORM_NAMED: Record<string, string> = {
   // operator), which the till sends.
   'POST /branches/:branchId/end-of-day/close':
     'one row per (branch, business date), unique — the day is the key; written only at Close Day, online',
+  'POST /branches/:branchId/settlements/terminal-runs':
+    'online terminal request; platform batch id with operator-scoped Idempotency-Key/source key, replayed as the same batch',
   'POST /branches/:branchId/cash-movements':
     'keyed by the press’s action id (unique per operator) the till sends; the row id is the platform’s, online only',
   // S2-15a round 2. Online only, never written by a box.
@@ -292,6 +294,7 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /payments/attempts/:id/inquire': 'derived: an inquiry of an attempt the caller already named',
   'POST /print-jobs/:id/reprint': 'a print job: the box names its own offline (OD-12); online the platform queues it',
   'POST /sales/:id/refunds': `${ACTION_KEYED} (\`refund_action_unique\`); refunds are online only (decision 8)`,
+  'POST /sales/:id/extensions': `${ACTION_KEYED} (\`sale_extension_action_unique\`); paid time extensions are online only`,
   'POST /sales/tier-claims': `${ACTION_KEYED} (\`sale_tier_claim_action_unique\`)`,
   'POST /stations/:id/displays/claim': 'derived: the credential a paired display is answered with, once',
   'POST /tiers': CODE_NAMED,

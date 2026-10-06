@@ -11,6 +11,8 @@ import {
   paymentAttempt,
   printJob,
   sale,
+  saleExtension,
+  saleExtensionBand,
   station,
   syncAnomaly,
   ticketPackage,
@@ -354,7 +356,7 @@ describe('a lane switch mid-sale converges (OD-1)', () => {
     expect(await attemptsOf(body.saleId)).toHaveLength(1);
   });
 
-  it('closed on the platform with its answer lost, closed again on the box: one sale, one payment, the late platform print refused, both numbers named', async () => {
+  it.each(['adult', 'kid'] as const)('closed on the platform with its answer lost: %s extension survives replacement without another charge', async (selectedKind) => {
     const cart = familyCart();
     const total = await platformTotal(cart);
     const body = saleBody(cart, total, cash(total));
@@ -389,6 +391,27 @@ describe('a lane switch mid-sale converges (OD-1)', () => {
     const platformJobs = await ctx.db.select().from(printJob).where(eq(printJob.actionId, tender.actionId));
     expect(platformJobs.length).toBeGreaterThan(0);
 
+    // SCRUM-495 review reproduction: the platform receipt is already visible
+    // before the box delivers its replacement-band fact.
+    const appliedExtension = await call('POST', `/sales/${body.saleId}/extensions`, {
+      actionId: newId(), stationId: tillId, optionId: 'ext-30',
+      selection: { mode: 'bands', bandIds: [platformBands.find((entry) => entry.kind === 'adult')!.id, platformBands.find((entry) => entry.kind === 'kid')!.id] },
+    });
+    expect(appliedExtension.statusCode).toBe(200);
+    const appliedChargeId = (appliedExtension.body.sale as { id: string }).id;
+    expect((await call('POST', `/sales/${appliedChargeId}/finalise`, { actionId: newId(), method: 'cash' })).statusCode).toBe(200);
+    const extension = await call('POST', `/sales/${body.saleId}/extensions`, {
+      actionId: newId(), stationId: tillId, optionId: 'ext-30',
+      selection: { mode: 'bands', bandIds: [platformBands.find((entry) => entry.kind === selectedKind)!.id] },
+    });
+    expect(extension.statusCode, JSON.stringify(extension.body)).toBe(200);
+    const chargeId = (extension.body.sale as { id: string }).id;
+    const partial = await call('POST', `/sales/${chargeId}/finalise`, {
+      actionId: newId(), method: 'cash', amountSatang: 3000,
+    });
+    expect(partial.statusCode, JSON.stringify(partial.body)).toBe(200);
+    expect(partial.body.finalised).toBe(false);
+
     // The till switches lanes and pays again on the box — the same press.
     await goOffline();
     const onTheBox = await onBox('sale.finalise', body);
@@ -398,7 +421,7 @@ describe('a lane switch mid-sale converges (OD-1)', () => {
     // Back online: the box collects the platform's print commands for a sale
     // it has already printed, and refuses them.
     await goOnline();
-    await agent.runPendingCommands();
+    for (let drain = 0; drain < 6; drain += 1) await agent.runPendingCommands();
     const jobs = await ctx.db.select().from(printJob).where(eq(printJob.actionId, tender.actionId));
     expect(jobs.length).toBe(platformJobs.length);
     for (const job of jobs) {
@@ -413,6 +436,67 @@ describe('a lane switch mid-sale converges (OD-1)', () => {
     const boxBands = (await agent.sales()!.recorded(body.saleId))!.bands.map((b) => b.id);
     expect(after.filter((b) => b.status === 'active').map((b) => b.id).sort()).toEqual([...boxBands].sort());
     expect(after.filter((b) => platformBands.some((p) => p.id === b.id)).every((b) => b.status === 'replaced')).toBe(true);
+
+    const appliedId = (appliedExtension.body.extension as { id: string }).id;
+    const [paidBeforeRepair] = await ctx.db.select().from(saleExtension).where(eq(saleExtension.id, appliedId));
+    const activeAdult = after.find((entry) => entry.status === 'active' && entry.kind === 'adult')!.id;
+    const activeKids = after.filter((entry) => entry.status === 'active' && entry.kind === 'kid').map((entry) => entry.id);
+    const paidRepairPath = `/sales/${body.saleId}/extensions/${appliedId}/bands`;
+    const paidRepair = { actionId: newId(), stationId: tillId, bandIds: [activeAdult, activeKids[0]!] };
+    const changedActive = await call('POST', paidRepairPath, { ...paidRepair, bandIds: activeKids });
+    expect(changedActive.statusCode).toBe(409);
+    expect(changedActive.body.error).toMatchObject({ code: 'EXTENSION_ACTIVE_BAND_FIXED' });
+    const paidFixed = await call('POST', paidRepairPath, paidRepair);
+    expect(paidFixed.statusCode, JSON.stringify(paidFixed.body)).toBe(200);
+    expect((await call('POST', paidRepairPath, paidRepair)).body.replay).toBe(true);
+    const [paidAfterRepair] = await ctx.db.select().from(saleExtension).where(eq(saleExtension.id, appliedId));
+    expect(paidAfterRepair!.appliedAt).toEqual(paidBeforeRepair!.appliedAt);
+    expect(paidAfterRepair!.amountSatang).toBe(paidBeforeRepair!.amountSatang);
+    const extensionId = (extension.body.extension as { id: string }).id;
+    const selectionRead = await call('GET', `/sales/${body.saleId}/extensions`);
+    const selectedRead = (selectionRead.body.extensions as Array<{ id: string; needsReselection: boolean }>).find((entry) => entry.id === extensionId)!;
+    expect(selectedRead.needsReselection).toBe(selectedKind === 'kid');
+    if (selectedKind === 'kid') {
+      const refused = await call('POST', `/sales/${chargeId}/finalise`, { actionId: newId(), method: 'cash' });
+      expect(refused.statusCode).toBe(409);
+      expect(refused.body.error).toMatchObject({ code: 'EXTENSION_BAND_UNAVAILABLE' });
+      expect(await attemptsOf(chargeId)).toHaveLength(1);
+      const replacementId = after.find((entry) => entry.status === 'active' && entry.kind === 'kid')!.id;
+      const repair = { actionId: newId(), stationId: tillId, bandIds: [replacementId] };
+      const path = `/sales/${body.saleId}/extensions/${extensionId}/bands`;
+      expect((await call('POST', path, { ...repair, amountSatang: 1 })).statusCode).toBe(400);
+      expect((await call('POST', path, { ...repair, bandIds: [newId()] })).statusCode).toBe(409);
+      const repaired = await call('POST', path, repair);
+      expect(repaired.statusCode, JSON.stringify(repaired.body)).toBe(200);
+      expect((await call('POST', path, repair)).body.replay).toBe(true);
+      expect((await call('POST', path, { ...repair, bandIds: [newId()] })).statusCode).toBe(409);
+    }
+    const finished = await call('POST', `/sales/${chargeId}/finalise`, { actionId: newId(), method: 'cash' });
+    expect(finished.statusCode, JSON.stringify(finished.body)).toBe(200);
+    expect(finished.body.finalised).toBe(true);
+    const entries = await ctx.db.select().from(saleExtension).where(eq(saleExtension.sourceSaleId, body.saleId));
+    expect(entries).toHaveLength(2);
+    for (const entry of entries) {
+      expect(entry.status).toBe('applied');
+      const expectedIds = entry.id === extensionId
+        ? [platformBands.find((value) => value.kind === selectedKind)!.id]
+        : [platformBands.find((value) => value.kind === 'adult')!.id, platformBands.find((value) => value.kind === 'kid')!.id].sort();
+      expect(entry.selection).toEqual({ mode: 'bands', bandIds: expectedIds });
+      const selected = await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, entry.id));
+      expect(selected).toHaveLength(expectedIds.length);
+      for (const current of selected) {
+        expect(boxBands).toContain(current.bandId);
+        expect(current.minutesAdded).toBe(30);
+      }
+    }
+    expect(await attemptsOf(chargeId)).toHaveLength(2);
+    expect(await attemptsOf(appliedChargeId)).toHaveLength(1);
+    const counted = await call('POST', `/sales/${body.saleId}/extensions`, {
+      actionId: newId(), stationId: tillId, optionId: 'ext-30', selection: { mode: 'count', braceletCount: boxBands.length },
+    });
+    expect(counted.statusCode, JSON.stringify(counted.body)).toBe(200);
+    const countId = (counted.body.sale as { id: string }).id;
+    expect((await call('POST', `/sales/${countId}/void`, { reason: 'Fixture count cleared' })).statusCode).toBe(200);
     const row = await saleRow(body.saleId);
     expect(row!.receiptNumber).toBe(platformNumber);
     if (boxNumber !== platformNumber) {
