@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { apiDiscountToDiscount, type ApiDiscount } from '@/api/menu';
-import { promoUsageSummaryOf } from '@/lib/reporting';
+import { defaultReportFilters, promoUsageSummaryOf } from '@/lib/reporting';
 import type { Discount } from '@/types';
 
 /**
@@ -57,5 +57,26 @@ describe('the promo code card reads the platform', () => {
       { code: 'SUMMER10', label: 'Summer 10%', type: 'percent', usedCount: 7, usageLimit: 50, active: true, totalDiscountValueSatang: 20_500 },
       { code: 'KIDSFREE', label: 'Kid free', type: 'percent', usedCount: 3, usageLimit: undefined, active: true, totalDiscountValueSatang: 69_000 },
     ]);
+  });
+});
+
+describe('the reports open on the branch’s trading month, not a UTC slice', () => {
+  it('06:00 in Phuket is today’s trading day; the month starts on its own first', () => {
+    // 2026-10-06 23:00 UTC: the UTC slice said the 6th; the park trades the 7th.
+    expect(defaultReportFilters(new Date('2026-10-07T06:00:00+07:00'))).toEqual({
+      startDate: '2026-10-01',
+      endDate: '2026-10-07',
+      branchId: 'all',
+    });
+    // 02:00 on the 1st is still the last trading day of September (day start 05:00).
+    expect(defaultReportFilters(new Date('2026-10-01T02:00:00+07:00'))).toMatchObject({
+      startDate: '2026-09-01',
+      endDate: '2026-09-30',
+    });
+    // A month's first trading day starts that month, never the one before.
+    expect(defaultReportFilters(new Date('2026-10-01T09:00:00+07:00'))).toMatchObject({
+      startDate: '2026-10-01',
+      endDate: '2026-10-01',
+    });
   });
 });

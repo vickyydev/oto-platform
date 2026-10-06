@@ -24,7 +24,7 @@ import {
 } from '@/store/catalogStore';
 import { itemOrderTotals, ticketTotals, toSatang } from '@/lib/cartWire';
 import { summarizeTax, type Satang, type TaxBreakdown } from '@oto/shared';
-import { getRateModeForDate, resolveRate, RateMode } from '@/lib/pricingMode';
+import { branchTradingDate, getRateModeForDate, resolveRate, RateMode, serverTradingDate } from '@/lib/pricingMode';
 import { getWalletReport } from '@/api/wallet';
 import type { ReportQuery } from '@/api/analyticsReports';
 import { fetchCostOfGoods } from '@/api/stock';
@@ -54,13 +54,21 @@ export interface ReportFilters {
   branchId: string; // a Branch.id, or 'all'
 }
 
-/** Default filters: the current month to date, all branches. */
-export function defaultReportFilters(): ReportFilters {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+/**
+ * Default filters: the current month to date, all branches.
+ *
+ * S2-15b round 6 (closing sweep; plan section 4, the wrong calendar day): the
+ * month and its last day are the branch's TRADING date - the platform's
+ * answer for today when the till has one, else this device's clock placed on
+ * the branch's calendar - as every report row is keyed. The prototype sliced
+ * the UTC date, so from 00:00 to 07:00 in Phuket the default range ended
+ * yesterday, and a month's first day began on the previous month's last.
+ */
+export function defaultReportFilters(now: Date = new Date()): ReportFilters {
+  const today = serverTradingDate() ?? branchTradingDate(now);
   return {
-    startDate: start.toISOString().slice(0, 10),
-    endDate: now.toISOString().slice(0, 10),
+    startDate: `${today.slice(0, 8)}01`,
+    endDate: today,
     branchId: 'all',
   };
 }
