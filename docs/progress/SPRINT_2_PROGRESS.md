@@ -1,5 +1,20 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 6 October 2026 - SCRUM-496 on main
+
+Lane B landed (reviewed MERGE): stock alerts, reorder rule, refunds to the
+sell point, Adjust that stops at zero and cascades, packs and a new item's
+starting stock (31-39); the arrival summary, reference format, list rows,
+newest-first picker, sibling service choice and connection check (22-28);
+supervised children booked and paid online and checked in from the board
+(21, event passes still not sold online: the register's fallback).
+Migration renumbered to 0063_stock_single_each_pack. Checks on the combined
+branch: db 166, shared 538, box 689, pos 813, api 375 across 30 files.
+Follow-ups: the item form locks after a failed save and shows a browser alert
+(no design source); a birthday between booking and visit changes a supervised
+child's band with a generic message. Next free migration: 0064. Next: staging
+evidence for SCRUM-495 and SCRUM-496, then SCRUM-498.
+
 ## Platform lane checkpoint - 6 October 2026 - SCRUM-495 finished on main
 
 Lane A landed (reviewed MERGE after one fix round): Add time charged from

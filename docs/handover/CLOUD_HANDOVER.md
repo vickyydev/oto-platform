@@ -23,7 +23,7 @@ _Updated: 6 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block
 
 | Item | State |
 |---|---|
-| Main | Green (SCRUM-501 repair confirmed). Migrations through 0062 (0061 End of Day receipt, 0062 sale extensions). Next free: 0063. Migrations through 0060. 0061 is reserved for SCRUM-495 and 0062 for SCRUM-496 |
+| Main | Green (SCRUM-501 repair confirmed). Migrations through 0063 (0061 End of Day receipt, 0062 sale extensions, 0063 stock packs). Next free: 0064. Migrations through 0060. 0061 is reserved for SCRUM-495 and 0062 for SCRUM-496 |
 | SCRUM-494 (till consistency, band details and services) | Deployed. Register entries 1-9 are on main and live |
 | SCRUM-215 (S2-15a End of Day) | Deployed. Follow-up work is on branch `lane/eod-followups` |
 | SCRUM-499 (Lucky Wheel fixed-code vouchers) and SCRUM-500 | Deployed |
