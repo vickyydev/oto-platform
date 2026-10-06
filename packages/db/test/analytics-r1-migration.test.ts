@@ -423,4 +423,32 @@ describe('migration 0064 — analytics round 1', () => {
       ),
     ).toBe(0);
   });
+
+  it('a check-in filed after its sale re-marks the sale day (the drop-off split)', async () => {
+    const p = await park();
+    const saleId = await saleOn(p, '2026-09-28', 'finalised');
+    const stayId = await one(`select gen_random_uuid()`);
+    expect(
+      await code(
+        `insert into pos.sale_line (id, sale_id, operator_id, branch_id, business_date, line_no, cart_line_id, kind, label,
+           taxable_category, customer_tier, revenue_category)
+         values (gen_random_uuid(), $1, $2, $3, '2026-09-28', 1, $4, 'kids', 'Drop-off', 'admission', 'tourist', 'dropoff')`,
+        [saleId, p.operatorId, p.branchId, stayId],
+      ),
+    ).toBeNull();
+    await client.query(`delete from analytics.dirty_date where branch_id = $1`, [p.branchId]);
+    const registrationId = await one(
+      `insert into crm.registration (id, operator_id, branch_id, guardian_name, acknowledged_confirmations)
+       values (gen_random_uuid(), $1, $2, 'Khun Malee', '[]'::jsonb) returning id`,
+      [p.operatorId, p.branchId],
+    );
+    await client.query(
+      `insert into pos.checkin (id, operator_id, branch_id, registration_id, child_name, child_age_years, service, status, checked_in_at)
+       values ($1, $2, $3, $4, 'Ploy', 6, 'drop_off', 'in_park', now())`,
+      [stayId, p.operatorId, p.branchId, registrationId],
+    );
+    expect(await marks(p.branchId)).toEqual([
+      { date: '2026-09-28', kind: 'sales', reason: 'checkin:late', count: 1 },
+    ]);
+  });
 });

@@ -557,3 +557,27 @@ SELECT gen_random_uuid(), b."operator_id", b."id", d."day", extract(isodow FROM 
   ) h ON true
  WHERE b."archived_at" IS NULL
 ON CONFLICT ("branch_id", "date") DO NOTHING;
+--> statement-breakpoint
+-- A check-in row filed AFTER its sale (a box replay whose registration event
+-- arrived late) decides that sale's Drop-off classification, so it re-marks
+-- the sale's own day: the rollup reads `sale_line.cart_line_id = checkin.id`.
+CREATE OR REPLACE FUNCTION "analytics"."checkin_marks_dirty_date"() RETURNS trigger AS $$
+DECLARE
+  s record;
+BEGIN
+  FOR s IN
+    SELECT DISTINCT sa."operator_id", sa."branch_id", sa."business_date"
+      FROM "pos"."sale_line" sl
+      JOIN "pos"."sale" sa ON sa."id" = sl."sale_id"
+     WHERE sl."cart_line_id" = NEW."id"
+       AND sa."status" IN ('finalised', 'refunded')
+  LOOP
+    PERFORM "analytics"."mark_dirty_date"(s."operator_id", s."branch_id", s."business_date", 'sales', 'checkin:late');
+  END LOOP;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE CONSTRAINT TRIGGER "checkin_marks_dirty_date" AFTER INSERT ON "pos"."checkin"
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+  EXECUTE FUNCTION "analytics"."checkin_marks_dirty_date"();
