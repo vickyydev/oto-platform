@@ -79,6 +79,33 @@ function receiptDay(status: string): EndOfDayRecord {
 }
 
 describe('eod-r2 useEndOfDay', () => {
+  it('offers an all-payments export even when no terminal has a TID', async () => {
+    vi.stubGlobal('window', { setInterval, clearInterval });
+    vi.spyOn(settlementsApi, 'read').mockResolvedValue({
+      branchId: BRANCH_API, date: '2026-10-02', devices: [], batches: [], lines: [], unmatchedAttempts: [],
+    });
+    const download = vi.spyOn(settlementsApi, 'export').mockRejectedValue(new Error('Test download stopped'));
+    const hook = renderHook(() => SettlementPanel({ branchId: BRANCH_API, date: '2026-10-02', canSettle: false }));
+    type Props = { children?: React.ReactNode; 'aria-label'?: string; value?: string; disabled?: boolean; onClick?: () => void };
+    const find = (node: React.ReactNode, matches: (props: Props) => boolean): Props | undefined => {
+      for (const child of React.Children.toArray(node)) {
+        if (!React.isValidElement<Props>(child)) continue;
+        if (matches(child.props)) return child.props;
+        const result = find(child.props.children, matches);
+        if (result) return result;
+      }
+    };
+    try {
+      await flush();
+      expect(find(hook.result.current, (props) => props['aria-label'] === 'Export payment scope')?.value).toBe('');
+      const button = find(hook.result.current, (props) => props.children === 'Download CSV');
+      expect(button?.disabled).toBe(false);
+      button?.onClick?.();
+      await flush();
+      expect(download).toHaveBeenCalledWith(BRANCH_API, '2026-10-02', undefined);
+    } finally { hook.unmount(); }
+  });
+
   it('retains a terminal settlement identity while the original request is still in flight', async () => {
     vi.stubGlobal('window', { setInterval, clearInterval });
     vi.spyOn(settlementsApi, 'read').mockResolvedValue({

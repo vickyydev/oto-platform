@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { schema } from '@oto/db';
-import { businessDate, newId } from '@oto/shared';
+import { businessDate, newId, PAID_ONLINE_TENDER_CODE } from '@oto/shared';
 import { BRANCH_MANAGER, CENTRAL_BRANCH_CODE, RECEPTION, branchIdByCode,
-  createTestContext, operatorIdByName, signInAs, teardownAll, OTO_OPERATOR_NAME,
+  CHALONG_BRANCH_CODE, createTestContext, operatorIdByName, signInAs, teardownAll, OTO_OPERATOR_NAME,
   type TestContext } from './helpers';
 import { matchSettlementEvidence, parse2c2pFixture, recordTerminalSettlement } from '../src/services/settlement';
 import { SETTLEMENT_FIXTURE_IMPORT_JOB } from '../src/services/settlement-import-job';
@@ -193,6 +193,52 @@ describe('S2-15a settlement ledger', () => {
     expect(summary.statusCode, summary.body).toBe(200);
     expect(summary.json().batches).toHaveLength(3);
     expect(summary.json().lines).toHaveLength(5);
+  });
+
+  it('exports every approved till card and QR payment, including a gateway invoice with no TID', async () => {
+    const exportDate = '2030-01-02';
+    const exportPaidAt = new Date('2030-01-02T08:30:00.000Z');
+    const otherBranchId = await branchIdByCode(ctx.db, CHALONG_BRANCH_CODE);
+    const [otherTill] = await ctx.db.select({ id: schema.station.id }).from(schema.station)
+      .where(and(eq(schema.station.branchId, otherBranchId), eq(schema.station.kind, 'till'))).limit(1);
+    await ctx.db.insert(schema.paymentAttempt).values([
+      { id: newId(), operatorId, branchId, stationId, businessDate: exportDate,
+        method: 'card', methodCode: 'card', provider: 'simulator', status: 'approved',
+        amountSatang: 12_000, tid: 'EXPORT-TID', approvalCode: '=FORMULA', paidAt: exportPaidAt },
+      { id: newId(), operatorId, branchId, stationId, businessDate: exportDate,
+        method: 'qr', methodCode: 'promptpay', provider: '2c2p', status: 'approved',
+        amountSatang: 15_000, invoiceNo: 'GATEWAYINVOICE1', tranRef: 'GATEWAY-REF', paidAt: exportPaidAt },
+      { id: newId(), operatorId, branchId, stationId, businessDate: exportDate,
+        method: 'card', methodCode: 'card', provider: 'digio', status: 'awaiting_settlement',
+        amountSatang: 8_000, tid: 'EXPORT-TID', paidAt: exportPaidAt },
+      { id: newId(), operatorId, branchId, stationId: null, businessDate: exportDate,
+        method: 'qr', methodCode: 'promptpay', provider: '2c2p', status: 'approved',
+        amountSatang: 9_000, invoiceNo: 'BOOKINGINVOICE1', paidAt: exportPaidAt },
+      { id: newId(), operatorId, branchId, stationId, businessDate: exportDate,
+        method: 'qr', methodCode: PAID_ONLINE_TENDER_CODE, provider: '2c2p', status: 'approved',
+        amountSatang: 10_000, invoiceNo: 'ONLINEINVOICE1', paidAt: exportPaidAt },
+      { id: newId(), operatorId, branchId: otherBranchId, stationId: otherTill!.id,
+        businessDate: exportDate, method: 'card', methodCode: 'card', provider: 'simulator',
+        status: 'approved', amountSatang: 7_000, tid: 'EXPORT-TID', paidAt: exportPaidAt },
+    ]);
+    const url = `/branches/${branchId}/settlements/export?date=${exportDate}`;
+    const all = await ctx.app.inject({ method: 'GET', url, headers: { cookie: receptionCookie } });
+    expect(all.statusCode, all.body).toBe(200);
+    const rows = all.body.replace(/^\uFEFF/, '').trim().split('\r\n');
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toBe('business_date,tid,method,amount_satang,approval_code,invoice_no,tran_ref,status');
+    expect(rows.some((row) => row.includes('"EXPORT-TID","card","12000","\'=FORMULA"'))).toBe(true);
+    expect(rows.some((row) => row.includes('"","qr","15000"') && row.includes('"GATEWAYINVOICE1"'))).toBe(true);
+    expect(all.body).not.toContain('BOOKINGINVOICE1');
+    expect(all.body).not.toContain('ONLINEINVOICE1');
+    expect(all.body).not.toContain('"8000"');
+    expect(all.body).not.toContain('"7000"');
+
+    const terminal = await ctx.app.inject({ method: 'GET', url: `${url}&tid=EXPORT-TID`,
+      headers: { cookie: receptionCookie } });
+    expect(terminal.statusCode).toBe(200);
+    expect(terminal.body.replace(/^\uFEFF/, '').trim().split('\r\n')).toHaveLength(2);
+    expect(terminal.body).not.toContain('GATEWAYINVOICE1');
   });
 
   it('serializes two batches that report the same attempt', async () => {

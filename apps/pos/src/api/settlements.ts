@@ -13,8 +13,8 @@ export const settlementsApi = {
       { date, deviceId },
       { idempotencyKey },
     ),
-  export: (branchId: string, date: string, tid: string) =>
-    api.getBlob(`${path(branchId)}/export?${new URLSearchParams({ date, tid })}`),
+  export: (branchId: string, date: string, tid?: string) =>
+    api.getBlob(`${path(branchId)}/export?${new URLSearchParams(tid ? { date, tid } : { date })}`),
 };
 
 export function settlementWord(state: string): string {

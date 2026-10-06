@@ -6,7 +6,7 @@ const UUID = z.string().uuid();
 
 export const SettlementQuerySchema = z.object({ date: DATE });
 export const TerminalSettlementRunBodySchema = z.object({ date: DATE, deviceId: UUID });
-export const SettlementExportQuerySchema = SettlementQuerySchema.extend({ tid: z.string().trim().min(1).max(64) });
+export const SettlementExportQuerySchema = SettlementQuerySchema.extend({ tid: z.string().trim().min(1).max(64).optional() });
 
 export const TerminalSettlementLineSchema = z.object({
   method: z.enum(['card', 'qr']),

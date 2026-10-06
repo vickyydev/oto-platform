@@ -77,15 +77,15 @@ export function SettlementPanel({
   }
 
   async function download() {
-    if (!tid || busy) return;
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      const blob = await settlementsApi.export(branchId, date, tid);
+      const blob = await settlementsApi.export(branchId, date, tid || undefined);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `settlement-${date}-${tid.replace(/[^a-zA-Z0-9_-]/g, '_')}.csv`;
+      link.download = `settlement-${date}-${tid ? tid.replace(/[^a-zA-Z0-9_-]/g, '_') : 'all'}.csv`;
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
@@ -172,23 +172,26 @@ export function SettlementPanel({
           <SettlementResults data={data} />
           <div className="flex flex-wrap gap-2 items-end">
             <label className="flex flex-col gap-1 text-xs text-muted-foreground flex-1 min-w-0">
-              Export terminal
+              Export payments
               <select
-                aria-label="Export settlement TID"
+                aria-label="Export payment scope"
                 className="h-10 rounded-lg bg-muted border border-border px-2 text-sm text-foreground w-full"
                 value={tid}
                 onChange={(event) => setTid(event.target.value)}
               >
-                <option value="">Choose TID</option>
+                <option value="">All card and QR payments</option>
                 {tids.map((value) => (
                   <option key={value}>{value}</option>
                 ))}
               </select>
             </label>
-            <Button variant="outline" disabled={!tid || busy} onClick={() => void download()}>
+            <Button variant="outline" disabled={busy} onClick={() => void download()}>
               {busy ? 'Downloading…' : 'Download CSV'}
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Payments without a terminal ID have a blank TID in the all-payments CSV.
+          </p>
         </>
       )}
     </Card>
