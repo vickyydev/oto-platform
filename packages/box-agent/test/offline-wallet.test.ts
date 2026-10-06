@@ -78,6 +78,7 @@ function catalogueItem() {
       },
     },
     overrides: [],
+    paymentMethods: [{ code: 'partner_tender', kind: 'other', enabled: true }],
     receiptHeader: { name: 'HKT Central', address: null, country: 'TH', operatorName: 'OTO' },
   };
 }
@@ -338,6 +339,32 @@ test('the cap on the box: exactly ฿300 a day is allowed, the rest of the order
       [read.wallet.balanceSatang, read.wallet.capLeftSatang, read.wallet.spendableSatang],
       [20_000, 0, 0],
     );
+  } finally {
+    box.close();
+  }
+});
+
+test('an Other remainder beside held credit stays Other and leaves the drawer shut', async () => {
+  const box = await openWalletBox();
+  try {
+    const o = await order(box, 3);
+    const press = credit(QR, { amountSatang: 20_000 });
+    const held = await send<BridgeWalletSpendAnswer>(box, 'payment.wallet', { ...o, wallet: press });
+    assert.equal(held.outstandingSatang, 16_000);
+    const tender = { actionId: `other-${uuidv7().slice(-12)}`, method: 'partner_tender', kind: 'other', amountSatang: 16_000 };
+    const closed = await send(box, 'sale.finalise', { ...o, tender });
+    assert.equal(closed.finalised, true);
+    assert.equal(closed.attempt?.method, 'other');
+    assert.equal(closed.attempt?.tenderedSatang, null);
+    assert.equal(closed.drawer, 'not_asked');
+    const queued = await facts(box);
+    assert.deepEqual(queued.map((fact) => fact.type), ['sale.finalised', 'wallet.spent']);
+    assert.deepEqual((queued[0]!.payload as { tenders: Array<{ kind: string; methodCode: string; tenderedSatang?: number }> }).tenders
+      .map((line) => [line.kind, line.methodCode, line.tenderedSatang ?? null]), [['other', 'partner_tender', null]]);
+    await box.restart();
+    const replay = await send(box, 'sale.finalise', { ...o, tender });
+    assert.equal(replay.replay, true);
+    assert.equal((await facts(box)).length, 2);
   } finally {
     box.close();
   }

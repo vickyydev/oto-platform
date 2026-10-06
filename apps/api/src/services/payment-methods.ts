@@ -1,9 +1,7 @@
-import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import { paymentAttempt, paymentMethod } from '@oto/db';
 import {
   PAID_ONLINE_TENDER_CODE,
-  PAYMENT_METHODS,
-  PAYMENT_METHOD_KINDS,
   WALLET_TENDER_CODE,
   newId,
   type PaymentMethodKind,
@@ -33,34 +31,14 @@ import type { Exec, Tx } from './tx';
  *     `makeId` can never re-mint it (`PaymentMethodsSection.tsx:20-33`);
  *   - **reorder is a swap of two `sortOrder`s** (`PaymentMethodsSection.tsx:69-77`),
  *     which is `movePaymentMethod` below;
- *   - **deleting a tender in use warned and let it through**
- *     (`PaymentMethodsSection.tsx:56-67`). On a real ledger the count is real,
- *     so the refusal is the server's and the warning copy moves to the disable
- *     path — decision O-7.
+ *   - **deleting a tender in use warns and lets the manager proceed**
+ *     (`PaymentMethodsSection.tsx`). The ledger keeps its token and the live
+ *     row is archived rather than erased.
  *
  * OPERATOR-WIDE, because the prototype says so in as many words: "paymentMethods
  * (same physical tenders everywhere)" (`catalogStore.ts:71`). There is no branch
  * in any signature here.
  */
-
-/**
- * The kinds the ledger has a word for today.
- *
- * `pos.payment_attempt.method` is CHECKed against `PAYMENT_METHODS` — the six
- * words money can be filed under — and `pos.payment_method.kind` is one of four,
- * of which `other` is the one with no word waiting for it. Derived rather than
- * typed out so the day `wallet` becomes a kind, this list grows with the
- * vocabulary instead of being a second place to remember.
- *
- * WHY IT IS ENFORCED HERE. `finaliseSale` resolves a tender's kind through
- * `pos.payment_method` and refuses one it cannot file (`services/sale.ts`,
- * `tenderMethodOf`). A park allowed to create an `other` tender would therefore
- * be allowed to put a button on the till that takes money and then refuses the
- * sale at the counter. Better to refuse the configuration than the customer.
- */
-export const LEDGER_BACKED_KINDS: readonly PaymentMethodKind[] = PAYMENT_METHOD_KINDS.filter(
-  (kind): kind is PaymentMethodKind => (PAYMENT_METHODS as readonly string[]).includes(kind),
-);
 
 /**
  * Tokens an older till may have written for a tender that now has another code.
@@ -70,7 +48,7 @@ export const LEDGER_BACKED_KINDS: readonly PaymentMethodKind[] = PAYMENT_METHOD_
  * `finaliseSale` normalises it the same way before looking the row up. So
  * attempts filed under `credit_card` ARE the `card` tender's history, and the
  * in-use count below has to say so — otherwise a park is told its card tender
- * has never been used and allowed to delete it.
+ * has never been used and skips the warning.
  */
 const LEGACY_CODES: Readonly<Record<string, readonly string[]>> = { card: ['credit_card'] };
 
@@ -193,23 +171,6 @@ export async function listPaymentMethods(
 }
 
 /**
- * The refusal a kind with no ledger word earns, in words a manager can act on.
- *
- * It names the kinds that ARE available rather than only the one that is not:
- * "other is not allowed" leaves somebody guessing, and the guess is usually a
- * second attempt with the same answer.
- */
-function assertLedgerBackedKind(kind: PaymentMethodKind): void {
-  if (LEDGER_BACKED_KINDS.includes(kind)) return;
-  throw errors.badRequest(
-    `A tender has to be one the platform can file money under, and today those are ` +
-      `${LEDGER_BACKED_KINDS.join(', ')}. Nothing records money against a “${kind}” tender yet, ` +
-      `so the till would take the payment and then refuse the sale.`,
-    { kind, allowed: [...LEDGER_BACKED_KINDS] },
-  );
-}
-
-/**
  * `credit_card` is refused as a code because it is the one token that cannot be
  * tendered: every reader normalises it to `card` before looking the row up —
  * the POS on read (`normalizePaymentMethod`) and `finaliseSale` before it
@@ -247,7 +208,6 @@ export async function createPaymentMethod(
   input: { code: string; label: string; kind: PaymentMethodKind; sortOrder?: number },
 ): Promise<{ id: string }> {
   assertTenderableCode(input.code);
-  assertLedgerBackedKind(input.kind);
 
   const rows = await liveRows(tx, actor.operatorId);
   if (rows.some((row) => row.code === input.code)) {
@@ -292,7 +252,6 @@ export async function updatePaymentMethod(
   patch: { label?: string; kind?: PaymentMethodKind; enabled?: boolean; sortOrder?: number },
 ): Promise<{ ok: true }> {
   const before = await loadRow(tx, actor.operatorId, code);
-  if (patch.kind !== undefined) assertLedgerBackedKind(patch.kind);
 
   const set: Partial<typeof paymentMethod.$inferInsert> = {};
   if (patch.label !== undefined) set.label = patch.label;
@@ -394,16 +353,8 @@ export async function movePaymentMethod(
 }
 
 /**
- * Remove a tender the park no longer takes — refused once money has been taken
- * in it (decision O-7).
- *
- * The prototype warned and let the delete through, and on browser-memory
- * transactions that was harmless. On a real ledger it is not: every attempt
- * filed under the token would be left with a code nothing can name, and a
- * day-end report would show money taken by a tender that no longer exists. So
- * the count comes from `pos.payment_attempt` and the refusal is the server's;
- * the prototype's warning copy moves to the panel's disable path, which is the
- * thing it was recommending all along.
+ * Remove a tender the park no longer takes (decision O-7). The admin screen
+ * warns when historical payments used it and lets the manager proceed.
  *
  * Archived rather than deleted, and unticked with it: `payment_method_code_unique`
  * is partial on `archived_at is null`, so the token is free for a later tender,
@@ -416,26 +367,6 @@ export async function archivePaymentMethod(
   code: string,
 ): Promise<{ ok: true }> {
   const before = await loadRow(tx, actor.operatorId, code);
-  const [used] = await tx
-    .select({ used: count() })
-    .from(paymentAttempt)
-    .where(
-      and(
-        eq(paymentAttempt.operatorId, actor.operatorId),
-        inArray(paymentAttempt.methodCode, codesRecordedAs(code)),
-      ),
-    );
-  const attempts = Number(used?.used ?? 0);
-  if (attempts > 0) {
-    throw errors.conflict(
-      'PAYMENT_METHOD_IN_USE',
-      `“${before.label}” has taken money on ${attempts} payment${attempts === 1 ? '' : 's'}, ` +
-        `so it cannot be deleted — those records have to keep saying what they were paid in. ` +
-        `Disable it instead: that hides it at checkout and keeps reporting clean.`,
-      { code, attempts },
-    );
-  }
-
   await tx
     .update(paymentMethod)
     .set({ archivedAt: new Date(), enabled: false })

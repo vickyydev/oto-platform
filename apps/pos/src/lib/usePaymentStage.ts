@@ -524,12 +524,13 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
         update({ phase: 'failed', error: 'Choose an enabled payment method and an amount within the balance.', retryable: false });
         return;
       }
-      if (method.kind === 'cash') {
-        if (!money(tendered) || tendered < amount) {
+      if (method.kind === 'cash' || method.kind === 'other') {
+        if (method.kind === 'cash' && (!money(tendered) || tendered < amount)) {
           update({ phase: 'failed', error: 'Cash received must cover this payment.', retryable: false });
           return;
         }
-        const tender: SaleTenderPayload = { method: method.id, kind: 'cash', amountSatang: amount, tenderedSatang: tendered, changeSatang: tendered - amount };
+        const tender: SaleTenderPayload = { method: method.id, kind: method.kind, amountSatang: amount,
+          ...(method.kind === 'cash' ? { tenderedSatang: tendered, changeSatang: tendered - amount } : {}) };
         const result = await optionsRef.current.finaliseSale(tender, actionId);
         if (!current(ctx)) { retain(ctx, { saleId: result.saleId, ...(result.ok && result.written ? { attempt: result.attempt } : {}) }); return; }
         if (!result.ok && isStockRefusalCode(result.code)) {
@@ -544,7 +545,7 @@ export function usePaymentStage(options: PaymentStageOptions): PaymentStageContr
             error: result.ok ? 'This payment has not been recorded.' : result.message });
           return;
         }
-        if (result.attempt) settlement(result.attempt, method.id, 'cash');
+        if (result.attempt) settlement(result.attempt, method.id, method.kind);
         if (result.finalised || result.sale.status === 'finalised') { await finish(ctx, result.sale); return; }
         if (!money(result.outstandingSatang ?? -1)) {
           update({ phase: 'blocked', error: 'The payment balance has not been confirmed.', retryable: true });

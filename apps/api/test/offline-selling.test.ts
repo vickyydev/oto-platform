@@ -23,6 +23,7 @@ import {
   type BridgeSaleAnswer,
 } from '@oto/shared';
 import {
+  ADMIN,
   RECEPTION,
   boxBySlot,
   createTestContext,
@@ -306,6 +307,39 @@ describe('a forced-offline virtual station sells, prints from the box queue, and
     expect(again.sale.receiptNumber).toBe(taken[0]!.receipt);
     expect((await agent.outbox()!.depth()).queued).toBe(depth);
   });
+});
+
+it('syncs an offline Other payment as Other, without cash received or change', async () => {
+  const manager = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+  const configured = await ctx.app.inject({ method: 'POST', url: '/payment-methods', headers: { cookie: manager },
+    payload: { code: 'partner_tender', label: 'Partner tender', kind: 'other' } });
+  expect(configured.statusCode).toBe(200);
+  await agent.syncCache();
+  const cart = familyCart();
+  const total = await platformTotal(cart);
+  const body = saleBody(cart, total, null);
+  const tender = { actionId: `other-${newId().slice(-12)}`, method: 'partner_tender', kind: 'other', amountSatang: total };
+  await goOffline();
+  try {
+    const taken = await onBox('sale.finalise', { ...body, tender });
+    expect(taken.finalised).toBe(true);
+    expect(taken.attempt).toMatchObject({ method: 'other', tenderedSatang: null, changeSatang: null });
+    expect(taken.drawer).toBe('not_asked');
+    expect(await saleRow(body.saleId)).toBeUndefined();
+    const disabled = await ctx.app.inject({ method: 'PATCH', url: '/payment-methods/partner_tender', headers: { cookie: manager }, payload: { enabled: false } });
+    expect(disabled.statusCode).toBe(200);
+    await goOnline();
+    const [attempt] = await attemptsOf(body.saleId);
+    expect(attempt).toMatchObject({ method: 'other', methodCode: 'partner_tender', status: 'approved', offline: true });
+    expect(attempt?.tenderedSatang).toBeNull();
+    expect(attempt?.changeSatang).toBeNull();
+    const firstId = attempt!.id;
+    await agent.outbox()!.replayLastBatch(50);
+    await goOnline();
+    expect((await attemptsOf(body.saleId)).map((row) => row.id)).toEqual([firstId]);
+  } finally {
+    if (link.cut) await goOnline();
+  }
 });
 
 describe('a ฿0 comp taken offline replays (S2-09a; plan §2.6)', () => {

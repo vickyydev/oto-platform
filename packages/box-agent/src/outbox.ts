@@ -413,6 +413,8 @@ export interface OfflineSaleFact {
   bands?: readonly OfflineBandFact[];
   /** The catalogue version the box priced the cart from (OD-8). */
   catalogueVersion?: string | null;
+  /** The engine that priced the recorded sale; absent on pre-versioned facts. */
+  engineVersion?: string;
   /** The prices it priced from, so an older catalogue's price can be filed as taken (OD-8). */
   priceBasis?: Record<string, unknown> | null;
   /** The offline staff token the box verified, by its `jti`, where one was used. */
@@ -442,6 +444,7 @@ export function saleFinalisedFact(sale: OfflineSaleFact): QueuedFact {
       ...(sale.offlineFresh ? { offlineFresh: true } : {}),
       ...(sale.bands && sale.bands.length > 0 ? { bands: sale.bands.map((band) => ({ ...band })) } : {}),
       ...(sale.catalogueVersion !== undefined ? { catalogueVersion: sale.catalogueVersion } : {}),
+      ...(sale.engineVersion !== undefined ? { engineVersion: sale.engineVersion } : {}),
       ...(sale.priceBasis ? { priceBasis: sale.priceBasis } : {}),
     },
   };

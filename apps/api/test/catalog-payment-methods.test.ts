@@ -14,6 +14,7 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
+import { classify } from '../src/services/refunds';
 
 /**
  * SCRUM-206 (S2-10a, Slice E) — the tenders the park takes money in.
@@ -24,10 +25,9 @@ import {
  * rules that make a tender list safe to edit while a till is standing open:
  *
  *   - the list, its order and its ticks persist, operator-wide;
- *   - a kind the ledger has no word for cannot be created, because
- *     `finaliseSale` would refuse the sale AFTER the customer had paid;
- *   - a tender that has taken money cannot be deleted, and the refusal carries
- *     the count so the panel can offer to disable it instead (decision O-7);
+ *   - an Other tender has its own ledger word, separate from cash;
+ *   - a used tender can be archived after a manager confirms; its payment
+ *     history stays intact, and the code is free for a new row;
  *   - a legacy token still resolves — `credit_card` is the `card` tender's
  *     history and is counted as such.
  */
@@ -179,13 +179,31 @@ describe('creating a tender', () => {
     expect(row.after).toMatchObject({ code: 'bank_transfer', kind: 'card', enabled: true });
   });
 
-  it('refuses a kind the ledger has no word for, naming the kinds it has', async () => {
+  it('adds an Other tender as its own ledger classification', async () => {
     const res = await create({ code: 'loyalty_points', label: 'Loyalty points', kind: 'other' });
-    expect(res.statusCode).toBe(400);
-    const { error } = res.json();
-    expect(error.message).toContain('cash, card, qr');
-    expect(error.details.allowed).toEqual(['cash', 'card', 'qr']);
-    expect((await list()).map((m) => m.id)).not.toContain('loyalty_points');
+    expect(res.statusCode).toBe(200);
+    expect((await list()).find((m) => m.id === 'loyalty_points')).toMatchObject({ kind: 'other', enabled: true });
+    for (const tender of [
+      { method: 'unknown_points', kind: 'other' },
+      { method: 'cash', kind: 'other' },
+      { method: 'loyalty_points', kind: 'cash' },
+      { method: 'loyalty_points', kind: 'other', tenderedSatang: 100_000 },
+      { method: 'loyalty_points', kind: 'other', changeSatang: 0 },
+    ]) {
+      const refused = await tryTender(tender);
+      expect(refused.response.statusCode, JSON.stringify(tender)).toBeGreaterThanOrEqual(400);
+      expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, refused.saleId))).toHaveLength(0);
+    }
+    await patch('loyalty_points', { enabled: false });
+    const disabled = await tryTender({ method: 'loyalty_points', kind: 'other' });
+    expect(disabled.response.statusCode).toBe(409);
+    await patch('loyalty_points', { enabled: true });
+    const saleId = await sellFor({ method: 'loyalty_points', kind: 'other' });
+    const [attempt] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    expect(attempt).toMatchObject({ method: 'other', methodCode: 'loyalty_points', status: 'approved' });
+    expect(attempt?.tenderedSatang).toBeNull();
+    expect(classify(attempt!)).toBe('manual');
+    await remove('loyalty_points');
   });
 
   it('refuses the legacy card token, which no reader would ever look up', async () => {
@@ -238,9 +256,11 @@ describe('editing a tender', () => {
     expect(rows.at(-1)!.after).toMatchObject({ label: 'Bank transfer (SCB)' });
   });
 
-  it('refuses a change of kind to one the ledger has no word for', async () => {
+  it('can change an unused tender to Other and back', async () => {
     const res = await patch('bank_transfer', { kind: 'other' });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(200);
+    expect((await list()).find((m) => m.id === 'bank_transfer')!.kind).toBe('other');
+    expect((await patch('bank_transfer', { kind: 'card' })).statusCode).toBe(200);
     expect((await list()).find((m) => m.id === 'bank_transfer')!.kind).toBe('card');
   });
 
@@ -309,26 +329,27 @@ describe('removing a tender', () => {
     await remove('bank_transfer');
   });
 
-  it('refuses one that has taken money, with the count, and leaves it alone', async () => {
+  it('archives a used tender after the manager confirms, while its payment keeps the old code', async () => {
     await sellFor({ method: 'cash', kind: 'cash' });
+    const used = (await list()).find((m) => m.id === 'cash')!.attempts;
+    expect(used).toBeGreaterThan(0);
     const res = await remove('cash');
-    expect(res.statusCode).toBe(409);
-    const { error } = res.json();
-    expect(error.code).toBe('PAYMENT_METHOD_IN_USE');
-    expect(error.details.attempts).toBeGreaterThan(0);
-    expect(error.message).toContain(`${error.details.attempts} payment`);
-    // The copy the panel turns into its offer to disable instead.
-    expect(error.message).toContain('Disable it instead');
-
-    const cash = (await list()).find((m) => m.id === 'cash')!;
-    expect(cash.enabled).toBe(true);
-    expect(cash.attempts).toBe(error.details.attempts);
+    expect(res.statusCode).toBe(200);
+    expect((await list()).map((m) => m.id)).not.toContain('cash');
+    const [old] = await ctx.db.select().from(paymentMethod)
+      .where(and(eq(paymentMethod.operatorId, operatorId), eq(paymentMethod.code, 'cash')));
+    expect(old).toMatchObject({ enabled: false });
+    expect(old!.archivedAt).not.toBeNull();
+    const [attempt] = await ctx.db.select({ methodCode: paymentAttempt.methodCode })
+      .from(paymentAttempt).where(eq(paymentAttempt.methodCode, 'cash')).limit(1);
+    expect(attempt?.methodCode).toBe('cash');
+    expect((await create({ code: 'cash', label: 'Cash', kind: 'cash' })).statusCode).toBe(200);
+    expect((await list()).find((m) => m.id === 'cash')?.attempts).toBe(used);
   });
 
   it('counts the legacy token as the card tender’s own history', async () => {
     // `finaliseSale` normalises `credit_card` to `card` before it resolves the
-    // kind, and stores the token as it arrived — so these rows ARE the card
-    // tender's money, and a park must not be told its card tender is unused.
+    // kind, and stores the token as it arrived. The warning count includes it.
     const saleId = await sellFor({ method: 'credit_card', kind: 'card' });
     const [attempt] = await ctx.db
       .select()
@@ -339,8 +360,10 @@ describe('removing a tender', () => {
 
     expect((await list()).find((m) => m.id === 'card')!.attempts).toBeGreaterThan(0);
     const res = await remove('card');
-    expect(res.statusCode).toBe(409);
-    expect(res.json().error.code).toBe('PAYMENT_METHOD_IN_USE');
+    expect(res.statusCode).toBe(200);
+    expect((await list()).map((m) => m.id)).not.toContain('card');
+    expect((await create({ code: 'card', label: 'Card', kind: 'card' })).statusCode).toBe(200);
+    expect((await list()).find((m) => m.id === 'card')!.attempts).toBeGreaterThan(0);
   });
 });
 

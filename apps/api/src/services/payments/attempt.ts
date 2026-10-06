@@ -367,11 +367,9 @@ export async function findAttemptByAction(
  * for. A configured disabled or archived tender is refused, even when an older
  * till still displays it. Settling an existing attempt does not re-resolve it.
  *
- * A TENDER NOBODY CAN CLASSIFY IS REFUSED rather than guessed at. The list's
- * fourth kind, `other`, has no word in the ledger's vocabulary: `wallet` and
- * `voucher` are named there for the tickets that will write them and nothing
- * maps to them yet, and money filed under the wrong word is a figure in
- * somebody's day-end report that no later correction can find.
+ * A tender nobody can classify is refused rather than guessed at. The
+ * configured `other` kind has its own ledger word: manually recorded bank or
+ * partner payments must not be misfiled as cash, transfer or voucher.
  *
  * It lives here rather than in `sale.ts`, where Slice A wrote it, because the
  * EDC, the QR and the offline replay must file money under the same word as
@@ -389,7 +387,7 @@ export async function tenderMethodOf(
    * replay — leaves it unset, and the stored-value code is then refused: credit
    * is never a tender a person picks off a grid.
    */
-  options: { platform?: 'wallet' } = {},
+  options: { platform?: 'wallet'; offlineRecorded?: boolean } = {},
 ): Promise<PaymentMethod> {
   // A till declaring kind `wallet` for some other token still falls through to
   // the refusal at the end: `wallet` is not a kind the park can configure.
@@ -413,6 +411,18 @@ export async function tenderMethodOf(
     // A live replacement wins over archived history with the same code.
     .orderBy(sql`${paymentMethod.archivedAt} asc nulls first`)
     .limit(1);
+  // Other is never inferred from a till-supplied kind. An offline box may have
+  // already taken it before an admin disabled the method; its signed fact can
+  // still settle, provided the configured row retains the same classification.
+  if (declaredKind === 'other' || configured?.kind === 'other') {
+    if (!configured || configured.kind !== 'other' || declaredKind !== 'other') {
+      throw errors.conflict('PAYMENT_METHOD_UNAVAILABLE', 'Choose a configured Other payment method.', { method: methodCode });
+    }
+    if ((!configured.enabled || configured.archivedAt) && !options.offlineRecorded) {
+      throw errors.conflict('PAYMENT_METHOD_UNAVAILABLE', 'This payment method is no longer available. Choose an available method.', { method: methodCode });
+    }
+    return 'other';
+  }
   if (configured && (!configured.enabled || configured.archivedAt)) {
     throw errors.conflict(
       'PAYMENT_METHOD_UNAVAILABLE',
@@ -421,7 +431,7 @@ export async function tenderMethodOf(
     );
   }
   const kind = configured?.kind ?? declaredKind;
-  if (kind === 'cash' || kind === 'card' || kind === 'qr') return kind;
+  if (kind === 'cash' || kind === 'card' || kind === 'qr' || kind === 'other') return kind;
   // Two different refusals, because they are two different things to go and
   // fix: a tender the park does not have, and a tender whose kind the ledger
   // cannot file money under.

@@ -57,6 +57,7 @@ import {
   OfflineChildUpdatedSchema,
   OfflineMemberCreatedSchema,
   OfflineMemberTierChangedSchema,
+  TIER_PROOF_TYPES,
   OfflineMemberUpdatedSchema,
   OfflineVisitCreatedSchema,
   bandShortCode,
@@ -1884,6 +1885,9 @@ export class StationBridge {
         : memberRecord(found.member);
       let toTier: string;
       if (body.direction === 'upgrade') {
+        if (!TIER_PROOF_TYPES.some((type) => type === body.evidenceType)) {
+          throw new BridgeError(400, 'VALIDATION', 'Select Passport, Residence certificate or School card.');
+        }
         if (!(await this.tierCodes()).includes(body.toTier)) {
           throw new BridgeError(400, 'VALIDATION', `Unknown tier "${body.toTier}"`);
         }
@@ -2064,6 +2068,14 @@ export class StationBridge {
 
   private async catalogueItem(): Promise<Record<string, unknown> | null> {
     return rec(itemsOf(await this.bundle('catalogue'))[0]);
+  }
+
+  private async assertOtherTender(method: string): Promise<void> {
+    const catalogue = await this.catalogueItem();
+    const methods = Array.isArray(catalogue?.paymentMethods) ? catalogue.paymentMethods.map(rec) : [];
+    if (!methods.some((row) => row?.code === method && row.kind === 'other' && row.enabled === true)) {
+      throw new BridgeError(409, 'PAYMENT_METHOD_UNAVAILABLE', 'Choose an enabled Other payment method from this box\'s current catalogue');
+    }
   }
 
   private async tierCodes(): Promise<string[]> {
@@ -2598,7 +2610,7 @@ export class StationBridge {
   private attemptView(input: {
     attemptId: string;
     saleId: string;
-    kind: 'cash' | 'card' | 'qr';
+    kind: 'cash' | 'card' | 'qr' | 'other';
     provider: PaymentProvider;
     status: PaymentAttemptStatus;
     amountSatang: number;
@@ -2788,6 +2800,7 @@ export class StationBridge {
         occurredAt: at,
         actionId: body.actionId,
         catalogueVersion: sale.pricing.basis.catalogueVersion,
+        engineVersion: sale.pricing.quote.engineVersion,
         priceBasis: sale.pricing.basis as unknown as Record<string, unknown>,
         printout: {
           snapshot: {
@@ -2811,7 +2824,7 @@ export class StationBridge {
     return this.answerOf(recorded);
   }
 
-  /** `sale.finalise`: cash, or nothing at all for a ฿0 comp. */
+  /** `sale.finalise`: cash, Other, or nothing at all for a ฿0 comp. */
   private async finaliseSale(
     station: BridgeStation,
     caller: BridgeTillCaller,
@@ -2854,7 +2867,10 @@ export class StationBridge {
   ): Promise<BridgeSaleAnswer> {
     const tender = body.tender ?? null;
     if (tender && tender.amountSatang > 0) {
-      if (tender.method === 'wallet') this.refuse('wallet');
+      if (tender.method === 'wallet' || tender.method === WALLET_TENDER_CODE) this.refuse('wallet');
+      if (tender.method === PAID_ONLINE_TENDER_CODE) {
+        throw new BridgeError(400, 'VALIDATION', 'Paid online is recorded only from a booking redemption');
+      }
       if (tender.kind === 'card' || tender.kind === 'qr') {
         throw new BridgeError(
           400,
@@ -2862,7 +2878,11 @@ export class StationBridge {
           'A card or a QR is taken on the counter’s terminal (payment.start), not recorded by hand',
         );
       }
-      if (tender.kind !== 'cash') this.refuse('noTerminal');
+      if (tender.kind !== 'cash' && tender.kind !== 'other') this.refuse('noTerminal');
+      if (tender.kind === 'other' && (tender.method === 'cash' || tender.tenderedSatang !== undefined || tender.changeSatang !== undefined)) {
+        throw new BridgeError(400, 'VALIDATION', 'Other payment must not carry cash received or change');
+      }
+      if (tender.kind === 'other') await this.assertOtherTender(tender.method);
     }
     /**
      * S2-14a round 4 — credit already written ahead for this sale on this box
@@ -2892,8 +2912,8 @@ export class StationBridge {
     if (tender.amountSatang !== sale.gross) {
       this.refuse('split', { amountSatang: tender.amountSatang, grossSatang: sale.gross });
     }
-    const handed = tender.tenderedSatang ?? sale.gross;
-    if (handed < sale.gross) {
+    const handed = tender.kind === 'cash' ? (tender.tenderedSatang ?? sale.gross) : null;
+    if (handed !== null && handed < sale.gross) {
       throw new BridgeError(
         400,
         'VALIDATION',
@@ -2903,22 +2923,20 @@ export class StationBridge {
     const fact: OfflineTenderFact = {
       actionId: tender.actionId,
       methodCode: tender.method,
-      kind: 'cash',
+      kind: tender.kind,
       provider: 'manual',
       amountSatang: sale.gross,
-      tenderedSatang: handed,
-      changeSatang: handed - sale.gross,
+      ...(handed === null ? {} : { tenderedSatang: handed, changeSatang: handed - sale.gross }),
       paidAt: now,
     };
     const attempt = this.attemptView({
       attemptId: uuidv7(),
       saleId: body.saleId,
-      kind: 'cash',
+      kind: tender.kind,
       provider: 'manual',
       status: 'approved',
       amountSatang: sale.gross,
-      tenderedSatang: handed,
-      changeSatang: handed - sale.gross,
+      ...(handed === null ? {} : { tenderedSatang: handed, changeSatang: handed - sale.gross }),
       actionId: tender.actionId,
       paidAt: now,
       createdAt: now,
@@ -3232,22 +3250,28 @@ export class StationBridge {
       );
     }
     let fact: OfflineTenderFact | null = null;
-    let cashAttempt: PaymentAttemptView | null = null;
+    let tenderAttempt: PaymentAttemptView | null = null;
     const now = this.host.now().toISOString();
     if (rest > 0) {
       if (!tender) throw new BridgeError(400, 'VALIDATION', 'A sale that owes money needs its payment');
-      if (tender.method === 'wallet') this.refuse('wallet');
+      if (tender.method === 'wallet' || tender.method === WALLET_TENDER_CODE) this.refuse('wallet');
+      if (tender.method === PAID_ONLINE_TENDER_CODE) {
+        throw new BridgeError(400, 'VALIDATION', 'Paid online is recorded only from a booking redemption');
+      }
       this.refuseSharedPressKey(tender.actionId, hold.actionId);
-      if (tender.kind !== 'cash') {
-        // The box closes a sale in one go with one payment beside the credit:
-        // the rest is cash on this lane, as it defaults online (OD-W3).
+      if (tender.kind !== 'cash' && tender.kind !== 'other') {
+        // The box closes a sale in one go with one direct payment beside the credit.
         this.refuse('split', { amountSatang: tender.amountSatang, outstandingSatang: rest, creditSatang: hold.amountSatang });
       }
+      if (tender.kind === 'other' && (tender.method === 'cash' || tender.tenderedSatang !== undefined || tender.changeSatang !== undefined)) {
+        throw new BridgeError(400, 'VALIDATION', 'Other payment must not carry cash received or change');
+      }
+      if (tender.kind === 'other') await this.assertOtherTender(tender.method);
       if (tender.amountSatang !== rest) {
         this.refuse('split', { amountSatang: tender.amountSatang, outstandingSatang: rest, creditSatang: hold.amountSatang });
       }
-      const handed = tender.tenderedSatang ?? rest;
-      if (handed < rest) {
+      const handed = tender.kind === 'cash' ? (tender.tenderedSatang ?? rest) : null;
+      if (handed !== null && handed < rest) {
         throw new BridgeError(
           400,
           'VALIDATION',
@@ -3257,22 +3281,20 @@ export class StationBridge {
       fact = {
         actionId: tender.actionId,
         methodCode: tender.method,
-        kind: 'cash',
+        kind: tender.kind,
         provider: 'manual',
         amountSatang: rest,
-        tenderedSatang: handed,
-        changeSatang: handed - rest,
+        ...(handed === null ? {} : { tenderedSatang: handed, changeSatang: handed - rest }),
         paidAt: now,
       };
-      cashAttempt = this.attemptView({
+      tenderAttempt = this.attemptView({
         attemptId: uuidv7(),
         saleId: body.saleId,
-        kind: 'cash',
+        kind: tender.kind,
         provider: 'manual',
         status: 'approved',
         amountSatang: rest,
-        tenderedSatang: handed,
-        changeSatang: handed - rest,
+        ...(handed === null ? {} : { tenderedSatang: handed, changeSatang: handed - rest }),
         actionId: tender.actionId,
         paidAt: now,
         createdAt: now,
@@ -3284,7 +3306,7 @@ export class StationBridge {
       spend: this.walletSpendView(hold),
       attempt: this.walletAttemptView(hold),
     };
-    return this.closeSale(station, caller, body, sale, fact ? [fact] : [], cashAttempt, {
+    return this.closeSale(station, caller, body, sale, fact ? [fact] : [], tenderAttempt, {
       // The figures `countCredit` settles are only known inside the
       // transaction; the memo is read back from the log on a retry, so the
       // closed hold carries them too.
