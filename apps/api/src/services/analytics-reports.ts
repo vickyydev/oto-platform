@@ -34,6 +34,7 @@ import {
 } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import type { Exec, Tx } from './tx';
+import { maskVoucherCode, maskedVoucherLineLabel } from './vouchers';
 
 /**
  * S2-15b (SCRUM-216) round 4 — THE REPORTS PANELS' ROWS (plan
@@ -65,8 +66,24 @@ const taken = () =>
     sql`, `,
   );
 
-/** A voucher's code as every read of a sale shows it (`maskVoucherCode` in `services/vouchers.ts`). */
-const maskVoucherCode = (code: string): string => `…${code.slice(-4)}`;
+/**
+ * SCRUM-433 — a voucher's discount row as every read of a sale shows it: the
+ * code as its last four (`maskVoucherCode`), and a label still in the old
+ * form that names the whole code rewritten the same way
+ * (`maskedVoucherLineLabel`: a row an older api wrote, or a database restored
+ * from before migration 0025). No report row and no report answer carries the
+ * whole code, whatever a row says. Any other row is answered as it is.
+ */
+function maskedDiscount(row: { code: string | null; label: string | null; voucher: boolean }): {
+  code: string | null;
+  label: string | null;
+} {
+  if (!row.voucher || row.code === null) return { code: row.code, label: row.label };
+  return {
+    code: maskVoucherCode(row.code),
+    label: row.label === null ? null : maskedVoucherLineLabel(row.label, row.code),
+  };
+}
 
 const num = (v: unknown): number => (v === null || v === undefined ? 0 : Number(v));
 
@@ -306,8 +323,7 @@ export async function reportFactsOf(db: Exec, branchId: string, date: string): P
     list.push({
       kind: d.kind,
       type: d.discount_type,
-      code: d.code && d.voucher ? maskVoucherCode(d.code) : d.code,
-      label: d.label,
+      ...maskedDiscount(d),
       reason: d.reason,
       amountSatang: num(d.amount_satang),
       appliedByAccountId: d.applied_by_account_id,
@@ -901,7 +917,8 @@ const lineCounts = sql`
 /**
  * Every manual discount and comp, and every promo that took something, on the
  * scope's counted sales, newest first — the Discounts & Comps panel's two
- * lists. A voucher's code is shown as its last four.
+ * lists. A voucher's code is shown as its last four, in its code and in its
+ * label (`maskedDiscount`).
  */
 export async function discountTransactionsOf(db: Exec, scope: ReportScope): Promise<DiscountTransactions> {
   if (scope.branches.length === 0) return { ...head(scope), rows: [], promoRows: [] };
@@ -955,12 +972,13 @@ export async function discountTransactionsOf(db: Exec, scope: ReportScope): Prom
         appliedBy: r.applied_by_name ?? UNNAMED,
       });
     } else {
+      const shown = maskedDiscount(r);
       out.promoRows.push({
         transactionId,
         createdAt,
         operatorName: r.operator_name,
-        code: r.code ? (r.voucher ? maskVoucherCode(r.code) : r.code) : '',
-        label: r.label ?? '',
+        code: shown.code ?? '',
+        label: shown.label ?? '',
         type: r.discount_type,
         amountSatang: num(r.amount_satang),
       });

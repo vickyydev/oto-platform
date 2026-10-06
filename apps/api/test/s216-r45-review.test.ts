@@ -63,8 +63,9 @@ import { runBoothRollupJob } from '../src/services/analytics-booth';
  * sale, and a voucher spun at Central's booth and spent at Chalong) — then the
  * Reports panels, the booth fact, the booth report and its CSV are attacked.
  *
- * Kept as `it.fails` (the repo's gate convention: each states the CORRECT
- * behaviour and fails until the fix round flips it to `it`):
+ * Kept as `it.fails` by the review (the repo's gate convention: each states
+ * the CORRECT behaviour and failed until the fix round flipped it to `it`;
+ * both hold since):
  *
  *   (R1) THE TICKET TYPE BREAKDOWN LEAVES OUT A CHILD'S STAY. The prototype's
  *        live drop-off line (`lib/dropoff.ts` makeDropOffLine) is the child's
@@ -396,7 +397,7 @@ describe('the Sales panel against the prototype’s rules', () => {
     expect(lines.some((l) => l.kind === 'service_fee')).toBe(true);
   });
 
-  it.fails('(R1) the ticket type breakdown counts a drop-off child under their ticket, as the prototype does', async () => {
+  it('(R1) the ticket type breakdown counts a drop-off child under their ticket, as the prototype does', async () => {
     const report = await read<SalesReport>(manager, 'reports/sales', `branches=${central}&from=${T}&to=${T}`);
     const expected = await prototypeTicketTypes(centralSales);
     expect(
@@ -673,7 +674,7 @@ describe('the report rows are written once, and a frozen day never', () => {
 // --- (R2) A voucher label in the old form ----------------------------------------------------
 
 describe('a voucher’s whole code never reaches the report', () => {
-  it.fails('(R2) a discount row labelled with the whole code (a row an older api wrote) is masked as a sale read masks it', async () => {
+  it('(R2) a discount row labelled with the whole code (a row an older api wrote) is masked as a sale read masks it', async () => {
     const homeSale = centralSales[2]!;
     const [row] = await ctx.db
       .select()

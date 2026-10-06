@@ -231,7 +231,10 @@ interface Day {
   ticket: string[];
   fnb: string[];
   merch: string[];
-  /** Cart lines sold as tickets (not a child's stay), with their participants. */
+  /**
+   * Cart lines sold as tickets, with their participants — a child's stay too:
+   * it is the child's own play ticket (`ticketTypeSalesRows`), its fee apart.
+   */
   ticketLines: Array<{ saleId: string; cartLineId: string | null; packageId: string; kids: number; adults: number }>;
   stays: Array<{ saleId: string; cartLineId: string }>;
   voucherCode: string;
@@ -326,6 +329,7 @@ describe('S2-15b round 4 — a day made through the routes', () => {
     const fee = { label: 'Drop-off service', amountSatang: 22_500 };
     const I = await commit({ lines: [{ id: stayI, packageId: twoHoursId, kids: 1, adults: 0, serviceFee: fee }] });
     await finalise(I, { method: 'cash' });
+    line(I, stayI, twoHoursId, 1, 0);
     const stayJ = await registerStay();
     const lineJ = newId();
     const J = await commit({
@@ -336,6 +340,7 @@ describe('S2-15b round 4 — a day made through the routes', () => {
     });
     await finalise(J, { method: 'cash' });
     line(J, lineJ, twoHoursId, 1, 1);
+    line(J, stayJ, twoHoursId, 1, 0);
 
     // K1 — a ฿50 manual discount; K2 — a comp on part of a cart.
     const lineK1 = newId();
@@ -463,9 +468,15 @@ describe('S2-15b round 4 — a day made through the routes', () => {
     ]);
 
     // Each ticket line under its package: the units' list price, the participants once per line.
+    // A stay counts its child's ticket and never its fee.
     const lines = await ctx.db.select().from(saleLine).where(inArray(saleLine.saleId, day.ticket));
     const ticketKinds = new Set(['kids', 'adults_paid', 'adults_free', 'socks', 'addon']);
     const bookingLine = lines.find((l) => l.saleId === day.ticket[3]! && l.ticketPackageId)!.cartLineId;
+    for (const stay of day.stays) {
+      const own = lines.filter((l) => l.saleId === stay.saleId && l.cartLineId === stay.cartLineId);
+      expect(own.some((l) => l.kind === 'kids' && l.baseSatang > 0)).toBe(true);
+      expect(own.some((l) => l.kind === 'service_fee' && l.baseSatang > 0)).toBe(true);
+    }
     const hand = new Map<string, { lines: number; kids: number; adults: number; revenue: number }>();
     for (const t of day.ticketLines) {
       const cartLineId = t.cartLineId ?? bookingLine;

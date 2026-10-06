@@ -83,11 +83,15 @@ describe('one day’s report rows', () => {
   const day = summariseReportDayV1([
     ticketSale({
       saleId: 'a',
-      grossSatang: 32_500,
-      categories: [category({ gross: 10_000 }), category({ category: 'drop_off', base: 21_028, gross: 22_500, tax: 1_472 })],
+      grossSatang: 42_500,
+      // The tickets: a plain line's ฿100 and the drop-off child's own ฿100 ticket; the ฿225 fee apart.
+      categories: [
+        category({ base: 18_692, gross: 20_000, tax: 1_308 }),
+        category({ category: 'drop_off', base: 21_028, gross: 22_500, tax: 1_472 }),
+      ],
       cartLines: [
         { cartLineId: 'l1', packageId: 'p-2h', packageName: '2 Hours Play', kids: 1, adults: 1, hours: 2, ticketBaseSatang: 10_000, feeBaseSatang: 0, stay: false, service: null, promo: false },
-        { cartLineId: 'stay', packageId: 'p-2h', packageName: '2 Hours Play', kids: 1, adults: 0, hours: 2, ticketBaseSatang: 0, feeBaseSatang: 22_500, stay: true, service: 'drop_off', promo: false },
+        { cartLineId: 'stay', packageId: 'p-2h', packageName: '2 Hours Play', kids: 1, adults: 0, hours: 2, ticketBaseSatang: 10_000, feeBaseSatang: 22_500, stay: true, service: 'drop_off', promo: false },
         { cartLineId: 'stub', packageId: 'p-2h', packageName: '2 Hours Play', kids: 0, adults: 0, hours: null, ticketBaseSatang: 0, feeBaseSatang: 0, stay: false, service: null, promo: true },
       ],
       discounts: [
@@ -117,18 +121,18 @@ describe('one day’s report rows', () => {
     expect(day.categories).toEqual([
       { key: 'drop_off', grossSatang: 22_500, netSatang: 21_028, taxSatang: 1_472, taxInclusiveSatang: 1_472, taxExclusiveSatang: 0, serviceSatang: 0, txnCount: 1 },
       { key: 'fnb', grossSatang: 7_000, netSatang: 6_542, taxSatang: 458, taxInclusiveSatang: 458, taxExclusiveSatang: 0, serviceSatang: 0, txnCount: 1 },
-      { key: 'tickets', grossSatang: 20_700, netSatang: 19_346, taxSatang: 1_354, taxInclusiveSatang: 654, taxExclusiveSatang: 700, serviceSatang: 0, txnCount: 2 },
+      { key: 'tickets', grossSatang: 30_700, netSatang: 28_692, taxSatang: 2_008, taxInclusiveSatang: 1_308, taxExclusiveSatang: 700, serviceSatang: 0, txnCount: 2 },
     ]);
   });
 
-  it('splits ticket sales by tier with the drop-off category apart, and counts ticket lines under their package without the stay or the stub', () => {
+  it('splits ticket sales by tier with the drop-off category apart, and counts every ticket line under its package — the stay’s ticket without its fee — but not the stub', () => {
     const rows = (kind: string) => day.tickets.filter((t) => t.kind === kind);
     expect(rows('tier').map((t) => [t.key, t.saleCount, t.revenueSatang, t.dropoffSatang])).toEqual([
       ['expat', 1, 10_700, 0],
-      ['tourist', 1, 10_000, 22_500],
+      ['tourist', 1, 20_000, 22_500],
     ]);
     expect(rows('ticket_type').map((t) => [t.key, t.label, t.lineCount, t.kids, t.adults, t.revenueSatang])).toEqual([
-      ['p-2h', '2 Hours Play', 2, 3, 2, 20_000],
+      ['p-2h', '2 Hours Play', 3, 4, 2, 30_000],
     ]);
     expect(rows('service').map((t) => [t.key, t.lineCount, t.hours, t.revenueSatang])).toEqual([['drop_off', 1, 2, 22_500]]);
   });

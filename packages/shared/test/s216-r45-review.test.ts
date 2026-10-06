@@ -5,14 +5,15 @@ import { summariseReportDayV1, type ReportCartLineFacts, type ReportSaleFacts } 
  * S2-15b rounds 4-5 — THE REVIEW (lane G, focused): the Sales panel's ticket
  * side against the prototype's `lib/reporting.ts`.
  *
- * (R1), kept as `it.fails` until the fix round flips it: the prototype's live
+ * (R1), held since the fix round (it was `it.fails` until then): the prototype's live
  * drop-off line (`lib/dropoff.ts` makeDropOffLine) IS the child's play ticket —
  * `ticketType` the 2 Hours ticket, kids 1 — with a `dropOff` block, and
  * `ticketTypeSalesRows` counts it under that ticket; only the seed's synthetic
  * `svc-dropoff` SERVICE line and event passes are left out, and the row's
  * revenue "excludes drop-off fee". A child checked in with no supervision
  * (service `none`) is a plain ticket line there too. `summariseReportDayV1`
- * skips every stay cart line from the ticket type breakdown instead.
+ * skipped every stay cart line from the ticket type breakdown; it now counts
+ * the stay's ticket units under its package and keeps the fee out.
  */
 
 const line = (over: Partial<ReportCartLineFacts>): ReportCartLineFacts => ({
@@ -44,7 +45,7 @@ const sale = (cartLines: ReportCartLineFacts[]): ReportSaleFacts => ({
 });
 
 describe('the ticket type breakdown (ticketTypeSalesRows)', () => {
-  it.fails('(R1) counts a drop-off child and a check-in child under their play ticket, without the drop-off fee', () => {
+  it('(R1) counts a drop-off child and a check-in child under their play ticket, without the drop-off fee', () => {
     const day = summariseReportDayV1([
       sale([
         line({ cartLineId: 'plain', kids: 2, adults: 1, ticketBaseSatang: 50_000 }),

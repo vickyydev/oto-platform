@@ -56,7 +56,11 @@ export interface ReportCartLineFacts {
   adults: number;
   /** The play hours recorded on the line at sale time. */
   hours: number | null;
-  /** List price before discounts of the line's ticket units: tickets, socks, add-ons. */
+  /**
+   * List price before discounts of the line's ticket units: tickets, socks,
+   * add-ons. A child's stay has these too — the child's own play ticket —
+   * apart from its service fee and food provision.
+   */
   ticketBaseSatang: Satang;
   /** List price before discounts of the line's drop-off / nanny service fee. */
   feeBaseSatang: Satang;
@@ -87,6 +91,7 @@ export interface ReportDiscountFacts {
   type: string;
   /** A voucher's code is already masked (`…47WP`). */
   code: string | null;
+  /** A voucher's label is already masked too ("150 THB Voucher (voucher …47WP)"), whatever the row says. */
   label: string | null;
   reason: string | null;
   amountSatang: Satang;
@@ -233,10 +238,11 @@ export function reportDiscountKey(d: ReportDiscountFacts): string {
  *   tenders     `paymentMix` (`reportPaymentBumps`).
  *   tickets     ticket sales only (`getFilteredSales`): `ticketSalesByTier`
  *               (the total less the drop-off category, and the drop-off
- *               category), `ticketTypeSalesRows` (a cart line under its
- *               package, the drop-off stay and the free-item stub left out)
- *               and `dropOffNannyRevenueRows` (a stay's session, its play
- *               hours and its fee).
+ *               category), `ticketTypeSalesRows` (every cart line under its
+ *               package — a child's stay too, its ticket units without the
+ *               fee — the free-item stub left out) and
+ *               `dropOffNannyRevenueRows` (a stay's session, its play hours
+ *               and its fee).
  *   items       `fnbSalesByItem` / `merchSalesByItem`, with the cost the
  *               profitability panel reads.
  *   discounts   `discountAndCompImpact` (every manual row) and
@@ -302,14 +308,16 @@ export function summariseReportDayV1(sales: readonly ReportSaleFacts[]): ReportD
       tier.revenueSatang += sale.grossSatang - dropOff;
       tier.dropoffSatang += dropOff;
       for (const line of sale.cartLines) {
-        if (line.stay) {
-          if (line.service === 'drop_off' || line.service === 'nanny') {
-            const service = ticketRow('service', line.service, line.service);
-            service.lineCount += 1;
-            service.hours += line.hours ?? 0;
-            service.revenueSatang += line.feeBaseSatang;
-          }
-          continue;
+        // A child's stay is a session (`dropOffNannyRevenueRows`: its play
+        // hours and its fee) AND the child's own play ticket: the prototype's
+        // drop-off line (`lib/dropoff.ts` makeDropOffLine) is that ticket with
+        // a `dropOff` block, counted under it below — its ticket units only,
+        // never the fee ("excludes drop-off fee").
+        if (line.stay && (line.service === 'drop_off' || line.service === 'nanny')) {
+          const service = ticketRow('service', line.service, line.service);
+          service.lineCount += 1;
+          service.hours += line.hours ?? 0;
+          service.revenueSatang += line.feeBaseSatang;
         }
         if (line.promo || !line.packageId) continue;
         const type = ticketRow('ticket_type', line.packageId, line.packageName ?? line.packageId);
