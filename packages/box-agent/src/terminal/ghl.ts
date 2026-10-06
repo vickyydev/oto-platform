@@ -724,6 +724,12 @@ export function ghlTerminal(deps: GhlDeps): PaymentTerminal {
       });
     },
 
+    async settle() {
+      // No verified transaction-level settlement wire contract is supplied.
+      // Digio section 5.12 uses non-BER tags SA..SP; GHL specifies no settle.
+      return { outcome: 'unsupported' as const, deviceId: deps.deviceId,
+        errorCode: 'TERMINAL_SETTLEMENT_UNSUPPORTED', lines: [] };
+    },
     async health() {
       const checkedAt = deps.now().toISOString();
       /**

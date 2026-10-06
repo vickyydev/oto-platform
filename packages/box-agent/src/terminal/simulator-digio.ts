@@ -268,6 +268,7 @@ export function createDigioSimulator(options: DigioSimulatorOptions): TerminalSi
       kind: paymentType,
       at: at(),
       voided: false,
+      tid, mid,
     });
 
     if (paymentType === DIGIO_PAYMENT_TYPES.card) {
@@ -454,7 +455,7 @@ export function createDigioSimulator(options: DigioSimulatorOptions): TerminalSi
       refuse(DIGIO_RESPONSE.VOID_UNSUPPORTED, 'a Thai QR sale cannot be voided');
       return;
     }
-    if (settledSince(found.at)) {
+    if (found.settled || settledSince(found.at)) {
       refuse(DIGIO_RESPONSE.ALREADY_SETTLED, 'the batch has settled since this sale');
       return;
     }
@@ -488,7 +489,7 @@ export function createDigioSimulator(options: DigioSimulatorOptions): TerminalSi
 
   function remember(entry: SimulatedTransaction): void {
     taken.push(entry);
-    if (taken.length > keep) taken.splice(0, taken.length - keep);
+    // Transactions are retained for settlement; only the diagnostic tape is bounded.
   }
 
   function handle(frame: Uint8Array, emit: (bytes: Uint8Array, afterMs?: number) => void): void {
@@ -555,7 +556,11 @@ export function createDigioSimulator(options: DigioSimulatorOptions): TerminalSi
         }
       });
     },
-    transactions: () => taken.slice(),
+    transactions: () => taken.map((row) => ({ ...row })),
+    restoreTransactions(transactions) {
+      taken.splice(0, taken.length, ...transactions.map((row) => ({ ...row })));
+      serial = transactions.reduce((max, row) => Math.max(max, Number(row.tranRef.slice(-4)) || 0), serial);
+    },
     events: (limit = keep * 2) => log.slice(-limit),
   };
 }

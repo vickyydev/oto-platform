@@ -562,6 +562,7 @@ export const BOX_COMMAND_KINDS = [
    * (`DEVICE_INVENTORY.md:948`) and a command ack cannot be held open for it.
    */
   'terminal_sale',
+  'terminal_settle',
   /**
    * Open the cash drawer. The pulse rides the receipt printer's RJ11 rather
    * than being a device of its own, so this is a job for the box's print queue;

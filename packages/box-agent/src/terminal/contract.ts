@@ -415,12 +415,36 @@ export interface PaymentTerminal {
   readonly deviceId: string;
   readonly label: string;
   readonly protocol: TerminalProtocol;
+  settle(): Promise<TerminalSettlementResult>;
   sale(request: TerminalSaleRequest): Promise<TerminalResult>;
   inquire(request: TerminalInquiryRequest): Promise<TerminalResult>;
   void(request: TerminalVoidRequest): Promise<TerminalResult>;
   /** Ask the machine whether it is there. Never throws. */
   health(): Promise<TerminalHealth>;
 }
+
+/** Settlement evidence contains no cardholder data or raw vendor frame. */
+export interface TerminalSettlementResult {
+  outcome: 'settled' | 'unsupported' | 'failed';
+  deviceId: string;
+  tid?: string | null;
+  mid?: string | null;
+  batchRef?: string | null;
+  errorCode?: string | null;
+  lines: Array<{
+    method: 'card' | 'qr';
+    amountSatang: number;
+    terminalRef?: string | null;
+    tranRef?: string | null;
+    approvalCode?: string | null;
+  }>;
+}
+export const TerminalSettlementCommandSchema = z.object({
+  batchId: z.string().uuid(),
+  deviceId: z.string().uuid(),
+  businessDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+export type TerminalSettlementCommand = z.infer<typeof TerminalSettlementCommandSchema>;
 
 // --- The command the cloud sends --------------------------------------------
 
@@ -490,6 +514,7 @@ export interface TerminalSimulator {
   connect(): TerminalChannel;
   /** What this terminal has taken, for an inquiry or a void to find. */
   transactions(): SimulatedTransaction[];
+  restoreTransactions(transactions: SimulatedTransaction[]): void;
   events(limit?: number): TerminalSimulatorEvent[];
 }
 
@@ -529,6 +554,9 @@ export interface SimulatedTransaction {
   /** The simulated clock when it was taken. */
   at: string;
   voided: boolean;
+  settled?: boolean;
+  tid?: string | null;
+  mid?: string | null;
 }
 
 export type TerminalSimulatorEventKind =
@@ -565,7 +593,7 @@ export interface TerminalSimulatorOptions {
   merchantId?: string | null;
   serialNumber?: string | null;
   now?: () => Date;
-  /** How many transactions and events to keep. A Pi has finite memory. */
+  /** Diagnostic tape limit. Settlement transactions live in the durable store. */
   keep?: number;
   /**
    * When the terminal's day ends, in its own local time.

@@ -6,7 +6,7 @@ import { TERMINAL_OUTCOMES } from '@oto/shared';
 import type { BoxConfigBundle } from '../src/protocol';
 import { createTerminals } from '../src/terminal/index';
 import { TERMINAL_OUTCOME_KINDS, type SimulatedOutcome } from '../src/terminal/contract';
-import { BOX_ID, openTestStore } from './_support';
+import { BOX_ID, openTestStore, fakeBoxCloud, openTestAgent, tillBundle } from './_support';
 
 /**
  * The two simulators, driven through the real adapters (S2-10a).
@@ -600,5 +600,167 @@ test('a GHL card exchange leaves no card_no and no message on the tape', async (
     assert.equal(response.detail.responseCode, '00');
     assert.equal(response.detail.amount, '100.25');
     assert.equal(response.detail.invoiceNo, sale.result?.invoiceNo);
+  });
+});
+
+
+test('settlement uses durable terminal facts by business day and replays the same batch after restart', async () => {
+  const held = openTestStore();
+  try {
+    await held.store.init(BOX_ID);
+    const controller = controllerOn(held);
+    for (let i = 0; i < 25; i += 1) {
+      const taken = await controller.runCommand({ mode: 'sale',
+        attemptId: `018f0000-0000-7000-8000-${String(i + 1).padStart(12, '0')}`,
+        deviceId: NEXGO, tender: 'card', amountSatang: 1000 + i });
+      assert.equal(taken.result?.outcome, 'approved');
+    }
+    controller.setOutcome(NEXGO, 'declined');
+    await controller.runCommand({ mode: 'sale', attemptId: '018f0000-0000-7000-8000-000000001111',
+      deviceId: NEXGO, tender: 'card', amountSatang: 9999 });
+    const reopened = controllerOn(held);
+    const payload = { batchId: '018f0000-0000-7000-8000-000000002222',
+      deviceId: NEXGO, businessDate: '2026-09-23' };
+    const batch = await reopened.settle(payload);
+    assert.equal(batch.outcome, 'settled');
+    assert.equal(batch.lines.length, 25);
+    assert.equal(batch.lines.reduce((sum, line) => sum + line.amountSatang, 0), 25300);
+    assert.ok(batch.batchRef?.startsWith('SIM-'));
+    assert.equal(batch.tid, bundle().stations[0]?.devices[0]?.terminalId);
+    assert.deepEqual(await controllerOn(held).settle(payload), batch);
+    assert.equal((await reopened.settle({ ...payload, businessDate: '2026-09-22' })).errorCode,
+      'SETTLEMENT_BATCH_CONFLICT');
+    assert.equal((await reopened.settle({ ...payload,
+      batchId: '018f0000-0000-7000-8000-000000003333' })).lines.length, 0);
+    const first = batch.lines[0];
+    const attemptedVoid = await reopened.runCommand({ mode: 'void',
+      attemptId: '018f0000-0000-7000-8000-000000004444', deviceId: NEXGO, tender: 'card',
+      amountSatang: first!.amountSatang, tranRef: first!.tranRef, approvalCode: first!.approvalCode });
+    assert.notEqual(attemptedVoid.result?.outcome, 'approved');
+  } finally { held.close(); }
+});
+
+test('settlement excludes voids, other terminals and other business days', async () => {
+  const held = openTestStore();
+  try {
+    await held.store.init(BOX_ID);
+    const controller = controllerOn(held);
+    const card = await controller.runCommand({ mode: 'sale',
+      attemptId: '018f0000-0000-7000-8000-000000005555', deviceId: NEXGO, tender: 'card', amountSatang: 5000 });
+    assert.equal(card.result?.outcome, 'approved');
+    await controller.runCommand({ mode: 'void',
+      attemptId: '018f0000-0000-7000-8000-000000006666', deviceId: NEXGO, tender: 'card',
+      amountSatang: 5000, tranRef: card.result?.tranRef, approvalCode: card.result?.approvalCode });
+    await controller.runCommand({ mode: 'sale',
+      attemptId: '018f0000-0000-7000-8000-000000007777', deviceId: PAX, tender: 'qr', amountSatang: 7000 });
+    const payload = { batchId: '018f0000-0000-7000-8000-000000008888', deviceId: NEXGO,
+      businessDate: '2026-09-23' };
+    assert.deepEqual((await controller.settle(payload)).lines, []);
+    assert.deepEqual((await controller.settle({ ...payload, deviceId: PAX,
+      businessDate: '2026-09-22' })).lines, []);
+    const qr = await controller.settle({ ...payload, deviceId: PAX,
+      batchId: '018f0000-0000-7000-8000-000000009999' });
+    assert.equal(qr.lines.length, 1);
+    assert.equal(qr.lines[0]?.method, 'qr');
+    assert.equal(qr.lines[0]?.amountSatang, 7000);
+  } finally { held.close(); }
+});
+
+test('real terminals report unsupported without opening an unverified settlement wire', async () => {
+  const config = bundle();
+  for (const device of config.stations[0]!.devices) device.transport = 'serial';
+  const controller = createTerminals({ bundle: () => config, boxId: () => BOX_ID,
+    openSerial: async () => { throw new Error('must not open'); } });
+  for (const deviceId of [NEXGO, PAX]) {
+    const result = await controller.settle({ batchId: '018f0000-0000-7000-8000-000000002222',
+      deviceId, businessDate: '2026-09-23' });
+    assert.equal(result.outcome, 'unsupported');
+    assert.equal(result.errorCode, 'TERMINAL_SETTLEMENT_UNSUPPORTED');
+    assert.deepEqual(result.lines, []);
+  }
+});
+
+
+test('a lost settlement callback is retried with durable evidence before command acknowledgement', { timeout: 10000 }, async () => {
+  const cloud = fakeBoxCloud(tillBundle(bundle()));
+  const fetch = cloud.fetch;
+  let available = false;
+  const received: unknown[] = [];
+  cloud.fetch = async (url, init) => {
+    if (new URL(url).pathname.endsWith('/terminal-result')) {
+      received.push(JSON.parse(init.body!));
+      return { status: available ? 200 : 503, json: async () => ({}), text: async () => '{}', header: () => null };
+    }
+    return fetch(url, init);
+  };
+  const held = await openTestAgent(cloud, { terminal: { enabled: true } });
+  try {
+    const terminal = held.agent.terminal()!;
+    await terminal.runCommand({ mode: 'sale',
+      attemptId: '018f0000-0000-7000-8000-000000004444', deviceId: NEXGO,
+      tender: 'card', amountSatang: 19000 });
+    const command = { id: '018f0000-0000-7000-8000-000000002222', kind: 'terminal_settle' as const,
+      actionId: null, attempts: 1, createdAt: NOW.toISOString(), expiresAt: null, payload: { batchId: '018f0000-0000-7000-8000-000000003333',
+        deviceId: NEXGO, businessDate: terminal.businessDate() } };
+    cloud.commands.push(command);
+    await held.agent.runPendingCommands();
+    assert.equal(cloud.commandResults.length, 0);
+    assert.equal(cloud.commands.length, 0);
+    held.agent.stop();
+    available = true;
+    const restarted = await openTestAgent(cloud, { terminal: { enabled: true } }, held.harness);
+    try {
+      // start() invokes the production command tick. The cloud has no queued
+      // command left; only the durable box handout can finish this callback.
+      await restarted.agent.start();
+      assert.deepEqual(received[1], received[0]);
+      assert.equal((received[1] as { lines: unknown[] }).lines.length, 1);
+      assert.equal(cloud.commandResults.length, 1);
+      assert.equal(cloud.commandResults[0]?.body.state, 'succeeded');
+      await restarted.agent.runPendingCommands();
+      assert.equal(received.length, 2);
+    } finally { restarted.close(); }
+  } finally { held.close(); }
+});
+
+
+test('settlement uses the branch day start and preserves the terminal identity that took the money', async () => {
+  const held = openTestStore();
+  try {
+    await held.store.init(BOX_ID);
+    const config = bundle();
+    const options = { bundle: () => config, boxId: () => BOX_ID, store: held.store,
+      now: () => new Date('2026-09-23T20:00:00Z') };
+    const controller = createTerminals(options); // 03:00 Bangkok, still trading on the 23rd.
+    await controller.runCommand({ mode: 'sale',
+      attemptId: '018f0000-0000-7000-8000-000000007777', deviceId: NEXGO, tender: 'card', amountSatang: 7000 });
+    const originalTid = config.stations[0]!.devices[0]!.terminalId;
+    config.stations[0]!.devices[0]!.terminalId = 'REPLACED';
+    const rebooted = createTerminals(options);
+    const payload = { batchId: '018f0000-0000-7000-8000-000000008888', deviceId: NEXGO,
+      businessDate: '2026-09-24' };
+    assert.deepEqual((await rebooted.settle(payload)).lines, []);
+    const previousDay = await rebooted.settle({ ...payload, businessDate: '2026-09-23',
+      batchId: '018f0000-0000-7000-8000-000000009999' });
+    assert.equal(previousDay.lines.length, 1);
+    assert.equal(previousDay.tid, originalTid);
+  } finally { held.close(); }
+});
+
+
+test('settlement includes paid GHL wallet transactions on the QR ledger line', async () => {
+  await withBox(async (controller) => {
+    const sale = await controller.runCommand({ mode: 'sale',
+      attemptId: '018f0000-0000-7000-8000-000000007777', deviceId: NEXGO,
+      tender: 'wallet', wallet: 'ALIPAY', amountSatang: 12000 });
+    assert.equal(sale.result?.outcome, 'approved');
+    const batch = await controller.settle({ batchId: '018f0000-0000-7000-8000-000000008888',
+      deviceId: NEXGO, businessDate: '2026-09-23' });
+    assert.equal(batch.lines.length, 1);
+    assert.equal(batch.lines[0]?.method, 'qr');
+    assert.equal(batch.lines[0]?.amountSatang, sale.result?.approvedSatang);
+    assert.equal(batch.lines[0]?.terminalRef, sale.result?.terminalRef);
+    assert.equal(batch.lines[0]?.tranRef, sale.result?.tranRef);
+    assert.equal(batch.lines[0]?.approvalCode, sale.result?.approvalCode);
   });
 });

@@ -33,12 +33,15 @@ import {
   type TerminalProgress,
   type TerminalProtocol,
   type TerminalResult,
+  type TerminalSettlementCommand,
+  type TerminalSettlementResult,
+  type SimulatedTransaction,
   type TerminalSimulator,
   type TerminalSimulatorEvent,
 } from './contract';
 import { createTerminalRefCounter, type TerminalRefCounter } from './counter';
-import { digioTerminal } from './digio';
-import { ghlTerminal } from './ghl';
+import { digioTerminal, DIGIO_PAYMENT_TYPES } from './digio';
+import { ghlTerminal, GHL_CARD_TRADE_TYPE, GHL_WALLET_TRADE_TYPES } from './ghl';
 import { createDigioSimulator } from './simulator-digio';
 import { createGhlSimulator } from './simulator-ghl';
 import { openSerialChannel, serialTargetFor, type SerialOpener } from './serial-channel';
@@ -97,6 +100,7 @@ export interface TerminalController {
     payload: TerminalCommandPayload,
     opts?: { onProgress?: (event: TerminalProgress) => void },
   ): Promise<TerminalCommandOutcome>;
+  settle(payload: TerminalSettlementCommand): Promise<TerminalSettlementResult>;
   simulators(): TerminalSimulator[];
   simulator(deviceId: string): TerminalSimulator | undefined;
   /** False when the device is not one this box simulates. */
@@ -130,6 +134,15 @@ export function createTerminals(options: TerminalsOptions): TerminalController {
   const log = options.log ?? (() => {});
   const openSerial = options.openSerial;
   const sims = new Map<string, TerminalSimulator>();
+  type SettlementState = {
+    transactions: SimulatedTransaction[];
+    tid?: string | null;
+    mid?: string | null;
+    batches: Record<string, { businessDate: string; result: TerminalSettlementResult }>;
+  };
+  const settlementStates = new Map<string, SettlementState>();
+  const settlementKey = (deviceId: string) => `terminal.settlement.${deviceId}`;
+
   /** One promise per device id: the tail of the chain of exchanges for it. */
   const locks = new Map<string, Promise<unknown>>();
   const counter: TerminalRefCounter = createTerminalRefCounter({
@@ -233,7 +246,29 @@ export function createTerminals(options: TerminalsOptions): TerminalController {
   /** Run `fn` when this terminal is free, and keep it free for the next caller. */
   function serialise<T>(deviceId: string, fn: () => Promise<T>): Promise<T> {
     const previous = locks.get(deviceId) ?? Promise.resolve();
-    const next = previous.then(fn, fn);
+    const run = async () => {
+      const sim = sims.get(deviceId);
+      const boxId = options.boxId();
+      if (!sim || !boxId || !options.store) return fn();
+      const saved = await options.store.readRuntimeValue(boxId, settlementKey(deviceId));
+      const held: SettlementState = saved ? JSON.parse(saved) as SettlementState
+        : { transactions: sim.transactions(), batches: {} };
+      sim.restoreTransactions(held.transactions);
+      settlementStates.set(deviceId, held);
+      try {
+        const result = await fn();
+        if (result && typeof result === 'object' && 'tid' in result) {
+          const terminalResult = result as { tid?: string | null; mid?: string | null };
+          held.tid = terminalResult.tid ?? held.tid;
+          held.mid = terminalResult.mid ?? held.mid;
+        }
+        return result;
+      } finally {
+        held.transactions = sim.transactions();
+        await options.store.writeRuntimeValue(boxId, settlementKey(deviceId), JSON.stringify(held));
+      }
+    };
+    const next = previous.then(run, run);
     locks.set(
       deviceId,
       next.then(
@@ -385,6 +420,45 @@ export function createTerminals(options: TerminalsOptions): TerminalController {
           errorMessage: err instanceof Error ? err.message : String(err),
         };
       }
+    },
+    async settle(payload) {
+      const device = find(payload.deviceId);
+      const terminal = device ? adapterFor(device) : null;
+      const failure = (errorCode: string): TerminalSettlementResult => ({
+        outcome: 'failed', deviceId: payload.deviceId, errorCode, lines: [],
+      });
+      if (!device || !terminal) return failure('TERMINAL_NOT_ON_THIS_BOX');
+      const sim = sims.get(device.id);
+      if (!sim) return serialise(device.id, () => terminal.settle());
+      if (!options.store || !options.boxId()) return failure('TERMINAL_NOT_CONFIGURED');
+      return serialise(device.id, async () => {
+        const held = settlementStates.get(device.id);
+        const branch = options.bundle()?.branch;
+        if (!held || !branch) return failure('TERMINAL_NOT_CONFIGURED');
+        const prior = held.batches[payload.batchId];
+        if (prior) return prior.businessDate === payload.businessDate
+          ? prior.result : failure('SETTLEMENT_BATCH_CONFLICT');
+        const transactions = sim.transactions();
+        const included = transactions.filter((row) => !row.voided && !row.settled && row.amountSatang > 0 &&
+          ([GHL_CARD_TRADE_TYPE, ...GHL_WALLET_TRADE_TYPES, ...Object.values(DIGIO_PAYMENT_TYPES)] as string[]).includes(row.kind) &&
+          businessDateFor(new Date(row.at), branch.timezone, parseDayStart(branch.businessDayStart)) === payload.businessDate);
+        if (included.length > 10_000) return failure('SETTLEMENT_BATCH_TOO_LARGE');
+        const identities = new Set(included.map((row) => JSON.stringify([row.tid, row.mid])));
+        if (identities.size > 1) return failure('SETTLEMENT_TERMINAL_IDENTITY_CHANGED');
+        const result: TerminalSettlementResult = {
+          outcome: 'settled', deviceId: device.id, tid: included[0]?.tid ?? held.tid ?? device.terminalId,
+          mid: included[0]?.mid ?? held.mid ?? device.merchantId, batchRef: `SIM-${payload.batchId}`,
+          lines: included.map((row) => ({
+            method: ['CARD', 'A1'].includes(row.kind) ? 'card' : 'qr',
+            amountSatang: row.amountSatang, terminalRef: row.ref,
+            tranRef: row.tranRef, approvalCode: row.approvalCode,
+          })),
+        };
+        for (const row of included) row.settled = true;
+        sim.restoreTransactions(transactions);
+        held.batches[payload.batchId] = { businessDate: payload.businessDate, result };
+        return result;
+      });
     },
     simulators() {
       reconcile();
