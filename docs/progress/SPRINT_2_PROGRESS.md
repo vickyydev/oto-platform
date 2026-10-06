@@ -1,5 +1,19 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 6 October 2026 - SCRUM-495 finished on main
+
+Lane A landed (reviewed MERGE after one fix round): Add time charged from
+History and kept on replacement bracelets, offered while the admission has
+active bracelets as the design does (a part refund no longer blocks it; a
+whole refund ends it); wallet credit spendable at any branch of the operator
+(offline copies keep the spending park's cap); the remainder after credit
+defaults to card; the shop's own customer payment display. Migration
+renumbered to 0062_sale_extensions (0061 is the End of Day receipt).
+Remaining SCRUM-495 polish for the next pass: "How many bracelets?" shown for a
+single bracelet, card re-applied on each credit selection, F&B payment layout
+gaps (entry 29). Next free migration: 0063. Next: staging evidence for SCRUM-495,
+then land lane B (SCRUM-496).
+
 ## Platform lane checkpoint - 6 October 2026 - End of Day closes at any counter again
 
 CI repair (SCRUM-501) green on 538d8669, so main is green again. Lane D
