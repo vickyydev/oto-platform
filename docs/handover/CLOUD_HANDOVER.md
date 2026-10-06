@@ -17,27 +17,29 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-Current checkpoint: SCRUM-494 is Deployed. SCRUM-215 rounds 2-4 and all-payments export are live with attached evidence through 11274; isolated QA fleet/grant cleanup is complete. API/POS 63d7307e and Console 581c7c4a are verified live. SCRUM-215 stays Testing pending current CI. SCRUM-495 pricing/proof/UI and History/tender slices are under verification; Add time must offer both selected bands and count-only, per the owner. SCRUM-496/498 remain; 497 keeps other prototype defaults. The older table below describes the original handover, not current status.
+Current checkpoint: the test-step repair (SCRUM-501) is landed; confirm its CI result by SHA before the next landing. SCRUM-494, SCRUM-215, SCRUM-499 and SCRUM-500 are Deployed. SCRUM-495 and SCRUM-496 are being finished in two parallel lanes. SCRUM-498 comes next after SCRUM-495, then S2-15b (SCRUM-216).
 
 _Updated: 6 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block carry exact deployments and checkpoints._
 
 | Item | State |
 |---|---|
-| Main | SCRUM-499 fixed-code vouchers landed 4 Oct (migration 0055). Migrations through 0055 |
-| SCRUM-499 (Lucky Wheel fixed-code vouchers) | Built and landed; deploy staging, screenshot a slip with the fixed code and a redemption, then Deployed. The park's booth Pi needs the new box-agent build |
-| Staging | All five platform services live at 9a14af81 (migrations 0053 and 0054 applied) |
-| S2-14 wallets and stock (SCRUM-211) | Deployed |
-| S2-15a End of Day (SCRUM-215, In Progress) | Round 1 on main and on staging, screenshot on the ticket. **Round 2 in flight**: partial build on `wip/eod-round-2-inflight` (head 13f7b3c6; its migration must become 0056), brief in `docs/progress/plans/cash/ROUND_2_BRIEF.md`. Rounds 3 (settlement) and 4 (demo-day, closing walkthrough) to do |
-| SCRUM-493 till consistency (In Progress) | Register: `docs/progress/plans/consistency/REGISTER.md` |
-| SCRUM-494 (Testing) | All nine register entries on main and on staging. **Staging evidence in flight** (section 10): items 1 (no-expiry half) and 2 captured; items 3-9 to capture. Then attach, comment and move to Deployed |
-| SCRUM-495, SCRUM-496, SCRUM-498 (To Do) | In that order, after End of Day rounds 2-4. SCRUM-498: food-counter band details through the counter box when the internet is down (High) |
-| SCRUM-497 (To Do) | Details for the owner to confirm; each keeps the design's behaviour until answered |
-| SCRUM-488 (To Do) | Owner's End of Day ruling (applied) plus four round-1 points to confirm |
+| Main | Test-step repair landed (SCRUM-501), CI result to confirm. Migrations through 0060. 0061 is reserved for SCRUM-495 and 0062 for SCRUM-496 |
+| SCRUM-494 (till consistency, band details and services) | Deployed. Register entries 1-9 are on main and live |
+| SCRUM-215 (S2-15a End of Day) | Deployed. Follow-up work is on branch `lane/eod-followups` |
+| SCRUM-499 (Lucky Wheel fixed-code vouchers) and SCRUM-500 | Deployed |
+| SCRUM-495 (till behaviour consistency) | Being finished on branch `lane/s495-finish`. Register entries 10, 11, 12, 13, 15, 16, 18, 19, 20, 40, 42, 43 are on main and live on staging. Entries 14 (Add time), 17, 29, 30 and 41 are being finished. Then screenshot evidence, then Deployed |
+| SCRUM-496 (stock, booking and check-in consistency) | Being finished on branch `lane/s496-consistency`. Register entries 21-28 and 31-39 |
+| SCRUM-497 | Details for the owner to confirm (register entries 44-65). Each keeps the approved design's behaviour until answered |
+| SCRUM-498 | Next after SCRUM-495: food-counter band details through the counter box when the internet is down. Closes SCRUM-493 |
+| SCRUM-216 (S2-15b analytics) | Plan drafted: docs/progress/plans/analytics/PLAN.md (migration 0063 reserved). Build after SCRUM-495 and SCRUM-496 land (shared sale, refund and wallet files). Then SCRUM-214 to Deployed, then the rest of `docs/progress/SPRINT_2_PLAN.md`'s execution order |
+| SCRUM-488 | Owner's End of Day ruling applied; four round-1 points to confirm |
 
-**Unlanded work lives on `wip/` branches.** `wip/eod-round-2-inflight` is
-the only current one. `wip/scrum-494-inflight` and
-`wip/cash-round-1-per-drawer` are superseded: everything they held is on
-main or was withdrawn. Ignore them.
+**Unlanded work** is saved, unreviewed, under `wip/saved-20261006/*`. Treat those branches as reference only until a lane picks one up.
+
+**Rules**
+
+- No feature pushes and no staging deploys while main is red.
+- Lanes `lane/s495-finish` and `lane/s496-consistency` own separate files. Rebase on `origin/main` before every push and take the migration number reserved above.
 
 ## 3. Order of work (owner priority, 2 October)
 
