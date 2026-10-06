@@ -63,6 +63,11 @@ describe('route guards (S2-01b)', () => {
       'POST /payments/manual',
       'POST /print-jobs/:id/reprint',
       'POST /sales',
+      // SCRUM-495: extra time is a new charge against a cloud admission and
+      // its bracelets, online only like the refund that corrects a sale; the
+      // bracelet repair changes which bands the paid minutes sit on.
+      'POST /sales/:id/extensions',
+      'POST /sales/:id/extensions/:extensionId/bands',
       'POST /sales/:id/finalise',
       // S2-11: a refund and a reprint are online-only, like the sale they correct.
       'POST /sales/:id/refunds',

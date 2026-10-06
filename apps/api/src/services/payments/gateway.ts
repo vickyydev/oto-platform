@@ -48,6 +48,7 @@ import {
   type BookingPaidOutcome,
 } from '../booking-payment';
 import { assertSaleVouchersHeld } from '../vouchers';
+import { assertSaleExtensionCollectable, extensionHoldsClose } from '../sale-extension-lifecycle';
 import {
   attemptView,
   failAttempt,
@@ -567,6 +568,7 @@ export async function openQrAttempt(
           `This sale is ${saleRow.status} and cannot take another tender`,
         );
       }
+      await assertSaleExtensionCollectable(tx, saleRow.id);
       await assertSaleVouchersHeld(
         tx,
         {
@@ -1110,7 +1112,7 @@ async function settleWithin(
      * catastrophic here. A QR that covered half a split would otherwise close
      * the sale with an invented cash tender for the rest.
      */
-    if (outstanding > 0 || saleRow.status === 'finalised') {
+    if (outstanding > 0 || saleRow.status === 'finalised' || (await extensionHoldsClose(tx, saleRow.id))) {
       return {
         outcome: 'settled' as const,
         attemptId: settled.id,

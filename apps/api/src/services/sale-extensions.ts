@@ -1,6 +1,6 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
-import { account, band, employee, sale, saleExtension, saleExtensionBand, saleLine, station, type ExtensionSelection } from '@oto/db';
-import { bandShortCode, computeTaxBreakdown, newId, PRICING_ENGINE_VERSION } from '@oto/shared';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { account, auditLog, band, employee, paymentAttempt, sale, saleExtension, saleExtensionBand, saleLine, station, type ExtensionSelection } from '@oto/db';
+import { bandShortCode, computeTaxBreakdown, newId, PAYMENT_ATTEMPT_TAKEN_STATUSES, PRICING_ENGINE_VERSION } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import { planBands } from './bands';
@@ -36,9 +36,25 @@ export async function readSaleExtensions(db: Exec, actor: ActorContext, sourceSa
   const bands = await db.select().from(band).where(and(eq(band.saleId, source.id), eq(band.status, 'active'))).orderBy(asc(band.createdAt));
   const lines = await db.select().from(saleLine).where(eq(saleLine.saleId, source.id));
   const eligible = source.status === 'finalised' && source.refundedSatang === 0 && planBands(lines).length > 0;
+  const selected = rows.length ? await db.select().from(saleExtensionBand).where(inArray(saleExtensionBand.extensionId, rows.map((row) => row.id))) : [];
+  // The 'Time added' card names the tender that took each charge, as the
+  // approved History card does; money taken is read from the charge's attempts.
+  const tenders = rows.length ? await db.select({ saleId: paymentAttempt.saleId, method: paymentAttempt.method, methodCode: paymentAttempt.methodCode })
+    .from(paymentAttempt).where(and(inArray(paymentAttempt.saleId, rows.map((row) => row.chargeSaleId)),
+      inArray(paymentAttempt.status, [...PAYMENT_ATTEMPT_TAKEN_STATUSES])))
+    .orderBy(asc(paymentAttempt.createdAt)) : [];
+  const activeIds = new Set(bands.map((row) => row.id));
   return { options: eligible ? [...EXTENSION_OPTIONS] : [],
     eligibleBands: eligible ? bands.map((row) => ({ id: row.id, shortCode: bandShortCode(row.code), kind: row.kind })) : [],
-    extensions: rows.map(extensionView) };
+    extensions: rows.map((row) => {
+      const currentBandIds = selected.filter((entry) => entry.extensionId === row.id).map((entry) => entry.bandId);
+      const paymentMethods = [...new Set(tenders.filter((entry) => entry.saleId === row.chargeSaleId)
+        .map((entry) => entry.methodCode ?? entry.method))];
+      return { ...extensionView(row), currentBandIds, paymentMethods,
+        needsReselection: eligible && row.status !== 'voided' && row.selection.mode === 'bands'
+          && (currentBandIds.length !== row.braceletCount || currentBandIds.some((id) => !activeIds.has(id))) };
+    }) };
+
 }
 
 export interface CreateSaleExtensionInput {
@@ -85,8 +101,8 @@ export async function createSaleExtension(tx: Tx, actor: ActorContext, sourceSal
     if (new Set(selection.bandIds).size !== count || selection.bandIds.some((id) => !active.some((row) => row.id === id))) {
       throw errors.conflict('EXTENSION_BAND_UNAVAILABLE', 'Select distinct active bands belonging to this admission.');
     }
-  } else if (allBands.some((row) => row.status !== 'active')) {
-    throw errors.conflict('EXTENSION_BAND_UNAVAILABLE', 'This admission has inactive bands. Select the active bands to extend.');
+  } else if (count > active.length) {
+    throw errors.conflict('EXTENSION_BAND_UNAVAILABLE', 'The quantity exceeds the active bracelets on this admission.');
   }
   const [counter] = await tx.select().from(station).where(eq(station.id, input.stationId)).limit(1);
   if (!counter || counter.operatorId !== actor.operatorId || counter.branchId !== source.branchId || counter.archivedAt) throw errors.notFound('Active counter not found at this park');
@@ -136,4 +152,45 @@ export async function createSaleExtension(tx: Tx, actor: ActorContext, sourceSal
     requestId: actor.requestId, actionId: input.actionId, action: 'sale.extension.create', entityType: 'sale_extension', entityId: extensionId,
     after: { sourceSaleId: source.id, chargeSaleId: charge.id, optionId: option.id, braceletCount: count, amountSatang: tax.grandTotal, selection } });
   return { extension: extensionView(extension), sale: await saleViewOf(tx, charge), replay: false };
+}
+
+/** Repairs credential identity only; money, quantity, duration and original
+ * selection remain frozen on the existing charge. */
+export async function reselectExtensionBands(tx: Tx, actor: ActorContext, sourceSaleId: string, extensionId: string,
+  input: { actionId: string; stationId: string; bandIds: string[] }) {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`${actor.operatorId}:extension-reselect:${input.actionId}`}, 0))`);
+  await sourceOf(tx, actor, sourceSaleId);
+  const [source] = await tx.select().from(sale).where(eq(sale.id, sourceSaleId)).for('update');
+  if (!source) throw errors.notFound('Sale not found');
+  const [extension] = await tx.select().from(saleExtension).where(and(eq(saleExtension.id, extensionId), eq(saleExtension.sourceSaleId, source.id))).for('update');
+  if (!extension) throw errors.notFound('Time extension not found');
+  const [counter] = await tx.select().from(station).where(eq(station.id, input.stationId));
+  if (!counter || counter.operatorId !== actor.operatorId || counter.branchId !== source.branchId || counter.archivedAt || counter.kind !== 'till') throw errors.notFound('Active ticket counter not found at this park');
+  const bandIds = [...input.bandIds].sort();
+  const [previous] = await tx.select().from(auditLog).where(and(eq(auditLog.operatorId, actor.operatorId), eq(auditLog.action, 'sale.extension.reselect'), eq(auditLog.actionId, input.actionId))).limit(1);
+  if (previous) {
+    const saved = previous.after as { bandIds?: string[]; stationId?: string } | null;
+    if (previous.entityId !== extension.id || saved?.stationId !== input.stationId || JSON.stringify(saved.bandIds) !== JSON.stringify(bandIds)) throw errors.conflict('ACTION_ID_REUSED', 'This action already selected different bracelets.');
+    return { replay: true };
+  }
+  if (extension.status === 'voided' || extension.selection.mode !== 'bands' || source.status !== 'finalised' || source.refundedSatang > 0) throw errors.conflict('EXTENSION_RESELECTION_UNAVAILABLE', 'Only an active selected-bracelet time addition can be repaired.');
+  const current = await tx.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, extension.id));
+  const active = await tx.select({ id: band.id }).from(band).where(and(eq(band.saleId, source.id), eq(band.status, 'active'))).for('update');
+  const activeIds = new Set(active.map((row) => row.id));
+  if (current.length === extension.braceletCount && current.every((row) => activeIds.has(row.bandId))) throw errors.conflict('EXTENSION_RESELECTION_UNAVAILABLE', 'The selected bracelets are still active.');
+  if (bandIds.length !== extension.braceletCount || new Set(bandIds).size !== bandIds.length || bandIds.some((id) => !activeIds.has(id))) throw errors.conflict('EXTENSION_BAND_UNAVAILABLE', 'Select the same number of distinct active bracelets from this admission.');
+  const preserved = current.filter((row) => activeIds.has(row.bandId));
+  if (preserved.some((row) => !bandIds.includes(row.bandId))) throw errors.conflict('EXTENSION_ACTIVE_BAND_FIXED', 'Keep the bracelets that are still active and replace only the inactive ones.');
+  if (current.length !== extension.braceletCount) throw errors.conflict('EXTENSION_SELECTION_INCOMPLETE', 'The recorded bracelet allocation needs review.');
+  const replacementIds = bandIds.filter((id) => !preserved.some((row) => row.bandId === id));
+  let next = 0;
+  for (const row of current) {
+    if (!activeIds.has(row.bandId)) {
+      await tx.update(saleExtensionBand).set({ bandId: replacementIds[next++]! }).where(eq(saleExtensionBand.id, row.id));
+    }
+  }
+  await audit.record(tx, { actorAccountId: actor.accountId, operatorId: actor.operatorId, branchId: source.branchId,
+    requestId: actor.requestId, actionId: input.actionId, action: 'sale.extension.reselect', entityType: 'sale_extension', entityId: extension.id,
+    before: { bandIds: current.map((row) => row.bandId) }, after: { bandIds, stationId: input.stationId, sourceSaleId, chargeSaleId: extension.chargeSaleId } });
+  return { replay: false };
 }

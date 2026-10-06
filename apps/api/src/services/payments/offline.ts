@@ -1,5 +1,5 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
-import { band, bandEvent, child, device, paymentAttempt, sale, saleLine } from '@oto/db';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { band, bandEvent, child, device, paymentAttempt, sale, saleLine, saleExtension, saleExtensionBand } from '@oto/db';
 import {
   OfflinePriceBasisSchema,
   PRICING_ENGINE_VERSION,
@@ -18,6 +18,7 @@ import { AppError, errors } from '../../lib/errors';
 import { audit } from '../audit';
 import { currentBandKey, packageGateAccess, planBands } from '../bands';
 import type { PromoDifference } from '../promo-codes';
+import { extensionHoldsClose } from '../sale-extension-lifecycle';
 import {
   commitSale,
   finaliseSale,
@@ -689,7 +690,7 @@ async function recordBoxBands(
   bands: OfflineSalePayload['bands'],
 ): Promise<number> {
   if (bands.length === 0) return 0;
-  const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
+  const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).for('update').limit(1);
   if (!row) throw new Error('the sale was not written');
   const lines = await tx
     .select()
@@ -700,7 +701,7 @@ async function recordBoxBands(
   const gateByPackage = await packageGateAccess(tx, lines);
   const planned = planBands(lines, gateByPackage);
   const packageOfLine = new Map(lines.map((l) => [l.id, l.ticketPackageId]));
-  const existing = await tx.select().from(band).where(eq(band.saleId, saleId));
+  const existing = await tx.select().from(band).where(eq(band.saleId, saleId)).orderBy(asc(band.createdAt), asc(band.id)).for('update');
   const held = new Set(existing.map((b) => b.id));
   const key = currentBandKey();
   const children = new Set(
@@ -734,6 +735,7 @@ async function recordBoxBands(
   }
 
   const used = { kid: 0, adult: 0 };
+  const replacements: Array<typeof band.$inferSelect> = [];
   let at = scope.occurredAt.getTime();
   for (const minted of fresh) {
     const parsed = parseBandCode(minted.code);
@@ -764,7 +766,7 @@ async function recordBoxBands(
         : linePackage
           ? gateByPackage.get(linePackage) === true
           : fallback?.gateAccess === true);
-    await tx.insert(band).values({
+    const [replacement] = await tx.insert(band).values({
       id: minted.id,
       operatorId: row.operatorId,
       branchId: row.branchId,
@@ -779,7 +781,8 @@ async function recordBoxBands(
       // A millisecond apart, in the order the box minted them.
       createdAt: new Date(at),
       updatedAt: new Date(at),
-    });
+    }).returning();
+    if (replacement) replacements.push(replacement);
     await tx.insert(bandEvent).values({
       id: newId(),
       bandId: minted.id,
@@ -791,6 +794,35 @@ async function recordBoxBands(
       createdAt: new Date(at),
     });
     at += 1;
+  }
+  // Both writers use planLedgerBands and preserve mint order in createdAt.
+  // Transfer only complete, identical planned groups; never match by names or
+  // silently give an entitlement to a different child. The original selection
+  // and the audit keep the old credential IDs for historical review.
+  const identity = (value: typeof band.$inferSelect) =>
+    JSON.stringify([value.saleLineId, value.kind, value.childId, value.gateAccess]);
+  for (const key of new Set(superseded.map(identity))) {
+    const prior = superseded.filter((value) => identity(value) === key);
+    const next = replacements.filter((value) => identity(value) === key);
+    const head = prior[0]!;
+    const plannedCount = planned.filter((value) => value.saleLineId === head.saleLineId && value.kind === head.kind).length;
+    const priorLine = superseded.filter((value) => value.saleLineId === head.saleLineId && value.kind === head.kind);
+    const nextLine = replacements.filter((value) => value.saleLineId === head.saleLineId && value.kind === head.kind);
+    if (!head.saleLineId || prior.length !== next.length || priorLine.length !== plannedCount || nextLine.length !== plannedCount) continue;
+    for (let index = 0; index < prior.length; index += 1) {
+      const oldBand = prior[index]!;
+      const newBand = next[index]!;
+      const entitlements = await tx.select({ entry: saleExtensionBand, extension: saleExtension })
+        .from(saleExtensionBand).innerJoin(saleExtension, eq(saleExtension.id, saleExtensionBand.extensionId))
+        .where(and(eq(saleExtensionBand.bandId, oldBand.id), isNull(saleExtensionBand.revokedAt),
+          eq(saleExtension.sourceSaleId, saleId), inArray(saleExtension.status, ['pending', 'applied'])));
+      for (const { entry, extension } of entitlements) {
+        await tx.update(saleExtensionBand).set({ bandId: newBand.id }).where(eq(saleExtensionBand.id, entry.id));
+        await audit.record(tx, { actorAccountId: scope.actorAccountId, operatorId: scope.operatorId,
+          branchId: scope.branchId, action: 'sale.extension.band_replaced', entityType: 'sale_extension', entityId: extension.id,
+          before: { bandId: oldBand.id }, after: { bandId: newBand.id, sourceSaleId: saleId, sourceEventId: scope.eventId, minutesAdded: entry.minutesAdded } });
+      }
+    }
   }
   return fresh.length;
 }
@@ -1097,7 +1129,7 @@ async function close(
    * money the end of day cannot count — and the refusal above is what makes
    * sure nobody has to rely on that.
    */
-  if (!finalised && outstanding <= 0) {
+  if (!finalised && outstanding <= 0 && !(await extensionHoldsClose(tx, saleId))) {
     const result = await finaliseSale(
       tx,
       actorFor(scope),

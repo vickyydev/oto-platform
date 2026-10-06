@@ -40,6 +40,7 @@ import {
   PRICING_ENGINE_VERSION,
 } from '@oto/shared';
 import { ADMIN, RECEPTION, createTestContext, signInAs, takeStation, teardownAll, type TestContext } from './helpers';
+import { extensionHoldsClose } from '../src/services/sale-extension-lifecycle';
 
 /**
  * S2-09a (SCRUM-203) — the till's money path, driven through the REAL routes
@@ -2048,6 +2049,7 @@ describe('the seam between this and the till', () => {
       '/sales/{id}/reprints',
       '/sales/{id}',
       '/sales/{id}/extensions',
+      '/sales/{id}/extensions/{extensionId}/bands',
       // SCRUM-307 — the document check that prices a walk-in's cart.
       '/sales/tier-claims',
       // S2-10b — a voucher held on the cart the till is ringing up, and taken
@@ -2095,6 +2097,7 @@ describe('the seam between this and the till', () => {
       'GET /sales/lookup dynamic no-target',
       'POST /sales pos:sale:create body.branchId',
       'POST /sales/:id/extensions pos:sale:create no-target',
+      'POST /sales/:id/extensions/:extensionId/bands pos:sale:create no-target',
       'POST /sales/:id/finalise pos:sale:update no-target',
       'POST /sales/:id/refunds pos:refund:create no-target',
       'POST /sales/:id/reprints pos:print:reprint no-target',
@@ -2168,6 +2171,8 @@ describe('SCRUM-495 paid time extensions', () => {
     const [revoked] = await ctx.db.select().from(saleExtensionBand).where(eq(saleExtensionBand.extensionId, extensionId));
     expect(revoked!.appliedAt).toEqual(applied.appliedAt);
     expect(revoked!.revokedAt).not.toBeNull();
+    const refusedRepair = await ctx.app.inject({ method: 'POST', url: `/sales/${original.id}/extensions/${extensionId}/bands`, headers: { cookie }, payload: { actionId: newId(), stationId, bandIds: [original.bands[1]!.id] } });
+    expect(refusedRepair.json().error.code).toBe('EXTENSION_RESELECTION_UNAVAILABLE');
     const attempts = await ctx.db.select({ id: paymentAttempt.id }).from(paymentAttempt).where(eq(paymentAttempt.saleId, chargeId));
     const read = await ctx.app.inject({ method: 'GET', url: `/payments/attempts/${attempts[0]!.id}`, headers: { cookie } });
     expect(read.json().route).toBe('manual');
@@ -2197,7 +2202,7 @@ describe('SCRUM-495 paid time extensions', () => {
     expect((await extension(original.id, { mode: 'count', braceletCount: 3 })).statusCode).toBe(400);
     await ctx.db.update(band).set({ status: 'revoked' }).where(eq(band.id, bandId));
     expect((await extension(original.id, { mode: 'bands', bandIds: [bandId] })).statusCode).toBe(409);
-    expect((await extension(original.id, { mode: 'count', braceletCount: 1 })).statusCode).toBe(409);
+    expect((await extension(original.id, { mode: 'count', braceletCount: 2 })).statusCode).toBe(409);
     expect(await ctx.db.select().from(saleExtension).where(eq(saleExtension.sourceSaleId, original.id))).toEqual([]);
   });
 
@@ -2232,6 +2237,22 @@ describe('SCRUM-495 paid time extensions', () => {
     } finally {
       await ctx.db.update(branchTaxConfig).set({ config: prior!.config }).where(eq(branchTaxConfig.branchId, branchId));
     }
+  });
+
+  it('a charge whose bracelets changed after collection began stays open for the auto-close paths, money kept', async () => {
+    const original = await admission();
+    const made = await extension(original.id, { mode: 'bands', bandIds: [original.bands[0]!.id] });
+    expect(made.statusCode).toBe(200);
+    const chargeId = made.json().sale.id as string;
+    expect(await ctx.db.transaction((tx) => extensionHoldsClose(tx, chargeId))).toBe(false);
+    await ctx.db.update(band).set({ status: 'revoked' }).where(eq(band.id, original.bands[0]!.id));
+    expect(await ctx.db.transaction((tx) => extensionHoldsClose(tx, chargeId))).toBe(true);
+    const refused = await finish(chargeId);
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error.code).toBe('EXTENSION_BAND_UNAVAILABLE');
+    const counted = await admission();
+    const byCount = await extension(counted.id, { mode: 'count', braceletCount: 1 });
+    expect(await ctx.db.transaction((tx) => extensionHoldsClose(tx, byCount.json().sale.id as string))).toBe(false);
   });
 
   it('requires sign-in, a finalised admission and the session counter', async () => {

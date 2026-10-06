@@ -115,7 +115,7 @@ import {
 import type { Exec, Tx } from './tx';
 import { bandsOfSale } from './bands';
 import { refundsOfSale } from './refund-slices';
-import { applySaleExtension, cancelSaleExtension } from './sale-extension-lifecycle';
+import { applySaleExtension, cancelSaleExtension, assertSaleExtensionCollectable } from './sale-extension-lifecycle';
 import { assertCartStock, stockSharesForLines, takeStockForSale } from './stock';
 import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
 import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
@@ -3881,6 +3881,7 @@ export async function finaliseSale(
   if (row.status === 'voided' || row.status === 'refunded') {
     throw errors.conflict('SALE_CLOSED', `This sale is ${row.status} and cannot be finalised`);
   }
+  await assertSaleExtensionCollectable(tx, row.id);
 
   /**
    * S2-09b — AN ORDER WITH FOOD ON IT IS NOT CLOSED WITHOUT A PICK-UP CODE.
