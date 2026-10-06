@@ -6,6 +6,9 @@ export default defineConfig({
     // Raster suites share the runner with database and box tests. Keep their
     // CPU-heavy files sequential so worker result reporting stays responsive.
     fileParallelism: false,
+    // Child processes rather than threads: a long raster blocks a thread's
+    // event loop and with it the worker's reporting back to the runner.
+    pool: 'forks',
     /**
      * Thirty seconds, where vitest's default is five.
      *

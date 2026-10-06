@@ -117,9 +117,17 @@ jobs:
       - name: Console tests
         if: steps.changes.outputs.workspace == 'true'
         run: pnpm test --filter=@oto/console
+      # The print package rasterises fonts and bitmaps. Alone on the runner its
+      # workers stay responsive; beside every other suite they starve and
+      # vitest's worker reporting times out with every test passed. Its own
+      # step first; the Test step below replays it from the turbo cache.
+      - name: Print tests
+        if: steps.changes.outputs.workspace == 'true'
+        run: pnpm test --filter=@oto/print
+      # --continue: every package reports, so one red suite cannot hide another.
       - name: Test
         if: steps.changes.outputs.workspace == 'true'
-        run: pnpm test
+        run: pnpm test --continue
       - name: Build
         if: steps.changes.outputs.workspace == 'true'
         run: pnpm build

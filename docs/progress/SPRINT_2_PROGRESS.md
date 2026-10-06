@@ -1,5 +1,15 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 6 October 2026 - review of the 5-6 October work; CI repair
+
+The 29 commits of 5-6 October (another agent) were reviewed: SCRUM-494,
+SCRUM-215 and SCRUM-499/500 are correctly Deployed; SCRUM-495 partly on main.
+All unlanded worktree edits are saved on wip/saved-20261006/* (31 refs); the
+main checkout is back on main. Main was red at 8c21b5e8 on a print-runner
+timeout (all 268 print tests passing): CI now runs @oto/print in its own step
+first and the Test step with --continue; print uses the forks pool
+(SCRUM-501). Plan for the rest of the sprint follows in the next checkpoint.
+
 ## Platform checkpoint - 6 October 2026 - Other tender
 
 **6 October 2026, SCRUM-495 Other payments verified:** Used payment methods may be archived after the prototype warning. Other has its own ledger classification and is supported through the till, box restart/replay, refunds and End of Day without a cash drawer action. Review added configured/enabled/matching-kind guards and refusal of cash-shaped Other payloads; already-recorded offline Other remains replayable after later disable. Forward migration0060 only expands the payment-method check; schema verification passes. Root checks: initial API77, follow-up API65 (including legacy pricing replay), POS114, shared24, box35, DB shape/migration18 pass; all five touched package typechecks, lint and POS build pass. API/POS905fe6c0 are live for History. Pricing screenshot11275 is attached; phone History review is being captured. SCRUM-495/493 remain In Progress. SCRUM-496 stock entries31-39 started independently; Add time0061 and stock0062 are allocated to their workflows. CI905fe6c0 is running; the superseded63d7307e run was cancelled after its known registry issue was repaired.
