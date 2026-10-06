@@ -1,5 +1,16 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 6 October 2026 - End of Day closes at any counter again
+
+CI repair (SCRUM-501) green on 538d8669, so main is green again. Lane D
+landed: End of Day closes for any pos:cash:day_close holder, as the design
+always allowed; a counter only decides where the receipt prints. A day closed
+away from a printing counter says "Receipt not printed - reprint it from a
+counter", and the first reprint numbers and prints it once on that counter's
+series. Another branch's counter is still refused. Migration 0061 lets a
+closed day take its receipt number once. Lanes A (SCRUM-495) and B
+(SCRUM-496) renumber their migrations at landing (next free: 0062).
+
 ## Platform lane checkpoint - 6 October 2026 - review of the 5-6 October work; CI repair
 
 The 29 commits of 5-6 October (another agent) were reviewed: SCRUM-494,

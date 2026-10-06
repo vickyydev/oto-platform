@@ -17,13 +17,13 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-Current checkpoint: the test-step repair (SCRUM-501) is landed; confirm its CI result by SHA before the next landing. SCRUM-494, SCRUM-215, SCRUM-499 and SCRUM-500 are Deployed. SCRUM-495 and SCRUM-496 are being finished in two parallel lanes. SCRUM-498 comes next after SCRUM-495, then S2-15b (SCRUM-216).
+Current checkpoint: main is green; End of Day closes at any counter again (lane D landed). SCRUM-494, SCRUM-215, SCRUM-499 and SCRUM-500 are Deployed. SCRUM-495 and SCRUM-496 are being finished in two parallel lanes. SCRUM-498 comes next after SCRUM-495, then S2-15b (SCRUM-216).
 
 _Updated: 6 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block carry exact deployments and checkpoints._
 
 | Item | State |
 |---|---|
-| Main | Test-step repair landed (SCRUM-501), CI result to confirm. Migrations through 0060. 0061 is reserved for SCRUM-495 and 0062 for SCRUM-496 |
+| Main | Green (SCRUM-501 repair confirmed). Migrations through 0061 (End of Day receipt after close). Lanes renumber at landing: next free 0062. Migrations through 0060. 0061 is reserved for SCRUM-495 and 0062 for SCRUM-496 |
 | SCRUM-494 (till consistency, band details and services) | Deployed. Register entries 1-9 are on main and live |
 | SCRUM-215 (S2-15a End of Day) | Deployed. Follow-up work is on branch `lane/eod-followups` |
 | SCRUM-499 (Lucky Wheel fixed-code vouchers) and SCRUM-500 | Deployed |
