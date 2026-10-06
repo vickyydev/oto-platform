@@ -27,10 +27,10 @@ _Updated: 6 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block
 | SCRUM-494 (till consistency, band details and services) | Deployed. Register entries 1-9 are on main and live |
 | SCRUM-215 (S2-15a End of Day) | Deployed. Follow-up work is on branch `lane/eod-followups` |
 | SCRUM-499 (Lucky Wheel fixed-code vouchers) and SCRUM-500 | Deployed |
-| SCRUM-495 (till behaviour consistency) | Being finished on branch `lane/s495-finish`. Register entries 10, 11, 12, 13, 15, 16, 18, 19, 20, 40, 42, 43 are on main and live on staging. Entries 14 (Add time), 17, 29, 30 and 41 are being finished. Then screenshot evidence, then Deployed |
-| SCRUM-496 (stock, booking and check-in consistency) | Being finished on branch `lane/s496-consistency`. Register entries 21-28 and 31-39 |
+| SCRUM-495 (till behaviour consistency) | Deployed with staging cards |
+| SCRUM-496 (stock, booking and check-in consistency) | Deployed with staging cards |
 | SCRUM-497 | Details for the owner to confirm (register entries 44-65). Each keeps the approved design's behaviour until answered |
-| SCRUM-498 | Next after SCRUM-495: food-counter band details through the counter box when the internet is down. Closes SCRUM-493 |
+| SCRUM-498 | Deployed with staging cards. SCRUM-493 waits only on SCRUM-497 answers |
 | SCRUM-216 (S2-15b analytics) | Plan drafted: docs/progress/plans/analytics/PLAN.md (migration 0063 reserved). Build after SCRUM-495 and SCRUM-496 land (shared sale, refund and wallet files). Then SCRUM-214 to Deployed, then the rest of `docs/progress/SPRINT_2_PLAN.md`'s execution order |
 | SCRUM-488 | Owner's End of Day ruling applied; four round-1 points to confirm |
 

@@ -1,5 +1,18 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 7 October 2026 - SCRUM-495 and SCRUM-498 Deployed
+
+The whole landing queue is on main and green: SCRUM-498 (87a439cb),
+analytics rounds 1-2 (ec4ec18f, migration 0064 incl. the late check-in
+mark), the card-after-credit fix (6523d202). Staging runs 6523d202.
+SCRUM-495 and SCRUM-498 are Deployed on staging cards (card-after-credit
+shown before and after; the offline food counter driven with the box
+genuinely cut off). SCRUM-493's four build parts are all Deployed; only
+SCRUM-497 (owner answers) holds it open. Follow-ups: SCRUM-503 (Low).
+In review: analytics round 3 (lane/s216-r3) - the Performance screens on
+real figures, All branches, the demo control off the real park. Next
+free migration: 0065.
+
 ## Platform lane checkpoint - 7 October 2026 - SCRUM-496 Deployed; evidence final
 
 The check system runs again (the repository is public). SCRUM-496 is
