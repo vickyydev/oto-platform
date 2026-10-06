@@ -1,5 +1,24 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 7 October 2026 - analytics round 3 on main; rounds 4-5 building
+
+Analytics round 3 landed on main as c578ebb0 (CI watched by SHA): the
+Performance tab reads GET /analytics/summary (today provisional, closed
+days stored), the freshness line tells an open day's rollup age from a
+stored day's own age - an ended day still provisional shows the earlier
+of the two times; All branches is offered only to an account the platform
+says may read more than one and is summed on the platform; the demo
+control drives Demo Branch 2, never the real park. Jira SCRUM-216
+commented in plain words. Deferred to owner questions (in the analytics
+plan): the End of Day closed-at note on Performance (needs migration
+0065 - end_of_day refuses UPDATE), who may open All branches, old
+Central demo rows. Rounds 4-5 (the four admin Reports panels on the
+platform with CSV exports; fact_booth_daily and the Console booth
+report) are building on lane/s216-r45. Staging still runs 6523d202;
+next deploy from the next green head. Next free migration: 0065
+(reserved first for the reports lane if the plan's report tables are
+not already in 0064).
+
 ## Platform lane checkpoint - 7 October 2026 - SCRUM-495 and SCRUM-498 Deployed
 
 The whole landing queue is on main and green: SCRUM-498 (87a439cb),
