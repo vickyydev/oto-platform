@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq, isNull } from 'drizzle-orm';
 import { schema } from '@oto/db';
-import { seedDemoDay } from '@oto/db/seed';
+import { DEMO_BRANCH_CODE, seedDemoDay } from '@oto/db/seed';
 import {
   DEFAULT_FLOAT,
   addDaysToIsoDate,
@@ -12,6 +12,7 @@ import {
   type RefundAllocationEntry,
 } from '@oto/shared';
 import {
+  ADMIN,
   BRANCH_MANAGER,
   CENTRAL_BRANCH_CODE,
   CHALONG_BRANCH_CODE,
@@ -646,13 +647,20 @@ describe('seed:demo-day End of Day fixture', () => {
     const second = await seedDemoDay(ctx.db, { on: date });
     expect(second).toMatchObject({ sales: 0, attempts: 0, skipped: 11 });
 
+    // S2-15b round 3: the demo day is written at Demo Branch 2, never at a live park.
+    expect(first[0]).toMatchObject({ branchCode: DEMO_BRANCH_CODE, branchName: 'Demo Branch 2' });
+    const demo = await branchIdByCode(ctx.db, DEMO_BRANCH_CODE);
+    const demoTill = await stationOf(demo, 'Reception Till 1');
+    expect(await ctx.db.select().from(schema.sale)
+      .where(and(eq(schema.sale.branchId, central), eq(schema.sale.businessDate, date)))).toEqual([]);
+
     const attempts = await ctx.db.select().from(schema.paymentAttempt)
-      .where(and(eq(schema.paymentAttempt.branchId, central), eq(schema.paymentAttempt.businessDate, date)));
+      .where(and(eq(schema.paymentAttempt.branchId, demo), eq(schema.paymentAttempt.businessDate, date)));
     const taken = attempts.filter((a) => a.status === 'approved' || a.status === 'awaiting_settlement');
     const walletAttempt = taken.find((a) => a.method === 'wallet');
-    expect(walletAttempt).toMatchObject({ methodCode: 'wallet_credit', stationId: till1 });
+    expect(walletAttempt).toMatchObject({ methodCode: 'wallet_credit', stationId: demoTill });
     const entries = await ctx.db.select().from(schema.walletEntry)
-      .where(and(eq(schema.walletEntry.branchId, central), eq(schema.walletEntry.businessDate, date)));
+      .where(and(eq(schema.walletEntry.branchId, demo), eq(schema.walletEntry.businessDate, date)));
     expect(entries.map((e) => [e.kind, e.source])).toEqual([
       ['grant', 'ticket_sale'], ['spend', 'merch_order'],
     ]);
@@ -675,7 +683,9 @@ describe('seed:demo-day End of Day fixture', () => {
     expect(cashRefund).toMatchObject({ amountSatang: 10_000, mode: 'custom' });
     expect(cashRefund?.tenderAllocation).toMatchObject([{ method: 'cash', route: 'cash', status: 'done' }]);
 
-    const response = await getDay(managerCookie, date);
+    // Khun Lek manages Central Floresta only; the demo branch is read by the administrator.
+    expect((await getDay(managerCookie, date, demo)).statusCode).toBe(403);
+    const response = await getDay(await signInAs(ctx.app, ADMIN.phone, ADMIN.password), date, demo);
     expect(response.statusCode, response.body).toBe(200);
     const day = response.json() as EndOfDayRecord;
     const cashTaken = taken.filter((a) => a.method === 'cash').reduce((sum, a) => sum + a.amountSatang, 0);

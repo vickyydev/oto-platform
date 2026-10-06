@@ -1,4 +1,7 @@
+import { z } from 'zod';
+import { isCalendarDate } from './end-of-day';
 import type { Satang } from './money';
+import type { Permission } from './permissions';
 
 /**
  * S2-15b (SCRUM-216) — THE DAY'S FIGURES, formula version 1.
@@ -260,3 +263,192 @@ export function summariseAnalyticsHoursV1(sales: readonly AnalyticsSaleFacts[]):
       };
     });
 }
+
+// --- Adding days up (round 3) ---------------------------------------------------------
+
+/** A day with no sale: every figure zero, no channel. */
+export function emptyAnalyticsDayFigures(): AnalyticsDayFigures {
+  return summariseAnalyticsDayV1([]);
+}
+
+/**
+ * Several stored days — of one branch over a range, or of several branches on
+ * one date — added up figure by figure. Every figure of formula version 1 is
+ * a sum over sales, so the sum of two days is the day the two would have made
+ * together; `by_channel` is added channel by channel.
+ */
+export function sumAnalyticsDayFigures(days: readonly AnalyticsDayFigures[]): AnalyticsDayFigures {
+  const total = emptyAnalyticsDayFigures();
+  for (const day of days) {
+    total.ticketsSatang += day.ticketsSatang;
+    total.fnbSatang += day.fnbSatang;
+    total.merchSatang += day.merchSatang;
+    total.partiesSatang += day.partiesSatang;
+    total.dropoffSatang += day.dropoffSatang;
+    total.revenueSatang += day.revenueSatang;
+    total.txnCount += day.txnCount;
+    total.creditPaidSatang += day.creditPaidSatang;
+    total.guestsKids += day.guestsKids;
+    total.guestsAdults += day.guestsAdults;
+    total.mix1h += day.mix1h;
+    total.mix2h += day.mix2h;
+    total.mixFullDay += day.mixFullDay;
+    total.partiesCount += day.partiesCount;
+    total.refundsSatang += day.refundsSatang;
+    total.discountsSatang += day.discountsSatang;
+    total.compsSatang += day.compsSatang;
+    total.vatSatang += day.vatSatang;
+    total.serviceSatang += day.serviceSatang;
+    for (const [channel, figures] of Object.entries(day.byChannel)) {
+      const row = (total.byChannel[channel] ??= { revenue: 0, txn_count: 0 });
+      row.revenue += figures.revenue;
+      row.txn_count += figures.txn_count;
+    }
+  }
+  return total;
+}
+
+// --- The wire: GET /analytics/summary (round 3) ---------------------------------------
+
+/**
+ * Who may read a branch's figures: the Today screen's own permission
+ * (`pos:cash:read`, which every counter role holds — the prototype shows
+ * Performance to anybody who opens Today, plan §9 question 9) or
+ * `analytics:read` (Radar and the manager reports). Held at the branch, or
+ * operator-wide; a branch the caller holds neither at is never read.
+ */
+export const ANALYTICS_SUMMARY_PERMISSIONS = ['pos:cash:read', 'analytics:read'] as const satisfies readonly Permission[];
+
+/** `day`: one row per business date; `total`: one row for the whole range. */
+export const ANALYTICS_SUMMARY_GROUPS = ['day', 'total'] as const;
+export type AnalyticsSummaryGroup = (typeof ANALYTICS_SUMMARY_GROUPS)[number];
+
+/** The longest range one request reads: a year and a day. */
+export const ANALYTICS_SUMMARY_MAX_DAYS = 366;
+/** The most branches one request names. */
+export const ANALYTICS_SUMMARY_MAX_BRANCHES = 50;
+
+const SUMMARY_DATE = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'A date is YYYY-MM-DD')
+  .refine(isCalendarDate, 'That date is not on the calendar.');
+
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+const UUID_LIST = new RegExp(`^${UUID}(,${UUID}){0,${ANALYTICS_SUMMARY_MAX_BRANCHES - 1}}$`, 'i');
+
+export const AnalyticsSummaryQuerySchema = z.object({
+  /** Comma-separated branch ids. Absent: every live branch the caller may read. */
+  branches: z.string().regex(UUID_LIST, 'branches is a comma-separated list of branch ids').optional(),
+  from: SUMMARY_DATE,
+  to: SUMMARY_DATE,
+  group: z.enum(ANALYTICS_SUMMARY_GROUPS).default('day'),
+});
+export type AnalyticsSummaryQuery = z.input<typeof AnalyticsSummaryQuerySchema>;
+
+/** The branch ids a `branches` parameter names, each once, in the order given. */
+export function analyticsSummaryBranchIds(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return [...new Set(raw.split(',').map((id) => id.trim().toLowerCase()).filter((id) => id.length > 0))];
+}
+
+const SatangSchema = z.number().int();
+const CountSchema = z.number().int().min(0);
+
+/** The figure set of one row: a stored day, or days added up. */
+export const AnalyticsDayFiguresSchema = z.object({
+  ticketsSatang: SatangSchema,
+  fnbSatang: SatangSchema,
+  merchSatang: SatangSchema,
+  partiesSatang: SatangSchema,
+  dropoffSatang: SatangSchema,
+  revenueSatang: SatangSchema,
+  txnCount: CountSchema,
+  creditPaidSatang: SatangSchema,
+  guestsKids: CountSchema,
+  guestsAdults: CountSchema,
+  mix1h: CountSchema,
+  mix2h: CountSchema,
+  mixFullDay: CountSchema,
+  partiesCount: CountSchema,
+  refundsSatang: SatangSchema,
+  discountsSatang: SatangSchema,
+  compsSatang: SatangSchema,
+  vatSatang: SatangSchema,
+  serviceSatang: SatangSchema,
+  byChannel: z.record(z.string(), z.object({ revenue: SatangSchema, txn_count: CountSchema })),
+});
+
+export const AnalyticsSummaryRowSchema = AnalyticsDayFiguresSchema.extend({
+  /** The business date; null on a `total` row. */
+  businessDate: SUMMARY_DATE.nullable(),
+  /**
+   * Still moving: a day that has not ended at its branch (today), or one the
+   * rollup has not written yet. A row of several days is provisional when any
+   * of them is.
+   */
+  provisional: z.boolean(),
+  /** How many branch-days in the row had a stored summary; the rest had no sale. */
+  rolledDays: CountSchema,
+  /** When the newest stored day in the row was last rewritten; null when none was stored. */
+  computedAt: z.string().nullable(),
+  /** The formula every stored day in the row was written under; null when none was stored or they differ. */
+  formulaVersion: z.number().int().positive().nullable(),
+});
+export type AnalyticsSummaryRow = z.infer<typeof AnalyticsSummaryRowSchema>;
+
+/** The same money buckets for one wall-clock hour, added up over the answer's branches. */
+export const AnalyticsSummaryHourSchema = z.object({
+  hour: z.number().int().min(0).max(23),
+  ticketsSatang: SatangSchema,
+  fnbSatang: SatangSchema,
+  merchSatang: SatangSchema,
+  partiesSatang: SatangSchema,
+  dropoffSatang: SatangSchema,
+  revenueSatang: SatangSchema,
+  txnCount: CountSchema,
+  guests: CountSchema,
+});
+export type AnalyticsSummaryHour = z.infer<typeof AnalyticsSummaryHourSchema>;
+
+export const AnalyticsSummaryBranchSchema = z.object({
+  branchId: z.string().uuid(),
+  name: z.string(),
+  timezone: z.string(),
+  /** `HH:MM` — the business day starts here, so a day is never a UTC slice. */
+  businessDayStart: z.string(),
+  /** The business date in progress at the branch now. */
+  today: SUMMARY_DATE,
+  /**
+   * When the rollup last brought this branch's figures up to date: the start
+   * of the newest successful daily rollup (each one rolls today at every live
+   * branch), or the newest row it wrote here, whichever is later. Null when it
+   * has never rolled this branch.
+   */
+  lastRolledUpAt: z.string().nullable(),
+  /** This branch's own rows, by the request's `group`. */
+  rows: z.array(AnalyticsSummaryRowSchema),
+});
+export type AnalyticsSummaryBranch = z.infer<typeof AnalyticsSummaryBranchSchema>;
+
+export const AnalyticsSummarySchema = z.object({
+  from: SUMMARY_DATE,
+  to: SUMMARY_DATE,
+  group: z.enum(ANALYTICS_SUMMARY_GROUPS),
+  source: z.enum(ANALYTICS_SOURCES),
+  /** The branches added up below: those requested, or every one the caller may read. */
+  branches: z.array(AnalyticsSummaryBranchSchema),
+  /** Requested branches of the caller's operator that the caller may not read: left out, never added in. */
+  omitted: z.array(z.string().uuid()),
+  /**
+   * Every live branch the caller may read, whatever was requested: the Today
+   * screen offers "All branches" when there is more than one.
+   */
+  readable: z.array(z.object({ branchId: z.string().uuid(), name: z.string() })),
+  /** `branches` added up: one row per date for `day`, one row for `total`. */
+  merged: z.array(AnalyticsSummaryRowSchema),
+  /** For a one-day range: the merged day by wall-clock hour, the hours that had a sale. Null otherwise. */
+  hours: z.array(AnalyticsSummaryHourSchema).nullable(),
+  /** The oldest of the branches' `lastRolledUpAt`: the whole answer is at least this fresh. Null if any branch was never rolled. */
+  lastRolledUpAt: z.string().nullable(),
+});
+export type AnalyticsSummary = z.infer<typeof AnalyticsSummarySchema>;

@@ -44,9 +44,19 @@ import * as s from '../schema/index';
  * `@oto/db/seed` is the one door to every fixture. It is NOT part of `seed()`:
  * the seed builds a park and this fills its till, and a deploy that wants the
  * first without the second — which is every deploy that has real sales — runs
- * `pnpm --filter @oto/db seed:demo-day` or nothing at all.
+ * `pnpm --filter @oto/db seed:demo-day` or nothing at all. It writes into
+ * Demo Branch 2 only (S2-15b round 3), never into a live park.
  */
-export { seedDemoDay, type DemoDayCounts } from './demo-day';
+export {
+  DEMO_BRANCH_CODE,
+  DEMO_BRANCH_CODES,
+  DEMO_BRANCH_NAME,
+  DemoBranchRefusedError,
+  ensureDemoBranch,
+  seedDemoDay,
+  type DemoBranch,
+  type DemoDayCounts,
+} from './demo-day';
 
 const b = satangFromBaht;
 

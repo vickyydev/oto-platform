@@ -47,6 +47,7 @@ import { releaseRoutes } from './routes/release';
 import { walletRoutes } from './routes/wallets';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
+import { analyticsRoutes } from './routes/analytics';
 import { boxRoutes } from './routes/box';
 import { fleetRoutes } from './routes/fleet';
 import { stationSessionRoutes } from './routes/stations';
@@ -454,6 +455,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // the paid-outs and safe drops it expects less of. Paths declared in full.
   await app.register((await import('./routes/end-of-day')).endOfDayRoutes);
   await app.register((await import('./routes/settlement')).settlementRoutes);
+  // S2-15b round 3 — the stored trading days Today > Performance and Radar read.
+  await app.register(analyticsRoutes, { prefix: '/analytics' });
   await app.register(opsRoutes, { prefix: '/ops' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a

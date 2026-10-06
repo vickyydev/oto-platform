@@ -10,13 +10,14 @@
  * said S2-09a would start this file and `SPRINT_2_PROGRESS.md:1504` still
  * lists it as missing; this is it.
  *
- * WHAT IT WRITES. Eleven sales at Reception Till 1, one trading day: cash
- * (including a split), card on both terminals, QR, one stored-value spend,
- * a redeemed discount voucher and a partial cash refund. The unresolved
- * attempts remain. The two terminals are the park's real ones from
- * `DEVICE_INVENTORY.md:38-41`, seeded by `seed/index.ts` as EDC 1 (NEXGO N5,
- * `ghl_linkpos`, TID 65703235) and EDC 3 (PAX A920Pro, `digio_tlv`), so a
- * demo of the Attempts list shows two dialects and not one.
+ * WHAT IT WRITES. Eleven sales at Demo Branch 2's Reception Till 1, one
+ * trading day: cash (including a split), card on both terminals, QR, one
+ * stored-value spend, a redeemed discount voucher and a partial cash refund.
+ * The unresolved attempts remain. The two terminals stand for the park's EDC 1
+ * (NEXGO N5, `ghl_linkpos`) and EDC 3 (PAX A920Pro, `digio_tlv`) from
+ * `DEVICE_INVENTORY.md:38-41`, each attempt carrying a clearly marked fixture
+ * TID, so a demo of the Attempts list and End of Day shows two terminals and
+ * not one.
  *
  * WHY THE UNHAPPY ROWS ARE THE POINT. A day of nine approvals proves nothing
  * about this ticket: the whole design of `payment_attempt` is that a terminal
@@ -35,6 +36,16 @@
  * The added scenarios are checked as an End of Day fixture on an isolated test
  * date. The physical PAX TID is not configured in the seed, so only new demo
  * attempts carry a clearly marked fixture TID; no device setting is changed.
+ *
+ * WHERE IT WRITES (S2-15b round 3, plan docs/progress/plans/analytics/PLAN.md
+ * §4, §9 question 12, hazard H11). Into "Demo Branch 2" and nowhere else —
+ * never a live park. Until round 3 this wrote the day into Central Floresta,
+ * so every press of the staging control put invented sales into the park's
+ * own Today > Performance, End of Day and Radar figures. Demo Branch 2 is made
+ * here, on first use, as a place that can trade: the park's tax rule and
+ * ticket packages copied from Central Floresta and a till numbering its own
+ * `D2` series. A request naming any other branch is refused before anything
+ * is written.
  */
 import { createHash, randomBytes } from 'node:crypto';
 import {
@@ -55,9 +66,36 @@ import * as s from '../schema/index';
 const b = satangFromBaht;
 type SeedWriter = Parameters<Parameters<Db['transaction']>[0]>[0];
 
-/** Central Floresta's till. The one station in the seed with a code prefix and a receipt series. */
+/** The demo branch's till, numbering its own receipt series. */
 const STATION_NAME = 'Reception Till 1';
-const BRANCH_NAME = 'Oto Play Park, Central Floresta';
+/**
+ * `D2`, distinct across the operator: the prefix IS the receipt series name
+ * (`allocateReceiptNumber`), so a demo receipt can never read like a park's.
+ */
+const STATION_PREFIX = 'D2';
+
+/** The branch demo sales are written to — the only one. */
+export const DEMO_BRANCH_CODE = 'demo-branch-2';
+export const DEMO_BRANCH_NAME = 'Demo Branch 2';
+/** Every branch a demo day may be written to. A live park is never on this list. */
+export const DEMO_BRANCH_CODES: readonly string[] = [DEMO_BRANCH_CODE];
+
+/**
+ * The park the demo branch copies its tax rule and ticket packages from, and
+ * whose operator it belongs to. Found by code: the slug is load-bearing and
+ * stays put when the name is edited (seed/index.ts, the rename note).
+ */
+const TEMPLATE_BRANCH_CODE = 'hkt-central';
+
+/** The TID a demo card attempt carries when its terminal has none configured. */
+const DEMO_FIXTURE_TIDS: Record<'edc1' | 'edc3', string> = { edc1: 'DEMONEX1', edc3: 'DEMOPAX1' };
+
+/** The ticket package a demo ticket line was sold under, by its duration label. */
+const PACKAGE_FOR_DURATION: Record<string, string> = {
+  '1 Hour': '1 Hour Play',
+  '2 Hours': '2 Hours Play',
+  'Full Day': 'Full Day Pass',
+};
 
 /**
  * A DETERMINISTIC UUIDv7.
@@ -482,6 +520,9 @@ const DAY: DemoSale[] = [
 ];
 
 export interface DemoDayCounts {
+  /** Where the day was written: always a demo branch. */
+  branchName: string;
+  branchCode: string;
   businessDate: string;
   sales: number;
   lines: number;
@@ -491,32 +532,33 @@ export interface DemoDayCounts {
   skipped: number;
 }
 
+/** Refused before anything is written: demo sales never reach a live park. */
+export class DemoBranchRefusedError extends Error {
+  constructor(code: string) {
+    super(`Demo sales are written to ${DEMO_BRANCH_NAME} only; "${code}" is not a demo branch.`);
+    this.name = 'DemoBranchRefusedError';
+  }
+}
+
 /**
- * Seed one trading day.
+ * Seed one trading day, into the demo branch.
  *
  * `on` is the business date to write, defaulting to the branch's own today —
  * so a demo has sales dated today, and a second run the same day writes
  * nothing. Naming an explicit date is how a later ticket fills a week.
+ * `branchCode` may only name a demo branch (`DEMO_BRANCH_CODES`); anything
+ * else, a live park above all, is refused with nothing written.
  */
 export async function seedDemoDay(
   db: Db = getDb(),
-  options: { on?: string } = {},
+  options: { on?: string; branchCode?: string } = {},
 ): Promise<DemoDayCounts> {
-  const [branch] = await db
-    .select({
-      id: s.branch.id,
-      operatorId: s.branch.operatorId,
-      timezone: s.branch.timezone,
-      businessDayStart: s.branch.businessDayStart,
-    })
-    .from(s.branch)
-    .where(eq(s.branch.name, BRANCH_NAME))
-    .limit(1);
-  if (!branch) {
-    throw new Error(`No branch "${BRANCH_NAME}". Run \`pnpm db:seed\` first — this seeds on top of it.`);
-  }
+  const branchCode = options.branchCode ?? DEMO_BRANCH_CODE;
+  if (!DEMO_BRANCH_CODES.includes(branchCode)) throw new DemoBranchRefusedError(branchCode);
+  const branch = await ensureDemoBranch(db);
   const { id: branchId, operatorId, timezone } = branch;
   const dayStart = branch.businessDayStart;
+  const branchName = branch.name;
 
   const [station] = await db
     .select({ id: s.station.id, codePrefix: s.station.codePrefix })
@@ -524,7 +566,7 @@ export async function seedDemoDay(
     .where(and(eq(s.station.branchId, branchId), eq(s.station.name, STATION_NAME)))
     .limit(1);
   if (!station?.codePrefix) {
-    throw new Error(`No station "${STATION_NAME}" with a code prefix at ${BRANCH_NAME}.`);
+    throw new Error(`No station "${STATION_NAME}" with a code prefix at ${branchName}.`);
   }
   const stationCodePrefix = station.codePrefix;
 
@@ -533,8 +575,21 @@ export async function seedDemoDay(
     .from(s.branchTaxConfig)
     .where(eq(s.branchTaxConfig.branchId, branchId))
     .limit(1);
-  if (!taxRow) throw new Error(`No tax config for ${BRANCH_NAME}.`);
+  if (!taxRow) throw new Error(`No tax config for ${branchName}.`);
   const taxConfig = taxRow.config as TaxConfigShape;
+
+  const packages = new Map<string, string>();
+  for (const row of await db
+    .select({ id: s.ticketPackage.id, name: s.ticketPackage.name })
+    .from(s.ticketPackage)
+    .where(eq(s.ticketPackage.branchId, branchId))) {
+    packages.set(row.name, row.id);
+  }
+  /** The demo branch's own package a ticket line was sold under; null for a line that is not a stay. */
+  const packageIdOf = (line: DemoLine): string | null => {
+    const name = line.stayDurationLabel ? PACKAGE_FOR_DURATION[line.stayDurationLabel] : undefined;
+    return name ? (packages.get(name) ?? null) : null;
+  };
 
   // Whoever rings a sale up has to be a real account: `sale.created_by_account_id`
   // is NOT NULL precisely so an unattributable money row cannot exist.
@@ -578,6 +633,8 @@ export async function seedDemoDay(
     new Date(midnightUtc + (dayStartMinutes + minutesIntoDay - offsetMin) * 60_000);
 
   const counts: DemoDayCounts = {
+    branchName,
+    branchCode,
     businessDate: on,
     sales: 0,
     lines: 0,
@@ -697,6 +754,9 @@ export async function seedDemoDay(
           freeAdultCount: line.freeAdultCount ?? 0,
           stayHours: line.stayHours ?? null,
           stayDurationLabel: line.stayDurationLabel ?? null,
+          // The package the stay was sold under, so the day's ticket mix is
+          // read from it as a real sale's would be.
+          ticketPackageId: packageIdOf(line),
         });
         counts.lines += 1;
       }
@@ -714,10 +774,10 @@ export async function seedDemoDay(
         const attemptId = stableId(`${on}/${scenario.key}/tender/${i}`, attemptAt);
         const deviceId = tender.terminal ? terminals[tender.terminal] : null;
         const configuredTid = deviceId ? await terminalIdOf(writer, deviceId) : null;
-        // The seeded PAX has no configured physical TID yet. New fixture rows
-        // get an unmistakable demo TID so the two-terminal EOD view can be tried
-        // without inventing a real device setting or rewriting old attempts.
-        const fixtureTid = tender.terminal === 'edc3' && !configuredTid ? 'DEMOPAX1' : null;
+        // A terminal with no configured TID — the demo branch has no devices at
+        // all — gets an unmistakable demo TID, so the two-terminal End of Day
+        // view can be tried without inventing a real device setting.
+        const fixtureTid = tender.terminal && !configuredTid ? DEMO_FIXTURE_TIDS[tender.terminal] : null;
         const invoiceNo = tender.invoiceSeq
           ? `DEMO${stationCodePrefix.replace(/[^A-Z0-9]/g, '')}${on.slice(2).replace(/-/g, '')}${String(tender.invoiceSeq).padStart(4, '0')}`
           : null;
@@ -808,6 +868,116 @@ export async function seedDemoDay(
     occurredAt: instantAt(10 * HOUR + 30), createdByAccountId: cashier.id });
 
   return counts;
+}
+
+export interface DemoBranch {
+  id: string;
+  name: string;
+  operatorId: string;
+  timezone: string;
+  businessDayStart: string;
+}
+
+/**
+ * DEMO BRANCH 2, MADE ONCE, AS A PLACE THAT CAN TRADE.
+ *
+ * Found by its code inside the park's operator, and made on first use: the
+ * branch (the park's timezone, country and opening hours), the park's tax
+ * rule and ticket packages copied from Central Floresta, and a Reception Till
+ * 1 numbering the `D2` series. No box and no device: its card attempts carry
+ * clearly marked fixture TIDs instead (`DEMO_FIXTURE_TIDS`).
+ *
+ * Everything is find-or-create, under one lock per operator, so two presses
+ * at once make one branch and a branch somebody has since edited stays as
+ * they left it.
+ */
+export async function ensureDemoBranch(db: Db): Promise<DemoBranch> {
+  const [operator] = await db.select({ id: s.operator.id }).from(s.operator).where(eq(s.operator.name, 'OTO')).limit(1);
+  const [template] = operator
+    ? await db
+        .select({
+          id: s.branch.id,
+          timezone: s.branch.timezone,
+          country: s.branch.country,
+          openingHours: s.branch.openingHours,
+        })
+        .from(s.branch)
+        .where(and(eq(s.branch.operatorId, operator.id), eq(s.branch.code, TEMPLATE_BRANCH_CODE)))
+        .limit(1)
+    : [];
+  if (!operator || !template) {
+    throw new Error('No park to model the demo branch on. Run `pnpm db:seed` first — this seeds on top of it.');
+  }
+  const operatorId = operator.id;
+
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${operatorId}), hashtext('demo-day/branch'))`);
+    const pick = {
+      id: s.branch.id,
+      name: s.branch.name,
+      operatorId: s.branch.operatorId,
+      timezone: s.branch.timezone,
+      businessDayStart: s.branch.businessDayStart,
+    };
+    const where = and(eq(s.branch.operatorId, operatorId), eq(s.branch.code, DEMO_BRANCH_CODE));
+    let [found] = await tx.select(pick).from(s.branch).where(where).limit(1);
+    if (!found) {
+      await tx.insert(s.branch).values({
+        id: newId(),
+        operatorId,
+        name: DEMO_BRANCH_NAME,
+        code: DEMO_BRANCH_CODE,
+        timezone: template.timezone,
+        country: template.country,
+        openingHours: template.openingHours,
+      });
+      [found] = await tx.select(pick).from(s.branch).where(where).limit(1);
+    }
+    const branch = found!;
+
+    // The park's tax rule: a branch without one cannot total a sale.
+    const [taxRow] = await tx
+      .select({ config: s.branchTaxConfig.config })
+      .from(s.branchTaxConfig)
+      .where(eq(s.branchTaxConfig.branchId, template.id))
+      .limit(1);
+    if (taxRow) {
+      await tx
+        .insert(s.branchTaxConfig)
+        .values({ id: newId(), branchId: branch.id, config: taxRow.config })
+        .onConflictDoNothing({ target: s.branchTaxConfig.branchId });
+    }
+
+    // The park's ticket packages, under the demo branch's own ids.
+    for (const pkg of await tx.select().from(s.ticketPackage).where(eq(s.ticketPackage.branchId, template.id))) {
+      const { id: _id, branchId: _branchId, createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = pkg;
+      await tx
+        .insert(s.ticketPackage)
+        .values({ ...rest, id: newId(), branchId: branch.id })
+        .onConflictDoNothing({ target: [s.ticketPackage.branchId, s.ticketPackage.name] });
+    }
+
+    // A till and nothing on a wall: no box and no device, so the demo branch
+    // never appears in Health's fleet as a box waiting to be claimed.
+    const [till] = await tx
+      .select({ id: s.station.id })
+      .from(s.station)
+      .where(and(eq(s.station.branchId, branch.id), eq(s.station.name, STATION_NAME)))
+      .limit(1);
+    if (!till) {
+      await tx.insert(s.station).values({
+        id: newId(),
+        operatorId,
+        branchId: branch.id,
+        name: STATION_NAME,
+        kind: 'till',
+        codePrefix: STATION_PREFIX,
+        capabilities: ['tickets', 'fnb'],
+        accessScope: 'all_staff',
+      });
+    }
+    return branch;
+  });
 }
 
 async function seedDemoWalletSpend(writer: SeedWriter, input: {
@@ -1120,8 +1290,9 @@ function tzOffsetMinutes(instant: Date, timeZone: string): number {
 
 /**
  * Run directly: `pnpm --filter @oto/db seed:demo-day`, or `--on 2026-09-20` for
- * a named day. It writes only to the demo tenant's own branch and refuses to
- * run before `pnpm db:seed` has, so there is no profile switch here.
+ * a named day. It writes only to Demo Branch 2, which it makes on first use,
+ * and refuses to run before `pnpm db:seed` has, so there is no profile switch
+ * here.
  */
 const isMain = process.argv[1]?.replace(/\\/g, '/').endsWith('seed/demo-day.ts');
 if (isMain) {
@@ -1131,8 +1302,8 @@ if (isMain) {
     .then((counts) => {
       console.log(
         counts.sales === 0
-          ? `Demo day ${counts.businessDate}: already seeded (${counts.skipped} sales), nothing written.`
-          : `Demo day ${counts.businessDate}: ${counts.sales} sales, ${counts.lines} lines, ${counts.attempts} payment attempts, ${counts.notifications} gateway notifications${counts.skipped ? `, ${counts.skipped} already present` : ''}.`,
+          ? `Demo day ${counts.businessDate} at ${counts.branchName}: already seeded (${counts.skipped} sales), nothing written.`
+          : `Demo day ${counts.businessDate} at ${counts.branchName}: ${counts.sales} sales, ${counts.lines} lines, ${counts.attempts} payment attempts, ${counts.notifications} gateway notifications${counts.skipped ? `, ${counts.skipped} already present` : ''}.`,
       );
       return closeDb();
     })

@@ -16,7 +16,8 @@ import { audit } from '../services/audit';
 import { opCtx, withTx } from '../services/tx';
 import { hasPermission, isPlatformWide } from '../services/permissions';
 import { PermissionDeniedError } from '../plugins/session';
-import { branchReach, type BranchReach } from '../services/access-control';
+import { branchReach, reachCovers, type BranchReach } from '../services/access-control';
+import { operatorBranches, rollupFreshnessOf } from '../services/analytics-summary';
 import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
 import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB } from '../services/analytics-rollup';
@@ -160,6 +161,7 @@ export async function opsRoutes(app: App): Promise<void> {
     async (req) => {
       const auth = req.requireAuth();
       const reach = await healthReach(req);
+      const parks = (await operatorBranches(app.db, auth.operatorId)).filter((b) => reachCovers(reach, b.id));
       return {
         ...(await healthSnapshot({ ...health(), operatorId: auth.operatorId, reach })),
         // SCRUM-301: the page branches on this. A branch-scoped caller is
@@ -167,6 +169,9 @@ export async function opsRoutes(app: App): Promise<void> {
         // the reach the Console could not tell that from a deployment that has
         // neither.
         reach: await answeredAt(req, reach),
+        // S2-15b round 3 (plan §1): when the analytics rollup last brought each
+        // park in the caller's reach up to date. Names and times only.
+        rollups: await rollupFreshnessOf(app.db, parks, new Date()),
       };
     },
   );
@@ -538,8 +543,12 @@ export async function opsRoutes(app: App): Promise<void> {
   const TEST_CONTROLS = [
     {
       key: 'demo.day',
-      label: 'Add demo sales to Central (today)',
-      description: 'Adds the labelled trading-day scenarios once. Keeps existing records and closed days unchanged.',
+      // S2-15b round 3 (plan §9 question 12, hazard H11): the demo day goes to
+      // Demo Branch 2 and never to a live park, so it never reaches Central
+      // Floresta's Performance, End of Day or Radar figures.
+      label: 'Add demo sales to Demo Branch 2 (today)',
+      description:
+        'Adds the labelled trading-day scenarios once, at Demo Branch 2 (made on first use) — never at a live park. Keeps existing records and closed days unchanged.',
       sticky: true,
     },
     {
@@ -691,7 +700,7 @@ export async function opsRoutes(app: App): Promise<void> {
       const { seedDemoDay } = await import('@oto/db/seed');
       // Each scenario commits atomically; repeating finishes an interrupted seed.
       const counts = await seedDemoDay(app.db);
-      return `Demo day ${counts.businessDate}: ${counts.sales} sales added, ${counts.skipped} already present. Existing records and closed-day totals were kept.`;
+      return `Demo day ${counts.businessDate} at ${counts.branchName}: ${counts.sales} sales added, ${counts.skipped} already present. Existing records and closed-day totals were kept.`;
     }
     if (key === 'watchdog.run') {
       const outcome = await jobRunner().runJob(WATCHDOG_JOB, { force: true });
