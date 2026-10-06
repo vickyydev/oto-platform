@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BellRing, CalendarClock, FlaskConical, Loader2, RefreshCw, Server } from 'lucide-react';
+import { BellRing, CalendarClock, FlaskConical, LineChart, Loader2, RefreshCw, Server } from 'lucide-react';
 import {
   healthApi,
   testControlsApi,
@@ -8,6 +8,7 @@ import {
   type HealthState,
   type JobStatus,
   type Readiness,
+  type RollupFreshness,
   type TestControl,
 } from '@/api/observability';
 import { Button } from '@/components/ui/button';
@@ -69,6 +70,7 @@ export function Health() {
   // reports on dependencies rather than on the round trip to itself.
   const checks = [...apiCheck(ready), ...(snapshot?.checks ?? checksFromReady(ready).slice(1))];
   const jobs = snapshot?.jobs ?? [];
+  const rollups = snapshot?.rollups ?? [];
   const alerts = (snapshot?.alerts ?? []).filter((a) => !a.resolvedAt);
   const problems = listProblems(ready, checks, jobs, alerts);
   const verdict = overallTone(ready, checks, jobs, alerts, problems);
@@ -224,6 +226,26 @@ export function Health() {
         )}
 
         {/*
+          S2-15b round 3 (plan §1): when the analytics rollup last brought each
+          park in this reader's reach up to date — what Today > Performance and
+          Radar are reading. Absent on an API that does not answer it.
+        */}
+        {rollups.length > 0 && (
+          <CardShell
+            span={12}
+            icon={LineChart}
+            title="Analytics rollup"
+            note="when each park's figures were last brought up to date"
+          >
+            <StripedList label="Analytics rollup">
+              {rollups.map((row) => (
+                <RollupRow key={row.branchId} row={row} timezone={timezone} />
+              ))}
+            </StripedList>
+          </CardShell>
+        )}
+
+        {/*
           Under the boxes, because a booth IS one of them and the card above is
           where a reader has just seen it go quiet. This adds the half of a booth
           that a box-shaped row cannot carry: the wheel it is running, whether
@@ -290,6 +312,25 @@ function JobRow({ job, timezone }: { job: JobStatus; timezone?: string | null })
         {job.lastRunAt ? `last ran ${formatWhen(job.lastRunAt, timezone)}` : 'never run'}
       </p>
       {job.lastError && <p className="mt-0.5 text-xs text-status-down break-words">{job.lastError}</p>}
+    </li>
+  );
+}
+
+/** One park's last rollup, drawn as a job row is. */
+function RollupRow({ row, timezone }: { row: RollupFreshness; timezone?: string | null }) {
+  return (
+    <li className="px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <StatusMark tone={row.lastRolledUpAt ? 'ok' : 'idle'} />
+        <span className="min-w-0 text-[13.5px] font-semibold break-words">{row.name}</span>
+        <span className="ml-auto text-[12.5px] text-muted-foreground tabular-nums">
+          {row.lastRolledUpAt ? timeAgo(row.lastRolledUpAt) : '—'}
+        </span>
+      </div>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {row.lastRolledUpAt ? `last rolled up ${formatWhen(row.lastRolledUpAt, timezone)}` : 'not rolled up yet'}
+        {` · trading day ${row.today}`}
+      </p>
     </li>
   );
 }
@@ -415,7 +456,7 @@ function TestControls({ canManage, onRan }: { canManage: boolean; onRan: () => v
       span={12}
       icon={FlaskConical}
       title="Test controls"
-      note="Staging-only controls add demo scenarios or simulate failures. Existing records are kept when adding the demo day."
+      note="Staging-only controls add demo scenarios or simulate failures. The demo day is added at Demo Branch 2, never at a live park, and existing records are kept."
     >
       <div className="flex flex-wrap gap-2">
         {controls.map((control) => (

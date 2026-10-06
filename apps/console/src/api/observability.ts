@@ -264,6 +264,20 @@ export interface HealthSnapshot {
   /** Seconds since the watchdog last ran — the check that checks the checks. */
   watchdogAgeSeconds?: number | null;
   generatedAt?: string;
+  /**
+   * S2-15b round 3: when the analytics rollup last brought each park in the
+   * caller's reach up to date. Optional: an older API answers without it.
+   */
+  rollups?: RollupFreshness[];
+}
+
+/** One park's line on Health: its business date in progress and its last rollup. */
+export interface RollupFreshness {
+  branchId: string;
+  name: string;
+  today: string;
+  /** ISO, or null when the rollup has never brought this park up to date. */
+  lastRolledUpAt: string | null;
 }
 
 /** What `/ready` answers. Public, and the one call that works on every deployment. */
