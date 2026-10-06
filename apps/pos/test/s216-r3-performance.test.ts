@@ -154,6 +154,10 @@ describe('the platform’s answer, end to end', () => {
         { branchId: DEMO, name: 'Demo Branch 2' },
         { branchId: HKT, name: 'Oto Play Park, Central Floresta' },
       ],
+      mergeable: [
+        { branchId: DEMO, name: 'Demo Branch 2' },
+        { branchId: HKT, name: 'Oto Play Park, Central Floresta' },
+      ],
       merged: [merged],
       hours: null,
       lastRolledUpAt: '2026-10-06T07:05:00.000Z',

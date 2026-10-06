@@ -20,8 +20,9 @@ import { Banknote, Users, PartyPopper, Baby, Ticket } from 'lucide-react';
  * S2-15b round 3: the figures are the platform's rolled-up day for the section's date
  * and branch (`usePerformance`), the same on every till and phone, instead of this
  * browser's copy of the sales (`getFloorReport`). `scope` reads every branch this
- * account may read, added up on the platform; `onReadable` tells the section which
- * branches those are, so it offers "All branches" only to somebody with more than one.
+ * account may add up (analytics:read there, round 6), summed on the platform;
+ * `onReadable` tells the section which branches those are, so it offers "All branches"
+ * only to somebody with more than one.
  */
 export function PerformanceTab({
   date,

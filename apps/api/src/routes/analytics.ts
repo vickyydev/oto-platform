@@ -1,5 +1,7 @@
 import type { FastifyRequest } from 'fastify';
+import { z } from 'zod';
 import {
+  ANALYTICS_MERGE_PERMISSION,
   ANALYTICS_REPORT_MAX_DAYS,
   ANALYTICS_SUMMARY_MAX_DAYS,
   AnalyticsReportQuerySchema,
@@ -8,6 +10,9 @@ import {
   AnalyticsVatQuerySchema,
   BoothReportQuerySchema,
   BoothReportSchema,
+  BranchSourceBodySchema,
+  BranchSourceSchema,
+  BranchSourcesSchema,
   DiscountReportSchema,
   DiscountTransactionsSchema,
   ProfitabilityReportSchema,
@@ -22,11 +27,15 @@ import { errors } from '../lib/errors';
 import { PermissionDeniedError } from '../plugins/session';
 import {
   analyticsSummaryOf,
+  mayMergeAnalytics,
   mayReadAnalytics,
   operatorBranches,
   summaryDayCount,
+  summaryScopeOf,
   type SummaryBranch,
 } from '../services/analytics-summary';
+import { branchSourceView, branchSourcesOf, switchBranchSource } from '../services/analytics-sources';
+import { opCtx, withTx } from '../services/tx';
 import {
   discountReportOf,
   discountTransactionsOf,
@@ -56,6 +65,11 @@ import { hasPermission } from '../services/permissions';
  * Comps, Tax & VAT) and the booth report, read the same way: per branch,
  * `analytics:read` only (plan §8, "Permissions"), the requested branches the
  * caller may not read listed as omitted and never added in.
+ *
+ * Round 6 — the source switch (`/sources`), and the summary's total held to
+ * plan §9 question 9's default: the Today screen's permission reads one branch
+ * on its own, and a total of several adds up only branches held on
+ * `analytics:read`.
  */
 export async function analyticsRoutes(app: App): Promise<void> {
   app.get(
@@ -68,10 +82,12 @@ export async function analyticsRoutes(app: App): Promise<void> {
           'own rows by business date (`group=day`) or for the whole range (`group=total`), the branches added up in ' +
           '`merged`, and for a one-day range the merged day by hour. Formula version 1, the prototype’s Today > ' +
           'Performance rule; a day still in progress at its branch is `provisional`, and each branch says when the ' +
-          "rollup last brought it up to date. A branch is read when the caller holds pos:cash:read (the Today screen's " +
-          'permission) or analytics:read there. Without `branches`: every live branch the caller may read. A requested ' +
-          'branch of the operator the caller may not read is listed in `omitted` and never added in; 403 when none of ' +
-          'the requested branches may be read; 404 for an id that is not a branch of the operator.',
+          "rollup last brought it up to date. A branch is read on its own when the caller holds pos:cash:read (the Today " +
+          "screen's permission) or analytics:read there; an answer of more than one branch adds up only the branches " +
+          'held on analytics:read (`mergeable`). Without `branches`: every live branch the caller may read. A requested ' +
+          'branch of the operator left out is listed in `omitted` and never added in; 403 when none may be read; 404 ' +
+          'for an id that is not a branch of the operator. Each branch is answered from the source it reports ' +
+          '(`GET /analytics/sources`): a legacy source serves its frozen days.',
         querystring: AnalyticsSummaryQuerySchema,
         response: { 200: AnalyticsSummarySchema },
       },
@@ -87,34 +103,119 @@ export async function analyticsRoutes(app: App): Promise<void> {
       const effective = await req.effectivePermissions();
       const parks = await operatorBranches(app.db, auth.operatorId);
       const may = (b: SummaryBranch) => mayReadAnalytics(effective, auth.operatorId, b.id);
+      const mayMerge = (b: SummaryBranch) => mayMergeAnalytics(effective, auth.operatorId, b.id);
       const readable = parks.filter((b) => b.archivedAt === null && may(b));
+      const mergeable = parks.filter((b) => b.archivedAt === null && mayMerge(b));
 
       const requested = analyticsSummaryBranchIds(req.query.branches);
-      let branches: SummaryBranch[];
-      const omitted: string[] = [];
-      if (requested.length > 0) {
-        branches = [];
-        for (const id of requested) {
-          const park = parks.find((b) => b.id === id);
-          if (!park) throw errors.notFound('Branch not found');
-          if (may(park)) branches.push(park);
-          else omitted.push(park.id);
-        }
-      } else {
-        branches = readable;
+      const candidates: SummaryBranch[] = [];
+      for (const id of requested) {
+        const park = parks.find((b) => b.id === id);
+        if (!park) throw errors.notFound('Branch not found');
+        candidates.push(park);
       }
+      // One branch on the Today screen's permission; a total of several only
+      // over the branches held on analytics:read (plan §9 question 9).
+      const { branches, omitted, denied } = summaryScopeOf({
+        candidates: requested.length > 0 ? candidates : readable,
+        requested: requested.length > 0,
+        mayRead: may,
+        mayMerge,
+      });
       // Nothing the caller may read: the permission is what is missing, not a
-      // branch. Named as the Today screen's, the one every counter role holds.
-      if (branches.length === 0) throw new PermissionDeniedError('pos:cash:read');
+      // branch — the Today screen's (which every counter role holds) when no
+      // branch could be read, analytics:read when only a total was refused.
+      if (denied) throw new PermissionDeniedError(denied);
 
       return analyticsSummaryOf(app.db, {
         branches,
         readable,
+        mergeable,
         omitted,
         from,
         to,
         group,
         now: new Date(),
+      });
+    },
+  );
+
+  /**
+   * Round 6 — which source each branch reports, and Radar's preference (plan
+   * §5; S2-18 reads it). Read per branch on analytics:read, as every figure
+   * here is; switched per branch on admin:branch:update, as other branch
+   * configuration is (a branch manager holds neither the write nor the
+   * decision).
+   */
+  app.get(
+    '/sources',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Which source each branch reports in the summary (`oto_pos`, the platform’s own rolled-up days; `pisell` or ' +
+          '`papaya`, that legacy system’s frozen days) and Radar’s preference (`oto_pos`, `legacy`, `both`), with when ' +
+          'and by whom it was last switched. A branch never switched reports `oto_pos`. ' +
+          'Per branch on analytics:read: without `branches`, every live branch the caller may read; a requested branch ' +
+          'of the operator the caller may not read is listed in `omitted`; 403 when none may be read; 404 for an id ' +
+          'that is not a branch of the operator.',
+        querystring: z.object({ branches: AnalyticsSummaryQuerySchema.shape.branches }),
+        response: { 200: BranchSourcesSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const effective = await req.effectivePermissions();
+      const may = (id: string) => mayMergeAnalytics(effective, auth.operatorId, id);
+      const parks = await operatorBranches(app.db, auth.operatorId);
+      const requested = analyticsSummaryBranchIds(req.query.branches);
+      const branches: SummaryBranch[] = [];
+      const omitted: string[] = [];
+      if (requested.length > 0) {
+        for (const id of requested) {
+          const park = parks.find((b) => b.id === id);
+          if (!park) throw errors.notFound('Branch not found');
+          if (may(park.id)) branches.push(park);
+          else omitted.push(park.id);
+        }
+      } else {
+        for (const park of parks) if (park.archivedAt === null && may(park.id)) branches.push(park);
+      }
+      if (branches.length === 0) throw new PermissionDeniedError(ANALYTICS_MERGE_PERMISSION);
+      const stored = await branchSourcesOf(app.db, branches.map((b) => b.id));
+      return { branches: branches.map((b) => branchSourceView(b, stored.get(b.id)!)), omitted };
+    },
+  );
+
+  app.put(
+    '/sources/:branchId',
+    {
+      config: { permission: 'admin:branch:update', target: { branchId: 'params.branchId' } },
+      schema: {
+        description:
+          'Switch which source a branch reports in the summary and Radar’s preference for it. Recorded with who ' +
+          'switched it and when, and audited with the switch before and after; asking for what the branch already ' +
+          'has changes and records nothing. A legacy source serves only its frozen days. admin:branch:update at the ' +
+          'branch; 404 for a branch of another operator.',
+        params: z.object({ branchId: z.string().uuid() }),
+        body: BranchSourceBodySchema,
+        response: { 200: BranchSourceSchema.extend({ changed: z.boolean() }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const park = (await operatorBranches(app.db, auth.operatorId)).find((b) => b.id === req.params.branchId);
+      if (!park) throw errors.notFound('Branch not found');
+      return withTx(app.db, opCtx(req), 'analytics.branch_source.switch', async (tx) => {
+        const { changed, stored } = await switchBranchSource(tx, {
+          operatorId: auth.operatorId,
+          branchId: park.id,
+          body: req.body,
+          actorAccountId: auth.accountId,
+          requestId: req.id,
+          now: new Date(),
+        });
+        return { ...branchSourceView(park, stored), changed };
       });
     },
   );

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, desc, eq, isNull, like } from 'drizzle-orm';
+import { and, desc, eq, like } from 'drizzle-orm';
 import {
   account,
   branch,
@@ -8,6 +8,7 @@ import {
   opsRun,
   role,
   roleAssignment,
+  rolePermission,
   sale,
   station,
   ticketPackage,
@@ -52,8 +53,10 @@ import { ROLLUP_DAILY_JOB } from '../src/services/analytics-rollup';
  * and the rollup runs from the Health page. Then the summary is read by:
  *
  *   reception        the Today screen's permission at Central only: one park
- *   Khun Lek         a branch manager at Central, given `staff` at Demo
- *                    Branch 2: two parks, never Chalong
+ *   Khun Lek         a branch manager at Central, given a reports role
+ *                    (analytics:read) at Demo Branch 2: two parks he may add
+ *                    up, never Chalong. (Round 6: a Today-only grant opens a
+ *                    park on its own, never into a total — s216-r6-legacy.)
  *   the admin        the whole operator: three parks
  *   the second       another operator's administrator: its own branch, and a
  *   operator         404 for any of OTO's
@@ -188,14 +191,20 @@ beforeAll(async () => {
 
   await rollUp();
 
-  // Khun Lek, branch manager at Central, is also `staff` at Demo Branch 2:
-  // two parks he may read, and Chalong is not one of them.
-  const [lek] = await ctx.db.select({ id: account.id }).from(account).where(eq(account.phone, BRANCH_MANAGER.phone));
-  const [staffRole] = await ctx.db.select({ id: role.id }).from(role).where(and(eq(role.name, 'staff'), isNull(role.operatorId)));
+  // Khun Lek, branch manager at Central, also reads the reports at Demo Branch
+  // 2 (an operator role carrying the Today screen's permission and
+  // analytics:read, nothing else): two parks he may add up, and Chalong is not
+  // one of them.
+  const [lek] = await ctx.db.select({ id: account.id, operatorId: account.operatorId }).from(account).where(eq(account.phone, BRANCH_MANAGER.phone));
+  const reportsRoleId = newId();
+  await ctx.db.insert(role).values({ id: reportsRoleId, operatorId: lek!.operatorId, name: 'Reports reader (r3 test)' });
+  for (const permission of ['pos:cash:read', 'analytics:read'] as const) {
+    await ctx.db.insert(rolePermission).values({ id: newId(), roleId: reportsRoleId, permission });
+  }
   await ctx.db.insert(roleAssignment).values({
     id: newId(),
     accountId: lek!.id,
-    roleId: staffRole!.id,
+    roleId: reportsRoleId,
     scopeType: 'branch',
     scopeId: demo,
   });
@@ -225,7 +234,7 @@ describe('S2-15b round 3 — who reads which park', () => {
     expect((await get(reception, `branches=${chalong}&from=${T}&to=${T}`)).statusCode).toBe(403);
   });
 
-  it('a two-branch caller: All branches is the sum of exactly its two parks, never the third', async () => {
+  it('H2 — a two-branch caller: All branches is the sum of exactly its two parks, never the third', async () => {
     const all = await summary(manager, `from=${T}&to=${T}`);
     expect(all.branches.map((b) => b.branchId).sort()).toEqual([hkt, demo].sort());
     expect(all.readable.map((b) => b.branchId).sort()).toEqual([hkt, demo].sort());
@@ -383,7 +392,7 @@ describe('S2-15b round 3 — provisional, and how fresh', () => {
     }
     expect(rollups.find((r) => r.branchId === demo)!.name).toBe(DEMO_BRANCH_NAME);
 
-    // Khun Lek reads Health at Central (his `staff` grant at the demo branch carries no Health).
+    // Khun Lek reads Health at Central (his reports grant at the demo branch carries no Health).
     const own = await ctx.app.inject({ method: 'GET', url: '/ops/health', headers: { cookie: manager } });
     expect(own.statusCode, own.body).toBe(200);
     expect(own.json<{ rollups: Array<{ branchId: string }> }>().rollups.map((r) => r.branchId)).toEqual([hkt]);
@@ -391,7 +400,7 @@ describe('S2-15b round 3 — provisional, and how fresh', () => {
 });
 
 describe('S2-15b round 3 — the demo control never writes to a live park (H11)', () => {
-  it('wrote every demo sale at Demo Branch 2, says so, and offers no live park', async () => {
+  it('H11 — wrote every demo sale at Demo Branch 2, says so, and offers no live park', async () => {
     const demoSales = await ctx.db.select({ branchId: sale.branchId }).from(sale).where(like(sale.actionId, 'demo-day/%'));
     expect(demoSales.length).toBe(22); // eleven today, eleven three days back
     expect(new Set(demoSales.map((s) => s.branchId))).toEqual(new Set([demo]));

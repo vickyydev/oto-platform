@@ -29,7 +29,8 @@ type TodayTab = 'performance' | 'eod';
  *
  * S2-15b round 3 — UI ADDITION: the same Branch choice as the iPad (this
  * branch or "All branches"), on its own row under the title, on Performance
- * only and only for somebody who may read more than one branch.
+ * only and only for somebody who may add up more than one branch (analytics:read
+ * there, round 6).
  */
 export function MobileTodayPage() {
   const { branch } = useBranch();

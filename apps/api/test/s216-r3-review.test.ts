@@ -299,12 +299,21 @@ describe('review — a caller who must not see Robinson Chalong never does', () 
     }
   });
 
-  it('a Today grant at Chalong opens it on the next request, and withdrawing it closes it on the next', async () => {
+  it('a Today grant at Chalong opens it on its own on the next request, never into a total; withdrawing it closes it', async () => {
     const [staffRole] = await ctx.db.select({ id: role.id }).from(role).where(and(eq(role.name, 'staff'), isNull(role.operatorId)));
     const assignment = await grant(staffRole!.id, 'branch', chalong);
-    const both = await summary(reception, `from=${T}&to=${T}`);
-    expect(both.readable.map((b) => b.branchId).sort()).toEqual([hkt, chalong].sort());
-    expect(both.merged[0]!.revenueSatang).toBe((await stored(hkt, T))!.revenueSatang + (await stored(chalong, T))!.revenueSatang);
+    const alone = await summary(reception, `branches=${chalong}&from=${T}&to=${T}`);
+    expect(alone.branches.map((b) => b.branchId)).toEqual([chalong]);
+    expect(figuresOf(alone.merged[0]!)).toEqual(figuresOf((await stored(chalong, T))!));
+    expect(alone.readable.map((b) => b.branchId).sort()).toEqual([hkt, chalong].sort());
+    // Round 6 (plan §9 question 9's default): a total of the two parks adds up
+    // only branches held on analytics:read, which reception holds at neither.
+    expect(alone.mergeable).toEqual([]);
+    for (const query of [`from=${T}&to=${T}`, `branches=${hkt},${chalong}&from=${T}&to=${T}`]) {
+      const refused = await get(reception, query);
+      expect(refused.statusCode, query).toBe(403);
+      expect(refused.body).toContain('analytics:read');
+    }
 
     await ctx.db.delete(roleAssignment).where(eq(roleAssignment.id, assignment));
     const back = await summary(reception, `from=${T}&to=${T}`);

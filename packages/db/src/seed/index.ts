@@ -58,6 +58,13 @@ export {
   type DemoBranch,
   type DemoDayCounts,
 } from './demo-day';
+/** The frozen legacy days the demo day loads at Demo Branch 2 (S2-15b round 6). */
+export {
+  LEGACY_FIXTURE_DAYS,
+  legacyFixtureFingerprint,
+  seedLegacyFixtureDays,
+  type LegacyFixtureDay,
+} from './legacy-fixtures';
 
 const b = satangFromBaht;
 

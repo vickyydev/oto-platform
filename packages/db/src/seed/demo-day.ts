@@ -13,7 +13,9 @@
  * WHAT IT WRITES. Eleven sales at Demo Branch 2's Reception Till 1, one
  * trading day: cash (including a split), card on both terminals, QR, one
  * stored-value spend, a redeemed discount voucher and a partial cash refund.
- * The unresolved attempts remain. The two terminals stand for the park's EDC 1
+ * The unresolved attempts remain. Beside them, once, the two frozen legacy
+ * days (`legacy-fixtures.ts`, S2-15b round 6) that stand in for the Pisell and
+ * Papaya history. The two terminals stand for the park's EDC 1
  * (NEXGO N5, `ghl_linkpos`) and EDC 3 (PAX A920Pro, `digio_tlv`) from
  * `DEVICE_INVENTORY.md:38-41`, each attempt carrying a clearly marked fixture
  * TID, so a demo of the Attempts list and End of Day shows two terminals and
@@ -48,7 +50,7 @@
  * `D2` series. A request naming any other branch is refused before anything
  * is written.
  */
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import {
   businessDate as businessDateOf,
   computeTaxBreakdown,
@@ -63,6 +65,8 @@ import {
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
 import * as s from '../schema/index';
+import { seedLegacyFixtureDays } from './legacy-fixtures';
+import { stableId } from './stable-id';
 
 const b = satangFromBaht;
 type SeedWriter = Parameters<Parameters<Db['transaction']>[0]>[0];
@@ -99,31 +103,12 @@ const PACKAGE_FOR_DURATION: Record<string, string> = {
 };
 
 /**
- * A DETERMINISTIC UUIDv7.
- *
- * The timestamp half is real — it is the moment the sale was rung up — so the
- * ids sort in the order the day happened, which is what every id in this
- * platform promises. The random half is a hash of the scenario key instead of
- * being random, which is what makes a second run a no-op rather than a second
- * trading day.
- *
- * Exported so a test can plant the rows the demo control left at a live park
- * before round 3, under the keys it used then.
+ * A deterministic UUIDv7 per scenario key (`stable-id.ts`): a second run is a
+ * no-op rather than a second trading day. Exported so a test can plant the
+ * rows the demo control left at a live park before round 3, under the keys it
+ * used then.
  */
-export function stableId(key: string, at: Date): string {
-  const ms = BigInt(at.getTime());
-  const time = ms.toString(16).padStart(12, '0');
-  const rand = createHash('sha256').update(key).digest('hex').slice(0, 20);
-  // Version 7 in the 13th nibble; variant 0b10 in the 17th.
-  const variant = ((parseInt(rand[4]!, 16) & 0b0011) | 0b1000).toString(16);
-  return [
-    time.slice(0, 8),
-    time.slice(8, 12),
-    `7${rand.slice(0, 3)}`,
-    `${variant}${rand.slice(5, 8)}`,
-    rand.slice(8, 20),
-  ].join('-');
-}
+export { stableId };
 
 /** One unit on the receipt, priced before tax. The engine's job in the real path; here, a figure. */
 interface DemoLine {
@@ -534,6 +519,11 @@ export interface DemoDayCounts {
   notifications: number;
   /** Sales already in the ledger for this day, which the run left alone. */
   skipped: number;
+  /**
+   * The frozen legacy days (`legacy-fixtures.ts`, S2-15b round 6) this run
+   * loaded at the demo branch: two the first time, none after.
+   */
+  legacyFixtureDays: number;
 }
 
 /** Refused before anything is written: demo sales never reach a live park. */
@@ -563,6 +553,9 @@ export async function seedDemoDay(
   const { id: branchId, operatorId, timezone } = branch;
   const dayStart = branch.businessDayStart;
   const branchName = branch.name;
+  // The frozen legacy days live at the demo branch too (round 6): loaded once,
+  // never rewritten by this or any later run.
+  const legacyFixtureDays = await seedLegacyFixtureDays(db, branch);
 
   const [station] = await db
     .select({ id: s.station.id, codePrefix: s.station.codePrefix })
@@ -645,6 +638,7 @@ export async function seedDemoDay(
     attempts: 0,
     notifications: 0,
     skipped: 0,
+    legacyFixtureDays,
   };
   const ref = demoDayRef(on, branchCode);
 
@@ -1356,6 +1350,9 @@ if (isMain) {
           ? `Demo day ${counts.businessDate} at ${counts.branchName}: already seeded (${counts.skipped} sales), nothing written.`
           : `Demo day ${counts.businessDate} at ${counts.branchName}: ${counts.sales} sales, ${counts.lines} lines, ${counts.attempts} payment attempts, ${counts.notifications} gateway notifications${counts.skipped ? `, ${counts.skipped} already present` : ''}.`,
       );
+      if (counts.legacyFixtureDays > 0) {
+        console.log(`Frozen legacy fixture days loaded at ${counts.branchName}: ${counts.legacyFixtureDays}.`);
+      }
       return closeDb();
     })
     .catch((err) => {

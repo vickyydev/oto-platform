@@ -28,8 +28,9 @@ type TodayTab = 'performance' | 'eod';
  * Performance, one End of Day record).
  *
  * S2-15b round 3 — UI ADDITION: beside the date, a Branch choice of this branch or
- * "All branches", offered on Performance only and only to somebody who may read more
- * than one branch (the platform says which). End of Day stays one branch's.
+ * "All branches", offered on Performance only and only to somebody who may add up more
+ * than one branch (the platform says which: analytics:read there, round 6). End of Day
+ * stays one branch's.
  */
 export default function Today({ initialTab = 'performance' }: { initialTab?: TodayTab }) {
   const { branch } = useBranch();

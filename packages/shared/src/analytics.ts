@@ -30,6 +30,66 @@ export const ANALYTICS_SOURCES = ['oto_pos', 'pisell', 'papaya'] as const;
 export type AnalyticsSource = (typeof ANALYTICS_SOURCES)[number];
 export const ANALYTICS_PLATFORM_SOURCE: AnalyticsSource = 'oto_pos';
 
+/** The systems a branch ran before the platform: their days are frozen rows, never rolled. */
+export type AnalyticsLegacySource = Exclude<AnalyticsSource, 'oto_pos'>;
+export const ANALYTICS_LEGACY_SOURCES = ['pisell', 'papaya'] as const satisfies readonly AnalyticsLegacySource[];
+
+/**
+ * The formula each legacy source's days were computed under (plan §9 question
+ * 7's default: a legacy source keeps its own version). Radar's Pisell pipeline
+ * is v30 (Central Floresta) and its Papaya pipeline v21 (Robinson Chalong),
+ * intake notes 03 and 04.
+ */
+export const ANALYTICS_LEGACY_FORMULA_VERSIONS: Record<AnalyticsLegacySource, number> = { pisell: 30, papaya: 21 };
+
+export function isLegacyAnalyticsSource(source: AnalyticsSource): source is AnalyticsLegacySource {
+  return source !== ANALYTICS_PLATFORM_SOURCE;
+}
+
+// --- Which source a branch reports (round 6) --------------------------------------------
+
+/**
+ * Radar's preference for a branch (S2-18): its own legacy figures, the
+ * platform's, or both side by side. Stored beside the source the summary
+ * serves; neither decides the other.
+ */
+export const ANALYTICS_SOURCE_PREFERENCES = ['oto_pos', 'legacy', 'both'] as const;
+export type AnalyticsSourcePreference = (typeof ANALYTICS_SOURCE_PREFERENCES)[number];
+
+/** A branch with no switch row reports the platform's own figures. */
+export const DEFAULT_BRANCH_SOURCE = { source: ANALYTICS_PLATFORM_SOURCE, preference: 'oto_pos' } as const satisfies {
+  source: AnalyticsSource;
+  preference: AnalyticsSourcePreference;
+};
+
+/** `PUT /analytics/sources/:branchId`. */
+export const BranchSourceBodySchema = z.object({
+  source: z.enum(ANALYTICS_SOURCES),
+  preference: z.enum(ANALYTICS_SOURCE_PREFERENCES),
+});
+export type BranchSourceBody = z.infer<typeof BranchSourceBodySchema>;
+
+/** One branch's switch as the routes answer it. */
+export const BranchSourceSchema = z.object({
+  branchId: z.string().uuid(),
+  name: z.string(),
+  source: z.enum(ANALYTICS_SOURCES),
+  preference: z.enum(ANALYTICS_SOURCE_PREFERENCES),
+  /** When the branch was last switched; null while it has never been (it reports `oto_pos`). */
+  switchedAt: z.string().nullable(),
+  /** Who switched it last; null while it has never been switched. */
+  actorAccountId: z.string().uuid().nullable(),
+});
+export type BranchSource = z.infer<typeof BranchSourceSchema>;
+
+/** `GET /analytics/sources`. */
+export const BranchSourcesSchema = z.object({
+  branches: z.array(BranchSourceSchema),
+  /** Requested branches of the operator the caller may not read: left out. */
+  omitted: z.array(z.string().uuid()),
+});
+export type BranchSources = z.infer<typeof BranchSourcesSchema>;
+
 /** The five revenue bars, in the order `RevenueBars.tsx` draws them. */
 export const ANALYTICS_REVENUE_BUCKETS = ['tickets', 'fnb', 'merch', 'parties', 'dropoff'] as const;
 export type AnalyticsRevenueBucket = (typeof ANALYTICS_REVENUE_BUCKETS)[number];
@@ -311,13 +371,22 @@ export function sumAnalyticsDayFigures(days: readonly AnalyticsDayFigures[]): An
 // --- The wire: GET /analytics/summary (round 3) ---------------------------------------
 
 /**
- * Who may read a branch's figures: the Today screen's own permission
+ * Who may read ONE branch's figures: the Today screen's own permission
  * (`pos:cash:read`, which every counter role holds — the prototype shows
  * Performance to anybody who opens Today, plan §9 question 9) or
  * `analytics:read` (Radar and the manager reports). Held at the branch, or
  * operator-wide; a branch the caller holds neither at is never read.
  */
 export const ANALYTICS_SUMMARY_PERMISSIONS = ['pos:cash:read', 'analytics:read'] as const satisfies readonly Permission[];
+
+/**
+ * What adds a branch into an answer that covers MORE than one (All branches,
+ * or several named): `analytics:read` there, and nothing else (plan §9
+ * question 9's default — "All branches only across the branches a person holds
+ * analytics:read on"). The Today screen's permission opens a branch on its own
+ * and never into a total.
+ */
+export const ANALYTICS_MERGE_PERMISSION = 'analytics:read' as const satisfies Permission;
 
 /** `day`: one row per business date; `total`: one row for the whole range. */
 export const ANALYTICS_SUMMARY_GROUPS = ['day', 'total'] as const;
@@ -337,7 +406,10 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const UUID_LIST = new RegExp(`^${UUID}(,${UUID}){0,${ANALYTICS_SUMMARY_MAX_BRANCHES - 1}}$`, 'i');
 
 export const AnalyticsSummaryQuerySchema = z.object({
-  /** Comma-separated branch ids. Absent: every live branch the caller may read. */
+  /**
+   * Comma-separated branch ids. Absent: every live branch the caller may read
+   * (more than one: those it holds `analytics:read` at, `ANALYTICS_MERGE_PERMISSION`).
+   */
   branches: z.string().regex(UUID_LIST, 'branches is a comma-separated list of branch ids').optional(),
   from: SUMMARY_DATE,
   to: SUMMARY_DATE,
@@ -419,6 +491,14 @@ export type AnalyticsSummaryHour = z.infer<typeof AnalyticsSummaryHourSchema>;
 export const AnalyticsSummaryBranchSchema = z.object({
   branchId: z.string().uuid(),
   name: z.string(),
+  /**
+   * Which system's days this branch's rows are (round 6, its
+   * `analytics.branch_source_switch`; no switch is `oto_pos`). A branch on a
+   * legacy source (`pisell`, `papaya`) is answered from that source's frozen
+   * days, which no rollup writes: a day with no frozen row reads as zero and
+   * final, and the branch has no hours.
+   */
+  source: z.enum(ANALYTICS_SOURCES),
   timezone: z.string(),
   /** `HH:MM` — the business day starts here, so a day is never a UTC slice. */
   businessDayStart: z.string(),
@@ -430,7 +510,8 @@ export const AnalyticsSummaryBranchSchema = z.object({
    * branch), or when it last wrote today's row here, whichever is later (an
    * archived branch: its newest row). A rewrite of an older day does not
    * count, so a run that fails before today's write never makes the branch
-   * look fresher. Null when it has never rolled this branch.
+   * look fresher. Null when it has never rolled this branch. A branch on a
+   * legacy source: when the newest of that source's frozen days was written.
    */
   lastRolledUpAt: z.string().nullable(),
   /** This branch's own rows, by the request's `group`. */
@@ -442,19 +523,35 @@ export const AnalyticsSummarySchema = z.object({
   from: SUMMARY_DATE,
   to: SUMMARY_DATE,
   group: z.enum(ANALYTICS_SUMMARY_GROUPS),
-  source: z.enum(ANALYTICS_SOURCES),
-  /** The branches added up below: those requested, or every one the caller may read. */
-  branches: z.array(AnalyticsSummaryBranchSchema),
-  /** Requested branches of the caller's operator that the caller may not read: left out, never added in. */
-  omitted: z.array(z.string().uuid()),
+  /** The one source every branch below reports; null when they report different ones (each branch says its own). */
+  source: z.enum(ANALYTICS_SOURCES).nullable(),
   /**
-   * Every live branch the caller may read, whatever was requested: the Today
-   * screen offers "All branches" when there is more than one.
+   * The branches added up below: those requested, or every one the caller may
+   * read. When more than one, only those the caller holds `analytics:read` at
+   * (`ANALYTICS_MERGE_PERMISSION`); the Today screen's permission reads one
+   * branch on its own.
    */
+  branches: z.array(AnalyticsSummaryBranchSchema),
+  /**
+   * Requested branches of the caller's operator that are left out, never added
+   * in: the caller may not read them, or may read them only one at a time.
+   */
+  omitted: z.array(z.string().uuid()),
+  /** Every live branch the caller may read on its own, whatever was requested. */
   readable: z.array(z.object({ branchId: z.string().uuid(), name: z.string() })),
+  /**
+   * Every live branch the caller may add up (`analytics:read` there): what
+   * "All branches" covers, offered on the Today screen when there is more
+   * than one (plan §9 question 9's default).
+   */
+  mergeable: z.array(z.object({ branchId: z.string().uuid(), name: z.string() })),
   /** `branches` added up: one row per date for `day`, one row for `total`. */
   merged: z.array(AnalyticsSummaryRowSchema),
-  /** For a one-day range: the merged day by wall-clock hour, the hours that had a sale. Null otherwise. */
+  /**
+   * For a one-day range: the merged day by wall-clock hour, the hours that had
+   * a sale, of the branches that report `oto_pos` (a legacy source keeps no
+   * hours). Null otherwise.
+   */
   hours: z.array(AnalyticsSummaryHourSchema).nullable(),
   /** The oldest of the branches' `lastRolledUpAt`: the whole answer is at least this fresh. Null if any branch was never rolled. */
   lastRolledUpAt: z.string().nullable(),

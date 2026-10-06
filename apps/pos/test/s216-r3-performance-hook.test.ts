@@ -64,10 +64,12 @@ function answer(over: Partial<AnalyticsSummary> = {}): AnalyticsSummary {
         today: '2026-10-06',
         lastRolledUpAt: '2026-10-06T07:05:00.000Z',
         rows: [row()],
+        source: 'oto_pos',
       },
     ],
     omitted: [],
     readable: [{ branchId: HKT, name: 'Oto Play Park, Central Floresta' }],
+    mergeable: [{ branchId: HKT, name: 'Oto Play Park, Central Floresta' }],
     merged: [row()],
     hours: null,
     lastRolledUpAt: '2026-10-06T07:05:00.000Z',
@@ -142,6 +144,10 @@ describe('usePerformance', () => {
         { branchId: DEMO, name: 'Demo Branch 2' },
         { branchId: HKT, name: 'Oto Play Park, Central Floresta' },
       ],
+      mergeable: [
+        { branchId: DEMO, name: 'Demo Branch 2' },
+        { branchId: HKT, name: 'Oto Play Park, Central Floresta' },
+      ],
       branches: [
         { ...answer().branches[0]!, branchId: DEMO, name: 'Demo Branch 2' },
         answer().branches[0]!,
@@ -167,6 +173,24 @@ describe('usePerformance', () => {
     expect(result.current.report!.netRevenueTHB).toBe(4240);
     // What this account may read is still known while the next answer is on its way.
     expect(result.current.readable).toHaveLength(1);
+  });
+
+  it('round 6: Today at two parks is not All branches — the offer follows the branches it may add up', async () => {
+    // Reception reads Central and Demo Branch 2 one at a time (the Today
+    // screen's permission) but holds analytics:read nowhere: nothing to add up.
+    vi.spyOn(api, 'get').mockResolvedValue(
+      answer({
+        readable: [
+          { branchId: DEMO, name: 'Demo Branch 2' },
+          { branchId: HKT, name: 'Oto Play Park, Central Floresta' },
+        ],
+        mergeable: [],
+      }),
+    );
+    const { result } = renderHook(() => usePerformance('2026-10-06', 'hkt-central', 'branch', false));
+    await flush();
+    expect(result.current.report!.netRevenueTHB).toBe(4240);
+    expect(result.current.readable).toEqual([]);
   });
 
   it('a refusal is shown in the platform’s words; a branch not linked to the platform is said so', async () => {

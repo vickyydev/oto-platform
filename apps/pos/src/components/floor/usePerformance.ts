@@ -12,9 +12,11 @@ import type { FloorReport } from '@/types';
  * follows the rollup as the day trades.
  *
  * `scope` is the one control the round adds (UI addition): `branch` reads the
- * Today section's branch, `all` every branch this account may read, added up
- * on the platform. `readable` is what the platform says this account may
- * read, so the choice is offered only to somebody with more than one.
+ * Today section's branch, `all` every branch this account may add up, summed
+ * on the platform. `readable` is what the platform says this account may add
+ * up — the branches it holds `analytics:read` at (`mergeable`, plan §9
+ * question 9; round 6) — so the choice is offered only to somebody with more
+ * than one. Opening Today at two parks is not enough: each is read on its own.
  */
 export type PerformanceScope = 'branch' | 'all';
 
@@ -31,7 +33,7 @@ export interface PerformanceState {
   today: string | null;
   /** The branch's business day start, `HH:MM`. */
   businessDayStart: string | null;
-  /** Every branch this account may read, as the platform answered. */
+  /** Every branch this account may add up into All branches, as the platform answered (`mergeable`). */
   readable: ReadonlyArray<{ branchId: string; name: string }>;
   /** The platform ids of the branches the figures cover. */
   branchIds: readonly string[];
@@ -80,7 +82,7 @@ export function usePerformance(date: string, branch: string, scope: PerformanceS
       if (current.current !== asked) return;
       const row = answer.merged[0];
       if (!row) throw new Error('The platform answered without the day.');
-      setReadable(answer.readable);
+      setReadable(answer.mergeable);
       setState({
         key: asked,
         value: {
@@ -103,7 +105,7 @@ export function usePerformance(date: string, branch: string, scope: PerformanceS
           // left over from an earlier day (a stalled rollup).
           today: answer.branches[0]?.today ?? null,
           businessDayStart: answer.branches[0]?.businessDayStart ?? null,
-          readable: answer.readable,
+          readable: answer.mergeable,
           branchIds: answer.branches.map((b) => b.branchId),
           error: null,
         },
