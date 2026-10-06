@@ -932,6 +932,10 @@ export interface SaleExtension {
   createdAt: string;
   createdByName: string | null;
   appliedAt: string | null;
+  currentBandIds?: string[];
+  needsReselection?: boolean;
+  /** The configured tender codes that took this charge, oldest first. */
+  paymentMethods?: string[];
 }
 export interface SaleExtensionsRead {
   options: SaleExtensionOption[];
@@ -951,3 +955,7 @@ export const createSaleExtension = (saleId: string, body: SaleExtensionBody) =>
     `/sales/${encodeURIComponent(saleId)}/extensions`, body,
     { idempotencyKey: `extension:${saleId}:${body.actionId}`, headers: { 'x-oto-action-id': body.actionId } },
   );
+
+export const reselectExtensionBands = (saleId: string, extensionId: string, body: { actionId: string; stationId: string; bandIds: string[] }) =>
+  api.post<{ replay: boolean }>(`/sales/${encodeURIComponent(saleId)}/extensions/${encodeURIComponent(extensionId)}/bands`, body,
+    { idempotencyKey: `extension-reselect:${extensionId}:${body.actionId}`, headers: { 'x-oto-action-id': body.actionId } });

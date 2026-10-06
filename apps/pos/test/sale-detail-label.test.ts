@@ -5,6 +5,7 @@ import {
   BOOKED_ONLINE_LABEL,
   createSaleExtension,
   type SaleExtensionsRead,
+  type SaleExtension,
   historyDateRange,
   listSales,
   type ApiSaleDetail,
@@ -35,7 +36,8 @@ import { api, ApiError } from '@/api/client';
 import { settle } from './support/fixtures';
 import { stationLinkApi } from '@/station/link';
 import { renderHook } from './support/hooks';
-import { ExtensionPayment, extensionBandFromScan } from '@/components/history/SaleExtensions';
+import { ExtensionBandRecovery, ExtensionPayment, extensionBandFromScan, useSaleExtensions } from '@/components/history/SaleExtensions';
+import { paymentMethodLabel } from '@/lib/payments';
 import { PaymentTenderPanel } from '@/components/till/PaymentTenderPanel';
 import { MobileRefundFlow } from '@/components/mobile/history/MobileRefundFlow';
 import { MobileReprintFlow } from '@/components/mobile/history/MobileReprintFlow';
@@ -828,5 +830,65 @@ describe('paid Add time selection and charge confirmation', () => {
     const panel = elements(hook.result.current).find((node) => node.type === PaymentTenderPanel);
     expect(panel?.props.stage).toMatchObject({ state: { outstandingSatang: 12_840 }, canSubmit: false });
     hook.unmount(); post.mockRestore(); get.mockRestore();
+  });
+});
+
+describe('the approved History Add time placement', () => {
+  const read: SaleExtensionsRead = {
+    options: [{ id: 'ext-30', label: '+30 minutes', minutes: 30, unitSatang: 6000 }],
+    eligibleBands: [{ id: 'band-1', shortCode: 'T1-7KMQ4X', kind: 'kid' }, { id: 'band-2', shortCode: 'T1-9ABCDE', kind: 'adult' }],
+    extensions: [{ id: 'extension-1', chargeSaleId: 'charge-1', optionId: 'ext-30', label: '+30 minutes', minutesAdded: 30,
+      braceletCount: 1, amountSatang: 6000, selection: { mode: 'count', braceletCount: 1 }, status: 'applied',
+      createdAt: '2026-10-06T05:00:00.000Z', createdByName: 'Som', appliedAt: '2026-10-06T05:01:00.000Z', paymentMethods: ['cash'] }],
+  };
+  it('lists time added with its bracelets, tender, time and staff, and offers Add time beside Reprint', async () => {
+    const get = vi.spyOn(api, 'get').mockResolvedValue(read);
+    const hook = renderHook(() => useSaleExtensions({ saleId: 'source-1', enabled: true, eligible: true, offline: false, fmt: () => '12:00' }));
+    await settle();
+    expect(get).toHaveBeenCalledWith('/sales/source-1/extensions');
+    const card = words(hook.result.current.card);
+    expect(card).toContain('Time added');
+    expect(card).toContain(`1 bracelet · ${paymentMethodLabel('cash')} · 12:00 · by Som`);
+    expect(card).not.toContain('Payment unfinished');
+    const button = elements(hook.result.current.button)[0]!;
+    expect(words(button.props.children)).toBe('Add time');
+    expect(button.props.disabled).toBe(false);
+    hook.unmount(); get.mockRestore();
+  });
+  it('reads nothing for a sale that cannot take extra time', async () => {
+    const get = vi.spyOn(api, 'get').mockResolvedValue(read);
+    const hook = renderHook(() => useSaleExtensions({ saleId: 'charge-1', enabled: false, eligible: true, offline: false, fmt: () => '' }));
+    await settle();
+    expect(get).not.toHaveBeenCalled();
+    expect(hook.result.current).toEqual({ card: null, button: null, dialogs: null });
+    hook.unmount(); get.mockRestore();
+  });
+});
+
+describe('replacement bracelet recovery', () => {
+  it('keeps active selections fixed and retries the same repair without collecting', async () => {
+    const post = vi.spyOn(api, 'post').mockRejectedValueOnce(new ApiError(409, 'IDEMPOTENCY_IN_FLIGHT', 'Still recording'));
+    const onClose = vi.fn();
+    const entry: SaleExtension = { id: 'extension-1', chargeSaleId: 'charge-1', optionId: 'ext-30', label: '+30 minutes',
+      minutesAdded: 30, braceletCount: 2, amountSatang: 12000, selection: { mode: 'bands', bandIds: ['old-1', 'band-2'] },
+      currentBandIds: ['old-1', 'band-2'], needsReselection: true, status: 'applied', createdAt: '', createdByName: 'Som', appliedAt: '' };
+    const hook = renderHook(() => ExtensionBandRecovery({ saleId: 'source-1', stationId: 'station-1', entry,
+      bands: [{ id: 'new-1', shortCode: 'T1-7KMQ4X', kind: 'kids' }, { id: 'band-2', shortCode: 'T1-9ABCDE', kind: 'kids' }], onClose }));
+    const checks = elements(hook.result.current).filter((node) => node.type === 'input');
+    expect(checks[1]!.props).toMatchObject({ disabled: true, checked: true });
+    (checks[0]!.props.onChange as () => void)();
+    press(hook.result.current, 'Save replacement bracelets');
+    await settle();
+    expect(post.mock.calls[0]?.[0]).toBe('/sales/source-1/extensions/extension-1/bands');
+    expect(post.mock.calls[0]?.[1]).toMatchObject({ bandIds: ['band-2', 'new-1'], stationId: 'station-1' });
+    expect(Object.keys(post.mock.calls[0]?.[1] as object).sort()).toEqual(['actionId', 'bandIds', 'stationId']);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(elements(hook.result.current).filter((node) => node.type === 'input').every((node) => node.props.disabled)).toBe(true);
+    post.mockResolvedValueOnce({ replay: true });
+    press(hook.result.current, 'Save replacement bracelets');
+    await settle();
+    expect(post.mock.calls[1]).toEqual(post.mock.calls[0]);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    hook.unmount(); post.mockRestore();
   });
 });

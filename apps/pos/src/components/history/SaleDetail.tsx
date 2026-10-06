@@ -1,4 +1,4 @@
-import { SaleExtensions } from '@/components/history/SaleExtensions';
+import { useSaleExtensions } from '@/components/history/SaleExtensions';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
@@ -1220,6 +1220,13 @@ export function SaleDetail(props: SaleDetailProps) {
     kidBands,
     adultBands,
   } = useSaleDetail(props);
+  const extensions = useSaleExtensions({
+    saleId: sale.id,
+    enabled: txn.kind === 'ticket' && Boolean(detail) && !detail?.timeExtension && bands.length > 0,
+    eligible: sale.status === 'finalised',
+    offline,
+    fmt,
+  });
 
   const contents = error ? (
     <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -1482,7 +1489,8 @@ export function SaleDetail(props: SaleDetailProps) {
             fmt={fmt}
           />
 
-          {txn.kind === 'ticket' && !detail?.timeExtension && <SaleExtensions key={sale.id} saleId={sale.id} eligible={sale.status === 'finalised'} offline={offline} />}
+          {extensions.card}
+          {extensions.dialogs}
 
           {/* Flash confirmation for a reprint or a noted request */}
           {flash && (
@@ -1504,7 +1512,8 @@ export function SaleDetail(props: SaleDetailProps) {
           )}
 
           {/* Actions — every one of these changes a recorded sale. A closed sale
-              can be reprinted and refunded (S2-11); an unpaid sale that took no money can
+              can be reprinted and refunded (S2-11), and a ticket sale with bracelets
+              can take paid extra time; an unpaid sale that took no money can
               be voided, in Refund's place; a voided sale has nothing to refund
               and shows neither (SCRUM-430). */}
           {justRefunded ? (
@@ -1535,7 +1544,7 @@ export function SaleDetail(props: SaleDetailProps) {
             </Card>
           ) : (
             <div className="shrink-0 space-y-2">
-              <div className="grid gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
                   className="h-14 text-base gap-2"
@@ -1547,7 +1556,7 @@ export function SaleDetail(props: SaleDetailProps) {
                   <Printer className="w-5 h-5" />
                   {reprintBusy ? 'Sending…' : 'Reprint'}
                 </Button>
-
+                {extensions.button}
               </div>
               {tookNoMoney ? (
                 <>

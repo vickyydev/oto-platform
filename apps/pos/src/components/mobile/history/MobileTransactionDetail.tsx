@@ -1,4 +1,4 @@
-import { SaleExtensions } from '@/components/history/SaleExtensions';
+import { useSaleExtensions } from '@/components/history/SaleExtensions';
 import { useState } from 'react';
 import {
   ArrowLeft,
@@ -53,6 +53,14 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
     remainingSatang,
     offline,
   } = state;
+  const extensions = useSaleExtensions({
+    saleId: sale.id,
+    enabled: txn.kind === 'ticket' && Boolean(detail) && !detail?.timeExtension && state.bands.length > 0,
+    eligible: sale.status === 'finalised',
+    offline,
+    fmt,
+    compact: true,
+  });
   if (state.refundOpen)
     return (
       <MobileRefundFlow
@@ -292,7 +300,8 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
             madeBy={state.madeBy}
             fmt={fmt}
           />
-          {txn.kind === 'ticket' && !detail?.timeExtension && <SaleExtensions key={sale.id} saleId={sale.id} eligible={sale.status === 'finalised'} offline={offline} />}
+          {extensions.card}
+          {extensions.dialogs}
 
           {state.flash && (
             <p
@@ -342,7 +351,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
             </Card>
           ) : (
             <div className="space-y-2">
-              <div className="grid gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
                   className="h-12 gap-2"
@@ -357,7 +366,7 @@ export function MobileTransactionDetail(props: SaleDetailProps) {
                   <Printer className="w-4 h-4" />
                   Reprint
                 </Button>
-
+                {extensions.button}
               </div>
               {state.tookNoMoney ? (
                 <Button
