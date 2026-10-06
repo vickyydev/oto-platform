@@ -712,13 +712,32 @@ export interface PromoUsageRow {
  * are lifetime, network-wide counters on the catalog record itself), joined with the
  * ฿ discount value actually redeemed within the filtered range (from promoDiscountImpact,
  * the same scanned-code ledger the Discount/Comp report uses — no parallel math).
+ *
+ * This form reads this browser's mock sales, and is kept as the prototype's
+ * arithmetic (the one-calculator parity test). The Wallet & Promo panel reads
+ * the platform through `promoUsageSummaryOf` (S2-15b round 6 closing sweep).
  */
 export function promoUsageSummary(filters: ReportFilters): PromoUsageRow[] {
+  return promoUsageSummaryOf(getDiscounts(), promoDiscountImpact(filters));
+}
+
+/**
+ * The same rule over given rows: the catalog's codes (on the platform, each
+ * `usedCount` counted from the sales, `GET /menu/discounts`) and the promo
+ * rows of the range (on the platform, `GET /analytics/reports/discounts/transactions`
+ * `promoRows`, the port of `promoDiscountImpact`). A code is matched however
+ * it was cased: the platform's definitions are upper case.
+ */
+export function promoUsageSummaryOf(
+  discounts: readonly Discount[],
+  promoRows: ReadonlyArray<{ code: string; amountSatang: Satang }>,
+): PromoUsageRow[] {
+  const key = (code: string) => code.trim().toUpperCase();
   const valueByCode = new Map<string, Satang>();
-  for (const row of promoDiscountImpact(filters)) {
-    valueByCode.set(row.code, (valueByCode.get(row.code) ?? 0) + row.amountSatang);
+  for (const row of promoRows) {
+    valueByCode.set(key(row.code), (valueByCode.get(key(row.code)) ?? 0) + row.amountSatang);
   }
-  return getDiscounts()
+  return discounts
     .filter((d) => (d.usedCount ?? 0) > 0 || d.usageLimit !== undefined)
     .map((d) => ({
       code: d.code,
@@ -727,7 +746,7 @@ export function promoUsageSummary(filters: ReportFilters): PromoUsageRow[] {
       usedCount: d.usedCount ?? 0,
       usageLimit: d.usageLimit,
       active: d.active !== false,
-      totalDiscountValueSatang: valueByCode.get(d.code) ?? 0,
+      totalDiscountValueSatang: valueByCode.get(key(d.code)) ?? 0,
     }))
     .sort((a, b) => b.usedCount - a.usedCount);
 }

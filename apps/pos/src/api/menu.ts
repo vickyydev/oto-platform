@@ -185,6 +185,12 @@ export interface ApiDiscount {
   stackable: boolean;
   active: boolean;
   archivedAt: string | null;
+  /**
+   * Finalised sales that carried the code since the definition was created —
+   * the count its usage limit is held to (S2-15b round 6). Read-only: never
+   * sent back. Optional: an older platform answers without it.
+   */
+  usedCount?: number;
 }
 
 // --- Import -----------------------------------------------------------------
@@ -777,6 +783,7 @@ export function apiDiscountToDiscount(d: ApiDiscount): Discount {
     ...(d.validUntil ? { validUntil: d.validUntil } : {}),
     ...(d.usageLimit != null ? { usageLimit: d.usageLimit } : {}),
     ...(d.perCustomerLimit != null ? { perCustomerLimit: d.perCustomerLimit } : {}),
+    ...(d.usedCount != null ? { usedCount: d.usedCount } : {}),
     stackable: d.stackable,
     active: d.active,
   };

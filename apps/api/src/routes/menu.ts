@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, getTableColumns, isNull, sql } from 'drizzle-orm';
 import {
   branch,
   discountDefinition,
@@ -661,22 +661,39 @@ export async function menuRoutes(app: App): Promise<void> {
     {
       config: { permission: 'catalog:menu:read' },
       schema: {
-        description: 'Discount code definitions',
+        description:
+          'Discount code definitions, each with `usedCount`: the finalised sales that carried the code since the ' +
+          'definition was created — the count its usage limit is held to.',
         querystring: z.object({ includeArchived: z.coerce.boolean().default(false) }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
+      const d = discountDefinition;
       const rows = await app.db
-        .select()
-        .from(discountDefinition)
+        .select({
+          ...getTableColumns(d),
+          // S2-15b round 6 closing sweep: the prototype's catalog counter
+          // (`Discount.usedCount`), which the Wallet & Promo report shows beside
+          // the limit. Counted from the sales as the limit is
+          // (`promo-codes.ts` finalisedUses), never kept as a counter.
+          // Named in full: drizzle writes a column of a one-table select
+          // unqualified, which the subquery's own tables would capture.
+          usedCount: sql<number>`(
+            select count(distinct sd.sale_id)::int
+              from pos.sale_discount sd
+              join pos.sale s on s.id = sd.sale_id
+             where sd.operator_id = "discount_definition"."operator_id"
+               and sd.kind = 'promo'
+               and sd.code = "discount_definition"."code"
+               and sd.created_at >= "discount_definition"."created_at"
+               and s.status = 'finalised')`.mapWith(Number),
+        })
+        .from(d)
         .where(
           req.query.includeArchived
-            ? eq(discountDefinition.operatorId, auth.operatorId)
-            : and(
-                eq(discountDefinition.operatorId, auth.operatorId),
-                isNull(discountDefinition.archivedAt),
-              ),
+            ? eq(d.operatorId, auth.operatorId)
+            : and(eq(d.operatorId, auth.operatorId), isNull(d.archivedAt)),
         );
       return { discounts: rows };
     },

@@ -8,9 +8,9 @@ import {
   type HealthState,
   type JobStatus,
   type Readiness,
-  type RollupFreshness,
   type TestControl,
 } from '@/api/observability';
+import { analyticsFreshnessLines, type AnalyticsFreshnessLine } from '@/lib/analyticsFreshness';
 import { Button } from '@/components/ui/button';
 import { BoothSummary } from '@/components/health/BoothSummary';
 import { FleetSummary } from '@/components/devices/FleetSummary';
@@ -235,18 +235,13 @@ export function Health() {
             span={12}
             icon={LineChart}
             title="Analytics rollup"
-            note="when each park's figures were last brought up to date"
+            note="when each park's day, report and booth figures were last brought up to date"
           >
             <StripedList label="Analytics rollup">
-              {rollups.map((row) => (
-                <RollupRow key={row.branchId} row={row} timezone={timezone} />
+              {/* Each park's daily figures, then (round 6) its report figures and (round 5) its booth figures. */}
+              {analyticsFreshnessLines(rollups).map((line) => (
+                <RollupRow key={line.key} line={line} timezone={timezone} />
               ))}
-              {/* S2-15b round 5: the booth figures' own line per park, where the API reports it. */}
-              {rollups
-                .filter((row) => row.boothLastRolledUpAt !== undefined)
-                .map((row) => (
-                  <BoothRollupRow key={`booth-${row.branchId}`} row={row} timezone={timezone} />
-                ))}
             </StripedList>
           </CardShell>
         )}
@@ -322,38 +317,19 @@ function JobRow({ job, timezone }: { job: JobStatus; timezone?: string | null })
   );
 }
 
-/** One park's last rollup, drawn as a job row is. */
-function RollupRow({ row, timezone }: { row: RollupFreshness; timezone?: string | null }) {
-  return (
-    <li className="px-3 py-2.5">
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <StatusMark tone={row.lastRolledUpAt ? 'ok' : 'idle'} />
-        <span className="min-w-0 text-[13.5px] font-semibold break-words">{row.name}</span>
-        <span className="ml-auto text-[12.5px] text-muted-foreground tabular-nums">
-          {row.lastRolledUpAt ? timeAgo(row.lastRolledUpAt) : '—'}
-        </span>
-      </div>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        {row.lastRolledUpAt ? `last rolled up ${formatWhen(row.lastRolledUpAt, timezone)}` : 'not rolled up yet'}
-        {` · trading day ${row.today}`}
-      </p>
-    </li>
-  );
-}
-
-/** One park's booth figures (`job:rollup.booth`), drawn as its rollup row is. */
-function BoothRollupRow({ row, timezone }: { row: RollupFreshness; timezone?: string | null }) {
-  const at = row.boothLastRolledUpAt ?? null;
+/** One park's figure set (daily, report or booth), drawn as a job row is. */
+function RollupRow({ line, timezone }: { line: AnalyticsFreshnessLine; timezone?: string | null }) {
+  const at = line.at;
   return (
     <li className="px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <StatusMark tone={at ? 'ok' : 'idle'} />
-        <span className="min-w-0 text-[13.5px] font-semibold break-words">{row.name} · booth figures</span>
+        <span className="min-w-0 text-[13.5px] font-semibold break-words">{line.label}</span>
         <span className="ml-auto text-[12.5px] text-muted-foreground tabular-nums">{at ? timeAgo(at) : '—'}</span>
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">
         {at ? `last rolled up ${formatWhen(at, timezone)}` : 'not rolled up yet'}
-        {` · trading day ${row.today}`}
+        {` · trading day ${line.today}`}
       </p>
     </li>
   );

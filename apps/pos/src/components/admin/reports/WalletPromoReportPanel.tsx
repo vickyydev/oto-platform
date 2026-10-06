@@ -11,14 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { downloadCsv } from '@/lib/csv';
 import {
   defaultReportFilters,
+  platformReportQuery,
   platformWalletCreditReport,
-  promoUsageSummary,
+  promoUsageSummaryOf,
   type WalletCreditReport,
 } from '@/lib/reporting';
 import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
-import type { PromoVoucherReport } from '@oto/shared';
+import type { DiscountTransactions, PromoVoucherReport } from '@oto/shared';
 import { voucherPromotionsApi } from '@/api/voucherPromotions';
-import { getBranches } from '@/store/catalogStore';
+import { analyticsReportsApi } from '@/api/analyticsReports';
+import { getBranches, getDiscounts } from '@/store/catalogStore';
 
 const EMPTY_REPORT: WalletCreditReport = {
   summary: { grantedSatang: 0, spentSatang: 0, refundedSatang: 0, expiredSatang: 0, netOutstandingSatang: 0, entryCount: 0 },
@@ -35,8 +37,11 @@ const EMPTY_REPORT: WalletCreditReport = {
  * the sum of every wallet's balance today, and a wallet belongs to the park
  * that issued it, so the branch filter now applies to it. Round 5 adds the
  * promotional vouchers' foregone-revenue line, the platform's own figures
- * (`GET /vouchers/promotions/report`); the promo-code usage card below it is
- * still the catalog's mock counters.
+ * (`GET /vouchers/promotions/report`). S2-15b round 6 (closing sweep): the
+ * promo-code usage card reads the platform too — each code's uses counted from
+ * the sales (`GET /menu/discounts`, into the catalog) and the range's discount
+ * value from the platform's promo rows (`GET /analytics/reports/discounts/transactions`),
+ * no longer this browser's mock sales.
  *
  * Note: usedCount/usageLimit on each promo row are lifetime, network-wide
  * catalog counters, but totalDiscountValueSatang is scoped to the current date
@@ -61,7 +66,37 @@ export function WalletPromoReportPanel() {
   }, [filters]);
   const summary = report.summary;
   const ledger = report.rows;
-  const promos = useMemo(() => promoUsageSummary(filters), [filters]);
+
+  /**
+   * The range's promo rows, from the platform. A branch only this device knows
+   * reads as empty, as every report here does; a refusal empties the card's
+   * value column and says why.
+   */
+  const [promoRows, setPromoRows] = useState<DiscountTransactions['promoRows']>([]);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    setPromoError(null);
+    const query = platformReportQuery(filters);
+    if (!query) {
+      setPromoRows([]);
+      return;
+    }
+    analyticsReportsApi
+      .discountTransactions(query)
+      .then((next) => {
+        if (live) setPromoRows(next.promoRows);
+      })
+      .catch((err: unknown) => {
+        if (!live) return;
+        setPromoRows([]);
+        setPromoError(err instanceof Error ? err.message : 'The promo code figures could not be loaded.');
+      });
+    return () => {
+      live = false;
+    };
+  }, [filters]);
+  const promos = useMemo(() => promoUsageSummaryOf(getDiscounts(), promoRows), [promoRows]);
 
   /**
    * S2-14a round 5 — FOREGONE REVENUE FROM PROMOTIONAL VOUCHERS, its own line,
@@ -255,6 +290,11 @@ export function WalletPromoReportPanel() {
           />
         }
       >
+        {promoError && (
+          <ShellBanner>
+            The promo code figures could not be loaded from the platform — {promoError}
+          </ShellBanner>
+        )}
         <Table>
           <TableHeader>
             <TableRow>

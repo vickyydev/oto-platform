@@ -283,6 +283,12 @@ export interface RollupFreshness {
    * brought up to date here. Optional: an older API answers without it.
    */
   boothLastRolledUpAt?: string | null;
+  /**
+   * S2-15b round 6: when the Reports panels' rows (written by the daily
+   * rollup with the day) were last brought up to date here. Optional: an older
+   * API answers without it.
+   */
+  reportsLastRolledUpAt?: string | null;
 }
 
 /** What `/ready` answers. Public, and the one call that works on every deployment. */
