@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { GUARDIAN_ADD_SOURCES } from './release';
 import { FoodProvisionSchema, RegistrationChildSchema, SUPERVISION_REQUIREMENTS } from './supervision';
+import type { BandStayView } from './band-food';
 
 /**
  * S2-13 ROUND 4 — CHECK-IN, THE BOARD AND RELEASE ON THE BOX LANE (plan
@@ -47,6 +48,8 @@ export const BRIDGE_CHECKIN_INTENTS = {
   photo: 'photo.capture',
   /** The board, from the box's copy with what this counter recorded laid over it. */
   board: 'checkin.board',
+  /** Only the in-park child's food and safety details behind a scanned band. */
+  bandFood: 'checkin.band_food',
   /** The supervision config and nanny roster the gate reads. */
   config: 'checkin.config',
   /** Registrations still waiting to be checked in (the gate's waiting-bookings picker). */
@@ -55,6 +58,18 @@ export const BRIDGE_CHECKIN_INTENTS = {
   context: 'release.context',
 } as const;
 export type BridgeCheckinIntent = (typeof BRIDGE_CHECKIN_INTENTS)[keyof typeof BRIDGE_CHECKIN_INTENTS];
+
+export const BridgeBandFoodLookupSchema = z.object({ key: z.string().trim().min(1).max(200) }).strict();
+/**
+ * The box's answer to a scanned band at a food counter: the in-park stay at
+ * this park, as `GET /wallets/scan` answers it online. Each prepaid item's
+ * `redeemedQty` already counts what this box has served and the platform has
+ * not yet filed.
+ */
+export interface BridgeBandFoodAnswer extends Record<string, unknown> {
+  stay: BandStayView | null;
+  cacheAppliedAt: string | null;
+}
 
 export const BRIDGE_CHECKIN_INTENT_TYPES: ReadonlySet<string> = new Set(Object.values(BRIDGE_CHECKIN_INTENTS));
 
@@ -401,6 +416,21 @@ export interface BridgeCheckinChild {
   childAgeYears: number;
   dateOfBirth: string | null;
   allergies: string | null;
+  /**
+   * The saved child's allergies, medical notes and dietary notes, behind the
+   * stay's own (which take precedence), as the online band scan reads them.
+   * Only on an in-park stay.
+   */
+  savedAllergies?: string | null;
+  savedMedicalNotes?: string | null;
+  savedDietary?: string | null;
+  /**
+   * Prepaid units this box has served from the stay that the platform has
+   * filed, per menu item: the box's own count less this is what the copy does
+   * not reflect yet. Only on an in-park stay with prepaid items, and only in
+   * the copy sent to that box.
+   */
+  boxPrepaidServed?: Array<{ menuItemId: string; qty: number }>;
   foodRestrictions: string | null;
   mayOrderFood: boolean;
   foodProvision: z.infer<typeof FoodProvisionSchema> | null;

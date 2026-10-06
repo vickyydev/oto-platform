@@ -1,6 +1,8 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { band, bandEvent, child, device, paymentAttempt, sale, saleLine, saleExtension, saleExtensionBand } from '@oto/db';
 import {
+  CartBandHolderSchema,
+  CartPrepaidSchema,
   OfflinePriceBasisSchema,
   PRICING_ENGINE_VERSION,
   LEGACY_SATANG_ENGINE_VERSION,
@@ -219,10 +221,14 @@ const OfflineCartSchema = z.object({
           .object({ variantId: z.string().min(1).max(100), variantLabel: z.string().min(1).max(60) })
           .nullish(),
         lineTotalSatang: z.number().int().min(0).optional(),
+        /** SCRUM-498 — served on the box from the band holder's prepaid items, at ฿0. */
+        prepaid: CartPrepaidSchema.nullish(),
       }),
     )
     .max(100)
     .default([]),
+  /** SCRUM-498 — the stay of the band the box took the F&B order against. */
+  bandHolder: CartBandHolderSchema.nullish(),
   pickupCode: z.string().max(12).optional(),
   manualDiscounts: z
     .array(
@@ -557,6 +563,7 @@ export async function replayOfflineSale(
     ...(cart.socks ? { socks: cart.socks } : {}),
     lines: cart.lines,
     items: cart.items,
+    ...(cart.bandHolder ? { bandHolder: cart.bandHolder } : {}),
     ...(cart.pickupCode ? { pickupCode: cart.pickupCode } : {}),
     manualDiscounts: cart.manualDiscounts,
     promos: cart.promos,

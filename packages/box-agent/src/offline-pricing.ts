@@ -397,6 +397,12 @@ export interface OfflineQuoteContext {
   businessDayStart: string;
   /** The member's tier from the box's copy, or null for a walk-in. */
   memberTier: string | null;
+  /**
+   * SCRUM-498 — the item lines served from a band holder's prepaid items, by
+   * cart line id, already checked against the stay (`checkin-desk.ts`). Each is
+   * priced at ฿0, as the platform prices it.
+   */
+  prepaid?: ReadonlyMap<string, { checkinId: string }>;
 }
 
 /** What the till reads back — the platform's `ApiSaleQuote`, from the box. */
@@ -554,24 +560,22 @@ export function priceOfflineSale(
   const date = businessDate(context.now, context.timezone, parseDayStart(context.businessDayStart));
   const rate = getRateModeForDate(date, catalogue.holidays);
   /**
-   * The tier that prices this cart. A recognised member's cart is priced at the
-   * tier the TILL chose (`cart.tier`), falling back to the member's own cached
-   * tier when the till named none. The till gates which tiers a member may be
-   * sold at — a higher unverified tier is refused there — and on the box lane
-   * the box prices what the till displayed, so a Thai member the staff rang up
-   * at the Tourist rate is priced at Tourist and the line totals match rather
-   * than refusing at Pay with `SALE_LINE_PRICE_MISMATCH`. That is the same sale
-   * the platform files on replay: `priceCart` reads this tier straight from the
-   * price basis the box carries (OD-8), not from the member.
+   * The tier that prices this cart, as the platform's `resolveTier` decides it.
+   * A recognised member's cart is priced at the member's tier as this box holds
+   * it (OD-11 included). The tier the till names moves the price one way only:
+   * down to the operator's default tier, which needs no proof. Any other tier
+   * it names prices nothing — the member's own tier stands, and a line the
+   * till priced at the other rate is refused as `SALE_LINE_PRICE_MISMATCH`.
    *
    * A walk-in has no member to price for and no way to record a document check
    * offline, so the operator's default stands and a tier named on the cart is
    * ignored — exactly as the platform prices a walk-in with no claim at the
    * default tier.
    */
-  const tierCode =
-    context.memberTier !== null ? (cart.tier ?? context.memberTier) : catalogue.defaultTier;
-  const tierSource: OfflineQuote['tierSource'] = context.memberTier !== null ? 'member' : 'default';
+  const defaultChosen =
+    context.memberTier !== null && cart.tier !== undefined && cart.tier !== context.memberTier && cart.tier === catalogue.defaultTier;
+  const tierCode = context.memberTier !== null && !defaultChosen ? context.memberTier : catalogue.defaultTier;
+  const tierSource: OfflineQuote['tierSource'] = context.memberTier !== null && !defaultChosen ? 'member' : 'default';
 
   const socksProduct = cart.socks ? catalogue.products.get(cart.socks.addOnId) : undefined;
   const ctx: PricingContext = {
@@ -731,11 +735,15 @@ export function priceOfflineSale(
         option: options.find((o) => o.id === optionId)!,
       })),
     );
-    const priced = itemUnitPrice(
-      itemPricePair(row.priceSatang, row.priceWeekendSatang),
-      picked.map(({ option }) => itemPricePair(option.priceSatang, option.priceWeekendSatang)),
-      ctx.mode,
-    );
+    // A line served from prepaid items is ฿0: it was paid for at the door.
+    const prepaidFrom = isMerch ? undefined : context.prepaid?.get(line.id);
+    const priced = prepaidFrom
+      ? { base: 0, unit: 0, options: picked.map(() => 0) }
+      : itemUnitPrice(
+          itemPricePair(row.priceSatang, row.priceWeekendSatang),
+          picked.map(({ option }) => itemPricePair(option.priceSatang, option.priceWeekendSatang)),
+          ctx.mode,
+        );
     const cartLine = itemCartLine(
       {
         id: line.id,
@@ -804,7 +812,8 @@ export function priceOfflineSale(
         ...(isMerch ? {} : { prepStation: prepStationOf(row, catalogue.categories) }),
       },
     });
-    freeItemLines.push({ lineId: line.id, productId: row.id });
+    // A prepaid line was paid for at the door: a free-item code has nothing to take off it.
+    if (!prepaidFrom) freeItemLines.push({ lineId: line.id, productId: row.id });
     cartLines.push(cartLine);
   }
 

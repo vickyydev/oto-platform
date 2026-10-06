@@ -123,6 +123,7 @@ import type { CartBandHolderInput, CartPrepaidInput, WalletGrantView, WalletTend
 import { BAND_FOOD_REFUSALS } from '@oto/shared';
 import {
   assertSalePrepaidServable,
+  boxCompletedSale,
   auditSettledAtPickup,
   isPrepaidSettledAtPickup,
   prepaidSettledAtPickup,
@@ -3926,20 +3927,25 @@ export async function finaliseSale(
    */
   const owedBefore = await outstandingOf(tx, row);
   const moneyTaken = owedBefore < row.grossSatang;
+  /**
+   * SCRUM-498 — the food was handed over offline only when a box completed
+   * this sale: this close is a box's replay, or a box's `sale.finalised` for it
+   * was filed before (`boxCompletedSale`). A sale a box started that the
+   * counter confirms online is not that, whatever its origin: the online rules
+   * apply to it.
+   */
+  const handedOverOffline = input.printing === 'skip' || (await boxCompletedSale(tx, row.id));
   const prepaidGate: PrepaidGate =
-    input.prepaidGate === 'refuse' && input.printing !== 'skip' && row.origin !== 'box' && !moneyTaken
-      ? 'refuse'
-      : 'file';
+    input.prepaidGate === 'refuse' && !handedOverOffline && !moneyTaken ? 'refuse' : 'file';
   let settledAtPickup: SettledPrepaidLine[] = [];
   let usedUp: UsedUpPrepaidLine[] = [];
   if (prepaidGate === 'refuse') await assertSalePrepaidServable(tx, row);
   else {
     settledAtPickup = await prepaidSettledAtPickup(tx, row);
-    // A box's replay served the food offline already: its redemption files any
-    // shortfall. Any other close sets aside, unserved, a prepaid line beyond
-    // what is left for the child.
-    const boxReplay = input.printing === 'skip' || row.origin === 'box';
-    if (!boxReplay) usedUp = await prepaidUsedUpAtClose(tx, row);
+    // Food a box handed over offline was served already: its redemption files
+    // any shortfall. Any other close sets aside, unserved, a prepaid line
+    // beyond what is left for the child.
+    if (!handedOverOffline) usedUp = await prepaidUsedUpAtClose(tx, row);
   }
 
   const [st] = await tx.select().from(station).where(eq(station.id, row.stationId)).limit(1);

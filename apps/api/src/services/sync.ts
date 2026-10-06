@@ -4924,7 +4924,7 @@ export async function cacheBundle(
     if (scope === 'checkin') {
       // One item, applied whole, like the catalogue: half a board is a child
       // the counter cannot find at pickup.
-      put('checkin', [await checkinCacheItem(db, operatorId, branchId)]);
+      put('checkin', [await checkinCacheItem(db, operatorId, branchId, new Date(), auth.boxId)]);
       continue;
     }
 

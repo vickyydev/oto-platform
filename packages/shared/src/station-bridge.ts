@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { TaxConfigSchema } from './catalog-shapes';
 import { formatTHB } from './money';
+import { CartBandHolderSchema, CartPrepaidSchema } from './band-food';
 import { PAYMENT_METHOD_KINDS, type PaymentAttemptView } from './payments';
 import { SALE_REPRINT_KINDS } from './print';
 import { TIER_PROOF_TYPES } from './tier-proof';
@@ -533,6 +534,8 @@ const BridgeCartItemSchema = z.object({
     .object({ variantId: z.string().min(1).max(100), variantLabel: z.string().min(1).max(60) })
     .nullish(),
   lineTotalSatang: z.number().int().min(0).optional(),
+  /** SCRUM-494 — served from the band holder's prepaid items, priced at ฿0. */
+  prepaid: CartPrepaidSchema.nullish(),
 });
 
 const BridgeManualDiscountSchema = z.object({
@@ -575,6 +578,8 @@ const BridgeCartBodySchema = z.object({
     .optional(),
   lines: z.array(BridgeCartLineSchema).max(50).default([]),
   items: z.array(BridgeCartItemSchema).max(100).default([]),
+  /** SCRUM-494 — the stay of the band the F&B order was taken against. */
+  bandHolder: CartBandHolderSchema.nullish(),
   pickupCode: z.string().max(12).optional(),
   manualDiscounts: z.array(BridgeManualDiscountSchema).max(20).default([]),
   promos: z.array(BridgePromoSchema).max(10).default([]),

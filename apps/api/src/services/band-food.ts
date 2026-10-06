@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
-import { auditLog, band, checkin, child, sale, saleLine, walletKey } from '@oto/db';
+import { auditLog, band, checkin, child, sale, saleLine, syncEvent, walletKey } from '@oto/db';
 import {
   BAND_FOOD_REFUSALS,
   allergiesMedicalOf,
@@ -331,6 +331,82 @@ export async function resolveCartBandFood(
 
 function entitlementOf(it: StoredItem): { menuItemId: string; qty: number; redeemedQty: number } {
   return { menuItemId: it.menuItemId, qty: it.qty, redeemedQty: it.redeemedQty ?? 0 };
+}
+
+// --- What a box handed over offline (SCRUM-498) ----------------------------------------
+
+/**
+ * A box completed this sale offline: one of its `sale.finalised` facts for
+ * the sale was filed (the `sale.offline_replay` row that fact wrote names it).
+ * A box queues that fact only for a sale it closed, its paper printed and its
+ * food handed over, so this — not the sale's origin — is the record that its
+ * prepaid lines left the counter. `boxId` narrows it to one box.
+ */
+export function boxCompletedSaleCondition(saleIdText: SQL, boxId?: string): SQL {
+  return sql`exists (
+    select 1 from ${auditLog}
+    join ${syncEvent} on ${syncEvent.eventId} = ${auditLog.sourceEventId}
+    where ${auditLog.entityType} = 'sale'
+      and ${auditLog.entityId} = ${saleIdText}
+      and ${auditLog.action} = 'sale.offline_replay'
+      and ${syncEvent.type} = 'sale.finalised'
+      ${boxId ? sql`and ${syncEvent.boxId} = ${boxId}` : sql``}
+  )`;
+}
+
+/** Whether a box completed this sale offline (`boxCompletedSaleCondition`). */
+export async function boxCompletedSale(db: Exec, saleId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: sale.id })
+    .from(sale)
+    .where(and(eq(sale.id, saleId), boxCompletedSaleCondition(sql`${sale.id}::text`)))
+    .limit(1);
+  return !!row;
+}
+
+/**
+ * THE PREPAID UNITS ONE BOX HAS SERVED THAT THE PLATFORM HAS FILED, per stay
+ * and menu item: every prepaid line of a sale that box completed offline, at
+ * the quantity the box served (`orderedQty` when the line was set aside), so
+ * the box's own all-days count and this agree. The box's `checkin` copy
+ * carries it; the box counts what is left as the copy less what it served and
+ * this does not yet hold.
+ */
+export async function boxPrepaidFiled(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+  boxId: string,
+  checkinIds: readonly string[],
+): Promise<Map<string, Array<{ menuItemId: string; qty: number }>>> {
+  const out = new Map<string, Array<{ menuItemId: string; qty: number }>>();
+  if (checkinIds.length === 0) return out;
+  const stayOf = sql<string>`(${saleLine.payload} -> 'prepaid' ->> 'checkinId')`;
+  const itemOf = sql<string>`coalesce(${saleLine.payload} -> 'prepaid' ->> 'menuItemId', ${saleLine.productId}::text)`;
+  const rows = await db
+    .select({
+      checkinId: stayOf,
+      menuItemId: itemOf,
+      qty: sql<number>`coalesce(sum(coalesce((${saleLine.payload} -> 'prepaid' ->> 'orderedQty')::int, ${saleLine.quantity})), 0)`,
+    })
+    .from(saleLine)
+    .innerJoin(sale, eq(sale.id, saleLine.saleId))
+    .where(
+      and(
+        eq(sale.operatorId, operatorId),
+        eq(sale.branchId, branchId),
+        eq(saleLine.kind, 'fnb_item'),
+        inArray(stayOf, [...checkinIds]),
+        boxCompletedSaleCondition(sql`${sale.id}::text`, boxId),
+      ),
+    )
+    .groupBy(stayOf, itemOf);
+  for (const row of rows) {
+    const qty = Number(row.qty);
+    if (!row.checkinId || !row.menuItemId || qty <= 0) continue;
+    out.set(row.checkinId, [...(out.get(row.checkinId) ?? []), { menuItemId: row.menuItemId, qty }]);
+  }
+  return out;
 }
 
 // --- The confirmation -----------------------------------------------------------------

@@ -14,9 +14,11 @@
 // confirm press sends to spend it (`api/sales.ts`, `spendWalletOnSale`).
 import {
   BOX_WALLET_REFUSALS,
+  BRIDGE_CHECKIN_INTENTS,
   BRIDGE_WALLET_INTENTS,
   walletOfflineCapMessage,
   type BandStayView,
+  type BridgeBandFoodAnswer,
   type BridgeWalletBalance,
   type WalletCreditDay,
   type WalletEntryView,
@@ -250,6 +252,36 @@ export async function lookupWalletOnBox(stationId: string, key: string): Promise
     key: key.trim(),
   });
   return answer.result!.wallet;
+}
+
+/**
+ * SCRUM-498 — `checkin.band_food` on the station's box: the child's in-park
+ * stay behind a scanned key, from the box's check-in copy, as the platform's
+ * scan answers it online. The prepaid items count what this box has served.
+ */
+export async function lookupBandFoodOnBox(stationId: string, key: string): Promise<BridgeBandFoodAnswer> {
+  const answer = await bridgeApi.intent<BridgeBandFoodAnswer>(stationId, BRIDGE_CHECKIN_INTENTS.bandFood, { key: key.trim() });
+  return answer.result!;
+}
+
+/**
+ * THE TILL'S TAB FOR A BOX SCAN: the wallet the box answered with the child's
+ * stay folded in, as `wristbandOfScan` builds it online, or — no wallet — a
+ * tab with ฿0 credit carrying the stay alone. `base` is the station's own copy
+ * of the band, used only when the box knows no stay behind the key.
+ */
+export function wristbandOfBoxScan(
+  food: BridgeBandFoodAnswer | null,
+  wallet: BridgeWalletBalance | null,
+  scannedKey: string,
+  base?: Wristband | null,
+): Wristband | null {
+  const stay = food?.stay ?? null;
+  const stayTab = stay ? wristbandOfScan({ wallet: null, ledger: [], stay }, scannedKey) : null;
+  const under = stayTab ?? base ?? null;
+  if (!wallet) return under;
+  const tab = wristbandOfBoxWallet(wallet, scannedKey, under);
+  return stay ? { ...tab, ...bandFoodOf(stay) } : tab;
 }
 
 /**

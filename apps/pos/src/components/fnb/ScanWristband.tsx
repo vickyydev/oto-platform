@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Wristband } from '@/types';
 import { getWristbandByCode, getMockWristbands } from '@/mockApi';
 import { ApiError } from '@/api/client';
-import { BOX_CREDIT_REFUSAL_CODES, lookupWalletOnBox, scanBand, wristbandOfBoxWallet } from '@/api/wallet';
+import { BOX_CREDIT_REFUSAL_CODES, lookupBandFoodOnBox, lookupWalletOnBox, scanBand, wristbandOfBoxScan } from '@/api/wallet';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { getActiveBranch } from '@/store/catalogStore';
 import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure } from '@/lib/lane';
@@ -245,6 +245,11 @@ export async function loadScannedTab(value: string): Promise<{ wristband: Wristb
  * opens the station's own band, or the wallet the box named, with no credit and
  * the box's words on it; a key the box knows nothing of and the station does
  * not hold is refused in those same words.
+ *
+ * SCRUM-498 — the box is asked for the child's stay first (`checkin.band_food`):
+ * the allergy alert, the food consent and the prepaid items reach the order as
+ * they do online, and a stay the box knows opens the tab whatever it says
+ * about credit.
  */
 async function loadFromBox(
   stationId: string,
@@ -253,12 +258,18 @@ async function loadFromBox(
 ): Promise<{ wristband: Wristband | null; error: string | null }> {
   const key = value.trim();
   if (!key) return { wristband: null, error: null };
+  const base = local ? withoutLocalCredit(local) : null;
+  // A box that cannot answer the stay still answers the credit; its refusal reaches the till there.
+  const food = await lookupBandFoodOnBox(stationId, key).catch(() => null);
   try {
     const read = await lookupWalletOnBox(stationId, key);
-    return { wristband: wristbandOfBoxWallet(read, key, local ? withoutLocalCredit(local) : null), error: null };
+    return { wristband: wristbandOfBoxScan(food, read, key, base), error: null };
   } catch (err) {
+    const said = err instanceof ApiError ? err.message : null;
+    const stayTab = food?.stay ? wristbandOfBoxScan(food, null, key) : null;
     if (err instanceof ApiError && BOX_CREDIT_REFUSAL_CODES.includes(err.code)) {
-      if (local) return { wristband: { ...withoutLocalCredit(local), creditNote: err.message }, error: null };
+      if (stayTab) return { wristband: { ...stayTab, creditNote: err.message }, error: null };
+      if (base) return { wristband: { ...base, creditNote: err.message }, error: null };
       const walletId = (err.details as { walletId?: unknown } | undefined)?.walletId;
       if (typeof walletId === 'string') {
         // The box knows the wallet (its credit has expired): the tab opens, ฿0.
@@ -267,8 +278,8 @@ async function loadFromBox(
       }
       return { wristband: null, error: err.message };
     }
-    if (local) return { wristband: withoutLocalCredit(local), error: null };
-    const said = err instanceof ApiError ? err.message : null;
+    if (stayTab) return { wristband: said ? { ...stayTab, creditNote: said } : stayTab, error: null };
+    if (base) return { wristband: base, error: null };
     return { wristband: null, error: said
       ? `This counter’s box could not look this band up: ${said}`
       : 'Could not reach this counter’s box to look this band up — check the connection and scan again.' };

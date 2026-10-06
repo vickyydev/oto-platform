@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import {
+  BAND_FOOD_REFUSALS,
   BOOKING_REDEEMED_FACT,
   BOX_BOOKING_REFUSALS,
   BOX_CATALOGUE_TOO_OLD,
@@ -98,10 +99,10 @@ import type {
 import {
   OfflinePriceError,
   offlineLedgerLines,
-  priceOfflineCart,
   priceOfflineSale,
   readOfflineCatalogue,
   type OfflineCatalogue,
+  type OfflineItemLine,
   type OfflineLedgerLine,
   type OfflineQuote,
   type OfflineSalePricing,
@@ -148,7 +149,7 @@ import {
 import { uuidv7 } from './signing';
 import type { TerminalCommandOutcome, TerminalController, TerminalProtocol } from './terminal/index';
 import { boxBlobs, type BlobStore } from './blob-store';
-import { CheckinDesk, DeskRefusal, type DeferredBand } from './checkin-desk';
+import { CheckinDesk, DeskRefusal, type BoxFoodOrder, type DeferredBand } from './checkin-desk';
 import type { StationSessionManager } from './station-session';
 import {
   OFFLINE_UNLOCK_REFUSALS,
@@ -616,6 +617,8 @@ interface PreparedSale {
   factCart: Record<string, unknown> & { expectedTotalSatang: number };
   /** S2-14b round 3: the counted sizes this sale takes, against the box's stock snapshot. */
   stock: BoxStock;
+  /** SCRUM-498: the band holder and the prepaid lines this sale serves, checked. */
+  food: BoxFoodOrder;
 }
 
 /**
@@ -627,6 +630,22 @@ interface BoxStock {
   snapshot: StockSnapshotItem | null;
   /** Units per stock item. */
   demand: Map<string, number>;
+}
+
+/**
+ * The design's food-consent rule (`OrderStation.tsx:handleAdd`), as the
+ * platform checks it at the commit: no food for a child whose parent did not
+ * authorise it unless staff recorded the override. Prepaid lines are not
+ * counted, as online.
+ */
+function assertFoodConsent(food: BoxFoodOrder, items: ReadonlyMap<string, OfflineItemLine>): void {
+  const holder = food.holder;
+  if (!holder || holder.mayOrderFood || holder.foodOverride) return;
+  if ([...items].some(([lineId, item]) => item.kind === 'fnb_item' && !food.prepaid.has(lineId))) {
+    throw new BridgeError(409, 'FOOD_NOT_AUTHORIZED', BAND_FOOD_REFUSALS.FOOD_NOT_AUTHORIZED, {
+      checkinId: holder.checkinId,
+    });
+  }
 }
 
 /** The runtime value naming what a sale took of the counted shelves on this box. */
@@ -1664,6 +1683,7 @@ export class StationBridge {
         issue: String(err),
       });
     }
+    const food = await this.foodOrder(station, cart, catalogue);
     // The member's tier as this counter knows it: a tier changed here offline
     // (OD-11) prices the cart that follows, as it would online.
     const owner = cart.memberId ? await this.resolveMember(cart.memberId) : null;
@@ -1672,13 +1692,15 @@ export class StationBridge {
       throw new BridgeError(404, 'NOT_FOUND', 'Member not found');
     }
     try {
-      const quote = priceOfflineCart(catalogue, cart, {
+      const pricing = priceOfflineSale(catalogue, cart, {
         now,
         timezone: branch.timezone,
         businessDayStart: branch.businessDayStart,
         memberTier,
+        prepaid: food.prepaid,
       });
-      return { ...quote, catalogueState: state, catalogueAppliedAt: bundle?.appliedAt ?? null };
+      assertFoodConsent(food, pricing.items);
+      return { ...pricing.quote, catalogueState: state, catalogueAppliedAt: bundle?.appliedAt ?? null };
     } catch (err) {
       if (err instanceof OfflinePriceError) {
         throw new BridgeError(
@@ -1692,6 +1714,21 @@ export class StationBridge {
           err.details,
         );
       }
+      throw err;
+    }
+  }
+
+  /** SCRUM-498 — the band an F&B order names and its prepaid lines, checked on the box's copy (`CheckinDesk.foodOrder`). */
+  private async foodOrder(
+    station: BridgeStation,
+    cart: BridgeCart,
+    catalogue: OfflineCatalogue,
+    mode: 'strict' | 'record' = 'strict',
+  ): Promise<BoxFoodOrder> {
+    try {
+      return await this.desk.foodOrder(station, cart, (id) => catalogue.products.get(id)?.name ?? 'That item', mode);
+    } catch (err) {
+      if (err instanceof DeskRefusal) throw new BridgeError(err.status, err.code, err.message, err.details);
       throw err;
     }
   }
@@ -2226,6 +2263,10 @@ export class StationBridge {
     } catch (err) {
       throw new BridgeError(400, 'VALIDATION', 'That cart could not be read', { issue: String(err) });
     }
+    // Money already taken for this sale (a tender approved, credit held, a
+    // booking paid): its food is recorded as served, never refused now.
+    const moneyTaken = !!opts.at || !!opts.redeeming || opts.stockGuard === 'skip';
+    const food = await this.foodOrder(station, cart, catalogue, moneyTaken ? 'record' : 'strict');
     if (cart.expectedTotalSatang === undefined) {
       throw new BridgeError(
         400,
@@ -2246,6 +2287,7 @@ export class StationBridge {
         timezone: branch.timezone,
         businessDayStart: branch.businessDayStart,
         memberTier,
+        prepaid: food.prepaid,
       });
     } catch (err) {
       if (err instanceof OfflinePriceError) {
@@ -2259,6 +2301,7 @@ export class StationBridge {
       }
       throw err;
     }
+    if (!moneyTaken) assertFoodConsent(food, pricing.items);
     const gross = pricing.quote.totals.grossSatang;
     if (cart.expectedTotalSatang !== gross) {
       throw new BridgeError(
@@ -2372,6 +2415,8 @@ export class StationBridge {
         grossSatang: gross,
         taxBreakdown: pricing.totals.taxBreakdown,
         orderChildren,
+        // The prep ticket prints the band holder's own name and allergy line, as online.
+        bandHolder: food.holder ? { name: food.holder.childName, allergiesMedical: food.holder.allergiesMedical } : null,
         note: body.note ?? null,
       },
       factCart: {
@@ -2383,6 +2428,7 @@ export class StationBridge {
         expectedTotalSatang: gross,
       },
       stock,
+      food,
     };
   }
 
@@ -2552,6 +2598,16 @@ export class StationBridge {
       JSON.stringify({ at: sale.at, snapshotVersion: snapshot.version, ...position, shares }),
       sale.at,
     );
+  }
+
+  /** SCRUM-498 — the prepaid units the sale serves, counted in its transaction (`CheckinDesk.servePrepaidAhead`). */
+  private async servePrepaidAhead(tx: BoxStore, food: BoxFoodOrder, mode: 'refuse' | 'record', at: string): Promise<void> {
+    try {
+      await this.desk.servePrepaidAhead(tx, food, mode, at);
+    } catch (err) {
+      if (err instanceof DeskRefusal) throw new BridgeError(err.status, err.code, err.message, err.details);
+      throw err;
+    }
   }
 
   /**
@@ -2756,10 +2812,11 @@ export class StationBridge {
     const stockMode = opts.stock ?? 'record';
     // The stock is taken once the sale's facts have their journal positions,
     // still inside the sale's own transaction: each share is kept with them.
+    const at = opts.at ?? this.host.now().toISOString();
     const afterQueued: NonNullable<OfflineSaleRequest['afterQueued']> = async (tx, queued) => {
       await this.takeStockAhead(tx, sale.stock, stockMode, queued);
+      await this.servePrepaidAhead(tx, sale.food, stockMode, at);
     };
-    const at = opts.at ?? this.host.now().toISOString();
     const memo: SaleMemo = {
       view: this.saleViewOf(station, body.saleId, sale, at),
       attempt,

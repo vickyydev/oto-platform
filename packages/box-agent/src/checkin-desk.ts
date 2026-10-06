@@ -1,6 +1,8 @@
 import {
+  BAND_FOOD_REFUSALS,
   BOX_CHECKIN_REFUSALS,
   BRIDGE_CHECKIN_INTENTS,
+  BridgeBandFoodLookupSchema,
   BridgeCheckinCreateSchema,
   BridgeCheckinUpdateSchema,
   BridgeGuardianCreateSchema,
@@ -13,7 +15,17 @@ import {
   DROPPER_OFF_PICKUP_ID,
   PhotoCaptureSchema,
   RELEASE_REFUSALS,
+  allergiesMedicalOf,
+  bandNotInParkRefusal,
+  bandOtherParkRefusal,
   bandShortCode,
+  normaliseBandCode,
+  parseBandCode,
+  parseBandShortCode,
+  prepaidNotEntitledRefusal,
+  prepaidRemainingOf,
+  prepaidUsedUpRefusal,
+  redeemPrepaid,
   buildAcknowledgedConfirmations,
   confirmationsSatisfied,
   normalizePhone,
@@ -24,7 +36,10 @@ import {
   revokedCollectorRefusal,
   supervisionBadgeOf,
   waiverRefusal,
+  type BandStayView,
   type BridgeCheckinChild,
+  type BridgeBandFoodAnswer,
+  type BridgeCart,
   type BridgeCheckinCreate,
   type BridgeCheckinFamily,
   type BridgeCheckinUpdate,
@@ -47,8 +62,9 @@ import {
 } from '@oto/shared';
 import { BlobStoreRefused, bytesOfDataUrl, type BlobStore } from './blob-store';
 import { CheckinBandRefused, type CheckinBandPlan, type OfflineBandPlan, type SaleQueue } from './sale-queue';
-import type { BoxOverlayKind, BoxStore, EnvelopeSealer, OverlayRecord, OverlayWrite, QueuedFact } from './store';
+import type { BoxOverlayKind, BoxStore, CounterKey, EnvelopeSealer, OverlayRecord, OverlayWrite, QueuedFact } from './store';
 import type { AgentLog } from './transport';
+import { findSnapshotWallet, readWalletSnapshot, walletKeyDigest, walletKeyDigestsOf } from './wallet-lane';
 
 /**
  * THE CHECK-IN DESK ON THE BOX (S2-13 round 4, plan §2.5).
@@ -130,6 +146,56 @@ export interface CheckinDeskHost {
    * a member this box knows nothing of.
    */
   resolveMember(memberId: string): Promise<{ id: string; childIds: ReadonlySet<string> } | null>;
+}
+
+/**
+ * SCRUM-498 — the `box_counter` scope this box's prepaid units served from a
+ * stay are counted in, per stay and menu item, across all days: what the
+ * `checkin` copy does not reflect yet is this count less the platform's
+ * `boxPrepaidServed` for this box. Kept under one fixed day and never pruned,
+ * as the wallet's all-days count.
+ */
+export const PREPAID_SERVED_TOTAL_SCOPE = 'prepaid_offline_served_total';
+export const PREPAID_SERVED_TOTAL_DAY = '1970-01-01';
+
+export function prepaidCounterKey(checkinId: string, menuItemId: string): CounterKey {
+  return { scope: PREPAID_SERVED_TOTAL_SCOPE, key: `${checkinId}|${menuItemId}`, businessDate: PREPAID_SERVED_TOTAL_DAY };
+}
+
+/** Units of one item the platform had filed from this box's sales when the copy was built. */
+function filedFromBox(child: BridgeCheckinChild, menuItemId: string): number {
+  return (child.boxPrepaidServed ?? []).filter((e) => e.menuItemId === menuItemId).reduce((sum, e) => sum + e.qty, 0);
+}
+
+/** A store that keeps no counters cannot tell what it has served, so it serves no prepaid meal. */
+export const BOX_PREPAID_NOT_COUNTED = {
+  code: 'PREPAID_NOT_COUNTED',
+  message: 'This counter cannot keep count of prepaid meals without the internet, so a prepaid meal cannot be served here until the connection is back. Nothing was taken.',
+} as const;
+
+type PrepaidItemOnBox = NonNullable<NonNullable<BridgeCheckinChild['foodProvision']>['items']>[number] & { redeemedQty: number };
+
+/** One prepaid line of a cart the box serves, checked. */
+interface PrepaidServing {
+  checkinId: string;
+  menuItemId: string;
+  qty: number;
+  /** The item's name and the child's, for the counter's words. */
+  name: string;
+  childName: string;
+}
+
+/** The band an F&B order names and the lines served from its prepaid items (`CheckinDesk.foodOrder`). */
+export interface BoxFoodOrder {
+  holder: {
+    checkinId: string;
+    childName: string;
+    allergiesMedical: string | null;
+    mayOrderFood: boolean;
+    foodOverride: boolean;
+  } | null;
+  /** By cart line id. */
+  prepaid: Map<string, PrepaidServing>;
 }
 
 /** The deferred band a sale left for "Check in now" — kept in the sale's memo (`station-bridge.ts`). */
@@ -301,6 +367,306 @@ export class CheckinDesk {
     return null;
   }
 
+  // --- the food counter (SCRUM-498) ----------------------------------------------------------
+
+  /** Whether this box can keep the prepaid count at all (its store holds counters). */
+  private countsPrepaid(store: BoxStore = this.host.store): boolean {
+    return store.features().boothRuntime;
+  }
+
+  /**
+   * Units of one prepaid item this box has served from a stay that the copy
+   * does not reflect yet: the box's own all-days count less what the platform
+   * had filed from this box when the copy was built.
+   */
+  private async unfiledOnBox(child: BridgeCheckinChild, menuItemId: string, store: BoxStore = this.host.store): Promise<number> {
+    if (!this.countsPrepaid(store)) return 0;
+    const served = await store.readCounter(this.host.boxId, prepaidCounterKey(child.id, menuItemId));
+    return Math.max(0, served - filedFromBox(child, menuItemId));
+  }
+
+  /**
+   * The stay's prepaid items as this box knows them: the copy's served counts
+   * with what this box has served since laid over them, entry by entry and
+   * never past what was paid for (`redeemPrepaid`).
+   */
+  private async prepaidOnBox(child: BridgeCheckinChild, store: BoxStore = this.host.store): Promise<PrepaidItemOnBox[]> {
+    const fp = child.foodProvision;
+    let items: PrepaidItemOnBox[] = (fp?.items ?? []).map((it) => ({ ...it, redeemedQty: it.redeemedQty ?? 0 }));
+    if (fp?.mode !== 'prepaid_items') return items;
+    for (const menuItemId of [...new Set(items.map((it) => it.menuItemId))]) {
+      const unfiled = await this.unfiledOnBox(child, menuItemId, store);
+      if (unfiled > 0) items = redeemPrepaid(items, menuItemId, unfiled).items;
+    }
+    return items;
+  }
+
+  /** The stay as the counter reads it: the online scan's `bandStayViewOf`, over the box's copy. */
+  private async bandStayView(family: BridgeCheckinFamily, child: BridgeCheckinChild): Promise<BandStayView> {
+    const provision = child.foodProvision;
+    const items = await this.prepaidOnBox(child);
+    return {
+      checkinId: child.id,
+      branchId: family.branchId,
+      childName: child.childName,
+      allergiesMedical: allergiesMedicalOf(child.allergies?.trim() || child.savedAllergies, child.savedMedicalNotes),
+      foodRestrictions: child.foodRestrictions?.trim() || child.savedDietary?.trim() || null,
+      mayOrderFood: child.mayOrderFood,
+      foodProvision: provision
+        ? {
+            mode: provision.mode,
+            paidSatang: provision.paidSatang,
+            creditSatang: provision.creditSatang ?? null,
+            items: items.map((item) => ({
+              menuItemId: item.menuItemId,
+              menuItemName: item.menuItemName,
+              unitSatang: item.unitSatang,
+              qty: item.qty,
+              redeemedQty: item.redeemedQty,
+            })),
+          }
+        : null,
+    };
+  }
+
+  /** The `bands` copy's active kids' bands of this park, as id and code. */
+  private async cachedKidBands(branchId: string): Promise<Array<{ id: string; code: string }>> {
+    const bundle = await this.host.store.readBundle(this.host.boxId, 'bands').catch(() => null);
+    const rows = rec(bundle?.payload)?.items;
+    const out: Array<{ id: string; code: string }> = [];
+    for (const raw of Array.isArray(rows) ? rows : []) {
+      const row = rec(raw);
+      if (!row || row.branchId !== branchId || row.kind !== 'kid' || row.status !== 'active') continue;
+      if (typeof row.id === 'string' && typeof row.code === 'string') out.push({ id: row.id, code: row.code });
+    }
+    return out;
+  }
+
+  /** Kids' bands this box minted for this park's in-park stays, which the `bands` copy may not hold yet. */
+  private async localKidBands(view: DeskView, branchId: string): Promise<Array<{ id: string; code: string }>> {
+    const queue = this.host.sales();
+    if (!queue) return [];
+    const saleIds = new Set<string>();
+    for (const family of view.families.values()) {
+      if (family.branchId !== branchId) continue;
+      for (const child of family.children) if (child.status === 'in_park' && child.saleId) saleIds.add(child.saleId);
+    }
+    const out: Array<{ id: string; code: string }> = [];
+    for (const saleId of saleIds) {
+      const recorded = await queue.recorded(saleId).catch(() => null);
+      for (const band of recorded?.bands ?? []) if (band.kind === 'kid') out.push({ id: band.id, code: band.code });
+    }
+    return out;
+  }
+
+  /**
+   * THE STAY A SCANNED KEY NAMES at this park, in the park — the online
+   * `stayForKey` over the box's copies: the bands the key names (a full or
+   * short code), the bands and the child of the wallet it names (a voucher QR,
+   * through the `wallets` copy's key digests), and of the stays in the park the
+   * latest checked in. Null when it names none.
+   */
+  private async stayForKey(
+    view: DeskView,
+    branchId: string,
+    key: string,
+  ): Promise<{ family: BridgeCheckinFamily; child: BridgeCheckinChild } | null> {
+    const full = parseBandCode(key) ? normaliseBandCode(key) : null;
+    const short = parseBandShortCode(key);
+    const shortKey = short ? `${short.prefix}-${short.tail}` : null;
+    const bands = [...(await this.cachedKidBands(branchId)), ...(await this.localKidBands(view, branchId))];
+    const bandIds = new Set<string>();
+    for (const band of bands) {
+      if ((full !== null && normaliseBandCode(band.code) === full) || (shortKey !== null && bandShortCode(band.code) === shortKey)) {
+        bandIds.add(band.id);
+      }
+    }
+    const childDigests = new Set<string>();
+    const wallets = await this.host.store.readBundle(this.host.boxId, 'wallets').catch(() => null);
+    const snapshot = wallets ? readWalletSnapshot(wallets.payload) : null;
+    const match = snapshot ? findSnapshotWallet(snapshot, key) : null;
+    if (match && 'found' in match) {
+      const digests = new Set(match.found.keys.map((k) => `${k.k}:${k.d}`));
+      for (const band of bands) {
+        if (walletKeyDigestsOf({ kind: 'band', value: band.code }).some((d) => digests.has(`${d.k}:${d.d}`))) bandIds.add(band.id);
+      }
+      for (const k of match.found.keys) if (k.k === 'c') childDigests.add(k.d);
+    }
+    let best: { family: BridgeCheckinFamily; child: BridgeCheckinChild } | null = null;
+    for (const family of view.families.values()) {
+      if (family.branchId !== branchId) continue;
+      for (const child of family.children) {
+        if (child.status !== 'in_park') continue;
+        const byBand = !!child.bandId && bandIds.has(child.bandId);
+        const byChild = !!child.childId && childDigests.has(walletKeyDigest('c', child.childId.toLowerCase()));
+        if (!byBand && !byChild) continue;
+        if (!best || (child.checkedInAt ?? '') > (best.child.checkedInAt ?? '')) best = { family, child };
+      }
+    }
+    return best;
+  }
+
+  /**
+   * `checkin.band_food` — the food counter's band scan with the link down:
+   * the child's allergies and medical notes, food restrictions, food
+   * permission and prepaid food, as `GET /wallets/scan` answers them online.
+   * One child's food and safety fields only, never the board or the pickup
+   * list; an account without `pos:checkin:read` is told no stay, as online.
+   */
+  private async bandFood(station: DeskStation, caller: DeskCaller, payload: Record<string, unknown>): Promise<BridgeBandFoodAnswer> {
+    if (!caller.can('pos:wallet:read')) throw new DeskRefusal(403, 'FORBIDDEN', 'Missing permission: pos:wallet:read');
+    const { key } = BridgeBandFoodLookupSchema.parse(payload);
+    const view = await this.view();
+    if (!view.item || view.item.branchId !== station.branchId || !caller.can('pos:checkin:read')) {
+      return { stay: null, cacheAppliedAt: view.item ? view.appliedAt : null };
+    }
+    const found = await this.stayForKey(view, station.branchId, key);
+    return { stay: found ? await this.bandStayView(found.family, found.child) : null, cacheAppliedAt: view.appliedAt };
+  }
+
+  /**
+   * THE BAND AN F&B ORDER NAMES AND THE LINES SERVED FROM ITS PREPAID ITEMS,
+   * checked before the box prices the cart — the platform's
+   * `resolveCartBandFood` in `strict` mode, in its words: the stay must be this
+   * park's and in the park, every prepaid line one of the holder's prepaid
+   * items, served as it was paid for, and never more than is left for the
+   * child on this box.
+   *
+   * `record` (money already taken for the sale: a card approved, credit held)
+   * refuses nothing, as the platform's `file` mode: every prepaid line is ฿0,
+   * the holder is named when the stay is this park's, and the platform files
+   * what it can when the sale arrives.
+   */
+  async foodOrder(
+    station: DeskStation,
+    cart: BridgeCart,
+    productName: (productId: string) => string,
+    mode: 'strict' | 'record' = 'strict',
+  ): Promise<BoxFoodOrder> {
+    const prepaidLines = cart.items.filter((l) => !!l.prepaid);
+    const holderId = cart.bandHolder?.checkinId ?? null;
+    const order: BoxFoodOrder = { holder: null, prepaid: new Map() };
+    if (!holderId && prepaidLines.length === 0) return order;
+    const view = await this.view();
+    if (mode === 'record') {
+      const found = holderId ? this.findStay(view, holderId) : null;
+      if (found && found.family.branchId === station.branchId) {
+        order.holder = {
+          checkinId: found.child.id,
+          childName: found.child.childName,
+          allergiesMedical: allergiesMedicalOf(found.child.allergies?.trim() || found.child.savedAllergies, found.child.savedMedicalNotes),
+          mayOrderFood: found.child.mayOrderFood,
+          foodOverride: cart.bandHolder?.foodOverride === true,
+        };
+      }
+      for (const line of prepaidLines) {
+        const checkinId = line.prepaid!.checkinId;
+        order.prepaid.set(line.id, {
+          checkinId,
+          menuItemId: line.productId,
+          qty: line.quantity,
+          name: productName(line.productId),
+          childName: this.findStay(view, checkinId)?.child.childName ?? '',
+        });
+      }
+      return order;
+    }
+    const checkStay = (id: string): { family: BridgeCheckinFamily; child: BridgeCheckinChild } => {
+      const found = this.findStay(view, id);
+      if (!found) throw new DeskRefusal(404, 'BAND_STAY_NOT_FOUND', BAND_FOOD_REFUSALS.STAY_NOT_FOUND);
+      if (found.family.branchId !== station.branchId) {
+        throw new DeskRefusal(409, 'BAND_OTHER_PARK', bandOtherParkRefusal(found.child.childName), { checkinId: id });
+      }
+      if (found.child.status !== 'in_park') {
+        throw new DeskRefusal(409, 'BAND_NOT_IN_PARK', bandNotInParkRefusal(found.child.childName), { checkinId: id });
+      }
+      return found;
+    };
+    if (holderId) {
+      const { child } = checkStay(holderId);
+      order.holder = {
+        checkinId: child.id,
+        childName: child.childName,
+        allergiesMedical: allergiesMedicalOf(child.allergies?.trim() || child.savedAllergies, child.savedMedicalNotes),
+        mayOrderFood: child.mayOrderFood,
+        foodOverride: cart.bandHolder?.foodOverride === true,
+      };
+    }
+    if (prepaidLines.length > 0 && !this.countsPrepaid()) {
+      throw new DeskRefusal(409, BOX_PREPAID_NOT_COUNTED.code, BOX_PREPAID_NOT_COUNTED.message);
+    }
+    const wanted = new Map<string, number>();
+    for (const line of prepaidLines) {
+      const checkinId = line.prepaid!.checkinId;
+      if (checkinId !== holderId) {
+        throw new DeskRefusal(409, 'PREPAID_NEEDS_BAND', BAND_FOOD_REFUSALS.PREPAID_NEEDS_BAND, { cartLineId: line.id });
+      }
+      const { child } = checkStay(checkinId);
+      const items = child.foodProvision?.mode === 'prepaid_items' ? await this.prepaidOnBox(child) : [];
+      const name = productName(line.productId);
+      if (!items.some((it) => it.menuItemId === line.productId)) {
+        throw new DeskRefusal(409, 'PREPAID_NOT_ENTITLED', prepaidNotEntitledRefusal(name, child.childName), {
+          cartLineId: line.id,
+          productId: line.productId,
+        });
+      }
+      if ((line.modifiers ?? []).some((m) => m.optionIds.length > 0)) {
+        throw new DeskRefusal(400, 'BAD_REQUEST', BAND_FOOD_REFUSALS.PREPAID_NO_OPTIONS, { cartLineId: line.id });
+      }
+      const key = `${checkinId}|${line.productId}`;
+      const total = (wanted.get(key) ?? 0) + line.quantity;
+      wanted.set(key, total);
+      const left = prepaidRemainingOf(items, line.productId);
+      if (total > left) {
+        throw new DeskRefusal(409, 'PREPAID_USED_UP', prepaidUsedUpRefusal(name, child.childName, left), {
+          cartLineId: line.id,
+          productId: line.productId,
+          remaining: left,
+        });
+      }
+      order.prepaid.set(line.id, { checkinId, menuItemId: line.productId, qty: line.quantity, name, childName: child.childName });
+    }
+    return order;
+  }
+
+  /**
+   * THE PREPAID UNITS A SALE SERVES, COUNTED ON THIS BOX in the sale's own
+   * store transaction, so the count moves with the sale or not at all. Each
+   * stay and item's all-days count is bumped in a fixed order — the row two
+   * tills on this box queue on — and under `refuse` (no money taken yet) a
+   * sale that no longer fits what is left rolls back with everything else.
+   * Under `record` (money already taken) it never refuses: the platform files
+   * the shortfall when the sale arrives.
+   */
+  async servePrepaidAhead(tx: BoxStore, order: BoxFoodOrder, mode: 'refuse' | 'record', at: string): Promise<void> {
+    if (order.prepaid.size === 0 || !this.countsPrepaid(tx)) return;
+    const units = new Map<string, PrepaidServing>();
+    for (const line of order.prepaid.values()) {
+      const key = `${line.checkinId}|${line.menuItemId}`;
+      const held = units.get(key);
+      units.set(key, held ? { ...held, qty: held.qty + line.qty } : { ...line });
+    }
+    const view = mode === 'refuse' ? await this.view(tx) : null;
+    for (const [, unit] of [...units].sort(([a], [b]) => a.localeCompare(b))) {
+      const after = await tx.bumpCounter(this.host.boxId, prepaidCounterKey(unit.checkinId, unit.menuItemId), unit.qty, at);
+      if (!view) continue;
+      const child = this.findStay(view, unit.checkinId)?.child;
+      if (!child) continue;
+      const copyLeft = prepaidRemainingOf(
+        (child.foodProvision?.items ?? []).map((it) => ({ ...it, redeemedQty: it.redeemedQty ?? 0 })),
+        unit.menuItemId,
+      );
+      const unfiledBefore = Math.max(0, after - unit.qty - filedFromBox(child, unit.menuItemId));
+      const left = Math.max(0, copyLeft - unfiledBefore);
+      if (unit.qty > left) {
+        throw new DeskRefusal(409, 'PREPAID_USED_UP', prepaidUsedUpRefusal(unit.name, unit.childName, left), {
+          productId: unit.menuItemId,
+          remaining: left,
+        });
+      }
+    }
+  }
+
   /** The cart lines that are supervised children's stays — their bands wait for "Check in now". */
   async supervisedLineIds(lineIds: readonly string[]): Promise<Set<string>> {
     const wanted = new Set(lineIds);
@@ -415,7 +781,8 @@ export class CheckinDesk {
     ];
   }
 
-  private reconciliationOf(child: BridgeCheckinChild): PrepaidReconciliation | null {
+  /** The unused prepaid food at pickup, counting the meals this box served that the copy does not reflect yet. */
+  private async reconciliationOf(child: BridgeCheckinChild, store: BoxStore = this.host.store): Promise<PrepaidReconciliation | null> {
     const fp = child.foodProvision;
     if (!fp || fp.mode === 'none') return null;
     const remaining = fp.mode === 'prepaid_credit' ? (fp.creditSatang ?? fp.paidSatang) : 0;
@@ -424,7 +791,7 @@ export class CheckinDesk {
         mode: fp.mode,
         paidSatang: fp.paidSatang,
         ...(fp.creditSatang !== undefined ? { creditSatang: fp.creditSatang } : {}),
-        ...(fp.items ? { items: fp.items.map((i) => ({ ...i, redeemedQty: i.redeemedQty ?? 0 })) } : {}),
+        ...(fp.items ? { items: await this.prepaidOnBox(child, store) } : {}),
       },
       remaining,
     );
@@ -478,6 +845,8 @@ export class CheckinDesk {
         const now = this.host.now();
         return { ...this.boardOf(await this.view(), now) };
       }
+      case BRIDGE_CHECKIN_INTENTS.bandFood:
+        return this.bandFood(station, caller, payload);
       case BRIDGE_CHECKIN_INTENTS.config: {
         this.require(caller, 'pos:checkin:read');
         const view = await this.view();
@@ -1306,7 +1675,7 @@ export class CheckinDesk {
       status: child.status,
       signUpPhotoFileId: signUp,
       pickups: this.pickupsOf(family, signUp),
-      reconciliation: this.reconciliationOf(child),
+      reconciliation: await this.reconciliationOf(child),
       prepaidPolicy: view.pricing.prepaidFoodUnused,
       release: release ? this.releaseViewOf(view, release) : null,
       photosEnabled: this.host.photosEnabled(),
@@ -1502,7 +1871,7 @@ export class CheckinDesk {
       collectorName = onTheSpot.record.name;
     }
 
-    const reconciliation = this.reconciliationOf(child);
+    const reconciliation = await this.reconciliationOf(child);
     const unused = reconciliation?.totalUnusedSatang ?? 0;
     const policy = view.pricing.prepaidFoodUnused;
     const at = this.host.now().toISOString();

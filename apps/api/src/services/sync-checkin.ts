@@ -51,6 +51,7 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { currentBandKey } from './bands';
 import type { BoxAuth } from './box';
+import { boxPrepaidFiled } from './band-food';
 import { autoSendRegistrationContact, boardOf, supervisionConfigOf } from './checkin';
 import { buildSmsSender } from './sms';
 import type { FileStorage } from './files';
@@ -1094,11 +1095,35 @@ export const CHECKIN_HANDLERS: Record<string, EventHandler> = {
  * the right adult with no internet, under the bundle's doctrine for members
  * (`cacheBundle`). Photos are never in it: a box holds file ids, not images.
  */
-export async function checkinCacheItem(db: Db, operatorId: string, branchId: string, now: Date = new Date()): Promise<CheckinCacheItem> {
+export async function checkinCacheItem(
+  db: Db,
+  operatorId: string,
+  branchId: string,
+  now: Date = new Date(),
+  /** The box the copy is for: its filed prepaid units ride on its in-park stays (SCRUM-498). */
+  boxId: string | null = null,
+): Promise<CheckinCacheItem> {
   const board = await boardOf(db, operatorId, branchId, now);
   const config = await supervisionConfigOf(db, branchId);
   const regIds = board.families.map((f) => f.registrationId);
   const stayIds = board.families.flatMap((f) => f.children.map((c) => c.id));
+  /**
+   * SCRUM-498 — what the food counter's band scan reads offline, for the
+   * children in the park only: the saved child's allergies, medical notes and
+   * dietary notes behind the stay's own, as `bandStayViewOf` reads them online.
+   */
+  const inPark = board.families.flatMap((f) => f.children.filter((c) => c.status === 'in_park'));
+  const savedChildIds = [...new Set(inPark.map((c) => c.childId).filter((id): id is string => !!id))];
+  const savedChildren = savedChildIds.length
+    ? await db
+        .select({ id: child.id, allergies: child.allergies, medicalNotes: child.medicalNotes, dietary: child.dietary })
+        .from(child)
+        .innerJoin(member, eq(child.memberId, member.id))
+        .where(and(eq(member.operatorId, operatorId), inArray(child.id, savedChildIds)))
+    : [];
+  const savedChildOf = new Map(savedChildren.map((c) => [c.id, c]));
+  const prepaidStayIds = inPark.filter((c) => c.foodProvision?.mode === 'prepaid_items').map((c) => c.id);
+  const filedOf = boxId ? await boxPrepaidFiled(db, operatorId, branchId, boxId, prepaidStayIds) : new Map();
   const guardians = regIds.length
     ? await db.select().from(guardian).where(inArray(guardian.registrationId, regIds)).orderBy(asc(guardian.createdAt), asc(guardian.id))
     : [];
@@ -1143,7 +1168,18 @@ export async function checkinCacheItem(db: Db, operatorId: string, branchId: str
   const families: Array<Omit<BridgeCheckinFamily, 'origin'>> = board.families.map((f) => ({
     ...f,
     tab: f.tab,
-    children: f.children,
+    children: f.children.map((c) => {
+      if (c.status !== 'in_park') return c;
+      const saved = c.childId ? savedChildOf.get(c.childId) : null;
+      const filed = filedOf.get(c.id);
+      return {
+        ...c,
+        savedAllergies: saved?.allergies ?? null,
+        savedMedicalNotes: saved?.medicalNotes ?? null,
+        savedDietary: saved?.dietary ?? null,
+        ...(c.foodProvision?.mode === 'prepaid_items' && boxId ? { boxPrepaidServed: filed ?? [] } : {}),
+      };
+    }),
     guardians: byReg.get(f.registrationId) ?? [],
   }));
   const releaseRecords: BridgeReleaseRecord[] = releases.map((r) => ({
