@@ -3,7 +3,7 @@ import {
   ShoppingCart, ChevronDown, ChevronUp, Check, Clock, Truck,
   Edit2, Trash2, AlertTriangle, Plus, ArrowRight,
 } from 'lucide-react';
-import { STOCK_TREND_HISTORY_DAYS, STOCK_TREND_SAFETY_DAYS } from '@oto/shared';
+import { STOCK_TREND_HISTORY_DAYS } from '@oto/shared';
 import { InventoryItem, PurchaseOrder, PurchaseOrderLine } from '@/types';
 import { stockApi, stockErrorWords } from '@/api/stock';
 import { UnitQuantityInput } from './UnitQuantityInput';
@@ -524,9 +524,8 @@ export function StockPurchasing({ branchId, inventory, orders, onGoToReceive }: 
       <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] px-3 py-2.5 text-[11px] text-foreground/40 leading-relaxed">
         <span className="font-semibold text-foreground/50">Reorder points:</span> an item uses the reorder
         point set in Admin Inventory until it has {STOCK_TREND_HISTORY_DAYS} days of sales; from then on, what it
-        sells on an average day over the last {STOCK_TREND_HISTORY_DAYS} days × (lead time + {STOCK_TREND_SAFETY_DAYS}{' '}
-        day), rounded up. Items at
-        or below their reorder point appear in the Alerts tab, unless an open order already covers them.
+        sells on an average day over the last {STOCK_TREND_HISTORY_DAYS} days × lead time, rounded up. Items at
+        or below their reorder point appear in the Alerts tab, with any open orders shown alongside.
       </div>
 
       {/* Controls row */}

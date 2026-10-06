@@ -65,7 +65,7 @@ export function stockShortMessage(name: string, available: number): string {
 export interface StockPack {
   /** What staff type and read, `Dozen`. */
   label: string;
-  /** How many eaches one pack holds — a whole number above one. */
+  /** How many eaches one pack holds — a positive whole number. */
   eaches: number;
 }
 
@@ -80,17 +80,12 @@ export type PackParse =
  *   "2 cases"      → 2 × case
  *   "1 case + 3"   → case + 3
  *   "1.5 dozen"    → 18 — a part pack that lands on whole eaches is fine
- *   "1.3 dozen"    → refused: 15.6 eaches is not a number of things
- *   "2.5"          → refused: there is no half an each
- *   "0.5 + 0.5"    → refused: each part is a number of things on its own
- *   "-3"           → refused: a count is never below nothing
+ *   "1.3 dozen"    -> 16, rounding the combined total
+ *   "0.5 + 0.5"    -> 1
+ *   "-3"           -> 0
  *
- * Port of `parseUnitCombo` (`lib/stockUnits.ts:16-55`): a segment whose label
- * matches no pack is read as eaches, as the prototype reads it (the parsed
- * figure is always shown before anything is confirmed). The prototype ROUNDED
- * the total and floored a negative at 0; this refuses both, because a rounded
- * or zeroed count is a count nobody made. Each part has to come to whole
- * eaches by itself, so halves cannot be smuggled in across two parts.
+ * Matches the approved quantity entry: negative segments floor at zero,
+ * unrecognised labels are eaches, and the final total is rounded for review.
  */
 export function parsePackQuantity(raw: string, packs: readonly StockPack[]): PackParse {
   const str = raw.trim().toLowerCase();
@@ -98,12 +93,13 @@ export function parsePackQuantity(raw: string, packs: readonly StockPack[]): Pac
   let total = 0;
   for (const part of str.split('+').map((p) => p.trim())) {
     if (!part) continue;
+    if (/^-?infinity$/i.test(part)) return { ok: false, reason: `"${part}" is not a number of things` };
     let segment: number | null = null;
     for (const pack of packs) {
       const label = pack.label.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const match = new RegExp(`^(-?[\\d.]+)\\s*${label}s?$`).exec(part);
       if (match) {
-        const count = Number(match[1]);
+        const count = parseFloat(match[1]!);
         if (!Number.isFinite(count)) return { ok: false, reason: `"${part}" is not a number of ${pack.label}s` };
         segment = count * pack.eaches;
         break;
@@ -111,23 +107,13 @@ export function parsePackQuantity(raw: string, packs: readonly StockPack[]): Pac
     }
     if (segment === null) {
       const n = parseFloat(part);
-      if (Number.isNaN(n)) return { ok: false, reason: `"${part}" is not a quantity` };
-      segment = n;
+      segment = Number.isNaN(n) ? 0 : n;
     }
-    // "1e400" and "Infinity" parse to Infinity, and Infinity − Infinity is NaN,
-    // which the whole-each check below would let through (round-1 re-check).
+    // Non-finite quantities cannot be stored, even with lenient entry.
     if (!Number.isFinite(segment)) return { ok: false, reason: `"${part}" is not a number of things` };
-    if (segment < 0) return { ok: false, reason: `"${part}" is below nothing — enter what is there, 0 or more` };
-    // Floating point: 1.5 × 12 is exactly 18, but 0.1 × 30 is 3.0000000000000004.
-    const nearest = Math.round(segment);
-    if (Math.abs(segment - nearest) > 1e-9) {
-      return {
-        ok: false,
-        reason: `"${part}" comes to ${Number(segment.toFixed(3))} — stock is counted in whole items, so enter a quantity that makes a whole number`,
-      };
-    }
-    total += nearest;
+    total += Math.max(0, segment);
   }
+  total = Math.round(total);
   // A shelf count the database cannot hold is not a count anybody made.
   if (total > STOCK_MAX_EACHES) {
     return { ok: false, reason: `${total} is more than any shelf holds — check the quantity` };
@@ -576,6 +562,8 @@ export const StockItemSizeInputSchema = z.object({
   label: z.string().trim().min(1, 'Label required').max(40),
   sku: z.string().trim().max(60).nullable().optional(),
   lowStockThreshold: z.number().int().min(0, 'Threshold must be 0 or more').nullable(),
+  /** Opening eaches on a new item only; recorded as a movement at the sell point. */
+  startingStock: z.number().int().min(0).max(STOCK_MAX_EACHES).optional(),
   /** location id → par on that shelf. */
   parByLocation: z.record(StockId, z.number().int().min(0, 'Par must be 0 or more')),
 });
@@ -602,7 +590,7 @@ export const StockItemBodySchema = z.object({
     .array(
       z.object({
         label: z.string().trim().min(1, 'Unit name required').max(30),
-        eaches: z.number().int().min(2, 'A pack holds 2 or more').max(100_000),
+        eaches: z.number().int().min(1, 'A pack holds 1 or more').max(100_000),
       }),
     )
     .max(10),
@@ -678,8 +666,8 @@ export const stockRuleBelowPar = (placeName: string): string => `Below par at ${
 
 /** Days of sale history an item needs before its reorder point comes from its usage. */
 export const STOCK_TREND_HISTORY_DAYS = 30;
-/** The day of cover added to the lead time, so an order lands before the shelf is bare. */
-export const STOCK_TREND_SAFETY_DAYS = 1;
+/** Kept for callers of the former rule; the approved rule adds no safety day. */
+export const STOCK_TREND_SAFETY_DAYS = 0;
 /** The rule's words on an attention row when the point came from the item's usage. */
 export const STOCK_RULE_REORDER_TREND = '≤ reorder point (30-day usage)';
 
@@ -699,9 +687,9 @@ export interface ReorderPointAnswer {
  * `STOCK_TREND_HISTORY_DAYS` of sale history (its first sale movement at least
  * 30 business days before today) the static reorder point stands. From then on
  * the point is its average daily usage over the 30 days before today, times
- * its lead time plus one safety day, rounded UP to a whole each:
+ * its lead time, rounded UP to a whole each:
  *
- *     ceil(used in the 30 days × (lead time + 1) / 30)
+ *     ceil(used in the 30 days × lead time / 30)
  *
  * Integer arithmetic throughout, so the same history always gives the same
  * point. An item with no reorder settings (no static point, or no lead time to
@@ -727,7 +715,7 @@ export function reorderPointFor(input: {
   const historyFrom = addDaysToIsoDate(input.firstSaleDate, STOCK_TREND_HISTORY_DAYS);
   if (historyFrom > input.today) return staticAnswer;
   const used = Math.max(0, Math.trunc(input.usedInWindow));
-  const cover = input.leadTimeDays + STOCK_TREND_SAFETY_DAYS;
+  const cover = input.leadTimeDays;
   return {
     rule: 'trend',
     reorderPoint: Math.ceil((used * cover) / STOCK_TREND_HISTORY_DAYS),

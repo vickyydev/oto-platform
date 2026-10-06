@@ -1129,7 +1129,7 @@ export const paymentAttempt = pos.table(
       .where(sql`device_id is not null and terminal_ref is not null`),
     check(
       'payment_attempt_method_check',
-      sql`${t.method} in ('cash','card','qr','wallet','voucher','transfer')`,
+      sql`${t.method} in ('cash','card','qr','wallet','voucher','transfer','other')`,
     ),
     check(
       'payment_attempt_provider_check',

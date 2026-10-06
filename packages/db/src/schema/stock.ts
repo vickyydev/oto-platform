@@ -174,7 +174,7 @@ export const stockUnit = pos.table(
     index('stock_unit_operator_idx').on(t.operatorId),
     index('stock_unit_item_idx').on(t.stockItemId),
     uniqueIndex('stock_unit_code_unique').on(t.stockItemId, t.code).where(sql`archived_at is null`),
-    check('stock_unit_eaches_check', sql`${t.eaches} >= 2`),
+    check('stock_unit_eaches_check', sql`${t.eaches} >= 1`),
   ],
 );
 

@@ -522,11 +522,11 @@ describe('low-stock attention: one per item and branch, the rule that fired, qui
     expect(rows[0]!.rule).toContain('Below par at FOH');
   });
 
-  it('is suppressed while an open purchase order covers the item, and comes back when it does not', async () => {
+  it('keeps an alert while an open purchase order covers the item', async () => {
     const keyring = await itemIdOf('MR-KEYRING');
     const add = await call('POST', `${base()}/purchase-orders/lines`, manager, { lines: [{ stockItemId: keyring, quantity: 24 }] });
     const order = (add.json() as { orders: Array<{ id: string; lines: Array<{ id: string; stockItemId: string }> }> }).orders[0]!;
-    expect((await attention()).filter((a) => a.stockItemId === keyring)).toEqual([]);
+    expect((await attention()).filter((a) => a.stockItemId === keyring)).toHaveLength(1);
     const line = order.lines.find((l) => l.stockItemId === keyring)!;
     await call('DELETE', `${base()}/purchase-orders/${order.id}/lines/${line.id}`, manager);
     expect((await attention()).filter((a) => a.stockItemId === keyring)).toHaveLength(1);
@@ -598,13 +598,9 @@ describe("a manager's correction, and setup", () => {
     expect(after.FOH).toBe(0);
     expect(after.BOH).toBe((before.BOH ?? 0) - (14 - (before.FOH ?? 0)));
     const tooMany = await call('POST', `${base()}/adjustments`, manager, { stockItemId: tshirt, delta: -100000, reason: 'x' });
-    expect(tooMany.statusCode).toBe(409);
-    expect(tooMany.json().error.message).toMatch(/^This branch holds only \d+ Oto T-Shirt — nothing was changed$/);
-    const up = await call('POST', `${base()}/adjustments`, manager, { stockItemId: tshirt, delta: 5, reason: 'Recount' });
-    expect((up.json() as { movements: Array<{ locationId: string; quantity: number }> }).movements).toEqual([
-      { locationId: places.get('FOH'), quantity: 5, levelAfter: 5 },
-    ]);
-    expect(await auditRows('stock.adjust', tshirt)).toHaveLength(2);
+    expect(tooMany.statusCode).toBe(200);
+    expect(tooMany.json().delta).toBe(-Object.values(after).reduce((sum, count) => sum + count, 0));
+    expect(Object.values(await heldBy(tshirt)).every((quantity) => quantity === 0)).toBe(true);
     await expectLedgerAddsUp();
   });
 
@@ -638,6 +634,33 @@ describe("a manager's correction, and setup", () => {
     });
     expect(drop.statusCode).toBe(409);
     expect(drop.json().error.message).toMatch(/^Grip Socks \(Merch\) M still holds \d+ \(\d+ at [^)]+\) — count it out or move it before removing the size$/);
+  });
+
+  it('creates starting stock once at the sell point with its operator and audit, and refuses starting stock on edits', async () => {
+    const key = `stock-opening-${newId()}`;
+    const body = { name: 'Opening test item', productId: null, unitCostSatang: 25, reorder: null,
+      units: [{ label: 'Each pack', eaches: 1 }], sizes: [{ variantId: null, label: 'Default', lowStockThreshold: null, parByLocation: {}, startingStock: 7 }] };
+    const headers = { 'idempotency-key': key };
+    const first = await call('POST', `${base()}/items`, manager, body, headers);
+    expect(first.statusCode).toBe(200);
+    const replay = await call('POST', `${base()}/items`, manager, body, headers);
+    expect(replay.json()).toEqual(first.json());
+    const created = first.json() as { groupId: string; stockItemIds: string[] };
+    expect(await heldBy(created.stockItemIds[0]!)).toEqual({ FOH: 7 });
+    const moves = await ctx.db.select().from(stockMovement).where(eq(stockMovement.stockItemId, created.stockItemIds[0]!));
+    expect(moves).toHaveLength(1);
+    expect(moves[0]).toMatchObject({ quantity: 7, kind: 'adjust', reason: 'Starting stock' });
+    expect(moves[0]!.actorAccountId).toBeTruthy();
+    expect(await auditRows('stock_item.create', created.stockItemIds[0])).toHaveLength(1);
+    const edited = await call('PUT', `${base()}/items/${created.groupId}`, manager,
+      { ...body, sizes: [{ ...body.sizes[0], stockItemId: created.stockItemIds[0], startingStock: 99 }] });
+    expect(edited.statusCode).toBe(400);
+    expect(await heldBy(created.stockItemIds[0]!)).toEqual({ FOH: 7 });
+    const down = await call('POST', `${base()}/adjustments`, manager, { stockItemId: created.stockItemIds[0], locationId: places.get('BOH'), delta: -99, reason: 'Count correction' });
+    expect(down.statusCode).toBe(200);
+    expect(down.json().delta).toBe(-7);
+    expect(Object.values(await heldBy(created.stockItemIds[0]!)).every((quantity) => quantity === 0)).toBe(true);
+    await expectLedgerAddsUp();
   });
 
   it('creates an unlinked item with no stock: it opens with a delivery, not with a typed figure', async () => {

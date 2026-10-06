@@ -1,26 +1,9 @@
 import { useState } from 'react';
 import { ArrowRight, Package, TrendingDown, ShoppingCart, AlertTriangle, Truck, ClipboardList, ChevronDown, ChevronUp, PackageX } from 'lucide-react';
-import { STOCK_TREND_HISTORY_DAYS, STOCK_TREND_SAFETY_DAYS, type StockAttentionView } from '@oto/shared';
+import { STOCK_TREND_HISTORY_DAYS, type StockAttentionView } from '@oto/shared';
 import { InventoryItem, InventoryVariant, PurchaseOrder, StockLocation } from '@/types';
 
-/**
- * THE ALERTS SCREEN READS THE PLATFORM (stock walkthrough F3).
- *
- * It used to work out low stock on the device, from the levels and the items'
- * static reorder settings (`lib/inventory.ts:getReorderAlerts` and the par
- * check below the prototype's cards). So the OD-27 30-day usage rule never
- * reached it, it listed items the platform keeps quiet (an open order covers
- * them), and its count could differ from the platform's.
- *
- * Now every card IS one of the platform's open low-stock or reorder rows
- * (`GET /branches/:id/stock/attention`): a suppressed item has no row and so
- * no card, the count is the rows', and the rule that fired is the row's own
- * words. The prototype's look stays — one card per item, the shortfall at each
- * place, the transfer or the reorder that is actually possible, and "already
- * ordered" when an open order is on the screen — with the figures read from
- * the row, and only the SUGGESTION (where to move stock from) worked out here,
- * from the levels on screen.
- */
+/** The platform's current low-stock rows, with transfer actions and open-order reminders. */
 
 /** Open purchase-order status for one inventory item (outstanding qty only). */
 interface OnOrderStatus {
@@ -302,8 +285,7 @@ export function StockSuggestions({
         <br />
         <span className="italic opacity-70">
           Once an item has {STOCK_TREND_HISTORY_DAYS} days of sales, its reorder point follows its usage: what it
-          sells on an average day over the last {STOCK_TREND_HISTORY_DAYS} days × (lead time + {STOCK_TREND_SAFETY_DAYS}{' '}
-          day), rounded up. An item already on an open order is not listed.
+          sells on an average day over the last {STOCK_TREND_HISTORY_DAYS} days × lead time, rounded up.
         </span>
       </p>
       {entries.map((e) => (

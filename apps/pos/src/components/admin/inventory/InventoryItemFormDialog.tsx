@@ -27,6 +27,8 @@ import { catalogueSizesOf } from '@/api/menu';
 
 interface InventoryItemFormDialogProps {
   open: boolean;
+  busy?: boolean;
+  frozen?: boolean;
   item: InventoryItem | null;
   stockLocations: StockLocation[];
   merchItems: MerchItem[];
@@ -101,7 +103,7 @@ const fromUnit = (u: StockUnit): UnitRow => ({
 const blankUnitRow = (): UnitRow => ({
   id: `u-${Math.random().toString(36).slice(2, 7)}`,
   label: '',
-  eaches: '2',
+  eaches: '1',
 });
 
 /** The sellables of one kind an inventory item can link to. */
@@ -127,6 +129,8 @@ function linkedOptionsFor(
  * - Linked sellable-product selection from catalog
  */
 export function InventoryItemFormDialog({
+  busy = false,
+  frozen = false,
   open,
   item,
   stockLocations,
@@ -360,9 +364,9 @@ export function InventoryItemFormDialog({
     for (let i = 0; i < units.length; i++) {
       const u = units[i];
       if (!u.label.trim()) next[`u${i}label`] = 'Unit name required.';
-      // A pack of one each is just an each: the platform keeps packs of two or more.
-      if (!u.eaches.trim() || !Number.isInteger(Number(u.eaches)) || Number(u.eaches) < 2)
-        next[`u${i}eaches`] = 'Must be ≥ 2.';
+      // The approved form allows a pack containing one each.
+      if (!u.eaches.trim() || !Number.isInteger(Number(u.eaches)) || Number(u.eaches) < 1)
+        next[`u${i}eaches`] = 'Must be ≥ 1.';
     }
 
     if (reorderEnabled) {
@@ -451,6 +455,7 @@ export function InventoryItemFormDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
     const result = validate();
     if (result) onSave(result);
   };
@@ -487,6 +492,7 @@ export function InventoryItemFormDialog({
         </DialogHeader>
 
         <form id="inv-form" onSubmit={handleSubmit} className="flex flex-col gap-6 pt-1">
+          <fieldset disabled={busy || frozen} className="contents">
 
           {/* ── Basics ── */}
           <section className="flex flex-col gap-4">
@@ -706,15 +712,15 @@ export function InventoryItemFormDialog({
                   </div>
                   <div className="w-20 flex flex-col gap-1">
                     <Label className="text-[10px] text-foreground/40 uppercase tracking-wider">Total stock</Label>
-                    {/* Stock moves only through the ledger — a count, a delivery, a
-                        transfer — so it is shown here, never typed (OD-S5). */}
+                    {/* New items open with an audited movement; existing stock uses stock operations. */}
                     <Input
                       type="number"
                       min={0}
                       value={v.stock}
-                      readOnly
-                      disabled
-                      title="Count or receive stock in the Stock module to change it"
+                      readOnly={Boolean(item)}
+                      disabled={Boolean(item)}
+                      onChange={(event) => updateVariant(i, 'stock', event.target.value)}
+                      title={item ? "Count or receive stock in the Stock module to change it" : "Starting stock is recorded at the sell point"}
                     />
                     {errors[`v${i}stock`] && (
                       <p className="text-xs text-destructive">{errors[`v${i}stock`]}</p>
@@ -1023,6 +1029,7 @@ export function InventoryItemFormDialog({
               </div>
             )}
           </section>
+          </fieldset>
         </form>
 
         <DialogFooter className="mt-4">

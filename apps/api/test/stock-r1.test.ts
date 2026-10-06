@@ -388,8 +388,8 @@ describe('the decrement at finalise', () => {
   });
 });
 
-describe('a refund puts stock back where it came from, once', () => {
-  it('returns each unit to the place it left, and a second pass moves nothing', async () => {
+describe('a refund puts returned stock at the sell point, once', () => {
+  it('returns every cascaded unit to the counter, and a second pass moves nothing', async () => {
     // Oto Cap: 7 at the counter, 18 behind. Sell 10 → 7 from FOH, 3 from BOH.
     const saleId = newId();
     expect((await commit({ id: saleId, items: [itemLine('MR-CAP', 10)] })).statusCode).toBe(200);
@@ -407,8 +407,8 @@ describe('a refund puts stock back where it came from, once', () => {
       refundSale(tx, actor, saleId, { mode: 'whole', reason: 'Wrong size' }),
     );
     expect(refunded.refund.lines.every((l) => l.restock)).toBe(true);
-    // Back to its origin: the counter gets its 7, the back of house its 3.
-    expect(await held('MR-CAP')).toEqual({ Store: 0, BOH: 18, FOH: 7 });
+    // All 10 returned units go onto the counter shelf.
+    expect(await held('MR-CAP')).toEqual({ Store: 0, BOH: 15, FOH: 10 });
 
     // Never twice: the restock is keyed by the sale line, whichever refund asks.
     const lineIds = refunded.refund.lines.map((l) => l.saleLineId);
@@ -426,7 +426,7 @@ describe('a refund puts stock back where it came from, once', () => {
       }),
     );
     expect(again).toEqual([]);
-    expect(await held('MR-CAP')).toEqual({ Store: 0, BOH: 18, FOH: 7 });
+    expect(await held('MR-CAP')).toEqual({ Store: 0, BOH: 15, FOH: 10 });
     await expectLedgerAddsUp();
   });
 

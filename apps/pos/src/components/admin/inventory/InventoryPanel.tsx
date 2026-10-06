@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { ApiError, idemKey } from '@/api/client';
+import type { StockItemBody } from '@oto/shared';
+import { useRef, useState } from 'react';
 import { Package, AlertTriangle, Pencil, Plus, MapPin } from 'lucide-react';
 import { InventoryItem, InventoryVariant } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
@@ -55,6 +57,10 @@ export function InventoryPanel() {
 
   const [tab, setTab] = useState<Tab>('items');
   const [formOpen, setFormOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savePending, setSavePending] = useState(false);
+  const pendingSave = useRef<{ actionId: string; branchId: string; groupId: string | null; body: StockItemBody } | null>(null);
+  const saveInFlight = useRef(false);
   const [editing, setEditing] = useState<InventoryItem | null>(null);
   const [adjusting, setAdjusting] = useState<{
     item: InventoryItem;
@@ -88,25 +94,31 @@ export function InventoryPanel() {
   };
 
   const handleSave = async (newItem: InventoryItem) => {
-    if (!branchId) return;
+    if (!branchId || saveInFlight.current) return;
     const existing = editing;
     const existingSizeIds = new Set(existing?.variants.map((v) => v.id) ?? []);
     const productSized = newItem.linkedId ? catalogueSizesOf(newItem.linkedId).length > 0 : false;
+    pendingSave.current ??= { actionId: idemKey(), branchId, groupId: existing?.id ?? null,
+      body: inventoryItemToStockBody(newItem, { existingSizeIds, productSized, newItem: !existing }) };
+    const pending = pendingSave.current;
+    if (pending.branchId !== branchId) { window.alert('Return to the original park to check this unfinished save.'); return; }
+    saveInFlight.current = true; setSaving(true); setSavePending(true);
     try {
       // One write: the item, its sizes, packs, pars and reorder settings, and
       // the link to the sellable it stocks (all of a sized product's sizes or
       // none — the platform refuses a partial link).
       await stockApi.saveItem(
-        branchId,
-        existing ? existing.id : null,
-        inventoryItemToStockBody(newItem, { existingSizeIds, productSized }),
+        pending.branchId, pending.groupId, pending.body, pending.actionId,
       );
       // The sell grids read "tracked" from the menu's links: read it back.
       if (branch) await reloadMenuInto(branchId, branch.id).catch(() => undefined);
-      setFormOpen(false);
+      pendingSave.current = null; setSavePending(false); setFormOpen(false);
     } catch (err) {
+      if (err instanceof ApiError && err.status < 500 && err.code !== 'IDEMPOTENCY_IN_FLIGHT') {
+        pendingSave.current = null; setSavePending(false);
+      }
       window.alert(stockErrorWords(err));
-    }
+    } finally { saveInFlight.current = false; setSaving(false); }
   };
 
   // All locations (active + retired) for the form's par inputs
@@ -288,9 +300,8 @@ export function InventoryPanel() {
               stock, refunds put it back, and each adjustment is a movement with
               the reason and the person who made it. */}
           <p className="text-xs text-foreground/35">
-            Use "Adjust" for receive, shrinkage, or recount corrections. Sale decrements and
-            refund restores follow automatically and each adjustment carries the operator who
-            made it.
+            Sale decrements and refund restores happen automatically. Use "Adjust" for receive,
+            shrinkage, or recount corrections — these are stamped with your operator ID.
           </p>
         </>
       )}
@@ -301,12 +312,14 @@ export function InventoryPanel() {
       {/* Dialogs (always mounted so state survives tab switch) */}
       <InventoryItemFormDialog
         open={formOpen}
+        busy={saving}
+        frozen={savePending}
         item={editing}
         stockLocations={activeLocations}
         merchItems={merchItems}
         addOns={addOns}
         menuItems={menuItems}
-        onClose={() => setFormOpen(false)}
+        onClose={() => { if (!savePending) setFormOpen(false); }}
         // The link to the sellable is written by the platform with the item
         // (`setProductStockLinks`), so both sides of it change together: the
         // product's "tracked" marker is the platform's, read back with the menu.

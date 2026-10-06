@@ -421,6 +421,27 @@
       "when": 1791231924328,
       "tag": "0059_eod_settlement",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1791237292171,
+      "tag": "0060_payment_method_other",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1791238619494,
+      "tag": "0061_sale_extensions",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1791239078770,
+      "tag": "0062_stock_single_each_pack",
+      "breakpoints": true
     }
   ]
 }

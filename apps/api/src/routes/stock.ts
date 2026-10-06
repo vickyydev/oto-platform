@@ -535,7 +535,7 @@ export async function stockRoutes(app: App): Promise<void> {
       config: { permission: 'pos:stock:adjust', target: { branchId: 'params.branchId' } },
       schema: {
         description:
-          'A new stocked item with its sizes, packs, pars and reorder settings, linked to what it stocks. It opens with a count or a delivery',
+          'A new stocked item with its sizes, packs, pars and reorder settings, linked to what it stocks. Starting stock is recorded as an audited movement at the sell point',
         params: BranchParams,
         body: StockItemBodySchema,
         response: { 200: StockItemResultSchema },

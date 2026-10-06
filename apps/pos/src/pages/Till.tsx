@@ -10,7 +10,7 @@ import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentActionAllowed,
-  stockShortMessage, stockSizeName, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
+  stockSizeName, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
@@ -2410,13 +2410,13 @@ export default function Till() {
         const variant = invItem?.variants.find((v) => v.id === variantId);
         const available = variant?.stock ?? Infinity;
         if (qty > available) {
-          stockViolations.push(stockShortMessage(stockSizeName(name, label ?? null), available));
+          stockViolations.push(`${stockSizeName(name, label ?? null)} (need ${qty}, have ${available})`);
         }
       }
       if (stockViolations.length > 0) {
         toast({
           title: 'Insufficient stock',
-          description: `Cannot complete sale — ${stockViolations.join(' · ')}`,
+          description: `Cannot complete sale — stock too low: ${stockViolations.join(' · ')}`,
           variant: 'destructive',
         });
         return false;

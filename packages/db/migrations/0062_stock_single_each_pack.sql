@@ -1,0 +1,2 @@
+ALTER TABLE "pos"."stock_unit" DROP CONSTRAINT "stock_unit_eaches_check";--> statement-breakpoint
+ALTER TABLE "pos"."stock_unit" ADD CONSTRAINT "stock_unit_eaches_check" CHECK ("pos"."stock_unit"."eaches" >= 1);

@@ -502,13 +502,13 @@ describe('OD-27 — the trend rule takes over at day 30, and the row says which 
     expect(row!.detail).toMatchObject({ reorderRule: 'static', reorderPoint: 20, staticReorderPoint: 20, usedInWindow: null });
   });
 
-  it('day 30: the point is ceil(25 × (10 + 1) / 30) = 10 — "≤ reorder point (30-day usage)"', async () => {
+  it('day 30: the point is ceil(25 × 10 / 30) = 9 — "≤ reorder point (30-day usage)"', async () => {
     await ctx.db.transaction((tx) => syncStockAttention(tx, { operatorId, branchId }, at(0), [bottle]));
     const row = await openRow();
-    expect(row).toMatchObject({ kind: 'reorder', rule: '≤ reorder point (30-day usage) · Below par at FOH', quantity: 5 });
-    expect(row!.detail).toMatchObject({ reorderRule: 'trend', reorderPoint: 10, staticReorderPoint: 20, usedInWindow: 25 });
+    expect(row).toMatchObject({ kind: 'reorder', rule: '≤ reorder point (30-day usage) · Below par at FOH', quantity: 4 });
+    expect(row!.detail).toMatchObject({ reorderRule: 'trend', reorderPoint: 9, staticReorderPoint: 20, usedInWindow: 25 });
     expect(row!.summary).toBe(
-      "Water Bottle: 5 on hand, at or below its reorder point of 10 — 25 used in the last 30 days, 10 days' lead time + 1",
+      "Water Bottle: 5 on hand, at or below its reorder point of 9 — 25 used in the last 30 days, 10 days' lead time",
     );
   });
 

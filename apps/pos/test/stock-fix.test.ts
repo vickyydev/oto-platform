@@ -138,8 +138,7 @@ const inventory: InventoryItem[] = [
     ],
     reorderSettings: { reorderPoint: 30, leadTimeDays: 10, supplierName: 'Phuket Socks Ltd.', reorderQty: 48 },
   },
-  // The device's old rule flagged this (2 on hand ≤ 20); the platform keeps it
-  // quiet because an open order covers it — so it has no row and no card.
+  // A fixture not present in this response; the UI renders only returned attention rows.
   {
     id: BOTTLE,
     name: 'Water Bottle',
@@ -241,6 +240,22 @@ describe('F3 — the Alerts screen is the platform’s attention rows', () => {
       ['S', 'FOH', 2, 10],
       ['M', 'FOH', 3, 15],
     ]);
+  });
+
+  it('keeps the transfer and purchase reminder when the same item has an open order', () => {
+    const capOrder: PurchaseOrder = { ...orders[0]!, state: 'to_order', lines: [{ ...orders[0]!.lines[0]!, inventoryItemId: CAP, variantId: CAP_ITEM, itemName: 'Oto Cap' }] };
+    const entries = buildAttentionList(platformRows, inventory, locations, [capOrder]);
+    const cap = entries.find((entry) => entry.name === 'Oto Cap')!;
+    expect(cap.transfer).toMatchObject({ sourceLocationId: BOH, shortage: 7 });
+    expect(cap.onOrder).toMatchObject({ state: 'to_order', qty: 48 });
+    const out = markup(React.createElement(StockSuggestions, { inventory, locations, orders: [capOrder], attention: platformRows,
+      onResolveAttention: () => {}, onStartTransfer: () => {}, onReorder: () => {} }));
+    expect(out).toContain('Move 7 from BOH');
+    expect(out).toContain('48 on list');
+    const socksOrder: PurchaseOrder = { ...capOrder, lines: [{ ...capOrder.lines[0]!, inventoryItemId: SOCKS, variantId: SOCKS_S }] };
+    const reminder = markup(React.createElement(StockSuggestions, { inventory, locations, orders: [socksOrder], attention: platformRows,
+      onResolveAttention: () => {}, onStartTransfer: () => {}, onReorder: () => {} }));
+    expect(reminder).toContain('Already on the purchase list');
   });
 
   it('with no platform rows there are no cards, whatever the levels on the device say', () => {
