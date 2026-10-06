@@ -171,6 +171,14 @@ export interface ApiSaleLine {
   freeAdultCount: number;
   stayHours: number | null;
   stayDurationLabel: string | null;
+  productId?: string | null;
+  modifiers?: { groupId: string; groupName: string; optionId: string; optionName: string; unitSatang: number }[] | null;
+  note?: string | null;
+  variant?: { variantId: string; variantLabel: string } | null;
+  variantBreakdown?: { variantId: string; variantLabel: string; quantity: number }[] | null;
+  prepaid?: { checkinId: string; menuItemId: string; unmatched?: true; settledAtPickup?: true; usedUp?: true } | null;
+  holderCheckinId?: string | null;
+  supervised?: boolean;
 }
 
 export interface ApiSaleDiscount {
@@ -216,6 +224,10 @@ export function isVoucherDiscount(d: Pick<ApiSaleDiscount, 'kind' | 'label'>): b
 }
 
 export interface ApiSaleDetail {
+  /** A separate paid extension of an existing admission, never a new admission cart. */
+  timeExtension?: { id: string; sourceSaleId: string; status: 'pending' | 'applied' | 'voided'; minutesAdded: number; braceletCount: number } | null;
+  /** Exact recorded food-order holder, by the non-secret code printed under its QR. */
+  correctionBandShortCode?: string | null;
   sale: ApiSale;
   taxBreakdown: { categories?: { category: string; tax: number; serviceCharge: number; taxName?: string | null }[] } | null;
   lines: ApiSaleLine[];
@@ -472,13 +484,27 @@ export function saleCountLabel(shown: number, limit = SALES_PAGE_LIMIT): string 
  * It answers at most `SALES_PAGE_LIMIT` rows; `saleCountLabel` is how a caller
  * tells the reader when that is what they are looking at.
  */
+export type HistoryDateFilter = 'today' | 'yesterday' | 'week' | 'all';
+
+/** The phone's date chips span park business dates; This week is seven days. */
+export function historyDateRange(today: string, filter: HistoryDateFilter): { from?: string; to?: string } {
+  if (filter === 'all') return {};
+  const offset = filter === 'yesterday' ? 1 : filter === 'week' ? 6 : 0;
+  const start = new Date(`${today}T12:00:00Z`);
+  start.setUTCDate(start.getUTCDate() - offset);
+  const from = start.toISOString().slice(0, 10);
+  return { from, to: filter === 'yesterday' ? from : today };
+}
+
 export async function listSales(
   branchId: string | null,
-  opts: { date?: string; memberId?: string; limit?: number } = {},
+  opts: { date?: string; from?: string; to?: string; memberId?: string; limit?: number } = {},
 ): Promise<HistoryTxn[]> {
   const params = new URLSearchParams();
   if (branchId) params.set('branchId', branchId);
   if (opts.date) params.set('businessDate', opts.date);
+  if (opts.from) params.set('from', opts.from);
+  if (opts.to) params.set('to', opts.to);
   if (opts.memberId) params.set('memberId', opts.memberId);
   params.set('limit', String(opts.limit ?? SALES_PAGE_LIMIT));
   const { sales } = await api.get<{ sales: ApiSaleListItem[] }>(`/sales?${params.toString()}`);
@@ -885,3 +911,49 @@ export function bandLabel(band: Pick<ApiSaleBand, 'shortCode' | 'childName'>): s
   const code = band.shortCode ?? 'No code';
   return band.childName ? `${code} · ${band.childName}` : code;
 }
+
+
+// Paid play extensions are separate charges: the original receipt stays unchanged.
+export type ExtensionSelection =
+  | { mode: 'bands'; bandIds: string[] }
+  | { mode: 'count'; braceletCount: number };
+export interface SaleExtensionOption { id: string; label: string; minutes: number; unitSatang: number }
+export interface ExtensionBand { id: string; shortCode: string; kind: string }
+export interface SaleExtension {
+  id: string;
+  chargeSaleId: string;
+  optionId: string;
+  label: string;
+  minutesAdded: number;
+  braceletCount: number;
+  amountSatang: number;
+  selection: ExtensionSelection;
+  status: 'pending' | 'applied' | 'voided';
+  createdAt: string;
+  createdByName: string | null;
+  appliedAt: string | null;
+  currentBandIds?: string[];
+  needsReselection?: boolean;
+}
+export interface SaleExtensionsRead {
+  options: SaleExtensionOption[];
+  eligibleBands: ExtensionBand[];
+  extensions: SaleExtension[];
+}
+export interface SaleExtensionBody {
+  actionId: string;
+  stationId: string;
+  optionId: string;
+  selection: ExtensionSelection;
+}
+export const readSaleExtensions = (saleId: string) =>
+  api.get<SaleExtensionsRead>(`/sales/${encodeURIComponent(saleId)}/extensions`);
+export const createSaleExtension = (saleId: string, body: SaleExtensionBody) =>
+  api.post<{ extension: SaleExtension; sale: import('./sales').ApiSale; replay?: boolean }>(
+    `/sales/${encodeURIComponent(saleId)}/extensions`, body,
+    { idempotencyKey: `extension:${saleId}:${body.actionId}`, headers: { 'x-oto-action-id': body.actionId } },
+  );
+
+export const reselectExtensionBands = (saleId: string, extensionId: string, body: { actionId: string; stationId: string; bandIds: string[] }) =>
+  api.post<{ replay: boolean }>(`/sales/${encodeURIComponent(saleId)}/extensions/${encodeURIComponent(extensionId)}/bands`, body,
+    { idempotencyKey: `extension-reselect:${extensionId}:${body.actionId}`, headers: { 'x-oto-action-id': body.actionId } });

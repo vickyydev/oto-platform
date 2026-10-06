@@ -128,6 +128,17 @@ afterEach(() => {
 });
 
 describe('pressing Pay twice produces one sale', () => {
+  it('persists the whole-order prep note and retains it when an unanswered write is retried', async () => {
+    const { result } = mountWriter();
+    const input = { ...order(1), note: 'Serve at 16:00; candles on the side' };
+    commit.mockRejectedValueOnce(new NetworkError(new TypeError('Failed to fetch')));
+    await result.current.commit(input);
+    await result.current.commit(input);
+    expect(sent()).toHaveLength(2);
+    expect(sent()[0]!.note).toBe(input.note);
+    expect(sent()[1]).toEqual(sent()[0]);
+  });
+
   it('joins a press to the one still going out: one request, one answer', async () => {
     let answer!: (result: SaleCommitResult) => void;
     commit.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
@@ -628,7 +639,7 @@ describe('payment request identities', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-09-25T04:00:00.000Z'));
     vi.spyOn(paymentMethods, 'findPaymentMethod').mockImplementation((id) => {
-      const kind = id === 'park-cash' ? 'cash' : id === 'park-card' ? 'card' : id === 'park-qr' ? 'qr' : null;
+      const kind = id === 'park-cash' ? 'cash' : id === 'park-card' ? 'card' : id === 'park-qr' ? 'qr' : id === 'park-other' ? 'other' : null;
       return kind ? { id, kind, label: id, enabled: true, sortOrder: 0 } : undefined;
     });
     const prepareSale = vi.fn<PaymentStageOptions['prepareSale']>().mockResolvedValue(outcome());
@@ -669,6 +680,73 @@ describe('payment request identities', () => {
     await test.result.current.submit();
     expect(test.finaliseSale.mock.calls[2]![1]).not.toBe(test.finaliseSale.mock.calls[1]![1]);
     expect(test.onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['cash', 'other'] as const)('resumes a partial %s charge from the actual remaining balance before another collection', async (kind) => {
+    const paid = { ...cashAttempt('sale-1'), method: kind };
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: apiSale(), attempts: [paid] });
+    const test = mountPayment({ resumeSaleId: 'sale-1' });
+    test.reading.mockResolvedValue(read(paid, 27_000));
+    expect(test.result.current.canSubmit).toBe(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.result.current.state.outstandingSatang).toBe(27_000);
+    expect(test.result.current.state.settlements).toHaveLength(1);
+    test.result.current.selectMethod(`park-${kind}`);
+    await test.result.current.submit();
+    expect(test.finaliseSale.mock.calls[0]![0]).toMatchObject({ kind, amountSatang: 27_000 });
+    expect(test.start).not.toHaveBeenCalled();
+    get.mockRestore();
+  });
+
+  it('resumes the exact unresolved terminal attempt and cannot start a replacement payment', async () => {
+    const pending = attempt('unknown');
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ sale: apiSale(), attempts: [pending] });
+    const test = mountPayment({ resumeSaleId: 'sale-1' });
+    test.reading.mockResolvedValue({ ...read(pending, 54_000), route: 'card_terminal' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.result.current.state.attempt?.id).toBe(pending.id);
+    expect(test.result.current.canInquire).toBe(true);
+    expect(test.result.current.locked).toBe(true);
+    test.result.current.selectMethod('park-cash');
+    await test.result.current.submit();
+    expect(test.start).not.toHaveBeenCalled();
+    expect(test.finaliseSale).not.toHaveBeenCalled();
+    get.mockRestore();
+  });
+
+  it('ignores recovery from a previous payment scope and refuses an unconfirmed balance', async () => {
+    let resolve!: (value: unknown) => void;
+    const get = vi.spyOn(api, 'get').mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    const test = mountPayment({ resumeSaleId: 'sale-1' });
+    await vi.advanceTimersByTimeAsync(0);
+    test.rerender({ ...test.options, scope: 'next', resumeSaleId: undefined, isCurrentScope: (scope) => scope === 'next' });
+    resolve({ sale: apiSale(), attempts: [attempt('unknown')] });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.result.current.state.saleId).toBeNull();
+    expect(test.reading).not.toHaveBeenCalled();
+    get.mockResolvedValue({ sale: apiSale(), attempts: [attempt('unknown')] });
+    test.reading.mockResolvedValue({ ...read(attempt('unknown'), 0), outstandingSatang: null, route: 'card_terminal' });
+    test.rerender({ ...test.options, resumeSaleId: 'sale-1' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(test.result.current.locked).toBe(true);
+    expect(test.result.current.state.error).toContain('balance has not been confirmed');
+    get.mockRestore();
+  });
+
+  it('records Other as an approved manual tender without cash change or a terminal request', async () => {
+    const test = mountPayment();
+    const otherAttempt = cashAttempt('sale-1');
+    test.finaliseSale.mockResolvedValueOnce(outcome(apiSale({ status: 'finalised' }), {
+      finalised: true, outstandingSatang: 0,
+      attempt: { ...otherAttempt, method: 'other', tenderedSatang: null, changeSatang: null },
+    }));
+    test.result.current.selectMethod('park-other');
+    expect(test.result.current.canSubmit).toBe(true);
+    await test.result.current.submit();
+    expect(test.finaliseSale).toHaveBeenCalledWith({ method: 'park-other', kind: 'other', amountSatang: 54_000 }, expect.any(String));
+    expect(test.start).not.toHaveBeenCalled();
+    expect(test.onComplete).toHaveBeenCalledTimes(1);
+    expect(test.onComplete.mock.calls[0]![1]).toMatchObject([{ method: 'park-other', kind: 'other' }]);
   });
 
   it('keeps partial money open, then closes confirmed QR money with NO_TENDER exactly once', async () => {

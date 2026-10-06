@@ -6,8 +6,10 @@ import { ArrowLeft, Printer, Check } from 'lucide-react';
 interface MobileReprintFlowProps {
   items: ReprintItemOption[];
   operatorName: string;
-  onConfirm: (labels: string[]) => void;
+  onConfirm: (labels: string[], ids: string[]) => void;
   onCancel: () => void;
+  busy?: boolean;
+  error?: string | null;
 }
 
 export function MobileReprintFlow({
@@ -15,6 +17,8 @@ export function MobileReprintFlow({
   operatorName,
   onConfirm,
   onCancel,
+  busy = false,
+  error = null,
 }: MobileReprintFlowProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -28,11 +32,11 @@ export function MobileReprintFlow({
   const toggleAll = () => setSelectedIds(allSelected ? [] : items.map((i) => i.id));
 
   const handleConfirm = () => {
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0 || busy) return;
     const labels = items
       .filter((i) => selectedIds.includes(i.id))
       .map((i) => (i.sublabel ? `${i.label} ${i.sublabel}` : i.label));
-    onConfirm(labels);
+    onConfirm(labels, selectedIds);
   };
 
   return (
@@ -40,8 +44,8 @@ export function MobileReprintFlow({
       {/* Header */}
       <div className="shrink-0 flex items-center gap-3 px-4 h-14 border-b bg-card/30">
         <button
-          type="button"
-          onClick={onCancel}
+          type="button" disabled={busy}
+          onClick={onCancel} aria-label="Back"
           className="w-9 h-9 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -54,7 +58,7 @@ export function MobileReprintFlow({
           <div className="text-xs text-muted-foreground truncate">By {operatorName}</div>
         </div>
         <button
-          type="button"
+          type="button" disabled={busy}
           onClick={toggleAll}
           className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors px-2"
         >
@@ -69,7 +73,7 @@ export function MobileReprintFlow({
           return (
             <button
               key={item.id}
-              type="button"
+              type="button" disabled={busy}
               onClick={() => toggle(item.id)}
               className={`w-full flex items-center justify-between rounded-xl border p-4 text-left transition-colors ${
                 checked
@@ -99,15 +103,16 @@ export function MobileReprintFlow({
         })}
       </div>
 
+      {error && <p role="alert" className="px-4 py-2 text-sm text-destructive">{error}</p>}
       {/* Footer */}
       <div className="shrink-0 p-4 border-t bg-card/20">
         <Button
           className="w-full h-14 text-base gap-2"
-          disabled={selectedIds.length === 0}
+          disabled={selectedIds.length === 0 || busy}
           onClick={handleConfirm}
         >
           <Printer className="w-5 h-5" />
-          {selectedIds.length === 0
+          {busy ? 'Sending…' : selectedIds.length === 0
             ? 'Select items to reprint'
             : `Reprint ${selectedIds.length} item${selectedIds.length > 1 ? 's' : ''}`}
         </Button>

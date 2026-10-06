@@ -459,12 +459,18 @@ export default function Till() {
   useEffect(() => {
     const correction = takeCorrectedOrder();
     if (!correction || correction.kind !== 'ticket') return;
+    if (correction.branchId && correction.branchId !== branch.apiId) {
+      toast({ title: 'Switch to the original park before correcting this sale', variant: 'destructive' });
+      return;
+    }
+    setMember(correction.member ?? null);
+    if (correction.notice) toast({ title: 'Complete the corrected order', description: correction.notice, duration: 20000 });
     setTier(correction.tier);
     setLines(correction.lines.map((l) => ({ ...l, id: Math.random().toString(36).substring(7) })));
     if (correction.customerPhone) setCustomerPhone(correction.customerPhone);
     if (correction.customerNickname) setCustomerNickname(correction.customerNickname);
     setStep(3);
-  }, []);
+  }, [branch.apiId]);
 
   // Shared helper: load a drop-off registration into the till as drop-off lines.
   // Used by both the handoff useEffect and the booking redemption "Check in now" flow.

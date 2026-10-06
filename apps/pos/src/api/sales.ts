@@ -353,10 +353,10 @@ export interface SaleTenderPayload {
   kind: 'cash' | 'card' | 'qr' | 'other';
   /** What the sale asked for: the platform's own gross for this sale. */
   amountSatang: number;
-  /** What was handed over. Equal to the amount due until S2-10a asks. */
-  tenderedSatang: number;
-  /** What was handed back. Zero until there is an entry for what came in. */
-  changeSatang: number;
+  /** Cash only: what was handed over. Other has no cash received figure. */
+  tenderedSatang?: number;
+  /** Cash only: what was handed back. */
+  changeSatang?: number;
 }
 
 /**

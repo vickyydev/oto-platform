@@ -27,7 +27,7 @@ import { z } from 'zod';
  * the point of landing the whole vocabulary in one migration is that no later
  * slice of this ticket — or of the two after it — has to write a second one.
  */
-export const PAYMENT_METHODS = ['cash', 'card', 'qr', 'wallet', 'voucher', 'transfer'] as const;
+export const PAYMENT_METHODS = ['cash', 'card', 'qr', 'wallet', 'voucher', 'transfer', 'other'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 /**
