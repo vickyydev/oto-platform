@@ -24,6 +24,8 @@ import {
   SYNC_EVENT_SCHEMA_VERSION,
   canonicalSyncBytes,
   newId,
+  PRICING_ENGINE_VERSION,
+  LEGACY_SATANG_ENGINE_VERSION,
   type SyncEventEnvelope,
   type SyncPushResponse,
 } from '@oto/shared';
@@ -57,6 +59,7 @@ import { catalogueVersionOf, replayQuarantined } from '../src/services/sync';
  * change to either end fails here instead of at a counter.
  */
 import { queueDrawerKick, resolveDrawerKick } from '../src/services/payments/drawer';
+import { priceCart } from '../src/services/sale';
 
 /**
  * S2-10a (SCRUM-206), Slice G — A SALE TAKEN WITH NO INTERNET, BANKED.
@@ -280,6 +283,42 @@ const saleRow = async (saleId: string) => {
 // ---------------------------------------------------------------------------
 
 describe('a sale taken with no internet reaches the ledger (SCRUM-206)', () => {
+  it.each([undefined, LEGACY_SATANG_ENGINE_VERSION, PRICING_ENGINE_VERSION] as const)('replays recorded manual rounding with engine %s without changing the money taken', async (recordedVersion) => {
+    const b = await freshBox();
+    const saleId = newId();
+    const manualDiscounts = [{ id: newId(), scope: 'order' as const, type: 'percent' as const, value: 11, reason: 'Service recovery' }];
+    const lines = [{ id: newId(), packageId: twoHoursId, kids: 1, adults: 0 }];
+    const version = recordedVersion ?? LEGACY_SATANG_ENGINE_VERSION;
+    const priced = await priceCart(ctx.db, { accountId: receptionAccountId, operatorId, branchId },
+      { branchId, lines, manualDiscounts }, new Date(), { mode: 'quote', stationId: b.stationId }, 'definition', null, 'strict', version);
+    expect(priced.money.manualDiscountSatang).toBe(version === LEGACY_SATANG_ENGINE_VERSION ? 9790 : 9800);
+    const total = priced.money.grossSatang;
+    const event = mint(b, 'sale.finalised', {
+      saleId, cart: cart(total, { lines, manualDiscounts }), tenders: [cashTender(total)],
+      ...(recordedVersion ? { engineVersion: recordedVersion } : {}),
+    });
+    const answer = await push(b, [event]);
+    expect(answer.applied).toBe(1);
+    expect(answer.quarantined).toBe(0);
+    const row = await saleRow(saleId);
+    expect(row).toMatchObject({ engineVersion: version, grossSatang: total, manualDiscountSatang: priced.money.manualDiscountSatang });
+    expect((await attemptsOf(saleId))[0]!.amountSatang).toBe(total);
+    expect((await push(b, [event])).duplicates).toBe(1);
+  });
+
+  it('quarantines an unknown engine version without recording or repricing its money', async () => {
+    const b = await freshBox();
+    const total = await quotedTotal(b.stationId);
+    const saleId = newId();
+    const answer = await push(b, [mint(b, 'sale.finalised', {
+      saleId, engineVersion: '2099.01.01-1', cart: cart(total), tenders: [cashTender(total)],
+    })]);
+    expect(answer.quarantined).toBe(1);
+    expect(answer.results[0]!.errorCode).toBe('OFFLINE_PRICING_ENGINE_UNSUPPORTED');
+    expect(await saleRow(saleId)).toBeUndefined();
+    expect(await attemptsOf(saleId)).toHaveLength(0);
+  });
+
   it('retains unavailable-tender money in quarantine and applies it after re-enable (SCRUM-382)', async () => {
     const b = await freshBox();
     const total = await quotedTotal(b.stationId);

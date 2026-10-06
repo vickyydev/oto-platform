@@ -2,6 +2,8 @@ import { and, asc, eq, inArray } from 'drizzle-orm';
 import { band, bandEvent, child, device, paymentAttempt, sale, saleLine } from '@oto/db';
 import {
   OfflinePriceBasisSchema,
+  PRICING_ENGINE_VERSION,
+  LEGACY_SATANG_ENGINE_VERSION,
   PAYMENT_METHOD_KINDS,
   PAYMENT_PROVIDERS,
   TaxableCategorySchema,
@@ -22,6 +24,7 @@ import {
   type ActorContext,
   type CommitResult,
   type CommitSaleInput,
+  type CommitSaleOptions,
 } from '../sale';
 import {
   findAttemptByAction,
@@ -403,6 +406,8 @@ export const OfflineSalePayloadSchema = z.object({
     .default([]),
   /** OD-8 — the catalogue version the box priced the cart from. */
   catalogueVersion: z.string().max(64).nullish(),
+  /** Absent on facts queued before the first versioned engine transition. */
+  engineVersion: z.string().min(1).max(40).optional(),
   /** OD-8 — the rows it priced from, so an older catalogue's price can be filed as taken. */
   priceBasis: OfflinePriceBasisSchema.nullish(),
 });
@@ -526,6 +531,10 @@ export async function replayOfflineSale(
 ): Promise<ReplayOutcome> {
   const actor = actorFor(scope);
   const cart = payload.cart;
+  const engineVersion = payload.engineVersion ?? LEGACY_SATANG_ENGINE_VERSION;
+  if (engineVersion !== PRICING_ENGINE_VERSION && engineVersion !== LEGACY_SATANG_ENGINE_VERSION) {
+    throw errors.conflict('OFFLINE_PRICING_ENGINE_UNSUPPORTED', 'This offline sale uses an unsupported pricing engine. Update the platform before replaying it.');
+  }
 
   /**
    * A ฿0 COMP REPLAYS (S2-09a; offline plan §2.6). A fully comped sale is a
@@ -568,8 +577,9 @@ export async function replayOfflineSale(
 
   // The codes as the till applied them — the money is already taken — with
   // each difference from the park's definition handed back (rule 1's note).
-  const options = {
+  const options: CommitSaleOptions = {
     promoPricing: 'as_recorded' as const,
+    replayEngineVersion: engineVersion,
     // S2-11: the box printed this sale's paper at the counter, when it was
     // taken. A replay printing it again hours later would be a second receipt.
     printing: 'skip' as const,

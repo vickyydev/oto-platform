@@ -134,7 +134,6 @@ interface TierSelection {
   tier: TierChoice;
   proofType: string;
   expiresAt: string;
-  otherDoc: string;
 }
 
 interface FormErrors {
@@ -214,7 +213,6 @@ const emptySelection = (): TierSelection => ({
   tier: getDefaultTier().id,
   proofType: '',
   expiresAt: '',
-  otherDoc: '',
 });
 
 const toSelection = (member: Member | null): TierSelection => {
@@ -227,7 +225,6 @@ const toSelection = (member: Member | null): TierSelection => {
     tier: verification.tier,
     proofType: verification.proofType,
     expiresAt: verification.expiresAt ?? '',
-    otherDoc: '',
   };
 };
 
@@ -324,7 +321,6 @@ export function MemberFormDialog({
     }));
   };
 
-  const isOther = selection.proofType === 'Other';
   // Re-sending the same tier with the same document and expiry is not a change;
   // anything else about the entitlement is, and needs the document checked again.
   const tierChanged =
@@ -364,10 +360,8 @@ export function MemberFormDialog({
       }
     }
     if (tierChanged) {
-      if (!selection.proofType) {
+      if (!proofTypes.some((type) => type === selection.proofType)) {
         nextErrors.tier = 'Select the document you checked.';
-      } else if (isOther && !selection.otherDoc.trim()) {
-        nextErrors.tier = 'Name the document you checked.';
       } else if (selection.expiresAt && !/^\d{4}-\d{2}-\d{2}$/.test(selection.expiresAt)) {
         nextErrors.tier = "Enter the document's expiry date.";
       } else if (selection.expiresAt && selection.expiresAt < todayIso()) {
@@ -439,7 +433,6 @@ export function MemberFormDialog({
               toTier: selection.tier,
               evidenceType: selection.proofType,
               ...(selection.expiresAt ? { evidenceExpiresAt: selection.expiresAt } : {}),
-              ...(isOther ? { note: selection.otherDoc.trim() } : {}),
             },
           }
         : {}),
@@ -605,6 +598,9 @@ export function MemberFormDialog({
                     <SelectValue placeholder="Proof type" />
                   </SelectTrigger>
                   <SelectContent>
+                    {selection.proofType && !proofTypes.some((type) => type === selection.proofType) && (
+                      <SelectItem value={selection.proofType} disabled>{selection.proofType} (recorded)</SelectItem>
+                    )}
                     {proofTypes.map((p) => (
                       <SelectItem key={p} value={p}>
                         {p}
@@ -617,21 +613,6 @@ export function MemberFormDialog({
                 <p className="text-xs text-muted-foreground">{TIER_PROOF_NOTE}</p>
               )}
             </div>
-
-            {!isDefaultTier(selection.tier) && isOther && (
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="member-tier-other">Which document?</Label>
-                <Input
-                  id="member-tier-other"
-                  value={selection.otherDoc}
-                  maxLength={120}
-                  placeholder="e.g. Work permit, Driving licence…"
-                  onChange={(e) =>
-                    setSelection((prev) => ({ ...prev, otherDoc: e.target.value }))
-                  }
-                />
-              </div>
-            )}
 
             {/* Ending an entitlement (SCRUM-241). Shown only when this member
                 actually holds one and the baseline has been chosen for them —

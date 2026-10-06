@@ -9,11 +9,12 @@ import { NumberKeypad } from './NumberKeypad';
 import { PaymentExpiry, PaymentQr } from './PaymentQr';
 
 const format = (amount: number) => (amount / 100).toFixed(2);
-export function paymentSubmitLabel(stage: PaymentStageController): string {
+export function paymentSubmitLabel(stage: PaymentStageController, confirmationLabel?: string): string {
   if (stage.busy) return label('pending');
   // S2-14a — credit expected to cover the order: the press needs no tender.
   if (stage.state.outstandingSatang === 0 || stage.creditCoversAll) return label('complete');
   const kind = stage.state.method ? findPaymentMethod(stage.state.method)?.kind : null;
+  if (confirmationLabel && (kind === 'cash' || !stage.state.method)) return confirmationLabel;
   return label(kind === 'cash' ? 'recordCash' : kind === 'qr' ? 'startQr' : kind === 'card' ? 'startCard' : 'selectMethod');
 }
 

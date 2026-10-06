@@ -52,7 +52,6 @@ export function VerifyTierModal({
   onConfirm,
 }: VerifyTierModalProps) {
   const [proofType, setProofType] = useState<string | null>(null);
-  const [otherDoc, setOtherDoc] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [busy, setBusy] = useState(false);
   const [revoking, setRevoking] = useState(false);
@@ -66,7 +65,6 @@ export function VerifyTierModal({
   useEffect(() => {
     if (open) {
       setProofType(null);
-      setOtherDoc('');
       setExpiresAt('');
       setBusy(false);
       setRevoking(false);
@@ -144,7 +142,6 @@ export function VerifyTierModal({
     }
   };
 
-  const isOther = proofType === 'Other';
   /**
    * The approved design's step asks for the proof type only, so the expiry is
    * optional for a member and for a visitor with no member yet alike. A
@@ -153,10 +150,10 @@ export function VerifyTierModal({
    */
   const expiryValid =
     expiresAt === '' || (/^\d{4}-\d{2}-\d{2}$/.test(expiresAt) && expiresAt >= todayIso());
-  const canConfirm = !!proofType && (!isOther || otherDoc.trim().length > 0) && expiryValid && !busy;
+  const canConfirm = !!proofType && expiryValid && !busy;
 
   const handleConfirm = async () => {
-    if (!proofType || !expiryValid || (isOther && !otherDoc.trim())) return;
+    if (!proofType || !expiryValid) return;
     const verification: TierVerification = {
       tier,
       proofType,
@@ -177,7 +174,6 @@ export function VerifyTierModal({
           toTier: tier,
           evidenceType: proofType,
           ...(expiresAt ? { evidenceExpiresAt: expiresAt } : {}),
-          note: isOther ? otherDoc.trim() : undefined,
         });
         const updated = apiMemberToMember(res.member);
         toast({
@@ -326,26 +322,6 @@ export function VerifyTierModal({
               ))}
             </div>
           </div>
-
-          {isOther && (
-            <div className="space-y-2">
-              <label
-                htmlFor="tier-evidence-other"
-                className="text-sm font-medium text-muted-foreground"
-              >
-                Which document? <span className="text-destructive">*</span>
-              </label>
-              <input
-                id="tier-evidence-other"
-                type="text"
-                value={otherDoc}
-                onChange={(e) => setOtherDoc(e.target.value)}
-                placeholder="e.g. Work permit, Driving licence…"
-                maxLength={120}
-                className="w-full h-12 rounded-lg border border-input bg-background px-3 text-base focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-          )}
 
           <div className="space-y-2">
             <label

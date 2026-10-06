@@ -641,27 +641,13 @@ export default function MerchStation() {
         {stage === 'order' && (
           <div className="flex h-full min-h-0">
             <div className="flex-1 min-w-0 flex flex-col p-6 border-r bg-card/20">
-              {/*
-                WHAT THIS STATION STILL DOES ON ITS OWN. The catalogue, the
-                prices and the sizes a tile asks for are the platform's (sizes
-                since S2-09b), and so is the receipt printing (S2-11); the
-                counts under each tile and the band's balance are not, and each
-                names the ticket that moves it.
-              */}
               {(!stockIsServerBacked() || !shopFromPlatform) && (
-              <div className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
-                <span className="font-bold uppercase tracking-wide text-foreground/70">
-                  This till&apos;s own record
-                </span>
-                {/* S2-14b — the counts are the platform's once it has answered. */}
-                {!stockIsServerBacked() && <span>Stock counts and out-of-stock — S2-14b</span>}
-                {!shopFromPlatform && (
-                  <span className="text-amber-300">
-                    Catalogue — this deployment has no menu route, so the ported one is shown
-                  </span>
-                )}
-              </div>
+                <div role="status" className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
+                  {!stockIsServerBacked() && <span>Live stock counts are unavailable. Check availability before taking an order.</span>}
+                  {!shopFromPlatform && <span>Current catalogue unavailable. Check prices before taking an order.</span>}
+                </div>
               )}
+
               <div className="flex-1 min-h-0">
                 <MerchGrid items={merchItems} quantities={quantities} onAdd={handleAdd} />
               </div>

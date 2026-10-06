@@ -21,7 +21,7 @@ import { freeItemLineId, promoNotApplicableReason } from './promo';
 import type { DiscountAllocation, TaxBreakdown, TaxCategoryInput } from './tax';
 import { computeTaxBreakdown, groupTaxInputs } from './tax';
 import type { RoundingPolicy } from './rounding';
-import { apportion, DEFAULT_ROUNDING, roundHalfUpSatang } from './rounding';
+import { apportion, PROTOTYPE_BAHT_ROUNDING, roundHalfUpSatang } from './rounding';
 import { PRICING_ENGINE_VERSION } from './engine';
 
 /**
@@ -633,7 +633,7 @@ export function computeTicketCartTotals(
   ctx: PricingContext,
   options: CartTotalsOptions = {},
 ): TicketCartTotals {
-  const rounding = options.rounding ?? DEFAULT_ROUNDING;
+  const rounding = options.rounding ?? PROTOTYPE_BAHT_ROUNDING;
 
   if ((options.staleLines ?? 'throw') === 'throw') {
     const stale = findStaleLines(lines, ctx);

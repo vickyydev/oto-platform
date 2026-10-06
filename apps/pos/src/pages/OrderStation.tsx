@@ -1048,6 +1048,7 @@ export default function OrderStation() {
    */
   const writeInput = (payload: SaleCartPayload): SaleWriteInput => ({
     cart: payload,
+    note: orderNote.trim() || undefined,
     finalise: false,
     ...(voucher.held ? { preferSaleId: voucher.held.saleId } : {}),
   });
@@ -1366,25 +1367,12 @@ export default function OrderStation() {
                 </div>
               )}
 
-              {/*
-                WHAT THIS STATION STILL DOES ON ITS OWN. The menu, the prices,
-                the order and — since S2-11 — the kitchen, bar and receipt
-                printing are the platform's; two things on this screen are not,
-                and each names the ticket that moves it rather than looking like
-                part of the ledger.
-              */}
-              <div className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
-                <span className="font-bold uppercase tracking-wide text-foreground/70">
-                  This till&apos;s own record
-                </span>
-                {/* S2-14b — the counts are the platform's once it has answered. */}
-                {!stockIsServerBacked() && <span>Stock counts and out-of-stock — S2-14b</span>}
-                {!menuFromPlatform && (
-                  <span className="text-amber-300">
-                    Menu — this deployment has no menu route, so the ported catalogue is shown
-                  </span>
-                )}
-              </div>
+              {(!stockIsServerBacked() || !menuFromPlatform) && (
+                <div role="status" className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
+                  {!stockIsServerBacked() && <span>Live stock counts are unavailable. Check availability before taking an order.</span>}
+                  {!menuFromPlatform && <span>Current catalogue unavailable. Check prices before taking an order.</span>}
+                </div>
+              )}
 
               <div className="flex-1 min-h-0">
                 <MenuGrid items={menuItems} quantities={quantities} onAdd={handleAdd} />

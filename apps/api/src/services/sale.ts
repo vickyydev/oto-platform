@@ -55,6 +55,9 @@ import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   PRICING_ENGINE_VERSION,
+  LEGACY_SATANG_ENGINE_VERSION,
+  DEFAULT_ROUNDING,
+  PROTOTYPE_BAHT_ROUNDING,
   priceCartLine,
   refundStatusOf,
   refundableSatang,
@@ -1439,6 +1442,7 @@ export async function priceCart(
    * catalogue no longer lists is filed as the box sent it (`ItemSizeMode`).
    */
   sizes: ItemSizeMode = 'strict',
+  engineVersion: typeof PRICING_ENGINE_VERSION | typeof LEGACY_SATANG_ENGINE_VERSION = PRICING_ENGINE_VERSION,
 ): Promise<PricedCart> {
   const branchId = input.branchId ?? actor.branchId;
   if (!branchId) throw errors.badRequest('No active branch on this session');
@@ -1799,7 +1803,9 @@ export async function priceCart(
     manualDiscounts as ManualDiscount[],
     scope.taxConfig,
     ctx,
+    { rounding: engineVersion === LEGACY_SATANG_ENGINE_VERSION ? DEFAULT_ROUNDING : PROTOTYPE_BAHT_ROUNDING },
   );
+  totals.engineVersion = engineVersion;
   /**
    * S2-10b — a hand-over prize's promo is worth nothing by design
    * (`voucherPricing`). The engine marks a code that found nothing left to take
@@ -1887,7 +1893,7 @@ export async function priceCart(
       pricingModeDiffers: input.pricingMode !== undefined && input.pricingMode !== scope.pricingMode,
       tierDiffers: input.tier !== undefined && input.tier !== resolvedTier.code,
     },
-    engineVersion: PRICING_ENGINE_VERSION,
+    engineVersion,
     totals,
     money: {
       subtotalSatang: totals.subtotal,
@@ -2827,6 +2833,8 @@ function assertSameLines(
 /** How a commit prices its promo codes. Only the offline replay sets it. */
 export interface CommitSaleOptions {
   promoPricing?: PromoPricing;
+  /** Only a box replay selects the policy that originally priced its money. */
+  replayEngineVersion?: typeof PRICING_ENGINE_VERSION | typeof LEGACY_SATANG_ENGINE_VERSION;
   /**
    * OD-8 — price the cart from the rows a box priced it from offline, when
    * the catalogue has moved on since. Only the offline replay sets it.
@@ -3076,6 +3084,7 @@ export async function commitSale(
     promoPricing,
     options.priceBasis ?? null,
     options.printing === 'skip' ? 'file' : 'strict',
+    options.printing === 'skip' ? options.replayEngineVersion : undefined,
   );
   if (st.branchId !== priced.scope.branchId) {
     throw errors.badRequest('That station belongs to another branch');

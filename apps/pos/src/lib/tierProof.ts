@@ -13,11 +13,9 @@
  * because the platform's tier-claim route accepts exactly these names and
  * nothing else (SCRUM-307); making it configurable per operator is SCRUM-238's
  * remaining half.
- *
- * 'Other' prompts for a short description of the document, saved with the record.
  */
 export { TIER_PROOF_TYPES } from '@oto/shared';
 
 /** What the admin screen says under the picker, so nobody looks for a setting that is not there. */
 export const TIER_PROOF_NOTE =
-  'This list is built in and cannot be configured per operator yet (SCRUM-238).';
+  'Select the document you checked.';

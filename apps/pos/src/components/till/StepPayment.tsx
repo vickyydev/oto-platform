@@ -177,7 +177,7 @@ export function StepPayment({ total, selectedMethod, onSelectMethod, onComplete,
           disabled={(paymentStage ? !paymentStage.canSubmit : (!selectedMethod && !free)) || busy || unpriced}
           onClick={paymentStage ? () => { void paymentStage.submit(); } : onComplete}
         >
-          {paymentStage ? paymentSubmitLabel(paymentStage) : busy
+          {paymentStage ? paymentSubmitLabel(paymentStage, 'Confirm Payment Received') : busy
             ? (busyLabel ?? 'Saving the sale…')
             : free
               ? 'Complete Sale'

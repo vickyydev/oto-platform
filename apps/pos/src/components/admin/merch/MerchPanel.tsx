@@ -81,17 +81,9 @@ export function MerchPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* The item, its price and its barcode persist (SCRUM-204). What is on
-          the shelf does not: the stock tables have no routes yet, so the
-          banner is about that half and says which half it is. It is written
-          out rather than using `NotSavedNotice`, whose sentence ends "a page
-          reload discards them" — true of the counts, and the opposite of true
-          of the item beside them. */}
       <AdminNoticeBanner>
-        <strong className="font-semibold">Stock counts are this tab only — SCRUM-204.</strong>{' '}
-        The item, its price, its category, its barcode and its sizes save to the
-        database and survive a reload. What is on the shelf, and the Track stock
-        switch that starts counting it, stay in this browser tab.
+        To start stock tracking, link the item in Inventory. Turning Track stock
+        on here alone does not create that link. Manage stock counts in Inventory.
       </AdminNoticeBanner>
 
       <div className="flex items-center justify-between gap-3">
