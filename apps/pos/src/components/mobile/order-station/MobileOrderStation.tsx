@@ -1,3 +1,4 @@
+import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
@@ -85,6 +86,20 @@ export function MobileOrderStation() {
   const [useCredit, setUseCredit] = useState(true);
   const [cart, setCart] = useState<FnbOrderLine[]>([]);
   const [orderNote, setOrderNote] = useState('');
+  useEffect(() => {
+    const correction = takeCorrectedOrder();
+    if (!correction || correction.kind !== 'fnb') return;
+    if (correction.branchId && correction.branchId !== branch.apiId) {
+      toast({ title: 'Switch to the original park before correcting this sale', variant: 'destructive' });
+      return;
+    }
+    setWristband(correction.wristband ?? null);
+    setCart(correction.lines.map((line) => ({ ...line, id: `line-${lineCounter++}` })));
+    setOrderNote(correction.note ?? '');
+    if (correction.notice) toast({ title: 'Complete the corrected order', description: correction.notice, duration: 20000 });
+    setStage('order');
+  }, [branch.apiId]);
+
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<FnbOrder | null>(null);
@@ -370,7 +385,7 @@ export function MobileOrderStation() {
     const cartPayload = buildItemCartPayload(displayLines, manualDiscounts, orderIdentity, total, {
       mode: orderQuote.quote.pricingMode, modeReason: orderQuote.quote.pricingModeReason,
     });
-    const outcome = await saleWriter.commit({ cart: cartPayload, finalise: false });
+    const outcome = await saleWriter.commit({ cart: cartPayload, note: orderNote.trim() || undefined, finalise: false });
     if ((orderEpochRef.current !== epoch || !paymentContextCurrent()) && outcome.ok && outcome.written) {
       toast({ title: 'An order was saved for the previous guest', description: `Order ${outcome.sale.receiptNumber ?? outcome.saleId} is recorded; nothing was printed for it. Find it in the sale list.`, variant: 'destructive' });
     }

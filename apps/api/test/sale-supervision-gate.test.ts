@@ -309,15 +309,24 @@ describe('SCRUM-478 — children are not sold tickets on their own (POST /sales)
     const [created] = await auditOf(saleId, 'sale.create');
     expect(created!.after).toMatchObject({ registrationIds: [reg.id] });
     expect(await auditOf(saleId, 'sale.supervision_unverified')).toHaveLength(0);
+    const detail = await ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie } });
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json().lines.every((line: { supervised: boolean }) => line.supervised)).toBe(true);
   });
 
   it('a sibling waived down to a plain ticket rides on the registered child’s line', async () => {
     const reg = await register([child({ name: 'Nok', ageYears: 10, service: 'none' })]);
+    const saleId = newId();
     const res = await commit({
-      id: newId(),
+      id: saleId,
       lines: [kidLine(reg.children[0]!.id), kidLine()],
     });
     expect(res.statusCode, res.body).toBe(200);
+    const detail = await ctx.app.inject({ method: 'GET', url: `/sales/${saleId}`, headers: { cookie } });
+    expect(detail.statusCode).toBe(200);
+    const lines = detail.json().lines as { cartLineId: string; supervised: boolean }[];
+    expect(lines.filter((line) => line.cartLineId === reg.children[0]!.id).every((line) => line.supervised)).toBe(true);
+    expect(lines.filter((line) => line.cartLineId !== reg.children[0]!.id).every((line) => !line.supervised)).toBe(true);
   });
 
   it('passes a cart with an adult admission beside the children', async () => {

@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import {
   account,
+  band,
   branch,
   branchHoliday,
   branchTaxConfig,
@@ -55,6 +56,7 @@ import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   PRICING_ENGINE_VERSION,
+  bandShortCode,
   priceCartLine,
   refundStatusOf,
   refundableSatang,
@@ -4794,6 +4796,15 @@ export async function getSaleDetail(
    * this answer, and a voided sale's voucher is free again.
    */
   const voucherCodes = await saleVoucherCodes(db, operatorId, saleId);
+  // A supervised cart line names its existing stay, including a zero-fee stay.
+  const supervisedLines = lines.length === 0 ? [] : await db.select({ id: checkin.id }).from(checkin)
+    .where(and(inArray(checkin.id, [...new Set(lines.map((line) => line.cartLineId))]),
+      eq(checkin.operatorId, operatorId), eq(checkin.branchId, row.branchId)));
+  const supervisedLineIds = new Set(supervisedLines.map((stay) => stay.id));
+  const holderIds = [...new Set(lines.map((line) => (line.payload as SaleLinePayload | null)?.holder?.checkinId).filter((id): id is string => !!id))];
+  const correctionBands = holderIds.length === 1 ? await db.select({ code: band.code }).from(checkin)
+    .innerJoin(band, eq(band.id, checkin.bandId))
+    .where(and(eq(checkin.id, holderIds[0]!), eq(checkin.operatorId, operatorId), eq(checkin.branchId, row.branchId))) : [];
 
   return {
     sale: {
@@ -4809,6 +4820,7 @@ export async function getSaleDetail(
      * every print job with its reprints marked by `reprintOf`, and the bands
      * by their short codes.
      */
+    correctionBandShortCode: correctionBands[0] ? bandShortCode(correctionBands[0].code) : null,
     refundStatus: refundStatusOf(row.grossSatang, row.refundedSatang),
     refundableSatang:
       row.status === 'finalised' || row.status === 'refunded'
@@ -4862,6 +4874,10 @@ export async function getSaleDetail(
       note: (line.payload as SaleLinePayload | null)?.note ?? null,
       variant: (line.payload as SaleLinePayload | null)?.variant ?? null,
       prepStation: (line.payload as SaleLinePayload | null)?.prepStation ?? null,
+      variantBreakdown: (line.payload as SaleLinePayload | null)?.variantBreakdown ?? null,
+      prepaid: (line.payload as SaleLinePayload | null)?.prepaid ?? null,
+      holderCheckinId: (line.payload as SaleLinePayload | null)?.holder?.checkinId ?? null,
+      supervised: supervisedLineIds.has(line.cartLineId),
     })),
     discounts: discounts.map((d) => {
       /** The whole code of a voucher's row, which this answer does not give. */
