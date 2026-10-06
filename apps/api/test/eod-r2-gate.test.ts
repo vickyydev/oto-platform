@@ -385,3 +385,95 @@ describe('eod-r2-gate close away from a printing counter: the day closes, the re
     ).rejects.toThrow();
   });
 });
+
+// --- Review (lane D): replays and races around the waiting receipt ---
+
+describe('eod-r2-gate review: a waiting receipt is numbered and printed exactly once', () => {
+  const reprint = (cookie: string, payload: Record<string, unknown>, key: string = newId()) =>
+    ctx.app.inject({
+      method: 'POST',
+      url: `/branches/${central}/end-of-day/reprint`,
+      headers: { cookie, 'idempotency-key': key },
+      payload,
+    });
+  const eodSeries = async () => {
+    const [series] = await ctx.db
+      .select()
+      .from(schema.receiptSeries)
+      .where(and(eq(schema.receiptSeries.stationId, till1.id), eq(schema.receiptSeries.kind, 'end_of_day')));
+    return series?.nextSeq ?? 1;
+  };
+  const jobsOf = async (id: string) => ctx.db.select().from(schema.printJob).where(eq(schema.printJob.subjectId, id));
+  const auditsOf = async (action: string, id: string) =>
+    ctx.db.select().from(schema.auditLog).where(and(eq(schema.auditLog.action, action), eq(schema.auditLog.entityId, id)));
+
+  it('a replayed counterless close answers the same, writes one day, prints nothing; racing first prints take one number', async () => {
+    const unseated = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const key = newId();
+    const before = await eodSeries();
+    const first = await close(unseated, { date: day(8) }, key);
+    expect(first.statusCode, first.body).toBe(200);
+    const replay = await close(unseated, { date: day(8) }, key);
+    expect(replay.statusCode, replay.body).toBe(200);
+    expect(replay.json()).toEqual(first.json());
+    const closed = first.json() as EndOfDayRecord;
+    expect(await ctx.db.select().from(schema.endOfDay).where(and(eq(schema.endOfDay.branchId, central), eq(schema.endOfDay.businessDate, day(8))))).toHaveLength(1);
+    expect(await jobsOf(closed.id)).toHaveLength(0);
+    expect(await auditsOf('end_of_day.close', closed.id)).toHaveLength(1);
+    expect(await eodSeries()).toBe(before);
+
+    // Two first prints pressed at once from the same counter: one number, one original, one copy.
+    const [a, b] = await Promise.all([
+      reprint(receptionCookie, { date: day(8), stationId: till1.id }),
+      reprint(managerCookie, { date: day(8), stationId: till1.id }),
+    ]);
+    expect(a.statusCode, a.body).toBe(200);
+    expect(b.statusCode, b.body).toBe(200);
+    expect(await eodSeries()).toBe(before + 1);
+    const jobs = await jobsOf(closed.id);
+    expect(jobs).toHaveLength(2);
+    expect(jobs.filter((j) => j.reprintOf === null)).toHaveLength(1);
+    expect(await auditsOf('end_of_day.receipt', closed.id)).toHaveLength(1);
+    const [row] = await ctx.db.select().from(schema.endOfDay).where(eq(schema.endOfDay.id, closed.id));
+    expect(row!.receiptNumber).toBe(`${till1.codePrefix}-EOD-${String(before).padStart(6, '0')}`);
+    expect(row!.receiptStationId).toBe(till1.id);
+
+    // Replaying the original close after the receipt printed still prints nothing more.
+    const late = await close(unseated, { date: day(8) }, key);
+    expect(late.statusCode, late.body).toBe(200);
+    expect(await jobsOf(closed.id)).toHaveLength(2);
+    expect(await eodSeries()).toBe(before + 1);
+  });
+
+  it('a replayed close at a printing counter prints once and takes one number', async () => {
+    const key = newId();
+    const before = await eodSeries();
+    const first = await close(receptionCookie, { date: day(9), stationId: till1.id }, key);
+    expect(first.statusCode, first.body).toBe(200);
+    const replay = await close(receptionCookie, { date: day(9), stationId: till1.id }, key);
+    expect(replay.statusCode, replay.body).toBe(200);
+    expect(replay.json()).toEqual(first.json());
+    const rec = first.json() as EndOfDayRecord;
+    expect(rec.receipt!.number).toBe(`${till1.codePrefix}-EOD-${String(before).padStart(6, '0')}`);
+    expect(await jobsOf(rec.id)).toHaveLength(1);
+    expect(await eodSeries()).toBe(before + 1);
+    // Already numbered: no second end_of_day.receipt audit, a reprint is a copy.
+    const copy = await reprint(receptionCookie, { date: day(9) });
+    expect(copy.statusCode, copy.body).toBe(200);
+    expect((copy.json() as EndOfDayRecord).receipt!.jobs.map((j) => j.reprint)).toEqual([false, true]);
+    expect(await auditsOf('end_of_day.receipt', rec.id)).toHaveLength(0);
+  });
+
+  it('a reprint naming a counter this session did not take is refused and numbers nothing', async () => {
+    const unseated = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const closed = await close(unseated, { date: day(10) });
+    expect(closed.statusCode, closed.body).toBe(200);
+    const before = await eodSeries();
+    const res = await reprint(receptionCookie, { date: day(10), stationId: otherCentralStation });
+    expect(res.statusCode, res.body).toBe(403);
+    expect(res.json().error.code).toBe('STATION_NOT_PICKED');
+    const [row] = await ctx.db.select().from(schema.endOfDay).where(and(eq(schema.endOfDay.branchId, central), eq(schema.endOfDay.businessDate, day(10))));
+    expect(row!.receiptNumber).toBeNull();
+    expect(await eodSeries()).toBe(before);
+  });
+});
