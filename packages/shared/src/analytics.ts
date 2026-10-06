@@ -382,12 +382,18 @@ export const AnalyticsSummaryRowSchema = AnalyticsDayFiguresSchema.extend({
   /** The business date; null on a `total` row. */
   businessDate: SUMMARY_DATE.nullable(),
   /**
-   * Still moving: a day that has not ended at its branch (today), or one the
-   * rollup has not written yet. A row of several days is provisional when any
-   * of them is.
+   * Still moving: a day that has not ended at its branch (today); a stored day
+   * the rollup wrote while it was open and has not rewritten since it ended;
+   * or an ended day with no stored row that the rollup's queue still holds (it
+   * traded, and has not been written yet). An ended day with no row and
+   * nothing queued had no sale, and is final. A row of several days is
+   * provisional when any of them is.
    */
   provisional: z.boolean(),
-  /** How many branch-days in the row had a stored summary; the rest had no sale. */
+  /**
+   * How many branch-days in the row had a stored summary. The rest had no sale
+   * or, when the row is provisional, may not have been written yet.
+   */
   rolledDays: CountSchema,
   /** When the newest stored day in the row was last rewritten; null when none was stored. */
   computedAt: z.string().nullable(),
@@ -421,8 +427,10 @@ export const AnalyticsSummaryBranchSchema = z.object({
   /**
    * When the rollup last brought this branch's figures up to date: the start
    * of the newest successful daily rollup (each one rolls today at every live
-   * branch), or the newest row it wrote here, whichever is later. Null when it
-   * has never rolled this branch.
+   * branch), or when it last wrote today's row here, whichever is later (an
+   * archived branch: its newest row). A rewrite of an older day does not
+   * count, so a run that fails before today's write never makes the branch
+   * look fresher. Null when it has never rolled this branch.
    */
   lastRolledUpAt: z.string().nullable(),
   /** This branch's own rows, by the request's `group`. */

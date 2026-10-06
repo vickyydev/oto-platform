@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, inArray, lte, max } from 'drizzle-orm';
-import { branch, dailySummary, hourlySummary, opsRun, type Db } from '@oto/db';
+import { branch, dailySummary, dirtyDate, hourlySummary, opsRun, type Db } from '@oto/db';
 import {
   ANALYTICS_PLATFORM_SOURCE,
   ANALYTICS_SUMMARY_PERMISSIONS,
@@ -26,7 +26,9 @@ import type { Exec } from './tx';
  * `GET /analytics/summary` answers from `analytics.daily_summary` and
  * `analytics.hourly_summary` only — never from the sales tables — so Today >
  * Performance shows the same figures on every till and phone, and survives a
- * reload. Each branch's rows are its own; the merged rows add up ONLY the
+ * reload. (The rollup's own queue, `analytics.dirty_date`, says only whether a
+ * day with no row is still owed a write; it adds no figure.) Each branch's
+ * rows are its own; the merged rows add up ONLY the
  * branches the caller may read (`mayReadAnalytics`), and a requested branch
  * the caller may not read is listed as omitted, never folded into a total.
  *
@@ -82,10 +84,17 @@ export function summaryBranchToday(b: Pick<SummaryBranch, 'timezone' | 'business
  * successful run of `job:rollup.daily` rolls today at every live branch, so
  * the start of the newest successful run is when a live branch's figures were
  * last confirmed (it is the `now` the run computed with). The answer is the
- * later of the two; for an archived branch, its newest row. A branch created
- * after that run was not in it.
+ * later of that and when TODAY's row at the branch was last written — not the
+ * newest row of any date: a run that rewrites an old day (a late refund) and
+ * then fails before today's write has not brought today up to date, and must
+ * not make the park read as just updated. For an archived branch, which has no
+ * today, its newest row. A branch created after that run was not in it.
  */
-export async function lastRolledUpAt(db: Exec, branches: readonly SummaryBranch[]): Promise<Map<string, Date | null>> {
+export async function lastRolledUpAt(
+  db: Exec,
+  branches: readonly SummaryBranch[],
+  now: Date,
+): Promise<Map<string, Date | null>> {
   const out = new Map<string, Date | null>();
   if (branches.length === 0) return out;
   const [lastRun] = await db
@@ -94,20 +103,62 @@ export async function lastRolledUpAt(db: Exec, branches: readonly SummaryBranch[
     .where(and(eq(opsRun.name, ROLLUP_DAILY_JOB), eq(opsRun.outcome, 'ok')))
     .orderBy(desc(opsRun.startedAt))
     .limit(1);
-  const written = await db
-    .select({ branchId: dailySummary.branchId, computedAt: max(dailySummary.computedAt) })
-    .from(dailySummary)
-    .where(and(inArray(dailySummary.branchId, branches.map((b) => b.id)), eq(dailySummary.source, SOURCE)))
-    .groupBy(dailySummary.branchId);
-  const newestRow = new Map(written.map((w) => [w.branchId, w.computedAt]));
+  const live = branches.filter((b) => b.archivedAt === null);
+  const archived = branches.filter((b) => b.archivedAt !== null);
+  const todayOf = new Map(live.map((b) => [b.id, summaryBranchToday(b, now)]));
+  const todays =
+    live.length === 0
+      ? []
+      : await db
+          .select({ branchId: dailySummary.branchId, businessDate: dailySummary.businessDate, computedAt: dailySummary.computedAt })
+          .from(dailySummary)
+          .where(
+            and(
+              inArray(dailySummary.branchId, live.map((b) => b.id)),
+              eq(dailySummary.source, SOURCE),
+              inArray(dailySummary.businessDate, [...new Set(todayOf.values())]),
+            ),
+          );
+  const written = new Map(todays.filter((r) => todayOf.get(r.branchId) === r.businessDate).map((r) => [r.branchId, r.computedAt]));
+  if (archived.length > 0) {
+    const newest = await db
+      .select({ branchId: dailySummary.branchId, computedAt: max(dailySummary.computedAt) })
+      .from(dailySummary)
+      .where(and(inArray(dailySummary.branchId, archived.map((b) => b.id)), eq(dailySummary.source, SOURCE)))
+      .groupBy(dailySummary.branchId);
+    for (const n of newest) if (n.computedAt) written.set(n.branchId, n.computedAt);
+  }
   for (const b of branches) {
-    const row = newestRow.get(b.id) ?? null;
+    const row = written.get(b.id) ?? null;
     const run =
       lastRun && b.archivedAt === null && lastRun.startedAt.getTime() >= b.createdAt.getTime() ? lastRun.startedAt : null;
     const later = row && run ? (row.getTime() >= run.getTime() ? row : run) : (row ?? run);
     out.set(b.id, later);
   }
   return out;
+}
+
+/**
+ * The branch-days `from`..`to` the rollup still owes a write: a fact marked
+ * them (`dirty_date` kind `sales` — every write to a sale, a refund, a payment
+ * or a wallet entry marks its day, and migration 0064 queued every day that
+ * already had sales) and no run has consumed the mark yet. Read from the
+ * rollup's own queue, not from the sales.
+ */
+async function queuedBranchDays(db: Exec, ids: readonly string[], from: string, to: string): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const rows = await db
+    .select({ branchId: dirtyDate.branchId, businessDate: dirtyDate.businessDate })
+    .from(dirtyDate)
+    .where(
+      and(
+        inArray(dirtyDate.branchId, [...ids]),
+        eq(dirtyDate.kind, 'sales'),
+        gte(dirtyDate.businessDate, from),
+        lte(dirtyDate.businessDate, to),
+      ),
+    );
+  return new Set(rows.map((r) => `${r.branchId}|${r.businessDate}`));
 }
 
 // --- The answer ------------------------------------------------------------------------
@@ -219,7 +270,8 @@ export async function analyticsSummaryOf(
           .orderBy(asc(dailySummary.businessDate), asc(dailySummary.branchId));
   const byKey = new Map(stored.map((row) => [`${row.branchId}|${row.businessDate}`, row]));
   const dates = datesBetween(from, to);
-  const fresh = await lastRolledUpAt(db, input.branches);
+  const fresh = await lastRolledUpAt(db, input.branches, now);
+  const queued = await queuedBranchDays(db, ids, from, to);
 
   const branches: AnalyticsSummaryBranch[] = [];
   const allDays: BranchDay[] = [];
@@ -231,9 +283,11 @@ export async function analyticsSummaryOf(
         branchId: b.id,
         date,
         stored: row,
-        // A stored row says for itself; a day with no row is still moving
-        // until it has ended at its branch (and after that it had no sale).
-        provisional: row ? row.provisional : date >= today,
+        // A stored row says for itself. A day with no row is still moving
+        // until it has ended at its branch, or while the rollup's queue still
+        // holds it (a day that traded but has not been written yet — the 0064
+        // backlog, or a rollup that has stopped). Otherwise it had no sale.
+        provisional: row ? row.provisional : date >= today || queued.has(`${b.id}|${date}`),
       };
     });
     allDays.push(...days);
@@ -320,7 +374,7 @@ export async function rollupFreshnessOf(
   now: Date,
 ): Promise<Array<{ branchId: string; name: string; today: string; lastRolledUpAt: string | null }>> {
   const live = branches.filter((b) => b.archivedAt === null);
-  const fresh = await lastRolledUpAt(db, live);
+  const fresh = await lastRolledUpAt(db, live, now);
   return live.map((b) => ({
     branchId: b.id,
     name: b.name,
