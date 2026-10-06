@@ -94,20 +94,40 @@ export async function createTestDatabase(
   // The process id and a random tail keep parallel workers apart: each worker's
   // counter starts at zero, and two of them starting in the same millisecond
   // once collided on the database name.
-  const name = `oto_test_${Date.now()}_${process.pid}_${Math.random().toString(36).slice(2, 6)}_${dbCounter++}`;
-  const admin = new pg.Client({ connectionString: server });
-  await admin.connect();
-  await admin.query(`CREATE DATABASE ${name}`);
-  await admin.end();
-
-  const url = server.replace(/\/[^/]*$/, `/${name}`);
-
-  // Apply committed migrations with drizzle-kit (same path as production).
-  execFileSync('node', [join(PKG_DIR, 'node_modules', 'drizzle-kit', 'bin.cjs'), 'migrate'], {
-    cwd: PKG_DIR,
-    env: { ...process.env, DATABASE_URL: url },
-    stdio: 'pipe',
-  });
+  // A loaded CI runner occasionally fails a CREATE or the migrate child process
+  // once; three tries, each on a fresh name, and a readable error after the last.
+  let name = '';
+  let url = '';
+  for (let attempt = 1; ; attempt += 1) {
+    name = `oto_test_${Date.now()}_${process.pid}_${Math.random().toString(36).slice(2, 6)}_${dbCounter++}`;
+    url = server.replace(/\/[^/]*$/, `/${name}`);
+    try {
+      const admin = new pg.Client({ connectionString: server });
+      await admin.connect();
+      try {
+        await admin.query(`CREATE DATABASE ${name}`);
+      } finally {
+        await admin.end();
+      }
+      // Apply committed migrations with drizzle-kit (same path as production).
+      execFileSync('node', [join(PKG_DIR, 'node_modules', 'drizzle-kit', 'bin.cjs'), 'migrate'], {
+        cwd: PKG_DIR,
+        env: { ...process.env, DATABASE_URL: url },
+        stdio: 'pipe',
+      });
+      break;
+    } catch (err) {
+      const e = err as { message?: string; stderr?: Buffer | string; stdout?: Buffer | string };
+      const detail = [e.message, e.stderr?.toString(), e.stdout?.toString()].filter(Boolean).join('\n');
+      const cleanup = new pg.Client({ connectionString: server });
+      await cleanup.connect().catch(() => undefined);
+      await cleanup.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`).catch(() => undefined);
+      await cleanup.end().catch(() => undefined);
+      if (attempt >= 3) {
+        throw new Error(`Could not create a migrated test database after ${attempt} tries:\n${detail || String(err)}`);
+      }
+    }
+  }
 
   if (opts.otoapp) await applyOtoAppMigrations(url);
 
