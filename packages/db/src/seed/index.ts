@@ -54,6 +54,7 @@ export {
   DemoBranchRefusedError,
   ensureDemoBranch,
   seedDemoDay,
+  stableId as demoStableId,
   type DemoBranch,
   type DemoDayCounts,
 } from './demo-day';

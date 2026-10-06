@@ -25,10 +25,11 @@
  * the till gave up. Those rows exist here so the states are on somebody's
  * screen before a guest is standing at the counter in one of them.
  *
- * IDEMPOTENT, PER SALE. Existing sale ids derive from their scenario keys and
- * the business date. The voucher sale also names its receipt generation because
- * a demo reset retains voucher history. A rerun finds each action and writes
- * nothing. That is per sale rather than per run on
+ * IDEMPOTENT, PER SALE. Existing sale ids derive from their scenario keys, the
+ * business date and the branch (`demoDayRef`). The voucher sale also names its
+ * receipt generation because a demo reset retains voucher history. A rerun
+ * finds each action at the branch's till and writes nothing. That is per sale
+ * rather than per run on
  * purpose — S2-10b, S2-13 and S2-15a are all expected to add scenarios to the
  * list below, and adding one has to write that one on the next run without
  * rewriting the sales already in the ledger.
@@ -59,7 +60,7 @@ import {
   type TaxCategoryInput,
   type TaxConfigShape,
 } from '@oto/shared';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
 import * as s from '../schema/index';
 
@@ -105,8 +106,11 @@ const PACKAGE_FOR_DURATION: Record<string, string> = {
  * platform promises. The random half is a hash of the scenario key instead of
  * being random, which is what makes a second run a no-op rather than a second
  * trading day.
+ *
+ * Exported so a test can plant the rows the demo control left at a live park
+ * before round 3, under the keys it used then.
  */
-function stableId(key: string, at: Date): string {
+export function stableId(key: string, at: Date): string {
   const ms = BigInt(at.getTime());
   const time = ms.toString(16).padStart(12, '0');
   const rand = createHash('sha256').update(key).digest('hex').slice(0, 20);
@@ -642,20 +646,20 @@ export async function seedDemoDay(
     notifications: 0,
     skipped: 0,
   };
+  const ref = demoDayRef(on, branchCode);
 
   for (const scenario of DAY) {
     await db.transaction(async (writer) => {
       const occurredAt = instantAt(scenario.atMinutes);
-      const actionId = `demo-day/${on}/${scenario.key}`;
+      const actionId = ref.action(scenario.key);
       await writer.execute(sql`select pg_advisory_xact_lock(hashtext(${operatorId}), hashtext(${actionId}))`);
-      const baseSaleId = stableId(`${on}/${scenario.key}`, occurredAt);
+      const baseSaleId = stableId(ref.key(scenario.key), occurredAt);
 
-      const [already] = await writer
-        .select({ id: s.sale.id })
-        .from(s.sale)
-        .where(scenario.voucherDefinitionCode ? eq(s.sale.actionId, actionId) : eq(s.sale.id, baseSaleId))
-        .limit(1);
-      if (already) {
+      // Already written HERE: at this branch's till, under this branch's key
+      // or the one the demo branch's first days were written under. A row the
+      // pre-round-3 control left at a live park on the same date is not this
+      // branch's sale, and never stops this one being written.
+      if (await demoSaleAt(writer, station.id, ref, scenario.key)) {
         counts.skipped += 1;
         return;
       }
@@ -679,7 +683,7 @@ export async function seedDemoDay(
       // a new identity when its old sale was removed, while a normal rerun above
       // still finds this day's existing action and writes nothing.
       const saleId = scenario.voucherDefinitionCode
-        ? stableId(`${on}/${scenario.key}/${receipt!.number}`, occurredAt)
+        ? stableId(`${ref.key(scenario.key)}/${receipt!.number}`, occurredAt)
         : baseSaleId;
 
       await writer.insert(s.sale).values({
@@ -771,7 +775,7 @@ export async function seedDemoDay(
         if (takes) outstanding -= amount;
 
         const attemptAt = new Date(occurredAt.getTime() + i * 30_000);
-        const attemptId = stableId(`${on}/${scenario.key}/tender/${i}`, attemptAt);
+        const attemptId = stableId(`${ref.key(scenario.key)}/tender/${i}`, attemptAt);
         const deviceId = tender.terminal ? terminals[tender.terminal] : null;
         const configuredTid = deviceId ? await terminalIdOf(writer, deviceId) : null;
         // A terminal with no configured TID — the demo branch has no devices at
@@ -820,7 +824,7 @@ export async function seedDemoDay(
           paidAt,
           staffConfirmedByAccountId: tender.note === 'staff_confirmed' ? cashier.id : null,
           offline: scenario.key === 'qr-terminal-offline',
-          actionId: `demo-day/${on}/${scenario.key}/${i}`,
+          actionId: `${actionId}/${i}`,
           payload: tender.note || fixtureTid ? { ...(tender.note ? { note: tender.note } : {}),
             ...(fixtureTid ? { fixtureTid: true } : {}) } : null,
           createdAt: attemptAt,
@@ -851,8 +855,10 @@ export async function seedDemoDay(
         }
       }
       if (scenario.key === 'merch-wallet') {
-        await seedDemoWalletSpend(writer, { on, saleId, operatorId, branchId, stationId: station.id,
-          occurredAt, sourceSaleId: stableId(`${on}/card-pax`, instantAt(8 * HOUR + 30)),
+        await seedDemoWalletSpend(writer, { on, ref, saleId, operatorId, branchId, stationId: station.id,
+          occurredAt,
+          sourceSaleId: (await demoSaleAt(writer, station.id, ref, 'card-pax'))
+            ?? stableId(ref.key('card-pax'), instantAt(8 * HOUR + 30)),
           expiresAt: instantAt(24 * HOUR), spentSatang: money.gross });
       }
       if (scenario.voucherDefinitionCode) {
@@ -863,9 +869,8 @@ export async function seedDemoDay(
     });
   }
 
-  await seedDemoCashRefund(db, { on, operatorId, branchId, stationId: station.id,
-    series: stationCodePrefix, sourceSaleId: stableId(`${on}/open-cash`, instantAt(5 * HOUR)),
-    occurredAt: instantAt(10 * HOUR + 30), createdByAccountId: cashier.id });
+  await seedDemoCashRefund(db, { ref, operatorId, branchId, stationId: station.id,
+    series: stationCodePrefix, occurredAt: instantAt(10 * HOUR + 30), createdByAccountId: cashier.id });
 
   return counts;
 }
@@ -980,16 +985,54 @@ export async function ensureDemoBranch(db: Db): Promise<DemoBranch> {
   });
 }
 
+/**
+ * THE KEYS OF ONE DEMO DAY AT ONE BRANCH (S2-15b round 3 fix). Every derived
+ * id and every action id names the branch as well as the date: before round 3
+ * the control wrote the same date's scenarios at Central Floresta under
+ * `demo-day/<date>/<scenario>` and ids hashed from `<date>/<scenario>`, and a
+ * press at Demo Branch 2 on such a date found those rows, skipped all eleven
+ * and reported "11 already present" at Demo Branch 2. The ids and action ids
+ * here can no longer meet the park's, and `legacyAction` is the shape the
+ * demo branch's own first days used, so a rerun still finds them.
+ */
+interface DemoDayRef {
+  /** The input to `stableId` for a scenario's rows. */
+  key: (scenario: string) => string;
+  /** A scenario's sale action id; its tenders, grant and refund extend it. */
+  action: (scenario: string) => string;
+  /** The un-namespaced action id the demo branch's first days used. */
+  legacyAction: (scenario: string) => string;
+}
+
+function demoDayRef(on: string, branchCode: string): DemoDayRef {
+  return {
+    key: (scenario) => `${branchCode}/${on}/${scenario}`,
+    action: (scenario) => `demo-day/${on}/${branchCode}/${scenario}`,
+    legacyAction: (scenario) => `demo-day/${on}/${scenario}`,
+  };
+}
+
+/** The id of a scenario's sale already written at this till (under either key), or null. */
+async function demoSaleAt(writer: SeedWriter, stationId: string, ref: DemoDayRef, scenario: string): Promise<string | null> {
+  const [found] = await writer
+    .select({ id: s.sale.id })
+    .from(s.sale)
+    .where(and(eq(s.sale.stationId, stationId), inArray(s.sale.actionId, [ref.action(scenario), ref.legacyAction(scenario)])))
+    .limit(1);
+  return found?.id ?? null;
+}
+
 async function seedDemoWalletSpend(writer: SeedWriter, input: {
-  on: string; saleId: string; sourceSaleId: string; operatorId: string; branchId: string;
+  on: string; ref: DemoDayRef; saleId: string; sourceSaleId: string; operatorId: string; branchId: string;
   stationId: string; occurredAt: Date; expiresAt: Date; spentSatang: number;
 }): Promise<void> {
   // The earlier card-pax sale has one paid adult ticket at the list price of
   // THB 350. The seeded adult full-price credit is spent on this socks sale.
   const grantSatang = b(350);
   if (input.spentSatang > grantSatang) throw new Error('Demo wallet spend exceeds its grant');
-  const walletId = stableId(`${input.on}/card-pax/wallet`, input.occurredAt);
-  const attemptId = stableId(`${input.on}/merch-wallet/tender/0`, input.occurredAt);
+  const walletId = stableId(`${input.ref.key('card-pax')}/wallet`, input.occurredAt);
+  // The merch-wallet sale's first tender, as the scenario loop wrote it.
+  const attemptId = stableId(`${input.ref.key('merch-wallet')}/tender/0`, input.occurredAt);
   await writer.insert(s.wallet).values({ id: walletId, operatorId: input.operatorId,
     branchId: input.branchId, holderName: 'Demo admission credit',
     balanceSatang: grantSatang - input.spentSatang });
@@ -997,7 +1040,7 @@ async function seedDemoWalletSpend(writer: SeedWriter, input: {
     operatorId: input.operatorId, walletId, kind: 'voucher_qr', value: `QR-${walletId}` });
   await writer.insert(s.walletEntry).values([
     { id: stableId(`${walletId}/grant`, input.occurredAt), walletId, operatorId: input.operatorId,
-      actionId: `demo-day/${input.on}/card-pax/wallet-grant`, amountSatang: grantSatang,
+      actionId: `${input.ref.action('card-pax')}/wallet-grant`, amountSatang: grantSatang,
       kind: 'grant', source: 'ticket_sale', saleId: input.sourceSaleId, branchId: input.branchId,
       stationId: input.stationId, businessDate: input.on, expiresAt: input.expiresAt,
       balanceAfter: grantSatang, createdAt: new Date(input.occurredAt.getTime() - 10 * 60_000) },
@@ -1045,20 +1088,28 @@ async function seedDemoVoucherDiscount(writer: SeedWriter, input: {
 }
 
 async function seedDemoCashRefund(db: Db, input: {
-  on: string; operatorId: string; branchId: string; stationId: string; series: string;
-  sourceSaleId: string; occurredAt: Date; createdByAccountId: string;
+  ref: DemoDayRef; operatorId: string; branchId: string; stationId: string; series: string;
+  occurredAt: Date; createdByAccountId: string;
 }): Promise<void> {
   await db.transaction(async (writer) => {
-    const actionId = `demo-day/${input.on}/open-cash/refund`;
+    const actionId = `${input.ref.action('open-cash')}/refund`;
     await writer.execute(sql`select pg_advisory_xact_lock(hashtext(${input.operatorId}), hashtext(${actionId}))`);
+    // Already refunded HERE, under either key: a live park's refund of the
+    // same date is not this branch's.
     const [prior] = await writer.select({ id: s.refund.id }).from(s.refund)
-      .where(and(eq(s.refund.operatorId, input.operatorId), eq(s.refund.actionId, actionId))).limit(1);
+      .where(and(eq(s.refund.operatorId, input.operatorId), eq(s.refund.branchId, input.branchId),
+        inArray(s.refund.actionId, [actionId, `${input.ref.legacyAction('open-cash')}/refund`]))).limit(1);
     if (prior) return;
-    const [sale] = await writer.select({ id: s.sale.id }).from(s.sale)
-      .where(and(eq(s.sale.id, input.sourceSaleId), eq(s.sale.branchId, input.branchId))).limit(1);
-    const [cashAttempt] = await writer.select({ id: s.paymentAttempt.id }).from(s.paymentAttempt)
-      .where(and(eq(s.paymentAttempt.saleId, input.sourceSaleId), eq(s.paymentAttempt.method, 'cash'),
-        eq(s.paymentAttempt.status, 'approved'))).limit(1);
+    const sourceSaleId = await demoSaleAt(writer, input.stationId, input.ref, 'open-cash');
+    const [sale] = sourceSaleId
+      ? await writer.select({ id: s.sale.id }).from(s.sale)
+          .where(and(eq(s.sale.id, sourceSaleId), eq(s.sale.branchId, input.branchId))).limit(1)
+      : [];
+    const [cashAttempt] = sourceSaleId
+      ? await writer.select({ id: s.paymentAttempt.id }).from(s.paymentAttempt)
+          .where(and(eq(s.paymentAttempt.saleId, sourceSaleId), eq(s.paymentAttempt.method, 'cash'),
+            eq(s.paymentAttempt.status, 'approved'))).limit(1)
+      : [];
     const [manager] = await writer.select({ id: s.account.id }).from(s.account)
       .innerJoin(s.employee, eq(s.employee.id, s.account.employeeId))
       .where(and(eq(s.account.operatorId, input.operatorId), eq(s.employee.name, 'Khun Lek (Manager)'))).limit(1);
@@ -1067,7 +1118,7 @@ async function seedDemoCashRefund(db: Db, input: {
       stationId: input.stationId, series: `${input.series}-R`, at: input.occurredAt }, 'refund');
     const amountSatang = b(100);
     await writer.insert(s.refund).values({ id: stableId(actionId, input.occurredAt),
-      operatorId: input.operatorId, branchId: input.branchId, saleId: input.sourceSaleId,
+      operatorId: input.operatorId, branchId: input.branchId, saleId: sale.id,
       stationId: input.stationId, number: number.number, amountSatang, mode: 'custom',
       reason: 'Demo partial cash refund', approvedByAccountId: manager.id,
       createdByAccountId: input.createdByAccountId, actionId,
@@ -1076,7 +1127,7 @@ async function seedDemoCashRefund(db: Db, input: {
         settledAt: input.occurredAt.toISOString() }],
       createdAt: input.occurredAt, updatedAt: input.occurredAt });
     await writer.update(s.sale).set({ refundedSatang: sql`${s.sale.refundedSatang} + ${amountSatang}` })
-      .where(eq(s.sale.id, input.sourceSaleId));
+      .where(eq(s.sale.id, sale.id));
   });
 }
 

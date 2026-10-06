@@ -669,7 +669,7 @@ describe('seed:demo-day End of Day fixture', () => {
     expect(wallet?.balanceSatang).toBe(entries.reduce((sum, e) => sum + e.amountSatang, 0));
 
     const [voucherSale] = await ctx.db.select().from(schema.sale)
-      .where(eq(schema.sale.actionId, `demo-day/${date}/voucher-discount`));
+      .where(eq(schema.sale.actionId, `demo-day/${date}/${DEMO_BRANCH_CODE}/voucher-discount`));
     expect(voucherSale).toMatchObject({ promoDiscountSatang: 10_000, manualDiscountSatang: 0 });
     const [voucher] = await ctx.db.select({ id: schema.voucher.id, status: schema.voucher.status })
       .from(schema.voucher).where(eq(schema.voucher.saleId, voucherSale!.id));
@@ -679,7 +679,7 @@ describe('seed:demo-day End of Day fixture', () => {
     expect(consumed).toHaveLength(1);
 
     const [cashRefund] = await ctx.db.select().from(schema.refund)
-      .where(eq(schema.refund.actionId, `demo-day/${date}/open-cash/refund`));
+      .where(eq(schema.refund.actionId, `demo-day/${date}/${DEMO_BRANCH_CODE}/open-cash/refund`));
     expect(cashRefund).toMatchObject({ amountSatang: 10_000, mode: 'custom' });
     expect(cashRefund?.tenderAllocation).toMatchObject([{ method: 'cash', route: 'cash', status: 'done' }]);
 
