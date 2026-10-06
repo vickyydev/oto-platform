@@ -144,6 +144,8 @@ export interface RegisterRow {
     verifiedAt: string;
     verifiedBy: string | null;
     expiresAt: string | null;
+    /** A recorded document expiry has passed: staff re-check it. The rate holds. */
+    reverifyDue: boolean;
   } | null;
   childCount: number;
   children: RegisterChild[];
@@ -258,10 +260,11 @@ export async function listRegister(
     members: rows.map((r) => {
       const kids = childrenByMember.get(r.id) ?? [];
       const v = latest.get(r.id);
-      // An expired document no longer entitles the discounted rate, and the
-      // register hides it exactly as the single-member read does.
+      // A verification holds until it is revoked, exactly as the single-member
+      // read answers it: a recorded document expiry that has passed keeps the
+      // rate and raises `reverifyDue`.
       //
-      // Nor does a revocation (SCRUM-317). A revoked member's latest evidence
+      // A revocation entitles nothing (SCRUM-317). A revoked member's latest evidence
       // row is the record of an entitlement ENDING, and handing it back as a
       // verification — `{tier: 'tourist', proofType: 'revoked'}` — described
       // the member as holding proof of the rate that needs no proof at all.
@@ -269,8 +272,7 @@ export async function listRegister(
       // those out since SCRUM-241; a register row now answers the same null,
       // so a reader cannot get two different stories about one member from
       // two routes.
-      const active =
-        v && !isTierRevocation(v) && !isEvidenceExpired(v.evidenceExpiresAt) ? v : null;
+      const active = v && !isTierRevocation(v) ? v : null;
       return {
         ...r,
         tierVerification: active
@@ -280,6 +282,7 @@ export async function listRegister(
               verifiedAt: active.createdAt.toISOString(),
               verifiedBy: active.staffName ?? active.staffPhone ?? null,
               expiresAt: active.evidenceExpiresAt?.toISOString().slice(0, 10) ?? null,
+              reverifyDue: isEvidenceExpired(active.evidenceExpiresAt),
             }
           : null,
         childCount: kids.length,

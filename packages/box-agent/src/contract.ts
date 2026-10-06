@@ -169,6 +169,11 @@ export const SYNC_ANOMALY_KINDS = [
   'merge',
   'epoch_regressed',
   'late_arrival',
+  'receipt_collision',
+  'revoked_actor',
+  'wallet_overdraft',
+  /** S2-14b round 3 — an offline sale wanted more stock than the record held (migration 0049). */
+  'stock_oversold',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 
@@ -184,6 +189,12 @@ export const SYNC_CHANGE_SCOPES = [
   'receipt_series',
   /** The booth's published wheel (S2-07a). */
   'booth',
+  /** S2-13 round 4 — in-park children, pickup lists, registrations awaiting check-in. */
+  'checkin',
+  /** S2-14a round 4 — wallet balance snapshots and the offline cap. */
+  'wallets',
+  /** S2-14b round 3 — stock level snapshots per size and place, and this box's filed offline sales. */
+  'stock',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

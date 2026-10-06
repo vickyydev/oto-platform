@@ -3,10 +3,8 @@ import { CustomerTier, CartLine, Discount, ManualDiscount, ChargeTarget } from '
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { computeTotals } from '@/lib/sale';
-import { summarizeTax, roundTHB } from '@/lib/tax';
 import { computeNannyGroups, resolveDropOffPricing } from '@/lib/dropoff';
-import { unpricedDropOffLines } from '@/lib/cartWire';
+import { taxRowsOf, ticketTotals, unpricedDropOffLines, type OrderTotals } from '@/lib/cartWire';
 import { getDropOffPricing, getAddOns } from '@/mockApi';
 import {
   adultUnitDisplay,
@@ -61,7 +59,7 @@ interface OrderSummaryProps {
    * same rules that happens to agree.
    */
   totals?: Pick<
-    ReturnType<typeof computeTotals>,
+    OrderTotals,
     'subtotal' | 'scannedDiscounts' | 'manualAmounts' | 'total' | 'taxBreakdown'
   >;
   /** Shown under the total when the figures did NOT come from the platform. */
@@ -230,8 +228,8 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
   };
 
   const { subtotal, scannedDiscounts, manualAmounts, total, taxBreakdown } =
-    totals ?? computeTotals(lines, discounts, manualDiscounts);
-  const taxRows = summarizeTax(taxBreakdown);
+    totals ?? ticketTotals(lines, discounts, manualDiscounts);
+  const taxRows = taxRowsOf(taxBreakdown);
 
   // Shared nanny supervision: one row per nanny (fee charged once across the kids
   // she covers), plus a pending row for any nanny line without a nanny yet.
@@ -732,7 +730,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
             taxRows.map((row) => (
               <div key={row.key} className="flex justify-between text-muted-foreground text-sm">
                 <span>{row.label}</span>
-                <span className="tabular-nums">฿{roundTHB(row.amount)}</span>
+                <span className="tabular-nums">฿{row.amount}</span>
               </div>
             ))}
           <Separator />

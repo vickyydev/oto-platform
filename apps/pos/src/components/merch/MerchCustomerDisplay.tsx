@@ -30,6 +30,13 @@ interface MerchCustomerDisplayProps {
   promptpayAmount: number | null;
   completedOrder: MerchOrder | null;
   newBalance: number | null;
+  /**
+   * S2-14a round 2 — the credit the station is REALLY taking on this order
+   * (the payment stage's figure), in satang. The prototype subtracted the
+   * band's whole balance here whether or not the station could spend it
+   * (plan §6); the display now shows only what the platform takes.
+   */
+  creditSatang?: number;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -131,6 +138,7 @@ export function MerchCustomerDisplay({
   promptpayAmount,
   completedOrder,
   newBalance,
+  creditSatang,
 }: MerchCustomerDisplayProps) {
   const { t, lang } = useLanguage();
   if (stage === 'welcome') {
@@ -238,9 +246,8 @@ export function MerchCustomerDisplay({
   }
 
   if (stage === 'payment') {
-    const balance = wristband?.creditBalanceTHB ?? 0;
-    const creditUsed = Math.min(balance, total);
-    const remainderDue = total - creditUsed;
+    const creditUsed = Math.min((creditSatang ?? 0) / 100, total);
+    const remainderDue = roundTHB(total - creditUsed);
 
     if (promptpayAmount !== null) {
       return (

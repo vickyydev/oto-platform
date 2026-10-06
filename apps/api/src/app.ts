@@ -17,7 +17,8 @@ import {
 } from 'fastify-type-provider-zod';
 import { randomUUID } from 'node:crypto';
 import type { Db } from '@oto/db';
-import type { Env } from './env';
+import { resolveBandKey, type Env } from './env';
+import { configureBandKey } from './services/bands';
 import { buildErrorReporter, type ErrorReporter } from './lib/error-reporting';
 import { buildLogger } from './lib/logger';
 import { AppError } from './lib/errors';
@@ -38,13 +39,18 @@ import { saleTierRoutes } from './routes/sale-tier';
 import { catalogRoutes } from './routes/catalog';
 import { branchCloneRoutes } from './routes/branch-clone';
 import { menuRoutes } from './routes/menu';
+import { stockRoutes } from './routes/stock';
 import { auditRoutes } from './routes/audit';
 import { fileRoutes } from './routes/files';
+import { checkinRoutes } from './routes/checkin';
+import { releaseRoutes } from './routes/release';
+import { walletRoutes } from './routes/wallets';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
 import { boxRoutes } from './routes/box';
 import { fleetRoutes } from './routes/fleet';
 import { stationSessionRoutes } from './routes/stations';
+import { stationBridgeRoutes } from './routes/station-bridge';
 import { printRoutes } from './routes/print';
 import { scanningRoutes } from './routes/scanning';
 import { staffTokenRoutes } from './routes/staff-token';
@@ -156,6 +162,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
 
   app.decorate('db', opts.db);
   app.decorate('env', opts.env);
+  // S2-11: the key every band this deployment issues is signed with. Every
+  // door a sale finalises through reads it from here (`services/bands.ts`).
+  configureBandKey(resolveBandKey(opts.env));
   app.decorate('reporter', buildErrorReporter(opts.env.SENTRY_DSN || undefined, log));
   app.decorate('fileStorage', opts.fileStorage ?? null);
   app.decorate(
@@ -168,6 +177,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
         twilioApiKeySid: opts.env.TWILIO_API_KEY_SID || undefined,
         twilioApiKeySecret: opts.env.TWILIO_API_KEY_SECRET || undefined,
         twilioFrom: opts.env.TWILIO_FROM || undefined,
+        twilioVerifyServiceSid: opts.env.TWILIO_VERIFY_SERVICE_SID || undefined,
       },
       log,
     ),
@@ -205,6 +215,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
     if (!WRITE_METHODS.has(req.method)) return;
     const origin = req.headers.origin;
     if (!origin) return;
+    // S2-12: the gateway's hosted page posting the guest's browser back. The
+    // route is public, writes nothing, and is declared so (`crossSiteReturn`).
+    if ((req.routeOptions?.config as { crossSiteReturn?: true } | undefined)?.crossSiteReturn) return;
     if (allowedOrigins.has(origin.replace(/\/$/, ''))) return;
     const host = req.headers.host;
     if (host && origin.replace(/\/$/, '').endsWith(`://${host}`)) return;
@@ -387,6 +400,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   // prefix, like the catalogue it belongs to: its items hang off
   // `/branches/:branchId/menu` and the operator-wide rows off `/menu`.
   await app.register(menuRoutes);
+  // S2-14b — the stock read routes the till and the stock screens read.
+  await app.register(stockRoutes);
   // No prefix, like the catalogue: the fleet's branch-scoped resources are
   // nested under /branches/:branchId/… and its by-id routes are not, so the
   // paths are declared in full rather than assembled from two places.
@@ -427,11 +442,29 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(webhookRoutes, { prefix: '/webhooks' });
   await app.register(auditRoutes, { prefix: '/audit' });
   await app.register(fileRoutes, { prefix: '/files' });
+  // S2-13 — the supervision gate, the consent and the check-in choice (round 1, online).
+  await app.register(checkinRoutes, { prefix: '/checkin' });
+  // S2-13 round 3 — the authorised-pickup list and the release (online).
+  await app.register(releaseRoutes, { prefix: '/checkin/pickups' });
+  // S2-14a — reading a wallet by key or id (round 1; the Wallet view builds on it).
+  await app.register(walletRoutes, { prefix: '/wallets' });
+  // S2-15a round 1 — the End of Day (one combined count per branch-day) and
+  // the paid-outs and safe drops it expects less of. Paths declared in full.
+  await app.register((await import('./routes/end-of-day')).endOfDayRoutes);
   await app.register(opsRoutes, { prefix: '/ops' });
   // Versioned separately from everything else: a box in a mall is updated on
   // its own schedule, so the one surface that has to stay compatible with a
   // machine nobody can reach says so in its path (S2-04).
   await app.register(boxRoutes, { prefix: '/box/v1' });
+  /**
+   * The station bridge for a virtual box (offline plan §2.2, Round 3): the
+   * same `/box/v1/station/:stationId/*` contract a Pi serves on the counter's
+   * LAN, here behind the platform session. Declared in full, beside the box's
+   * own surface whose version prefix it shares, and deliberately outside the
+   * `stationTrading` guard: it is the box's surface, so it keeps working with
+   * the station forced offline.
+   */
+  await app.register(stationBridgeRoutes);
   await app.register((await import('./routes/box-booth-staff')).boxBoothStaffRoutes);
   await app.register(publicRoutes);
 

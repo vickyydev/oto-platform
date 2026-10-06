@@ -104,7 +104,14 @@ export type PrinterErrorCode =
   /** The printer this station's drawer would ride has no drawer line at all. */
   | 'PRINTER_HAS_NO_DRAWER'
   /** The renderer refused the job — a bitmap wider than the head, say. */
-  | 'RENDER_FAILED';
+  | 'RENDER_FAILED'
+  /**
+   * The platform did not hand over what one of its print jobs says (S2-11): a
+   * sale's receipt, band or prep ticket is fetched by job id as the box prints
+   * it, and the answer was a refusal, an error or something that is not a
+   * printout. Nothing reached a printer.
+   */
+  | 'DOCUMENT_UNAVAILABLE';
 
 export class PrinterError extends Error {
   readonly code: PrinterErrorCode;

@@ -1,5 +1,41 @@
 # Open questions for the owner
 
+## Waiting on the owner's word — 30 September 2026, evening
+
+- **Card refunds after the terminal's void window (S2-11, the gate's finding).**
+  As built: a card payment refunded while the terminal can still void it is
+  voided on the terminal; once the window has closed, the money is handed back
+  **in cash** and the refund row records that allocation. The alternative is a
+  real refund transaction on the terminal, which the acquirer settles back to
+  the card in days. **Recommendation: cash-back, as built** — it matches how
+  the park handles a family at the counter and needs no acquirer round-trip.
+  The owner will check with the park and confirm; nothing blocks meanwhile.
+- **The arrival plan's fifteen decisions** (`docs/progress/plans/arrival/PLAN.md`
+  section 4, OD-A1 to OD-A15): each carries a recommended answer the build will
+  follow unless the owner says otherwise before S2-12 starts. The ones only the
+  site, the gate supplier or the 2C2P credentials can settle are marked so.
+- **One calculator on the till (SCRUM-271, offline plan Round 2).** The till's
+  older baht calculator is deleted: every screen, the F&B and shop fallback, the
+  party and booking totals, the history screens and the reports now price
+  through the platform's satang engine. Measured on 170 carts against the
+  prototype's own recorded figures (`apps/pos/test/one-calculator-parity.test.ts`):
+  163 totals identical; a staff percent discount now rounds to the satang, not
+  the baht (up to ฿0.50); a VAT row on a cart spanning two tax categories can
+  read ฿0.01 lower (each category rounded, as the ledger stores it). Beyond
+  rounding, only the two rulings of §3c — now on every screen, where before the
+  prototype's figure showed wherever the platform had not priced the cart:
+  (a) a free-item code — the prototype charged ฿2,080 where the rule says
+  ฿2,130 (a cited rule, no question); (b) a scoped code after a comp — ฿0
+  became ฿1,000, and two ticket codes ฿0 became ฿300 (our decision).
+  **Owner:** confirm (b) stands now that every screen shows it; no code the park
+  holds today is scoped this way. **And one question it raised, left as it
+  was:** a sale re-read on a history screen or in a report on a day of the
+  other rate mode is still re-derived the prototype's way — subtotal from its
+  lines, tax and total at today's rate (a weekday ฿1,790 sale reads ฿2,290 on a
+  Saturday). The engine's own rule is to re-price at the mode it was sold
+  under. Recommended: switch when those screens read the platform's stored sale
+  (they read the till's own records today); until then nothing changes.
+
 ## Current follow-ups - 30 September 2026
 
 - **Break checkpoint direction.** The current release is deployed and verified;
@@ -142,7 +178,53 @@ path currently dead-ends on the POS station picker — build item B1 fixes it.
 **Needed:** the numbers to verify, a prepaid balance on the account, and a
 decision on the production route.
 
-## 3. `TWILIO_AUTH_TOKEN` in `.env` — **confirmed invalid 2026-09-21**
+## 3. ~~`TWILIO_AUTH_TOKEN` in `.env`~~ — **resolved 2026-09-30, night: the account is live**
+
+The owner replaced the whole Twilio block in `.env` with the three new lines —
+account SID, a real 32-character auth token, and the Verify service — and
+removed the old trial API key pair and sender in the same edit. Validated
+directly against Twilio without sending anything: the account answers
+**active, type Full** (the trial limits are gone), the balance is funded, and
+the Verify service ("OTO App", 6-digit codes, SMS-capable) answers under the
+token. The route question 2 raised is thereby settled: **Twilio Verify** is the
+production route. The `twilio_verify` adapter is BUILT (SCRUM-455): Verify generates, sends and
+checks the code; the platform keeps a marker row as the audit anchor so the
+outstanding-code window, resend throttles, guess counting and single use all
+hold, and the check's enumeration catch is closed — a phone whose Verify
+session is gone answers guess for guess like a phone with nothing outstanding.
+Every environment stays on the console adapter until the owner says which one
+switches (`SMS_ADAPTER=twilio_verify` plus the three Twilio variables on that
+service). An earlier note here read the file before the owner's newest save
+and wrongly called the token still truncated.
+
+**2026-09-30, evening:** the owner obtained the real account credentials and a
+**Twilio Verify service** — exactly the route question 2's write-up recommended
+for Thai delivery — and added `TWILIO_VERIFY_SERVICE_SID` to `.env` (present,
+correctly shaped, now a known variable in `env.ts` and `.env.example`). But the
+`TWILIO_AUTH_TOKEN` value in `.env` is still **13 characters** — the same
+truncated value diagnosed below — so every call still answers 20003 and nothing
+could be validated. **Needed from the owner: re-paste the auth token (a real
+one is 32 characters).**
+
+**How the new set differs from the trial setup, and what changes:** the trial
+setup authenticated with an API key pair (`TWILIO_API_KEY_SID` and
+`TWILIO_API_KEY_SECRET`) and sent through a sender number (`TWILIO_FROM`) on
+the Messages API. The new set authenticates with the account SID and auth
+token and sends through a **Verify service**, which needs **no sender number
+at all** — Verify uses Twilio's pre-registered senders, which is why it
+reaches Thai phones. Two consequences: (1) the API key pair still in `.env`
+belongs to the **trial** account, and the platform prefers an API key over the
+auth token, so those two lines must be **removed** (or replaced with a
+Standard key created on the new account) or the platform would keep
+authenticating as the trial; (2) `TWILIO_FROM` is not needed on the Verify
+route and stays only for the plain-SMS adapter. Then, in order: the
+credentials are validated without sending anything; a small build adds the
+`twilio_verify` sending-and-checking path beside the existing adapters
+(Verify generates and checks the code, so the platform's own code table is
+bypassed for that adapter); every environment stays on the console adapter
+until the owner says which one switches.
+
+### The original 2026-09-21 diagnosis, kept for the record
 
 It is 13 characters; a real Twilio auth token is 32. Twilio now answers
 `20003 "auth token is not valid for account AC…"` when it is used, so it is

@@ -259,12 +259,84 @@ create table if not exists box_runtime (
   updated_at text not null,
   primary key (box_id, runtime_key)
 );
+
+-- What a counter recorded while it could not reach the platform (offline plan
+-- Round 3): members, children and visits, each written in the same
+-- transaction as the fact that carries it up, so the next lookup at this
+-- counter finds the family it just signed up. Pruned once a cache pull brings
+-- the platform's own copy. The platform database's twin is migration 0035.
+create table if not exists box_overlay (
+  box_id text not null,
+  kind text not null,
+  entity_id text not null,
+  member_id text,
+  phone text,
+  payload text not null,
+  created_at text not null,
+  updated_at text not null,
+  primary key (box_id, kind, entity_id),
+  check (kind in ('member', 'child', 'visit', 'registration', 'checkin', 'guardian', 'release'))
+);
+
+create index if not exists box_overlay_phone_idx on box_overlay (box_id, phone);
+create index if not exists box_overlay_member_idx on box_overlay (box_id, member_id);
 `;
 
 /** Create the tables if they are absent and set the durability pragmas. */
 export function prepareSqliteBoxStore(db: SqliteDatabaseLike): void {
   for (const pragma of SQLITE_PRAGMAS) db.exec(pragma);
   db.exec(SQLITE_BOX_SCHEMA);
+  widenSqliteOverlayKinds(db);
+}
+
+/**
+ * S2-13 round 4 — a Pi whose card predates the check-in overlay kinds.
+ *
+ * `create table if not exists` leaves an older `box_overlay` as it was, and
+ * SQLite cannot alter a CHECK, so a card made before this round would refuse
+ * the first offline check-in with a constraint error. The table is rebuilt
+ * once, in one transaction, keeping every row it holds (the members, children
+ * and visits a counter recorded offline): a power cut in the middle leaves the
+ * old table whole, and the next boot does it again. A table that already
+ * allows the new kinds is left alone, so this costs one read on every boot.
+ */
+export function widenSqliteOverlayKinds(db: SqliteDatabaseLike): boolean {
+  const rows = db
+    .prepare(`select sql from sqlite_master where type = 'table' and name = 'box_overlay'`)
+    .all() as Array<{ sql?: unknown }>;
+  const ddl = typeof rows[0]?.sql === 'string' ? rows[0].sql : '';
+  if (!ddl || ddl.includes("'checkin'")) return false;
+  db.exec('begin immediate');
+  try {
+    db.exec(`create table box_overlay_widened (
+      box_id text not null,
+      kind text not null,
+      entity_id text not null,
+      member_id text,
+      phone text,
+      payload text not null,
+      created_at text not null,
+      updated_at text not null,
+      primary key (box_id, kind, entity_id),
+      check (kind in ('member', 'child', 'visit', 'registration', 'checkin', 'guardian', 'release'))
+    )`);
+    db.exec(`insert into box_overlay_widened
+      (box_id, kind, entity_id, member_id, phone, payload, created_at, updated_at)
+      select box_id, kind, entity_id, member_id, phone, payload, created_at, updated_at from box_overlay`);
+    db.exec('drop table box_overlay');
+    db.exec('alter table box_overlay_widened rename to box_overlay');
+    db.exec('create index if not exists box_overlay_phone_idx on box_overlay (box_id, phone)');
+    db.exec('create index if not exists box_overlay_member_idx on box_overlay (box_id, member_id)');
+    db.exec('commit');
+  } catch (err) {
+    try {
+      db.exec('rollback');
+    } catch {
+      // The transaction is already gone; the old table stands either way.
+    }
+    throw err;
+  }
+  return true;
 }
 
 // --- A store the box cannot use (SCRUM-403) ----------------------------------

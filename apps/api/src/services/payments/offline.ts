@@ -1,16 +1,28 @@
-import { and, eq } from 'drizzle-orm';
-import { device, paymentAttempt, sale } from '@oto/db';
+import { and, asc, eq, inArray } from 'drizzle-orm';
+import { band, bandEvent, child, device, paymentAttempt, sale, saleLine } from '@oto/db';
 import {
+  OfflinePriceBasisSchema,
   PAYMENT_METHOD_KINDS,
   PAYMENT_PROVIDERS,
   TaxableCategorySchema,
+  newId,
+  normaliseBandCode,
+  parseBandCode,
+  verifyBandCode,
   type PaymentAttemptStatus,
 } from '@oto/shared';
 import { z } from 'zod';
-import { errors } from '../../lib/errors';
+import { AppError, errors } from '../../lib/errors';
 import { audit } from '../audit';
+import { currentBandKey, packageGateAccess, planBands } from '../bands';
 import type { PromoDifference } from '../promo-codes';
-import { commitSale, finaliseSale, type ActorContext, type CommitSaleInput } from '../sale';
+import {
+  commitSale,
+  finaliseSale,
+  type ActorContext,
+  type CommitResult,
+  type CommitSaleInput,
+} from '../sale';
 import {
   findAttemptByAction,
   openAttempt,
@@ -72,14 +84,15 @@ import type { Tx } from '../tx';
  *     catches a re-send of the same EVENT; it does nothing about the same money
  *     arriving under a new event id, which is what a box that lost its
  *     acknowledgements and re-queued from its own records produces.
- *  3. **The receipt number is allocated here, inside the finalise
- *     transaction.** The box shows the guest a number minted from the
- *     high-water mark the cache bundle ships (`sync.ts`, the `receipt_series`
- *     scope), which is provisional: if the series moved on while the box was
- *     away, the number this path allocates is the next one after the mark and
- *     never a duplicate. Where the two differ, the audit row and a
- *     `late_arrival` anomaly carry both, because somebody holding the first is
- *     going to ask.
+ *  3. **The number the box printed is the sale's, when it is free (OD-4).**
+ *     The box persists each number before printing it, continuing from the
+ *     higher of the mark it pulled, the last number the till reported and its
+ *     own last one, so a guest is holding that number. Inside the finalise
+ *     transaction it is adopted when no sale in the station's series carries
+ *     it, and the series moves past it (`adoptReceipt` in `sale.ts`). When it
+ *     is taken, the sale is filed under the next free number — never a
+ *     duplicate — and the audit row and a `receipt_collision` anomaly carry
+ *     both, because somebody holding the first is going to ask.
  *  4. **A late fact never edits a finalised sale.** `pos.sale_freeze` enforces
  *     it and this path is shaped for it: the box's own columns — `origin`,
  *     `box_seq`, `source_event_id` — are stamped while the sale is still
@@ -134,6 +147,23 @@ const OfflineCartSchema = z.object({
               unitSatang: z.number().int().min(0).max(100_000_000).optional(),
               quantity: z.number().int().min(1).max(99),
               taxCategoryOverride: TaxableCategorySchema.optional(),
+              /**
+               * S2-14b — an add-on split across sizes, as the till's own
+               * commit carries it (`routes/sales.ts`), so each size's stock is
+               * taken when the sale is filed. Optional: a box on an older
+               * build sends none, and the sale is filed with a `size_unknown`
+               * attention rather than refused.
+               */
+              variantBreakdown: z
+                .array(
+                  z.object({
+                    variantId: z.string().min(1).max(100),
+                    variantLabel: z.string().max(60),
+                    quantity: z.number().int().min(0).max(99),
+                  }),
+                )
+                .max(20)
+                .optional(),
             }),
           )
           .max(20)
@@ -299,6 +329,20 @@ const OfflineTenderSchema = z.object({
   paidAt: z.string().datetime().optional(),
   /** A slip number or the guest's reference, where staff typed one. */
   reference: z.string().max(64).nullish(),
+  /**
+   * OD-3 — a GHL card sale that gave no answer offline, which that dialect
+   * cannot be asked about: staff read the terminal's own screen and typed its
+   * approval code. Recorded as taken, named on the account that confirmed it,
+   * and flagged on the attempt for end-of-day reconciliation.
+   */
+  staffConfirmation: z
+    .object({
+      accountId: z.string().uuid(),
+      at: z.string().datetime(),
+      approvalCode: z.string().min(1).max(12),
+      note: z.string().max(300).nullish(),
+    })
+    .nullish(),
 });
 
 export type OfflineTender = z.infer<typeof OfflineTenderSchema>;
@@ -317,7 +361,12 @@ export const OfflineSalePayloadSchema = z.object({
   /** Minted at the till. Re-sending it finds the sale that exists. */
   saleId: z.string().uuid(),
   cart: OfflineCartSchema,
-  tenders: z.array(OfflineTenderSchema).min(1).max(6),
+  /**
+   * Every tender that closed the sale — none at all for a ฿0 comp, which owes
+   * nothing (S2-09a; offline plan §2.6). A sale that owes money and arrives
+   * with too little is left open with what it has, as online.
+   */
+  tenders: z.array(OfflineTenderSchema).max(6),
   /**
    * The number the box showed at the counter, from the cached high-water mark.
    * Provisional: this path allocates the real one. See rule 3 at the top.
@@ -331,6 +380,31 @@ export const OfflineSalePayloadSchema = z.object({
     .nullish(),
   /** The offline staff token the box verified, by its `jti`, where it used one. */
   staffTokenJti: z.string().uuid().nullish(),
+  /** Taken under a fresh offline sign-in with no live token (OD-6). */
+  offlineFresh: z.boolean().optional(),
+  /**
+   * OD-13 — the bands the box minted with the park's key and printed. They
+   * are recorded as they are; the platform mints nothing for this sale.
+   */
+  bands: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        code: z.string().min(8).max(80),
+        kind: z.enum(['kid', 'adult']),
+        cartLineId: z.string().max(100),
+        saleLineId: z.string().uuid().nullish(),
+        childId: z.string().uuid().nullish(),
+        /** Gate access from the band's line's ticket package, as the box minted it. */
+        gateAccess: z.boolean().optional(),
+      }),
+    )
+    .max(200)
+    .default([]),
+  /** OD-8 — the catalogue version the box priced the cart from. */
+  catalogueVersion: z.string().max(64).nullish(),
+  /** OD-8 — the rows it priced from, so an older catalogue's price can be filed as taken. */
+  priceBasis: OfflinePriceBasisSchema.nullish(),
 });
 
 export type OfflineSalePayload = z.infer<typeof OfflineSalePayloadSchema>;
@@ -365,6 +439,24 @@ export interface ReplayScope {
   boxSeq: number;
   eventId: string;
   actionId: string | null;
+  /**
+   * OD-8 — the catalogue version the platform would ship a box now, asked for
+   * only when a replayed sale's total disagrees with today's prices. Read by
+   * the sync path, which owns the bundle's hashing.
+   */
+  catalogueVersion?: () => Promise<string | null>;
+}
+
+/**
+ * OD-8 — a sale filed at the price the box took it at, because the catalogue
+ * had moved on since the box last pulled. The alert says what changed.
+ */
+export interface PriceFiledAsTaken {
+  boxCatalogueVersion: string;
+  currentCatalogueVersion: string | null;
+  boxTotalSatang: number;
+  /** What today's catalogue would have charged; null when it refused the line outright. */
+  platformTotalSatang: number | null;
 }
 
 export interface ReplayOutcome {
@@ -375,8 +467,16 @@ export interface ReplayOutcome {
   outstandingSatang: number;
   /** Attempts this call wrote. A replay writes none and says so. */
   recorded: number;
-  /** The box showed one number and the ledger issued another. Both are named. */
+  /**
+   * OD-4 — the box printed a number the ledger could not file the sale under:
+   * it was already used in the series, or the platform had already numbered
+   * this sale before the box's copy arrived. Both are named.
+   */
   receiptDiffers: { box: string; ledger: string } | null;
+  /** OD-8 — filed at the box's price, with what changed. Null when today's prices agreed. */
+  priceFiledAsTaken: PriceFiledAsTaken | null;
+  /** The bands the box minted that this call recorded. */
+  bandsRecorded: number;
   /**
    * SCRUM-401 — each promo code this call filed at the value the till applied
    * where the park's definition gives something else today, or nothing. Empty
@@ -428,31 +528,12 @@ export async function replayOfflineSale(
   const cart = payload.cart;
 
   /**
-   * A CART THE TILL ITSELF PRICED AT NOTHING, refused before anything is
-   * written.
-   *
-   * A fully comped sale is a real thing at a counter, and it cannot be
-   * expressed as an offline event at all: `tenders` requires at least one
-   * tender and every tender is a positive amount (the two schemas above), so a
-   * ฿0 cart arrives here carrying money it says it does not owe. Rather than
-   * commit a sale and then refuse its own tenders on the gross cap below —
-   * which is the same outcome reached expensively, through a write that is
-   * rolled back and a refusal naming the tender rather than the cart — it is
-   * named here, where it is true.
-   *
-   * WHAT F NEEDS TO KNOW: a fully comped sale taken offline is not expressible
-   * yet. Until the event can carry a sale with no tenders, a ฿0 cart must be
-   * held on the till until the link is back, and this refusal is what says so
-   * rather than quarantining it under a code about money.
+   * A ฿0 COMP REPLAYS (S2-09a; offline plan §2.6). A fully comped sale is a
+   * real thing at a counter: it owes nothing, so it arrives with no tender and
+   * is committed and closed like any other — numbered under the box's printed
+   * number, its bands recorded. Money arriving with it is refused by the gross
+   * cap below, as it would be on a sale that owes some.
    */
-  if (cart.expectedTotalSatang === 0) {
-    throw errors.conflict(
-      'SALE_NOTHING_TO_PAY',
-      'The till priced this cart at nothing, so there is no offline sale to bank — a fully comped sale cannot be taken with the link down',
-      { saleId: payload.saleId },
-    );
-  }
-
   const input: CommitSaleInput = {
     id: payload.saleId,
     stationId: scope.stationId,
@@ -487,9 +568,56 @@ export async function replayOfflineSale(
 
   // The codes as the till applied them — the money is already taken — with
   // each difference from the park's definition handed back (rule 1's note).
-  const committed = await commitSale(tx, actor, input, scope.occurredAt, {
-    promoPricing: 'as_recorded',
-  });
+  const options = {
+    promoPricing: 'as_recorded' as const,
+    // S2-11: the box printed this sale's paper at the counter, when it was
+    // taken. A replay printing it again hours later would be a second receipt.
+    printing: 'skip' as const,
+    catalogueVersion: payload.catalogueVersion ?? null,
+  };
+  let committed: CommitResult;
+  let priceFiledAsTaken: PriceFiledAsTaken | null = null;
+  try {
+    // Under a savepoint of its own, so a price refusal leaves nothing behind
+    // for the second pricing below to trip over.
+    committed = await tx.transaction((sp) =>
+      commitSale(sp, actor, input, scope.occurredAt, options),
+    );
+  } catch (err) {
+    /**
+     * OD-8 — WHAT IF A PRICE CHANGED WHILE THE BOX WAS OFFLINE?
+     *
+     * The fact carries the catalogue version it was priced from. When today's
+     * catalogue prices the cart differently and the box's version is OLDER,
+     * the money was taken at a price the park displayed: the sale is filed at
+     * the box's price — priced again from the rows the box priced from — and
+     * the sync push raises an alert. The same version at a different total is
+     * a defect and is refused whole, into quarantine, exactly as before.
+     */
+    const code = err instanceof AppError ? err.code : null;
+    if (
+      (code !== 'SALE_TOTAL_MISMATCH' && code !== 'SALE_LINE_PRICE_MISMATCH') ||
+      !payload.priceBasis ||
+      !payload.catalogueVersion ||
+      !scope.catalogueVersion
+    ) {
+      throw err;
+    }
+    const current = await scope.catalogueVersion();
+    if (current === null || current === payload.catalogueVersion) throw err;
+    committed = await commitSale(tx, actor, input, scope.occurredAt, {
+      ...options,
+      priceBasis: payload.priceBasis,
+    });
+    const quoted = (err as AppError).details as { quotedTotalSatang?: unknown } | undefined;
+    priceFiledAsTaken = {
+      boxCatalogueVersion: payload.catalogueVersion,
+      currentCatalogueVersion: current,
+      boxTotalSatang: cart.expectedTotalSatang,
+      platformTotalSatang:
+        typeof quoted?.quotedTotalSatang === 'number' ? quoted.quotedTotalSatang : null,
+    };
+  }
   const promoDifferences = committed.promoDifferences ?? [];
 
   /**
@@ -518,11 +646,143 @@ export async function replayOfflineSale(
       .where(eq(sale.id, payload.saleId));
   }
 
+  const bandsRecorded = await recordBoxBands(tx, scope, payload.saleId, payload.bands);
   const recorded = await recordTenders(tx, scope, payload.saleId, payload.tenders);
   return close(tx, scope, payload.saleId, recorded, payload.receipt ?? null, {
     committed: !committed.replay,
     promoDifferences,
+    priceFiledAsTaken,
+    bandsRecorded,
+    offlineFresh: payload.offlineFresh === true,
   });
+}
+
+/**
+ * OD-13 — THE BANDS THE BOX MINTED, RECORDED AS THEY ARE.
+ *
+ * The box minted each band's id and signed code with the park's key and put
+ * the paper on the guest's wrist; the platform mints nothing for this sale.
+ * Each code is checked — its shape always, its signature when this deployment
+ * holds the key — so a fact cannot put a gate credential on the ledger that
+ * the gate would refuse. A band already here (a replay) is left alone.
+ *
+ * A sale the platform had ALREADY closed and banded online — its answer lost
+ * on the way, the till then finishing it through the box — has two sets: the
+ * platform's, never printed (the box refused the late print), and the box's,
+ * on the family's wrists. The platform's are marked `replaced` by the box's,
+ * so the gate admits the paper that exists and nothing else.
+ */
+async function recordBoxBands(
+  tx: Tx,
+  scope: ReplayScope,
+  saleId: string,
+  bands: OfflineSalePayload['bands'],
+): Promise<number> {
+  if (bands.length === 0) return 0;
+  const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
+  if (!row) throw new Error('the sale was not written');
+  const lines = await tx
+    .select()
+    .from(saleLine)
+    .where(eq(saleLine.saleId, saleId))
+    .orderBy(asc(saleLine.lineNo));
+  const lineIds = new Set(lines.map((l) => l.id));
+  const gateByPackage = await packageGateAccess(tx, lines);
+  const planned = planBands(lines, gateByPackage);
+  const packageOfLine = new Map(lines.map((l) => [l.id, l.ticketPackageId]));
+  const existing = await tx.select().from(band).where(eq(band.saleId, saleId));
+  const held = new Set(existing.map((b) => b.id));
+  const key = currentBandKey();
+  const children = new Set(
+    (
+      await tx
+        .select({ id: child.id })
+        .from(child)
+        .where(
+          inArray(
+            child.id,
+            bands.map((b) => b.childId).filter((id): id is string => !!id).concat(['00000000-0000-0000-0000-000000000000']),
+          ),
+        )
+    ).map((c) => c.id),
+  );
+  const fresh = bands.filter((b) => !held.has(b.id));
+  if (fresh.length === 0) return 0;
+
+  // The platform's own bands for this sale, which the box's paper replaces.
+  const superseded = existing.filter((b) => b.status === 'active' && !bands.some((x) => x.id === b.id));
+  for (const old of superseded) {
+    await tx.update(band).set({ status: 'replaced', updatedAt: scope.occurredAt }).where(eq(band.id, old.id));
+    await tx.insert(bandEvent).values({
+      id: newId(),
+      bandId: old.id,
+      kind: 'replaced',
+      stationId: scope.stationId,
+      boxId: scope.boxId,
+      detail: { saleId, reason: 'printed_on_box', sourceEventId: scope.eventId },
+    });
+  }
+
+  const used = { kid: 0, adult: 0 };
+  let at = scope.occurredAt.getTime();
+  for (const minted of fresh) {
+    const parsed = parseBandCode(minted.code);
+    if (!parsed || (key && !verifyBandCode(minted.code, key).ok)) {
+      throw errors.conflict(
+        'SYNC_BAND_CODE_INVALID',
+        'A band this box printed does not carry a code this park signs, so none of this sale was recorded',
+        { saleId, bandId: minted.id },
+      );
+    }
+    // The ledger line it admits against: the box names it (`deriveSaleLineId`);
+    // the plan for its kind stands in when that line is not on the sale.
+    const fallback = planned.filter((p) => p.kind === minted.kind)[used[minted.kind]] ?? null;
+    used[minted.kind] += 1;
+    const saleLineId =
+      minted.saleLineId && lineIds.has(minted.saleLineId) ? minted.saleLineId : (fallback?.saleLineId ?? null);
+    const childId = minted.kind === 'kid' && minted.childId && children.has(minted.childId) ? minted.childId : null;
+    /**
+     * Gate access as the box minted it, from its line's ticket package in the
+     * box's catalogue. A box that sent none is answered from the package of
+     * the line the band admits against. A kids band never has it.
+     */
+    const linePackage = saleLineId ? packageOfLine.get(saleLineId) : null;
+    const gateAccess =
+      minted.kind === 'adult' &&
+      (typeof minted.gateAccess === 'boolean'
+        ? minted.gateAccess
+        : linePackage
+          ? gateByPackage.get(linePackage) === true
+          : fallback?.gateAccess === true);
+    await tx.insert(band).values({
+      id: minted.id,
+      operatorId: row.operatorId,
+      branchId: row.branchId,
+      saleId,
+      saleLineId,
+      memberId: row.memberId,
+      childId,
+      kind: minted.kind,
+      gateAccess,
+      code: normaliseBandCode(minted.code),
+      status: 'active',
+      // A millisecond apart, in the order the box minted them.
+      createdAt: new Date(at),
+      updatedAt: new Date(at),
+    });
+    await tx.insert(bandEvent).values({
+      id: newId(),
+      bandId: minted.id,
+      kind: 'minted',
+      stationId: scope.stationId,
+      boxId: scope.boxId,
+      // The facts of the issue. Never the code: it is a gate credential.
+      detail: { saleId, saleLineId, childId, gateAccess, origin: 'box', sourceEventId: scope.eventId },
+      createdAt: new Date(at),
+    });
+    at += 1;
+  }
+  return fresh.length;
 }
 
 /**
@@ -577,6 +837,9 @@ export async function replayOfflineTender(
   return close(tx, scope, payload.saleId, recorded, null, {
     committed: false,
     promoDifferences: [],
+    priceFiledAsTaken: null,
+    bandsRecorded: 0,
+    offlineFresh: false,
   });
 }
 
@@ -722,6 +985,23 @@ async function recordTenders(
         takenByAccountId: scope.actorAccountId,
         actionId: tender.actionId,
         sourceEventId: scope.eventId,
+        /**
+         * OD-3 — confirmed by a person against the terminal's own screen,
+         * offline, with the approval code typed. The end of day reconciles it
+         * against the terminal's slips.
+         */
+        ...(tender.staffConfirmation
+          ? {
+              staffConfirmation: {
+                accountId: tender.staffConfirmation.accountId,
+                took: true,
+                at: tender.staffConfirmation.at,
+                offline: true,
+                reconcile: 'end_of_day',
+                ...(tender.staffConfirmation.note ? { note: tender.staffConfirmation.note } : {}),
+              },
+            }
+          : {}),
       },
     });
 
@@ -749,6 +1029,8 @@ async function recordTenders(
       ...(tender.last4 ? { last4: tender.last4 } : {}),
       ...(tender.tid ? { tid: tender.tid } : {}),
       ...(tender.mid ? { mid: tender.mid } : {}),
+      // The person who said the money moved, on the row as online (OD-3).
+      ...(tender.staffConfirmation ? { staffConfirmedByAccountId: scope.actorAccountId } : {}),
     });
 
     out.written += 1;
@@ -778,7 +1060,13 @@ async function close(
   saleId: string,
   recorded: Recorded,
   boxReceipt: { series: string; seq: number; number: string } | null,
-  flags: { committed: boolean; promoDifferences: PromoDifference[] },
+  flags: {
+    committed: boolean;
+    promoDifferences: PromoDifference[];
+    priceFiledAsTaken: PriceFiledAsTaken | null;
+    bandsRecorded: number;
+    offlineFresh: boolean;
+  },
 ): Promise<ReplayOutcome> {
   const [row] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
   if (!row) throw new Error('the sale was not written');
@@ -801,7 +1089,9 @@ async function close(
       tx,
       actorFor(scope),
       saleId,
-      { actionId: scope.actionId },
+      // Printed where it was taken; see the commit above. And filed under the
+      // number the guest is holding when it is free (OD-4).
+      { actionId: scope.actionId, printing: 'skip', adoptReceipt: boxReceipt },
       scope.occurredAt,
     );
     finalised = result.finalised;
@@ -843,8 +1133,14 @@ async function close(
       attemptsWritten: recorded.written,
       outstandingSatang: Math.max(0, outstanding),
       receiptNumber,
-      /** What the guest was shown at the counter, when it is not this. */
+      /** What the guest was shown at the counter, when it is not this (OD-4). */
       ...(receiptDiffers ? { boxReceiptNumber: receiptDiffers.box } : {}),
+      ...(boxReceipt && !receiptDiffers ? { receiptAdopted: true } : {}),
+      ...(flags.bandsRecorded > 0 ? { boxBands: flags.bandsRecorded } : {}),
+      /** OD-8 — filed at the price the box took, from an older catalogue. */
+      ...(flags.priceFiledAsTaken ? { priceFiledAsTaken: flags.priceFiledAsTaken } : {}),
+      /** OD-6 — taken under a fresh offline sign-in. */
+      ...(flags.offlineFresh ? { offlineFresh: true } : {}),
       /**
        * SCRUM-401 — a code filed at the value the till applied that the park's
        * definition prices differently today, or does not know. The sync push
@@ -862,5 +1158,7 @@ async function close(
     recorded: recorded.written,
     receiptDiffers,
     promoDifferences: flags.promoDifferences,
+    priceFiledAsTaken: flags.priceFiledAsTaken,
+    bandsRecorded: flags.bandsRecorded,
   };
 }

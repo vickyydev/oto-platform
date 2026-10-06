@@ -1,0 +1,12 @@
+feat(display): save child review from the separate screen
+
+Returning members can confirm saved-child corrections on the paired
+display while the till performs the authorised profile update.
+
+- fence typed review actions by visitor, request and saved-child binding
+- retain each correction across lost replies, lock and disconnection
+- keep private profile data and supervision on the staff screen
+- verify 149 existing checks, typecheck, lint and the POS build; attach
+  three reviewed local screenshots and save the release follow-ups
+
+Refs: SCRUM-201

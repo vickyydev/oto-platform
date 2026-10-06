@@ -1,0 +1,17 @@
+{
+  "status": "failed",
+  "tests": [
+    {
+      "name": "separate display guardian acknowledgement retains lock and retry, while staff authorises private readiness",
+      "status": "failed",
+      "errors": [
+        {
+          "message": "Error: expect(locator).toHaveValue(expected) failed",
+          "source": "smoke.spec.ts:768:83",
+          "booleanMismatch": null
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

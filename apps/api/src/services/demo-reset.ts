@@ -1,26 +1,38 @@
-import { inArray, isNotNull, ne, or } from 'drizzle-orm';
+import { eq, inArray, isNotNull, ne, notInArray, or, sql } from 'drizzle-orm';
 import {
   attendee,
   auditLog,
   band,
+  bandEvent,
   booking,
+  bookingRedemption,
+  cashMovement,
   child,
+  endOfDay,
   member,
+  memberAlias,
   memberTierVerification,
   paymentAttempt,
   paymentNotification,
+  purchaseOrder,
+  purchaseOrderLine,
+  refund,
   sale,
   saleDiscount,
   saleLine,
   saleTierClaim,
-  stockLevel,
+  stockAttention,
+  stockMovement,
+  stockTake,
+  stockTakeLine,
   visit,
   visitChild,
   voucher,
   wallet,
   walletEntry,
+  walletKey,
 } from '@oto/db';
-import type { Exec } from './tx';
+import type { Exec, Tx } from './tx';
 
 /**
  * "Reset demo data" — S2-01c.
@@ -31,7 +43,8 @@ import type { Exec } from './tx';
  * separates the two by OWNER rather than by age:
  *
  *   facts         what a day of play produces — visits, bookings, sales,
- *                 payments, wallets, bands, stock counts, and the members
+ *                 payments, wallets, bands, stock counts, closed days and
+ *                 the cash taken out of the drawers, and the members
  *                 walked up to the counter during the session
  *   configuration what someone sat down and set up — operators, branches,
  *                 departments, employees, accounts, roles and assignments,
@@ -85,7 +98,12 @@ const FACT_ENTITY_TYPES = [
   'payment_notification',
   'wallet',
   'band',
+  // S2-11: a refund is a fact of the sale it refunds, and goes with it.
+  'refund',
   'stock_level',
+  // S2-15a: a closed day and the paid-outs and safe drops of a day of play.
+  'end_of_day',
+  'cash_movement',
 ];
 
 /** Rows removed per table, for the response and the audit entry. */
@@ -96,7 +114,13 @@ export type DemoResetCounts = Record<string, number>;
  * statement runs on the caller's transaction handle, so a failure anywhere
  * leaves the deployment exactly as it was rather than half-wiped.
  */
-export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
+export async function resetDemoData(exec: Exec): Promise<DemoResetCounts> {
+  // One transaction of its own (a savepoint inside the caller's), so the stock
+  // ledger's purge flag below is local to it whichever handle the caller holds.
+  return exec.transaction((tx) => resetDemoDataIn(tx));
+}
+
+async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   const counts: DemoResetCounts = {};
 
   // The members the session created. Collected first: the facts below are
@@ -108,10 +132,94 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
     .where(ne(member.createdVia, SEEDED_MEMBER_CREATED_VIA));
   const doomedIds = doomedMembers.map((m) => m.id);
 
-  counts.visit_child = (
-    await tx.delete(visitChild).returning({ visitId: visitChild.visitId })
+  /**
+   * S2-11: a band points at its sale and at the ticket unit it was issued
+   * against, and a band's events at the band, all ON DELETE RESTRICT — so the
+   * events go, then the bands, before the lines and the sale they hang off. A
+   * refund points at its sale the same way.
+   */
+  /**
+   * S2-14a: a wallet entry points at the sale, refund and payment attempt it
+   * moved money for (ON DELETE RESTRICT), and a key at its wallet — so the
+   * ledger and the keys go first, then the wallets, before anything they name.
+   */
+  /**
+   * S2-14b: the stock ledger's day of play, back to the counted opening. A
+   * movement points at the sale line, sale and refund it moved stock for (ON
+   * DELETE RESTRICT), so it goes first. The ledger is append-only by trigger;
+   * the purge flag, local to this transaction, is the one door through it.
+   * What stays is the opening count (OD-S5) — the stock take marked `opening`
+   * and the movements its lines wrote — and every level is set back to the sum
+   * of the movements that remain, so the projection still adds up.
+   */
+  await tx.execute(sql`select set_config('oto.stock_ledger_purge', 'on', true)`);
+  const openingTakes = (
+    await tx.select({ id: stockTake.id }).from(stockTake).where(eq(stockTake.opening, true))
+  ).map((r) => r.id);
+  const openingLines = openingTakes.length
+    ? (
+        await tx
+          .select({ id: stockTakeLine.id })
+          .from(stockTakeLine)
+          .where(inArray(stockTakeLine.stockTakeId, openingTakes))
+      ).map((r) => r.id)
+    : [];
+  counts.stock_attention = (await tx.delete(stockAttention).returning({ id: stockAttention.id })).length;
+  counts.stock_movement = (
+    await tx
+      .delete(stockMovement)
+      .where(
+        openingLines.length
+          ? or(sql`${stockMovement.stockTakeLineId} is null`, notInArray(stockMovement.stockTakeLineId, openingLines))
+          : undefined,
+      )
+      .returning({ id: stockMovement.id })
   ).length;
-  counts.visit = (await tx.delete(visit).returning({ id: visit.id })).length;
+  counts.stock_take_line = (
+    await tx
+      .delete(stockTakeLine)
+      .where(openingTakes.length ? notInArray(stockTakeLine.stockTakeId, openingTakes) : undefined)
+      .returning({ id: stockTakeLine.id })
+  ).length;
+  counts.stock_take = (
+    await tx
+      .delete(stockTake)
+      .where(eq(stockTake.opening, false))
+      .returning({ id: stockTake.id })
+  ).length;
+  counts.purchase_order_line = (
+    await tx.delete(purchaseOrderLine).returning({ id: purchaseOrderLine.id })
+  ).length;
+  counts.purchase_order = (await tx.delete(purchaseOrder).returning({ id: purchaseOrder.id })).length;
+  await tx.execute(sql`
+    update pos.stock_level l
+       set quantity = coalesce((select sum(m.quantity) from pos.stock_movement m
+                                 where m.stock_item_id = l.stock_item_id
+                                   and m.stock_location_id = l.stock_location_id), 0),
+           updated_at = now()`);
+  // Shut the door again. `set_config(…, true)` lasts until the OUTER transaction
+  // ends, not this savepoint, so left on it would keep the ledger deletable for
+  // whatever the caller does after the reset returns.
+  await tx.execute(sql`select set_config('oto.stock_ledger_purge', 'off', true)`);
+
+  /**
+   * S2-15a: the End of Day's closed days and the day's paid-outs and safe
+   * drops are a day of play too. Both refuse UPDATE and DELETE by trigger; the
+   * purge flag, local to this transaction, is the one door through, and it is
+   * shut again straight after.
+   */
+  await tx.execute(sql`select set_config('oto.cash_ledger_purge', 'on', true)`);
+  counts.end_of_day = (await tx.delete(endOfDay).returning({ id: endOfDay.id })).length;
+  counts.cash_movement = (await tx.delete(cashMovement).returning({ id: cashMovement.id })).length;
+  await tx.execute(sql`select set_config('oto.cash_ledger_purge', 'off', true)`);
+
+  counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
+  counts.wallet_key = (await tx.delete(walletKey).returning({ id: walletKey.id })).length;
+  counts.wallet = (await tx.delete(wallet).returning({ id: wallet.id })).length;
+
+  counts.band_event = (await tx.delete(bandEvent).returning({ id: bandEvent.id })).length;
+  counts.band = (await tx.delete(band).returning({ id: band.id })).length;
+  counts.refund = (await tx.delete(refund).returning({ id: refund.id })).length;
 
   counts.sale_line = (await tx.delete(saleLine).returning({ id: saleLine.id })).length;
   // S2-09a: a sale's discounts are rows of their own now, and they point at
@@ -128,6 +236,19 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   counts.payment_notification = (
     await tx.delete(paymentNotification).returning({ id: paymentNotification.id })
   ).length;
+  /**
+   * S2-12: a booking names the one gateway attempt it is paid through
+   * (`booking.payment_attempt_id`, ON DELETE RESTRICT), while the attempts go
+   * here and the bookings further down — after the sales, which name a booking
+   * of their own (`pos.sale.booking_id`). That is a cycle of restricting keys,
+   * so one edge is cut first, as with the tier claims below: the bookings
+   * forget their attempts, then the attempts go. Without it, the first booking
+   * of a session that reached the payment page made the whole reset fail.
+   */
+  await tx
+    .update(booking)
+    .set({ paymentAttemptId: null })
+    .where(isNotNull(booking.paymentAttemptId));
   counts.payment_attempt = (
     await tx.delete(paymentAttempt).returning({ id: paymentAttempt.id })
   ).length;
@@ -169,20 +290,34 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
     })
     .where(or(isNotNull(voucher.saleId), isNotNull(voucher.heldSaleId)));
   counts.sale = (await tx.delete(sale).returning({ id: sale.id })).length;
+  /**
+   * The visits go AFTER the sales, because a sale names the visit it was rung
+   * up for (`pos.sale.visit_id`, ON DELETE RESTRICT). They went first until
+   * S2-11, which was only safe while no test rang a sale for a visit — the
+   * first day of play that did would have made the whole reset fail.
+   */
+  counts.visit_child = (
+    await tx.delete(visitChild).returning({ visitId: visitChild.visitId })
+  ).length;
+  counts.visit = (await tx.delete(visit).returning({ id: visit.id })).length;
   counts.sale_tier_claim = (
     await tx.delete(saleTierClaim).returning({ id: saleTierClaim.id })
   ).length;
 
   counts.attendee = (await tx.delete(attendee).returning({ id: attendee.id })).length;
+  /**
+   * A booking claimed at a counter has its claim row (`booking_redemption`,
+   * ON DELETE RESTRICT on the booking). It is a fact of the day's play like the
+   * booking itself, and it goes first — or a single redeemed booking made the
+   * whole reset fail.
+   */
+  counts.booking_redemption = (
+    await tx.delete(bookingRedemption).returning({ id: bookingRedemption.id })
+  ).length;
   counts.booking = (await tx.delete(booking).returning({ id: booking.id })).length;
 
-  counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
-  counts.wallet = (await tx.delete(wallet).returning({ id: wallet.id })).length;
-
-  counts.band = (await tx.delete(band).returning({ id: band.id })).length;
-  // The stocked things and where they live are catalogue; the COUNT is what a
-  // day of play moves, so only the levels go.
-  counts.stock_level = (await tx.delete(stockLevel).returning({ id: stockLevel.id })).length;
+  // The stocked things and where they live are catalogue; what a day of play
+  // moved went with the stock ledger above (S2-14b), back to the opening count.
 
   counts.member_tier_verification = doomedIds.length
     ? (
@@ -195,6 +330,19 @@ export async function resetDemoData(tx: Exec): Promise<DemoResetCounts> {
   counts.child = doomedIds.length
     ? (
         await tx.delete(child).where(inArray(child.memberId, doomedIds)).returning({ id: child.id })
+      ).length
+    : 0;
+  /**
+   * Offline plan Round 3: an id merged into a member at sync is kept as an
+   * alias of it (`crm.member_alias`, ON DELETE RESTRICT), so the aliases of a
+   * member the session created go before the member does.
+   */
+  counts.member_alias = doomedIds.length
+    ? (
+        await tx
+          .delete(memberAlias)
+          .where(inArray(memberAlias.memberId, doomedIds))
+          .returning({ id: memberAlias.aliasMemberId })
       ).length
     : 0;
   counts.member = doomedIds.length

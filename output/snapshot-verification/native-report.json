@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "tests": [
+    {
+      "name": "Devices: display snapshots retain recorded history, empty records and privacy across selections",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "Devices: a station-read grant for another park does not expose a display snapshot",
+      "status": "passed",
+      "errors": []
+    }
+  ],
+  "cleanup": {
+    "processes": true,
+    "database": true
+  },
+  "errors": []
+}

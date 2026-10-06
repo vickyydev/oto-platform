@@ -2,6 +2,7 @@ import { AlertTriangle, CloudOff, Loader2, ReceiptText, RefreshCw, ServerCrash }
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import type { SaleFailureCause, SaleWriteState } from '@/lib/saleWriter';
+import { isStockRefusalCode, stockRefusalAdvice } from '@/lib/stockRefusal';
 import type { CartQuote } from '@/api/sales';
 
 /**
@@ -124,8 +125,12 @@ export function SaleWriteFailure({
 
   if (state.kind !== 'failed') return null;
 
+  // S2-14b round 4 (Q1): a refusal of the cart's stock — the platform's at
+  // commit, or the counter's box at the money press — took nothing and saved
+  // nothing anywhere, whichever call it answered. Its words stand as they came.
+  const stockRefused = isStockRefusalCode(state.code);
   const headline =
-    state.stage === 'commit'
+    state.stage === 'commit' || stockRefused
       ? 'This sale has not been saved.'
       : 'The payment has not been recorded.';
 
@@ -135,13 +140,15 @@ export function SaleWriteFailure({
         <ServerCrash className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400" />
         <div className="min-w-0 flex-1">
           <div className="text-base font-bold text-rose-700 dark:text-rose-200">{headline}</div>
-          {state.stage === 'finalise' && (
+          {state.stage === 'finalise' && !stockRefused && (
             <p className="mt-1 text-sm text-muted-foreground">
               The order itself is saved on the platform, as unpaid and without a receipt number.
             </p>
           )}
           <p className="mt-1 text-sm text-muted-foreground">{state.message}</p>
-          <p className="mt-2 text-sm text-muted-foreground">{advice(state.cause)}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {stockRefused && state.code ? stockRefusalAdvice(state.code) : advice(state.cause)}
+          </p>
           <p className="mt-2 font-mono text-xs text-muted-foreground">Sale {state.saleId}</p>
           <div className="mt-4 flex items-center gap-3">
             {state.retryable && (

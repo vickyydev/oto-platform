@@ -65,7 +65,8 @@ export interface TierVerification {
   verifiedBy: string; // operator name (from auth context)
   verifiedById: string;
   verifiedAt: string; // ISO
-  expiresAt?: string; // document expiry, YYYY-MM-DD (required by the platform API)
+  expiresAt?: string; // document expiry, YYYY-MM-DD, when one was recorded
+  reverifyDue?: boolean; // the recorded expiry has passed: re-check the document; the rate holds
 }
 
 // Single source of truth for the messaging channels the POS/parent app can use
@@ -317,8 +318,9 @@ export interface Discount {
 
 // --- Tax + service-charge engine ------------------------------------------
 // A configurable VAT/tax + service-charge model. The owner's accountant sets
-// the rates/sequence as data (never hardcoded); the pricing engine (lib/tax.ts)
-// reads this and reports/adds tax + service charge per area. Seeded so today's
+// the rates/sequence as data (never hardcoded); the pricing engine (@oto/shared,
+// through lib/cartWire.ts since SCRUM-271) reads this and reports/adds tax +
+// service charge per area. Seeded so today's
 // displayed totals are unchanged until the config is edited (see catalogStore).
 export type TaxMode = 'inclusive' | 'exclusive' | 'none';
 
@@ -563,7 +565,7 @@ export interface DropOffLine {
   foodRestrictions?: string;
   // Prepaid food provision captured at door consent. When present, the
   // paidTHB is already included in the CartLine lineTotal (added on top of
-  // ticket + service fee); tillTaxInputs routes it to the correct tax category.
+  // ticket + service fee); the engine's cartUnits routes it to the correct tax category.
   foodProvision?: ChildFoodProvision;
   // Photo captured during online consent (data URL) — the child together with
   // the parent / guardian; carried into the CheckIn for pickup verification.
@@ -659,8 +661,8 @@ export interface SaleQuotedPricing {
   serviceChargeTotal: number;
   taxTotal: number;
   /**
-   * The tax and service rows a receipt prints, exactly as `summarizeTax`
-   * returned them for this sale.
+   * The tax and service rows a receipt prints, exactly as `taxRowsOf`
+   * (lib/cartWire.ts) returned them for this sale.
    */
   taxRows: {
     key: string;
@@ -1128,6 +1130,14 @@ export interface Wristband {
    * resolves to the exact same wristband — no separate balance, no double-spend.
    */
   qrCode?: string;
+  /**
+   * SCRUM-208 — the platform member this band belongs to, where the band was
+   * issued to one. Carried so an F&B order taken against the band can name its
+   * member to the platform, which then prints the member's children's allergy
+   * line on the kitchen/bar ticket (`orderChildren` in the platform's
+   * sale-printing). Absent on a walk-in band, which names no member.
+   */
+  memberId?: string;
   customerNickname: string;
   /**
    * F&B credit wallet — PREPAID STORED VALUE loaded at ticket sale time.
@@ -1143,6 +1153,13 @@ export interface Wristband {
    * truth). Absent on bands with no credit history.
    */
   ledger?: WalletEntry[];
+  /**
+   * Staging F3 — why this counter cannot take the tab's credit right now, in
+   * its box's words (the offline cap reached today, the credit expired, a
+   * wallet the box holds no copy of). Set only on a tab the box answered while
+   * the counter works without the internet; the credit card shows it as it is.
+   */
+  creditNote?: string;
   // --- Allergy / medical + food consent (drop-off children) ---------------
   // These come from the drop-off web form via the child's CheckIn (the parent
   // declares allergies and whether staff may serve the child food). They are
@@ -1156,6 +1173,12 @@ export interface Wristband {
   // items array carries the entitlements (redeemedQty reconciled at pickup).
   foodProvision?: ChildFoodProvision;
   checkInId?: string; // links back to the originating drop-off CheckIn
+  /**
+   * SCRUM-494 — the platform's stay (`pos.checkin.id`) the counter's scan
+   * resolved this band to. Set only from `GET /wallets/scan`; the F&B order
+   * names it as its band holder and its prepaid lines are served from it.
+   */
+  stayId?: string;
   // --- Gate access + group linkage (entrance gate / occupancy) ------------
   /**
    * Whether this band operates the entrance gate. TRUE for adult bands, FALSE
@@ -1211,6 +1234,8 @@ export interface FnbOrderLine {
   // lineTotal is always ฿0 (already paid at booking), and redeemedQty on the
   // band is incremented at order confirmation. Never drawn from F&B credit balance.
   isPrepaid?: boolean;
+  /** SCRUM-494 — the platform stay a prepaid line is served from (`Wristband.stayId`). */
+  prepaidStayId?: string;
 }
 
 export interface FnbOrder {
@@ -1679,6 +1704,12 @@ export interface CheckIn {
   // Sign-up photo: one photo of the child TOGETHER WITH the parent / guardian,
   // used for pickup-safety matching. Placeholder image ok.
   childPhotoUrl?: string;
+  /**
+   * S2-13 round 2: the platform holds a consent photo for this stay, whether
+   * or not its short-lived URL has been fetched into `childPhotoUrl` yet — so
+   * the booked check-in does not ask for a photo that is already on file.
+   */
+  photoOnFile?: boolean;
   parentName: string;
   contactMethod: ContactChannel; // absent-on-legacy-records default = 'whatsapp'
   phone: string; // incl. country code, e.g. +66818953926

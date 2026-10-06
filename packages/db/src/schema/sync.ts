@@ -505,6 +505,36 @@ export const SYNC_ANOMALY_KINDS = [
   'epoch_regressed',
   /** Applied a long time after it happened — a box back from days offline. */
   'late_arrival',
+  /**
+   * A sale a box numbered offline arrived to find its printed number already
+   * used in the station's series, so it was filed under the next free one
+   * (offline plan OD-4). Both numbers are on the anomaly and the audit row:
+   * somebody is holding a slip with the first.
+   */
+  'receipt_collision',
+  /**
+   * A fact made by an account whose shift token was revoked before the fact
+   * happened, applied anyway because a sale that happened is filed, not lost
+   * (offline plan OD-9). An alert goes with it.
+   */
+  'revoked_actor',
+  /**
+   * S2-14a round 4 — a wallet spent offline past what it held when the spend
+   * reached the platform: two boxes spending one wallet in one outage. The
+   * spend is filed (the money was promised at the counter), the wallet's
+   * balance never goes below zero, and the overdraft is named here with a
+   * critical alert (migration 0046).
+   */
+  'wallet_overdraft',
+  /**
+   * S2-14b round 3 — a sale a box took offline reached the platform wanting
+   * more of an item than the record held: two boxes sold the same last units
+   * in one outage, or a counter online sold them meanwhile. The sale is filed
+   * (it was paid), the level floors at zero with the rest recorded as the
+   * movement's shortfall, and the item, size, place, box, station and short
+   * quantity are named here with a critical alert (migration 0049).
+   */
+  'stock_oversold',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 
@@ -544,7 +574,7 @@ export const syncAnomaly = edge.table(
     index('sync_anomaly_detected_idx').on(t.detectedAt),
     check(
       'sync_anomaly_kind_check',
-      sql`${t.kind} in ('clock_recomputed','duplicate_replay','sequence_gap','merge','epoch_regressed','late_arrival')`,
+      sql`${t.kind} in ('clock_recomputed','duplicate_replay','sequence_gap','merge','epoch_regressed','late_arrival','receipt_collision','revoked_actor','wallet_overdraft','stock_oversold')`,
     ),
   ],
 );

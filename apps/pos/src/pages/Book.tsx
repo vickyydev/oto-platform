@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { AddOn, Booking, CartLine, ContactChannel, CustomerTier, Member, OtoEvent, SelectedAddOn, TicketType } from '@/types';
 import {
   createBooking,
+  getAddOns,
   getDropOffPricing,
   getActiveEventPasses,
   getActiveBranch,
@@ -9,11 +10,12 @@ import {
 } from '@/mockApi';
 import { resolveAutoTier } from '@/lib/membership';
 import { computeLineTotal } from '@/lib/pricing';
-import { computeTotals } from '@/lib/sale';
+import { ticketTotals } from '@/lib/cartWire';
 import { resolveRequirement, resolveSupervisionOutcome, confirmationsSatisfied, buildAcknowledgedConfirmations } from '@/lib/supervision';
 import { dropOffServiceFee, normalizeDropOffFees, resolveDropOffPricing, type DropOffPricing as ResolvedDropOffPricing } from '@/lib/dropoff';
 import { getSupervisionPolicy, wwp, subscribeCatalog } from '@/store/catalogStore';
-import { resolveRateToday } from '@/lib/pricingMode';
+import { branchTradingDate, resolveRateToday, setPricingDate } from '@/lib/pricingMode';
+import { clampVisitDate, visitDateBounds } from '@/lib/visitDate';
 import { slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
 import { slotPatchFromSavedChild } from '@/lib/savedChildren';
@@ -23,6 +25,7 @@ import { BookIdentify } from '@/components/book/BookIdentify';
 import { BookTickets } from '@/components/book/BookTickets';
 import { BookPayment } from '@/components/book/BookPayment';
 import { BookConfirmation } from '@/components/book/BookConfirmation';
+import { BookCheckingPayment } from '@/components/book/BookCheckingPayment';
 import { BookEventPassForm, type PassSelection } from '@/components/book/BookEventPasses';
 import {
   emptyAttendeeForm,
@@ -33,16 +36,125 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { publicApi } from '@/api/platform';
+import { paymentPageHref, publicApi, type PublicBookingStatus } from '@/api/platform';
 import { loadPublicCatalog } from '@/api/catalogBridge';
 import { toast } from '@/hooks/use-toast';
 
-type Stage = 'identify' | 'tickets' | 'pass' | 'savedChildren' | 'supervise' | 'pay' | 'confirmation';
+type Stage =
+  | 'identify'
+  | 'tickets'
+  | 'pass'
+  | 'savedChildren'
+  | 'supervise'
+  | 'pay'
+  | 'checking'
+  | 'confirmation';
+
+/**
+ * THE CHECKOUT'S ROUND TRIP (S2-12, SCRUM-209).
+ *
+ * "Pay" now leaves this page for the payment partner's hosted page, and the
+ * guest comes back to `/book?payment=…&booking=…`. What the confirmation page
+ * shows about the basket — bracelets, supervised children, event passes — was
+ * built here and is not the platform's to hand back, so it is kept in this
+ * tab's session storage across the trip, keyed by the booking id. It is a
+ * DISPLAY copy only: whether the booking is paid is asked of the platform, and
+ * the QR comes from the platform's answer.
+ *
+ * THE CONFIRMATION CAN BE REOPENED (fix round 2). The return link and the
+ * copy are kept, not cleared the moment the confirmation shows: a reload, a
+ * tab brought back, or the link opened again asks the platform once more and,
+ * while the booking is paid and not yet redeemed, shows its QR again (the
+ * family is told to show it at reception). Nothing new is on any open answer:
+ * the link carries the booking id the platform already handed this browser.
+ * "Make another booking" is what clears both.
+ */
+const PENDING_CHECKOUT_KEY = 'oto.book.pendingCheckout';
+
+interface PendingCheckout {
+  bookingId: string;
+  reference: string;
+  name: string;
+  booking: Booking;
+}
+
+function saveCheckout(value: PendingCheckout): void {
+  try {
+    sessionStorage.setItem(PENDING_CHECKOUT_KEY, JSON.stringify(value));
+  } catch {
+    // A private window without storage still pays; the confirmation then
+    // shows what the platform says about the booking.
+  }
+}
+
+function readCheckout(): PendingCheckout | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_CHECKOUT_KEY);
+    return raw ? (JSON.parse(raw) as PendingCheckout) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearCheckout(): void {
+  try {
+    sessionStorage.removeItem(PENDING_CHECKOUT_KEY);
+  } catch {
+    // Nothing to clear.
+  }
+}
+
+/**
+ * The basket re-priced for the day now being priced (`setPricingDate`): a
+ * line's total and its extras were worked out at the day it was added. The
+ * ticket's own weekday / weekend pair is on the line; an extra's pair is the
+ * catalogue's, looked up by id.
+ */
+function repriceLines(lines: CartLine[]): CartLine[] {
+  const catalogue = getAddOns();
+  return lines.map((line) => {
+    const addOns = line.addOns.map((a) => {
+      const source = catalogue.find((c) => c.id === a.id);
+      return source ? { ...a, price: resolveRateToday(source.price) } : a;
+    });
+    const base = {
+      ticketType: line.ticketType,
+      tier: line.tier,
+      kids: line.kids,
+      adults: line.adults,
+      socks: line.socks,
+      addOns,
+    };
+    return { ...line, addOns, lineTotal: computeLineTotal(base) };
+  });
+}
+
+/** Where a reopened confirmation lives: the return link, with the booking it is about. */
+function confirmationHref(bookingId: string): string {
+  const query = new URLSearchParams({ payment: 'completed', booking: bookingId });
+  return `${window.location.pathname}?${query.toString()}`;
+}
+
+/** What the confirmation shows when this tab kept no copy of the basket. */
+function bookingFromStatus(status: PublicBookingStatus): Booking {
+  return {
+    id: status.id,
+    reference: status.reference,
+    tier: 'tourist',
+    lines: [],
+    total: status.totalSatang / 100,
+    paymentMethod: 'online',
+    willIssue: { childBracelets: status.kidsCount, adultBracelets: status.adultsCount, creditTotalTHB: 0 },
+    createdAt: status.paidAt ?? new Date().toISOString(),
+    status: status.status === 'redeemed' ? 'redeemed' : 'paid',
+  };
+}
 
 // A synthetic kid-ticket line modelling one event pass, used ONLY for the running
 // total + tax (NEVER stored in booking.lines). The flat entryPriceTHB is placed
 // in prices[tier] so computeLineBreakdown taxes it as a ticket — avoiding the
-// "fee in lineTotal only -> 0 in computeTotals" gotcha.
+// "fee in lineTotal only -> 0 in the cart's totals" gotcha (computeTotals then,
+// `ticketTotals` since SCRUM-271: the same re-derivation, in the engine).
 function buildPassLine(pass: PassSelection, tier: CustomerTier): CartLine {
   const fee = resolveRateToday(pass.event.entryPriceTHB);
   const ticketType: TicketType = {
@@ -203,8 +315,8 @@ function buildEffectiveLines(
           allergiesMedical: slot.allergiesMedical || undefined,
           mayOrderFood: slot.mayOrderFood,
           // Carry the parent's prepaid food choice onto the drop-off line so its
-          // paidTHB flows into the cart total + tax engine (tillTaxInputs routes
-          // prepaid_items → fnb, prepaid_credit → stored_value), exactly as the
+          // paidTHB flows into the cart total + tax engine (the engine's cartUnits
+          // routes prepaid_items → fnb, prepaid_credit → stored_value), exactly as the
           // door flow does via makeDropOffLine. createBooking then persists it on
           // the registration; the band is loaded at check-in (not at booking).
           foodProvision: slot.foodProvision,
@@ -247,8 +359,18 @@ export default function Book() {
   useEffect(() => {
     let cancelled = false;
     loadPublicCatalog(getActiveBranch().id)
-      .then(() => {
-        if (!cancelled) setLiveCatalog('ready');
+      .then((cat) => {
+        if (cancelled) return;
+        // The platform's trading day is "today"; a date the family has not
+        // chosen follows it.
+        const platformToday = cat.rateMode.date;
+        setToday(platformToday);
+        if (!visitDateChosen.current) {
+          setPricingDate(platformToday);
+          setVisitDate(platformToday);
+          setLines(repriceLines);
+        }
+        setLiveCatalog('ready');
       })
       .catch(() => {
         if (!cancelled) setLiveCatalog('offline');
@@ -266,9 +388,64 @@ export default function Book() {
     setContactChannel(channel);
   };
   const [lines, setLines] = useState<CartLine[]>([]);
+
+  /** Point every price at a day, and re-price what is already in the basket. */
+  const chooseVisitDate = (date: string) => {
+    const next = clampVisitDate(date, today);
+    setPricingDate(next);
+    setVisitDate(next);
+    setLines(repriceLines);
+  };
+
+  const handleVisitDateChange = (date: string) => {
+    visitDateChosen.current = true;
+    chooseVisitDate(date);
+  };
+
   const [passes, setPasses] = useState<PassSelection[]>([]);
   const [editingPass, setEditingPass] = useState<PassSelection | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
+  // The booking the checking page waits on, and the QR the platform signed for it.
+  const [checkingId, setCheckingId] = useState<string | null>(null);
+  const [returnHint, setReturnHint] = useState<'completed' | 'failed' | 'unknown'>('unknown');
+  const [signedQr, setSignedQr] = useState<string | null>(null);
+  // What the confirmation says about the day booked, and whether it was used.
+  const [bookedVisitDate, setBookedVisitDate] = useState<string | null>(null);
+  const [bookedRedeemed, setBookedRedeemed] = useState(false);
+
+  /**
+   * THE VISIT DATE (S2-12 fix round 2 — a UI addition, CLAUDE.md §7 rule 2).
+   * Today by default, today at the earliest, sixty days out at the latest.
+   * "Today" is the branch's trading day: this device's reading of it until the
+   * public catalogue arrives, then the platform's (`rateMode.date`). Every
+   * price on the page is the chosen day's (`setPricingDate`), and the booking
+   * sends the date, so the total shown is the total the platform quotes.
+   */
+  const [today, setToday] = useState(() => branchTradingDate());
+  const [visitDate, setVisitDate] = useState(() => branchTradingDate());
+  const visitDateChosen = useRef(false);
+  const { min: minVisitDate, max: maxVisitDate } = visitDateBounds(today);
+
+  // Back from the payment partner's page: wait on the platform, not on the URL.
+  // The link is kept (fix round 2): opening it again shows the confirmation again.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('payment')) return;
+    const bookingId = params.get('booking') ?? readCheckout()?.bookingId ?? null;
+    if (!bookingId) {
+      // Nothing to wait on: a return this browser cannot place.
+      window.history.replaceState(null, '', window.location.pathname);
+      return;
+    }
+    const hint = params.get('payment');
+    setReturnHint(hint === 'completed' || hint === 'failed' ? hint : 'unknown');
+    setCheckingId(bookingId);
+    setStage('checking');
+  }, []);
+
+  // This page prices the chosen day (`chooseVisitDate` sets it); leaving it
+  // hands the rest of the app (the till's routes) back to today.
+  useEffect(() => () => setPricingDate(null), []);
 
   // Active events sellable as online passes (flat entryPriceTHB, parties excluded).
   const activeEvents = useMemo(() => {
@@ -329,7 +506,7 @@ export default function Book() {
   // Synthetic lines model each pass's flat fee so it taxes alongside the basket;
   // they are summed for the total only, never persisted on the booking.
   const passLines = useMemo(() => passes.map((p) => buildPassLine(p, tier)), [passes, tier]);
-  const { total } = computeTotals([...normalizedLines, ...passLines]);
+  const { total } = ticketTotals([...normalizedLines, ...passLines]);
 
   // Per-child resolution for the basket gate.
   const supRows = useMemo(
@@ -581,70 +758,108 @@ export default function Book() {
     if (bookingBusy) return; // double-submit guard
     setBookingBusy(true);
     void (async () => {
-      // Persist the booking on the platform API FIRST — the server recomputes
-      // the ticket total from the database packages (client figure untrusted)
-      // and issues the canonical reference. Failure keeps the customer on the
-      // payment step with a clear message instead of a phantom booking.
+      // The platform prices the booking itself (client figure never charged)
+      // and writes it PENDING; the booking's one payment then opens on the
+      // payment partner's page. The figure this page showed goes with it, and
+      // the platform refuses rather than charge a different one.
       const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(v);
       const serverLines = normalizedLines
         .filter((l) => !l.promoItem && !l.dropOff && isUuid(l.ticketType.id) && (l.kids > 0 || l.adults > 0))
-        .map((l) => ({ packageId: l.ticketType.id, kids: l.kids, adults: l.adults }));
-      let serverReference: string | null = null;
-      if (serverLines.length > 0) {
-        try {
-          const res = await publicApi.createBooking({
-            branchCode: getActiveBranch().id,
-            phone: phone || undefined,
-            parentName: parentName.trim() || nickname.trim() || 'Guest',
-            tier,
-            lines: serverLines,
-            contactChannel,
-            locale: lang,
-            clientSnapshot: { totalTHB: total, passCount: passes.length },
-          });
-          serverReference = res.reference;
-        } catch (err) {
-          setBookingBusy(false);
-          toast({
-            title: "We couldn't confirm your booking",
-            description:
-              err instanceof Error ? err.message : 'Please check your connection and try again.',
-            variant: 'destructive',
-          });
-          return;
-        }
+        .map((l) => ({
+          packageId: l.ticketType.id,
+          kids: l.kids,
+          adults: l.adults,
+          ...(l.socks > 0 ? { socks: l.socks } : {}),
+          ...(l.addOns.length > 0
+            ? { addOns: l.addOns.map((a) => ({ id: a.id, quantity: a.quantity })) }
+            : {}),
+        }));
+      // Online payment covers play tickets, socks and extras (S2-12). A basket
+      // that also holds an event pass or a supervised child would be refused by
+      // the platform at the very end — its quote does not price them (S2-13,
+      // S2-20) — so it is told here, before anything is written, and in words.
+      const bookedAtReception = passes.length > 0 || normalizedLines.some((l) => l.dropOff);
+      if (serverLines.length === 0 || bookedAtReception) {
+        setBookingBusy(false);
+        toast({
+          title: 'Online payment covers play tickets',
+          description: 'Event passes and supervised children are booked at reception.',
+          variant: 'destructive',
+        });
+        return;
       }
-      finalizeBooking(paymentMethod, serverReference);
-      setBookingBusy(false);
+      try {
+        const displayName = parentName.trim() || nickname.trim() || 'Guest';
+        const res = await publicApi.createBooking({
+          branchCode: getActiveBranch().id,
+          phone: phone || undefined,
+          parentName: displayName,
+          tier,
+          // The chosen day: the platform quotes it, and refuses a total that is not its own.
+          visitDate,
+          lines: serverLines,
+          contactChannel,
+          locale: lang,
+          clientSnapshot: { totalTHB: total, passCount: passes.length },
+          displayedTotalSatang: Math.round(total * 100),
+        });
+        const pay = await publicApi.checkoutBooking(res.id, paymentMethod, lang);
+        // What the confirmation page will show about this basket, kept for the
+        // round trip. Children named on this booking are not saved to the
+        // member's profile: the open route this page uses reads a member and
+        // cannot write one (S2-09b, OD-A14).
+        const made = createBooking({
+          memberId: member?.id,
+          tier,
+          lines: normalizedLines,
+          total,
+          paymentMethod,
+          registrant: {
+            parentName: displayName,
+            phone,
+            contactMethod: contactChannel,
+            acknowledgedConfirmations: buildAcknowledgedConfirmations(policy, acknowledgedConfirmationIds),
+          },
+          eventPasses: passes.map((p) => ({
+            eventId: p.event.id,
+            input: buildAttendeeInput(p.form),
+            priceTHB: resolveRateToday(p.event.entryPriceTHB),
+          })),
+        });
+        // The database reference is the one printed on the QR / told to reception.
+        made.reference = res.reference;
+        saveCheckout({ bookingId: res.id, reference: res.reference, name: nickname, booking: made });
+        window.location.assign(paymentPageHref(pay.redirectUrl));
+      } catch (err) {
+        setBookingBusy(false);
+        toast({
+          title: "We couldn't start your payment",
+          description:
+            err instanceof Error ? err.message : 'Please check your connection and try again.',
+          variant: 'destructive',
+        });
+      }
     })();
   };
 
-  const finalizeBooking = (paymentMethod: 'card' | 'promptpay', serverReference: string | null) => {
-    // Children named on this booking are not saved to the member's profile for
-    // next time. The prototype saved them into this browser's fixture members,
-    // which no platform member id matched; the open route this page uses reads
-    // a member and cannot write one (S2-09b).
-    const made = createBooking({
-      memberId: member?.id,
-      tier,
-      lines: normalizedLines,
-      total,
-      paymentMethod,
-      registrant: {
-        parentName: parentName.trim() || nickname.trim() || 'Guest',
-        phone,
-        contactMethod: contactChannel,
-        acknowledgedConfirmations: buildAcknowledgedConfirmations(policy, acknowledgedConfirmationIds),
-      },
-      eventPasses: passes.map((p) => ({
-        eventId: p.event.id,
-        input: buildAttendeeInput(p.form),
-        priceTHB: resolveRateToday(p.event.entryPriceTHB),
-      })),
-    });
-    // The database reference is the one printed on the QR / told to reception.
-    if (serverReference) made.reference = serverReference;
-    setBooking(made);
+  // The platform has the gateway's word that the money arrived: show the
+  // confirmation, with the QR the platform signed for this booking.
+  const handlePaid = (status: PublicBookingStatus) => {
+    const kept = readCheckout();
+    const shown = kept && kept.bookingId === status.id ? kept.booking : bookingFromStatus(status);
+    shown.reference = status.reference;
+    if (kept && kept.bookingId === status.id) setNickname(kept.name);
+    setSignedQr(status.qr);
+    setBookedVisitDate(status.visitDate);
+    setBookedRedeemed(status.status === 'redeemed');
+    setBooking(shown);
+    setCheckingId(null);
+    // Kept, not cleared: the copy and this link are how the page is reopened.
+    try {
+      window.history.replaceState(null, '', confirmationHref(status.id));
+    } catch {
+      // A history the browser will not let us touch: the link it came on still works.
+    }
     setStage('confirmation');
   };
 
@@ -663,6 +878,20 @@ export default function Book() {
     setAcknowledgedConfirmationIds([]);
     setConfirmedSavedIds([]);
     setBooking(null);
+    setCheckingId(null);
+    setReturnHint('unknown');
+    setSignedQr(null);
+    setBookedVisitDate(null);
+    setBookedRedeemed(false);
+    visitDateChosen.current = false;
+    chooseVisitDate(today);
+    // A new booking: the last one's copy and its link go.
+    clearCheckout();
+    try {
+      window.history.replaceState(null, '', window.location.pathname);
+    } catch {
+      // Nothing to strip.
+    }
   };
 
   return (
@@ -703,6 +932,10 @@ export default function Book() {
             onUpdateLine={handleUpdateLine}
             onRemoveLine={handleRemoveLine}
             onContinue={handleContinueFromTickets}
+            visitDate={visitDate}
+            minVisitDate={minVisitDate}
+            maxVisitDate={maxVisitDate}
+            onVisitDateChange={handleVisitDateChange}
           />
         )}
 
@@ -794,10 +1027,22 @@ export default function Book() {
           />
         )}
 
+        {stage === 'checking' && checkingId && (
+          <BookCheckingPayment
+            bookingId={checkingId}
+            hint={returnHint}
+            onPaid={handlePaid}
+            onStartOver={handleStartOver}
+          />
+        )}
+
         {stage === 'confirmation' && booking && (
           <BookConfirmation
             booking={booking}
             name={nickname}
+            qr={signedQr}
+            visitDate={bookedVisitDate}
+            redeemed={bookedRedeemed}
             onStartOver={handleStartOver}
           />
         )}

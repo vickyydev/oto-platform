@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -9,17 +9,25 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { downloadCsv } from '@/lib/csv';
-import { defaultReportFilters, fnbProfitability, merchProfitability, ProfitabilityRow } from '@/lib/reporting';
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, thb } from './shared';
+import {
+  defaultReportFilters,
+  fnbProfitability,
+  merchProfitability,
+  platformCostOfGoods,
+  withLedgerCost,
+  type LedgerCost,
+  type ProfitabilityRow,
+} from '@/lib/reporting';
+import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
 
 function ProfitabilityTable({ rows, exportName, filters }: { rows: ProfitabilityRow[]; exportName: string; filters: { startDate: string; endDate: string } }) {
-  const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
-  const totalCogs = rows.reduce((s, r) => s + r.cogs, 0);
+  const totalRevenue = rows.reduce((s, r) => s + r.revenueSatang, 0);
+  const totalCogs = rows.reduce((s, r) => s + r.cogsSatang, 0);
   const totalMargin = totalRevenue - totalCogs;
 
   return (
     <ReportCard
-      title={`Revenue ${thb(totalRevenue)} · COGS ${thb(totalCogs)} · Margin ${thb(totalMargin)}`}
+      title={`Revenue ${thbFromSatang(totalRevenue)} · COGS ${thbFromSatang(totalCogs)} · Margin ${thbFromSatang(totalMargin)}`}
       action={
         <ExportCsvButton
           onExport={() =>
@@ -29,9 +37,9 @@ function ProfitabilityTable({ rows, exportName, filters }: { rows: Profitability
               rows.map((r) => [
                 r.name,
                 r.qty,
-                r.revenue.toFixed(2),
-                r.cogs.toFixed(2),
-                r.margin.toFixed(2),
+                csvBaht(r.revenueSatang),
+                csvBaht(r.cogsSatang),
+                csvBaht(r.marginSatang),
                 r.marginPercent.toFixed(1),
                 r.costTracked ? 'yes' : 'no',
               ])
@@ -64,9 +72,9 @@ function ProfitabilityTable({ rows, exportName, filters }: { rows: Profitability
                 )}
               </TableCell>
               <TableCell className="text-right tabular-nums">{r.qty}</TableCell>
-              <TableCell className="text-right tabular-nums">{thb(r.revenue)}</TableCell>
-              <TableCell className="text-right tabular-nums">{thb(r.cogs)}</TableCell>
-              <TableCell className="text-right tabular-nums">{thb(r.margin)}</TableCell>
+              <TableCell className="text-right tabular-nums">{thbFromSatang(r.revenueSatang)}</TableCell>
+              <TableCell className="text-right tabular-nums">{thbFromSatang(r.cogsSatang)}</TableCell>
+              <TableCell className="text-right tabular-nums">{thbFromSatang(r.marginSatang)}</TableCell>
               <TableCell className="text-right tabular-nums">
                 {r.costTracked ? `${r.marginPercent.toFixed(1)}%` : '—'}
               </TableCell>
@@ -85,8 +93,21 @@ function ProfitabilityTable({ rows, exportName, filters }: { rows: Profitability
  */
 export function ProfitabilityReportPanel() {
   const [filters, setFilters] = useState(defaultReportFilters());
-  const fnbRows = useMemo(() => fnbProfitability(filters), [filters]);
-  const merchRows = useMemo(() => merchProfitability(filters), [filters]);
+  // S2-14b round 4 — cost of goods from the stock ledger, at the cost frozen on
+  // each sale line; the catalogue's cost only where the ledger holds nothing.
+  const [ledger, setLedger] = useState<Map<string, LedgerCost> | null>(null);
+  useEffect(() => {
+    let live = true;
+    setLedger(null);
+    platformCostOfGoods(filters)
+      .then((answer) => live && setLedger(answer))
+      .catch(() => live && setLedger(null));
+    return () => {
+      live = false;
+    };
+  }, [filters]);
+  const fnbRows = useMemo(() => withLedgerCost(fnbProfitability(filters), ledger), [filters, ledger]);
+  const merchRows = useMemo(() => withLedgerCost(merchProfitability(filters), ledger), [filters, ledger]);
   const anyUntracked = [...fnbRows, ...merchRows].some((r) => !r.costTracked && r.qty > 0);
 
   return (

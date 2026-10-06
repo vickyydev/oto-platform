@@ -4,8 +4,15 @@ import type { FastifyBaseLogger } from 'fastify';
 import { opsExpectation, opsLast, type AlertSeverity, type Db } from '@oto/db';
 import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
-import { expireStaleCommands, markSilentBoxesOffline, purgeOldBoxHeartbeats } from './box';
+import { BOOTH_DUTY_JOB, runMorningBoothDutySync } from './booth-duty';
+import {
+  expireStaleCommands,
+  markSilentBoxesOffline,
+  purgeOldBoxHeartbeats,
+  withinOpeningHours,
+} from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
+import { OCCUPANCY_JOB, runOccupancyJob } from './occupancy';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import {
@@ -26,6 +33,12 @@ import {
   purgeOldSyncEvents,
   syncSettings,
 } from './sync';
+import { runStockDailyJob, STOCK_DAILY_JOB } from './stock';
+import { runWalletExpiryJob, runWalletLiabilityJob } from './wallet';
+
+/** S2-14a round 3 — the wallet day-end jobs, named once (the runner, the tests, the Health page). */
+export const WALLET_EXPIRY_JOB = 'job:wallet.expiry';
+export const WALLET_LIABILITY_JOB = 'job:wallet.liability';
 
 /**
  * The job runner and the watchdog (S2-03).
@@ -470,9 +483,106 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
      */
     {
       name: 'job:payments.pending',
-      description: 'Flags payment attempts with no outcome on the Failures page, and clears the flag when they are answered',
+      description: 'Flags payment attempts with no outcome on the Failures page, clears the flag when they are answered, and ends unpaid booking holds that have run out',
       intervalSeconds: 60,
-      run: async ({ db, env, now }) => ({ detail: await flagPendingPayments(db, env, now) }),
+      run: async ({ db, env, log, now }) => ({ detail: await flagPendingPayments(db, env, now, log) }),
+    },
+    /**
+     * `job:booth.duty_sync` — THE DAY'S BOOTH STAFF, AT THE BRANCH'S OPEN
+     * (SCRUM-473, plan D4).
+     *
+     * A five-minute tick that does the work once per booth per trading day:
+     * the first tick at which the branch is open and the booth has no sync
+     * recorded for today reads the OTO App's schedule and writes the day's
+     * roster (`runMorningBoothDutySync` in `services/booth-duty.ts`). Every
+     * other tick finds nothing due and costs one query per booth. "Sync now"
+     * in the Console is the same sync on demand, and a booth synced that way
+     * is not synced again by this job the same day.
+     */
+    {
+      name: BOOTH_DUTY_JOB,
+      description: "Reads the OTO App's schedule at each branch's open and writes the day's booth staff",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({
+        detail: await runMorningBoothDutySync(db, now, withinOpeningHours),
+      }),
+    },
+    /**
+     * `job:occupancy.facts` — THE HEAD COUNT, KEPT (S2-12 round 4).
+     *
+     * Every five minutes, for each branch with a gate: the live occupancy
+     * projection at the current quarter-hour and the two hours before it,
+     * upserted into `analytics.fact_occupancy_15min` (recomputed rather than
+     * appended, so a passage from a gate box that was offline corrects the
+     * buckets it belongs to); then the day-end clear of the trading days that
+     * have ended — a week back, so a job that was down across a boundary still
+     * closes the days it missed — which audits any group the gate still
+     * counted inside at the boundary (`services/occupancy.ts`). Five minutes
+     * so every quarter-hour is sampled at least twice.
+     */
+    {
+      name: OCCUPANCY_JOB,
+      description:
+        "Writes each gate branch's head count per quarter-hour and records the groups still counted inside when a trading day ends",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runOccupancyJob(db, now) }),
+    },
+    /**
+     * `job:wallet.expiry` — THE BRANCH'S DAY ENDS, ITS CREDIT EXPIRES (S2-14a
+     * round 3, plan §2.5).
+     *
+     * Every five minutes, for each live branch, the trading days that have
+     * ENDED — a week back, as the occupancy day-end does, so a job that was
+     * down across a boundary still closes the days it missed: every wallet
+     * whose credit's expiry (recorded from the branch's `wallet_policy` when it
+     * was granted — same day, N days, never) has passed loses what it held
+     * through that day, as an `expire` entry keyed by branch, date and wallet
+     * (`expireWalletsForDay` in `services/wallet.ts`). A rerun writes nothing
+     * new. A counter cannot spend credit in the minutes between the boundary
+     * and this tick: the spend checks the expiry's clock as well as the status.
+     */
+    {
+      name: WALLET_EXPIRY_JOB,
+      description: "Expires each branch's wallet credit at the end of its trading day, by the branch's wallet policy",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runWalletExpiryJob(db, now) }),
+    },
+    /**
+     * `job:wallet.liability` — THE OFFICE'S DAILY STORED-VALUE FACT (round 3).
+     *
+     * After the expiry above (array order is run order in `runDue`), each live
+     * branch's ended days are recomputed from the ledger into
+     * `analytics.fact_wallet_liability_daily` — granted, spent, refunded back,
+     * expired, reactivated, outstanding — and upserted only when a figure
+     * moved, so a quiet tick writes nothing and a late offline spend corrects
+     * the day it belongs to. outstanding(D) = outstanding(D-1) + granted -
+     * spent + refunded - expired + reactivated, exactly (wallet-r3-figures).
+     */
+    {
+      name: WALLET_LIABILITY_JOB,
+      description: "Writes each branch's daily wallet liability (granted, spent, refunded, expired, outstanding) from the ledger",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runWalletLiabilityJob(db, now) }),
+    },
+    /**
+     * `job:stock.daily` — THE OFFICE'S DAILY STOCK FACT AND THE SLIDING
+     * REORDER POINT (S2-14b round 4, plan §2.5).
+     *
+     * Every five minutes, for each live branch, the trading days that have
+     * ENDED — a week back, as the wallet jobs do — recomputed from the stock
+     * ledger into `analytics.fact_stock_daily` per size (opening, sold,
+     * refunded, received, transferred, adjusted, counted, closing, value) and
+     * upserted only where a figure moved, so a quiet tick writes nothing and a
+     * late offline sale corrects the day it belongs to; closing = opening +
+     * the day's movements, sign-exact (`stockDayFacts`). Then the branch's
+     * low-stock attention is re-read whole: the 30-day usage window behind the
+     * trend reorder point (OD-27) slides with the date, not with a movement.
+     */
+    {
+      name: STOCK_DAILY_JOB,
+      description: "Writes each branch's daily stock fact per size from the ledger and re-reads its low-stock alerts as the 30-day usage window slides",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runStockDailyJob(db, now) }),
     },
   ];
 }

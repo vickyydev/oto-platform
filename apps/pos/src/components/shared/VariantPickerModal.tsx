@@ -2,10 +2,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 
 /**
- * A size the picker offers: an inventory variant with its count, or a size the
- * platform defines on the item (S2-09b), which has no count yet — stock per
- * size is S2-14b. A size with no count is offered with no badge and is never
- * greyed out, because "unknown" is not "none left".
+ * A size the picker offers, with the count the platform holds for it when the
+ * item is stock-tracked (S2-14b, `api/stock.ts` — what the whole branch holds,
+ * the number its guard counts). A size with no count — an item nobody tracks —
+ * is offered with no badge and is never greyed out, because "unknown" is not
+ * "none left". A size counted out is greyed out on its own; its siblings stay
+ * on sale.
  */
 export interface PickableVariant {
   id: string;

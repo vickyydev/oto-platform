@@ -1,10 +1,26 @@
 import { z } from 'zod';
 import type { FastifyRequest } from 'fastify';
-import { TaxableCategorySchema, type Permission } from '@oto/shared';
+import { and, eq } from 'drizzle-orm';
+import { member, sale } from '@oto/db';
+import {
+  CartBandHolderSchema,
+  CartPrepaidSchema,
+  REFUND_MODES,
+  SALE_REPRINT_KINDS,
+  TaxableCategorySchema,
+  WalletTenderInstructionSchema,
+  normalizePhone,
+  type Permission,
+} from '@oto/shared';
 import type { App } from '../app';
-import { errors } from '../lib/errors';
+import { AppError, errors } from '../lib/errors';
 import { PermissionDeniedError } from '../plugins/session';
 import { branchReach } from '../services/access-control';
+import { findBandsByCode } from '../services/bands';
+import { refundsOfSale } from '../services/refund-slices';
+import { refundSale, settleGatewayRefunds, type RefundActor } from '../services/refunds';
+import { reprintSale } from '../services/sale-printing';
+import { gatewayFor } from '../services/payments/gateway';
 import { opCtx, withTx } from '../services/tx';
 import { queueDrawerKick, type DrawerKick } from '../services/payments/drawer';
 import {
@@ -138,29 +154,59 @@ const CartItemLine = z.object({
     .nullish(),
   /** What the screen showed. Reconciled against the platform's price, never charged. */
   lineTotalSatang: z.number().int().min(0).optional(),
+  /**
+   * SCRUM-494 — served from the band holder's prepaid items: priced at ฿0 and
+   * checked against what is left on the child's stay.
+   */
+  prepaid: CartPrepaidSchema.nullish(),
 });
 
-const ManualDiscount = z.object({
-  id: z.string().uuid(),
-  scope: z.enum(['order', 'line']),
-  targetLineId: z.string().uuid().optional(),
-  targetComponent: ComponentTarget.optional(),
-  targetLabel: z.string().max(120).optional(),
-  type: z.enum(['percent', 'fixed', 'comp']),
-  /** A percentage for `percent`, satang for `fixed`, ignored for `comp`. */
-  value: z.number().min(0).max(100_000_000).default(0),
-  /** Required: a discount with no reason is what the discounts report exists to stop. */
-  reason: z.string().min(1).max(120),
-  note: z.string().max(500).optional(),
-  /**
-   * The till names who applied it; the platform records the SESSION's account
-   * instead, because that is the one it authenticated. Accepted so the till's
-   * payload validates, and ignored.
-   */
-  appliedByAccountId: z.string().uuid().optional(),
-  appliedByName: z.string().max(160).optional(),
-  appliedAt: z.string().max(40).optional(),
-});
+/**
+ * SCRUM-271 — A DISCOUNT THAT CARRIES MONEY CARRIES WHOLE SATANG.
+ *
+ * Every other money field on this route is named for its unit and declared
+ * `.int()`, and `test/money-fields.test.ts` walks the OpenAPI document to keep
+ * it so. A discount's `value` cannot be: it is a percentage for `percent` —
+ * which may be 12.5 — and satang for `fixed` (and, on a promo, for a free
+ * item's price). So the whole-satang rule is checked here, on the types that
+ * carry money, and a fraction of a satang is refused by name rather than
+ * reaching an engine that works in integers.
+ */
+function wholeSatangWhenMoney(moneyTypes: readonly string[]) {
+  return (discount: { type: string; value: number }, ctx: z.RefinementCtx) => {
+    if (moneyTypes.includes(discount.type) && !Number.isInteger(discount.value)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['value'],
+        message: `A ${discount.type} discount's value is money, and money is whole satang`,
+      });
+    }
+  };
+}
+
+const ManualDiscount = z
+  .object({
+    id: z.string().uuid(),
+    scope: z.enum(['order', 'line']),
+    targetLineId: z.string().uuid().optional(),
+    targetComponent: ComponentTarget.optional(),
+    targetLabel: z.string().max(120).optional(),
+    type: z.enum(['percent', 'fixed', 'comp']),
+    /** A percentage for `percent`, satang for `fixed`, ignored for `comp`. */
+    value: z.number().min(0).max(100_000_000).default(0),
+    /** Required: a discount with no reason is what the discounts report exists to stop. */
+    reason: z.string().min(1).max(120),
+    note: z.string().max(500).optional(),
+    /**
+     * The till names who applied it; the platform records the SESSION's account
+     * instead, because that is the one it authenticated. Accepted so the till's
+     * payload validates, and ignored.
+     */
+    appliedByAccountId: z.string().uuid().optional(),
+    appliedByName: z.string().max(160).optional(),
+    appliedAt: z.string().max(40).optional(),
+  })
+  .superRefine(wholeSatangWhenMoney(['fixed']));
 
 /**
  * A park promo code as the till applied it. SCRUM-401 — ONLY `code` IS PRICED:
@@ -180,6 +226,7 @@ const Promo = z
     freeItemKind: z.enum(['menu', 'merch']).optional(),
     target: z.unknown().optional(),
   })
+  .superRefine(wholeSatangWhenMoney(['fixed', 'free_item']))
   .describe(
     "A promo code as the till applied it. Only the code is priced, from the park's own " +
       'definition; the type, value and target beside it are the till’s and move no money.',
@@ -207,7 +254,11 @@ const Cart = z.object({
    */
   channel: z.enum(['till', 'fnb', 'shop']).optional(),
   memberId: z.string().uuid().nullish(),
-  /** Ignored for pricing; reported back when it differs from the platform's. */
+  /**
+   * The tier staff picked. Prices the cart only when it is the operator's
+   * default tier (`resolveTier` in services/sale.ts); otherwise reported back
+   * when it differs from the platform's.
+   */
   tier: z.string().max(40).optional(),
   /**
    * SCRUM-307 — the action id of a document check reception recorded through
@@ -249,10 +300,22 @@ const Cart = z.object({
   customerPhone: z.string().max(40).nullish(),
   customerNickname: z.string().max(120).nullish(),
   expectedTotalSatang: z.number().int().min(0).optional(),
+  /**
+   * SCRUM-494 — the child's stay behind the band the F&B order was taken
+   * against (`GET /wallets/scan`), and the food-consent override when staff
+   * recorded one. The prep ticket prints that child's own allergy line.
+   */
+  bandHolder: CartBandHolderSchema.nullish(),
 });
 
 /** The till sends the cart nested under `cart`; a curl sends it flat. */
 const CommitBody = Cart.extend({
+  /**
+   * The sale's id, minted by the till (UUIDv7) with every line's (SCRUM-270,
+   * OD-12). The same id with the same line ids is a replay, answered with the
+   * sale under `x-oto-replay`; the same id with other line ids is refused
+   * `409 SALE_LINES_DIFFER` (`commitSale`).
+   */
   id: z.string().uuid().optional(),
   actionId: z.string().min(1).max(200).optional(),
   cart: Cart.optional(),
@@ -296,7 +359,47 @@ const FinaliseBody = Tender.extend({
   actionId: z.string().min(1).max(200).optional(),
   /** S2-09b — the pick-up code, for a food order committed without one. */
   pickupCode: z.string().max(12).optional(),
+  /**
+   * S2-14a round 2 — the scanned wallet and "use credit" (or an exact figure).
+   * The platform writes the wallet tender itself, first; the tender above, if
+   * any, settles what is left (cash when it names no method).
+   */
+  wallet: WalletTenderInstructionSchema.optional(),
 }).nullish();
+
+/**
+ * S2-11 — a refund, as History's Refund dialog sends it (`RefundModal.tsx`).
+ * `lineIds` for a by-item refund, `amountSatang` for a custom one; a whole
+ * refund names neither. What it may NOT name is where the money goes: that is
+ * the platform's allocation, wallet → same tender → cash.
+ */
+const RefundBody = z
+  .object({
+    mode: z.enum(REFUND_MODES),
+    lineIds: z.array(z.string().uuid()).min(1).max(200).optional(),
+    amountSatang: z.number().int().min(1).max(10_000_000_000).optional(),
+    /** Required, as a void's is. */
+    reason: z.string().trim().min(1).max(120),
+    note: z.string().max(500).nullish(),
+    actionId: z.string().min(1).max(200).optional(),
+  })
+  .refine((b) => b.mode !== 'items' || (b.lineIds?.length ?? 0) > 0, {
+    message: 'A by-item refund names the lines it covers',
+    path: ['lineIds'],
+  })
+  .refine((b) => b.mode !== 'custom' || b.amountSatang !== undefined, {
+    message: 'A custom refund names its amount',
+    path: ['amountSatang'],
+  });
+
+const ReprintBody = z.object({
+  /** `TransactionDetail.tsx:171-197`: the receipt, a band group, the pick-up ticket, a shop receipt. */
+  kind: z.enum(SALE_REPRINT_KINDS),
+  /** Where to print it. Defaults to the station this session is at, then the sale's own. */
+  stationId: z.string().uuid().optional(),
+  reason: z.string().trim().max(200).optional(),
+  actionId: z.string().min(1).max(200).optional(),
+});
 
 export async function saleRoutes(app: App): Promise<void> {
   /**
@@ -370,7 +473,10 @@ export async function saleRoutes(app: App): Promise<void> {
           'Record a ticket sale. It is written unfinalised and with no receipt number; ' +
           'the tender at /sales/:id/finalise closes it. A ฿0 comp has nothing to tender, ' +
           'so `finalise` may close it here; the ticket and F&B tills leave it open instead ' +
-          'and close it at their confirm press, so it can still be voided until then.',
+          'and close it at their confirm press, so it can still be voided until then. ' +
+          'The till names the sale and every line: the same sale id with the same line ids ' +
+          'answers with the recorded sale under x-oto-replay, and with other line ids is ' +
+          'refused 409 SALE_LINES_DIFFER.',
         body: CommitBody,
       },
     },
@@ -435,17 +541,33 @@ export async function saleRoutes(app: App): Promise<void> {
           'Take the tender and close the sale: record the payment attempt, allocate the ' +
           'receipt number, finalise. An empty body settles the balance in cash. A sale ' +
           'that owes nothing — a ฿0 comp, a voucher’s free item on its own — is closed ' +
-          'with no payment recorded, and its voucher is used up here.',
+          'with no payment recorded, and its voucher is used up here. The call that closes the ' +
+          'sale also queues its paper (S2-11): `printing` carries the print jobs — a receipt; a ' +
+          'kids band per child and an adult band per adult, each with its signed code; an item ' +
+          'voucher per add-on; a prep ticket per kitchen or bar station — the bands issued, and ' +
+          'the "not printed" notes for a station with no printer for a role. Printing never ' +
+          'fails the sale.',
         params: z.object({ id: z.string().uuid() }),
         body: FinaliseBody,
       },
     },
     async (req, reply) => {
-      const actor = actorOf(req, 'pos:sale:update');
       const body = req.body ?? {};
+      const saleActor = actorOf(req, 'pos:sale:update');
+      // S2-14a — spending a wallet needs `pos:wallet:spend` at the sale's own
+      // branch as well, checked when the service has the row.
+      const actor: ActorContext = body.wallet
+        ? {
+            ...saleActor,
+            assertBranchAllowed: async (branchId: string) => {
+              await saleActor.assertBranchAllowed?.(branchId);
+              await req.requirePermission('pos:wallet:spend', { branchId });
+            },
+          }
+        : saleActor;
       // The till sends the tender both nested and flat; either reading is the
       // same tender, so the nested one wins and the flat one is the fallback.
-      const tender = body.tender ?? {
+      const flat = {
         method: body.method,
         kind: body.kind,
         amountSatang: body.amountSatang,
@@ -453,6 +575,10 @@ export async function saleRoutes(app: App): Promise<void> {
         changeSatang: body.changeSatang,
         reference: body.reference,
       };
+      // S2-14a — a wallet press naming no tender at all spends the credit and
+      // leaves the remainder owed; without a wallet, an empty body is cash.
+      const namesTender = body.tender !== undefined || Object.values(flat).some((v) => v !== undefined);
+      const tender = body.tender ?? (namesTender || !body.wallet ? flat : undefined);
       const headerActionId = req.headers['x-oto-action-id'];
       let drawerKick: DrawerKick | null = null;
       const answer = await withTx(app.db, opCtx(req), 'sale.finalise', async (tx) => {
@@ -461,6 +587,9 @@ export async function saleRoutes(app: App): Promise<void> {
           actionId:
             body.actionId ?? (typeof headerActionId === 'string' ? headerActionId : null) ?? null,
           ...(body.pickupCode ? { pickupCode: body.pickupCode } : {}),
+          ...(body.wallet ? { wallet: body.wallet } : {}),
+          // SCRUM-494 — the counter is confirming now: a prepaid line it can no longer serve is refused.
+          prepaidGate: 'refuse',
         });
         const { drawerKick: kick, ...response } = result;
         drawerKick = kick;
@@ -590,12 +719,189 @@ export async function saleRoutes(app: App): Promise<void> {
     },
   );
 
+  /**
+   * S2-11 — History's search box, for the two things a guest hands over at the
+   * desk: a band, and a phone. A band is found by its full signed code (what a
+   * scanner reads off the QR) or by its short code (`T1-7KMQ4X`, printed under
+   * the QR and on the receipt); a phone is normalised the way every phone in
+   * the platform is and finds every sale of the member(s) holding it. Scoped
+   * exactly as the list is: one branch named and checked, or the branches the
+   * caller's grants reach.
+   */
+  app.get(
+    '/lookup',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Find sales by a band code or short code (`band`) or by a member phone in any format (`phone`) — one of the two. Answers the list shape of `GET /sales`, plus what matched. Branch-scoped as the list is.',
+        querystring: z
+          .object({
+            band: z.string().trim().min(1).max(80).optional(),
+            phone: z.string().trim().min(1).max(40).optional(),
+            branchId: z.string().uuid().optional(),
+            limit: z.coerce.number().int().min(1).max(200).default(50),
+          })
+          .refine((q) => Boolean(q.band) !== Boolean(q.phone), {
+            message: 'Search by a band or by a phone — one of the two',
+          }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const branchId = req.query.branchId ?? auth.branchId ?? undefined;
+      let branchIds: string[] | undefined;
+      if (branchId) {
+        await req.requirePermission('pos:sale:read', { branchId });
+      } else {
+        const reach = branchReach(await req.effectivePermissions(), 'pos:sale:read', auth.operatorId);
+        if (reach.kind === 'branches') {
+          if (reach.branchIds.length === 0) throw new PermissionDeniedError('pos:sale:read');
+          branchIds = reach.branchIds;
+        }
+      }
+      const scope = { branchId, branchIds, limit: req.query.limit, offset: 0 };
+      if (req.query.band) {
+        const bands = await findBandsByCode(app.db, auth.operatorId, req.query.band);
+        const found = await listSales(app.db, auth.operatorId, {
+          ...scope,
+          saleIds: [...new Set(bands.map((b) => b.saleId))],
+        });
+        return {
+          match: { by: 'band' as const, bandIds: bands.map((b) => b.id) },
+          ...found,
+        };
+      }
+      const phone = normalizePhone(req.query.phone ?? '');
+      if (!phone) {
+        throw new AppError(400, 'PHONE_INVALID', 'That is not a phone number this platform can read');
+      }
+      const members = await app.db
+        .select({ id: member.id })
+        .from(member)
+        .where(and(eq(member.operatorId, auth.operatorId), eq(member.phone, phone)));
+      const found = await listSales(app.db, auth.operatorId, {
+        ...scope,
+        memberIds: members.map((m) => m.id),
+      });
+      return { match: { by: 'phone' as const, phone, memberIds: members.map((m) => m.id) }, ...found };
+    },
+  );
+
+  /**
+   * S2-11 — REFUND A FINALISED SALE (`mockApi.ts:recordRefund`, with the plan's
+   * manager approval). Reception may open the dialog — the route takes
+   * `pos:refund:create` — and is refused `REFUND_APPROVAL_REQUIRED` at the
+   * press unless the account also holds `pos:refund:approve` at the sale's
+   * branch. Online only: a station forced offline is refused before the key is
+   * claimed, and the till queues a "refund requested" note instead.
+   */
+  app.post(
+    '/:id/refunds',
+    {
+      config: { permission: 'pos:refund:create', stationTrading: true },
+      schema: {
+        description:
+          'Refund a finalised sale: the whole of what is left, chosen lines, or a custom amount, clamped to what is left, with a reason. Needs `pos:refund:approve` at the sale’s branch (403 `REFUND_APPROVAL_REQUIRED` without it). Numbered from the station’s refund series. The money goes back wallet → same tender → cash: a whole card tender is voided on its terminal (the answer arrives from the box; a refusal falls back to cash), a gateway QR is refunded through the gateway after the refund commits, cash is handed back. The sale walks paid → partially_refunded → refunded. Replaying the same `actionId` answers the refund it recorded.',
+        params: z.object({ id: z.string().uuid() }),
+        body: RefundBody,
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const headerActionId = req.headers['x-oto-action-id'];
+      const actor: RefundActor = {
+        accountId: auth.accountId,
+        operatorId: auth.operatorId,
+        stationId: auth.stationId,
+        requestId: req.id,
+        assertBranchAllowed: async (branchId) => {
+          await req.requirePermission('pos:refund:create', { branchId });
+        },
+        assertCanApprove: async (branchId) => {
+          try {
+            await req.requirePermission('pos:refund:approve', { branchId });
+          } catch (err) {
+            if (err instanceof PermissionDeniedError) {
+              throw new AppError(
+                403,
+                'REFUND_APPROVAL_REQUIRED',
+                'A refund needs a manager’s approval — ask a manager to make it',
+              );
+            }
+            throw err;
+          }
+        },
+      };
+      const result = await withTx(app.db, opCtx(req), 'sale.refund', (tx) =>
+        refundSale(tx, actor, req.params.id, {
+          mode: req.body.mode,
+          lineIds: req.body.lineIds,
+          amountSatang: req.body.amountSatang,
+          reason: req.body.reason,
+          note: req.body.note ?? null,
+          actionId:
+            req.body.actionId ?? (typeof headerActionId === 'string' ? headerActionId : null) ?? null,
+        }),
+      );
+      if (result.replay) reply.header('x-oto-replay', 'true');
+      const gatewayPending = result.refund.tenderAllocation.some(
+        (slice) => slice.route === 'gateway_refund' && slice.status === 'pending',
+      );
+      if (!gatewayPending) return result;
+      // After the commit: a call to the gateway's server must not hold the
+      // sale's row lock. The answer then carries the slice as it ended.
+      await settleGatewayRefunds(app.db, opCtx(req), result.refund.id, gatewayFor(app.env, req.log).qr);
+      const refreshed = (await refundsOfSale(app.db, req.params.id)).find((r) => r.id === result.refund.id);
+      return refreshed ? { ...result, refund: refreshed } : result;
+    },
+  );
+
+  /**
+   * S2-11 — HISTORY'S REPRINT (`TransactionDetail.tsx:171-212`,
+   * `mockApi.ts:recordReprint`). A new print job per printout, `reprint_of`
+   * naming the original, an audit row each; a band reprint keeps the band and
+   * its code and marks the paper it replaces.
+   */
+  app.post(
+    '/:id/reprints',
+    {
+      config: { permission: 'pos:print:reprint', stationTrading: true },
+      schema: {
+        description:
+          'Print a finalised sale’s paper again: `receipt` (or `merch_receipt`), `kids_bands`, `adult_bands`, or `prep` (the F&B pick-up tickets). Each copy is a new print job whose `reprintOf` names the original, with an audit row. A band keeps its id and code; its old print is marked replaced by a `reprinted` band event. Prints at the station this session is at unless `stationId` names another at the same park.',
+        params: z.object({ id: z.string().uuid() }),
+        body: ReprintBody,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const [found] = await app.db.select().from(sale).where(eq(sale.id, req.params.id)).limit(1);
+      if (!found || found.operatorId !== auth.operatorId) throw errors.notFound('Sale not found');
+      await req.requirePermission('pos:print:reprint', { branchId: found.branchId });
+      const headerActionId = req.headers['x-oto-action-id'];
+      const actionId =
+        req.body.actionId ?? (typeof headerActionId === 'string' ? headerActionId : null) ?? req.id;
+      return withTx(app.db, opCtx(req), 'sale.reprint', async (tx) => {
+        const [row] = await tx.select().from(sale).where(eq(sale.id, found.id)).limit(1);
+        if (!row) throw errors.notFound('Sale not found');
+        return reprintSale(
+          tx,
+          { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id, stationId: auth.stationId },
+          row,
+          { kind: req.body.kind, stationId: req.body.stationId ?? null, reason: req.body.reason ?? null, actionId },
+        );
+      });
+    },
+  );
+
   app.get(
     '/:id',
     {
       config: { permission: 'pos:sale:read' },
       schema: {
-        description: 'One sale with its lines and discounts — the Sale detail view',
+        description:
+          'One sale with its lines, discounts and payment attempts — the Sale detail view — and, since S2-11, its refunds (`refunds`, `refundStatus`, `refundableSatang`), its print jobs with reprints marked by `reprintOf` (`printJobs`) and its bands by short code (`bands`).',
         params: z.object({ id: z.string().uuid() }),
       },
     },

@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 import type { DisplayMerchCart, DisplayPayment, DisplayTotals } from '@oto/shared';
-import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
+import { taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { creditCoversOrder, guestLeftToPaySatang } from '@/lib/guestPayment';
 import { Sparkles, Wallet, ShoppingBag, PartyPopper, Banknote, CreditCard,
   BadgePercent, QrCode as QrCodeIcon, Loader2 } from 'lucide-react';
 
@@ -13,13 +14,13 @@ const discountDetail = (discount: Discount) => discount.type === 'comp' ? 'Comp 
   : discount.type === 'percent' ? `${discount.value}% off` : `฿${discount.value} off`;
 
 function taxRows(totals: DisplayTotals) {
-  const captured: TaxBreakdown = { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0,
+  const captured: TaxBreakdownBaht = { netSubtotal: 0, discountTotal: 0, exclusiveTaxTotal: 0,
     inclusiveTaxTotal: 0, taxTotal: 0, grandTotal: totals.total,
     serviceChargeTotal: totals.taxBreakdown.serviceChargeTotal,
     categories: totals.taxBreakdown.categories.map(category => ({ ...category, category: 'merch',
       base: 0, taxPercent: 0, serviceCharge: 0, secondaryTaxPercent: 0, gross: 0 })),
   };
-  return summarizeTax(captured);
+  return taxRowsOf(captured);
 }
 
 function Shell({ children }: { children: ReactNode }) {
@@ -101,7 +102,7 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
             <span className="text-lg font-bold tabular-nums">−฿{totals.manualAmounts[discount.id]}</span>
           </div>)}
         {taxRows(totals).map(row => <div key={row.key} className="flex items-center justify-between mb-2 text-foreground/60">
-          <span className="text-lg">{row.label}</span><span className="text-lg tabular-nums">฿{roundTHB(row.amount)}</span>
+          <span className="text-lg">{row.label}</span><span className="text-lg tabular-nums">฿{row.amount}</span>
         </div>)}
         <div className="flex items-center justify-between"><span className="text-2xl text-foreground/70">{t('common.total')}</span>
           <span className="text-5xl font-black text-primary tabular-nums">฿{totals.total}</span></div>
@@ -109,6 +110,15 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
     </Shell>;
   }
   if (stage === 'payment' && payment) {
+    // S2-14a round 2 — the credit the station is really taking (the payment
+    // frame's figure, never a balance this screen cannot hold): the
+    // prototype's "From your credit / Left to pay" rows, on the production device.
+    const creditUsed = (payment.creditSatang ?? 0) / 100;
+    // Staging F2 — left to pay is never more than the purchase less that
+    // credit: a guest whose credit covers it is not asked to pay it again.
+    const orderSatang = totals ? Math.round(totals.total * 100) : null;
+    const leftToPay = guestLeftToPaySatang(payment, orderSatang) / 100;
+    const coveredByCredit = creditCoversOrder(payment, orderSatang);
     if (payment.online && payment.status === 'pending' && (payment.qrPayload || payment.qrImageUrl)) {
       return <Shell><div className="flex-1 flex flex-col items-center justify-center text-center px-10 transition-none animate-in fade-in zoom-in-95 duration-500">
         <div className="inline-flex items-center gap-2 text-(--cd-violet) mb-4"><QrCodeIcon className="w-6 h-6" />
@@ -116,7 +126,8 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
         <h2 className="text-4xl font-black mb-6">{t('merch.payment.scanToPay')}</h2>
         <div className="bg-white rounded-3xl p-6 shadow-2xl shadow-violet-500/20">
           <PaymentQr payload={payment.qrPayload} imageUrl={payment.qrImageUrl} className="w-64 h-64" /></div>
-        <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{payment.amountSatang / 100}</div>
+        <div className="text-6xl font-black text-(--cd-violet) mt-8 tabular-nums">฿{leftToPay}</div>
+        {creditUsed > 0 && <p className="text-lg text-foreground/60 mt-3">{t('merch.payment.paidFromCredit', { amount: String(creditUsed) })}</p>}
         <PaymentExpiry expiresAt={payment.expiresAt} />
         <p className="text-xl text-foreground/60 mt-4 max-w-md">{t('merch.payment.openBankingApp')}</p>
         <div className="flex items-center gap-3 mt-6 text-foreground/50 text-lg"><Loader2 className="w-5 h-5 animate-spin" />{t('merch.payment.waiting')}</div>
@@ -125,12 +136,17 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
     return <Shell><div className="flex-1 flex flex-col items-center justify-center text-center px-10 transition-none animate-in fade-in zoom-in-95 duration-500">
       <div className="w-24 h-24 rounded-full bg-primary/15 flex items-center justify-center text-primary mb-8"><Wallet className="w-12 h-12" /></div>
       <p className="text-2xl text-foreground/70 mb-6">{t('merch.payment.amountToPay')}</p>
-      <div className="w-full max-w-md space-y-3"><div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
-        <span className="flex items-center gap-3 text-xl text-foreground/80"><Banknote className="w-6 h-6 text-foreground/60" />{t('merch.payment.toPay')}</span>
-        <span className="text-4xl font-black tabular-nums">฿{payment.amountSatang / 100}</span></div></div>
+      <div className="w-full max-w-md space-y-3">
+        {creditUsed > 0 && <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
+          <span className="flex items-center gap-3 text-xl text-foreground/80"><Wallet className="w-6 h-6 text-primary" />{t('merch.payment.fromCredit')}</span>
+          <span className="text-2xl font-black text-primary tabular-nums">฿{creditUsed}</span></div>}
+        <div className="flex items-center justify-between bg-foreground/5 rounded-2xl px-6 py-4 border border-foreground/10">
+          <span className="flex items-center gap-3 text-xl text-foreground/80"><Banknote className="w-6 h-6 text-foreground/60" />
+            {creditUsed > 0 ? t('merch.payment.leftToPay') : t('merch.payment.toPay')}</span>
+          <span className="text-4xl font-black tabular-nums">฿{leftToPay}</span></div></div>
       <p className="text-xl text-foreground/60 mt-8">{!payment.online ? t('till.payment.reconnect') : payment.offline ? t('till.payment.offlineRecorded')
         : payment.status === 'pending' ? t('merch.payment.waiting') : payment.status === 'paid' ? t('till.payment.received')
-          : payment.status === 'blocked' ? t('till.payment.checking') : t('merch.payment.confirmWithStaff')}</p>
+          : payment.status === 'blocked' ? t('till.payment.checking') : coveredByCredit ? t('merch.payment.coveredByCredit') : t('merch.payment.confirmWithStaff')}</p>
     </div></Shell>;
   }
   const completion = cart.completion;
@@ -146,6 +162,7 @@ export function PublicMerchCustomerDisplay({ stage, cart, totals, payment }: {
           <span className="font-bold tabular-nums shrink-0">฿{line.lineTotal}</span></div>)}</div>
         <div className="border-t border-foreground/10 mt-3 pt-3 space-y-1.5">
           <div className="flex items-center justify-between text-xl font-bold"><span>{t('common.total')}</span><span className="tabular-nums">฿{completion.total}</span></div>
+          {(completion.payment.credit ?? 0) > 0 && <PaidRow icon={Wallet} label={t('common.credit')} amount={completion.payment.credit!} />}
           {completion.payment.cash > 0 && <PaidRow icon={Banknote} label={t('common.cash')} amount={completion.payment.cash} />}
           {completion.payment.card > 0 && <PaidRow icon={CreditCard} label={t('common.card')} amount={completion.payment.card} />}
           {completion.payment.promptpay > 0 && <PaidRow icon={QrCodeIcon} label={t('common.thaiQrPromptpay')} amount={completion.payment.promptpay} />}

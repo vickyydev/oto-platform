@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 import { Banknote } from 'lucide-react';
 import { AmountInput } from './AmountInput';
@@ -17,6 +18,7 @@ export function CashCountCard({
   floatSourceLabel,
   readOnly,
   onCounted,
+  children,
 }: {
   cashCount: EndOfDay['cashCount'];
   expectedCashTHB: number;
@@ -24,6 +26,8 @@ export function CashCountCard({
   floatSourceLabel: string;
   readOnly: boolean;
   onCounted: (v: number | null) => void;
+  /** S2-15a — the day's paid-outs and safe drops, shown under the figures when there are any. */
+  children?: ReactNode;
 }) {
   const income = cashCount.cashIncomeTHB;
   const diff = income === null ? null : income - expectedCashTHB;
@@ -91,6 +95,7 @@ export function CashCountCard({
           </div>
         </div>
       </div>
+      {children}
     </Card>
   );
 }

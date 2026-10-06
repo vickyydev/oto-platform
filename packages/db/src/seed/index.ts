@@ -33,6 +33,9 @@ import { and, eq, isNull, notInArray, sql } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
 import { reconcileAppBranches } from '../schema/otoapp';
 import { seedMenu } from './menu';
+import { seedStock, syncStockSetup } from './stock';
+import { seedSupervision } from './supervision';
+import { seedWalletPolicies } from './wallet';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
 import * as s from '../schema/index';
 
@@ -125,6 +128,16 @@ export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole,
   if (converged.length > 0) {
     console.log(
       `Payment methods: wrote the ${DEFAULT_TENDERS.length} default tenders for ${converged.length} park(s) that had none.`,
+    );
+  }
+
+  // Stock (S2-14b round 2, H4): a branch with no stock places or items gets the
+  // seed's — places, items, sizes, packs and links — and never an opening
+  // quantity: the opening is a count somebody does in the app (OD-S5).
+  const stock = await syncStockSetup(db);
+  if (stock.branchesWithPlaces > 0 || stock.branchesWithItems > 0) {
+    console.log(
+      `Stock: laid places at ${stock.branchesWithPlaces} branch(es) and ${stock.items} stocked size(s) at ${stock.branchesWithItems} branch(es) that had none — opening counts are done in the app.`,
     );
   }
 
@@ -786,6 +799,19 @@ export async function seed(db: Db = getDb()): Promise<void> {
     .update(s.productCategory)
     .set({ code: 'FB' })
     .where(and(eq(s.productCategory.id, catId), isNull(s.productCategory.code)));
+  // The menu the park actually runs (SCRUM-232): the prototype's twenty items
+  // in their categories and sub-categories, the modifier library, the add-ons
+  // and the launch discount codes — find-or-create on code, so a re-seed
+  // changes nothing a manager has since edited. It is the source of truth for
+  // Ice Cream Cone (`FB-ICECREAM`, ฿50), so it is seeded BEFORE the tax-target
+  // fallback below: the two used to seed the item twice, at ฿50 and ฿60.
+  await seedMenu(db, { operatorId, branchId });
+  // Stock (S2-14b): the prototype's places, items and figures, opened by a
+  // count — once per branch, after the menu whose products it stocks.
+  await seedStock(db, { operatorId, branchId, timezone: 'Asia/Bangkok' });
+  // A product the tax-override resolver can point at. Found by name so the
+  // menu's own Ice Cream Cone counts — this must not mint a second row — and,
+  // if the menu somehow seeded none, created at the menu's price, not another.
   const [productRow] = await db
     .select({ id: s.product.id })
     .from(s.product)
@@ -798,15 +824,9 @@ export async function seed(db: Db = getDb()): Promise<void> {
       branchId,
       categoryId: catId,
       name: 'Ice Cream Cone',
-      priceSatang: b(60),
+      priceSatang: b(50),
     });
   }
-  // The menu the park actually runs (SCRUM-232): the prototype's twenty items
-  // in their categories and sub-categories, the modifier library, the add-ons
-  // and the launch discount codes — find-or-create on code, so a re-seed
-  // changes nothing a manager has since edited. Written by the menu slice and
-  // hooked here afterwards, because this file was another slice's that night.
-  await seedMenu(db, { operatorId, branchId });
 
   // --- The fleet (S2-04, S2-05) ----------------------------------------------
   //
@@ -1580,6 +1600,13 @@ export async function seed(db: Db = getDb()): Promise<void> {
 
   await seedSecondOperator(db, roleIds);
 
+  // S2-13: every branch's supervision config (bands, confirmations, drop-off
+  // pricing) and the park's nanny roster.
+  await seedSupervision(db, operatorId);
+
+  // S2-14a: every branch's wallet policy (expiry, the offline cap, unused prepaid).
+  await seedWalletPolicies(db);
+
   console.log(
     'Seed complete: operator OTO; branches Oto Play Park, Central Floresta and Oto Play Park, Robinson Chalong, each with opening hours, tax, a holiday, four priced packages and six print templates; roles, accounts (including a branch manager scoped to each park), members; three virtual boxes and four stations (T1, T2, B1 at Floresta, T3 at Chalong); the park\'s printers; Booth 1 with six prizes at config version 1; and a second operator with one branch, one administrator, one box and one till.',
   );
@@ -1834,7 +1861,7 @@ if (isMain) {
   const platformOnly = forcedPlatform || (!forcedDemo && profile === 'production');
   console.log(
     platformOnly
-      ? `Platform sync only (SEED_PROFILE=${profile}): system roles, permissions and tenders.`
+      ? `Platform sync only (SEED_PROFILE=${profile}): system roles, permissions, tenders and stock setup.`
       : `Full seed (SEED_PROFILE=${profile}): platform rows plus the demo tenant.`,
   );
   (platformOnly ? platformSync() : seed())

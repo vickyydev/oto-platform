@@ -2,6 +2,37 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Monitor } from 'lucide-react';
 import { DisplayPaymentSchema, DisplayTotalsSchema, readDisplayFnbCart, readDisplayMerchCart, type StationIntent } from '@oto/shared';
 import { displayApi, DisplayError, newDisplayCredential, newerDisplaySession, readDisplayCredential, rememberDisplayCredential, type DisplaySession } from '@/api/display';
+import { displayBridgeApi } from '@/api/bridge';
+import { ApiError } from '@/api/client';
+
+/**
+ * OD-10 (offline plan Round 3): the display follows its BOX. Once it knows its
+ * station it reads the document through the station bridge with its paired
+ * credential, so it keeps working while the box works without the platform.
+ * Pairing itself still needs the platform, and a display that cannot reach its
+ * box shows its welcome screen rather than a total that may no longer be true.
+ */
+function asDisplayError(failure: unknown): unknown {
+  if (failure instanceof DisplayError) return failure;
+  if (failure instanceof ApiError) return new DisplayError(failure.status, failure.code, failure.message);
+  if (failure instanceof DOMException && failure.name === 'AbortError') return failure;
+  return new DisplayError(0, 'DISPLAY_UNAVAILABLE', 'Connection interrupted. Please retry when the connection returns.');
+}
+
+async function readThroughBox(stationId: string | null, bearer: string, signal: AbortSignal): Promise<DisplaySession> {
+  if (!stationId) return displayApi.session(bearer, signal);
+  try {
+    return await displayBridgeApi.session(stationId, bearer, signal);
+  } catch (failure) {
+    throw asDisplayError(failure);
+  }
+}
+
+/** The document with nothing on it for the visitor: the welcome screen, never a stale total. */
+function welcomeOnly(session: DisplaySession): DisplaySession {
+  return { ...session, document: { ...session.document, stage: 'welcome', step: null, cart: null,
+    member: null, totals: null, payment: null, prompt: null } };
+}
 import { CustomerDisplay } from '@/components/till/CustomerDisplay';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -59,7 +90,17 @@ export default function Display() {
           : await displayApi.pairing(bearer, controller.signal);
         if (inactive()) return;
         if (paired.status === 'paired') {
-          const current = await displayApi.session(bearer, controller.signal);
+          const stationId = sessionRef.current?.station.id ?? paired.station?.id ?? null;
+          let current: DisplaySession;
+          try {
+            current = await readThroughBox(stationId, bearer, controller.signal);
+          } catch (failure) {
+            // Cannot reach the box: the welcome screen, not the last total (OD-10).
+            if (!(failure instanceof DisplayError && failure.status === 401)) {
+              setSession(previous => previous ? welcomeOnly(previous) : previous);
+            }
+            throw failure;
+          }
           if (inactive()) return;
           knownPaired = true;
           setSession(previous => newerDisplaySession(previous, current));
@@ -169,7 +210,9 @@ export default function Display() {
     // snapshot supplies the sequence, while the prompt id fences the visitor.
     pending.current = intent;
     try {
-      const result = await displayApi.intent(bearer, { ...intent, lastSeenSequence: current.document.sequence });
+      const next = { ...intent, lastSeenSequence: current.document.sequence };
+      const result = await displayBridgeApi.intent(current.station.id, bearer, next)
+        .catch((failure: unknown) => { throw asDisplayError(failure); });
       if (!active()) return;
       setSession(previous => previous?.device.id === current.device.id ? newerDisplaySession(previous, { ...previous, document: result.document }) : previous);
       pending.current = null;

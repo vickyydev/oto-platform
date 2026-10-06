@@ -9,6 +9,8 @@ import {
   type StationSessionDocument, type StationSessionStage,
 } from '@oto/shared';
 import { api, ApiError } from '@/api/client';
+import { bridgeApi } from '@/api/bridge';
+import { currentLane, isBoxLaneTrigger, noteLaneFailure } from './lane';
 import type { ContactChannel, Member, Sale } from '@/types';
 import { computeLineBreakdown, isAdultRulePriced, isTierPriced, unpricedCartLines } from './pricing';
 import type { RateMode } from './pricingMode';
@@ -442,7 +444,7 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
     return () => {
       if (publisher.current === channel) publisher.current = null;
       if (signOutPublisher === channel) signOutPublisher = null;
-      if (channel.leaseId && !channel.signingOut) void api.post(`/stations/${stationId}/lease/release`, { leaseId: channel.leaseId }).catch(() => undefined);
+      if (channel.leaseId && !channel.signingOut) void bridgeApi.release(stationId, channel.leaseId).catch(() => undefined);
     };
   }, [stationId]);
 
@@ -453,17 +455,37 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
     let timer: ReturnType<typeof setTimeout> | undefined;
     const base = `/stations/${stationId}`;
     const paused = () => stopped || channel.signingOut || !current.current.active || publisher.current !== channel;
+    /**
+     * Whether any display is watching, from the platform while it answers.
+     * On the box lane (offline plan OD-10) the platform cannot say, and the
+     * document is published to the box anyway: it is the box's document the
+     * display follows, publishing to it is local and cheap, and the till never
+     * waits on a display either way.
+     */
+    const watching = async (): Promise<ConnectedDisplay[] | 'unknown'> => {
+      if (currentLane() === 'box') return 'unknown';
+      try {
+        const list = await api.get<{ displays: ConnectedDisplay[] }>(`${base}/displays`);
+        return list.displays.filter(display => display.connected);
+      } catch (failure) {
+        if (!isBoxLaneTrigger(failure)) throw failure;
+        noteLaneFailure(failure);
+        return 'unknown';
+      }
+    };
     const tick = async () => {
       if (paused()) return;
       try {
-        const list = await api.get<{ displays: ConnectedDisplay[] }>(`${base}/displays`);
+        const seen = await watching();
         if (paused()) return;
-        const online = list.displays.filter(display => display.connected);
-        setConnected(online);
-        if (!online.length) return;
+        setConnected(seen === 'unknown' ? [] : seen);
+        if (seen !== 'unknown' && !seen.length) return;
+        // The lease, the document and the publish go to the BOX through the
+        // station bridge (offline plan Round 3): the same session manager on a
+        // virtual box, and the one a Pi serves on the counter's LAN.
         let document: StationSessionDocument;
         if (!channel.leaseId) {
-          const acquisition = api.post<{ document: StationSessionDocument; lease: { leaseId: string } }>(`${base}/lease`, { holder: channel.holder });
+          const acquisition = bridgeApi.lease(stationId, channel.holder);
           channel.claiming = acquisition.then((claimed) => claimed.lease.leaseId, () => undefined);
           const claimed = await acquisition;
           channel.leaseId = claimed.lease.leaseId;
@@ -473,12 +495,12 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
           document = claimed.document;
           channel.lastPublished = '';
         } else if (Date.now() - channel.renewedAt >= 15_000) {
-          const renewed = await api.post<{ document: StationSessionDocument }>(`${base}/lease/renew`, { leaseId: channel.leaseId });
+          const renewed = await bridgeApi.renew(stationId, channel.leaseId);
           if (paused()) return;
           document = renewed.document;
           channel.renewedAt = Date.now();
         } else {
-          document = (await api.get<{ document: StationSessionDocument }>(`${base}/session`)).document;
+          document = (await bridgeApi.session(stationId)).document;
           if (paused()) return;
         }
         const latest = current.current;
@@ -505,7 +527,7 @@ export function useStationDisplay(stationId: string | null, state: StationDispla
         const payload = latest.state.presentation(channel.requestId);
         const signature = JSON.stringify(payload);
         if (signature !== channel.lastPublished) {
-          await api.post(`${base}/intents`, { type: 'session.publish_display', leaseId: channel.leaseId,
+          await bridgeApi.publish(stationId, { type: 'session.publish_display', leaseId: channel.leaseId,
             lastSeenSequence: document.sequence, actionId: crypto.randomUUID(), payload });
           if (paused()) return;
           channel.lastPublished = signature;

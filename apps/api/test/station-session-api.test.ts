@@ -38,6 +38,7 @@ import { ADMIN, CHALONG_MANAGER, RECEPTION, SECOND_OPERATOR_ADMIN, createTestCon
 import { provisionVirtualBox } from '../src/services/box';
 import { forcedOfflineStation } from '../src/services/station-offline';
 import { managerForStation } from '../src/services/station-session';
+import * as syncService from '../src/services/sync';
 
 describe('paired display transport uses the redacted station document (SCRUM-201)', () => {
   let proof: TestContext;
@@ -1083,6 +1084,66 @@ describe('what the till’s banner reads (S2-05)', () => {
       .update(boxState)
       .set({ offline: false, offlineSince: null, offlineReason: null })
       .where(eq(boxState.boxId, boxId));
+  });
+
+  it('answers a truthful degraded state, not a 500, when a stale box outbox cannot be read', async () => {
+    // A box silent for a few minutes makes the outbox read throw. The POS banner
+    // and the lane arbiter both read this route, so a 500 here would MASK the
+    // outage; instead the link reads as down/stale in the shape the POS already
+    // reads (offline finding 4).
+    const outbox = vi
+      .spyOn(syncService, 'boxOutboxState')
+      .mockRejectedValueOnce(new Error('box outbox unreadable while the box is stale'));
+    try {
+      const res = await call('GET', '/me/station/link', { cookie: receptionCookie });
+      expect(outbox).toHaveBeenCalled();
+      expect(res.statusCode).toBe(200);
+      expect(res.body.stationId).toBe(tillId);
+      // Not connected-looking: the link is reported down and stale.
+      expect(res.body.syncStale).toBe(true);
+      expect(['offline', 'disabled']).toContain(res.body.boxStatus);
+      expect(res.body.outboxDepth).toBeNull();
+    } finally {
+      outbox.mockRestore();
+    }
+  });
+
+  it('ages the oldest queued event from a real outbox row rather than crashing on it (SCRUM-475)', async () => {
+    // `min(created_at)` is an aggregate, not a column, so nothing decoded it:
+    // the `pg` session hands `timestamptz` back as text, and the age arithmetic
+    // reached it with `.getTime()` — 142 times in a day on staging, each one a
+    // 500 (or, once guarded, a false "box offline") for a till whose only fault
+    // was having something queued. One queued row, through the real route: the
+    // depth is one and the age is the row's, in seconds.
+    const queuedAt = new Date(Date.now() - 90_000);
+    const eventId = newId();
+    await ctx.db.insert(boxOutbox).values({
+      eventId,
+      boxId,
+      journalEpoch: 1,
+      boxSeq: 9_000_000 + Math.floor(Math.random() * 1_000_000),
+      type: 'member.created',
+      occurredAt: queuedAt,
+      payload: {},
+      payloadHash: 'b'.repeat(64),
+      sig: 'test',
+      state: 'queued',
+      // Not due, so nothing that sends could take the row while the route reads it.
+      nextAttemptAt: new Date(Date.now() + 60_000),
+      createdAt: queuedAt,
+    });
+    try {
+      const res = await call('GET', '/me/station/link', { cookie: receptionCookie });
+      expect(res.statusCode).toBe(200);
+      expect(res.body.outboxDepth).toBe(1);
+      const age = res.body.oldestUnackedSeconds as number;
+      expect(typeof age).toBe('number');
+      expect(age).toBeGreaterThanOrEqual(89);
+      expect(age).toBeLessThan(120);
+      expect(res.body.syncStale).toBe(age > syncService.syncSettings().staleAfterS);
+    } finally {
+      await ctx.db.delete(boxOutbox).where(eq(boxOutbox.eventId, eventId));
+    }
   });
 });
 

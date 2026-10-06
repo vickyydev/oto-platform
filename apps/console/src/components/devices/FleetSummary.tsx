@@ -9,8 +9,12 @@ import {
   type DeviceRow,
 } from '@/api/fleet';
 import { directoryApi, type BranchRow } from '@/api/platform';
-import { EmptyState, Loading, Panel, RouteUnavailable } from '@/components/Panel';
-import { Chip, StatusMark, StatusPill, type Tone } from '@/components/Status';
+import { Cpu } from 'lucide-react';
+import { Loading, RouteUnavailable } from '@/components/Panel';
+import { StatusMark, type Tone } from '@/components/Status';
+import { StatusChip } from '@/components/redesign/chips';
+import { CardShell, StripedList, type Span } from '@/components/redesign/layout';
+import { EmptyNote } from '@/components/redesign/StatTile';
 import {
   boxRoleWord,
   boxStatusWord,
@@ -30,7 +34,7 @@ import { elapsed, formatWhen, timeAgo } from '@/lib/time';
  * station sits on it is a different question, asked at a different moment.
  * Each row links across rather than repeating the drawer here.
  */
-export function FleetSummary({ timezone }: { timezone?: string | null }) {
+export function FleetSummary({ timezone, span }: { timezone?: string | null; span?: Span }) {
   const [boxes, setBoxes] = useState<BoxRow[] | null>(null);
   const [devices, setDevices] = useState<DeviceRow[]>([]);
   const [branches, setBranches] = useState<BranchRow[]>([]);
@@ -78,9 +82,11 @@ export function FleetSummary({ timezone }: { timezone?: string | null }) {
   const withoutHours = branches.filter((b) => b.openingHours === null);
 
   return (
-    <Panel
-      title="Boxes"
-      description="The machine at each counter, gate and booth, and whether it is still talking to us."
+    <CardShell
+      span={span}
+      icon={Cpu}
+      title="The boxes"
+      note="the machine at each counter, gate and booth, and whether it is still talking to us"
     >
       {missing ? (
         <RouteUnavailable
@@ -90,12 +96,12 @@ export function FleetSummary({ timezone }: { timezone?: string | null }) {
       ) : boxes === null ? (
         <Loading what="boxes" />
       ) : boxes.length === 0 ? (
-        <EmptyState
+        <EmptyNote
           title="No box is registered"
-          detail="Nothing is running the tills yet, so there is nothing here to be offline."
+          detail="Nothing is running the tills yet, so there is nothing here to be offline. Boxes are added on Devices."
         />
       ) : (
-        <ul className="flex flex-col divide-y">
+        <StripedList label="Boxes">
           {boxes
             .filter((box) => !box.archived)
             .map((box) => (
@@ -106,11 +112,11 @@ export function FleetSummary({ timezone }: { timezone?: string | null }) {
                 timezone={timezone}
               />
             ))}
-        </ul>
+        </StripedList>
       )}
 
       {withoutHours.map((branch) => (
-        <p key={branch.id} className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+        <p key={branch.id} className="flex items-start gap-2 px-3 text-xs text-muted-foreground">
           <StatusMark tone="idle" className="mt-0.5" />
           <span>
             Opening hours are not set for {branch.name}. A box is only called offline during trading,
@@ -119,7 +125,7 @@ export function FleetSummary({ timezone }: { timezone?: string | null }) {
           </span>
         </p>
       ))}
-    </Panel>
+    </CardShell>
   );
 }
 
@@ -140,26 +146,31 @@ function BoxHealthRow({
   const tone: Tone = late ? 'warn' : toneForBoxStatus(box.status);
 
   return (
-    <li className="py-3 first:pt-0 last:pb-0">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusMark tone={tone} />
-        <Link
-          href="/devices"
-          className="text-sm font-semibold min-w-0 break-words hover:underline underline-offset-4"
-        >
-          {box.name}
-        </Link>
-        <Chip>{boxRoleWord(box.role)}</Chip>
-        <StatusPill tone={toneForBoxStatus(box.status)}>{boxStatusWord(box.status)}</StatusPill>
-        <span className="text-sm text-muted-foreground ml-auto tabular-nums whitespace-nowrap">
+    <li className="px-3 py-2.5">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-1 text-[13.5px] @lg:grid-cols-[minmax(0,1fr)_150px_130px]">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
+          <StatusMark tone={tone} />
+          <Link
+            href="/devices"
+            className="min-w-0 font-semibold break-words hover:underline underline-offset-4"
+          >
+            {box.name}
+          </Link>
+          <span className="text-xs text-muted-foreground">{boxRoleWord(box.role)}</span>
+        </span>
+        <span className="hidden font-mono text-xs text-muted-foreground @lg:block">
+          {vitals.agentVersion ? `agent ${vitals.agentVersion}` : box.slot}
+        </span>
+        <span className="text-right text-[12.5px] text-muted-foreground tabular-nums whitespace-nowrap">
           {vitals.heartbeatAgeSeconds === null
             ? 'never reported'
             : `heartbeat ${elapsed(vitals.heartbeatAgeSeconds)} old`}
         </span>
       </div>
 
-      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        {vitals.agentVersion && <span>agent {vitals.agentVersion}</span>}
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 pl-6 text-xs text-muted-foreground">
+        <StatusChip tone={toneForBoxStatus(box.status)}>{boxStatusWord(box.status)}</StatusChip>
+        {vitals.agentVersion && <span className="@lg:hidden">agent {vitals.agentVersion}</span>}
         {vitals.uptimeSeconds !== null && <span>up {elapsed(vitals.uptimeSeconds)}</span>}
         {vitals.outboxDepth !== null && <span>outbox {vitals.outboxDepth}</span>}
         {box.lastHeartbeatAt && (
@@ -170,7 +181,7 @@ function BoxHealthRow({
       </div>
 
       {devices.length > 0 && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-6">
           {devices.map((device) => (
             <span key={device.id} className="inline-flex items-center gap-1.5 text-xs">
               <StatusMark tone={toneForReachability(device.reachability)} className="w-2.5 h-2.5" />
@@ -179,9 +190,9 @@ function BoxHealthRow({
                 device.paperStatus &&
                 device.paperStatus !== 'unknown' &&
                 device.paperStatus !== 'ok' && (
-                  <StatusPill tone={toneForPaper(device.paperStatus)} className="px-1.5 py-0">
+                  <StatusChip tone={toneForPaper(device.paperStatus)} className="px-1.5 py-0">
                     paper {device.paperStatus}
-                  </StatusPill>
+                  </StatusChip>
                 )}
               <span className="sr-only">{deviceKindWord(device.kind)}</span>
             </span>

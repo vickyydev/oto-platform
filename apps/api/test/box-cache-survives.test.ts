@@ -258,7 +258,7 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
       payload: {
         stationId: tillId,
         id: newId(),
-        lines: [{ id: newId(), packageId, kids: 1, adults: 0 }],
+        lines: [{ id: newId(), packageId, kids: 1, adults: 1 }],
         manualDiscounts: [
           { id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Staff / family' },
         ],
@@ -296,6 +296,14 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
     expect(calls).toEqual([
       '/box/v1/cache?schemaVersion=1',
       '/box/v1/cache?schemaVersion=1&scopes=receipt_series',
+      // S2-13 round 4: a till's box reads its check-in board on its own tick
+      // too (volatile, as the mark is) — and writes it only when it moved.
+      '/box/v1/cache?schemaVersion=1&scopes=checkin',
+      // S2-14a round 4: and its wallet balance snapshots, written only when
+      // they moved (or the copy is old enough to need confirming).
+      '/box/v1/cache?schemaVersion=1&scopes=wallets',
+      // S2-14b round 3: and its stock level snapshot, on the same terms.
+      '/box/v1/cache?schemaVersion=1&scopes=stock',
     ]);
 
     const staffAfter = await freshStore().readBundle(boxId, 'staff');

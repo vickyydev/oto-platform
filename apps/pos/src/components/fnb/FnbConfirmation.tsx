@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { FnbOrder } from '@/types';
 import { buildPrepTickets, describeModifiers } from '@/lib/fnb';
+import { prepStationsPrinted } from '@/lib/salePrinting';
+import type { ApiSalePrintJob } from '@/api/history';
 import { getPrintTemplate } from '@/mockApi';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -47,6 +49,14 @@ interface FnbConfirmationProps {
    * (`VoucherUsedNote` in components/till/RedeemVoucher).
    */
   note?: ReactNode;
+  /**
+   * SCRUM-208 — the platform's own print jobs for this closed order, so the
+   * confirmation names only the prep stations it actually put on paper: a bar
+   * ticket the platform skipped shows no bar card and is not claimed. Null (or
+   * omitted) on a deployment whose sale read carries no jobs, where the
+   * confirmation falls back to what the order built.
+   */
+  platformPrintJobs?: readonly ApiSalePrintJob[] | null;
 }
 
 export function FnbConfirmation({
@@ -56,11 +66,30 @@ export function FnbConfirmation({
   receiptNumber = null,
   flowLayout = false,
   note,
+  platformPrintJobs = null,
 }: FnbConfirmationProps) {
   const { payment } = order;
   const bounded = !flowLayout;
-  // Simulated kitchen/bar ticket previews — what each prep station receives.
+  // Kitchen/bar ticket previews — what each prep station receives.
   const prepTickets = buildPrepTickets(order);
+  /**
+   * SCRUM-208 — SAY WHAT ACTUALLY PRINTED, not what the order would have sent.
+   * With the platform's jobs, show a card only for a prep station it queued or
+   * printed; without them, fall back to what the order built. The header line
+   * then names those stations, so an order whose bar ticket was skipped reads
+   * "Sent to the kitchen" with no bar card.
+   */
+  const printedStations = platformPrintJobs ? prepStationsPrinted(platformPrintJobs) : null;
+  const shownPrepTickets = printedStations
+    ? prepTickets.filter((ticket) => printedStations.includes(ticket.station))
+    : prepTickets;
+  const sentStations = shownPrepTickets.map((ticket) => ticket.station);
+  const sentWords =
+    sentStations.length >= 2
+      ? 'kitchen & bar'
+      : sentStations[0] === 'bar'
+        ? 'the bar'
+        : 'the kitchen';
   // Printout CONTENT follows the active templates (routing is unchanged). With
   // no template configured, default to showing everything.
   const receiptTpl = getPrintTemplate('receipt');
@@ -78,13 +107,14 @@ export function FnbConfirmation({
             <CheckCircle2 className="w-11 h-11" />
           </div>
           <h2 className="text-3xl font-bold tracking-tight">Order Confirmed</h2>
-          {/* Said only when a ticket went to a prep station. An order of nothing
-              the kitchen or bar makes — a Lucky Wheel hand-over prize on its own
-              (C2) — sent them nothing, and the line says so. */}
-          {prepTickets.length > 0 ? (
+          {/* Said only for the prep stations that actually printed (SCRUM-208).
+              An order of nothing the kitchen or bar makes — a Lucky Wheel
+              hand-over prize on its own (C2), or one whose only prep ticket the
+              platform skipped — sent them nothing, and the line says so. */}
+          {shownPrepTickets.length > 0 ? (
             <div className="flex items-center gap-2 text-primary mt-2 text-lg font-medium">
               <ChefHat className="w-5 h-5" />
-              Sent to kitchen &amp; bar
+              Sent to {sentWords}
             </div>
           ) : (
             <div className="flex items-center gap-2 text-muted-foreground mt-2 text-lg font-medium">
@@ -224,9 +254,9 @@ export function FnbConfirmation({
           </Card>
         )}
 
-        {prepTickets.length > 0 && (
+        {shownPrepTickets.length > 0 && (
           <div className="shrink-0 mb-4 grid gap-3 sm:grid-cols-2">
-            {prepTickets.map((ticket) => {
+            {shownPrepTickets.map((ticket) => {
               // Each prep ticket renders the sections its template enables; with
               // no template, default to showing everything.
               const tpl = getPrintTemplate(

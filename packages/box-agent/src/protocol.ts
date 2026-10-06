@@ -472,6 +472,25 @@ export interface BoxConfigBundle {
   printTemplates?: PrintTemplateWire[];
   /** PUBLIC halves only — what a box needs to verify a staff token offline. */
   signingKeys: Array<{ purpose: string; kid: string; algorithm: string; publicKey: string }>;
+  /**
+   * The park's band key (`BAND_HMAC_KEY`, S2-11) — the one secret this
+   * document carries, and why it carries one.
+   *
+   * A band code is signed with an HMAC (`verifyBandCode` in `@oto/shared`), so
+   * checking one with the link down takes the same key that signed it: there
+   * is no public half to send instead, which is what `signingKeys` above sends
+   * for a staff token. The bundle is the channel the box already trusts for
+   * its configuration — fetched over the box's own credential, never logged,
+   * and written by a Raspberry Pi only to its home directory with the
+   * credential's own permissions (`fileConfigCache` in `runner/runtime.ts`).
+   *
+   * Optional and nullable: an api that does not send it yet, or a deployment
+   * with no key configured, leaves the box classifying band codes and saying
+   * it cannot check them (`BAND_KEY_MISSING`) rather than guessing. A host
+   * that holds the key itself — the virtual box inside the api — passes it as
+   * `BoxAgentOptions.bands.key`, which wins over this.
+   */
+  bandKey?: string | null;
   heartbeatIntervalS: number;
   minSupportedAgentVersion: string;
 }

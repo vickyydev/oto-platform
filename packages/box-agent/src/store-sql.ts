@@ -22,6 +22,7 @@ import {
   type ClockStamp,
   type CounterKey,
   type EnvelopeSealer,
+  type EpochAdvance,
   type LeaseWrite,
   type OutboxBatch,
   type OutboxDepth,
@@ -35,6 +36,9 @@ import {
   type StationEventWrite,
   type StationIdentity,
   type ThrottleRecord,
+  type BoxOverlayKind,
+  type OverlayRecord,
+  type OverlayWrite,
 } from './store';
 import { uuidv7 } from './signing';
 
@@ -138,6 +142,13 @@ export const BOX_LOCAL_TABLES = [
 ] as const;
 
 const BOOTH_RUNTIME_TABLES = ['box_counter', 'box_staff_session', 'box_throttle', 'box_runtime'];
+
+/**
+ * The counter's offline overlay (offline plan Round 3): `packages/db`
+ * migration 0035 on the platform database, `SQLITE_BOX_SCHEMA` on a Pi. Probed
+ * like the five above, for the reason given there.
+ */
+const OVERLAY_TABLE = 'box_overlay';
 
 /**
  * The Postgres shape these five must have, as `packages/db` migration 0013
@@ -273,6 +284,7 @@ export class SqlBoxStore implements BoxStore {
     return {
       printJobs: this.present.has('box_print_job'),
       boothRuntime: BOOTH_RUNTIME_TABLES.every((name) => this.present.has(name)),
+      overlay: this.present.has(OVERLAY_TABLE),
     };
   }
 
@@ -283,7 +295,12 @@ export class SqlBoxStore implements BoxStore {
   /** Throw with the missing tables named, rather than write into nowhere. */
   private requireFeature(feature: keyof BoxStoreFeatures): void {
     if (this.features()[feature]) return;
-    const wanted = feature === 'printJobs' ? ['box_print_job'] : BOOTH_RUNTIME_TABLES;
+    const wanted =
+      feature === 'printJobs'
+        ? ['box_print_job']
+        : feature === 'overlay'
+          ? [OVERLAY_TABLE]
+          : BOOTH_RUNTIME_TABLES;
     throw new BoxStoreFeatureMissingError(
       feature,
       wanted.filter((name) => !this.present.has(name)),
@@ -360,7 +377,7 @@ export class SqlBoxStore implements BoxStore {
    * and on Postgres a failed statement poisons the transaction it was in.
    */
   private async probeBoxLocalTables(): Promise<Set<string>> {
-    const names = [...BOX_LOCAL_TABLES];
+    const names = [...BOX_LOCAL_TABLES, OVERLAY_TABLE];
     const rows =
       this.dialect === 'postgres'
         ? await this.driver.query(
@@ -435,6 +452,28 @@ export class SqlBoxStore implements BoxStore {
       [journalEpoch, at, at, boxId],
     );
     return this.readState(boxId);
+  }
+
+  async advanceEpoch(
+    boxId: string,
+    journalEpoch: number,
+    when: EpochAdvance,
+    now?: string,
+  ): Promise<{ moved: boolean; state: BoxStateRecord }> {
+    const at = now ?? this.nowIso();
+    // SCRUM-486 — the condition is in the UPDATE, not in a read before it: a
+    // plain read takes no lock on Postgres, so two adoptions that both read the
+    // old epoch would both restart the sequence, the second one under a fact
+    // already sealed on the new epoch. The row lock the UPDATE takes makes the
+    // second one re-check against what the first committed and move nothing.
+    const rows = await this.driver.query(
+      `update ${this.table('box_state')}
+          set journal_epoch = ?, next_box_seq = 1, last_reset_at = ?, updated_at = ?
+        where box_id = ? and journal_epoch ${when === 'newer' ? '<' : '<>'} ?
+        returning box_id`,
+      [journalEpoch, at, at, boxId, journalEpoch],
+    );
+    return { moved: rows.length > 0, state: await this.readState(boxId) };
   }
 
   async setAppliedConfigVersion(
@@ -1427,6 +1466,156 @@ export class SqlBoxStore implements BoxStore {
       [boxId, key, value, at],
     );
   }
+
+  // --- The offline overlay (offline plan Round 3) -----------------------------
+
+  async putOverlay(boxId: string, write: OverlayWrite, now?: string): Promise<void> {
+    this.requireFeature('overlay');
+    const at = now ?? this.nowIso();
+    const payload = JSON.stringify({ record: write.record, eventId: write.eventId });
+    if (this.dialect === 'sqlite') {
+      await this.driver.query(
+        `insert into ${this.table(OVERLAY_TABLE)}
+           (box_id, kind, entity_id, member_id, phone, payload, created_at, updated_at)
+         values (?, ?, ?, ?, ?, ?, ?, ?)
+         on conflict (box_id, kind, entity_id) do update set
+           member_id = excluded.member_id,
+           phone = excluded.phone,
+           payload = excluded.payload,
+           updated_at = excluded.updated_at`,
+        [boxId, write.kind, write.entityId, write.memberId, write.phone, payload, at, at],
+      );
+      return;
+    }
+    /**
+     * The operator is taken from `core.box` in the statement, as
+     * `writeBundle` takes it, and for the same reasons: a Pi's file is
+     * single-tenant and has no such column, and an id with no box writes no
+     * row, which the `returning` turns into an error rather than a record the
+     * next lookup silently cannot find.
+     */
+    const written = await this.driver.query(
+      `insert into ${this.table(OVERLAY_TABLE)}
+         (box_id, operator_id, kind, entity_id, member_id, phone, payload, created_at, updated_at)
+       select b.id, b.operator_id, ?::text, ?::uuid, ?::uuid, ?::text, ?::jsonb, ?::timestamptz, ?::timestamptz
+         from "core"."box" b
+        where b.id = ?
+       on conflict (box_id, kind, entity_id) do update set
+         member_id = excluded.member_id,
+         phone = excluded.phone,
+         payload = excluded.payload,
+         updated_at = excluded.updated_at
+       returning box_id`,
+      [write.kind, write.entityId, write.memberId, write.phone, payload, at, at, boxId],
+    );
+    if (written.length === 0) {
+      throw new Error(`No core.box row for ${boxId}; the ${write.kind} was not kept`);
+    }
+  }
+
+  async readOverlay(
+    boxId: string,
+    kind: BoxOverlayKind,
+    entityId: string,
+  ): Promise<OverlayRecord | null> {
+    if (!this.features().overlay) return null;
+    const rows = await this.driver.query(
+      `select * from ${this.table(OVERLAY_TABLE)} where box_id = ? and kind = ? and entity_id = ?`,
+      [boxId, kind, entityId],
+    );
+    return rows[0] ? decodeOverlay(rows[0]) : null;
+  }
+
+  async listOverlay(
+    boxId: string,
+    where: { kind: BoxOverlayKind; phone?: string; memberIds?: readonly string[] },
+  ): Promise<OverlayRecord[]> {
+    if (!this.features().overlay) return [];
+    const clauses = ['box_id = ?', 'kind = ?'];
+    const params: unknown[] = [boxId, where.kind];
+    if (where.phone !== undefined) {
+      clauses.push('phone = ?');
+      params.push(where.phone);
+    }
+    if (where.memberIds !== undefined) {
+      if (where.memberIds.length === 0) return [];
+      clauses.push(`member_id in (${placeholders(where.memberIds.length)})`);
+      params.push(...where.memberIds);
+    }
+    const rows = await this.driver.query(
+      `select * from ${this.table(OVERLAY_TABLE)} where ${clauses.join(' and ')}
+        order by created_at asc, entity_id asc`,
+      params,
+    );
+    return rows.map(decodeOverlay);
+  }
+
+  async allOverlay(boxId: string): Promise<OverlayRecord[]> {
+    if (!this.features().overlay) return [];
+    const rows = await this.driver.query(
+      `select * from ${this.table(OVERLAY_TABLE)} where box_id = ? order by created_at asc, entity_id asc`,
+      [boxId],
+    );
+    return rows.map(decodeOverlay);
+  }
+
+  async deleteOverlay(
+    boxId: string,
+    keys: ReadonlyArray<{ kind: BoxOverlayKind; entityId: string }>,
+  ): Promise<number> {
+    if (!this.features().overlay || keys.length === 0) return 0;
+    let removed = 0;
+    await this.driver.transaction(async (tx) => {
+      for (const key of keys) {
+        const rows = await tx.query(
+          `delete from ${this.table(OVERLAY_TABLE)}
+            where box_id = ? and kind = ? and entity_id = ?
+          returning entity_id`,
+          [boxId, key.kind, key.entityId],
+        );
+        removed += rows.length;
+      }
+    });
+    return removed;
+  }
+
+  async outboxStates(
+    boxId: string,
+    eventIds: readonly string[],
+  ): Promise<Map<string, { state: OutboxState; ackedAt: string | null }>> {
+    const out = new Map<string, { state: OutboxState; ackedAt: string | null }>();
+    if (eventIds.length === 0) return out;
+    const rows = await this.driver.query(
+      `select event_id, state, acked_at from ${this.table('box_outbox')}
+        where box_id = ? and event_id in (${placeholders(eventIds.length)})`,
+      [boxId, ...eventIds],
+    );
+    for (const row of rows) {
+      out.set(String(row.event_id), {
+        state: String(row.state) as OutboxState,
+        ackedAt: toIso(row.acked_at),
+      });
+    }
+    return out;
+  }
+}
+
+function decodeOverlay(row: SqlRow): OverlayRecord {
+  const body = (parseJson(row.payload) ?? {}) as { record?: unknown; eventId?: unknown };
+  return {
+    boxId: String(row.box_id),
+    kind: String(row.kind) as BoxOverlayKind,
+    entityId: String(row.entity_id),
+    memberId: row.member_id ? String(row.member_id) : null,
+    phone: row.phone ? String(row.phone) : null,
+    record:
+      body.record && typeof body.record === 'object' && !Array.isArray(body.record)
+        ? (body.record as Record<string, unknown>)
+        : {},
+    eventId: typeof body.eventId === 'string' ? body.eventId : null,
+    createdAt: toIso(row.created_at) ?? new Date(0).toISOString(),
+    updatedAt: toIso(row.updated_at) ?? new Date(0).toISOString(),
+  };
 }
 
 /**

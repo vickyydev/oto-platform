@@ -11,17 +11,17 @@ import {
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import {
-  redeemPrepaidItem,
   getDiscountReasons,
   recordFnbOrder,
 } from '@/mockApi';
+import { bandHolderOf, withPrepaidServed } from '@/lib/bandFood';
 import {
-  computeLineTotal,
   hasModifiers,
   modifierSignature,
 } from '@/lib/fnb';
+import { fnbLineTotal } from '@/lib/cartWire';
 import { dropDiscountsForRemovedLines } from '@/lib/manualDiscount';
-import { dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
+import { announceSalePrinting, dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
 import { useBranch } from '@/branch/BranchContext';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { getDefaultTier } from '@/store/catalogStore';
@@ -38,7 +38,8 @@ import { toast } from '@/hooks/use-toast';
 import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
-import { FnbPayment, fnbPaymentResult } from '@/components/fnb/FnbPayment';
+import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
+import { walletKeyOf } from '@/api/wallet';
 import { FnbConfirmation } from '@/components/fnb/FnbConfirmation';
 import { FoodConsentModal } from '@/components/fnb/FoodConsentModal';
 import { PickupCodeModal } from '@/components/fnb/PickupCodeModal';
@@ -80,6 +81,8 @@ export function MobileOrderStation() {
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
+  /** S2-14a round 2 — spend the scanned wallet on this order; preselected when it has credit. */
+  const [useCredit, setUseCredit] = useState(true);
   const [cart, setCart] = useState<FnbOrderLine[]>([]);
   const [orderNote, setOrderNote] = useState('');
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
@@ -111,8 +114,10 @@ export function MobileOrderStation() {
       branchId, stationId: station.stationId, tier: getDefaultTier()?.id ?? 'tourist', channel: 'fnb',
       pickupCode: pickupCode || null, memberId: null, customerPhone: null, customerNickname: null,
       accountId: operator.id, accountName: operator.name,
+      // SCRUM-494 — the band's child: their own allergy line on the prep ticket, their prepaid items.
+      bandHolder: bandHolderOf(wristband, foodOverride),
     };
-  }, [branch.id, station?.stationId, operator, pickupCode]);
+  }, [branch.id, station?.stationId, operator, pickupCode, wristband, foodOverride]);
   const orderQuote = useItemCartQuote({ kind: 'fnb', lines, manualDiscounts, identity: orderIdentity, enabled: stage !== 'confirmation' });
   const { total, manualAmounts } = orderQuote.totals;
   const displayLines = useMemo(() => lines.map((line) => orderQuote.quote.lineTotals?.[line.id] === undefined
@@ -144,7 +149,7 @@ export function MobileOrderStation() {
     menuItem: item,
     qty,
     selectedModifiers: selected,
-    lineTotal: computeLineTotal(item, selected, qty),
+    lineTotal: fnbLineTotal(item, selected, qty),
     note,
   });
 
@@ -161,7 +166,7 @@ export function MobileOrderStation() {
         const next = [...prev];
         const merged = next[idx];
         const newQty = merged.qty + qty;
-        next[idx] = { ...merged, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+        next[idx] = { ...merged, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
         return next;
       }
       return [...prev, makeLine(item, selected, qty, note)];
@@ -206,6 +211,8 @@ export function MobileOrderStation() {
       selectedModifiers: [],
       lineTotal: 0,
       isPrepaid: true,
+      // SCRUM-494 — served from the platform stay the scan resolved.
+      ...(wristband?.stayId ? { prepaidStayId: wristband.stayId } : {}),
     };
     setCart((prev) => [...prev, line]);
   };
@@ -251,7 +258,7 @@ export function MobileOrderStation() {
             .map((l) => {
               if (l.id !== prev[twinIdx].id) return l;
               const newQty = l.qty + addQty;
-              return { ...l, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+              return { ...l, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
             });
           setManualDiscounts((mds) => dropDiscountsForRemovedLines(mds, next.map((l) => l.id)));
           return next;
@@ -262,7 +269,7 @@ export function MobileOrderStation() {
                 ...l,
                 selectedModifiers: selected,
                 qty,
-                lineTotal: computeLineTotal(item, selected, qty),
+                lineTotal: fnbLineTotal(item, selected, qty),
                 note,
               }
             : l,
@@ -287,7 +294,7 @@ export function MobileOrderStation() {
       if (qty <= 0) return prev.filter((l) => l.id !== lineId);
       return prev.map((l) =>
         l.id === lineId
-          ? { ...l, qty, lineTotal: computeLineTotal(l.menuItem, l.selectedModifiers, qty) }
+          ? { ...l, qty, lineTotal: fnbLineTotal(l.menuItem, l.selectedModifiers, qty) }
           : l,
       );
     });
@@ -303,6 +310,7 @@ export function MobileOrderStation() {
 
   const loadBand = (wb: Wristband | null) => {
     setWristband(wb);
+    setUseCredit(true);
     setStage('order');
   };
 
@@ -313,6 +321,7 @@ export function MobileOrderStation() {
     paymentSnapshotRef.current = null;
     setStage('scan');
     setWristband(null);
+    setUseCredit(true);
     setCart([]);
     setOrderNote('');
     setManualDiscounts([]);
@@ -373,20 +382,18 @@ export function MobileOrderStation() {
     if (!operator || !station || written.status !== 'finalised' || completedSaleRef.current === written.id) return;
     completedSaleRef.current = written.id;
     const payment = fnbPaymentResult(settlements);
-    const balanceAfter = wristband?.creditBalanceTHB ?? null;
-
-    // Commit prepaid item redemptions only after the sale is finalised.
-    if (wristband) {
-      for (const line of lines.filter((l) => l.isPrepaid)) {
-        redeemPrepaidItem(wristband.id, line.menuItem.id, line.qty);
-      }
-    }
+    // S2-14a — the balance the platform left on the wallet, when credit paid.
+    const balanceAfter = walletBalanceAfter(settlements) ?? wristband?.creditBalanceTHB ?? null;
+    // SCRUM-494 — the platform served the prepaid lines from the child's stay
+    // when it closed the order; this till's copy of the band shows the same counts.
+    const servedWristband = wristband ? withPrepaidServed(wristband, lines) : wristband;
+    const paidWristband = servedWristband && balanceAfter !== null ? { ...servedWristband, creditBalanceTHB: balanceAfter } : servedWristband;
 
     const order: FnbOrder = {
       id: String(orderCounter++).padStart(4, '0'),
       operatorId: operator.id,
       operatorName: operator.name,
-      wristband: wristband ?? undefined,
+      wristband: paidWristband ?? undefined,
       lines: displayLines,
       manualDiscounts,
       total: written.totals.grossSatang / 100,
@@ -404,7 +411,9 @@ export function MobileOrderStation() {
     setNewBalance(balanceAfter);
     setHandoffMode(null);
     setStage('confirmation');
-    dispatchPrintJobs(fnbPrintJobs(station, order));
+    // S2-11 — the platform printed the receipt and the prep tickets when it
+    // closed the order; the toast says what it queued and where.
+    void announceSalePrinting(written.id, () => dispatchPrintJobs(fnbPrintJobs(station, order)));
   };
 
   if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
@@ -416,6 +425,10 @@ export function MobileOrderStation() {
     prepareSale: () => paymentSnapshotRef.current?.prepare() ?? recordOrderOnPlatform(paymentEpoch), finaliseSale: saleWriter.finalise,
     onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
     onLeftBehind: notePaymentLeftBehind,
+    // S2-14a round 2 — the scanned wallet, spent first by the platform on the confirm press.
+    wallet: wristband && wristband.creditBalanceTHB > 0
+      ? { key: walletKeyOf(wristband), useCredit, previewSatang: Math.round(wristband.creditBalanceTHB * 100) }
+      : null,
   });
   const paymentContextLocked = stage === 'payment' && (paymentStage.locked || paymentStage.state.settlements.length > 0);
   useEffect(() => {
@@ -631,7 +644,7 @@ export function MobileOrderStation() {
                         Prepaid credit · {wristband.holderName ?? wristband.customerNickname}
                       </span>
                       <div className="text-sm text-violet-200/80 mt-0.5">
-                        ฿{wristband.creditBalanceTHB} remaining. Credit payments are not available at this station.
+                        ฿{wristband.creditBalanceTHB} remaining — spends like credit at checkout.
                       </div>
                     </div>
                   </div>
@@ -689,6 +702,8 @@ export function MobileOrderStation() {
             pickupCode={pickupCode}
             stage={paymentStage}
             onBack={backFromPayment}
+            useCredit={useCredit}
+            onUseCreditChange={setUseCredit}
           />
           </div>
         </div>

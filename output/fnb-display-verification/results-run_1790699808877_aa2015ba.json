@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "tests": [
+    {
+      "name": "lock → sign in → membership lookup → child confirm → sign out",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "unknown phone offers the create-member path (SCRUM-31)",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "separate display saved-child review persists before Done and retries a lost save reply",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "separate display guest F&B uses the captured order through lock, cash payment and pickup",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "separate display guardian acknowledgement retains lock and retry, while staff authorises private readiness",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "separate display guest shop uses captured sizes, lock retention, disconnect fallback and settled cash split",
+      "status": "passed",
+      "errors": []
+    }
+  ],
+  "errors": []
+}

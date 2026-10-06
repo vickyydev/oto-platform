@@ -436,7 +436,7 @@ describe('the same store over Postgres (S2-07a)', () => {
   });
 
   it('finds the tables and offers what they can hold', () => {
-    expect(store.features()).toEqual({ printJobs: true, boothRuntime: true });
+    expect(store.features()).toEqual({ printJobs: true, boothRuntime: true, overlay: true });
     expect(store.printJobs()).not.toBeNull();
   });
 

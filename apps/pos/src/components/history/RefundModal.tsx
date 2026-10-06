@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { TouchKeypad } from '@/components/shared/TouchKeypad';
 import type { RefundMode } from '@/lib/payments';
-import { Undo2, Wallet, RefreshCw, HandCoins } from 'lucide-react';
+import { refundAmountFor, type RefundItemOption } from '@/api/history';
+import { Undo2, Wallet, RefreshCw, HandCoins, WifiOff } from 'lucide-react';
 
 export interface RefundLineOption {
   id: string;
@@ -27,6 +28,13 @@ export interface RefundResult {
   // The line ids this refund covers, so a merch refund can return exactly those
   // units to stock. Whole-sale covers every line; a custom ฿ amount covers none.
   lineIds?: string[];
+  /**
+   * S2-11 — which of the three the refund was, and its amount in satang, so the
+   * platform is sent exactly what the dialog showed. Optional because the
+   * handheld's own flow (`MobileRefundFlow`) builds results without them.
+   */
+  mode?: Mode;
+  amountSatang?: number;
 }
 
 interface RefundModalProps {
@@ -46,9 +54,29 @@ interface RefundModalProps {
    */
   refundMode?: RefundMode;
   onConfirm: (result: RefundResult) => void;
+  /**
+   * S2-11 — THE PLATFORM DECIDES. Set by a caller that sends the refund and
+   * waits for the answer: the dialog stays open on Confirm (`closeOnConfirm`
+   * false), shows `busy` while the answer is out, and shows `error` — the
+   * platform's own words, e.g. a refund that needs a manager's approval — when
+   * it is refused. Left unset, it behaves as the prototype's did: it confirms
+   * and closes.
+   */
+  closeOnConfirm?: boolean;
+  busy?: boolean;
+  error?: string | null;
+  /**
+   * S2-11 — REFUNDS ARE ONLINE ONLY. With the station offline the dialog says
+   * so, and its button notes the request on this till instead of refunding;
+   * the caller keeps the note (`lib/refundRequests.ts`).
+   */
+  offline?: boolean;
 }
 
 type Mode = 'full' | 'item' | 'custom';
+
+/** Baht as the screen shows it, to satang as the platform counts it. */
+const toSatang = (baht: number): number => Math.round(baht * 100);
 
 export function RefundModal({
   open,
@@ -60,6 +88,10 @@ export function RefundModal({
   operatorName,
   refundMode,
   onConfirm,
+  closeOnConfirm = true,
+  busy = false,
+  error = null,
+  offline = false,
 }: RefundModalProps) {
   const [mode, setMode] = useState<Mode>('full');
   const [selectedLineIds, setSelectedLineIds] = useState<string[]>([]);
@@ -83,22 +115,31 @@ export function RefundModal({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
-  const rawAmount = useMemo(() => {
-    if (mode === 'full') return maxRefund;
-    if (mode === 'item')
-      return lines
-        .filter((l) => selectedLineIds.includes(l.id))
-        .reduce((acc, l) => acc + l.amount, 0);
-    return Number(customValue) || 0;
+  // A refund can never exceed what's left to refund on the transaction — the
+  // same clamp the platform applies (`refundAmountFor`), in satang, so the
+  // figure on the button is the figure sent.
+  const resolved = useMemo(() => {
+    const options: RefundItemOption[] = lines.map((l) => ({
+      id: l.id,
+      label: l.label,
+      lineIds: [l.id],
+      amountSatang: toSatang(l.amount),
+    }));
+    return refundAmountFor({
+      mode: mode === 'full' ? 'whole' : mode === 'item' ? 'items' : 'custom',
+      remainingSatang: toSatang(maxRefund),
+      options,
+      selected: selectedLineIds,
+      customSatang: toSatang(Number(customValue) || 0),
+    });
   }, [mode, maxRefund, lines, selectedLineIds, customValue]);
 
-  // A refund can never exceed what's left to refund on the transaction.
-  const amountTHB = Math.min(rawAmount, maxRefund);
-  const scope: 'full' | 'partial' = amountTHB >= maxRefund ? 'full' : 'partial';
+  const amountTHB = resolved.amountSatang / 100;
+  const scope: 'full' | 'partial' = resolved.amountSatang >= toSatang(maxRefund) ? 'full' : 'partial';
   // F&B credit is refunded first; only the F&B credit portion returns to the tab.
   const creditRestoredTHB = Math.min(amountTHB, restorableCredit);
 
-  const canConfirm = !!reason && amountTHB > 0;
+  const canConfirm = !!reason && resolved.amountSatang > 0 && !busy;
 
   const handleConfirm = () => {
     if (!canConfirm) return;
@@ -110,12 +151,21 @@ export function RefundModal({
         : mode === 'item'
           ? selectedLineIds
           : undefined;
-    onConfirm({ scope, amountTHB, creditRestoredTHB, reason, note: note.trim() || undefined, lineIds });
-    onOpenChange(false);
+    onConfirm({
+      scope,
+      amountTHB,
+      creditRestoredTHB,
+      reason,
+      note: note.trim() || undefined,
+      lineIds,
+      mode,
+      amountSatang: resolved.amountSatang,
+    });
+    if (closeOnConfirm) onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -193,6 +243,9 @@ export function RefundModal({
                   );
                 })}
               </div>
+              {resolved.clamped && resolved.requestedSatang > 0 && (
+                <p className="text-sm font-semibold text-amber-400">capped at ฿{maxRefund}</p>
+              )}
             </div>
           )}
 
@@ -202,7 +255,7 @@ export function RefundModal({
               <p className="text-sm font-medium text-muted-foreground">Amount to refund (฿)</p>
               <div className="flex items-baseline justify-between rounded-lg border bg-muted/40 px-4 h-14">
                 <span className="text-3xl font-bold tabular-nums">฿{customValue || '0'}</span>
-                {Number(customValue) > maxRefund && (
+                {resolved.clamped && resolved.requestedSatang > 0 && (
                   <span className="text-sm font-semibold text-amber-400">capped at ฿{maxRefund}</span>
                 )}
               </div>
@@ -256,7 +309,7 @@ export function RefundModal({
                 <span className="tabular-nums font-semibold">+฿{creditRestoredTHB}</span>
               </div>
             )}
-            {refundMode && (
+            {refundMode && !offline && (
               <div className="flex items-start gap-2 text-sm text-muted-foreground border-t pt-2">
                 {refundMode === 'auto' ? (
                   <RefreshCw className="w-4 h-4 mt-0.5 shrink-0 text-sky-400" />
@@ -270,14 +323,40 @@ export function RefundModal({
                 </span>
               </div>
             )}
+            {offline && (
+              <div
+                className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300 border-t pt-2"
+                data-testid="refund-online-only"
+              >
+                <WifiOff className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  Online only — this station is offline, so no refund can be made now. Note the
+                  request on this till and make the refund when the station is back online.
+                </span>
+              </div>
+            )}
           </div>
 
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+
           <Button
-            className="w-full h-14 text-lg bg-rose-500 hover:bg-rose-600 text-white"
+            className={`w-full h-14 text-lg text-white ${
+              offline ? 'bg-amber-600 hover:bg-amber-700' : 'bg-rose-500 hover:bg-rose-600'
+            }`}
             disabled={!canConfirm}
             onClick={handleConfirm}
           >
-            {reason ? `Refund ฿${amountTHB}` : 'Choose a reason to refund'}
+            {!reason
+              ? 'Choose a reason to refund'
+              : busy
+                ? 'Refunding…'
+                : offline
+                  ? `Note refund request ฿${amountTHB}`
+                  : `Refund ฿${amountTHB}`}
           </Button>
         </div>
       </DialogContent>

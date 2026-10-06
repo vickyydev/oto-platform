@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "tests": [
+    {
+      "name": "lock → sign in → membership lookup → child confirm → sign out",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "unknown phone offers the create-member path (SCRUM-31)",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "separate display saved-child review persists before Done and retries a lost save reply",
+      "status": "passed",
+      "errors": []
+    }
+  ],
+  "cleanup": {
+    "processes": true,
+    "database": true
+  },
+  "errors": []
+}

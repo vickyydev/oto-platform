@@ -41,10 +41,21 @@ export interface HeldElsewhereDetails {
   saleId?: string | null;
 }
 
+/**
+ * S2-14a round 5 — what a discount voucher comes off, as the platform resolved
+ * it at this branch: `tickets` (every booth voucher), or a category or an item
+ * a promotion was aimed at. `label` is the platform's name for it.
+ */
+export interface VoucherScope {
+  appliesTo: 'tickets' | 'ticket_package' | 'fnb' | 'category' | 'items' | 'merch';
+  target?: unknown;
+  label?: string;
+}
+
 /** What a voucher is worth, as the platform resolved it at this branch. */
 export type VoucherEffect =
-  | { type: 'amount_off'; appliesTo: 'tickets'; valueSatang: number }
-  | { type: 'percent_off'; appliesTo: 'tickets'; valueBp: number }
+  | ({ type: 'amount_off'; valueSatang: number } & VoucherScope)
+  | ({ type: 'percent_off'; valueBp: number } & VoucherScope)
   | {
       type: 'free_item';
       product: {
@@ -61,7 +72,9 @@ export type VoucherEffect =
       };
     }
   | { type: 'free_kids_ticket'; package: { id: string; name: string } }
-  | { type: 'hand_over' };
+  | { type: 'hand_over' }
+  /** S2-14a round 5 — loads this much credit onto a new wallet when its ฿0 sale closes. */
+  | { type: 'wallet_credit'; valueSatang: number };
 
 /** A voucher as every answer about one shows it (`VoucherView` in the api). */
 export interface VoucherView {
@@ -104,7 +117,64 @@ export interface VoucherReleaseAnswer {
   saleId: string;
 }
 
+// --- S2-14a round 5: promotional vouchers -------------------------------------------
+
+/** A print the platform queued for a voucher: queued, skipped (no printer here) or none (no box). */
+export interface VoucherPrintAnswer {
+  jobId: string | null;
+  status: 'queued' | 'skipped' | 'none';
+  note: string | null;
+}
+
+/** A definition this till may issue today (`GET /vouchers/issuable`). */
+export interface IssuableDefinition {
+  id: string;
+  code: string;
+  nameEn: string;
+  nameTh: string | null;
+  kind: string;
+  valueSatang: number | null;
+  valueBp: number | null;
+  validFrom: string | null;
+  validUntil: string | null;
+  usageLimit: number | null;
+  redeemed: number;
+}
+
+export interface IssuedVoucher {
+  voucher: {
+    id: string;
+    code: string;
+    definitionId: string;
+    nameEn: string;
+    kind: string;
+    issuedAt: string;
+    expiresAt: string | null;
+    validFrom: string | null;
+    validUntil: string | null;
+  };
+  print: VoucherPrintAnswer;
+}
+
+/** The wallet a wallet-credit voucher loaded (`GET /vouchers/:id/credit`); null until its sale closes. */
+export interface VoucherCredit {
+  voucherId: string;
+  wallet: { id: string; balanceSatang: number; holderName: string | null; expiresAt?: string | null } | null;
+  qrCode: string | null;
+}
+
 export const vouchersApi = {
+  issuable: () => api.get<{ definitions: IssuableDefinition[] }>('/vouchers/issuable'),
+  /** One key per press: a retried press is the same voucher, never a second. */
+  issue: (definitionId: string, memberId: string | null, idempotencyKey: string = idemKey()) =>
+    api.post<IssuedVoucher>('/vouchers/issue', { definitionId, ...(memberId ? { memberId } : {}) }, { idempotencyKey }),
+  credit: (voucherId: string) => api.get<VoucherCredit>(`/vouchers/${encodeURIComponent(voucherId)}/credit`),
+  printCredit: (voucherId: string) =>
+    api.post<{ walletId: string; print: VoucherPrintAnswer }>(
+      `/vouchers/${encodeURIComponent(voucherId)}/credit/print`,
+      {},
+      { idempotencyKey: idemKey() },
+    ),
   lookup: (code: string) =>
     api.get<{ voucher: VoucherView }>(`/vouchers/lookup?code=${encodeURIComponent(code)}`),
   /**

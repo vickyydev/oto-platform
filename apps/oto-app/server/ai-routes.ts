@@ -1,28 +1,13 @@
 import { Express, Request, Response, NextFunction } from "express";
-import OpenAI from "openai";
 import { db } from "./db";
 import { settings, branches } from "../shared/schema";
 import { eq } from "drizzle-orm";
-
-let openaiClient: OpenAI | null = null;
-
-/**
- * `AI_INTEGRATIONS_OPENAI_API_KEY` and `AI_INTEGRATIONS_OPENAI_BASE_URL` were
- * Replit's names for a key it injected and a proxy it ran. Off Replit nothing
- * injects them, and the names describe a thing that no longer exists, so they
- * are the SDK's own: OPENAI_API_KEY and OPENAI_BASE_URL. The base URL is still
- * honoured because a proxy in front of the model is a real deployment choice —
- * it is simply ours to make now.
- */
-function getOpenAI(): OpenAI {
-  if (!openaiClient) {
-    openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      baseURL: process.env.OPENAI_BASE_URL,
-    });
-  }
-  return openaiClient;
-}
+import {
+  aiComplete,
+  aiConfigured,
+  getAnthropic,
+  stripJsonFences,
+} from "./lib/anthropic";
 
 async function getSettingValue(key: string): Promise<string> {
   const setting = await db.query.settings.findFirst({
@@ -54,24 +39,27 @@ export function registerAIRoutes(app: Express, requireAuth: any) {
 
   app.get("/api/ai/available-models", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const openai = getOpenAI();
-      const modelsList = await openai.models.list();
-      
-      // Filter for GPT models only
-      const gptModels = modelsList.data
-        .filter(m => m.id.includes("gpt"))
+      if (!aiConfigured()) {
+        return res.status(503).json({
+          message: "AI service not configured. Please set the Anthropic API key.",
+        });
+      }
+      const modelsList = await getAnthropic().models.list();
+
+      const claudeModels = modelsList.data
+        .filter(m => m.id.startsWith("claude"))
         .map(m => ({
           id: m.id,
-          label: m.id,
+          label: m.display_name || m.id,
         }))
         .sort((a, b) => a.id.localeCompare(b.id));
-      
-      res.json({ models: gptModels });
+
+      res.json({ models: claudeModels });
     } catch (error: any) {
       console.error("[AI Available Models] Error:", error);
-      if (error.message?.includes("Missing credentials") || error.message?.includes("API key")) {
+      if (error.status === 401 || error.message?.includes("API key")) {
         return res.status(503).json({ 
-          message: "AI service not configured. Please set up OpenAI integration." 
+          message: "AI service not configured. Please set up the Anthropic API key." 
         });
       }
       next(error);
@@ -158,30 +146,28 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
       console.log("[AI Extract Event] System prompt:\n", prompt + branchSection);
       console.log("[AI Extract Event] User message:\n", userMessage);
 
-      const openai = getOpenAI();
-      const completion = await openai.chat.completions.create({
+      const responseText = await aiComplete({
         model,
-        messages: [
-          { role: "system", content: prompt + branchSection },
-          { role: "user", content: userMessage },
-        ],
+        system:
+          prompt +
+          branchSection +
+          "\n\nReturn ONLY a valid JSON object, with no markdown fences or commentary.",
+        user: userMessage,
         temperature: 0.3,
-        response_format: { type: "json_object" },
+        maxTokens: 4096,
       });
-
-      const responseText = completion.choices[0]?.message?.content;
       if (!responseText) {
         throw new Error("No response from AI");
       }
 
-      const parsed = JSON.parse(responseText);
+      const parsed = JSON.parse(stripJsonFences(responseText));
       console.log("[AI Extract Event] Response:\n", JSON.stringify(parsed, null, 2));
       res.json(parsed);
     } catch (error: any) {
       console.error("[AI Extract Event] Error:", error);
-      if (error.message?.includes("Missing credentials") || error.message?.includes("API key")) {
+      if (error.status === 401 || error.message?.includes("API key")) {
         return res.status(503).json({ 
-          message: "AI service not configured. Please set up OpenAI integration." 
+          message: "AI service not configured. Please set up the Anthropic API key." 
         });
       }
       if (error.code === "insufficient_quota" || error.status === 429) {
@@ -236,30 +222,27 @@ ${text}`
       console.log("[AI Parse BEO] System prompt:\n", prompt);
       console.log("[AI Parse BEO] User message:\n", userMessage);
 
-      const openai = getOpenAI();
-      const completion = await openai.chat.completions.create({
+      const responseText = await aiComplete({
         model,
-        messages: [
-          { role: "system", content: prompt },
-          { role: "user", content: userMessage },
-        ],
+        system:
+          prompt +
+          "\n\nReturn ONLY a valid JSON object, with no markdown fences or commentary.",
+        user: userMessage,
         temperature: 0.2,
-        response_format: { type: "json_object" },
+        maxTokens: 4096,
       });
-
-      const responseText = completion.choices[0]?.message?.content;
       if (!responseText) {
         throw new Error("No response from AI");
       }
 
-      const parsed = JSON.parse(responseText);
+      const parsed = JSON.parse(stripJsonFences(responseText));
       console.log("[AI Parse BEO] Response:\n", JSON.stringify(parsed, null, 2));
       res.json(parsed);
     } catch (error: any) {
       console.error("[AI Parse BEO] Error:", error);
-      if (error.message?.includes("Missing credentials") || error.message?.includes("API key")) {
+      if (error.status === 401 || error.message?.includes("API key")) {
         return res.status(503).json({
-          message: "AI service not configured. Please set up OpenAI integration."
+          message: "AI service not configured. Please set up the Anthropic API key."
         });
       }
       if (error.code === "insufficient_quota" || error.status === 429) {

@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Info, Check, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import type { CategoryTaxRule, TaxableCategory, TaxConfig, TaxMode, TaxRate } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
-import { computeTaxBreakdown, roundTHB } from '@/lib/tax';
+import { computeTaxBreakdown } from '@oto/shared';
+import {
+  breakdownToBaht,
+  engineTaxConfig,
+  toSatang,
+  type CategoryTaxLineBaht,
+  type TaxBreakdownBaht,
+} from '@/lib/cartWire';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -60,8 +67,8 @@ const NO_RATE = '__none__';
 
 /**
  * Admin editing screen for the tax configuration. Reads the live shared catalog
- * store and writes back through `updateTaxConfig`, so changes flow to the POS tax
- * engine (lib/tax.ts) on the next computation. Every taxable area is editable —
+ * store and writes back through `updateTaxConfig`, so changes flow to the tax
+ * engine (@oto/shared, through lib/cartWire.ts) on the next computation. Every taxable area is editable —
  * including the retail/merch category, which the owner's accountant can tax
  * independently of F&B.
  */
@@ -134,12 +141,16 @@ export function TaxPanel() {
   }, [rates, rules, service, discountPlacement, taxConfig.categoryRules]);
 
   // ── live example computation (always from the engine — never re-implemented) ─
+  // The platform's satang engine since SCRUM-271: the example is priced exactly
+  // as a sale under this draft would be, and only converted to baht to show it.
   const liveExample = useMemo(() => {
     const EXAMPLE_BASE = 100;
-    const bd = computeTaxBreakdown(
-      [{ category: exampleCategory, base: EXAMPLE_BASE }],
-      0,
-      draftConfig
+    const bd = breakdownToBaht(
+      computeTaxBreakdown(
+        [{ category: exampleCategory, base: toSatang(EXAMPLE_BASE) }],
+        0,
+        engineTaxConfig(draftConfig)
+      )
     );
     const cat = bd.categories[0];
     return { bd, cat, base: EXAMPLE_BASE };
@@ -631,18 +642,17 @@ export function TaxPanel() {
 
 // ── Live example breakdown display ─────────────────────────────────────────
 
-import type { CategoryTaxLine, TaxBreakdown } from '@/lib/tax';
-
 interface ExampleBreakdownProps {
   category: TaxableCategory;
   base: number;
-  cat: CategoryTaxLine;
-  bd: TaxBreakdown;
+  cat: CategoryTaxLineBaht;
+  bd: TaxBreakdownBaht;
   rates: TaxRate[];
 }
 
+/** A baht figure from the engine — a whole number of satang — to two places. */
 function fmt(n: number) {
-  return `฿${roundTHB(n).toFixed(2)}`;
+  return `฿${n.toFixed(2)}`;
 }
 
 function ExampleBreakdown({ category, base, cat }: ExampleBreakdownProps) {

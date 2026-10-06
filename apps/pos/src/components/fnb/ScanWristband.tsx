@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { Wristband } from '@/types';
 import { getWristbandByCode, getMockWristbands } from '@/mockApi';
+import { ApiError } from '@/api/client';
+import { BOX_CREDIT_REFUSAL_CODES, lookupWalletOnBox, scanBand, wristbandOfBoxWallet } from '@/api/wallet';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { getActiveBranch } from '@/store/catalogStore';
+import { currentLane, isBoxLaneTrigger, laneStation, noteLaneFailure } from '@/lib/lane';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,10 +31,23 @@ export function ScanWristband({
 }: ScanWristbandProps) {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const presets = getMockWristbands();
+  const [looking, setLooking] = useState(false);
+  // S2-14a round 2 — the demo bands carry the allergy and prepaid-item notes
+  // the stations still show from this till's own list, but NO credit: the only
+  // spendable balance is a platform wallet's, so a demo band reads ฿0 rather
+  // than offering money the platform does not hold.
+  const presets = getMockWristbands().map(withoutLocalCredit);
 
-  const submit = (value: string) => {
-    const wb = getWristbandByCode(value);
+  const submit = async (value: string) => {
+    if (looking) return;
+    setLooking(true);
+    const found = await loadScannedTab(value);
+    setLooking(false);
+    if (found.error) {
+      setError(found.error);
+      return;
+    }
+    const wb = found.wristband;
     if (!wb) {
       if (onUnknownCode) {
         setError(null);
@@ -46,7 +64,7 @@ export function ScanWristband({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) return;
-    submit(code);
+    void submit(code);
   };
 
   return (
@@ -72,7 +90,7 @@ export function ScanWristband({
             placeholder="Wristband code e.g. 1001"
             className="h-16 text-2xl px-5"
           />
-          <Button type="submit" size="lg" className="h-16 px-8 text-xl gap-2" disabled={!code.trim()}>
+          <Button type="submit" size="lg" className="h-16 px-8 text-xl gap-2" disabled={!code.trim() || looking}>
             Load Tab
             <ArrowRight className="w-5 h-5" />
           </Button>
@@ -95,11 +113,11 @@ export function ScanWristband({
                 key={wb.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => submit(wb.code)}
+                onClick={() => void submit(wb.code)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    submit(wb.code);
+                    void submit(wb.code);
                   }
                 }}
                 className="p-4 flex items-center gap-3 cursor-pointer select-none hover:border-primary/60 transition-all active:scale-[0.98]"
@@ -163,4 +181,96 @@ export function ScanWristband({
       </div>
     </div>
   );
+}
+
+/**
+ * A band from this till's own demo list, with no spendable credit on it and no
+ * prepaid items to serve: the only spendable balance is a platform wallet's,
+ * and the only servable entitlements are a platform stay's (SCRUM-494).
+ */
+function withoutLocalCredit(wb: Wristband): Wristband {
+  return {
+    ...wb,
+    creditBalanceTHB: 0,
+    ledger: undefined,
+    ...(wb.foodProvision?.items ? { foodProvision: { ...wb.foodProvision, items: [] } } : {}),
+  };
+}
+
+/**
+ * THE PLATFORM FIRST (plan §2.3): a band's code, its short code or a
+ * voucher's `QR-…` names a real wallet — balance, ledger, and the key the
+ * confirm press spends. A key no wallet carries falls back to this till's
+ * demo band list (allergy and food notes only); a key neither knows is the
+ * unknown-code path (`wristband: null`, no error).
+ *
+ * A lookup that could not be made is never read as "no credit": when the
+ * platform cannot be reached (round-2 gate, finding 6) the station still
+ * loads the band it holds itself — its notes, with ฿0 credit — and only a band
+ * it does not hold is refused, in the platform's words when it answered and the
+ * connection's when it did not.
+ *
+ * Staging F3 — A TILL WORKING THROUGH ITS BOX ASKS THE BOX (`wallet.lookup`),
+ * which holds the branch's balance snapshot and the day's offline cap: the tab
+ * offers the credit the box will really take, and the box's refusals are shown
+ * in its words. A till still on the platform lane whose call meets a dropped
+ * link moves to its box for this scan, as every other call does.
+ */
+export async function loadScannedTab(value: string): Promise<{ wristband: Wristband | null; error: string | null }> {
+  const local = getWristbandByCode(value);
+  const station = laneStation();
+  if (station && currentLane() === 'box') return loadFromBox(station, value, local);
+  try {
+    // SCRUM-494 — the wallet and, beside it, the child's stay at this park:
+    // the allergy alert, the food consent and the prepaid items.
+    const wb = await scanBand(value, apiBranchIdForSlug(getActiveBranch().id));
+    if (wb) return { wristband: wb, error: null };
+  } catch (err) {
+    if (station && isBoxLaneTrigger(err)) {
+      noteLaneFailure(err);
+      return loadFromBox(station, value, local);
+    }
+    if (local) return { wristband: withoutLocalCredit(local), error: null };
+    const said = err instanceof ApiError ? err.message : null;
+    return { wristband: null, error: said
+      ? `The platform could not look this band up: ${said}`
+      : 'Could not reach the platform to look this band up — check the connection and scan again.' };
+  }
+  return { wristband: local ? withoutLocalCredit(local) : null, error: null };
+}
+
+/**
+ * The box lane's half of the scan. The box's refusal of credit (the cap, an
+ * expired wallet, a wallet it holds no copy of, a snapshot too old) still
+ * opens the station's own band, or the wallet the box named, with no credit and
+ * the box's words on it; a key the box knows nothing of and the station does
+ * not hold is refused in those same words.
+ */
+async function loadFromBox(
+  stationId: string,
+  value: string,
+  local: Wristband | null,
+): Promise<{ wristband: Wristband | null; error: string | null }> {
+  const key = value.trim();
+  if (!key) return { wristband: null, error: null };
+  try {
+    const read = await lookupWalletOnBox(stationId, key);
+    return { wristband: wristbandOfBoxWallet(read, key, local ? withoutLocalCredit(local) : null), error: null };
+  } catch (err) {
+    if (err instanceof ApiError && BOX_CREDIT_REFUSAL_CODES.includes(err.code)) {
+      if (local) return { wristband: { ...withoutLocalCredit(local), creditNote: err.message }, error: null };
+      const walletId = (err.details as { walletId?: unknown } | undefined)?.walletId;
+      if (typeof walletId === 'string') {
+        // The box knows the wallet (its credit has expired): the tab opens, ฿0.
+        return { wristband: { id: walletId, code: key, customerNickname: 'Guest', creditBalanceTHB: 0, gateAccess: false,
+          creditNote: err.message }, error: null };
+      }
+      return { wristband: null, error: err.message };
+    }
+    if (local) return { wristband: withoutLocalCredit(local), error: null };
+    const said = err instanceof ApiError ? err.message : null;
+    return { wristband: null, error: said
+      ? `This counter’s box could not look this band up: ${said}`
+      : 'Could not reach this counter’s box to look this band up — check the connection and scan again.' };
+  }
 }

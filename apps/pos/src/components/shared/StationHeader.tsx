@@ -7,10 +7,10 @@ import { ThemeMenu } from '@/components/shared/ThemeMenu';
 import { BranchSwitcher } from '@/components/shared/BranchSwitcher';
 import { PricingModeIndicator } from '@/components/shared/PricingModeIndicator';
 import { PrinterHealthIndicator } from '@/components/shared/PrinterHealthIndicator';
+import { CashMovementButton } from '@/components/shared/CashMovementButton';
 import { StationLinkBanner } from '@/components/shared/StationLinkBanner';
 import { useStation } from '@/station/StationContext';
-import { useCatalogStore } from '@/store/CatalogStoreContext';
-import { getRestockAlerts } from '@/lib/inventory';
+import { sellableRestockAlerts, useSellableStockVersion } from '@/api/stock';
 import { getTotalUnreadCount, UnreadBadge } from '@/components/mobile/messaging/messagingUtils';
 import logoUrl from '@/assets/logo-oto.png';
 
@@ -53,7 +53,10 @@ const idleBtn = `${baseBtn} text-muted-foreground hover:text-foreground`;
 // navigation (menu buttons) are identical on each screen.
 export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderProps) {
   const { station } = useStation();
-  const { inventory } = useCatalogStore();
+  // S2-14b round 2 — the strip reads the platform's counts (`api/stock.ts`),
+  // refreshed after every sale the till closes and every stock write, not the
+  // ported seed's in-memory inventory.
+  useSellableStockVersion();
   // From the F&B surface, Parties carries the surface hint so PartyDetail leads
   // with kitchen/bar emphasis. Everywhere else it's the plain reception view.
   const partiesHref = active === 'fnb' ? '/parties?surface=fnb' : '/parties';
@@ -64,7 +67,7 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
   // Live low-stock reminder shown on EVERY staff surface (same source of truth as
   // the Admin Inventory panel + nav badge): so the floor team notices a depleted
   // line without opening Admin. Out-of-stock first.
-  const alerts = getRestockAlerts(inventory);
+  const alerts = sellableRestockAlerts();
   const outCount = alerts.filter((a) => a.status === 'out').length;
   const lowCount = alerts.length - outCount;
 
@@ -217,6 +220,9 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
             one is out of paper or stops answering (S2-06, PROJECT_CONTEXT
             §7.3) — before anybody notices a receipt that never came out. */}
         <PrinterHealthIndicator />
+        {/* S2-15a — the Cash action: record a paid-out or a safe drop against the
+            branch's one combined count (UI addition). */}
+        <CashMovementButton className={idleBtn} />
         <PricingModeIndicator />
         {rightExtra}
         <div className="shrink-0">
@@ -265,11 +271,7 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
         <span className="min-w-0 truncate font-normal opacity-80">
           {alerts
             .slice(0, 4)
-            .map((a) =>
-              a.item.variants.length > 1
-                ? `${a.item.name} (${a.variant.label})`
-                : a.item.name,
-            )
+            .map((a) => (a.sizeLabel ? `${a.name} (${a.sizeLabel})` : a.name))
             .join(', ')}
           {alerts.length > 4 && ` +${alerts.length - 4} more`}
         </span>

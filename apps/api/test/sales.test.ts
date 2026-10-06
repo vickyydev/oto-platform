@@ -28,6 +28,7 @@ import {
 } from '@oto/db';
 import {
   businessDate,
+  deriveSaleLineId,
   mintBoothCode,
   newId,
   normalizePhone,
@@ -290,10 +291,13 @@ describe('committing a sale writes the ledger', () => {
 
   it('answers a retry of the same sale id with the sale that exists', async () => {
     const saleId = newId();
-    const payload = { id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] };
+    const sold = line(twoHoursId, 1, 1);
+    const payload = { id: saleId, memberId: jamesId, lines: [sold] };
     const first = await commit(payload);
     expect(first.statusCode).toBe(200);
-    const second = await commit({ ...payload, lines: [line(twoHoursId, 9, 9)] });
+    // SCRUM-270 — the same sale id AND the same line id: the same sale, whatever
+    // the retry now says is on that line. It is answered as first recorded.
+    const second = await commit({ ...payload, lines: [{ ...sold, kids: 9, adults: 9 }] });
     expect(second.statusCode).toBe(200);
     expect(second.headers['x-oto-replay']).toBe('true');
     expect(second.json().sale.totals.grossSatang).toBe(first.json().sale.totals.grossSatang);
@@ -302,17 +306,67 @@ describe('committing a sale writes the ledger', () => {
     expect(rows).toHaveLength(1);
   });
 
+  it('refuses the same sale id carrying other line ids, and writes nothing (SCRUM-270)', async () => {
+    // OD-12: the till names the sale and every line. Another cart under a sale
+    // id already recorded is not a retry of that sale — it is refused in words
+    // rather than answered with a sale it does not describe.
+    const saleId = newId();
+    const first = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] });
+    expect(first.statusCode).toBe(200);
+    const linesBefore = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
+
+    const other = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] });
+    expect(other.statusCode).toBe(409);
+    expect(other.headers['x-oto-replay']).toBeUndefined();
+    expect(other.json().error).toEqual({
+      code: 'SALE_LINES_DIFFER',
+      message: 'That sale has already been recorded with different lines — nothing was saved',
+      details: { saleId },
+    });
+    // One more line than was recorded is other lines too.
+    const recordedLineId = linesBefore[0]!.cartLineId;
+    const more = await commit({
+      id: saleId,
+      memberId: jamesId,
+      lines: [{ ...line(twoHoursId, 1, 1), id: recordedLineId }, line(twoHoursId, 1, 0)],
+    });
+    expect(more.statusCode).toBe(409);
+    expect(more.json().error.code).toBe('SALE_LINES_DIFFER');
+
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, saleId))).toHaveLength(1);
+    expect(await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId))).toEqual(linesBefore);
+  });
+
+  it('names every sale line from the ids the till minted (SCRUM-270)', async () => {
+    // One cart line, two units: kids and adults. Each row's id is
+    // the one anybody holding the cart would name it by before it was saved.
+    const saleId = newId();
+    const sold = line(twoHoursId, 2, 1);
+    const res = await commit({ id: saleId, memberId: jamesId, lines: [sold] });
+    expect(res.statusCode).toBe(200);
+    const rows = await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId));
+    expect(rows.map((row) => row.componentKey).sort()).toEqual(['adults', 'kids']);
+    for (const row of rows) {
+      expect(row.cartLineId).toBe(sold.id);
+      expect(row.id).toBe(deriveSaleLineId(saleId, sold.id, row.componentKey ?? row.kind, 0));
+    }
+    // The replay lands on the same rows rather than beside them.
+    const again = await commit({ id: saleId, memberId: jamesId, lines: [sold] });
+    expect(again.headers['x-oto-replay']).toBe('true');
+    expect(await ctx.db.select().from(saleLine).where(eq(saleLine.saleId, saleId))).toHaveLength(rows.length);
+  });
+
   it('refuses a retry that minted a new id under the same action', async () => {
     // Pressing Pay twice through a dropped connection must not become two
     // sales just because the client minted a fresh id for the second attempt.
     const actionId = newId();
     const first = await commit(
-      { id: newId(), memberId: jamesId, lines: [line(twoHoursId, 1, 0)] },
+      { id: newId(), memberId: jamesId, lines: [line(twoHoursId, 1, 1)] },
       { 'x-oto-action-id': actionId },
     );
     expect(first.statusCode).toBe(200);
     const second = await commit(
-      { id: newId(), memberId: jamesId, lines: [line(twoHoursId, 1, 0)] },
+      { id: newId(), memberId: jamesId, lines: [line(twoHoursId, 1, 1)] },
       { 'x-oto-action-id': actionId },
     );
     expect(second.statusCode).toBe(409);
@@ -406,7 +460,7 @@ describe('a ฿0 comp finalises like any other sale', () => {
   it('numbers receipts consecutively within the station series', async () => {
     const comp = (): Record<string, unknown> => ({
       id: newId(),
-      lines: [line(twoHoursId, 1, 0)],
+      lines: [line(twoHoursId, 1, 1)],
       manualDiscounts: [{ id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Staff / family' }],
       finalise: true,
     });
@@ -430,7 +484,7 @@ describe('a ฿0 comp finalises like any other sale', () => {
     const saleId = newId();
     await commit({
       id: saleId,
-      lines: [line(twoHoursId, 1, 0)],
+      lines: [line(twoHoursId, 1, 1)],
       manualDiscounts: [{ id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Service recovery' }],
     });
     const first = await ctx.app.inject({
@@ -866,7 +920,7 @@ describe('a branch-scoped account cannot sell at another branch', () => {
         id: saleId,
         branchId: otherBranchId,
         stationId: otherStationId,
-        lines: [line(otherPackageId, 1, 0)],
+        lines: [line(otherPackageId, 1, 1)],
       },
     });
     expect(written.statusCode).toBe(200);
@@ -1112,7 +1166,7 @@ describe('reading a sale back', () => {
 
   it('names no member on a walk-in rather than inventing one', async () => {
     const saleId = newId();
-    await commit({ id: saleId, lines: [line(twoHoursId, 1, 0)] });
+    await commit({ id: saleId, lines: [line(twoHoursId, 1, 1)] });
     const res = await ctx.app.inject({
       method: 'GET',
       url: `/sales?businessDate=${today()}&limit=200`,
@@ -1176,7 +1230,7 @@ describe('reading a sale back', () => {
 
   it('answers null for all four on a sale that was never voided', async () => {
     const saleId = newId();
-    const committed = await commit({ id: saleId, lines: [line(twoHoursId, 1, 0)] });
+    const committed = await commit({ id: saleId, lines: [line(twoHoursId, 1, 1)] });
     expect(committed.statusCode, committed.body).toBe(200);
     // Present and null — not missing: `toMatchObject` fails on an absent key.
     const never = { voidedAt: null, voidedByAccountId: null, voidedByName: null, voidReason: null };
@@ -1286,7 +1340,7 @@ describe('the payload the till actually sends', () => {
       .limit(1);
     expect(iceCream).toBeDefined();
 
-    const cartLine = line(twoHoursId, 1, 0);
+    const cartLine = line(twoHoursId, 1, 1);
     const saleId = newId();
     const res = await commit({
       id: saleId,
@@ -1312,7 +1366,15 @@ describe('the payload the till actually sends', () => {
     expect(locker.taxableCategory).toBe('addons');
 
     const socksLine = lines.find((l) => l.kind === 'socks')!;
-    expect(socksLine.payload).toEqual({ priceSource: 'till_snapshot' });
+    // S2-14b fix round (gate R1) — still priced from the till's snapshot, but
+    // `a-socks` is the branch's Regular Socks product for STOCK: the line names
+    // it and freezes the share it takes, so finalise takes it off the shelf.
+    expect(socksLine.payload).toMatchObject({
+      priceSource: 'till_snapshot',
+      stock: [expect.objectContaining({ quantity: 1, variantId: null })],
+    });
+    const regularSocks = await ctx.db.select({ id: product.id }).from(product).where(eq(product.code, 'AO-SOCKS'));
+    expect(regularSocks.map((p) => p.id)).toContain(socksLine.productId);
 
     const cataloguePriced = lines.find((l) => l.componentKey === iceCream!.id)!;
     // The platform's price, not the ฿0.01 the till sent, and its own category.
@@ -1344,7 +1406,7 @@ describe('the payload the till actually sends', () => {
         id: saleId,
         stationId,
         memberId: jamesId,
-        lines: [line(twoHoursId, 1, 0)],
+        lines: [line(twoHoursId, 1, 1)],
         occurredAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
       },
     });
@@ -1891,7 +1953,7 @@ describe('removing a holiday range the park has traded on', () => {
     const holidayId = await addHoliday('Traded Holiday', date, date);
     const saleId = newId();
     try {
-      const written = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 0)] });
+      const written = await commit({ id: saleId, memberId: jamesId, lines: [line(twoHoursId, 1, 1)] });
       expect(written.statusCode).toBe(200);
       const [row] = await ctx.db.select().from(sale).where(eq(sale.id, saleId));
       expect(row!.holidayId).toBe(holidayId);
@@ -1976,6 +2038,10 @@ describe('the seam between this and the till', () => {
       '/sales/{id}/finalise',
       // S2-10b — the till's cancel of a sale that took no money.
       '/sales/{id}/void',
+      // S2-11 — History's band and phone search, a refund, and a reprint.
+      '/sales/lookup',
+      '/sales/{id}/refunds',
+      '/sales/{id}/reprints',
       '/sales/{id}',
       // SCRUM-307 — the document check that prices a walk-in's cart.
       '/sales/tier-claims',
@@ -2018,8 +2084,13 @@ describe('the seam between this and the till', () => {
       'DELETE /sales/:id/vouchers/:voucherId dynamic no-target',
       'GET /sales dynamic no-target',
       'GET /sales/:id pos:sale:read no-target',
+      // S2-11 — the lookup is dynamic for the list's reason; a refund and a
+      // reprint check their branch on the sale row, as finalise does.
+      'GET /sales/lookup dynamic no-target',
       'POST /sales pos:sale:create body.branchId',
       'POST /sales/:id/finalise pos:sale:update no-target',
+      'POST /sales/:id/refunds pos:refund:create no-target',
+      'POST /sales/:id/reprints pos:print:reprint no-target',
       'POST /sales/:id/void pos:sale:void no-target',
       'POST /sales/:id/vouchers dynamic no-target',
       'POST /sales/quote pos:sale:create body.branchId',

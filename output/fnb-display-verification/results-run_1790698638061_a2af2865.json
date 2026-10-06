@@ -1,0 +1,17 @@
+{
+  "status": "failed",
+  "tests": [
+    {
+      "name": "separate display guardian acknowledgement retains lock and retry, while staff authorises private readiness",
+      "status": "failed",
+      "errors": [
+        {
+          "message": "TimeoutError: locator.click: Timeout [number]ms exceeded.",
+          "source": "smoke.spec.ts:765:80",
+          "booleanMismatch": null
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

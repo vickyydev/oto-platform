@@ -51,8 +51,11 @@ import { isDefaultTier, tierLabel } from '@/lib/membership';
 export interface TierChangeRequest {
   toTier: CustomerTier;
   evidenceType: string;
-  /** Document expiry, YYYY-MM-DD. The API refuses an already-expired document. */
-  evidenceExpiresAt: string;
+  /**
+   * Document expiry, YYYY-MM-DD, when the document carries one; absent, the
+   * verification never expires. The API refuses an already-expired document.
+   */
+  evidenceExpiresAt?: string;
   note?: string;
 }
 
@@ -365,9 +368,9 @@ export function MemberFormDialog({
         nextErrors.tier = 'Select the document you checked.';
       } else if (isOther && !selection.otherDoc.trim()) {
         nextErrors.tier = 'Name the document you checked.';
-      } else if (!/^\d{4}-\d{2}-\d{2}$/.test(selection.expiresAt)) {
+      } else if (selection.expiresAt && !/^\d{4}-\d{2}-\d{2}$/.test(selection.expiresAt)) {
         nextErrors.tier = "Enter the document's expiry date.";
-      } else if (selection.expiresAt < todayIso()) {
+      } else if (selection.expiresAt && selection.expiresAt < todayIso()) {
         nextErrors.tier = 'That document has already expired — it cannot verify a discounted rate.';
       }
       // The verifier is stamped from the session, so there has to be one.
@@ -435,7 +438,7 @@ export function MemberFormDialog({
             tierChange: {
               toTier: selection.tier,
               evidenceType: selection.proofType,
-              evidenceExpiresAt: selection.expiresAt,
+              ...(selection.expiresAt ? { evidenceExpiresAt: selection.expiresAt } : {}),
               ...(isOther ? { note: selection.otherDoc.trim() } : {}),
             },
           }

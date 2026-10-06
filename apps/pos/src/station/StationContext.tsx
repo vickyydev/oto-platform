@@ -13,6 +13,7 @@ import { stationsApi, type ApiStation, type PickableStation } from '@/api/platfo
 import { ApiError, isMissingRoute } from '@/api/client';
 import { forgetStationDevices, rememberStation, toStationProfile } from '@/station/fleet';
 import { forgetStaffToken, rememberStaffToken } from '@/auth/staffToken';
+import { setLaneStation } from '@/lib/lane';
 
 interface StationContextValue {
   /** The station this till is working, or null while none has been picked. */
@@ -306,6 +307,16 @@ export function StationProvider({ children }: { children: ReactNode }) {
   }, [branch.id]);
 
   const station = fleetAvailable ? picked : localProfiles[branch.id] ?? null;
+
+  /**
+   * The lane arbiter follows the station this till is standing at (offline
+   * plan OD-1): its box is the one the station bridge reaches. A prototype
+   * profile from a deployment with no fleet routes has no box, so no lane.
+   */
+  const laneStationId = fleetAvailable ? (picked?.stationId ?? null) : null;
+  useEffect(() => {
+    setLaneStation(laneStationId);
+  }, [laneStationId]);
 
   return (
     <StationContext.Provider

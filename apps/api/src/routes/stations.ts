@@ -626,7 +626,7 @@ export async function stationSessionRoutes(app: App): Promise<void> {
 /** The same shape the telemetry plugin accepts, so one id follows one gesture. */
 const ACTION_ID = /^[A-Za-z0-9._-]{8,64}$/;
 
-function actionIdOf(req: FastifyRequest): string | null {
+export function actionIdOf(req: FastifyRequest): string | null {
   const sent = req.headers['x-oto-action-id'];
   // Refused rather than echoed when it is the wrong shape: a header copied
   // into a log line is a header that could forge one.
@@ -651,7 +651,7 @@ const CHANNEL_KEEPALIVE_MS = 25_000;
  * socket errors, the process shuts down, the request is aborted mid-flight.
  * All four land on `finish`, once.
  */
-function openChannel(
+export function openChannel(
   req: FastifyRequest,
   reply: FastifyReply,
   stationId: string,

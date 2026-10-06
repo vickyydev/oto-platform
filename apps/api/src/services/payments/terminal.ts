@@ -30,6 +30,7 @@ import { audit } from '../audit';
 import { boxSettings } from '../box';
 import { recordRun } from '../ops';
 import { assertSaleVouchersHeld } from '../vouchers';
+import { settleRefundSlice } from '../refund-slices';
 import {
   attemptView,
   failAttempt,
@@ -422,7 +423,7 @@ async function stampAttempt(
  * written with the same handle for the same reason, and carries the action id
  * so the Box log, the command history and the attempt all answer to one press.
  */
-async function queueTerminalCommand(
+export async function queueTerminalCommand(
   tx: Tx,
   input: {
     boxId: string;
@@ -908,6 +909,34 @@ export async function recordTerminalResult(
         void: { ...(payload.void ?? {}), result: facts },
       },
     });
+    /**
+     * S2-11 — A REFUND'S VOID. The attempt stays `approved` (the money was
+     * taken; the refund row is what says it went back), and the slice of the
+     * refund that asked for this void learns how it ended: approved is money
+     * back on the card; anything else is the terminal refusing — its void
+     * window closed at settlement, or the dialect cannot void this tender — and
+     * the slice falls back to cash, which staff hand over.
+     */
+    const refundId = payload.void?.refundId;
+    if (payload.void?.reason === 'refund' && typeof refundId === 'string' && actionId) {
+      const voided = report.outcome === 'approved';
+      await settleRefundSlice(tx, {
+        refundId,
+        match: (entry) => entry.actionId === actionId,
+        update: voided
+          ? { status: 'done', detail: 'Voided on the terminal', respCode: report.responseCode ?? null, settledAt: new Date().toISOString() }
+          : {
+              status: 'failed',
+              fallback: 'cash',
+              respCode: report.responseCode ?? null,
+              detail: `The terminal refused the void (${report.responseText ?? report.outcome}) — hand it back in cash`,
+              settledAt: new Date().toISOString(),
+            },
+        actorAccountId: null,
+        requestId: ctx.requestId,
+        action: voided ? 'refund.void_approved' : 'refund.void_refused',
+      });
+    }
     return { attempt: attemptView(stamped), replayed: false, phase, run };
   }
 

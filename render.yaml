@@ -1130,6 +1130,87 @@ services:
       # kiosk codes. The body is no longer captured at all, so there is no
       # variable left to set wrongly.
 
+  # ---------------------------------------------------------------------------
+  # deploy bot — a morning WhatsApp digest of what went live. A helper, not
+  # part of the suite: nothing above depends on it and it can be deleted
+  # without touching anything else (then `DROP SCHEMA deploybot CASCADE`).
+  #
+  # It is outside the pnpm workspace, like the OTO App: its own package.json,
+  # its own npm lockfile, and `rootDir` pointing at its folder. That rootDir is
+  # doing real work — Render only redeploys a service when something under its
+  # root changes, so a push to the suite does not restart the bot and drop its
+  # WhatsApp connection every time.
+  #
+  # It shares the staging database but only ever touches its own `deploybot`
+  # schema, which it creates itself on first boot. Drizzle's schemaFilter and
+  # verify-schema both ignore schemas outside the platform's list, so the
+  # platform's migrations never see it. Its pool is capped at 3 connections.
+  #
+  # One instance, always: two would hold the same WhatsApp session and knock
+  # each other off it. See services/deploy-bot/README.md for pairing.
+  - type: web
+    name: oto-deploy-bot
+    runtime: node
+    region: singapore
+    plan: starter
+    branch: main
+    rootDir: services/deploy-bot
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    numInstances: 1
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: TZ
+        value: UTC
+      - key: LOG_LEVEL
+        value: info
+      - key: DATABASE_URL
+        fromDatabase:
+          name: oto-db-staging
+          property: connectionString
+      - key: DB_SCHEMA
+        value: deploybot
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: RENDER_API_KEY
+        sync: false
+      - key: WATCH_SERVICES
+        value: oto-api-staging,oto-pos-staging,oto-launcher-staging,oto-console-staging,oto-app-staging
+      - key: WHATSAPP_PHONE
+        sync: false
+      # Empty until the bot is paired; read it from GET /admin/groups.
+      - key: WHATSAPP_GROUP_ID
+        sync: false
+      - key: ENV_LABEL
+        value: OTO staging
+      - key: DIGEST_TZ
+        value: Asia/Bangkok
+      - key: DIGEST_TIME
+        value: '09:00'
+      - key: DIGEST_LATEST
+        value: '12:00'
+      - key: PART_INTERVAL_MIN
+        value: '30'
+      # Optional. Without a model key the digest lists the commit subjects as
+      # they are instead of a plain-English summary.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SUMMARY_MODEL
+        value: claude-opus-5
+      # Optional: an SMS to this number when WhatsApp drops the session — the
+      # one alert that cannot go over WhatsApp.
+      - key: OWNER_PHONE
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM
+        sync: false
+
 # -----------------------------------------------------------------------------
 # worker — the future home of PROCESS_ROLES=jobs. Not enabled yet.
 #

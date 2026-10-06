@@ -1,26 +1,47 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StationHeader } from '@/components/shared/StationHeader';
-import { TxnKind, MemberActivity as MemberActivityData } from '@/types';
+import { TxnKind, MemberActivity as MemberActivityData, type Wristband } from '@/types';
+import { scanWallet } from '@/api/wallet';
 import {
   businessDateToday,
   calendarDateIn,
   listSales,
+  lookupSales,
+  mergeLookup,
+  parseHistorySearch,
   saleCountLabel,
+  spentOf,
   toTxn,
+  type ApiSale,
   type HistoryTxn,
 } from '@/api/history';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import { membersApi } from '@/api/platform';
 import { apiMemberToMember } from '@/api/mappers';
 import { useBranch } from '@/branch/BranchContext';
+import { explainLookup, useSearchLookup } from '@/lib/historyLookup';
+import { readRefundRequests, type RefundRequestNote } from '@/lib/refundRequests';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SaleDetail } from '@/components/history/SaleDetail';
 import { TransactionCard } from '@/components/history/TransactionCard';
 import { MemberActivity } from '@/components/history/MemberActivity';
+import { ClientActivity } from '@/components/history/ClientActivity';
 import { LEDGER_ONLY_NOTICE } from '@/components/history/ledgerNotice';
 import { PhoneInput } from '@/components/shared/PhoneInput';
-import { Search, X, ScanLine, ArrowLeft, Phone, ArrowRight, Info, Calendar } from 'lucide-react';
+import {
+  Search,
+  X,
+  ScanLine,
+  ArrowLeft,
+  Phone,
+  ArrowRight,
+  Info,
+  Calendar,
+  AlertCircle,
+  Undo2,
+} from 'lucide-react';
 
 /**
  * ORDER HISTORY — the platform's sale ledger, not a sample of one (SCRUM-238).
@@ -37,16 +58,21 @@ import { Search, X, ScanLine, ArrowLeft, Phone, ArrowRight, Info, Calendar } fro
  * showed nothing: the figures on this page are read as the day's takings. When
  * the read fails, the page says so and lists nothing.
  *
- * WHAT STILL DOES NOT WORK is named once, in `LEDGER_ONLY_NOTICE`: refunds,
- * voids, reprints, adding time and the bracelet scan are S2-11 (SCRUM-208), and
- * the scan needs band codes the ledger does not carry yet. Those controls are
- * disabled with that reason rather than left to act on nothing.
+ * S2-11 (SCRUM-208) BRINGS BACK WHAT THE PROTOTYPE'S PAGE DID with the ledger
+ * behind it: the bracelet scan (`GET /sales/lookup?band=`, the prototype's
+ * `getTransactionsByWristband`), the phone lookup across days
+ * (`?phone=`, `getTransactionsByMember`), the same two lookups from the search
+ * box when what is typed is a band code or a phone, and — on the detail —
+ * refunds and reprints. Refunds asked for while the station was offline are
+ * noted on this till and listed here until a manager makes them. What is
+ * still missing is named once, in `LEDGER_ONLY_NOTICE`.
  */
 
 type TabKey = 'all' | TxnKind;
-// The list is the default; "phone" looks up a member and "member" shows that
-// member's orders. A selected sale opens SaleDetail on top of either.
-type View = 'list' | 'phone' | 'member';
+// The list is the default; "scan" takes a bracelet code and "band" shows its
+// orders; "phone" looks up a member and "member" shows that member's orders.
+// A selected sale opens SaleDetail on top of any of them.
+type View = 'list' | 'scan' | 'band' | 'phone' | 'member';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -65,6 +91,13 @@ function explain(err: unknown, subject: string): string {
   return err instanceof ApiError ? err.message : `${subject} could not be read.`;
 }
 
+/** The orders one bracelet leads to, and who they belong to. */
+interface BandResult {
+  code: string;
+  label: string;
+  sales: HistoryTxn[];
+}
+
 export default function History() {
   const { branch } = useBranch();
   const branchApiId = branch.apiId ?? null;
@@ -79,12 +112,26 @@ export default function History() {
   const [date, setDate] = useState('');
   const [txns, setTxns] = useState<HistoryTxn[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** Bumped to read the day again without changing the day — after a void (SCRUM-430). */
+  /** Bumped to read the day again without changing the day — after a void (SCRUM-430) or a refund (S2-11). */
   const [reread, setReread] = useState(0);
 
   const [phoneInput, setPhoneInput] = useState('');
   const [memberActivity, setMemberActivity] = useState<MemberActivityData | null>(null);
   const [memberError, setMemberError] = useState<string | null>(null);
+
+  // S2-11 — the bracelet scan.
+  const [scanInput, setScanInput] = useState('');
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [bandResult, setBandResult] = useState<BandResult | null>(null);
+  /** S2-14a round 2 — the platform wallet the scanned band carries, if any. */
+  const [bandWallet, setBandWallet] = useState<Wristband | null>(null);
+  const [bandError, setBandError] = useState<string | null>(null);
+
+  /** Refunds noted on this till while the station was offline, read again on the way back from a sale. */
+  const [refundRequests, setRefundRequests] = useState<RefundRequestNote[]>(() => readRefundRequests());
+  useEffect(() => {
+    if (!selected) setRefundRequests(readRefundRequests());
+  }, [selected]);
 
   // The day the park is on, from the branch's own clock and 05:00 boundary —
   // not the browser's calendar, which between midnight and five belongs to
@@ -124,6 +171,20 @@ export default function History() {
     };
   }, [branchApiId, date, reread]);
 
+  /** One sale on every list on this page, replaced by what `patch` makes of it. */
+  const patchEverywhere = useCallback(
+    (saleId: string, patch: (t: HistoryTxn) => HistoryTxn) => {
+      const swap = (t: HistoryTxn) => (t.id === saleId ? patch(t) : t);
+      setMemberActivity((current) =>
+        current
+          ? { ...current, transactions: current.transactions.map((t) => swap(t as HistoryTxn)) }
+          : current,
+      );
+      setBandResult((current) => (current ? { ...current, sales: current.sales.map(swap) } : current));
+    },
+    [],
+  );
+
   /**
    * A sale voided on its page (SCRUM-430): the day's list is read again from
    * the ledger, so its row stops saying "Unpaid" without a reload of the page;
@@ -134,37 +195,49 @@ export default function History() {
   const onVoided = useCallback(
     (saleId: string) => {
       setReread((n) => n + 1);
-      setMemberActivity((current) =>
-        current
-          ? {
-              ...current,
-              transactions: current.transactions.map((t) =>
-                t.id === saleId
-                  ? toTxn(
-                      { ...(t as HistoryTxn).ledger, status: 'voided' },
-                      { id: branch.id, name: branch.name },
-                    )
-                  : t,
-              ),
-            }
-          : current,
+      patchEverywhere(saleId, (t) =>
+        toTxn({ ...t.ledger, status: 'voided' }, { id: branch.id, name: branch.name }),
       );
     },
-    [branch.id, branch.name],
+    [branch.id, branch.name, patchEverywhere],
+  );
+
+  /**
+   * A sale refunded on its page (S2-11): the same, with the sale the refund
+   * answered — its status and its refunded total — so every row showing it
+   * says "Partial refund" or "Refunded" at once.
+   */
+  const onRefunded = useCallback(
+    (saleId: string, refunded: ApiSale) => {
+      setReread((n) => n + 1);
+      patchEverywhere(saleId, (t) =>
+        toTxn(
+          { ...t.ledger, status: refunded.status, totals: refunded.totals },
+          { id: branch.id, name: branch.name },
+        ),
+      );
+    },
+    [branch.id, branch.name, patchEverywhere],
   );
 
   const backToList = () => {
     setPhoneInput('');
     setMemberActivity(null);
     setMemberError(null);
+    setScanInput('');
+    setScanError(null);
+    setBandResult(null);
+    setBandError(null);
     setView('list');
   };
 
   /**
    * A member's orders, from the ledger: the phone finds the member, and the
-   * member's id filters the same sale list. It is THIS BRANCH's sales — that is
-   * the width `GET /sales` answers for a reception session — so the header says
-   * so rather than repeating the prototype's "all branches".
+   * platform's phone lookup (`GET /sales/lookup?phone=`, S2-11) finds every
+   * sale of theirs, on any day. It is THIS BRANCH's sales — that is the width
+   * the ledger answers for a reception session — so the header says so rather
+   * than repeating the prototype's "all branches". A deployment without the
+   * lookup still answers by the member's id, as it did before S2-11.
    */
   const submitPhone = useCallback(
     async (e: React.FormEvent) => {
@@ -188,26 +261,23 @@ export default function History() {
           });
           return;
         }
-        const sales = await listSales(branchApiId, { memberId: member.id });
+        const sales = await lookupSales(branchApiId, { phone: member.phone })
+          .then((found) => found.sales)
+          .catch((err: unknown) => {
+            if (isMissingRoute(err)) return listSales(branchApiId, { memberId: member.id });
+            throw err;
+          });
         const withBranch = sales.map((t) => ({
           ...t,
           branchId: branch.id,
           branchName: branch.name,
         }));
-        // What this member actually paid: an order rung up and never tendered,
-        // or one that was voided, is not spend.
-        const spent = withBranch
-          .filter((t) => t.badge !== 'unpaid' && t.badge !== 'voided')
-          .reduce(
-            (sum, t) => sum + (t.ledger.totals.grossSatang - t.ledger.totals.refundedSatang) / 100,
-            0,
-          );
         setMemberActivity({
           member: apiMemberToMember(member),
           phone: member.phone,
           bandCodes: [],
           transactions: withBranch,
-          totalSpent: Math.round(spent * 100) / 100,
+          totalSpent: spentOf(withBranch),
           orderCount: withBranch.length,
           branchVisits: withBranch.length
             ? [{ branchId: branch.id, branchName: branch.name, count: withBranch.length }]
@@ -220,22 +290,78 @@ export default function History() {
     [phoneInput, branchApiId, branch.id, branch.name],
   );
 
+  /**
+   * THE BRACELET SCAN (S2-11) — the prototype's "Scan bracelet" view
+   * (`ScanWristband` in History, `getTransactionsByWristband`). A scanner that
+   * types reads the band's QR into the box; staff can also type the short code
+   * printed under it. The platform finds the band and its sale; nothing here
+   * checks the code's signature, which is the gate's job, not History's.
+   */
+  const submitScan = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      const search = parseHistorySearch(scanInput);
+      if (search.kind !== 'band') {
+        setScanError(
+          'That is not a bracelet code. Scan the QR on the band, or type the short code printed under it — for example T1-7KMQ4X.',
+        );
+        return;
+      }
+      setScanError(null);
+      setView('band');
+      setBandResult(null);
+      setBandError(null);
+      setBandWallet(null);
+      // S2-14a round 2 — the band's real credit, beside its sales. A lookup
+      // that fails leaves the credit unsaid rather than reading ฿0.
+      void scanWallet(search.code).then(setBandWallet, () => setBandWallet(null));
+      try {
+        const found = await lookupSales(branchApiId, { band: search.code });
+        setBandResult({
+          code: search.code,
+          label: search.label,
+          sales: found.sales.map((t) => ({ ...t, branchId: branch.id, branchName: branch.name })),
+        });
+      } catch (err) {
+        setBandError(explainLookup(err, 'band'));
+      }
+    },
+    [scanInput, branchApiId, branch.id, branch.name],
+  );
+
+  /** The search box asking the platform, when what it holds is a band code or a phone. */
+  const lookup = useSearchLookup(query, branchApiId, reread);
+
   const q = query.trim().toLowerCase();
-  // Universal search across reference (receipt number), customer name/phone,
-  // operator, and amount — combined with the active tab filter.
+  // Universal search across reference (receipt number), the booking reference
+  // a redemption sale carries (SCRUM-477), customer name/phone, operator, and
+  // amount — combined with the active tab filter — plus, for a band code or a
+  // phone, what the platform found for it on any day.
   const filtered = useMemo(() => {
     const all = txns ?? [];
-    const byTab = tab === 'all' ? all : all.filter((t) => t.kind === tab);
+    const onTab = (t: HistoryTxn) => tab === 'all' || t.kind === tab;
+    const byTab = all.filter(onTab);
     if (!q) return byTab;
-    return byTab.filter(
+    const local = byTab.filter(
       (t) =>
         t.reference.toLowerCase().includes(q) ||
+        (t.bookingReference?.toLowerCase().includes(q) ?? false) ||
         (t.customerLabel?.toLowerCase().includes(q) ?? false) ||
         (t.ledger.member?.phone.toLowerCase().includes(q) ?? false) ||
         t.operatorName.toLowerCase().includes(q) ||
         String(t.total).includes(q),
     );
-  }, [txns, tab, q]);
+    return mergeLookup(local, lookup.sales ? lookup.sales.filter(onTab) : null);
+  }, [txns, tab, q, lookup.sales]);
+
+  const lookupCaption =
+    lookup.search.kind === 'text'
+      ? null
+      : lookup.error
+        ? lookup.error
+        : lookup.pending
+          ? `Looking up ${lookup.search.kind === 'band' ? `bracelet ${lookup.search.label}` : 'this phone number'}…`
+          : `${lookup.search.kind === 'band' ? `Bracelet ${lookup.search.label}` : 'This phone number'}: ${saleCountLabel(lookup.sales?.length ?? 0)} on the platform, any day`;
 
   const back = (
     <div className="shrink-0 mb-2">
@@ -245,6 +371,8 @@ export default function History() {
       </Button>
     </div>
   );
+
+  const bandHolder = bandResult?.sales.find((t) => t.ledger.member)?.ledger.member ?? null;
 
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background text-foreground overflow-hidden">
@@ -260,7 +388,94 @@ export default function History() {
               timeZone={timeZone}
               onBack={() => setSelected(null)}
               onVoided={onVoided}
+              onRefunded={onRefunded}
             />
+          ) : view === 'scan' ? (
+            <div className="flex-1 min-h-0 flex flex-col">
+              {back}
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-6 animate-in fade-in duration-500">
+                <div className="w-full max-w-2xl">
+                  <div className="flex flex-col items-center text-center mb-8">
+                    <div className="w-20 h-20 rounded-2xl bg-primary/20 text-primary flex items-center justify-center mb-4">
+                      <ScanLine className="w-10 h-10" />
+                    </div>
+                    <h2 className="text-3xl font-bold tracking-tight">Scan bracelet</h2>
+                    <p className="text-muted-foreground mt-2 text-lg">
+                      Scan or type a bracelet code to see everything bought on it.
+                    </p>
+                  </div>
+                  <form onSubmit={submitScan} className="flex gap-3 mb-3">
+                    <Input
+                      autoFocus
+                      value={scanInput}
+                      onChange={(e) => {
+                        setScanInput(e.target.value);
+                        if (scanError) setScanError(null);
+                      }}
+                      placeholder="Bracelet code e.g. T1-7KMQ4X"
+                      aria-label="Bracelet code"
+                      className="h-16 text-2xl px-5 font-mono"
+                    />
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="h-16 px-8 text-xl gap-2 shrink-0"
+                      disabled={!scanInput.trim()}
+                    >
+                      Find
+                      <ArrowRight className="w-5 h-5" />
+                    </Button>
+                  </form>
+                  {scanError && (
+                    <div className="flex items-center gap-2 text-destructive text-sm mb-4" role="alert">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{scanError}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : view === 'band' ? (
+            bandError ? (
+              <div className="flex-1 min-h-0 flex flex-col">
+                {back}
+                <div className="flex-1 flex items-center justify-center text-center text-muted-foreground px-6">
+                  {bandError}
+                </div>
+              </div>
+            ) : !bandResult ? (
+              <div className="flex-1 min-h-0 flex flex-col">
+                {back}
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                  Looking this bracelet up…
+                </div>
+              </div>
+            ) : (
+              <ClientActivity
+                code={bandResult.label}
+                activity={{
+                  wristband: bandWallet,
+                  member: null,
+                  transactions: bandResult.sales,
+                  totalSpent: spentOf(bandResult.sales),
+                  orderCount: bandResult.sales.length,
+                }}
+                holderName={
+                  bandHolder
+                    ? bandHolder.nickname || bandHolder.name || bandHolder.phone
+                    : bandResult.sales.length > 0
+                      ? 'Walk-in'
+                      : 'Unknown band'
+                }
+                memberLine={bandHolder ? { nickname: bandHolder.nickname, phone: bandHolder.phone } : null}
+                {...(bandWallet ? {} : { creditLabel: 'No credit on this band' })}
+                spentLabel={`Total spent (${branch.name})`}
+                onOpenTxn={(t) => setSelected(t as HistoryTxn)}
+                onBack={backToList}
+                badgeFor={(t) => (t as HistoryTxn).badge}
+                timeZone={timeZone}
+              />
+            )
           ) : view === 'phone' ? (
             <div className="flex-1 min-h-0 flex flex-col">
               {back}
@@ -318,7 +533,7 @@ export default function History() {
                 onOpenTxn={(t) => setSelected(t as HistoryTxn)}
                 onBack={backToList}
                 spentLabel={`Total spent (${branch.name})`}
-                bandsLabel="Bracelet codes arrive with SCRUM-208"
+                bandsLabel="Open an order to see its bracelet codes"
                 badgeFor={(t) => (t as HistoryTxn).badge}
                 timeZone={timeZone}
               />
@@ -335,7 +550,7 @@ export default function History() {
                     aria-label="Search transactions"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search by name, receipt number, operator, amount…"
+                    placeholder="Search by name, receipt number, bracelet, phone, operator, amount…"
                     className="w-full h-12 pl-12 pr-12 rounded-xl bg-muted/50 border border-border text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                   {query && (
@@ -369,12 +584,7 @@ export default function History() {
                   <Phone className="w-5 h-5" />
                   Find by phone
                 </Button>
-                <Button
-                  size="lg"
-                  className="h-12 gap-2 shrink-0"
-                  disabled
-                  title={LEDGER_ONLY_NOTICE}
-                >
+                <Button size="lg" className="h-12 gap-2 shrink-0" onClick={() => setView('scan')}>
                   <ScanLine className="w-5 h-5" />
                   Scan bracelet
                 </Button>
@@ -398,14 +608,38 @@ export default function History() {
                     </button>
                   ))}
                 </div>
-                {txns && (
-                  <span className="text-sm text-muted-foreground">
-                    {saleCountLabel(txns.length)} recorded at {branch.name}
+                {lookupCaption ? (
+                  <span className="text-sm text-muted-foreground" data-testid="search-lookup">
+                    {lookupCaption}
                   </span>
+                ) : (
+                  txns && (
+                    <span className="text-sm text-muted-foreground">
+                      {saleCountLabel(txns.length)} recorded at {branch.name}
+                    </span>
+                  )
                 )}
               </div>
 
-              {/* The one notice: what this page cannot do yet, and the ticket. */}
+              {/* S2-11 — refunds noted while the station was offline, until one is made. */}
+              {refundRequests.length > 0 && (
+                <div
+                  className="shrink-0 mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2"
+                  data-testid="refund-requests-waiting"
+                >
+                  <Undo2 className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span className="min-w-0">
+                    {refundRequests.length === 1
+                      ? '1 refund was requested while the station was offline'
+                      : `${refundRequests.length} refunds were requested while the station was offline`}
+                    {' — '}
+                    {[...new Set(refundRequests.map((r) => r.receiptNumber ?? 'a sale with no receipt number'))].join(', ')}
+                    . Open the sale to make the refund.
+                  </span>
+                </div>
+              )}
+
+              {/* The one notice: what this page cannot do yet. */}
               <div className="shrink-0 mb-4 rounded-lg border border-dashed p-3 text-sm text-muted-foreground flex items-start gap-2">
                 <Info className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{LEDGER_ONLY_NOTICE}</span>
@@ -422,7 +656,9 @@ export default function History() {
               ) : filtered.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center text-muted-foreground">
                   {q
-                    ? `No transactions match “${query.trim()}”.`
+                    ? lookup.pending
+                      ? `Looking for “${query.trim()}”…`
+                      : `No transactions match “${query.trim()}”.`
                     : tab !== 'all' && (txns?.length ?? 0) > 0
                       ? `No ${TABS.find((t) => t.key === tab)?.label.toLowerCase() ?? tab} sales on ${date} — ${txns!.length} other sale${txns!.length === 1 ? '' : 's'} that day.`
                       : `No sales recorded on ${date}.`}

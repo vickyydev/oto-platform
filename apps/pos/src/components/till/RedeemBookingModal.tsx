@@ -6,12 +6,17 @@ import { Badge } from '@/components/ui/badge';
 import { Booking } from '@/types';
 import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
 import {
+  BOOKING_QR_SIGNATURE_INVALID,
   bookingsApi,
   describeRedemption,
+  fetchScannedBooking,
+  typedBookingQr,
+  type ScannedBooking,
   toPosBooking,
   type PlatformBooking,
   type PlatformRedemption,
   type RedeemOutcome,
+  type RedeemedBand,
   type UnmappedLine,
 } from '@/api/bookings';
 import { QrCode, CheckCircle2, AlertTriangle, Search, Ticket, Users, Baby, CreditCard, Smartphone, Loader2 } from 'lucide-react';
@@ -28,9 +33,24 @@ interface RedeemBookingModalProps {
    * put with the reason nothing was issued.
    */
   onConfirm: (booking: Booking, platform: PlatformBooking) => Promise<RedeemOutcome>;
+  /**
+   * S2-12 round 3 — the booking a scanned QR named: the id the box vouched
+   * for after checking the signature, or the raw code a scanner on this
+   * device read, which the platform checks before anything opens. When set as
+   * the dialog opens, it goes straight to that booking's summary instead of
+   * waiting for a typed reference.
+   */
+  scannedBooking?: ScannedBooking | null;
 }
 
-type Stage = 'lookup' | 'summary' | 'already_redeemed';
+type Stage = 'lookup' | 'summary' | 'already_redeemed' | 'issued';
+
+/** What the counter's box issued for a booking it redeemed offline (S2-12 round 5). */
+interface Issued {
+  receiptNumber: string | null;
+  bands: RedeemedBand[];
+  notes: string[];
+}
 
 function paymentMethodLabel(pm: string): string {
   if (pm === 'card') return 'Card';
@@ -58,14 +78,23 @@ function paymentMethodIcon(pm: string) {
  * answer, the panel says which of the three things happened — no connection, no
  * such route on this deployment, or the lookup failed — and nothing is issued.
  */
-export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: RedeemBookingModalProps) {
+export function RedeemBookingModal({
+  open,
+  onOpenChange,
+  branchId,
+  onConfirm,
+  scannedBooking = null,
+}: RedeemBookingModalProps) {
   const [stage, setStage] = useState<Stage>('lookup');
   const [refInput, setRefInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [foundBooking, setFoundBooking] = useState<Booking | null>(null);
   const [foundPlatform, setFoundPlatform] = useState<PlatformBooking | null>(null);
   const [unmapped, setUnmapped] = useState<UnmappedLine[]>([]);
+  // S2-12 — why nothing can be issued against the booking found (not paid), or null.
+  const [notPaid, setNotPaid] = useState<string | null>(null);
   const [redemption, setRedemption] = useState<PlatformRedemption | null>(null);
+  const [issued, setIssued] = useState<Issued | null>(null);
   const [waiting, setWaiting] = useState<PlatformBooking[]>([]);
   const [waitingState, setWaitingState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const [waitingNote, setWaitingNote] = useState<string | null>(null);
@@ -90,6 +119,7 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
     setFoundPlatform(p);
     setFoundBooking(mapped.booking);
     setUnmapped(mapped.unmapped);
+    setNotPaid(mapped.notPaidReason);
     setRedemption(p.redemption);
     setStage(p.redemption ? 'already_redeemed' : 'summary');
   }, []);
@@ -103,7 +133,9 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
     setFoundBooking(null);
     setFoundPlatform(null);
     setUnmapped([]);
+    setNotPaid(null);
     setRedemption(null);
+    setIssued(null);
     setLookingUp(false);
     setTimeout(() => inputRef.current?.focus(), 80);
 
@@ -143,10 +175,16 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
     setLookingUp(true);
     setError(null);
     try {
-      const p = await bookingsApi.byReference(trimmed, branchId ?? undefined);
+      // A booking QR read into this field by a scanner goes to the platform
+      // whole, which checks its signature; anything else is the reference
+      // printed beside it.
+      const qr = typedBookingQr(trimmed);
+      const p = qr ? await bookingsApi.byQr(qr) : await bookingsApi.byReference(trimmed, branchId ?? undefined);
       show(p);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 404 && !isMissingRoute(err)) {
+      if (err instanceof ApiError && err.code === BOOKING_QR_SIGNATURE_INVALID) {
+        setError(err.message);
+      } else if (err instanceof ApiError && err.status === 404 && !isMissingRoute(err)) {
         setError(`No booking found for "${trimmed}".`);
       } else {
         setError(readFailure(err, `"${trimmed}"`));
@@ -155,6 +193,36 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
       setLookingUp(false);
     }
   }
+
+  // A scanned QR opened this dialog: go straight to that booking.
+  useEffect(() => {
+    if (!open || !scannedBooking) return;
+    let live = true;
+    setLookingUp(true);
+    setError(null);
+    void fetchScannedBooking(scannedBooking)
+      .then((p) => {
+        if (!live) return;
+        setRefInput(p.reference);
+        show(p);
+      })
+      .catch((err: unknown) => {
+        if (!live) return;
+        if (err instanceof ApiError && err.code === BOOKING_QR_SIGNATURE_INVALID) {
+          setError(err.message);
+        } else if (err instanceof ApiError && err.status === 404 && !isMissingRoute(err)) {
+          setError('No booking found for the scanned QR.');
+        } else {
+          setError(readFailure(err, 'the scanned booking'));
+        }
+      })
+      .finally(() => {
+        if (live) setLookingUp(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [open, scannedBooking, show, readFailure]);
 
   function handleLookup() {
     void lookup(refInput);
@@ -167,12 +235,19 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
   }
 
   async function handleConfirm() {
-    if (!foundBooking || !foundPlatform || confirming) return;
+    if (!foundBooking || !foundPlatform || confirming || notPaid) return;
     setConfirming(true);
     setError(null);
     try {
       const outcome = await onConfirm(foundBooking, foundPlatform);
       if (outcome.ok) {
+        // Redeemed by the counter's box with the link down: stay on the codes,
+        // for reading aloud should a band not print.
+        if (outcome.issued) {
+          setIssued(outcome.issued);
+          setStage('issued');
+          return;
+        }
         onOpenChange(false);
         return;
       }
@@ -201,6 +276,14 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
   const regularAdults = foundBooking
     ? foundBooking.lines.reduce((s, l) => (l.dropOff ? s : s + l.adults), 0)
     : 0;
+  // S2-12 — the socks and extras paid for online, summed by name across lines,
+  // so reception hands them over with the wristbands.
+  const paidExtras = foundBooking
+    ? [...foundBooking.lines
+        .flatMap((l) => l.addOns)
+        .reduce((byName, a) => byName.set(a.name, (byName.get(a.name) ?? 0) + a.quantity), new Map<string, number>())
+        .entries()]
+    : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -353,7 +436,7 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
                   </div>
                 )}
                 <div className="text-right font-semibold text-foreground">
-                  ฿{foundBooking.total.toLocaleString()} paid
+                  ฿{foundBooking.total.toLocaleString()} {notPaid ? 'not paid' : 'paid'}
                 </div>
               </div>
             </div>
@@ -370,6 +453,9 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
                 {foundBooking.willIssue.creditTotalTHB > 0 && (
                   <li>• ฿{foundBooking.willIssue.creditTotalTHB.toLocaleString()} credit</li>
                 )}
+                {paidExtras.map(([name, quantity]) => (
+                  <li key={name}>• {quantity} × {name}</li>
+                ))}
                 {dropOffChildren.length > 0 && (
                   <li>• Drop-off check-in for {dropOffChildren.join(', ')}</li>
                 )}
@@ -408,6 +494,13 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
               </div>
             )}
 
+            {notPaid && (
+              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                {notPaid}
+              </div>
+            )}
+
             {error && (
               <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -422,7 +515,7 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
               <Button
                 className="flex-1 h-12"
                 onClick={() => void handleConfirm()}
-                disabled={confirming || foundBooking.lines.length === 0}
+                disabled={confirming || foundBooking.lines.length === 0 || notPaid !== null}
               >
                 {confirming ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -432,6 +525,50 @@ export function RedeemBookingModal({ open, onOpenChange, branchId, onConfirm }: 
                 Confirm &amp; Issue
               </Button>
             </div>
+          </div>
+        )}
+
+        {stage === 'issued' && foundBooking && issued && (
+          <div className="space-y-5 pt-1">
+            <div className="flex flex-col items-center text-center gap-3 py-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-lg">Redeemed on this counter's box</p>
+                <p className="font-mono text-muted-foreground mt-0.5">{foundBooking.reference}</p>
+                {issued.receiptNumber && (
+                  <p className="text-sm text-muted-foreground mt-0.5">Receipt {issued.receiptNumber}</p>
+                )}
+              </div>
+            </div>
+
+            {issued.bands.length > 0 && (
+              <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm space-y-1">
+                <p className="text-muted-foreground">
+                  Wristband codes — read them out if a band did not print:
+                </p>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5" data-testid="band-codes">
+                  {issued.bands.map((band) => (
+                    <span key={band.id} className="whitespace-nowrap">
+                      <span className="font-mono font-semibold text-foreground">{band.shortCode ?? 'No code'}</span>
+                      {band.childName && <span className="text-muted-foreground"> {band.childName}</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {issued.notes.length > 0 && (
+              <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>{issued.notes.join(' · ')}</span>
+              </div>
+            )}
+
+            <Button className="w-full h-12" onClick={() => onOpenChange(false)}>
+              Done
+            </Button>
           </div>
         )}
 

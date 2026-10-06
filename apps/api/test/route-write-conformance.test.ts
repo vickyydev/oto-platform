@@ -221,6 +221,19 @@ const NO_DIRECT_WRITE = [
   // is transacted.
   'POST /branches/:branchId/menu/import/preview',
   'POST /print-templates/:id/preview.png',
+  // SCRUM-471: the booth voucher slip's live preview draws a sample and saves nothing.
+  'POST /booths/:id/voucher-preview.png',
+  /**
+   * S2-12 (SCRUM-209) — THE INVARIANT OF ARRIVAL ROUND 1, measured.
+   *
+   * The payment gateway's hosted page sends the guest's browser back here with
+   * a signed `paymentResponse`. It is verified and read as a display hint, and
+   * the browser is redirected to the booking site's waiting page — and that is
+   * all: a booking is paid only by the backend notification plus an inquiry,
+   * or by the poller. A write reached from this handler fails the re-measure
+   * below, which is the point of listing it.
+   */
+  'POST /public/bookings/return',
   /**
    * S2-10a — what a SIMULATED card terminal will do with the next tender.
    *
@@ -232,6 +245,21 @@ const NO_DIRECT_WRITE = [
    * and scan-simulate routes above it.
    */
   'POST /payments/terminal-simulator',
+  /**
+   * Offline plan Round 3 — the station bridge's virtual-box mount. Every one of
+   * these crosses into the box: a lease and an intent are the box's session
+   * manager, a member, child or visit record is a fact sealed into the box's
+   * own outbox with its overlay row in ONE store transaction
+   * (`@oto/box-agent` `station-bridge.ts`, `produce`), and ending a box
+   * session forgets a hash held in memory. The unlock beside them does write
+   * here — the platform session's lock and its audit row — and does it in
+   * `withTx`, so it is not on this list.
+   */
+  'POST /box/v1/station/:stationId/intents',
+  'POST /box/v1/station/:stationId/lease',
+  'POST /box/v1/station/:stationId/lease/release',
+  'POST /box/v1/station/:stationId/lease/renew',
+  'POST /box/v1/station/:stationId/lock',
   'POST /sales/quote',
   'POST /stations/:id/button',
   'POST /stations/:id/intents',
@@ -424,10 +452,27 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /box/v1/commands/:commandId/result [credential:box]',
   'POST /box/v1/commands/poll [credential:box]',
   'POST /box/v1/heartbeat [credential:box]',
+  /**
+   * S2-13 round 4 — a box's photo upload. A machine's own replay protection,
+   * as the print-job result: the photo id IS the file's id, so asking for an
+   * upload URL again is the same file, and linking again is a replay that
+   * writes nothing (`linkBoxPhoto`).
+   */
+  'POST /box/v1/photos/:id/link [credential:box]',
+  'POST /box/v1/photos/:id/upload-url [credential:box]',
   'POST /box/v1/print-jobs/:id/result [credential:box]',
   'POST /box/v1/register [secretResponse,credential:box-claim]',
   'POST /box/v1/sync/key [credential:box]',
   'POST /box/v1/sync/push [credential:box]',
+  /**
+   * Offline plan Round 3 — the station bridge. The unlock's answer IS a
+   * credential (the box session), and a retried unlock is a second attempt
+   * that counts as one, exactly as a second `POST /auth/unlock` does. A
+   * display's intent through the bridge is the display's own credential and
+   * fencing, as `POST /display/intents` is.
+   */
+  'POST /box/v1/station/:stationId/display/intents [credential:display]',
+  'POST /box/v1/station/:stationId/unlock [secretResponse]',
   // Independent display credentials have no staff account replay key. Minting
   // rotates the pending single-use hash and must never store its secret reply;
   // expiry is idempotent. Typed answers keep their action/request id and use
@@ -494,6 +539,22 @@ const OPEN_WITHOUT_A_KEY = [
   'POST /auth/sign-out',
   'POST /booth/pair',
   'POST /public/bookings',
+  /**
+   *   - **one attempt per booking** — `POST /public/bookings/:id/checkout`
+   *     (S2-12). The booking's row is locked and it links to ONE gateway
+   *     attempt, so a second press finds that attempt and is answered with
+   *     the same page; a new invoice is never minted for a booking that
+   *     already has one.
+   *   - **it writes nothing** — `POST /public/bookings/return`, the hosted
+   *     page's browser return (on the no-write list above).
+   *   - **the notification's own key** — `POST /webhooks/2c2p/hosted/:attemptId`,
+   *     the simulated page's press: it moves the simulator's in-memory record
+   *     and sends a signed notification through the webhook below, whose
+   *     unique indexes make a second press of the same payment a duplicate.
+   */
+  'POST /public/bookings/:id/checkout',
+  'POST /public/bookings/return',
+  'POST /webhooks/2c2p/hosted/:attemptId',
   /**
    *   - **the delivery is its own unique key** — `POST /webhooks/2c2p/payment`
    *     (S2-10a). The caller is 2C2P's server and has no account, so the

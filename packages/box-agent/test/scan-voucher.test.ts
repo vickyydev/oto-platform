@@ -168,7 +168,7 @@ test('digits alone stay the shop’s: the product handler gets them, not the vou
 
 test('the router claims a voucher ahead of any registered handler, and lists it first', async () => {
   const { router } = open();
-  assert.deepEqual(router.registered(), ['voucher'], 'the router’s own handler is always on');
+  assert.deepEqual(router.registered(), ['voucher', 'booking'], 'the router’s own handlers are always on');
   const seen: string[] = [];
   router.register({
     name: 'greedy',
@@ -179,7 +179,7 @@ test('the router claims a voucher ahead of any registered handler, and lists it 
       return { outcome: 'handled' as const };
     },
   });
-  assert.deepEqual(router.registered(), ['voucher', 'greedy'], 'match order: the voucher, then registrations');
+  assert.deepEqual(router.registered(), ['voucher', 'booking', 'greedy'], 'match order: the voucher, the booking QR, then registrations');
 
   const code = mint(53);
   const voucher = await router.deliver(STATION_ID, { code, source: 'camera' });

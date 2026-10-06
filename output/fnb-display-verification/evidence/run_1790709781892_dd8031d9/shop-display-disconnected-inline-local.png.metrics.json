@@ -1,0 +1,102 @@
+{
+  "before": {
+    "viewport": {
+      "width": 1440,
+      "height": 1024,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "document": {
+      "tag": "html",
+      "top": 0,
+      "left": 0,
+      "width": 1440,
+      "height": 1024,
+      "scrollTop": 0,
+      "scrollLeft": 0,
+      "scrollHeight": 1024,
+      "clientHeight": 1024,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflowY": "visible",
+      "overflowX": "visible",
+      "position": "static",
+      "paddingTop": "0px",
+      "transform": "none"
+    },
+    "body": {
+      "tag": "body",
+      "top": 0,
+      "left": 0,
+      "width": 1440,
+      "height": 1024,
+      "scrollTop": 0,
+      "scrollLeft": 0,
+      "scrollHeight": 1024,
+      "clientHeight": 1024,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflowY": "visible",
+      "overflowX": "visible",
+      "position": "static",
+      "paddingTop": "0px",
+      "transform": "none"
+    },
+    "root": null,
+    "pane": null,
+    "language": null,
+    "heading": null,
+    "languageAncestors": [],
+    "headingAncestors": []
+  },
+  "after": {
+    "viewport": {
+      "width": 1440,
+      "height": 1024,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "document": {
+      "tag": "html",
+      "top": 0,
+      "left": 0,
+      "width": 1440,
+      "height": 1024,
+      "scrollTop": 0,
+      "scrollLeft": 0,
+      "scrollHeight": 1024,
+      "clientHeight": 1024,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflowY": "visible",
+      "overflowX": "visible",
+      "position": "static",
+      "paddingTop": "0px",
+      "transform": "none"
+    },
+    "body": {
+      "tag": "body",
+      "top": 0,
+      "left": 0,
+      "width": 1440,
+      "height": 1024,
+      "scrollTop": 0,
+      "scrollLeft": 0,
+      "scrollHeight": 1024,
+      "clientHeight": 1024,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflowY": "visible",
+      "overflowX": "visible",
+      "position": "static",
+      "paddingTop": "0px",
+      "transform": "none"
+    },
+    "root": null,
+    "pane": null,
+    "language": null,
+    "heading": null,
+    "languageAncestors": [],
+    "headingAncestors": []
+  }
+}

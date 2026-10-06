@@ -403,23 +403,9 @@ export const chargeFnbCredit = (wristbandId: string, amount: number, by?: string
   return wb.creditBalanceTHB;
 };
 
-/**
- * Increment `redeemedQty` on a prepaid item entitlement. Mirrors chargeFnbCredit
- * — called once at order confirmation for each prepaid line, never at add-time.
- * Returns the remaining (unredeemed) quantity after the increment.
- */
-export const redeemPrepaidItem = (
-  wristbandId: string,
-  menuItemId: string,
-  qty: number
-): number => {
-  const wb = mockWristbands.find(w => w.id === wristbandId);
-  if (!wb?.foodProvision?.items) return 0;
-  const item = wb.foodProvision.items.find(i => i.menuItemId === menuItemId);
-  if (!item) return 0;
-  item.redeemedQty = Math.min(item.qty, item.redeemedQty + Math.max(0, qty));
-  return item.qty - item.redeemedQty;
-};
+// Prepaid item entitlements are served on the platform (SCRUM-494): the F&B
+// order's prepaid lines are taken off the child's stay when the order closes
+// (`apps/api/src/services/band-food.ts`, `redeemSalePrepaid`).
 
 // --- Operators / face-scan login (mocked) ---------------------------------
 // Stand-in for the HR face enrollments. In production these match the staff
@@ -1331,8 +1317,20 @@ export const recordSale = (sale: Sale): void => {
   }
 };
 
-export const recordFnbOrder = (order: FnbOrder): void => {
+/**
+ * S2-14b — `decrementStock: false` when the platform closed the sale: its
+ * finalise took the stock off the platform's shelves, and a second, local
+ * decrement of the ported inventory would be the prototype's count drifting
+ * away from the real one. The record itself is still kept for the screens
+ * that read this store.
+ */
+export interface RecordOrderOptions {
+  decrementStock?: boolean;
+}
+
+export const recordFnbOrder = (order: FnbOrder, options: RecordOrderOptions = {}): void => {
   recordedFnbOrders.unshift({ ...order, branchId: getActiveBranch().id });
+  if (options.decrementStock === false) return;
   // DECREMENT on-hand stock for any stock-tracked menu item (e.g. bottled water,
   // slushie flavours). Multi-variant lines carry their variantId; single-variant
   // and untracked-but-linked lines fall back to the Default variant. Prepaid
@@ -1348,8 +1346,9 @@ export const recordFnbOrder = (order: FnbOrder): void => {
 // Routes through inventory (adjustInventoryStock) when the item has an
 // inventoryItemId; falls back to adjustMerchStock for legacy items.
 // Restored on a full refund (see recordRefund).
-export const recordMerchOrder = (order: MerchOrder): void => {
+export const recordMerchOrder = (order: MerchOrder, options: RecordOrderOptions = {}): void => {
   recordedMerchOrders.unshift({ ...order, branchId: getActiveBranch().id });
+  if (options.decrementStock === false) return;
   for (const line of order.lines) {
     if (line.merchItem.inventoryItemId) {
       adjustInventoryStock(
@@ -2001,7 +2000,8 @@ function _getRecordByKindAcrossBranches(
 /**
  * Reporting seam (manager Reports module): raw, unfiltered access to every
  * recorded Sale/FnbOrder/MerchOrder across ALL branches. Reports do their own
- * date-range + branch filtering and re-derive tax via lib/tax.ts — this just
+ * date-range + branch filtering and re-derive tax through the engine
+ * (lib/cartWire.ts, SCRUM-271) — this just
  * exposes the same in-memory ledgers `getTransactions()` already reads, without
  * the active-branch scoping. Read-only; never mutate the returned arrays.
  */

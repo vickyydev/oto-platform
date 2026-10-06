@@ -29,12 +29,6 @@ export async function saveDeferredVerification(input: {
   const nickname = input.nickname.trim();
   const { verification } = input;
 
-  if (!verification.expiresAt) {
-    throw new Error(
-      'This verification has no document expiry date, which the platform requires. Verify the tier again.',
-    );
-  }
-
   const found = (await membersApi.lookup(phone)).member;
   let target = found;
 
@@ -68,7 +62,8 @@ export async function saveDeferredVerification(input: {
   const { member } = await membersApi.verifyTier(target.id, {
     toTier: verification.tier,
     evidenceType: verification.proofType,
-    evidenceExpiresAt: verification.expiresAt,
+    // Optional, as in the approved design's verification step.
+    ...(verification.expiresAt ? { evidenceExpiresAt: verification.expiresAt } : {}),
   });
   return apiMemberToMember(member);
 }

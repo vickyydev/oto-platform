@@ -141,7 +141,8 @@ const USAGE = `oto-box ${BOX_AGENT_VERSION} — the OTO booth box
       Say whether this box is registered, which booth it runs and what it holds.
   oto-box version
 
-Environment: OTO_BOX_API, OTO_BOX_HOME, OTO_BOX_PORT, OTO_BOX_PAGE, OTO_BOX_HOSTNAME.
+Environment: OTO_BOX_API, OTO_BOX_HOME, OTO_BOX_PORT, OTO_BOX_PAGE, OTO_BOX_HOSTNAME,
+OTO_BOX_BRIDGE_ORIGINS and OTO_BOX_BRIDGE_PORT (the station bridge, on a counter box).
 `;
 
 export async function main(argv: readonly string[], io: CliStreams = {}): Promise<number> {
@@ -210,6 +211,20 @@ export async function main(argv: readonly string[], io: CliStreams = {}): Promis
           pageDir: option(parsed, 'page', 'OTO_BOX_PAGE') ?? defaultPageDir(),
           hostname: option(parsed, 'hostname', 'OTO_BOX_HOSTNAME'),
           log,
+          /**
+           * The station bridge (offline plan Round 3), for a counter box:
+           * `OTO_BOX_BRIDGE_ORIGINS` names the POS origins its tills are served
+           * from, comma-separated, and turns it on; `OTO_BOX_BRIDGE_PORT` moves
+           * it off 8471. Caddy publishes it on the LAN (`pi/Caddyfile`).
+           */
+          bridge: process.env.OTO_BOX_BRIDGE_ORIGINS
+            ? {
+                origins: process.env.OTO_BOX_BRIDGE_ORIGINS.split(','),
+                ...(process.env.OTO_BOX_BRIDGE_PORT
+                  ? { port: Number(process.env.OTO_BOX_BRIDGE_PORT) }
+                  : {}),
+              }
+            : null,
           onRestartNeeded: () => {
             setTimeout(() => process.exit(EXIT_RESTART), 250).unref();
           },

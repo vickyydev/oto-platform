@@ -7,11 +7,13 @@ import {
   newId,
 } from '@oto/shared';
 import { STATION_DEVICE_ROLES } from '@oto/db';
+import { PRINT_SAMPLE_NAMES } from '@oto/print';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { inProcessBox } from '../services/box';
 import { loadBox, loadBranchForOperator, loadDevice, loadStation, queueCommand } from '../services/fleet';
 import {
+  describeTestPrintDestination,
   listPrintJobs,
   listStationPrinters,
   listTemplates,
@@ -170,8 +172,15 @@ export async function printRoutes(app: App): Promise<void> {
         description: 'Draw this template’s sample the way the printer would, and answer with the PNG',
         params: IdParams,
         body: PrintTemplateUpdateSchema.extend({
-          /** Which till to lay it out for; omitted, the branch’s first box decides. */
+          /** Which till to lay it out for; omitted, it is drawn at the kind’s own paper. */
           stationId: z.string().uuid().nullable().optional(),
+          /**
+           * Which scenario to fill it with (SCRUM-472): `standard` — the
+           * default — is the Test print's own sample; the others are
+           * `@oto/print`'s named sets. A name the renderer does not have is a
+           * 400, never a silent fall back to the default.
+           */
+          sample: z.enum(PRINT_SAMPLE_NAMES).optional(),
         }),
       },
     },
@@ -179,9 +188,10 @@ export async function printRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const row = await loadTemplate(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('pos:print:read', { branchId: row.branchId });
-      const { stationId, ...draft } = req.body;
+      const { stationId, sample, ...draft } = req.body;
       const preview = await renderTemplatePreview(app.db, auth.operatorId, row, draft, {
         stationId: stationId ?? null,
+        sample,
       });
       return reply
         .header('content-type', 'image/png')
@@ -190,6 +200,52 @@ export async function printRoutes(app: App): Promise<void> {
         // printer. Nothing shared may hold it.
         .header('cache-control', 'private, no-store')
         .send(Buffer.from(preview.png));
+    },
+  );
+
+  /**
+   * Where this template's Test print would come out, from a station
+   * (SCRUM-472).
+   *
+   * The editor's Test print button names its destination — "Receipt Printer 1"
+   * — so nobody walks to the wrong counter for the paper. It is the same
+   * routing the preview is laid out for and the test print itself takes, asked
+   * once when the editor opens rather than riding every preview's headers.
+   * `pos:print:read`, as the preview: a printer's label is what the till's own
+   * header already shows under that permission.
+   *
+   * The printer is the STATION's, for the role this template's printout takes
+   * (SCRUM-476): never another station's printer that carries the role on the
+   * same box. Without a station, or at a station whose routing has nothing
+   * for the role, `printer` is null and `note` says so in words.
+   */
+  app.get(
+    '/print-templates/:id/test-print-target',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description: 'Which printer this template’s Test print would reach from this station',
+        params: IdParams,
+        querystring: z.object({
+          /** The station asking. Omitted, no printer is named: a test print is a station’s. */
+          stationId: z.string().uuid().optional(),
+        }),
+        response: {
+          200: z.object({
+            printer: z.object({ deviceId: z.string().uuid(), label: z.string() }).nullable(),
+            note: z.string().nullable(),
+            widthDots: z.number().int(),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadTemplate(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('pos:print:read', { branchId: row.branchId });
+      return describeTestPrintDestination(app.db, auth.operatorId, row, {
+        stationId: req.query.stationId ?? null,
+      });
     },
   );
 
@@ -205,7 +261,7 @@ export async function printRoutes(app: App): Promise<void> {
         params: IdParams,
         body: z
           .object({
-            /** Which till to print at. Omitted, the branch’s first box decides. */
+            /** Which station to print at. Omitted, the print is refused (409 STATION_REQUIRED). */
             stationId: z.string().uuid().nullable().optional(),
             copies: z.number().int().min(1).max(3).optional(),
           })
@@ -232,6 +288,13 @@ export async function printRoutes(app: App): Promise<void> {
         stationId: target.stationId,
         copies: req.body?.copies ?? 1,
         actionId: actionIdOf(req.headers as Record<string, unknown>),
+        /**
+         * The editor's "Save & print test" saves and prints within a second,
+         * and the box would otherwise render the template it cached before the
+         * save (SCRUM-472): a config pull goes ahead of the print whenever the
+         * box has not confirmed the configuration it would be handed now.
+         */
+        refreshConfig: true,
       });
     },
   );

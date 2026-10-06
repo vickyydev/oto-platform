@@ -12,6 +12,8 @@ import { MaintenanceClient } from './maintenance';
 import { RESP_CODE_PAID, stateForRespCode } from './resp-codes';
 import type {
   CancelResult,
+  CreateHostedPaymentInput,
+  CreateHostedPaymentResult,
   CreateQrInput,
   CreateQrResult,
   QrPayment,
@@ -177,6 +179,53 @@ export class TwoC2PQrPayment implements QrPayment {
       respCode,
       respDesc: stringOf(payment.claims.respDesc),
     };
+  }
+
+  /**
+   * The booking site's checkout: a Payment Token, and nothing after it
+   * (`PAYMENT_GATEWAY.md` §2.8, steps 1-3).
+   *
+   * There is no Do Payment here. The guest does that on 2C2P's own page, which
+   * is what keeps card numbers off this platform entirely (PCI stays with
+   * 2C2P). The token call carries both return URLs: the BACKEND one is the
+   * webhook that can make a booking paid; the FRONTEND one is where the
+   * browser lands, and what it carries is a hint for the page and nothing
+   * more. `paymentChannel` restricts the page to what the booking site offered
+   * the guest, so the page cannot take money through a channel the park has
+   * never reconciled.
+   */
+  async createHostedPayment(input: CreateHostedPaymentInput): Promise<CreateHostedPaymentResult> {
+    if (input.paymentChannels.length === 0) {
+      throw new Error('a hosted payment page has to be restricted to at least one channel');
+    }
+    const expiresAt = new Date(this.now().getTime() + input.expiryMinutes * 60_000);
+    const token = await this.post('paymentToken', {
+      merchantID: this.config.merchantId,
+      invoiceNo: input.invoiceNo,
+      description: input.description,
+      amount: toWireAmount(input.amountSatang),
+      currencyCode: this.config.currencyCode,
+      paymentChannel: [...input.paymentChannels],
+      paymentExpiry: formatPaymentExpiry(expiresAt),
+      backendReturnUrl: this.config.backendReturnUrl || undefined,
+      frontendReturnUrl: input.frontendReturnUrl,
+      locale: input.locale,
+      userDefined1: input.attemptId,
+      userDefined2: input.userDefined?.stationCode,
+      userDefined3: input.userDefined?.businessDate,
+      idempotencyID: input.attemptId,
+    });
+    const respCode = stringOf(token.claims.respCode) ?? '';
+    const respDesc = stringOf(token.claims.respDesc);
+    if (respCode !== RESP_CODE_PAID) {
+      return { webPaymentUrl: null, expiresAt, state: stateForRespCode(respCode), respCode, respDesc };
+    }
+    const webPaymentUrl = stringOf(token.claims.webPaymentUrl);
+    if (!webPaymentUrl) {
+      throw new Error('the payment token call answered 0000 with no webPaymentUrl');
+    }
+    // `0000` on a token is "the page is open", not "paid". The state says so.
+    return { webPaymentUrl, expiresAt, state: 'pending', respCode, respDesc };
   }
 
   /** The truth. One call, `invoiceNo` only (`:345-360`). */

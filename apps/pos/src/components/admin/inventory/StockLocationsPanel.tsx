@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Pencil, Star, StarOff, ToggleLeft, ToggleRight } from 'lucide-react';
 import { StockLocation, StockLocationType } from '@/types';
-import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { stockApi, stockErrorWords } from '@/api/stock';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -136,11 +136,33 @@ function LocationFormDialog({ open, location, isSellPoint, onClose, onSave }: Lo
  * the location from which sales decrement stock by default. Setting a new sell point
  * clears the flag from all other locations.
  */
-export function StockLocationsPanel() {
-  const { stockLocations: allLocations, mutators } = useCatalogStore();
-
+export function StockLocationsPanel({
+  branchId,
+  locations: allLocations,
+}: {
+  /** The platform branch whose places these are (S2-14b round 2). */
+  branchId: string | null;
+  /** Every place of the branch, retired ones included, from the platform. */
+  locations: StockLocation[];
+}) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
+
+  /**
+   * One write to the platform, which holds every rule below too — exactly one
+   * active sell point, only a FOH rotation place, never retired or retyped — so
+   * a refusal arrives in the same words whichever screen sent it.
+   */
+  const run = async (write: (branch: string) => Promise<unknown>): Promise<boolean> => {
+    if (!branchId) return false;
+    try {
+      await write(branchId);
+      return true;
+    } catch (err) {
+      alert(stockErrorWords(err));
+      return false;
+    }
+  };
 
   const openAdd = () => {
     setEditing(null);
@@ -152,31 +174,25 @@ export function StockLocationsPanel() {
     setFormOpen(true);
   };
 
-  const handleSave = ({ name, type }: LocationFormState) => {
+  const handleSave = async ({ name, type }: LocationFormState) => {
+    let ok: boolean;
     if (editing) {
       // Sell-point invariant: if this location is the active sell point, its
-      // type cannot be changed to non-rotation (the mutator enforces this too,
-      // but we guard here for a clear UX error rather than a silent no-op).
+      // type cannot be changed to non-rotation (the platform enforces this too,
+      // but we guard here for a clear UX error rather than a round trip).
       if (editing.sellPoint && editing.active && type !== 'rotation') {
         // This branch should not be reachable: the dialog disables the type
         // select and validates before calling onSave. Abort defensively.
         return;
       }
-      mutators.upsertStockLocation({ ...editing, name, type });
+      ok = await run((branch) => stockApi.updateLocation(branch, editing.id, { name, type }));
     } else {
-      const id = `loc-${Date.now().toString(36)}`;
-      mutators.upsertStockLocation({ id, name, type, active: true });
-      // Auto-assign sell point: if the new location is a rotation type and
-      // there is currently no active sell point, set it immediately so the
-      // branch is never left without one after the first rotation location
-      // is configured.
-      if (type === 'rotation') {
-        const hasActiveSellPoint = allLocations.some((l) => l.sellPoint && l.active);
-        if (!hasActiveSellPoint) {
-          mutators.setStockLocationSellPoint(id);
-        }
-      }
+      // The platform makes a new FOH rotation place the sell point when the
+      // branch has none, so the branch is never left without one after the
+      // first rotation location is configured.
+      ok = await run((branch) => stockApi.createLocation(branch, { name, type }));
     }
+    if (!ok) return;
     setFormOpen(false);
     setEditing(null);
   };
@@ -187,7 +203,7 @@ export function StockLocationsPanel() {
       alert('Cannot retire the active sell-point location. Assign another sell point first.');
       return;
     }
-    mutators.upsertStockLocation({ ...loc, active: !loc.active });
+    void run((branch) => stockApi.updateLocation(branch, loc.id, { active: !loc.active }));
   };
 
   const setSellPoint = (loc: StockLocation) => {
@@ -199,7 +215,7 @@ export function StockLocationsPanel() {
       alert('Cannot set an inactive location as the sell point. Activate it first.');
       return;
     }
-    mutators.setStockLocationSellPoint(loc.id);
+    void run((branch) => stockApi.setSellPoint(branch, loc.id));
   };
 
   const active = allLocations.filter((l) => l.active);
@@ -285,7 +301,7 @@ export function StockLocationsPanel() {
         location={editing}
         isSellPoint={!!(editing?.sellPoint && editing?.active)}
         onClose={() => { setFormOpen(false); setEditing(null); }}
-        onSave={handleSave}
+        onSave={(patch) => void handleSave(patch)}
       />
     </div>
   );

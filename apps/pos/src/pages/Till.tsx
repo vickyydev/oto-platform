@@ -3,26 +3,30 @@ import { useLocation } from 'wouter';
 import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
 import { useStation } from '@/station/StationContext';
-import { braceletPrintJobs, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
+import { announceSalePrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
+import { announceBookingRedemption, redeemBookingOnPlatform, redeemedOutcome } from '@/lib/bookingRedemption';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentActionAllowed,
-  type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
+  stockShortMessage, stockSizeName, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { makeDropOffLine, normalizeDropOffFees, resolveDropOffPricing } from '@/lib/dropoff';
-import { resolveGroupRequirements, resolveSupervisionOutcome, buildAcknowledgedConfirmations, sortedConfirmations } from '@/lib/supervision';
+import { resolveGroupRequirements, resolveSupervisionOutcome, sortedConfirmations } from '@/lib/supervision';
 import { buildSale } from '@/lib/sale';
 import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { resolveAutoTier, tierLabel } from '@/lib/membership';
 import { saveDeferredVerification } from '@/lib/deferredTierVerification';
 import { setSaleOpen } from '@/pwa/openSale';
-import { getInventoryItem, getAddOns } from '@/store/catalogStore';
-import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getCheckInsByRegistration, checkInFamilyWithPayment, linkCheckInSaleId, getDefaultTier, getSupervisionPolicy, registerWalkInChildren, recordSupervisionWaiver, markCheckInsBooked, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, issueBookingBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getAddOns } from '@/store/catalogStore';
+import { inventoryFor, refreshSellableStock } from '@/api/stock';
+import { isSocksAddOnId } from '@/api/menu';
+import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getDefaultTier, getSupervisionPolicy, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
+import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
 import { prefillSlots, slotPatchFromSavedChild } from '@/lib/savedChildren';
@@ -39,14 +43,17 @@ import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
 import { membersApi, visitsApi } from '@/api/platform';
 import { childrenApi, lookupMember } from '@/api/members';
-import { ApiError, NetworkError, isMissingRoute } from '@/api/client';
+import { ApiError, isMissingRoute } from '@/api/client';
 import {
-  bookingsApi,
-  redemptionFromConflict,
+  looksLikeBookingQr,
+  typedBookingQr,
+  readBookingScan,
   type PlatformBooking,
+  type ScannedBooking,
   type RedeemOutcome,
 } from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { boxSaleIssue } from '@/api/boxSales';
 import {
   buildCartPayload,
   claimVerifiedTier,
@@ -67,18 +74,19 @@ import { useScannerBurst } from '@/lib/scannerBurst';
 import { vouchersApi } from '@/api/vouchers';
 import {
   CANCELLED_AT_THE_TILL,
-  VOUCHER_AFTER_PAY,
   VOUCHER_AFTER_SALE,
   VOUCHER_AT_THE_RESTAURANT,
   VOUCHER_BEING_PRICED,
   VOUCHER_NOT_COMBINABLE,
   isMenuItemVoucher,
   looksLikeVoucherCode,
+  ticketTillVoucherBlock,
   useTillVoucher,
   voucherUnpricedReason,
   type HeldVoucher,
 } from '@/lib/tillVoucher';
 import {
+  IssueVoucherEntry,
   RedeemVoucherEntry,
   TillRefusalNotice,
   VoucherCard,
@@ -201,6 +209,14 @@ export default function Till() {
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
 
   const [member, setMember] = useState<Member | null>(null);
+  /**
+   * SCRUM-208 — the visit the membership check opened for this cart. Confirming
+   * children in `VisitChildrenModal` creates a draft visit; its id rides with
+   * the sale so band minting names each child (allergies included). Null on a
+   * walk-in or before the check, in which case the sale carries no visit. Reset
+   * with the sale and cleared whenever the till looks up a different visitor.
+   */
+  const [confirmedVisitId, setConfirmedVisitId] = useState<string | null>(null);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [verifyTier, setVerifyTier] = useState<CustomerTier | null>(null);
   // A verification taken before the customer gave their details; saved to a
@@ -337,6 +353,18 @@ export default function Till() {
 
   // Booking redemption flow
   const [showRedeemModal, setShowRedeemModal] = useState(false);
+  // S2-12 round 3 — the booking a scanned QR named: the id a box vouched for,
+  // or the raw code this device read, which the platform checks before the
+  // dialog shows anything.
+  const [scannedBooking, setScannedBooking] = useState<ScannedBooking | null>(null);
+  const openScannedBooking = (scan: ScannedBooking) => {
+    setScannedBooking(scan);
+    setShowRedeemModal(true);
+  };
+  // One idempotency key per booking per open dialog: a retry after a dropped
+  // answer replays the platform's stored redemption instead of being told the
+  // booking was already redeemed by this very press.
+  const redeemKeyRef = useRef<{ bookingId: string; key: string } | null>(null);
   // Holds a booking's registrationId after the regular guest sale is issued,
   // while waiting for the staff to confirm or skip the drop-off check-in.
   const [pendingDropOffRegistration, setPendingDropOffRegistration] = useState<{
@@ -381,6 +409,50 @@ export default function Till() {
 
   const dropOffPricing = useMemo(() => resolveDropOffPricing(getDropOffPricing()), []);
 
+  /**
+   * S2-13 — the park's nanny roster, from the platform (`GET /checkin/config`):
+   * the nanny a drop-off line names is a roster row the check-in records and
+   * the band prints. Re-read when the gate opens, so who is on shift is now.
+   */
+  const [nannyRoster, setNannyRoster] = useState<ApiNanny[]>([]);
+  const refreshNannyRoster = () => {
+    // The park in the PLATFORM's id — `branch.id` is the catalogue slug
+    // (finding R1). A till with no platform branch has no roster to read.
+    const platformBranchId = apiBranchIdForSlug(branch.id);
+    if (!platformBranchId) {
+      setNannyRoster([]);
+      return;
+    }
+    void checkinApi
+      .config(platformBranchId)
+      .then((config) => setNannyRoster(config.nannies))
+      .catch(() => setNannyRoster([]));
+  };
+  useEffect(() => {
+    refreshNannyRoster();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-read only when the park changes
+  }, [branch?.id]);
+
+  /**
+   * S2-13 — the ids this gate writes under, minted once per gate (OD-12): the
+   * registration, each supervised child's stay (which is also its drop-off
+   * line's id, so the sale line names the stay) and each waiver. A Continue
+   * pressed again after a failure re-sends the same ids, and the platform
+   * answers with what already exists rather than registering the family twice.
+   */
+  const gateRegistrationIdRef = useRef<string | null>(null);
+  const gateStayIdsRef = useRef(new Map<string, string>());
+  const gateWaiverIdsRef = useRef(new Map<string, string>());
+  const gateIdFor = (ids: Map<string, string>, slotId: string): string => {
+    const known = ids.get(slotId);
+    if (known) return known;
+    const id = checkinApi.newId();
+    ids.set(slotId, id);
+    return id;
+  };
+  /** True while a post-payment check-in choice is being written. */
+  const checkInChoiceBusy = useRef(false);
+
   // Consume a "start corrected order" handoff from the History screen (after a
   // refund). Preloads the tier + lines (with fresh ids) and drops staff at the
   // ticket step to review and re-charge. Runs once on mount.
@@ -403,11 +475,39 @@ export default function Till() {
   // before; a lookup that fails says so and loads the same way, as
   // `handleIdentify` does. A Cancel pressed while the lookup is out wins
   // (`saleEpochRef`).
+  /**
+   * S2-13 — a drop-off line under its STAY's id. The prototype named the line
+   * `line-<checkInId>`; the platform's sale line carries the cart line id, and
+   * finalisation knows a supervised child's band waits for the check-in choice
+   * by finding a stay under that id (`services/bands.ts`). A UUID line id goes
+   * to the platform unchanged (`platformId`).
+   */
+  const stayLine = (args: Parameters<typeof makeDropOffLine>[0]): CartLine => ({
+    ...makeDropOffLine(args),
+    id: args.ci.id,
+  });
+
   const loadDropOffRegistration = async (registrationId: string) => {
-    const children = getCheckInsByRegistration(registrationId).filter((c) => c.status === 'registered');
+    // The registration is the platform's: its waiting, unpaid children are
+    // read back (`waitingStaysOf`), never this browser's store.
+    const epoch = saleEpochRef.current;
+    const platformBranchId = apiBranchIdForSlug(branch.id);
+    let children: CheckIn[];
+    try {
+      if (!platformBranchId) throw new Error(TILL_NOT_LINKED);
+      children = await waitingStaysOf(platformBranchId, registrationId, nannyRoster);
+    } catch (err) {
+      if (saleEpochRef.current !== epoch) return;
+      toast({
+        title: 'Could not load the registration',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (saleEpochRef.current !== epoch) return;
     if (children.length === 0) return;
     const phone = children[0]?.phone ?? '';
-    const epoch = saleEpochRef.current;
     let found: Member | null = null;
     if (phone) {
       try {
@@ -430,7 +530,7 @@ export default function Till() {
     setTier(resolvedTier);
     const dropOffLines = normalizeDropOffFees(
       children.map((ci) =>
-        makeDropOffLine({
+        stayLine({
           ci,
           ticket: defaultTicket,
           tier: resolvedTier,
@@ -566,6 +666,7 @@ export default function Till() {
     setPendingPaymentMethod(null);
     setPendingCheckInChoices(null);
     setMember(null);
+    setConfirmedVisitId(null);
     setShowVerifyModal(false);
     setVerifyTier(null);
     setPendingVerification(null);
@@ -597,6 +698,9 @@ export default function Till() {
         const found = phone ? (await membersApi.lookup(phone)).member : null;
         if (saleEpochRef.current !== epoch) return;
         const mapped = found ? apiMemberToMember(found) : null;
+        // A new lookup is a new (or no) visit: the last check's visit must not
+        // ride onto this visitor's sale.
+        setConfirmedVisitId(null);
         setMember(mapped);
         if (mapped) {
           setTier(resolveAutoTier(mapped));
@@ -623,6 +727,7 @@ export default function Till() {
   // Walk-in: no membership, default to Tourist.
   const handleSkipIdentify = () => {
     setMember(null);
+    setConfirmedVisitId(null);
     setStep(2);
   };
 
@@ -766,18 +871,22 @@ export default function Till() {
       .finally(() => setCaptureNameBusy(false));
   };
 
-  // Staff confirmed a paid booking in the RedeemBookingModal. Claim the booking
-  // on the platform, then build + record the regular-guest sale (drop-off lines
-  // are excluded — they get their own check-in flow), issue wristbands, dispatch
-  // print jobs, then offer to check in any drop-off children via the existing
+  // Staff confirmed a paid booking in the RedeemBookingModal. The platform
+  // does the rest in ONE transaction (S2-12 round 3, `POST /bookings/:id/
+  // redeem`): claims the booking, records the regular-guest sale from what the
+  // family PAID (drop-off lines are excluded — they get their own check-in
+  // flow) with the booking's paid-online tender, mints the wristbands and queues
+  // the print jobs. The till then announces the paper exactly as a walk-in sale
+  // does, and offers to check in any drop-off children via the existing
   // registration flow.
   //
-  // THE CLAIM COMES FIRST — SCRUM-234. The prototype minted the bands and then
-  // asked its in-memory store whether the booking was still unredeemed, which
-  // left a losing race holding printed wristbands. `pos.booking` is now the
-  // thing that decides, and it is asked before anything is minted or printed, so
-  // the second counter to scan the same QR is told who redeemed it and when, and
-  // has issued nothing.
+  // THE CLAIM COMES FIRST, on the server — SCRUM-234. The prototype minted the
+  // bands and then asked its in-memory store whether the booking was still
+  // unredeemed, which left a losing race holding printed wristbands. The second
+  // counter to confirm the same booking is told who redeemed it and when, and
+  // nothing has been issued for it.
+  //
+  // The phone till redeems through the same helpers (`lib/bookingRedemption`).
   const handleRedeemConfirm = async (
     booking: Booking,
     platform: PlatformBooking,
@@ -795,67 +904,27 @@ export default function Till() {
       };
     }
 
-    const sale = buildSale({
-      operatorId: operator.id,
-      operatorName: operator.name,
-      tier: booking.tier,
-      lines: regularLines,
-      discounts: booking.promoDiscount ? [booking.promoDiscount] : [],
-      manualDiscounts: [],
-      memberId: booking.memberId,
-      customerPhone: '',
-      customerNickname: '',
-      paymentMethod: booking.paymentMethod,
-      bookingReference: booking.reference,
-    });
+    // The visit reception confirmed for this family names the children on the
+    // kids' bands, allergy line included — exactly as a walk-in sale's does.
+    const visitId =
+      confirmedVisitId && platform.memberId && member?.id === platform.memberId ? confirmedVisitId : undefined;
 
-    try {
-      await bookingsApi.redeem(
-        platform.id,
-        { stationId: station?.stationId },
-        bookingsApi.newRedeemKey(),
-      );
-    } catch (err) {
-      const first = redemptionFromConflict(err);
-      if (first) return { ok: false, redemption: first };
-      if (err instanceof NetworkError) {
-        return {
-          ok: false,
-          message: 'No connection to the platform, so this booking cannot be redeemed here. Nothing has been issued.',
-        };
-      }
-      if (isMissingRoute(err)) {
-        return {
-          ok: false,
-          message: 'This deployment cannot record a booking redemption yet (SCRUM-234). Nothing has been issued.',
-        };
-      }
-      return {
-        ok: false,
-        message: err instanceof ApiError ? err.message : 'The booking could not be redeemed. Nothing has been issued.',
-      };
-    }
+    // Only a lost answer is retried under the same key; a definite refusal
+    // leaves the next press free to ask again fresh.
+    const claimed = await redeemBookingOnPlatform(
+      platform.id,
+      { ...(station?.stationId ? { stationId: station.stationId } : {}), ...(visitId ? { visitId } : {}) },
+      redeemKeyRef,
+    );
+    if (!claimed.ok) return claimed;
+    const redeemed = claimed.redeemed;
 
-    recordSale(sale);
-    // Track usage for promo codes embedded in the booking at redemption time.
-    if (booking.promoDiscount) {
-      incrementPromoUsage(booking.promoDiscount.code, customerPhone || member?.phone || undefined);
-    }
-
-    // Mint every wristband for the booking from each ticket's own package:
-    // credit-earning persons (adults and/or kids per the ticket's credit rule)
-    // get a scannable wallet band; everyone else gets a 0-balance gate/plain
-    // band. Gate access comes purely from the ticket — not a park-wide config.
-    const mintedCodes = issueBookingBands(sale, operator?.name);
-
-    if (station) {
-      dispatchPrintJobs(ticketPrintJobs(station, sale));
-    }
-
-    toast({
-      title: 'Booking redeemed',
-      description: `${booking.reference} — ${mintedCodes.length} wristband(s) issued.`,
-    });
+    // The platform printed the sale when it closed it — the receipt and the
+    // signed bands — so the till announces what was queued and where, and what
+    // was not printed, as it does for a walk-in sale. S2-12 round 5 — redeemed
+    // by this counter's box with the link down: the box printed from its own
+    // queue, so only what did not print is said.
+    announceBookingRedemption(booking.reference, redeemed);
 
     // Event passes sold online are registered (not checked in) attendees. On
     // redemption, check each one into its event — minting bracelets and marking
@@ -888,7 +957,9 @@ export default function Till() {
       setPendingDropOffRegistration({ registrationId: booking.registrationId, childNames: dropOffNames });
     }
 
-    return { ok: true };
+    // On the box lane the dialog stays open on the codes, for reading aloud
+    // should a band not print — as an offline sale's confirmation does.
+    return redeemedOutcome(redeemed);
   };
 
   // Re-price every line to a newly-picked tier. Normal lines recompute via
@@ -948,13 +1019,13 @@ export default function Till() {
     // handler resuming onto a fresh sale would set the tier and the claim id
     // on a family that showed no document. Same guard as handleCustomerDone.
     const epoch = saleEpochRef.current;
-    if (!verified && apiBranchId && verification.expiresAt) {
+    if (!verified && apiBranchId) {
       try {
         const claimed = await claimVerifiedTier({
           branchId: apiBranchId,
           tier: verification.tier,
           proofType: verification.proofType,
-          expiresAt: verification.expiresAt,
+          ...(verification.expiresAt ? { expiresAt: verification.expiresAt } : {}),
         });
         if (saleEpochRef.current !== epoch) return;
         setTierClaimActionId(claimed);
@@ -1171,13 +1242,15 @@ export default function Till() {
     // One of the park's own discount codes — some have a booth code's shape
     // (SONGKRAN25) — belongs in the promo box, and asking the platform about it
     // as a voucher would count a wrong code against this till.
-    const blockedBy = getDiscountByCode(typed)
-      ? `"${typed}" is a promo code — enter it in the promo code box`
-      : step === 5
-        ? VOUCHER_AFTER_PAY
-        : discounts.length > 0
-          ? VOUCHER_NOT_COMBINABLE
-          : null;
+    // Staging F6 — and a cart with no customer type cannot be priced, so a
+    // voucher is refused until one is chosen rather than held on it.
+    const blockedBy = ticketTillVoucherBlock({
+      typed,
+      isPromoCode: Boolean(getDiscountByCode(typed)),
+      afterPay: step === 5,
+      hasDiscounts: discounts.length > 0,
+      tierChosen: tier !== null,
+    });
     return voucher.redeem(typed, blockedBy);
   };
 
@@ -1198,8 +1271,24 @@ export default function Till() {
   useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
     const code = readVoucherScan(event);
     if (code) redeemScannedVoucher(code);
+    // S2-12 round 3 — a family's booking QR, checked on the box: open the
+    // redeem flow on that booking. A QR the box refused says why.
+    const bookingScan = readBookingScan(event);
+    if (bookingScan && 'bookingId' in bookingScan) openScannedBooking({ bookingId: bookingScan.bookingId });
+    else if (bookingScan) {
+      toast({ title: 'Booking QR not accepted', description: bookingScan.refused, variant: 'destructive' });
+    }
   });
   useScannerBurst(redeemScannedVoucher, { accept: looksLikeVoucherCode, enabled: !locked });
+  // A booking QR read by a scanner on this device rather than the box's.
+  useScannerBurst(
+    (code) => {
+      // Sent whole: only the platform can check this code's signature.
+      const qr = typedBookingQr(code);
+      if (qr) openScannedBooking({ qr });
+    },
+    { accept: looksLikeBookingQr, enabled: !locked && !showRedeemModal },
+  );
 
   /**
    * S2-10b — THE ORDER PANEL'S CANCEL.
@@ -1296,7 +1385,7 @@ export default function Till() {
       const additions = children
         .filter((ci) => !present.has(ci.id))
         .map((ci) =>
-          makeDropOffLine({
+          stayLine({
             ci,
             ticket: template ? template.ticketType : defaultTicket,
             tier: activeTier,
@@ -1509,6 +1598,10 @@ export default function Till() {
     setSuperParentName('');
     setSuperParentPhone('');
     setSuperParentContactMethod('whatsapp');
+    gateRegistrationIdRef.current = null;
+    gateStayIdsRef.current = new Map();
+    gateWaiverIdsRef.current = new Map();
+    refreshNannyRoster();
     setSuperConsentAck(false);
     setSuperAcknowledgedConfirmationIds([]);
     setConfirmedSavedIds([]);
@@ -1831,6 +1924,24 @@ export default function Till() {
     }
 
     /**
+     * THE PARK, IN THE PLATFORM'S ID (round-1 fix, finding R1). `branch.id`
+     * is the catalogue slug; the registration and the waivers name the
+     * platform's branch row, as the cart identity does. A till with no
+     * platform branch is refused HERE, before a single child is written
+     * anywhere — not after the children have been saved to the member and the
+     * registration is then refused as a validation error.
+     */
+    const platformBranchId = apiBranchIdForSlug(branch.id) ?? '';
+    if (!platformBranchId && (supervised.length > 0 || waiversToAudit.length > 0)) {
+      toast({
+        title: "Couldn't register these children",
+        description: `${TILL_NOT_LINKED} Nobody has been checked in or charged — the details are still on screen.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    /**
      * SCRUM-233 — THE CHILDREN ARE SAVED BEFORE ANYTHING ELSE HAPPENS HERE.
      *
      * These are the records carrying the allergies and the medical notes for
@@ -1853,6 +1964,9 @@ export default function Till() {
      * than entering them twice.
      */
     let guardian = member;
+    /** The saved record each supervised slot became, for the registration. */
+    const childIdBySlot = new Map<string, string>();
+    let gateVisitId: string | null = null;
     try {
       const parentPhone = superParentPhone.trim();
       if (!guardian && parentPhone && supervised.length > 0) {
@@ -1874,6 +1988,7 @@ export default function Till() {
               : saved;
             applySavedChild(child);
             confirmedChildIds.push(child.id);
+            childIdBySlot.set(slot.id, child.id);
           } else {
             // The photo is deliberately NOT saved (re-taken each visit).
             const child = apiChildToSavedChild(
@@ -1887,12 +2002,13 @@ export default function Till() {
               prev.map((s) => (s.id === slot.id ? { ...s, savedChildId: child.id } : s)),
             );
             confirmedChildIds.push(child.id);
+            childIdBySlot.set(slot.id, child.id);
           }
         }
         // The visit is what stamps each child as confirmed today — the same
         // step the membership check takes once its edits have landed.
         if (confirmedChildIds.length > 0) {
-          await visitsApi.create({ memberId: guardian.id, childIds: confirmedChildIds });
+          gateVisitId = (await visitsApi.create({ memberId: guardian.id, childIds: confirmedChildIds })).id;
         }
       }
     } catch (err) {
@@ -1904,43 +2020,111 @@ export default function Till() {
       return;
     }
 
-    // Register the supervised children as a walk-in group (consent already taken),
-    // so checkInFamilyWithPayment can check them in atomically at payment.
-    // Parent phone + contactMethod are shared across all siblings in the group —
-    // autoSendWaConfirmation fires per child but only when phone is non-empty.
-    const created = registerWalkInChildren(
-      supervised.map(({ slot, service }) => ({
-        name: slot.name,
-        age: slotAge(slot) ?? 0,
-        dateOfBirth: slot.dateOfBirth,
-        service,
-        parentName: superParentName,
-        phone: superParentPhone,
-        contactMethod: superParentContactMethod as ContactChannel,
-        allergiesMedical: slot.allergiesMedical,
-        foodRestrictions: slot.foodRestrictions,
-        mayOrderFood: slot.mayOrderFood,
-        foodProvision: slot.foodProvision,
-        childPhotoUrl: slot.childPhotoUrl,
-      })),
-      {
-        operatorName: operator.name,
-        acknowledgedConfirmations: buildAcknowledgedConfirmations(policy, superAcknowledgedConfirmationIds),
-      },
-    );
+    /**
+     * S2-13 — THE REGISTRATION AND THE WAIVERS, ON THE PLATFORM.
+     *
+     * The prototype's `registerWalkInChildren` minted one registration the
+     * siblings share and stamped the consent on it, and `recordSupervisionWaiver`
+     * kept the staff-accepted waivers in memory. Both are platform writes now,
+     * made BEFORE the cart changes: a refusal (an age the policy disagrees
+     * with, a waiver the policy will not allow, consent not finished) leaves
+     * the gate exactly as it was, with nothing charged. The platform resolves
+     * every child's service again from the age, so what it accepts is what the
+     * policy says, not what this screen happened to compute.
+     */
+    let created: CheckIn[] = [];
+    let registrationId: string | null = null;
+    try {
+      if (supervised.length > 0) {
+        const regId = gateRegistrationIdRef.current ?? checkinApi.newId();
+        gateRegistrationIdRef.current = regId;
+        const stayIds = supervised.map(({ slot }) => gateIdFor(gateStayIdsRef.current, slot.id));
+        const reg = await checkinApi.createRegistration({
+          id: regId,
+          branchId: platformBranchId,
+          stationId: station?.stationId ?? null,
+          memberId: guardian?.id ?? null,
+          visitId: gateVisitId,
+          guardianName: superParentName.trim(),
+          guardianPhone: superParentPhone.trim() || null,
+          contactChannel: superParentContactMethod,
+          consentAcknowledged: superConsentAck,
+          acknowledgedConfirmationIds: superAcknowledgedConfirmationIds,
+          children: supervised.map(({ slot, service }, i) => ({
+            checkinId: stayIds[i]!,
+            childId: guardian ? (childIdBySlot.get(slot.id) ?? null) : null,
+            name: slot.name.trim(),
+            ageYears: slotAge(slot) ?? 0,
+            dateOfBirth: slot.dateOfBirth ?? null,
+            service,
+            allergies: slot.allergiesMedical.trim() || null,
+            foodRestrictions: slot.foodRestrictions.trim() || null,
+            foodProvision: foodProvisionToWire(slot.foodProvision),
+          })),
+        });
+        registrationId = reg.id;
+        created = supervised.map(({ slot }, i) => {
+          const stay = reg.children.find((c) => c.id === stayIds[i]);
+          if (!stay) throw new Error(`${slot.name.trim() || 'A child'} is missing from the registration — press Continue again.`);
+          return apiCheckinToCheckIn(stay, reg, { childPhotoUrl: slot.childPhotoUrl });
+        });
+        // The consent photo (child with guardian) goes to file storage under
+        // the registration. A photo that does not upload does not undo the
+        // registration — it is said, so staff can retake it before pickup.
+        for (const [i, { slot }] of supervised.entries()) {
+          const stayId = stayIds[i]!;
+          if (!slot.childPhotoUrl?.startsWith('data:')) continue;
+          if (reg.children.find((c) => c.id === stayId)?.photoFileId) continue;
+          try {
+            await checkinApi.uploadPhoto(reg.id, slot.childPhotoUrl, [stayId]);
+          } catch (err) {
+            // The box with CHILD_PHOTOS_ENABLED off keeps no photo at all and
+            // says so (gate r4, finding 2): there is nothing to take again.
+            if (err instanceof ApiError && err.code === 'CHILD_PHOTOS_DISABLED') {
+              toast({
+                title: `${slot.name.trim() || 'The child'}: photo not kept`,
+                description: `${err.message} The registration is saved.`,
+              });
+              continue;
+            }
+            toast({
+              title: `${slot.name.trim() || 'The child'}: photo not saved`,
+              description: `${err instanceof Error ? err.message : 'Unknown error'} The registration is saved; take the photo again before pickup.`,
+              variant: 'destructive',
+            });
+          }
+        }
+      }
 
-    // Audit each staff-authorized sibling waiver.
-    for (const { slot, covering } of waiversToAudit) {
-      recordSupervisionWaiver(
-        {
-          childName: slot.name.trim() || 'Child',
-          childAge: slotAge(slot) ?? 0,
+      // Each staff-accepted sibling waiver, audited on the platform. Only
+      // signed-in staff reach the route (OD-C3), and the policy is checked
+      // again there: a waiver the age no longer allows is refused, not kept.
+      for (const { slot, covering } of waiversToAudit) {
+        await checkinApi.recordWaiver({
+          id: gateIdFor(gateWaiverIdsRef.current, slot.id),
+          branchId: platformBranchId,
+          stationId: station?.stationId ?? null,
+          registrationId,
+          child: {
+            name: slot.name.trim() || 'Child',
+            ageYears: slotAge(slot) ?? 0,
+            childId: guardian ? (slot.savedChildId ?? null) : null,
+          },
+          sibling: {
+            name: covering.name.trim() || 'Sibling',
+            ageYears: slotAge(covering) ?? 0,
+            childId: guardian ? (covering.savedChildId ?? null) : null,
+          },
           waivedRequirement: (reqById.get(slot.id) ?? 'drop_off') as 'drop_off' | 'nanny',
-          coveringSiblingName: covering.name.trim() || 'Sibling',
-          coveringSiblingAge: slotAge(covering) ?? 0,
-        },
-        { operatorName: operator.name, operatorId: operator.id },
-      );
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Couldn't register these children",
+        description: `${err instanceof Error ? err.message : 'Unknown error'} Nobody has been checked in or charged — the details are still on screen.`,
+        variant: 'destructive',
+      });
+      return;
     }
 
     // A source line fully converts when no plain kid remains on it. Its socks /
@@ -1957,7 +2141,7 @@ export default function Till() {
 
     const usedCarry = new Set<string>();
     const dropLines: CartLine[] = supervised.map(({ slot, service }, i) => {
-      let line = makeDropOffLine({
+      let line = stayLine({
         ci: created[i],
         ticket: slot.ticketType,
         tier,
@@ -2174,49 +2358,59 @@ export default function Till() {
     }
 
     // Pre-checkout stock guard: aggregate all stocked items in the cart and
-    // compare against live inventory so an edge-case UI race can't oversell.
+    // compare against what the platform says the branch holds (S2-14b,
+    // `api/stock.ts`) so an edge-case UI race can't oversell. It is the
+    // platform's own rule, read early: the commit refuses the same cart in the
+    // same words, and a race this cannot see is recorded at finalise.
     {
       const stockViolations: string[] = [];
       const allAddOnsForCheck = getAddOns();
-      const socksAddOn = allAddOnsForCheck.find((a) => a.id === 'a-socks');
-      // Socks are tracked as a plain integer per line (CartLine.socks).
-      if (socksAddOn?.inventoryItemId) {
-        const totalSocks = lines.reduce((sum, l) => sum + l.socks, 0);
-        const invItem = getInventoryItem(socksAddOn.inventoryItemId);
-        const available = invItem?.variants[0]?.stock ?? Infinity;
-        if (totalSocks > available) {
-          stockViolations.push(`Regular Socks (need ${totalSocks}, have ${available})`);
-        }
+      // Inventory-linked add-ons — aggregate by inventoryItemId + size. An
+      // add-on split across sizes counts each size against its own shelf (the
+      // prototype's guard ignored the split and counted only the default).
+      const needed = new Map<string, { name: string; label: string | null; qty: number }>();
+      // Socks are tracked as a plain integer per line (CartLine.socks), and are
+      // the branch's Regular Socks product on the platform whichever id this
+      // till holds them under (`isSocksAddOnId`, S2-14b) — counted on the same
+      // shelf as socks sold from the add-on grid, as the platform counts them.
+      const socksAddOn = allAddOnsForCheck.find((a) => isSocksAddOnId(a.id));
+      const totalSocks = lines.reduce((sum, l) => sum + l.socks, 0);
+      if (socksAddOn?.inventoryItemId && totalSocks > 0) {
+        const vid = inventoryFor(socksAddOn.inventoryItemId)?.variants[0]?.id ?? INVENTORY_DEFAULT_VARIANT_ID;
+        needed.set(`${socksAddOn.inventoryItemId}:${vid}`, { name: socksAddOn.name, label: null, qty: totalSocks });
       }
-      // Inventory-linked add-ons — aggregate by inventoryItemId + variantId.
-      const needed = new Map<string, { name: string; qty: number }>();
       for (const line of lines) {
         for (const sa of line.addOns) {
           const ao = allAddOnsForCheck.find((a) => a.id === sa.id);
           if (!ao?.inventoryItemId) continue;
-          const vid = sa.variantId ?? INVENTORY_DEFAULT_VARIANT_ID;
-          const key = `${ao.inventoryItemId}:${vid}`;
-          const prev = needed.get(key);
-          if (prev) {
-            prev.qty += sa.quantity;
-          } else {
-            needed.set(key, { name: sa.name, qty: sa.quantity });
+          const parts =
+            sa.variantBreakdown && sa.variantBreakdown.length > 0
+              ? sa.variantBreakdown.map((b) => ({ vid: b.variantId, label: b.variantLabel, qty: b.quantity }))
+              : [{ vid: sa.variantId ?? INVENTORY_DEFAULT_VARIANT_ID, label: null, qty: sa.quantity }];
+          for (const part of parts) {
+            const key = `${ao.inventoryItemId}:${part.vid}`;
+            const prev = needed.get(key);
+            if (prev) {
+              prev.qty += part.qty;
+            } else {
+              needed.set(key, { name: ao.name, label: part.label, qty: part.qty });
+            }
           }
         }
       }
-      for (const [key, { name, qty }] of needed) {
+      for (const [key, { name, label, qty }] of needed) {
         const [itemId, variantId] = key.split(':');
-        const invItem = getInventoryItem(itemId);
+        const invItem = inventoryFor(itemId);
         const variant = invItem?.variants.find((v) => v.id === variantId);
         const available = variant?.stock ?? Infinity;
         if (qty > available) {
-          stockViolations.push(`${name} (need ${qty}, have ${available})`);
+          stockViolations.push(stockShortMessage(stockSizeName(name, label ?? null), available));
         }
       }
       if (stockViolations.length > 0) {
         toast({
           title: 'Insufficient stock',
-          description: `Cannot complete sale — stock too low: ${stockViolations.join(' · ')}`,
+          description: `Cannot complete sale — ${stockViolations.join(' · ')}`,
           variant: 'destructive',
         });
         return false;
@@ -2288,6 +2482,9 @@ export default function Till() {
   const writeInput = (payload: SaleCartPayload): SaleWriteInput => ({
     cart: payload,
     finalise: false,
+    // SCRUM-208 — the membership check's visit rides with the sale so band
+    // minting names the children; a walk-in cart carries none.
+    ...(confirmedVisitId ? { visitId: confirmedVisitId } : {}),
     ...(voucher.held ? { preferSaleId: voucher.held.saleId } : {}),
   });
 
@@ -2435,6 +2632,9 @@ export default function Till() {
       quoted,
     });
     recordSale(newSale);
+    // S2-14b — the platform took the add-ons' stock when it closed the sale;
+    // read what is left so the next guest's grid and guard are current.
+    void refreshSellableStock();
     // Increment each applied promo's usage counter after the sale is committed.
     // Use the same identity key as validatePromoCode for consistent per-customer tracking.
     discounts.forEach((d) =>
@@ -2465,11 +2665,17 @@ export default function Till() {
     const nonDropOffKids = lines
       .filter((l) => !l.dropOff)
       .reduce((s, l) => s + l.kids, 0);
-    dispatchPrintJobs(
-      ticketPrintJobs(station, {
-        ...newSale,
-        bracelets: { children: nonDropOffKids, adults: newSale.bracelets.adults },
-      }),
+    // S2-11 — the platform printed this sale when it closed it (the receipt,
+    // the signed bands, the item vouchers); the toast says what it queued and
+    // where. The till's own routing is only the stand-in for a deployment
+    // whose sale read carries no print jobs.
+    void announceSalePrinting(saleId, () =>
+      dispatchPrintJobs(
+        ticketPrintJobs(station, {
+          ...newSale,
+          bracelets: { children: nonDropOffKids, adults: newSale.bracelets.adults },
+        }),
+      ),
     );
 
     // If the sale carries drop-off / nanny children, present the post-payment
@@ -2548,61 +2754,87 @@ export default function Till() {
     completeSale(completionRetry.sale, completionRetry.settlements);
   };
 
-  // Commit a registration's "Check in now" decision: check the children into the
-  // park (validates nanny availability all-or-nothing), link the originating sale
-  // for deterministic refunds, then issue their bands (the receipt already printed).
+  /**
+   * "Check in now" — S2-13: ONE platform transaction puts the registration's
+   * children in the park, links this sale, mints their bands on their own
+   * lines and queues them for print (`POST /checkin/check-in-now`). The
+   * prototype's `checkInFamilyWithPayment` + `linkCheckInSaleId` +
+   * `braceletPrintJobs` were three steps on this screen; a refusal now leaves
+   * nothing half done, and the group stays open to retry or leave as booked.
+   */
   const handleCheckInGroupNow = (group: DoorCheckInGroup) => {
-    if (!operator || !station) return;
-    const checkedIn = checkInFamilyWithPayment(
-      group.entries.map((e) => ({ checkInId: e.checkInId, input: e.input })),
-      { operatorName: operator.name, operatorId: operator.id },
-    );
-    if (!checkedIn) {
-      // Keep the group open so staff can retry or leave the children as booked.
-      toast({
-        title: 'Could not check in',
-        description: 'A nanny is no longer available, or a child was already checked in.',
-        variant: 'destructive',
+    if (!operator || !station || !saleResult || checkInChoiceBusy.current) return;
+    checkInChoiceBusy.current = true;
+    void checkinApi
+      .checkInNow({
+        saleId: saleResult.id,
+        entries: group.entries.map((e) => ({
+          checkinId: e.checkInId,
+          nannyId: e.input.serviceType === 'nanny' ? (e.input.nannyId ?? null) : null,
+          // The Drop-Off / Nanny switch as the paid line carried it: the
+          // platform applies it to the stay and checks the nanny against it.
+          service: e.input.serviceType,
+        })),
+      })
+      .then((done) => {
+        // S2-13 round 4 — with the link down the BOX answers (`checkinApi`
+        // runs on the lane the arbiter says): it mints and prints the bands
+        // itself and names each band's short code, so a band that did not
+        // print can be read out at the counter, as an offline sale's can.
+        const codes = done.bands.map((b) => b.shortCode).filter((c): c is string => !!c);
+        toast({
+          title: 'Checked in',
+          description: [
+            `${group.entries.map((e) => e.childName).join(', ')} — band(s) issued${codes.length ? `: ${codes.join(', ')}` : ''}.`,
+            ...done.notes,
+          ].join(' '),
+        });
+        resolveCheckInGroup(group.registrationId);
+      })
+      .catch((err: unknown) => {
+        // Keep the group open so staff can retry or leave the children as booked.
+        toast({
+          title: 'Could not check in',
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+      })
+      .finally(() => {
+        checkInChoiceBusy.current = false;
       });
-      return;
-    }
-    if (saleResult) {
-      for (const e of group.entries) linkCheckInSaleId(e.checkInId, saleResult.id);
-    }
-    dispatchPrintJobs(braceletPrintJobs(station, { children: group.entries.length, adults: 0 }));
-    toast({
-      title: 'Checked in',
-      description: `${group.entries.map((e) => e.childName).join(', ')} — band(s) issued.`,
-    });
-    resolveCheckInGroup(group.registrationId);
   };
 
-  // Commit a registration's "Leave as booked" decision: keep the children
-  // registered with the booked play-start time + length recorded (no band, no
-  // timer). They surface in the drop-off board's Schedule list, checkable later.
+  /**
+   * "Leave as booked" — the children stay registered with the booked start and
+   * length and this sale linked; no band, no timer (`POST
+   * /checkin/leave-as-booked`, the prototype's `markCheckInsBooked`).
+   */
   const handleLeaveGroupBooked = (group: DoorCheckInGroup) => {
-    if (!operator) return;
-    const booked = markCheckInsBooked(
-      group.entries.map((e) => ({
-        checkInId: e.checkInId,
-        scheduledFor: bookedScheduledForRef.current,
-        bookedDurationMinutes: Math.round(e.input.durationHours * 60),
-      })),
-      { operatorName: operator.name },
-    );
-    if (!booked) {
-      toast({
-        title: 'Could not leave as booked',
-        description: 'A child was no longer in a bookable state.',
-        variant: 'destructive',
+    if (!operator || !saleResult || checkInChoiceBusy.current) return;
+    checkInChoiceBusy.current = true;
+    void checkinApi
+      .leaveAsBooked({
+        saleId: saleResult.id,
+        ...(bookedScheduledForRef.current ? { scheduledFor: bookedScheduledForRef.current } : {}),
+        entries: group.entries.map((e) => ({ checkinId: e.checkInId })),
+      })
+      .then(() => {
+        toast({
+          title: 'Left as booked',
+          description: `${group.entries.map((e) => e.childName).join(', ')} — checkable later from the Drop-Off board.`,
+        });
+        resolveCheckInGroup(group.registrationId);
+      })
+      .catch((err: unknown) => {
+        toast({
+          title: 'Could not leave as booked',
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+      })
+      .finally(() => {
+        checkInChoiceBusy.current = false;
       });
-      return;
-    }
-    toast({
-      title: 'Left as booked',
-      description: `${group.entries.map((e) => e.childName).join(', ')} — checkable later from the Drop-Off board.`,
-    });
-    resolveCheckInGroup(group.registrationId);
   };
 
   // Remove a resolved registration from the pending list; close the modal when
@@ -2861,7 +3093,10 @@ export default function Till() {
               nickname={customerNickname}
               member={member}
               onSkip={handleSkipIdentify}
-              onRedeemBooking={() => setShowRedeemModal(true)}
+              onRedeemBooking={() => {
+                setScannedBooking(null);
+                setShowRedeemModal(true);
+              }}
               eventPasses={activeEventPasses}
               onSellEventPass={handleSellEventPassFromStep1}
             />
@@ -2890,6 +3125,7 @@ export default function Till() {
                   onUpdateExtras={handleUpdateDropOffExtras}
                   onAssignNannyToAll={handleAssignNannyToAll}
                   siblingNanny={siblingNannyFor(activeLine.id)}
+                  roster={nannyRoster}
                   onBackToGrid={handleBackToGrid}
                   onDone={handleDropOffLineDone}
                 />
@@ -2991,6 +3227,7 @@ export default function Till() {
                   sale={saleResult}
                   onNewSale={resetSale}
                   note={voucherUsed ? <VoucherUsedNote held={voucherUsed} /> : undefined}
+                  boxIssue={boxSaleIssue(saleResult.id)}
                 />
               </div>
             </div>
@@ -3067,6 +3304,13 @@ export default function Till() {
                   busy={voucher.busy}
                   disabled={step === 5}
                 />
+                {/* S2-14a round 5 — issue one of the park's promotions here, printed on this till. */}
+                {can('pos:print:voucher') && (
+                  <IssueVoucherEntry
+                    memberId={member?.id && /^[0-9a-f-]{36}$/i.test(member.id) ? member.id : null}
+                    disabled={step === 5}
+                  />
+                )}
                 {voucher.refusal && (
                   <VoucherRefusalCard
                     refusal={voucher.refusal}
@@ -3251,9 +3495,16 @@ export default function Till() {
 
       <RedeemBookingModal
         open={showRedeemModal}
-        onOpenChange={setShowRedeemModal}
+        onOpenChange={(next) => {
+          setShowRedeemModal(next);
+          if (!next) {
+            setScannedBooking(null);
+            redeemKeyRef.current = null;
+          }
+        }}
         branchId={apiBranchIdForSlug(branch.id)}
         onConfirm={handleRedeemConfirm}
+        scannedBooking={scannedBooking}
       />
 
       {/* Event-pass sell flow — flat-priced camp/event entry (non-party). */}
@@ -3378,8 +3629,11 @@ export default function Till() {
         open={showVisitChildren}
         member={member}
         onClose={() => setShowVisitChildren(false)}
-        onConfirmed={(children) => {
+        onConfirmed={(children, visitId) => {
           setMember((m) => (m ? { ...m, savedChildren: children } : m));
+          // SCRUM-208 — keep the visit so the sale carries it and the kids'
+          // bands are named from its children.
+          setConfirmedVisitId(visitId);
         }}
       />
 

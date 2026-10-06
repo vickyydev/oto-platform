@@ -44,6 +44,11 @@ describe('route guards (S2-01b)', () => {
       'DELETE /members/:id/tier-verification',
       'DELETE /members/children/:childId',
       'DELETE /sales/:id/vouchers/:voucherId',
+      // SCRUM-477: a booking is read where it is redeemed — on the box, once
+      // the station is forced offline — so the three lookups refuse with it.
+      'GET /bookings/:id',
+      'GET /bookings/by-qr',
+      'GET /bookings/by-reference/:reference',
       'GET /members/lookup',
       'GET /vouchers/lookup',
       'PATCH /members/:id',
@@ -59,11 +64,18 @@ describe('route guards (S2-01b)', () => {
       'POST /print-jobs/:id/reprint',
       'POST /sales',
       'POST /sales/:id/finalise',
+      // S2-11: a refund and a reprint are online-only, like the sale they correct.
+      'POST /sales/:id/refunds',
+      'POST /sales/:id/reprints',
       'POST /sales/:id/void',
       'POST /sales/:id/vouchers',
       'POST /sales/quote',
       'POST /sales/tier-claims',
       'POST /visits',
+      // S2-14a round 5: a voucher is issued and its credit printed by the
+      // platform, at the till — online only, like a voucher's redemption.
+      'POST /vouchers/:id/credit/print',
+      'POST /vouchers/issue',
     ]);
     expect(ctx.app.routeRegistry.filter((r) => r.config.stationTrading &&
       (r.config.public || r.config.credential || r.url.startsWith('/boxes/')))).toEqual([]);
@@ -102,9 +114,24 @@ describe('route guards (S2-01b)', () => {
     // Anything added here is a deliberate decision, made visible in a diff.
     expect(open).toEqual([
       'GET /health',
+      /**
+       * S2-12 (SCRUM-209) — the booking site's waiting page, polling one
+       * booking by its own id. It answers the booking's state and, once the
+       * gateway has confirmed the money, its signed QR — no name, no phone, no
+       * child.
+       */
+      'GET /public/bookings/:id/status',
+      /** The same browser return as the POST below, reached by a GET. Writes nothing. */
+      'GET /public/bookings/return',
       'GET /public/branches/:code/catalog',
       'GET /public/member-tier',
       'GET /ready',
+      /**
+       * S2-12 — the SIMULATED hosted payment page, the guest's stand-in for
+       * 2C2P's own public page. 404 on any deployment with the real gateway,
+       * which is every live park (`assertProductionSafe`).
+       */
+      'GET /webhooks/2c2p/hosted/:attemptId',
       // S2-02: the app's origin has no session yet — that is the point. The
       // token is the credential, fenced by its signature, its one-minute life
       // and its single-use jti.
@@ -130,6 +157,20 @@ describe('route guards (S2-01b)', () => {
       // failure. Same shape as `POST /box/v1/register`.
       'POST /booth/pair',
       'POST /public/bookings',
+      /**
+       * S2-12 — the booking's ONE payment: an attempt on the `WEB` invoice
+       * segment and the hosted page's address. It pays nothing; a booking is
+       * paid only by the webhook below plus an inquiry, or by the poller.
+       */
+      'POST /public/bookings/:id/checkout',
+      /**
+       * S2-12 — the hosted page sending the guest's browser back. Verified,
+       * read as a display hint, and it WRITES NOTHING — the invariant of the
+       * round, held by `route-write-conformance.test.ts`'s no-write list.
+       */
+      'POST /public/bookings/return',
+      /** S2-12 — a press of pay / fail on the simulated hosted page. Simulator only. */
+      'POST /webhooks/2c2p/hosted/:attemptId',
       /**
        * S2-10a — what the payment gateway posts to us.
        *
@@ -186,9 +227,16 @@ describe('route guards (S2-01b)', () => {
    * mistaken for an open endpoint, and an open endpoint cannot be smuggled in
    * as a box route: both lists have to be edited on purpose.
    */
+  /**
+   * The station bridge's mount (offline plan Round 3) shares the box's version
+   * prefix — it is the contract a Pi serves at the same path — but its caller
+   * is a till or a display, not a box, so it is pinned on its own below.
+   */
+  const isBridge = (url: string): boolean => url.startsWith('/box/v1/station/');
+
   it('the box surface is only what it should be, and is credential-guarded', async () => {
     const boxRoutes = ctx.app.routeRegistry
-      .filter((r) => r.url.startsWith('/box/') && r.method !== 'HEAD')
+      .filter((r) => r.url.startsWith('/box/') && !isBridge(r.url) && r.method !== 'HEAD')
       .map((r) => `${r.method} ${r.url} [${r.config.credential}]`)
       .sort();
     expect(boxRoutes).toEqual([
@@ -198,6 +246,10 @@ describe('route guards (S2-01b)', () => {
       // somebody has to edit deliberately.
       'GET /box/v1/cache [box]',
       'GET /box/v1/config [box]',
+      // S2-11: the content of a sale's print job, fetched as the box prints it,
+      // so no printout's member, allergy line or band code is ever stored in a
+      // command.
+      'GET /box/v1/print-jobs/:id/document [box]',
       'GET /box/v1/sync/pull [box]',
       // SCRUM-223: a booth box asks whether a phone and password typed at one
       // of ITS booths may sign in there. The password is the body; the box is
@@ -206,6 +258,11 @@ describe('route guards (S2-01b)', () => {
       'POST /box/v1/commands/:commandId/result [box]',
       'POST /box/v1/commands/poll [box]',
       'POST /box/v1/heartbeat [box]',
+      // S2-13 round 4: a photo a counter took with the link down — an upload
+      // URL for it, then its link to its row, exactly once. Photos of faces
+      // only, never a document.
+      'POST /box/v1/photos/:id/link [box]',
+      'POST /box/v1/photos/:id/upload-url [box]',
       // What happened to a print job (S2-06). Its own route rather than a
       // command result, because a job that waited on an empty roll reports
       // long after the command that queued it was acknowledged.
@@ -237,9 +294,13 @@ describe('route guards (S2-01b)', () => {
    */
   it('every box route refuses a caller with no credential', async () => {
     const boxUrls = ctx.app.routeRegistry.filter(
-      (r) => r.url.startsWith('/box/') && r.method !== 'HEAD' && r.method !== 'OPTIONS',
+      (r) =>
+        r.url.startsWith('/box/') &&
+        !isBridge(r.url) &&
+        r.method !== 'HEAD' &&
+        r.method !== 'OPTIONS',
     );
-    expect(boxUrls.length).toBe(11);
+    expect(boxUrls.length).toBe(14);
 
     const bodies: Record<string, unknown> = {
       'POST:/box/v1/register': { claimCode: undefined, agentVersion: '0.1.0' },
@@ -247,6 +308,8 @@ describe('route guards (S2-01b)', () => {
       'POST:/box/v1/commands/poll': { max: 5 },
       'POST:/box/v1/commands/:commandId/result': { state: 'succeeded' },
       'POST:/box/v1/print-jobs/:id/result': { status: 'printed', attempts: 1 },
+      'POST:/box/v1/photos/:id/upload-url': { target: { kind: 'release', id: '00000000-0000-7000-8000-000000000000' } },
+      'POST:/box/v1/photos/:id/link': { target: { kind: 'release', id: '00000000-0000-7000-8000-000000000000' } },
       'POST:/box/v1/sync/key': { publicKey: 'x'.repeat(44) },
       // A whole batch of facts, sent by nobody. It must be refused before the
       // body is looked at, which is what preValidation buys.
@@ -272,6 +335,53 @@ describe('route guards (S2-01b)', () => {
         ['BOX_UNAUTHORIZED', 'BOX_CLAIM_INVALID'],
         `${route.method} ${route.url}`,
       ).toContain(res.json().error.code);
+    }
+  });
+
+  /**
+   * THE STATION BRIDGE ON THE API (offline plan §2.2, Round 3): the platform
+   * session for a till standing at the station (OD-2), a paired display's own
+   * credential for the customer display (OD-10), and nothing for anybody else.
+   * Deliberately NOT `stationTrading`: it is the box's surface and keeps
+   * answering with the station forced offline — `offline-capability.test.ts`
+   * is where that is proved.
+   */
+  it('the station bridge is only what it should be, and refuses a caller with neither credential', async () => {
+    const bridge = ctx.app.routeRegistry
+      .filter((r) => isBridge(r.url) && r.method !== 'HEAD' && r.method !== 'OPTIONS')
+      .map((r) => `${r.method} ${r.url} [${r.config.credential ?? (r.config.dynamicPermission ? 'session' : '?')}]`)
+      .sort();
+    expect(bridge).toEqual([
+      'GET /box/v1/station/:stationId/channel [session]',
+      'GET /box/v1/station/:stationId/display/session [display]',
+      'GET /box/v1/station/:stationId/members/lookup [session]',
+      'GET /box/v1/station/:stationId/session [session]',
+      'GET /box/v1/station/:stationId/status [session]',
+      'POST /box/v1/station/:stationId/display/intents [display]',
+      'POST /box/v1/station/:stationId/intents [session]',
+      'POST /box/v1/station/:stationId/lease [session]',
+      'POST /box/v1/station/:stationId/lease/release [session]',
+      'POST /box/v1/station/:stationId/lease/renew [session]',
+      'POST /box/v1/station/:stationId/lock [session]',
+      'POST /box/v1/station/:stationId/unlock [session]',
+    ]);
+    expect(
+      ctx.app.routeRegistry.filter((r) => isBridge(r.url) && r.config.stationTrading),
+    ).toEqual([]);
+    const station = '00000000-0000-7000-8000-000000000000';
+    for (const route of ctx.app.routeRegistry.filter(
+      (r) => isBridge(r.url) && r.method !== 'HEAD' && r.method !== 'OPTIONS',
+    )) {
+      const res = await ctx.app.inject({
+        method: route.method as 'GET' | 'POST',
+        url: `${route.url.replace(':stationId', station)}${route.url.endsWith('lookup') ? '?phone=1' : ''}`,
+        ...(route.method === 'GET' ? {} : { payload: {} as never }),
+      });
+      expect([400, 401], `${route.method} ${route.url}`).toContain(res.statusCode);
+      if (res.statusCode === 400) {
+        // A body schema checked before the session: still nothing done.
+        expect(res.json().error.code, `${route.method} ${route.url}`).toBe('VALIDATION');
+      }
     }
   });
 

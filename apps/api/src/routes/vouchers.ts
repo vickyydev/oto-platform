@@ -1,8 +1,28 @@
 import { z } from 'zod';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
+import { branch } from '@oto/db';
+import {
+  PromoVoucherReportQuerySchema,
+  PromoVoucherReportSchema,
+  VoucherCampaignBodySchema,
+  VoucherIssueBodySchema,
+} from '@oto/shared';
 import type { App } from '../app';
+import { AppError } from '../lib/errors';
 import { loadBranchForOperator } from '../services/fleet';
+import { hasPermission } from '../services/permissions';
 import { opCtx, withTx } from '../services/tx';
+import {
+  campaignCodesCsv,
+  issuableDefinitionsAt,
+  issueVoucherAtTill,
+  listVoucherCampaigns,
+  mintVoucherCampaign,
+  printVoucherCredit,
+  promoVoucherReportOf,
+  voucherCreditOf,
+} from '../services/voucher-promotions';
 import {
   VOUCHER_LEDGER_STATUSES,
   listVoucherLedger,
@@ -51,6 +71,17 @@ import {
  */
 
 const SaleParams = z.object({ id: z.string().uuid() });
+
+/**
+ * What a till says when a voucher is tried on a station that is offline. The
+ * generic forced-offline sentence talks about taking payment, which a voucher
+ * look-up is not; this is the same voice as the refund path's own wording, and
+ * it is spoken here — platform-side — so every till says it identically. The
+ * refusal keeps the `STATION_FORCED_OFFLINE` code (the lane arbiter reads it);
+ * only the sentence changes (offline finding 6).
+ */
+const VOUCHER_OFFLINE_MESSAGE =
+  'Online only — a voucher is checked by the platform, so redeem it when the station is back online.';
 
 /** A trading day, as the ledger filters on it. */
 const IsoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'A date is YYYY-MM-DD');
@@ -212,7 +243,11 @@ export async function voucherRoutes(app: App): Promise<void> {
   app.get(
     '/vouchers/lookup',
     {
-      config: { dynamicPermission: true, stationTrading: true },
+      config: {
+        dynamicPermission: true,
+        stationTrading: true,
+        stationOfflineMessage: VOUCHER_OFFLINE_MESSAGE,
+      },
       schema: {
         description:
           'What a scanned or typed voucher code is and what it is worth here, or why it cannot be ' +
@@ -230,7 +265,11 @@ export async function voucherRoutes(app: App): Promise<void> {
   app.post(
     '/sales/:id/vouchers',
     {
-      config: { dynamicPermission: true, stationTrading: true },
+      config: {
+        dynamicPermission: true,
+        stationTrading: true,
+        stationOfflineMessage: VOUCHER_OFFLINE_MESSAGE,
+      },
       schema: {
         description:
           'Hold a voucher for the sale this till is ringing up (the till’s own sale id, usually ' +
@@ -252,10 +291,225 @@ export async function voucherRoutes(app: App): Promise<void> {
     },
   );
 
+  // --- S2-14a round 5: promotional vouchers ----------------------------------
+
+  app.get(
+    '/vouchers/issuable',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'What the till this session stands at may issue today: the operator’s switched-on, unarchived voucher ' +
+          'definitions whose promotion has not ended on the branch’s trading day, with their window, global limit ' +
+          'and how many are used. Needs pos:print:voucher at the till’s branch.',
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const at = await loadRedemptionStation(app.db, auth.operatorId, auth.stationId);
+      await req.requirePermission('pos:print:voucher', { branchId: at.branchId });
+      return issuableDefinitionsAt(app.db, auth.operatorId, at.branchId);
+    },
+  );
+
+  app.post(
+    '/vouchers/issue',
+    {
+      config: {
+        dynamicPermission: true,
+        stationTrading: true,
+        stationOfflineMessage: VOUCHER_OFFLINE_MESSAGE,
+      },
+      schema: {
+        description:
+          'Issue one voucher of a definition at the till this session stands at, and print it on the till’s receipt ' +
+          'printer as a voucher slip. The code is minted on the platform on the till’s prefix (the booth scheme, with ' +
+          'its check character), recorded as issued by the person at the till, and audited. `print.status` is queued, ' +
+          'skipped (no receipt printer at this till) or none (no box). Refused for a switched-off or archived ' +
+          'definition, and for a promotion that has ended. Needs pos:print:voucher at the till’s branch.',
+        body: VoucherIssueBodySchema,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const at = await loadRedemptionStation(app.db, auth.operatorId, auth.stationId);
+      await req.requirePermission('pos:print:voucher', { branchId: at.branchId });
+      return withTx(app.db, opCtx(req), 'voucher.issue', (tx) =>
+        issueVoucherAtTill(
+          tx,
+          { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
+          at,
+          req.body,
+        ),
+      );
+    },
+  );
+
+  app.get(
+    '/vouchers/:id/credit',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The wallet a wallet-credit voucher loaded when the sale carrying it closed: its balance, keys, expiry and ' +
+          'its ONE voucher QR. `wallet` is null while the voucher has loaded nothing. Read at the till this session ' +
+          'stands at, with pos:voucher:redeem there; a wallet another park issued answers 404.',
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const { actor, at } = await standing(req);
+      const credit = await voucherCreditOf(app.db, actor.operatorId, req.params.id);
+      if (credit.wallet?.branchId && credit.wallet.branchId !== at.branchId) {
+        return { voucherId: req.params.id, wallet: null, qrCode: null };
+      }
+      return credit;
+    },
+  );
+
+  app.post(
+    '/vouchers/:id/credit/print',
+    {
+      config: {
+        dynamicPermission: true,
+        stationTrading: true,
+        stationOfflineMessage: VOUCHER_OFFLINE_MESSAGE,
+      },
+      schema: {
+        description:
+          'Print the credit voucher for the wallet a wallet-credit voucher loaded, on the till’s receipt printer ' +
+          '(the landed credit voucher, its QR and the credit). 409 VOUCHER_CREDIT_NOT_LOADED before the sale ' +
+          'carrying the voucher has closed. Needs pos:print:voucher at the till’s branch; audited.',
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const at = await loadRedemptionStation(app.db, auth.operatorId, auth.stationId);
+      await req.requirePermission('pos:print:voucher', { branchId: at.branchId });
+      return withTx(app.db, opCtx(req), 'voucher.credit_print', (tx) =>
+        printVoucherCredit(
+          tx,
+          { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
+          at,
+          req.params.id,
+        ),
+      );
+    },
+  );
+
+  app.get(
+    '/vouchers/promotions/report',
+    {
+      config: { permission: 'analytics:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description:
+          'Foregone revenue from promotional vouchers — its own line, separate from manual discounts and promo codes: ' +
+          'per voucher definition, the vouchers used up on a sale whose trading day is in from..to, and what those ' +
+          'sales did not charge for them (each voucher’s own discount row, the engine’s figure). A wallet-credit ' +
+          'voucher’s loaded credit is reported beside it (stored value, owed until spent or expired), never in it. ' +
+          'Without branchId: every park this account reads reports for.',
+        querystring: PromoVoucherReportQuerySchema,
+        response: { 200: PromoVoucherReportSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const { branchId, from, to } = req.query;
+      if (from > to) throw new AppError(400, 'BAD_REQUEST', 'The report’s start date is after its end date.');
+      let branchIds: string[];
+      if (branchId) {
+        const br = await loadBranchForOperator(app.db, auth.operatorId, branchId);
+        branchIds = [br.id];
+      } else {
+        // Every park of the operator this account holds the report for, as the
+        // wallet report reads it — an account scoped to one park sees that park.
+        const effective = await req.effectivePermissions();
+        const parks = await app.db
+          .select({ id: branch.id })
+          .from(branch)
+          .where(and(eq(branch.operatorId, auth.operatorId), isNull(branch.archivedAt)));
+        branchIds = parks
+          .filter((p) =>
+            hasPermission(effective, 'analytics:read', { operatorId: auth.operatorId, branchId: p.id }),
+          )
+          .map((p) => p.id);
+      }
+      return promoVoucherReportOf(app.db, auth.operatorId, { branchIds, from, to });
+    },
+  );
+
+  app.get(
+    '/voucher-campaigns',
+    {
+      config: { permission: 'admin:booth:read' },
+      schema: {
+        description:
+          'The operator’s voucher campaigns, newest first: name, definition, branch, how many codes were minted and ' +
+          'how many have been used. Never the codes — those are read through the export.',
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return listVoucherCampaigns(app.db, auth.operatorId);
+    },
+  );
+
+  app.post(
+    '/voucher-campaigns',
+    {
+      config: { permission: 'admin:booth:manage', target: { branchId: 'body.branchId' } },
+      schema: {
+        description:
+          'Mint a campaign: a batch of codes of one definition, issued at one branch in one transaction, every code ' +
+          'unique (the booth scheme on the campaign prefix, with its check character). The campaign row and one ' +
+          'audit row record the batch; the answer never carries the codes (each is a bearer credential) — read them ' +
+          'with GET /voucher-campaigns/:id/codes. Refused for a switched-off definition and an ended promotion.',
+        body: VoucherCampaignBodySchema,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return withTx(app.db, opCtx(req), 'voucher_campaign.create', (tx) =>
+        mintVoucherCampaign(
+          tx,
+          { accountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
+          req.body,
+        ),
+      );
+    },
+  );
+
+  app.get(
+    '/voucher-campaigns/:id/codes',
+    {
+      config: { permission: 'admin:booth:manage' },
+      schema: {
+        description:
+          'A campaign’s codes as a CSV file — code, status, expiry — for the manager to hand out. The one place the ' +
+          'whole codes are given; never cached.',
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const { filename, csv } = await campaignCodesCsv(app.db, auth.operatorId, req.params.id);
+      return reply
+        .header('content-type', 'text/csv; charset=utf-8')
+        .header('content-disposition', `attachment; filename="${filename}"`)
+        .header('cache-control', 'no-store')
+        .send(csv);
+    },
+  );
+
   app.delete(
     '/sales/:id/vouchers/:voucherId',
     {
-      config: { dynamicPermission: true, stationTrading: true },
+      config: {
+        dynamicPermission: true,
+        stationTrading: true,
+        stationOfflineMessage: VOUCHER_OFFLINE_MESSAGE,
+      },
       schema: {
         description:
           'Take a voucher off a cart that has not been rung up yet. Answers released: false when ' +

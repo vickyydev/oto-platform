@@ -101,13 +101,28 @@ export interface ApiProduct {
    * size. Optional because an api older than the column does not send it.
    */
   variants?: ApiProductVariant[];
-  /** Set = stock-tracked (the prototype's `inventoryItemId`). */
+  /**
+   * Set = stock-tracked (the prototype's `inventoryItemId`): the platform's
+   * marker, one of the item's stock items.
+   */
   stockItemId: string | null;
+  /**
+   * S2-14b — the stock items that stock this item at the branch, one per size
+   * (`variantId` null for an item sold in one size). Optional because an api
+   * older than the stock ledger does not send it.
+   */
+  stockLinks?: ApiProductStockLink[];
   sortOrder: number;
   active: boolean;
   archivedAt: string | null;
   /** `product_modifier_group` — the shared groups this item asks, in order. */
   linkedModifierGroupIds: string[];
+}
+
+/** S2-14b — one size's stock item at the branch (`ProductStockLink` in `@oto/shared`). */
+export interface ApiProductStockLink {
+  variantId: string | null;
+  stockItemId: string;
 }
 
 /** One size, as the platform stores it — `ProductVariant` in `@oto/shared`. */
@@ -343,10 +358,39 @@ interface ServerFields {
   active: boolean;
   sortOrder: number;
   description: string | null;
+  /** S2-14b — the item's stock links at this branch, as last read. */
+  stockLinks: ApiProductStockLink[];
+  /** S2-14b — the sizes the catalogue sells it in, as last read (`[]` for one size). */
+  sizes: Array<{ id: string; label: string }>;
 }
 
 const serverFields = new Map<string, ServerFields>();
 const categoryCodes = new Map<string, string>();
+
+/**
+ * S2-14b — the sizes an item is sold in, from the CATALOGUE, for a till that
+ * has no counts to offer them from: an F&B item whose stock is kept in sizes,
+ * on a till where `GET stock/sellable` did not load. The counter still asks
+ * which size (the platform's guard refuses an unsized line on such an item);
+ * the picker offers them uncounted, because "unknown" is not "none left".
+ * Empty for an item sold in one size.
+ */
+export function catalogueSizesOf(productId: string): Array<{ id: string; label: string }> {
+  const sizes = serverFields.get(productId)?.sizes ?? [];
+  return sizes.length > 1 ? sizes : [];
+}
+
+/** The catalogue code the branch's Regular Socks were seeded under (`seed/menu.ts`). */
+const SOCKS_PRODUCT_CODE = 'AO-SOCKS';
+
+/**
+ * S2-14b — whether an add-on id is the branch's Regular Socks: the prototype's
+ * `a-socks`, or the platform product it was seeded as. The socks a ticket line
+ * counts are that product's stock, whichever id this till holds them under.
+ */
+export function isSocksAddOnId(id: string): boolean {
+  return id === 'a-socks' || serverFields.get(id)?.code === SOCKS_PRODUCT_CODE;
+}
 
 /**
  * The category tree, kept beside the rows for the same reason `serverFields` is.
@@ -429,6 +473,32 @@ export function serverFieldsFor(id: string): ServerFields | undefined {
   return serverFields.get(id);
 }
 
+/**
+ * S2-14b — THE STOCK LINK, RECEIVED. A product the platform tracks carries its
+ * OWN id as the prototype's `inventoryItemId`: the platform keeps one stock
+ * item per size, and the selling screens read every size of a product at once
+ * through `inventoryFor` (`api/stock.ts`), keyed by the product. Untracked = no
+ * key, exactly as the prototype's "absent = no stock tracking".
+ */
+function stockKeyOf(p: ApiProduct): { inventoryItemId?: string } {
+  const tracked = (p.stockLinks?.length ?? 0) > 0 || (p.stockLinks === undefined && !!p.stockItemId);
+  return tracked ? { inventoryItemId: p.id } : {};
+}
+
+/**
+ * S2-14b — THE STOCK LINK, SENT. The links themselves are made where stock
+ * items are set up (the stock module, round 2); a catalogue form can only take
+ * tracking AWAY. So the body leaves the links alone (absent) unless the form's
+ * Track stock switch was turned off on an item the platform tracks, which sends
+ * the empty list that stops it. A switch turned ON mints a local id for a row
+ * that exists only in this tab (`inv-<item>`) and links nothing — a stock item
+ * has to exist first.
+ */
+function stockLinksBody(id: string, inventoryItemId: string | undefined): { stockLinks?: ApiProductStockLink[] } {
+  const held = serverFields.get(id)?.stockLinks ?? [];
+  return held.length > 0 && !inventoryItemId ? { stockLinks: [] } : {};
+}
+
 /** True once `load` has answered, i.e. the menu on screen came from the database. */
 let loaded = false;
 export const menuIsServerBacked = (): boolean => loaded;
@@ -487,7 +557,7 @@ export function apiProductToMenuItem(p: ApiProduct, inline: ApiModifierGroup[]):
       : {}),
     ...(p.prepStationOverride ? { prepStationOverride: p.prepStationOverride } : {}),
     ...(p.taxCategoryOverride ? { taxCategoryOverride: p.taxCategoryOverride } : {}),
-    ...(p.stockItemId ? { inventoryItemId: p.stockItemId } : {}),
+    ...stockKeyOf(p),
     ...(p.translations ? { translations: p.translations } : {}),
   };
 }
@@ -511,12 +581,10 @@ export function menuItemToApiBody(item: MenuItem): ApiProductBody {
     prepStationOverride: item.prepStationOverride ?? null,
     taxCategoryOverride: item.taxCategoryOverride ?? null,
     translations: item.translations ?? null,
-    // `inventoryItemId` is deliberately NOT sent, for the reason written on
-    // `merchItemToApiBody` below: `MenuItemBodySchema` has no `stockItemId`
-    // field, so this one was stripped by the route's schema in silence — the
-    // Track stock switch looked linked and nothing was. `product.stock_item_id`
-    // is a foreign key into `stock_item`, and the prototype's switch mints a
-    // local id (`inv-<item>`) for a row that exists only in this tab.
+    // The stock link goes as `stockLinks`, and only to take tracking away —
+    // see `stockLinksBody`. `inventoryItemId` itself is never sent: the
+    // prototype's switch mints a local id for a row only this tab has.
+    ...stockLinksBody(item.id, item.inventoryItemId),
     sortOrder: held?.sortOrder ?? 0,
     active: held?.active ?? true,
     // Under the write's name, not the read's — see `ApiProductBody`. An empty
@@ -562,7 +630,7 @@ export function apiProductToMerchItem(p: ApiProduct): MerchItem {
       ? { category: categoryNameById.get(p.categoryId)! }
       : {}),
     ...(p.taxCategoryOverride ? { taxCategoryOverride: p.taxCategoryOverride } : {}),
-    ...(p.stockItemId ? { inventoryItemId: p.stockItemId } : {}),
+    ...stockKeyOf(p),
     ...(p.variants && p.variants.length > 0 ? { variants: p.variants.map(apiVariantToVariant) } : {}),
   };
 }
@@ -616,13 +684,8 @@ export function merchItemToApiBody(
       ...(v.barcode ? { barcode: v.barcode } : {}),
     })),
     taxCategoryOverride: item.taxCategoryOverride ?? null,
-    // `inventoryItemId` is deliberately NOT sent. The prototype's Track stock
-    // switch mints a local id (`inv-m-<item>`) for a row that exists only in
-    // this tab, and `product.stock_item_id` is a foreign key into `stock_item`.
-    // `MenuItemBodySchema` has no such field, so it was being stripped in
-    // silence — sending it looked like stock was linked when nothing was. The
-    // stock tables get their routes in SCRUM-204's inventory half, and the
-    // panel's notice says so.
+    // The stock link: `stockLinksBody`, for the reason written there.
+    ...stockLinksBody(item.id, item.inventoryItemId),
     sortOrder: held?.sortOrder ?? 0,
     active: item.active,
   };
@@ -636,7 +699,7 @@ export function apiProductToAddOn(p: ApiProduct): AddOn {
       weekday: baht(p.priceSatang),
       weekend: baht(p.priceWeekendSatang ?? p.priceSatang),
     },
-    ...(p.stockItemId ? { inventoryItemId: p.stockItemId } : {}),
+    ...stockKeyOf(p),
     ...(p.taxCategoryOverride ? { taxCategoryOverride: p.taxCategoryOverride } : {}),
     ...(p.translations ? { translations: p.translations } : {}),
   };
@@ -646,10 +709,7 @@ export function addOnToApiBody(
   addOn: AddOn,
 ): Partial<ApiProduct> & { name: string; kind: ProductKind } {
   const held = serverFields.get(addOn.id);
-  // `inventoryItemId` is deliberately NOT sent, for the reason written on
-  // `merchItemToApiBody` above: the Track stock switch mints a local id for a
-  // row that exists only in this tab, and `product.stock_item_id` is a foreign
-  // key into `stock_item`.
+  // The stock link: `stockLinksBody`, for the reason written there.
   return {
     kind: 'addon',
     name: addOn.name,
@@ -661,6 +721,7 @@ export function addOnToApiBody(
       addOn.price.weekend === addOn.price.weekday ? null : satang(addOn.price.weekend),
     taxCategoryOverride: addOn.taxCategoryOverride ?? null,
     translations: addOn.translations ?? null,
+    ...stockLinksBody(addOn.id, addOn.inventoryItemId),
     sortOrder: held?.sortOrder ?? 0,
     active: held?.active ?? true,
   };
@@ -808,6 +869,8 @@ export function mapMenu(menu: ApiMenu): MappedMenu {
       active: p.active,
       sortOrder: p.sortOrder,
       description: p.description,
+      stockLinks: p.stockLinks ?? [],
+      sizes: (p.variants ?? []).map((v) => ({ id: v.id, label: v.label })),
     });
   }
   loaded = true;

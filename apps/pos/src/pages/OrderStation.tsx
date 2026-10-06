@@ -3,24 +3,24 @@ import { useLocation } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { Discount, FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, Operator, SelectedModifier, Wristband } from '@/types';
 import { useStation } from '@/station/StationContext';
-import { dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
+import { announceSalePrinting, dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
 import { setSaleOpen } from '@/pwa/openSale';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
 import {
-  redeemPrepaidItem,
   getDiscountByCode,
   getDiscountReasons,
   recordFnbOrder,
-  getInventoryItem,
   previewStaffBenefit,
   commitStaffBenefit,
   attachBenefitAuditOrderId,
 } from '@/mockApi';
 import { INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
-import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
-import { computeLineTotal, hasModifiers, modifierSignature } from '@/lib/fnb';
+import { inventoryFor, refreshSellableStock, stockIsServerBacked } from '@/api/stock';
+import { VariantPickerModal, type PickableVariant } from '@/components/shared/VariantPickerModal';
+import { hasModifiers, modifierSignature } from '@/lib/fnb';
+import { fnbLineTotal } from '@/lib/cartWire';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
 import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
@@ -49,11 +49,12 @@ import {
   VoucherUsedNote,
   voucherIsGift,
 } from '@/components/till/RedeemVoucher';
+import { type ApiSalePrintJob } from '@/api/history';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import { useBranch } from '@/branch/BranchContext';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { getDefaultTier } from '@/store/catalogStore';
-import { menuIsServerBacked } from '@/api/menu';
+import { catalogueSizesOf, menuIsServerBacked } from '@/api/menu';
 import {
   buildItemCartPayload,
   offLedgerOnly,
@@ -74,7 +75,9 @@ import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { BenefitScanModal } from '@/components/fnb/BenefitScanModal';
 import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { FnbCart } from '@/components/fnb/FnbCart';
-import { FnbPayment, fnbPaymentResult } from '@/components/fnb/FnbPayment';
+import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
+import { walletKeyOf } from '@/api/wallet';
+import { bandHolderOf, withPrepaidServed } from '@/lib/bandFood';
 import { FnbConfirmation } from '@/components/fnb/FnbConfirmation';
 import { PickupCodeModal } from '@/components/fnb/PickupCodeModal';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
@@ -116,6 +119,12 @@ export default function OrderStation() {
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
+  /**
+   * S2-14a round 2 — whether this order spends the scanned wallet. Preselected
+   * whenever the band carries credit (the prototype's tender card); staff can
+   * take it off to collect the whole order another way.
+   */
+  const [useCredit, setUseCredit] = useState(true);
   const [cart, setCart] = useState<FnbOrderLine[]>([]);
   const [orderNote, setOrderNote] = useState('');
   const [manualDiscounts, setManualDiscounts] = useState<ManualDiscount[]>([]);
@@ -140,6 +149,13 @@ export default function OrderStation() {
   const saleWriter = useSaleWriter();
   /** The sale the platform holds for the order on the confirmation screen. */
   const [platformSale, setPlatformSale] = useState<ApiSale | null>(null);
+  /**
+   * SCRUM-208 — the platform's own print jobs for the closed order, so the
+   * confirmation names only the prep stations it actually printed. Null until
+   * they land, and on a deployment whose sale read carries none — the
+   * confirmation then falls back to what the order built.
+   */
+  const [platformPrintJobs, setPlatformPrintJobs] = useState<ApiSalePrintJob[] | null>(null);
   const completedSaleRef = useRef<string | null>(null);
   const paymentSnapshotRef = useRef<{ epoch: number; scope: string; prepare: () => Promise<SaleWriteOutcome>; complete: (sale: ApiSale, settlements: readonly PaymentSettlement[]) => void } | null>(null);
   /**
@@ -274,19 +290,26 @@ export default function OrderStation() {
       tier: getDefaultTier()?.id ?? 'tourist',
       channel: 'fnb',
       pickupCode: pickupCode || null,
-      memberId: null,
+      // SCRUM-208 — name the band's member to the platform where the tab has
+      // one, so the prep ticket carries the member's children's allergy line.
+      // A guest order or a walk-in band names none; nothing is looked up here.
+      memberId: wristband?.memberId ?? null,
       customerPhone: null,
       customerNickname: null,
       accountId: operator.id,
       accountName: operator.name,
+      // SCRUM-494 — the band's child, so the prep ticket prints their own
+      // allergy line and the prepaid lines are served from their stay.
+      bandHolder: bandHolderOf(wristband, foodOverride),
     };
-  }, [branch.id, station?.stationId, operator, pickupCode]);
+  }, [branch.id, station?.stationId, operator, pickupCode, wristband, foodOverride]);
 
   /**
    * THE PRICE THE PLATFORM QUOTES FOR THIS ORDER. Every figure the order panel,
    * the customer display and the payment screen show comes from here. The
-   * prototype totalled the order in the browser (`computeFnbTotals`); that
-   * arithmetic is now only the fallback, and when it is what is on screen
+   * prototype totalled the order in the browser (`computeFnbTotals`); the
+   * fallback is now the platform's own engine run on this till
+   * (`itemOrderTotals`, SCRUM-271), and when it is what is on screen
    * `PriceSourceNote` says so beside the total.
    *
    * Switched off once the order is confirmed: the sale's own figures stand from
@@ -409,7 +432,7 @@ export default function OrderStation() {
     menuItem: item,
     qty,
     selectedModifiers: selected,
-    lineTotal: computeLineTotal(item, selected, qty),
+    lineTotal: fnbLineTotal(item, selected, qty),
     note,
     ...(variant
       ? { variantId: variant.variantId, variantLabel: variant.variantLabel }
@@ -421,7 +444,7 @@ export default function OrderStation() {
   // they resolve against the Default variant — same as recordFnbOrder's decrement.
   const variantStockCap = (item: MenuItem, variantId?: string): number | null => {
     if (!item.inventoryItemId) return null;
-    const inv = getInventoryItem(item.inventoryItemId);
+    const inv = inventoryFor(item.inventoryItemId);
     if (!inv) return null;
     const v = inv.variants.find((x) => x.id === (variantId ?? INVENTORY_DEFAULT_VARIANT_ID));
     return v ? v.stock : null;
@@ -446,6 +469,8 @@ export default function OrderStation() {
       selectedModifiers: [],
       lineTotal: 0,
       isPrepaid: true,
+      // SCRUM-494 — served from the platform stay the scan resolved.
+      ...(wristband?.stayId ? { prepaidStayId: wristband.stayId } : {}),
     };
     setCart((prev) => [...prev, line]);
   };
@@ -487,7 +512,7 @@ export default function OrderStation() {
         const next = [...prev];
         const merged = next[idx];
         const newQty = merged.qty + addQty;
-        next[idx] = { ...merged, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+        next[idx] = { ...merged, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
         return next;
       }
       return [...prev, makeLine(item, selected, addQty, note, variant)];
@@ -510,10 +535,23 @@ export default function OrderStation() {
     addOrMerge(item, [], 1, undefined, variant);
   };
 
+  /**
+   * The sizes the counter asks about: a stocked item's sizes with their counts
+   * (`api/stock.ts`). An item the platform tracks whose counts this till could
+   * not read is offered its catalogue sizes uncounted (S2-14b), since the
+   * platform asks which size of it was sold; an untracked item is asked nothing,
+   * as in the prototype.
+   */
+  const pickableSizesFor = (item: MenuItem | null): PickableVariant[] => {
+    if (!item?.inventoryItemId) return [];
+    const inv = inventoryFor(item.inventoryItemId);
+    if (inv) return inv.variants.length > 1 ? inv.variants : [];
+    return catalogueSizesOf(item.id);
+  };
+
   const proceedAdd = (item: MenuItem) => {
-    const inv = item.inventoryItemId ? getInventoryItem(item.inventoryItemId) : undefined;
     // Multi-variant stocked item → ask staff which size/flavour first.
-    if (inv && inv.variants.length > 1) {
+    if (pickableSizesFor(item).length > 1) {
       setVariantItem(item);
       return;
     }
@@ -526,8 +564,7 @@ export default function OrderStation() {
     const item = variantItem;
     setVariantItem(null);
     if (!item || !item.inventoryItemId) return;
-    const inv = getInventoryItem(item.inventoryItemId);
-    const v = inv?.variants.find((x) => x.id === variantId);
+    const v = pickableSizesFor(item).find((x) => x.id === variantId);
     continueAdd(item, v ? { variantId: v.id, variantLabel: v.label } : null);
   };
 
@@ -588,7 +625,7 @@ export default function OrderStation() {
             .map((l) => {
               if (l.id !== prev[twinIdx].id) return l;
               const newQty = l.qty + addQty;
-              return { ...l, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+              return { ...l, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
             });
           // The edited line merged into its twin and no longer exists — drop
           // any manual discount that targeted it.
@@ -601,7 +638,7 @@ export default function OrderStation() {
                 ...l,
                 selectedModifiers: selected,
                 qty,
-                lineTotal: computeLineTotal(item, selected, qty),
+                lineTotal: fnbLineTotal(item, selected, qty),
                 note,
               }
             : l
@@ -646,7 +683,7 @@ export default function OrderStation() {
         return {
           ...l,
           qty: nextQty,
-          lineTotal: computeLineTotal(l.menuItem, l.selectedModifiers, nextQty),
+          lineTotal: fnbLineTotal(l.menuItem, l.selectedModifiers, nextQty),
         };
       });
     });
@@ -848,6 +885,7 @@ export default function OrderStation() {
   const loadBand = (wb: Wristband | null) => {
     if (staffLocked.current) return;
     setWristband(wb);
+    setUseCredit(true);
     setStage('order');
   };
 
@@ -863,8 +901,10 @@ export default function OrderStation() {
     setVoucherUsed(null);
     setCancelRefusal(null);
     setPlatformSale(null);
+    setPlatformPrintJobs(null);
     setStage('scan');
     setWristband(null);
+    setUseCredit(true);
     setCart([]);
     setOrderNote('');
     setManualDiscounts([]);
@@ -900,12 +940,17 @@ export default function OrderStation() {
    */
   const voucherOrderLine = (held: HeldVoucher): FnbOrderLine | null => {
     const effect = held.view.effect;
-    if (effect.type === 'hand_over') {
+    // S2-14a round 5: a wallet-credit voucher is a line the same way — nothing
+    // the kitchen makes; the platform loads the credit when the sale closes.
+    if (effect.type === 'hand_over' || effect.type === 'wallet_credit') {
       return {
         id: `voucher-${held.view.id}`,
         menuItem: {
           id: `voucher-prize-${held.view.id}`,
-          name: held.view.prize.nameEn,
+          name:
+            effect.type === 'wallet_credit'
+              ? `฿${Math.round(effect.valueSatang) / 100} wallet credit`
+              : held.view.prize.nameEn,
           category: '',
           price: { weekday: 0, weekend: 0 },
           prepStationOverride: 'none',
@@ -1082,14 +1127,13 @@ export default function OrderStation() {
       voucher.reset();
     }
 
-    const balanceAfter = wristband?.creditBalanceTHB ?? null;
-
-    // Commit prepaid item redemptions only after the sale is finalised.
-    if (wristband) {
-      for (const line of lines.filter((l) => l.isPrepaid)) {
-        redeemPrepaidItem(wristband.id, line.menuItem.id, line.qty);
-      }
-    }
+    // S2-14a — the balance the platform left on the wallet, when credit paid.
+    const balanceAfter = walletBalanceAfter(settlements) ?? wristband?.creditBalanceTHB ?? null;
+    // SCRUM-494 — the platform served the prepaid lines from the child's stay
+    // in the transaction that closed the order; this till's copy of the band
+    // shows the same counts.
+    const servedWristband = wristband ? withPrepaidServed(wristband, lines) : wristband;
+    const paidWristband = servedWristband && balanceAfter !== null ? { ...servedWristband, creditBalanceTHB: balanceAfter } : servedWristband;
 
     // Commit the staff benefit LAST, right before the order is finalized —
     // this is the one place usage/credit is actually consumed and audited
@@ -1125,7 +1169,7 @@ export default function OrderStation() {
       id: String(orderCounter++).padStart(4, '0'),
       operatorId: operator.id,
       operatorName: operator.name,
-      wristband: wristband ?? undefined,
+      wristband: paidWristband ?? undefined,
       // The voucher's free item with the order's own lines: it goes to the
       // kitchen, onto the receipt and into the stock count like any F&B line.
       lines: voucherLine ? [...displayLines, voucherLine] : displayLines,
@@ -1140,12 +1184,24 @@ export default function OrderStation() {
       foodConsentOverride: foodOverride ?? undefined,
       staffBenefit,
     };
-    recordFnbOrder(record);
+    // S2-14b — the platform took the stock off its shelves when it closed the
+    // order; the local record is kept and the ported inventory is not touched.
+    recordFnbOrder(record, { decrementStock: false });
+    void refreshSellableStock();
     if (staffBenefit) attachBenefitAuditOrderId(staffBenefit.auditId, record.id);
     setCompletedOrder(record);
     setNewBalance(balanceAfter);
     setStage('confirmation');
-    dispatchPrintJobs(fnbPrintJobs(station, record));
+    // S2-11 — the platform printed the receipt and one prep ticket per station
+    // when it closed the order; the toast says what it queued and where. The
+    // till's own routing is only the stand-in for a deployment whose sale read
+    // carries no print jobs. SCRUM-208 — the jobs it queued are kept so the
+    // confirmation names only the prep stations that actually printed.
+    void announceSalePrinting(written.id, () => dispatchPrintJobs(fnbPrintJobs(station, record))).then(
+      (jobs) => {
+        if (jobs && completedSaleRef.current === written.id) setPlatformPrintJobs(jobs);
+      },
+    );
   };
 
   if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
@@ -1161,6 +1217,10 @@ export default function OrderStation() {
     finaliseSale: saleWriter.finalise,
     onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
     onLeftBehind: notePaymentLeftBehind,
+    // S2-14a round 2 — the scanned wallet, spent first by the platform on the confirm press.
+    wallet: wristband && wristband.creditBalanceTHB > 0
+      ? { key: walletKeyOf(wristband), useCredit, previewSatang: Math.round(wristband.creditBalanceTHB * 100) }
+      : null,
   });
   const backFromPayment = () => {
     if (!paymentStage.canBack) return;
@@ -1178,7 +1238,13 @@ export default function OrderStation() {
   const separateDisplay = useFnbDisplay(station?.stationId ?? null, {
     sessionKey: `${operator?.id ?? ''}:${station?.branchId ?? branch.id}:${station?.stationId ?? ''}:${orderEpochRef.current}`,
     stage: customerStage, online: !stationOffline(),
-    excluded: !!wristband || !!benefitOperator || !!voucher.held || !!voucherUsed || promoCodes.length > 0
+    // S2-14a round 2 — a scanned wallet no longer excludes the order: its lines
+    // and total are the platform's quote, and the credit the stage takes rides
+    // the payment frame as a figure (`creditSatang`), so the separate display —
+    // the production device (CLAUDE.md §7 rule 4) — shows "From your credit /
+    // Left to pay" like the in-till harness. An order with a prepaid line stays
+    // on the in-till display.
+    excluded: !!benefitOperator || !!voucher.held || !!voucherUsed || promoCodes.length > 0
       || !!offLedgerOnly(lines) || lines.some(line => line.isPrepaid),
     lines, orderNote, manualDiscounts: effectiveManualDiscounts, quote: order.quote,
     pending: order.pending, quoteFailed: !!order.error, payment: paymentStage.display, completedOrder, platformSale,
@@ -1310,7 +1376,7 @@ export default function OrderStation() {
                         Prepaid credit · {wristband.holderName ?? wristband.customerNickname}
                       </span>
                       <div className="text-sm text-violet-200/80 mt-0.5">
-                        ฿{wristband.creditBalanceTHB} remaining. Credit payments are not available at this station.
+                        ฿{wristband.creditBalanceTHB} remaining — spends like credit at checkout.
                       </div>
                     </div>
                   </div>
@@ -1318,18 +1384,18 @@ export default function OrderStation() {
               )}
 
               {/*
-                WHAT THIS STATION STILL DOES ON ITS OWN. The menu, the prices
-                and the order are the platform's from here on; three things on
-                this screen are not, and each names the ticket that moves it
-                rather than looking like part of the ledger.
+                WHAT THIS STATION STILL DOES ON ITS OWN. The menu, the prices,
+                the order and — since S2-11 — the kitchen, bar and receipt
+                printing are the platform's; two things on this screen are not,
+                and each names the ticket that moves it rather than looking like
+                part of the ledger.
               */}
               <div className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
                 <span className="font-bold uppercase tracking-wide text-foreground/70">
                   This till&apos;s own record
                 </span>
-                <span>Stock counts and out-of-stock — S2-14b</span>
-                <span>Wallet credit and prepaid items — S2-14a</span>
-                <span>Kitchen, bar and receipt printing — S2-11</span>
+                {/* S2-14b — the counts are the platform's once it has answered. */}
+                {!stockIsServerBacked() && <span>Stock counts and out-of-stock — S2-14b</span>}
                 {!menuFromPlatform && (
                   <span className="text-amber-300">
                     Menu — this deployment has no menu route, so the ported catalogue is shown
@@ -1450,6 +1516,8 @@ export default function OrderStation() {
               pickupCode={pickupCode}
               stage={paymentStage}
               onBack={backFromPayment}
+              useCredit={useCredit}
+              onUseCreditChange={setUseCredit}
             />
             {/*
               What the platform has done with this order, in the same panels the
@@ -1476,6 +1544,7 @@ export default function OrderStation() {
               newBalance={newBalance}
               onNewOrder={resetOrder}
               receiptNumber={platformSale?.receiptNumber ?? null}
+              platformPrintJobs={platformPrintJobs}
               flowLayout
               note={voucherUsed ? <VoucherUsedNote held={voucherUsed} /> : undefined}
             />
@@ -1518,7 +1587,10 @@ export default function OrderStation() {
         {inlineDisplay && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
             <FnbCustomerDisplay
-              presentation={separateDisplay.presentation}
+              // The in-till harness keeps the prototype's wallet visuals (the
+              // greeting, the balance chip, the remaining credit); only the
+              // separate device reads the captured frame.
+              presentation={wristband ? undefined : separateDisplay.presentation}
               stage={customerStage}
               wristband={wristband}
               lines={displayLines}
@@ -1581,11 +1653,7 @@ export default function OrderStation() {
       <VariantPickerModal
         open={variantItem !== null}
         itemName={variantItem?.name ?? ''}
-        variants={
-          variantItem?.inventoryItemId
-            ? getInventoryItem(variantItem.inventoryItemId)?.variants ?? []
-            : []
-        }
+        variants={pickableSizesFor(variantItem)}
         onPick={handlePickVariant}
         onCancel={() => setVariantItem(null)}
       />

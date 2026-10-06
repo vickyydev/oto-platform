@@ -55,6 +55,8 @@ export * from './document';
 export * from './devices';
 export * from './templates/model';
 export type * from './templates/data';
+// The Print Templates editor's named preview scenarios (SCRUM-472).
+export * from './samples';
 export { Bitmap1 } from './raster/bitmap';
 export { layoutDocument, resolveCellWidths } from './layout/layout';
 export type { LayoutItem, LayoutModel, LayoutOptions } from './layout/layout';

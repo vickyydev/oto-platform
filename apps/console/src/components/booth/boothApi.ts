@@ -25,7 +25,7 @@
  * console that type-errored on a new one would be a console that cannot be
  * told about a new way to be wrong.
  */
-import { api, ApiError, idemKey, isMissingRoute } from '@/api/client';
+import { api, apiUrl, ApiError, idemKey, isMissingRoute } from '@/api/client';
 import type { BoothEligibilityMode } from '@oto/shared';
 
 export { isMissingRoute, ApiError };
@@ -129,6 +129,15 @@ export interface BoothPrizeDraft {
   effectiveExpiryDays: number | null;
 }
 
+/**
+ * `BoothArchivedPrizeView`: a slice archived off the booth, listed only when
+ * the draft is read with `includeArchived` (SCRUM-468). It is never in
+ * `prizes`, so no total on the page counts it.
+ */
+export interface BoothArchivedPrize extends BoothPrizeDraft {
+  archivedAt: string;
+}
+
 export interface BoothSettingsDraft {
   layoutId: string | null;
   layoutName: string | null;
@@ -143,6 +152,32 @@ export interface BoothSettingsDraft {
    * deployment older than the column does not send it.
    */
   staffSessionMinutes?: number | null;
+  /**
+   * The booth's voucher slip (SCRUM-471): show the logo, a header line under
+   * the venue line, a footer line, show the Staff row, show the terms. All
+   * optional on the read because a deployment older than migration 0039 does
+   * not send them — which the Voucher slip card says rather than guessing.
+   */
+  voucherShowLogo?: boolean;
+  voucherHeaderText?: string | null;
+  voucherFooterText?: string | null;
+  voucherShowStaff?: boolean;
+  voucherShowTerms?: boolean;
+}
+
+/** The five slip fields, as the settings route and the preview route take them. */
+export interface VoucherSlipInput {
+  voucherShowLogo: boolean;
+  voucherHeaderText: string | null;
+  voucherFooterText: string | null;
+  voucherShowStaff: boolean;
+  voucherShowTerms: boolean;
+}
+
+/** A drawn sample slip: the PNG, and its width in printer dots. */
+export interface VoucherSlipPicture {
+  blob: Blob;
+  widthDots: number;
 }
 
 /** What the API will refuse a publish for, with the field to put it against. */
@@ -168,6 +203,12 @@ export interface BoothDraft {
   settings: BoothSettingsDraft;
   /** In slice order — `sortOrder`, then name, which is what a publish freezes. */
   prizes: BoothPrizeDraft[];
+  /**
+   * The archived slices, most recently archived first — present only when the
+   * draft was read with `includeArchived` (SCRUM-468), and absent from a
+   * deployment older than it.
+   */
+  archivedPrizes?: BoothArchivedPrize[];
   /** Exactly what publishing would mint. Left unparsed; see the file note. */
   bundle: unknown;
   /**
@@ -268,6 +309,9 @@ export interface VoucherDefinitionRow {
   instructionTh?: string | null;
   termsEn?: string | null;
   termsTh?: string | null;
+  /** 'fixed': every slip prints fixedCode (a code set up in another till system, say). */
+  codeMode?: string;
+  fixedCode?: string | null;
   archivedAt?: string | null;
   updatedAt?: string;
   product?: VoucherLink | null;
@@ -301,6 +345,8 @@ export interface VoucherDefinitionInput {
   termsEn: string | null;
   termsTh: string | null;
   active: boolean;
+  codeMode?: 'generated' | 'fixed';
+  fixedCode?: string | null;
 }
 
 /** `GET /voucher-definitions/link-options`: what a voucher type can point at. */
@@ -415,7 +461,13 @@ export const boothApi = {
 
   status: (id: string) => api.get<BoothStatus>(`${at(id)}/status`),
 
-  draft: (id: string) => api.get<BoothDraft>(`${at(id)}/draft`),
+  /**
+   * `includeArchived` adds the archived slices beside the live ones, the way
+   * `voucherDefinitions` below does for voucher types (SCRUM-468). The draft
+   * itself — prizes, bundle, hash — is the same either way.
+   */
+  draft: (id: string, includeArchived = false) =>
+    api.get<BoothDraft>(`${at(id)}/draft${includeArchived ? '?includeArchived=true' : ''}`),
 
   versions: (id: string) => api.get<{ versions: BoothVersionRow[] }>(`${at(id)}/versions`),
 
@@ -462,6 +514,40 @@ export const boothApi = {
   saveSettings: (id: string, settings: Partial<Omit<BoothSettingsDraft, 'layoutName'>>) =>
     api.patch<unknown>(`${at(id)}/settings`, settings, { idempotencyKey: idemKey() }),
 
+  /**
+   * Draw a sample voucher slip from DRAFT slip choices (SCRUM-471) — the same
+   * renderer as the paper, at the booth printer's 80 mm width. It saves
+   * nothing, so it carries no idempotency key, like the till's template
+   * preview. A PNG rather than JSON, so it is fetched here rather than through
+   * the JSON client; a refusal still comes back as the platform's error.
+   */
+  voucherPreview: async (
+    id: string,
+    slip: Partial<VoucherSlipInput>,
+    signal?: AbortSignal,
+  ): Promise<VoucherSlipPicture> => {
+    const res = await fetch(apiUrl(`${at(id)}/voucher-preview.png`), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(slip),
+      signal,
+    });
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as {
+        error?: { code?: string; message?: string; details?: unknown };
+      } | null;
+      throw new ApiError(
+        res.status,
+        body?.error?.code ?? 'UNKNOWN',
+        body?.error?.message ?? res.statusText,
+        body?.error?.details,
+      );
+    }
+    const widthDots = Number(res.headers.get('x-oto-preview-width-dots'));
+    return { blob: await res.blob(), widthDots: Number.isFinite(widthDots) && widthDots > 0 ? widthDots : 576 };
+  },
+
   createPrize: (id: string, prize: PrizeInput) =>
     api.post<BoothPrizeDraft>(`${at(id)}/prizes`, prize, { idempotencyKey: idemKey() }),
 
@@ -478,6 +564,16 @@ export const boothApi = {
    */
   archivePrize: (id: string, prizeId: string) =>
     api.delete<unknown>(`${at(id)}/prizes/${encodeURIComponent(prizeId)}`, {
+      idempotencyKey: idemKey(),
+    }),
+
+  /**
+   * Brings an archived slice back, switched off (SCRUM-468). The API refuses
+   * it while its voucher type is archived, and while a live slice has its
+   * name; either refusal is said in the prizes panel.
+   */
+  restorePrize: (id: string, prizeId: string) =>
+    api.post<unknown>(`${at(id)}/prizes/${encodeURIComponent(prizeId)}/restore`, undefined, {
       idempotencyKey: idemKey(),
     }),
 
@@ -549,4 +645,93 @@ export const boothApi = {
       `${at(id)}/staff/${encodeURIComponent(accountId)}/pin?reason=${encodeURIComponent(reason)}`,
       { idempotencyKey: idemKey() },
     ),
+
+  // --- The day's booth staff (SCRUM-473) -------------------------------------
+
+  duty: (id: string) => api.get<BoothDutyView>(`${at(id)}/duty`),
+
+  /** Read the OTO App's schedule now and write the difference into today's roster. */
+  syncDuty: (id: string) =>
+    api.post<BoothDutySyncResult>(`${at(id)}/duty/sync`, undefined, { idempotencyKey: idemKey() }),
+
+  /** An account of the branch's staff, or a name alone for somebody with none. */
+  addDuty: (id: string, input: { accountId?: string | null; displayName?: string | null }) =>
+    api.post<{ roster: BoothDutyAssignment[] }>(`${at(id)}/duty`, input, {
+      idempotencyKey: idemKey(),
+    }),
+
+  removeDuty: (id: string, assignmentId: string) =>
+    api.delete<{ roster: BoothDutyAssignment[] }>(
+      `${at(id)}/duty/${encodeURIComponent(assignmentId)}`,
+      { idempotencyKey: idemKey() },
+    ),
+
+  saveDutyRule: (id: string, rule: Partial<BoothDutyRule>) =>
+    api.patch<BoothDutyRule>(`${at(id)}/duty/rule`, rule, { idempotencyKey: idemKey() }),
 };
+
+// ---------------------------------------------------------------------------
+// The day's booth staff (SCRUM-473) — `BoothDutyView` and friends in
+// `apps/api/src/services/booth-duty.ts`
+// ---------------------------------------------------------------------------
+
+/** How somebody came to be on the day's roster. */
+export type BoothDutySource = 'app_schedule' | 'app_duty_block' | 'manual' | 'self_assigned';
+
+/** What the last sync found about the OTO App itself. */
+export type BoothDutyAppState = 'ok' | 'app_not_installed' | 'no_app_branch' | 'ambiguous_app_branch';
+
+export interface BoothDutyAssignment {
+  id: string;
+  /** Null for a casual worker: named on the voucher, never signs in. */
+  accountId: string | null;
+  displayName: string;
+  source: BoothDutySource;
+  syncedAt: string | null;
+  addedByAccountId: string | null;
+  createdAt: string;
+}
+
+export interface BoothDutyUnmatched {
+  name: string;
+  /** `no_app_user`: the employee has no app login. `no_platform_account`: the login is not linked. */
+  reason: 'no_app_user' | 'no_platform_account';
+}
+
+export interface BoothDutyRule {
+  /** Matched inside a shift row's group, department or role name. */
+  groupText: string;
+  /** Matched inside a duty block's name. */
+  dutyText: string;
+}
+
+export interface BoothDutyLogLine {
+  at: string;
+  action: string;
+  actorAccountId: string | null;
+  detail: Record<string, unknown> | null;
+}
+
+export interface BoothDutyView {
+  businessDate: string;
+  rule: BoothDutyRule;
+  roster: BoothDutyAssignment[];
+  /** What prints on every voucher today; null prints "unattributed". */
+  label: string | null;
+  lastSync: {
+    syncedAt: string;
+    appState: BoothDutyAppState;
+    unmatched: BoothDutyUnmatched[];
+    syncedByAccountId: string | null;
+  } | null;
+  log: BoothDutyLogLine[];
+}
+
+export interface BoothDutySyncResult {
+  businessDate: string;
+  appState: BoothDutyAppState;
+  added: number;
+  removed: number;
+  unmatched: BoothDutyUnmatched[];
+  roster: BoothDutyAssignment[];
+}

@@ -7,38 +7,48 @@ import type {
   SaleQuotedPricing,
   TaxConfig,
 } from '@/types';
-import { computeTotals } from '@/lib/sale';
-import { computeFnbTotals } from '@/lib/fnb';
-import { computeMerchTotals } from '@/lib/merch';
-import { summarizeTax } from '@/lib/tax';
 import {
   computeTicketCartTotals,
+  dropOffLineEntersCart,
   newId,
-  type AppliedPromo,
   type PaymentAttemptView,
   type TaxBreakdown as EngineTaxBreakdown,
   type TaxableCategory,
   type TicketCartTotals,
 } from '@oto/shared';
 import {
+  breakdownToBaht,
   engineCart,
   engineManualDiscount,
   enginePromo,
   itemCart,
+  itemOrderTotals,
   type ItemCartLine,
   localIdFor,
   platformId,
   SOCKS_ADDON_ID,
   SOCKS_LABEL,
+  taxRowsOf,
   toBaht,
   toSatang,
+  totalsToBaht,
   unpricedDropOffLines,
   type EngineCart,
+  type OrderTotals,
 } from '@/lib/cartWire';
 import { todayRateMode, type RateMode } from '@/lib/pricingMode';
 import { api, ApiError, idemKey, isMissingRoute } from './client';
+import { bridgeApi } from './bridge';
+import { viaLane } from '@/lib/lane';
 import type { VoucherEffect } from './vouchers';
-import type { TaxBreakdown as PosTaxBreakdown, CategoryTaxLine as PosCategoryTaxLine } from '@/lib/tax';
+
+/**
+ * The totals shape every money component renders, and one applied code as they
+ * draw it. They live with the rest of the display edge in `lib/cartWire.ts`
+ * since SCRUM-271; re-exported so the screens that have always read them from
+ * here still do.
+ */
+export type { OrderTotals, QuotedPromoLine } from '@/lib/cartWire';
 
 /**
  * THE SALES LEDGER, FROM THE TILL'S SIDE — S2-09a (SCRUM-203).
@@ -84,7 +94,12 @@ export interface SaleCartAddOnPayload {
 }
 
 export interface SaleCartLinePayload {
-  /** The till's own cart line id — `pos.sale_line.cart_line_id`. */
+  /**
+   * The till's own cart line id — `pos.sale_line.cart_line_id` — as the
+   * UUIDv7 this till minted for it (`platformId`, SCRUM-270). The platform
+   * names every row the line fans out into from it and the sale's id, and a
+   * retry of the same sale carrying other line ids is refused, not replayed.
+   */
   id: string;
   /** The platform's `ticket_package` id: what the platform prices from. */
   packageId: string;
@@ -213,11 +228,12 @@ export interface SaleCartPayload {
    * `POST /sales/tier-claims`, when this cart is for a visitor who is not a
    * member yet.
    *
-   * It is what makes a discounted walk-in priceable at all: `tier` above is
-   * ignored by the platform, and with no member to read a tier from the cart
-   * would otherwise be priced at the default rate — which is how every Expat
-   * and Thai sale came back as `SALE_LINE_PRICE_MISMATCH`. What this names is
-   * a row the platform wrote under a permission check and stamped with the
+   * It is what makes a discounted walk-in priceable at all: `tier` above can
+   * only move a price down to the operator's default tier (the platform prices
+   * a member at the default rate when the till picks it, and any other tier it
+   * names prices nothing), so with no member to read a tier from the cart is
+   * priced at the default rate unless this names a claim. What this names is a
+   * row the platform wrote under a permission check and stamped with the
    * verifier and the branch; naming it is not the same as naming a price.
    */
   tierClaimActionId?: string | null;
@@ -259,6 +275,13 @@ export interface SaleCartPayload {
   customerNickname?: string | null;
   /** What the till last showed as the amount due. See `lineTotalSatang`. */
   expectedTotalSatang: number;
+  /**
+   * SCRUM-494 — the child's stay behind the band an F&B order was taken
+   * against, and the food-consent override when staff recorded one. The
+   * platform checks the stay, prints that child's allergy line on the prep
+   * ticket and serves the prepaid lines from it.
+   */
+  bandHolder?: { checkinId: string; foodOverride?: boolean };
 }
 
 export interface SaleCommitBody {
@@ -282,6 +305,14 @@ export interface SaleCommitBody {
    * refused as a mismatch — the one moment a retry has to work.
    */
   occurredAt: string;
+  /**
+   * SCRUM-208 — THE VISIT THIS SALE FOLLOWS, when it followed a membership
+   * check that opened one. The platform stores it on the sale and band minting
+   * names each child's band from the visit's children (allergies included);
+   * without it the kids' bands print with no name. A walk-in sale, or one with
+   * no membership check, sends nothing.
+   */
+  visitId?: string | null;
   note?: string | null;
   /**
    * WHETHER THIS COMMIT ALSO CLOSES THE SALE.
@@ -521,6 +552,22 @@ export interface SaleFinaliseResult {
   attempt?: PaymentAttemptView | null;
   /** S2-10b — the vouchers this call used up, by id. Empty unless it closed a sale carrying one. */
   redeemedVoucherIds?: string[];
+  /** S2-14a round 2 — the wallet tender the platform wrote for this press, when it carried a wallet. */
+  walletAttempt?: PaymentAttemptView | null;
+  walletSpend?: { walletId: string; amountSatang: number; balanceAfterSatang: number } | null;
+}
+
+/**
+ * S2-14a round 2 (plan §2.3) — WHAT THE CONFIRM PRESS SENDS TO SPEND A WALLET:
+ * the scanned key (a band's code or a voucher's `QR-…`) and "use credit". The
+ * platform decides the amount — min(balance, outstanding) under the wallet's
+ * lock — and writes the tender itself; this till never names credit as a
+ * method on the tender grid.
+ */
+export interface SaleWalletPayload {
+  key: string;
+  useCredit?: boolean;
+  amountSatang?: number;
 }
 
 // --- The client -------------------------------------------------------------
@@ -589,8 +636,8 @@ export interface SaleTierClaimBody {
   toTier: string;
   /** The KIND of document — `Passport`, `School card`. Never its number. */
   evidenceType: string;
-  /** The document's expiry, `YYYY-MM-DD`. */
-  evidenceExpiresAt: string;
+  /** The document's expiry, `YYYY-MM-DD`; absent when it carries none. */
+  evidenceExpiresAt?: string;
 }
 
 /** The claim as the platform answers it. The tier on it is the platform's. */
@@ -604,7 +651,23 @@ export interface ApiTierClaim {
 }
 
 export const salesApi = {
-  quote: (body: SaleCartPayload) => api.post<{ quote: ApiSaleQuote }>('/sales/quote', body),
+  /**
+   * On the box lane (offline plan Round 3, OD-1) the cart is priced by the box
+   * from its cached catalogue, with the one satang engine, and answered in the
+   * platform's own quote shape.
+   */
+  quote: (body: SaleCartPayload) =>
+    viaLane(
+      () => api.post<{ quote: ApiSaleQuote }>('/sales/quote', body),
+      async (stationId) => {
+        const answer = await bridgeApi.intent<{ quote: ApiSaleQuote }>(
+          stationId,
+          'cart.quote',
+          body as unknown as Record<string, unknown>,
+        );
+        return { quote: answer.result!.quote };
+      },
+    ),
   /**
    * SCRUM-307 — record the document staff just checked for a visitor who has
    * given no details yet, so the cart that follows is priced at the rate it
@@ -629,6 +692,17 @@ export const salesApi = {
   finalise: (saleId: string, body: SaleFinaliseBody) =>
     api.post<SaleFinaliseResult>(`/sales/${encodeURIComponent(saleId)}/finalise`, body, {
       idempotencyKey: saleFinaliseIdempotencyKey(saleId, body.tender, body.actionId),
+      headers: { 'x-oto-action-id': body.actionId },
+    }),
+  /**
+   * S2-14a round 2 — the credit half of a confirm press: the same finalise
+   * route with the wallet and NO tender, so the platform spends the credit
+   * and leaves any remainder owed for the tender that follows. Its own key,
+   * so a retry replays the spend and never repeats it.
+   */
+  spendWallet: (saleId: string, body: { actionId: string; wallet: SaleWalletPayload }) =>
+    api.post<SaleFinaliseResult>(`/sales/${encodeURIComponent(saleId)}/finalise`, body, {
+      idempotencyKey: `sale:${saleId}:wallet:${body.actionId}`,
       headers: { 'x-oto-action-id': body.actionId },
     }),
   /**
@@ -717,7 +791,11 @@ export function buildCartPayload(
 ): SaleCartPayload {
   const rate = todayRateMode();
   const mode = options.mode ?? rate.mode;
-  const cart = engineCart(lines, discounts, manualDiscounts, {
+  // S2-13 — THE CART RULE (`dropOffLineEntersCart`, the cart-totals.ts note): a
+  // drop-off line enters what the platform is sent only once its play length
+  // is chosen. Until then it is on the screen and nowhere else — never quoted,
+  // never sold, never trusted at the till's ฿0.
+  const cart = engineCart(lines.filter(dropOffLineEntersCart), discounts, manualDiscounts, {
     mode,
     ...(options.config ? { config: options.config } : {}),
   });
@@ -741,7 +819,7 @@ export function buildCartPayload(
     lines: cart.lines.map((line) => {
       const source = byId.get(line.id);
       return {
-        // Translated at the wire — see `platformId`. The till keeps its own id.
+        // Minted at the wire, once per line — see `platformId`. The screen keeps its own id.
         id: platformId(line.id),
         packageId: line.packageId,
         packageName: source?.ticketType.name ?? '',
@@ -782,7 +860,7 @@ export function buildCartPayload(
       return {
         id: platformId(discount.id),
         scope: discount.scope,
-        // The same translation, or a line-scoped discount would point at a line
+        // The same minted id, or a line-scoped discount would point at a line
         // id the platform has never seen and be treated as order-wide.
         ...(discount.targetLineId ? { targetLineId: platformId(discount.targetLineId) } : {}),
         ...(discount.targetComponent ? { targetComponent: discount.targetComponent } : {}),
@@ -830,6 +908,8 @@ export function buildCartPayload(
 export interface ItemCartIdentity extends CartIdentity {
   channel: 'fnb' | 'shop';
   pickupCode?: string | null;
+  /** SCRUM-494 — the scanned band's stay (`Wristband.stayId`) and the food-consent override. */
+  bandHolder?: { checkinId: string; foodOverride?: boolean } | null;
 }
 
 /**
@@ -856,9 +936,10 @@ export interface ItemCartIdentity extends CartIdentity {
  * WHAT FOLLOWED FROM THAT, and it is answered — SCRUM-362. `computeFnbTotals`
  * and `computeMerchTotals` took no promo codes, so an order with a code on it
  * that the platform could not be reached for would have shown an undiscounted
- * figure on the screen and then been refused at the commit against it. Both now
- * take the codes and price them through the same engine the platform does
- * (`lib/itemPromo.ts`), and `localItemQuote` passes them on, so the fallback
+ * figure on the screen and then been refused at the commit against it. Since
+ * SCRUM-271 both are gone and the order is priced, codes and all, by the engine
+ * the platform prices it with (`itemOrderTotals`, `lib/cartWire.ts`), and
+ * `localItemQuote` passes the codes on, so the fallback
  * figure and the platform's are the same figure while this station's copy of a
  * code matches the park's definition. Where it does not (SCRUM-401), the
  * platform's figure stands, and a code it refused comes off the order
@@ -922,51 +1003,51 @@ export function buildItemCartPayload(
     customerPhone: identity.customerPhone ?? null,
     customerNickname: identity.customerNickname ?? null,
     expectedTotalSatang: toSatang(shownTotal),
+    ...(identity.bandHolder
+      ? {
+          bandHolder: {
+            checkinId: identity.bandHolder.checkinId,
+            ...(identity.bandHolder.foodOverride ? { foodOverride: true } : {}),
+          },
+        }
+      : {}),
   };
 }
 
 /**
  * THE ORDER'S PRICE, ON THIS DEVICE, when the platform cannot be asked.
  *
- * This is the prototype's own arithmetic (`lib/fnb.ts`, `lib/merch.ts`) and it
- * is labelled as such — `source: 'till'`, `engineVersion: 'prototype'` — for
- * the reason `cartQuote.ts` sets out: a figure on a screen has to say where it
- * came from, and an F&B order has no ticket cart for `@oto/shared` to price.
- * Nothing is SOLD from it silently: the commit carries it as
- * `expectedTotalSatang` and the platform refuses the sale if it disagrees.
+ * Until SCRUM-271 this was the prototype's own baht arithmetic (`lib/fnb.ts`,
+ * `lib/merch.ts`), labelled `engineVersion: 'prototype'`. It is the platform's
+ * engine now, run on this device over the same item lines the platform builds
+ * (`itemOrderTotals`, `lib/cartWire.ts`), so the figure is labelled with the
+ * engine's version — and `source: 'till'` still says, as `cartQuote.ts` sets
+ * out, that this device priced it rather than the platform. Nothing is SOLD
+ * from it silently: the commit carries it as `expectedTotalSatang` and the
+ * platform refuses the sale if it disagrees.
  *
- * THE CODES ARE THE EXCEPTION TO "the prototype's own arithmetic" — SCRUM-362.
- * A promo code on the order is priced by `@oto/shared` over the same rows the
- * platform prices it over, inside those two helpers, because a code the till
- * discounted differently would be a commit the platform refuses.
+ * The codes on the order (SCRUM-362) are priced in the same pass, after the
+ * staff discounts, as the platform prices them.
  */
 export function localItemQuote(
-  kind: 'fnb' | 'shop',
+  // Which counter, as the callers name it. Nothing turns on it any more: one
+  // pass prices both, and a shop line is told from an F&B line by what it carries.
+  _kind: 'fnb' | 'shop',
   lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
   manualDiscounts: readonly ManualDiscount[],
   options: { config?: TaxConfig; reason?: string; promos?: readonly Discount[] } = {},
 ): CartQuote {
   const rate = todayRateMode();
-  const promos = options.promos ?? [];
-  const totals =
-    kind === 'fnb'
-      ? computeFnbTotals(
-          [...(lines as readonly FnbOrderLine[])],
-          [...manualDiscounts],
-          options.config,
-          promos,
-        )
-      : computeMerchTotals(
-          [...(lines as readonly MerchOrderLine[])],
-          [...manualDiscounts],
-          options.config,
-          promos,
-        );
+  const totals = itemOrderTotals(lines as readonly (FnbOrderLine | MerchOrderLine)[], manualDiscounts, {
+    ...(options.config ? { config: options.config } : {}),
+    ...(options.promos ? { promos: options.promos } : {}),
+    mode: rate.mode,
+  });
   return {
     totals: {
       subtotal: totals.subtotal,
-      discountAmount: totals.promoDiscountAmount,
-      scannedDiscounts: totals.appliedPromos,
+      discountAmount: totals.discountAmount,
+      scannedDiscounts: totals.scannedDiscounts,
       manualDiscountAmount: totals.manualDiscountAmount,
       manualAmounts: totals.manualAmounts,
       serviceChargeTotal: totals.serviceChargeTotal,
@@ -978,7 +1059,7 @@ export function localItemQuote(
     source: 'till',
     pricingMode: rate.mode,
     pricingModeReason: rate.reason,
-    engineVersion: 'prototype',
+    engineVersion: totals.satang.engineVersion,
     ...(options.reason ? { reason: options.reason } : {}),
   };
 }
@@ -986,20 +1067,18 @@ export function localItemQuote(
 /**
  * Why this order has nothing the platform can be asked about. Null when it has.
  *
- * An order made up entirely of prepaid entitlement lines is the case: every row
- * is ฿0 because it was paid for at a booking, the platform has no wallet or
- * entitlement ledger to take it off (S2-14a), and a cart with no rows on it is
- * refused as empty. So the platform is not asked, the order stands on this till
- * and the confirmation says so — rather than reception being shown a refusal
- * they can do nothing about while a guest waits for an ice cream somebody has
- * already paid for.
+ * An order made up entirely of prepaid lines from a band the platform holds no
+ * stay for (`isOffLedgerFnbLine`) is the case: there is no entitlement on the
+ * platform to serve them from, and a cart with no rows on it is refused as
+ * empty. A prepaid-only order from a platform stay is not this case — it goes
+ * to the platform at ฿0 and closes with no tender (SCRUM-494).
  */
 export function offLedgerOnly(
   lines: readonly FnbOrderLine[] | readonly MerchOrderLine[],
 ): string | null {
   if (lines.length === 0) return null;
   if (itemCart(lines).length > 0) return null;
-  return 'Every item on this order was prepaid at booking, which the ledger cannot record yet (S2-14a).';
+  return 'Every item on this order is prepaid on a band the platform holds no stay for, so the ledger cannot record it — scan the band again.';
 }
 
 export interface ItemQuoteArgs {
@@ -1091,91 +1170,9 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
 
 // --- Totals, in the shape the prototype's components render -----------------
 
-/** One applied code, as `OrderSummary` and the customer display draw it. */
-export interface QuotedPromoLine {
-  code: string;
-  label: string;
-  type: Discount['type'];
-  amount: number;
-  exhaustedReason?: string;
-}
-
 /**
- * EXACTLY THE SHAPE `lib/sale.ts:computeTotals` RETURNS, in baht.
- *
- * That is the point: every component that shows money already destructures
- * this, so the source of the numbers can change without a single one of them
- * being redesigned. What changes is where it comes from — `source` says which.
- */
-export interface OrderTotals {
-  subtotal: number;
-  discountAmount: number;
-  scannedDiscounts: QuotedPromoLine[];
-  manualDiscountAmount: number;
-  manualAmounts: Record<string, number>;
-  serviceChargeTotal: number;
-  taxTotal: number;
-  taxBreakdown: PosTaxBreakdown;
-  total: number;
-}
-
-function breakdownToBaht(breakdown: EngineTaxBreakdown): PosTaxBreakdown {
-  const categories: PosCategoryTaxLine[] = breakdown.categories.map((category) => ({
-    category: category.category,
-    base: toBaht(category.base),
-    taxMode: category.taxMode,
-    ...(category.taxRateId ? { taxRateId: category.taxRateId } : {}),
-    ...(category.taxName ? { taxName: category.taxName } : {}),
-    taxPercent: category.taxPercent,
-    serviceCharge: toBaht(category.serviceCharge),
-    tax: toBaht(category.tax),
-    ...(category.secondaryTaxRateId ? { secondaryTaxRateId: category.secondaryTaxRateId } : {}),
-    ...(category.secondaryTaxName ? { secondaryTaxName: category.secondaryTaxName } : {}),
-    secondaryTaxMode: category.secondaryTaxMode,
-    secondaryTaxPercent: category.secondaryTaxPercent,
-    secondaryTax: toBaht(category.secondaryTax),
-    gross: toBaht(category.gross),
-  }));
-  return {
-    netSubtotal: toBaht(breakdown.netSubtotal),
-    discountTotal: toBaht(breakdown.discountTotal),
-    serviceChargeTotal: toBaht(breakdown.serviceChargeTotal),
-    exclusiveTaxTotal: toBaht(breakdown.exclusiveTaxTotal),
-    inclusiveTaxTotal: toBaht(breakdown.inclusiveTaxTotal),
-    taxTotal: toBaht(breakdown.taxTotal),
-    categories,
-    grandTotal: toBaht(breakdown.grandTotal),
-  };
-}
-
-function promosToBaht(promos: readonly AppliedPromo[]): QuotedPromoLine[] {
-  return promos.map((promo) => ({
-    code: promo.code,
-    label: promo.label,
-    type: promo.type,
-    amount: toBaht(promo.amount),
-    ...(promo.exhaustedReason ? { exhaustedReason: promo.exhaustedReason } : {}),
-  }));
-}
-
-function totalsToBaht(totals: TicketCartTotals): OrderTotals {
-  const manualAmounts: Record<string, number> = {};
-  for (const [id, satang] of Object.entries(totals.manualAmounts)) manualAmounts[id] = toBaht(satang);
-  return {
-    subtotal: toBaht(totals.subtotal),
-    discountAmount: toBaht(totals.promoDiscountTotal),
-    scannedDiscounts: promosToBaht(totals.appliedPromos),
-    manualDiscountAmount: toBaht(totals.manualDiscountTotal),
-    manualAmounts,
-    serviceChargeTotal: toBaht(totals.serviceChargeTotal),
-    taxTotal: toBaht(totals.taxTotal),
-    taxBreakdown: breakdownToBaht(totals.taxBreakdown),
-    total: toBaht(totals.total),
-  };
-}
-
-/**
- * The same, from the platform's answer.
+ * The platform's answer in the shape every money component renders
+ * (`OrderTotals`, whose engine-side twin is `totalsToBaht` in `lib/cartWire.ts`).
  *
  * `manualIds` are the till's own discount ids: the platform keys its amounts by
  * what it was sent, and the panel looks them up by the id it knows. Without the
@@ -1303,55 +1300,6 @@ export interface CartQuote {
 }
 
 /**
- * A SELF-CHECK ON EVERY QUOTE, IN DEVELOPMENT.
- *
- * The engine is tested to 1,694 lines. The till has a unit runner of its own
- * now (vitest, `apps/pos/test`, SCRUM-408), but nothing in it drives the
- * translation from this cart to the engine (`lib/cartWire.ts`): the cart-quote
- * tests replace `quoteCart`, where that translation happens, with answers of
- * their own. So it is checked by the compiler and by somebody driving the
- * till. A wrong conversion there — a price left in baht, an adult rule's nested
- * price missed — would not fail to compile and would not look wrong on screen.
- * It would simply charge the visitor a hundredth or a hundred times the money.
- *
- * So in development the two arithmetics are compared on every quote and any
- * difference is reported, loudly, with both figures.
- *
- * WHERE THEY ARE ALLOWED TO DIFFER, and it is not a short list: rulings 1 and 2
- * in `cart-totals.ts` deliberately move money on carts with stacked or scoped
- * codes, and manual percent discounts round to the satang rather than to the
- * baht. A warning on those would be noise that trains the reader to ignore the
- * ones that matter. The comparison therefore runs only where the two are
- * REQUIRED to agree: at most one promo code, no free-item code, and no percent
- * discount of either kind.
- */
-function warnOnDivergence(
-  engineTotalSatang: number,
-  prototypeTotalBaht: number,
-  lines: readonly CartLine[],
-  discounts: readonly Discount[],
-  manualDiscounts: readonly ManualDiscount[],
-): void {
-  // `import.meta.env` is Vite's, and it is absent under a plain node runner —
-  // where this module is perfectly loadable and where a check of this kind is
-  // most likely to be run. Reading it defensively costs nothing and stops a
-  // diagnostic from being the thing that throws.
-  const env = (import.meta as { env?: { DEV?: boolean } }).env;
-  if (!env?.DEV) return;
-  if (discounts.length > 1) return;
-  if (discounts.some((d) => d.type === 'free_item' || d.type === 'percent')) return;
-  if (manualDiscounts.some((m) => m.type === 'percent')) return;
-  const expected = toSatang(prototypeTotalBaht);
-  if (expected === engineTotalSatang) return;
-  console.warn(
-    '[S2-09a] The platform engine and the prototype disagree on this cart. ' +
-      `Engine ${engineTotalSatang} satang, prototype ${expected} satang. ` +
-      'One of them is wrong about what a visitor owes — check apps/pos/src/lib/cartWire.ts.',
-    { lines, discounts, manualDiscounts },
-  );
-}
-
-/**
  * Price a cart on this device, with the platform's own engine.
  *
  * `staleLines: 'throw'` is deliberately left at its default: a cart whose
@@ -1379,13 +1327,11 @@ export function localQuote(
     cart.config,
     cart.ctx,
   );
-  warnOnDivergence(
-    totals.total,
-    computeTotals([...lines], [...discounts], [...manualDiscounts], options.config).total,
-    lines,
-    discounts,
-    manualDiscounts,
-  );
+  // Until SCRUM-271 a development-only check re-totalled every quote with the
+  // prototype's own arithmetic and warned when the two disagreed. That
+  // arithmetic is gone; the translation from this cart to the engine is proven
+  // instead, on every run of the till's suite, against the prototype's recorded
+  // figures (`apps/pos/test/one-calculator-parity.test.ts`).
   return {
     totals: totalsToBaht(totals),
     satang: totals,
@@ -1470,8 +1416,8 @@ export async function claimVerifiedTier(input: {
   tier: string;
   /** The document type as the modal named it. */
   proofType: string;
-  /** `YYYY-MM-DD`. */
-  expiresAt: string;
+  /** `YYYY-MM-DD`, when the document carries an expiry. */
+  expiresAt?: string;
 }): Promise<string> {
   const actionId = newId();
   await salesApi.tierClaim({
@@ -1479,7 +1425,7 @@ export async function claimVerifiedTier(input: {
     branchId: input.branchId,
     toTier: input.tier,
     evidenceType: input.proofType,
-    evidenceExpiresAt: input.expiresAt,
+    ...(input.expiresAt ? { evidenceExpiresAt: input.expiresAt } : {}),
   });
   return actionId;
 }
@@ -1544,6 +1490,8 @@ export interface CommitSaleArgs {
   actionId: string;
   cart: SaleCartPayload;
   occurredAt: string;
+  /** SCRUM-208 — the visit this sale follows, so band minting names the children. See `SaleCommitBody.visitId`. */
+  visitId?: string | null;
   note?: string | null;
   /** Close it in the same call — a ฿0 sale, where the caller wants that. See `SaleCommitBody.finalise`. */
   finalise: boolean;
@@ -1567,6 +1515,10 @@ export async function commitSale(args: CommitSaleArgs): Promise<SaleCommitResult
     actionId: args.actionId,
     cart: args.cart,
     occurredAt: args.occurredAt,
+    // Omitted rather than sent as null on a walk-in: "sends nothing" when there
+    // is no visit, and the route declares it optional (`CommitBody` in
+    // apps/api/src/routes/sales.ts).
+    ...(args.visitId ? { visitId: args.visitId } : {}),
     note: args.note ?? null,
     finalise: args.finalise,
   };
@@ -1605,6 +1557,19 @@ export async function finaliseSale(
     if (isMissingRoute(err)) throw new SalesLedgerUnavailable();
     throw err;
   }
+}
+
+/**
+ * S2-14a round 2 — spend the scanned wallet on a rung-up sale, online only.
+ * Refusals arrive in the counter's words (`WALLET_EMPTY`, `WALLET_INSUFFICIENT`,
+ * `WALLET_NOT_FOUND`) as an `ApiError` the payment panel shows as it is.
+ */
+export async function spendWalletOnSale(
+  saleId: string,
+  actionId: string,
+  wallet: SaleWalletPayload,
+): Promise<SaleFinaliseResult> {
+  return salesApi.spendWallet(saleId, { actionId, wallet });
 }
 
 /** The local engine's figures in the platform's own totals shape, for a sale that was not written. */
@@ -1693,7 +1658,7 @@ export function refusedPromoCodes(
  * split four ways, not the per-category breakdown a receipt prints.
  */
 export function quotedPricing(quote: CartQuote, written?: ApiSale | null): SaleQuotedPricing {
-  const taxRows = summarizeTax(quote.totals.taxBreakdown);
+  const taxRows = taxRowsOf(quote.totals.taxBreakdown);
   if (!written) {
     return {
       source: quote.source,

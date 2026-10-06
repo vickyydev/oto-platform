@@ -81,15 +81,20 @@ test('one call may ask for less than the transport allows, never more', async ()
   const cloud = await silentServer();
   try {
     const call = httpTransport({ answerTimeoutMs: 400 });
-    let began = Date.now();
-    await assert.rejects(() => call(cloud.url, { ...GET, answerTimeoutMs: 100 }), AgentTimeoutError);
-    assert.ok(Date.now() - began < 350, 'the shorter allowance was the one used');
-    began = Date.now();
+    // Which allowance was used is read off the transport's own word for it —
+    // the error names the allowance it timed (`answerMs`, the lesser of the
+    // call's and the ceiling) — rather than off a stopwatch that a loaded
+    // runner reads differently (SCRUM-423).
+    await assert.rejects(
+      () => call(cloud.url, { ...GET, answerTimeoutMs: 100 }),
+      (err: unknown) => err instanceof AgentTimeoutError && /within 100 ms/.test(err.message),
+      'the shorter allowance was the one used',
+    );
     await assert.rejects(
       () => call(cloud.url, { ...GET, answerTimeoutMs: 60_000 }),
       (err: unknown) => err instanceof AgentTimeoutError && /within 400 ms/.test(err.message),
+      'and a longer one was held to the ceiling',
     );
-    assert.ok(Date.now() - began < 2_000, 'and a longer one was held to the ceiling');
   } finally {
     await cloud.close();
   }

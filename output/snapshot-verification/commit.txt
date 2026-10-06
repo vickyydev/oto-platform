@@ -1,0 +1,12 @@
+feat(display): retain the last protected display response
+
+Console Snapshot was a fresh station read and could not show what a
+disconnected display last requested. It now reads per-device history.
+
+- add forward migration 0032 for one finite response per credential
+- omit QR contents and visitor answers before storage and scoped reads
+- retain revoked or changed-target history with honest preparation time
+- verify 187 existing checks, six native checks and schema parity
+- record temporary evidence loss and regenerate reviewed local images
+
+Refs: SCRUM-201

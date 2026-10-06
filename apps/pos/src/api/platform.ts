@@ -2,8 +2,20 @@
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
 import { newId as newRecordId } from '@oto/shared';
 import { PERMISSIONS, type Permission } from '@oto/shared/permissions';
-import type { StationCapability } from '@/types';
+import type { AddOn, StationCapability, TaxableCategory, TaxConfig } from '@/types';
 import { api, idemKey } from './client';
+import { bridgeApi } from './bridge';
+import { viaLane } from '@/lib/lane';
+import { tierNeedsProof } from '@/lib/membership';
+
+/**
+ * A record write on the box lane (offline plan Round 3): the bridge intent
+ * with the till's own id, answered in the shape the platform route answers.
+ */
+async function onBox<R>(stationId: string, type: string, payload: Record<string, unknown>): Promise<R> {
+  const answer = await bridgeApi.intent<R>(stationId, type, payload, { actionId: `${type}:${newRecordId()}` });
+  return answer.result as R;
+}
 
 // --- auth / me -------------------------------------------------------------
 export interface MeResponse {
@@ -103,8 +115,10 @@ export interface ApiMember {
     verifiedAt: string;
     /** Staff who checked the document — stamped server-side from the session. */
     verifiedBy: string | null;
-    /** Document expiry (YYYY-MM-DD); the API hides expired verifications. */
+    /** Document expiry (YYYY-MM-DD), when one was recorded. */
     expiresAt: string | null;
+    /** The recorded expiry has passed: staff re-check the document. The rate holds. */
+    reverifyDue?: boolean;
   } | null;
   children: ApiChild[];
 }
@@ -123,9 +137,51 @@ export interface ApiTierVerificationRecord {
   verifiedAt: string;
 }
 
+/**
+ * The member, child and visit calls the till makes at the counter go through
+ * the lane arbiter (`lib/lane.ts`, OD-1): the platform while it answers, the
+ * box when the link is down or the station is forced offline. The ids are
+ * minted here once, before either is asked, so a record begun on one lane and
+ * finished on the other is the same record (OD-12).
+ */
+/**
+ * Read the box's cached tier as the entitlement it is (offline finding 2).
+ *
+ * The box's cached member carries the tier it was pulled at (`tierCode`) but no
+ * evidence rows — the bundle's doctrine leaves `tierVerification` null. The
+ * till's tier gate reads `tierVerification`, so without this it forces a
+ * re-verification the box cannot record and then prices that very tier
+ * unconditionally. The platform moves `member.tier_code` only on a filed
+ * verification, so the cached code IS a verified entitlement: synthesise one for
+ * it (no document — that is the "full verification flow" the box does not run),
+ * so choosing the member's own rate offline skips the dialog while a HIGHER
+ * unverified tier still gates (`isTierVerified`). Online never reaches here.
+ */
+function withCachedTierEntitlement(m: ApiMember): ApiMember {
+  if (m.tierVerification || !tierNeedsProof(m.tierCode)) return m;
+  return {
+    ...m,
+    tierVerification: {
+      tier: m.tierCode,
+      proofType: 'On file',
+      verifiedAt: new Date().toISOString(),
+      verifiedBy: null,
+      expiresAt: null,
+    },
+  };
+}
+
 export const membersApi = {
   lookup: (phone: string) =>
-    api.get<{ member: ApiMember | null }>(`/members/lookup?phone=${encodeURIComponent(phone)}`),
+    viaLane(
+      () => api.get<{ member: ApiMember | null }>(`/members/lookup?phone=${encodeURIComponent(phone)}`),
+      async (stationId) => {
+        const answer = (await bridgeApi.lookup(stationId, phone)) as unknown as {
+          member: ApiMember | null;
+        };
+        return { member: answer.member ? withCachedTierEntitlement(answer.member) : null };
+      },
+    ),
   list: (q?: string) =>
     api.get<{ members: ApiMember[] }>(`/members${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   archive: (id: string) => api.delete<{ ok: true }>(`/members/${id}`),
@@ -136,16 +192,57 @@ export const membersApi = {
    * that already exists instead of creating a second one — belt to the
    * Idempotency-Key's braces, and the one that survives a client restart.
    */
-  create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' | 'line' }) =>
-    api.post<{ member: ApiMember }>('/members', { id: newRecordId(), ...body }, { idempotencyKey: idemKey() }),
+  create: (body: { phone: string; nickname: string; preferredChannel?: 'whatsapp' | 'telegram' | 'line' }) => {
+    const id = newRecordId();
+    return viaLane(
+      () => api.post<{ member: ApiMember }>('/members', { id, ...body }, { idempotencyKey: idemKey() }),
+      (stationId) => onBox<{ member: ApiMember }>(stationId, 'member.create', { memberId: id, ...body }),
+    );
+  },
   update: (id: string, patch: Record<string, unknown>) =>
-    api.patch<{ member: ApiMember }>(`/members/${id}`, patch),
-  addChild: (memberId: string, body: Record<string, unknown>) =>
-    api.post<{ child: ApiChild }>(`/members/${memberId}/children`, body, { idempotencyKey: idemKey() }),
+    viaLane(
+      () => api.patch<{ member: ApiMember }>(`/members/${id}`, patch),
+      (stationId) => onBox<{ member: ApiMember }>(stationId, 'member.update', { memberId: id, ...patch }),
+    ),
+  /**
+   * The till mints the child's id too (SCRUM-270, OD-12), for the reason given
+   * on `create`: sending the same id again answers with the child that exists.
+   */
+  addChild: (memberId: string, body: Record<string, unknown>) => {
+    const id = newRecordId();
+    return viaLane(
+      () =>
+        api.post<{ child: ApiChild }>(
+          `/members/${memberId}/children`,
+          { id, ...body },
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.create', { childId: id, memberId, ...body }),
+    );
+  },
   updateChild: (childId: string, patch: Record<string, unknown>, idempotencyKey?: string, signal?: AbortSignal) =>
-    api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch, { idempotencyKey, signal }),
-  verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt: string; note?: string }) =>
-    api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, { idempotencyKey: idemKey() }),
+    viaLane(
+      () => api.patch<{ child: ApiChild }>(`/members/children/${childId}`, patch, { idempotencyKey, signal }),
+      (stationId) => onBox<{ child: ApiChild }>(stationId, 'child.update', { childId, ...patch }),
+    ),
+  /**
+   * A tier checked on a document (OD-11): on the box lane it becomes a
+   * `member.tier_changed` fact under the same permission as online.
+   */
+  verifyTier: (memberId: string, body: { toTier: string; evidenceType: string; evidenceExpiresAt?: string; note?: string }) =>
+    viaLane(
+      () =>
+        api.post<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
+          idempotencyKey: idemKey(),
+        }),
+      (stationId) =>
+        onBox<{ member: ApiMember }>(stationId, 'member.tier_change', {
+          direction: 'upgrade',
+          memberId,
+          verificationId: newRecordId(),
+          ...body,
+        }),
+    ),
   /**
    * End a verified tier (SCRUM-241): the member goes back to the operator's
    * baseline rate and the typed reason is filed with the revocation.
@@ -156,21 +253,42 @@ export const membersApi = {
    * session gets a 403 with that message and the screens ask a manager.
    */
   revokeTierVerification: (memberId: string, body: { reason: string }) =>
-    api.delete<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
-      idempotencyKey: idemKey(),
-    }),
+    viaLane(
+      () =>
+        api.delete<{ member: ApiMember }>(`/members/${memberId}/tier-verification`, body, {
+          idempotencyKey: idemKey(),
+        }),
+      (stationId) =>
+        onBox<{ member: ApiMember }>(stationId, 'member.tier_change', {
+          direction: 'downgrade',
+          memberId,
+          verificationId: newRecordId(),
+          reason: body.reason,
+        }),
+    ),
   tierVerifications: () =>
     api.get<{ verifications: ApiTierVerificationRecord[] }>('/members/tier-verifications'),
 };
 
 export const visitsApi = {
-  /** Client-minted id, for the reason given on membersApi.create. */
-  create: (body: { memberId?: string | null; childIds: string[] }) =>
-    api.post<{ id: string; visitDate: string; status: string }>(
-      '/visits',
-      { id: newRecordId(), ...body },
-      { idempotencyKey: idemKey() },
-    ),
+  /** Client-minted id, for the reason given on membersApi.create; either lane. */
+  create: (body: { memberId?: string | null; childIds: string[] }) => {
+    const id = newRecordId();
+    return viaLane(
+      () =>
+        api.post<{ id: string; visitDate: string; status: string }>(
+          '/visits',
+          { id, ...body },
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) =>
+        onBox<{ id: string; visitDate: string; status: string }>(stationId, 'visit.create', {
+          visitId: id,
+          memberId: body.memberId ?? null,
+          childIds: body.childIds,
+        }),
+    );
+  },
 };
 
 // --- branches / catalog -----------------------------------------------------
@@ -390,6 +508,25 @@ export interface PublicCatalog {
   packages: ApiTicketPackage[];
   rateMode: { date: string; mode: 'weekday' | 'weekend'; reason: string; overrideName?: string };
   holidays: Array<{ name: string; startsOn: string; endsOn: string }>;
+  /**
+   * S2-12 — the extras on sale online and the branch's tax configuration, so
+   * the total this site shows is built from the numbers the platform prices the
+   * booking with. Optional: an API that predates them leaves the site's own.
+   */
+  addOns?: PublicAddOn[];
+  taxConfig?: TaxConfig | null;
+}
+
+/** One extra on sale online, as the platform prices it. Money in satang. */
+export interface PublicAddOn {
+  /** What a booking line sends back: a seeded extra's prototype id (`a-socks`), or the product's id. */
+  id: string;
+  name: string;
+  priceSatang: number;
+  /** Null when the weekend price is the weekday price. */
+  priceWeekendSatang: number | null;
+  taxCategory: TaxableCategory | null;
+  translations: AddOn['translations'] | null;
 }
 
 export const publicApi = {
@@ -408,16 +545,30 @@ export const publicApi = {
     >(
       `/public/member-tier?phone=${encodeURIComponent(phone)}&branch=${encodeURIComponent(branchCode)}`,
     ),
+  /**
+   * S2-12 — the booking is written PENDING; it is paid only when the payment
+   * gateway confirms the money to the platform, never by anything this page
+   * does. `displayedTotalSatang` is what the page showed: the platform refuses
+   * (`BOOKING_TOTAL_CHANGED`) rather than charge a different figure.
+   */
   createBooking: (body: {
+    id?: string;
     branchCode: string;
     phone?: string;
     parentName: string;
     tier: string;
     visitDate?: string;
-    lines: Array<{ packageId: string; kids: number; adults: number }>;
+    lines: Array<{
+      packageId: string;
+      kids: number;
+      adults: number;
+      socks?: number;
+      addOns?: Array<{ id: string; quantity: number }>;
+    }>;
     contactChannel?: 'whatsapp' | 'telegram' | 'line';
     locale?: string;
     clientSnapshot?: unknown;
+    displayedTotalSatang?: number;
   }) =>
     api.post<{
       id: string;
@@ -426,8 +577,51 @@ export const publicApi = {
       rateMode: 'weekday' | 'weekend';
       totalSatang: number;
       lines: unknown[];
+      status: string;
+      expiresAt: string | null;
     }>('/public/bookings', body, { idempotencyKey: idemKey() }),
+  /**
+   * The booking's one payment: the page to send the browser to. A
+   * `redirectUrl` starting with `/` is the platform's own (the simulator's pay /
+   * fail page) and is reached through `/api` — see `paymentPageHref`.
+   */
+  checkoutBooking: (bookingId: string, method: 'card' | 'promptpay', locale?: string) =>
+    api.post<{
+      bookingId: string;
+      attemptId: string;
+      redirectUrl: string;
+      expiresAt: string;
+      provider: '2c2p' | 'simulator';
+    }>(`/public/bookings/${encodeURIComponent(bookingId)}/checkout`, { method, locale }),
+  /** What the waiting page polls: the booking's state, and its signed QR once paid. */
+  bookingStatus: (bookingId: string) =>
+    api.get<PublicBookingStatus>(`/public/bookings/${encodeURIComponent(bookingId)}/status`),
 };
+
+export interface PublicBookingStatus {
+  id: string;
+  reference: string;
+  /** `pending` until the gateway confirms; `paid`; `redeemed`; `expired`; `cancelled`. */
+  status: string;
+  visitDate: string;
+  totalSatang: number;
+  rateMode: 'weekday' | 'weekend';
+  kidsCount: number;
+  adultsCount: number;
+  paidAt: string | null;
+  expiresAt: string | null;
+  /** The QR the park signed — present only once the booking is paid. */
+  qr: string | null;
+}
+
+/**
+ * Where the browser goes for the payment page. The payment partner's page is
+ * an absolute address; the simulator's is the platform's own path, which this
+ * site reaches through the same `/api` prefix every call here uses.
+ */
+export function paymentPageHref(redirectUrl: string): string {
+  return redirectUrl.startsWith('/') ? `/api${redirectUrl}` : redirectUrl;
+}
 
 // --- admin: accounts / roles / operators ------------------------------------
 export const adminApi = {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, RotateCcw, CameraOff, Loader2 } from 'lucide-react';
+import { Camera, RotateCcw, CameraOff, Loader2, AlertTriangle } from 'lucide-react';
 
 type CamState = 'idle' | 'requesting' | 'live' | 'captured' | 'denied' | 'unavailable';
 
@@ -11,7 +11,18 @@ interface CameraCaptureProps {
   onCapture: (dataUrl: string) => void;
   onClear?: () => void;
   className?: string;
+  /**
+   * S2-13 round 3 — store the photo on the platform once it is taken. Given,
+   * the frame is uploaded straight after capture (through the presigned path
+   * the caller wraps) and `onUploaded` hears the stored file's id — or null
+   * when the photo is retaken or did not save. Absent, nothing leaves the
+   * browser and the component behaves exactly as before.
+   */
+  upload?: (dataUrl: string) => Promise<string>;
+  onUploaded?: (fileId: string | null) => void;
 }
+
+type SaveState = 'idle' | 'saving' | 'saved' | 'failed';
 
 /**
  * Reusable live-camera photo capture. Uses the REAL getUserMedia stream (front
@@ -20,10 +31,32 @@ interface CameraCaptureProps {
  * with no photo (the caller decides whether a photo is mandatory). Always stops
  * the stream on capture and on unmount so the camera light goes off.
  */
-export function CameraCapture({ value, onCapture, onClear, className }: CameraCaptureProps) {
+export function CameraCapture({ value, onCapture, onClear, className, upload, onUploaded }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [state, setState] = useState<CamState>(value ? 'captured' : 'idle');
+  const [save, setSave] = useState<SaveState>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // The frame being saved; a retake supersedes it, so a late answer is dropped.
+  const pendingRef = useRef<string | null>(null);
+
+  const store = async (dataUrl: string) => {
+    if (!upload) return;
+    pendingRef.current = dataUrl;
+    setSave('saving');
+    setSaveError(null);
+    try {
+      const fileId = await upload(dataUrl);
+      if (pendingRef.current !== dataUrl) return;
+      setSave('saved');
+      onUploaded?.(fileId);
+    } catch (err) {
+      if (pendingRef.current !== dataUrl) return;
+      setSave('failed');
+      setSaveError(err instanceof Error ? err.message : 'The photo did not save.');
+      onUploaded?.(null);
+    }
+  };
 
   const stop = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -71,9 +104,16 @@ export function CameraCapture({ value, onCapture, onClear, className }: CameraCa
     stop();
     setState('captured');
     onCapture(dataUrl);
+    void store(dataUrl);
   };
 
   const retake = () => {
+    pendingRef.current = null;
+    if (upload) {
+      setSave('idle');
+      setSaveError(null);
+      onUploaded?.(null);
+    }
     onClear?.();
     void start();
   };
@@ -91,6 +131,20 @@ export function CameraCapture({ value, onCapture, onClear, className }: CameraCa
 
         {(state === 'captured' && value) && (
           <img src={value} alt="Captured" className="h-full w-full object-cover" />
+        )}
+
+        {state === 'captured' && save === 'saving' && (
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/60 py-2 text-sm text-foreground/80">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Saving photo…</span>
+          </div>
+        )}
+
+        {state === 'captured' && save === 'failed' && (
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/70 px-3 py-2 text-center text-sm text-amber-300">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>{saveError ?? 'The photo did not save.'}</span>
+          </div>
         )}
 
         {state === 'idle' && (
@@ -139,6 +193,11 @@ export function CameraCapture({ value, onCapture, onClear, className }: CameraCa
             onClick={retake}
           >
             <RotateCcw className="mr-2 h-5 w-5" /> Retake
+          </Button>
+        )}
+        {state === 'captured' && save === 'failed' && value && (
+          <Button size="lg" className="h-14 flex-1 rounded-2xl text-lg" onClick={() => void store(value)}>
+            <RotateCcw className="mr-2 h-5 w-5" /> Save again
           </Button>
         )}
         {(state === 'denied' || state === 'unavailable') && (

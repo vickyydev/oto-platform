@@ -1,0 +1,25 @@
+{
+  "status": "failed",
+  "tests": [
+    {
+      "name": "lock → sign in → membership lookup → child confirm → sign out",
+      "status": "passed",
+      "errors": []
+    },
+    {
+      "name": "unknown phone offers the create-member path (SCRUM-31)",
+      "status": "failed",
+      "errors": [
+        "Error: expect(received).toBe(expected) // Object.is equality"
+      ]
+    },
+    {
+      "name": "separate display saved-child review persists before Done and retries a lost save reply",
+      "status": "failed",
+      "errors": [
+        "Error: expect(locator).toBeVisible() failed"
+      ]
+    }
+  ],
+  "errors": []
+}

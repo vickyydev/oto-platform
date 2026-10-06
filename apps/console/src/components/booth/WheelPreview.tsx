@@ -50,7 +50,7 @@ export function WheelPreview({
 
   if (prizes.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+      <div className="rounded-[14px] border-[1.5px] border-dashed border-foreground/20 px-4 py-10 text-center text-sm text-muted-foreground">
         This booth has no prizes, so there is no wheel to draw.
       </div>
     );
@@ -67,7 +67,7 @@ export function WheelPreview({
   return (
     <div className={className}>
       {slices.length === 0 ? (
-        <div className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-[14px] border-[1.5px] border-dashed border-foreground/20 px-4 py-10 text-center text-sm text-muted-foreground">
           Every prize is switched off, so the wheel has no wedge to draw.
         </div>
       ) : (
@@ -168,7 +168,7 @@ export function WheelPreview({
         on, not how big it looks. The percentage beside each prize is its real chance.
       </p>
       {slices.length === 0 && (
-        <p className="mt-1.5 text-xs" style={{ color: 'hsl(var(--status-down))' }}>
+        <p className="mt-1.5 text-xs text-status-down">
           With no prize switched on the television would have nothing to draw and nothing to give,
           so publishing refuses this. Switch at least one prize on.
         </p>
@@ -198,7 +198,23 @@ function labelOf(prize: BoothPrizeDraft): string {
  * real design would be worse than an obvious stand-in — somebody would sign it
  * off as the booth's colours.
  */
-function placeholderInk(index: number, total: number): string {
+export function placeholderInk(index: number, total: number): string {
   const hue = Math.round((360 / Math.max(total, 1)) * index);
   return `hsl(${hue} 45% 62%)`;
+}
+
+/**
+ * The colour each prize is drawn in everywhere on the page — the swatch on its
+ * row, the bar of its odds, the dot beside a spin that won it — which is the
+ * colour of its wedge above, so the table and the wheel agree. A switched-on
+ * prize with no colour takes the placeholder by its position among the
+ * switched-on prizes, as the television counts its palette; a switched-off
+ * prize has no wedge and so only its own colour, if it has one.
+ */
+export function prizeInks(prizes: readonly BoothPrizeDraft[]): Map<string, string> {
+  const slices = prizes.filter((p) => p.active);
+  const inks = new Map<string, string>();
+  slices.forEach((p, i) => inks.set(p.id, p.sliceColor ?? placeholderInk(i, slices.length)));
+  for (const p of prizes) if (!inks.has(p.id) && p.sliceColor) inks.set(p.id, p.sliceColor);
+  return inks;
 }

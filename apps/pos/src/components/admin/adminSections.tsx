@@ -19,6 +19,7 @@ import {
   BarChart3,
   TrendingUp,
   Wallet,
+  WalletCards,
   PercentCircle,
   FileSpreadsheet,
   type LucideIcon,
@@ -170,6 +171,17 @@ export const adminNav: AdminNavEntry[] = [
         permission: 'catalog:menu:manage',
       },
       {
+        // S2-14a round 5 — promotional vouchers: each voucher type's scope,
+        // limits and window, and campaigns of codes. `GET /voucher-definitions`
+        // and `GET /voucher-campaigns` ask `admin:booth:read`; saving and
+        // minting ask `admin:booth:manage`, which the panel checks per button.
+        id: 'voucher-promotions',
+        label: 'Voucher Promotions',
+        icon: Gift,
+        description: 'Promotional vouchers: what each comes off, its limits and window, and campaigns of codes.',
+        permission: 'admin:booth:read',
+      },
+      {
         id: 'tax',
         label: 'Tax & Service',
         icon: Receipt,
@@ -247,8 +259,20 @@ export const adminNav: AdminNavEntry[] = [
         label: 'Wallet & Promo',
         icon: Wallet,
         description: 'F&B/merch wallet credit ledger and promo-code usage.',
+        // S2-14a round 3: the wallet half reads `GET /wallets/report`, which
+        // asks this exact permission; the promo half is still the catalog's.
         permission: 'analytics:read',
-        localOnly: true,
+      },
+      {
+        // S2-14a round 3 — the Wallet view, beside the report the prototype's
+        // admin put wallet credit in: scan or type a key, read the balance,
+        // status and ledger, bring expired credit back with a reason.
+        id: 'wallets',
+        label: 'Wallets',
+        icon: WalletCards,
+        description: 'Look up a wallet by band or voucher: balance, status, ledger — and reactivate expired credit.',
+        // `GET /wallets/lookup`; reactivating asks `pos:wallet:reactivate` on top.
+        permission: 'pos:wallet:read',
       },
       {
         id: 'reports-discounts',

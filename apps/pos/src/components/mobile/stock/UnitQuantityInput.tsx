@@ -1,10 +1,26 @@
 import { useState, useId } from 'react';
+import { parsePackQuantity } from '@oto/shared';
 import { StockUnit } from '@/types';
-import { parseUnitCombo, comboSummary } from '@/lib/stockUnits';
+import { comboSummary } from '@/lib/stockUnits';
+
+/**
+ * S2-14b — what an entry comes to, in whole eaches, or NaN when it is refused.
+ *
+ * The prototype's `parseUnitCombo` ROUNDED ("1.3 dozen" became 16) and floored
+ * a negative at 0; the platform stores whole eaches and refuses a part pack
+ * that does not land on one (`parsePackQuantity`, `@oto/shared`), so the screen
+ * refuses it too, with the reason under the field, and a caller reading
+ * `eaches > 0` simply cannot submit it.
+ */
+export function entryEaches(raw: string, units: readonly StockUnit[]): { eaches: number; reason: string | null } {
+  const parsed = parsePackQuantity(raw, units);
+  return parsed.ok ? { eaches: parsed.eaches, reason: null } : { eaches: Number.NaN, reason: parsed.reason };
+}
 
 interface UnitQuantityInputProps {
   units?: StockUnit[];
   value: string;
+  /** `eaches` is NaN while the entry is refused (a part pack, a negative, not a number). */
   onChange: (raw: string, eaches: number) => void;
   placeholder?: string;
   label?: string;
@@ -29,8 +45,9 @@ export function UnitQuantityInput({
   const id = useId();
   const [focussed, setFocussed] = useState(false);
 
-  const eaches = parseUnitCombo(value, units);
+  const { eaches, reason } = entryEaches(value, units);
   const showSummary = value.trim() !== '' && eaches > 0;
+  const shownError = error ?? reason ?? undefined;
 
   const appendUnit = (unit: StockUnit) => {
     const current = value.trim();
@@ -39,11 +56,11 @@ export function UnitQuantityInput({
         ? `${current} 1 ${unit.label}`
         : `${current} + 1 ${unit.label}`
       : `1 ${unit.label}`;
-    onChange(next, parseUnitCombo(next, units));
+    onChange(next, entryEaches(next, units).eaches);
   };
 
   const handleChange = (raw: string) => {
-    onChange(raw, parseUnitCombo(raw, units));
+    onChange(raw, entryEaches(raw, units).eaches);
   };
 
   return (
@@ -94,7 +111,7 @@ export function UnitQuantityInput({
         onBlur={() => setFocussed(false)}
         className={`h-11 w-full rounded-lg border bg-background px-3 text-base transition-colors
           ${focussed ? 'border-primary ring-1 ring-primary/20' : 'border-input'}
-          ${error ? 'border-destructive' : ''}
+          ${shownError ? 'border-destructive' : ''}
           disabled:opacity-50`}
       />
 
@@ -104,7 +121,7 @@ export function UnitQuantityInput({
         </p>
       )}
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {shownError && <p className="text-xs text-destructive">{shownError}</p>}
     </div>
   );
 }

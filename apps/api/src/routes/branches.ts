@@ -1,18 +1,20 @@
 import { z } from 'zod';
 import { and, asc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import { branch } from '@oto/db';
-import { newId } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
 import { branchReach, outOfBranchScope } from '../services/access-control';
+import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import {
   branchAppMappingForReach,
   reconcileBranchesWithApp,
   syncBranchRenameToApp,
   syncNewBranchToApp,
 } from '../services/oto-app-branches';
+import { liveOccupancy } from '../services/occupancy';
 import { opCtx, withTx } from '../services/tx';
+import { LiveOccupancyViewSchema } from '@oto/shared';
 
 /** SCRUM-27 — branches (with timezone) under the caller's operator. */
 export async function branchRoutes(app: App): Promise<void> {
@@ -66,8 +68,12 @@ export async function branchRoutes(app: App): Promise<void> {
     {
       config: { permission: 'admin:branch:create' },
       schema: {
-        description: 'Create a branch',
+        description:
+          'Create a branch. An optional body id names it (SCRUM-270): the same id again answers ' +
+          'with that branch under x-oto-replay; an id naming another record is refused 409 ID_IN_USE.',
         body: z.object({
+          /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+          id: ClientIdSchema.optional(),
           name: z.string().min(1),
           code: z
             .string()
@@ -79,13 +85,26 @@ export async function branchRoutes(app: App): Promise<void> {
         }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
-      const id = newId();
+      const { id: sentId, ...fields } = req.body;
+      const claim = await claimClientId(
+        sentId,
+        async (id) => (await app.db.select().from(branch).where(eq(branch.id, id)).limit(1))[0],
+        (row) => row.operatorId === auth.operatorId,
+      );
+      if (claim.replay) {
+        // Nothing is written, so there is nothing new to say about the OTO
+        // App's row: the answer that opened the branch said it, and
+        // `GET /branches/oto-app` reads it at any time.
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: claim.id, otoApp: null };
+      }
+      const id = claim.id;
       // Everything the operator's estate is judged by hangs off a branch row,
       // so it arrives with the record of who opened it or not at all.
       return withTx(app.db, opCtx(req), 'branch.create', async (tx) => {
-        await tx.insert(branch).values({ id, operatorId: auth.operatorId, ...req.body });
+        await tx.insert(branch).values({ id, operatorId: auth.operatorId, ...fields });
         /**
          * The OTO App's own branch list, in the same transaction (SCRUM-268).
          * A park that exists here and not there is a park whose staff open the
@@ -102,9 +121,9 @@ export async function branchRoutes(app: App): Promise<void> {
           { actorAccountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
           {
             branchId: id,
-            name: req.body.name,
-            address: req.body.address ?? null,
-            timezone: req.body.timezone,
+            name: fields.name,
+            address: fields.address ?? null,
+            timezone: fields.timezone,
           },
         );
         await audit.record(tx, {
@@ -114,7 +133,7 @@ export async function branchRoutes(app: App): Promise<void> {
           action: 'branch.create',
           entityType: 'branch',
           entityId: id,
-          after: { ...req.body, otoApp },
+          after: { ...fields, otoApp },
           requestId: req.id,
         });
         return { id, otoApp };
@@ -238,6 +257,32 @@ export async function branchRoutes(app: App): Promise<void> {
         });
         return { ok: true, otoApp };
       });
+    },
+  );
+
+  app.get(
+    '/:id/occupancy',
+    {
+      /**
+       * S2-12 round 4 — the till's occupancy chip. `pos:checkin:read` because
+       * who is in the park is the floor's question (S2-13's permission family),
+       * and every counter role holds it through `READ_COUNTER`; the target is
+       * the branch in the path, so a branch-scoped account reads its own park
+       * and is refused another's.
+       */
+      config: { permission: 'pos:checkin:read', target: { branchId: 'params.id' } },
+      schema: {
+        description:
+          'Live occupancy at a branch: adults counted from committed gate passages since the trading day started, ' +
+          'children on regular tickets while an adult of the same sale is inside, and whether the gate behind the ' +
+          'count has been heard from recently enough to believe it (stale, with asOf).',
+        params: z.object({ id: z.string().uuid() }),
+        response: { 200: LiveOccupancyViewSchema },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return liveOccupancy(app.db, { operatorId: auth.operatorId, branchId: req.params.id });
     },
   );
 }

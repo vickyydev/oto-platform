@@ -1,0 +1,5 @@
+Release check after main 88140af: CI run 36589992120 / check 109480274224 did not start any steps. GitHub reports failed account payments or the spending limit as the cause. The normal successful-checks deployment gate remains enabled.
+
+Render was checked after this push. API, POS, Console, Launcher and Booth are still live on 0468c38; the OTO App remains c416065. No new staging release or CI-packed Pi artifact is available. The exact failure, unchanged staging and follow-ups are saved in the progress/QA documents.
+
+Continuing the independent F&B guest display work on feat/display-fnb-guest, using the real quote, payment and completion data. Wallet, prepaid and staff-benefit paths keep their existing staff fallback until their own authoritative workflow is complete. SCRUM-201 remains In Progress.

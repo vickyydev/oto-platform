@@ -485,3 +485,46 @@ describe('what a type can point at (SCRUM-400)', () => {
     expect(packages).toContainEqual(expect.objectContaining({ id: packageId }));
   });
 });
+
+describe('a voucher type with a fixed code', () => {
+  it('stores the code in capitals, refuses it on a second type, and needs one in fixed mode', async () => {
+    const made = await post(admin, {
+      code: `zz-fixed-${newId().slice(-8)}`,
+      nameEn: 'ZZ TEST Papaya 50',
+      kind: 'discount',
+      valueType: 'amount',
+      valueSatang: 5000,
+      codeMode: 'fixed',
+      fixedCode: 'zzpapaya-50',
+    });
+    expect(made.statusCode).toBe(201);
+    expect(made.json().definition).toMatchObject({ codeMode: 'fixed', fixedCode: 'ZZPAPAYA-50' });
+
+    const again = await post(admin, {
+      code: `zz-fixed-${newId().slice(-8)}`,
+      nameEn: 'ZZ TEST Papaya 50 again',
+      kind: 'discount',
+      valueType: 'amount',
+      valueSatang: 5000,
+      codeMode: 'fixed',
+      fixedCode: 'ZZPAPAYA-50',
+    });
+    expect(again.statusCode).toBe(409);
+    expect(again.json().error.code).toBe('VOUCHER_FIXED_CODE_TAKEN');
+
+    const none = await post(admin, {
+      code: `zz-fixed-${newId().slice(-8)}`,
+      nameEn: 'ZZ TEST no code',
+      kind: 'discount',
+      valueType: 'amount',
+      valueSatang: 5000,
+      codeMode: 'fixed',
+    });
+    expect(none.statusCode).toBe(422);
+    expect(none.json().error.code).toBe('VOUCHER_FIXED_CODE_REQUIRED');
+
+    const back = await patch(admin, made.json().definition.id, { codeMode: 'generated' });
+    expect(back.statusCode).toBe(200);
+    expect(back.json().definition).toMatchObject({ codeMode: 'generated', fixedCode: null });
+  });
+});

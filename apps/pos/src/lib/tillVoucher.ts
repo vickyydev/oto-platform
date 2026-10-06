@@ -83,6 +83,34 @@ export const VOUCHER_BEING_PRICED = 'The platform is still pricing the voucher �
  */
 export const VOUCHER_AT_THE_RESTAURANT = 'Redeem this voucher at the restaurant till';
 /**
+ * Staging F6 — said by the ticket till for a voucher scanned or typed before a
+ * customer type is chosen: the platform prices a ticket cart by its tier, so a
+ * voucher held then sat on a cart nothing could price. It is refused, nothing
+ * held, until the type is chosen.
+ */
+export const VOUCHER_NEEDS_TIER = 'Choose the customer type first — then redeem the voucher';
+
+/**
+ * Staging F6 — WHY THE TICKET TILL WILL NOT TAKE A VOUCHER RIGHT NOW, in its
+ * own words, or null when it may ask the platform. In order: a park promo code
+ * belongs in the promo box; after Pay the cart is being paid for; a voucher
+ * does not combine with a code; and a cart with no customer type cannot be
+ * priced, so a voucher is never held on one.
+ */
+export function ticketTillVoucherBlock(at: {
+  typed: string;
+  isPromoCode: boolean;
+  afterPay: boolean;
+  hasDiscounts: boolean;
+  tierChosen: boolean;
+}): string | null {
+  if (at.isPromoCode) return `"${at.typed}" is a promo code — enter it in the promo code box`;
+  if (at.afterPay) return VOUCHER_AFTER_PAY;
+  if (at.hasDiscounts) return VOUCHER_NOT_COMBINABLE;
+  if (!at.tierChosen) return VOUCHER_NEEDS_TIER;
+  return null;
+}
+/**
  * The reason the till's Cancel voids a sale it rang up that took no money —
  * any such sale, voucher or not: the owner's rule for Cancel, so a sale nobody
  * will pay is never left `tendering` behind a screen that has moved on.

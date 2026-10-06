@@ -1,5 +1,13 @@
 import type { PaymentAttemptView } from '@oto/shared';
 import { api } from './client';
+import {
+  boxSaleOfAttempt,
+  confirmOnBox,
+  inquireOnBox,
+  laneSale,
+  readOnBox,
+  startOnBox,
+} from './boxSales';
 
 export interface PaymentQrMetadata {
   qrPayload: string | null;
@@ -69,24 +77,38 @@ const writeOptions = (scope: string, actionId: string) => ({
   headers: { 'x-oto-action-id': actionId },
 });
 
-/** Cloud payment routes. Local box payment transport is separate work. */
+/**
+ * The payment routes. A sale rung up on the box lane (offline plan Round 4)
+ * takes its card and its PAX QR on the counter's own terminal through the box,
+ * and every read, inquiry and confirmation of such a tender goes back to that
+ * box (`api/boxSales.ts`). Everything else is the platform's.
+ */
 export const paymentsApi = {
-  start: (body: PaymentStartBody) =>
-    api.post<PaymentStartResult>(
+  start: (body: PaymentStartBody): Promise<PaymentStartResult> => {
+    const held = laneSale(body.saleId);
+    if (held?.lane === 'box' && body.tender !== 'wallet') return startOnBox(held, body);
+    return api.post<PaymentStartResult>(
       '/payments/attempts', body, writeOptions(`${body.saleId}:start`, body.actionId),
-    ),
-  read: (attemptId: string) =>
-    api.get<PaymentAttemptRead>(`/payments/attempts/${encodeURIComponent(attemptId)}`),
+    );
+  },
+  read: (attemptId: string): Promise<PaymentAttemptRead> =>
+    boxSaleOfAttempt(attemptId)
+      ? readOnBox(attemptId)
+      : api.get<PaymentAttemptRead>(`/payments/attempts/${encodeURIComponent(attemptId)}`),
   inquire: (attemptId: string, actionId: string) =>
-    api.post<{ attempt: PaymentAttemptView }>(
-      `/payments/attempts/${encodeURIComponent(attemptId)}/inquire`,
-      undefined, writeOptions(`${attemptId}:inquire`, actionId),
-    ),
+    boxSaleOfAttempt(attemptId)
+      ? inquireOnBox(attemptId, actionId)
+      : api.post<{ attempt: PaymentAttemptView }>(
+          `/payments/attempts/${encodeURIComponent(attemptId)}/inquire`,
+          undefined, writeOptions(`${attemptId}:inquire`, actionId),
+        ),
   confirm: (attemptId: string, body: PaymentConfirmationBody, actionId: string) =>
-    api.post<{ attempt: PaymentAttemptView }>(
-      `/payments/attempts/${encodeURIComponent(attemptId)}/confirm`,
-      body, writeOptions(`${attemptId}:confirm`, actionId),
-    ),
+    boxSaleOfAttempt(attemptId)
+      ? confirmOnBox(attemptId, body, actionId)
+      : api.post<{ attempt: PaymentAttemptView }>(
+          `/payments/attempts/${encodeURIComponent(attemptId)}/confirm`,
+          body, writeOptions(`${attemptId}:confirm`, actionId),
+        ),
   manual: (body: ManualPaymentBody) =>
     api.post<ManualPaymentResult>(
       '/payments/manual', body, writeOptions(`${body.saleId}:manual`, body.actionId),

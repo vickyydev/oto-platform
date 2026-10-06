@@ -773,3 +773,123 @@ export async function reconcileAppBranches(
 
   return report;
 }
+
+// ---------------------------------------------------------------------------
+// The day's booth staff: the app's scheduling, read only (SCRUM-473)
+// ---------------------------------------------------------------------------
+
+/**
+ * THE APP'S SCHEDULE, as much of it as "who is on the booth today" needs.
+ *
+ * The same narrow re-declaration as everything above, for the same reason, and
+ * with one difference that matters: **the platform only ever READS these
+ * tables.** The rota is the staff app's; the booth's roster
+ * (`booth.booth_duty_assignment`) is written from what is read here by
+ * `apps/api/src/services/booth-duty.ts`, and nothing on the platform writes a
+ * shift, an assignment or a duty block back. Each table carries only the
+ * columns that reader selects — the definitions stay in
+ * `apps/oto-app/shared/schema.ts`, and a column added there reaches here only
+ * when the reader needs it.
+ *
+ * The path the reader walks, and why each hop is there:
+ *
+ *   schedule_assignments (a person on a shift row, on a date)
+ *     → schedule_shift_rows (which branch, department and shift group)
+ *       → shift_groups (the park schedules the booth under "Sale Booth")
+ *       → departments, and roles via schedule_shift_row_roles
+ *   duty_blocks (a person given a named duty on a date — "Sales booth ")
+ *     → duty_types (the name, when the block names none of its own)
+ *   employees → users.platform_user_id → core.account — who can sign in;
+ *   casual_workers — who never can, and is named on the slip anyway.
+ */
+export const otoappScheduleAssignments = otoapp.table('schedule_assignments', {
+  id: varchar('id').primaryKey(),
+  shiftRowId: varchar('shift_row_id').notNull(),
+  /** `date` there; read as the ISO string the platform's trading day is. */
+  shiftDate: text('shift_date').notNull(),
+  /** `employee` or `casual`. */
+  assigneeType: text('assignee_type').notNull(),
+  employeeId: varchar('employee_id'),
+  casualWorkerId: varchar('casual_worker_id'),
+  /** The role this person fills on the shift, when the planner said. */
+  roleId: varchar('role_id'),
+});
+
+export const otoappScheduleShiftRows = otoapp.table('schedule_shift_rows', {
+  id: varchar('id').primaryKey(),
+  /** `otoapp.branches.id`. */
+  branchId: varchar('branch_id').notNull(),
+  departmentId: varchar('department_id'),
+  shiftGroupId: varchar('shift_group_id').notNull(),
+});
+
+export const otoappShiftGroups = otoapp.table('shift_groups', {
+  id: varchar('id').primaryKey(),
+  name: text('name').notNull(),
+});
+
+export const otoappDepartments = otoapp.table('departments', {
+  id: varchar('id').primaryKey(),
+  name: text('name').notNull(),
+});
+
+export const otoappRoles = otoapp.table('roles', {
+  id: varchar('id').primaryKey(),
+  name: text('name').notNull(),
+});
+
+export const otoappScheduleShiftRowRoles = otoapp.table('schedule_shift_row_roles', {
+  id: varchar('id').primaryKey(),
+  shiftRowId: varchar('shift_row_id').notNull(),
+  roleId: varchar('role_id').notNull(),
+});
+
+export const otoappDutyBlocks = otoapp.table('duty_blocks', {
+  id: varchar('id').primaryKey(),
+  branchId: varchar('branch_id').notNull(),
+  date: text('date').notNull(),
+  employeeId: varchar('employee_id').notNull(),
+  dutyTypeId: varchar('duty_type_id'),
+  /** Free text, typed by a planner: "Sales booth " with its trailing space is a real row. */
+  dutyName: text('duty_name'),
+});
+
+export const otoappDutyTypes = otoapp.table('duty_types', {
+  id: varchar('id').primaryKey(),
+  name: text('name').notNull(),
+});
+
+export const otoappEmployees = otoapp.table('employees', {
+  id: varchar('id').primaryKey(),
+  fullName: text('full_name').notNull(),
+  /** NOT NULL there: the name the slip prints. */
+  nickname: text('nickname').notNull(),
+  /** `otoapp.users.id`, or null for somebody who has never been given a login. */
+  userId: varchar('user_id'),
+});
+
+export const otoappCasualWorkers = otoapp.table('casual_workers', {
+  /**
+   * `varchar` there, like every app id. The booth's roster copies it into
+   * `booth.booth_duty_assignment.casual_worker_id`, which is text for that
+   * reason: an id that is not a uuid is still an id.
+   */
+  id: varchar('id').primaryKey(),
+  fullName: text('full_name').notNull(),
+  nickname: text('nickname').notNull(),
+});
+
+/**
+ * Are the app's scheduling tables on this database?
+ *
+ * Asked before the booth roster is read, for the reason
+ * `otoAppBranchesInstalled` gives: a platform-only deployment has the `otoapp`
+ * schema and nothing in it, and the sync then answers "the app is not
+ * installed" rather than failing.
+ */
+export async function otoAppScheduleInstalled(exec: OtoAppExec): Promise<boolean> {
+  const res = await exec.execute<{ a: string | null; d: string | null }>(
+    sql`select to_regclass('otoapp.schedule_assignments')::text as a, to_regclass('otoapp.duty_blocks')::text as d`,
+  );
+  return Boolean(res.rows[0]?.a && res.rows[0]?.d);
+}

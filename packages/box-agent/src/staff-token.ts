@@ -628,6 +628,18 @@ export class OfflineAuth {
     }
 
     /**
+     * A REVOKED token is a decision somebody made — a manager ended that
+     * shift — and it is never a way into the thirty-day sign-in below, which
+     * exists for a token that merely ran out (offline plan OD-6). Without this
+     * a person whose shift had been ended could type their password and be
+     * let straight back in as a "fresh" sign-in, which is the deny-list
+     * refusing nothing.
+     */
+    if (tokenRefusal === STAFF_TOKEN_REFUSALS.REVOKED) {
+      return { ok: false, refusal: tokenRefusal, message: refusalMessage(tokenRefusal) };
+    }
+
+    /**
      * Whose till this is.
      *
      * From the VERIFIED claims, or from the caller — the locked session — and

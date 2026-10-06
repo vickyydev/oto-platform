@@ -16,14 +16,15 @@ import {
   promoDiscountImpact,
   promoDiscountImpactByType,
 } from '@/lib/reporting';
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, thb } from './shared';
+import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang } from './shared';
 
 /**
  * Discount / comp impact report — every manual discount and comp applied at
  * the till, F&B, or merch station, plus a per-operator rollup ("who's
  * granting comps") and scanned promo-code impact. Manual rows come straight
  * off the recorded Sale/FnbOrder/MerchOrder.manualDiscounts; promo rows are
- * re-derived from computeTotals' scannedDiscounts — no separate ledger.
+ * re-derived from the engine's applied promos (`ticketTotals`) — no separate
+ * ledger. Every figure is satang until it is drawn (SCRUM-271).
  *
  * "Benefit" impact (guests getting a free menu/merch item via a scanned
  * `free_item` promo code) is scanned-promo revenue foregone, not a manual
@@ -37,10 +38,10 @@ export function DiscountCompReportPanel() {
   const promoRows = useMemo(() => promoDiscountImpact(filters), [filters]);
   const promoByType = useMemo(() => promoDiscountImpactByType(filters), [filters]);
 
-  const totalComp = rows.filter((r) => r.type === 'comp').reduce((s, r) => s + r.amountTHB, 0);
-  const totalDiscount = rows.filter((r) => r.type !== 'comp').reduce((s, r) => s + r.amountTHB, 0);
-  const totalPromo = promoRows.reduce((s, r) => s + r.amountTHB, 0);
-  const totalBenefit = promoByType.find((p) => p.type === 'free_item')?.amountTHB ?? 0;
+  const totalComp = rows.filter((r) => r.type === 'comp').reduce((s, r) => s + r.amountSatang, 0);
+  const totalDiscount = rows.filter((r) => r.type !== 'comp').reduce((s, r) => s + r.amountSatang, 0);
+  const totalPromo = promoRows.reduce((s, r) => s + r.amountSatang, 0);
+  const totalBenefit = promoByType.find((p) => p.type === 'free_item')?.amountSatang ?? 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -49,23 +50,23 @@ export function DiscountCompReportPanel() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3">
           <div className="text-[11px] uppercase tracking-wide text-foreground/45">Total comps</div>
-          <div className="mt-1 text-lg font-bold tabular-nums">{thb(totalComp)}</div>
+          <div className="mt-1 text-lg font-bold tabular-nums">{thbFromSatang(totalComp)}</div>
         </div>
         <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3">
           <div className="text-[11px] uppercase tracking-wide text-foreground/45">Manual discounts</div>
-          <div className="mt-1 text-lg font-bold tabular-nums">{thb(totalDiscount)}</div>
+          <div className="mt-1 text-lg font-bold tabular-nums">{thbFromSatang(totalDiscount)}</div>
         </div>
         <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3">
           <div className="text-[11px] uppercase tracking-wide text-foreground/45">Promo codes</div>
-          <div className="mt-1 text-lg font-bold tabular-nums">{thb(totalPromo)}</div>
+          <div className="mt-1 text-lg font-bold tabular-nums">{thbFromSatang(totalPromo)}</div>
         </div>
         <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3">
           <div className="text-[11px] uppercase tracking-wide text-foreground/45">Free-item benefit</div>
-          <div className="mt-1 text-lg font-bold tabular-nums">{thb(totalBenefit)}</div>
+          <div className="mt-1 text-lg font-bold tabular-nums">{thbFromSatang(totalBenefit)}</div>
         </div>
         <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3">
           <div className="text-[11px] uppercase tracking-wide text-foreground/45">Total impact</div>
-          <div className="mt-1 text-lg font-bold tabular-nums">{thb(totalComp + totalDiscount + totalPromo)}</div>
+          <div className="mt-1 text-lg font-bold tabular-nums">{thbFromSatang(totalComp + totalDiscount + totalPromo)}</div>
         </div>
       </div>
 
@@ -77,7 +78,7 @@ export function DiscountCompReportPanel() {
               downloadCsv(
                 `promo-impact-by-type_${filters.startDate}_${filters.endDate}`,
                 ['Type', 'Count', 'Amount'],
-                promoByType.map((p) => [p.type, p.count, p.amountTHB.toFixed(2)])
+                promoByType.map((p) => [p.type, p.count, csvBaht(p.amountSatang)])
               )
             }
           />
@@ -103,7 +104,7 @@ export function DiscountCompReportPanel() {
                   {p.type === 'free_item' ? 'Free item (benefit)' : p.type.replace('_', ' ')}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{p.count}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(p.amountTHB)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(p.amountSatang)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -121,9 +122,9 @@ export function DiscountCompReportPanel() {
                 byOperator.map((o) => [
                   o.appliedBy,
                   o.compCount,
-                  o.compTotalTHB.toFixed(2),
+                  csvBaht(o.compTotalSatang),
                   o.discountCount,
-                  o.discountTotalTHB.toFixed(2),
+                  csvBaht(o.discountTotalSatang),
                 ])
               )
             }
@@ -146,9 +147,9 @@ export function DiscountCompReportPanel() {
               <TableRow key={o.appliedBy}>
                 <TableCell>{o.appliedBy}</TableCell>
                 <TableCell className="text-right tabular-nums">{o.compCount}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(o.compTotalTHB)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(o.compTotalSatang)}</TableCell>
                 <TableCell className="text-right tabular-nums">{o.discountCount}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(o.discountTotalTHB)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(o.discountTotalSatang)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -170,7 +171,7 @@ export function DiscountCompReportPanel() {
                   r.code,
                   r.label,
                   r.type,
-                  r.amountTHB.toFixed(2),
+                  csvBaht(r.amountSatang),
                 ])
               )
             }
@@ -203,7 +204,7 @@ export function DiscountCompReportPanel() {
                   <div className="text-xs text-foreground/40">{r.label}</div>
                 </TableCell>
                 <TableCell className="capitalize">{r.type.replace('_', ' ')}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.amountTHB)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.amountSatang)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -226,7 +227,7 @@ export function DiscountCompReportPanel() {
                   r.type,
                   r.reason,
                   r.note ?? '',
-                  r.amountTHB.toFixed(2),
+                  csvBaht(r.amountSatang),
                   r.appliedBy,
                 ])
               )
@@ -265,7 +266,7 @@ export function DiscountCompReportPanel() {
                   {r.note && <div className="text-xs text-foreground/40">{r.note}</div>}
                 </TableCell>
                 <TableCell>{r.appliedBy}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.amountTHB)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.amountSatang)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

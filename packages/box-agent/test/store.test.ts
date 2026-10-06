@@ -973,7 +973,8 @@ test('a store with no tables for this says so, rather than losing it quietly', a
   const store = new SqlBoxStore({ driver: sqliteBoxDriver(db), now: () => new Date(AT) });
   await store.init(BOX_ID);
 
-  assert.deepEqual(store.features(), { printJobs: false, boothRuntime: false });
+  // The overlay (offline plan Round 3) is its own table and was not dropped.
+  assert.deepEqual(store.features(), { printJobs: false, boothRuntime: false, overlay: true });
   assert.equal(store.printJobs(), null, 'the print queue is told to keep to memory');
 
   // A read with nowhere to read from is honestly empty: the print queue asks
@@ -1003,7 +1004,7 @@ test('a store that was never opened keeps nothing, which is the safe answer', as
   // No `init()`: nothing has probed, so nothing is known to be there. Saying
   // "yes" here would mean a caller writing a lockout into a table this store
   // has never looked for.
-  assert.deepEqual(harness.store.features(), { printJobs: false, boothRuntime: false });
+  assert.deepEqual(harness.store.features(), { printJobs: false, boothRuntime: false, overlay: false });
   harness.close();
 });
 

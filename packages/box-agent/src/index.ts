@@ -52,3 +52,30 @@ export * from './booth-draw';
 export * from './booth';
 export * from './booth-http';
 export * from './agent';
+/**
+ * The station bridge and what it prices with (offline plan Round 3): the
+ * counter's surface to its box, mounted by the api for a virtual box and by a
+ * Pi's runner on loopback. `offline-pricing` carries no I/O, so the api's
+ * parity test prices one cart both ways through it.
+ */
+export * from './offline-pricing';
+export * from './station-bridge';
+/**
+ * S2-13 round 4 — check-in on the box lane: the desk the bridge hands its
+ * check-in intents to, the bounded photo store and the worker that sends the
+ * photos taken offline through the platform when the link is back.
+ */
+export * from './checkin-desk';
+export * from './blob-store';
+export * from './photo-upload';
+/**
+ * S2-14a round 4 — credit on the box lane under the offline cap: the key
+ * digests the api ships the `wallets` scope with, and the arithmetic the
+ * bridge spends by.
+ */
+export * from './wallet-lane';
+/**
+ * S2-14b round 3 — counted stock on the box lane: the snapshot reader and the
+ * guard's arithmetic the bridge sells by.
+ */
+export * from './stock-lane';

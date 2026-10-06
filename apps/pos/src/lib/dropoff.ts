@@ -1,4 +1,11 @@
 import { CheckIn, CartLine, TicketType, CustomerTier, DropOffServiceType, ChildFoodProvision, ChildFoodProvisionMode, DropOffPricing as CatalogDropOffPricing } from '@/types';
+import {
+  bahtFromSatang,
+  dropOffFees,
+  satangFromBaht,
+  type DropOffFeeLine,
+  type DropOffPricing as SharedDropOffPricing,
+} from '@oto/shared';
 import { computeLineTotal, priceForTier } from '@/lib/pricing';
 import { RateMode, resolveRate, todayRateMode } from '@/lib/pricingMode';
 
@@ -105,6 +112,18 @@ export function makeDropOffLine(args: {
   };
 }
 
+/** The till's baht pricing as the shared fee law reads it (satang). */
+function pricingInSatang(pricing: DropOffPricing): SharedDropOffPricing {
+  return {
+    oneTimeFee: satangFromBaht(pricing.oneTimeFeeTHB),
+    nannyHourly: satangFromBaht(pricing.nannyHourlyRateTHB),
+    extraHour: satangFromBaht(pricing.extraHourTHB),
+    fullDayHours: pricing.fullDayHours,
+    nannyRatioSoftMax: pricing.nannyRatioSoftMax,
+    prepaidFoodUnused: pricing.prepaidFoodRefundPolicy,
+  };
+}
+
 /**
  * Re-derive every drop-off line's fee + lineTotal across the whole cart so the
  * nanny fee is charged ONCE per nanny (shared by the siblings she covers), while
@@ -114,23 +133,33 @@ export function makeDropOffLine(args: {
  * ties) and 0 on her other covered lines — so summing lineTotals counts it once.
  * Unassigned nanny lines carry a provisional own fee; unconfigured lines are 0.
  * Non-drop-off lines pass through untouched.
+ *
+ * S2-13 (round-1 fix, finding R2): THE FEE IS THE SHARED LAW'S. The figures
+ * come from `dropOffFees` in `@oto/shared` — the one port of this rule that
+ * the api reads too — so a child who OPTED IN to the safety flow at service
+ * 'none' pays no service fee (R-86, "the safety flow without the fee"). The
+ * prototype's own `else` branch here charged the flat fee to every non-nanny
+ * line, 'none' included, and the platform takes the till's figure as given;
+ * the plan corrects the prototype on this point. Everything else — the flat
+ * fee, once-per-nanny on her longest child, first wins a tie — is unchanged.
  */
 export function normalizeDropOffFees(
   lines: CartLine[],
   pricing: DropOffPricing,
 ): CartLine[] {
-  const ownerByNanny = new Map<string, string>();
-  const sharedHoursByNanny = new Map<string, number>();
+  const feeLines: DropOffFeeLine[] = [];
   for (const l of lines) {
     const d = l.dropOff;
-    if (!d || !d.lengthChosen || d.service !== 'nanny' || !d.nannyId) continue;
-    const h = l.ticketType.hours;
-    const prev = sharedHoursByNanny.get(d.nannyId);
-    if (prev === undefined || h > prev) {
-      sharedHoursByNanny.set(d.nannyId, h);
-      ownerByNanny.set(d.nannyId, l.id);
-    }
+    if (!d) continue;
+    feeLines.push({
+      id: l.id,
+      service: d.service,
+      hours: l.ticketType.hours,
+      lengthChosen: d.lengthChosen,
+      nannyId: d.nannyId ?? null,
+    });
   }
+  const fees = dropOffFees(feeLines, pricingInSatang(pricing));
 
   return lines.map((l) => {
     const d = l.dropOff;
@@ -139,21 +168,7 @@ export function normalizeDropOffFees(
     if (!d.lengthChosen) {
       return { ...l, lineTotal: 0, dropOff: { ...d, hours, serviceFeeTHB: 0 } };
     }
-    let serviceFeeTHB = 0;
-    if (d.service === 'nanny') {
-      if (d.nannyId) {
-        // Owner line carries the shared fee; her other covered kids carry 0.
-        serviceFeeTHB =
-          ownerByNanny.get(d.nannyId) === l.id
-            ? pricing.nannyHourlyRateTHB * Math.max(0, sharedHoursByNanny.get(d.nannyId)!)
-            : 0;
-      } else {
-        // Not yet assigned — provisional own fee so the running total stays real.
-        serviceFeeTHB = pricing.nannyHourlyRateTHB * Math.max(0, hours);
-      }
-    } else {
-      serviceFeeTHB = pricing.oneTimeFeeTHB;
-    }
+    const serviceFeeTHB = bahtFromSatang(fees.get(l.id) ?? 0);
     // Preserve any prepaid food amount that was captured at door consent.
     // computeLineTotal only sees the ticket + extras; food provision was added
     // as a separate charge in makeDropOffLine and must survive every fee

@@ -150,6 +150,88 @@ const COMMAND_WORDS: Record<string, string> = {
 export const commandWord = (value: string): string => COMMAND_WORDS[value] ?? tidy(value);
 
 /**
+ * A print kind (`PRINT_KINDS` in `@oto/shared`) as the object of a verb —
+ * "Print receipt", "Reprint kids' wristband" — so lower-case, the way the
+ * command words above put theirs ("Apply config", "Clear cache").
+ */
+const PRINT_KIND_WORDS: Record<string, string> = {
+  receipt: 'receipt',
+  kitchen_ticket: 'kitchen ticket',
+  bar_ticket: 'bar ticket',
+  kids_wristband: "kids' wristband",
+  adult_wristband: 'adult wristband',
+  credit_voucher: 'credit voucher',
+  item_voucher: 'item voucher',
+  booth_voucher: 'booth voucher',
+  test_page: 'test page',
+};
+
+const printKindWord = (value: string): string =>
+  PRINT_KIND_WORDS[value] ?? value.replace(/_/g, ' ');
+
+/**
+ * What one command in a box's history asked for (SCRUM-208, staging proof).
+ *
+ * `test_print` is the box's one print command, and it does not only print
+ * test pages: a finalised sale's receipt, bands and prep tickets ride it too,
+ * carrying `document: 'platform'` and the job's kind (`writeJob` in
+ * `apps/api/src/services/sale-printing.ts`), and so does a reprint from
+ * History (`reprintJob` in `services/print.ts`, which adds `reprintOf`).
+ * Named by its kind alone, every one of those read "Test print" — a real
+ * sale's receipt listed as a test page. A command carrying a platform document
+ * is named for what it printed; a bare test print, which carries none and
+ * prints the box's own sample, keeps its name.
+ */
+export function commandLabel(command: {
+  kind: string;
+  payload?: Record<string, unknown> | null;
+}): string {
+  const payload = command.payload;
+  if (command.kind !== 'test_print' || payload?.document !== 'platform') {
+    return commandWord(command.kind);
+  }
+  const verb = payload.reprintOf ? 'Reprint' : 'Print';
+  return typeof payload.kind === 'string' ? `${verb} ${printKindWord(payload.kind)}` : verb;
+}
+
+/**
+ * `ESC p m t1 t2` — the whole of a cash-drawer pulse is five bytes
+ * (`drawerKick` in `packages/print/src/emit/escpos.ts`).
+ */
+const DRAWER_PULSE_BYTES = 5;
+
+/**
+ * Is this printout the cash-drawer pulse rather than paper (SCRUM-208,
+ * staging proof)?
+ *
+ * A cash sale opens the drawer by sending `ESC p` down the receipt printer's
+ * own socket (`pulseDrawer` in `packages/box-agent/src/printing/queue.ts`),
+ * and the simulator records every session on that socket as a printout — so
+ * the pulse arrived in the Printing panel as "576×0 dots · 5 bytes · cut off
+ * mid-job" over a picture nothing was drawn in. It is not a failed printout:
+ * it drew no rows because it had none to draw, and it has no cut because a
+ * pulse never does.
+ *
+ * The simulator's own `job.printed` event says what the bytes held
+ * (`drawerKicks`) and is read first. The events ride the same response as
+ * the printouts but in a window of their own, so a printout whose event has
+ * scrolled out is judged by its shape instead: no rows, and exactly the
+ * pulse's five bytes.
+ */
+export function isDrawerPulse(
+  printout: { seq: number; heightDots: number; jobBytes: number },
+  events: ReadonlyArray<{ kind: string; detail: Record<string, unknown> }>,
+): boolean {
+  if (printout.heightDots !== 0) return false;
+  const printed = events.find((e) => e.kind === 'job.printed' && e.detail.seq === printout.seq);
+  if (printed) {
+    const kicks = printed.detail.drawerKicks;
+    return typeof kicks === 'number' && kicks > 0;
+  }
+  return printout.jobBytes === DRAWER_PULSE_BYTES;
+}
+
+/**
  * The line Health puts under an alert about a box that cannot use its store
  * (SCRUM-445): what the heading means for the booth, and where the way back
  * is written up — the Pi guide, section 7, "A damaged store".

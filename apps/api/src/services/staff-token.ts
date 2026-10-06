@@ -382,7 +382,7 @@ async function cooldownLeft(db: Db, keys: string[]): Promise<number> {
   return left;
 }
 
-function sharedThrottle(
+export function sharedThrottle(
   db: Db,
   keys: string[],
   env: Env,

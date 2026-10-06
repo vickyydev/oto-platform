@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "tests": [
+    {
+      "name": "separate display guardian acknowledgement retains lock and retry, while staff authorises private readiness",
+      "status": "passed",
+      "errors": []
+    }
+  ],
+  "cleanup": {
+    "processes": true,
+    "database": true
+  },
+  "errors": [],
+  "selection": "existing case: guardian acknowledgement"
+}

@@ -1,13 +1,22 @@
-import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ReconSummary } from '@/components/eod/ReconSummary';
 import { AmountInput } from '@/components/eod/AmountInput';
-import { getEdcTerminals, getEndOfDay, getFloatCarryover, closeEndOfDay } from '@/mockApi';
-import { recomputeEndOfDay, channelLabel, lineFlag, RECON_TOLERANCE_THB } from '@/lib/endOfDay';
+import { CashMovementList } from '@/components/eod/CashMovementList';
+import { useEndOfDay } from '@/components/eod/useEndOfDay';
+import {
+  edcTerminalsOf,
+  floatSourceLabelOf,
+  screenEndOfDay,
+  withActual,
+  withCounted,
+  withFloatLeft,
+  withNotes,
+  withVouchers,
+} from '@/api/endOfDay';
+import { channelLabel, lineFlag, RECON_TOLERANCE_THB } from '@/lib/endOfDay';
 import { useOperator } from '@/auth/OperatorContext';
-import { EndOfDay as EndOfDayRecord } from '@/types';
 import { Lock, Vault, Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -17,48 +26,46 @@ import { cn } from '@/lib/utils';
  * the iPad EndOfDayTab — only the layout differs: per-channel rows become vertical
  * cards with large numeric inputs for one-handed use, and sm: grid breakpoints are
  * replaced with single-column stacks.
+ *
+ * S2-15a round 1 — the same platform record as the iPad tab (`useEndOfDay`): the
+ * expected side, the carried float and the lock from `GET /branches/:id/end-of-day`,
+ * Close Day through `POST …/end-of-day/close`, entries recomputed in satang with the
+ * platform's own `recomputeEndOfDay`.
  */
 export function MobileEndOfDayTab({ date, branch }: { date: string; branch: string }) {
-  const terminals = getEdcTerminals();
   const { operator } = useOperator();
+  const { record: apiRecord, setRecord, error, closeError, closing, close } = useEndOfDay(date, branch);
 
-  const [record, setRecord] = useState<EndOfDayRecord>(() => getEndOfDay(date, branch));
+  if (!apiRecord) {
+    return (
+      <Card className="p-4 bg-card/50">
+        <p role="status" className={error ? 'text-sm text-amber-600' : 'text-sm text-muted-foreground'}>
+          {error ? `The End of Day could not be read from the platform — ${error}` : 'Loading End of Day…'}
+        </p>
+      </Card>
+    );
+  }
 
-  useEffect(() => {
-    setRecord(getEndOfDay(date, branch));
-  }, [date, branch]);
-
+  const record = screenEndOfDay(apiRecord);
+  const terminals = edcTerminalsOf(apiRecord);
   const readOnly = record.status === 'closed';
 
-  const setActual = (channel: string, value: number | null) =>
-    setRecord((prev) =>
-      recomputeEndOfDay({
-        ...prev,
-        lines: prev.lines.map((l) => (l.channel === channel ? { ...l, actualTHB: value } : l)),
-      }),
-    );
+  const setActual = (channel: string, value: number | null) => setRecord((prev) => withActual(prev, channel, value));
 
-  const setCounted = (countedTHB: number | null) =>
-    setRecord((prev) =>
-      recomputeEndOfDay({ ...prev, cashCount: { ...prev.cashCount, countedTHB } }),
-    );
+  const setCounted = (countedTHB: number | null) => setRecord((prev) => withCounted(prev, countedTHB));
 
   const setVouchers = (patch: Partial<{ handedOut: number | null; redeemed: number | null }>) =>
-    setRecord((prev) => ({ ...prev, vouchers: { ...prev.vouchers, ...patch } }));
+    setRecord((prev) => withVouchers(prev, patch));
 
   const onClose = () => {
     if (!operator) return;
-    const result = closeEndOfDay(record, operator);
-    setRecord(result ?? getEndOfDay(date, branch));
+    void close();
   };
 
   const expectedCash = record.lines.find((l) => l.channel === 'cash')?.expectedTHB ?? 0;
   const closedAt = record.closedAt ? new Date(record.closedAt) : null;
 
-  const carry = getFloatCarryover(date, branch);
-  const floatSourceLabel = carry.fromDate
-    ? `carried from ${carry.fromDate} close`
-    : 'standard opening float (no prior close)';
+  const floatSourceLabel = floatSourceLabelOf(apiRecord);
 
   const counted = record.cashCount.countedTHB;
   const banked =
@@ -222,6 +229,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
               );
             })()}
           </div>
+          <CashMovementList movements={apiRecord.cashMovements} />
         </div>
       </Card>
 
@@ -259,7 +267,10 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
           value={record.notes ?? ''}
           disabled={readOnly}
           placeholder="Explain any discrepancy…"
-          onChange={(e) => setRecord((prev) => ({ ...prev, notes: e.target.value }))}
+          onChange={(e) => {
+            const notes = e.target.value;
+            setRecord((prev) => withNotes(prev, notes));
+          }}
           className="min-h-[72px] bg-muted/50 [color-scheme:dark]"
         />
       </Card>
@@ -278,7 +289,7 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
               ariaLabel="Float left in drawer for tomorrow"
               value={record.floatLeftTHB}
               disabled={readOnly}
-              onChange={(v) => setRecord((prev) => ({ ...prev, floatLeftTHB: v }))}
+              onChange={(v) => setRecord((prev) => withFloatLeft(prev, v))}
             />
           </label>
           <div className="rounded-xl bg-muted/50 px-4 py-3">
@@ -292,12 +303,17 @@ export function MobileEndOfDayTab({ date, branch }: { date: string; branch: stri
       </Card>
 
       {/* Close Day button */}
+      {!readOnly && closeError && (
+        <p role="alert" className="text-xs text-amber-600">
+          {closeError}
+        </p>
+      )}
       {!readOnly && (
         <Button
           size="lg"
           className="w-full h-14 gap-2 text-base"
           onClick={onClose}
-          disabled={!operator}
+          disabled={!operator || closing}
         >
           <Lock className="w-4 h-4" />
           Close Day

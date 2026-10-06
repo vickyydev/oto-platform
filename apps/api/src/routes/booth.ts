@@ -6,6 +6,8 @@ import {
   BOOTH_SPIN_DURATION_MIN_SECONDS,
   BOOTH_SPIN_DURATION_MAX_SECONDS,
   BOOTH_STAFF_SESSION_MAX_MINUTES,
+  BOOTH_VOUCHER_FOOTER_MAX_CHARS,
+  BOOTH_VOUCHER_HEADER_MAX_CHARS,
 } from '@oto/shared';
 import type { App } from '../app';
 import { boothDeviceOf } from '../plugins/credential';
@@ -36,12 +38,23 @@ import {
   loadBoothPrizeIncludingArchived,
   publishBoothConfig,
   removeBoothStaff,
+  renderBoothVoucherPreview,
   reorderBoothPrizes,
+  restoreBoothPrize,
   setBoothPin,
   updateBoothLayout,
   updateBoothPrize,
   updateBoothSettings,
 } from '../services/booth-admin';
+import {
+  BOOTH_DUTY_NAME_MAX_CHARS,
+  BOOTH_DUTY_RULE_MAX_CHARS,
+  addManualBoothDuty,
+  boothDutyView,
+  removeBoothDuty,
+  syncBoothDuty,
+  updateBoothDutyRule,
+} from '../services/booth-duty';
 import { loadBranchForOperator } from '../services/fleet';
 import { opCtx } from '../services/tx';
 import { listBoothSpins } from '../services/voucher-ledger';
@@ -445,6 +458,27 @@ export async function boothRoutes(app: App): Promise<void> {
     voucherDefinitionId: z.string().uuid().nullable().optional(),
   });
 
+  /**
+   * The booth's voucher slip (SCRUM-471): the print templates' own limits for
+   * the two lines (`PrintTemplateUpdateSchema` in `@oto/shared`), refused here
+   * and backed by the columns' CHECKs. Blank text is saved as null.
+   */
+  const VoucherSlipFields = {
+    voucherShowLogo: z.boolean().optional(),
+    voucherHeaderText: z
+      .string()
+      .max(BOOTH_VOUCHER_HEADER_MAX_CHARS, `A header line is at most ${BOOTH_VOUCHER_HEADER_MAX_CHARS} characters`)
+      .nullable()
+      .optional(),
+    voucherFooterText: z
+      .string()
+      .max(BOOTH_VOUCHER_FOOTER_MAX_CHARS, `A footer line is at most ${BOOTH_VOUCHER_FOOTER_MAX_CHARS} characters`)
+      .nullable()
+      .optional(),
+    voucherShowStaff: z.boolean().optional(),
+    voucherShowTerms: z.boolean().optional(),
+  };
+
   const SettingsBody = z
     .object({
       layoutId: z.string().uuid().nullable().optional(),
@@ -480,6 +514,7 @@ export async function boothRoutes(app: App): Promise<void> {
         .max(BOOTH_STAFF_SESSION_MAX_MINUTES, 'A booth sign-in lasts at most 24 hours')
         .nullable()
         .optional(),
+      ...VoucherSlipFields,
     })
     .refine((body) => Object.keys(body).length > 0, { message: 'Nothing to change' });
 
@@ -518,15 +553,16 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'What would be published if somebody pressed Publish now: the settings, the prize list in slice order, the exact bundle and its hash, the bundle the booths are running now beside it so a before-and-after can be shown, whether the draft differs, when it was last edited — and every reason it cannot be published yet, each naming its field. There is no draft table: these rows ARE the draft, one per booth and shared, so a colleague’s edit is in here too.',
+          'What would be published if somebody pressed Publish now: the settings, the prize list in slice order, the exact bundle and its hash, the bundle the booths are running now beside it so a before-and-after can be shown, whether the draft differs, when it was last edited — and every reason it cannot be published yet, each naming its field. There is no draft table: these rows ARE the draft, one per booth and shared, so a colleague’s edit is in here too. With `includeArchived=true` the slices archived off the booth come too, most recently archived first, as `archivedPrizes` beside `prizes` — never in it, and never in the bundle — so an archived prize can be found and restored.',
         params: BoothIdParams,
+        querystring: z.object({ includeArchived: z.enum(['true', 'false']).default('false') }),
       },
     },
     async (req) => {
       const auth = req.requireAuth();
       const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
       await req.requirePermission('admin:booth:read', { branchId: row.branchId });
-      return boothDraft(app.db, row);
+      return boothDraft(app.db, row, { includeArchived: req.query.includeArchived === 'true' });
     },
   );
 
@@ -536,7 +572,7 @@ export async function boothRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Change the booth itself: its wheel design, button key, spin eligibility, daily spin cap, spin duration (`spinDurationSeconds`, whole seconds from 2 to 20), and staff sign-in length (`staffSessionMinutes`, at most 1440; null is twelve hours). Saved to the draft until published. Eligibility `band` and `phone` can be saved and cannot be published until there is a booth inside the park.',
+          'Change the booth itself: its wheel design, button key, spin eligibility, daily spin cap, spin duration (`spinDurationSeconds`, whole seconds from 2 to 20), staff sign-in length (`staffSessionMinutes`, at most 1440; null is twelve hours), and its voucher slip (`voucherShowLogo`, `voucherHeaderText` up to 200 characters, `voucherFooterText` up to 400, `voucherShowStaff`, `voucherShowTerms`; blank text is saved as no line). Saved to the draft until published — the slip changes reach the booth only with a publish. Eligibility `band` and `phone` can be saved and cannot be published until there is a booth inside the park.',
         params: BoothIdParams,
         body: SettingsBody,
       },
@@ -552,6 +588,41 @@ export async function boothRoutes(app: App): Promise<void> {
         row,
         req.body,
       );
+    },
+  );
+
+  /**
+   * The picture the Console's "Voucher slip" card shows while somebody edits
+   * (SCRUM-471).
+   *
+   * POST, and it changes nothing — the same shape as the print templates'
+   * `POST /print-templates/:id/preview.png`: the draft on the screen is a
+   * request body, and a preview of unsaved work is the whole point. What
+   * comes back is a SAMPLE slip — a placeholder prize, code, branch and member
+   * of staff — carrying only the booth's five choices from the request, so it
+   * is guarded with `admin:booth:read`, like the draft it previews.
+   */
+  app.post(
+    '/booths/:id/voucher-preview.png',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Draw a sample voucher slip for this booth the way its 80 mm printer would, from the draft slip choices in the body (any left out take the saved value), and answer with the PNG. The prize, code, branch and staff on it are placeholders; nothing is saved.',
+        params: BoothIdParams,
+        body: z.object(VoucherSlipFields),
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:read', { branchId: row.branchId });
+      const preview = await renderBoothVoucherPreview(app.db, row, req.body);
+      return reply
+        .header('content-type', 'image/png')
+        .header('x-oto-preview-width-dots', String(preview.widthDots))
+        .header('cache-control', 'private, no-store')
+        .send(Buffer.from(preview.png));
     },
   );
 
@@ -619,10 +690,10 @@ export async function boothRoutes(app: App): Promise<void> {
       },
     },
     /**
-     * The one by-id prize route that accepts an already-archived row
-     * (`loadBoothPrizeIncludingArchived`). A second DELETE of the same prize
-     * is the same request; answering 404 to it would tell a manager the
-     * archive failed a moment after it succeeded.
+     * One of the two by-id prize routes that accept an already-archived row
+     * (`loadBoothPrizeIncludingArchived`), the restore below being the other.
+     * A second DELETE of the same prize is the same request; answering 404 to
+     * it would tell a manager the archive failed a moment after it succeeded.
      */
     async (req) => {
       const auth = req.requireAuth();
@@ -634,6 +705,35 @@ export async function boothRoutes(app: App): Promise<void> {
         req.params.prizeId,
       );
       return archiveBoothPrize(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        prize,
+      );
+    },
+  );
+
+  app.post(
+    '/booths/:id/prizes/:prizeId/restore',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Bring an archived slice back to the draft, switched off, with its weight, cost and position as they were: it is drawn by nobody until somebody switches it on and re-fits the chances to 100%, which the publish checks as it does every edit. Refused (409 BOOTH_PRIZE_VOUCHER_ARCHIVED) while its voucher type is archived — restore that first — and (409 BOOTH_PRIZE_NAME_TAKEN) while a live slice of the booth has its name. One that is not archived answers with itself and records nothing, like the voucher types’ own restore.',
+        params: PrizeParams,
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:manage', { branchId: row.branchId });
+      const prize = await loadBoothPrizeIncludingArchived(
+        app.db,
+        row.stationId,
+        req.params.prizeId,
+      );
+      return restoreBoothPrize(
         app.db,
         opCtx(req),
         { accountId: auth.accountId, operatorId: auth.operatorId },
@@ -792,6 +892,182 @@ export async function boothRoutes(app: App): Promise<void> {
         row,
         req.body,
       );
+    },
+  );
+
+  // --- The day's booth staff (SCRUM-473) -------------------------------------
+
+  const DutySource = z.enum(['app_schedule', 'app_duty_block', 'manual', 'self_assigned']);
+  const DutyAppState = z.enum(['ok', 'app_not_installed', 'no_app_branch', 'ambiguous_app_branch']);
+  const DutyUnmatched = z.object({
+    name: z.string(),
+    reason: z.enum(['no_app_user', 'no_platform_account']),
+  });
+  const DutyAssignment = z.object({
+    id: z.string().uuid(),
+    accountId: z.string().uuid().nullable(),
+    displayName: z.string(),
+    source: DutySource,
+    syncedAt: z.string().nullable(),
+    addedByAccountId: z.string().uuid().nullable(),
+    createdAt: z.string(),
+  });
+  const DutyRule = z.object({
+    groupText: z.string().max(BOOTH_DUTY_RULE_MAX_CHARS),
+    dutyText: z.string().max(BOOTH_DUTY_RULE_MAX_CHARS),
+  });
+  const DutyView = z.object({
+    businessDate: z.string(),
+    rule: DutyRule,
+    roster: z.array(DutyAssignment),
+    label: z.string().nullable(),
+    lastSync: z
+      .object({
+        syncedAt: z.string(),
+        appState: DutyAppState,
+        unmatched: z.array(DutyUnmatched),
+        syncedByAccountId: z.string().uuid().nullable(),
+      })
+      .nullable(),
+    log: z.array(
+      z.object({
+        at: z.string(),
+        action: z.string(),
+        actorAccountId: z.string().uuid().nullable(),
+        detail: z.record(z.string(), z.unknown()).nullable(),
+      }),
+    ),
+  });
+  const DutyDateQuery = z.object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+  });
+
+  app.get(
+    '/booths/:id/duty',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The day’s staff of this booth (SCRUM-473): the dated roster with where each person came from (the OTO App’s shift schedule, a duty block, a manual add, or a stand-in who signed in), the merged label every voucher prints that day, the last sync and the names it could not match to an account, the booth’s match rule, and the day’s log lines. `date` defaults to the branch’s trading day now.',
+        params: BoothIdParams,
+        querystring: DutyDateQuery,
+        response: { 200: DutyView },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:read', { branchId: row.branchId });
+      return boothDutyView(app.db, row, { date: req.query.date });
+    },
+  );
+
+  app.post(
+    '/booths/:id/duty/sync',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Sync now: read the OTO App’s schedule for this booth’s branch and today’s trading day, and write the difference into the roster — each new person audited `booth_duty.assign`, each person the app no longer names `booth_duty.unassign`. A re-run with nothing changed writes nothing. Manual and self-assigned rows are never removed by a sync, and nothing is removed when the app cannot be read. People the app names who have no platform account come back in `unmatched`, by name.',
+        params: BoothIdParams,
+        response: {
+          200: z.object({
+            businessDate: z.string(),
+            appState: DutyAppState,
+            added: z.number().int(),
+            removed: z.number().int(),
+            unmatched: z.array(DutyUnmatched),
+            roster: z.array(DutyAssignment),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return syncBoothDuty(app.db, opCtx(req), { row, actorAccountId: auth.accountId });
+    },
+  );
+
+  app.post(
+    '/booths/:id/duty',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Put somebody on today’s roster by hand (audited `booth_duty.assign`, source `manual`): an account of the booth’s branch staff — refused 400 `STAFF_NOT_AT_BRANCH` otherwise — or a name alone for somebody with no account, who is named on the voucher and can never sign in. Adding somebody already on the roster changes nothing.',
+        params: BoothIdParams,
+        body: z
+          .object({
+            accountId: z.string().uuid().nullish(),
+            displayName: z.string().max(BOOTH_DUTY_NAME_MAX_CHARS).nullish(),
+          })
+          .refine((b) => Boolean(b.accountId) || Boolean(b.displayName?.trim()), {
+            message: 'An account or a name is required',
+          }),
+        response: { 200: z.object({ roster: z.array(DutyAssignment) }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return addManualBoothDuty(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        row,
+        { accountId: req.body.accountId ?? null, displayName: req.body.displayName ?? null },
+      );
+    },
+  );
+
+  app.delete(
+    '/booths/:id/duty/:assignmentId',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Take somebody off this booth’s roster, whatever put them there (audited `booth_duty.unassign`). A row the OTO App put there comes back at the next sync while the app still names the person — the rota is the staff app’s, and a wrong shift is fixed there.',
+        params: z.object({ id: z.string().uuid(), assignmentId: z.string().uuid() }),
+        response: { 200: z.object({ roster: z.array(DutyAssignment) }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return removeBoothDuty(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId },
+        row,
+        req.params.assignmentId,
+      );
+    },
+  );
+
+  app.patch(
+    '/booths/:id/duty/rule',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Change how this booth’s staff are found in the OTO App: `groupText` is matched inside a shift row’s group, department or role name, `dutyText` inside a duty block’s name — case-insensitive, surrounding spaces trimmed. The defaults (“Sale Booth”, “booth”) are the recommended rule; an empty text matches nothing. Not published to the box, so no bundle changes. Audited `booth_duty.rule`.',
+        params: BoothIdParams,
+        body: DutyRule.partial(),
+        response: { 200: DutyRule },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const row = await loadBoothStation(app.db, auth.operatorId, req.params.id);
+      await req.requirePermission('admin:booth:staff_assign', { branchId: row.branchId });
+      return updateBoothDutyRule(app.db, opCtx(req), { accountId: auth.accountId }, row, req.body);
     },
   );
 

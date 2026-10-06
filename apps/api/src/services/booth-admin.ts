@@ -1,6 +1,6 @@
 import { createHash, randomInt } from 'node:crypto';
 import { hash as argonHash } from '@node-rs/argon2';
-import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import {
   account,
   boothConfigVersion,
@@ -21,10 +21,14 @@ import {
   BOOTH_BUNDLE_SCHEMA_VERSION,
   BOOTH_CODE_PREFIX_LENGTH,
   BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
+  BOOTH_VOUCHER_SLIP_DEFAULTS,
+  boothVoucherSlipBundleFields,
+  boothVoucherText,
   businessDate,
   newId,
   parseDayStart,
 } from '@oto/shared';
+import { escposProfile, renderPreviewPng } from '@oto/print';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { atBranch } from '../lib/staff-scope';
@@ -129,6 +133,12 @@ const SETTINGS_DEFAULTS = {
   /** Null is the box's own twelve hours (`BOOTH_STAFF_SESSION_DEFAULT_MINUTES`). */
   staffSessionMinutes: null as number | null,
   spinDurationSeconds: BOOTH_SPIN_DURATION_DEFAULT_SECONDS,
+  /** The voucher slip (SCRUM-471): today's slip, the column defaults of migration 0039. */
+  voucherShowLogo: BOOTH_VOUCHER_SLIP_DEFAULTS.showLogo,
+  voucherHeaderText: BOOTH_VOUCHER_SLIP_DEFAULTS.headerText as string | null,
+  voucherFooterText: BOOTH_VOUCHER_SLIP_DEFAULTS.footerText as string | null,
+  voucherShowStaff: BOOTH_VOUCHER_SLIP_DEFAULTS.showStaff,
+  voucherShowTerms: BOOTH_VOUCHER_SLIP_DEFAULTS.showTerms,
 };
 
 export interface BoothDraft {
@@ -199,6 +209,11 @@ async function loadDraft(exec: Exec, row: BoothStationRow): Promise<BoothDraft> 
       staffSessionMinutes:
         settingsRow?.staffSessionMinutes ?? SETTINGS_DEFAULTS.staffSessionMinutes,
       spinDurationSeconds: settingsRow?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
+      voucherShowLogo: settingsRow?.voucherShowLogo ?? SETTINGS_DEFAULTS.voucherShowLogo,
+      voucherHeaderText: settingsRow?.voucherHeaderText ?? SETTINGS_DEFAULTS.voucherHeaderText,
+      voucherFooterText: settingsRow?.voucherFooterText ?? SETTINGS_DEFAULTS.voucherFooterText,
+      voucherShowStaff: settingsRow?.voucherShowStaff ?? SETTINGS_DEFAULTS.voucherShowStaff,
+      voucherShowTerms: settingsRow?.voucherShowTerms ?? SETTINGS_DEFAULTS.voucherShowTerms,
       updatedAt: settingsRow?.updatedAt ?? null,
     },
     layout,
@@ -286,6 +301,18 @@ function bundleFrom(draft: BoothDraft): Record<string, unknown> | null {
       ...(draft.settings.staffSessionMinutes !== null
         ? { staffSessionMinutes: draft.settings.staffSessionMinutes }
         : {}),
+      /**
+       * The voucher slip (SCRUM-471), each field only when it differs from
+       * its default — the same rule, for the same hash, as the two above. The
+       * box reads them back with `boothVoucherSlip`.
+       */
+      ...boothVoucherSlipBundleFields({
+        showLogo: draft.settings.voucherShowLogo,
+        headerText: draft.settings.voucherHeaderText,
+        footerText: draft.settings.voucherFooterText,
+        showStaff: draft.settings.voucherShowStaff,
+        showTerms: draft.settings.voucherShowTerms,
+      }),
     },
     layout: {
       id: layout.id,
@@ -552,6 +579,31 @@ export interface PublishedVersionView {
   publishedByAccountId: string | null;
 }
 
+/** One slice as the Console's prize table reads it. */
+export interface BoothPrizeView {
+  id: string;
+  nameEn: string;
+  nameTh: string | null;
+  wheelLabel: string | null;
+  weightBp: number;
+  active: boolean;
+  expiryDays: number | null;
+  dailyCap: number | null;
+  costSatang: number;
+  sliceColor: string | null;
+  textColor: string | null;
+  sortOrder: number;
+  voucherDefinitionId: string | null;
+  /** The definition's own code and expiry, so the editor can show what a win produces. */
+  voucherDefinitionCode: string | null;
+  effectiveExpiryDays: number | null;
+}
+
+/** A slice taken off the wheel, as the "show archived" list reads it (SCRUM-468). */
+export interface BoothArchivedPrizeView extends BoothPrizeView {
+  archivedAt: string;
+}
+
 export interface BoothDraftView {
   booth: { id: string; name: string; branchId: string; codePrefix: string | null };
   settings: {
@@ -563,25 +615,19 @@ export interface BoothDraftView {
     /** Minutes a staff sign-in lasts; null is the box's own twelve hours. */
     staffSessionMinutes: number | null;
     spinDurationSeconds: number;
-  };
-  prizes: Array<{
-    id: string;
-    nameEn: string;
-    nameTh: string | null;
-    wheelLabel: string | null;
-    weightBp: number;
-    active: boolean;
-    expiryDays: number | null;
-    dailyCap: number | null;
-    costSatang: number;
-    sliceColor: string | null;
-    textColor: string | null;
-    sortOrder: number;
-    voucherDefinitionId: string | null;
-    /** The definition's own code and expiry, so the editor can show what a win produces. */
-    voucherDefinitionCode: string | null;
-    effectiveExpiryDays: number | null;
-  }>;
+  } & BoothVoucherSlipSettings;
+  prizes: BoothPrizeView[];
+  /**
+   * The slices archived off this booth, most recently archived first — only
+   * when the caller asked for them (`includeArchived`), and absent otherwise,
+   * so the draft everybody else reads is the draft it always was (SCRUM-468).
+   *
+   * Beside `prizes` rather than in it: `prizes` is what a publish would
+   * freeze, and every total the Console draws from it — the odds, the money,
+   * "adds to 100%" — would be wrong with a row in it the wheel will never
+   * carry. Nothing here reaches the bundle or its hash.
+   */
+  archivedPrizes?: BoothArchivedPrizeView[];
   /** Exactly what publishing would mint, or null while there is no layout. */
   bundle: unknown;
   bundleHash: string | null;
@@ -604,7 +650,65 @@ export interface BoothDraftView {
   blockers: PublishBlocker[];
 }
 
-export async function boothDraft(db: Db, row: BoothStationRow): Promise<BoothDraftView> {
+/** A prize row as the Console reads it, its voucher definition looked up in `definitions`. */
+function prizeView(
+  p: PrizeRow,
+  definitions: ReadonlyMap<string, typeof voucherDefinition.$inferSelect>,
+): BoothPrizeView {
+  const definition = p.voucherDefinitionId ? definitions.get(p.voucherDefinitionId) : undefined;
+  return {
+    id: p.id,
+    nameEn: p.nameEn,
+    nameTh: p.nameTh,
+    wheelLabel: p.wheelLabel,
+    weightBp: p.weightBp,
+    active: p.active,
+    expiryDays: p.expiryDays,
+    dailyCap: p.dailyCap,
+    costSatang: p.costSatang,
+    sliceColor: p.sliceColor,
+    textColor: p.textColor,
+    sortOrder: p.sortOrder,
+    voucherDefinitionId: p.voucherDefinitionId,
+    voucherDefinitionCode: definition?.code ?? null,
+    effectiveExpiryDays: p.expiryDays ?? definition?.expiryDays ?? null,
+  };
+}
+
+/**
+ * The booth's archived slices, most recently archived first (SCRUM-468) —
+ * what "Show archived prizes" lists, each with its voucher definition's code
+ * so a manager can tell them apart before bringing one back.
+ */
+async function archivedPrizeViews(
+  exec: Exec,
+  row: BoothStationRow,
+  known: ReadonlyMap<string, typeof voucherDefinition.$inferSelect>,
+): Promise<BoothArchivedPrizeView[]> {
+  const rows = await exec
+    .select()
+    .from(boothPrize)
+    .where(and(eq(boothPrize.stationId, row.stationId), isNotNull(boothPrize.archivedAt)))
+    .orderBy(desc(boothPrize.archivedAt), asc(boothPrize.nameEn));
+  const missing = [
+    ...new Set(rows.map((p) => p.voucherDefinitionId).filter(isNonNull)),
+  ].filter((id) => !known.has(id));
+  const extra = missing.length
+    ? await exec.select().from(voucherDefinition).where(inArray(voucherDefinition.id, missing))
+    : [];
+  const definitions = new Map([...known, ...extra.map((d) => [d.id, d] as const)]);
+  return rows.map((p) => ({
+    ...prizeView(p, definitions),
+    // The WHERE above keeps only archived rows; the fallback is never taken.
+    archivedAt: (p.archivedAt ?? new Date(0)).toISOString(),
+  }));
+}
+
+export async function boothDraft(
+  db: Db,
+  row: BoothStationRow,
+  opts: { includeArchived?: boolean } = {},
+): Promise<BoothDraftView> {
   const draft = await loadDraft(db, row);
   const bundle = bundleFrom(draft);
   const blockers = await publishBlockers(db, row, draft);
@@ -640,27 +744,16 @@ export async function boothDraft(db: Db, row: BoothStationRow): Promise<BoothDra
       dailySpinCap: draft.settings.dailySpinCap,
       staffSessionMinutes: draft.settings.staffSessionMinutes,
       spinDurationSeconds: draft.settings.spinDurationSeconds,
+      voucherShowLogo: draft.settings.voucherShowLogo,
+      voucherHeaderText: draft.settings.voucherHeaderText,
+      voucherFooterText: draft.settings.voucherFooterText,
+      voucherShowStaff: draft.settings.voucherShowStaff,
+      voucherShowTerms: draft.settings.voucherShowTerms,
     },
-    prizes: draft.prizes.map((p) => {
-      const definition = p.voucherDefinitionId ? draft.definitions.get(p.voucherDefinitionId) : undefined;
-      return {
-        id: p.id,
-        nameEn: p.nameEn,
-        nameTh: p.nameTh,
-        wheelLabel: p.wheelLabel,
-        weightBp: p.weightBp,
-        active: p.active,
-        expiryDays: p.expiryDays,
-        dailyCap: p.dailyCap,
-        costSatang: p.costSatang,
-        sliceColor: p.sliceColor,
-        textColor: p.textColor,
-        sortOrder: p.sortOrder,
-        voucherDefinitionId: p.voucherDefinitionId,
-        voucherDefinitionCode: definition?.code ?? null,
-        effectiveExpiryDays: p.expiryDays ?? definition?.expiryDays ?? null,
-      };
-    }),
+    prizes: draft.prizes.map((p) => prizeView(p, draft.definitions)),
+    ...(opts.includeArchived
+      ? { archivedPrizes: await archivedPrizeViews(db, row, draft.definitions) }
+      : {}),
     bundle,
     bundleHash,
     published,
@@ -951,6 +1044,27 @@ export interface BoothSettingsPatch {
   /** Minutes, at most one trading day; null goes back to the box's twelve hours. */
   staffSessionMinutes?: number | null;
   spinDurationSeconds?: number;
+  /** The voucher slip (SCRUM-471). Blank text is stored as null — "no line". */
+  voucherShowLogo?: boolean;
+  voucherHeaderText?: string | null;
+  voucherFooterText?: string | null;
+  voucherShowStaff?: boolean;
+  voucherShowTerms?: boolean;
+}
+
+/**
+ * The five voucher slip choices, as `booth.booth_settings` stores them and the
+ * draft reads them (SCRUM-471). Named exactly as their columns, like the rest
+ * of the settings.
+ */
+export interface BoothVoucherSlipSettings {
+  voucherShowLogo: boolean;
+  /** A line under the venue line; null prints none. */
+  voucherHeaderText: string | null;
+  /** The slip's last line; null prints none. */
+  voucherFooterText: string | null;
+  voucherShowStaff: boolean;
+  voucherShowTerms: boolean;
 }
 
 /**
@@ -971,25 +1085,24 @@ export async function updateBoothSettings(
   if (patch.layoutId) await requireLayout(db, actor.operatorId, patch.layoutId);
 
   return withTx(db, ctx, 'booth_settings.update', async (tx) => {
-    const [before] = await tx
-      .select()
-      .from(boothSettings)
-      .where(eq(boothSettings.stationId, row.stationId))
-      .limit(1);
-
-    const next = {
-      layoutId: patch.layoutId !== undefined ? patch.layoutId : (before?.layoutId ?? null),
-      buttonKey: patch.buttonKey ?? before?.buttonKey ?? SETTINGS_DEFAULTS.buttonKey,
-      eligibility: patch.eligibility ?? before?.eligibility ?? SETTINGS_DEFAULTS.eligibility,
-      dailySpinCap:
-        patch.dailySpinCap !== undefined ? patch.dailySpinCap : (before?.dailySpinCap ?? null),
-      staffSessionMinutes:
-        patch.staffSessionMinutes !== undefined
-          ? patch.staffSessionMinutes
-          : (before?.staffSessionMinutes ?? null),
-      spinDurationSeconds:
-        patch.spinDurationSeconds ?? before?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
-    };
+    /**
+     * The row is read FOR UPDATE because the write below rewrites every
+     * column from `before` plus the patch. The booth page has two forms on
+     * this one row (the settings drawer and the Voucher slip card), and two
+     * people saving at once must each land on top of the other's committed
+     * change, not on the row as it was when both started (SCRUM-471 gate).
+     */
+    const lockedRow = async () =>
+      (
+        await tx
+          .select()
+          .from(boothSettings)
+          .where(eq(boothSettings.stationId, row.stationId))
+          .for('update')
+          .limit(1)
+      )[0];
+    let before = await lockedRow();
+    let next = mergedSettings(before, patch);
 
     if (before) {
       await tx
@@ -997,12 +1110,26 @@ export async function updateBoothSettings(
         .set({ ...next, updatedAt: new Date() })
         .where(eq(boothSettings.stationId, row.stationId));
     } else {
-      await tx.insert(boothSettings).values({
-        stationId: row.stationId,
-        operatorId: row.operatorId,
-        branchId: row.branchId,
-        ...next,
-      });
+      const inserted = await tx
+        .insert(boothSettings)
+        .values({
+          stationId: row.stationId,
+          operatorId: row.operatorId,
+          branchId: row.branchId,
+          ...next,
+        })
+        .onConflictDoNothing({ target: boothSettings.stationId })
+        .returning({ stationId: boothSettings.stationId });
+      if (inserted.length === 0) {
+        // A colleague's first save wrote the row between the read and this
+        // insert: theirs is now `before`, and this patch lands on top of it.
+        before = await lockedRow();
+        next = mergedSettings(before, patch);
+        await tx
+          .update(boothSettings)
+          .set({ ...next, updatedAt: new Date() })
+          .where(eq(boothSettings.stationId, row.stationId));
+      }
     }
 
     await audit.record(tx, {
@@ -1020,6 +1147,11 @@ export async function updateBoothSettings(
             dailySpinCap: before.dailySpinCap,
             staffSessionMinutes: before.staffSessionMinutes,
             spinDurationSeconds: before.spinDurationSeconds,
+            voucherShowLogo: before.voucherShowLogo,
+            voucherHeaderText: before.voucherHeaderText,
+            voucherFooterText: before.voucherFooterText,
+            voucherShowStaff: before.voucherShowStaff,
+            voucherShowTerms: before.voucherShowTerms,
           }
         : null,
       after: next,
@@ -1031,6 +1163,134 @@ export async function updateBoothSettings(
       : [];
     return { settings: { ...next, layoutName: layout?.name ?? null } };
   });
+}
+
+/**
+ * The row a settings PATCH writes: the stored row (or the defaults, before
+ * there is one) with the patch's fields on top. A field the patch leaves out
+ * keeps its stored value, so the settings drawer and the Voucher slip card
+ * never overwrite each other's fields.
+ */
+function mergedSettings(
+  before: typeof boothSettings.$inferSelect | undefined,
+  patch: BoothSettingsPatch,
+) {
+  return {
+    layoutId: patch.layoutId !== undefined ? patch.layoutId : (before?.layoutId ?? null),
+    buttonKey: patch.buttonKey ?? before?.buttonKey ?? SETTINGS_DEFAULTS.buttonKey,
+    eligibility: patch.eligibility ?? before?.eligibility ?? SETTINGS_DEFAULTS.eligibility,
+    dailySpinCap:
+      patch.dailySpinCap !== undefined ? patch.dailySpinCap : (before?.dailySpinCap ?? null),
+    staffSessionMinutes:
+      patch.staffSessionMinutes !== undefined
+        ? patch.staffSessionMinutes
+        : (before?.staffSessionMinutes ?? null),
+    spinDurationSeconds:
+      patch.spinDurationSeconds ?? before?.spinDurationSeconds ?? SETTINGS_DEFAULTS.spinDurationSeconds,
+    voucherShowLogo:
+      patch.voucherShowLogo ?? before?.voucherShowLogo ?? SETTINGS_DEFAULTS.voucherShowLogo,
+    // Trimmed, and blank is null: "no line" has one spelling in the column,
+    // which is what keeps an emptied field out of the published bundle.
+    voucherHeaderText:
+      patch.voucherHeaderText !== undefined
+        ? boothVoucherText(patch.voucherHeaderText)
+        : (before?.voucherHeaderText ?? null),
+    voucherFooterText:
+      patch.voucherFooterText !== undefined
+        ? boothVoucherText(patch.voucherFooterText)
+        : (before?.voucherFooterText ?? null),
+    voucherShowStaff:
+      patch.voucherShowStaff ?? before?.voucherShowStaff ?? SETTINGS_DEFAULTS.voucherShowStaff,
+    voucherShowTerms:
+      patch.voucherShowTerms ?? before?.voucherShowTerms ?? SETTINGS_DEFAULTS.voucherShowTerms,
+  };
+}
+
+// --- The voucher slip's live preview (SCRUM-471) ----------------------------
+
+/**
+ * The 80 mm head the preview is laid out for: 576 dots, the width every booth
+ * voucher is drawn against today (`packages/print/src/templates/booth.ts`
+ * explains why that number is an assumption). A preview of a booth whose
+ * printer turns out to be 512 dots is the one thing this cannot show, and the
+ * fixture beside the template is where that comparison lives.
+ */
+const BOOTH_VOUCHER_PREVIEW_DEVICE = escposProfile({
+  id: 'booth-voucher-preview',
+  label: 'Sample',
+  model: '80 mm receipt printer',
+  widthDots: 576,
+});
+
+/**
+ * The sample the preview prints: every word visibly a placeholder, and none
+ * of it read from anything real — no prize, no code, no member of staff, no
+ * branch. What the preview is FOR is the booth's five choices, and those are
+ * the only thing on it that comes from the request.
+ */
+const BOOTH_VOUCHER_PREVIEW_SAMPLE = {
+  venueLine: 'Your branch name prints here',
+  prizeLine: 'SAMPLE PRIZE',
+  prizeLineThai: 'รางวัลตัวอย่าง',
+  redemptionLine: 'Show this QR at OTO Reception to claim: Sample prize.',
+  terms: ['Sample terms — the voucher type’s own terms print here.'],
+  voucherCode: 'SAMPLECODE',
+  issuedAt: '01 Jan 2026 12:00',
+  booth: 'Sample branch · Sample booth',
+  staff: 'Staff name (S-0000)',
+  expiresAt: '15 Jan 2026',
+  reprintNote: null,
+} as const;
+
+/** The draft a preview is drawn from: any of the five, the saved value for the rest. */
+export type BoothVoucherPreviewDraft = Partial<BoothVoucherSlipSettings>;
+
+/**
+ * Draw this booth's voucher slip as the printer would, from DRAFT values the
+ * Console has not saved yet, and answer with the PNG.
+ *
+ * Rendered by the same `@oto/print` renderer the box uses, at the same 80 mm
+ * width, so "the preview looks right" and "the paper looks right" are the
+ * same statement. It writes nothing and reads only this booth's saved slip,
+ * for whatever the draft leaves out.
+ */
+export async function renderBoothVoucherPreview(
+  db: Db,
+  row: BoothStationRow,
+  draft: BoothVoucherPreviewDraft,
+): Promise<{ png: Uint8Array; widthDots: number }> {
+  const [saved] = await db
+    .select({
+      voucherShowLogo: boothSettings.voucherShowLogo,
+      voucherHeaderText: boothSettings.voucherHeaderText,
+      voucherFooterText: boothSettings.voucherFooterText,
+      voucherShowStaff: boothSettings.voucherShowStaff,
+      voucherShowTerms: boothSettings.voucherShowTerms,
+    })
+    .from(boothSettings)
+    .where(eq(boothSettings.stationId, row.stationId))
+    .limit(1);
+  const pick = <K extends keyof BoothVoucherSlipSettings>(key: K): BoothVoucherSlipSettings[K] =>
+    draft[key] !== undefined
+      ? (draft[key] as BoothVoucherSlipSettings[K])
+      : (saved?.[key] ?? SETTINGS_DEFAULTS[key]);
+
+  const png = renderPreviewPng(
+    {
+      kind: 'booth_voucher',
+      data: {
+        ...BOOTH_VOUCHER_PREVIEW_SAMPLE,
+        terms: [...BOOTH_VOUCHER_PREVIEW_SAMPLE.terms],
+        showLogo: pick('voucherShowLogo'),
+        headerLine: boothVoucherText(pick('voucherHeaderText')),
+        footerLine: boothVoucherText(pick('voucherFooterText')) ?? '',
+        showStaff: pick('voucherShowStaff'),
+        showTerms: pick('voucherShowTerms'),
+      },
+    },
+    { device: BOOTH_VOUCHER_PREVIEW_DEVICE },
+  );
+  return { png, widthDots: BOOTH_VOUCHER_PREVIEW_DEVICE.widthDots };
 }
 
 async function requireLayout(exec: Exec, operatorId: string, layoutId: string): Promise<LayoutRow> {
@@ -1211,6 +1471,87 @@ export async function archiveBoothPrize(
 }
 
 /**
+ * Bring an archived slice back (SCRUM-468).
+ *
+ * Archiving was a one-way door: the slice left every list, and nothing on
+ * the platform could put it back, so a prize taken off by mistake had to be
+ * typed in again under a new id — and last month's spins then named a prize
+ * the editor could no longer show.
+ *
+ * **It comes back switched off**, whatever it was when it was archived, with
+ * its weight, cost and position as they were. A switched-off slice is drawn
+ * by nobody and counts in no total, so restoring one changes no odds on its
+ * own: somebody has to switch it on in the editor and re-fit the chances to
+ * 100%, and the publish refuses the wheel until they do — the same rule as
+ * every other edit here, and the only safe answer for a wheel whose other
+ * slices were re-weighted while this one was away.
+ *
+ * **Refused while its voucher type is archived** (409): a slice pointing at
+ * an archived type could never be switched on and published, so bringing it
+ * back would only move the refusal to a later screen. The message says which
+ * type, and that it is restored on Voucher types first.
+ *
+ * One that is not archived answers with itself and records nothing, like
+ * `archiveBoothPrize` and the voucher types' own restore: a double press is
+ * the same request. A live slice of the same name is the unique index's to
+ * refuse, with the name said.
+ */
+export async function restoreBoothPrize(
+  db: Db,
+  ctx: OpContext,
+  actor: { accountId: string; operatorId: string },
+  row: BoothStationRow,
+  before: PrizeRow,
+): Promise<{ prize: PrizeRow }> {
+  if (!before.archivedAt) return { prize: before };
+
+  try {
+    return await withTx(db, ctx, 'booth_prize.restore', async (tx) => {
+      // Read inside the transaction, so an archive of the type committed a
+      // moment ago is seen rather than raced.
+      if (before.voucherDefinitionId) {
+        const definition = await requireDefinition(tx, actor.operatorId, before.voucherDefinitionId);
+        if (definition.archivedAt) {
+          throw new AppError(
+            409,
+            'BOOTH_PRIZE_VOUCHER_ARCHIVED',
+            `“${before.nameEn}” cannot come back yet: its voucher type “${definition.nameEn}” is archived. Restore that voucher type on Voucher types first, then this prize.`,
+            { voucherDefinitionId: definition.id },
+          );
+        }
+      }
+      const restoredAt = new Date();
+      await tx
+        .update(boothPrize)
+        .set({ archivedAt: null, active: false, updatedAt: restoredAt })
+        .where(eq(boothPrize.id, before.id));
+      const [prize] = await tx.select().from(boothPrize).where(eq(boothPrize.id, before.id)).limit(1);
+      await audit.record(tx, {
+        actorAccountId: actor.accountId,
+        operatorId: row.operatorId,
+        branchId: row.branchId,
+        action: 'booth_prize.restore',
+        entityType: 'booth_prize',
+        entityId: before.id,
+        before,
+        after: prize,
+        requestId: ctx.requestId,
+      });
+      return { prize: prize! };
+    });
+  } catch (err) {
+    if (isUniqueViolation(err, 'booth_prize_name_unique')) {
+      throw new AppError(
+        409,
+        'BOOTH_PRIZE_NAME_TAKEN',
+        `This booth already has a live prize called “${before.nameEn}”. Rename or archive that one first — two slices with one name cannot be told apart on the wheel.`,
+      );
+    }
+    throw err;
+  }
+}
+
+/**
  * The slice order, set as a whole list rather than a field at a time.
  *
  * The order IS the wheel — `SpinResponse.prizeIndex` indexes the published
@@ -1280,15 +1621,15 @@ export async function loadBoothPrize(db: Db, stationId: string, prizeId: string)
  * The same lookup, except that a slice already off the wheel comes back
  * rather than 404ing.
  *
- * Only the archive route uses it, and for one reason: a second archive of the
- * same prize is the same request, and answering 404 to it tells a manager the
- * archive failed at the moment it had in fact just succeeded. The console
- * sends this DELETE without an idempotency key, so a double press or a retry
- * after a dropped response arrives here with the row already archived — see
- * `archiveBoothPrize`, which returns it unchanged.
+ * The archive route uses it for one reason: a second archive of the same
+ * prize is the same request, and answering 404 to it tells a manager the
+ * archive failed at the moment it had in fact just succeeded. A double press
+ * or a retry after a dropped response arrives here with the row already
+ * archived — see `archiveBoothPrize`, which returns it unchanged. The restore
+ * route (SCRUM-468) uses it because an archived row is exactly what it is for.
  *
  * EDITING an archived slice is still refused: that is `loadBoothPrize`, and
- * the PATCH route keeps it.
+ * the PATCH route keeps it. Restore it first.
  */
 export async function loadBoothPrizeIncludingArchived(
   db: Db,
@@ -1545,7 +1886,7 @@ async function requireStaffAccount(exec: Exec, operatorId: string, accountId: st
  * deactivated account. The join to `employee` is required: the predicate
  * reads the employee's branch.
  */
-async function isBranchStaff(
+export async function isBranchStaff(
   exec: Exec,
   operatorId: string,
   branchId: string,

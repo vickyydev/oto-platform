@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react';
 import { FnbOrderLine, ManualDiscount, MenuItem, PartyBooking, SelectedModifier } from '@/types';
 import { useOperator } from '@/auth/OperatorContext';
 import { getDiscountReasons, getMenuItems } from '@/mockApi';
+import { fnbLineTotal, itemOrderTotals } from '@/lib/cartWire';
 import {
-  computeFnbTotals,
-  computeLineTotal,
   describeModifiers,
   hasModifiers,
   modifierSignature,
@@ -46,7 +45,7 @@ export function MobilePartyFnb({
   const lines = cart;
 
   const { subtotal, total, manualAmounts } = useMemo(
-    () => computeFnbTotals(lines, manualDiscounts),
+    () => itemOrderTotals(lines, manualDiscounts),
     [lines, manualDiscounts],
   );
 
@@ -66,7 +65,7 @@ export function MobilePartyFnb({
     menuItem: item,
     qty,
     selectedModifiers: selected,
-    lineTotal: computeLineTotal(item, selected, qty),
+    lineTotal: fnbLineTotal(item, selected, qty),
     note,
   });
 
@@ -83,7 +82,7 @@ export function MobilePartyFnb({
         const next = [...prev];
         const merged = next[idx];
         const newQty = merged.qty + qty;
-        next[idx] = { ...merged, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+        next[idx] = { ...merged, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
         return next;
       }
       return [...prev, makeLine(item, selected, qty, note)];
@@ -128,7 +127,7 @@ export function MobilePartyFnb({
             .map((l) => {
               if (l.id !== prev[twinIdx].id) return l;
               const newQty = l.qty + addQty;
-              return { ...l, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+              return { ...l, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
             });
           setManualDiscounts((mds) => dropDiscountsForRemovedLines(mds, next.map((l) => l.id)));
           return next;
@@ -139,7 +138,7 @@ export function MobilePartyFnb({
                 ...l,
                 selectedModifiers: selected,
                 qty,
-                lineTotal: computeLineTotal(item, selected, qty),
+                lineTotal: fnbLineTotal(item, selected, qty),
                 note,
               }
             : l,
@@ -164,7 +163,7 @@ export function MobilePartyFnb({
       if (qty <= 0) return prev.filter((l) => l.id !== lineId);
       return prev.map((l) =>
         l.id === lineId
-          ? { ...l, qty, lineTotal: computeLineTotal(l.menuItem, l.selectedModifiers, qty) }
+          ? { ...l, qty, lineTotal: fnbLineTotal(l.menuItem, l.selectedModifiers, qty) }
           : l,
       );
     });

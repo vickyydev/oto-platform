@@ -263,6 +263,27 @@ export function PrizeEditor({
           />
         </Field>
 
+        {/*
+          Where the slip's words are (SCRUM-468): the owner looked for them
+          here at the park. They belong to the voucher type, shared by every
+          prize that uses it, so this points there — at the chosen type's own
+          editor when there is one — rather than copying the form.
+        */}
+        <p className="-mt-2 text-xs text-muted-foreground">
+          The slip’s words — its title, instruction and terms — are set on the voucher type, not on
+          the prize.{' '}
+          <Link
+            href={
+              chosenDefinition
+                ? `/voucher-types?type=${encodeURIComponent(chosenDefinition.id)}`
+                : '/voucher-types'
+            }
+            className="underline underline-offset-4"
+          >
+            {chosenDefinition ? `Edit the slip’s words on ${chosenDefinition.nameEn}` : 'Open Voucher types'}
+          </Link>
+        </p>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             label="Cost to the park"

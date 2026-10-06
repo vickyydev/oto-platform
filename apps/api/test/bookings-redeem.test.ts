@@ -7,19 +7,23 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   account,
   auditLog,
+  band,
   booking,
   bookingRedemption,
   box,
   branch,
   employee,
+  paymentAttempt,
+  printJob,
   role,
   roleAssignment,
   rolePermission,
+  sale,
   station,
   syncChange,
 } from '@oto/db';
 import { platformSync } from '@oto/db/seed';
-import { newId, type Permission } from '@oto/shared';
+import { PAID_ONLINE_TENDER_CODE, countsAsTillTakings, mintBookingQr, newId, type Permission } from '@oto/shared';
 import {
   CENTRAL_BRANCH_CODE,
   CHALONG_BRANCH_CODE,
@@ -32,7 +36,11 @@ import {
   type TestContext,
 } from './helpers';
 import { cacheBundle, pullChanges } from '../src/services/sync';
+import { openBookingCheckout, quoteBooking } from '../src/services/booking-checkout';
+import { pressSimulatorHostedPage } from '../src/services/payments/gateway';
 import type { BoxAuth } from '../src/services/box';
+import { salePrintSnapshotOf } from '../src/services/sale-printing';
+import { bookingQrOf } from '../src/services/booking-payment';
 
 /**
  * SCRUM-234 — a booking made online is found and redeemed at the counter.
@@ -72,6 +80,7 @@ let receptionStaffName: string;
 let som: string;
 let dao: string;
 let packageId: string;
+let chalongPackageId: string;
 /** The box standing behind Central's reception till, as its own credential sees it. */
 let centralBox: BoxAuth;
 
@@ -84,11 +93,12 @@ interface Res {
 const call = async (
   method: 'GET' | 'POST' | 'PUT',
   url: string,
-  opts: { cookie?: string; payload?: unknown; key?: string } = {},
+  opts: { cookie?: string; payload?: unknown; key?: string; remoteAddress?: string } = {},
 ): Promise<Res> => {
   const res = await ctx.app.inject({
     method,
     url,
+    ...(opts.remoteAddress ? { remoteAddress: opts.remoteAddress } : {}),
     headers: {
       ...(opts.cookie ? { cookie: opts.cookie } : {}),
       ...(opts.key ? { 'idempotency-key': opts.key } : {}),
@@ -148,14 +158,26 @@ interface BookingView {
 
 const listed = (res: Res): BookingView[] => (res.body.bookings ?? []) as BookingView[];
 
-/** Make a booking the way a customer does: the public route, priced server-side. */
+/**
+ * Make a booking the way a customer does: the public route, priced
+ * server-side — and PAID the way a customer pays since S2-12 (SCRUM-209): the
+ * booking's checkout opens a gateway attempt, and "Pay" on the simulated
+ * hosted page sends a signed notification through the real webhook, whose
+ * inquiry-confirmed settlement is the only thing that makes a booking paid.
+ * Driven through the services rather than HTTP so the open routes' per-address
+ * budgets are left to the one route this file is about.
+ */
 async function bookOnline(opts: {
   phone?: string;
   kids: number;
   adults: number;
   branchCode?: string;
 }): Promise<{ id: string; reference: string; totalSatang: number }> {
+  // Each booking from its own address: the public route's per-address budget
+  // is twenty a minute, and this file makes more than that on purpose.
+  booked += 1;
   const res = await call('POST', '/public/bookings', {
+    remoteAddress: `10.209.${Math.floor(booked / 250)}.${(booked % 250) + 1}`,
     payload: {
       branchCode: opts.branchCode ?? CENTRAL_BRANCH_CODE,
       phone: opts.phone,
@@ -165,10 +187,22 @@ async function bookOnline(opts: {
     },
   });
   expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
-  return res.body as unknown as { id: string; reference: string; totalSatang: number };
+  const made = res.body as unknown as { id: string; reference: string; totalSatang: number };
+  const checkout = await openBookingCheckout(ctx.db, ctx.app.env, ctx.app.log, {}, {
+    bookingId: made.id,
+    method: 'promptpay',
+  });
+  const pressed = await pressSimulatorHostedPage(ctx.db, ctx.app.env, ctx.app.log, {
+    attemptId: checkout.attemptId,
+    action: 'pay',
+  });
+  expect(pressed?.webhookOutcome).toBe('settled');
+  return made;
 }
 
 let planted = 0;
+/** How many bookings this file has made through the public route. */
+let booked = 0;
 
 /**
  * A booking row as a release left it, written straight into the table.
@@ -189,33 +223,33 @@ async function plantBooking(opts: {
 }): Promise<{ id: string; reference: string }> {
   const id = newId();
   const reference = `OTO-PLANT-${String(++planted).padStart(4, '0')}`;
+  const branchId = opts.branchId ?? centralId;
+  const [br] = await ctx.db.select().from(branch).where(eq(branch.id, branchId)).limit(1);
+  const bookingDate = new Date().toISOString().slice(0, 10);
+  // Priced by the booking site's own quote, so the planted row is one the
+  // counter can redeem to the satang (S2-12 round 3 never re-prices).
+  const quote = await quoteBooking(ctx.db, br!, {
+    tier: 'tourist',
+    visitDate: bookingDate,
+    lines: [{ packageId: branchId === centralId ? packageId : chalongPackageId, kids: 1, adults: 1 }],
+  });
   await ctx.db.insert(booking).values({
     id,
     operatorId: centralOperatorId,
-    branchId: opts.branchId ?? centralId,
+    branchId,
     reference,
-    bookingDate: new Date().toISOString().slice(0, 10),
+    bookingDate,
     status: opts.status ?? 'paid',
-    totalSatang: 120000,
+    totalSatang: quote.totalSatang,
+    pricingSnapshot: quote as never,
     payload: {
       tier: 'tourist',
-      rateMode: 'weekday',
+      rateMode: quote.rateMode,
       parentName: 'Khun Ploy',
       phone: '+66812229900',
       contactChannel: 'whatsapp',
       locale: 'en',
-      lines: [
-        {
-          packageId,
-          name: 'Planted package',
-          kids: 1,
-          adults: 1,
-          kidUnitSatang: 80000,
-          adultsFree: 1,
-          adultUnitSatang: 40000,
-          lineTotalSatang: 120000,
-        },
-      ],
+      lines: quote.lines as unknown as Array<Record<string, unknown>>,
       clientSnapshot: null,
       ...(opts.payloadRedemption ? { redemption: opts.payloadRedemption } : {}),
     },
@@ -281,6 +315,8 @@ beforeAll(async () => {
 
   const catalog = await call('GET', `/public/branches/${CENTRAL_BRANCH_CODE}/catalog`);
   packageId = (catalog.body.packages as Array<{ id: string }>)[0]!.id;
+  const chalongCatalog = await call('GET', `/public/branches/${CHALONG_BRANCH_CODE}/catalog`);
+  chalongPackageId = (chalongCatalog.body.packages as Array<{ id: string }>)[0]!.id;
 
   const [boxRow] = await ctx.db.select().from(box).where(eq(box.id, centralTill.boxId!)).limit(1);
   centralBox = {
@@ -364,6 +400,7 @@ describe('SCRUM-234 — the till reads the booking the booking site wrote', () =
     );
     expect(Object.keys(found.lines[0]!).sort()).toEqual(
       [
+        'addOns',
         'adultUnitSatang',
         'adults',
         'adultsFree',
@@ -372,6 +409,10 @@ describe('SCRUM-234 — the till reads the booking the booking site wrote', () =
         'lineTotalSatang',
         'name',
         'packageId',
+        // S2-12: what the family paid for online beside admission, so the
+        // counter hands it over.
+        'socks',
+        'socksUnitSatang',
       ].sort(),
     );
 
@@ -421,7 +462,7 @@ describe('SCRUM-234 — the till reads the booking the booking site wrote', () =
 
   it('and a redeemed booking is not on the waiting list', async () => {
     const made = await bookOnline({ phone: '0812223388', kids: 1, adults: 0 });
-    await call('POST', `/bookings/${made.id}/redeem`, { cookie: som, payload: {} });
+    await call('POST', `/bookings/${made.id}/redeem`, { cookie: som, payload: { stationId: centralTillId } });
     const waiting = await call('GET', `/bookings?branchId=${centralId}&status=paid`, {
       cookie: som,
     });
@@ -475,8 +516,11 @@ describe('SCRUM-234 — redemption happens once', () => {
       branchName: centralName,
       stationName: centralTillName,
       staffName: receptionStaffName,
-      bandCodes: [],
     });
+    // S2-12 round 3 — the counter minted the bands in the same transaction:
+    // two kids and one adult, recorded by their short codes (never the
+    // credential itself).
+    expect(redeemed.redemption!.bandCodes).toHaveLength(3);
     expect(new Date(redeemed.redemption!.at).getTime()).toBeGreaterThanOrEqual(before - 1000);
 
     // The row, not the answer. A response can describe a write that did not
@@ -490,7 +534,7 @@ describe('SCRUM-234 — redemption happens once', () => {
       stationId: centralTillId,
       accountId: receptionAccountId,
       branchId: centralId,
-      bandCodes: [],
+      bandCodes: redeemed.redemption!.bandCodes,
     });
     // The instant is the row's own column, and it is what the wire said.
     expect(stored!.redeemedAt.toISOString()).toBe(redeemed.redemption!.at);
@@ -533,14 +577,16 @@ describe('SCRUM-234 — redemption happens once', () => {
     const made = await bookOnline({ phone: '0812224411', kids: 1, adults: 1 });
     const first = await call('POST', `/bookings/${made.id}/redeem`, {
       cookie: som,
-      payload: { stationId: centralTillId, bandCodes: ['B-1111'] },
+      payload: { stationId: centralTillId },
     });
     expect(first.statusCode).toBe(200);
     const firstAt = (first.body.booking as BookingView).redemption!.at;
+    const firstBands = (first.body.booking as BookingView).redemption!.bandCodes;
+    expect(firstBands).toHaveLength(2);
 
     const second = await call('POST', `/bookings/${made.id}/redeem`, {
       cookie: som,
-      payload: { stationId: centralTillId, bandCodes: ['B-2222'] },
+      payload: { stationId: centralTillId },
     });
     expect(second.statusCode).toBe(409);
     const err = errorOf(second);
@@ -553,7 +599,7 @@ describe('SCRUM-234 — redemption happens once', () => {
       branchName: centralName,
       stationName: centralTillName,
       staffName: receptionStaffName,
-      bandCodes: ['B-1111'],
+      bandCodes: firstBands,
     });
     // The message carries the same facts for anyone reading the response by
     // hand, with the time in the park's own clock rather than UTC.
@@ -562,7 +608,7 @@ describe('SCRUM-234 — redemption happens once', () => {
     expect(err.message).toContain(centralTillName);
 
     // And nothing moved: the first redemption is still the only one.
-    expect(await storedRedemption(made.id)).toMatchObject({ bandCodes: ['B-1111'] });
+    expect(await storedRedemption(made.id)).toMatchObject({ bandCodes: firstBands });
     expect(await redeemAuditRows(made.id)).toHaveLength(1);
   });
 
@@ -593,7 +639,10 @@ describe('SCRUM-234 — redemption happens once', () => {
   it('refuses a booking that is not paid', async () => {
     const made = await bookOnline({ phone: '0812224433', kids: 1, adults: 1 });
     await ctx.db.update(booking).set({ status: 'cancelled' }).where(eq(booking.id, made.id));
-    const res = await call('POST', `/bookings/${made.id}/redeem`, { cookie: som, payload: {} });
+    const res = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId },
+    });
     expect(res.statusCode).toBe(409);
     expect(errorOf(res).code).toBe('BOOKING_NOT_REDEEMABLE');
     expect(await redeemAuditRows(made.id)).toHaveLength(0);
@@ -639,9 +688,11 @@ describe('SCRUM-305 — a box that cached the booking learns it was redeemed', (
 
     const redeemed = await call('POST', `/bookings/${made.id}/redeem`, {
       cookie: som,
-      payload: { stationId: centralTillId, bandCodes: ['B-3030'] },
+      payload: { stationId: centralTillId },
     });
     expect(redeemed.statusCode, JSON.stringify(redeemed.body)).toBe(200);
+    const handed = (redeemed.body.booking as BookingView).redemption!.bandCodes;
+    expect(handed).toHaveLength(2);
 
     const pulled = await pullChanges(ctx.db, centralBox, {
       cursorSeq: from,
@@ -665,13 +716,13 @@ describe('SCRUM-305 — a box that cached the booking learns it was redeemed', (
     expect(sent.payload.redemption).toMatchObject({
       stationId: centralTillId,
       accountId: receptionAccountId,
-      bandCodes: ['B-3030'],
+      bandCodes: handed,
     });
     // And it came from `pos.booking_redemption`, not from the booking's jsonb:
     // since SCRUM-304 nothing writes a redemption block there, so a box that
     // is told one has been told what the table says.
     expect(await payloadRedemption(made.id)).toBeNull();
-    expect((await storedRedemption(made.id))!.bandCodes).toEqual(['B-3030']);
+    expect((await storedRedemption(made.id))!.bandCodes).toEqual(handed);
 
     const bundle = await cacheBundle(ctx.db, centralBox, { scopes: ['bookings'] });
     const items = (bundle.scopes.bookings?.items ?? []) as Array<{ id: string }>;
@@ -746,7 +797,7 @@ describe('SCRUM-304 — redemption lives in its own table', () => {
 
     const res = await call('POST', `/bookings/${made.id}/redeem`, {
       cookie: som,
-      payload: { stationId: centralTillId, bandCodes: ['B-4040'] },
+      payload: { stationId: centralTillId },
     });
     expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
     const now = res.body.booking as BookingView;
@@ -762,7 +813,7 @@ describe('SCRUM-304 — redemption lives in its own table', () => {
         branchName: centralName,
         stationName: centralTillName,
         staffName: receptionStaffName,
-        bandCodes: ['B-4040'],
+        bandCodes: stored!.bandCodes,
       },
     });
 
@@ -795,11 +846,13 @@ describe('SCRUM-304 — redemption lives in its own table', () => {
     });
     const first = await call('POST', `/bookings/${made.id}/redeem`, {
       cookie: som,
-      payload: { stationId: centralTillId, bandCodes: ['B-5050'] },
+      payload: { stationId: centralTillId },
     });
     expect(first.statusCode, JSON.stringify(first.body)).toBe(200);
     // The stale block is not what the first claim answered with either.
-    expect((first.body.booking as BookingView).redemption!.bandCodes).toEqual(['B-5050']);
+    const firstBands = (first.body.booking as BookingView).redemption!.bandCodes;
+    expect(firstBands).toHaveLength(2);
+    expect(firstBands).not.toContain('B-GHOST');
 
     const second = await call('POST', `/bookings/${made.id}/redeem`, {
       cookie: som,
@@ -814,7 +867,7 @@ describe('SCRUM-304 — redemption lives in its own table', () => {
       branchName: centralName,
       stationName: centralTillName,
       staffName: receptionStaffName,
-      bandCodes: ['B-5050'],
+      bandCodes: firstBands,
     });
     expect(JSON.stringify(err.details)).not.toContain('B-GHOST');
     // Still one redemption, and the refused claim wrote nothing.
@@ -1140,5 +1193,243 @@ describe('SCRUM-306 — the booking pair is its own permission', () => {
       payload: { stationId: centralTillId },
     });
     expect(ok.statusCode, JSON.stringify(ok.body)).toBe(200);
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+/**
+ * S2-12 (SCRUM-209 round 3) — redemption at the till is the whole of it: the
+ * claim, a sale from what the family PAID for with the booking on it and the
+ * paid-online tender, the bands, and the paper, in one transaction.
+ *
+ * The prototype's `handleRedeemConfirm` did these in a browser tab
+ * (`imports/oto-pos/artifacts/oto-till/src/pages/Till.tsx:376-468`); these are
+ * the round's proof that the platform now does them, once.
+ */
+describe('S2-12 round 3 — redemption is a sale, its bands and its print jobs', () => {
+  async function salesOfBooking(bookingId: string) {
+    return ctx.db.select().from(sale).where(eq(sale.bookingId, bookingId));
+  }
+
+  /** A member with two children, one with an allergy, and the visit reception confirmed. */
+  async function familyVisit(phone: string): Promise<{ memberId: string; childIds: string[]; visitId: string }> {
+    const created = await call('POST', '/members', { cookie: som, payload: { phone, nickname: 'Khun Ploy' } });
+    expect(created.statusCode, JSON.stringify(created.body)).toBe(200);
+    const memberId = (created.body.member as { id: string }).id;
+    const childIds: string[] = [];
+    for (const kid of [
+      { name: 'Anna', allergies: 'Peanuts' },
+      { name: 'Ben' },
+    ]) {
+      const res = await call('POST', `/members/${memberId}/children`, { cookie: som, payload: kid });
+      expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+      childIds.push((res.body.child as { id: string }).id);
+    }
+    const visitRes = await call('POST', '/visits', { cookie: som, payload: { memberId, childIds } });
+    expect(visitRes.statusCode, JSON.stringify(visitRes.body)).toBe(200);
+    return { memberId, childIds, visitId: (visitRes.body as { id: string }).id };
+  }
+
+  it('the sale carries the booking, the paid-online tender and exactly what the booking paid', async () => {
+    const made = await bookOnline({ phone: '0812228800', kids: 2, adults: 2 });
+    const res = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId },
+    });
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+
+    const sales = await salesOfBooking(made.id);
+    expect(sales, 'one sale redeems one booking').toHaveLength(1);
+    const row = sales[0]!;
+    expect(row.salesChannel).toBe('booking');
+    expect(row.stationId).toBe(centralTillId);
+    expect(row.status).toBe('finalised');
+    expect(row.receiptNumber).toBeTruthy();
+    // Never re-priced: the satang the family paid online, to the satang.
+    expect(row.grossSatang).toBe(made.totalSatang);
+    expect((res.body.sale as { id: string }).id).toBe(row.id);
+
+    const attempts = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, row.id));
+    expect(attempts).toHaveLength(1);
+    const tender = attempts[0]!;
+    expect(tender.methodCode).toBe(PAID_ONLINE_TENDER_CODE);
+    // Transfer money, never cash: no drawer opens and the till's cash-up
+    // leaves it out (OD-A10).
+    expect(tender.method).toBe('transfer');
+    expect(tender.amountSatang).toBe(made.totalSatang);
+    expect(countsAsTillTakings(tender)).toBe(false);
+    expect((tender.payload as { bookingId?: string }).bookingId).toBe(made.id);
+    expect(res.body.attempt).toBeTruthy();
+  });
+
+  it('mints two kid and two adult bands, the kids naming the visit children with their allergy line, and prints them', async () => {
+    const phone = '0812228811';
+    const family = await familyVisit(phone);
+    const made = await bookOnline({ phone, kids: 2, adults: 2 });
+    const res = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId, visitId: family.visitId },
+    });
+    expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+    const [row] = await salesOfBooking(made.id);
+    expect(row!.memberId).toBe(family.memberId);
+    expect(row!.visitId).toBe(family.visitId);
+
+    const bands = await ctx.db.select().from(band).where(eq(band.saleId, row!.id));
+    expect(bands.filter((b) => b.kind === 'kid')).toHaveLength(2);
+    expect(bands.filter((b) => b.kind === 'adult')).toHaveLength(2);
+    expect(
+      bands
+        .filter((b) => b.kind === 'kid')
+        .map((b) => b.childId)
+        .sort(),
+    ).toEqual([...family.childIds].sort());
+    // The same snapshot a walk-in sale's paper is composed from.
+    const snapshot = await salePrintSnapshotOf(ctx.db, row!);
+    const anna = snapshot.bands.find((b) => b.childName === 'Anna');
+    expect(anna?.allergies).toBe('Peanuts');
+
+    // Each band has its print job, and the answer names them.
+    const printing = res.body.printing as { jobs: Array<{ id: string; subjectType: string | null }> };
+    const bandJobs = printing.jobs.filter((j) => j.subjectType === 'band');
+    expect(bandJobs).toHaveLength(4);
+    const refreshed = await ctx.db.select().from(band).where(eq(band.saleId, row!.id));
+    for (const b of refreshed) expect(b.printedJobId, 'every band printed').toBeTruthy();
+    const jobs = await ctx.db
+      .select()
+      .from(printJob)
+      .where(inArray(printJob.id, bandJobs.map((j) => j.id)));
+    expect(jobs).toHaveLength(4);
+    expect(res.body.bands as unknown[]).toHaveLength(4);
+
+    // The redemption row keeps the SHORT codes — what reception reads back —
+    // never the signed credential.
+    const stored = await storedRedemption(made.id);
+    expect(stored!.bandCodes).toHaveLength(4);
+    for (const code of stored!.bandCodes) expect(bands.map((b) => b.code)).not.toContain(code);
+  });
+
+  it('a second redeem answers who and when, and writes no second sale and no second band', async () => {
+    const made = await bookOnline({ phone: '0812228822', kids: 1, adults: 1 });
+    const first = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId },
+    });
+    expect(first.statusCode).toBe(200);
+    const [row] = await salesOfBooking(made.id);
+    const bandsBefore = await ctx.db.select().from(band).where(eq(band.saleId, row!.id));
+
+    const second = await call('POST', `/bookings/${made.id}/redeem`, {
+      cookie: som,
+      payload: { stationId: centralTillId },
+    });
+    expect(second.statusCode).toBe(409);
+    const err = errorOf(second);
+    expect(err.code).toBe('BOOKING_ALREADY_REDEEMED');
+    expect(err.details!.redemption).toMatchObject({
+      at: (first.body.booking as BookingView).redemption!.at,
+      staffName: receptionStaffName,
+      stationName: centralTillName,
+    });
+    expect(await salesOfBooking(made.id)).toHaveLength(1);
+    expect(await ctx.db.select().from(band).where(eq(band.saleId, row!.id))).toHaveLength(bandsBefore.length);
+  });
+
+  it('two tills racing on the same booking yield ONE sale — the row lock, under real concurrency', async () => {
+    const made = await bookOnline({ phone: '0812228833', kids: 2, adults: 1 });
+    const other = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const [a, b] = await Promise.all([
+      call('POST', `/bookings/${made.id}/redeem`, {
+        cookie: som,
+        payload: { stationId: centralTillId },
+        key: `race-a-${made.id}`,
+      }),
+      call('POST', `/bookings/${made.id}/redeem`, {
+        cookie: other,
+        payload: { stationId: centralTillId },
+        key: `race-b-${made.id}`,
+      }),
+    ]);
+    expect([a.statusCode, b.statusCode].sort()).toEqual([200, 409]);
+    const loser = a.statusCode === 409 ? a : b;
+    expect(errorOf(loser).code).toBe('BOOKING_ALREADY_REDEEMED');
+    const sales = await salesOfBooking(made.id);
+    expect(sales).toHaveLength(1);
+    expect(await ctx.db.select().from(band).where(eq(band.saleId, sales[0]!.id))).toHaveLength(3);
+    expect(await redemptionRows(made.id)).toHaveLength(1);
+    expect(await redeemAuditRows(made.id)).toHaveLength(1);
+  });
+
+  it('a till cannot claim the booking channel or the paid-online tender for an ordinary cart', async () => {
+    const cart = { stationId: centralTillId, lines: [{ id: newId(), packageId, kids: 1, adults: 1 }] };
+    const asBooking = await call('POST', '/sales', { cookie: som, payload: { ...cart, channel: 'booking' } });
+    // Refused at the door: the cart body's channel list carries no `booking`
+    // (and `commitSale` refuses it to a sale that names no booking).
+    expect(asBooking.statusCode, JSON.stringify(asBooking.body)).toBe(400);
+
+    const committed = await call('POST', '/sales', { cookie: som, payload: { ...cart, lines: [{ ...cart.lines[0]!, id: newId() }] } });
+    expect(committed.statusCode, JSON.stringify(committed.body)).toBe(200);
+    const saleId = (committed.body.sale as { id: string }).id;
+    const settled = await call('POST', `/sales/${saleId}/finalise`, {
+      cookie: som,
+      payload: { tender: { method: PAID_ONLINE_TENDER_CODE } },
+    });
+    expect(settled.statusCode, JSON.stringify(settled.body)).toBe(400);
+    const attempts = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId));
+    expect(attempts).toHaveLength(0);
+  });
+
+  it('GET /bookings/:id answers the booking a scanned QR names — at its own park only', async () => {
+    const made = await bookOnline({ phone: '0812228855', kids: 1, adults: 1 });
+    const mine = await call('GET', `/bookings/${made.id}`, { cookie: som });
+    expect(mine.statusCode).toBe(200);
+    expect((mine.body as unknown as BookingView).reference).toBe(made.reference);
+    const theirs = await call('GET', `/bookings/${made.id}`, { cookie: dao });
+    expect(theirs.statusCode).toBe(403);
+  });
+
+  /**
+   * The fix round's reproduction: a QR the till's own scanner (or the typed
+   * field) read has had nobody check its signature. The till sends the whole
+   * code and the platform opens nothing unless the signature is the one it
+   * stored when the booking was paid.
+   */
+  it('GET /bookings/by-qr opens a booking only for the QR the park issued — a tampered one is refused', async () => {
+    const made = await bookOnline({ phone: '0812228866', kids: 1, adults: 1 });
+    const [row] = await ctx.db.select().from(booking).where(eq(booking.id, made.id));
+    const qr = bookingQrOf(row!);
+    expect(qr, 'a paid booking carries its signed QR').toBeTruthy();
+
+    const good = await call('GET', `/bookings/by-qr?code=${encodeURIComponent(qr!.toLowerCase())}`, { cookie: som });
+    expect(good.statusCode, JSON.stringify(good.body)).toBe(200);
+    expect((good.body as unknown as BookingView).id).toBe(made.id);
+
+    // One signature character changed.
+    const sig = qr!.split('.')[1]!;
+    const forged = `${qr!.split('.')[0]}.${sig[0] === '0' ? '1' : '0'}${sig.slice(1)}`;
+    const tampered = await call('GET', `/bookings/by-qr?code=${encodeURIComponent(forged)}`, { cookie: som });
+    expect(tampered.statusCode).toBe(422);
+    expect(errorOf(tampered).code).toBe('BOOKING_QR_SIGNATURE_INVALID');
+    expect(JSON.stringify(tampered.body)).not.toContain(made.reference);
+
+    // Signed with some other key: the right shape, not this park's.
+    const foreign = mintBookingQr(made.id, 'a-key-this-park-never-issued-with-000');
+    const other = await call('GET', `/bookings/by-qr?code=${encodeURIComponent(foreign)}`, { cookie: som });
+    expect(other.statusCode).toBe(422);
+
+    // A booking that was never paid has no QR to match, so nothing opens.
+    const unpaid = await plantBooking({ status: 'pending' });
+    const invented = mintBookingQr(unpaid.id, 'a-key-this-park-never-issued-with-000');
+    const none = await call('GET', `/bookings/by-qr?code=${encodeURIComponent(invented)}`, { cookie: som });
+    expect(none.statusCode).toBe(422);
+
+    // Not a booking QR at all.
+    const shape = await call('GET', `/bookings/by-qr?code=OTO-AB12-3456`, { cookie: som });
+    expect(shape.statusCode).toBe(400);
+
+    // The other park's till cannot read it even with the genuine QR.
+    const theirs = await call('GET', `/bookings/by-qr?code=${encodeURIComponent(qr!)}`, { cookie: dao });
+    expect(theirs.statusCode).toBe(403);
   });
 });

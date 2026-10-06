@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "tests": [
+    {
+      "name": "separate display guest F&B uses the captured order through lock, cash payment and pickup",
+      "status": "passed",
+      "errors": []
+    }
+  ],
+  "errors": []
+}

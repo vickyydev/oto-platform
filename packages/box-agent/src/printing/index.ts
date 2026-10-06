@@ -16,6 +16,7 @@
  * there stops existing here.
  */
 
+import { PRINT_KINDS } from '@oto/shared';
 import type { PrintKind, PrintTemplate, PrinterFault } from '@oto/shared';
 import type { BoxConfigBundle, BoxConfigDevice } from '../protocol';
 import { PrinterError, parseAddress, tcpChannel, type ChannelFactory } from './channel';
@@ -216,4 +217,87 @@ export async function testPrintJob(
     throw new PrinterError('RENDER_FAILED', `there is no sample print for ${kind}`);
   }
   return fixture.job;
+}
+
+// --- A sale's printouts (S2-11) ----------------------------------------------
+
+/**
+ * What a `test_print` command's `document` says when the content is the
+ * platform's rather than a fixture's.
+ *
+ * A sale's receipt, its bands, its prep tickets and its item vouchers are each
+ * a `print_job` row the platform wrote as the sale closed, and each reaches
+ * the box as a `test_print` command carrying the job id and
+ * `document: 'platform'` — and nothing a printout says. The member's name, a
+ * child's allergy and a band's signed code are fetched by job id at the moment
+ * the box prints (`GET /box/v1/print-jobs/:id/document`), so none of them sits
+ * in the command history or the job row. Once fetched, the job goes through
+ * the same queue, templates and simulators as a test page: routed by role,
+ * held while a printer is out of paper, kept on the box's disk where the queue
+ * is durable, and deleted when paper has come out.
+ */
+export const PLATFORM_DOCUMENT = 'platform';
+
+/** Where a box asks for one of its print jobs' content. */
+export function printDocumentPath(jobId: string): string {
+  return `/box/v1/print-jobs/${encodeURIComponent(jobId)}/document`;
+}
+
+/** A print job's content as the platform hands it over, read into what the queue takes. */
+export interface PlatformPrintDocument {
+  kind: PrintKind;
+  job: Parameters<PrintSubsystem['submit']>[0]['job'];
+  role: string | null;
+  stationId: string | null;
+  templateId: string | null;
+  templateVersion: number | null;
+  /** The job this one is a copy of, on a reprint from History. */
+  reprintOf: string | null;
+}
+
+const PRINT_KIND_SET: ReadonlySet<string> = new Set(PRINT_KINDS);
+
+const stringOrNull = (value: unknown): string | null => (typeof value === 'string' ? value : null);
+
+/**
+ * Read the platform's answer as a job the renderer takes, or refuse it with
+ * `DOCUMENT_UNAVAILABLE` and the reason.
+ *
+ * Checked only as far as the renderer needs — a kind this box prints and a
+ * `data` object. The fields inside `data` are the templates' own
+ * (`templates/data.ts` in `@oto/print`), the platform builds them from those
+ * types, and a field left out prints as a section left out, which is the
+ * templates' rule for every printout. Fields the templates do not know — the
+ * receipt's `taxRows` and `copy` — ride along and are not drawn.
+ */
+export function readPlatformPrintDocument(status: number, body: unknown): PlatformPrintDocument {
+  const answer = body && typeof body === 'object' ? (body as Record<string, unknown>) : null;
+  if (status !== 200 || !answer) {
+    const error =
+      answer?.error && typeof answer.error === 'object'
+        ? (answer.error as Record<string, unknown>)
+        : null;
+    const code = stringOrNull(error?.code) ?? `HTTP ${status}`;
+    throw new PrinterError(
+      'DOCUMENT_UNAVAILABLE',
+      `The platform did not hand over this print job's content (${code}), so nothing was printed — reprint it from History`,
+    );
+  }
+  const job = answer.job && typeof answer.job === 'object' ? (answer.job as Record<string, unknown>) : null;
+  const kind = stringOrNull(job?.kind);
+  if (!job || !kind || !PRINT_KIND_SET.has(kind) || !job.data || typeof job.data !== 'object') {
+    throw new PrinterError(
+      'DOCUMENT_UNAVAILABLE',
+      'The platform answered with something that is not a printout this box can print',
+    );
+  }
+  return {
+    kind: kind as PrintKind,
+    job: { kind, data: job.data } as PlatformPrintDocument['job'],
+    role: stringOrNull(answer.role),
+    stationId: stringOrNull(answer.stationId),
+    templateId: stringOrNull(answer.templateId),
+    templateVersion: typeof answer.templateVersion === 'number' ? answer.templateVersion : null,
+    reprintOf: stringOrNull(answer.reprintOf),
+  };
 }

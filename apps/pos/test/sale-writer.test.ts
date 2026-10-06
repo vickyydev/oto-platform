@@ -175,6 +175,24 @@ describe('pressing Pay twice produces one sale', () => {
   });
 });
 
+describe('the visit rides with the sale (SCRUM-208)', () => {
+  it('sends the confirmed visit id on the commit, and null when the cart has none', async () => {
+    const { result } = mountWriter();
+    await result.current.commit(order(1, { visitId: 'visit-xyz' }));
+    await result.current.commit(order(2));
+    const [withVisit, walkIn] = sent();
+    expect(withVisit!.visitId).toBe('visit-xyz');
+    expect(walkIn!.visitId).toBeNull();
+  });
+
+  it('makes a cart that differs only by its visit a different sale', async () => {
+    const { result } = mountWriter();
+    const a = await result.current.commit(order(1, { visitId: 'visit-a' }));
+    const b = await result.current.commit(order(1, { visitId: 'visit-b' }));
+    expect(b.saleId).not.toBe(a.saleId);
+  });
+});
+
 describe('a corrected cart is a different sale', () => {
   it('gives a changed order new ids, and Cancel voids the sale it was rung up as before', async () => {
     const { result } = mountWriter();

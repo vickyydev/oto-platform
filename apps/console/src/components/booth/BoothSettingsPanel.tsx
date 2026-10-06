@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Keyboard } from 'lucide-react';
+import { Link } from 'wouter';
+import { Keyboard, SlidersHorizontal } from 'lucide-react';
 import {
   BOOTH_ELIGIBILITY_MODES,
   BOOTH_SPIN_DURATION_MIN_SECONDS,
@@ -9,28 +10,132 @@ import {
   BOOTH_STAFF_SESSION_MAX_MINUTES,
   type BoothEligibilityMode,
 } from '@oto/shared';
-import { Panel, ErrorNote, Fact, RouteUnavailable } from '@/components/Panel';
+import { Drawer } from '@/components/Drawer';
+import { ErrorNote, RouteUnavailable } from '@/components/Panel';
 import { Button } from '@/components/ui/button';
 import { ChoiceRow, Field, NumberInput, Select } from '@/components/Form';
+import { CardShell, FactLine, FactList } from '@/components/redesign/layout';
 import { ELIGIBILITY_REFUSAL } from './publishPlan';
 import type { BoothDraft, BoothLayoutRow, BoothSettingsDraft } from './boothApi';
 
 /** What the settings form can actually change. `layoutName` is the API's to say. */
 export type BoothSettingsEdit = Omit<BoothSettingsDraft, 'layoutName'>;
 
+/** The words each spin-eligibility mode goes by, on the form and on the summary. */
+function eligibilityLabel(mode: BoothEligibilityMode): string {
+  return mode === 'none' ? 'Anybody' : mode === 'band' ? 'One spin per wristband' : 'One spin per phone';
+}
+
+/** A staff sign-in's length in hours, as the summary says it. */
+function sessionHoursText(minutes: number | null | undefined): string {
+  if (minutes == null) return `${BOOTH_STAFF_SESSION_DEFAULT_MINUTES / 60} hours (default)`;
+  const hours = minutes / 60;
+  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)} hour${hours === 1 ? '' : 's'}`;
+}
+
 /**
- * The booth's own settings: the design it draws, who may spin, the key the red
- * button sends, how many spins a day it will allow, and how long a staff
- * sign-in lasts (SCRUM-400).
+ * The booth's own settings, as saved to the draft (SCRUM-468): the design it
+ * draws, who may spin, the key the red button sends, how many spins a day it
+ * will allow, how long a spin lasts and how long a staff sign-in lasts.
+ *
+ * A summary on the page and the form in a drawer (`BoothSettingsEditor`), so
+ * the page reads at a glance and the form has the screen to itself while it
+ * is being changed. The summary reads what the API returned — never an edit
+ * in progress — so what it says is what a publish would carry.
  *
  * **Its name, its branch and whether it is in service are not here.** A booth
  * is a station (`core.station`, kind `booth`) and those three belong to the
  * station, which is edited on Devices with every other station in the park.
- * Showing them here as read-only facts and saying where they are changed is
- * better than a second form that writes the same row from two pages and lets
- * them disagree.
+ * Showing the station and its prefix here as read-only facts and saying where
+ * they are changed is better than a second form that writes the same row from
+ * two pages and lets them disagree.
  */
 export function BoothSettingsPanel({
+  draft,
+  readOnly = false,
+  onEdit,
+  id,
+  className,
+}: {
+  draft: BoothDraft;
+  /** The caller may read this booth but not change it. */
+  readOnly?: boolean;
+  onEdit: () => void;
+  id?: string;
+  className?: string;
+}) {
+  const s = draft.settings;
+  return (
+    <CardShell
+      id={id}
+      className={className}
+      icon={SlidersHorizontal}
+      title="Booth settings"
+      note="saved here, applied at the booth only when a version is published"
+      actions={
+        readOnly ? undefined : (
+          <Button variant="outline" size="sm" className="rounded-full px-3.5" onClick={onEdit}>
+            <SlidersHorizontal className="w-4 h-4" />
+            Edit settings
+          </Button>
+        )
+      }
+      footer={
+        <p>
+          The booth’s name, its branch, its box and whether it is in service belong to the station
+          and are changed on Devices, with the rest of the park’s stations.{' '}
+          <Link href="/devices" className="font-semibold text-primary-ink underline underline-offset-4">
+            Open Devices to set the station or printer
+          </Link>
+          {readOnly && (
+            <>
+              {' '}
+              Changing these needs <code className="font-mono">admin:booth:manage</code>.
+            </>
+          )}
+        </p>
+      }
+    >
+      <FactList>
+        {/* The step "Booth station with its prefix" on the setup checklist lands here. */}
+        <div id="booth-station" className="scroll-mt-24">
+          <FactLine label="Station">
+            {draft.booth.name} · Prefix: {draft.booth.codePrefix ?? 'Not set'}
+          </FactLine>
+        </div>
+        <FactLine label="Design in use">{s.layoutName ?? 'none chosen'}</FactLine>
+        <FactLine label="Published">
+          {draft.published ? `version ${draft.published.version}` : 'never'}
+        </FactLine>
+        <FactLine label="Who may spin">
+          {s.eligibility === 'none' ? (
+            eligibilityLabel(s.eligibility)
+          ) : (
+            <span className="text-status-down">
+              {eligibilityLabel(s.eligibility)} — publishing will refuse it
+            </span>
+          )}
+        </FactLine>
+        <FactLine label="Spins per day">{s.dailySpinCap ?? 'no cap'}</FactLine>
+        <FactLine label="Spin duration (seconds)">{boothSpinDurationSeconds(s)}</FactLine>
+        <FactLine label="Staff session length">{sessionHoursText(s.staffSessionMinutes)}</FactLine>
+        <FactLine label="Button key">
+          <code className="font-mono text-sm">{s.buttonKey === ' ' ? 'Space' : s.buttonKey}</code>
+        </FactLine>
+      </FactList>
+    </CardShell>
+  );
+}
+
+/**
+ * The settings form, in the drawer the summary's "Edit settings" opens.
+ *
+ * Unchanged from when it sat on the page: the same fields, the same checks,
+ * and the same rule that a fresh read of the booth replaces what is on screen.
+ * The page closes the drawer once a save has been accepted and the booth read
+ * again; a refused save keeps it open with the refusal at the top.
+ */
+export function BoothSettingsEditor({
   draft,
   layouts,
   saving,
@@ -38,6 +143,7 @@ export function BoothSettingsPanel({
   readOnly = false,
   error,
   onSave,
+  onClose,
 }: {
   draft: BoothDraft;
   /** The operator's designs, read separately — a layout is shared between booths. */
@@ -54,6 +160,7 @@ export function BoothSettingsPanel({
   readOnly?: boolean;
   error: string | null;
   onSave: (settings: BoothSettingsEdit) => void;
+  onClose: () => void;
 }) {
   const [settings, setSettings] = useState<BoothSettingsEdit>(() => edit(draft.settings));
   const [listening, setListening] = useState(false);
@@ -76,6 +183,10 @@ export function BoothSettingsPanel({
     if (!listening) return;
     const onKey = (e: KeyboardEvent) => {
       e.preventDefault();
+      // The key is the booth's, not the page's: stopped here, in the capture
+      // phase, so an Escape that ends the listening does not also close the
+      // drawer this form sits in.
+      e.stopPropagation();
       setListening(false);
       if (e.key === 'Escape') return;
       if (e.key === 'Enter') return;
@@ -109,9 +220,36 @@ export function BoothSettingsPanel({
       sessionMinutes <= BOOTH_STAFF_SESSION_MAX_MINUTES);
 
   return (
-    <Panel
+    <Drawer
       title="Booth settings"
-      description="Saved here, applied at the booth only when a version is published."
+      subtitle={`${draft.booth.name} · Saved here, applied at the booth only when a version is published.`}
+      onClose={onClose}
+      footer={
+        <div className="flex flex-wrap gap-2 items-center">
+          <Button
+            className="rounded-full px-4 font-bold"
+            onClick={() => onSave(settings)}
+            disabled={!dirty || !sessionValid || !spinDurationValid || saving || unavailable || readOnly}
+          >
+            {saving ? 'Saving…' : 'Save settings'}
+          </Button>
+          <Button variant="outline" className="rounded-full px-4" onClick={onClose}>
+            Cancel
+          </Button>
+          {readOnly ? (
+            <span className="text-xs text-muted-foreground">
+              Changing these needs <code className="font-mono">admin:booth:manage</code>.
+            </span>
+          ) : (
+            dirty &&
+            !saving && (
+              <span className="text-xs text-muted-foreground">
+                Unsaved. Saving changes the draft; only a published version can reach the booth.
+              </span>
+            )
+          )}
+        </div>
+      }
     >
       {unavailable && (
         <RouteUnavailable
@@ -120,18 +258,6 @@ export function BoothSettingsPanel({
         />
       )}
       {error && <ErrorNote message={error} />}
-
-      <dl className="grid gap-3 sm:grid-cols-3 mb-4">
-        <Fact label="Booth">{draft.booth.name}</Fact>
-        <Fact label="Design in use">{draft.settings.layoutName ?? 'none chosen'}</Fact>
-        <Fact label="Published">
-          {draft.published ? `version ${draft.published.version}` : 'never'}
-        </Fact>
-      </dl>
-      <p className="-mt-2 mb-4 text-xs text-muted-foreground">
-        The booth’s name, its branch, its box and whether it is in service belong to the station and
-        are changed on Devices, with the rest of the park’s stations.
-      </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
@@ -165,7 +291,7 @@ export function BoothSettingsPanel({
           label="Spin duration (seconds)"
           hint={spinDurationValid
             ? 'Whole seconds from 2 to 20. Reaches the booth with the next published version.'
-            : <span style={{ color: 'hsl(var(--status-down))' }}>Choose a whole number from 2 to 20.</span>}
+            : <span className="text-status-down">Choose a whole number from 2 to 20.</span>}
         >
           <NumberInput
             value={spinDuration ?? null}
@@ -180,7 +306,7 @@ export function BoothSettingsPanel({
             sessionValid ? (
               `How long a sign-in at the booth lasts before it ends by itself — never because nobody pressed anything. Hours; left empty it is ${BOOTH_STAFF_SESSION_DEFAULT_MINUTES / 60}, at most ${BOOTH_STAFF_SESSION_MAX_MINUTES / 60}. Reaches the booth with the next published version.`
             ) : (
-              <span style={{ color: 'hsl(var(--status-down))' }}>
+              <span className="text-status-down">
                 More than nothing and at most {BOOTH_STAFF_SESSION_MAX_MINUTES / 60} hours.
               </span>
             )
@@ -232,7 +358,7 @@ export function BoothSettingsPanel({
             settings.eligibility === 'none' ? (
               'Anybody who walks up to the booth. The only mode a mall booth can use.'
             ) : (
-              <span style={{ color: 'hsl(var(--status-down))' }}>
+              <span className="text-status-down">
                 This mode is {ELIGIBILITY_REFUSAL} — publishing will refuse it.
               </span>
             )
@@ -243,38 +369,12 @@ export function BoothSettingsPanel({
             onChange={(v) => setSettings({ ...settings, eligibility: v as BoothEligibilityMode })}
             options={BOOTH_ELIGIBILITY_MODES.map((mode) => ({
               value: mode,
-              label:
-                mode === 'none'
-                  ? 'Anybody'
-                  : mode === 'band'
-                    ? 'One spin per wristband'
-                    : 'One spin per phone',
+              label: eligibilityLabel(mode),
             }))}
           />
         </Field>
       </div>
-
-      <div className="mt-4 flex flex-wrap gap-2 items-center">
-        <Button
-          onClick={() => onSave(settings)}
-          disabled={!dirty || !sessionValid || !spinDurationValid || saving || unavailable || readOnly}
-        >
-          {saving ? 'Saving…' : 'Save settings'}
-        </Button>
-        {readOnly ? (
-          <span className="text-xs text-muted-foreground">
-            Changing these needs <code className="font-mono">admin:booth:manage</code>.
-          </span>
-        ) : (
-          dirty &&
-          !saving && (
-            <span className="text-xs text-muted-foreground">
-              Unsaved. Saving changes the draft; only a published version can reach the booth.
-            </span>
-          )
-        )}
-      </div>
-    </Panel>
+    </Drawer>
   );
 }
 

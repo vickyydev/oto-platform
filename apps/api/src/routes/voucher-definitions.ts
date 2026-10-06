@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { VOUCHER_KINDS, VOUCHER_OFFLINE_POLICIES, VOUCHER_VALUE_TYPES } from '@oto/db';
+import { VOUCHER_CODE_MODES, VOUCHER_KINDS, VOUCHER_OFFLINE_POLICIES, VOUCHER_VALUE_TYPES } from '@oto/db';
+import { VoucherPromoRulesSchema, VoucherTargetSchema } from '@oto/shared';
 import type { App } from '../app';
 import {
   archiveVoucherDefinition,
@@ -86,6 +87,26 @@ const DefinitionBody = z.object({
   termsEn: Words(2000),
   termsTh: Words(2000),
   active: z.boolean().optional(),
+  /**
+   * `generated` (default): each voucher prints its own minted code. `fixed`:
+   * every slip prints `fixedCode`, and a till redeems that code against this
+   * type. Letters, digits and hyphens, 4 to 32; stored in capitals.
+   */
+  codeMode: z.enum(VOUCHER_CODE_MODES).optional(),
+  fixedCode: z
+    .string()
+    .trim()
+    .transform((c) => c.toUpperCase())
+    .pipe(z.string().regex(/^[0-9A-Z-]{4,32}$/, 'A fixed code is 4 to 32 letters, digits or hyphens'))
+    .nullable()
+    .optional(),
+  /**
+   * S2-14a round 5 — the promotional rules: what a discount comes off (a
+   * category or an item, in the pricing engine's scopes), the global and
+   * per-customer redemption limits, and the window on the redeeming branch's
+   * trading day. Each optional; null clears it.
+   */
+  ...VoucherPromoRulesSchema.shape,
 });
 
 const LinkSchema = z.object({
@@ -119,6 +140,8 @@ const DefinitionSchema = z.object({
   termsEn: z.string().nullable(),
   termsTh: z.string().nullable(),
   active: z.boolean(),
+  codeMode: z.enum(VOUCHER_CODE_MODES),
+  fixedCode: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
   archivedAt: z.string().nullable(),
@@ -137,6 +160,14 @@ const DefinitionSchema = z.object({
   ),
   /** Its vouchers still unredeemed — issued, not used, not void, not past their date — when it was read. */
   unredeemedVouchers: z.number().int().min(0),
+  /** S2-14a round 5 — the promotional rules as stored (null target: the ticket rows). */
+  target: VoucherTargetSchema.nullable(),
+  usageLimit: z.number().int().nullable(),
+  perCustomerLimit: z.number().int().nullable(),
+  validFrom: z.string().nullable(),
+  validUntil: z.string().nullable(),
+  /** Its vouchers used up so far — what the global limit counts. */
+  redeemedVouchers: z.number().int().min(0),
 });
 
 const OneDefinition = z.object({ definition: DefinitionSchema });

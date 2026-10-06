@@ -1,10 +1,11 @@
 import { z } from 'zod';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { branch, child, member, visit, visitChild } from '@oto/db';
-import { branchToday, newId } from '@oto/shared';
+import { branchToday } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -34,8 +35,12 @@ export async function visitRoutes(app: App): Promise<void> {
       schema: {
         description: 'Create a draft visit with confirmed children',
         body: z.object({
-          /** Client-minted UUIDv7: re-sending it returns the visit that exists. */
-          id: z.string().uuid().optional(),
+          /**
+           * Client-minted UUIDv7 (OD-12): re-sending it returns the visit that
+           * exists; an id another operator's visit carries is refused 409
+           * ID_IN_USE (SCRUM-270).
+           */
+          id: ClientIdSchema.optional(),
           memberId: z.string().uuid().nullable().optional(),
           branchId: z.string().uuid().optional(),
           childIds: z.array(z.string().uuid()).default([]),
@@ -45,20 +50,19 @@ export async function visitRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const auth = req.requireAuth();
-      if (req.body.id) {
-        const [already] = await app.db
-          .select()
-          .from(visit)
-          .where(and(eq(visit.id, req.body.id), eq(visit.operatorId, auth.operatorId)))
-          .limit(1);
-        if (already) {
-          // A replay answers for the branch the visit is ON, not the one the
-          // request claims — otherwise the replay path is a way around the
-          // check the create path now makes.
-          await req.requirePermission('pos:visit:create', { branchId: already.branchId });
-          reply.header('x-oto-replay', 'true');
-          return { id: already.id, visitDate: already.visitDate, status: already.status };
-        }
+      const claim = await claimClientId(
+        req.body.id,
+        async (id) => (await app.db.select().from(visit).where(eq(visit.id, id)).limit(1))[0],
+        (row) => row.operatorId === auth.operatorId,
+      );
+      if (claim.replay) {
+        const already = claim.row;
+        // A replay answers for the branch the visit is ON, not the one the
+        // request claims — otherwise the replay path is a way around the
+        // check the create path now makes.
+        await req.requirePermission('pos:visit:create', { branchId: already.branchId });
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: already.id, visitDate: already.visitDate, status: already.status };
       }
       const branchId = req.body.branchId ?? auth.branchId;
       if (!branchId) throw errors.badRequest('No active branch on this session');
@@ -111,7 +115,7 @@ export async function visitRoutes(app: App): Promise<void> {
         }
       }
 
-      const id = req.body.id ?? newId();
+      const id = claim.id;
       const visitDate = req.body.visitDate ?? branchToday(br.timezone);
       const now = new Date();
       // The visit, who is on it, their re-confirmation stamps and the audit
@@ -135,6 +139,18 @@ export async function visitRoutes(app: App): Promise<void> {
             .update(child)
             .set({ lastConfirmedAt: now })
             .where(inArray(child.id, req.body.childIds));
+          /**
+           * Offline plan OD-7: a family signed up at two counters while both
+           * were offline is merged with both sets of children kept, and the
+           * member flagged for staff to confirm who is who. This is that
+           * confirmation, so the flag is cleared with it.
+           */
+          if (req.body.memberId) {
+            await tx
+              .update(member)
+              .set({ childrenReviewSince: null })
+              .where(and(eq(member.id, req.body.memberId), isNotNull(member.childrenReviewSince)));
+          }
         }
         await audit.record(tx, {
           actorAccountId: auth.accountId,

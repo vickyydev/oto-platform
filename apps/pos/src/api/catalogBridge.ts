@@ -2,12 +2,13 @@
 // catalog store. Load once after sign-in (and on branch switches); the wired
 // admin mutators call the write-through helpers so the DB is the source of
 // truth while every prototype screen keeps its exact rendering path.
-import type { PaymentMethod, PricingOverride, TaxConfig, TicketType, TierDef } from '@/types';
+import type { AddOn, PaymentMethod, PricingOverride, TaxConfig, TicketType, TierDef } from '@/types';
 import { getActiveBranch, hydrateFromApi } from '@/store/catalogStore';
 import { setBranchDayStart, setBranchRateMode, setBranchTimezone } from '@/lib/pricingMode';
-import { branchesApi, catalogApi, type ApiBranch, type ApiPaymentMethod } from './platform';
+import { branchesApi, catalogApi, type ApiBranch, type ApiPaymentMethod, type PublicAddOn } from './platform';
 import { isMissingRoute } from './client';
 import { reloadMenuInto } from './menu';
+import { loadSellableStock } from './stock';
 import { apiBranchToBranch, apiPackageToTicketType, holidayToPricingOverride, ticketTypeToApiBody } from './mappers';
 
 let _apiBranches: ApiBranch[] = [];
@@ -98,6 +99,10 @@ export async function loadMenuFromApi(branchSlug: string): Promise<boolean> {
     // contains — which is how the shop came to be READ from the mock while the
     // menu beside it came from the database.
     await reloadMenuInto(branchId, branchSlug);
+    // S2-14b — what each tracked size holds, beside the menu that names it. Its
+    // own non-fatal read (`api/stock.ts`): a platform without the stock route
+    // keeps the ported inventory, and the menu above is still the platform's.
+    await loadSellableStock(branchId);
     return true;
   } catch (err) {
     if (isMissingRoute(err)) return false;
@@ -166,9 +171,31 @@ export async function loadCatalogFromApi(activeSlug?: string): Promise<void> {
 }
 
 /**
+ * One extra from the public catalogue, as the ported store holds it: prices in
+ * baht, as weekday/weekend, and the area the platform resolved carried as the
+ * override so the site taxes it exactly as the booking quote does.
+ */
+export const publicAddOnToStore = (a: PublicAddOn): AddOn => ({
+  id: a.id,
+  name: a.name,
+  price: {
+    weekday: a.priceSatang / 100,
+    weekend: (a.priceWeekendSatang ?? a.priceSatang) / 100,
+  },
+  ...(a.taxCategory ? { taxCategoryOverride: a.taxCategory } : {}),
+  ...(a.translations ? { translations: a.translations } : {}),
+});
+
+/**
  * Public /book hydration (no session): pull the branch's active packages +
  * tiers + holidays through the public endpoint so the customer site prices
  * from the database. Returns the catalog for direct use (rate mode etc.).
+ *
+ * S2-12: the extras and the tax configuration come from it too. The platform
+ * refuses a booking whose shown total is not its own quote, so the figures the
+ * total is built from have to be the platform's — the prototype's add-on list
+ * and tax set-up held in this browser agreed with it only while nobody had
+ * edited either in the Console.
  */
 export async function loadPublicCatalog(branchCode: string) {
   const { publicApi } = await import('./platform');
@@ -189,6 +216,8 @@ export async function loadPublicCatalog(branchCode: string) {
           sortOrder: i,
         })),
         ticketTypes: cat.packages.map(apiPackageToTicketType),
+        ...(cat.addOns ? { addOns: cat.addOns.map(publicAddOnToStore) } : {}),
+        ...(cat.taxConfig ? { taxConfig: cat.taxConfig } : {}),
       },
     },
     pricingOverrides: cat.holidays.map((h, i) => ({

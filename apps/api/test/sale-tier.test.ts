@@ -519,7 +519,7 @@ describe('a void gives the document check back', () => {
   });
 
   it('gives nothing back for a sale that spent no check', async () => {
-    const plain = await commit({ lines: [line(twoHoursId, 1, 0)] });
+    const plain = await commit({ lines: [line(twoHoursId, 1, 1)] });
     expect(plain.statusCode, plain.body).toBe(200);
     const saleId = plain.json().sale.id as string;
     const voided = await voidSale(saleId);

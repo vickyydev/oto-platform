@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { CameraCapture } from '@/components/shared/CameraCapture';
 import { CheckIn } from '@/types';
-import { getNannyRoster, getDropOffPricing } from '@/mockApi';
+import { nannyChoicesFor, type ApiNanny } from '@/api/checkin';
 import {
   UserCheck,
   Baby,
@@ -35,6 +35,10 @@ interface CheckInBookedModalProps {
   onOpenChange: (open: boolean) => void;
   // The booked (registered + scheduledFor) children of ONE registration.
   family: CheckIn[];
+  /** The park's roster with each nanny's live load (the board's, S2-13 round 2). */
+  nannies: readonly ApiNanny[];
+  /** The suggested ratio the warning is shown at — never a block. */
+  softMax: number;
   onConfirm: (items: BookedCheckInItem[]) => void;
 }
 
@@ -59,6 +63,8 @@ export function CheckInBookedModal({
   open,
   onOpenChange,
   family,
+  nannies: roster,
+  softMax,
   onConfirm,
 }: CheckInBookedModalProps) {
   const rep = family[0];
@@ -72,9 +78,9 @@ export function CheckInBookedModal({
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [consentAck, setConsentAck] = useState(false);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- open is the trigger: the roster and each nanny's load are re-read from the in-memory store each time the modal opens
-  const nannies = useMemo(() => getNannyRoster(), [open]);
-  const softMax = useMemo(() => getDropOffPricing().nannyRatioSoftMax, []);
+  // The board's roster: on shift is what makes a nanny pickable, and the
+  // platform checks it again when the family is checked in.
+  const nannies = useMemo(() => nannyChoicesFor(roster), [roster]);
 
   useEffect(() => {
     if (open) {
@@ -86,7 +92,7 @@ export function CheckInBookedModal({
 
   // Children whose consent / photo isn't on file → must be captured before check-in.
   const childrenMissingConsent = family.filter((c) => !c.confirmationsAccepted);
-  const childrenMissingPhoto = family.filter((c) => !c.childPhotoUrl && !photos[c.id]);
+  const childrenMissingPhoto = family.filter((c) => !c.childPhotoUrl && !c.photoOnFile && !photos[c.id]);
   const consentNeeded = childrenMissingConsent.length > 0;
   const selectedNanny = nannies.find((n) => n.id === nannyId);
   const overRatio = !!selectedNanny && selectedNanny.load + 1 > softMax;
@@ -216,7 +222,7 @@ export function CheckInBookedModal({
                 Consent &amp; photo needed before check-in
               </p>
               {family
-                .filter((c) => !c.childPhotoUrl)
+                .filter((c) => !c.childPhotoUrl && !c.photoOnFile)
                 .map((c) => (
                   <div key={c.id}>
                     <label className="flex items-center gap-2 text-xs text-muted-foreground mb-1">

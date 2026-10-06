@@ -1,24 +1,41 @@
 import { createHash, createPublicKey, verify as verifyDetached, type KeyObject } from 'node:crypto';
-import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, lt, lte, or, sql, type SQL } from 'drizzle-orm';
 import {
   account,
   employee,
   band,
+  bandEvent,
   boothStaffAssignment,
   booking,
+  bookingRedemption,
   box,
   boxOutbox,
   boxSyncKey,
   branch,
+  operator,
   branchHoliday,
   branchTaxConfig,
   child,
   device,
+  deviceCredential,
+  discountDefinition,
   member,
+  memberAlias,
+  memberTierVerification,
+  modifierGroup,
+  modifierOption,
+  paymentAttempt,
+  paymentMethod,
   product,
   productCategory,
+  productModifierGroup,
   receiptSeries,
+  role,
+  sale,
+  roleAssignment,
+  rolePermission,
   station,
+  staffToken,
   stationDevice,
   syncAnomaly,
   syncChange,
@@ -39,6 +56,21 @@ import {
   type SyncQuarantineStatus,
 } from '@oto/db';
 import {
+  BOOKING_REDEEMED_FACT,
+  SYNC_QUARANTINE_REASONS,
+  GATE_EVENT_TYPE,
+  GateEventPayloadSchema,
+  OfflineBookingRedeemedSchema,
+  PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  PAID_ONLINE_TENDER_CODE,
+  bandShortCode,
+  OFFLINE_POLICY,
+  OfflineChildCreatedSchema,
+  OfflineChildUpdatedSchema,
+  OfflineMemberCreatedSchema,
+  OfflineMemberTierChangedSchema,
+  OfflineMemberUpdatedSchema,
+  OfflineVisitCreatedSchema,
   SYNC_EVENT_SCHEMA_VERSION,
   SyncEventEnvelopeSchema,
   boothStaffCode,
@@ -46,6 +78,7 @@ import {
   canonicalSyncBytes,
   newId,
   normalizePhone,
+  formatTHB,
   parseDayStart,
   type BusinessDateSource,
   type SyncEventEnvelope,
@@ -66,7 +99,21 @@ import { audit } from './audit';
  * function-level one `./ops` and this file already have, and used the same way:
  * inside a call, never while either module is still being evaluated.
  */
-import { loadRedemptions, type StoredRedemption } from './bookings';
+import {
+  linesOf,
+  loadRedemptions,
+  redeemBooking,
+  REDEEMABLE_STATUS,
+  type BookingRow,
+  type StoredRedemption,
+} from './bookings';
+/**
+ * S2-12 round 5 — a booking a box redeemed offline is filed exactly as the
+ * counter's online redemption files it: priced from the lines the family paid
+ * for, never from today's list. Function-level, as the imports above.
+ */
+import { priceBasisOfBooking } from './booking-redemption';
+import { commitSale, finaliseSale, type ActorContext, type CommitSaleInput } from './sale';
 /**
  * The money a box took while it was cut off (S2-10a, Slice G). It lives beside
  * the cash tender's own service rather than here, because a replayed sale is
@@ -84,9 +131,20 @@ import {
 import { decodeCursor, encodeCursor, errorInfo, raiseAlert, recordRun, scrubDetail } from './ops';
 import { raiseOfflinePromoAlerts } from './promo-codes';
 import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
+/**
+ * S2-13 round 4 — check-in, the board and release taken at a box with the
+ * link down: their facts' handlers and the `checkin` cache scope, in a file of
+ * their own as the booth's are.
+ */
+import { CHECKIN_HANDLERS, checkinCacheItem } from './sync-checkin';
+import { WALLET_HANDLERS, walletCacheItem } from './sync-wallet';
+import { stockCacheItem, withStockOversold } from './sync-stock';
+import { describeRegressedPaidFact, type RegressedPaidFact } from './sync-epoch-regressed';
 import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
 import { lastTokenByAccountOnBox, revokedStaffTokenIds } from './staff-token';
+import { TIER_REVOKED_EVIDENCE_TYPE } from './member-tier';
+import { grantCovers, type EffectivePermission } from './permissions';
 import { withTx, type Exec, type OpContext, type Tx } from './tx';
 /**
  * What a box's cache is for (SCRUM-412). `./box` imports from this file too, so
@@ -700,50 +758,18 @@ class RefuseEvent extends Error {
 //   - what the cloud now owns is published to `sync_change`, so the OTHER box
 //     at the branch learns about it without anybody thinking to tell it.
 
-const MemberCreatedSchema = z.object({
-  memberId: z.string().uuid(),
-  phone: z.string().min(4).max(32),
-  nickname: z.string().min(1).max(120),
-  name: z.string().max(200).nullish(),
-  preferredChannel: z.enum(['whatsapp', 'telegram', 'line']).nullish(),
-  createdVia: z.enum(['pos', 'booking', 'import']).default('pos'),
-});
-
-const MemberUpdatedSchema = z.object({
-  memberId: z.string().uuid(),
-  nickname: z.string().min(1).max(120).optional(),
-  name: z.string().max(200).nullish(),
-  email: z.string().email().max(200).nullish(),
-  notes: z.string().max(2_000).nullish(),
-  preferredChannel: z.enum(['whatsapp', 'telegram', 'line']).nullish(),
-});
-
-const ChildFields = {
-  name: z.string().min(1).max(120),
-  dateOfBirth: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullish(),
-  ageYears: z.number().int().min(0).max(17).nullish(),
-  allergies: z.string().max(1_000).nullish(),
-  medicalNotes: z.string().max(1_000).nullish(),
-  medicalAlert: z.boolean().optional(),
-  dietary: z.string().max(1_000).nullish(),
-  foodRestrictions: z.string().max(1_000).nullish(),
-  notes: z.string().max(1_000).nullish(),
-};
-
-const ChildCreatedSchema = z.object({
-  childId: z.string().uuid(),
-  memberId: z.string().uuid(),
-  ...ChildFields,
-});
-
-const ChildUpdatedSchema = z.object({
-  childId: z.string().uuid(),
-  ...ChildFields,
-  name: ChildFields.name.optional(),
-});
+/**
+ * The member, child and visit payloads are declared ONCE, in `@oto/shared`
+ * (`station-bridge.ts`), because since offline plan Round 3 a counter box
+ * PRODUCES them (`@oto/box-agent` `station-bridge.ts`) and this file applies
+ * them: two copies would be two descriptions of one wire. Each carries an
+ * optional `offlineFresh`, stamped by the box on a fact made under a fresh
+ * offline sign-in (OD-6) and written onto the audit row here.
+ */
+const MemberCreatedSchema = OfflineMemberCreatedSchema;
+const MemberUpdatedSchema = OfflineMemberUpdatedSchema;
+const ChildCreatedSchema = OfflineChildCreatedSchema;
+const ChildUpdatedSchema = OfflineChildUpdatedSchema;
 
 /**
  * A takeover, as the box queues it. Every field is what the audit row shows:
@@ -759,13 +785,30 @@ const StationTakeoverSchema = z.object({
   takeoverCount: z.number().int().min(0).optional(),
 });
 
-const VisitCreatedSchema = z.object({
-  visitId: z.string().uuid(),
-  memberId: z.string().uuid().nullish(),
-  visitDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  childIds: z.array(z.string().uuid()).max(20).default([]),
-  status: z.enum(['draft', 'active', 'closed']).default('draft'),
-});
+const VisitCreatedSchema = OfflineVisitCreatedSchema;
+
+/**
+ * THE ALIAS RULE (offline plan §2.6, OD-7).
+ *
+ * A member merged at sync keeps its id as an alias of the survivor
+ * (`crm.member_alias`, written by `member.created` below), so every later fact
+ * the second counter queued under that id — a child, a visit, a sale, an edit —
+ * lands on the survivor instead of waiting in quarantine for a member that was
+ * never written. An id that is not an alias is its own answer.
+ */
+async function survivingMemberId(tx: Exec, operatorId: string, memberId: string): Promise<string> {
+  const [alias] = await tx
+    .select({ memberId: memberAlias.memberId })
+    .from(memberAlias)
+    .where(and(eq(memberAlias.aliasMemberId, memberId), eq(memberAlias.operatorId, operatorId)))
+    .limit(1);
+  return alias?.memberId ?? memberId;
+}
+
+/** What the audit row says about a fact made under a fresh offline sign-in (OD-6). */
+function freshMark(payload: { offlineFresh?: boolean }): { offlineFresh?: true } {
+  return payload.offlineFresh ? { offlineFresh: true } : {};
+}
 
 /** The member row a box's cache needs, and nothing a box has no use for. */
 function memberChange(row: typeof member.$inferSelect, extra?: Record<string, unknown>): unknown {
@@ -776,6 +819,8 @@ function memberChange(row: typeof member.$inferSelect, extra?: Record<string, un
     name: row.name,
     tierCode: row.tierCode,
     preferredChannel: row.preferredChannel,
+    /** OD-7: children from two counters are waiting for staff to confirm them. */
+    childrenReviewSince: row.childrenReviewSince?.toISOString() ?? null,
     ...extra,
   };
 }
@@ -850,6 +895,471 @@ export function bookingChange(
   };
 }
 
+// --- A booking redeemed at a box with no internet (S2-12 round 5) -------------
+//
+// The box claims the booking in its own redemption log, commits the sale from
+// the lines the family paid for with the paid-online tender, prints and bands
+// it, and queues two facts in this order: `sale.finalised` (its cart naming the
+// booking) and `booking.redeemed`. The FIRST of them to reach the cloud with its
+// sale writes the redemption: the booking's row lock, the paid-only predicate
+// and the unique `booking_redemption` row (`redeemBooking`), then the sale
+// shaped as the counter's online redemption shapes it — the booking on it, the
+// paid-online tender, the booking's own price basis — with the box's number
+// and the bands on the family's wrists.
+//
+// SINGLE USE ACROSS TWO BOXES IS NOT MADE SAFE OFFLINE (OD-A9). A second
+// redemption of the same booking — another box's, or one made after the
+// counter online already issued it — is NEVER APPLIED BLIND: its events are
+// quarantined (`conflict`) and an alert names both redemptions, so a person
+// decides what the second family was handed.
+
+/** The marker a box puts on the cart of a sale that redeems a booking. */
+const BookingSaleMarkSchema = z.object({
+  cart: z.object({
+    bookingId: z.string().uuid().nullish(),
+    bookingRedemptionId: z.string().uuid().nullish(),
+  }),
+});
+
+/** The redemption already on a booking, and the sale that issued it — what the alert names first. */
+interface FirstRedemption {
+  redeemedAt: string | null;
+  stationId: string | null;
+  accountId: string | null;
+  saleId: string | null;
+  boxId: string | null;
+  /** `cloud` when the counter redeemed it online, `box` when a box filed it from offline. */
+  origin: string | null;
+  receiptNumber: string | null;
+}
+
+async function firstRedemptionOf(tx: Tx, bookingId: string): Promise<FirstRedemption | null> {
+  const [row] = await tx
+    .select()
+    .from(bookingRedemption)
+    .where(eq(bookingRedemption.bookingId, bookingId))
+    .limit(1);
+  const [issued] = await tx
+    .select({ id: sale.id, boxId: sale.boxId, origin: sale.origin, receiptNumber: sale.receiptNumber })
+    .from(sale)
+    .where(eq(sale.bookingId, bookingId))
+    .orderBy(asc(sale.createdAt))
+    .limit(1);
+  if (!row && !issued) return null;
+  return {
+    redeemedAt: row?.redeemedAt.toISOString() ?? null,
+    stationId: row?.stationId ?? null,
+    accountId: row?.accountId ?? null,
+    saleId: issued?.id ?? null,
+    boxId: issued?.boxId ?? null,
+    origin: issued?.origin ?? null,
+    receiptNumber: issued?.receiptNumber ?? null,
+  };
+}
+
+/**
+ * THE SECOND REDEMPTION, named beside the first and held for a person. Raised
+ * on the pool before the refusal is thrown, so it outlives the savepoint the
+ * refusal rolls back; `critical`, because it is two families through the gate
+ * on one payment.
+ */
+async function refuseSecondRedemption(
+  scope: BatchScope,
+  event: PreparedEvent,
+  row: BookingRow,
+  first: FirstRedemption | null,
+  second: { saleId: string; redeemedAt: string; receiptNumber: string | null; redemptionId: string | null },
+): Promise<never> {
+  const boxName = `${scope.auth.name} (${scope.auth.slot})`;
+  const firstWhere = first?.boxId && first.origin === 'box'
+    ? first.boxId === scope.auth.boxId
+      ? 'on this same box'
+      : `on box ${first.boxId}`
+    : 'at a counter online';
+  const detail = {
+    bookingId: row.id,
+    reference: row.reference,
+    first: first ?? { redeemedAt: null },
+    second: {
+      boxId: scope.auth.boxId,
+      stationId: event.envelope.stationId ?? null,
+      actorAccountId: event.envelope.actorAccountId ?? null,
+      saleId: second.saleId,
+      redemptionId: second.redemptionId,
+      redeemedAt: second.redeemedAt,
+      receiptNumber: second.receiptNumber,
+      eventId: event.envelope.eventId,
+    },
+  };
+  try {
+    await raiseAlert(
+      scope.db,
+      {
+        key: `booking.redeemed_twice:${row.id}`,
+        category: 'booking.redeemed_twice',
+        severity: 'critical',
+        subject: `Booking ${row.reference}`,
+        summary:
+          `Booking ${row.reference} was redeemed twice: first ${firstWhere}` +
+          (first?.redeemedAt ? ` at ${first.redeemedAt}` : '') +
+          (first?.receiptNumber ? ` (sale ${first.receiptNumber})` : '') +
+          `, then again offline on ${boxName} at ${second.redeemedAt}` +
+          (second.receiptNumber ? ` (sale ${second.receiptNumber})` : '') +
+          '. The second was not applied — it is held in quarantine for a person to look at.',
+        detail,
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  } catch (err) {
+    scope.log?.error(
+      { err, bookingId: row.id },
+      'a second redemption of a booking could not be alerted; its quarantine row names it',
+    );
+  }
+  throw new RefuseEvent(
+    'conflict',
+    'SYNC_BOOKING_REDEEMED_TWICE',
+    `Booking ${row.reference} was already redeemed ${firstWhere}; this box's redemption of it was not applied`,
+  );
+}
+
+/**
+ * A BOX REDEMPTION HELD FOR A PERSON for a reason other than a second
+ * redemption (SCRUM-477): the booking is not paid here — cancelled or expired
+ * online after the box took its copy — or the sum the box filed is not the
+ * sum the booking was paid at. Either way a family holds bands the ledger has
+ * no sale for, so it is `critical` like the double redemption, and raised on
+ * the pool before the refusal is thrown for the reason `refuseSecondRedemption`
+ * gives. Before this both refusals quarantined the event and told nobody.
+ */
+async function refuseQuarantinedRedemption(
+  scope: BatchScope,
+  event: PreparedEvent,
+  row: BookingRow,
+  refusal: { code: 'SYNC_BOOKING_NOT_PAID' | 'BOOKING_TOTAL_DRIFT'; message: string },
+  second: { saleId: string; redeemedAt: string; receiptNumber: string | null; redemptionId: string | null },
+): Promise<never> {
+  const boxName = `${scope.auth.name} (${scope.auth.slot})`;
+  const detail = {
+    bookingId: row.id,
+    reference: row.reference,
+    code: refusal.code,
+    status: row.status,
+    paidSatang: row.totalSatang,
+    second: {
+      boxId: scope.auth.boxId,
+      stationId: event.envelope.stationId ?? null,
+      actorAccountId: event.envelope.actorAccountId ?? null,
+      saleId: second.saleId,
+      redemptionId: second.redemptionId,
+      redeemedAt: second.redeemedAt,
+      receiptNumber: second.receiptNumber,
+      eventId: event.envelope.eventId,
+    },
+  };
+  try {
+    await raiseAlert(
+      scope.db,
+      {
+        key: `booking.redemption_quarantined:${row.id}`,
+        category: 'booking.redemption_quarantined',
+        severity: 'critical',
+        subject: `Booking ${row.reference}`,
+        summary:
+          `Booking ${row.reference} was redeemed offline on ${boxName} at ${second.redeemedAt}` +
+          (second.receiptNumber ? ` (sale ${second.receiptNumber})` : '') +
+          `, and the platform could not file it: ${refusal.message}. ` +
+          'The family holds the bands; the sale and the redemption are held in quarantine for a person to look at.',
+        detail,
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  } catch (err) {
+    scope.log?.error(
+      { err, bookingId: row.id, code: refusal.code },
+      'a quarantined box redemption could not be alerted; its quarantine row names it',
+    );
+  }
+  throw new RefuseEvent('conflict', refusal.code, refusal.message);
+}
+
+/** The booking a box names, inside the credential's operator, locked for the claim. */
+async function lockedBooking(tx: Tx, scope: BatchScope, bookingId: string): Promise<BookingRow> {
+  const [row] = await tx
+    .select()
+    .from(booking)
+    .where(and(eq(booking.id, bookingId), eq(booking.operatorId, scope.auth.operatorId)))
+    .for('update')
+    .limit(1);
+  if (!row) {
+    throw new RefuseEvent('poison', 'SYNC_BOOKING_UNKNOWN', 'That booking is not one of this park’s');
+  }
+  if (row.branchId !== scope.auth.branchId) {
+    throw new RefuseEvent(
+      'poison',
+      'SYNC_BOOKING_NOT_OURS',
+      'That booking is for another branch than the box that redeemed it',
+    );
+  }
+  return row;
+}
+
+/** The gateway invoice that paid the booking, for the tender's reconciliation (as online). */
+async function onlineInvoiceOf(tx: Tx, bookingId: string): Promise<string | null> {
+  const [paid] = await tx
+    .select({ invoiceNo: paymentAttempt.invoiceNo })
+    .from(paymentAttempt)
+    .where(
+      and(
+        sql`${paymentAttempt.payload} ->> 'bookingId' = ${bookingId}`,
+        isNull(paymentAttempt.saleId),
+        inArray(paymentAttempt.status, [...PAYMENT_ATTEMPT_TAKEN_STATUSES]),
+      ),
+    )
+    .orderBy(desc(paymentAttempt.createdAt))
+    .limit(1);
+  return paid?.invoiceNo ?? null;
+}
+
+/**
+ * The sale a box committed for a booking it redeemed offline.
+ *
+ * FIRST ARRIVAL CLAIMS. The booking is taken `FOR UPDATE`; a booking already
+ * redeemed — by another box, or at a counter online — refuses this sale into
+ * quarantine with an alert naming both. Otherwise, in the event's savepoint:
+ * the claim (`redeemBooking`, with the band codes the family holds and the
+ * counter's own instant), the sale committed against the booking at the prices
+ * it was PAID at, the box's journal columns, the paid-online tender that
+ * closes it under the number the box printed, and then the replay's own half —
+ * the box's bands recorded as they are and the audit row naming the event.
+ */
+async function applyBoxBookingSale(
+  tx: Tx,
+  scope: BatchScope,
+  event: PreparedEvent,
+  payload: z.infer<typeof OfflineSalePayloadSchema>,
+  mark: { bookingId: string; redemptionId: string | null },
+): Promise<ApplyResult> {
+  const replay = replayScope(scope, event);
+  // S2-12 closing audit — a booking's redemption is settled by the money the
+  // family paid online, and by nothing else: this path files the sale under
+  // the paid-online tender and drops the box's tenders. A sale that names a
+  // booking and carries any other money (cash, a card) is not a redemption the
+  // box's `booking.redeem` wrote, and filing it here would erase that money.
+  // Held for a person, whole — never applied blind.
+  const foreign = payload.tenders.filter((t) => t.methodCode !== PAID_ONLINE_TENDER_CODE);
+  if (foreign.length > 0) {
+    throw new RefuseEvent(
+      'conflict',
+      'SYNC_BOOKING_SALE_TENDER',
+      `A sale naming a booking carries ${foreign.map((t) => `${t.methodCode} ${formatTHB(t.amountSatang)}`).join(', ')}; a redemption is paid online only, so it was not applied`,
+    );
+  }
+  const row = await lockedBooking(tx, scope, mark.bookingId);
+  const withoutMoney = { ...payload, tenders: [] };
+
+  // This sale again (a replay of the event, or under a new envelope): the
+  // redemption was written with it the first time. The replay's own half is
+  // idempotent on every key, so it answers as the first did.
+  const [existing] = await tx
+    .select({ id: sale.id, bookingId: sale.bookingId })
+    .from(sale)
+    .where(eq(sale.id, payload.saleId))
+    .limit(1);
+  if (existing) {
+    if (existing.bookingId !== row.id) {
+      throw new RefuseEvent('conflict', 'SYNC_SALE_ID_TAKEN', 'That sale id already names another sale');
+    }
+    return { ...saleApplied(await replayOfflineSale(tx, replay, withoutMoney)), entityType: 'sale' };
+  }
+
+  const first = await firstRedemptionOf(tx, row.id);
+  /** This box's redemption, as every refusal below names it. */
+  const boxSide = {
+    saleId: payload.saleId,
+    redeemedAt: replay.occurredAt.toISOString(),
+    receiptNumber: payload.receipt?.number ?? null,
+    redemptionId: mark.redemptionId,
+  };
+  if (first || row.status === 'redeemed') {
+    return refuseSecondRedemption(scope, event, row, first, boxSide);
+  }
+  if (row.status !== REDEEMABLE_STATUS) {
+    // The box's copy said paid and the platform's does not: never filed blind.
+    return refuseQuarantinedRedemption(
+      scope,
+      event,
+      row,
+      {
+        code: 'SYNC_BOOKING_NOT_PAID',
+        message: `Booking ${row.reference} is ${row.status} here, so the box's redemption of it was not applied`,
+      },
+      boxSide,
+    );
+  }
+  if (payload.cart.expectedTotalSatang !== row.totalSatang) {
+    return refuseQuarantinedRedemption(
+      scope,
+      event,
+      row,
+      {
+        code: 'BOOKING_TOTAL_DRIFT',
+        message: `Booking ${row.reference} was paid ${formatTHB(row.totalSatang)}, and the box filed ${formatTHB(payload.cart.expectedTotalSatang)}`,
+      },
+      boxSide,
+    );
+  }
+
+  // 1. THE CLAIM, at the counter's own instant, with the bands the family holds.
+  const bandCodes = payload.bands
+    .map((b) => bandShortCode(b.code))
+    .filter((c): c is string => !!c);
+  const claimed = await redeemBooking(tx, {
+    bookingId: row.id,
+    operatorId: scope.auth.operatorId,
+    actorAccountId: replay.actorAccountId,
+    stationId: replay.stationId,
+    bandCodes,
+    now: replay.occurredAt,
+  });
+
+  // 2. THE SALE, at the prices the family paid (`priceBasisOfBooking`, as online).
+  const lines = linesOf(claimed).filter((l) => l.packageId && (l.kids > 0 || l.adults > 0));
+  const bag = (claimed.payload ?? {}) as Record<string, unknown>;
+  const tier = typeof bag.tier === 'string' && bag.tier ? bag.tier : 'tourist';
+  const rateMode = bag.rateMode === 'weekend' ? 'weekend' : 'weekday';
+  const socksId = payload.cart.socks?.addOnId ?? null;
+  const [socks] = socksId
+    ? await tx
+        .select({ id: product.id })
+        .from(product)
+        .where(and(eq(product.id, socksId), eq(product.operatorId, scope.auth.operatorId)))
+        .limit(1)
+    : [];
+  const actor: ActorContext = {
+    accountId: replay.actorAccountId,
+    operatorId: scope.auth.operatorId,
+    branchId: claimed.branchId,
+  };
+  const memberId = claimed.memberId
+    ? await survivingMemberId(tx, scope.auth.operatorId, claimed.memberId)
+    : null;
+  const input: CommitSaleInput = {
+    id: payload.saleId,
+    stationId: replay.stationId,
+    branchId: claimed.branchId,
+    memberId,
+    visitId: payload.cart.visitId ?? null,
+    bookingId: claimed.id,
+    lines: payload.cart.lines,
+    ...(payload.cart.socks ? { socks: payload.cart.socks } : {}),
+    note: payload.cart.note ?? `Online booking ${claimed.reference}`,
+    actionId: replay.actionId,
+    occurredAt: replay.occurredAt.toISOString(),
+    expectedTotalSatang: claimed.totalSatang,
+  };
+  try {
+    await tx.transaction((sp) =>
+      commitSale(sp, actor, input, replay.occurredAt, {
+        priceBasis: priceBasisOfBooking(tier, rateMode, lines, socks?.id ?? null),
+        printing: 'skip',
+        catalogueVersion: payload.catalogueVersion ?? null,
+      }),
+    );
+  } catch (err) {
+    if (err instanceof AppError && (err.code === 'SALE_TOTAL_MISMATCH' || err.code === 'SALE_LINE_PRICE_MISMATCH')) {
+      return refuseQuarantinedRedemption(
+        scope,
+        event,
+        row,
+        {
+          code: 'BOOKING_TOTAL_DRIFT',
+          message: `Booking ${claimed.reference} was paid ${formatTHB(claimed.totalSatang)}, and the platform would file the box's sale at a different sum`,
+        },
+        boxSide,
+      );
+    }
+    throw err;
+  }
+
+  // 3. THE BOX'S COLUMNS, while the sale is still open (`pos.sale_freeze`).
+  await tx
+    .update(sale)
+    .set({
+      origin: 'box',
+      boxId: scope.auth.boxId,
+      boxSeq: replay.boxSeq,
+      sourceEventId: replay.eventId,
+      ...(payload.staffTokenJti ? { staffTokenJti: payload.staffTokenJti } : {}),
+    })
+    .where(eq(sale.id, payload.saleId));
+
+  // 4. SETTLED AS PAID ONLINE, under the number the box printed when it is free.
+  const tenderActionId = payload.tenders[0]?.actionId ?? `paid-online:${payload.saleId}`;
+  await finaliseSale(
+    tx,
+    actor,
+    payload.saleId,
+    {
+      onlineTender: {
+        bookingId: claimed.id,
+        bookingReference: claimed.reference,
+        onlineInvoiceNo: await onlineInvoiceOf(tx, claimed.id),
+      },
+      actionId: tenderActionId,
+      printing: 'skip',
+      adoptReceipt: payload.receipt ?? null,
+    },
+    replay.occurredAt,
+  );
+  // The tender was recorded with the box's link down, and the attempt says so
+  // — as a cash tender replayed from a box does (`replayOfflineTender`). The
+  // flag alone (SCRUM-477): the money is the booking's, settled above.
+  await tx
+    .update(paymentAttempt)
+    .set({ offline: true })
+    .where(
+      and(eq(paymentAttempt.saleId, payload.saleId), eq(paymentAttempt.methodCode, PAID_ONLINE_TENDER_CODE)),
+    );
+
+  // 5. The box's bands, and the audit row that names the event.
+  const outcome = await replayOfflineSale(tx, replay, {
+    ...withoutMoney,
+    cart: { ...payload.cart, memberId },
+  });
+  await audit.record(tx, {
+    actorAccountId: replay.actorAccountId,
+    operatorId: scope.auth.operatorId,
+    branchId: claimed.branchId,
+    action: 'booking.redeem.offline',
+    entityType: 'booking',
+    entityId: claimed.id,
+    before: { status: row.status },
+    after: {
+      reference: claimed.reference,
+      saleId: payload.saleId,
+      receiptNumber: outcome.receiptNumber,
+      boxId: scope.auth.boxId,
+      stationId: replay.stationId,
+      redemptionId: mark.redemptionId,
+      redeemedAt: replay.occurredAt.toISOString(),
+      totalSatang: claimed.totalSatang,
+      tender: PAID_ONLINE_AUDIT,
+      bandCodes,
+    },
+    requestId: null,
+    actionId: replay.actionId,
+    sourceEventId: replay.eventId,
+  });
+  return saleApplied(outcome);
+}
+
+const PAID_ONLINE_AUDIT = 'paid_online';
+
 const HANDLERS: Record<string, EventHandler> = {
   /**
    * A member created at a counter, possibly with no internet.
@@ -911,11 +1421,26 @@ const HANDLERS: Record<string, EventHandler> = {
           entityType: 'member',
           entityId: byPhone.id,
           before: { memberId: payload.memberId },
-          after: { mergedIntoMemberId: byPhone.id, boxId: scope.auth.boxId },
+          after: { mergedIntoMemberId: byPhone.id, boxId: scope.auth.boxId, ...freshMark(payload) },
           requestId: null,
           actionId: event.envelope.actionId ?? null,
           sourceEventId: event.envelope.eventId,
         });
+
+        /**
+         * The discarded id keeps working (OD-7): the children, visits and
+         * sales the second counter recorded under it land on the survivor.
+         * Idempotent, because an id is merged once, into one survivor.
+         */
+        await tx
+          .insert(memberAlias)
+          .values({
+            aliasMemberId: payload.memberId,
+            operatorId,
+            memberId: byPhone.id,
+            sourceEventId: event.envelope.eventId,
+          })
+          .onConflictDoNothing();
 
         return {
           entityType: 'member',
@@ -962,7 +1487,7 @@ const HANDLERS: Record<string, EventHandler> = {
         action: 'member.create',
         entityType: 'member',
         entityId: created!.id,
-        after: { nickname: created!.nickname, createdVia: created!.createdVia },
+        after: { nickname: created!.nickname, createdVia: created!.createdVia, ...freshMark(payload) },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
@@ -986,12 +1511,12 @@ const HANDLERS: Record<string, EventHandler> = {
   'member.updated': {
     schema: MemberUpdatedSchema,
     async apply(tx, scope, event, payload: z.infer<typeof MemberUpdatedSchema>) {
+      // An edit made under a merged id is an edit of the survivor (OD-7).
+      const memberId = await survivingMemberId(tx, scope.auth.operatorId, payload.memberId);
       const [before] = await tx
         .select()
         .from(member)
-        .where(
-          and(eq(member.id, payload.memberId), eq(member.operatorId, scope.auth.operatorId)),
-        )
+        .where(and(eq(member.id, memberId), eq(member.operatorId, scope.auth.operatorId)))
         .limit(1);
       if (!before) {
         // The box is ahead of us: it edited a member whose creation has not
@@ -1010,7 +1535,7 @@ const HANDLERS: Record<string, EventHandler> = {
       const [after] = await tx
         .update(member)
         .set(patch)
-        .where(eq(member.id, payload.memberId))
+        .where(eq(member.id, memberId))
         .returning();
 
       await audit.record(tx, {
@@ -1019,9 +1544,9 @@ const HANDLERS: Record<string, EventHandler> = {
         branchId: scope.auth.branchId,
         action: 'member.update',
         entityType: 'member',
-        entityId: payload.memberId,
+        entityId: memberId,
         before,
-        after,
+        after: { ...after, ...freshMark(payload) },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
@@ -1029,14 +1554,138 @@ const HANDLERS: Record<string, EventHandler> = {
 
       return {
         entityType: 'member',
-        entityId: payload.memberId,
+        entityId: memberId,
         changes: [
           {
             scope: 'members',
             entityType: 'member',
-            entityId: payload.memberId,
+            entityId: memberId,
             payload: memberChange(after!),
           },
+        ],
+      };
+    },
+  },
+
+  /**
+   * A tier changed at a counter with no internet (offline plan OD-11).
+   *
+   * An upgrade on a checked document, or a downgrade by somebody holding
+   * `pos:member:tier_downgrade` — the permission was checked on the box from
+   * its cached copy, as it is checked online by the route. The evidence and
+   * the tier move together here exactly as `POST /members/:id/tier-verification`
+   * and `revokeTierVerification` move them: a member never holds a discounted
+   * tier with no document behind it. The verification row's id is the box's,
+   * so a fact that arrives twice files one row.
+   */
+  'member.tier_changed': {
+    schema: OfflineMemberTierChangedSchema,
+    async apply(tx, scope, event, payload: z.infer<typeof OfflineMemberTierChangedSchema>) {
+      const operatorId = scope.auth.operatorId;
+      const memberId = await survivingMemberId(tx, operatorId, payload.memberId);
+      const [existing] = await tx
+        .select({ id: memberTierVerification.id })
+        .from(memberTierVerification)
+        .where(eq(memberTierVerification.id, payload.verificationId))
+        .limit(1);
+      if (existing) return { entityType: 'member_tier_verification', entityId: existing.id };
+
+      const [m] = await tx
+        .select()
+        .from(member)
+        .where(and(eq(member.id, memberId), eq(member.operatorId, operatorId)))
+        .for('update')
+        .limit(1);
+      if (!m) {
+        throw new RefuseEvent('apply_failed', 'SYNC_MEMBER_ABSENT', 'No such member here yet');
+      }
+      const actorAccountId = event.envelope.actorAccountId ?? null;
+
+      let toTier: string;
+      let evidence: { type: string; expiresAt: Date | null; note: string | null };
+      let action: 'member.tier_verify' | 'member.tier_revoke';
+      if (payload.direction === 'upgrade') {
+        const [target] = await tx
+          .select({ code: tier.code })
+          .from(tier)
+          .where(and(eq(tier.operatorId, operatorId), eq(tier.code, payload.toTier)))
+          .limit(1);
+        if (!target) {
+          throw new RefuseEvent('poison', 'SYNC_TIER_UNKNOWN', `Unknown tier "${payload.toTier}"`);
+        }
+        toTier = target.code;
+        evidence = {
+          type: payload.evidenceType,
+          expiresAt: payload.evidenceExpiresAt
+            ? new Date(`${payload.evidenceExpiresAt}T00:00:00Z`)
+            : null,
+          note: payload.note ?? null,
+        };
+        action = 'member.tier_verify';
+      } else {
+        const [baseline] = await tx
+          .select({ code: tier.code })
+          .from(tier)
+          .where(and(eq(tier.operatorId, operatorId), eq(tier.isDefault, true), isNull(tier.archivedAt)))
+          .limit(1);
+        if (!baseline) {
+          throw new RefuseEvent(
+            'apply_failed',
+            'SYNC_TIER_NO_BASELINE',
+            'This operator has no baseline tier configured, so there is no rate to put this member back on',
+          );
+        }
+        // Already at the baseline: the counter's decision stands and there is
+        // nothing to take back, so nothing is written.
+        if (m.tierCode === baseline.code) return { entityType: 'member', entityId: m.id };
+        toTier = baseline.code;
+        evidence = { type: TIER_REVOKED_EVIDENCE_TYPE, expiresAt: null, note: payload.reason };
+        action = 'member.tier_revoke';
+      }
+
+      await tx.insert(memberTierVerification).values({
+        id: payload.verificationId,
+        memberId: m.id,
+        fromTier: m.tierCode,
+        toTier,
+        evidenceType: evidence.type,
+        evidenceExpiresAt: evidence.expiresAt,
+        verifiedByAccountId: actorAccountId,
+        branchId: scope.auth.branchId,
+        note: evidence.note,
+      });
+      const [after] = await tx
+        .update(member)
+        .set({ tierCode: toTier })
+        .where(eq(member.id, m.id))
+        .returning();
+      await audit.record(tx, {
+        actorAccountId,
+        operatorId,
+        branchId: scope.auth.branchId,
+        action,
+        entityType: 'member_tier_verification',
+        entityId: payload.verificationId,
+        before: { tierCode: m.tierCode },
+        after: {
+          memberId: m.id,
+          toTier,
+          evidenceType: evidence.type,
+          ...(payload.direction === 'upgrade'
+            ? { evidenceExpiresAt: payload.evidenceExpiresAt ?? null }
+            : { reason: payload.reason }),
+          boxId: scope.auth.boxId,
+          ...freshMark(payload),
+        },
+        requestId: null,
+        actionId: event.envelope.actionId ?? null,
+        sourceEventId: event.envelope.eventId,
+      });
+      return {
+        entityType: 'member_tier_verification',
+        entityId: payload.verificationId,
+        changes: [
+          { scope: 'members', entityType: 'member', entityId: m.id, payload: memberChange(after!) },
         ],
       };
     },
@@ -1045,14 +1694,15 @@ const HANDLERS: Record<string, EventHandler> = {
   'child.created': {
     schema: ChildCreatedSchema,
     async apply(tx, scope, event, payload: z.infer<typeof ChildCreatedSchema>) {
+      // A child recorded under a merged id belongs to the survivor (OD-7).
+      const memberId = await survivingMemberId(tx, scope.auth.operatorId, payload.memberId);
+      const viaAlias = memberId !== payload.memberId;
       // The guardian proves the tenancy: a child is only reachable through a
       // member of this box's own operator, exactly as on the HTTP route.
       const [guardian] = await tx
-        .select({ id: member.id })
+        .select({ id: member.id, childrenReviewSince: member.childrenReviewSince })
         .from(member)
-        .where(
-          and(eq(member.id, payload.memberId), eq(member.operatorId, scope.auth.operatorId)),
-        )
+        .where(and(eq(member.id, memberId), eq(member.operatorId, scope.auth.operatorId)))
         .limit(1);
       if (!guardian) {
         throw new RefuseEvent('apply_failed', 'SYNC_MEMBER_ABSENT', 'No such member here yet');
@@ -1064,11 +1714,34 @@ const HANDLERS: Record<string, EventHandler> = {
         .limit(1);
       if (existing) return { entityType: 'child', entityId: existing.id };
 
+      /**
+       * Children are never merged automatically (OD-7). A child arriving
+       * through an alias onto a survivor that already has children is kept as
+       * its own record, and the member is flagged for staff to confirm who is
+       * who at the next visit — so no allergy note disappears into a guess.
+       */
+      let flagged: typeof member.$inferSelect | null = null;
+      if (viaAlias && !guardian.childrenReviewSince) {
+        const [sibling] = await tx
+          .select({ id: child.id })
+          .from(child)
+          .where(and(eq(child.memberId, memberId), isNull(child.archivedAt)))
+          .limit(1);
+        if (sibling) {
+          const [marked] = await tx
+            .update(member)
+            .set({ childrenReviewSince: event.occurredAt })
+            .where(eq(member.id, memberId))
+            .returning();
+          flagged = marked ?? null;
+        }
+      }
+
       const [created] = await tx
         .insert(child)
         .values({
           id: payload.childId,
-          memberId: payload.memberId,
+          memberId,
           name: payload.name.trim(),
           dateOfBirth: payload.dateOfBirth ?? null,
           ageYears: payload.ageYears ?? null,
@@ -1091,7 +1764,13 @@ const HANDLERS: Record<string, EventHandler> = {
         entityId: created!.id,
         // Not the allergy text: an audit row is read on a Console page, and
         // what changed is enough to answer "who added this child and when".
-        after: { memberId: payload.memberId, medicalAlert: created!.medicalAlert },
+        after: {
+          memberId,
+          medicalAlert: created!.medicalAlert,
+          ...(viaAlias ? { recordedUnderMemberId: payload.memberId } : {}),
+          ...(flagged ? { childrenReviewFlagged: true } : {}),
+          ...freshMark(payload),
+        },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
@@ -1107,6 +1786,16 @@ const HANDLERS: Record<string, EventHandler> = {
             entityId: created!.id,
             payload: childChange(created!),
           },
+          ...(flagged
+            ? [
+                {
+                  scope: 'members' as const,
+                  entityType: 'member',
+                  entityId: flagged.id,
+                  payload: memberChange(flagged),
+                },
+              ]
+            : []),
         ],
       };
     },
@@ -1159,7 +1848,7 @@ const HANDLERS: Record<string, EventHandler> = {
         entityType: 'child',
         entityId: payload.childId,
         before,
-        after,
+        after: { ...after, ...freshMark(payload) },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
@@ -1185,6 +1874,14 @@ const HANDLERS: Record<string, EventHandler> = {
     async apply(tx, scope, event, payload: z.infer<typeof VisitCreatedSchema>) {
       const [existing] = await tx.select().from(visit).where(eq(visit.id, payload.visitId)).limit(1);
       if (existing) return { entityType: 'visit', entityId: existing.id };
+
+      // A visit recorded under a merged id is the survivor's (OD-7).
+      if (payload.memberId) {
+        payload = {
+          ...payload,
+          memberId: await survivingMemberId(tx, scope.auth.operatorId, payload.memberId),
+        };
+      }
 
       if (payload.memberId) {
         const [guardian] = await tx
@@ -1279,11 +1976,37 @@ const HANDLERS: Record<string, EventHandler> = {
         action: 'visit.create',
         entityType: 'visit',
         entityId: payload.visitId,
-        after: { memberId: payload.memberId ?? null, children: payload.childIds.length },
+        after: {
+          memberId: payload.memberId ?? null,
+          children: payload.childIds.length,
+          ...freshMark(payload),
+        },
         requestId: null,
         actionId: event.envelope.actionId ?? null,
         sourceEventId: event.envelope.eventId,
       });
+
+      /**
+       * Staff confirmed who is visiting, which is the confirmation OD-7's flag
+       * was waiting for: a merged family's children have been looked at by a
+       * person. Cleared, and the member republished so every box stops asking.
+       */
+      if (payload.memberId && payload.childIds.length > 0) {
+        const [cleared] = await tx
+          .update(member)
+          .set({ childrenReviewSince: null })
+          .where(and(eq(member.id, payload.memberId), sql`${member.childrenReviewSince} is not null`))
+          .returning();
+        if (cleared) {
+          return {
+            entityType: 'visit',
+            entityId: payload.visitId,
+            changes: [
+              { scope: 'members', entityType: 'member', entityId: cleared.id, payload: memberChange(cleared) },
+            ],
+          };
+        }
+      }
 
       return { entityType: 'visit', entityId: payload.visitId };
     },
@@ -1358,8 +2081,32 @@ const HANDLERS: Record<string, EventHandler> = {
   'sale.finalised': {
     schema: OfflineSalePayloadSchema,
     async apply(tx, scope, event, payload: z.infer<typeof OfflineSalePayloadSchema>) {
-      const replay = replayScope(scope, event);
-      const outcome = await replayOfflineSale(tx, replay, payload);
+      // S2-12 round 5 — the sale a box committed for a booking it redeemed
+      // offline: filed as the counter's online redemption files one.
+      const mark = BookingSaleMarkSchema.safeParse(event.envelope.payload);
+      if (mark.success && mark.data.cart.bookingId) {
+        return applyBoxBookingSale(tx, scope, event, payload, {
+          bookingId: mark.data.cart.bookingId,
+          redemptionId: mark.data.cart.bookingRedemptionId ?? null,
+        });
+      }
+      const replay = {
+        ...replayScope(scope, event),
+        // OD-8: asked only when today's prices disagree with the box's.
+        catalogueVersion: () =>
+          catalogueVersionOf(tx, scope.auth.operatorId, scope.auth.branchId as string),
+      };
+      // A sale rung up under a merged member's id is the survivor's (OD-7).
+      const memberId = payload.cart.memberId
+        ? await survivingMemberId(tx, scope.auth.operatorId, payload.cart.memberId)
+        : null;
+      const outcome = await replayOfflineSale(
+        tx,
+        replay,
+        memberId && memberId !== payload.cart.memberId
+          ? { ...payload, cart: { ...payload.cart, memberId } }
+          : payload,
+      );
       // SCRUM-401 — a promo code filed at the value the till applied, where the
       // park's definition says otherwise today: flagged, never refused, because
       // the money was taken. On the pool, as every alert a handler raises, and
@@ -1375,7 +2122,66 @@ const HANDLERS: Record<string, EventHandler> = {
         outcome,
         scope.log,
       );
-      return saleApplied(outcome);
+      const boxName = `${scope.auth.name} (${scope.auth.slot})`;
+      const saleName = outcome.receiptNumber ?? outcome.saleId;
+      // OD-8 — filed at the box's price because the catalogue had moved on.
+      if (outcome.priceFiledAsTaken) {
+        const priced = outcome.priceFiledAsTaken;
+        await raiseSaleAlert(scope, {
+          key: `sale.offline_price:${outcome.saleId}`,
+          category: 'sale.offline_price',
+          subject: `Offline sale ${saleName} (${boxName})`,
+          summary:
+            `Offline sale ${saleName} was filed at ${formatTHB(priced.boxTotalSatang)}, the price the counter took it at from an older price list` +
+            (priced.platformTotalSatang === null
+              ? '; today’s prices would not sell it as it was rung up.'
+              : `; today’s prices would have charged ${formatTHB(priced.platformTotalSatang)}.`),
+          detail: { saleId: outcome.saleId, receiptNumber: outcome.receiptNumber, ...priced },
+        });
+      }
+      /**
+       * OD-9 — WHO IS THE ACTOR ON A FACT THAT SYNCS HOURS LATER? The account
+       * that unlocked the box session, whose shift token the fact names.
+       * Expiry since then does not matter. A token revoked BEFORE the sale
+       * happened is still applied — a sale that happened is filed, not lost —
+       * and raises a `revoked_actor` anomaly with an alert.
+       */
+      const revoked = await revokedBefore(tx, payload.staffTokenJti ?? null, replay.occurredAt);
+      if (revoked) {
+        await raiseSaleAlert(scope, {
+          key: `sale.revoked_actor:${outcome.saleId}`,
+          category: 'sale.revoked_actor',
+          subject: `Offline sale ${saleName} (${boxName})`,
+          summary: `Offline sale ${saleName} was taken on a shift token that had been revoked before the sale; it was filed, and needs a person to look at it.`,
+          detail: {
+            saleId: outcome.saleId,
+            receiptNumber: outcome.receiptNumber,
+            actorAccountId: replay.actorAccountId,
+            staffTokenJti: revoked.jti,
+            revokedAt: revoked.revokedAt.toISOString(),
+            occurredAt: replay.occurredAt.toISOString(),
+          },
+        });
+      }
+      const applied = saleApplied(outcome);
+      return revoked
+        ? {
+            ...applied,
+            anomalies: [
+              ...(applied.anomalies ?? []),
+              {
+                kind: 'revoked_actor' as const,
+                detail: {
+                  saleId: outcome.saleId,
+                  actorAccountId: replay.actorAccountId,
+                  staffTokenJti: revoked.jti,
+                  revokedAt: revoked.revokedAt.toISOString(),
+                  reason: revoked.reason,
+                },
+              },
+            ],
+          }
+        : applied;
     },
   },
 
@@ -1398,6 +2204,221 @@ const HANDLERS: Record<string, EventHandler> = {
   },
 
   /**
+   * A BOOKING REDEEMED AT A BOX WITH NO INTERNET (S2-12 round 5; OD-A9).
+   *
+   * Its sale travels ahead of it as `sale.finalised`, and whichever of the two
+   * reaches here first with the sale writes the redemption
+   * (`applyBoxBookingSale`). So this fact, arriving after its own sale, finds
+   * the redemption already there and linked to that sale: it is applied once,
+   * and every replay — the same envelope, or the same fact under a new one —
+   * answers the same without writing again.
+   *
+   * A booking redeemed by ANOTHER sale — a second box's, or the counter's
+   * online — is the case this handler exists for: quarantined with an alert
+   * naming both, never applied blind. A sale that has not arrived yet (its
+   * event is behind this one, or was itself held) is `apply_failed`, held to
+   * replay once it has — as money that reaches the cloud before its sale is.
+   */
+  [BOOKING_REDEEMED_FACT]: {
+    schema: OfflineBookingRedeemedSchema,
+    async apply(tx, scope, event, payload: z.infer<typeof OfflineBookingRedeemedSchema>) {
+      const replay = replayScope(scope, event);
+      const row = await lockedBooking(tx, scope, payload.bookingId);
+      const [own] = await tx
+        .select({ id: sale.id, bookingId: sale.bookingId, operatorId: sale.operatorId })
+        .from(sale)
+        .where(eq(sale.id, payload.saleId))
+        .limit(1);
+      if (own && own.operatorId !== scope.auth.operatorId) {
+        throw new RefuseEvent('poison', 'SYNC_SALE_NOT_OURS', 'That sale belongs to another park');
+      }
+      const first = await firstRedemptionOf(tx, row.id);
+      const ours = !!own && own.bookingId === row.id;
+      if (first && ours && first.saleId === own!.id) {
+        // Applied with its sale. Nothing more to write.
+        return { entityType: 'booking', entityId: row.id };
+      }
+      if (first || row.status === 'redeemed') {
+        return refuseSecondRedemption(scope, event, row, first, {
+          saleId: payload.saleId,
+          redeemedAt: payload.redeemedAt,
+          receiptNumber: payload.receiptNumber ?? null,
+          redemptionId: payload.redemptionId,
+        });
+      }
+      if (!own) {
+        throw new RefuseEvent(
+          'apply_failed',
+          'SYNC_SALE_ABSENT',
+          `The sale that redeemed booking ${row.reference} is not here yet, so the redemption waits for it`,
+        );
+      }
+      if (own.bookingId !== row.id) {
+        throw new RefuseEvent(
+          'conflict',
+          'SYNC_SALE_NOT_BOOKING',
+          `That sale does not redeem booking ${row.reference}`,
+        );
+      }
+      // The sale is here, linked, and no redemption was written with it (a
+      // sale filed before this round's handler): the claim is written now.
+      if (row.status !== REDEEMABLE_STATUS) {
+        return refuseQuarantinedRedemption(
+          scope,
+          event,
+          row,
+          {
+            code: 'SYNC_BOOKING_NOT_PAID',
+            message: `Booking ${row.reference} is ${row.status} here, so the box's redemption of it was not applied`,
+          },
+          {
+            saleId: payload.saleId,
+            redeemedAt: payload.redeemedAt,
+            receiptNumber: payload.receiptNumber ?? null,
+            redemptionId: payload.redemptionId,
+          },
+        );
+      }
+      await redeemBooking(tx, {
+        bookingId: row.id,
+        operatorId: scope.auth.operatorId,
+        actorAccountId: replay.actorAccountId,
+        stationId: replay.stationId,
+        bandCodes: payload.bandCodes,
+        // The skew-checked instant (`replayScope`), never the box's raw clock.
+        now: replay.occurredAt,
+      });
+      await audit.record(tx, {
+        actorAccountId: replay.actorAccountId,
+        operatorId: scope.auth.operatorId,
+        branchId: row.branchId,
+        action: 'booking.redeem.offline',
+        entityType: 'booking',
+        entityId: row.id,
+        before: { status: row.status },
+        after: {
+          reference: row.reference,
+          saleId: payload.saleId,
+          receiptNumber: payload.receiptNumber ?? null,
+          boxId: scope.auth.boxId,
+          stationId: replay.stationId,
+          redemptionId: payload.redemptionId,
+          redeemedAt: payload.redeemedAt,
+          bandCodes: payload.bandCodes,
+          ...freshMark(payload),
+        },
+        requestId: null,
+        actionId: replay.actionId,
+        sourceEventId: replay.eventId,
+      });
+      return { entityType: 'booking', entityId: row.id };
+    },
+  },
+
+  /**
+   * THE GATE'S JOURNAL (S2-12 round 2; plan §2.5): one fact per outcome a
+   * gate box reached about a band — a credited passage in or out, a refusal
+   * at the reader, an open nobody passed, an alarm after an open.
+   *
+   * IDEMPOTENT ON THE BOX'S OWN ID. `eventId` is minted on the box and IS the
+   * `pos.band_event` row's id, so a replay (the same fact again after an
+   * unacknowledged push, a store restored, the Console's "Replay last batch")
+   * writes nothing the second time and answers as the first did. The ledger
+   * drops a repeated envelope already; this is the net under it for a fact
+   * that arrives under a new envelope.
+   *
+   * The band must be ours: a band at another operator is poison, and a band
+   * not here YET — minted on a box whose sale has not arrived — is held in
+   * quarantine to replay, as a member edit ahead of its create is.
+   *
+   * No change is published: the occupancy projection that reads these rows
+   * is round 4's. Reverse and tailgating raise an alert per gate station.
+   */
+  [GATE_EVENT_TYPE]: {
+    schema: GateEventPayloadSchema,
+    async apply(tx, scope, event, payload: z.infer<typeof GateEventPayloadSchema>) {
+      const stationId = event.envelope.stationId;
+      if (!stationId) {
+        throw new RefuseEvent('poison', 'SYNC_STATION_MISSING', 'A gate event names no station');
+      }
+      const [existing] = await tx
+        .select({ id: bandEvent.id, bandId: bandEvent.bandId })
+        .from(bandEvent)
+        .where(eq(bandEvent.id, payload.eventId))
+        .limit(1);
+      if (existing) {
+        if (existing.bandId !== payload.bandId) {
+          throw new RefuseEvent('conflict', 'SYNC_GATE_EVENT_ID_TAKEN', 'That gate event id names another band');
+        }
+        return { entityType: 'band', entityId: payload.bandId };
+      }
+      const [row] = await tx
+        .select({ id: band.id, operatorId: band.operatorId, branchId: band.branchId })
+        .from(band)
+        .where(eq(band.id, payload.bandId))
+        .limit(1);
+      if (!row) {
+        throw new RefuseEvent('apply_failed', 'SYNC_BAND_ABSENT', 'No such band here yet');
+      }
+      if (row.operatorId !== scope.auth.operatorId) {
+        throw new RefuseEvent('poison', 'SYNC_BAND_NOT_OURS', 'That band belongs to another operator');
+      }
+      const detail: Record<string, unknown> = {
+        direction: payload.direction,
+        side: payload.side,
+        occurredAt: payload.occurredAt,
+        ...(payload.reason ? { reason: payload.reason } : {}),
+        ...(payload.alarm ? { alarm: payload.alarm } : {}),
+        ...(payload.exitWithoutEntry ? { exitWithoutEntry: true } : {}),
+        ...(payload.revoked ? { revoked: true } : {}),
+        ...(payload.inferred ? { inferred: true } : {}),
+        ...(payload.personInLane ? { personInLane: true } : {}),
+        ...(payload.offline ? { offline: true } : {}),
+        ...(row.branchId !== scope.auth.branchId ? { otherBranch: true } : {}),
+        sourceEventId: event.envelope.eventId,
+      };
+      await tx
+        .insert(bandEvent)
+        .values({
+          id: payload.eventId,
+          bandId: payload.bandId,
+          kind: payload.kind,
+          stationId,
+          boxId: scope.auth.boxId,
+          detail,
+          createdAt: event.occurredAt,
+        })
+        .onConflictDoNothing({ target: bandEvent.id });
+      await audit.record(tx, {
+        actorAccountId: null,
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+        action: `gate.${payload.kind}`,
+        entityType: 'band',
+        entityId: payload.bandId,
+        before: null,
+        after: { ...detail, stationId, boxId: scope.auth.boxId, bandEventId: payload.eventId },
+        requestId: null,
+        actionId: event.envelope.actionId ?? null,
+        sourceEventId: event.envelope.eventId,
+      });
+      if (payload.kind === 'alarm' && payload.alarm) {
+        await raiseSaleAlert(scope, {
+          key: `gate.${payload.alarm}:${stationId}`,
+          category: `gate.${payload.alarm}`,
+          subject: stationId,
+          summary:
+            payload.alarm === 'reverse'
+              ? 'Someone went the wrong way through the gate after it opened'
+              : 'Someone followed a guest through the gate',
+          detail: { stationId, boxId: scope.auth.boxId, direction: payload.direction, side: payload.side },
+        });
+      }
+      return { entityType: 'band', entityId: payload.bandId };
+    },
+  },
+
+  /**
    * The Lucky Wheel's three facts (S2-07a) — `booth.spin_recorded`,
    * `promo.voucher_issued`, `booth.voucher_printed`, named as the booth module
    * in `@oto/box-agent` queues them. They live in `sync-booth.ts` because what
@@ -1405,6 +2426,9 @@ const HANDLERS: Record<string, EventHandler> = {
    * changes what a push does.
    */
   ...BOOTH_HANDLERS,
+  ...CHECKIN_HANDLERS,
+  /** S2-14a round 4 — `wallet.spent`: credit a box took offline under the cap (`sync-wallet.ts`). */
+  ...WALLET_HANDLERS,
 };
 
 /**
@@ -1459,14 +2483,67 @@ function replayScope(scope: BatchScope, event: PreparedEvent): ReplayScope {
 }
 
 /**
+ * A shift token revoked BEFORE the fact it signed happened (OD-9), or null.
+ * Revoked afterwards, or never, is an ordinary actor.
+ */
+async function revokedBefore(
+  tx: Tx,
+  jti: string | null,
+  occurredAt: Date,
+): Promise<{ jti: string; revokedAt: Date; reason: string | null } | null> {
+  if (!jti) return null;
+  const [row] = await tx
+    .select({ revokedAt: staffToken.revokedAt, reason: staffToken.revokedReason })
+    .from(staffToken)
+    .where(eq(staffToken.jti, jti))
+    .limit(1);
+  if (!row?.revokedAt || row.revokedAt.getTime() >= occurredAt.getTime()) return null;
+  return { jti, revokedAt: row.revokedAt, reason: row.reason ?? null };
+}
+
+/**
+ * An alert about a sale a box filed, on the pool as every alert a handler
+ * raises, and best-effort: an alert that cannot be written is logged, never
+ * thrown, so it cannot quarantine the sale it is about.
+ */
+async function raiseSaleAlert(
+  scope: BatchScope,
+  alert: {
+    key: string;
+    category: string;
+    subject: string;
+    summary: string;
+    detail: Record<string, unknown>;
+  },
+): Promise<void> {
+  try {
+    await raiseAlert(
+      scope.db,
+      {
+        ...alert,
+        severity: 'warning',
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  } catch (err) {
+    scope.log?.error(
+      { err, key: alert.key },
+      "an offline sale's alert could not be raised; its audit row names what happened",
+    );
+  }
+}
+
+/**
  * What a replayed sale leaves behind, as the ledger records it.
  *
- * The anomaly is the one thing worth flagging without refusing: the box showed
- * a guest a receipt number and the ledger issued a different one, because the
- * series had moved on while the box was away. Nothing is wrong with either
- * number — the allocator's is the real one and can never be a duplicate — but
- * somebody holding the first is going to ask about it, and `late_arrival` is
- * exactly what happened.
+ * The anomaly is the one thing worth flagging without refusing (OD-4): the
+ * box printed a receipt number the ledger could not file the sale under —
+ * already used in the station's series, or the platform had numbered this
+ * sale itself before the box's copy arrived — so it was filed under the next
+ * free one. Nothing is wrong with the ledger's number, and it can never be a
+ * duplicate, but somebody holding the first is going to ask about it.
  */
 function saleApplied(outcome: ReplayOutcome): ApplyResult {
   return {
@@ -1476,7 +2553,7 @@ function saleApplied(outcome: ReplayOutcome): ApplyResult {
       ? {
           anomalies: [
             {
-              kind: 'late_arrival' as const,
+              kind: 'receipt_collision' as const,
               detail: {
                 saleId: outcome.saleId,
                 boxReceiptNumber: outcome.receiptDiffers.box,
@@ -1751,7 +2828,12 @@ export async function pushEvents(
     actionId?: string | null;
     detail?: Record<string, unknown>;
   }> = [];
-  const quarantined: Array<{ reason: SyncQuarantineReason; eventId: string }> = [];
+  const quarantined: Array<{
+    reason: SyncQuarantineReason;
+    eventId: string;
+    /** SCRUM-486 — set on an `epoch_regressed` fact that carries a sale's money. */
+    paid?: RegressedPaidFact['detail'];
+  }> = [];
   /**
    * Sequences counted as duplicates on the cursor's word alone, with no row
    * anywhere to back it up. Never silent: see where it is filled, and the alert
@@ -1945,16 +3027,39 @@ export async function pushEvents(
 
       // --- The epoch, first, because it decides whether the rest means anything.
       if (address.journalEpoch !== epoch) {
+        /**
+         * SCRUM-486 — already applied on its own epoch? A push the platform
+         * applied whose answer was lost leaves the box holding the event, and
+         * a reset that runs before the re-send puts it on a replaced epoch.
+         * It is in the ledger already — its sale, its money, its stock
+         * movement — so it is answered as the duplicate it is, before anything
+         * files it as money a person must record by hand (and records twice).
+         * Not accounted on THIS epoch's cursor: its position is the old one's.
+         */
+        if (await appliedOnItsOwnEpoch(tx, auth, address)) {
+          duplicates += 1;
+          outcome.result = 'duplicate';
+          results.push(outcome);
+          continue;
+        }
         const ahead = address.journalEpoch > epoch;
         outcome.result = 'quarantined';
         outcome.reason = 'epoch_regressed';
         outcome.errorCode = ahead ? 'SYNC_EPOCH_AHEAD' : 'SYNC_EPOCH_REGRESSED';
+        /**
+         * SCRUM-486 — a fact that carries a sale's money is never only "a batch
+         * from an old epoch": it is money out of the ledger and, for the sale
+         * itself, goods off the shelf that the stock level still counts. The
+         * row is set aside as every regressed event is, and says which.
+         */
+        const paid = await describeRegressedPaidFact(tx, auth.operatorId, address.type, address.raw);
+        const why = ahead
+          ? `This box sent epoch ${address.journalEpoch}; the cloud has it on ${epoch}`
+          : `A batch from epoch ${address.journalEpoch}, which was replaced by ${epoch} when the store was reset`;
         await fileQuarantine(tx, auth, address, {
           reason: 'epoch_regressed',
           errorCode: outcome.errorCode,
-          errorMessage: ahead
-            ? `This box sent epoch ${address.journalEpoch}; the cloud has it on ${epoch}`
-            : `A batch from epoch ${address.journalEpoch}, which was replaced by ${epoch} when the store was reset`,
+          errorMessage: paid ? `${why}. ${paid.message}` : why,
           batchId,
           alertKey: `sync.epoch_regressed:${auth.boxId}`,
         });
@@ -1962,9 +3067,20 @@ export async function pushEvents(
           kind: 'epoch_regressed',
           eventId: address.eventId,
           actionId: address.actionId,
-          detail: { sentEpoch: address.journalEpoch, currentEpoch: epoch, boxSeq: address.boxSeq },
+          detail: {
+            sentEpoch: address.journalEpoch,
+            currentEpoch: epoch,
+            boxSeq: address.boxSeq,
+            ...(paid ? { paid: paid.detail } : {}),
+          },
         });
-        quarantined.push({ reason: 'epoch_regressed', eventId: address.eventId });
+        // A paid fact the ledger already holds is noted on its row and anomaly
+        // but is not money out of the ledger: not counted, not critical.
+        quarantined.push({
+          reason: 'epoch_regressed',
+          eventId: address.eventId,
+          ...(paid && !paid.detail.inLedger ? { paid: paid.detail } : {}),
+        });
         results.push(outcome);
         continue;
       }
@@ -2214,7 +3330,20 @@ export async function pushEvents(
             );
           }
 
-          const result = await handler.apply(sp, scope, prepared, parsed.data as never);
+          /**
+           * S2-14b round 3 — a fact that can close a box's sale has taken its
+           * stock at finalise (`takeStockForSale`, once per sale line); a line
+           * filed short of the record is raised once as `stock_oversold`
+           * (`sync-stock.ts`). Nothing for any other fact.
+           */
+          const result = await withStockOversold(
+            sp,
+            scope,
+            prepared,
+            envelope.type,
+            parsed.data,
+            await handler.apply(sp, scope, prepared, parsed.data as never),
+          );
 
           await sp.insert(syncEvent).values({
             eventId: envelope.eventId,
@@ -2536,15 +3665,35 @@ export async function pushEvents(
   if (quarantined.length > 0) {
     const epochRegressed = quarantined.filter((q) => q.reason === 'epoch_regressed').length;
     if (epochRegressed > 0) {
+      /**
+       * SCRUM-486 — paid facts among them make it money out of the ledger and
+       * goods the stock level still counts: critical, and said in the summary,
+       * so nobody reads it as a harmless replay. Each row on Failures names
+       * its sale, its money and its goods.
+       */
+      const paid = quarantined
+        .filter((q) => q.reason === 'epoch_regressed' && q.paid)
+        .map((q) => q.paid!);
+      const paidSatang = paid.reduce((sum, p) => sum + p.takenSatang, 0);
       await raiseAlert(
         db,
         {
           key: `sync.epoch_regressed:${auth.boxId}`,
           category: 'sync.epoch_regressed',
-          severity: 'warning',
+          severity: paid.length > 0 ? 'critical' : 'warning',
           subject: `${auth.name} (${auth.slot})`,
-          summary: `${auth.name} sent ${epochRegressed} event(s) from a journal epoch the cloud has replaced — a replay from a store that was reset`,
-          detail: { boxId: auth.boxId, epoch, count: epochRegressed },
+          summary:
+            paid.length > 0
+              ? `${auth.name} sent ${epochRegressed} event(s) from a journal epoch the cloud has replaced, ${paid.length} of them PAID (${formatTHB(paidSatang)}): set aside on Failures > Quarantine, not in the ledger, their goods not taken off the stock level — each row says what to record by hand`
+              : `${auth.name} sent ${epochRegressed} event(s) from a journal epoch the cloud has replaced — a replay from a store that was reset`,
+          detail: {
+            boxId: auth.boxId,
+            epoch,
+            count: epochRegressed,
+            ...(paid.length > 0
+              ? { paidCount: paid.length, paidSatang, paidSaleIds: [...new Set(paid.map((p) => p.saleId))].slice(0, 20) }
+              : {}),
+          },
           operatorId: auth.operatorId,
           branchId: auth.branchId,
         },
@@ -2858,6 +4007,35 @@ async function loadHeldPositions(
 }
 
 /**
+ * SCRUM-486 — whether an event sent on an epoch other than the box's current
+ * one is a fact this ledger already applied AT THAT VERY ADDRESS: the same
+ * event id, from this box, on the epoch and sequence it names, with the same
+ * content. Only then is it a re-send rather than news. An id the ledger holds
+ * with other content, or at another address, is not vouched for here and goes
+ * on to be set aside like any other regressed event.
+ */
+async function appliedOnItsOwnEpoch(tx: Tx, auth: BoxAuth, address: EventAddress): Promise<boolean> {
+  if (!address.addressable || !address.payloadHash) return false;
+  const [held] = await tx
+    .select({
+      boxId: syncEvent.boxId,
+      journalEpoch: syncEvent.journalEpoch,
+      boxSeq: syncEvent.boxSeq,
+      payloadHash: syncEvent.payloadHash,
+    })
+    .from(syncEvent)
+    .where(eq(syncEvent.eventId, address.eventId))
+    .limit(1);
+  return (
+    !!held &&
+    held.boxId === auth.boxId &&
+    held.journalEpoch === address.journalEpoch &&
+    held.boxSeq === address.boxSeq &&
+    held.payloadHash === address.payloadHash
+  );
+}
+
+/**
  * An event at or below the high-water mark: is it the same event coming round
  * again, or a different one wearing its id?
  *
@@ -2963,6 +4141,17 @@ function classifyFailure(err: unknown): RefuseEvent {
     return new RefuseEvent('conflict', 'SYNC_EVENT_ID_TAKEN', 'That event id is already recorded');
   }
   const info = errorInfo(err);
+  /**
+   * S2-13 round 4 — a handler in its own file (`sync-checkin.ts`) cannot
+   * throw `RefuseEvent` without a runtime cycle through this one, so it names
+   * the finer reason on its `AppError` (`details.quarantineReason`): a release
+   * that conflicts with one recorded online is a `conflict`, as the booking
+   * double is, not an `apply_failed` a replay would fix.
+   */
+  const named = err instanceof AppError ? (err.details as { quarantineReason?: unknown } | undefined)?.quarantineReason : undefined;
+  if (typeof named === 'string' && (SYNC_QUARANTINE_REASONS as readonly string[]).includes(named)) {
+    return new RefuseEvent(named as SyncQuarantineReason, info.code, info.message);
+  }
   return new RefuseEvent('apply_failed', info.code, info.message);
 }
 
@@ -3199,8 +4388,17 @@ export async function pullChanges(
   const asked: readonly SyncChangeScope[] | undefined = query.scopes?.length
     ? query.scopes
     : undefined;
+  // `checkin` (S2-13 round 4), `wallets` (S2-14a round 4) and `stock` (S2-14b
+  // round 3) are cache scopes only: never written to the change feed, so a
+  // feed narrowed to one of them is narrowed to nothing of it.
+  const feedOnly = (names: readonly string[]): SyncChangeScope[] =>
+    names.filter(
+      (name): name is SyncChangeScope => name !== 'checkin' && name !== 'wallets' && name !== 'stock',
+    );
   const scopes =
-    role === 'counter' ? asked : (asked ?? offered).filter((name) => offered.includes(name));
+    role === 'counter'
+      ? asked && feedOnly(asked)
+      : feedOnly((asked ?? offered).filter((name) => (offered as readonly string[]).includes(name)));
   const where = and(
     eq(syncChange.operatorId, auth.operatorId),
     or(isNull(syncChange.branchId), eq(syncChange.branchId, auth.branchId)),
@@ -3269,6 +4467,27 @@ export const CACHE_SCOPES = [
    * it. Built by `boothCacheItems` in `sync-booth.ts`.
    */
   'booth',
+  /**
+   * S2-13 round 4 — the branch's check-in board as one item: the families in
+   * the park or awaiting check-in (and today's collected), their pickup lists,
+   * today's releases, the supervision config and the nanny roster with its
+   * shifts. Built by `checkinCacheItem` in `sync-checkin.ts`. Volatile.
+   */
+  'checkin',
+  /**
+   * S2-14a round 4 — the branch's spendable wallets as balance SNAPSHOTS with
+   * the policy's offline cap, keys as digests only. Built by
+   * `walletCacheItem` in `sync-wallet.ts`. Volatile.
+   */
+  'wallets',
+  /**
+   * S2-14b round 3 — the branch's stock LEVEL SNAPSHOTS per stocked size and
+   * per place, with this box's filed offline sales of each. Built by
+   * `stockCacheItem` in `sync-stock.ts`. Volatile, and never part of the
+   * `catalogue` scope: a sale moves it and must not move the price list's
+   * version (OD-8).
+   */
+  'stock',
 ] as const;
 export type CacheScope = (typeof CACHE_SCOPES)[number];
 
@@ -3293,7 +4512,37 @@ export type CacheScope = (typeof CACHE_SCOPES)[number];
  * `@oto/box-agent`). An agent that does not make that tick learns the mark only
  * when something administered changes, so the two halves belong in one change.
  */
-export const CACHE_VOLATILE_SCOPES = ['receipt_series'] as const satisfies readonly CacheScope[];
+export const CACHE_VOLATILE_SCOPES = [
+  'receipt_series',
+  /**
+   * S2-11 — since bands are minted inside sale finalisation, every ticket sale
+   * moves this scope exactly as it moves the receipt mark, and for the same
+   * reason it may not move the etag: a selling box would otherwise take a full
+   * 200 after every family through the door. A box learns the day's new bands
+   * on its own tick (`?scopes=receipt_series,bands`), and a band it has not
+   * seen yet still verifies offline — its code is signed and names its row
+   * (`verifyBandCode` in `@oto/shared`).
+   */
+  'bands',
+  /**
+   * S2-13 round 4 — every check-in, edit and release moves the board, so the
+   * `checkin` scope may not move the etag either; the agent reads it on its
+   * own tick (`?scopes=checkin`, `pullCheckinScope` in `@oto/box-agent`).
+   */
+  'checkin',
+  /**
+   * S2-14a round 4 — every grant and spend moves a balance, so the snapshots
+   * may not move the etag; the agent reads them on its own tick
+   * (`?scopes=wallets`, `pullWalletScope` in `@oto/box-agent`).
+   */
+  'wallets',
+  /**
+   * S2-14b round 3 — every sale anywhere in the branch moves a level, so the
+   * stock snapshot may not move the etag; the agent reads it on its own tick
+   * (`?scopes=stock`, `pullStockScope` in `@oto/box-agent`).
+   */
+  'stock',
+] as const satisfies readonly CacheScope[];
 
 function isVolatileScope(name: string): boolean {
   return (CACHE_VOLATILE_SCOPES as readonly string[]).includes(name);
@@ -3368,6 +4617,184 @@ export interface CacheBundle {
 }
 
 /**
+ * THE `catalogue` SCOPE'S ONE ITEM, with a version of its own (offline plan
+ * §2.3, OD-8). A function of its own since Round 4, because the offline replay
+ * asks for the same version: a sale priced offline names the catalogue it was
+ * priced from, and a sale from an OLDER one is filed at the price it was taken.
+ */
+export async function catalogueCacheItem(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+): Promise<Record<string, unknown> & { version: string }> {
+  const packages = await db
+    .select()
+    .from(ticketPackage)
+    .where(and(eq(ticketPackage.branchId, branchId), isNull(ticketPackage.archivedAt)))
+    .orderBy(asc(ticketPackage.name));
+  const categories = await db
+    .select()
+    .from(productCategory)
+    .where(eq(productCategory.operatorId, operatorId))
+    .orderBy(asc(productCategory.name));
+  /**
+   * This branch's items AND the operator-wide ones (branch null), which is
+   * what the platform's own cart reads (`loadCatalogue` in `sale.ts`) and
+   * what the menu shows. A box holding only the branch's rows could not
+   * price an operator-wide item a till put on the order (offline plan §2.3).
+   */
+  const products = await db
+    .select()
+    .from(product)
+    .where(
+      and(
+        eq(product.operatorId, operatorId),
+        or(isNull(product.branchId), eq(product.branchId, branchId)),
+        isNull(product.archivedAt),
+      ),
+    )
+    .orderBy(asc(product.name));
+  const tiers = await db
+    .select()
+    .from(tier)
+    .where(eq(tier.operatorId, operatorId))
+    .orderBy(asc(tier.code));
+  const holidays = await db
+    .select()
+    .from(branchHoliday)
+    .where(eq(branchHoliday.branchId, branchId))
+    .orderBy(asc(branchHoliday.startsOn));
+  const [taxConfig] = await db
+    .select()
+    .from(branchTaxConfig)
+    .where(eq(branchTaxConfig.branchId, branchId))
+    .limit(1);
+  const overrides = await db
+    .select()
+    .from(taxOverride)
+    .where(eq(taxOverride.branchId, branchId));
+  /**
+   * What a local quote lacks without them (offline plan §2.3, Round 3):
+   * the modifier groups and options an item offers and the library groups
+   * it links, the tenders the park takes, the promotion definitions, and
+   * the branch's receipt header. Each is read with the same scope the
+   * platform's own cart reads it with (`resolveItemLines`, `readMenu`).
+   */
+  const productIds = products.map((p) => p.id);
+  const modifierGroups = await db
+    .select()
+    .from(modifierGroup)
+    .where(and(eq(modifierGroup.operatorId, operatorId), isNull(modifierGroup.archivedAt)))
+    .orderBy(asc(modifierGroup.sortOrder), asc(modifierGroup.name));
+  const modifierOptions = modifierGroups.length
+    ? await db
+        .select()
+        .from(modifierOption)
+        .where(
+          and(
+            inArray(
+              modifierOption.modifierGroupId,
+              modifierGroups.map((g) => g.id),
+            ),
+            isNull(modifierOption.archivedAt),
+          ),
+        )
+        .orderBy(asc(modifierOption.sortOrder), asc(modifierOption.name))
+    : [];
+  const modifierLinks = productIds.length
+    ? await db
+        .select({
+          productId: productModifierGroup.productId,
+          modifierGroupId: productModifierGroup.modifierGroupId,
+          sortOrder: productModifierGroup.sortOrder,
+        })
+        .from(productModifierGroup)
+        .where(
+          and(
+            eq(productModifierGroup.operatorId, operatorId),
+            inArray(productModifierGroup.productId, productIds),
+          ),
+        )
+        .orderBy(asc(productModifierGroup.productId), asc(productModifierGroup.sortOrder))
+    : [];
+  const paymentMethods = await db
+    .select({
+      code: paymentMethod.code,
+      label: paymentMethod.label,
+      kind: paymentMethod.kind,
+      enabled: paymentMethod.enabled,
+      sortOrder: paymentMethod.sortOrder,
+    })
+    .from(paymentMethod)
+    .where(and(eq(paymentMethod.operatorId, operatorId), isNull(paymentMethod.archivedAt)))
+    .orderBy(asc(paymentMethod.sortOrder), asc(paymentMethod.code));
+  const promotions = await db
+    .select({
+      id: discountDefinition.id,
+      branchId: discountDefinition.branchId,
+      code: discountDefinition.code,
+      label: discountDefinition.label,
+      kind: discountDefinition.kind,
+      valueBp: discountDefinition.valueBp,
+      valueSatang: discountDefinition.valueSatang,
+      freeProductId: discountDefinition.freeProductId,
+      target: discountDefinition.target,
+      validFrom: discountDefinition.validFrom,
+      validUntil: discountDefinition.validUntil,
+      stackable: discountDefinition.stackable,
+      active: discountDefinition.active,
+    })
+    .from(discountDefinition)
+    .where(
+      and(
+        eq(discountDefinition.operatorId, operatorId),
+        or(isNull(discountDefinition.branchId), eq(discountDefinition.branchId, branchId)),
+        isNull(discountDefinition.archivedAt),
+      ),
+    )
+    .orderBy(asc(discountDefinition.code));
+  const [header] = await db
+    .select({ name: branch.name, address: branch.address, country: branch.country })
+    .from(branch)
+    .where(eq(branch.id, branchId))
+    .limit(1);
+  // The seller's name the receipt's tax-invoice header prints beside the
+  // branch's (offline plan §2.5): a box printing a receipt with no internet
+  // has nowhere else to read it.
+  const [seller] = await db
+    .select({ name: operator.name })
+    .from(operator)
+    .where(eq(operator.id, operatorId))
+    .limit(1);
+  const item = {
+    packages,
+    categories,
+    products,
+    tiers,
+    holidays,
+    taxConfig: taxConfig ?? null,
+    overrides,
+    modifierGroups,
+    modifierOptions,
+    modifierLinks,
+    paymentMethods,
+    promotions,
+    receiptHeader: header ? { ...header, operatorName: seller?.name ?? null } : null,
+  };
+  // One item, because the catalogue is applied as a unit: half a price list
+  // is worse than none. It carries a version of its OWN (OD-8): the bundle's
+  // is hashed over every administered scope together, and a sale priced
+  // offline has to name the price list it was priced from, not the staff
+  // list beside it.
+  return { ...item, version: sha256Hex(JSON.stringify(item)).slice(0, 16) };
+}
+
+/** The version `catalogueCacheItem` would ship a box of this branch now (OD-8). */
+export async function catalogueVersionOf(db: Exec, operatorId: string, branchId: string): Promise<string> {
+  return (await catalogueCacheItem(db, operatorId, branchId)).version;
+}
+
+/**
  * Everything one box needs to keep its counter working with no internet.
  *
  * **What it does NOT carry, and why.** A box is a Raspberry Pi standing in a
@@ -3379,8 +4806,12 @@ export interface CacheBundle {
  *   - **no sales history, no payments, no audit log, no reporting.** A box acts;
  *     it does not answer questions about the past. A stolen Pi must not be a
  *     copy of the business;
- *   - **no wallet balances and no payment instruments.** An offline box must
- *     not be able to spend money it cannot verify;
+ *   - **no payment instruments, and of wallets only SNAPSHOTS.** The old "no
+ *     wallet balances" rule is widened deliberately and no further (S2-14a
+ *     round 4, plan `wallet/PLAN.md` §2.6): the `wallets` scope carries each
+ *     spendable wallet's balance, status and expiry, the policy's offline cap,
+ *     and its keys as DIGESTS — never a voucher QR or a band code. A box
+ *     spends from it only under the cap, and an overdraft is found at sync;
  *   - **no member notes, email or tier evidence.** Staff notes are free text and
  *     can say anything; the till's identify step does not read them;
  *   - **of staff, only what an offline unlock needs** — the account id, the
@@ -3485,45 +4916,26 @@ export async function cacheBundle(
 
   for (const scope of wanted) {
     if (scope === 'catalogue') {
-      const packages = await db
-        .select()
-        .from(ticketPackage)
-        .where(and(eq(ticketPackage.branchId, branchId), isNull(ticketPackage.archivedAt)))
-        .orderBy(asc(ticketPackage.name));
-      const categories = await db
-        .select()
-        .from(productCategory)
-        .where(eq(productCategory.operatorId, operatorId))
-        .orderBy(asc(productCategory.name));
-      const products = await db
-        .select()
-        .from(product)
-        .where(and(eq(product.branchId, branchId), isNull(product.archivedAt)))
-        .orderBy(asc(product.name));
-      const tiers = await db
-        .select()
-        .from(tier)
-        .where(eq(tier.operatorId, operatorId))
-        .orderBy(asc(tier.code));
-      const holidays = await db
-        .select()
-        .from(branchHoliday)
-        .where(eq(branchHoliday.branchId, branchId))
-        .orderBy(asc(branchHoliday.startsOn));
-      const [taxConfig] = await db
-        .select()
-        .from(branchTaxConfig)
-        .where(eq(branchTaxConfig.branchId, branchId))
-        .limit(1);
-      const overrides = await db
-        .select()
-        .from(taxOverride)
-        .where(eq(taxOverride.branchId, branchId));
-      // One item, because the catalogue is applied as a unit: half a price list
-      // is worse than none.
-      put('catalogue', [
-        { packages, categories, products, tiers, holidays, taxConfig: taxConfig ?? null, overrides },
-      ]);
+      put('catalogue', [await catalogueCacheItem(db, operatorId, branchId)]);
+      continue;
+    }
+
+    if (scope === 'checkin') {
+      // One item, applied whole, like the catalogue: half a board is a child
+      // the counter cannot find at pickup.
+      put('checkin', [await checkinCacheItem(db, operatorId, branchId)]);
+      continue;
+    }
+
+    if (scope === 'wallets') {
+      // One item, applied whole: balances, the cap, this box's filed spends.
+      put('wallets', [await walletCacheItem(db, auth)]);
+      continue;
+    }
+
+    if (scope === 'stock') {
+      // One item, applied whole: every counted size and place, this box's filed sales.
+      put('stock', [await stockCacheItem(db, auth)]);
       continue;
     }
 
@@ -3561,10 +4973,34 @@ export async function cacheBundle(
         list.push(childChange(c));
         byMember.set(c.memberId, list);
       }
+      /**
+       * The ids merged into each member (OD-7), so a counter that signed a
+       * family up under one of them files what it records next under the
+       * survivor, and shows the children it recorded offline under it.
+       */
+      const aliases = rows.length
+        ? await db
+            .select({ aliasMemberId: memberAlias.aliasMemberId, memberId: memberAlias.memberId })
+            .from(memberAlias)
+            .where(
+              and(
+                eq(memberAlias.operatorId, operatorId),
+                inArray(
+                  memberAlias.memberId,
+                  rows.map((m) => m.id),
+                ),
+              ),
+            )
+        : [];
+      const aliasesOf = new Map<string, string[]>();
+      for (const a of aliases) {
+        aliasesOf.set(a.memberId, [...(aliasesOf.get(a.memberId) ?? []), a.aliasMemberId]);
+      }
       put(
         'members',
         rows.map((m) => ({
           ...(memberChange(m) as Record<string, unknown>),
+          aliasIds: aliasesOf.get(m.id) ?? [],
           children: byMember.get(m.id) ?? [],
         })),
         { rowsRead: rows.length, cursorOf: (last) => (last as { id: string }).id },
@@ -3741,6 +5177,12 @@ export async function cacheBundle(
       const onBooth = new Map(
         boothPeople.map((p) => [p.accountId, p.nickname ?? p.name ?? null] as const),
       );
+      const permissionsAt = await staffPermissionsAtBranch(
+        db,
+        operatorId,
+        branchId,
+        rows.map((a) => a.id),
+      );
       put(
         'staff',
         rows.map((a) => ({
@@ -3758,6 +5200,14 @@ export async function cacheBundle(
           /** Null for anybody not on a booth of this box. See above. */
           displayName: onBooth.get(a.id) ?? null,
           staffCode: onBooth.has(a.id) ? boothStaffCode(a.id) : null,
+          /**
+           * What this account may do at THIS branch (offline plan §2.3, OD-11):
+           * the permission strings its grants cover here, resolved exactly as
+           * the platform's guard resolves them. A counter with no internet
+           * decides a discount, a tier change or a member create from this and
+           * nothing else. It is a list of verbs, not a role or a name.
+           */
+          permissions: permissionsAt.get(a.id) ?? [],
         })),
         // One row per person, so the rows read ARE the items — but the count
         // that decides "cut short" is the one the LIMIT applied to.
@@ -3790,12 +5240,36 @@ export async function cacheBundle(
        * stays offline. That is a property of offline working rather than a
        * defect: it is why a token's expiry is hours and not days.
        */
+      /**
+       * Bands stopped on purpose, NAMED (S2-12 round 2). The `bands` scope
+       * carries active bands only, so a gate cannot read absence as revoked —
+       * a band printed after its last pull is absent too. This list is what
+       * lets it refuse a revoked band with no internet. `replaced` is a stop
+       * as well: the lost band a new one took over from. Bounded by the
+       * `bands` scope's own window: a band older than that is unknown to the
+       * gate's copy anyway, and refused as such offline (OD-A5). The kind
+       * rides along so the gate can tell a refunded adult leaving (let out,
+       * OD-A4) from a kid's band (never operates the gate); `gateAccess` with
+       * it, since the gate checks that flag (SCRUM-494).
+       */
+      const stoppedBands = await db
+        .select({ id: band.id, kind: band.kind, gateAccess: band.gateAccess })
+        .from(band)
+        .where(
+          and(
+            eq(band.branchId, branchId),
+            inArray(band.status, ['revoked', 'replaced']),
+            sql`${band.createdAt} >= now() - interval '36 hours'`,
+          ),
+        )
+        .orderBy(asc(band.id));
       put(
         'deny_list',
         [
           {
             revokedAccountIds: rows.map((r) => r.id),
             revokedTokenIds: await revokedStaffTokenIds(db, operatorId),
+            revokedBands: stoppedBands,
           },
         ],
         /**
@@ -3842,10 +5316,23 @@ export async function cacheBundle(
     }
 
     if (scope === 'bands') {
+      /**
+       * The branch's bands still in play: active, and issued in the last
+       * thirty-six hours. A band admits for one visit, so a gate needs today's
+       * — and yesterday evening's, for a box whose clock is behind — not every
+       * band the park ever printed, which is the diary the bookings scope also
+       * declines to send.
+       */
       const rows = await db
         .select()
         .from(band)
-        .where(and(eq(band.branchId, branchId), eq(band.status, 'active')))
+        .where(
+          and(
+            eq(band.branchId, branchId),
+            eq(band.status, 'active'),
+            sql`${band.createdAt} >= now() - interval '36 hours'`,
+          ),
+        )
         .orderBy(asc(band.id))
         .limit(limit);
       put('bands', rows, {
@@ -3877,6 +5364,35 @@ export async function cacheBundle(
               ),
             )
         : [];
+      /**
+       * The paired customer displays, as the HASH of each one's credential
+       * (offline plan §2.3, OD-10). A display reaches its box through the
+       * bridge with the bearer it was paired under, and the box compares
+       * hashes: the credential itself is never on the box, so a stolen card
+       * yields none. Revoked and unpaired credentials are left out.
+       */
+      const displays = stations.length
+        ? await db
+            .select({
+              id: deviceCredential.id,
+              stationId: deviceCredential.stationId,
+              secretHash: deviceCredential.secretHash,
+            })
+            .from(deviceCredential)
+            .where(
+              and(
+                eq(deviceCredential.operatorId, operatorId),
+                eq(deviceCredential.kind, 'display'),
+                inArray(
+                  deviceCredential.stationId,
+                  stations.map((s) => s.id),
+                ),
+                isNull(deviceCredential.revokedAt),
+                sql`${deviceCredential.pairedAt} is not null`,
+                sql`${deviceCredential.secretHash} is not null`,
+              ),
+            )
+        : [];
       put(
         'station_config',
         stations.map((s) => ({
@@ -3891,6 +5407,16 @@ export async function cacheBundle(
           devices: assignments
             .filter((a) => a.stationId === s.id)
             .map((a) => ({ id: a.device.id, role: a.role, kind: a.device.kind })),
+          displays: displays
+            .filter((d) => d.stationId === s.id)
+            .map((d) => ({ id: d.id, credentialHash: d.secretHash })),
+          /**
+           * How stale this counter's copies may grow (OD-5, OD-6). The plan's
+           * defaults until the owner's two catalogue numbers have a Console
+           * setting to live in; delivered here so the box and the till read
+           * one value.
+           */
+          offlinePolicy: OFFLINE_POLICY,
         })),
       );
       continue;
@@ -4024,6 +5550,46 @@ export async function cacheBundle(
 }
 
 /**
+ * Every permission each account holds at one branch, as the platform's guard
+ * would resolve it there (`hasPermission` with the branch as the target).
+ *
+ * One query for the whole staff page rather than one per person, and the
+ * covering rule is the guard's own (`grantCovers`), so the box and the
+ * platform cannot disagree about what somebody may do at this counter.
+ */
+async function staffPermissionsAtBranch(
+  db: Db,
+  operatorId: string,
+  branchId: string,
+  accountIds: readonly string[],
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (accountIds.length === 0) return out;
+  const grants = await db
+    .select({
+      accountId: roleAssignment.accountId,
+      permission: rolePermission.permission,
+      scopeType: roleAssignment.scopeType,
+      scopeId: roleAssignment.scopeId,
+      roleName: role.name,
+    })
+    .from(roleAssignment)
+    .innerJoin(role, eq(roleAssignment.roleId, role.id))
+    .innerJoin(rolePermission, eq(rolePermission.roleId, role.id))
+    .where(inArray(roleAssignment.accountId, [...accountIds]));
+  const target = { operatorId, branchId };
+  const held = new Map<string, Set<string>>();
+  for (const grant of grants) {
+    if (!grantCovers(grant as EffectivePermission, target)) continue;
+    const set = held.get(grant.accountId) ?? new Set<string>();
+    set.add(grant.permission);
+    held.set(grant.accountId, set);
+  }
+  for (const [accountId, set] of held) out.set(accountId, [...set].sort());
+  return out;
+}
+
+/**
  * A box too old to read the bundle this api would build gets a refusal and an
  * alert, not a document it will half-apply.
  *
@@ -4090,11 +5656,17 @@ export async function boxOutboxState(
   exec: Exec,
   boxId: string,
 ): Promise<{ depth: number; oldestCreatedAt: Date | null }> {
+  /**
+   * An aggregate is not a column, so nothing decodes it on its own: the `pg`
+   * session Drizzle sets up hands `timestamptz` back as its wire text, and a
+   * `min()` merely TYPED as a Date reached both readers' `.getTime()` as a
+   * string (SCRUM-475 — every station-link poll with anything queued). Mapped
+   * through the column's own decoder it is the same Date every `created_at`
+   * row arrives as; an empty queue's `null` passes the decoder untouched.
+   */
+  const oldest: SQL<Date | null> = sql`min(${boxOutbox.createdAt})`.mapWith(boxOutbox.createdAt);
   const [row] = await exec
-    .select({
-      depth: sql<number>`count(*)::int`,
-      oldest: sql<Date | null>`min(${boxOutbox.createdAt})`,
-    })
+    .select({ depth: sql<number>`count(*)::int`, oldest })
     .from(boxOutbox)
     .where(and(eq(boxOutbox.boxId, boxId), sql`${boxOutbox.state} in ('queued','sending')`));
   return { depth: row?.depth ?? 0, oldestCreatedAt: row?.oldest ?? null };

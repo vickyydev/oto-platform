@@ -213,6 +213,22 @@ const ANOMALIES: Record<SyncAnomalyKind, AnomalyWords> = {
     label: 'Filed long after it happened',
     what: 'A box that had been away for a while. The fact is filed against the day it actually happened, not the day it arrived — this row is why the two differ.',
   },
+  receipt_collision: {
+    label: 'A printed receipt number was already taken',
+    what: 'A counter printed this number while it was offline, and by the time the sale arrived the number had been used in the station’s series. The sale is filed under the next free number; both numbers are on the row, because a guest is holding the first.',
+  },
+  revoked_actor: {
+    label: 'Taken on a shift that had been ended',
+    what: 'The shift token this sale was taken on had been revoked before the sale happened. The sale is filed, because it happened, and an alert asks somebody to look at who was at the counter.',
+  },
+  wallet_overdraft: {
+    label: 'Credit spent offline that the wallet did not have',
+    what: 'A counter with no internet took credit off a wallet, and when the spend reached us the wallet had held less than that at the moment it was taken — usually because two counters spent the same wallet while both were offline. A spend that only reached us after the day’s end had expired the credit is not one of these: it is filed as the spend it was, with the expiry’s take put back first. The sale is filed as it was taken and the wallet is at zero; the row names the wallet, the box, the station and how much credit was given that was not there, so somebody can follow it up.',
+  },
+  stock_oversold: {
+    label: 'Sold offline more than the shelves held',
+    what: 'A counter with no internet sold an item, and when the sale reached us the stock record held fewer than were sold — usually because two counters sold the same last ones while both were offline. The sale is filed as it was taken, because the guest paid; the record for that item is at zero, not below it, and the units it could not cover are kept with the sale. The row names the item, its size, the place, the box, the counter and how many were short, so somebody can count the shelf and correct the record.',
+  },
 };
 
 export function anomalyWords(kind: string): AnomalyWords {

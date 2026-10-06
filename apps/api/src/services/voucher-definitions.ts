@@ -8,15 +8,21 @@ import {
   voucher,
   voucherDefinition,
   type Db,
+  type VoucherCodeMode,
   type VoucherKind,
   type VoucherOfflinePolicy,
   type VoucherValueType,
 } from '@oto/db';
-import { newId } from '@oto/shared';
+import { newId, VoucherTargetSchema, type VoucherTarget } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
 import { withTx, type Exec, type OpContext } from './tx';
+import {
+  redemptionsByDefinition,
+  settlePromoRules,
+  type PromoRulesShape,
+} from './voucher-promotions';
 
 /**
  * Voucher types — what a booth prize is worth, set up by the park before any
@@ -107,6 +113,21 @@ export interface VoucherDefinitionInput {
   termsEn?: string | null;
   termsTh?: string | null;
   active?: boolean;
+  /** `fixed`: every slip prints `fixedCode` and a till redeems it against this type. */
+  codeMode?: VoucherCodeMode;
+  /** Capitals, digits and hyphens, 4 to 32 (the route normalises it). */
+  fixedCode?: string | null;
+  /**
+   * S2-14a round 5 — the promotional rules (`VoucherPromoRulesSchema` in
+   * `@oto/shared`): what a discount comes off, the global and per-customer
+   * limits, and the window. Decided at redemption by
+   * `services/voucher-promotions.ts`; checked whole here on every save.
+   */
+  target?: VoucherTarget | null;
+  usageLimit?: number | null;
+  perCustomerLimit?: number | null;
+  validFrom?: string | null;
+  validUntil?: string | null;
 }
 
 /** One live prize on a live booth that points at a definition. */
@@ -170,6 +191,8 @@ export interface VoucherDefinitionView {
   termsEn: string | null;
   termsTh: string | null;
   active: boolean;
+  codeMode: VoucherCodeMode;
+  fixedCode: string | null;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -186,6 +209,14 @@ export interface VoucherDefinitionView {
    * and the till refuses it), and a row carrying it is not counted either.
    */
   unredeemedVouchers: number;
+  /** S2-14a round 5 — the promotional rules, as stored (null target: the ticket rows). */
+  target: VoucherTarget | null;
+  usageLimit: number | null;
+  perCustomerLimit: number | null;
+  validFrom: string | null;
+  validUntil: string | null;
+  /** Vouchers of this type used up so far — what `usageLimit` is counted against. */
+  redeemedVouchers: number;
 }
 
 // --- The value, whole --------------------------------------------------------
@@ -308,8 +339,8 @@ async function settleValue(
       return { ...none, kind: next.kind, valueType, ticketPackageId: found.id };
     }
     case 'wallet_credit': {
-      // Nothing redeems one yet (`resolveVoucherEffect` refuses it), and the
-      // Console does not offer it; the rule it had before this file is kept.
+      // S2-14a round 5: redeemed at a till, it loads this much credit onto a
+      // new wallet when the sale carrying it closes (`consumeSaleVouchers`).
       if (next.valueSatang === null || next.valueSatang <= 0) {
         throw new AppError(
           400,
@@ -436,6 +467,7 @@ async function viewsOf(
   const productById = new Map(products.map((p) => [p.id, p]));
   const packageById = new Map(packages.map((p) => [p.id, p]));
   const unredeemedById = new Map(unredeemed.map((u) => [u.definitionId, u.vouchers]));
+  const redeemedById = await redemptionsByDefinition(exec, operatorId, ids);
 
   return rows.map((row) => {
     const p = row.productId ? productById.get(row.productId) : undefined;
@@ -462,6 +494,8 @@ async function viewsOf(
       termsEn: row.termsEn,
       termsTh: row.termsTh,
       active: row.active,
+      codeMode: row.codeMode,
+      fixedCode: row.fixedCode,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       archivedAt: row.archivedAt?.toISOString() ?? null,
@@ -497,8 +531,40 @@ async function viewsOf(
           active: u.active,
         })),
       unredeemedVouchers: unredeemedById.get(row.id) ?? 0,
+      target: storedTarget(row.target),
+      usageLimit: row.usageLimit,
+      perCustomerLimit: row.perCustomerLimit,
+      validFrom: row.validFrom,
+      validUntil: row.validUntil,
+      redeemedVouchers: redeemedById.get(row.id) ?? 0,
     };
   });
+}
+
+/** A stored target as the view answers it: null for the ticket rows, or one the schema cannot read. */
+function storedTarget(raw: unknown): VoucherTarget | null {
+  if (raw === null || raw === undefined) return null;
+  const parsed = VoucherTargetSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
+}
+
+/** The promotional rules a write will leave, laid over what is stored. */
+function promoRulesAfter(
+  before: DefinitionRow | null,
+  patch: Partial<VoucherDefinitionInput>,
+): PromoRulesShape {
+  const pick = <K extends keyof PromoRulesShape>(key: K): PromoRulesShape[K] => {
+    if (patch[key] !== undefined) return patch[key] as PromoRulesShape[K];
+    if (!before) return null as PromoRulesShape[K];
+    return (key === 'target' ? storedTarget(before.target) : before[key]) as PromoRulesShape[K];
+  };
+  return {
+    target: pick('target'),
+    usageLimit: pick('usageLimit'),
+    perCustomerLimit: pick('perCustomerLimit'),
+    validFrom: pick('validFrom'),
+    validUntil: pick('validUntil'),
+  };
 }
 
 async function viewOne(
@@ -625,6 +691,32 @@ export async function voucherDefinitionLinkOptions(
 
 type Actor = { accountId: string; operatorId: string };
 
+const FIXED_CODE_TAKEN = 'That code is already in use by another voucher type or voucher';
+
+/**
+ * The code mode as it will be after a create or an edit. `fixed` needs its
+ * code; `generated` keeps none. A fixed code may not be any voucher's own code,
+ * or a till could not tell which one a scan meant.
+ */
+async function settleCodeMode(
+  db: Exec,
+  operatorId: string,
+  mode: VoucherCodeMode,
+  fixedCode: string | null,
+): Promise<{ codeMode: VoucherCodeMode; fixedCode: string | null }> {
+  if (mode === 'generated') return { codeMode: 'generated', fixedCode: null };
+  if (!fixedCode) {
+    throw new AppError(422, 'VOUCHER_FIXED_CODE_REQUIRED', 'Enter the fixed code this voucher type prints');
+  }
+  const [clash] = await db
+    .select({ id: voucher.id })
+    .from(voucher)
+    .where(and(eq(voucher.operatorId, operatorId), eq(voucher.code, fixedCode)))
+    .limit(1);
+  if (clash) throw new AppError(409, 'VOUCHER_FIXED_CODE_TAKEN', FIXED_CODE_TAKEN);
+  return { codeMode: 'fixed', fixedCode };
+}
+
 export async function createVoucherDefinition(
   db: Db,
   ctx: OpContext,
@@ -644,6 +736,19 @@ export async function createVoucherDefinition(
     },
     input.valueType,
   );
+  const rules = await settlePromoRules(
+    db,
+    actor.operatorId,
+    value.kind,
+    promoRulesAfter(null, input),
+    input.target !== undefined,
+  );
+  const codes = await settleCodeMode(
+    db,
+    actor.operatorId,
+    input.codeMode ?? 'generated',
+    input.fixedCode ?? null,
+  );
   const id = newId();
   try {
     return await withTx(db, ctx, 'voucher_definition.create', async (tx) => {
@@ -654,6 +759,8 @@ export async function createVoucherDefinition(
         nameEn: input.nameEn.trim(),
         nameTh: words(input.nameTh) ?? null,
         ...value,
+        ...rules,
+        ...codes,
         expiryDays: input.expiryDays ?? null,
         offlinePolicy: input.offlinePolicy ?? 'allow',
         singleUse: input.singleUse ?? true,
@@ -726,10 +833,28 @@ export async function updateVoucherDefinition(
     },
     patch.valueType,
   );
+  const rules = await settlePromoRules(
+    db,
+    actor.operatorId,
+    value.kind,
+    promoRulesAfter(before, patch),
+    patch.target !== undefined,
+  );
+  const codes =
+    patch.codeMode !== undefined || patch.fixedCode !== undefined
+      ? await settleCodeMode(
+          db,
+          actor.operatorId,
+          patch.codeMode ?? before.codeMode,
+          patch.fixedCode !== undefined ? patch.fixedCode : before.fixedCode,
+        )
+      : {};
   try {
     return await withTx(db, ctx, 'voucher_definition.update', async (tx) => {
       const set: Partial<typeof voucherDefinition.$inferInsert> = {
         ...value,
+        ...rules,
+        ...codes,
         updatedAt: new Date(),
       };
       if (patch.code !== undefined) set.code = patch.code;
@@ -858,6 +983,9 @@ export async function restoreVoucherDefinition(
  */
 function definitionConflict(err: unknown): unknown {
   const pg = pgErrorOf(err);
+  if (pg?.code === '23505' && pg.constraint === 'voucher_definition_fixed_code_unique') {
+    return new AppError(409, 'VOUCHER_FIXED_CODE_TAKEN', FIXED_CODE_TAKEN);
+  }
   if (pg?.code === '23505' && pg.constraint === 'voucher_definition_code_unique') {
     return new AppError(
       409,

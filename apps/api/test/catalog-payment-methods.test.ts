@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { auditLog, paymentAttempt, paymentMethod, station, ticketPackage } from '@oto/db';
-import { newId } from '@oto/shared';
+import { PAID_ONLINE_TENDER_CODE, WALLET_TENDER_CODE, newId } from '@oto/shared';
 import {
   ADMIN,
   CENTRAL_BRANCH_CODE,
@@ -84,7 +84,7 @@ async function tryTender(tender: Record<string, unknown>) {
     payload: {
       id: saleId,
       stationId,
-      lines: [{ id: newId(), packageId, kids: 1, adults: 0 }],
+      lines: [{ id: newId(), packageId, kids: 1, adults: 1 }],
       finalise: true,
     },
   });
@@ -192,6 +192,16 @@ describe('creating a tender', () => {
     const res = await create({ code: 'credit_card', label: 'Credit Card', kind: 'card' });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.message).toContain('credit_card');
+  });
+
+  it('refuses the two codes the platform writes by itself: stored-value credit and paid online (S2-14a round 2)', async () => {
+    for (const [code, kind] of [[WALLET_TENDER_CODE, 'cash'], [PAID_ONLINE_TENDER_CODE, 'card']] as const) {
+      const res = await create({ code, label: 'Dead button', kind });
+      expect(res.statusCode, code).toBe(400);
+      expect(res.json().error.message).toContain(code);
+      expect(res.json().error.details.reserved).toEqual([PAID_ONLINE_TENDER_CODE, WALLET_TENDER_CODE]);
+      expect((await list()).map((m) => m.id)).not.toContain(code);
+    }
   });
 
   it('refuses a second tender on the same token', async () => {
@@ -352,7 +362,7 @@ describe('what the ledger does with a tender that has left the list', () => {
       payload: {
         id: saleId,
         stationId,
-        lines: [{ id: newId(), packageId, kids: 1, adults: 0 }],
+        lines: [{ id: newId(), packageId, kids: 1, adults: 1 }],
         finalise: true,
       },
     });

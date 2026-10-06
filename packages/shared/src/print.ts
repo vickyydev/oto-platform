@@ -252,6 +252,8 @@ export const PRINT_SUBJECT_TYPES = [
   'booking',
   'visit',
   'station',
+  /** S2-14a — a credit voucher prints one wallet: its QR and its balance. */
+  'wallet',
 ] as const;
 export type PrintSubjectType = (typeof PRINT_SUBJECT_TYPES)[number];
 
@@ -331,3 +333,51 @@ export function reprintRootOf(source: Pick<PrintJob, 'id' | 'reprintOf'>): strin
  * read. It is not wired yet — S2-06's API work does that.
  */
 export const PRINT_JOB_RETENTION_DAYS = 90;
+
+// --- Sale printing (S2-11) ------------------------------------------------------
+
+/**
+ * The two prep stations that print, in the order their tickets come out —
+ * `PREP_TITLE` and the station list in the prototype's `lib/fnb.ts:204-235`.
+ * `none` is a prep station that prints nothing (a bottled drink handed over at
+ * the counter) and is not in this list on purpose.
+ */
+export const PRINTING_PREP_STATIONS = ['kitchen', 'bar'] as const;
+export type PrintingPrepStation = (typeof PRINTING_PREP_STATIONS)[number];
+
+/** The ticket title each station prints under (`lib/fnb.ts:204`). */
+export const PREP_TICKET_TITLE: Record<PrintingPrepStation, string> = {
+  kitchen: 'Kitchen',
+  bar: 'Bar',
+};
+
+/**
+ * One prep ticket per station that has lines — the prototype's
+ * `buildPrepTickets` (`lib/fnb.ts:213-235`), ported. A line whose station is
+ * `none` does not print; a station with no lines gets no ticket; the kitchen
+ * ticket comes before the bar's. A line with no station recorded goes to the
+ * kitchen, which is where `resolveItemPrepStations` sends it too.
+ */
+export function groupPrepTickets<T extends { prepStation?: string | null }>(
+  lines: readonly T[],
+): { station: PrintingPrepStation; title: string; lines: T[] }[] {
+  const byStation: Record<PrintingPrepStation, T[]> = { kitchen: [], bar: [] };
+  for (const line of lines) {
+    const station = line.prepStation ?? 'kitchen';
+    if (station === 'kitchen' || station === 'bar') byStation[station].push(line);
+  }
+  return PRINTING_PREP_STATIONS.filter((station) => byStation[station].length > 0).map((station) => ({
+    station,
+    title: PREP_TICKET_TITLE[station],
+    lines: byStation[station],
+  }));
+}
+
+/**
+ * What History can ask to print again (`TransactionDetail.tsx:171-197`): the
+ * full receipt, the kids' band group, the adults' band group, the F&B pick-up
+ * ticket, and a shop sale's receipt — the till names the last one separately,
+ * the paper is the same receipt.
+ */
+export const SALE_REPRINT_KINDS = ['receipt', 'kids_bands', 'adult_bands', 'prep', 'merch_receipt'] as const;
+export type SaleReprintKind = (typeof SALE_REPRINT_KINDS)[number];

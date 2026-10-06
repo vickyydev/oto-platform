@@ -10,9 +10,11 @@ import {
 } from '@/api/sync';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/Drawer';
-import { EmptyState, ErrorNote, Fact, Loading, Panel, RouteUnavailable } from '@/components/Panel';
+import { ErrorNote, Fact, Loading, RouteUnavailable } from '@/components/Panel';
 import { Chip, StatusMark, StatusPill } from '@/components/Status';
-import { PresetButton, PresetRow, SelectFilter } from '@/components/Filters';
+import { CodeTag, FilterChip, SelectChip, Tag, TONE_INK, TONE_TINT } from '@/components/redesign/chips';
+import { CardShell } from '@/components/redesign/layout';
+import { EmptyNote, UnreadNote } from '@/components/redesign/StatTile';
 import { Field, TextInput } from '@/components/Form';
 import {
   QUARANTINE_REASON_OPTIONS,
@@ -119,52 +121,47 @@ export function Quarantine({
   const openTotal = rows.filter((r) => r.status === 'open').length;
 
   return (
-    <div className="flex flex-col gap-4">
-      <Panel>
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <PresetRow>
-              {STATUSES.map((s) => (
-                <PresetButton key={s.value} active={status === s.value} onClick={() => setStatus(s.value)}>
-                  {s.label}
-                </PresetButton>
-              ))}
-            </PresetRow>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-2 ml-auto"
-              onClick={() => void load()}
-              disabled={loading}
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Refresh
-            </Button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <SelectFilter
-              label="Why it was refused"
-              value={reason}
-              onChange={setReason}
-              options={QUARANTINE_REASON_OPTIONS}
-              anyLabel="Every reason"
-            />
-          </div>
-        </div>
-      </Panel>
-
+    <>
       {error && <ErrorNote message={error} onRetry={() => void load()} />}
 
-      <Panel
+      <CardShell
         title={groups.length === 0 ? 'Quarantine' : `${groups.length} problem${groups.length === 1 ? '' : 's'}`}
-        description={
+        note={
           groups.length === 0
-            ? undefined
+            ? 'events the cloud refused to file'
             : `${rows.length} event${rows.length === 1 ? '' : 's'} the cloud would not file${
                 openTotal > 0 ? `, ${openTotal} still waiting on a decision` : ''
               }. Each one is something that happened at the park; the till's own copy is untouched.`
         }
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-2 rounded-full px-3.5"
+            onClick={() => void load()}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Refresh
+          </Button>
+        }
       >
+        <div className="flex flex-wrap items-center gap-2">
+          {STATUSES.map((s) => (
+            <FilterChip key={s.value} active={status === s.value} onClick={() => setStatus(s.value)}>
+              {s.label}
+            </FilterChip>
+          ))}
+          <SelectChip
+            label="Why it was refused"
+            value={reason}
+            onChange={setReason}
+            options={QUARANTINE_REASON_OPTIONS}
+            anyLabel="Every reason"
+            className="ml-auto"
+          />
+        </div>
+
         {missing ? (
           <RouteUnavailable
             what="The quarantine list"
@@ -172,17 +169,22 @@ export function Quarantine({
           />
         ) : loading && rows.length === 0 ? (
           <Loading what="quarantined events" />
+        ) : error && groups.length === 0 ? (
+          // Never the all-clear below: this list was not read. The error note
+          // above carries the reason and the Try again.
+          <UnreadNote what="The quarantine list" />
         ) : groups.length === 0 ? (
-          <EmptyState
+          <EmptyNote
+            good={status === 'open'}
             title={status === 'open' ? 'Nothing is waiting on a decision' : 'Nothing here'}
             detail={
               status === 'open'
                 ? 'Every event the boxes have sent was filed — or was a duplicate, which is the ledger working as intended.'
-                : 'No event has been dealt with under this filter.'
+                : 'No event has been dealt with under this filter. “Waiting on a decision” is one press above.'
             }
           />
         ) : (
-          <ul className="flex flex-col divide-y">
+          <ul className="flex flex-col gap-2.5" aria-label="Quarantined events">
             {groups.map((group) => (
               <GroupRow
                 key={group.key}
@@ -195,14 +197,20 @@ export function Quarantine({
         )}
 
         {cursor && (
-          <div className="mt-4 flex justify-center">
-            <Button variant="outline" size="sm" onClick={() => void loadMore()} disabled={loadingMore}>
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full px-4"
+              onClick={() => void loadMore()}
+              disabled={loadingMore}
+            >
               {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               Load more
             </Button>
           </div>
         )}
-      </Panel>
+      </CardShell>
 
       <Anomalies timezone={timezone} />
 
@@ -215,7 +223,7 @@ export function Quarantine({
           onChanged={() => void load()}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -229,48 +237,55 @@ function GroupRow({
   onOpen: () => void;
 }) {
   const words = quarantineWords(group.reason);
+  const tone = group.openCount > 0 ? 'down' : 'idle';
   return (
-    <li className="py-3 first:pt-0 last:pb-0">
+    <li
+      className={
+        group.openCount > 0
+          ? 'flex flex-col gap-2 rounded-2xl border border-status-down/25 bg-status-down/5 px-[18px] py-4'
+          : 'flex flex-col gap-2 rounded-2xl bg-foreground/[0.025] px-[18px] py-4'
+      }
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusMark tone={group.openCount > 0 ? 'down' : 'idle'} />
+        <StatusMark tone={tone} className="w-4 h-4" />
+        <CodeTag className="text-xs">{group.reason}</CodeTag>
         <button
           type="button"
           onClick={onOpen}
-          className="text-sm font-semibold min-w-0 break-words text-left hover:underline underline-offset-4"
+          className="min-w-0 text-left text-sm font-semibold break-words hover:underline underline-offset-4"
         >
           {words.label}
         </button>
-        {group.type && <Chip>{group.type}</Chip>}
+        {group.type && <Tag>{group.type}</Tag>}
         <span
-          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold tabular-nums"
-          style={{
-            color: `hsl(var(--status-${group.openCount > 0 ? 'down' : 'idle'}))`,
-            backgroundColor: `hsl(var(--status-${group.openCount > 0 ? 'down' : 'idle'}) / 0.12)`,
-          }}
+          className={`ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold tabular-nums ${TONE_INK[tone]} ${TONE_TINT[tone]}`}
           title={`${group.count} event${group.count === 1 ? '' : 's'} in this group`}
         >
           ×{group.count}
         </span>
-        <span className="text-sm text-muted-foreground ml-auto whitespace-nowrap">
-          {timeAgo(group.lastSeenAt)}
-        </span>
       </div>
 
-      <p className="mt-1.5 text-sm text-muted-foreground break-words">{words.what}</p>
+      <p className="text-[13px] leading-normal text-muted-foreground break-words">{words.what}</p>
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span>{group.boxName ?? 'Unnamed box'}</span>
-        <span>first seen {formatWhen(group.firstSeenAt, timezone)}</span>
-        {group.openCount > 0 && group.openCount < group.count && (
-          <span>
-            {group.openCount} of {group.count} still open
-          </span>
-        )}
-        <span className="ml-auto">
-          <button type="button" onClick={onOpen} className="font-semibold hover:text-foreground">
-            Details
-          </button>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-[12.5px] text-muted-foreground">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <span>{group.boxName ?? 'Unnamed box'}</span>
+          <span>first seen {formatWhen(group.firstSeenAt, timezone)}</span>
+          <span>last {timeAgo(group.lastSeenAt)}</span>
+          {group.openCount > 0 && group.openCount < group.count && (
+            <span>
+              {group.openCount} of {group.count} still open
+            </span>
+          )}
         </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full border-primary bg-card px-3.5 font-bold text-primary-ink"
+          onClick={onOpen}
+        >
+          Details
+        </Button>
       </div>
     </li>
   );
@@ -734,31 +749,33 @@ function Anomalies({ timezone }: { timezone?: string | null }) {
   };
 
   return (
-    <Panel
+    <CardShell
       title="Filed, with a caveat"
-      description="Events that DID go in, where the cloud had to make a judgement on the way — a clock it could not trust, a batch that arrived twice, the same person entered at two tills. Nothing here is waiting on you."
+      note="Events that DID go in, where the cloud had to make a judgement on the way — a clock it could not trust, a batch that arrived twice, the same person entered at two tills. Nothing here is waiting on you."
     >
       {missing ? (
         <RouteUnavailable what="The anomaly record" />
       ) : rows === null ? (
         <Loading what="anomalies" />
       ) : rows.length === 0 ? (
-        <EmptyState
+        <EmptyNote
+          good
+          className="py-3"
           title="No caveats recorded"
           detail="Every event the boxes sent was filed exactly as it arrived."
         />
       ) : (
         <>
-          <ul className="flex flex-col divide-y">
+          <ul className="flex flex-col [&>*]:rounded-[12px] [&>*:nth-child(odd)]:bg-foreground/[0.025]">
             {rows.map((row) => {
               const words = anomalyWords(row.kind);
               const facts = anomalyFacts(row.detail);
               return (
-                <li key={row.id} className="py-3 first:pt-0 last:pb-0">
+                <li key={row.id} className="px-3 py-2.5">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <StatusMark tone="idle" />
                     <span className="text-sm font-semibold break-words">{words.label}</span>
-                    {row.boxName && <Chip>{row.boxName}</Chip>}
+                    {row.boxName && <Tag>{row.boxName}</Tag>}
                     <span className="text-sm text-muted-foreground ml-auto whitespace-nowrap">
                       {timeAgo(row.detectedAt)}
                     </span>
@@ -794,10 +811,16 @@ function Anomalies({ timezone }: { timezone?: string | null }) {
               );
             })}
           </ul>
-          {error && <p className="mt-3 text-sm text-destructive break-words">{error}</p>}
+          {error && <p className="text-sm text-destructive break-words">{error}</p>}
           {cursor && (
-            <div className="mt-4 flex justify-center">
-              <Button variant="outline" size="sm" onClick={() => void loadMore()} disabled={loadingMore}>
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full px-4"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+              >
                 {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 Load more
               </Button>
@@ -805,6 +828,6 @@ function Anomalies({ timezone }: { timezone?: string | null }) {
           )}
         </>
       )}
-    </Panel>
+    </CardShell>
   );
 }

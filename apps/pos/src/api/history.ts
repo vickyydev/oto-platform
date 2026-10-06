@@ -12,14 +12,32 @@
 // It is deliberately NOT in `api/sales.ts`: that file is the till's write path
 // — quote, commit, tender — and this is a read a different screen makes.
 //
-// WHAT THE LEDGER CANNOT ANSWER YET. There are no wristband codes on a sale or
-// its lines (`wristband` is still the Sprint 1 placeholder table; bands are
-// minted and printed in S2-11 / SCRUM-208), so `wristbandCode` is left unset
-// rather than invented, and the page's "Scan bracelet" path has nothing to read.
-// Nor is there a booking reference on a sale: a redemption links the booking to
-// the visit, not to the money, so `bookingReference` stays unset too.
-import type { PaymentAttemptView } from '@oto/shared';
-import { api } from './client';
+// BANDS, REFUNDS AND REPRINTS — S2-11 (SCRUM-208). A finalised ticket sale now
+// carries its bands (by short code — the signed code is a gate credential and
+// never leaves the platform in a read), its refunds and its print jobs, all on
+// `GET /sales/:id`. A sale is found by a band or a member's phone through
+// `GET /sales/lookup`, and History changes a sale through two more routes:
+// `POST /sales/:id/refunds` and `POST /sales/:id/reprints`. The list card
+// still leaves `wristbandCode` unset: the list answer carries no bands, and a
+// sale can hold several. The booking reference is read off the sale's note
+// (`bookingReferenceOf`, SCRUM-477): a redemption writes "Online booking
+// OTO-XXXX-XXXX" on the sale it files, and no read yet answers the booking
+// itself.
+import {
+  bandShortCode,
+  isBandCodeShape,
+  normaliseBandCode,
+  normalizePhone,
+  parseBandShortCode,
+  resolveRefundAmount,
+  type PaymentAttemptView,
+  type PrintKind,
+  type RefundAllocationEntry,
+  type RefundLineEntry,
+  type RefundMode,
+  type SaleReprintKind,
+} from '@oto/shared';
+import { api, idemKey } from './client';
 import type { TxnKind, TxnStatus, TxnSummary } from '@/types';
 
 export type { PaymentAttemptView };
@@ -65,8 +83,8 @@ export interface ApiSaleTierClaim {
   documentKind: string;
   /** The tier the document supported — the one this sale was charged at. */
   toTier: string;
-  /** The document's own expiry as the check recorded it (`YYYY-MM-DD`). */
-  evidenceExpiresOn: string;
+  /** The document's own expiry as the check recorded it (`YYYY-MM-DD`), or null when it carries none. */
+  evidenceExpiresOn: string | null;
   /** When reception checked it. */
   verifiedAt: string;
 }
@@ -217,6 +235,98 @@ export interface ApiSaleDetail {
    * and History has to keep opening sales on that deployment.
    */
   attempts?: PaymentAttemptView[];
+  /**
+   * S2-11 — WHAT THE REFUNDS LEFT, the prototype's `statusForRefunds`
+   * (`mockApi.ts`), derived by the platform from the running total: the
+   * ledger status stays `finalised` until the whole sale is refunded.
+   *
+   * Everything from here down is optional on the wire for the same reason
+   * `attempts` is: a deployment older than S2-11 answers without it, and
+   * History has to keep opening sales there.
+   */
+  refundStatus?: RefundStatus;
+  /** What may still be refunded, in satang. 0 on a sale that is not finalised. */
+  refundableSatang?: number;
+  /** Every refund, oldest first — the prototype's "Refund history". */
+  refunds?: ApiRefund[];
+  /** Every print job, newest first; a reprint names its original in `reprintOf`. */
+  printJobs?: ApiSalePrintJob[];
+  /** The bands the sale issued, by short code. */
+  bands?: ApiSaleBand[];
+  /** S2-09b — the code the guest holds for an F&B order. */
+  pickupCode?: string | null;
+}
+
+/** Where a sale's refunds leave it (`refundStatusOf` in `@oto/shared`). */
+export type RefundStatus = 'none' | 'partially_refunded' | 'refunded';
+
+/**
+ * ONE REFUND, as the platform recorded it (`RefundView`,
+ * apps/api/src/services/refund-slices.ts): its own number from the station's
+ * refund series, who pressed it and who approved it, the lines it covered and
+ * how the money went back — slice by slice, wallet → same tender → cash.
+ */
+export interface ApiRefund {
+  id: string;
+  saleId: string;
+  stationId: string;
+  /** `T1-R-000003`. */
+  number: string;
+  amountSatang: number;
+  mode: RefundMode | string;
+  reason: string;
+  note: string | null;
+  lines: RefundLineEntry[];
+  tenderAllocation: RefundAllocationEntry[];
+  approvedBy: { accountId: string; name: string | null };
+  createdBy: { accountId: string; name: string | null };
+  /** True while a slice still waits on a terminal, the gateway or a wallet. */
+  pending: boolean;
+  createdAt: string;
+}
+
+/** One print job as the sale detail, the finalise answer and a reprint show it. */
+export interface ApiSalePrintJob {
+  id: string;
+  kind: PrintKind;
+  role: string | null;
+  /** `queued`, `printed`, `failed` or `skipped` (no printer for the role). */
+  status: string;
+  stationId: string | null;
+  deviceId: string | null;
+  deviceLabel: string | null;
+  subjectType: string | null;
+  subjectId: string | null;
+  /** The ORIGINAL job this is a copy of. Null on a first print. */
+  reprintOf: string | null;
+  reprintReason: string | null;
+  /**
+   * SCRUM-208 — who asked for this printout, filled for reprints (the account
+   * that pressed Reprint), null otherwise. Read back with the sale, so a
+   * reprint's attribution survives a reload rather than living only in the
+   * screen state of the till that made it.
+   */
+  requestedByName: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  queuedAt: string;
+  finishedAt: string | null;
+}
+
+/**
+ * One band as a read shows it — its short code (`T1-7KMQ4X`, printed under the
+ * QR and on the receipt), never the signed code, which is a gate credential.
+ */
+export interface ApiSaleBand {
+  id: string;
+  kind: 'kid' | 'adult';
+  status: string;
+  shortCode: string | null;
+  saleLineId: string | null;
+  childId: string | null;
+  childName: string | null;
+  printedJobId: string | null;
+  createdAt: string;
 }
 
 /**
@@ -277,10 +387,33 @@ export function referenceOf(sale: ApiSale): string {
   return sale.receiptNumber ?? 'No receipt number';
 }
 
+/**
+ * THE BOOKING A SALE REDEEMED — SCRUM-477.
+ *
+ * A redemption sale carries its booking on the ledger row (`sale.booking_id`),
+ * but neither the list nor the detail read answers it. What both carry is the
+ * note the redemption writes on the sale, "Online booking OTO-XXXX-XXXX" —
+ * the counter's online path (`services/booking-redemption.ts`) and the box
+ * lane's (`sync.ts`) write the same words — and that is read here the way a
+ * voucher's label is read above. Until a read carries the booking, this is
+ * the one signal on the wire. Null on every other sale.
+ */
+export function bookingReferenceOf(sale: Pick<ApiSale, 'note'>): string | null {
+  const found = /^Online booking (\S+)$/.exec(sale.note ?? '');
+  return found ? found[1]! : null;
+}
+
+/** The customer line on a redemption sale with no member behind it. */
+export const BOOKED_ONLINE_LABEL = 'Booked online';
+
 /** One ledger sale as the History components read it. */
 export function toTxn(sale: ApiSaleListItem, branch: { id?: string; name?: string }): HistoryTxn {
   const badge = badgeOf(sale);
-  const guest = sale.member ? sale.member.nickname || sale.member.name || sale.member.phone : null;
+  const bookingReference = bookingReferenceOf(sale);
+  // A guest who booked online and is no member is not a walk-in (SCRUM-477).
+  const guest =
+    (sale.member ? sale.member.nickname || sale.member.name || sale.member.phone : null) ??
+    (bookingReference ? BOOKED_ONLINE_LABEL : null);
   return {
     id: sale.id,
     kind: kindOf(sale),
@@ -294,6 +427,7 @@ export function toTxn(sale: ApiSaleListItem, branch: { id?: string; name?: strin
     badge,
     operatorName: sale.soldBy?.name ?? 'Unknown',
     ...(guest ? { customerLabel: guest } : {}),
+    ...(bookingReference ? { bookingReference } : {}),
     ...(branch.id ? { branchId: branch.id } : {}),
     ...(branch.name ? { branchName: branch.name } : {}),
     ledger: sale,
@@ -385,4 +519,369 @@ export function calendarDateIn(timezone: string | undefined): string {
     month: '2-digit',
     day: '2-digit',
   }).format(new Date());
+}
+
+// --- S2-11: finding a sale by a band or a phone -----------------------------
+
+/**
+ * WHAT THE SEARCH BOX WAS GIVEN — the universal search's one new decision
+ * (S2-11). The prototype's box filtered the rows on screen by reference, name,
+ * operator and amount (`pages/History.tsx`), and that filter stays. Two things
+ * a guest hands over at the desk are not on any row, though: the band on their
+ * wrist and their phone. Those are asked of the platform (`lookupSales`), which
+ * finds them on any day, not just the one on screen.
+ *
+ *   band   the whole signed code, as a scanner reads the QR, or the short code
+ *          printed under it and on the receipt (`T1-7KMQ4X`, the dash or a
+ *          space between the two parts, any case);
+ *   phone  nine digits or more that read as a phone in any format — "08…",
+ *          "+66 …", "0066…". Fewer digits are an amount or part of a receipt
+ *          number, which the on-screen filter already answers;
+ *   text   anything else: the on-screen filter alone.
+ */
+export type HistorySearch =
+  | { kind: 'band'; code: string; label: string }
+  | { kind: 'phone'; phone: string }
+  | { kind: 'text' };
+
+export function parseHistorySearch(raw: string): HistorySearch {
+  const text = raw.trim();
+  if (!text) return { kind: 'text' };
+  if (isBandCodeShape(text)) {
+    const code = normaliseBandCode(text);
+    return { kind: 'band', code, label: bandShortCode(code) ?? code };
+  }
+  const short = parseBandShortCode(text);
+  if (short) {
+    const code = `${short.prefix}-${short.tail}`;
+    return { kind: 'band', code, label: code };
+  }
+  if (/^[+\d][\d\s\-().]*$/.test(text) && text.replace(/\D/g, '').length >= 9) {
+    const phone = normalizePhone(text);
+    if (phone) return { kind: 'phone', phone };
+  }
+  return { kind: 'text' };
+}
+
+/** What `GET /sales/lookup` matched, beside the sales it found. */
+export type SaleLookupMatch =
+  | { by: 'band'; bandIds: string[] }
+  | { by: 'phone'; phone: string; memberIds: string[] };
+
+export interface SaleLookupResult {
+  match: SaleLookupMatch;
+  sales: HistoryTxn[];
+}
+
+/**
+ * The sales a band or a phone leads to, newest first, scoped as the day's list
+ * is: this branch when the till names one, otherwise every branch the session
+ * reaches. One of the two, never both — the platform refuses either way.
+ */
+export async function lookupSales(
+  branchId: string | null,
+  by: { band: string } | { phone: string },
+  limit = 50,
+): Promise<SaleLookupResult> {
+  const params = new URLSearchParams();
+  if ('band' in by) params.set('band', by.band);
+  else params.set('phone', by.phone);
+  if (branchId) params.set('branchId', branchId);
+  params.set('limit', String(limit));
+  const answer = await api.get<{ match: SaleLookupMatch; sales: ApiSaleListItem[] }>(
+    `/sales/lookup?${params.toString()}`,
+  );
+  return { match: answer.match, sales: answer.sales.map((sale) => toTxn(sale, {})) };
+}
+
+/**
+ * The rows a search shows: the lookup's finds and the day's own rows that the
+ * on-screen filter kept, each sale once, newest first. A band sold yesterday
+ * is found by the lookup and not by the filter, and a sale found both ways
+ * must not appear twice.
+ */
+export function mergeLookup(
+  local: readonly HistoryTxn[],
+  found: readonly HistoryTxn[] | null,
+): HistoryTxn[] {
+  if (!found || found.length === 0) return [...local];
+  const seen = new Set<string>();
+  const rows: HistoryTxn[] = [];
+  for (const t of [...found, ...local]) {
+    if (seen.has(t.id)) continue;
+    seen.add(t.id);
+    rows.push(t);
+  }
+  return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/**
+ * What a set of sales actually took, in baht, net of refunds: an order rung up
+ * and never tendered, or one that was voided, is not spend (the prototype's
+ * `totalSpent`, "net of refunds", `mockApi.ts:getTransactionsByMember`).
+ */
+export function spentOf(txns: readonly HistoryTxn[]): number {
+  const satang = txns
+    .filter((t) => t.badge !== 'unpaid' && t.badge !== 'voided')
+    .reduce((sum, t) => sum + Math.max(0, t.ledger.totals.grossSatang - t.ledger.totals.refundedSatang), 0);
+  return baht(satang);
+}
+
+// --- S2-11: refunds ------------------------------------------------------------
+
+/**
+ * One choice in the Refund dialog's "By item" list (`RefundModal.tsx`).
+ *
+ * The prototype listed one row per CART line — "2 Hours Play · 3 ppl", "2×
+ * Iced Latte" (`TransactionDetail.tsx:150-166`) — and that is the grouping the
+ * detail already draws (`cartLineId`). The platform refunds SALE lines, which
+ * are the components of a cart line (kids, adults, socks), so a row carries
+ * every component still unrefunded and the refund names them all.
+ *
+ * A line an earlier refund already covered is left out (the platform would
+ * refuse it, `REFUND_LINE_ALREADY_REFUNDED`), and so is a row worth nothing: the
+ * prototype listed no free promo item, and a ฿0 refund refunds nothing.
+ */
+export interface RefundItemOption {
+  /** The cart line — the row's key. */
+  id: string;
+  label: string;
+  /** The sale lines this row refunds. */
+  lineIds: string[];
+  amountSatang: number;
+}
+
+const ADMISSION_KINDS = new Set(['kids', 'adults_paid', 'adults_free']);
+
+export function refundItemOptions(
+  detail: Pick<ApiSaleDetail, 'lines' | 'refunds'>,
+  nameOf: (line: ApiSaleLine) => string | null = () => null,
+): RefundItemOption[] {
+  const refunded = new Set(
+    (detail.refunds ?? []).flatMap((r) => r.lines.map((line) => line.saleLineId)),
+  );
+  const groups = new Map<string, ApiSaleLine[]>();
+  for (const line of detail.lines) {
+    const group = groups.get(line.cartLineId) ?? [];
+    group.push(line);
+    groups.set(line.cartLineId, group);
+  }
+  const options: RefundItemOption[] = [];
+  for (const [cartLineId, lines] of groups) {
+    const open = lines.filter((line) => !refunded.has(line.id));
+    const amountSatang = open.reduce((sum, line) => sum + line.grossSatang, 0);
+    if (open.length === 0 || amountSatang <= 0) continue;
+    const first = lines[0]!;
+    const people = lines
+      .filter((line) => ADMISSION_KINDS.has(line.kind))
+      .reduce((sum, line) => sum + line.quantity, 0);
+    const name = nameOf(first) ?? first.stayDurationLabel ?? first.label;
+    const label =
+      people > 0
+        ? `${name} · ${people} ppl`
+        : lines.length === 1
+          ? `${first.quantity}× ${first.label}`
+          : name;
+    options.push({ id: cartLineId, label, lineIds: open.map((line) => line.id), amountSatang });
+  }
+  return options;
+}
+
+/** What a refund may still be for: the detail's figure when it has one, else the totals'. */
+export function refundRemainingSatang(
+  detail: Pick<ApiSaleDetail, 'refundableSatang'> | null,
+  totals: Pick<ApiSaleTotals, 'grossSatang' | 'refundedSatang'>,
+): number {
+  if (detail?.refundableSatang !== undefined) return Math.max(0, detail.refundableSatang);
+  return Math.max(0, totals.grossSatang - totals.refundedSatang);
+}
+
+/**
+ * THE AMOUNT A REFUND IS FOR — the prototype's clamp (`RefundModal.tsx`
+ * `amountTHB = Math.min(rawAmount, maxRefund)`, and again in
+ * `mockApi.ts:recordRefund`), in satang, through the same `resolveRefundAmount`
+ * the platform applies. `clamped` is what lets the dialog say "capped at"
+ * rather than refund a different figure than the one keyed in without a word.
+ */
+export function refundAmountFor(input: {
+  mode: RefundMode;
+  remainingSatang: number;
+  options: readonly RefundItemOption[];
+  selected: readonly string[];
+  customSatang: number;
+}): { amountSatang: number; requestedSatang: number; clamped: boolean; lineIds: string[] } {
+  const picked = input.options.filter((option) => input.selected.includes(option.id));
+  const resolved = resolveRefundAmount({
+    mode: input.mode,
+    remainingSatang: input.remainingSatang,
+    itemsSatang: picked.reduce((sum, option) => sum + option.amountSatang, 0),
+    customSatang: Math.max(0, Math.round(input.customSatang)),
+  });
+  return {
+    ...resolved,
+    lineIds: input.mode === 'items' ? picked.flatMap((option) => option.lineIds) : [],
+  };
+}
+
+/** What the Refund dialog sends. The platform decides where the money goes. */
+export interface SaleRefundBody {
+  mode: RefundMode;
+  lineIds?: string[];
+  amountSatang?: number;
+  reason: string;
+  note?: string | null;
+  actionId: string;
+}
+
+export interface SaleRefundAnswer {
+  /** True when this press had already been recorded and nothing was written. */
+  replay: boolean;
+  refund: ApiRefund;
+  sale: ApiSale;
+  refundStatus: RefundStatus;
+  refundableSatang: number;
+  requestedSatang: number;
+  clamped: boolean;
+}
+
+/** A short stable digest of a request body, for an idempotency key. FNV-1a, hex. */
+function digest(value: unknown): string {
+  const s = JSON.stringify(value);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+/**
+ * Refund a finalised sale (`POST /sales/:id/refunds`). Online only, and only
+ * with a manager's approval: an account without `pos:refund:approve` is
+ * refused `REFUND_APPROVAL_REQUIRED` in the platform's words.
+ *
+ * The action id is one per dialog, so a retry of the same press after a lost
+ * answer replays the refund it recorded; the idempotency key carries the body,
+ * so a corrected amount is a new request rather than a mismatch.
+ */
+export function refundSale(saleId: string, body: SaleRefundBody): Promise<SaleRefundAnswer> {
+  return api.post<SaleRefundAnswer>(`/sales/${encodeURIComponent(saleId)}/refunds`, body, {
+    idempotencyKey: `refund:${saleId}:${body.actionId}:${digest(body)}`,
+    headers: { 'x-oto-action-id': body.actionId },
+  });
+}
+
+/** A fresh action id for one Refund dialog, or one Reprint press. */
+export const newActionId = (): string => idemKey();
+
+// --- S2-11: reprints ------------------------------------------------------------
+
+/**
+ * One row in the Reprint dialog (`ReprintModal.tsx`), ported from
+ * `TransactionDetail.tsx:171-197`: the full receipt, each bracelet group and
+ * the F&B pick-up ticket. The prototype's credit-grant rows print with S2-14a
+ * and are not offered. A shop sale's receipt is the same paper under its own
+ * kind (`merch_receipt`).
+ */
+export interface ReprintOption {
+  kind: SaleReprintKind;
+  label: string;
+  sublabel?: string;
+}
+
+export function reprintOptions(
+  detail: Pick<ApiSaleDetail, 'lines' | 'bands' | 'printJobs' | 'pickupCode'>,
+  kind: TxnKind,
+): ReprintOption[] {
+  const options: ReprintOption[] = [
+    { kind: kind === 'merch' ? 'merch_receipt' : 'receipt', label: 'Full receipt' },
+  ];
+  const count = (bandKind: 'kid' | 'adult', lineKinds: readonly string[]): number => {
+    const bands = (detail.bands ?? []).filter((b) => b.kind === bandKind && b.status !== 'revoked');
+    // A sale finalised while the platform had no band key has no bands yet;
+    // reprinting them issues them, so the count comes from its lines.
+    return bands.length > 0
+      ? bands.length
+      : detail.lines
+          .filter((line) => lineKinds.includes(line.kind))
+          .reduce((sum, line) => sum + line.quantity, 0);
+  };
+  const kids = count('kid', ['kids']);
+  const adults = count('adult', ['adults_paid', 'adults_free']);
+  if (kids > 0) options.push({ kind: 'kids_bands', label: 'Child bracelet', sublabel: `×${kids}` });
+  if (adults > 0) {
+    options.push({ kind: 'adult_bands', label: 'Adult bracelet', sublabel: `×${adults}` });
+  }
+  const hasPrep =
+    (detail.printJobs ?? []).some((j) => j.kind === 'kitchen_ticket' || j.kind === 'bar_ticket') ||
+    (kind === 'fnb' && detail.lines.some((line) => line.kind === 'fnb_item'));
+  if (hasPrep) {
+    options.push({
+      kind: 'prep',
+      label: detail.pickupCode ? `Pickup ticket #${detail.pickupCode}` : 'Pickup ticket',
+    });
+  }
+  return options;
+}
+
+export interface SaleReprintAnswer {
+  jobs: ApiSalePrintJob[];
+  bands: ApiSaleBand[];
+  /** "Bar ticket not printed — no bar printer at this station", and the like. */
+  notes: string[];
+}
+
+/**
+ * Print a finalised sale's paper again (`POST /sales/:id/reprints`), at the
+ * station this session is at. A band keeps its id and its code; the job it
+ * replaces is marked, and the new one names its original in `reprintOf`.
+ */
+export function reprintSale(
+  saleId: string,
+  kind: SaleReprintKind,
+  actionId: string,
+): Promise<SaleReprintAnswer> {
+  return api.post<SaleReprintAnswer>(
+    `/sales/${encodeURIComponent(saleId)}/reprints`,
+    { kind, actionId },
+    {
+      idempotencyKey: `reprint:${saleId}:${kind}:${actionId}`,
+      headers: { 'x-oto-action-id': actionId },
+    },
+  );
+}
+
+// --- S2-11: which band goes on which bracelet row ---------------------------------
+
+/**
+ * The bands of a sale filed under the till's own cart lines, so the payment
+ * confirmation can put each code beside the bracelet row it belongs to: the
+ * band names its sale line, and the sale line names its cart line. The key is
+ * `<cartLineId>:<kid|adult>`. A band whose line cannot be placed goes in
+ * `unplaced`, and is still shown — a code staff cannot read out is no use.
+ */
+export function bandsByCartLine(
+  bands: readonly ApiSaleBand[],
+  lines: readonly Pick<ApiSaleLine, 'id' | 'cartLineId'>[],
+): { byRow: Map<string, ApiSaleBand[]>; unplaced: ApiSaleBand[] } {
+  const cartOf = new Map(lines.map((line) => [line.id, line.cartLineId]));
+  const byRow = new Map<string, ApiSaleBand[]>();
+  const unplaced: ApiSaleBand[] = [];
+  for (const band of bands) {
+    if (band.status === 'revoked') continue;
+    const cart = band.saleLineId ? cartOf.get(band.saleLineId) : undefined;
+    if (!cart) {
+      unplaced.push(band);
+      continue;
+    }
+    const key = `${cart}:${band.kind}`;
+    byRow.set(key, [...(byRow.get(key) ?? []), band]);
+  }
+  return { byRow, unplaced };
+}
+
+/** "T1-7KMQ4X · Mali" — a band as staff read it out. */
+export function bandLabel(band: Pick<ApiSaleBand, 'shortCode' | 'childName'>): string {
+  const code = band.shortCode ?? 'No code';
+  return band.childName ? `${code} · ${band.childName}` : code;
 }

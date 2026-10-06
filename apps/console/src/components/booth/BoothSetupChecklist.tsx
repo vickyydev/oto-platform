@@ -1,71 +1,91 @@
-import { Panel } from '@/components/Panel';
-import type { BoothDraft, BoothStaffRow, BoothStatus } from './boothApi';
-import type { Read } from './readState';
+import { CheckCircle2, Circle, ListChecks } from 'lucide-react';
+import { TitleChip } from '@/components/redesign/chips';
+import { CardShell } from '@/components/redesign/layout';
+import { cn } from '@/lib/utils';
+import type { SetupStep } from './boothState';
 
-export function BoothSetupChecklist({
-  draft,
-  status,
-  staff,
-}: {
-  draft: Read<BoothDraft | null>;
-  status: Read<BoothStatus | null>;
-  staff: Read<BoothStaffRow[]>;
-}) {
-  const d = draft.state === 'read' ? draft.value : null;
-  const s = status.state === 'read' ? status.value : null;
-  const active = d?.prizes.filter((p) => p.active) ?? [];
-  const steps = [
-    { id: 'booth-printer', label: 'Printer added to the box', done: Boolean(s?.printer) },
-    {
-      id: 'booth-station',
-      label: 'Booth station with its prefix',
-      done: Boolean(d && /^[A-Z0-9]{2}$/.test(d.booth.codePrefix ?? '')),
-    },
-    {
-      id: 'booth-settings',
-      label: 'Layout and session length saved',
-      done: Boolean(
-        d?.settings.layoutId &&
-        (d.settings.staffSessionMinutes == null || d.settings.staffSessionMinutes > 0),
-      ),
-    },
-    {
-      id: 'booth-staff',
-      label: 'Staff with PINs',
-      done:
-        staff.state === 'read' &&
-        staff.value.length > 0 &&
-        staff.value.every(
-          (p) => p.hasPin && (!p.pinExpiresAt || Date.parse(p.pinExpiresAt) > Date.now()),
-        ),
-    },
-    {
-      id: 'booth-prizes',
-      label: 'Prizes adding to 100%',
-      done: active.length > 0 && active.reduce((sum, p) => sum + p.weightBp, 0) === 10_000,
-    },
-    { id: 'booth-publish', label: 'Published', done: Boolean(d?.published && !d.changed) },
-  ];
+/**
+ * "Set up this booth" (SCRUM-468): the six steps in the order a booth is set
+ * up, each jumping to the part of the page it is about, with the first step
+ * not done yet marked as the next one — so a manager opening a half-set-up
+ * booth reads where to go before reading anything else.
+ *
+ * On the approved sheet (SCRUM-474) the booth's name and where its wheel
+ * stands moved up into the command bar, and this became a card of its own
+ * across the sheet, opened while a step is still to do and folded into the
+ * bar's "Setup" chip once every step is done. The ticks are `boothSetupSteps`,
+ * computed by the page; a reading not in hand ticks nothing.
+ */
+export function BoothSetupChecklist({ steps, id }: { steps: readonly SetupStep[]; id?: string }) {
+  const done = steps.filter((step) => step.done).length;
+  const next = steps.find((step) => !step.done);
+
   return (
-    <Panel
+    <CardShell
+      id={id}
+      span={12}
+      icon={ListChecks}
       title="Set up this booth"
-      description="Follow these steps in order. A tick confirms the latest saved settings shown on this page."
+      badge={
+        <TitleChip>
+          {done} of {steps.length} done
+        </TitleChip>
+      }
+      note="follow these steps in order — a tick confirms the latest saved settings shown on this page"
     >
-      <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {steps.map((step, index) => (
-          <li key={step.id}>
-            <a
-              href={'#' + step.id}
-              className="flex gap-2 rounded-lg border p-3 text-sm hover:bg-muted"
-            >
-              <span aria-label={step.done ? 'Complete' : 'To do'}>{step.done ? '✓' : '○'}</span>
-              <span>
-                {index + 1}. {step.label}
-              </span>
-            </a>
-          </li>
-        ))}
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-label="Setup steps done"
+        aria-valuemin={0}
+        aria-valuemax={steps.length}
+        aria-valuenow={done}
+      >
+        <div
+          className="h-full rounded-full bg-status-ok transition-[width] duration-300"
+          style={{ width: `${(done / Math.max(steps.length, 1)) * 100}%` }}
+        />
+      </div>
+      <ol className="grid gap-2 @md:grid-cols-2 @3xl:grid-cols-3">
+        {steps.map((step, index) => {
+          const isNext = step.id === next?.id;
+          return (
+            <li key={step.id} className="min-w-0">
+              <a
+                href={'#' + step.id}
+                aria-current={isNext ? 'step' : undefined}
+                className={cn(
+                  'flex h-full items-center gap-2.5 rounded-[14px] border px-3 py-2.5 text-sm hover:bg-foreground/5',
+                  step.done ? 'border-border text-foreground/70' : 'border-border font-medium',
+                  isNext && 'border-primary/30 bg-primary/10',
+                )}
+              >
+                {step.done ? (
+                  <CheckCircle2
+                    className="w-4 h-4 shrink-0 text-status-ok"
+                    role="img"
+                    aria-label="Complete"
+                  />
+                ) : (
+                  <Circle
+                    className="w-4 h-4 shrink-0 text-foreground/35"
+                    role="img"
+                    aria-label="To do"
+                  />
+                )}
+                <span className="min-w-0 break-words">
+                  {index + 1}. {step.label}
+                </span>
+                {isNext && (
+                  <span className="ml-auto shrink-0 text-[11px] font-semibold uppercase tracking-wide text-primary-ink">
+                    Next
+                  </span>
+                )}
+              </a>
+            </li>
+          );
+        })}
       </ol>
-    </Panel>
+    </CardShell>
   );
 }

@@ -12,9 +12,22 @@ import {
 } from '@/components/ui/select';
 import { ReportFilters, getBranchOptions } from '@/lib/reporting';
 
-/** ฿ formatting shared by every report table/card. */
-export function thb(n: number): string {
-  return `฿${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/**
+ * ฿ formatting shared by every report table/card — THE SCREEN EDGE. Every
+ * money figure `lib/reporting.ts` returns is satang (SCRUM-271); it is turned
+ * into baht here, once, as it is drawn.
+ */
+export function thbFromSatang(satang: number): string {
+  return `฿${(satang / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/**
+ * A satang figure as an export's cell: baht to two places, the text the
+ * prototype's reports wrote (`.toFixed(2)`) — THE CSV EDGE, and the only place
+ * a report figure is written out as baht.
+ */
+export function csvBaht(satang: number): string {
+  return (satang / 100).toFixed(2);
 }
 
 /**

@@ -15,6 +15,7 @@ import { DeviceSettingsSchema, newId, PaymentRoutingSchema } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { holdsGrantAt } from '../services/access-control';
+import { ClientIdSchema, REPLAY_HEADER, wasReplay } from '../services/client-id';
 import {
   archiveBox,
   archiveDevice,
@@ -432,14 +433,23 @@ export async function fleetRoutes(app: App): Promise<void> {
         description:
           'Create a station on a box, with its devices and its access list. A booth (`kind: booth`) needs a code prefix of exactly two capital letters or digits, such as B1, because its box starts every voucher code with it; without one the station is refused with 400 `BOOTH_CODE_PREFIX_INVALID`, whose message states the rule. A prefix another live booth of the operator already carries, at any branch, is refused with 409 `BOOTH_CODE_PREFIX_TAKEN`, whose message names that booth.',
         params: BranchParams,
-        body: StationWriteSchema,
+        body: StationWriteSchema.extend({
+          /**
+           * SCRUM-270 — optional, client-minted (OD-12). The same id again
+           * answers with that station under x-oto-replay; an id naming another
+           * record is refused 409 ID_IN_USE.
+           */
+          id: ClientIdSchema.optional(),
+        }),
         response: { 200: z.object({ station: StationSchema }) },
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       await loadBranchForOperator(app.db, auth.operatorId, req.params.branchId);
-      return createStation(app.db, opCtx(req), auth, req.params.branchId, req.body);
+      const result = await createStation(app.db, opCtx(req), auth, req.params.branchId, req.body);
+      if (wasReplay(result)) reply.header(REPLAY_HEADER, 'true');
+      return result;
     },
   );
 
@@ -605,6 +615,13 @@ export async function fleetRoutes(app: App): Promise<void> {
           'Register a box and mint its claim code. The code is returned once — only its hash is stored.',
         params: BranchParams,
         body: z.object({
+          /**
+           * SCRUM-270 — optional, client-minted (OD-12). The same id again is
+           * refused 409 BOX_ALREADY_REGISTERED rather than replayed, because
+           * the answer is a one-time code; an id naming another record is
+           * refused 409 ID_IN_USE.
+           */
+          id: ClientIdSchema.optional(),
           name: z.string().min(1),
           slot: z.string().min(1),
           role: z.enum(BOX_ROLES).default('counter'),
@@ -862,6 +879,12 @@ export async function fleetRoutes(app: App): Promise<void> {
           'Declare a device the box cannot find on its own — nothing announces a printer on a TCP socket. `settings` is what is true of this unit rather than of its model, such as an ESC/POS printer’s 576 or 512 dots per line as its self-test page says; left out, the box uses the model’s profile.',
         params: BoxIdParams,
         body: z.object({
+          /**
+           * SCRUM-270 — optional, client-minted (OD-12). The same id again
+           * answers with that device under x-oto-replay; an id naming another
+           * record is refused 409 ID_IN_USE.
+           */
+          id: ClientIdSchema.optional(),
           kind: z.enum(DEVICE_KINDS),
           label: z.string().min(1),
           transport: z.enum(DEVICE_TRANSPORTS),
@@ -876,11 +899,13 @@ export async function fleetRoutes(app: App): Promise<void> {
         response: { 200: z.object({ device: DeviceSchema }) },
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
       const row = await loadBox(app.db, auth.operatorId, req.params.boxId);
       await req.requirePermission('admin:device:create', { branchId: row.branchId });
-      return createDevice(app.db, opCtx(req), auth, row, req.body);
+      const result = await createDevice(app.db, opCtx(req), auth, row, req.body);
+      if (wasReplay(result)) reply.header(REPLAY_HEADER, 'true');
+      return result;
     },
   );
 
@@ -1000,6 +1025,13 @@ export async function fleetRoutes(app: App): Promise<void> {
           'Mint a pairing code for a display, kiosk or booth. Returned once — only its hash is stored.',
         params: IdParams,
         body: z.object({
+          /**
+           * SCRUM-270 — optional, client-minted (OD-12). The same id again is
+           * refused 409 CREDENTIAL_ALREADY_ISSUED rather than replayed, because
+           * the answer is a one-time code; an id naming another record is
+           * refused 409 ID_IN_USE.
+           */
+          id: ClientIdSchema.optional(),
           kind: z.enum(DEVICE_CREDENTIAL_KINDS),
           label: z.string().min(1).nullable().optional(),
         }),

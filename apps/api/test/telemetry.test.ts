@@ -1,7 +1,8 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { opsRun } from '@oto/db';
-import { ADMIN, RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import { boxState, opsRun, station } from '@oto/db';
+import { newId } from '@oto/shared';
+import { ADMIN, RECEPTION, boxBySlot, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
 
 /**
  * S2-03 dev evidence for the request-completion line: it groups by the route
@@ -49,7 +50,8 @@ let reception: string;
 let admin: string;
 
 beforeAll(async () => {
-  ctx = await createTestContext();
+  // The test controls are on so the forced-offline refusal can be driven below.
+  ctx = await createTestContext({ env: { OPS_TEST_CONTROLS: 'true' } });
   // Before the first inject: Fastify refuses a hook once the instance has
   // booted, and a hook added directly on it runs ahead of every plugin's.
   ctx.app.addHook('onRequest', async (req) => {
@@ -231,5 +233,52 @@ describe('request completion line (S2-03)', () => {
     expect(run!.requestId).toBe(line.record.reqId);
     expect(run!.actionId).toBe('till-failure-01');
     expect((run!.detail as { statusCode: number; path: string }).path).toBe('/members');
+  });
+
+  /**
+   * SCRUM-477 — the one 5xx that is the platform's own answer: the station
+   * forced offline by the Console's switch (SCRUM-285) refuses every trading
+   * call `503 STATION_FORCED_OFFLINE`, and the till's lane arbiter reads
+   * exactly that. It is not a fault, so it is not logged as one and leaves no
+   * `ops_run` row for somebody to look at on Monday.
+   */
+  it('logs the forced-offline refusal at info and keeps it out of ops_run', async () => {
+    const box = await boxBySlot(ctx.db, 'virtual-1');
+    const [till] = await ctx.db
+      .select()
+      .from(station)
+      .where(and(eq(station.boxId, box.id), eq(station.name, 'Reception Till 1')));
+    const picked = await ctx.app.inject({
+      method: 'PUT',
+      url: '/me/session/station',
+      headers: { cookie: reception },
+      payload: { stationId: till!.id },
+    });
+    expect(picked.statusCode, picked.body).toBe(200);
+    await ctx.db
+      .insert(boxState)
+      .values({ boxId: box.id, offline: true })
+      .onConflictDoUpdate({ target: boxState.boxId, set: { offline: true } });
+    try {
+      lines.length = 0;
+      const refused = await ctx.app.inject({
+        method: 'POST',
+        url: `/bookings/${newId()}/redeem`,
+        headers: { cookie: reception, 'x-oto-action-id': 'till-offline-01' },
+        payload: { stationId: till!.id },
+      });
+      expect(refused.statusCode).toBe(503);
+      expect(refused.json().error.code).toBe('STATION_FORCED_OFFLINE');
+
+      const line = lastCompleted();
+      expect(line.level).toBe('info');
+      expect(line.record.statusCode).toBe(503);
+      expect(line.record.errorCode).toBe('STATION_FORCED_OFFLINE');
+      expect(line.record.route).toBe('/bookings/:id/redeem');
+      const runs = await ctx.db.select().from(opsRun).where(eq(opsRun.kind, 'http'));
+      expect(runs.find((r) => r.name === 'http:POST /bookings/:id/redeem')).toBeUndefined();
+    } finally {
+      await ctx.db.update(boxState).set({ offline: false }).where(eq(boxState.boxId, box.id));
+    }
   });
 });

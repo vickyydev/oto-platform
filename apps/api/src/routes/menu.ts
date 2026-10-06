@@ -48,6 +48,7 @@ import {
   assertVariantsWellFormed,
   normaliseVariants,
 } from '../services/product-variants';
+import { productStockLinks, setProductStockLinks } from '../services/stock';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -158,7 +159,18 @@ export async function menuRoutes(app: App): Promise<void> {
         branchId: req.params.branchId,
         includeArchived: req.query.includeArchived,
       });
-      return presentMenu(snapshot);
+      const menu = presentMenu(snapshot);
+      // S2-14b — each item's stock links at THIS branch, both ways: the item
+      // names the stock items that stock it, one per size.
+      const links = await productStockLinks(
+        app.db,
+        req.params.branchId,
+        menu.products.map((p) => p.id),
+      );
+      return {
+        ...menu,
+        products: menu.products.map((p) => ({ ...p, stockLinks: links.get(p.id) ?? [] })),
+      };
     },
   );
 
@@ -354,6 +366,15 @@ export async function menuRoutes(app: App): Promise<void> {
         if (body.modifierGroupIds) {
           await setItemModifierGroups(tx, auth.operatorId, id, body.modifierGroupIds);
         }
+        if (body.stockLinks) {
+          const [created] = await tx.select().from(product).where(eq(product.id, id)).limit(1);
+          await setProductStockLinks(
+            tx,
+            { operatorId: auth.operatorId, branchId: req.params.branchId, accountId: auth.accountId, requestId: req.id },
+            created!,
+            body.stockLinks,
+          );
+        }
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,
@@ -446,6 +467,16 @@ export async function menuRoutes(app: App): Promise<void> {
           .returning();
         if (body.modifierGroupIds) {
           await setItemModifierGroups(tx, auth.operatorId, before.id, body.modifierGroupIds);
+        }
+        // S2-14b — the stock links at this branch, when the body carries them;
+        // checked against the sizes the row holds now.
+        if (body.stockLinks && after) {
+          await setProductStockLinks(
+            tx,
+            { operatorId: auth.operatorId, branchId: req.params.branchId, accountId: auth.accountId, requestId: req.id },
+            after,
+            body.stockLinks,
+          );
         }
         await audit.record(tx, {
           actorAccountId: auth.accountId,

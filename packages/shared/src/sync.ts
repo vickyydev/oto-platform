@@ -243,6 +243,25 @@ export const SYNC_ANOMALY_KINDS = [
   'merge',
   'epoch_regressed',
   'late_arrival',
+  /** A box's printed receipt number was taken; filed under the next free one (OD-4). */
+  'receipt_collision',
+  /** Made by an account revoked before it happened; applied, with an alert (OD-9). */
+  'revoked_actor',
+  /**
+   * S2-14a round 4 — a wallet spent offline past what it held when the spend
+   * reached the platform (two boxes spending one wallet in one outage): the
+   * spend is filed, the wallet never goes below zero, and the overdraft is
+   * named here with a critical alert.
+   */
+  'wallet_overdraft',
+  /**
+   * S2-14b round 3 — a sale a box took offline wanted more of an item than
+   * the record held when it reached the platform (two boxes selling the same
+   * last units in one outage): the sale is filed, the level floors at zero
+   * with the rest as the movement's shortfall, and the item, size, place, box,
+   * station and short quantity are named here with a critical alert.
+   */
+  'stock_oversold',
 ] as const;
 export type SyncAnomalyKind = (typeof SYNC_ANOMALY_KINDS)[number];
 
@@ -258,6 +277,31 @@ export const SYNC_CHANGE_SCOPES = [
   'receipt_series',
   /** The booth's published wheel (S2-07a) — `booth.booth_config_version`. */
   'booth',
+  /**
+   * S2-13 round 4 — the branch's in-park children, their pickup lists and the
+   * registrations awaiting check-in, with the supervision config and the nanny
+   * roster. A cache scope only: it is served whole by `GET /box/v1/cache` and
+   * never written to `edge.sync_change` (its rows move with every check-in).
+   */
+  'checkin',
+  /**
+   * S2-14a round 4 — the branch's spendable wallets as balance SNAPSHOTS, with
+   * the policy's offline cap: what a counter needs to take credit under the
+   * cap with the link down. A cache scope only, like `checkin`: served whole
+   * by `GET /box/v1/cache`, never written to `edge.sync_change`, and its keys
+   * travel as digests, never as the codes a guest holds.
+   */
+  'wallets',
+  /**
+   * S2-14b round 3 — the branch's stock LEVEL SNAPSHOTS, per stocked size and
+   * per place (the sell point and the others), with what this box's own
+   * offline sales the platform has already filed: what a counter needs to
+   * refuse what is not there with the link down. A cache scope only, like
+   * `wallets`: served whole by `GET /box/v1/cache`, never written to
+   * `edge.sync_change`, and volatile — kept out of the `catalogue` scope and
+   * out of the bundle's version, because every sale moves it.
+   */
+  'stock',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

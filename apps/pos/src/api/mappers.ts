@@ -59,6 +59,7 @@ export function apiMemberToMember(m: ApiMember): Member {
         verifiedById: 'api',
         verifiedAt: m.tierVerification.verifiedAt,
         expiresAt: m.tierVerification.expiresAt ?? undefined,
+        ...(m.tierVerification.reverifyDue ? { reverifyDue: true } : {}),
       }
     : undefined;
   return {

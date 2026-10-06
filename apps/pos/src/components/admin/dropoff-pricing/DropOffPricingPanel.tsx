@@ -1,15 +1,40 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
+import { bahtFromSatang, satangFromBaht, type DropOffPricingConfig } from '@oto/shared';
 import type { DropOffPricing, WeekdayWeekendPrice } from '@/types';
 import { MarketsTiersSection } from '../markets-tiers/MarketsTiersSection';
 import { PricingOverridesSection } from '../pricing-overrides/PricingOverridesSection';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { getActiveBranch } from '@/store/catalogStore';
+import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { boardApi, checkinApi, TILL_NOT_LINKED } from '@/api/checkin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WeekdayWeekendPriceInput } from '@/components/shared/WeekdayWeekendPriceInput';
 import { cn } from '@/lib/utils';
-import { NotSavedNotice } from '../NotSavedNotice';
+import { AdminNoticeBanner } from '../NotSavedNotice';
+
+const pairToBaht = (p: { weekday: number; weekend: number }): WeekdayWeekendPrice => ({
+  weekday: bahtFromSatang(p.weekday),
+  weekend: bahtFromSatang(p.weekend),
+});
+const pairToSatang = (p: WeekdayWeekendPrice): { weekday: number; weekend: number } => ({
+  weekday: satangFromBaht(p.weekday),
+  weekend: satangFromBaht(p.weekend),
+});
+
+/** The park's platform pricing (satang) as the panel and the till's store hold it (baht). */
+function pricingFromConfig(c: DropOffPricingConfig): DropOffPricing {
+  return {
+    oneTimeFeeTHB: pairToBaht(c.oneTimeFee),
+    nannyHourlyRateTHB: pairToBaht(c.nannyHourly),
+    extraHourTHB: pairToBaht(c.extraHour),
+    fullDayHours: c.fullDayHours,
+    nannyRatioSoftMax: c.nannyRatioSoftMax,
+    prepaidFoodRefundPolicy: c.prepaidFoodUnused,
+  };
+}
 
 // The plain-number drop-off/nanny values, in the order they appear in the form.
 const FIELDS: {
@@ -79,12 +104,33 @@ const toPriceForm = (p: DropOffPricing): PriceValues => ({
 });
 
 /**
- * Admin editing screen for drop-off & nanny pricing. Reads the live shared
- * catalog store and writes a partial patch through `updateDropOffPricing`, so
- * edits flow straight to the POS drop-off check-in in-session.
+ * Admin editing screen for drop-off & nanny pricing. Opens on the park's
+ * platform config and saves to it (S2-13 round 2 — audited there), then writes
+ * the same values through `updateDropOffPricing` so the till in this tab
+ * prices with them at once.
  */
 export function DropOffPricingPanel() {
   const { dropOffPricing, mutators } = useCatalogStore();
+  const platformId = apiBranchIdForSlug(getActiveBranch().id);
+  const [saveError, setSaveError] = useState<string | null>(platformId ? null : TILL_NOT_LINKED);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!platformId) {
+      setSaveError(TILL_NOT_LINKED);
+      return;
+    }
+    let live = true;
+    checkinApi
+      .config(platformId)
+      .then((c) => {
+        if (live) mutators.updateDropOffPricing(pricingFromConfig(c.pricing));
+      })
+      .catch((err: unknown) => live && setSaveError(err instanceof Error ? err.message : 'Could not load the pricing.'));
+    return () => {
+      live = false;
+    };
+  }, [platformId, mutators]);
 
   const [values, setValues] = useState<NumericValues>(() => toNumericForm(dropOffPricing));
   const [prices, setPrices] = useState<PriceValues>(() => toPriceForm(dropOffPricing));
@@ -141,7 +187,7 @@ export function DropOffPricingPanel() {
     return next;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const nextErrors = validate();
     if (Object.keys(nextErrors).length > 0) {
@@ -149,16 +195,27 @@ export function DropOffPricingPanel() {
       setSaved(false);
       return;
     }
-    mutators.updateDropOffPricing({
-      oneTimeFeeTHB: prices.oneTimeFeeTHB,
-      nannyHourlyRateTHB: prices.nannyHourlyRateTHB,
-      extraHourTHB: prices.extraHourTHB,
-      fullDayHours: Number(values.fullDayHours),
-      nannyRatioSoftMax: Number(values.nannyRatioSoftMax),
-      prepaidFoodRefundPolicy: refundPolicy,
-    });
-    setErrors({});
-    setSaved(true);
+    if (!platformId) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const after = await boardApi.savePricing(platformId, {
+        oneTimeFee: pairToSatang(prices.oneTimeFeeTHB),
+        nannyHourly: pairToSatang(prices.nannyHourlyRateTHB),
+        extraHour: pairToSatang(prices.extraHourTHB),
+        fullDayHours: Number(values.fullDayHours),
+        nannyRatioSoftMax: Number(values.nannyRatioSoftMax),
+        prepaidFoodUnused: refundPolicy,
+      });
+      mutators.updateDropOffPricing(pricingFromConfig(after.pricing));
+      setErrors({});
+      setSaved(true);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save.');
+      setSaved(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -179,7 +236,7 @@ export function DropOffPricingPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-5">
         {/* Numeric pricing fields */}
         <div className="rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-5">
           <h2 className="text-base font-bold">Drop-off &amp; nanny pricing</h2>
@@ -190,12 +247,11 @@ export function DropOffPricingPanel() {
           {/* Scoped to this card on purpose. The holiday ranges further down
               this same screen DO save, so a banner at the top of the panel
               would tar them with this one. */}
-          <div className="mt-4">
-            <NotSavedNotice
-              mutators={['updateDropOffPricing']}
-              what="the prices and rules in this box"
-            />
-          </div>
+          {saveError && (
+            <div className="mt-4">
+              <AdminNoticeBanner>{saveError}</AdminNoticeBanner>
+            </div>
+          )}
 
           <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
             {PRICE_FIELDS.map((f) => (
@@ -268,7 +324,7 @@ export function DropOffPricingPanel() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={!dirty}>
+          <Button type="submit" disabled={!dirty || saving || !platformId}>
             <Check className="w-4 h-4" />
             Save changes
           </Button>

@@ -7,6 +7,17 @@ on:
     paths-ignore: ['imports/**', 'docs/**']
   workflow_dispatch:
 
+# Two agent lanes push several times an hour, and a run superseded by a newer
+# push proves nothing anyone waits for: Render deploys the newest green
+# commit, and the Pi release is fetched for tips, not intermediates. One
+# in-flight run per branch; newer pushes QUEUE behind it rather than cancel
+# it: with two lanes pushing, a cancelled run left main's workspace suite
+# unproven while a later app-only push went green by path gate — and the
+# deploys ride whatever green comes. A queued run always finishes its tree.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -28,6 +39,38 @@ jobs:
       TEST_DATABASE_URL: postgres://oto:oto@localhost:5433/postgres
     steps:
       - uses: actions/checkout@v4
+      # What this push actually changed, so the expensive steps below can be
+      # skipped when they prove nothing about it. CONSERVATIVE BY CONSTRUCTION:
+      # if the base commit cannot be fetched or diffed — a force push, the
+      # first push of a branch, anything surprising — every flag is true and
+      # the whole job runs. The flags:
+      #   workspace — any change outside apps/oto-app (that app sits outside
+      #               the pnpm workspace, so typecheck/lint/test/build say
+      #               nothing about it; its own guard is the redaction-sync
+      #               step, which always runs)
+      #   db        — packages/db changed, so migrations and seed are re-proven
+      #   e2e       — the Console browser set exercises the built Console AND
+      #               the api behind it, so console, api, packages, the
+      #               lockfile or this workflow changed
+      #   pi        — what the Pi release is packed from changed
+      - name: What changed
+        id: changes
+        shell: bash
+        run: |
+          set -u
+          BASE='${{ github.event.pull_request.base.sha || github.event.before }}'
+          all() { for f in workspace db e2e pi; do echo "$f=true" >> "$GITHUB_OUTPUT"; done; }
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "no usable base — running everything"; all; exit 0
+          fi
+          git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running everything"; all; exit 0; }
+          FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running everything"; all; exit 0; }
+          echo "$FILES"
+          flag() { echo "$1=$2" >> "$GITHUB_OUTPUT"; }
+          if echo "$FILES" | grep -q -v -E '^apps/oto-app/'; then flag workspace true; else flag workspace false; fi
+          if echo "$FILES" | grep -q -E '^packages/db/'; then flag db true; else flag db false; fi
+          if echo "$FILES" | grep -q -E '^(apps/console/|apps/api/|packages/|pnpm-lock.yaml|.github/workflows/ci.yml)'; then flag e2e true; else flag e2e false; fi
+          if echo "$FILES" | grep -q -E '^(packages/|apps/booth/|scripts/pi/)'; then flag pi true; else flag pi false; fi
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -36,8 +79,10 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
       - name: Typecheck
+        if: steps.changes.outputs.workspace == 'true'
         run: pnpm typecheck
       - name: Lint
+        if: steps.changes.outputs.workspace == 'true'
         run: pnpm lint
       # One member record, and it is the platform's (S2-09b, SCRUM-204).
       # `apps/pos/src/mockApi.ts` still carries the prototype's fixture
@@ -46,6 +91,7 @@ jobs:
       # mockApi.ts imports one of its member functions, naming the file and
       # the line. Plain Node and the TypeScript parser the install brings.
       - name: No screen reads mock members
+        if: steps.changes.outputs.workspace == 'true'
         run: node scripts/check-no-mock-members.mjs
       # The lifted OTO App carries a byte-for-byte copy of the platform's
       # redactor, because it is outside the pnpm workspace and cannot import
@@ -56,14 +102,26 @@ jobs:
       - name: Vendored redaction has not drifted
         run: node apps/oto-app/server/lib/telemetry/check-sync.mjs
       - name: Migrations apply cleanly from empty (twice)
+        if: steps.changes.outputs.db == 'true'
         run: |
           pnpm db:migrate
           pnpm db:migrate
       - name: Seed
+        if: steps.changes.outputs.db == 'true'
         run: pnpm db:seed
+      # The Console's unit tests (SCRUM-256): the booth's odds and money
+      # arithmetic, what blocks a publish, and the voucher-type form. A step of
+      # their own so a red one is named in the run's summary. Through turbo, so
+      # the Test step below replays this result from the cache rather than
+      # running the suite a second time.
+      - name: Console tests
+        if: steps.changes.outputs.workspace == 'true'
+        run: pnpm test --filter=@oto/console
       - name: Test
+        if: steps.changes.outputs.workspace == 'true'
         run: pnpm test
       - name: Build
+        if: steps.changes.outputs.workspace == 'true'
         run: pnpm build
       # The Pi release (SCRUM-422; the closing audit's M4 and L52). The box
       # installs `oto-box-<version>-<commit>.tgz`, and the guide says the file
@@ -74,6 +132,7 @@ jobs:
       # `sha256sum -c` form. The install and service scripts are parsed first:
       # a script bash cannot read was otherwise found on the Pi, at install time.
       - name: Pi scripts parse
+        if: steps.changes.outputs.pi == 'true'
         run: |
           for f in scripts/pi/*.sh; do bash -n "$f"; done
           # ubuntu-latest carries shellcheck. An error fails the job; warnings
@@ -96,11 +155,13 @@ jobs:
       # a mode flip as one, so whatever dirties the tree next time is read in
       # the log rather than off the tarball's name.
       - name: Working tree before the pack
+        if: steps.changes.outputs.pi == 'true'
         run: |
           git status --porcelain
           git diff --summary
           if [ -z "$(git status --porcelain)" ]; then echo "clean"; fi
       - name: Pack the Pi release
+        if: steps.changes.outputs.pi == 'true'
         id: pack
         run: |
           pnpm --filter @oto/box-agent pack:pi
@@ -115,6 +176,7 @@ jobs:
           sha256sum "$1" | tee "$1.sha256"
           echo "tarball=packages/box-agent/dist/$1" >> "$GITHUB_OUTPUT"
       - name: Upload the Pi release
+        if: steps.changes.outputs.pi == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: oto-box-${{ github.sha }}
@@ -139,8 +201,10 @@ jobs:
       # Locally the set keeps Edge, which is the Chromium already on the
       # machines here.
       - name: Install Chromium for the Console end-to-end set
+        if: steps.changes.outputs.e2e == 'true'
         run: pnpm --filter @oto/console exec playwright install --with-deps chromium
       - name: Console end-to-end
+        if: steps.changes.outputs.e2e == 'true'
         run: pnpm --filter @oto/console e2e
         env:
           CONSOLE_E2E_BROWSER: chromium

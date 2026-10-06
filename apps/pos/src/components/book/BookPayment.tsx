@@ -1,9 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import QRCode from 'qrcode';
-import { CreditCard, QrCode as QrCodeIcon, ArrowLeft, Lock, Download } from 'lucide-react';
+import { useState } from 'react';
+import { CreditCard, QrCode as QrCodeIcon, ArrowLeft, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getVenuePromptPayId } from '@/mockApi';
-import { buildPromptPayPayload } from '@/lib/promptpay';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 type Method = 'card' | 'promptpay';
@@ -14,112 +11,21 @@ interface BookPaymentProps {
   onPay: (method: Method) => void;
 }
 
+/**
+ * The pay step (S2-12, SCRUM-209). Both methods now go to the payment
+ * partner's hosted page, restricted to the one the guest chose — card or
+ * PromptPay — and the booking is confirmed only when the partner tells the
+ * platform the money arrived.
+ *
+ * The prototype's second PromptPay view is gone: it drew a PromptPay QR to the
+ * park's own account and then took the guest's word for it ("I've completed
+ * payment"), which is exactly what a real booking may no longer rest on. The
+ * selection screen above it is unchanged; its footnote now says where the
+ * guest will pay instead of calling the payment a mock.
+ */
 export function BookPayment({ total, onBack, onPay }: BookPaymentProps) {
   const { t } = useLanguage();
   const [method, setMethod] = useState<Method | null>(null);
-  const [view, setView] = useState<'select' | 'promptpay'>('select');
-
-  // A PromptPay payment reference shown to the customer for their records.
-  const payRef = useMemo(
-    () => `PP-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
-    []
-  );
-
-  // Real, scannable EMVCo PromptPay payload -> rendered to a PNG data URL so the
-  // customer can scan it on screen OR save it and upload it in their banking app.
-  const payload = useMemo(
-    () => buildPromptPayPayload(getVenuePromptPayId(), total),
-    [total]
-  );
-  const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  useEffect(() => {
-    let active = true;
-    setQrDataUrl('');
-    QRCode.toDataURL(payload, { margin: 2, width: 512, errorCorrectionLevel: 'M' })
-      .then((url) => {
-        if (active) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (active) setQrDataUrl('');
-      });
-    return () => {
-      active = false;
-    };
-  }, [payload]);
-
-  const handleSaveQr = () => {
-    if (!qrDataUrl) return;
-    const a = document.createElement('a');
-    a.href = qrDataUrl;
-    a.download = `oto-promptpay-${payRef}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  if (view === 'promptpay') {
-    return (
-      <div className="flex-1 flex flex-col px-5 py-6 animate-in fade-in slide-in-from-right-4 duration-300">
-        <button
-          type="button"
-          onClick={() => setView('select')}
-          className="inline-flex items-center gap-2 text-slate-500 mb-5"
-        >
-          <ArrowLeft className="w-5 h-5" /> {t('book.payment.paymentOptions')}
-        </button>
-
-        <h2 className="text-3xl font-black leading-tight">{t('book.payment.payWithPromptpay')}</h2>
-        <p className="text-slate-500 mt-1">{t('book.payment.saveScanInstructions')}</p>
-
-        <div className="mt-6 bg-white border border-slate-200 rounded-3xl p-6 flex flex-col items-center">
-          <div className="bg-white rounded-2xl p-3 w-60 h-60 flex items-center justify-center">
-            {qrDataUrl ? (
-              <img
-                src={qrDataUrl}
-                alt="PromptPay QR code"
-                className="w-full h-full"
-                width={512}
-                height={512}
-              />
-            ) : (
-              <div className="text-slate-400 text-sm">{t('book.payment.generatingQr')}</div>
-            )}
-          </div>
-          <div className="mt-4 text-center">
-            <div className="text-xs uppercase tracking-widest text-slate-400">{t('book.payment.amount')}</div>
-            <div className="text-3xl font-black text-primary tabular-nums mt-0.5">฿{total}</div>
-            <div className="text-xs text-slate-400 mt-2">{t('book.payment.ref', { ref: payRef })}</div>
-          </div>
-          <Button
-            variant="secondary"
-            className="w-full h-12 gap-2 mt-5"
-            disabled={!qrDataUrl}
-            onClick={handleSaveQr}
-          >
-            <Download className="w-4 h-4" />
-            {t('book.payment.saveQrImage')}
-          </Button>
-        </div>
-
-        <ol className="mt-6 space-y-2 text-sm text-slate-500">
-          <li>1. {t('book.payment.step1')}</li>
-          <li>2. {t('book.payment.step2')}</li>
-          <li>3. {t('book.payment.step3', { total: String(total) })}</li>
-        </ol>
-
-        <div className="sticky bottom-0 mt-auto pt-6 pb-2 bg-gradient-to-t from-sky-50 via-sky-50 to-transparent">
-          <Button
-            size="lg"
-            className="w-full h-16 text-lg font-bold"
-            onClick={() => onPay('promptpay')}
-          >
-            {t('book.payment.completedPayment')}
-          </Button>
-          <p className="text-center text-xs text-slate-400 mt-2">{t('book.payment.mockNote')}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 flex flex-col px-5 py-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -163,8 +69,7 @@ export function BookPayment({ total, onBack, onPay }: BookPaymentProps) {
           disabled={!method}
           className="w-full h-16 text-lg font-bold gap-2"
           onClick={() => {
-            if (method === 'promptpay') setView('promptpay');
-            else if (method === 'card') onPay('card');
+            if (method) onPay(method);
           }}
         >
           {method === 'promptpay' ? (
@@ -179,7 +84,7 @@ export function BookPayment({ total, onBack, onPay }: BookPaymentProps) {
             </>
           )}
         </Button>
-        <p className="text-center text-xs text-slate-400 mt-2">{t('book.payment.mockNote')}</p>
+        <p className="text-center text-xs text-slate-400 mt-2">{t('book.payment.securePageNote')}</p>
       </div>
     </div>
   );

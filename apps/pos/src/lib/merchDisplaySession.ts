@@ -49,11 +49,14 @@ export function merchDisplayPresentation(state: MerchDisplayState) {
   if (state.stage === 'thankyou') {
     const { platformSale, completedOrder } = state;
     if (!platformSale || platformSale.status !== 'finalised' || !completedOrder || completedOrder.status !== 'paid'
-      || completedOrder.wristband || completedOrder.payment.creditUsed !== 0
       || platformSale.totals.grossSatang !== satang(totals.data.total)
       || satang(completedOrder.total) !== platformSale.totals.grossSatang) return fallback;
+    // S2-14a round 2 — a purchase paid with credit publishes too: the credit the
+    // platform took is a settled figure of its own (the wallet itself never
+    // crosses), and the schema's sum check holds the four to the total.
     completion = { saleId: platformSale.id, total: completedOrder.total,
-      payment: { cash: completedOrder.payment.cash, card: completedOrder.payment.card, promptpay: completedOrder.payment.promptpay } };
+      payment: { cash: completedOrder.payment.cash, card: completedOrder.payment.card, promptpay: completedOrder.payment.promptpay,
+        ...(completedOrder.payment.creditUsed > 0 ? { credit: completedOrder.payment.creditUsed } : {}) } };
   }
   const cart = DisplayMerchCartSchema.safeParse({ kind: 'merch', supported: true, lines,
     manualDiscounts: state.manualDiscounts.map(({ id, scope, targetLineId, targetLabel, type, value }) => ({ id, scope, targetLineId, targetLabel, type, value })),

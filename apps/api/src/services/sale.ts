@@ -1,9 +1,10 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import {
   account,
   branch,
   branchHoliday,
   branchTaxConfig,
+  checkin,
   employee,
   member,
   modifierGroup,
@@ -13,6 +14,7 @@ import {
   productCategory,
   productModifierGroup,
   receiptSeries,
+  registration,
   sale,
   saleDiscount,
   saleLine,
@@ -21,6 +23,7 @@ import {
   ticketPackage,
   tier,
   visit,
+  type ProductVariant,
   type SaleClockTrust,
   type SaleLineKind,
   type SalesChannel,
@@ -29,33 +32,46 @@ import {
   type StationKind,
 } from '@oto/db';
 import {
-  apportion,
   businessDate,
   cartUnits,
   componentKey,
   computeTicketCartTotals,
+  deriveSaleLineId,
   getRateModeForDate,
+  itemCartLine,
+  itemCategoryWalk,
+  itemPricePair,
+  itemTaxCategory,
+  itemUnitPrice,
+  ledgerUnitComponentKey,
+  ledgerUnitKindOf,
+  ledgerUnitLabel,
   newId,
   isPaymentReversalPending,
+  PAID_ONLINE_TENDER_CODE,
+  PAID_ONLINE_TENDER_METHOD,
+  WALLET_TENDER_CODE,
   parseDayStart,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
   PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   PRICING_ENGINE_VERSION,
   priceCartLine,
-  resolveRate,
-  SERVICE_FEE_ROW_KEY,
+  refundStatusOf,
+  refundableSatang,
+  splitLedgerUnitMoney,
   type CartAddOn,
   type CartPromo,
-  type CartUnit,
   type DiscountComponentTarget,
   type ManualDiscount,
   type PrepStation,
+  type OfflinePriceBasis,
   type PricingContext,
   type TaxableCategory,
   type TaxConfigShape,
   type TicketCartLine,
   type TicketCartTotals,
   type PaymentAttemptView,
+  type SaleLineStockShare,
 } from '@oto/shared';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
@@ -91,6 +107,29 @@ import {
   type TierClaimRefusal,
 } from './sale-tier';
 import type { Exec, Tx } from './tx';
+import { bandsOfSale } from './bands';
+import { refundsOfSale } from './refund-slices';
+import { assertCartStock, stockSharesForLines, takeStockForSale } from './stock';
+import { printJobsOfSale, routeSalePrinting, type SalePrintingResult } from './sale-printing';
+import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
+import type { CartBandHolderInput, CartPrepaidInput, WalletGrantView, WalletTenderInstruction } from '@oto/shared';
+import { BAND_FOOD_REFUSALS } from '@oto/shared';
+import {
+  assertSalePrepaidServable,
+  auditSettledAtPickup,
+  isPrepaidSettledAtPickup,
+  prepaidSettledAtPickup,
+  prepaidUsedUpAtClose,
+  redeemSalePrepaid,
+  resolveCartBandFood,
+  setAsideSettledPrepaid,
+  setAsideUsedUpPrepaid,
+  settledAtPickupPayload,
+  type CartBandFood,
+  type PrepaidGate,
+  type SettledPrepaidLine,
+  type UsedUpPrepaidLine,
+} from './band-food';
 import {
   assertSaleVouchersHeld,
   auditVoidReleases,
@@ -103,6 +142,7 @@ import {
   saleVoucherCodes,
   voucherConfiguredValue,
   voucherPricing,
+  voucherStandsAlone,
   type CartVoucherClaim,
   type VoucherEffect,
 } from './vouchers';
@@ -130,10 +170,12 @@ import {
  *      the only thing that does is make a disagreement LOUD: the sale is
  *      refused (`SALE_TOTAL_MISMATCH`) rather than either number being taken
  *      on trust.
- *   2. THE TIER IS RESOLVED FROM THE MEMBER. Never from the request body. The
- *      tier picks the price, and it is the one field a visitor would most like
- *      to change; a body-supplied tier is a price list anybody can choose from.
- *      A sale with no member is priced at the operator's default tier.
+ *   2. THE TIER IS RESOLVED FROM THE MEMBER. The tier picks the price, and it
+ *      is the one field a visitor would most like to change; a body-supplied
+ *      tier is a price list anybody can choose from. The one exception is the
+ *      operator's default tier, which needs no proof: staff picking it for a
+ *      verified member prices the cart at it (`resolveTier`). A sale with no
+ *      member is priced at the operator's default tier.
  */
 
 // --- Inputs -----------------------------------------------------------------
@@ -215,13 +257,20 @@ export interface CartItemLineInput {
    * (`product.variants`, S2-09b): a size the item does not have is refused, and
    * so is a line that names none when the item comes in two sizes or more. The
    * label recorded is the catalogue's; `variantLabel` here is only what the
-   * screen showed. ON AN F&B LINE it is carried as sent and checked against
-   * nothing: the item routes accept sizes on an item of any kind, but only a
-   * shop line is read against them, and stock by flavour is S2-14b.
+   * screen showed. ON AN F&B LINE the same since S2-14b: a slushie's flavour is
+   * one of the item's own sizes, checked like a shop size, because the flavour
+   * is the shelf its stock is taken from — free text was a shelf nobody could
+   * find.
    */
   variant?: { variantId: string; variantLabel: string } | null;
   /** What the screen showed for this line. Reconciled against the platform's price, never charged. */
   lineTotalSatang?: number;
+  /**
+   * SCRUM-494 — served from the band holder's prepaid items (the design's
+   * `isPrepaid` line): priced at ฿0, checked against what is left on the stay,
+   * and taken off the stay when the order is confirmed (`band-food.ts`).
+   */
+  prepaid?: CartPrepaidInput | null;
 }
 
 export interface ManualDiscountInput {
@@ -315,7 +364,11 @@ export interface CartInput {
   channel?: SalesChannel;
   /** The rate mode the cart was priced under at the till. Compared, never used. */
   pricingMode?: 'weekday' | 'weekend';
-  /** The tier the till believed. Compared, never used: see rule 2 at the top. */
+  /**
+   * The tier the till believed. Prices the cart only when it is the
+   * operator's default tier (`resolveTier`); otherwise compared, never used —
+   * see rule 2 at the top.
+   */
   tier?: string;
   /**
    * SCRUM-307 — the action id of the document check reception recorded through
@@ -323,6 +376,14 @@ export interface CartInput {
    * here so the route cannot carry it on a cast alone.
    */
   tierClaimActionId?: string | null;
+  /**
+   * SCRUM-494 — the child's stay behind the band an F&B order was taken
+   * against, as `GET /wallets/scan` answered it. Checked to be at this park and
+   * in the park; recorded on the order's F&B lines so the prep ticket prints
+   * that child's own allergy line; and, for a child whose parent did not
+   * authorise food, the design's food-consent override (`foodOverride`).
+   */
+  bandHolder?: CartBandHolderInput | null;
 }
 
 /**
@@ -366,6 +427,28 @@ export interface CommitSaleInput extends CartInput {
    * with what is left to take: see the seam described on `commitSale`.
    */
   finalise?: boolean;
+  /**
+   * S2-12 (SCRUM-209 round 3) — the online booking this sale redeems.
+   *
+   * Set ONLY by `services/booking-redemption.ts`, inside the transaction that
+   * holds the booking's row lock; the sales route's body schema does not carry
+   * it, so a till cannot file an ordinary cart against somebody's booking. A
+   * sale carrying it is recorded under the `booking` channel whatever the cart
+   * claims (`resolveSalesChannel` refuses that channel to a sale without one).
+   */
+  bookingId?: string | null;
+  /**
+   * SCRUM-478 — the drop-off registration (`crm.registration`) standing behind
+   * the children on this sale, when the caller names it outright.
+   *
+   * The gate (`supervisionOf`) needs one on a sale that admits children and
+   * not one adult. The till does not send this field today: it sends each
+   * supervised child's drop-off line under the STAY's id (`pos.checkin.id`,
+   * which carries the registration), and the gate reads the registration from
+   * those. This is the other door — for a caller that holds the registration
+   * id and nothing else — and is verified against the row, never believed.
+   */
+  registrationId?: string | null;
 }
 
 export interface ActorContext {
@@ -475,16 +558,37 @@ export async function resolvePricingScope(
 
 /**
  * The tier that prices this cart, from the MEMBER — or the operator's default
- * for a walk-in. Never from the request body: see rule 2 at the top.
+ * for a walk-in. See rule 2 at the top.
+ *
+ * `requestedTier` is the tier staff picked at the till. It moves the price in
+ * one direction only: down to the operator's default tier, which needs no
+ * proof (the approved design's StepCustomerType never asks to verify it, and
+ * Till.tsx handlePickTier restates the cart at it for a verified member).
+ * Any other tier the till names is not the member's to choose and prices
+ * nothing — the member's own tier stands, and a line priced at the other rate
+ * is refused as `SALE_LINE_PRICE_MISMATCH`.
  */
 async function resolveTier(
   db: Exec,
   operatorId: string,
   memberId: string | null | undefined,
+  requestedTier?: string,
 ): Promise<{ code: string; source: 'member' | 'default' }> {
   if (memberId) {
     const [m] = await db.select().from(member).where(eq(member.id, memberId)).limit(1);
     if (!m || m.operatorId !== operatorId) throw errors.notFound('Member not found');
+    if (requestedTier !== undefined && requestedTier !== m.tierCode) {
+      const [baseline] = await db
+        .select({ code: tier.code })
+        .from(tier)
+        .where(
+          and(eq(tier.operatorId, operatorId), eq(tier.isDefault, true), isNull(tier.archivedAt)),
+        )
+        .limit(1);
+      if (baseline && baseline.code === requestedTier) {
+        return { code: baseline.code, source: 'default' };
+      }
+    }
     return { code: m.tierCode, source: 'member' };
   }
   const [fallback] = await db
@@ -525,11 +629,23 @@ export interface SaleLinePayload {
   /** The prototype's per-item note (`FnbOrderLine.note`). */
   note?: string;
   /**
-   * The size sold. On a shop line, the item's own size — its id and its label
-   * as the catalogue names it (`product.variants`); on an F&B line, what the
-   * till sent (`FnbOrderLine.variantId` / `variantLabel`).
+   * The size sold — the item's own size, its id and its label as the
+   * catalogue names it (`product.variants`), on a shop line and (S2-14b) on an
+   * F&B line alike.
    */
   variant?: { variantId: string; variantLabel: string };
+  /**
+   * S2-14b — on a ticket add-on split across sizes (grip socks 1×S + 2×M), the
+   * split as the till sent it. It used to survive only in the label; each size
+   * takes its own stock (`services/stock.ts`, `lineStock`).
+   */
+  variantBreakdown?: { variantId: string; variantLabel: string; quantity: number }[];
+  /**
+   * S2-14b — the stocked sizes this line takes and the cost per each when it
+   * was sold, frozen at commit (`SaleLineStockShare`). Never on the till's
+   * answer: a cost to the park is not the counter's to read.
+   */
+  stock?: SaleLineStockShare[];
   /** Where this item's prep ticket prints: override → category → parent → kitchen. */
   prepStation?: PrepStation;
   /** The order's pick-up code, on every F&B line so each prep ticket carries it. */
@@ -539,6 +655,31 @@ export interface SaleLinePayload {
    * receipt, a refund and a report can say why this line cost nothing.
    */
   voucher?: { id: string; code: string };
+  /**
+   * SCRUM-494 — on an F&B line served from a child's prepaid items: whose, and
+   * which item. Priced at ฿0; the stay's `redeemedQty` goes up when the sale closes.
+   * `unmatched` on an offline replay's line naming no stay of this park: filed
+   * as served, and nothing is redeemed or printed from the stay it names.
+   * `settledAtPickup` on a line closed after its stay was released: the pickup
+   * settled that food as unused, so the line is not served — quantity 0 with
+   * `orderedQty` the quantity ordered; nothing redeemed, printed or taken
+   * from stock. `usedUp` the same, on a line a counter's close set aside
+   * because fewer were left for the child than it serves.
+   */
+  prepaid?: {
+    checkinId: string;
+    menuItemId: string;
+    unmatched?: true;
+    settledAtPickup?: true;
+    usedUp?: true;
+    orderedQty?: number;
+  };
+  /**
+   * SCRUM-494 — on every F&B line of an order taken against a band: the
+   * child's stay, which the prep ticket prints the allergy line of, and the
+   * food-consent override when staff recorded one.
+   */
+  holder?: { checkinId: string; foodOverride?: { accountId: string; at: string } };
 }
 
 /** A priced unit, ready to become a `pos.sale_line` row. */
@@ -685,10 +826,37 @@ export type CartVoucherScope =
 interface CatalogueLookup {
   packages: Map<string, typeof ticketPackage.$inferSelect>;
   products: Map<string, { row: typeof product.$inferSelect; category: TaxableCategory | null }>;
+  /**
+   * S2-14b — the branch's socks product when the cart names its socks by the
+   * prototype's id (`a-socks`), which is how the till sends them
+   * (`apps/pos/src/lib/cartWire.ts`). It is the STOCK link only: the socks are
+   * still priced as before (the till's snapshot), but the line carries this
+   * product so the guard sees it and finalise takes Regular Socks off the shelf
+   * for every ticket line's socks count, as the prototype does
+   * (`mockApi.ts:1304-1311`).
+   */
+  socksStockProductId: string | null;
 }
 
 /** Only a uuid can be a `pos.product` id; the prototype's are strings like `a-socks`. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The prototype's socks add-on id, and the catalogue code it was seeded under (`seed/menu.ts`). */
+const PROTOTYPE_SOCKS_ID = 'a-socks';
+const SOCKS_CODE = 'AO-SOCKS';
+
+/**
+ * The branch's own socks product, else the operator-wide one; null when the
+ * catalogue has none (the socks then stay untracked, as an unknown add-on does).
+ */
+async function socksStockProductOf(db: Exec, scope: PricingScope): Promise<string | null> {
+  const rows = await db
+    .select({ id: product.id, branchId: product.branchId })
+    .from(product)
+    .where(and(eq(product.operatorId, scope.operatorId), eq(product.code, SOCKS_CODE), isNull(product.archivedAt)));
+  const own = rows.find((r) => r.branchId === scope.branchId) ?? rows.find((r) => !r.branchId);
+  return own?.id ?? null;
+}
 
 async function loadCatalogue(
   db: Exec,
@@ -757,19 +925,72 @@ async function loadCatalogue(
     }
   }
 
-  return { packages, products };
+  const socksStockProductId =
+    input.socks?.addOnId === PROTOTYPE_SOCKS_ID &&
+    (input.lines ?? []).some((l) => (l.socks ?? 0) > 0)
+      ? await socksStockProductOf(db, scope)
+      : null;
+
+  return { packages, products, socksStockProductId };
 }
 
-/** What a unit of the engine's decomposition is, as the ledger names it. */
-function lineKindOf(unit: CartUnit): SaleLineKind {
-  if (unit.promoItem) return 'promo_item';
-  const row = unit.row;
-  if (!row) return 'food_provision';
-  if (row.key === SERVICE_FEE_ROW_KEY) return 'service_fee';
-  if (row.kind === 'kids') return 'kids';
-  if (row.kind === 'adults') return row.key === 'adults-free' ? 'adults_free' : 'adults_paid';
-  if (row.kind === 'socks') return 'socks';
-  return 'addon';
+/**
+ * OD-8 — PRICE THE CART AS THE BOX PRICED IT.
+ *
+ * A sale taken offline from an older catalogue version is filed at the price
+ * the box charged, because the money was taken at a price the park displayed.
+ * The rows the cart used are laid over what the catalogue holds today: each
+ * package's prices and adult rules, each product's price pair, the day's rate
+ * and the tax configuration. A package or product withdrawn since is read back
+ * as it stands, so the sale is filed with the line it sold.
+ */
+async function applyPriceBasis(
+  db: Exec,
+  scope: PricingScope,
+  catalogue: CatalogueLookup,
+  basis: OfflinePriceBasis,
+): Promise<void> {
+  if (basis.pricingMode !== scope.pricingMode) {
+    scope.pricingMode = basis.pricingMode;
+    scope.pricingModeReason = `As the counter priced it offline (${basis.pricingMode} pricing)`;
+  }
+  if (basis.taxConfig) scope.taxConfig = basis.taxConfig as TaxConfigShape;
+
+  const missingPackages = basis.packages.filter((p) => !catalogue.packages.has(p.id)).map((p) => p.id);
+  if (missingPackages.length > 0) {
+    const rows = await db
+      .select()
+      .from(ticketPackage)
+      .where(and(inArray(ticketPackage.id, missingPackages), eq(ticketPackage.branchId, scope.branchId)));
+    for (const row of rows) catalogue.packages.set(row.id, row);
+  }
+  for (const priced of basis.packages) {
+    const row = catalogue.packages.get(priced.id);
+    if (!row) continue;
+    catalogue.packages.set(priced.id, {
+      ...row,
+      prices: priced.prices as typeof row.prices,
+      adultRules: (priced.adultRules ?? row.adultRules) as typeof row.adultRules,
+    });
+  }
+
+  const missingProducts = basis.products.filter((p) => !catalogue.products.has(p.id)).map((p) => p.id);
+  if (missingProducts.length > 0) {
+    const rows = await db
+      .select()
+      .from(product)
+      .where(and(inArray(product.id, missingProducts), eq(product.operatorId, scope.operatorId)));
+    const areas = await resolveItemTaxCategories(db, rows);
+    for (const row of rows) catalogue.products.set(row.id, { row, category: areas.get(row.id) ?? null });
+  }
+  for (const priced of basis.products) {
+    const found = catalogue.products.get(priced.id);
+    if (!found) continue;
+    catalogue.products.set(priced.id, {
+      ...found,
+      row: { ...found.row, priceSatang: priced.priceSatang, priceWeekendSatang: priced.priceWeekendSatang },
+    });
+  }
 }
 
 // --- F&B and shop lines (S2-09b) --------------------------------------------
@@ -821,18 +1042,6 @@ function pickupCodeRequired(): never {
 }
 
 /**
- * The `packageId` an F&B or shop line's cart line carries.
- *
- * It is NOT a package and names no row: an item line has no admission on it, so
- * there is nothing for a `ticketType`-scoped discount to match and a real
- * package id here would make one match something it never sold. `buildPricedLines`
- * looks it up in the loaded packages, finds nothing, and writes
- * `ticket_package_id` null — which is what the ledger should say about a plate
- * of chips.
- */
-const ITEM_LINE_PACKAGE_KEY = 'item-line';
-
-/**
  * SCRUM-344 — each item's own menu category and its parent, by product id.
  *
  * What an `fnbCategory`-scoped promo matches on: a code scoped to Drinks has to
@@ -864,7 +1073,9 @@ async function loadItemCategoryWalk(
     if (!row.categoryId) continue;
     const category = byId.get(row.categoryId);
     if (!category) continue;
-    walk.set(row.id, category.parentId ? [category.id, category.parentId] : [category.id]);
+    // The walk itself is the shared item engine's (`itemCategoryWalk`), so the
+    // till and a box build the scope a code matches on exactly as this does.
+    walk.set(row.id, itemCategoryWalk(category.id, () => category.parentId));
   }
   return walk;
 }
@@ -879,8 +1090,52 @@ interface ResolvedItemLine {
 }
 
 /**
+ * S2-14b — what an F&B size the catalogue does not list does to a cart.
+ *
+ *   - `strict`: a till ringing it up now is told, in the counter's words, and
+ *     can pick again;
+ *   - `file`: an offline sale replayed hours later (`printing: 'skip'`) was
+ *     paid for at a price the park displayed, so it is filed with the size the
+ *     box sent, and finalise raises a `size_unknown` attention for it
+ *     (`takeStockForSale`) instead of the sale going to quarantine.
+ */
+type ItemSizeMode = 'strict' | 'file';
+
+/**
+ * THE SIZE ON AN F&B LINE. Never compulsory here: the counter only offers a
+ * size where the item's stock is kept in sizes (`OrderStation.tsx`'s picker,
+ * fed by `GET stock/sellable`), and there the stock guard refuses an unsized
+ * line ("Choose a size for Slushie — it comes in Red, Blue, Green"). An item
+ * whose tracking was switched off, or a till that could not read stock, still
+ * sells it without one, as the prototype's F&B screen did.
+ */
+function fnbLineVariant(
+  itemName: string,
+  variants: readonly ProductVariant[],
+  sent: { variantId: string; variantLabel?: string } | null | undefined,
+  sizes: ItemSizeMode,
+  details: Record<string, unknown>,
+): { id: string; label: string } | null {
+  if (!sent) return null;
+  const found = variants.find((v) => v.id === sent.variantId);
+  if (found) return found;
+  if (sizes === 'file') {
+    return { id: sent.variantId, label: sent.variantLabel?.trim() || sent.variantId };
+  }
+  return resolveLineVariant(itemName, variants, sent, details);
+}
+
+/**
  * Price the cart's F&B and shop lines from the catalogue, and refuse the ones
  * the menu does not allow.
+ *
+ * THE ARITHMETIC IS THE SHARED ITEM ENGINE'S — SCRUM-271. The unit price, the
+ * category walk, the taxable area's fallback and the cart line an item becomes
+ * are `itemUnitPrice`, `itemCategoryWalk`, `itemTaxCategory` and `itemCartLine`
+ * in `@oto/shared` (`item-cart.ts`), moved there unchanged so the till and a box
+ * selling offline price an item with this code rather than a copy of it. What
+ * stays here is what needs the database: loading the item's groups and options,
+ * checking the selection against the menu, resolving the size, the prep station.
  *
  * THREE RULES, all of them the prototype's:
  *
@@ -904,7 +1159,7 @@ interface ResolvedItemLine {
  * around the engine: it means the F&B money is decomposed into units, bounded
  * by the discount ledger, run through the same tax cascade and apportioned back
  * the same way admission is, instead of a second set of totals arithmetic
- * living here. `lineKindOf` would call such a unit an `addon`; `buildPricedLines`
+ * living here. `ledgerUnitKindOf` would call such a unit an `addon`; `buildPricedLines`
  * writes the kind this function resolved, `fnb_item` or `merch_item`.
  *
  * WHAT THE ROW SAYS IT IS, so a promo code can be scoped to it (SCRUM-344).
@@ -932,6 +1187,14 @@ async function resolveItemLines(
   input: CartInput,
   catalogue: CatalogueLookup,
   tierCode: string,
+  /** OD-8 — each option's price as the box priced it offline. */
+  optionPrices: ReadonlyMap<string, { priceSatang: number; priceWeekendSatang: number | null }> | undefined,
+  /** S2-14b — how an F&B size the catalogue does not list is treated (`ItemSizeMode`). */
+  sizes: ItemSizeMode,
+  /** SCRUM-494 — the band holder and the prepaid lines, already checked (`resolveCartBandFood`). */
+  band: CartBandFood = { holder: null, prepaid: new Map() },
+  /** Who recorded a food-consent override, and when: the session's account. */
+  overrideBy: { accountId: string; at: string } | null = null,
 ): Promise<ResolvedItemLine[]> {
   const itemInputs = input.items ?? [];
   if (itemInputs.length === 0) return [];
@@ -982,7 +1245,7 @@ async function resolveItemLines(
         inArray(productModifierGroup.productId, productIds),
       ),
     );
-  const options = groups.length
+  const loadedOptions = groups.length
     ? await db
         .select()
         .from(modifierOption)
@@ -997,14 +1260,23 @@ async function resolveItemLines(
         )
         .orderBy(asc(modifierOption.sortOrder), asc(modifierOption.name))
     : [];
+  const options = optionPrices
+    ? loadedOptions.map((option) => {
+        const asPriced = optionPrices.get(option.id);
+        return asPriced
+          ? {
+              ...option,
+              priceSatang: asPriced.priceSatang,
+              priceWeekendSatang: asPriced.priceWeekendSatang,
+            }
+          : option;
+      })
+    : loadedOptions;
   const prepStations = await resolveItemPrepStations(db, rows);
   const categoryWalk = await loadItemCategoryWalk(db, rows);
 
   const inlineGroups = groups.filter((g) => g.productId !== null);
   const libraryGroups = groups.filter((g) => g.productId === null);
-  /** The weekday/weekend pair as the engine resolves every other one. */
-  const rate = (weekday: number, weekend: number | null): number =>
-    resolveRate({ weekday, weekend: weekend ?? weekday }, ctx.mode);
 
   const resolved: ResolvedItemLine[] = [];
   itemInputs.forEach((line, index) => {
@@ -1022,91 +1294,116 @@ async function resolveItemLines(
     }));
     assertModifierSelection(row.name, itemGroups, chosen);
     /**
-     * The size, on a shop line (S2-09b): one of the ITEM's sizes, the same way
-     * a modifier option has to be one the item offers — and on an item sold in
-     * two sizes or more, a required one, the way a required question is
-     * (`resolveLineVariant`). Only the id is taken from the till; the label
-     * frozen on the line is the catalogue's. No size carries a price of its
-     * own, so the unit price below is the item's whichever size it is.
+     * The size (S2-09b; F&B since S2-14b): one of the ITEM's sizes, the same
+     * way a modifier option has to be one the item offers. On a shop item sold
+     * in two sizes or more it is a required one, the way a required question is
+     * (`resolveLineVariant`); an F&B size is required only where its stock is
+     * kept in sizes, which the stock guard asks for (`fnbLineVariant`). Only
+     * the id is taken from the till; the label frozen on the line is the
+     * catalogue's. No size carries a price of its own, so the unit price below
+     * is the item's whichever size it is.
      */
-    const variant =
-      kind === 'merch_item'
-        ? resolveLineVariant(row.name, row.variants, line.variant, {
-            cartLineId: line.id,
-            productId: row.id,
-          })
-        : null;
+    const details = { cartLineId: line.id, productId: row.id };
+    const variant: { id: string; label: string } | null =
+      kind === 'fnb_item'
+        ? fnbLineVariant(row.name, row.variants, line.variant, sizes, details)
+        : resolveLineVariant(row.name, row.variants, line.variant, details);
 
     const chosenByGroup = new Map(chosen.map((c) => [c.groupId, c.optionIds]));
-    let unitSatang = rate(row.priceSatang, row.priceWeekendSatang);
-    const modifiers: NonNullable<SaleLinePayload['modifiers']> = [];
     // Group order, then the order the options were chosen in — the order the
     // prototype lists them in on the display and the receipt
     // (`describeModifiers`, `breakdownModifiers`).
-    for (const { group, options: offered } of itemGroups) {
-      for (const optionId of chosenByGroup.get(group.id) ?? []) {
-        const option = offered.find((o) => o.id === optionId)!;
-        const delta = rate(option.priceSatang, option.priceWeekendSatang);
-        unitSatang += delta;
-        modifiers.push({
-          groupId: group.id,
-          groupName: group.name,
-          optionId: option.id,
-          optionName: option.name,
-          unitSatang: delta,
-        });
-      }
-    }
+    const picked = itemGroups.flatMap(({ group, options: offered }) =>
+      (chosenByGroup.get(group.id) ?? []).map((optionId) => ({
+        group,
+        option: offered.find((o) => o.id === optionId)!,
+      })),
+    );
+    // Rule 1, priced by the shared item engine: the item's pair and every
+    // chosen option's pair, each resolved at this rate mode. A line served
+    // from prepaid items is ฿0 — it was paid for at the door (the design's
+    // `isPrepaid` line, `lineTotal: 0`).
+    const prepaidFrom = kind === 'fnb_item' ? (band.prepaid.get(line.id) ?? null) : null;
+    const priced = prepaidFrom
+      ? { unit: 0, options: picked.map(() => 0) }
+      : itemUnitPrice(
+          itemPricePair(row.priceSatang, row.priceWeekendSatang),
+          picked.map(({ option }) => itemPricePair(option.priceSatang, option.priceWeekendSatang)),
+          ctx.mode,
+        );
+    const unitSatang = priced.unit;
+    const modifiers: NonNullable<SaleLinePayload['modifiers']> = picked.map(
+      ({ group, option }, position) => ({
+        groupId: group.id,
+        groupName: group.name,
+        optionId: option.id,
+        optionName: option.name,
+        unitSatang: priced.options[position] ?? 0,
+      }),
+    );
 
     /**
      * Which taxable area this item's money lands in: the resolved walk from
      * `loadCatalogue` — the item's override, else its category's, else its
      * parent's. Where nothing in the chain answers, a menu item is `fnb` and a
      * shop item is `merch`, which is the prototype's own fallback on each side
-     * (`lib/menu.ts:101-110`, `lib/merch.ts:merchTaxInputs`).
+     * (`lib/menu.ts:101-110`, `lib/merch.ts:merchTaxInputs`) and the shared
+     * engine's `itemTaxCategory`.
      */
-    const taxCategory: TaxableCategory =
-      catalogue.products.get(row.id)?.category ?? (kind === 'merch_item' ? 'merch' : 'fnb');
+    const taxCategory: TaxableCategory = itemTaxCategory(
+      kind === 'merch_item' ? 'merch' : 'menu',
+      catalogue.products.get(row.id)?.category,
+    );
     const note = (line.note ?? '').trim();
     const payload: SaleLinePayload = {
       ...(modifiers.length > 0 ? { modifiers } : {}),
       ...(note ? { note } : {}),
-      ...(variant
-        ? { variant: { variantId: variant.id, variantLabel: variant.label } }
-        : kind === 'fnb_item' && line.variant
-          ? { variant: line.variant }
-          : {}),
+      ...(variant ? { variant: { variantId: variant.id, variantLabel: variant.label } } : {}),
       // Merchandise is handed over at the till and prints no prep ticket at all
       // (`types.ts:1213`), so a station on a shop line would be a fact about
       // nothing.
       ...(kind === 'fnb_item' ? { prepStation: prepStations.get(row.id) ?? 'kitchen' } : {}),
+      ...(prepaidFrom
+        ? {
+            prepaid: {
+              checkinId: prepaidFrom.checkinId,
+              menuItemId: row.id,
+              ...(prepaidFrom.matched ? {} : { unmatched: true as const }),
+              ...(prepaidFrom.settledAtPickup ? { settledAtPickup: true as const } : {}),
+            },
+          }
+        : {}),
+      ...(kind === 'fnb_item' && band.holder
+        ? {
+            holder: {
+              checkinId: band.holder.checkinId,
+              ...(band.holder.foodOverride && !band.holder.mayOrderFood && overrideBy
+                ? { foodOverride: overrideBy }
+                : {}),
+            },
+          }
+        : {}),
     };
 
-    const cartLine: TicketCartLine = {
-      id: line.id,
-      packageId: ITEM_LINE_PACKAGE_KEY,
-      package: { prices: {}, adultRules: null },
-      tier: tierCode,
-      kids: 0,
-      adults: 0,
-      socks: 0,
-      addOns: [
-        {
-          id: row.id,
-          // The line's label: "Grip Socks — M" when a size was sold, which is
-          // what the receipt and the Sale detail read back.
-          name: variant ? variantLineLabel(row.name, variant.label) : row.name,
-          price: unitSatang,
-          quantity: line.quantity,
-          taxCategoryOverride: taxCategory,
-          // What this row IS, for the promo scopes — see the header.
-          itemKind: kind === 'merch_item' ? ('merch' as const) : ('menu' as const),
-          categoryIds: categoryWalk.get(row.id) ?? [],
-        },
-      ],
-      lineTotal: 0,
-    };
-    cartLine.lineTotal = priceCartLine(cartLine, ctx);
+    // The cart line the item becomes, and its total, from the shared item
+    // engine — the same line the till and a box build for it.
+    const cartLine: TicketCartLine = itemCartLine(
+      {
+        id: line.id,
+        itemId: row.id,
+        // The line's label: "Grip Socks — M" when a size was sold, which is
+        // what the receipt and the Sale detail read back.
+        name: variant ? variantLineLabel(row.name, variant.label) : row.name,
+        // What this row IS, for the promo scopes — see the header.
+        itemKind: kind === 'merch_item' ? 'merch' : 'menu',
+        unitPrice: unitSatang,
+        quantity: line.quantity,
+        taxCategory,
+        categoryIds: categoryWalk.get(row.id) ?? [],
+        tier: tierCode,
+      },
+      ctx,
+    );
     resolved.push({ cartLineId: line.id, kind, productId: row.id, payload, cartLine });
   });
 
@@ -1130,6 +1427,18 @@ export async function priceCart(
   now: Date = new Date(),
   voucherScope: CartVoucherScope = { mode: 'quote', stationId: null },
   promoPricing: PromoPricing = 'definition',
+  /**
+   * OD-8 — the prices a box priced an offline sale from, when the catalogue
+   * has moved on since: the sale is filed at the price the park displayed and
+   * the money was taken at. Only the offline replay passes it, and only after
+   * the current catalogue disagreed with the box's total.
+   */
+  priceBasis: OfflinePriceBasis | null = null,
+  /**
+   * S2-14b — `file` only for an offline sale being replayed: an F&B size the
+   * catalogue no longer lists is filed as the box sent it (`ItemSizeMode`).
+   */
+  sizes: ItemSizeMode = 'strict',
 ): Promise<PricedCart> {
   const branchId = input.branchId ?? actor.branchId;
   if (!branchId) throw errors.badRequest('No active branch on this session');
@@ -1159,9 +1468,11 @@ export async function priceCart(
    * refuses on the same reason before it takes any money for it.
    */
   const claimed = await resolveTierClaim(db, actor, scope.branchId, input, now);
-  const resolvedTier: PricedCart['tier'] =
-    claimed.claim ?? (await resolveTier(db, actor.operatorId, input.memberId));
+  const resolvedTier: PricedCart['tier'] = priceBasis
+    ? { code: priceBasis.tier, source: input.memberId ? 'member' : 'default' }
+    : claimed.claim ?? (await resolveTier(db, actor.operatorId, input.memberId, input.tier));
   const catalogue = await loadCatalogue(db, scope, input);
+  if (priceBasis) await applyPriceBasis(db, scope, catalogue, priceBasis);
 
   // What the platform stood behind, and what it took on trust. Filled as the
   // cart resolves and written onto the lines that were priced from a snapshot.
@@ -1305,7 +1616,49 @@ export async function priceCart(
    * S2-09b — the F&B and shop lines, priced from the catalogue and appended to
    * the cart the engine totals, so one cascade covers the whole bill.
    */
-  const itemLines = await resolveItemLines(db, scope, ctx, input, catalogue, resolvedTier.code);
+  /**
+   * SCRUM-494 — the band the F&B order was taken against, and the lines served
+   * from that child's prepaid items, checked before the lines are priced.
+   */
+  const bandFood = await resolveCartBandFood(
+    db,
+    actor.operatorId,
+    scope.branchId,
+    input,
+    sizes === 'file' ? 'file' : 'strict',
+    (productId) => catalogue.products.get(productId)?.row.name ?? 'That item',
+    voucherScope.mode === 'commit' ? { saleId: voucherScope.saleId, lock: true } : { saleId: null, lock: false },
+  );
+  const itemLines = await resolveItemLines(
+    db,
+    scope,
+    ctx,
+    input,
+    catalogue,
+    resolvedTier.code,
+    priceBasis ? new Map(priceBasis.options.map((o) => [o.id, o])) : undefined,
+    sizes,
+    bandFood,
+    { accountId: actor.accountId, at: now.toISOString() },
+  );
+  /**
+   * The design's food-consent rule (`OrderStation.tsx:handleAdd`): food is not
+   * ordered for a child whose parent did not authorise it until staff record
+   * the override, which then rides the order. Checked here so a till that
+   * skipped the modal cannot ring the order up either; an offline replay was
+   * served already and is filed as it was taken.
+   */
+  if (
+    sizes !== 'file' &&
+    bandFood.holder &&
+    !bandFood.holder.mayOrderFood &&
+    !bandFood.holder.foodOverride &&
+    itemLines.some((item) => item.kind === 'fnb_item' && !bandFood.prepaid.has(item.cartLineId))
+  ) {
+    throw errors.conflict('FOOD_NOT_AUTHORIZED', BAND_FOOD_REFUSALS.FOOD_NOT_AUTHORIZED, {
+      checkinId: bandFood.holder.checkinId,
+    });
+  }
   for (const item of itemLines) {
     const sent = (input.items ?? []).find((l) => l.id === item.cartLineId)?.lineTotalSatang;
     // The same reconciliation a ticket line gets, and yielding to a refused
@@ -1386,7 +1739,9 @@ export async function priceCart(
    * nothing on it — a voucher of another kind, or a code that adds no line —
    * is still empty.
    */
-  if (cartLines.length === 0 && voucherClaim?.effect.type !== 'hand_over') {
+  // S2-14a round 5: a wallet-credit voucher stands alone the same way — it
+  // loads credit when the ฿0 sale closes (`voucherStandsAlone`).
+  if (cartLines.length === 0 && !voucherStandsAlone(voucherClaim?.effect)) {
     throw errors.badRequest('The cart is empty');
   }
 
@@ -1407,11 +1762,14 @@ export async function priceCart(
         ? [{ lineId: line.id, productId: line.promoItem.itemId, unitSatang: line.lineTotal }]
         : [],
     ),
-    ...itemLines.map((item) => ({
-      lineId: item.cartLineId,
-      productId: item.productId,
-      unitSatang: item.cartLine.addOns[0]?.price ?? 0,
-    })),
+    // A prepaid line was paid for at the door: a free-item code has nothing to take off it.
+    ...itemLines
+      .filter((item) => !bandFood.prepaid.has(item.cartLineId))
+      .map((item) => ({
+        lineId: item.cartLineId,
+        productId: item.productId,
+        unitSatang: item.cartLine.addOns[0]?.price ?? 0,
+      })),
   ];
   const resolvedPromos = await resolveCartPromos(
     db,
@@ -1451,7 +1809,7 @@ export async function priceCart(
    * true of a prize that was handed over, so it is dropped, and the row reads
    * as it does beside a ticket: the code, its label, ฿0.
    */
-  if (voucherClaim?.effect.type === 'hand_over') {
+  if (voucherClaim && voucherStandsAlone(voucherClaim.effect)) {
     const applied = totals.appliedPromos.find((promo) => promo.code === voucherClaim.code);
     if (applied) delete applied.exhaustedReason;
   }
@@ -1584,162 +1942,76 @@ function buildPricedLines(
   voucherLines: ReadonlyMap<string, { id: string; code: string; productId: string }> = new Map(),
 ): PricedLine[] {
   const units = cartUnits(cartLines, ctx);
-  const byCategory = new Map<TaxableCategory, number[]>();
-  units.forEach((unit, index) => {
-    const list = byCategory.get(unit.category) ?? [];
-    list.push(index);
-    byCategory.set(unit.category, list);
-  });
-
-  // Per-unit money, filled in category by category.
-  const discount = new Array<number>(units.length).fill(0);
-  const baseAfter = new Array<number>(units.length).fill(0);
-  const service = new Array<number>(units.length).fill(0);
-  const taxIncl = new Array<number>(units.length).fill(0);
-  const taxExcl = new Array<number>(units.length).fill(0);
-
-  /**
-   * S2-10b — WHAT A LINE-AIMED PROMO TOOK, ON THE UNIT IT TOOK IT FROM: a
-   * voucher's free item on the voucher's own line, a 1+1 on one line's kids.
-   * The engine reports it (`AppliedPromo.units`, indexed like `cartUnits` over
-   * these same lines and context). Spread by the category rule below instead, a
-   * free pizza beside a paid one would put ฿110 off on each — the right total,
-   * two wrong receipt lines, and a refund of the paid pizza returning ฿110.
-   */
-  const pinned = new Array<number>(units.length).fill(0);
-  for (const applied of totals.appliedPromos) {
-    for (const aimed of applied.units ?? []) {
-      if (aimed.index < 0 || aimed.index >= units.length) {
-        throw new Error('a line-aimed discount names a unit this cart does not have');
-      }
-      pinned[aimed.index] = (pinned[aimed.index] ?? 0) + aimed.amount;
-    }
-  }
-
-  for (const [category, indexes] of byCategory) {
-    const weights = indexes.map((i) => units[i]?.base ?? 0);
-    const originalBase = weights.reduce((sum, w) => sum + w, 0);
-    const row = totals.taxBreakdown.categories.find((c) => c.category === category);
-    // A category with no row in the breakdown contributed no base at all.
-    const after = row?.base ?? originalBase;
-    const inclusive =
-      (row?.taxMode === 'inclusive' ? (row?.tax ?? 0) : 0) +
-      (row?.secondaryTaxMode === 'inclusive' ? (row?.secondaryTax ?? 0) : 0);
-    const exclusive =
-      (row?.taxMode === 'exclusive' ? (row?.tax ?? 0) : 0) +
-      (row?.secondaryTaxMode === 'exclusive' ? (row?.secondaryTax ?? 0) : 0);
-
-    const categoryDiscount = Math.max(0, originalBase - after);
-    const pins = indexes.map((i) => pinned[i] ?? 0);
-    const pinnedTotal = pins.reduce((sum, pin) => sum + pin, 0);
-
-    if (pinnedTotal === 0) {
-      // Nothing aimed at a line in this category: every figure spread across
-      // its units in proportion to their undiscounted bases, as it always was.
-      const shares = {
-        base: apportion(after, weights),
-        discount: apportion(categoryDiscount, weights),
-        service: apportion(row?.serviceCharge ?? 0, weights),
-        inclusive: apportion(inclusive, weights),
-        exclusive: apportion(exclusive, weights),
-      };
-      indexes.forEach((unitIndex, position) => {
-        baseAfter[unitIndex] = shares.base[position] ?? 0;
-        discount[unitIndex] = shares.discount[position] ?? 0;
-        service[unitIndex] = shares.service[position] ?? 0;
-        taxIncl[unitIndex] = shares.inclusive[position] ?? 0;
-        taxExcl[unitIndex] = shares.exclusive[position] ?? 0;
-      });
-      continue;
-    }
-
-    // The aimed markdown on its own units — never more than the category's own
-    // discount, which is none when discounts are placed after tax ...
-    const aimedShares = pinnedTotal <= categoryDiscount ? pins : apportion(categoryDiscount, pins);
-    const aimedTotal = aimedShares.reduce((sum, share) => sum + share, 0);
-    // ... and the rest of the category's discount over what each unit has left.
-    const room = indexes.map((i, position) =>
-      Math.max(0, (units[i]?.base ?? 0) - (aimedShares[position] ?? 0)),
-    );
-    const restShares = apportion(categoryDiscount - aimedTotal, room);
-    const discounts = indexes.map(
-      (_, position) =>
-        (aimedShares[position] ?? 0) + Math.min(restShares[position] ?? 0, room[position] ?? 0),
-    );
-    const bases = indexes.map((i, position) => (units[i]?.base ?? 0) - (discounts[position] ?? 0));
-    // Service charge and tax follow the base each unit is left with: an item
-    // handed over for nothing carries none of either.
-    const chargeWeights = bases.some((base) => base > 0) ? bases : weights;
-    const shares = {
-      service: apportion(row?.serviceCharge ?? 0, chargeWeights),
-      inclusive: apportion(inclusive, chargeWeights),
-      exclusive: apportion(exclusive, chargeWeights),
-    };
-    indexes.forEach((unitIndex, position) => {
-      baseAfter[unitIndex] = bases[position] ?? 0;
-      discount[unitIndex] = discounts[position] ?? 0;
-      service[unitIndex] = shares.service[position] ?? 0;
-      taxIncl[unitIndex] = shares.inclusive[position] ?? 0;
-      taxExcl[unitIndex] = shares.exclusive[position] ?? 0;
-    });
-  }
-
+  // Each unit's share of the money, split by the one function the box's
+  // finalise runs too (`splitLedgerUnitMoney` in `@oto/shared`, offline plan
+  // §2.5), so the line a guest reads on an offline receipt is the line this
+  // ledger files.
+  const money = splitLedgerUnitMoney(units, totals);
   const linesById = new Map(cartLines.map((line) => [line.id, line]));
   return units.map((unit, index) => {
     const cartLine = linesById.get(unit.lineId);
     const row = unit.row;
     const categoryRow = totals.taxBreakdown.categories.find((c) => c.category === unit.category);
-    const base = baseAfter[index] ?? 0;
-    const incl = taxIncl[index] ?? 0;
-    const excl = taxExcl[index] ?? 0;
-    const serviceCharge = service[index] ?? 0;
-    // Inclusive tax is already inside the base; exclusive tax is added to it.
-    const net = base - incl;
+    const share = money[index]!;
     // An F&B or shop line reaches the engine as one add-on row on its own cart
-    // line, so `lineKindOf` would call it an `addon`. The kind the ledger
+    // line, so `ledgerUnitKindOf` would call it an `addon`. The kind the ledger
     // records is the one `resolveItemLines` resolved from `product.kind`.
     const item = itemLines.get(unit.lineId);
-    const kind = item ? item.kind : lineKindOf(unit);
+    const kind = item ? item.kind : ledgerUnitKindOf(unit);
     const voucherLine = unit.promoItem ? voucherLines.get(unit.lineId) : undefined;
     const productId = item
       ? item.productId
       : voucherLine
         ? voucherLine.productId
         : kind === 'socks'
-          ? (catalogue.products.get(ctx.socks.addOnId)?.row.id ?? null)
+          ? (catalogue.products.get(ctx.socks.addOnId)?.row.id ?? catalogue.socksStockProductId)
           : kind === 'addon' && row
             ? (catalogue.products.get(row.key)?.row.id ?? null)
             : null;
     const pkg = cartLine ? catalogue.packages.get(cartLine.packageId) : undefined;
     const freeAdults = row?.key === 'adults-free' ? row.quantity : 0;
+    /**
+     * S2-14b — an add-on split across sizes carries the split onto its line, so
+     * each size's stock is taken (and a refund puts each back). The engine
+     * keeps one row per add-on id with the breakdown beside it
+     * (`lib/pricing.ts`'s `setAddOnVariants`), so the cart line's add-on with
+     * this row's key is the one.
+     */
+    const breakdown =
+      kind === 'addon' && row
+        ? cartLine?.addOns.find((a) => a.id === row.key)?.variantBreakdown?.filter((b) => b.quantity > 0)
+        : undefined;
+    const sized: SaleLinePayload | null =
+      breakdown && breakdown.length > 0 ? { variantBreakdown: breakdown } : null;
+    const snapshot =
+      (row && snapshotPriced.has(row.key)) ||
+      (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
+      ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
+        snapshotPriced.has(unit.lineId));
 
     return {
       lineNo: index + 1,
       cartLineId: unit.lineId,
       kind,
-      componentKey: row
-        ? row.key
-        : unit.promoItem
-          ? `promo-item:${unit.promoItem.itemId}`
-          : 'food-provision',
+      componentKey: ledgerUnitComponentKey(unit),
       ticketPackageId: pkg?.id ?? null,
       productId,
-      label: row?.label ?? unit.promoItem?.name ?? 'Prepaid food',
+      label: ledgerUnitLabel(unit),
       revenueCategory: unit.category,
       taxableCategory: unit.category,
       quantity: row?.quantity ?? 1,
       unitSatang: row?.unitPrice ?? unit.base,
-      baseSatang: unit.base,
-      discountSatang: discount[index] ?? 0,
-      netSatang: net,
-      serviceChargeSatang: serviceCharge,
-      taxSatang: incl + excl,
+      baseSatang: share.base,
+      discountSatang: share.discount,
+      netSatang: share.net,
+      serviceChargeSatang: share.service,
+      taxSatang: share.taxInclusive + share.taxExclusive,
       taxMode: categoryRow?.taxMode ?? 'none',
       // Basis points: 7 % is 700. The percent comes from the resolved rate.
       taxRateBp: Math.round((categoryRow?.taxPercent ?? 0) * 100),
       taxRateId: categoryRow?.taxRateId ?? null,
       taxName: categoryRow?.taxName ?? null,
-      grossSatang: net + incl + excl + serviceCharge,
+      grossSatang: share.gross,
       customerTier: tierCode,
       kidCount: cartLine?.kids ?? 0,
       adultCount: cartLine?.adults ?? 0,
@@ -1756,12 +2028,9 @@ function buildPricedLines(
               // that route to it and has to print the code the guest holds.
               ...(item.kind === 'fnb_item' && pickupCode ? { pickupCode } : {}),
             }
-          : (row && snapshotPriced.has(row.key)) ||
-              (kind === 'socks' && snapshotPriced.has(ctx.socks.addOnId)) ||
-              ((kind === 'service_fee' || kind === 'food_provision' || kind === 'promo_item') &&
-                snapshotPriced.has(unit.lineId))
-            ? { priceSource: 'till_snapshot' as const }
-            : null,
+          : snapshot
+            ? { priceSource: 'till_snapshot' as const, ...sized }
+            : sized,
     };
   });
 }
@@ -2023,8 +2292,8 @@ export interface SaleTierClaimView {
   documentKind: string;
   /** The tier the document supported — the one that priced this sale. */
   toTier: string;
-  /** The document's own expiry, as the check recorded it (`YYYY-MM-DD`). */
-  evidenceExpiresOn: string;
+  /** The document's own expiry, as the check recorded it (`YYYY-MM-DD`); null when none was recorded. */
+  evidenceExpiresOn: string | null;
   /** When reception checked it: the claim row's `created_at`. */
   verifiedAt: string;
 }
@@ -2146,6 +2415,11 @@ async function accountNamesOf(
   return (accountId) => (accountId ? (names.get(accountId) ?? null) : null);
 }
 
+/** A sale row as every answer shows it, for a service outside this file (S2-11 refunds). */
+export async function saleViewOf(db: Exec, row: typeof sale.$inferSelect): Promise<SaleView> {
+  return viewOf(row, await voidedByNameOf(db, row));
+}
+
 /** `SaleView.voidedByName` for one sale: null, and no query, on a sale never voided. */
 async function voidedByNameOf(db: Exec, row: typeof sale.$inferSelect): Promise<string | null> {
   return (await accountNamesOf(db, [row.voidedByAccountId]))(row.voidedByAccountId);
@@ -2161,9 +2435,11 @@ async function voidedByNameOf(db: Exec, row: typeof sale.$inferSelect): Promise<
  * does. The row is locked FOR UPDATE so two tills on one station cannot take
  * the same number; `sale_receipt_unique` is the net underneath that.
  */
-async function allocateReceipt(
+export async function allocateReceipt(
   tx: Tx,
   scope: { operatorId: string; branchId: string; stationId: string; series: string },
+  /** S2-11 — `refund` numbers a credit note from its own series; `sale` is the default. */
+  kind: 'sale' | 'refund' = 'sale',
 ): Promise<{ series: string; seq: number; number: string }> {
   const existing = await tx
     .select()
@@ -2172,7 +2448,7 @@ async function allocateReceipt(
       and(
         eq(receiptSeries.stationId, scope.stationId),
         eq(receiptSeries.series, scope.series),
-        eq(receiptSeries.kind, 'sale'),
+        eq(receiptSeries.kind, kind),
       ),
     )
     .for('update')
@@ -2188,7 +2464,7 @@ async function allocateReceipt(
         branchId: scope.branchId,
         stationId: scope.stationId,
         series: scope.series,
-        kind: 'sale',
+        kind,
       })
       .onConflictDoNothing()
       .returning();
@@ -2202,7 +2478,7 @@ async function allocateReceipt(
           and(
             eq(receiptSeries.stationId, scope.stationId),
             eq(receiptSeries.series, scope.series),
-            eq(receiptSeries.kind, 'sale'),
+            eq(receiptSeries.kind, kind),
           ),
         )
         .for('update')
@@ -2223,6 +2499,85 @@ async function allocateReceipt(
     seq,
     number: `${row.series}-${String(seq).padStart(row.seqPadding, '0')}`,
   };
+}
+
+/**
+ * OD-4 — ADOPT THE NUMBER A BOX PRINTED, when it is free.
+ *
+ * A counter with no internet numbers its sales from its own copy of the
+ * series and persists each number before printing it, so a guest is holding
+ * that number. On replay it is filed under that number whenever no sale in the
+ * station's series already carries it, and `next_seq` moves past it so the
+ * allocator never issues it again. When it IS taken — an abandoned sale that
+ * lost its answer, a replaced box whose predecessor's unsent tail arrived
+ * late — the sale is filed under the next free number and the caller names
+ * both. Locks the series row as `allocateReceipt` does, so an online sale
+ * numbering at the same instant waits its turn.
+ */
+export async function adoptReceipt(
+  tx: Tx,
+  scope: { operatorId: string; branchId: string; stationId: string; series: string },
+  printed: { series: string; seq: number; number: string },
+): Promise<{ receipt: { series: string; seq: number; number: string }; adopted: boolean }> {
+  if (printed.series !== scope.series) {
+    // Printed under another prefix than the station's series today: not a
+    // number this series can hold.
+    return { receipt: await allocateReceipt(tx, scope), adopted: false };
+  }
+  // Open or lock the series first, exactly as a number is allocated.
+  const [row] = await tx
+    .select()
+    .from(receiptSeries)
+    .where(
+      and(
+        eq(receiptSeries.stationId, scope.stationId),
+        eq(receiptSeries.series, scope.series),
+        eq(receiptSeries.kind, 'sale'),
+      ),
+    )
+    .for('update')
+    .limit(1);
+  const padding = row?.seqPadding ?? 6;
+  const number = `${printed.series}-${String(printed.seq).padStart(padding, '0')}`;
+  const [taken] = await tx
+    .select({ id: sale.id })
+    .from(sale)
+    .where(
+      or(
+        and(
+          eq(sale.stationId, scope.stationId),
+          eq(sale.receiptSeries, printed.series),
+          eq(sale.receiptSeq, printed.seq),
+        ),
+        and(eq(sale.branchId, scope.branchId), eq(sale.receiptNumber, number)),
+      ),
+    )
+    .limit(1);
+  if (taken) return { receipt: await allocateReceipt(tx, scope), adopted: false };
+  if (!row) {
+    await tx
+      .insert(receiptSeries)
+      .values({
+        id: newId(),
+        operatorId: scope.operatorId,
+        branchId: scope.branchId,
+        stationId: scope.stationId,
+        series: scope.series,
+        kind: 'sale',
+        nextSeq: printed.seq + 1,
+        lastIssuedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [receiptSeries.stationId, receiptSeries.series, receiptSeries.kind],
+        set: { nextSeq: sql`greatest(${receiptSeries.nextSeq}, ${printed.seq + 1})`, lastIssuedAt: new Date() },
+      });
+  } else if (row.nextSeq <= printed.seq) {
+    await tx
+      .update(receiptSeries)
+      .set({ nextSeq: printed.seq + 1, lastIssuedAt: new Date() })
+      .where(eq(receiptSeries.id, row.id));
+  }
+  return { receipt: { series: printed.series, seq: printed.seq, number }, adopted: true };
 }
 
 /**
@@ -2385,11 +2740,224 @@ export interface CommitResult {
    * today. Never set on a till's own commit, so the route's answer is unchanged.
    */
   promoDifferences?: PromoDifference[];
+  /**
+   * S2-11 — what closing it put on paper: the print jobs, the bands, and the
+   * "not printed" notes. Null when this call did not close the sale.
+   */
+  printing?: SalePrintingResult | null;
+  /**
+   * S2-14a — the wallets closing it granted (one per person who earns credit,
+   * each with its ONE voucher QR). Empty when this call did not close the sale
+   * or nobody on it earns.
+   */
+  grants?: WalletGrantView[];
+}
+
+/**
+ * SCRUM-270 — THE CART LINE IDS A CART WOULD LEAVE ON THE LEDGER.
+ *
+ * A sale line is one priced UNIT of a cart line (`cartUnits` in
+ * `@oto/shared`), and every unit carries its cart line's id
+ * (`sale_line.cart_line_id`). A cart line that prices into no unit at all — a
+ * ticket line with nobody on it, nothing added and no fee — leaves no row, so
+ * its id cannot be read back off the ledger; comparing a replay against the
+ * stored ids therefore leaves those out, or every retry of a cart carrying one
+ * would be refused for a line that was never there to store. This mirrors the
+ * engine's rule unit for unit (`id-conformance.test.ts` holds the two
+ * together): a free-item line is one unit, kids, adults, socks, each add-on, a
+ * fee and prepaid food each make one, and every F&B or shop line is one.
+ */
+export function storedCartLineIds(input: Pick<CartInput, 'lines' | 'items'>): Set<string> {
+  const ids = new Set<string>();
+  for (const line of input.lines ?? []) {
+    const pricesIntoAUnit =
+      Boolean(line.promoItem) ||
+      line.kids > 0 ||
+      line.adults > 0 ||
+      (line.socks ?? 0) > 0 ||
+      (line.addOns?.length ?? 0) > 0 ||
+      (line.serviceFee?.amountSatang ?? 0) > 0 ||
+      (line.foodProvision?.paidSatang ?? 0) > 0;
+    if (pricesIntoAUnit) ids.add(line.id.toLowerCase());
+  }
+  for (const item of input.items ?? []) ids.add(item.id.toLowerCase());
+  return ids;
+}
+
+/**
+ * SCRUM-270, OD-12 — a sale id arriving again is the same sale only if it
+ * names the same lines.
+ *
+ * The till mints the sale's id and every line's, and both lanes carry them
+ * (plan `offline/PLAN.md` §2.1), so the one sale begun at the counter and
+ * finished through the box meets itself here. Other line ids under the same
+ * sale id are not a retry of this sale: they are a different cart claiming its
+ * name, which is a defect somewhere and not a thing to answer with the stored
+ * sale as though it were this one. Refused in words, and nothing is written.
+ *
+ * What is compared is the line IDS, not what is on the lines: a retry that
+ * re-sends a line with other counts is still that line, and the sale stays as
+ * it was first recorded. A voucher's free item is a line the platform put on
+ * the bill itself (`payload.voucher`), so it is not one the caller could name.
+ */
+function assertSameLines(
+  saleId: string,
+  stored: ReadonlyArray<{ cartLineId: string; payload: unknown }>,
+  input: CartInput,
+): void {
+  const recorded = new Set(
+    stored
+      .filter((row) => !(row.payload as { voucher?: unknown } | null)?.voucher)
+      .map((row) => row.cartLineId.toLowerCase()),
+  );
+  const sent = storedCartLineIds(input);
+  const same = recorded.size === sent.size && [...sent].every((id) => recorded.has(id));
+  if (!same) {
+    throw errors.conflict(
+      'SALE_LINES_DIFFER',
+      'That sale has already been recorded with different lines — nothing was saved',
+      { saleId },
+    );
+  }
 }
 
 /** How a commit prices its promo codes. Only the offline replay sets it. */
 export interface CommitSaleOptions {
   promoPricing?: PromoPricing;
+  /**
+   * OD-8 — price the cart from the rows a box priced it from offline, when
+   * the catalogue has moved on since. Only the offline replay sets it.
+   */
+  priceBasis?: OfflinePriceBasis | null;
+  /** The catalogue version a box priced the sale from, recorded on the row (OD-8). */
+  catalogueVersion?: string | null;
+  /**
+   * S2-11 — `skip` for a sale whose paper was already printed where it was
+   * taken: an offline replay. Everything else routes its printing.
+   */
+  printing?: 'route' | 'skip';
+  /**
+   * SCRUM-478 — what the supervision gate does to a sale that admits children
+   * with no adult and no registration behind them. `refuse` is the online
+   * path's answer and the default. `warn` records the fact and lets the sale
+   * through: a box's replay (round 4 brings the gate to the box itself), where
+   * the money was already taken at a counter with nobody to ask. Left unset,
+   * a replay is told apart by `printing: 'skip'`, which only those paths set.
+   */
+  supervisionGate?: 'refuse' | 'warn';
+  /**
+   * S2-14b — what the stock guard does to a cart the branch cannot fill.
+   * `refuse` is the till's answer and the default. `skip` is for a sale whose
+   * money is already taken — a box's replay (told apart by `printing: 'skip'`
+   * when this is unset) and a booking's redemption, paid online before the
+   * family arrived. Neither is refused for stock: the decrement at finalise
+   * records what it could take and the shortfall (`takeStockForSale`).
+   */
+  stockGuard?: 'refuse' | 'skip';
+}
+
+// --- SCRUM-478: the supervision gate ----------------------------------------
+
+/** The refusal's code, so the till can name it. */
+export const SALE_KIDS_WITHOUT_REGISTRATION = 'SALE_KIDS_WITHOUT_REGISTRATION';
+
+/**
+ * What the gate found on a cart, before anything is written.
+ *
+ * `unaccompanied` is the one fact the gate acts on: at least one child's
+ * admission on the sale and not one adult's. `registrationIds` is the evidence
+ * that answers it, and `evidence` says where that evidence came from.
+ */
+export interface SupervisionVerdict {
+  kids: number;
+  adults: number;
+  unaccompanied: boolean;
+  registrationIds: string[];
+  evidence: 'no_admissions' | 'adult' | 'registration' | 'stay' | 'none';
+}
+
+/**
+ * NO CHILD IS SOLD A TICKET ALONE. A sale whose admission lines are children's,
+ * with no adult admission beside them, is a child left in the park with nobody
+ * responsible for them — unless the family has been through the drop-off
+ * registration, which is what the till's supervision gate exists to make
+ * happen (`pages/Till.tsx`, `resolveSupervisionGate`). The till enforces that
+ * on screen; this is the same rule at the one place every sale passes, so a
+ * till that skipped the gate, a curl, or a screen that has not caught up
+ * cannot ring up a child on their own.
+ *
+ * THE EVIDENCE, in the order it is read:
+ *
+ *   1. an adult admission on any line — nothing to prove;
+ *   2. `input.registrationId`, when the caller names one: it must be a
+ *      `crm.registration` of this operator, made at this branch;
+ *   3. the kid lines' own ids. The till sends a supervised child's drop-off line
+ *      under the STAY's id (`pos.checkin.id`), which carries its registration
+ *      (`services/checkin.ts` `loadChoice` reads the same link back). One real
+ *      stay on the sale, at this branch, is a registered family — a sibling
+ *      waived down to a plain ticket rides on the registered child's line.
+ *
+ * Read-only: the verdict is taken before the sale is written, so a refusal
+ * writes nothing and a warning is recorded against the sale that was.
+ */
+export async function supervisionOf(
+  db: Exec,
+  actor: Pick<ActorContext, 'operatorId'>,
+  input: Pick<CommitSaleInput, 'lines' | 'registrationId'>,
+  branchId: string,
+): Promise<SupervisionVerdict> {
+  const lines = input.lines ?? [];
+  const kids = lines.reduce((sum, line) => sum + (line.kids ?? 0), 0);
+  const adults = lines.reduce((sum, line) => sum + (line.adults ?? 0), 0);
+  if (kids === 0) {
+    return { kids, adults, unaccompanied: false, registrationIds: [], evidence: 'no_admissions' };
+  }
+  if (adults > 0) {
+    return { kids, adults, unaccompanied: false, registrationIds: [], evidence: 'adult' };
+  }
+
+  if (input.registrationId) {
+    const [reg] = await db
+      .select({ id: registration.id, branchId: registration.branchId })
+      .from(registration)
+      .where(and(eq(registration.id, input.registrationId), eq(registration.operatorId, actor.operatorId)))
+      .limit(1);
+    if (reg && reg.branchId === branchId) {
+      return { kids, adults, unaccompanied: true, registrationIds: [reg.id], evidence: 'registration' };
+    }
+    // Named and not real (or another park's): the same answer as none, with
+    // the reason on it, so the till does not retry the same id.
+    return { kids, adults, unaccompanied: true, registrationIds: [], evidence: 'none' };
+  }
+
+  const kidLineIds = lines.filter((line) => (line.kids ?? 0) > 0).map((line) => line.id);
+  const stays = kidLineIds.length
+    ? await db
+        .select({ id: checkin.id, registrationId: checkin.registrationId, branchId: checkin.branchId })
+        .from(checkin)
+        .where(and(inArray(checkin.id, kidLineIds), eq(checkin.operatorId, actor.operatorId)))
+    : [];
+  const registrationIds = [...new Set(stays.filter((s) => s.branchId === branchId).map((s) => s.registrationId))];
+  if (registrationIds.length > 0) {
+    return { kids, adults, unaccompanied: true, registrationIds, evidence: 'stay' };
+  }
+  return { kids, adults, unaccompanied: true, registrationIds: [], evidence: 'none' };
+}
+
+/** The refusal, in the counter's words. */
+function kidsWithoutRegistration(verdict: SupervisionVerdict, namedRegistrationId: string | null): never {
+  throw errors.conflict(
+    SALE_KIDS_WITHOUT_REGISTRATION,
+    namedRegistrationId
+      ? "The drop-off registration on this sale isn't on file at this park — register the children again, or add an adult admission. Nothing was saved."
+      : "Children can't be sold tickets on their own. Add an adult admission to this sale, or register the children for drop-off first. Nothing was saved.",
+    {
+      kids: verdict.kids,
+      adults: verdict.adults,
+      registrationId: namedRegistrationId,
+      reason: namedRegistrationId ? 'registration_not_found' : 'no_registration',
+    },
+  );
 }
 
 /**
@@ -2430,26 +2998,29 @@ export async function commitSale(
   const promoPricing = options.promoPricing ?? 'definition';
   const saleId = input.id ?? newId();
 
-  // Replay by the till-minted id.
+  // Replay by the till-minted id — the same sale only if it names the same
+  // lines (SCRUM-270, `assertSameLines`).
   const [already] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
   if (already) {
     if (already.operatorId !== actor.operatorId) throw errors.notFound('Sale not found');
     await actor.assertBranchAllowed?.(already.branchId);
+    const storedLines = await tx
+      .select({ cartLineId: saleLine.cartLineId, kind: saleLine.kind, payload: saleLine.payload })
+      .from(saleLine)
+      .where(eq(saleLine.saleId, already.id));
+    assertSameLines(already.id, storedLines, input);
     return {
       replay: true,
       replayed: true,
       finalised: already.status === 'finalised',
       outstandingSatang: await outstandingOf(tx, already),
-      pickupCode: recordedPickupCode(
-        await tx
-          .select({ payload: saleLine.payload })
-          .from(saleLine)
-          .where(and(eq(saleLine.saleId, already.id), eq(saleLine.kind, 'fnb_item'))),
-      ),
+      pickupCode: recordedPickupCode(storedLines.filter((line) => line.kind === 'fnb_item')),
       sale: viewOf(already, await voidedByNameOf(tx, already)),
       lines: [],
       rejectedPromoCodes: [],
       voucher: null,
+      // S2-14a — what closing it granted, read back: a retry gets the wallets the first call made.
+      grants: already.status === 'finalised' ? await grantsOfSale(tx, already.id) : [],
     };
   }
 
@@ -2459,7 +3030,33 @@ export async function commitSale(
   // SCRUM-343 — before anything is priced or written: a till claiming a lane it
   // is not set up for is a misconfigured till, and nothing about it is fixed by
   // writing the sale first.
-  const salesChannel = resolveSalesChannel(st, input.channel);
+  /**
+   * S2-12 — a booking's redemption sale is the booking channel, and only a
+   * sale that names its booking may claim it: the channel is how a report
+   * tells money paid online from money taken at the counter.
+   */
+  if (input.bookingId && st.kind !== 'till') {
+    throw errors.conflict(
+      'SALE_CHANNEL_MISMATCH',
+      `A ${st.kind} station cannot redeem an online booking`,
+      { stationKind: st.kind, claimedChannel: 'booking' },
+    );
+  }
+  if (input.bookingId && (st.capabilities ?? []).length > 0 && !(st.capabilities ?? []).includes('tickets')) {
+    throw errors.conflict(
+      'SALE_CHANNEL_MISMATCH',
+      `"${st.name}" is not set up to sell tickets, so a booking cannot be redeemed here`,
+      { stationKind: st.kind, claimedChannel: 'booking', capabilities: [...(st.capabilities ?? [])] },
+    );
+  }
+  if (!input.bookingId && input.channel === 'booking') {
+    throw errors.conflict(
+      'SALE_CHANNEL_MISMATCH',
+      'Only the redemption of an online booking is recorded under the booking channel',
+      { stationKind: st.kind, claimedChannel: 'booking' },
+    );
+  }
+  const salesChannel: SalesChannel = input.bookingId ? 'booking' : resolveSalesChannel(st, input.channel);
 
   const clock = resolveOccurredAt(input.occurredAt, now);
   /**
@@ -2474,6 +3071,8 @@ export async function commitSale(
     clock.occurredAt,
     { mode: 'commit', saleId, stationId: st.id },
     promoPricing,
+    options.priceBasis ?? null,
+    options.printing === 'skip' ? 'file' : 'strict',
   );
   if (st.branchId !== priced.scope.branchId) {
     throw errors.badRequest('That station belongs to another branch');
@@ -2500,6 +3099,12 @@ export async function commitSale(
   if (input.visitId) {
     const [v] = await tx.select().from(visit).where(eq(visit.id, input.visitId)).limit(1);
     if (!v || v.operatorId !== actor.operatorId) throw errors.notFound('Visit not found');
+    // The visit names the children this sale's bands will carry, so it has to
+    // be one of this branch's: a visit rung up at another park is not this
+    // sale's to claim, and is refused rather than stored on the wrong branch.
+    if (v.branchId !== priced.scope.branchId) {
+      throw errors.badRequest('That visit belongs to another branch');
+    }
   }
 
   // An action id that already produced a sale at this station is one tap, not
@@ -2552,6 +3157,45 @@ export async function commitSale(
     );
   }
 
+  /**
+   * SCRUM-478 — THE SUPERVISION GATE, last of the refusals: every answer above
+   * is more specific, and a cart refused here is a cart the platform would
+   * otherwise have written. A booking's redemption is not gated — its adults
+   * and children are the booking's, paid online, and the booking channel has
+   * its own path. A box's replay is warned about rather than refused: the
+   * money was taken with nobody to ask, and the box's own gate is round 4.
+   */
+  const gateMode: 'refuse' | 'warn' =
+    options.supervisionGate ?? (options.printing === 'skip' ? 'warn' : 'refuse');
+  const supervision = input.bookingId
+    ? null
+    : await supervisionOf(tx, actor, input, priced.scope.branchId);
+  const unsupervised = supervision !== null && supervision.unaccompanied && supervision.registrationIds.length === 0;
+  if (unsupervised && gateMode === 'refuse') {
+    kidsWithoutRegistration(supervision, input.registrationId ?? null);
+  }
+
+  /**
+   * S2-14b — THE STOCK GUARD, after every other refusal and before anything is
+   * written: the cart is checked per size, honouring an add-on's split across
+   * sizes, against everything this branch holds (the sell point and every place
+   * the cascade reaches). "Only 3 Grip Socks S left" — and nothing is saved.
+   * A race this cannot see (another till taking the last unit before this sale
+   * is paid) is the finalise decrement's to record, never a refused paid sale.
+   */
+  const stockGuard: 'refuse' | 'skip' =
+    options.stockGuard ?? (options.printing === 'skip' || input.bookingId ? 'skip' : 'refuse');
+  const stockLines = priced.lines.map((line) => ({
+    kind: line.kind,
+    productId: line.productId,
+    quantity: line.quantity,
+    label: line.label,
+    payload: line.payload,
+  }));
+  if (stockGuard === 'refuse') await assertCartStock(tx, priced.scope.branchId, stockLines);
+  /** The stocked sizes each line takes and their cost, frozen onto the line below. */
+  const stockShares = await stockSharesForLines(tx, priced.scope.branchId, stockLines);
+
   // A sale that has just been written has no tenders against it, so what it
   // owes is its gross. `finalise` is honoured when that is nothing and is
   // reported back rather than refused when it is not.
@@ -2596,6 +3240,7 @@ export async function commitSale(
     createdByAccountId: actor.accountId,
     memberId: input.memberId ?? null,
     visitId: input.visitId ?? null,
+    bookingId: input.bookingId ?? null,
     pricingMode: priced.scope.pricingMode,
     pricingModeReason: priced.scope.pricingModeReason,
     holidayId: priced.scope.holidayId,
@@ -2604,6 +3249,7 @@ export async function commitSale(
     /** SCRUM-311 — the document check that chose that tier, when one did. */
     tierClaimId: priced.tier.claimId ?? null,
     engineVersion: priced.engineVersion,
+    ...(options.catalogueVersion ? { catalogueVersion: options.catalogueVersion } : {}),
     taxConfig: priced.scope.taxConfig,
     taxBreakdown: priced.totals.taxBreakdown,
     ...priced.money,
@@ -2647,9 +3293,29 @@ export async function commitSale(
     await spendTierClaim(tx, priced.tier.claimId, saleId, clock.occurredAt);
   }
 
-  for (const line of priced.lines) {
+  /**
+   * SCRUM-270 — EVERY ROW NAMED FROM WHAT THE TILL MINTED, not minted here.
+   *
+   * One cart line fans out into several units, so a unit's id cannot be the
+   * till's line id; it is DERIVED from the sale's id, that line id, the unit's
+   * component key and — for a line carrying one key twice — which occurrence
+   * it is (`deriveSaleLineId`, `@oto/shared`). Anyone holding the cart can
+   * therefore name every row before it is saved: the box, which prints a band
+   * against a sale line the platform has not written yet (plan §2.6), and the
+   * replay, which lands on the same rows. The sale's id keeps two sales that
+   * share a cart line id apart.
+   */
+  const occurrences = new Map<string, number>();
+  for (const [index, line] of priced.lines.entries()) {
+    const key = `${line.cartLineId}|${line.componentKey ?? line.kind}`;
+    // SCRUM-494 — a prepaid line settled at pickup is written with nothing
+    // served: quantity 0 (the quantity ordered on its payload), no stock.
+    const settled = isPrepaidSettledAtPickup({ kind: line.kind, payload: line.payload });
+    const shares = settled ? null : (stockShares[index] ?? null);
+    const occurrence = occurrences.get(key) ?? 0;
+    occurrences.set(key, occurrence + 1);
     await tx.insert(saleLine).values({
-      id: newId(),
+      id: deriveSaleLineId(saleId, line.cartLineId, line.componentKey ?? line.kind, occurrence),
       saleId,
       operatorId: actor.operatorId,
       branchId: priced.scope.branchId,
@@ -2663,7 +3329,7 @@ export async function commitSale(
       label: line.label,
       revenueCategory: line.revenueCategory,
       taxableCategory: line.taxableCategory,
-      quantity: line.quantity,
+      quantity: settled ? 0 : line.quantity,
       unitSatang: line.unitSatang,
       baseSatang: line.baseSatang,
       discountSatang: line.discountSatang,
@@ -2681,8 +3347,31 @@ export async function commitSale(
       freeAdultCount: line.freeAdultCount,
       stayHours: line.stayHours,
       stayDurationLabel: line.stayDurationLabel,
-      payload: line.payload,
+      // S2-14b — the stock it takes, frozen here and never on the answer.
+      payload: settled
+        ? settledAtPickupPayload(line.payload, line.quantity)
+        : shares
+          ? { ...(line.payload ?? {}), stock: shares }
+          : line.payload,
     });
+  }
+  /**
+   * SCRUM-494 — an offline replay whose prepaid lines name a stay released
+   * before the replay arrived: those lines are written settled at pickup (not
+   * served), and the audit row names them.
+   */
+  if (priced.lines.some((line) => isPrepaidSettledAtPickup({ kind: line.kind, payload: line.payload }))) {
+    await auditSettledAtPickup(
+      tx,
+      {
+        id: saleId,
+        operatorId: actor.operatorId,
+        branchId: priced.scope.branchId,
+        stationId: st.id,
+        receiptNumber: receipt?.number ?? null,
+      },
+      { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+    );
   }
 
   const appliedByName = priced.manualDiscounts.length > 0 ? await displayNameOf(tx, actor.accountId) : null;
@@ -2827,8 +3516,36 @@ export async function commitSale(
       discountSatang: priced.money.discountSatang,
       lineCount: priced.lines.length,
       status: values.status,
+      /** SCRUM-478 — the registration(s) the children on this sale stand under, when any. */
+      registrationIds: supervision?.registrationIds ?? [],
     },
   });
+  /**
+   * SCRUM-478 — a box let children through on their own. The sale stands (the
+   * money is real), and the fact is on the record under its own action so the
+   * console can list every one of them until the box carries the gate itself.
+   */
+  if (unsupervised && supervision) {
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId: priced.scope.branchId,
+      action: 'sale.supervision_unverified',
+      entityType: 'sale',
+      entityId: saleId,
+      actionId: input.actionId ?? null,
+      requestId: actor.requestId,
+      after: {
+        stationId: st.id,
+        boxId: st.boxId,
+        kids: supervision.kids,
+        adults: supervision.adults,
+        registrationId: input.registrationId ?? null,
+        reason: input.registrationId ? 'registration_not_found' : 'no_registration',
+        gate: gateMode,
+      },
+    });
+  }
   if (finalising) {
     await audit.record(tx, {
       actorAccountId: actor.accountId,
@@ -2852,7 +3569,54 @@ export async function commitSale(
 
   const [written] = await tx.select().from(sale).where(eq(sale.id, saleId)).limit(1);
   if (!written) throw new Error('the sale was not written');
+  /**
+   * S2-14b — a ฿0 close takes its stock like any other close: the one finalise
+   * point that is not `finaliseSale`. Never refuses (see `takeStockForSale`).
+   */
+  if (finalising) {
+    await takeStockForSale(tx, written, {
+      actorAccountId: actor.accountId,
+      requestId: actor.requestId ?? null,
+      offline: options.printing === 'skip',
+      now: clock.occurredAt,
+    });
+    // SCRUM-494 — a prepaid-only order closes here with no tender, and is served
+    // here; a counter's close refuses what it cannot serve, a replay files it.
+    await redeemSalePrepaid(
+      tx,
+      written,
+      { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+      clock.occurredAt,
+      options.printing === 'skip' ? 'file' : 'refuse',
+    );
+  }
+  /**
+   * S2-14a — a ฿0 close earns like any other (the credit is read from the list
+   * price, OD-W2): the grants are written in this transaction, before the paper
+   * that prints their vouchers.
+   */
+  const grants = finalising
+    ? await grantSaleCredit(
+        tx,
+        { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+        written,
+        now,
+      )
+    : [];
+  /** S2-11 — a ฿0 close prints like any other: a receipt, and a comp admission's bands. */
+  const printing =
+    finalising && options.printing !== 'skip'
+      ? await routeSalePrinting(tx, written, {
+          actorAccountId: actor.accountId,
+          operatorId: actor.operatorId,
+          actionId: input.actionId ?? null,
+          requestId: actor.requestId,
+          now,
+        })
+      : null;
   return {
+    printing,
+    grants: grants.length > 0 ? await grantsOfSale(tx, saleId) : grants,
     replay: false,
     replayed: false,
     finalised: finalising,
@@ -2901,6 +3665,47 @@ export interface FinaliseSaleInput {
    * the trap the station's code prefix already taught this file.
    */
   pickupCode?: string;
+  /**
+   * S2-11 — `skip` for a sale whose paper was already printed where it was
+   * taken (the offline replay). Everything else routes its printing.
+   */
+  printing?: 'route' | 'skip';
+  /**
+   * OD-4 — the number a box printed at an offline counter. Adopted when it is
+   * free in the station's series; when it is not, the sale is filed under the
+   * next free number and the answer names both. Only the offline replay sets it.
+   */
+  adoptReceipt?: { series: string; seq: number; number: string } | null;
+  /**
+   * S2-12 (SCRUM-209 round 3) — settle the whole balance with the paid-online
+   * tender. Set ONLY by `services/booking-redemption.ts` on the sale it has
+   * just committed against the booking it holds locked; the sales route never
+   * passes it, and a tender NAMED `paid_online` without it is refused. Recorded
+   * as `transfer` money, so no drawer opens and the till's cash-up leaves it
+   * out (OD-A10).
+   */
+  onlineTender?: { bookingId: string; bookingReference: string; onlineInvoiceNo: string | null } | null;
+  /**
+   * S2-14a round 2 (plan §2.3) — SPEND A SCANNED WALLET FIRST. The till sends
+   * the band's or voucher's key with "use credit" (or an exact figure); the
+   * PLATFORM writes the wallet tender itself on the `onlineTender` model: an
+   * attempt with method `wallet`, code `wallet_credit`, for min(balance,
+   * outstanding), in this transaction and under the wallet's row lock, with
+   * its `spend` entry. It is never offered on the tender grid and never opens
+   * the drawer. Whatever is left is the `tender`'s — cash when it names no
+   * method (OD-W3) — and with no `tender` at all the remainder stays owed for
+   * the till's next press (a ฿0-after-credit order closes here, with none).
+   * Online only: the box's replay never passes it (round 4).
+   */
+  wallet?: WalletTenderInstruction | null;
+  /**
+   * SCRUM-494 — `refuse` when a counter is confirming the order now (the
+   * sales route): a prepaid line that cannot be served any more refuses the
+   * press before any tender is recorded — while no money has been taken for
+   * the order; after that the close files. Omitted, the close files what it
+   * can (`redeemSalePrepaid`'s `file`).
+   */
+  prepaidGate?: PrepaidGate;
 }
 
 /** The change owed back on a cash tender, and a refusal if the cash is short. */
@@ -2935,6 +3740,43 @@ export interface FinaliseResult {
   drawerKick: DrawerKick | null;
   /** S2-10b — the vouchers this call used up, by id. Empty unless it closed a sale carrying one. */
   redeemedVoucherIds: string[];
+  /**
+   * S2-11 — what closing it put on paper: the print jobs (queued, or skipped
+   * for want of a printer), the bands it issued, and the non-blocking notes
+   * the till shows ("Kitchen ticket not printed — …"). Null when this call did
+   * not close the sale. Printing never fails a sale: a failure is `failed`.
+   */
+  printing: SalePrintingResult | null;
+  /**
+   * OD-4 — the number the box printed was already used in the series, so the
+   * sale was filed under the next free one. Null when it was adopted, and on
+   * every sale no box numbered.
+   */
+  receiptCollision: { box: string; ledger: string } | null;
+  /**
+   * S2-14a — the wallets this sale's tickets granted, one per person who earns
+   * credit, in the till's grant order, each with the ONE QR its voucher prints
+   * (plan §2.2). Read back on a replay; empty while the sale is still open.
+   */
+  grants: WalletGrantView[];
+  /**
+   * S2-14a round 2 — the wallet tender this call wrote or found: its attempt
+   * (as the Attempts list shows it) and what it took off the wallet. Absent
+   * when the call carried no wallet.
+   */
+  walletAttempt?: PaymentAttemptView | null;
+  walletSpend?: { walletId: string; amountSatang: number; balanceAfterSatang: number } | null;
+}
+
+/** Which counter's word the wallet's ledger records a spend under — one pool, two sources. */
+function walletSpendSource(row: { salesChannel: string | null }): 'fnb_order' | 'merch_order' {
+  if (row.salesChannel === 'shop') return 'merch_order';
+  if (row.salesChannel === 'fnb') return 'fnb_order';
+  throw errors.conflict(
+    'WALLET_NOT_HERE',
+    'Credit pays for food and shop orders — take this sale in cash, card or QR.',
+    { salesChannel: row.salesChannel },
+  );
 }
 
 /**
@@ -3005,6 +3847,19 @@ export async function finaliseSale(
       // connection must not open it again with a queue in front of it.
       drawerKick: null,
       redeemedVoucherIds: [],
+      // Printed on the first answer too; a retry does not print it twice.
+      printing: null,
+      receiptCollision: null,
+      // Granted on the first answer, and read back here — never granted twice.
+      grants: await grantsOfSale(tx, saleId),
+      ...(input.wallet
+        ? {
+            walletAttempt: input.actionId
+              ? await attemptOfAction(tx, row.operatorId, saleId, `${input.actionId}:wallet`)
+              : null,
+            walletSpend: null,
+          }
+        : {}),
     };
   }
   if (row.status === 'voided' || row.status === 'refunded') {
@@ -3036,9 +3891,43 @@ export async function finaliseSale(
     }
   }
 
+  /**
+   * SCRUM-494 — A COUNTER CONFIRMING AN ORDER WITH PREPAID LINES is told,
+   * before any tender is recorded, when one cannot be served any more: the
+   * child was collected while the order was open (their prepaid food was
+   * settled at pickup), or the item was served since. The stays stay locked
+   * to the end of this transaction, so the redemption below reads what this
+   * read. Only the counter's own confirm asks for it, and only while no money
+   * has been taken for the order: once a tender is in (a card approved before
+   * the confirm, a part payment), refusing would leave money taken against an
+   * order nobody can close. A close that cannot be refused — that one, a paid
+   * QR, a box's replay, a booking's redemption — files what it can, and sets
+   * aside unserved the prepaid lines of a stay released meanwhile (the pickup
+   * settled that food as unused, and that settlement stands). Except on a box's
+   * replay, it also sets aside unserved a prepaid line beyond what is left for
+   * the child, rather than serving it short.
+   */
+  const owedBefore = await outstandingOf(tx, row);
+  const moneyTaken = owedBefore < row.grossSatang;
+  const prepaidGate: PrepaidGate =
+    input.prepaidGate === 'refuse' && input.printing !== 'skip' && row.origin !== 'box' && !moneyTaken
+      ? 'refuse'
+      : 'file';
+  let settledAtPickup: SettledPrepaidLine[] = [];
+  let usedUp: UsedUpPrepaidLine[] = [];
+  if (prepaidGate === 'refuse') await assertSalePrepaidServable(tx, row);
+  else {
+    settledAtPickup = await prepaidSettledAtPickup(tx, row);
+    // A box's replay served the food offline already: its redemption files any
+    // shortfall. Any other close sets aside, unserved, a prepaid line beyond
+    // what is left for the child.
+    const boxReplay = input.printing === 'skip' || row.origin === 'box';
+    if (!boxReplay) usedUp = await prepaidUsedUpAtClose(tx, row);
+  }
+
   const [st] = await tx.select().from(station).where(eq(station.id, row.stationId)).limit(1);
 
-  let owed = await outstandingOf(tx, row);
+  let owed = owedBefore;
   if (owed <= 0) {
     const attempts = await tx.select({ payload: paymentAttempt.payload }).from(paymentAttempt)
       .where(eq(paymentAttempt.saleId, saleId));
@@ -3064,7 +3953,85 @@ export async function finaliseSale(
   let replayedTender = false;
   /** Ask the box to open the drawer, once the transaction has committed. */
   let drawerKick: DrawerKick | null = null;
-  if (owed > 0) {
+
+  /**
+   * S2-14a round 2 — THE WALLET FIRST, written by the platform (plan §2.3).
+   *
+   * Keyed `<press>:wallet` beside the press's own tender, so one press may
+   * write both and a retry finds each. The spend and its attempt are one act
+   * under the wallet's row lock (`debitForSale`): a second till spending the
+   * same wallet waits for this one and then reads what is left — the honest
+   * zero, refused, never a negative and never a second charge.
+   */
+  let walletAttempt: PaymentAttemptView | null = null;
+  let walletSpend: FinaliseResult['walletSpend'] = null;
+  let walletReplayed = false;
+  if (input.wallet && owed > 0) {
+    const walletActionId = input.actionId ? `${input.actionId}:wallet` : null;
+    const prior = walletActionId ? await findAttemptByAction(tx, row.operatorId, walletActionId) : null;
+    if (prior) {
+      if (prior.saleId !== saleId) {
+        throw errors.conflict('ACTION_ID_REUSED', 'That action id already recorded a tender against another sale', {
+          actionId: input.actionId,
+          saleId: prior.saleId,
+        });
+      }
+      walletAttempt = attemptView(prior);
+      walletReplayed = true;
+    } else {
+      await assertSaleVouchersHeld(tx, voucherScope, now);
+      const source = walletSpendSource(row);
+      const instruction = input.wallet;
+      const spent = await debitForSale(
+        tx,
+        { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+        {
+          key: instruction.key,
+          useCredit: instruction.useCredit,
+          amountSatang: instruction.amountSatang,
+          outstandingSatang: owed,
+          source,
+          branchId: row.branchId,
+          saleId,
+          stationId: row.stationId,
+          boxId: row.boxId,
+          businessDate: row.businessDate,
+          now,
+          openAttempt: async (amountSatang, walletId) => {
+            const method = await tenderMethodOf(tx, row.operatorId, WALLET_TENDER_CODE, undefined, { platform: 'wallet' });
+            const opened = await openAttempt(tx, {
+              operatorId: row.operatorId,
+              branchId: row.branchId,
+              stationId: row.stationId,
+              businessDate: row.businessDate,
+              saleId,
+              method,
+              methodCode: WALLET_TENDER_CODE,
+              amountSatang,
+              actionId: walletActionId,
+              payload: {
+                platformWritten: true,
+                walletId,
+                source,
+                takenByAccountId: actor.accountId,
+                ...(walletActionId ? { actionId: walletActionId } : {}),
+              },
+            });
+            await settleAttempt(tx, opened.id, { paidAt: now });
+            return opened;
+          },
+        },
+      );
+      owed -= spent.amountSatang;
+      const [settled] = await tx.select().from(paymentAttempt).where(eq(paymentAttempt.id, spent.attemptId)).limit(1);
+      walletAttempt = settled ? attemptView(settled) : null;
+      walletSpend = { walletId: spent.walletId, amountSatang: spent.amountSatang, balanceAfterSatang: spent.balanceAfterSatang };
+    }
+  }
+  // A wallet press with no tender leaves the remainder owed for the next press.
+  const takesTender = !(input.wallet && input.tender === undefined);
+
+  if (owed > 0 && takesTender) {
     // CALLING THIS ROUTE IS THE CONFIRMATION THAT THE MONEY WAS TAKEN — it is
     // what the till's "Confirm Payment Received" does — so a call that names
     // no tender settles the balance in cash rather than refusing. Staff who
@@ -3106,7 +4073,23 @@ export async function finaliseSale(
        * check before they write an attempt.
        */
       await assertSaleVouchersHeld(tx, voucherScope, now);
-      const amountSatang = tender.amountSatang ?? owed;
+      const online = input.onlineTender ?? null;
+      if (online && row.bookingId !== online.bookingId) {
+        throw errors.conflict(
+          'SALE_NOT_BOOKING',
+          'Only the sale that redeems this booking can be settled as paid online',
+          { saleId, bookingId: online.bookingId },
+        );
+      }
+      if (!online && tender.method === PAID_ONLINE_TENDER_CODE) {
+        throw errors.badRequest(
+          'A sale is settled as paid online only by redeeming the booking that paid for it',
+          { method: tender.method },
+        );
+      }
+      // The paid-online tender settles everything: the booking paid the whole
+      // of it before the family arrived, and a part of it is not a thing.
+      const amountSatang = online ? owed : tender.amountSatang ?? owed;
       if (amountSatang <= 0) throw errors.badRequest('A tender has to settle something');
       if (amountSatang > owed) {
         throw errors.badRequest('That tender is more than this sale still owes', {
@@ -3114,8 +4097,10 @@ export async function finaliseSale(
           outstandingSatang: owed,
         });
       }
-      const methodCode = tender.method ?? 'cash';
-      const method = await tenderMethodOf(tx, row.operatorId, methodCode, tender.kind);
+      const methodCode = online ? PAID_ONLINE_TENDER_CODE : tender.method ?? 'cash';
+      const method = online
+        ? PAID_ONLINE_TENDER_METHOD
+        : await tenderMethodOf(tx, row.operatorId, methodCode, tender.kind);
       const changeSatang = changeFor(amountSatang, tender.tenderedSatang);
       /**
        * OPENED, THEN SETTLED — the lifecycle every tender shares, run here in
@@ -3154,6 +4139,16 @@ export async function finaliseSale(
           ...(tender.reference ? { reference: tender.reference } : {}),
           takenByAccountId: actor.accountId,
           ...(input.actionId ? { actionId: input.actionId } : {}),
+          // S2-12 — which booking paid this, and under which gateway invoice,
+          // so the redemption sale reconciles to the money it came from.
+          ...(online
+            ? {
+                paidOnline: true,
+                bookingId: online.bookingId,
+                reference: online.bookingReference,
+                onlineInvoiceNo: online.onlineInvoiceNo,
+              }
+            : {}),
         },
       });
       // Money taken at a counter is paid at the moment it is recorded. The
@@ -3189,8 +4184,11 @@ export async function finaliseSale(
    * spending it on a sale that is not settled leaves a gap somebody has to
    * explain. The next tender, at this counter or from a webhook, closes it.
    */
+  /** True when this press had already been recorded whole and this call wrote nothing. */
+  const replayedCall = (replayedTender || walletReplayed) && taken === null && walletSpend === null;
+  const walletAnswer = input.wallet ? { walletAttempt, walletSpend } : {};
   if (owed > 0) {
-    if (!replayedTender) {
+    if (!replayedCall) {
       await audit.record(tx, {
         actorAccountId: actor.accountId,
         operatorId: actor.operatorId,
@@ -3200,7 +4198,7 @@ export async function finaliseSale(
         entityId: saleId,
         actionId: input.actionId ?? null,
         requestId: actor.requestId,
-        before: { status: row.status, outstandingSatang: owed + (taken?.amountSatang ?? 0) },
+        before: { status: row.status, outstandingSatang: owed + (taken?.amountSatang ?? 0) + (walletSpend?.amountSatang ?? 0) },
         after: {
           status: row.status,
           stationId: row.stationId,
@@ -3208,12 +4206,13 @@ export async function finaliseSale(
           grossSatang: row.grossSatang,
           outstandingSatang: owed,
           tender: taken,
+          ...(walletSpend ? { wallet: walletSpend } : {}),
         },
       });
     }
     return {
-      replay: replayedTender,
-      replayed: replayedTender,
+      replay: replayedCall,
+      replayed: replayedCall,
       finalised: false,
       outstandingSatang: owed,
       attempt,
@@ -3221,6 +4220,10 @@ export async function finaliseSale(
       sale: viewOf(row, await voidedByNameOf(tx, row)),
       drawerKick,
       redeemedVoucherIds: [],
+      printing: null,
+      receiptCollision: null,
+      grants: [],
+      ...walletAnswer,
     };
   }
 
@@ -3242,12 +4245,41 @@ export async function finaliseSale(
       'This station has no code prefix, so it cannot number a receipt — set one on the station',
     );
   }
-  const receipt = await allocateReceipt(tx, {
+  const seriesScope = {
     operatorId: row.operatorId,
     branchId: row.branchId,
     stationId: row.stationId,
     series: st.codePrefix,
-  });
+  };
+  let receiptCollision: FinaliseResult['receiptCollision'] = null;
+  let receipt: { series: string; seq: number; number: string };
+  if (input.adoptReceipt) {
+    const adoption = await adoptReceipt(tx, seriesScope, input.adoptReceipt);
+    receipt = adoption.receipt;
+    if (!adoption.adopted) receiptCollision = { box: input.adoptReceipt.number, ledger: receipt.number };
+  } else {
+    receipt = await allocateReceipt(tx, seriesScope);
+  }
+
+  /**
+   * SCRUM-494 — the prepaid lines of a stay released while the order was open
+   * are set aside here, while the lines can still be written: not served, no
+   * stock, no prep ticket, the audit row naming them. The rest closes as usual.
+   */
+  await setAsideSettledPrepaid(
+    tx,
+    row,
+    settledAtPickup,
+    { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+    receipt.number,
+  );
+  await setAsideUsedUpPrepaid(
+    tx,
+    row,
+    usedUp,
+    { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+    receipt.number,
+  );
 
   const updated = await tx
     .update(sale)
@@ -3262,6 +4294,34 @@ export async function finaliseSale(
     .returning();
   const after = updated[0];
   if (!after) throw new Error('the sale was not finalised');
+
+  /**
+   * S2-14b — THE STOCK LEAVES THE SHELF, in this transaction, once the sale is
+   * paid: the sell point first, then back of house, then bulk. It never
+   * refuses — a card approved after another till took the last unit, an
+   * offline sale arriving hours later — it records what it took and the
+   * shortfall for someone to count. Keyed by the sale's own line ids, so a
+   * replayed close takes nothing twice.
+   */
+  await takeStockForSale(tx, after, {
+    actorAccountId: actor.accountId,
+    requestId: actor.requestId ?? null,
+    offline: input.printing === 'skip' || after.origin === 'box',
+    now,
+  });
+
+  /**
+   * SCRUM-494 — THE PREPAID LINES ARE SERVED, in this transaction, once the
+   * order is confirmed: the design's `redeemPrepaidItem` per prepaid line, on
+   * the child's stay, never past what was paid for, audited.
+   */
+  await redeemSalePrepaid(
+    tx,
+    after,
+    { accountId: actor.accountId, requestId: actor.requestId ?? null, actionId: input.actionId ?? null },
+    now,
+    prepaidGate,
+  );
 
   await audit.record(tx, {
     actorAccountId: actor.accountId,
@@ -3282,13 +4342,46 @@ export async function finaliseSale(
       // What closed it, so "who took this money and how" is answerable from
       // the log and not only from the payment row.
       tender: taken,
+      ...(walletSpend ? { wallet: walletSpend } : {}),
       ...(pickupCode ? { pickupCode } : {}),
     },
   });
 
+  /**
+   * S2-14a — THE CREDIT, in this transaction, after the number and before the
+   * paper (plan §2.2): one wallet per person the tickets' credit rules pay,
+   * from the list price, keyed by the sale and the person so a replay of this
+   * close — a retried press, the booking's redemption, a box's offline sale
+   * arriving later — grants once. Not under the printing savepoint: credit is
+   * money owed to the guest, and a printer problem must not take it away.
+   */
+  const grants = await grantSaleCredit(
+    tx,
+    { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+    after,
+    now,
+  );
+
+  /**
+   * S2-11 — THE PAPER, inside this transaction and after the number: the
+   * receipt, the bands and the prep tickets become rows and box commands that
+   * commit with the sale. Under a savepoint that never throws, so a printing
+   * problem is a note on this answer and never a sale that did not close.
+   */
+  const printing =
+    input.printing === 'skip'
+      ? null
+      : await routeSalePrinting(tx, after, {
+          actorAccountId: actor.accountId,
+          operatorId: actor.operatorId,
+          actionId: input.actionId ?? null,
+          requestId: actor.requestId,
+          now,
+        });
+
   return {
-    replay: replayedTender,
-    replayed: replayedTender,
+    replay: replayedCall,
+    replayed: replayedCall,
     finalised: true,
     outstandingSatang: 0,
     attempt,
@@ -3296,6 +4389,11 @@ export async function finaliseSale(
     sale: viewOf(after, await voidedByNameOf(tx, after)),
     drawerKick,
     redeemedVoucherIds: consumed,
+    printing,
+    receiptCollision,
+    // Read again after the paper: the bands it minted now carry the wallets.
+    grants: grants.length > 0 ? await grantsOfSale(tx, saleId) : grants,
+    ...walletAnswer,
   };
 }
 
@@ -3510,6 +4608,10 @@ export interface SaleListFilters {
   branchIds?: string[];
   stationId?: string;
   memberId?: string;
+  /** S2-11 — History's band and phone lookups: exactly these sales. */
+  saleIds?: string[];
+  /** S2-11 — every sale of any of these members (a phone can name more than one). */
+  memberIds?: string[];
   status?: SaleStatus;
   from?: string;
   to?: string;
@@ -3542,6 +4644,9 @@ export interface SaleListItem extends SaleReadView {
   revenueCategories: string[];
 }
 
+/** An id no row has, for an `in` over an empty list — Postgres refuses `in ()`. */
+const NO_SALE = '00000000-0000-0000-0000-000000000000';
+
 export async function listSales(
   db: Exec,
   operatorId: string,
@@ -3552,6 +4657,10 @@ export async function listSales(
   if (filters.branchIds) where.push(inArray(sale.branchId, filters.branchIds));
   if (filters.stationId) where.push(eq(sale.stationId, filters.stationId));
   if (filters.memberId) where.push(eq(sale.memberId, filters.memberId));
+  if (filters.saleIds) where.push(inArray(sale.id, filters.saleIds.length ? filters.saleIds : [NO_SALE]));
+  if (filters.memberIds) {
+    where.push(inArray(sale.memberId, filters.memberIds.length ? filters.memberIds : [NO_SALE]));
+  }
   if (filters.status) where.push(eq(sale.status, filters.status));
   if (filters.from) where.push(gte(sale.businessDate, filters.from));
   if (filters.to) where.push(lte(sale.businessDate, filters.to));
@@ -3688,6 +4797,25 @@ export async function getSaleDetail(
       ...viewOf(row, voidedByName),
       tierClaim: claims.get(row.id) ?? null,
     } satisfies SaleReadView,
+    /**
+     * S2-11 — the History detail's right-hand column: where the refunds leave
+     * it (`paid → partially_refunded → refunded`, the prototype's
+     * `statusForRefunds`, derived from the running total — the ledger status
+     * stays `finalised` until the whole sale is refunded), what is still
+     * refundable, every refund with its number, approver and tender slices,
+     * every print job with its reprints marked by `reprintOf`, and the bands
+     * by their short codes.
+     */
+    refundStatus: refundStatusOf(row.grossSatang, row.refundedSatang),
+    refundableSatang:
+      row.status === 'finalised' || row.status === 'refunded'
+        ? refundableSatang(row.grossSatang, row.refundedSatang)
+        : 0,
+    refunds: await refundsOfSale(db, saleId),
+    printJobs: await printJobsOfSale(db, saleId),
+    bands: await bandsOfSale(db, saleId),
+    /** S2-14a — the wallets this sale granted, each with the ONE QR its voucher printed. */
+    grants: await grantsOfSale(db, saleId),
     /** S2-09b — the code the guest holds, from the F&B lines that carry it. */
     pickupCode: recordedPickupCode(lines.filter((line) => line.kind === 'fnb_item')),
     attempts,

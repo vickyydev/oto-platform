@@ -1,0 +1,5 @@
+Saved-child review is being connected to the separate display under this story. The parent can check saved names and ages and confirm a correction; the till still performs the authorised save. New-child entry, removal and supervision continue on the staff screen.
+
+The shared contract and box checks pass locally. Review caught two cases being tightened before the browser check: locking during a save must not repeat it on unlock, and going offline must retain the original correction and retry key. An unanswered save will have a bounded wait and an explicit Retry action. No successful save or registration is shown before its real result.
+
+The existing native browser cases are being extended for real profile readback, an intentionally lost save reply, retry and the staff-screen handoff. This is work in progress, not staging acceptance. GitHub Actions is still blocked before any job steps by billing/spending availability; the normal deployment gate remains in place. The findings and release follow-ups are saved in the progress and QA documents.

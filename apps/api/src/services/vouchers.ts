@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { and, asc, desc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import {
   account,
@@ -7,6 +7,7 @@ import {
   discountDefinition,
   employee,
   product,
+  productCategory,
   redemptionThrottle,
   sale,
   spin,
@@ -28,13 +29,16 @@ import {
   computeTicketCartTotals,
   isLegacyBoothCode,
   isoDateInTz,
+  mintBoothCode,
   newId,
   normaliseBoothCode,
   priceForTier,
   resolveRate,
   verifyBoothCode,
   wallClockMinutesInTz,
+  VoucherTargetSchema,
   type CartPromo,
+  type DiscountTarget,
   type ManualDiscount,
   type PricingContext,
   type PromoDiscount,
@@ -45,6 +49,13 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { raiseAlert } from './ops';
 import type { Exec, Tx } from './tx';
+import {
+  assertPromoLimits,
+  hasPromoRules,
+  promoRefusal,
+  promoWindowRefusal,
+} from './voucher-promotions';
+import { loadWalletFromVoucher } from './wallet';
 
 /**
  * S2-10b (SCRUM-207) — a voucher at the counter: looked up, held on a cart,
@@ -819,8 +830,8 @@ type DefinitionRow = typeof voucherDefinition.$inferSelect;
  * being redeemed at. Never from the till.
  */
 export type VoucherEffect =
-  | { type: 'amount_off'; appliesTo: 'tickets'; valueSatang: number }
-  | { type: 'percent_off'; appliesTo: 'tickets'; valueBp: number }
+  | ({ type: 'amount_off'; valueSatang: number } & VoucherScope)
+  | ({ type: 'percent_off'; valueBp: number } & VoucherScope)
   | {
       type: 'free_item';
       product: {
@@ -832,7 +843,114 @@ export type VoucherEffect =
       };
     }
   | { type: 'free_kids_ticket'; package: { id: string; name: string } }
-  | { type: 'hand_over' };
+  | { type: 'hand_over' }
+  /**
+   * S2-14a round 5 — credit LOADED onto a new wallet when the sale carrying
+   * the voucher closes (`consumeSaleVouchers` → `loadWalletFromVoucher`).
+   * Nothing comes off the bill: like a hand-over prize it is rung up as a ฿0
+   * sale of its own (`voucherStandsAlone`), because a sale closing is the only
+   * thing that uses a voucher up.
+   */
+  | { type: 'wallet_credit'; valueSatang: number };
+
+/**
+ * S2-14a round 5 — WHAT A DISCOUNT VOUCHER COMES OFF, resolved at the
+ * redeeming branch from the definition's `target` (`resolveVoucherTarget`).
+ *
+ *   appliesTo  the scope's kind in the counter's terms — `tickets` for the
+ *              landed default, which every booth voucher keeps
+ *   target     the pricing engine's own scope, handed to it unchanged, so the
+ *              engine decides what it takes and the S2-09a tax seam where the
+ *              tax falls (`voucherPricing`)
+ *   label      what the card and the refusal call it: "the ticket order",
+ *              "Drinks", "Iced Latte"
+ */
+export interface VoucherScope {
+  appliesTo: 'tickets' | 'ticket_package' | 'fnb' | 'category' | 'items' | 'merch';
+  target: DiscountTarget;
+  label: string;
+}
+
+/**
+ * A voucher that is a sale on its own: it puts nothing on the bill to take
+ * off, so the till rings it up with nothing else on the cart and the platform
+ * closes it at ฿0 — a hand-over prize, and (round 5) a wallet credit. Read by
+ * `priceCart`'s empty-cart rule and its exhausted-reason rule.
+ */
+export function voucherStandsAlone(effect: VoucherEffect | undefined | null): boolean {
+  return effect?.type === 'hand_over' || effect?.type === 'wallet_credit';
+}
+
+/** The landed default: the ticket rows. */
+const TICKETS_SCOPE: VoucherScope = {
+  appliesTo: 'tickets',
+  target: { kind: 'tickets' },
+  label: 'the ticket order',
+};
+
+/**
+ * S2-14a round 5 — the scope a discount definition names, resolved at the
+ * branch doing the redeeming. Null target is the ticket rows, as every
+ * definition written before round 5 meant. A ticket package is the branch's
+ * own package of the same name (`packageAtBranch`); named menu items are those
+ * on sale here (`freeItemAtBranch`); a category is named from its row. A scope
+ * nothing here can be found for is refused by name (VOUCHER_ITEM_UNAVAILABLE),
+ * and one the definition cannot be read as is "not set up yet".
+ */
+async function resolveVoucherScope(
+  db: Exec,
+  operatorId: string,
+  def: DefinitionRow,
+  branchId: string,
+): Promise<VoucherScope> {
+  if (def.target === null || def.target === undefined) return TICKETS_SCOPE;
+  const parsed = VoucherTargetSchema.safeParse(def.target);
+  if (!parsed.success) {
+    throw voucherErrors.notSetUp(def.code, 'what the voucher comes off cannot be read');
+  }
+  const target = parsed.data;
+  switch (target.kind) {
+    case 'tickets':
+      return TICKETS_SCOPE;
+    case 'ticketType': {
+      const row = await packageAtBranch(db, operatorId, target.ticketTypeId, branchId);
+      if (!row) throw voucherErrors.itemUnavailable(def.code);
+      return {
+        appliesTo: 'ticket_package',
+        target: { kind: 'ticketType', ticketTypeId: row.id },
+        label: `${row.name} tickets`,
+      };
+    }
+    case 'fnb':
+      return { appliesTo: 'fnb', target, label: 'food and drink' };
+    case 'merch':
+      return { appliesTo: 'merch', target, label: 'shop items' };
+    case 'fnbCategory': {
+      const [row] = await db
+        .select({ id: productCategory.id, name: productCategory.name })
+        .from(productCategory)
+        .where(
+          and(eq(productCategory.id, target.category), eq(productCategory.operatorId, operatorId)),
+        )
+        .limit(1);
+      if (!row) throw voucherErrors.notSetUp(def.code, 'its menu category is not there');
+      return { appliesTo: 'category', target, label: row.name };
+    }
+    case 'menuItems': {
+      const here: { id: string; name: string }[] = [];
+      for (const id of target.menuItemIds) {
+        const row = await freeItemAtBranch(db, operatorId, id, branchId);
+        if (row && row.kind === 'menu') here.push({ id: row.id, name: row.name });
+      }
+      if (here.length === 0) throw voucherErrors.itemUnavailable(def.code);
+      return {
+        appliesTo: 'items',
+        target: { kind: 'menuItems', menuItemIds: here.map((item) => item.id) },
+        label: here.map((item) => item.name).join(', '),
+      };
+    }
+  }
+}
 
 /**
  * A free item from its product link, at the branch doing the redeeming.
@@ -934,10 +1052,12 @@ export async function resolveVoucherEffect(
   switch (def.kind) {
     case 'discount': {
       if (def.valueType === 'amount' && (def.valueSatang ?? 0) > 0) {
-        return { type: 'amount_off', appliesTo: 'tickets', valueSatang: def.valueSatang! };
+        const scope = await resolveVoucherScope(db, operatorId, def, branchId);
+        return { type: 'amount_off', valueSatang: def.valueSatang!, ...scope };
       }
       if (def.valueType === 'percent' && (def.valueBp ?? 0) > 0) {
-        return { type: 'percent_off', appliesTo: 'tickets', valueBp: def.valueBp! };
+        const scope = await resolveVoucherScope(db, operatorId, def, branchId);
+        return { type: 'percent_off', valueBp: def.valueBp!, ...scope };
       }
       throw voucherErrors.notSetUp(def.code, 'the discount has no amount or percentage');
     }
@@ -965,12 +1085,18 @@ export async function resolveVoucherEffect(
     }
     case 'manual':
       return { type: 'hand_over' };
+    case 'wallet_credit':
+      // S2-14a round 5: the wallet exists now. Redeeming one LOADS a new
+      // wallet through the wallet service when the sale carrying it closes
+      // (`consumeSaleVouchers`), keyed by the voucher — never a second ledger.
+      if ((def.valueSatang ?? 0) <= 0) {
+        throw voucherErrors.notSetUp(def.code, 'the wallet credit has no amount');
+      }
+      return { type: 'wallet_credit', valueSatang: def.valueSatang! };
     default:
-      // `wallet_credit` needs the wallet (S2-10a/b's neighbour), which is not
-      // built; a till that "redeemed" one would load credit into nothing.
       throw voucherErrors.notSetUp(
         def.code,
-        `a ${def.kind} voucher cannot be redeemed at a till yet`,
+        `a ${def.kind as string} voucher cannot be redeemed at a till`,
       );
   }
 }
@@ -989,15 +1115,17 @@ export async function resolveVoucherEffect(
 export function describeEffect(effect: VoucherEffect, prizeName: string): string {
   switch (effect.type) {
     case 'amount_off':
-      return `${baht(effect.valueSatang)} THB off the ticket order`;
+      return `${baht(effect.valueSatang)} THB off ${effect.label}`;
     case 'percent_off':
-      return `${effect.valueBp / 100}% off the ticket order`;
+      return `${effect.valueBp / 100}% off ${effect.label}`;
     case 'free_item':
       return `Ring up to use it, then hand over: ${effect.product.name}`;
     case 'free_kids_ticket':
       return `Second kids ticket free — ${effect.package.name}`;
     case 'hand_over':
       return `Ring up to use it, then hand over: ${prizeName}`;
+    case 'wallet_credit':
+      return `Ring up to load ${baht(effect.valueSatang)} THB of credit onto a new wallet`;
   }
 }
 
@@ -1117,6 +1245,10 @@ async function viewOf(
  */
 function redeemableOffline(v: VoucherRow, def: DefinitionRow): boolean {
   if (v.source === 'booth') return false;
+  // S2-14a round 5: a limit or a window is counted and judged on the
+  // platform, and a wallet credit loads stored value — none can be honoured
+  // on the strength of the paper, whatever the policy says.
+  if (def.kind === 'wallet_credit' || hasPromoRules(def)) return false;
   return def.offlinePolicy === 'allow';
 }
 
@@ -1389,8 +1521,101 @@ export async function lookupVoucher(
   if (hold.kind === 'live') throw await heldElsewhere(db, hold.stationId, at, hold.rungUpSaleId);
   await refuseOffline(db, at, v, def);
   const effect = await resolveVoucherEffect(db, actor.operatorId, def, at.branchId);
+  // S2-14a round 5: the window and the limits, read without a lock — a scan
+  // says at once what the hold would say. The hold decides under the lock.
+  const promo = await promoRefusal(db, v, def, at.branchId, now);
+  if (promo) throw promo;
   const state = v.heldStationId === at.id && hold.kind !== 'free' ? 'held_here' : 'available';
   return { voucher: await viewOf(db, v, def, effect, state, legacyFormat) };
+}
+
+/** The two characters a till-minted row for a fixed-code redemption starts with. */
+const FIXED_REDEMPTION_PREFIX = 'FX';
+
+/**
+ * A fixed-code voucher type's shared code (`voucher_definition.fixed_code`):
+ * the active type that prints it, or none. Checked only after no voucher row
+ * has the code, so a voucher's own code always wins.
+ */
+async function fixedCodeDefinition(
+  tx: Exec,
+  operatorId: string,
+  rawCode: string,
+): Promise<DefinitionRow | null> {
+  const code = rawCode.trim().toUpperCase();
+  if (!/^[0-9A-Z-]{4,32}$/.test(code)) return null;
+  const [def] = await tx
+    .select()
+    .from(voucherDefinition)
+    .where(
+      and(
+        eq(voucherDefinition.operatorId, operatorId),
+        eq(voucherDefinition.codeMode, 'fixed'),
+        eq(voucherDefinition.fixedCode, code),
+        eq(voucherDefinition.active, true),
+        isNull(voucherDefinition.archivedAt),
+      ),
+    )
+    .limit(1);
+  return def ?? null;
+}
+
+/**
+ * The voucher a fixed code is redeemed as. For a hold (`mint`) it is a new
+ * `fixed` row with a minted code, issued to nobody and never expiring on its
+ * own: the type's window and limits are what apply, as for any voucher of it.
+ * For a look-up nothing is written, and the row only describes what a hold
+ * would create.
+ */
+async function fixedRedemptionRow(
+  tx: Exec,
+  actor: RedemptionActor,
+  at: RedemptionStation,
+  def: DefinitionRow,
+  mint: boolean,
+  now: Date,
+): Promise<VoucherRow> {
+  const base = {
+    operatorId: actor.operatorId,
+    branchId: at.branchId,
+    voucherDefinitionId: def.id,
+    source: 'fixed' as const,
+    status: 'issued' as const,
+    costSatang: def.costSatang,
+    issuedByAccountId: actor.accountId,
+    issuedAt: now,
+    expiresAt: null,
+  };
+  if (!mint) {
+    return {
+      ...base,
+      id: newId(),
+      code: def.fixedCode!,
+      memberId: null,
+      printCount: 0,
+      redeemedAt: null,
+      redeemedByAccountId: null,
+      redeemedBranchId: null,
+      saleId: null,
+      redeemedStationId: null,
+      heldSaleId: null,
+      heldStationId: null,
+      heldByAccountId: null,
+      heldAt: null,
+      campaignId: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const [row] = await tx
+      .insert(voucher)
+      .values({ ...base, id: newId(), code: mintBoothCode(FIXED_REDEMPTION_PREFIX, (max) => randomInt(max)) })
+      .onConflictDoNothing({ target: [voucher.operatorId, voucher.code] })
+      .returning();
+    if (row) return row;
+  }
+  throw new Error('Five minted codes in a row collided — the random source is not random');
 }
 
 /** What checking a code decided, with everything the check wrote committed (`findForRedemption`). */
@@ -1431,6 +1656,7 @@ async function findForRedemption(
   at: RedemptionStation,
   rawCode: string,
   now: Date,
+  mintFixed = false,
 ): Promise<{ v: VoucherRow; def: DefinitionRow; legacyFormat: boolean }> {
   await assertRedemptionUnlocked(db, at.id, actor.accountId, now);
   const code = classifyVoucherCode(rawCode);
@@ -1457,6 +1683,12 @@ async function findForRedemption(
         const legacyFormat = code.kind === 'legacy_booth';
         return { kind: 'found', v: row.v, def: row.def, legacyFormat };
       }
+    }
+    // A fixed-code type's shared code: redeemed against that type.
+    const fixedDef = await fixedCodeDefinition(tx, actor.operatorId, rawCode);
+    if (fixedDef) {
+      const v = await fixedRedemptionRow(tx, actor, at, fixedDef, mintFixed, now);
+      return { kind: 'found', v, def: fixedDef, legacyFormat: false };
     }
     // Only an eleven-character code with a right check can be a booth that has
     // not synced. A ten-character one is a current code with a character
@@ -1507,7 +1739,7 @@ export async function prepareHold(
   rawCode: string,
   now: Date = new Date(),
 ): Promise<{ voucherId: string; legacyFormat: boolean }> {
-  const { v, legacyFormat } = await findForRedemption(db, actor, at, rawCode, now);
+  const { v, legacyFormat } = await findForRedemption(db, actor, at, rawCode, now, true);
   return { voucherId: v.id, legacyFormat };
 }
 
@@ -1600,6 +1832,18 @@ export async function holdVoucher(
       alreadyHeld: true,
     };
   }
+
+  /*
+   * S2-14a round 5 — THE PROMOTIONAL RULES, before anything is written: the
+   * window on this branch's trading day, then the limits. A definition with a
+   * limit is counted under its own lock (taken after this voucher's row, the
+   * order every path takes), and a hold is a RESERVATION: two tills reaching
+   * for the last use queue there, and the second counts the first's hold and
+   * is refused in the counter's words.
+   */
+  const windowRefusal = await promoWindowRefusal(tx, def, at.branchId, now);
+  if (windowRefusal) throw windowRefusal;
+  await assertPromoLimits(tx, def, v, { stage: 'hold', memberId: v.memberId, now });
 
   const [other] = await tx
     .select({ id: voucher.id, code: voucher.code })
@@ -2051,6 +2295,11 @@ export async function resolveCartVoucher(
       { expiresAt: v.expiresAt.toISOString() },
     );
   }
+  // S2-14a round 5: a promotion's window, on this branch's trading day — the
+  // quote shows it and the commit refuses it. The limits are Pay's to decide
+  // (`recordVoucherApplied`), under the definition's lock.
+  const windowRefusal = await promoWindowRefusal(db, def, ctx.branchId, ctx.now);
+  if (windowRefusal) throw windowRefusal;
   const effect = await resolveVoucherEffect(db, ctx.operatorId, def, ctx.branchId);
   return {
     claim: {
@@ -2156,12 +2405,15 @@ export function voucherPricing(
   const base = { code: claim.code, label: claim.label } as const;
   const effect = claim.effect;
   switch (effect.type) {
+    // The definition's scope goes to the engine as it is (round 5): the engine
+    // takes what that scope has left and attributes it to the taxable
+    // categories it covered, so the tax falls where `discountPlacement` puts
+    // it — the S2-09a seam, never a second reading of VAT here.
     case 'amount_off':
       return {
-        promo: { ...base, type: 'fixed', value: effect.valueSatang, target: { kind: 'tickets' } },
+        promo: { ...base, type: 'fixed', value: effect.valueSatang, target: effect.target },
         line: null,
-        notApplicable:
-          'This voucher comes off tickets, and this sale has no tickets left to take it off',
+        notApplicable: scopeNotApplicable(effect),
       };
     case 'percent_off':
       return {
@@ -2169,11 +2421,19 @@ export function voucherPricing(
           ...base,
           type: 'percent',
           value: effect.valueBp / 100,
-          target: { kind: 'tickets' },
+          target: effect.target,
         },
         line: null,
-        notApplicable:
-          'This voucher comes off tickets, and this sale has no tickets left to take it off',
+        notApplicable: scopeNotApplicable(effect),
+      };
+    case 'wallet_credit':
+      // Nothing comes off the bill: the credit is loaded when the sale closes.
+      // A promo worth nothing records which voucher the sale carried, as a
+      // hand-over prize's does.
+      return {
+        promo: { ...base, type: 'fixed', value: 0 },
+        line: null,
+        notApplicable: null,
       };
     case 'free_item': {
       const price = resolveRate(
@@ -2246,6 +2506,13 @@ export function voucherPricing(
   }
 }
 
+/** The words for a discount voucher that found nothing in its scope on this sale. */
+function scopeNotApplicable(scope: VoucherScope): string {
+  return scope.appliesTo === 'tickets'
+    ? 'This voucher comes off tickets, and this sale has no tickets left to take it off'
+    : `This voucher comes off ${scope.label}, and this sale has none left to take it off`;
+}
+
 /**
  * How much of one line's kids row a discount aimed at it could still take,
  * once the manual discounts on the cart have come off.
@@ -2301,6 +2568,31 @@ export async function recordVoucherApplied(
   amountSatang: number,
   now: Date,
 ): Promise<void> {
+  /*
+   * S2-14a round 5 — PAY IS WHERE THE LIMITS ARE DECIDED BEFORE ANY MONEY: a
+   * definition with a global or per-customer limit is counted again here,
+   * under its lock, against the vouchers already used and those on sales
+   * already rung up. A hold that lapsed while its cart sat (the one way two
+   * reservations can both stand) is caught here, with the sale refused before
+   * a tender, rather than at the use-up after one. Per customer is the SALE's
+   * member, else the member the voucher was issued to.
+   */
+  const [v] = await tx.select().from(voucher).where(eq(voucher.id, claim.voucherId)).limit(1);
+  if (v) {
+    const def = await definitionBehind(tx, v);
+    if (hasPromoRules(def)) {
+      const [rung] = await tx
+        .select({ memberId: sale.memberId })
+        .from(sale)
+        .where(eq(sale.id, scope.saleId))
+        .limit(1);
+      await assertPromoLimits(tx, def, v, {
+        stage: 'apply',
+        memberId: rung?.memberId ?? v.memberId,
+        now,
+      });
+    }
+  }
   await tx.insert(voucherRedemption).values({
     id: newId(),
     operatorId: scope.operatorId,
@@ -2491,9 +2783,22 @@ export async function consumeSaleVouchers(
   scope: SaleVoucherScope,
   actor: { accountId: string; requestId?: string },
   now: Date,
-): Promise<{ consumed: string[] }> {
+): Promise<{ consumed: string[]; walletLoads: VoucherWalletLoad[] }> {
   const applied = await appliedVoucherIds(tx, scope);
   const consumed: string[] = [];
+  const walletLoads: VoucherWalletLoad[] = [];
+  /** The closing sale: whose it is (per-customer limits, the wallet's member) and where. */
+  let closing: { memberId: string | null; boxId: string | null } | null = null;
+  const closingSale = async () => {
+    if (closing) return closing;
+    const [row] = await tx
+      .select({ memberId: sale.memberId, boxId: sale.boxId })
+      .from(sale)
+      .where(eq(sale.id, scope.saleId))
+      .limit(1);
+    closing = { memberId: row?.memberId ?? null, boxId: row?.boxId ?? null };
+    return closing;
+  };
   for (const voucherId of applied) {
     const used = await tx
       .update(voucher)
@@ -2517,8 +2822,24 @@ export async function consumeSaleVouchers(
           eq(voucher.heldSaleId, scope.saleId),
         ),
       )
-      .returning({ id: voucher.id, code: voucher.code });
+      .returning();
     if (used.length === 0) throw await lostVoucher(tx, voucherId, scope, now);
+    const usedRow = used[0]!;
+    const def = await definitionBehind(tx, usedRow);
+    /*
+     * S2-14a round 5 — the limits a last time, under the definition's lock,
+     * counting the vouchers used before this one. Reached only by a state the
+     * hold and Pay could not see (a correction outside the api); refusing
+     * rolls the whole close back, tender and receipt number with it.
+     */
+    if (hasPromoRules(def)) {
+      const { memberId } = await closingSale();
+      await assertPromoLimits(tx, def, usedRow, {
+        stage: 'consume',
+        memberId: memberId ?? usedRow.memberId,
+        now,
+      });
+    }
 
     await tx.insert(voucherRedemption).values({
       id: newId(),
@@ -2543,7 +2864,7 @@ export async function consumeSaleVouchers(
       before: { status: 'issued', heldSaleId: scope.saleId },
       after: {
         status: 'redeemed',
-        code: used[0]!.code,
+        code: usedRow.code,
         saleId: scope.saleId,
         branchId: scope.branchId,
         stationId: scope.stationId,
@@ -2551,6 +2872,38 @@ export async function consumeSaleVouchers(
       },
     });
     consumed.push(voucherId);
+
+    /*
+     * S2-14a round 5 — A WALLET CREDIT LOADS ITS WALLET HERE, in the
+     * transaction that used the voucher up, through the wallet service: a new
+     * wallet with one voucher QR and a `grant` entry from `promo_voucher`,
+     * keyed `voucher:<id>:load`, so however often this close is replayed the
+     * credit lands once. Never a second ledger: the wallet's own ledger is
+     * the record, and the liability report counts it as granted.
+     */
+    if (def.kind === 'wallet_credit' && (def.valueSatang ?? 0) > 0) {
+      const { memberId, boxId } = await closingSale();
+      const loaded = await loadWalletFromVoucher(
+        tx,
+        { accountId: actor.accountId, operatorId: scope.operatorId, requestId: actor.requestId ?? null },
+        {
+          voucherId,
+          amountSatang: def.valueSatang!,
+          branchId: scope.branchId,
+          saleId: scope.saleId,
+          stationId: scope.stationId,
+          boxId,
+          memberId: memberId ?? usedRow.memberId,
+          now,
+        },
+      );
+      walletLoads.push({
+        voucherId,
+        walletId: loaded.wallet.id,
+        amountSatang: loaded.entry.amountSatang,
+        replayed: loaded.replayed,
+      });
+    }
   }
 
   const strays = await tx
@@ -2596,7 +2949,16 @@ export async function consumeSaleVouchers(
       });
     }
   }
-  return { consumed };
+  return { consumed, walletLoads };
+}
+
+/** A wallet credit voucher's load, as the close made it (`consumeSaleVouchers`). */
+export interface VoucherWalletLoad {
+  voucherId: string;
+  walletId: string;
+  amountSatang: number;
+  /** True when the load had already been written by an earlier run of this close. */
+  replayed: boolean;
 }
 
 // --- When a sale rung up with a voucher is voided ----------------------------

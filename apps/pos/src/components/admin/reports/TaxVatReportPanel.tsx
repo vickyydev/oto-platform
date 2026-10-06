@@ -24,15 +24,16 @@ import {
   VatSummaryPeriod,
 } from '@/lib/reporting';
 import { TaxableCategory } from '@/types';
-import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, thb, categoryLabel } from './shared';
+import { ReportFilterBar, ReportCard, ExportCsvButton, EmptyRow, ShellBanner, csvBaht, thbFromSatang, categoryLabel } from './shared';
 
 const CATEGORY_OPTIONS: TaxableCategory[] = ['tickets', 'fnb', 'bar', 'drop_off', 'parties', 'addons', 'merch'];
 
 /**
  * Bulk tax-receipt export + a category-level VAT summary. Every row is
- * recomputed live through computeTotals/computeFnbTotals/computeMerchTotals
- * → lib/tax.ts — this is not a stored/duplicated tax ledger, so it always
- * matches what the tax engine would print on the original receipt.
+ * recomputed live through the satang engine (`ticketTotals` / `itemOrderTotals`,
+ * lib/cartWire.ts, since SCRUM-271) — this is not a stored/duplicated tax
+ * ledger, so it always matches what the tax engine would print on the original
+ * receipt, and every figure is summed in satang before it is shown.
  */
 export function TaxVatReportPanel() {
   const [filters, setFilters] = useState(defaultReportFilters());
@@ -45,15 +46,15 @@ export function TaxVatReportPanel() {
   const receipts = useMemo(() => taxReceiptRows(receiptFilters), [receiptFilters]);
   const vat = useMemo(() => vatSummary(filters, period), [filters, period]);
 
-  const totalTax = vat.reduce((s, r) => s + r.exclusiveTax + r.inclusiveTax, 0);
-  const totalGross = vat.reduce((s, r) => s + r.gross, 0);
+  const totalTax = vat.reduce((s, r) => s + r.exclusiveTaxSatang + r.inclusiveTaxSatang, 0);
+  const totalGross = vat.reduce((s, r) => s + r.grossSatang, 0);
 
   return (
     <div className="flex flex-col gap-5">
       <ReportFilterBar filters={filters} onChange={setFilters} />
 
       <ReportCard
-        title={`VAT summary — ${thb(totalTax)} tax on ${thb(totalGross)} gross`}
+        title={`VAT summary — ${thbFromSatang(totalTax)} tax on ${thbFromSatang(totalGross)} gross`}
         action={
           <div className="flex items-center gap-3">
             <div className="flex flex-col gap-1">
@@ -77,11 +78,11 @@ export function TaxVatReportPanel() {
                   vat.map((r) => [
                     r.period ?? 'range',
                     categoryLabel(r.category),
-                    r.netBase.toFixed(2),
-                    r.serviceCharge.toFixed(2),
-                    r.exclusiveTax.toFixed(2),
-                    r.inclusiveTax.toFixed(2),
-                    r.gross.toFixed(2),
+                    csvBaht(r.netBaseSatang),
+                    csvBaht(r.serviceChargeSatang),
+                    csvBaht(r.exclusiveTaxSatang),
+                    csvBaht(r.inclusiveTaxSatang),
+                    csvBaht(r.grossSatang),
                   ])
                 )
               }
@@ -107,11 +108,11 @@ export function TaxVatReportPanel() {
               <TableRow key={`${r.period}-${r.category}`}>
                 {period !== 'range' && <TableCell className="text-xs text-foreground/60">{r.period}</TableCell>}
                 <TableCell>{categoryLabel(r.category)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.netBase)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.serviceCharge)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.exclusiveTax)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.inclusiveTax)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.gross)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.netBaseSatang)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.serviceChargeSatang)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.exclusiveTaxSatang)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.inclusiveTaxSatang)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.grossSatang)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -181,10 +182,10 @@ export function TaxVatReportPanel() {
                     r.operatorName,
                     r.categories.map((c) => categoryLabel(c)).join('; '),
                     r.paymentMethod,
-                    r.netSubtotal.toFixed(2),
-                    r.serviceCharge.toFixed(2),
-                    r.taxTotal.toFixed(2),
-                    r.grandTotal.toFixed(2),
+                    csvBaht(r.netSubtotalSatang),
+                    csvBaht(r.serviceChargeSatang),
+                    csvBaht(r.taxTotalSatang),
+                    csvBaht(r.grandTotalSatang),
                     r.taxSummaryLabel,
                   ])
                 )
@@ -226,9 +227,9 @@ export function TaxVatReportPanel() {
                   {r.categories.map((c) => categoryLabel(c)).join(', ')}
                 </TableCell>
                 <TableCell className="capitalize">{r.paymentMethod.replace('_', ' ')}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.netSubtotal)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.taxTotal)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(r.grandTotal)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.netSubtotalSatang)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.taxTotalSatang)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(r.grandTotalSatang)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

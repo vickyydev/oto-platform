@@ -26,14 +26,16 @@ import {
   ExportCsvButton,
   EmptyRow,
   ShellBanner,
-  thb,
+  csvBaht,
+  thbFromSatang,
   categoryLabel,
 } from './shared';
 
 /**
  * Sales report — revenue by taxable category, payment mix, ticket tier split
- * and top F&B/merch items. Every number is re-derived from the same tax
- * engine (lib/tax.ts) used at checkout; nothing here is a parallel total.
+ * and top F&B/merch items. Every number is re-derived from the same satang
+ * engine used at checkout (lib/cartWire.ts, SCRUM-271), summed in satang and
+ * drawn in baht only by `thbFromSatang`; nothing here is a parallel total.
  */
 export function SalesReportPanel() {
   const [filters, setFilters] = useState(defaultReportFilters());
@@ -48,14 +50,14 @@ export function SalesReportPanel() {
   const events = useMemo(() => eventCampRevenueRows(filters), [filters]);
   const dropOffNanny = useMemo(() => dropOffNannyRevenueRows(filters), [filters]);
 
-  const totalGross = categories.reduce((s, c) => s + c.grossRevenue, 0);
+  const totalGross = categories.reduce((s, c) => s + c.grossRevenueSatang, 0);
 
   return (
     <div className="flex flex-col gap-5">
       <ReportFilterBar filters={filters} onChange={setFilters} />
 
       <ReportCard
-        title={`Revenue by category — ${thb(totalGross)} total`}
+        title={`Revenue by category — ${thbFromSatang(totalGross)} total`}
         action={
           <ExportCsvButton
             onExport={() =>
@@ -64,10 +66,10 @@ export function SalesReportPanel() {
                 ['Category', 'Gross Revenue', '% of total', 'Tax Collected', 'Service Charge', 'Transactions'],
                 categories.map((c) => [
                   categoryLabel(c.category),
-                  c.grossRevenue.toFixed(2),
+                  csvBaht(c.grossRevenueSatang),
                   c.pctShare.toFixed(1),
-                  c.taxCollected.toFixed(2),
-                  c.serviceCharge.toFixed(2),
+                  csvBaht(c.taxCollectedSatang),
+                  csvBaht(c.serviceChargeSatang),
                   c.count,
                 ])
               )
@@ -91,10 +93,10 @@ export function SalesReportPanel() {
             {categories.map((c) => (
               <TableRow key={c.category}>
                 <TableCell>{categoryLabel(c.category)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(c.grossRevenue)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(c.grossRevenueSatang)}</TableCell>
                 <TableCell className="text-right tabular-nums">{c.pctShare.toFixed(1)}%</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(c.taxCollected)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(c.serviceCharge)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(c.taxCollectedSatang)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(c.serviceChargeSatang)}</TableCell>
                 <TableCell className="text-right tabular-nums">{c.count}</TableCell>
               </TableRow>
             ))}
@@ -110,7 +112,7 @@ export function SalesReportPanel() {
               downloadCsv(
                 `payment-mix_${filters.startDate}_${filters.endDate}`,
                 ['Method', 'Amount', 'Count'],
-                payments.map((p) => [p.method, p.amount.toFixed(2), p.count])
+                payments.map((p) => [p.method, csvBaht(p.amountSatang), p.count])
               )
             }
           />
@@ -129,7 +131,7 @@ export function SalesReportPanel() {
             {payments.map((p) => (
               <TableRow key={p.method}>
                 <TableCell className="capitalize">{p.method.replace('_', ' ')}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(p.amount)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(p.amountSatang)}</TableCell>
                 <TableCell className="text-right tabular-nums">{p.count}</TableCell>
               </TableRow>
             ))}
@@ -145,7 +147,7 @@ export function SalesReportPanel() {
               downloadCsv(
                 `ticket-sales-by-tier_${filters.startDate}_${filters.endDate}`,
                 ['Tier', 'Ticket Revenue', 'Drop-off Revenue', 'Sale Count'],
-                tiers.map((t) => [t.tier, t.ticketRevenue.toFixed(2), t.dropOffRevenue.toFixed(2), t.saleCount])
+                tiers.map((t) => [t.tier, csvBaht(t.ticketRevenueSatang), csvBaht(t.dropOffRevenueSatang), t.saleCount])
               )
             }
           />
@@ -165,8 +167,8 @@ export function SalesReportPanel() {
             {tiers.map((t) => (
               <TableRow key={t.tier}>
                 <TableCell className="capitalize">{t.tier}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(t.ticketRevenue)}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(t.dropOffRevenue)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(t.ticketRevenueSatang)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(t.dropOffRevenueSatang)}</TableCell>
                 <TableCell className="text-right tabular-nums">{t.saleCount}</TableCell>
               </TableRow>
             ))}
@@ -182,7 +184,7 @@ export function SalesReportPanel() {
               downloadCsv(
                 `ticket-type-breakdown_${filters.startDate}_${filters.endDate}`,
                 ['Ticket type', 'Lines', 'Kids', 'Adults', 'Revenue'],
-                ticketTypes.map((t) => [t.name, t.lineCount, t.kids, t.adults, t.revenue.toFixed(2)])
+                ticketTypes.map((t) => [t.name, t.lineCount, t.kids, t.adults, csvBaht(t.revenueSatang)])
               )
             }
           />
@@ -206,7 +208,7 @@ export function SalesReportPanel() {
                 <TableCell className="text-right tabular-nums">{t.lineCount}</TableCell>
                 <TableCell className="text-right tabular-nums">{t.kids}</TableCell>
                 <TableCell className="text-right tabular-nums">{t.adults}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(t.revenue)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(t.revenueSatang)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -222,7 +224,7 @@ export function SalesReportPanel() {
                 downloadCsv(
                   `weekday-weekend-split_${filters.startDate}_${filters.endDate}`,
                   ['Mode', 'Sales', 'Revenue'],
-                  weekdayWeekend.map((w) => [w.mode, w.saleCount, w.revenue.toFixed(2)])
+                  weekdayWeekend.map((w) => [w.mode, w.saleCount, csvBaht(w.revenueSatang)])
                 )
               }
             />
@@ -242,7 +244,7 @@ export function SalesReportPanel() {
                 <TableRow key={w.mode}>
                   <TableCell className="capitalize">{w.mode}</TableCell>
                   <TableCell className="text-right tabular-nums">{w.saleCount}</TableCell>
-                  <TableCell className="text-right tabular-nums">{thb(w.revenue)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{thbFromSatang(w.revenueSatang)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -257,7 +259,7 @@ export function SalesReportPanel() {
                 downloadCsv(
                   `dropoff-nanny_${filters.startDate}_${filters.endDate}`,
                   ['Service', 'Sessions', 'Hours', 'Fees'],
-                  dropOffNanny.map((d) => [d.service, d.sessionCount, d.totalHours, d.feesTHB.toFixed(2)])
+                  dropOffNanny.map((d) => [d.service, d.sessionCount, d.totalHours, csvBaht(d.feesSatang)])
                 )
               }
             />
@@ -279,7 +281,7 @@ export function SalesReportPanel() {
                   <TableCell className="capitalize">{d.service.replace('_', ' ')}</TableCell>
                   <TableCell className="text-right tabular-nums">{d.sessionCount}</TableCell>
                   <TableCell className="text-right tabular-nums">{d.totalHours}</TableCell>
-                  <TableCell className="text-right tabular-nums">{thb(d.feesTHB)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{thbFromSatang(d.feesSatang)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -295,7 +297,7 @@ export function SalesReportPanel() {
               downloadCsv(
                 `event-camp-revenue_${filters.startDate}_${filters.endDate}`,
                 ['Event', 'Type', 'Date', 'Passes sold', 'Attended', 'Est. revenue'],
-                events.map((e) => [e.name, e.type, e.date, e.passesSold, e.attended, e.estimatedRevenue.toFixed(2)])
+                events.map((e) => [e.name, e.type, e.date, e.passesSold, e.attended, csvBaht(e.estimatedRevenueSatang)])
               )
             }
           />
@@ -326,7 +328,7 @@ export function SalesReportPanel() {
                 <TableCell>{e.date}</TableCell>
                 <TableCell className="text-right tabular-nums">{e.passesSold}</TableCell>
                 <TableCell className="text-right tabular-nums">{e.attended}</TableCell>
-                <TableCell className="text-right tabular-nums">{thb(e.estimatedRevenue)}</TableCell>
+                <TableCell className="text-right tabular-nums">{thbFromSatang(e.estimatedRevenueSatang)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -342,7 +344,7 @@ export function SalesReportPanel() {
                 downloadCsv(
                   `fnb-sales-by-item_${filters.startDate}_${filters.endDate}`,
                   ['Item', 'Qty', 'Revenue'],
-                  fnbItems.map((i) => [i.name, i.qty, i.revenue.toFixed(2)])
+                  fnbItems.map((i) => [i.name, i.qty, csvBaht(i.revenueSatang)])
                 )
               }
             />
@@ -362,7 +364,7 @@ export function SalesReportPanel() {
                 <TableRow key={i.itemId}>
                   <TableCell>{i.name}</TableCell>
                   <TableCell className="text-right tabular-nums">{i.qty}</TableCell>
-                  <TableCell className="text-right tabular-nums">{thb(i.revenue)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{thbFromSatang(i.revenueSatang)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -377,7 +379,7 @@ export function SalesReportPanel() {
                 downloadCsv(
                   `merch-sales-by-item_${filters.startDate}_${filters.endDate}`,
                   ['Item', 'Qty', 'Revenue'],
-                  merchItems.map((i) => [i.name, i.qty, i.revenue.toFixed(2)])
+                  merchItems.map((i) => [i.name, i.qty, csvBaht(i.revenueSatang)])
                 )
               }
             />
@@ -397,7 +399,7 @@ export function SalesReportPanel() {
                 <TableRow key={i.itemId}>
                   <TableCell>{i.name}</TableCell>
                   <TableCell className="text-right tabular-nums">{i.qty}</TableCell>
-                  <TableCell className="text-right tabular-nums">{thb(i.revenue)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{thbFromSatang(i.revenueSatang)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -10,6 +10,7 @@
     "./protocol": "./src/protocol.ts",
     "./contract": "./src/contract.ts",
     "./printing": "./src/printing/index.ts",
+    "./gate": "./src/gate/index.ts",
     "./sqlite": "./src/store-sqlite.ts",
     "./runner": "./src/runner/runtime.ts"
   },

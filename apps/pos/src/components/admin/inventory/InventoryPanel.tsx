@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Package, AlertTriangle, Pencil, Plus, MapPin } from 'lucide-react';
-import { InventoryItem, InventoryVariant, MerchItem, AddOn, MenuItem } from '@/types';
+import { InventoryItem, InventoryVariant } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { useBranch } from '@/branch/BranchContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { NotSavedNotice } from '../NotSavedNotice';
 import { InventoryItemFormDialog } from './InventoryItemFormDialog';
 import { StockAdjustModal } from './StockAdjustModal';
 import { StockLocationsPanel } from './StockLocationsPanel';
-import { recordInventoryAdjustment } from '@/mockApi';
-import { useOperator } from '@/auth/OperatorContext';
+import { inventoryItemToStockBody, stockApi, stockErrorWords, useStockModule } from '@/api/stock';
+import { catalogueSizesOf, reloadMenuInto } from '@/api/menu';
 import { getRestockAlerts } from '@/lib/inventory';
 
 type Tab = 'items' | 'locations';
@@ -44,15 +44,14 @@ function variantStockBadge(v: InventoryVariant) {
  *   Locations — manager-only: add/edit/toggle stock locations + sell-point designation.
  */
 export function InventoryPanel() {
-  const {
-    inventory,
-    stockLocations,
-    merchItems,
-    addOns,
-    menuItems,
-    mutators,
-  } = useCatalogStore();
-  const { operator } = useOperator();
+  // The sellables an item can link to are the catalogue's (platform-hydrated);
+  // the items, sizes, places and counts are the platform's stock (S2-14b round 2).
+  const { merchItems, addOns, menuItems } = useCatalogStore();
+  const { branch } = useBranch();
+  const branchId = branch?.apiId ?? null;
+  const stock = useStockModule(branchId);
+  const inventory = stock.inventory;
+  const stockLocations = stock.locations;
 
   const [tab, setTab] = useState<Tab>('items');
   const [formOpen, setFormOpen] = useState(false);
@@ -76,17 +75,38 @@ export function InventoryPanel() {
     setAdjusting({ item, variant });
   };
 
-  const handleAdjust = (delta: number, reason: string) => {
-    if (!adjusting || !operator) return;
-    recordInventoryAdjustment({
-      inventoryItemId: adjusting.item.id,
-      variantId: adjusting.variant.id,
-      delta,
-      reason,
-      operator: operator.name,
-      operatorId: operator.id,
-    });
-    setAdjusting(null);
+  const handleAdjust = async (delta: number, reason: string) => {
+    if (!adjusting || !branchId) return;
+    try {
+      // An increase lands at the sell point; a decrease takes from the sell
+      // point first and then the cascade — never past what the branch holds.
+      await stockApi.adjust(branchId, { stockItemId: adjusting.variant.id, delta, reason });
+      setAdjusting(null);
+    } catch (err) {
+      window.alert(stockErrorWords(err));
+    }
+  };
+
+  const handleSave = async (newItem: InventoryItem) => {
+    if (!branchId) return;
+    const existing = editing;
+    const existingSizeIds = new Set(existing?.variants.map((v) => v.id) ?? []);
+    const productSized = newItem.linkedId ? catalogueSizesOf(newItem.linkedId).length > 0 : false;
+    try {
+      // One write: the item, its sizes, packs, pars and reorder settings, and
+      // the link to the sellable it stocks (all of a sized product's sizes or
+      // none — the platform refuses a partial link).
+      await stockApi.saveItem(
+        branchId,
+        existing ? existing.id : null,
+        inventoryItemToStockBody(newItem, { existingSizeIds, productSized }),
+      );
+      // The sell grids read "tracked" from the menu's links: read it back.
+      if (branch) await reloadMenuInto(branchId, branch.id).catch(() => undefined);
+      setFormOpen(false);
+    } catch (err) {
+      window.alert(stockErrorWords(err));
+    }
   };
 
   // All locations (active + retired) for the form's par inputs
@@ -170,15 +190,11 @@ export function InventoryPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <NotSavedNotice
-        mutators={[
-          'upsertInventoryItem',
-          'deleteInventoryItem',
-          'upsertStockLocation',
-          'commitStockTakeCorrection',
-        ]}
-        what="items, variants, locations, counts and every adjustment made here"
-      />
+      {(stock.error || !branchId) && (
+        <p role="status" className="text-xs text-foreground/50">
+          {stock.error ?? 'This branch is not on the platform yet, so it has no stock to manage.'}
+        </p>
+      )}
 
       {/* Tab strip */}
       <div className="flex gap-1 border-b border-foreground/10 -mb-2">
@@ -268,19 +284,19 @@ export function InventoryPanel() {
             </section>
           )}
 
-          {/* Sale decrements, refund restores and the operator stamp on an
-              adjustment all happen in the in-memory store and nowhere else, so
-              this says "within this session" rather than claiming a ledger. */}
+          {/* S2-14b — every figure here is the platform's ledger: sales take
+              stock, refunds put it back, and each adjustment is a movement with
+              the reason and the person who made it. */}
           <p className="text-xs text-foreground/35">
-            Use "Adjust" for receive, shrinkage, or recount corrections. Within this
-            session, sale decrements and refund restores follow automatically and each
-            adjustment carries the operator who made it.
+            Use "Adjust" for receive, shrinkage, or recount corrections. Sale decrements and
+            refund restores follow automatically and each adjustment carries the operator who
+            made it.
           </p>
         </>
       )}
 
       {/* ── Locations tab ── */}
-      {tab === 'locations' && <StockLocationsPanel />}
+      {tab === 'locations' && <StockLocationsPanel branchId={branchId} locations={stockLocations} />}
 
       {/* Dialogs (always mounted so state survives tab switch) */}
       <InventoryItemFormDialog
@@ -291,49 +307,10 @@ export function InventoryPanel() {
         addOns={addOns}
         menuItems={menuItems}
         onClose={() => setFormOpen(false)}
-        onSave={(newItem) => {
-          mutators.upsertInventoryItem(newItem);
-
-          // Keep the sellable-product's inventoryItemId in sync with the link.
-          // Stock decrement flows read product.inventoryItemId, NOT InventoryItem.linkedId,
-          // so both sides must be consistent after a link change.
-
-          const oldItem = editing;
-          const linkChanged =
-            !oldItem ||
-            oldItem.linkedKind !== newItem.linkedKind ||
-            oldItem.linkedId !== newItem.linkedId;
-
-          if (linkChanged) {
-            // Clear inventoryItemId from the old product (if remapping)
-            if (oldItem && (oldItem.linkedKind !== newItem.linkedKind || oldItem.linkedId !== newItem.linkedId)) {
-              if (oldItem.linkedKind === 'merch') {
-                const p = merchItems.find((m) => m.id === oldItem.linkedId);
-                if (p) mutators.upsertMerchItem({ ...p, inventoryItemId: undefined } as MerchItem);
-              } else if (oldItem.linkedKind === 'addon') {
-                const p = addOns.find((a) => a.id === oldItem.linkedId);
-                if (p) mutators.upsertAddOn({ ...p, inventoryItemId: undefined } as AddOn);
-              } else if (oldItem.linkedKind === 'menu') {
-                const p = menuItems.find((m) => m.id === oldItem.linkedId);
-                if (p) mutators.upsertMenuItem({ ...p, inventoryItemId: undefined } as MenuItem);
-              }
-            }
-
-            // Set inventoryItemId on the new linked product
-            if (newItem.linkedKind === 'merch') {
-              const p = merchItems.find((m) => m.id === newItem.linkedId);
-              if (p) mutators.upsertMerchItem({ ...p, inventoryItemId: newItem.id });
-            } else if (newItem.linkedKind === 'addon') {
-              const p = addOns.find((a) => a.id === newItem.linkedId);
-              if (p) mutators.upsertAddOn({ ...p, inventoryItemId: newItem.id });
-            } else if (newItem.linkedKind === 'menu') {
-              const p = menuItems.find((m) => m.id === newItem.linkedId);
-              if (p) mutators.upsertMenuItem({ ...p, inventoryItemId: newItem.id });
-            }
-          }
-
-          setFormOpen(false);
-        }}
+        // The link to the sellable is written by the platform with the item
+        // (`setProductStockLinks`), so both sides of it change together: the
+        // product's "tracked" marker is the platform's, read back with the menu.
+        onSave={(newItem) => void handleSave(newItem)}
       />
 
       {adjusting && (
@@ -343,7 +320,7 @@ export function InventoryPanel() {
           variantLabel={adjusting.variant.label}
           currentStock={adjusting.variant.stock}
           onClose={() => setAdjusting(null)}
-          onAdjust={handleAdjust}
+          onAdjust={(delta, reason) => void handleAdjust(delta, reason)}
         />
       )}
     </div>

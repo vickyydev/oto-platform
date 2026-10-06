@@ -10,20 +10,41 @@ import {
   type BoothStationContext,
 } from './booth';
 import { planCacheApply, type CacheFaultReason } from './cache-apply';
+import { WALLET_SNAPSHOT_REWRITE_AFTER_MS } from './wallet-lane';
+import { STOCK_SNAPSHOT_REWRITE_AFTER_MS } from './stock-lane';
 import type { SyncPushRequest, SyncPushResponse } from './contract';
 import type { CredentialStore } from './credentials';
-import {
-  createOutbox,
-  paymentRecordedFact,
-  saleFinalisedFact,
-  type OfflineReceiptFact,
-  type OfflineSaleFact,
-  type OfflineTenderFact,
-  type Outbox,
-} from './outbox';
+import { createOutbox, type Outbox } from './outbox';
+import { createSaleQueue, type FinaliseCrashPoint, type SaleQueue } from './sale-queue';
 import { createRefusalBackOff } from './reregister';
-import { generateSyncKeyPair, publicKeyFor, uuidv7 } from './signing';
-import { ScanRouter, type ScanInput } from './scan';
+import { generateSyncKeyPair, publicKeyFor, sealEnvelope, uuidv7 } from './signing';
+import {
+  GATE_READER_DEFAULT_PORT,
+  createGateHost,
+  gateSignature,
+  gateStationsOf,
+  gpiosetRelayDriver,
+  type GateHost,
+  type RelayDriver,
+} from './gate/index';
+import { StationBridge, type StationBridgeOptions } from './station-bridge';
+import { tmpdir } from 'node:os';
+import { join as joinPath } from 'node:path';
+import {
+  fsBlobStore,
+  memoryBlobStore,
+  registerBoxBlobs,
+  type BlobLimits,
+  type BlobStore,
+} from './blob-store';
+import {
+  createPhotoUploader,
+  fetchPut,
+  type PhotoUploader,
+  type UploadCrashPoint,
+  type UploadTick,
+} from './photo-upload';
+import { BAND_CODE_HANDLER, ScanRouter, type ScanInput } from './scan';
 import { HidBurstReader, buttonKeyProblem, simulateHidKeys } from './scan-input';
 import { StationSessionManager } from './station-session';
 import {
@@ -31,6 +52,7 @@ import {
   type BoxStore,
   type CachedBundle,
   type ClockStamp,
+  type EnvelopeSealer,
   type StationIdentity,
 } from './store';
 import {
@@ -54,9 +76,14 @@ import {
 } from './protocol';
 import { httpTransport, silentLog, type AgentFetch, type AgentLog } from './transport';
 import {
+  PLATFORM_DOCUMENT,
+  PrinterError,
   createPrinting,
+  printDocumentPath,
+  readPlatformPrintDocument,
   testPrintJob,
   type ChannelFactory,
+  type PlatformPrintDocument,
   type PrintingController,
   type PrintJobOutcome,
 } from './printing/index';
@@ -72,9 +99,7 @@ import {
   BOOTH_STAFF_VERIFY_ERRORS,
   BOOTH_STAFF_VERIFY_PATH,
   PrintTemplateSchema,
-  isLegacyBoothCode,
-  normaliseBoothCode,
-  verifyBoothCode,
+  childPhotosEnabled,
 } from '@oto/shared';
 import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@oto/shared';
 
@@ -106,7 +131,9 @@ import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@o
  * cache and the agent writes every bundle it adopts to it and reads it back
  * at start. The virtual box passes none: its cloud is the process it runs in.
  *
- * Nothing secret is in a bundle — signing keys ride it as PUBLIC halves only.
+ * Signing keys ride a bundle as PUBLIC halves only. The one secret in it is
+ * the band key (S2-11, `BoxConfigBundle.bandKey`), which is why a Pi writes
+ * the bundle with its credential's own permissions and nothing logs it.
  */
 export interface BoxConfigCache {
   read(): Promise<BoxConfigBundle | null>;
@@ -269,6 +296,44 @@ export interface BoxAgentOptions {
      * send a void rather than guessing.
      */
     voidPassword?: string | null;
+    /** Read deadlines, for a test that must not wait out a two-minute budget. */
+    timeouts?: { saleMs?: number; probeMs?: number };
+  };
+  /**
+   * Band codes (S2-11).
+   *
+   * The scanner checks a band's signature on the box, with no network, against
+   * the park's band key (`verifyBandCode` in `@oto/shared`). The key reaches a
+   * box in its config bundle (`BoxConfigBundle.bandKey`); a host that holds it
+   * already passes it here instead, and this wins — the virtual box inside the
+   * api, which reads `BAND_HMAC_KEY` from its own environment. Asked on every
+   * scan, so a key that arrives with the next config pull is used from the
+   * scan after it.
+   */
+  bands?: {
+    key?: () => string | Uint8Array | null;
+  };
+  /**
+   * The sale queue (offline plan Round 4). `crashPoint` is a test's hand on
+   * the power lead: called at each named point inside the finalise
+   * transaction, and a throw there must leave nothing half-written.
+   */
+  sales?: {
+    crashPoint?: (point: FinaliseCrashPoint) => void | Promise<void>;
+  };
+  /**
+   * The station bridge (offline plan §2.2, Round 3): how a till and a customer
+   * display reach this box with no internet. Built whenever the box has a
+   * store; whether anything calls it is the host's choice — the api mounts it
+   * for a virtual box, a Pi serves it on loopback behind Caddy.
+   */
+  bridge?: {
+    /**
+     * argon2id verification for the till's password at unlock. Defaults to the
+     * booth's `verifySecret`, which both the api and a Pi already pass.
+     */
+    verifyPassword?: (hash: string, password: string) => Promise<boolean>;
+    options?: StationBridgeOptions;
   };
   /**
    * The Lucky Wheel (S2-07a).
@@ -309,6 +374,44 @@ export interface BoxAgentOptions {
      * booth station is run, as before.
      */
     stationId?: () => string | null;
+  };
+  /**
+   * The gate box (S2-12 round 2): the reader's HTTP calls, the controller's
+   * serial line, the access decision and its journal (`gate/host.ts`).
+   *
+   * Built ONLY when the bundle names a station of kind `gate`; a till or a
+   * booth box never constructs it. On a Raspberry Pi (a box with a
+   * `configCache`) it listens for the reader on `GATE_READER_DEFAULT_PORT` and
+   * pulses its relay HAT through `gpioset`; the virtual box does neither
+   * unless told to here.
+   */
+  /**
+   * S2-13 round 4 — photos taken at a counter with the link down (plan §2.5):
+   * the bounded store on this box (`blob-store.ts`) and the worker that sends
+   * them through the platform when the link is back (`photo-upload.ts`).
+   */
+  photos?: {
+    /** `CHILD_PHOTOS_ENABLED`; absent, the process environment decides (on unless switched off). */
+    enabled?: boolean;
+    /** Where the photos are kept on disk. Default: the system temp directory, per box. */
+    dir?: string;
+    /** Keep them in memory instead (tests). */
+    memory?: boolean;
+    limits?: Partial<BlobLimits>;
+    /** The PUT to object storage. Default: `fetch`. */
+    put?: (url: string, bytes: Uint8Array, contentType: string) => Promise<number>;
+    /** A test's hand on the power lead between the upload's steps. */
+    crashPoint?: (point: UploadCrashPoint, photoId: string) => void | Promise<void>;
+  };
+  gate?: {
+    /** Off only for a test that wants the agent without it. */
+    enabled?: boolean;
+    /** Where the reader's calls are served; null serves nothing. */
+    listen?: { port: number; host?: string } | null;
+    /** The controller's serial line. Defaults to `terminal.openSerial`. */
+    openSerial?: SerialOpener;
+    /** The relay HAT. Null refuses a relay open by name. */
+    relayDriver?: RelayDriver | null;
   };
 }
 
@@ -450,6 +553,8 @@ export interface BoxAgent {
    * `createBoothHttp` to this.
    */
   booth(): Booth | null;
+  /** The gate box, or null on a box whose bundle names no gate station (S2-12). */
+  gate(): GateHost | null;
   /**
    * Sales taken with no internet, or null on a box with no store (S2-10a).
    *
@@ -459,142 +564,48 @@ export interface BoxAgent {
    * money it cannot account for.
    */
   sales(): SaleQueue | null;
-}
-
-/**
- * TAKING MONEY WITH THE LINK DOWN (S2-10a, Slice G).
- *
- * The rule the outbox states — a fact is on disk before the person who caused
- * it is told it worked — applied to the one fact that is money. The till hands
- * the sale over, this writes it to the box's own queue, and it reaches the
- * ledger whenever the mall's internet comes back: minutes, or tomorrow.
- *
- * WHAT THE BOX DECIDES AND WHAT IT DOES NOT. It decides three things, all of
- * them things only a box can know: the journal position (`box_seq`, from the
- * store's gapless generator), the receipt number to show the guest (from the
- * high-water mark the cloud last told it), and whether the drawer opens. It
- * decides NOTHING about what the sale costs — see `OfflineSaleFact.cart`.
- */
-export interface SaleQueue {
   /**
-   * Record a whole sale and its money. On disk when this resolves.
+   * The station bridge over this box's own sessions, cache and outbox, or null
+   * on a box with no store (offline plan Round 3).
+   */
+  bridge(): StationBridge | null;
+  /** S2-13 round 4 — the box's photo store, or null before the box knows who it is. */
+  photoStore(): BlobStore | null;
+  /** S2-13 round 4 — one pass of the photo upload worker. Also run on the cache tick. */
+  uploadPhotos(): Promise<UploadTick>;
+  /** S2-13 round 4 — pull the `checkin` scope on its own (it is volatile). Also run on the cache tick. */
+  syncCheckin(): Promise<boolean>;
+  /** S2-14a round 4 — pull the `wallets` scope (balance snapshots + the cap) on its own. Also run on the cache tick. */
+  syncWallets(): Promise<boolean>;
+  /** S2-14b round 3 — pull the `stock` scope (level snapshots + this box's filed sales) on its own. Also run on the cache tick. */
+  syncStock(): Promise<boolean>;
+  /**
+   * Seals facts with this box's signing key, or null before registration.
    *
-   * ONE FACT carries both: the cart and every tender that closed the sale
-   * travel inside a single `sale.finalised`, so a box that loses power has
-   * either the whole sale or none of it, and the cloud applies both halves in
-   * one savepoint. `queueAll` is used rather than `queue` because it is the
-   * transaction the multi-fact case needs and a single fact is the same call
-   * with one entry — money that arrives LATER is `recordTender`, which mints a
-   * second fact of its own.
+   * For a host that runs its OWN station bridge over this box's store — the
+   * api's mount for a virtual box, whose station documents are served by the
+   * api's session manager rather than this agent's — so the facts it produces
+   * are signed by the box, exactly as the agent's own would be.
    */
-  record(request: OfflineSaleRequest): Promise<OfflineSaleAnswer>;
-  /** A later tender against a sale already queued: a split's second half, a late approval. */
-  recordTender(request: OfflineTenderRequest): Promise<OfflineSaleAnswer>;
-  /** Where this station's receipt numbering stands, as the box last heard. */
-  receiptMark(stationId: string): Promise<ReceiptMark | null>;
+  sealer(): EnvelopeSealer | null;
 }
 
 /**
- * S2-10b (SCRUM-207) — THE WORDS AN OFFLINE SALE CARRYING A VOUCHER IS REFUSED
- * WITH, exactly as the till shows them.
+ * TAKING MONEY WITH THE LINK DOWN lives in `sale-queue.ts` (S2-10a; offline
+ * plan Round 4): the finalise transaction, the receipt series, the bands and
+ * the box's own print log. Its words are re-exported here, where S2-10a first
+ * published them.
  */
-export const OFFLINE_VOUCHER_REFUSAL =
-  'Vouchers need the internet — take this one when the connection is back';
-
-/** A sale the box will not take offline, with a code the till can tell apart. */
-export class OfflineSaleRefused extends Error {
-  readonly code: 'VOUCHER_NEEDS_INTERNET';
-
-  constructor(message: string, code: 'VOUCHER_NEEDS_INTERNET') {
-    super(message);
-    this.name = 'OfflineSaleRefused';
-    this.code = code;
-  }
-}
-
-/**
- * The Lucky Wheel voucher an offline sale's cart names, or null — the one
- * question the box asks of a cart it otherwise never reads
- * (`OfflineSaleFact.cart`).
- *
- * WHY THE BOX ASKS IT. A voucher is redeemed online only (spec §8; the owner,
- * 24 September): it is held by the platform for one cart and used up in the
- * transaction that closes that sale, and a sale taken offline reaches the
- * platform later through the replay, which prices the cart WITHOUT its
- * `promoCodes`. A voucher riding an offline sale would therefore be honoured
- * at the counter on the strength of the slip alone, never used up, and the
- * sale's price would disagree with the platform's when it arrived. So the box
- * refuses the sale before it numbers or queues anything, whatever the till
- * did or did not check first.
- *
- * WHERE A VOUCHER RIDES. A till names one by putting its code in the cart's
- * `promoCodes` — flat, or under `cart` as the till nests it — and nowhere
- * else: the platform refuses a voucher described in `promos`
- * (VOUCHER_CLAIM_REFUSED). `promos` is not read here on purpose. The park's own
- * discount codes ride there and some have a booth code's shape (SONGKRAN25,
- * MEMBERDAY25), which only the platform's discount catalogue can tell apart.
- *
- * Any code of a booth code's shape counts — eleven characters with a right
- * check, or the ten-character shape printed before the check — digits alone
- * included: refusing a sale over a code that turns out to be nobody's voucher
- * costs a retype, and a voucher taken offline costs the voucher.
- */
-export function voucherOnOfflineCart(cart: Record<string, unknown>): string | null {
-  const codesOf = (value: unknown): string[] =>
-    Array.isArray(value) ? value.filter((code): code is string => typeof code === 'string') : [];
-  const nested =
-    cart.cart && typeof cart.cart === 'object' ? (cart.cart as Record<string, unknown>) : null;
-  for (const raw of [...codesOf(cart.promoCodes), ...codesOf(nested?.promoCodes)]) {
-    const code = normaliseBoothCode(raw);
-    if (verifyBoothCode(code).ok || isLegacyBoothCode(code)) return code;
-  }
-  return null;
-}
-
-export interface OfflineSaleRequest extends Omit<OfflineSaleFact, 'saleId' | 'receipt'> {
-  /** Minted at the till. One is minted here when the till did not send one. */
-  saleId?: string;
-  /**
-   * Open the drawer. Defaults to "whenever one of the tenders was cash", which
-   * is the rule the cloud's own cash finalise applies (`payments/drawer.ts`) —
-   * a card payment leaves it shut.
-   */
-  openDrawer?: boolean;
-}
-
-export interface OfflineTenderRequest {
-  saleId: string;
-  stationId: string;
-  actorAccountId: string;
-  tender: OfflineTenderFact;
-  occurredAt?: string;
-  actionId?: string | null;
-  openDrawer?: boolean;
-}
-
-export interface OfflineSaleAnswer {
-  saleId: string;
-  /** What the till shows the guest. Provisional: the cloud allocates the real one. */
-  receipt: OfflineReceiptFact | null;
-  /** The journal position the first of this sale's facts took. */
-  boxSeq: number;
-  /** How many facts this call put on the queue. One, on both paths today. */
-  queued: number;
-  /** What the drawer did. `not_asked` when this sale took no cash. */
-  drawer: 'opened' | 'failed' | 'not_asked';
-  /** Everything still waiting to go up, so the till can say "3 sales to send". */
-  outboxDepth: number;
-}
-
-/** A station's receipt numbering, as the cache bundle last shipped it. */
-export interface ReceiptMark {
-  stationId: string;
-  /** The station's `code_prefix`, which is the series name printed on the number. */
-  prefix: string | null;
-  /** The highest number the CLOUD has issued in this series. 0 means none. */
-  highWaterMark: number;
-}
-
+export {
+  OFFLINE_VOUCHER_REFUSAL,
+  OfflineSaleRefused,
+  voucherOnOfflineCart,
+  type OfflineSaleAnswer,
+  type OfflineSaleRequest,
+  type OfflineTenderRequest,
+  type ReceiptMark,
+  type SaleQueue,
+} from './sale-queue';
 /** Kept small: it is read by `collect_logs` and it lives in a Pi's memory. */
 const LOG_RING = 500;
 
@@ -901,6 +912,13 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   let sessions: StationSessionManager | null = null;
   let scanner: ScanRouter | null = null;
   let booth: Booth | null = null;
+  /** The gate host, built only for a bundle with a gate station (S2-12). */
+  let gateHost: GateHost | null = null;
+  /** Whether `prepare` has run since the last `stop`: the gate follows config only then. */
+  let gateArmed = false;
+  let bridge: StationBridge | null = null;
+  let photoStore: BlobStore | null = null;
+  let photoUploader: PhotoUploader | null = null;
   /**
    * The `staff` cache scope, as the booth's sign-in reads it.
    *
@@ -1282,8 +1300,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     const boxId = state.boxId;
     const at = new Date(clock()).toISOString();
     await store.atomically(async (tx) => {
-      const persisted = await tx.readState(boxId);
-      if (persisted.journalEpoch !== epoch) await tx.setEpoch(boxId, epoch, at);
+      // A compare-and-set, not a read and then a reset (SCRUM-486): a
+      // heartbeat adopting this same epoch on its own timer may already have
+      // moved the store and sealed a fact at (epoch, 1); resetting the
+      // sequence again would put it back under that fact.
+      await tx.advanceEpoch(boxId, epoch, 'different', at);
       await keepJournalEpochNote(tx, boxId, { state: 'taken', epoch, from: 'reset_store', at });
     });
     if (state.journalAwaitingEpoch) {
@@ -1295,6 +1316,84 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     state.journalAwaitingEpoch = false;
     journalRefusals = 0;
     journalRefusalNotedAt = null;
+  }
+
+  /**
+   * SCRUM-486 — THE PLATFORM'S CURRENT EPOCH, WHEREVER THE BOX LEARNS IT.
+   *
+   * The platform mints a new epoch in the transaction that accepts a
+   * `reset_store` result, and the answer that carries it can be lost. Every
+   * other answer names the platform's current epoch too — the heartbeat, the
+   * config pull, an ordinary command's acknowledgement, a push — and a box
+   * that took it only into memory went on SEALING on the old one: a quiet box
+   * pushes nothing, so the next offline sale it took came back
+   * `epoch_regressed`, set aside out of the ledger and out of the stock level.
+   *
+   * So whichever answer brings it, an epoch NEWER than the store's is adopted
+   * into the STORE (the sequence back at 1 with it, as `advanceEpoch` does
+   * when it moves), durably, before the next fact can be sealed; and every comparison
+   * is against the store's epoch, never against what memory last heard.
+   *
+   * Two things it never does. It never adopts an OLDER epoch than the store
+   * holds — a platform answering from a restored database or a stale replica
+   * would otherwise restart the sequence on addresses the cloud may already
+   * hold, and a re-sent fact landing on one is counted a duplicate and lost.
+   * And it never releases a store that WAITS for a minted epoch (NO NEW FACT
+   * BEFORE A FRESH EPOCH, above `JOURNAL_EPOCH_KEY`): the epoch such a store
+   * hears on a heartbeat is the one its predecessor sealed under, and only a
+   * `reset_store` answer (`takeMintedEpoch`) names a fresh one.
+   *
+   * Leaves `state.epoch` saying what the box stamps with — the store's epoch.
+   * Answers whether it adopted.
+   */
+  async function adoptPlatformEpoch(
+    epoch: unknown,
+    from: 'heartbeat' | 'config' | 'command_ack' | 'push',
+  ): Promise<boolean> {
+    if (typeof epoch !== 'number' || !Number.isInteger(epoch) || epoch < 1) return false;
+    if (!store || !state.boxId || !outbox) {
+      // No journal attached to seal anything under — no store, or one not
+      // attached yet (`attachStore` makes the outbox after the row, and reads
+      // the row's epoch back into memory itself). Memory is all there is.
+      state.epoch = epoch;
+      return false;
+    }
+    const boxId = state.boxId;
+    if (state.journalAwaitingEpoch) {
+      state.epoch = (await store.readState(boxId)).journalEpoch;
+      return false;
+    }
+    const at = new Date(clock()).toISOString();
+    const outcome = await store.atomically(async (tx) => {
+      const persisted = await tx.readState(boxId);
+      if (epoch <= persisted.journalEpoch) {
+        return { adopted: false, held: persisted.journalEpoch, was: persisted.journalEpoch };
+      }
+      // The read above takes no lock (on the platform's Postgres edge store a
+      // plain SELECT never does), and the heartbeat, the push answer and a
+      // command ack adopt on separate timers. So the move is a compare-and-set:
+      // an adoption that read the old epoch while another committed the new
+      // one — and a fact was sealed at (epoch, 1) between them — moves
+      // nothing, rather than putting the sequence back under that fact and
+      // wedging every later fact on the journal's unique address.
+      const moved = await tx.advanceEpoch(boxId, epoch, 'newer', at);
+      return { adopted: moved.moved, held: moved.state.journalEpoch, was: persisted.journalEpoch };
+    });
+    state.epoch = outcome.held;
+    if (outcome.adopted) {
+      note('warn', 'the platform is on a newer journal epoch than this store; adopted it', {
+        from,
+        storeEpoch: outcome.was,
+        platformEpoch: epoch,
+      });
+    } else if (epoch < outcome.held) {
+      note('error', 'the platform named an OLDER journal epoch than this store holds; not adopted', {
+        from,
+        storeEpoch: outcome.held,
+        platformEpoch: epoch,
+      });
+    }
+    return outcome.adopted;
   }
 
   /** The wait, on the heartbeat, as a fingerprint and a count like every other fault. */
@@ -1582,6 +1681,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       log: (level, msg, detail) => note(level, msg, detail),
       openSerial: options.terminal?.openSerial,
       voidPassword: options.terminal?.voidPassword ?? null,
+      ...(options.terminal?.timeouts ? { timeouts: options.terminal.timeouts } : {}),
     });
   }
 
@@ -1611,6 +1711,39 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       });
     }
     cachedTemplates = out;
+  }
+
+  /**
+   * The band key this box checks band codes against (S2-11), or null when it
+   * has none yet: the host's own when it passes one, else the config bundle's.
+   * A function, asked per scan, so a key that arrives with a config pull is in
+   * use from the next scan and a box restored from its cached bundle has it
+   * before the cloud has answered anything.
+   */
+  function bandKeyNow(): string | Uint8Array | null {
+    const own = options.bands?.key?.() ?? null;
+    if (own) return own;
+    return bundle?.bandKey || null;
+  }
+
+  /**
+   * One of a sale's printouts, as the platform built it for this job id
+   * (S2-11). Asked once, when the command runs; from then on the job is the
+   * queue's, which holds it — on disk where the queue is durable — until paper
+   * comes out, so a printer out of paper costs no second fetch.
+   */
+  async function fetchPlatformDocument(jobId: string): Promise<PlatformPrintDocument> {
+    let answer: { status: number; body: unknown };
+    try {
+      answer = await request<unknown>(printDocumentPath(jobId), { method: 'GET' });
+    } catch (err) {
+      throw new PrinterError(
+        'DOCUMENT_UNAVAILABLE',
+        `The platform could not be reached for this print job's content: ${err instanceof Error ? err.message : String(err)}`,
+        { cause: err },
+      );
+    }
+    return readPlatformPrintDocument(answer.status, answer.body);
   }
 
   /**
@@ -1646,6 +1779,13 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       await booth.reportPrint(outcome);
       return;
     }
+    /**
+     * A sale's printout the BOX raised, for a sale it took with no internet
+     * (offline plan §2.5): the cloud has no row for it, so its outcome goes
+     * into that sale's log on this box and never up the print-result route.
+     */
+    const sales = saleQueue();
+    if (sales && (await sales.notePrintOutcome(outcome).catch(() => false))) return;
     if (!credential || state.offline) return;
     const { status } = await request(`/box/v1/print-jobs/${outcome.id}/result`, {
       method: 'POST',
@@ -1863,9 +2003,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       intervalMs: options.syncIntervalMs ?? 5_000,
       now: () => new Date(clock()),
       log,
-      onEpoch: (epoch) => {
-        state.epoch = epoch;
-      },
+      // A push answer's epoch goes through the same adoption as every other
+      // answer's (SCRUM-486): into the store when newer, never backwards, and
+      // never past a journal that waits for a minted epoch.
+      adoptEpoch: (epoch) => adoptPlatformEpoch(epoch, 'push'),
     });
 
     sessions = new StationSessionManager({
@@ -1894,6 +2035,91 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       publish: (stationId, message) => sessions?.emitScan(stationId, message),
       now: () => new Date(clock()),
       log,
+      /**
+       * S2-11 — a band's signature is checked here, on the box, with no
+       * network: against the host's key when it holds one, else the one the
+       * config bundle brought. Read per scan (`bandKeyNow`).
+       */
+      bandKey: bandKeyNow,
+    });
+
+    /**
+     * The station bridge (offline plan Round 3). Every answer it gives is read
+     * from what this box holds — its sessions, its cache, its outbox — so it
+     * works exactly as well with the link down as up, which is the point.
+     */
+    const verifyPassword =
+      options.bridge?.verifyPassword ?? options.booth?.verifySecret ?? (async () => false);
+    /**
+     * S2-13 round 4 — the photo store, one per box, registered so a bridge in
+     * the same process (the api's mount for a virtual box) keeps a captured
+     * photo where this box's upload worker reads it.
+     */
+    if (!photoStore) {
+      photoStore = options.photos?.memory
+        ? memoryBlobStore({ limits: options.photos.limits })
+        : fsBlobStore(options.photos?.dir ?? joinPath(tmpdir(), 'oto-box-photos', boxId), {
+            limits: options.photos?.limits,
+          });
+    }
+    registerBoxBlobs(boxId, photoStore);
+    bridge = new StationBridge(
+      {
+        boxId,
+        store,
+        sessions,
+        station: (stationId) => {
+          const station = bundle?.stations.find((s) => s.id === stationId);
+          const branch = bundle?.branch;
+          const operatorId = branch?.operatorId ?? state.operatorId;
+          if (!station || !branch || !operatorId) return null;
+          return { id: station.id, name: station.name, kind: station.kind, branchId: branch.id, operatorId };
+        },
+        branch: () => {
+          const branch = bundle?.branch;
+          const operatorId = branch?.operatorId ?? state.operatorId;
+          if (!branch || !operatorId) return null;
+          return {
+            id: branch.id,
+            operatorId,
+            timezone: branch.timezone,
+            businessDayStart: branch.businessDayStart,
+          };
+        },
+        signingKeys: () => bundle?.signingKeys ?? [],
+        link: () => ({ up: state.linkUp, offline: state.offline }),
+        sealer: () => {
+          const key = syncPrivateKeyPem;
+          return key ? (draft) => sealEnvelope(draft, boxId, key) : null;
+        },
+        verifyPassword,
+        now: () => new Date(clock()),
+        log,
+        // Round 4: a till on the box lane sells through this box's own queue
+        // and drives this box's own terminals.
+        sales: () => saleQueue(),
+        terminals: () => terminals,
+        /**
+         * SCRUM-477 — the park key, so a booking QR typed into the redeem
+         * field at a till on the box lane is verified here, as a QR read at
+         * the box's own scanner is. Without it the bridge refused every typed
+         * QR with `BOOKING_QR_UNCHECKED`, which the staging drive met live.
+         */
+        bandKey: bandKeyNow,
+        blobs: () => photoStore,
+        photosEnabled: () => options.photos?.enabled ?? childPhotosEnabled(process.env.CHILD_PHOTOS_ENABLED),
+      },
+      options.bridge?.options,
+    );
+    photoUploader = createPhotoUploader({
+      blobs: () => photoStore,
+      request: (path, init) => request(path, init),
+      put: options.photos?.put ?? fetchPut,
+      target: async (photoId) => (await bridge?.photoTarget(photoId)) ?? null,
+      isOnline: () => !!credential && !state.offline && state.linkUp,
+      now: () => new Date(clock()),
+      note: (level, msg, detail) => note(level, msg, detail),
+      ...(options.photos?.crashPoint ? { crashPoint: options.photos.crashPoint } : {}),
     });
 
     /**
@@ -2224,6 +2450,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      * through to `unknown` below.
      */
     const printerHealth = printing?.jobs.health() ?? {};
+    // The gate's controller and readers, as the gate host last saw them (S2-12).
+    const gateHealth = gateHost?.deviceHealth() ?? {};
     for (const device of devices) {
       // One device can serve two roles on one station; it is still one device.
       if (seen.has(device.id)) continue;
@@ -2236,14 +2464,15 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
        */
       const fault = options.faults?.[device.id] ?? options.faults?.[device.label];
       const health = printerHealth[device.id];
+      const gate = gateHealth[device.id];
       reports.push({
         id: device.id,
         address: device.address ?? undefined,
         kind: device.kind,
         model: device.model ?? undefined,
-        reachability: fault?.reachability ?? health?.reachability ?? 'unknown',
+        reachability: fault?.reachability ?? health?.reachability ?? gate?.reachability ?? 'unknown',
         paperStatus: fault?.paperStatus ?? health?.paperStatus ?? 'unknown',
-        lastError: fault?.lastError ?? health?.lastError ?? undefined,
+        lastError: fault?.lastError ?? health?.lastError ?? gate?.lastError ?? undefined,
       });
     }
     return reports;
@@ -2298,7 +2527,8 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       });
     }
     state.configVersion = body.configVersion;
-    state.epoch = body.box.epoch;
+    // The bundle names the platform's current epoch as well (SCRUM-486).
+    await adoptPlatformEpoch(body.box.epoch, 'config');
     heartbeatIntervalMs = options.heartbeatIntervalMs ?? body.heartbeatIntervalS * 1000;
     if (changed) {
       note('info', 'config applied', {
@@ -2312,6 +2542,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         agentVersion: BOX_AGENT_VERSION,
         minSupportedAgentVersion: body.minSupportedAgentVersion,
       });
+    }
+    if (changed) {
+      await syncGate().catch((err) => note('error', 'the gate host could not follow the config', { err: String(err) }));
     }
     return changed;
   }
@@ -2374,7 +2607,188 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      * own store is the evidence (`box-cache-survives.test.ts`).
      */
     await pullReceiptSeries(boxId);
+    // S2-13 round 4: the check-in copy moves with every check-in, so like the
+    // receipt mark it is read on its own every tick; then the photos taken
+    // offline go up, now that their rows may have reached the platform.
+    await pullCheckinScope(boxId).catch((err: unknown) => {
+      note('warn', 'the check-in copy could not be refreshed', { err: String(err) });
+    });
+    // S2-14a round 4: the wallet balance snapshots move with every grant and
+    // spend, so they are read on their own every tick as the board is.
+    await pullWalletScope(boxId).catch((err: unknown) => {
+      note('warn', 'the wallet balance copy could not be refreshed', { err: String(err) });
+    });
+    // S2-14b round 3: the stock levels move with every sale anywhere in the
+    // branch, so they are read on their own every tick as the balances are.
+    await pullStockScope(boxId).catch((err: unknown) => {
+      note('warn', 'the stock count copy could not be refreshed', { err: String(err) });
+    });
+    await photoUploader?.tick().catch((err: unknown) => {
+      note('warn', 'the photo upload pass failed', { err: String(err) });
+    });
     return applied;
+  }
+
+  /**
+   * The `checkin` scope, read on its own (S2-13 round 4). Volatile, as
+   * `bands` is — every check-in moves it — so the bundle's version does not
+   * stand for it. Written whole and never moves `cacheCursorSeq`. After it
+   * lands, rows this counter recorded offline that the platform has since
+   * taken are let go (`pruneCheckinOverlay`).
+   */
+  async function pullCheckinScope(boxId: string): Promise<boolean> {
+    if (!store || !credential || state.offline) return false;
+    // Only a counter checks children in: a booth or a gate box is not asked to
+    // hold the board, and is spared the request.
+    if (!bundle?.stations.some((s) => s.kind === 'till')) return false;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=checkin`, { method: 'GET' });
+    if (status === 401) {
+      await reregisterAfterRefusal('cache');
+      return false;
+    }
+    if (status !== 200 || !body) return false;
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const held = plan.apply.includes('checkin') ? body.scopes.checkin : undefined;
+    if (!held) return false;
+    // The same board as last time (its own version, which leaves out when it
+    // was generated): nothing is rewritten, as a 304 rewrites nothing.
+    const versionOf = (items: unknown): string | null => {
+      const first = Array.isArray(items) ? (items[0] as { version?: unknown } | undefined) : undefined;
+      return typeof first?.version === 'string' ? first.version : null;
+    };
+    const before = await store.readBundle(boxId, 'checkin').catch(() => null);
+    const incoming = versionOf(held.items);
+    if (before && incoming && versionOf((before.payload as { items?: unknown }).items) === incoming) return false;
+    await store.writeBundle(boxId, {
+      scope: 'checkin',
+      schemaVersion: body.schemaVersion,
+      cursorSeq: cacheCursorSeq,
+      payload: { items: held.items },
+      appliedAt: new Date(clock()).toISOString(),
+    });
+    cacheScopesHeld.add('checkin');
+    await bridge?.pruneCheckinOverlay().catch((err: unknown) => {
+      note('warn', 'the check-in overlay could not be pruned after a pull', { err: String(err) });
+    });
+    return true;
+  }
+
+  /**
+   * The `wallets` scope, read on its own (S2-14a round 4, plan §2.6): the
+   * branch's spendable wallets as balance SNAPSHOTS with the offline cap.
+   * Volatile, as `checkin` is — every grant and spend moves it — and written
+   * when it moved, or when the copy held is older than
+   * `WALLET_SNAPSHOT_REWRITE_AFTER_MS` even though it did not: the copy's
+   * `appliedAt` is what a counter judges a snapshot's age by
+   * (`WALLET_SNAPSHOT_REFUSE_AFTER_S`). Bounded by the platform
+   * (`WALLET_SNAPSHOT_LIMIT`).
+   */
+  async function pullWalletScope(boxId: string): Promise<boolean> {
+    if (!store || !credential || state.offline) return false;
+    // Only a counter spends credit: a booth or a gate box is not sent balances.
+    if (!bundle?.stations.some((s) => s.kind === 'till')) return false;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=wallets`, { method: 'GET' });
+    if (status === 401) {
+      await reregisterAfterRefusal('cache');
+      return false;
+    }
+    if (status !== 200 || !body) return false;
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const held = plan.apply.includes('wallets') ? body.scopes.wallets : undefined;
+    if (!held) return false;
+    const versionOf = (items: unknown): string | null => {
+      const first = Array.isArray(items) ? (items[0] as { version?: unknown } | undefined) : undefined;
+      return typeof first?.version === 'string' ? first.version : null;
+    };
+    const now = clock();
+    const before = await store.readBundle(boxId, 'wallets').catch(() => null);
+    const incoming = versionOf(held.items);
+    // The same balances as the copy held, confirmed recently enough: nothing
+    // is rewritten (a Pi's card is spared a write a minute). Past the refresh
+    // age the same copy is written again, so its `appliedAt` — what a counter
+    // judges the snapshot's age by — never trails the platform by more than
+    // that.
+    if (
+      before &&
+      incoming &&
+      versionOf((before.payload as { items?: unknown }).items) === incoming &&
+      now - Date.parse(before.appliedAt) < WALLET_SNAPSHOT_REWRITE_AFTER_MS
+    ) {
+      return false;
+    }
+    await store.writeBundle(boxId, {
+      scope: 'wallets',
+      schemaVersion: body.schemaVersion,
+      cursorSeq: cacheCursorSeq,
+      payload: { items: held.items },
+      appliedAt: new Date(now).toISOString(),
+    });
+    cacheScopesHeld.add('wallets');
+    return true;
+  }
+
+  /**
+   * The `stock` scope, read on its own (S2-14b round 3, plan §2.4): the
+   * branch's level SNAPSHOT per stocked size and place, with what this box's
+   * own offline sales the platform has already filed. Volatile — every sale
+   * moves it — so it rides neither the catalogue nor the bundle's version.
+   * Written when it moved, or when the copy held is older than
+   * `STOCK_SNAPSHOT_REWRITE_AFTER_MS` even though it did not: the copy's
+   * `appliedAt` is what a counter judges the snapshot's age by
+   * (`STOCK_SNAPSHOT_REFUSE_AFTER_S`).
+   */
+  async function pullStockScope(boxId: string): Promise<boolean> {
+    if (!store || !credential || state.offline) return false;
+    // Only a counter sells counted stock: a booth or a gate box is not sent levels.
+    if (!bundle?.stations.some((s) => s.kind === 'till')) return false;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=stock`, { method: 'GET' });
+    if (status === 401) {
+      await reregisterAfterRefusal('cache');
+      return false;
+    }
+    if (status !== 200 || !body) return false;
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const held = plan.apply.includes('stock') ? body.scopes.stock : undefined;
+    if (!held) return false;
+    const versionOf = (items: unknown): string | null => {
+      const first = Array.isArray(items) ? (items[0] as { version?: unknown } | undefined) : undefined;
+      return typeof first?.version === 'string' ? first.version : null;
+    };
+    const now = clock();
+    const before = await store.readBundle(boxId, 'stock').catch(() => null);
+    const incoming = versionOf(held.items);
+    if (
+      before &&
+      incoming &&
+      versionOf((before.payload as { items?: unknown }).items) === incoming &&
+      now - Date.parse(before.appliedAt) < STOCK_SNAPSHOT_REWRITE_AFTER_MS
+    ) {
+      return false;
+    }
+    await store.writeBundle(boxId, {
+      scope: 'stock',
+      schemaVersion: body.schemaVersion,
+      cursorSeq: cacheCursorSeq,
+      payload: { items: held.items },
+      appliedAt: new Date(now).toISOString(),
+    });
+    cacheScopesHeld.add('stock');
+    return true;
   }
 
   /**
@@ -2430,6 +2844,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       recordCacheFault('unreadable', `status ${status}`);
       return [];
     }
+    await completeTruncatedScopes(body);
     const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
     const applied: string[] = [];
     const appliedAt = new Date(clock()).toISOString();
@@ -2498,6 +2913,16 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
      */
     if (applied.includes('staff')) await refreshBoothStaff(boxId);
     /**
+     * The overlay's end (offline plan §2.3): a record this counter wrote
+     * offline, whose fact the platform has since accepted, is now in the
+     * members copy that just landed — the cache speaks for it again.
+     */
+    if (applied.includes('members')) {
+      await bridge?.pruneOverlay().catch((err: unknown) => {
+        note('warn', 'the offline overlay could not be pruned after a pull', { err: String(err) });
+      });
+    }
+    /**
      * A staff pull reaches the booth too (SCRUM-223): its `refresh` is where a
      * session whose holder has since been deactivated is ended, and that
      * check reads the staff list refreshed on the line above.
@@ -2523,6 +2948,52 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       cursorSeq: body.cursorSeq,
     });
     return applied;
+  }
+
+  /**
+   * The rest of a scope the cloud cut off at its page limit (offline plan §2.3).
+   *
+   * A truncated scope is never applied — half a member list is a counter that
+   * cannot find the families who fell off the end of it — and before this a
+   * park with more members than one page held NO members offline at all. So a
+   * scope cut short that carries a cursor is read on to its end, page by page,
+   * with `?scopes=<scope>&cursor=`, and only a scope read whole leaves the
+   * truncated list. A page that fails leaves it there, and the scope is
+   * skipped as before: the last complete copy stands.
+   */
+  async function completeTruncatedScopes(body: {
+    schemaVersion: number;
+    scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+    truncated: string[];
+  }): Promise<void> {
+    const MAX_PAGES = 200;
+    for (const scope of [...(body.truncated ?? [])]) {
+      const held = body.scopes?.[scope];
+      if (!held?.nextCursor) continue;
+      const items = [...held.items];
+      let cursor: string | null = held.nextCursor;
+      let complete = false;
+      for (let page = 0; page < MAX_PAGES && cursor; page += 1) {
+        type Page = {
+          scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+          truncated: string[];
+        };
+        const next: { status: number; body: Page | null } | null = await request<Page>(
+          `/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=${encodeURIComponent(scope)}&cursor=${encodeURIComponent(cursor)}`,
+          { method: 'GET' },
+        ).catch(() => null);
+        const part: { items: unknown[]; nextCursor: string | null } | undefined =
+          next?.status === 200 ? next.body?.scopes?.[scope] : undefined;
+        if (!part) break;
+        items.push(...part.items);
+        const cut: boolean = next?.body?.truncated?.includes(scope) ?? false;
+        cursor = cut ? part.nextCursor : null;
+        if (!cut) complete = true;
+      }
+      if (!complete) continue;
+      body.scopes[scope] = { items, nextCursor: null };
+      body.truncated = body.truncated.filter((name) => name !== scope);
+    }
   }
 
   /**
@@ -2587,205 +3058,136 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
   }
 
-  // --- Sales taken with no internet (S2-10a, Slice G) -----------------------
+  // --- The gate box (S2-12 round 2) -------------------------------------------
 
   /**
-   * The local half of the receipt numbering, and why it is a counter rather
-   * than a stored "next number".
+   * The day's bands, read on their own (S2-12 round 2).
    *
-   * `edge.box_counter` moves in ONE statement (`store-sql.ts:1160`), so two
-   * tills finishing in the same second cannot both read 41 and both write 42 —
-   * which is the whole of the problem, and is exactly why the terminal
-   * reference counter next door uses the same row.
-   *
-   * THE KEY CARRIES THE MARK. The counter says how many numbers this box has
-   * minted SINCE the cloud last told it where the series stands, so a mark that
-   * has moved starts a fresh run rather than colliding with the numbers the
-   * cloud issued in between. Without the mark in the key, a box that sold five
-   * offline, reconnected, and went offline again would mint those same five
-   * numbers a second time.
-   *
-   * THE DATE IN THE KEY IS PINNED, which is the one unusual thing here: the
-   * other users of this table are daily caps and want the reset that the
-   * primary key's `business_date` gives them. A receipt series is continuous
-   * and does not reset at 5am — a box that was offline across midnight would
-   * otherwise re-issue the numbers it had already shown guests the evening
-   * before.
+   * `bands` is volatile — every ticket sale moves it — so the bundle's version
+   * does not stand for it, and a 304 says nothing about it. Only a gate needs
+   * it current, so only the gate host asks: on its own timer and before it
+   * sends an unknown band to reception (OD-A5). Paged to the end, written
+   * whole, and never moves `cacheCursorSeq`, for `pullReceiptSeries`'s reason.
    */
-  const RECEIPT_SEQ_SCOPE = 'receipt_seq';
-  const RECEIPT_SERIES_DAY = '1970-01-01';
-  /**
-   * `pos.receipt_series.seq_padding`'s default, which the cache bundle does not
-   * carry. A series configured wider would make the box's PRINTED string differ
-   * from the cloud's while the number itself is the same; the ledger's is
-   * authoritative either way, and the audit row names both.
-   */
-  const RECEIPT_SEQ_PADDING = 6;
-
-  /** The `receipt_series` scope of the cache, as this box last wrote it. */
-  async function receiptMarks(boxId: string): Promise<ReceiptMark[]> {
-    const held = await store?.readBundle(boxId, RECEIPT_SERIES).catch(() => null);
-    const items = (held?.payload as { items?: unknown[] } | undefined)?.items ?? [];
-    const out: ReceiptMark[] = [];
-    for (const raw of items) {
-      const item = raw as Partial<ReceiptMark>;
-      if (typeof item?.stationId !== 'string') continue;
-      out.push({
-        stationId: item.stationId,
-        prefix: typeof item.prefix === 'string' ? item.prefix : null,
-        highWaterMark: typeof item.highWaterMark === 'number' ? item.highWaterMark : 0,
-      });
-    }
-    return out;
+  async function pullBandsScope(boxId: string): Promise<boolean> {
+    if (!store || !credential || state.offline) return false;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=bands`, { method: 'GET' });
+    if (status !== 200 || !body) return false;
+    await completeTruncatedScopes(body);
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const held = plan.apply.includes('bands') ? body.scopes.bands : undefined;
+    if (!held) return false;
+    await store.writeBundle(boxId, {
+      scope: 'bands',
+      schemaVersion: body.schemaVersion,
+      cursorSeq: cacheCursorSeq,
+      payload: { items: held.items },
+      appliedAt: new Date(clock()).toISOString(),
+    });
+    cacheScopesHeld.add('bands');
+    return true;
   }
 
   /**
-   * The number this sale is shown under at the counter.
-   *
-   * REFUSES rather than guesses, in both of the ways it can fail. A box that
-   * has never been told where the series stands would start at 1 and collide
-   * with numbers the cloud has already issued — and offline that collision is
-   * discovered after the money is in the drawer, with the sale quarantined
-   * (`receipt-hwm.test.ts` says exactly this). A station with no code prefix
-   * cannot number a receipt at all, which the cloud refuses at the same point
-   * on the online path (`sale.ts`, "this station has no code prefix"). Both
-   * are configuration somebody can fix in a minute; taking the money first is
-   * what cannot be fixed.
+   * Build, rebuild or drop the gate host to match the bundle. A no-op on a box
+   * whose bundle names no gate station — which is every till and booth box —
+   * and on one whose gate configuration has not changed.
    */
-  async function mintReceipt(boxId: string, stationId: string): Promise<OfflineReceiptFact> {
-    if (!store) throw new Error('This box has no store, so it cannot number a sale offline');
-    const marks = await receiptMarks(boxId);
-    const mark = marks.find((m) => m.stationId === stationId);
-    if (!mark) {
-      throw new Error(
-        'This box has not been told where this station’s receipt numbering stands, so it cannot number a sale offline',
-      );
-    }
-    if (!mark.prefix) {
-      throw new Error('This station has no code prefix, so it cannot number a receipt');
-    }
-    const since = await store.bumpCounter(
-      boxId,
-      {
-        scope: RECEIPT_SEQ_SCOPE,
-        key: `${stationId}:${mark.prefix}:${mark.highWaterMark}`,
-        businessDate: RECEIPT_SERIES_DAY,
-      },
-      1,
-      new Date(clock()).toISOString(),
-    );
-    const seq = mark.highWaterMark + since;
-    return {
-      series: mark.prefix,
-      seq,
-      number: `${mark.prefix}-${String(seq).padStart(RECEIPT_SEQ_PADDING, '0')}`,
-    };
-  }
-
-  /** Cash opens the drawer; a card leaves it shut. */
-  function tookCash(tenders: readonly OfflineTenderFact[]): boolean {
-    return tenders.some((t) => t.kind === 'cash' || t.methodCode === 'cash');
-  }
-
-  /**
-   * Open the drawer, and never let it fail a sale.
-   *
-   * The money is already in the till and the fact is already on disk by the
-   * time this runs. A printer that has been unplugged is a drawer somebody
-   * opens with the key, not a sale to roll back.
-   */
-  async function openDrawerFor(stationId: string, actionId: string | null): Promise<'opened' | 'failed'> {
-    if (!printing) return 'failed';
-    try {
-      const outcome = await printing.pulseDrawer({ stationId, actionId });
-      if (!outcome.opened) {
-        note('warn', 'the cash drawer did not open for an offline sale', {
-          stationId,
-          errorCode: outcome.errorCode,
-        });
+  async function syncGate(): Promise<void> {
+    if (!gateArmed || options.gate?.enabled === false) return;
+    const stations = gateStationsOf(bundle?.stations);
+    const boxId = state.boxId;
+    const wanted = stations.length > 0 && store && outbox && boxId;
+    if (!wanted) {
+      if (gateHost) {
+        await gateHost.stop().catch(() => undefined);
+        gateHost = null;
+        note('info', 'gate host stopped: this box runs no gate station now');
       }
-      return outcome.opened ? 'opened' : 'failed';
-    } catch (err) {
-      note('error', 'the cash drawer could not be opened', { stationId, err: String(err) });
-      return 'failed';
+      return;
     }
+    if (gateHost && gateHost.signature === gateSignature(stations)) return;
+    if (gateHost) await gateHost.stop().catch(() => undefined);
+    const heldStore = store!;
+    const heldOutbox = outbox!;
+    const onPi = Boolean(options.configCache);
+    gateHost = createGateHost({
+      boxId: boxId!,
+      stations,
+      now: clock,
+      bandKey: bandKeyNow,
+      readCopy: async () => {
+        const [bands, deny] = await Promise.all([
+          heldStore.readBundle(boxId!, 'bands').catch(() => null),
+          heldStore.readBundle(boxId!, 'deny_list').catch(() => null),
+        ]);
+        const items = (b: CachedBundle | null): unknown[] => {
+          const list = (b?.payload as { items?: unknown } | undefined)?.items;
+          return Array.isArray(list) ? list : [];
+        };
+        return { bands: items(bands), deny: items(deny) };
+      },
+      isOnline: () => !state.offline && state.linkUp,
+      refreshBands: () => pullBandsScope(boxId!),
+      journal: (fact) => heldOutbox.queue(fact),
+      state: {
+        read: (key) => heldStore.readRuntimeValue(boxId!, key),
+        write: (key, value) => heldStore.writeRuntimeValue(boxId!, key, value),
+      },
+      mintId: () => uuidv7(clock()),
+      openSerial: options.gate?.openSerial ?? options.terminal?.openSerial ?? null,
+      relayDriver:
+        options.gate?.relayDriver !== undefined ? options.gate.relayDriver : onPi ? gpiosetRelayDriver() : null,
+      listen:
+        options.gate?.listen !== undefined
+          ? options.gate.listen
+          : onPi
+            ? { port: GATE_READER_DEFAULT_PORT }
+            : null,
+      note: (level, message, detail) => note(level, message, detail),
+    });
+    await gateHost.start().catch((err) => {
+      note('error', 'the gate host could not start', { err: String(err) });
+    });
+    note('info', 'gate host running', { stations: stations.map((s) => s.id) });
   }
 
+  // --- Sales taken with no internet (S2-10a; offline plan Round 4) -----------
+
+  /**
+   * The box's sale queue (`sale-queue.ts`): one per registered box, over this
+   * box's store, outbox, key, printers and band key. Null on a box with no
+   * store — a queue in memory is a day's takings lost to a power cut.
+   */
+  let salesQueue: { boxId: string; queue: SaleQueue } | null = null;
   function saleQueue(): SaleQueue | null {
     const queue = outbox;
     const boxId = state.boxId;
     if (!store || !queue || !boxId) return null;
-    return {
-      async record(request) {
-        /**
-         * S2-10b — A VOUCHER NEVER RIDES AN OFFLINE SALE (`voucherOnOfflineCart`).
-         * Refused first: before a receipt number is minted, so the refused
-         * sale spends no number in the station's series, and before anything
-         * is queued or the drawer opens. The code itself is not logged.
-         */
-        if (voucherOnOfflineCart(request.cart)) {
-          note('warn', 'an offline sale carrying a voucher was refused', {
-            stationId: request.stationId,
-          });
-          throw new OfflineSaleRefused(OFFLINE_VOUCHER_REFUSAL, 'VOUCHER_NEEDS_INTERNET');
-        }
-        const saleId = request.saleId ?? uuidv7();
-        const receipt = await mintReceipt(boxId, request.stationId);
-        /**
-         * THE ORDER IS THE POINT: on disk, then the drawer.
-         *
-         * A drawer that opened for a sale the box then failed to record is
-         * money in a till with no row behind it — the one outcome this whole
-         * path exists to prevent. The other way round, the worst case is a
-         * recorded sale whose drawer has to be opened by hand.
-         */
-        const records = await queue.queueAll([
-          saleFinalisedFact({ ...request, saleId, receipt }),
-        ]);
-        const drawer =
-          (request.openDrawer ?? tookCash(request.tenders))
-            ? await openDrawerFor(request.stationId, request.actionId ?? null)
-            : ('not_asked' as const);
-        const depth = await queue.depth();
-        note('info', 'an offline sale is on the queue', {
-          saleId,
-          stationId: request.stationId,
-          boxSeq: records[0]?.envelope.boxSeq ?? null,
-          receiptNumber: receipt.number,
-          tenders: request.tenders.length,
-          drawer,
-        });
-        return {
-          saleId,
-          receipt,
-          boxSeq: records[0]?.envelope.boxSeq ?? 0,
-          queued: records.length,
-          drawer,
-          outboxDepth: depth.queued,
-        };
+    if (salesQueue?.boxId === boxId) return salesQueue.queue;
+    const created = createSaleQueue({
+      store,
+      boxId,
+      outbox: queue,
+      sealer: () => {
+        const key = syncPrivateKeyPem;
+        return key ? (draft) => sealEnvelope(draft, boxId, key) : null;
       },
-      async recordTender(request) {
-        const records = await queue.queueAll([paymentRecordedFact(request)]);
-        const drawer =
-          (request.openDrawer ?? tookCash([request.tender]))
-            ? await openDrawerFor(request.stationId, request.actionId ?? null)
-            : ('not_asked' as const);
-        const depth = await queue.depth();
-        return {
-          saleId: request.saleId,
-          receipt: null,
-          boxSeq: records[0]?.envelope.boxSeq ?? 0,
-          queued: records.length,
-          drawer,
-          outboxDepth: depth.queued,
-        };
-      },
-      async receiptMark(stationId) {
-        return (await receiptMarks(boxId)).find((m) => m.stationId === stationId) ?? null;
-      },
-    };
+      printing: () => printing,
+      durablePrinting: () => options.printing?.durable === true,
+      bandKey: bandKeyNow,
+      now: () => new Date(clock()),
+      note,
+      ...(options.sales?.crashPoint ? { crashPoint: options.sales.crashPoint } : {}),
+    });
+    salesQueue = { boxId, queue: created };
+    return created;
   }
-
   async function heartbeat(): Promise<BoxHeartbeatAck | null> {
     if (!credential || state.heartbeatsPaused) return null;
     // Read before the guard below, so the toggle coming back on is noticed on
@@ -2852,7 +3254,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
        * whose journal waits for a new epoch (SCRUM-403): somebody has to
        * press Reset the store for it, and this is how they learn so.
        */
-      errors: [...cacheFaultReports(), ...journalFaultReports()].slice(0, 32),
+      errors: [...cacheFaultReports(), ...journalFaultReports(), ...(gateHost?.errorReports() ?? [])].slice(0, 32),
     };
     /**
      * What this box is holding offline (SCRUM-323).
@@ -2976,7 +3378,10 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     }
     state.lastHeartbeatAt = payload.reportedAt;
     state.lastAckAt = ack.receivedAt;
-    state.epoch = ack.epoch;
+    // Into the STORE when it is newer, before anything below can seal a fact
+    // (SCRUM-486): a lost `reset_store` answer is otherwise never made good on
+    // a quiet box, whose empty outbox never pushes.
+    await adoptPlatformEpoch(ack.epoch, 'heartbeat');
     await adoptServerTime(ack.serverTime, sent, answered);
     if (ack.configVersion !== state.configVersion) {
       await syncConfig();
@@ -3129,14 +3534,17 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           // it is what a store waiting for a new epoch waits for (NO NEW FACT
           // BEFORE A FRESH EPOCH, above `JOURNAL_EPOCH_KEY`).
           await takeMintedEpoch(ack.epoch);
-        } else if (store && state.boxId && ack.epoch !== state.epoch) {
+          if (store && state.boxId) state.epoch = (await store.readState(state.boxId)).journalEpoch;
+          else state.epoch = ack.epoch;
+        } else {
           // Written to the store, not just to memory: the epoch and the
           // sequence generator are one thing, and a box that adopted a new
           // epoch in memory and then lost power would come back stamping the
-          // old one over sequences it had already used.
-          await store.setEpoch(state.boxId, ack.epoch, new Date(clock()).toISOString());
+          // old one over sequences it had already used. Compared against the
+          // STORE's epoch (SCRUM-486): the heartbeat used to set the in-memory
+          // one to the platform's, which made this check see nothing to do.
+          await adoptPlatformEpoch(ack.epoch, 'command_ack');
         }
-        state.epoch = ack.epoch;
       } else {
         note('warn', 'command result was not accepted', {
           status: resultStatus,
@@ -3185,7 +3593,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
             errorMessage: 'This agent was built without its print pipeline',
           };
         }
-        const kind = (typeof payload.kind === 'string' ? payload.kind : 'test_page') as PrintKind;
+        let kind = (typeof payload.kind === 'string' ? payload.kind : 'test_page') as PrintKind;
         const stationId = typeof payload.stationId === 'string' ? payload.stationId : null;
         const role = typeof payload.role === 'string' ? payload.role : null;
         /**
@@ -3196,15 +3604,105 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
          * cloud will not recognise, which is honest and harmless.
          */
         const jobId = typeof payload.printJobId === 'string' ? payload.printJobId : command.id;
+        /**
+         * A sale's printout (S2-11): the content is the platform's, fetched by
+         * job id now, and never carried on the command. Anything else is a
+         * test print of fixture content.
+         */
+        const fromPlatform = payload.document === PLATFORM_DOCUMENT && typeof payload.printJobId === 'string';
+        /**
+         * A LATE FIRST PRINT OF A SALE THIS BOX ALREADY PRINTED (offline plan
+         * §2.5). A sale begun online and finished on this box — the platform's
+         * answer lost on the way, the till switched lanes — has had its paper
+         * from this box's own queue. When the platform's finalise lands too,
+         * its print commands reach the box later, and printing them would put a
+         * second receipt and a second set of bands in the family's hands. So a
+         * first print of a sale in this box's log is refused, by name, on the
+         * job's row. A copy somebody asked for from History is printed.
+         */
+        const saleOfJob = typeof payload.saleId === 'string' ? payload.saleId : null;
+        const askedForCopy = payload.reprint === true || typeof payload.reprintOf === 'string';
+        if (fromPlatform && saleOfJob && !askedForCopy) {
+          const printedHere = await saleQueue()
+            ?.recorded(saleOfJob)
+            .catch(() => null);
+          if (printedHere) {
+            const errorMessage =
+              'This sale was already printed at the counter while it was offline, so this late print was refused — reprint it from History for another copy';
+            await reportPrintJob({
+              id: jobId,
+              status: 'skipped',
+              attempts: 0,
+              deviceId: null,
+              role,
+              stationId,
+              errorCode: 'PRINTED_ON_BOX',
+              errorMessage,
+              overflow: [],
+              elapsedMs: null,
+            }).catch((reportErr: unknown) =>
+              note('warn', 'a refused late print could not be reported', {
+                jobId,
+                err: String(reportErr),
+              }),
+            );
+            note('warn', 'a late platform print of a sale this box already printed was refused', {
+              jobId,
+              saleId: saleOfJob,
+            });
+            return {
+              state: 'succeeded',
+              result: { printJobId: jobId, status: 'skipped', kind, refused: 'PRINTED_ON_BOX' },
+              errorCode: 'PRINTED_ON_BOX',
+              errorMessage,
+            };
+          }
+        }
         let job;
+        let template: { templateId: string | null; templateVersion: number | null } = {
+          templateId: null,
+          templateVersion: null,
+        };
         try {
-          job = await testPrintJob(kind);
+          if (fromPlatform) {
+            const document = await fetchPlatformDocument(jobId);
+            job = document.job;
+            kind = document.kind;
+            template = { templateId: document.templateId, templateVersion: document.templateVersion };
+          } else {
+            job = await testPrintJob(kind);
+          }
         } catch (err) {
-          return {
-            state: 'failed',
-            errorCode: 'RENDER_FAILED',
-            errorMessage: err instanceof Error ? err.message : String(err),
-          };
+          const errorCode = err instanceof PrinterError ? err.code : 'RENDER_FAILED';
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          if (fromPlatform) {
+            /**
+             * Said on the JOB's row as well as the command's: a sale's job
+             * stays `queued` on the platform until the box reports it, and
+             * the till's printer indicator counts queued jobs. Nothing
+             * reached a printer, so it is `failed` rather than left waiting
+             * for a retry that has nothing to retry with — a person reprints
+             * from History, which mints a new job.
+             */
+            await reportPrintJob({
+              id: jobId,
+              status: 'failed',
+              attempts: 0,
+              deviceId: null,
+              role,
+              stationId,
+              errorCode,
+              errorMessage,
+              overflow: [],
+              elapsedMs: null,
+            }).catch((reportErr: unknown) =>
+              note('warn', 'a print job that could not be fetched could not be reported either', {
+                jobId,
+                err: String(reportErr),
+              }),
+            );
+          }
+          return { state: 'failed', errorCode, errorMessage };
         }
         const outcome = await printing.submit({
           id: jobId,
@@ -3214,6 +3712,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
           role,
           actionId: command.actionId,
           copies: typeof payload.copies === 'number' ? payload.copies : 1,
+          ...template,
         });
         /**
          * The COMMAND succeeded whenever the box understood it and routed it.
@@ -3460,9 +3959,20 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
               codeKind: outcome.kind,
               outcome: outcome.outcome,
               handler: outcome.handler,
+              // Short and non-leaking, as on the tape: why a code was refused —
+              // a band whose signature does not check out, say (S2-11).
+              errorCode: outcome.errorCode,
               // The fingerprint, never the code: this result is stored on the
               // command row and rendered in the Console's history.
               codeFingerprint: outcome.codeFingerprint,
+              // A band's identity, which the Console's scanner panel shows as
+              // the band the code decoded to. Only ever the band handler's
+              // summary — its id and short code, which open nothing — and
+              // never another handler's `detail`, which can carry a voucher
+              // code or name a member.
+              ...(outcome.handler === BAND_CODE_HANDLER && outcome.detail?.band
+                ? { band: outcome.detail.band }
+                : {}),
               handlers: scanner.registered(),
             },
           };
@@ -3693,6 +4203,9 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
         note('error', 'the booth could not start', { err: String(err) });
       });
     }
+    // A gate, like a booth, runs from the config this box holds (S2-12).
+    gateArmed = true;
+    await syncGate().catch((err) => note('error', 'the gate host could not be set up', { err: String(err) }));
     return true;
   }
 
@@ -3805,6 +4318,12 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     // A `restart` command is `stop` then `start`: the booth's own timer went
     // with it, so the next `prepare` starts the booth again.
     boothStarted = false;
+    // The gate likewise: its port and serial line are let go, and the next
+    // `prepare` builds it again from the config.
+    gateArmed = false;
+    const stopping = gateHost;
+    gateHost = null;
+    void stopping?.stop().catch(() => undefined);
   }
 
   return {
@@ -3826,7 +4345,20 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     printing: () => printing,
     terminal: () => terminals,
     booth: () => booth,
+    gate: () => gateHost,
     sales: saleQueue,
+    bridge: () => bridge,
+    photoStore: () => photoStore,
+    uploadPhotos: async () =>
+      photoUploader ? photoUploader.tick() : { linked: 0, waiting: 0, failed: 0, purged: 0 },
+    syncCheckin: async () => (state.boxId ? pullCheckinScope(state.boxId) : false),
+    syncWallets: async () => (state.boxId ? pullWalletScope(state.boxId) : false),
+    syncStock: async () => (state.boxId ? pullStockScope(state.boxId) : false),
+    sealer: () => {
+      const key = syncPrivateKeyPem;
+      const id = state.boxId;
+      return key && id ? (draft) => sealEnvelope(draft, id, key) : null;
+    },
     pauseHeartbeats(paused) {
       state.heartbeatsPaused = paused;
       note('info', paused ? 'heartbeats stopped by a test control' : 'heartbeats resumed');

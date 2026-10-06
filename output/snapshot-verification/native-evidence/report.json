@@ -1,0 +1,17 @@
+{
+  "result": "PASS",
+  "environment": "local disposable database; real protected API and browser; synthetic public order only",
+  "checks": [
+    "History stays empty before the first protected response",
+    "Actual display poll records a safe order visible in the Console",
+    "Offline display retains the same saved response and time while staff advances to payment",
+    "Reconnected display replaces saved order with its actual payment response",
+    "Revoked display retains history after its protected requests are rejected",
+    "Cold API restart retains the exact saved response and prepared time"
+  ],
+  "limitations": [
+    "No sale or payment executed in this focused rerun",
+    "Earlier23 full ticket/browser checks passed but their temporary images and report were cleared by a test output path error",
+    "No staging or physical Pi verification"
+  ]
+}

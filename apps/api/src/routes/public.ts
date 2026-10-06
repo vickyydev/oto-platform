@@ -1,9 +1,6 @@
 import { z } from 'zod';
-import { randomInt } from 'node:crypto';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import {
-  attendee,
-  booking,
   branch,
   branchHoliday,
   member,
@@ -11,48 +8,48 @@ import {
   tier,
 } from '@oto/db';
 import {
+  TaxConfigSchema,
+  TaxableCategorySchema,
   TicketCreditRuleSchema,
   TicketFreebieSchema,
   TierAdultRuleSchema,
   TierPriceRuleSchema,
   TranslationsSchema,
   WWPriceSchema,
-  branchToday,
-  computeTicketLine,
   getRateModeForDate,
-  newId,
-  normalizePhone,
   isIsoDate,
+  normalizePhone,
 } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
 import { ipLimited } from '../plugins/rate-limit';
-import { audit } from '../services/audit';
-import { opCtx, withTx } from '../services/tx';
+import {
+  CHECKOUT_METHODS,
+  bookingReturnTarget,
+  bookingToday,
+  createPublicBooking,
+  openBookingCheckout,
+  publicBasketInputs,
+  publicBookingStatus,
+} from '../services/booking-checkout';
+import { opCtx } from '../services/tx';
 
 /**
  * PUBLIC endpoints for the customer self-booking site (/book) — no session.
  * Deliberately minimal surface:
  *   - catalog: active packages (with translations) + tiers + today's rate mode
  *   - member-tier: phone → nickname + tier ONLY (no children / PII — the
- *     prototype's "members are recognised automatically" UX)
- *   - bookings: creates a booking + attendees; the TOTAL IS COMPUTED
- *     SERVER-SIDE from the packages via the ported pricing rules — the client
- *     figure is never trusted.
- */
-/**
- * A booking that already exists, answered as the call that wrote it answered
- * it (SCRUM-298).
- *
- * Read back from the row rather than recomputed: the reference is random, and
- * re-pricing a booking made last night against tonight's packages would hand
- * the same family a different total for the same submit.
- *
- * Every VALUE is the first answer's; the bytes are not, because `lines` comes
- * back through a `jsonb` column and Postgres orders an object's keys its own
- * way. That is the difference between this and the platform's replay store,
- * which returns a stored body unchanged — and it is a difference no JSON
- * client can see.
+ *     prototype's "members are recognised automatically" UX; OD-A14 keeps it
+ *     that way: saved children never appear on the open site)
+ *   - bookings: creates a PENDING booking + attendees; the TOTAL IS COMPUTED
+ *     SERVER-SIDE through the S2-09a engine — the client figure is never
+ *     charged (S2-12, `services/booking-checkout.ts`)
+ *   - checkout: the booking's one payment, on 2C2P's hosted page (or the
+ *     simulator's while no `PGW_*` credentials are set)
+ *   - return: where the hosted page sends the browser back. Verified, read as
+ *     a display hint, and it WRITES NOTHING — a booking is paid only by the
+ *     backend notification plus an inquiry, or by the inquiry poller
+ *   - status: what the waiting page polls; the signed QR once paid.
  */
 /**
  * ONE PACKAGE, AS THE BOOKING SITE READS IT (SCRUM-252).
@@ -133,31 +130,24 @@ const PublicCatalogSchema = z.object({
   holidays: z.array(
     z.object({ name: z.string(), startsOn: z.string(), endsOn: z.string() }),
   ),
+  /**
+   * S2-12 — the extras on sale online and the tax configuration, so the total
+   * the site shows is built from the numbers the booking is priced with
+   * (`publicBasketInputs`). Money in satang, as everywhere on the platform.
+   */
+  addOns: z.array(
+    z.object({
+      /** What a booking line sends back: a seeded extra's prototype id, or the product's id. */
+      id: z.string(),
+      name: z.string(),
+      priceSatang: z.number().int(),
+      priceWeekendSatang: z.number().int().nullable(),
+      taxCategory: TaxableCategorySchema.nullable(),
+      translations: TranslationsSchema.nullable(),
+    }),
+  ),
+  taxConfig: TaxConfigSchema.nullable(),
 });
-
-function storedBookingAnswer(row: typeof booking.$inferSelect): {
-  id: string;
-  reference: string;
-  visitDate: string;
-  rateMode: 'weekday' | 'weekend';
-  totalSatang: number;
-  lines: Array<Record<string, unknown>>;
-} {
-  const payload = (row.payload ?? {}) as {
-    rateMode?: string;
-    lines?: Array<Record<string, unknown>>;
-  };
-  return {
-    id: row.id,
-    reference: row.reference,
-    visitDate: row.bookingDate,
-    // There are two modes and weekday is the pair's default, so anything but
-    // 'weekend' reads as 'weekday' — the same convention the resolver uses.
-    rateMode: payload.rateMode === 'weekend' ? 'weekend' : 'weekday',
-    totalSatang: row.totalSatang,
-    lines: payload.lines ?? [],
-  };
-}
 
 export async function publicRoutes(app: App): Promise<void> {
   const loadBranchByCode = async (code: string) => {
@@ -175,13 +165,23 @@ export async function publicRoutes(app: App): Promise<void> {
     {
       config: { ...ipLimited, public: true },
       schema: {
-        description: 'Public booking catalog: branch, tiers, active packages, rate mode',
+        description:
+          "Public booking catalog: branch, tiers, active packages, rate mode, the extras on sale online and the tax configuration. `rateMode` is for `date` when one is given (the visit date the booking site's date step chose), otherwise for the branch's trading day (business_day_start in the branch timezone) — the day a booking sent without a visit date is quoted for.",
         params: z.object({ code: z.string() }),
+        querystring: z.object({ date: z.string().optional() }),
         response: { 200: PublicCatalogSchema },
       },
     },
     async (req) => {
       const br = await loadBranchByCode(req.params.code);
+      /**
+       * The TRADING day, not the calendar day (SCRUM-209 fix round 2): the
+       * same `bookingToday` the quote falls back to, and the day the till's
+       * own pricing-mode route answers for. A sent `date` is honoured, as it
+       * is there.
+       */
+      const date = req.query.date ?? bookingToday(br);
+      if (!isIsoDate(date)) throw errors.badRequest('date must be yyyy-mm-dd');
       const [tiers, packages, holidays] = await Promise.all([
         app.db
           .select()
@@ -199,11 +199,16 @@ export async function publicRoutes(app: App): Promise<void> {
             ),
           )
           .orderBy(asc(ticketPackage.createdAt)),
-        app.db.select().from(branchHoliday).where(eq(branchHoliday.branchId, br.id)),
+        // An archived range no longer prices anything, here or at the till
+        // (`resolvePricingScope`) or in the booking quote — one calendar.
+        app.db
+          .select()
+          .from(branchHoliday)
+          .where(and(eq(branchHoliday.branchId, br.id), isNull(branchHoliday.archivedAt))),
       ]);
-      const today = branchToday(br.timezone);
+      const basket = await publicBasketInputs(app.db, br);
       const rate = getRateModeForDate(
-        today,
+        date,
         holidays.map((h) => ({ name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })),
       );
       return {
@@ -226,8 +231,10 @@ export async function publicRoutes(app: App): Promise<void> {
          * what checks them and what strips every column it does not name.
          */
         packages: packages as PublicPackage[],
-        rateMode: { date: today, ...rate },
+        rateMode: { date, ...rate },
         holidays: holidays.map((h) => ({ name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })),
+        addOns: basket.addOns,
+        taxConfig: basket.taxConfig,
       };
     },
   );
@@ -274,6 +281,26 @@ export async function publicRoutes(app: App): Promise<void> {
     packageId: z.string().uuid(),
     kids: z.number().int().min(0).max(20),
     adults: z.number().int().min(0).max(20),
+    /** The prototype's separate socks count on a line. Priced from the branch catalogue. */
+    socks: z.number().int().min(0).max(50).optional(),
+    /** Extras on the line, by id — priced from the branch catalogue, never from here. */
+    addOns: z
+      .array(z.object({ id: z.string().min(1).max(64), quantity: z.number().int().min(1).max(20) }))
+      .max(10)
+      .optional(),
+  });
+
+  const BookingAnswerSchema = z.object({
+    id: z.string().uuid(),
+    reference: z.string(),
+    visitDate: z.string(),
+    rateMode: z.enum(['weekday', 'weekend']),
+    totalSatang: z.number().int(),
+    lines: z.array(z.record(z.string(), z.unknown())),
+    /** `pending` until the gateway confirms the money. */
+    status: z.string(),
+    /** The end of the hold for payment. */
+    expiresAt: z.string().nullable(),
   });
 
   app.post(
@@ -284,22 +311,14 @@ export async function publicRoutes(app: App): Promise<void> {
       config: { public: true, rateLimit: { max: 20, timeWindow: 60_000 } },
       schema: {
         description:
-          'Create a customer booking; total computed server-side. `id` is the booking id the SITE mints, and sending it again returns the booking that exists rather than making a second one.',
+          'Create a customer booking, PENDING until paid; total computed server-side through the pricing engine. `id` is the booking id the SITE mints, and sending it again returns the booking that exists rather than making a second one.',
         body: z.object({
           /**
            * The booking's own id, minted by the site before it submits
-           * (SCRUM-298).
-           *
-           * This route is open, and the platform's idempotency store is not
-           * available to it: the store's rows are owned by an account
-           * (`core.idempotency_key.account_id`, not null, foreign key), and a
-           * customer on the booking page has none — so the plugin returns
-           * before the store and the `Idempotency-Key` the site already sends
-           * does nothing here. A client-minted id needs no migration and no
-           * anonymous principal: the primary key IS the unique constraint, and
-           * the check below turns the second submit into the first one's
-           * answer. A double-tap on a Thai mall's wifi was two bookings, two
-           * references and two held slots for one family.
+           * (SCRUM-298). This route is open and the platform's idempotency
+           * store is owned by accounts, so a client-minted id is what makes a
+           * double-tap on a mall's wifi one booking: the primary key IS the
+           * unique constraint.
            */
           id: z.string().uuid().optional(),
           branchCode: z.string(),
@@ -312,177 +331,157 @@ export async function publicRoutes(app: App): Promise<void> {
           locale: z.string().max(8).optional(),
           /** Client-side extras snapshot (drop-off, passes) — stored, not priced here. */
           clientSnapshot: z.unknown().optional(),
+          /** What the page showed as the total, in satang: compared, never charged. */
+          displayedTotalSatang: z.number().int().min(0).optional(),
         }),
+        response: { 200: BookingAnswerSchema },
       },
     },
     async (req, reply) => {
-      const br = await loadBranchByCode(req.body.branchCode);
-
-      /**
-       * The same submit arriving twice (SCRUM-298).
-       *
-       * Everything the first call answered is on the row — the reference and
-       * the priced lines included, because the total is computed here and
-       * stored — so the replay is that answer and not a fresh computation
-       * against today's prices.
-       */
-      if (req.body.id) {
-        const [already] = await app.db
-          .select()
-          .from(booking)
-          .where(and(eq(booking.id, req.body.id), eq(booking.operatorId, br.operatorId)))
-          .limit(1);
-        if (already) {
-          reply.header('x-oto-replay', 'true');
-          return storedBookingAnswer(already);
-        }
-      }
-
-      // Tier must exist for this operator; unverifiable tiers are allowed for
-      // the ONLINE flow only as a claim — reception re-verifies at the door
-      // (prototype rule: verification is a door concern, tourists never need it).
-      const [tierRow] = await app.db
-        .select()
-        .from(tier)
-        .where(and(eq(tier.operatorId, br.operatorId), eq(tier.code, req.body.tier)))
-        .limit(1);
-      if (!tierRow) throw errors.badRequest(`Unknown tier ${req.body.tier}`);
-
-      const visitDate = req.body.visitDate ?? branchToday(br.timezone);
-      if (!isIsoDate(visitDate)) throw errors.badRequest('visitDate must be yyyy-mm-dd');
-      const holidays = await app.db
-        .select()
-        .from(branchHoliday)
-        .where(eq(branchHoliday.branchId, br.id));
-      const rate = getRateModeForDate(
-        visitDate,
-        holidays.map((h) => ({ name: h.name, startsOn: h.startsOn, endsOn: h.endsOn })),
-      );
-
-      // Resolve every package and compute the authoritative total.
-      let totalSatang = 0;
-      const computedLines: Array<Record<string, unknown>> = [];
-      for (const line of req.body.lines) {
-        if (line.kids === 0 && line.adults === 0) continue;
-        const [pkg] = await app.db
-          .select()
-          .from(ticketPackage)
-          .where(
-            and(
-              eq(ticketPackage.id, line.packageId),
-              eq(ticketPackage.branchId, br.id),
-              eq(ticketPackage.active, true),
-            ),
-          )
-          .limit(1);
-        if (!pkg) throw errors.badRequest('A selected ticket is no longer available');
-        const shape = {
-          prices: pkg.prices as Record<string, { weekday: number; weekend: number }>,
-          adultRules: pkg.adultRules as never,
-        };
-        const computed = computeTicketLine(
-          { pkg: shape, tier: req.body.tier, kids: line.kids, adults: line.adults },
-          rate.mode,
-        );
-        totalSatang += computed.lineTotal;
-        computedLines.push({
-          packageId: pkg.id,
-          name: pkg.name,
-          kids: line.kids,
-          adults: line.adults,
-          kidUnitSatang: computed.kidUnit,
-          adultsFree: computed.adults.freeCount,
-          adultUnitSatang: computed.adults.paidUnit,
-          lineTotalSatang: computed.lineTotal,
-        });
-      }
-      if (computedLines.length === 0) throw errors.badRequest('Nothing selected');
-
-      const phone = req.body.phone ? normalizePhone(req.body.phone) : null;
-      let memberId: string | null = null;
-      if (phone) {
-        const [m] = await app.db
-          .select({ id: member.id })
-          .from(member)
-          .where(and(eq(member.operatorId, br.operatorId), eq(member.phone, phone)))
-          .limit(1);
-        memberId = m?.id ?? null;
-      }
-
-      const id = req.body.id ?? newId();
-      const reference = `OTO-${String(randomInt(0, 36 ** 4)).padStart(4, '0')}-${randomInt(1000, 9999)}`;
-      // Booking, attendees and the audit row are one operation: a booking
-      // whose attendees are missing is a family turned away at the door.
-      return withTx(app.db, opCtx(req), 'booking.create', async (tx) => {
-        /**
-         * `onConflictDoNothing` closes what the read above cannot: two submits
-         * in flight together both pass that check, and the loser waits here on
-         * the winner's row and is handed nothing. It answers with the row that
-         * exists and writes no attendees and no audit entry — the winner wrote
-         * both.
-         */
-        const [inserted] = await tx
-          .insert(booking)
-          .values({
-            id,
-            operatorId: br.operatorId,
-            branchId: br.id,
-            memberId,
-            reference,
-            bookingDate: visitDate,
-            status: 'paid', // payment recording is M2; the online flow simulates it (prototype behaviour)
-            totalSatang,
-            payload: {
-              tier: req.body.tier,
-              rateMode: rate.mode,
-              parentName: req.body.parentName,
-              phone,
-              contactChannel: req.body.contactChannel ?? 'whatsapp',
-              locale: req.body.locale ?? 'en',
-              lines: computedLines,
-              clientSnapshot: req.body.clientSnapshot ?? null,
-            },
-          })
-          .onConflictDoNothing({ target: booking.id })
-          .returning({ id: booking.id });
-        if (!inserted) {
-          const [already] = await tx
-            .select()
-            .from(booking)
-            .where(and(eq(booking.id, id), eq(booking.operatorId, br.operatorId)))
-            .limit(1);
-          if (already) {
-            reply.header('x-oto-replay', 'true');
-            return storedBookingAnswer(already);
-          }
-          // The id is taken by a booking of ANOTHER operator: the site sent an
-          // id that is not its own to use. Nothing is written, and it is not
-          // told whose it is.
-          throw errors.badRequest('This booking id is already in use');
-        }
-        for (const line of req.body.lines) {
-          for (let i = 0; i < line.kids; i++) {
-            await tx.insert(attendee).values({
-              id: newId(),
-              bookingId: id,
-              name: `${req.body.parentName} — child ${i + 1}`,
-              kind: 'child',
-              payload: { packageId: line.packageId },
-            });
-          }
-        }
-        await audit.record(tx, {
-          actorAccountId: null,
-          operatorId: br.operatorId,
-          branchId: br.id,
-          action: 'booking.create',
-          entityType: 'booking',
-          entityId: id,
-          after: { reference, totalSatang, tier: req.body.tier, visitDate },
-          requestId: req.id,
-        });
-        return { id, reference, visitDate, rateMode: rate.mode, totalSatang, lines: computedLines };
-      });
+      const { answer, replay } = await createPublicBooking(app.db, app.env, opCtx(req), req.body);
+      if (replay) reply.header('x-oto-replay', 'true');
+      return answer;
     },
+  );
+
+  /**
+   * THE BOOKING'S ONE PAYMENT (S2-12).
+   *
+   * Opens a station-less gateway attempt on the `WEB` invoice segment under
+   * the booking's row lock, and answers with the page the guest pays on. A
+   * second call — a double-tap, a back button — finds that attempt and answers
+   * with the same page: the row lock and the booking's one attempt link are
+   * what stand in for the replay store on this open route.
+   *
+   * `redirectUrl` starting with `/` is the api's own page (the simulator's);
+   * the site reaches it through its `/api` prefix.
+   */
+  app.post(
+    '/public/bookings/:id/checkout',
+    {
+      config: { public: true, rateLimit: { max: 20, timeWindow: 60_000 } },
+      schema: {
+        description:
+          "Open the booking's payment: a Payment Token restricted to the chosen channel, and the hosted page to send the browser to. Pays nothing — a booking is paid only on the gateway's backend notification confirmed by an inquiry.",
+        params: z.object({ id: z.string().uuid() }),
+        body: z.object({
+          method: z.enum(CHECKOUT_METHODS),
+          locale: z.string().max(8).optional(),
+        }),
+        response: {
+          200: z.object({
+            bookingId: z.string().uuid(),
+            attemptId: z.string().uuid(),
+            redirectUrl: z.string(),
+            expiresAt: z.string(),
+            provider: z.enum(['2c2p', 'simulator']),
+          }),
+        },
+      },
+    },
+    async (req) =>
+      openBookingCheckout(app.db, app.env, req.log, opCtx(req), {
+        bookingId: req.params.id,
+        method: req.body.method,
+        locale: req.body.locale,
+      }),
+  );
+
+  /**
+   * What the booking site's "checking your payment" page polls.
+   *
+   * Addressed by the booking's own id — a v7 uuid the family's browser was
+   * handed — and it answers with the booking's state only: no name, no phone,
+   * no child. The signed QR is in the answer once the gateway has confirmed
+   * the money, and not before.
+   */
+  app.get(
+    '/public/bookings/:id/status',
+    {
+      config: { ...ipLimited, public: true },
+      schema: {
+        description: "A booking's payment state for the booking site's waiting page, with its signed QR once paid",
+        params: z.object({ id: z.string().uuid() }),
+        response: {
+          200: z.object({
+            id: z.string().uuid(),
+            reference: z.string(),
+            status: z.string(),
+            visitDate: z.string(),
+            totalSatang: z.number().int(),
+            rateMode: z.enum(['weekday', 'weekend']),
+            kidsCount: z.number().int(),
+            adultsCount: z.number().int(),
+            paidAt: z.string().nullable(),
+            expiresAt: z.string().nullable(),
+            qr: z.string().nullable(),
+          }),
+        },
+      },
+    },
+    async (req) => publicBookingStatus(app.db, req.params.id),
+  );
+
+  /**
+   * WHERE THE HOSTED PAGE SENDS THE BROWSER BACK (`PAYMENT_GATEWAY.md` §2.8
+   * step 5). 2C2P posts a form with one field, `paymentResponse`.
+   *
+   * THIS ROUTE CHANGES NOTHING, and that is the invariant of the round: the
+   * `paymentResponse` is verified and read as a hint for the page's wording,
+   * the booking it names is looked up, and the browser is redirected to the
+   * booking site's waiting page — which polls the status route until the
+   * gateway's own notification (or the poller's inquiry) has made the booking
+   * paid. A forged return is answered exactly like an honest "unknown".
+   *
+   * It is the one open write the Origin check lets through from another site
+   * (`crossSiteReturn`): the POST comes from 2C2P's page by design, and a
+   * route that writes nothing has nothing to protect from it.
+   */
+  const returnHandler = async (
+    paymentResponse: string | undefined,
+    reply: { redirect: (url: string, code?: number) => unknown },
+  ) => {
+    const target = await bookingReturnTarget(app.db, app.env, paymentResponse);
+    const query = new URLSearchParams({ payment: target.display });
+    if (target.bookingId) query.set('booking', target.bookingId);
+    return reply.redirect(`/book?${query.toString()}`, 303);
+  };
+
+  // The hosted page's return is a form POST: read it as one, in this plugin only.
+  app.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'string', bodyLimit: 16_384 },
+    (_req, body, done) => {
+      try {
+        done(null, Object.fromEntries(new URLSearchParams(String(body))));
+      } catch (err) {
+        done(err as Error, undefined);
+      }
+    },
+  );
+
+  app.post(
+    '/public/bookings/return',
+    {
+      config: { public: true, crossSiteReturn: true, ...ipLimited },
+      schema: {
+        description:
+          "The hosted payment page's browser return. Verifies the `paymentResponse` and redirects to the booking site's waiting page with a DISPLAY HINT. Changes nothing: a booking is paid only by the gateway's backend notification confirmed by an inquiry.",
+        body: z.object({ paymentResponse: z.string().max(8192).optional() }).passthrough(),
+      },
+    },
+    async (req, reply) => returnHandler(req.body.paymentResponse, reply),
+  );
+
+  app.get(
+    '/public/bookings/return',
+    {
+      config: { public: true, ...ipLimited },
+      schema: {
+        description: 'The same return, reached by a GET. Changes nothing.',
+        querystring: z.object({ paymentResponse: z.string().max(8192).optional() }).passthrough(),
+      },
+    },
+    async (req, reply) => returnHandler(req.query.paymentResponse, reply),
   );
 }

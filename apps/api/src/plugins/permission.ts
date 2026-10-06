@@ -35,6 +35,15 @@ export interface PermissionConfig {
    * rate limits instead.
    */
   public?: true;
+  /**
+   * S2-12 — a public route ANOTHER SITE sends the browser to with a form POST:
+   * the payment gateway's hosted page returning the guest to
+   * `/public/bookings/return`. The Origin check on writes (`app.ts`) lets it
+   * through, because the POST comes from the gateway's page by design and
+   * because such a route writes nothing — `route-write-conformance.test.ts`
+   * holds it on the no-write list, so a write added to it fails there.
+   */
+  crossSiteReturn?: true;
   /** A signed-in caller is enough; no permission applies (e.g. `/me`). */
   auth?: 'session';
   /**
@@ -81,6 +90,14 @@ export interface PermissionConfig {
   secretResponse?: true;
   /** Cloud trading calls that a station's forced-offline test must refuse. */
   stationTrading?: true;
+  /**
+   * The forced-offline refusal this route speaks, when the generic
+   * "go online before taking payment" is the wrong thing to say — a voucher is
+   * not a payment, so it gets its own offline sentence in the same voice. The
+   * code stays `STATION_FORCED_OFFLINE` so the till's lane arbiter still reads
+   * it; only the message changes. Ignored unless `stationTrading` is set.
+   */
+  stationOfflineMessage?: string;
 }
 
 declare module 'fastify' {

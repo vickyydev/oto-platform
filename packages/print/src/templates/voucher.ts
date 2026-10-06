@@ -32,6 +32,13 @@ import {
   text,
 } from './common';
 
+/** "฿150" for whole baht, "฿150.50" otherwise — `formatTHB` in `@oto/shared`, which this package does not import. */
+function bahtText(baht: number | undefined): string {
+  if (baht === undefined || !Number.isFinite(baht)) return '';
+  const whole = Number.isInteger(baht);
+  return `฿${baht.toLocaleString('en-US', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 })}`;
+}
+
 export interface CreditVoucherInput {
   template?: PrintTemplate;
   data: CreditVoucherData;
@@ -47,7 +54,7 @@ export function buildCreditVoucher({
 
   if (fieldOn(template, 'credit_voucher', 'creditVoucherBalance')) {
     blocks.push(divider());
-    blocks.push(moneyRow('Credit loaded', data.balance ?? '', true));
+    blocks.push(moneyRow('Credit loaded', data.balance ?? bahtText(data.balanceTHB), true));
     blocks.push(text('Scan wristband or QR at the F&B counter to spend.', small));
   }
 

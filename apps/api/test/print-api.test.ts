@@ -434,8 +434,12 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
     expect(replay.headers['x-oto-replay']).toBe('true');
     expect(replay.json()).toEqual(retried.json());
     expect(await ctx.db.select().from(printJob).where(eq(printJob.actionId, actionId))).toHaveLength(1);
-    expect(await ctx.db.select().from(boxCommand).where(eq(boxCommand.actionId, actionId)))
-      .toHaveLength(surface === 'skipped' ? 0 : 1);
+    // One print. A template's may carry one config pull ahead of it, so the
+    // box renders the template as saved (SCRUM-472); nothing else may.
+    const commands = await ctx.db.select().from(boxCommand).where(eq(boxCommand.actionId, actionId));
+    const pulls = commands.filter((c) => surface === 'template' && c.kind === 'config_apply');
+    expect(commands.length - pulls.length).toBe(surface === 'skipped' ? 0 : 1);
+    expect(pulls.length).toBeLessThanOrEqual(1);
     const [stored] = await ctx.db.select().from(idempotencyKey).where(eq(idempotencyKey.key, key));
     expect(stored!.responseBody).toEqual(retried.json());
     await agent.runPendingCommands();
@@ -459,7 +463,14 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
     expect(second.headers['x-oto-replay']).toBe('true');
     expect(second.json()).toEqual(first.json());
     expect(await ctx.db.select().from(printJob).where(eq(printJob.actionId, actionId))).toHaveLength(1);
-    expect(await ctx.db.select().from(boxCommand).where(eq(boxCommand.actionId, actionId))).toHaveLength(1);
+    // No second print. A template's print may carry one config pull ahead of
+    // it (SCRUM-472), and the replay adds no second one either.
+    const commands = await ctx.db.select().from(boxCommand).where(eq(boxCommand.actionId, actionId));
+    expect(commands.filter((c) => c.kind === 'test_print')).toHaveLength(1);
+    expect(commands.filter((c) => c.kind === 'config_apply').length).toBeLessThanOrEqual(
+      surface === 'template' ? 1 : 0,
+    );
+    expect(commands.length).toBeLessThanOrEqual(2);
     await agent.runPendingCommands();
   });
 
@@ -491,11 +502,19 @@ describe('a test print, cloud to box to paper (S2-06)', () => {
       expect(job.kind).toBe(template.type);
 
       // Whichever box the station belongs to takes it; the other has nothing.
-      const ran = (await Promise.all(boxes.map((b) => b.agent.runPendingCommands()))).reduce(
-        (a, b) => a + b,
-        0,
-      );
-      expect(ran, `${template.type} was collected by no box`).toBe(1);
+      // A template's test print can carry a config pull ahead of it, under
+      // the same action id (SCRUM-472), so what is counted is the gesture's
+      // commands and which box ran them rather than how many there were.
+      const ran = await Promise.all(boxes.map((b) => b.agent.runPendingCommands()));
+      const gesture = await ctx.db
+        .select({ boxId: boxCommand.boxId, kind: boxCommand.kind, state: boxCommand.state })
+        .from(boxCommand)
+        .where(eq(boxCommand.actionId, res.json().printJob.actionId as string));
+      const detail = `${template.type}: ran ${ran.join('+')}, ${JSON.stringify(gesture)}`;
+      expect(ran.filter((n) => n > 0), detail).toHaveLength(1);
+      expect(new Set(gesture.map((c) => c.boxId)).size, detail).toBe(1);
+      expect(gesture.filter((c) => c.kind === 'test_print'), detail).toHaveLength(1);
+      expect(gesture.every((c) => c.state === 'succeeded'), detail).toBe(true);
 
       const [row] = await ctx.db.select().from(printJob).where(eq(printJob.id, job.id)).limit(1);
       expect(row!.status, `${template.type} ended ${row!.status} (${row!.errorCode})`).toBe('printed');

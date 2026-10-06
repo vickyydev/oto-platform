@@ -1,0 +1,3902 @@
+import { and, asc, desc, eq, inArray, isNull, ne, notInArray, sql, type SQL } from 'drizzle-orm';
+import {
+  account,
+  branch,
+  employee,
+  factStockDaily,
+  product,
+  purchaseOrder,
+  purchaseOrderLine,
+  saleLine,
+  stockAttention,
+  stockItem,
+  stockLevel,
+  stockLocation,
+  stockMovement,
+  stockTake,
+  stockTakeLine,
+  stockUnit,
+  type Db,
+  type sale,
+  type StockAttentionKind,
+  type StockMovementKind,
+} from '@oto/db';
+import {
+  addDaysToIsoDate,
+  businessDate,
+  newId,
+  parseDayStart,
+  partialStockLinkProblem,
+  reorderPointFor,
+  STOCK_CASCADE_TYPE_ORDER,
+  STOCK_MAX_EACHES,
+  STOCK_RULE_REORDER,
+  STOCK_RULE_REORDER_TREND,
+  STOCK_TREND_HISTORY_DAYS,
+  STOCK_TREND_SAFETY_DAYS,
+  stockRuleBelowPar,
+  stockShortMessage,
+  stockSizeName,
+  stockStatus,
+  stockTakeFlagged,
+  type ProductStockLink,
+  type PurchaseOrderAddBody,
+  type PurchaseOrderView,
+  type SaleLineStockShare,
+  type SellableStock,
+  type StockAdjustBody,
+  type StockAdjustResult,
+  type StockAttentionLowStock,
+  type StockAttentionView,
+  type StockCostOfGoods,
+  type StockDiscrepancyRow,
+  type StockItemBody,
+  type StockLevels,
+  type StockLocationType,
+  type StockLocationView,
+  type StockMovementView,
+  type StockPlaceOpening,
+  type StockPurchaseOrderRow,
+  type StockReceiveBody,
+  type StockReceiveResult,
+  type StockReports,
+  type StockShrinkageRow,
+  type StockUsageRow,
+  type StockValueRow,
+  type StockTakeBody,
+  type StockTakeResult,
+  type StockTransferBody,
+  type StockTransferResult,
+} from '@oto/shared';
+import { errors } from '../lib/errors';
+import { audit } from './audit';
+import type { Exec, Tx } from './tx';
+
+/**
+ * S2-14b — STOCK: the ledger, its projection, and the two moments a sale meets
+ * it. Plan: docs/progress/plans/stock/PLAN.md §2.1-§2.2.
+ *
+ * THE ONE WRITER. `applyMovements` is the only code that writes
+ * `pos.stock_level`, and it writes the level in the same transaction as the
+ * `pos.stock_movement` row that moves it — so the level is always the sum of its
+ * movements. It locks the levels it touches `FOR UPDATE` in (item id, location
+ * id) order — the `allocateReceipt` pattern, one fixed order so two tills never
+ * deadlock on the same two shelves — and every movement carries an `action_id`
+ * unique per operator, derived from what moved (a sale line, a refund line), so
+ * a replay lands on the row that exists and moves nothing twice.
+ *
+ * THE TWO MOMENTS A SALE MEETS STOCK:
+ *
+ *   - AT COMMIT, a GUARD (`assertCartStock`): the cart is checked, per size and
+ *     honouring an add-on's `variantBreakdown`, against everything this branch
+ *     holds — the sell point and every other place, because the cascade will
+ *     reach them. A shortage is refused in the counter's words ("Only 3 Grip
+ *     Socks S left") and nothing is written. The prototype's guard
+ *     (`pages/Till.tsx:2393-2440`) ignored the breakdown; this one does not.
+ *   - AT FINALISE, a DECREMENT that NEVER REFUSES (`takeStockForSale`): a card
+ *     can be approved long after commit, and an offline sale was paid hours
+ *     ago. It takes from the sell point first, then back of house, then bulk
+ *     (`STOCK_CASCADE_TYPE_ORDER`), from the levels it holds locked; whatever the
+ *     record does not hold is the movement's `shortfall` plus a
+ *     `stock_shortfall` attention row. A paid sale is never refused for stock.
+ *
+ * A REFUND puts back what its restock decision says (`restockForRefund`), to
+ * the place each unit was taken from — not always the sell point, which was the
+ * prototype's limitation (`mockApi.ts:2876-2960`).
+ */
+
+/** Sale-line kinds that can hold stock; admission and fees never sit on a shelf. */
+export const STOCKED_LINE_KINDS = new Set(['socks', 'addon', 'merch_item', 'fnb_item']);
+
+type ItemRow = typeof stockItem.$inferSelect;
+type LocationRow = typeof stockLocation.$inferSelect;
+type SaleRow = typeof sale.$inferSelect;
+
+// --- The writer ------------------------------------------------------------------
+
+/** One movement to write. `quantity` is signed, in eaches. */
+export interface MovementDraft {
+  stockItemId: string;
+  stockLocationId: string;
+  kind: StockMovementKind;
+  quantity: number;
+  /** Units a paid sale could not take from the record (sale kinds only). */
+  shortfall?: number;
+  /** Unique per operator; derived from what moved, so a replay is a no-op. */
+  actionId: string;
+  saleId?: string | null;
+  saleLineId?: string | null;
+  refundId?: string | null;
+  purchaseOrderLineId?: string | null;
+  stockTakeLineId?: string | null;
+  transferId?: string | null;
+  reason?: string | null;
+  unitCostSatang?: number | null;
+}
+
+/** Who moved it, where and when — shared by every movement of one act. */
+export interface MovementContext {
+  operatorId: string;
+  branchId: string;
+  businessDate: string;
+  occurredAt: Date;
+  actorAccountId: string | null;
+  stationId?: string | null;
+  boxId?: string | null;
+  offline?: boolean;
+}
+
+export interface AppliedMovement {
+  id: string;
+  actionId: string;
+  stockItemId: string;
+  stockLocationId: string;
+  kind: StockMovementKind;
+  quantity: number;
+  shortfall: number;
+  levelAfter: number;
+}
+
+const pairKey = (itemId: string, locationId: string) => `${itemId}|${locationId}`;
+
+/**
+ * Make sure a level row exists for every pair, then lock them all `FOR UPDATE`
+ * in (item id, location id) order, and answer what each holds.
+ */
+export async function lockLevels(
+  tx: Tx,
+  pairs: ReadonlyArray<{ stockItemId: string; stockLocationId: string }>,
+): Promise<Map<string, number>> {
+  const unique = [...new Map(pairs.map((p) => [pairKey(p.stockItemId, p.stockLocationId), p])).values()].sort(
+    (a, b) =>
+      a.stockItemId === b.stockItemId
+        ? a.stockLocationId.localeCompare(b.stockLocationId)
+        : a.stockItemId.localeCompare(b.stockItemId),
+  );
+  const levels = new Map<string, number>();
+  if (unique.length === 0) return levels;
+  for (const pair of unique) {
+    await tx
+      .insert(stockLevel)
+      .values({ id: newId(), stockItemId: pair.stockItemId, stockLocationId: pair.stockLocationId, quantity: 0 })
+      .onConflictDoNothing({ target: [stockLevel.stockLocationId, stockLevel.stockItemId] });
+  }
+  const itemIds = [...new Set(unique.map((p) => p.stockItemId))];
+  const locationIds = [...new Set(unique.map((p) => p.stockLocationId))];
+  const rows = await tx
+    .select({ stockItemId: stockLevel.stockItemId, stockLocationId: stockLevel.stockLocationId, quantity: stockLevel.quantity })
+    .from(stockLevel)
+    .where(and(inArray(stockLevel.stockItemId, itemIds), inArray(stockLevel.stockLocationId, locationIds)))
+    .orderBy(asc(stockLevel.stockItemId), asc(stockLevel.stockLocationId))
+    .for('update');
+  for (const row of rows) levels.set(pairKey(row.stockItemId, row.stockLocationId), row.quantity);
+  return levels;
+}
+
+/**
+ * THE ONLY WRITER OF `pos.stock_level`. Writes each movement and moves its
+ * level in this transaction; a draft whose `action_id` already exists is
+ * skipped (a replay), and so is its level change.
+ *
+ * Refuses — throws — a movement that would take a level below zero. Callers
+ * that must never refuse (the finalise decrement) plan within the levels they
+ * hold locked, so this is the net under a planning bug, never the answer a
+ * paid sale gets.
+ */
+export async function applyMovements(
+  tx: Tx,
+  ctx: MovementContext,
+  drafts: readonly MovementDraft[],
+): Promise<AppliedMovement[]> {
+  if (drafts.length === 0) return [];
+  const seen = new Set<string>();
+  for (const d of drafts) {
+    if (seen.has(d.actionId)) throw new Error(`two stock movements in one act share the action id ${d.actionId}`);
+    seen.add(d.actionId);
+  }
+  const existing = await tx
+    .select({ actionId: stockMovement.actionId })
+    .from(stockMovement)
+    .where(and(eq(stockMovement.operatorId, ctx.operatorId), inArray(stockMovement.actionId, [...seen])));
+  const done = new Set(existing.map((r) => r.actionId));
+  const fresh = drafts
+    .filter((d) => !done.has(d.actionId))
+    .sort((a, b) =>
+      a.stockItemId === b.stockItemId
+        ? a.stockLocationId.localeCompare(b.stockLocationId)
+        : a.stockItemId.localeCompare(b.stockItemId),
+    );
+  if (fresh.length === 0) return [];
+
+  const levels = await lockLevels(tx, fresh);
+  const applied: AppliedMovement[] = [];
+  for (const d of fresh) {
+    if (!Number.isInteger(d.quantity) || !Number.isInteger(d.shortfall ?? 0)) {
+      throw errors.badRequest('Stock moves in whole items only', { actionId: d.actionId });
+    }
+    const key = pairKey(d.stockItemId, d.stockLocationId);
+    const before = levels.get(key) ?? 0;
+    const after = before + d.quantity;
+    if (after < 0) {
+      throw errors.conflict('STOCK_LEVEL_NEGATIVE', 'That would take a shelf below nothing — nothing was moved', {
+        stockItemId: d.stockItemId,
+        stockLocationId: d.stockLocationId,
+        level: before,
+        quantity: d.quantity,
+      });
+    }
+    const id = newId();
+    const inserted = await tx
+      .insert(stockMovement)
+      .values({
+        id,
+        operatorId: ctx.operatorId,
+        branchId: ctx.branchId,
+        stockItemId: d.stockItemId,
+        stockLocationId: d.stockLocationId,
+        kind: d.kind,
+        quantity: d.quantity,
+        levelAfter: after,
+        shortfall: d.shortfall ?? 0,
+        actionId: d.actionId,
+        saleId: d.saleId ?? null,
+        saleLineId: d.saleLineId ?? null,
+        refundId: d.refundId ?? null,
+        purchaseOrderLineId: d.purchaseOrderLineId ?? null,
+        stockTakeLineId: d.stockTakeLineId ?? null,
+        transferId: d.transferId ?? null,
+        reason: d.reason ?? null,
+        unitCostSatang: d.unitCostSatang ?? null,
+        businessDate: ctx.businessDate,
+        actorAccountId: ctx.actorAccountId,
+        stationId: ctx.stationId ?? null,
+        boxId: ctx.boxId ?? null,
+        offline: ctx.offline ?? false,
+        occurredAt: ctx.occurredAt,
+      })
+      .onConflictDoNothing({ target: [stockMovement.operatorId, stockMovement.actionId] })
+      .returning({ id: stockMovement.id });
+    // Lost a race to the same action id: the other writer moved the level.
+    if (!inserted[0]) continue;
+    if (d.quantity !== 0) {
+      await tx
+        .update(stockLevel)
+        .set({ quantity: after, updatedAt: ctx.occurredAt })
+        .where(and(eq(stockLevel.stockItemId, d.stockItemId), eq(stockLevel.stockLocationId, d.stockLocationId)));
+    }
+    levels.set(key, after);
+    applied.push({
+      id,
+      actionId: d.actionId,
+      stockItemId: d.stockItemId,
+      stockLocationId: d.stockLocationId,
+      kind: d.kind,
+      quantity: d.quantity,
+      shortfall: d.shortfall ?? 0,
+      levelAfter: after,
+    });
+  }
+  return applied;
+}
+
+// --- Places -------------------------------------------------------------------------
+
+function typeRank(type: string): number {
+  const at = STOCK_CASCADE_TYPE_ORDER.indexOf(type as StockLocationType);
+  return at === -1 ? STOCK_CASCADE_TYPE_ORDER.length : at;
+}
+
+/**
+ * The branch's live places, in the order a sale takes from them: the sell point,
+ * then back of house, then bulk, then any other rotation shelf (plan §2.2), and
+ * by name within a type so the order is the same every time.
+ */
+export async function branchLocations(db: Exec, branchId: string): Promise<LocationRow[]> {
+  const rows = await db
+    .select()
+    .from(stockLocation)
+    .where(and(eq(stockLocation.branchId, branchId), eq(stockLocation.active, true), isNull(stockLocation.archivedAt)));
+  return rows.sort((a, b) => {
+    if (a.sellPoint !== b.sellPoint) return a.sellPoint ? -1 : 1;
+    const rank = typeRank(a.type) - typeRank(b.type);
+    if (rank !== 0) return rank;
+    return a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+  });
+}
+
+/**
+ * What the branch holds of each item: everywhere (`available`, the guard's
+ * number) and at the sell point. Read without a lock — it is a check, and the
+ * race it cannot see is the finalise decrement's to record.
+ */
+export async function availableFor(
+  db: Exec,
+  branchId: string,
+  stockItemIds: readonly string[],
+): Promise<Map<string, { available: number; atSellPoint: number }>> {
+  const out = new Map<string, { available: number; atSellPoint: number }>();
+  for (const id of stockItemIds) out.set(id, { available: 0, atSellPoint: 0 });
+  if (stockItemIds.length === 0) return out;
+  const rows = await db
+    .select({
+      stockItemId: stockLevel.stockItemId,
+      quantity: stockLevel.quantity,
+      sellPoint: stockLocation.sellPoint,
+    })
+    .from(stockLevel)
+    .innerJoin(stockLocation, eq(stockLocation.id, stockLevel.stockLocationId))
+    .where(
+      and(
+        inArray(stockLevel.stockItemId, [...stockItemIds]),
+        eq(stockLocation.branchId, branchId),
+        eq(stockLocation.active, true),
+        isNull(stockLocation.archivedAt),
+      ),
+    );
+  for (const row of rows) {
+    const entry = out.get(row.stockItemId) ?? { available: 0, atSellPoint: 0 };
+    entry.available += row.quantity;
+    if (row.sellPoint) entry.atSellPoint += row.quantity;
+    out.set(row.stockItemId, entry);
+  }
+  return out;
+}
+
+/**
+ * The place a paid sale's shortfall is recorded at when the branch has NO live
+ * place (round 4, Q2): its retired places, the one a sale would have taken from
+ * first — the old sell point, then back of house, bulk, any other shelf — by
+ * name within a type. Null only for a branch that has never had a place.
+ */
+async function retiredShortfallPlace(db: Exec, branchId: string): Promise<LocationRow | null> {
+  const rows = await db
+    .select()
+    .from(stockLocation)
+    .where(and(eq(stockLocation.branchId, branchId), isNull(stockLocation.archivedAt)));
+  rows.sort((a, b) => {
+    if (a.sellPoint !== b.sellPoint) return a.sellPoint ? -1 : 1;
+    const rank = typeRank(a.type) - typeRank(b.type);
+    if (rank !== 0) return rank;
+    return a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+  });
+  return rows[0] ?? null;
+}
+
+// --- A sale line's stock --------------------------------------------------------------
+
+/** The part of a sale line the stock rules read. */
+export interface StockLineInput {
+  /** The line's id once written; absent at the guard. */
+  id?: string;
+  kind: string;
+  productId: string | null;
+  quantity: number;
+  label?: string;
+  payload: unknown;
+}
+
+interface LinePayloadView {
+  variant?: { variantId: string; variantLabel?: string };
+  variantBreakdown?: { variantId: string; variantLabel?: string; quantity: number }[];
+  stock?: SaleLineStockShare[];
+}
+
+export interface LineStock {
+  shares: SaleLineStockShare[];
+  /**
+   * Units of a stock-tracked product the line does not say the size of — an
+   * add-on sold in sizes with no breakdown, or a breakdown short of the line.
+   */
+  unsized: number;
+  /** A breakdown that names more units than the line sells. */
+  oversized: number;
+  /** The sizes, by label where the line carried one, that this branch does not stock. */
+  unknownSizes: string[];
+  /** How many units those unknown sizes account for. */
+  unknownUnits: number;
+  productId: string | null;
+  productName: string | null;
+}
+
+export interface StockCatalogue {
+  /** Live, active stock items of this branch, by product. */
+  itemsByProduct: Map<string, ItemRow[]>;
+  itemsById: Map<string, ItemRow>;
+  productNames: Map<string, string>;
+  /** Each product's size ids in the catalogue's order, for listing sizes the way the counter sees them. */
+  sizeOrder: Map<string, string[]>;
+}
+
+/** The branch's stock items for these products — what a cart's lines resolve against. */
+export async function loadStockCatalogue(
+  db: Exec,
+  branchId: string,
+  productIds: readonly string[],
+): Promise<StockCatalogue> {
+  const ids = [...new Set(productIds)];
+  const itemsByProduct = new Map<string, ItemRow[]>();
+  const itemsById = new Map<string, ItemRow>();
+  const productNames = new Map<string, string>();
+  const sizeOrder = new Map<string, string[]>();
+  if (ids.length === 0) return { itemsByProduct, itemsById, productNames, sizeOrder };
+  const items = await db
+    .select()
+    .from(stockItem)
+    .where(
+      and(
+        eq(stockItem.branchId, branchId),
+        inArray(stockItem.productId, ids),
+        eq(stockItem.active, true),
+        isNull(stockItem.archivedAt),
+      ),
+    );
+  for (const item of items) {
+    itemsById.set(item.id, item);
+    const list = itemsByProduct.get(item.productId!) ?? [];
+    list.push(item);
+    itemsByProduct.set(item.productId!, list);
+  }
+  const products = await db
+    .select({ id: product.id, name: product.name, variants: product.variants })
+    .from(product)
+    .where(inArray(product.id, ids));
+  for (const p of products) {
+    productNames.set(p.id, p.name);
+    sizeOrder.set(p.id, (p.variants ?? []).map((v) => v.id));
+  }
+  return { itemsByProduct, itemsById, productNames, sizeOrder };
+}
+
+/**
+ * Which stocked sizes one sale line takes, and how many of each.
+ *
+ *   - an add-on with a `variantBreakdown` takes each size it names (the
+ *     prototype's `recordSale`, `mockApi.ts:1316-1330`);
+ *   - a shop or F&B line with a size takes that size;
+ *   - anything else takes the product's one-size item.
+ *
+ * A product with no stock item at this branch is not stock-tracked and the
+ * line takes nothing — the prototype's "no `inventoryItemId`" (`types.ts:216`).
+ */
+export function lineStock(line: StockLineInput, catalogue: StockCatalogue): LineStock {
+  const empty: LineStock = {
+    shares: [],
+    unsized: 0,
+    oversized: 0,
+    unknownSizes: [],
+    unknownUnits: 0,
+    productId: line.productId,
+    productName: line.productId ? (catalogue.productNames.get(line.productId) ?? null) : null,
+  };
+  if (!line.productId || !STOCKED_LINE_KINDS.has(line.kind) || line.quantity <= 0) return empty;
+  const items = catalogue.itemsByProduct.get(line.productId);
+  if (!items || items.length === 0) return empty;
+  const payload = (line.payload ?? {}) as LinePayloadView;
+  const share = (item: ItemRow, quantity: number): SaleLineStockShare => ({
+    stockItemId: item.id,
+    variantId: item.variantId,
+    quantity,
+    unitCostSatang: item.unitCostSatang,
+  });
+  const oneSize = items.find((i) => i.variantId === null);
+  const sized = (variantId: string) => items.find((i) => i.variantId === variantId);
+
+  const breakdown = (payload.variantBreakdown ?? []).filter((b) => b.quantity > 0);
+  if (breakdown.length > 0) {
+    const result: LineStock = { ...empty, shares: [] };
+    let named = 0;
+    for (const b of breakdown) {
+      const item = sized(b.variantId) ?? (b.variantId === 'default' ? oneSize : undefined);
+      named += b.quantity;
+      if (!item) {
+        result.unknownSizes.push(b.variantLabel?.trim() || b.variantId);
+        result.unknownUnits += b.quantity;
+        continue;
+      }
+      // One share per stock item, however the breakdown spelled it.
+      const twin = result.shares.find((s) => s.stockItemId === item.id);
+      if (twin) twin.quantity += b.quantity;
+      else result.shares.push(share(item, b.quantity));
+    }
+    if (named < line.quantity) result.unsized = line.quantity - named;
+    if (named > line.quantity) result.oversized = named - line.quantity;
+    return result;
+  }
+  const variantId = payload.variant?.variantId;
+  if (variantId) {
+    const item = sized(variantId) ?? oneSize;
+    if (item) return { ...empty, shares: [share(item, line.quantity)] };
+    return {
+      ...empty,
+      unknownSizes: [payload.variant?.variantLabel?.trim() || variantId],
+      unknownUnits: line.quantity,
+    };
+  }
+  if (oneSize) return { ...empty, shares: [share(oneSize, line.quantity)] };
+  return { ...empty, unsized: line.quantity };
+}
+
+/** Sizes the counter can choose from, for a refusal: "S, M, L". */
+function sizeList(catalogue: StockCatalogue, productId: string | null): string {
+  const items = productId ? (catalogue.itemsByProduct.get(productId) ?? []) : [];
+  const order = (productId && catalogue.sizeOrder.get(productId)) || [];
+  const rank = (variantId: string | null) => {
+    const at = variantId ? order.indexOf(variantId) : -1;
+    return at < 0 ? order.length : at;
+  };
+  return [...items]
+    .sort((a, b) => rank(a.variantId) - rank(b.variantId))
+    .filter((i) => i.variantLabel)
+    .map((i) => i.variantLabel!)
+    .join(', ');
+}
+
+/**
+ * THE GUARD AT COMMIT. Refuses, in the counter's words and before anything is
+ * written, a cart this branch cannot fill — per size, honouring an add-on's
+ * breakdown, counting every place the cascade will reach.
+ */
+export async function assertCartStock(
+  db: Exec,
+  branchId: string,
+  lines: readonly StockLineInput[],
+): Promise<void> {
+  const catalogue = await loadStockCatalogue(
+    db,
+    branchId,
+    lines.flatMap((l) => (l.productId && STOCKED_LINE_KINDS.has(l.kind) ? [l.productId] : [])),
+  );
+  if (catalogue.itemsById.size === 0) return;
+  const demand = new Map<string, number>();
+  const sizeProblems: string[] = [];
+  for (const line of lines) {
+    const resolved = lineStock(line, catalogue);
+    const name = resolved.productName ?? line.label ?? 'This item';
+    if (resolved.unknownSizes.length > 0) {
+      sizeProblems.push(
+        `${name} has no size ${resolved.unknownSizes.join(', ')} in stock here — it comes in ${sizeList(catalogue, line.productId)}`,
+      );
+    }
+    if (resolved.unsized > 0) {
+      sizeProblems.push(`Choose a size for ${name} — it comes in ${sizeList(catalogue, line.productId)}`);
+    }
+    if (resolved.oversized > 0) {
+      sizeProblems.push(`The sizes chosen for ${name} add up to more than the ${line.quantity} on the line`);
+    }
+    for (const s of resolved.shares) demand.set(s.stockItemId, (demand.get(s.stockItemId) ?? 0) + s.quantity);
+  }
+  if (sizeProblems.length > 0) {
+    throw errors.conflict('STOCK_SIZE_REQUIRED', `${sizeProblems.join('. ')}. Nothing was saved.`, {
+      problems: sizeProblems,
+    });
+  }
+  const held = await availableFor(db, branchId, [...demand.keys()]);
+  const shortages: { stockItemId: string; name: string; requested: number; available: number }[] = [];
+  for (const [stockItemId, requested] of demand) {
+    const available = held.get(stockItemId)?.available ?? 0;
+    if (requested <= available) continue;
+    const item = catalogue.itemsById.get(stockItemId)!;
+    const productName = (item.productId && catalogue.productNames.get(item.productId)) || item.name;
+    shortages.push({ stockItemId, name: stockSizeName(productName, item.variantLabel), requested, available });
+  }
+  if (shortages.length > 0) {
+    throw errors.conflict(
+      'STOCK_SHORT',
+      `${shortages.map((s) => stockShortMessage(s.name, s.available)).join('. ')}. Nothing was saved.`,
+      { shortages },
+    );
+  }
+}
+
+/** The shares a line freezes onto its payload at commit, or none when nothing is stocked. */
+export async function stockSharesForLines(
+  db: Exec,
+  branchId: string,
+  lines: readonly StockLineInput[],
+): Promise<Array<SaleLineStockShare[] | null>> {
+  const catalogue = await loadStockCatalogue(
+    db,
+    branchId,
+    lines.flatMap((l) => (l.productId && STOCKED_LINE_KINDS.has(l.kind) ? [l.productId] : [])),
+  );
+  return lines.map((line) => {
+    const shares = lineStock(line, catalogue).shares;
+    return shares.length > 0 ? shares : null;
+  });
+}
+
+// --- Attention ------------------------------------------------------------------------
+
+async function raiseStockAttention(
+  tx: Tx,
+  input: {
+    operatorId: string;
+    branchId: string;
+    stockItemId: string | null;
+    kind: StockAttentionKind;
+    dedupeKey: string;
+    quantity: number;
+    summary: string;
+    detail: unknown;
+    saleId?: string | null;
+    saleLineId?: string | null;
+  },
+): Promise<void> {
+  const inserted = await tx
+    .insert(stockAttention)
+    .values({
+      id: newId(),
+      operatorId: input.operatorId,
+      branchId: input.branchId,
+      stockItemId: input.stockItemId,
+      kind: input.kind,
+      dedupeKey: input.dedupeKey,
+      quantity: input.quantity,
+      summary: input.summary,
+      detail: input.detail as never,
+      saleId: input.saleId ?? null,
+      saleLineId: input.saleLineId ?? null,
+    })
+    .onConflictDoNothing()
+    .returning({ id: stockAttention.id });
+  if (inserted[0]) return;
+  await tx
+    .update(stockAttention)
+    .set({ occurrences: sql`${stockAttention.occurrences} + 1`, updatedAt: new Date() })
+    .where(
+      and(
+        eq(stockAttention.operatorId, input.operatorId),
+        eq(stockAttention.dedupeKey, input.dedupeKey),
+        isNull(stockAttention.resolvedAt),
+      ),
+    );
+}
+
+// --- The decrement at finalise -----------------------------------------------------------
+
+export interface TakeStockResult {
+  movements: AppliedMovement[];
+  shortfalls: { saleLineId: string; stockItemId: string; shortfall: number }[];
+  unsized: { saleLineId: string; quantity: number }[];
+}
+
+/**
+ * THE DECREMENT, at both finalise points (`commitSale`'s ฿0 close and
+ * `finaliseSale`). NEVER REFUSES: it takes what the record holds, in the
+ * cascade order, and records the rest as a shortfall to look at.
+ *
+ * Once per line: a line that already has movements is skipped, and every
+ * movement's action id is `sale:<sale line>:<stock item>:<location>`, derived
+ * from the deterministic sale-line id — so a replayed finalise, a retried
+ * press or a box's offline sale arriving twice moves nothing twice.
+ */
+export async function takeStockForSale(
+  tx: Tx,
+  saleRow: SaleRow,
+  ctx: { actorAccountId: string | null; requestId?: string | null; offline: boolean; now: Date },
+): Promise<TakeStockResult> {
+  const result: TakeStockResult = { movements: [], shortfalls: [], unsized: [] };
+  const lines = await tx
+    .select({
+      id: saleLine.id,
+      kind: saleLine.kind,
+      productId: saleLine.productId,
+      quantity: saleLine.quantity,
+      label: saleLine.label,
+      payload: saleLine.payload,
+      lineNo: saleLine.lineNo,
+    })
+    .from(saleLine)
+    .where(eq(saleLine.saleId, saleRow.id))
+    .orderBy(asc(saleLine.lineNo));
+  const stocked = lines.filter((l) => l.productId && STOCKED_LINE_KINDS.has(l.kind) && l.quantity > 0);
+  if (stocked.length === 0) return result;
+
+  const already = await tx
+    .selectDistinct({ saleLineId: stockMovement.saleLineId })
+    .from(stockMovement)
+    .where(eq(stockMovement.saleId, saleRow.id));
+  const moved = new Set(already.map((r) => r.saleLineId));
+  const todo = stocked.filter((l) => !moved.has(l.id));
+  if (todo.length === 0) return result;
+
+  // The shares frozen at commit where the line carries them; resolved now for
+  // a line committed before the shares existed.
+  const catalogue = await loadStockCatalogue(tx, saleRow.branchId, todo.map((l) => l.productId!));
+  const plans = todo.map((line) => {
+    const frozen = (line.payload as LinePayloadView | null)?.stock;
+    if (Array.isArray(frozen) && frozen.length > 0) {
+      return { line, shares: frozen, unsized: 0 };
+    }
+    const resolved = lineStock(line, catalogue);
+    return { line, shares: resolved.shares, unsized: resolved.unsized + resolved.unknownUnits };
+  });
+  const itemIds = [...new Set(plans.flatMap((p) => p.shares.map((s) => s.stockItemId)))];
+  const locations = await branchLocations(tx, saleRow.branchId);
+  const levels = await lockLevels(
+    tx,
+    itemIds.flatMap((stockItemId) => locations.map((loc) => ({ stockItemId, stockLocationId: loc.id }))),
+  );
+  const sellPoint = locations.find((l) => l.sellPoint) ?? null;
+  const kind: StockMovementKind = ctx.offline ? 'offline_sale' : 'sale';
+  /**
+   * WHERE A SHORTFALL IS RECORDED (round 4, handover Q2). A branch with no live
+   * place is still a branch that TRACKS the item: round 1's guard counts what
+   * every live place holds, finds nothing, and refuses the cart at commit
+   * ("Oto Cap is out of stock"), and a box's snapshot of no places refuses it
+   * offline too. So a paid sale that reaches finalise there anyway — its guard
+   * was skipped for a tender already in flight, or every place was retired
+   * between commit and close — sold units the record did not hold, and that is
+   * a shortfall, not an untracked sale: it is recorded where the record last
+   * was, the branch's retired place a sale would have taken from first, so the
+   * ledger keeps it and the offline oversold check (which reads these
+   * movements) raises it. Only a branch that has never had a place has nowhere
+   * for a movement to be: its shortfall is the attention row below alone.
+   */
+  const shortfallPlace = sellPoint ?? locations[0] ?? (await retiredShortfallPlace(tx, saleRow.branchId));
+
+  const drafts: MovementDraft[] = [];
+  const shortfallsToRaise: { line: (typeof todo)[number]; share: SaleLineStockShare; shortfall: number }[] = [];
+  for (const plan of plans) {
+    for (const s of plan.shares) {
+      let remaining = s.quantity;
+      const lineDrafts: MovementDraft[] = [];
+      for (const loc of locations) {
+        if (remaining <= 0) break;
+        const key = pairKey(s.stockItemId, loc.id);
+        const level = levels.get(key) ?? 0;
+        const take = Math.min(level, remaining);
+        if (take <= 0) continue;
+        levels.set(key, level - take);
+        remaining -= take;
+        lineDrafts.push({
+          stockItemId: s.stockItemId,
+          stockLocationId: loc.id,
+          kind,
+          quantity: -take,
+          actionId: `sale:${plan.line.id}:${s.stockItemId}:${loc.id}`,
+          saleId: saleRow.id,
+          saleLineId: plan.line.id,
+          unitCostSatang: s.unitCostSatang,
+        });
+      }
+      if (remaining > 0) {
+        // What the record did not hold is recorded where the sale takes from
+        // first: the sell point, or the first place in the cascade, or — no
+        // live place at all — the retired place the record last was.
+        const where = shortfallPlace;
+        if (where) {
+          const existing = lineDrafts.find((d) => d.stockLocationId === where.id);
+          if (existing) existing.shortfall = remaining;
+          else {
+            lineDrafts.push({
+              stockItemId: s.stockItemId,
+              stockLocationId: where.id,
+              kind,
+              quantity: 0,
+              shortfall: remaining,
+              actionId: `sale:${plan.line.id}:${s.stockItemId}:${where.id}`,
+              saleId: saleRow.id,
+              saleLineId: plan.line.id,
+              unitCostSatang: s.unitCostSatang,
+            });
+          }
+        }
+        shortfallsToRaise.push({ line: plan.line, share: s, shortfall: remaining });
+      }
+      drafts.push(...lineDrafts);
+    }
+    if (plan.unsized > 0) result.unsized.push({ saleLineId: plan.line.id, quantity: plan.unsized });
+  }
+
+  const mctx: MovementContext = {
+    operatorId: saleRow.operatorId,
+    branchId: saleRow.branchId,
+    businessDate: saleRow.businessDate,
+    occurredAt: ctx.now,
+    actorAccountId: ctx.actorAccountId,
+    stationId: saleRow.stationId,
+    boxId: saleRow.boxId,
+    offline: ctx.offline,
+  };
+  result.movements = await applyMovements(tx, mctx, drafts);
+
+  for (const { line, share, shortfall } of shortfallsToRaise) {
+    const item = catalogue.itemsById.get(share.stockItemId);
+    const name = item
+      ? stockSizeName((item.productId && catalogue.productNames.get(item.productId)) || item.name, item.variantLabel)
+      : line.label;
+    result.shortfalls.push({ saleLineId: line.id, stockItemId: share.stockItemId, shortfall });
+    await raiseStockAttention(tx, {
+      operatorId: saleRow.operatorId,
+      branchId: saleRow.branchId,
+      stockItemId: share.stockItemId,
+      kind: 'stock_shortfall',
+      dedupeKey: `shortfall:${line.id}:${share.stockItemId}`,
+      quantity: shortfall,
+      summary: `${shortfall} ${name} sold that the record did not hold${ctx.offline ? ' (sold offline)' : ''} — count the shelf`,
+      detail: { saleId: saleRow.id, saleLineId: line.id, requested: share.quantity, shortfall, offline: ctx.offline },
+      saleId: saleRow.id,
+      saleLineId: line.id,
+    });
+  }
+  for (const u of result.unsized) {
+    const line = todo.find((l) => l.id === u.saleLineId)!;
+    await raiseStockAttention(tx, {
+      operatorId: saleRow.operatorId,
+      branchId: saleRow.branchId,
+      stockItemId: null,
+      kind: 'size_unknown',
+      dedupeKey: `size_unknown:${line.id}`,
+      quantity: u.quantity,
+      summary: `${u.quantity} ${line.label} sold with no size named, or a size not stocked here — nothing was taken off a shelf for them`,
+      detail: { saleId: saleRow.id, saleLineId: line.id },
+      saleId: saleRow.id,
+      saleLineId: line.id,
+    });
+  }
+
+  if (result.movements.length > 0 || result.shortfalls.length > 0 || result.unsized.length > 0) {
+    await audit.record(tx, {
+      actorAccountId: ctx.actorAccountId,
+      operatorId: saleRow.operatorId,
+      branchId: saleRow.branchId,
+      action: ctx.offline ? 'stock.offline_sale' : 'stock.sale',
+      entityType: 'sale',
+      entityId: saleRow.id,
+      requestId: ctx.requestId ?? null,
+      after: {
+        movements: result.movements.map((m) => ({
+          stockItemId: m.stockItemId,
+          stockLocationId: m.stockLocationId,
+          quantity: m.quantity,
+          shortfall: m.shortfall,
+          levelAfter: m.levelAfter,
+        })),
+        shortfalls: result.shortfalls,
+        unsized: result.unsized,
+      },
+    });
+  }
+  // Round 4 (Q4): the low-stock rows move with the sale — for the items it
+  // moved only, in this transaction — so the attention read never has to write.
+  await syncStockAttention(
+    tx,
+    { operatorId: saleRow.operatorId, branchId: saleRow.branchId, accountId: ctx.actorAccountId },
+    ctx.now,
+    [...new Set(result.movements.map((m) => m.stockItemId))],
+  );
+  return result;
+}
+
+// --- The restock on a refund -------------------------------------------------------------
+
+/**
+ * Put back what a refund's restock decision returns (`restockLineIds`,
+ * `@oto/shared/refund.ts`) — to the PLACE each unit was taken from, the
+ * sale's own movements read back. A unit the sale recorded as a shortfall goes
+ * back where the shortfall was recorded (the sell point): the guest is handing
+ * a real thing over the counter.
+ *
+ * Once per sale line, whichever refund carries it: the action id is
+ * `restock:<sale line>:<stock item>:<location>`. A line sold before the ledger
+ * existed has no movements and puts nothing back (OD-S5).
+ */
+export async function restockForRefund(
+  tx: Tx,
+  input: {
+    operatorId: string;
+    branchId: string;
+    saleId: string;
+    refundId: string;
+    saleLineIds: readonly string[];
+    businessDate: string;
+    stationId: string | null;
+    actorAccountId: string;
+    requestId?: string | null;
+    now: Date;
+  },
+): Promise<AppliedMovement[]> {
+  if (input.saleLineIds.length === 0) return [];
+  const taken = await tx
+    .select({
+      saleLineId: stockMovement.saleLineId,
+      stockItemId: stockMovement.stockItemId,
+      stockLocationId: stockMovement.stockLocationId,
+      quantity: stockMovement.quantity,
+      shortfall: stockMovement.shortfall,
+      unitCostSatang: stockMovement.unitCostSatang,
+    })
+    .from(stockMovement)
+    .where(
+      and(
+        eq(stockMovement.saleId, input.saleId),
+        inArray(stockMovement.saleLineId, [...input.saleLineIds]),
+        inArray(stockMovement.kind, ['sale', 'offline_sale']),
+      ),
+    );
+  // FOR SHARE, in id order: a size removal in flight (`saveStockItem`, FOR NO
+  // KEY UPDATE) finishes first and this reads what it left. A size the manager
+  // has since removed is on no screen and no count, so a unit put back on it
+  // would be an each nobody can see: it is skipped — the same as a line sold
+  // before the ledger — and named in the refund's audit for the office.
+  const takenIds = [...new Set(taken.map((r) => r.stockItemId))];
+  const archived = new Map(
+    (takenIds.length
+      ? await tx
+          .select({ id: stockItem.id, name: stockItem.name, variantLabel: stockItem.variantLabel, archivedAt: stockItem.archivedAt })
+          .from(stockItem)
+          .where(inArray(stockItem.id, takenIds))
+          .orderBy(asc(stockItem.id))
+          .for('share')
+      : []
+    )
+      .filter((r) => r.archivedAt !== null)
+      .map((r) => [r.id, stockSizeName(r.name, r.variantLabel)] as const),
+  );
+  const drafts: MovementDraft[] = [];
+  const skipped: Array<{ saleLineId: string | null; stockItemId: string; stockLocationId: string; quantity: number; item: string }> = [];
+  for (const row of taken) {
+    const back = -row.quantity + row.shortfall;
+    if (back <= 0) continue;
+    const removedName = archived.get(row.stockItemId);
+    if (removedName !== undefined) {
+      skipped.push({
+        saleLineId: row.saleLineId,
+        stockItemId: row.stockItemId,
+        stockLocationId: row.stockLocationId,
+        quantity: back,
+        item: removedName,
+      });
+      continue;
+    }
+    drafts.push({
+      stockItemId: row.stockItemId,
+      stockLocationId: row.stockLocationId,
+      kind: 'refund',
+      quantity: back,
+      actionId: `restock:${row.saleLineId}:${row.stockItemId}:${row.stockLocationId}`,
+      saleId: input.saleId,
+      saleLineId: row.saleLineId,
+      refundId: input.refundId,
+      unitCostSatang: row.unitCostSatang,
+    });
+  }
+  const applied = await applyMovements(
+    tx,
+    {
+      operatorId: input.operatorId,
+      branchId: input.branchId,
+      businessDate: input.businessDate,
+      occurredAt: input.now,
+      actorAccountId: input.actorAccountId,
+      stationId: input.stationId,
+    },
+    drafts,
+  );
+  if (applied.length > 0 || skipped.length > 0) {
+    await audit.record(tx, {
+      actorAccountId: input.actorAccountId,
+      operatorId: input.operatorId,
+      branchId: input.branchId,
+      action: 'stock.refund',
+      entityType: 'refund',
+      entityId: input.refundId,
+      requestId: input.requestId ?? null,
+      after: {
+        saleId: input.saleId,
+        movements: applied.map((m) => ({
+          stockItemId: m.stockItemId,
+          stockLocationId: m.stockLocationId,
+          quantity: m.quantity,
+          levelAfter: m.levelAfter,
+        })),
+        // Units the guest handed back to a size since removed from stock: not
+        // put on any shelf. Add the size back and receive them to keep them.
+        ...(skipped.length > 0
+          ? { notRestocked: skipped.map((s) => ({ ...s, why: `${s.item} was removed from stock` })) }
+          : {}),
+      },
+    });
+  }
+  // Round 4 (Q4): what came back may lift a low-stock row — the items moved only.
+  await syncStockAttention(
+    tx,
+    { operatorId: input.operatorId, branchId: input.branchId, accountId: input.actorAccountId },
+    input.now,
+    [...new Set(applied.map((m) => m.stockItemId))],
+  );
+  return applied;
+}
+
+// --- The catalogue link ------------------------------------------------------------------
+
+/** Every live link from this branch's stock items to products, by product. */
+export async function productStockLinks(
+  db: Exec,
+  branchId: string,
+  productIds: readonly string[],
+): Promise<Map<string, ProductStockLink[]>> {
+  const out = new Map<string, ProductStockLink[]>();
+  if (productIds.length === 0) return out;
+  const rows = await db
+    .select({ id: stockItem.id, productId: stockItem.productId, variantId: stockItem.variantId })
+    .from(stockItem)
+    .where(and(eq(stockItem.branchId, branchId), inArray(stockItem.productId, [...productIds]), isNull(stockItem.archivedAt)))
+    .orderBy(asc(stockItem.variantId), asc(stockItem.id));
+  for (const row of rows) {
+    const list = out.get(row.productId!) ?? [];
+    list.push({ variantId: row.variantId, stockItemId: row.id });
+    out.set(row.productId!, list);
+  }
+  return out;
+}
+
+/**
+ * WRITE a product's stock links at one branch: the list given replaces the
+ * product's links there. Each stock item must be this branch's, live, and not
+ * already stocking another product; each size must be one of the product's
+ * own (`product.variants`), or null for a product in one size. The product's
+ * own `stock_item_id` — the prototype's "set = tracked" marker — follows: the
+ * one-size link, else the first size's, else null.
+ */
+export async function setProductStockLinks(
+  tx: Tx,
+  scope: { operatorId: string; branchId: string; accountId: string; requestId?: string | null },
+  productRow: typeof product.$inferSelect,
+  links: readonly ProductStockLink[],
+): Promise<ProductStockLink[]> {
+  const sizes = new Set((productRow.variants ?? []).map((v) => v.id));
+  const seenSizes = new Set<string>();
+  const seenItems = new Set<string>();
+  for (const link of links) {
+    const size = link.variantId ?? '';
+    if (seenSizes.has(size)) {
+      throw errors.badRequest(`"${productRow.name}" is linked to two stock items for the same size`, { variantId: link.variantId });
+    }
+    seenSizes.add(size);
+    if (seenItems.has(link.stockItemId)) {
+      throw errors.badRequest('One stock item cannot stock two sizes', { stockItemId: link.stockItemId });
+    }
+    seenItems.add(link.stockItemId);
+    if (link.variantId !== null && !sizes.has(link.variantId)) {
+      throw errors.badRequest(`"${productRow.name}" has no size "${link.variantId}"`, { variantId: link.variantId });
+    }
+  }
+  // H3 (round 2): all of a sized product's sizes, or none — a partial link
+  // leaves the till offering a size no shelf stocks.
+  const partial = partialStockLinkProblem(productRow.name, productRow.variants ?? [], links);
+  if (partial) throw errors.badRequest(partial, { productId: productRow.id, links });
+  const items = links.length
+    ? await tx
+        .select()
+        .from(stockItem)
+        .where(and(inArray(stockItem.id, links.map((l) => l.stockItemId)), eq(stockItem.operatorId, scope.operatorId)))
+        // In id order, and NO KEY: a concurrent finalise holds these rows FOR KEY
+        // SHARE through the level and movement foreign keys, which a plain FOR
+        // UPDATE would wait on (and could deadlock with across two sizes). The
+        // finalise must never be the one chosen to fail.
+        .orderBy(asc(stockItem.id))
+        .for('no key update')
+    : [];
+  const byId = new Map(items.map((i) => [i.id, i]));
+  for (const link of links) {
+    const item = byId.get(link.stockItemId);
+    if (!item || item.archivedAt || item.branchId !== scope.branchId) {
+      throw errors.badRequest('That stock item is not one of this branch’s', { stockItemId: link.stockItemId });
+    }
+    if (item.productId && item.productId !== productRow.id) {
+      throw errors.conflict('STOCK_ITEM_LINKED', `"${item.name}" already stocks another item — unlink it there first`, {
+        stockItemId: item.id,
+        productId: item.productId,
+      });
+    }
+  }
+  const before = (await productStockLinks(tx, scope.branchId, [productRow.id])).get(productRow.id) ?? [];
+  // Unlink first, so a size moving from one stock item to another never meets
+  // `stock_item_sellable_unique` half-way.
+  await tx
+    .update(stockItem)
+    .set({ productId: null, variantId: null, variantLabel: null, updatedAt: new Date() })
+    .where(and(eq(stockItem.branchId, scope.branchId), eq(stockItem.productId, productRow.id)));
+  for (const link of links) {
+    const label = link.variantId ? (productRow.variants.find((v) => v.id === link.variantId)?.label ?? null) : null;
+    await tx
+      .update(stockItem)
+      .set({ productId: productRow.id, variantId: link.variantId, variantLabel: label, updatedAt: new Date() })
+      .where(eq(stockItem.id, link.stockItemId));
+  }
+  const marker = links.find((l) => l.variantId === null) ?? links[0] ?? null;
+  await tx
+    .update(product)
+    .set({ stockItemId: marker?.stockItemId ?? null, updatedAt: new Date() })
+    .where(eq(product.id, productRow.id));
+  await audit.record(tx, {
+    actorAccountId: scope.accountId,
+    operatorId: scope.operatorId,
+    branchId: scope.branchId,
+    action: 'product.stock_links',
+    entityType: 'product',
+    entityId: productRow.id,
+    requestId: scope.requestId ?? null,
+    before: { links: before },
+    after: { links },
+  });
+  return [...links];
+}
+
+// --- What the till reads -------------------------------------------------------------------
+
+/**
+ * Every stock-tracked product at the branch, each size with what the branch
+ * holds of it — the answer the till's grids, its size pickers and its guard
+ * read (`GET /branches/:branchId/stock/sellable`).
+ */
+export async function sellableStock(db: Exec, operatorId: string, branchId: string): Promise<SellableStock> {
+  const items = await db
+    .select()
+    .from(stockItem)
+    .where(
+      and(
+        eq(stockItem.operatorId, operatorId),
+        eq(stockItem.branchId, branchId),
+        eq(stockItem.active, true),
+        isNull(stockItem.archivedAt),
+        sql`${stockItem.productId} is not null`,
+      ),
+    );
+  const locations = await branchLocations(db, branchId);
+  const sellPoint = locations.find((l) => l.sellPoint) ?? null;
+  const held = await availableFor(
+    db,
+    branchId,
+    items.map((i) => i.id),
+  );
+  const productIds = [...new Set(items.map((i) => i.productId!))];
+  // A retired product — withdrawn from the sell surface (`active = false`) or
+  // archived — is not sold, so it is not the till's to count: the header strip
+  // never names it as out of stock (stock walkthrough F4, "Old Lanyard
+  // (retired)" in "12 out of stock"). Its stock item still shows on the stock
+  // screens, which read the levels, not this.
+  const products = productIds.length
+    ? await db
+        .select({ id: product.id, name: product.name, variants: product.variants })
+        .from(product)
+        .where(and(inArray(product.id, productIds), eq(product.active, true), isNull(product.archivedAt)))
+    : [];
+  const out: SellableStock = { branchId, sellPointId: sellPoint?.id ?? null, products: [] };
+  for (const p of products.sort((a, b) => a.name.localeCompare(b.name))) {
+    const order = new Map(p.variants.map((v, i) => [v.id, i]));
+    const own = items
+      .filter((i) => i.productId === p.id)
+      .sort((a, b) => (order.get(a.variantId ?? '') ?? -1) - (order.get(b.variantId ?? '') ?? -1));
+    out.products.push({
+      productId: p.id,
+      name: p.name,
+      sizes: own.map((i) => {
+        const h = held.get(i.id) ?? { available: 0, atSellPoint: 0 };
+        return {
+          variantId: i.variantId,
+          label: i.variantLabel ?? (i.variantId ? (p.variants.find((v) => v.id === i.variantId)?.label ?? i.variantId) : null),
+          stockItemId: i.id,
+          available: h.available,
+          atSellPoint: h.atSellPoint,
+          lowStockThreshold: i.lowStockThreshold,
+          status: stockStatus(h.available, i.lowStockThreshold),
+        };
+      }),
+    });
+  }
+  return out;
+}
+
+/**
+ * What a stock item keeps in its `payload` (round 2, no migration): the group
+ * its sizes share, the item's own product-line code, and the photo the stock
+ * screens show.
+ */
+interface StockItemPayload {
+  groupId?: string;
+  itemSku?: string;
+  photoUrl?: string;
+  showPhotoInPos?: boolean;
+}
+
+function itemPayload(row: ItemRow): StockItemPayload {
+  const p = row.payload;
+  return p && typeof p === 'object' && !Array.isArray(p) ? (p as StockItemPayload) : {};
+}
+
+/**
+ * THE KEY THAT MAKES SIZES ONE ITEM on the stock screens (the prototype's
+ * `InventoryItem` with `variants`): the group the sizes were saved in, else the
+ * product they stock — every seeded size of the Grip Socks shares its product —
+ * else the row itself.
+ */
+export function stockGroupKey(row: ItemRow): string {
+  const g = itemPayload(row).groupId;
+  return typeof g === 'string' && g ? g : (row.productId ?? row.id);
+}
+
+/** The branch's items with what each place holds — the stock screens' read. */
+export async function stockLevelsOf(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+  /** Cost per each is answered only to a manager (`StockPlaceViewSchema`'s note). */
+  view: { withCost: boolean },
+): Promise<StockLevels> {
+  const items = await db
+    .select()
+    .from(stockItem)
+    .where(and(eq(stockItem.operatorId, operatorId), eq(stockItem.branchId, branchId), isNull(stockItem.archivedAt)))
+    .orderBy(asc(stockItem.name), asc(stockItem.variantId));
+  const locations = await branchLocations(db, branchId);
+  const ids = items.map((i) => i.id);
+  const levels = ids.length ? await db.select().from(stockLevel).where(inArray(stockLevel.stockItemId, ids)) : [];
+  const units = ids.length
+    ? await db
+        .select()
+        .from(stockUnit)
+        .where(and(inArray(stockUnit.stockItemId, ids), isNull(stockUnit.archivedAt)))
+        .orderBy(desc(stockUnit.eaches), asc(stockUnit.code))
+    : [];
+  const productIds = [...new Set(items.flatMap((i) => (i.productId ? [i.productId] : [])))];
+  const kinds = new Map(
+    (productIds.length
+      ? await db.select({ id: product.id, kind: product.kind }).from(product).where(inArray(product.id, productIds))
+      : []
+    ).map((p) => [p.id, p.kind as string]),
+  );
+  // Each item's reorder point today, judged over its live sizes exactly as the
+  // low-stock attention judges it (`syncStockAttention`).
+  const live = items.filter((i) => i.active);
+  const today = await branchToday(db, branchId, new Date());
+  const usage = await usageForTrend(db, branchId, live.map((i) => i.id), today);
+  const liveGroups = new Map<string, ItemRow[]>();
+  for (const i of [...live].sort((a, b) => a.id.localeCompare(b.id))) {
+    const key = stockGroupKey(i);
+    liveGroups.set(key, [...(liveGroups.get(key) ?? []), i]);
+  }
+  const pointNow = new Map([...liveGroups].map(([key, sizes]) => [key, groupReorderPoint(sizes, usage, today).reorderPoint]));
+  return {
+    branchId,
+    locations: locations.map((l) => ({ id: l.id, name: l.name, type: l.type, sellPoint: l.sellPoint })),
+    items: items.map((i) => {
+      const byLocation: Record<string, number> = {};
+      for (const level of levels) if (level.stockItemId === i.id) byLocation[level.stockLocationId] = level.quantity;
+      const total = locations.reduce((sum, l) => sum + (byLocation[l.id] ?? 0), 0);
+      const extra = itemPayload(i);
+      return {
+        groupId: stockGroupKey(i),
+        itemSku: extra.itemSku ?? null,
+        productKind: i.productId ? (kinds.get(i.productId) ?? null) : null,
+        units: units
+          .filter((u) => u.stockItemId === i.id)
+          .map((u) => ({ code: u.code, label: u.label, eaches: u.eaches })),
+        photoUrl: extra.photoUrl ?? null,
+        showPhotoInPos: extra.showPhotoInPos === true,
+        id: i.id,
+        name: i.name,
+        sku: i.sku,
+        category: i.category,
+        active: i.active,
+        productId: i.productId,
+        variantId: i.variantId,
+        variantLabel: i.variantLabel,
+        unitCostSatang: view.withCost ? i.unitCostSatang : null,
+        lowStockThreshold: i.lowStockThreshold,
+        parByLocation: i.parByLocation,
+        reorderPoint: i.reorderPoint,
+        reorderPointNow: pointNow.get(stockGroupKey(i)) ?? null,
+        reorderQuantity: i.reorderQuantity,
+        leadTimeDays: i.leadTimeDays,
+        supplierName: i.supplierName,
+        supplierContact: i.supplierContact,
+        byLocation,
+        total,
+        status: stockStatus(total, i.lowStockThreshold),
+      };
+    }),
+  };
+}
+
+/** One item's ledger, newest first. */
+export async function movementsOf(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+  filter: { stockItemId?: string; saleId?: string; limit: number },
+  view: { withCost: boolean },
+): Promise<StockMovementView[]> {
+  const rows = await db
+    .select()
+    .from(stockMovement)
+    .where(
+      and(
+        eq(stockMovement.operatorId, operatorId),
+        eq(stockMovement.branchId, branchId),
+        filter.stockItemId ? eq(stockMovement.stockItemId, filter.stockItemId) : undefined,
+        filter.saleId ? eq(stockMovement.saleId, filter.saleId) : undefined,
+      ),
+    )
+    .orderBy(sql`${stockMovement.createdAt} desc`, sql`${stockMovement.id} desc`)
+    .limit(filter.limit);
+  return rows.map((m) => ({
+    id: m.id,
+    stockItemId: m.stockItemId,
+    stockLocationId: m.stockLocationId,
+    kind: m.kind,
+    quantity: m.quantity,
+    levelAfter: m.levelAfter,
+    shortfall: m.shortfall,
+    saleId: m.saleId,
+    saleLineId: m.saleLineId,
+    refundId: m.refundId,
+    transferId: m.transferId,
+    reason: m.reason,
+    unitCostSatang: view.withCost ? m.unitCostSatang : null,
+    businessDate: m.businessDate,
+    actorAccountId: m.actorAccountId,
+    stationId: m.stationId,
+    offline: m.offline,
+    occurredAt: m.occurredAt.toISOString(),
+    createdAt: m.createdAt.toISOString(),
+  }));
+}
+
+// =====================================================================================
+// ROUND 2 — the stock module's own writes (plan §2.3, OD-S1, OD-S4, OD-S5).
+//
+// Every write below goes through `applyMovements`, the one writer of the level,
+// in the caller's transaction, records an audit row with that transaction, and
+// then re-reads the branch's low-stock attention (`syncStockAttention`) so the
+// rows a person looks at move with the stock. Ported rules, each from the
+// prototype (`imports/oto-pos/artifacts/oto-till/src`):
+//
+//   - a transfer clamps to what the source holds and logs what MOVED, never what
+//     was asked (`catalogStore.ts:1298-1330`, `StockTransferFlow.tsx:85-109`);
+//   - a delivery with no order needs a reason (`StockReplenishFlow.tsx:230`); one
+//     against an order line is clamped to what is outstanding, into the place the
+//     member of staff chose, and the order closes when every line is in
+//     (`mockApi.ts:1837-1886`);
+//   - an order is `to_order → ordered → received`; one open `to_order` per
+//     supplier and branch, a repeat size merges, lines change only while
+//     `to_order`, at least one each, and removing the last line deletes the order
+//     (`mockApi.ts:1699-1801`); placing it stamps the date and the expected
+//     arrival, today + the largest lead time (`StockPurchasing.tsx:303-315`);
+//   - a count sets each counted shelf to what was counted, flags a difference
+//     above three and adjusts with no approval gate (`StockTakeFlow.tsx:96-148`,
+//     OD-S1); each place's FIRST count is that place's opening (OD-S5);
+//   - exactly one active sell point, only a FOH rotation place can be it, and it
+//     can be neither retired nor retyped (`catalogStore.ts:1434-1447`,
+//     `StockLocationsPanel.tsx:155-203`).
+// =====================================================================================
+
+/** Who is moving stock, at which branch. */
+export interface StockActor {
+  operatorId: string;
+  branchId: string;
+  accountId: string;
+  requestId?: string | null;
+  stationId?: string | null;
+}
+
+/** The branch's trading day now, and who moved it: the context every movement carries. */
+async function movementContext(db: Exec, actor: StockActor, now: Date): Promise<MovementContext> {
+  const [br] = await db
+    .select({ operatorId: branch.operatorId, timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(eq(branch.id, actor.branchId))
+    .limit(1);
+  if (!br || br.operatorId !== actor.operatorId) throw errors.notFound('Branch not found');
+  return {
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    businessDate: businessDate(now, br.timezone, parseDayStart(br.dayStart)),
+    occurredAt: now,
+    actorAccountId: actor.accountId,
+    stationId: actor.stationId ?? null,
+  };
+}
+
+/** How the counter names one stock item: "Grip Socks S". */
+const sizeName = (item: ItemRow): string => stockSizeName(item.name, item.variantLabel);
+
+/** How the counter is told a size it is putting eaches on was removed. */
+const REMOVED_REFUSAL = {
+  received: 'it cannot be received',
+  counted: 'it cannot be counted',
+  added: 'nothing can be added to it',
+  moved: 'it cannot be moved',
+  /** Round 4 (handover Q5): an order for a size removed while the add waited. */
+  ordered: 'it cannot be ordered',
+  used: 'it cannot be used',
+} as const;
+
+/**
+ * This branch's live stock items, by id. A missing one is refused in plain words.
+ *
+ * `lockFor` — every path that PUTS EACHES ON an item (a delivery, a count, an
+ * upward correction, a transfer's arrival) passes what it is doing. The items are then read FOR
+ * SHARE, in id order: a size removal in flight (`saveStockItem`, FOR NO KEY
+ * UPDATE) finishes first and the size it removed is refused in the counter's
+ * words, or this write commits first and the removal sees the level and
+ * refuses. The movement's own foreign key takes only KEY SHARE, which never
+ * waits on the removal. Not in `applyMovements`: the offline replay calls it.
+ */
+async function loadBranchItems(
+  db: Exec,
+  actor: StockActor,
+  ids: readonly string[],
+  opts: { staffOperation?: boolean; lockFor?: Exclude<keyof typeof REMOVED_REFUSAL, 'used'> } = {},
+): Promise<Map<string, ItemRow>> {
+  const unique = [...new Set(ids)];
+  const scope = and(
+    inArray(stockItem.id, unique),
+    eq(stockItem.operatorId, actor.operatorId),
+    eq(stockItem.branchId, actor.branchId),
+  );
+  // Locked, the archived rows are read too: a size removed while this waited
+  // is named and refused, not reported as unknown.
+  const rows = !unique.length
+    ? []
+    : opts.lockFor
+      ? await db.select().from(stockItem).where(scope).orderBy(asc(stockItem.id)).for('share')
+      : await db.select().from(stockItem).where(and(scope, isNull(stockItem.archivedAt)));
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  for (const id of unique) {
+    const row = byId.get(id);
+    if (!row) throw errors.notFound('That stock item is not one of this branch’s');
+    if (row.archivedAt) {
+      throw errors.conflict(
+        'STOCK_ITEM_REMOVED',
+        `${sizeName(row)} was removed from stock — ${REMOVED_REFUSAL[opts.lockFor ?? 'used']}; add the size back under Inventory first`,
+        { stockItemId: id },
+      );
+    }
+    // A retired item is hidden from staff stock operations (`types.ts:921`).
+    if (opts.staffOperation && !row.active) {
+      throw errors.conflict('STOCK_ITEM_RETIRED', `${sizeName(row)} is retired — reactivate it in Inventory first`, {
+        stockItemId: id,
+      });
+    }
+  }
+  return byId;
+}
+
+/** One of this branch's places; a retired one is refused unless asked for. */
+async function loadBranchLocation(
+  db: Exec,
+  actor: StockActor,
+  locationId: string,
+  opts: { allowRetired?: boolean; lock?: boolean } = {},
+): Promise<LocationRow> {
+  const query = db
+    .select()
+    .from(stockLocation)
+    .where(
+      and(
+        eq(stockLocation.id, locationId),
+        eq(stockLocation.operatorId, actor.operatorId),
+        eq(stockLocation.branchId, actor.branchId),
+        isNull(stockLocation.archivedAt),
+      ),
+    )
+    .limit(1);
+  // NO KEY: a sale writing a movement holds the place FOR KEY SHARE through the
+  // foreign key, which a plain FOR UPDATE would wait on.
+  const [row] = opts.lock ? await query.for('no key update') : await query;
+  if (!row) throw errors.notFound('That stock place is not one of this branch’s');
+  if (!opts.allowRetired && !row.active) {
+    throw errors.conflict('STOCK_LOCATION_RETIRED', `${row.name} is retired — reactivate it first`, {
+      locationId,
+    });
+  }
+  return row;
+}
+
+// --- Transfers ------------------------------------------------------------------------
+
+/**
+ * MOVE STOCK between two places of the branch. Each line clamps to what the
+ * source holds at this moment (the levels are locked first), and the pair of
+ * movements — `transfer_out` and `transfer_in`, one transfer id — records what
+ * actually moved. A line the source holds none of moves nothing; a transfer in
+ * which nothing at all could move is refused, so nobody is told "Transfer done"
+ * about an empty shelf.
+ */
+export async function transferStock(
+  tx: Tx,
+  actor: StockActor,
+  body: StockTransferBody,
+  now: Date,
+): Promise<StockTransferResult> {
+  if (body.fromLocationId === body.toLocationId) throw errors.badRequest('From and To must be different');
+  const from = await loadBranchLocation(tx, actor, body.fromLocationId);
+  const to = await loadBranchLocation(tx, actor, body.toLocationId);
+  const requested = new Map<string, number>();
+  for (const line of body.lines) requested.set(line.stockItemId, (requested.get(line.stockItemId) ?? 0) + line.quantity);
+  const items = await loadBranchItems(tx, actor, [...requested.keys()], { staffOperation: true, lockFor: 'moved' });
+  const levels = await lockLevels(
+    tx,
+    [...requested.keys()].flatMap((stockItemId) => [
+      { stockItemId, stockLocationId: from.id },
+      { stockItemId, stockLocationId: to.id },
+    ]),
+  );
+  const transferId = newId();
+  const drafts: MovementDraft[] = [];
+  const lines: StockTransferResult['lines'] = [];
+  for (const [stockItemId, asked] of requested) {
+    const fromLevel = levels.get(pairKey(stockItemId, from.id)) ?? 0;
+    const toLevel = levels.get(pairKey(stockItemId, to.id)) ?? 0;
+    const moved = Math.min(asked, fromLevel);
+    const item = items.get(stockItemId)!;
+    if (moved > 0) {
+      const shared = { stockItemId, transferId, unitCostSatang: item.unitCostSatang, reason: `${from.name} → ${to.name}` };
+      drafts.push(
+        { ...shared, stockLocationId: from.id, kind: 'transfer_out', quantity: -moved, actionId: `transfer:${transferId}:${stockItemId}:out` },
+        { ...shared, stockLocationId: to.id, kind: 'transfer_in', quantity: moved, actionId: `transfer:${transferId}:${stockItemId}:in` },
+      );
+    }
+    lines.push({ stockItemId, requested: asked, moved, fromLevel: fromLevel - moved, toLevel: toLevel + moved });
+  }
+  if (drafts.length === 0) {
+    const names = lines.map((l) => sizeName(items.get(l.stockItemId)!)).join(', ');
+    throw errors.conflict('STOCK_TRANSFER_EMPTY', `${from.name} holds no ${names} — nothing was moved`, {
+      fromLocationId: from.id,
+    });
+  }
+  await applyMovements(tx, await movementContext(tx, actor, now), drafts);
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'stock.transfer',
+    entityType: 'stock_transfer',
+    entityId: transferId,
+    requestId: actor.requestId ?? null,
+    after: { fromLocationId: from.id, toLocationId: to.id, lines },
+  });
+  await syncStockAttention(tx, actor, now);
+  return { transferId, fromLocationId: from.id, toLocationId: to.id, lines };
+}
+
+// --- Receiving --------------------------------------------------------------------------
+
+/** A DELIVERY WITH NO ORDER, into the place chosen, with the reason it came. */
+export async function receiveStock(
+  tx: Tx,
+  actor: StockActor,
+  body: StockReceiveBody,
+  now: Date,
+): Promise<StockReceiveResult> {
+  const reason = body.reason.trim();
+  if (!reason) throw errors.badRequest('Give a reason for stock arriving without an order');
+  const item = (await loadBranchItems(tx, actor, [body.stockItemId], { staffOperation: true, lockFor: 'received' })).get(
+    body.stockItemId,
+  )!;
+  const place = await loadBranchLocation(tx, actor, body.locationId);
+  const receiptId = newId();
+  const [applied] = await applyMovements(tx, await movementContext(tx, actor, now), [
+    {
+      stockItemId: item.id,
+      stockLocationId: place.id,
+      kind: 'receive',
+      quantity: body.quantity,
+      actionId: `receive:${receiptId}`,
+      reason,
+      unitCostSatang: item.unitCostSatang,
+    },
+  ]);
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'stock.receive',
+    entityType: 'stock_item',
+    entityId: item.id,
+    requestId: actor.requestId ?? null,
+    after: { locationId: place.id, quantity: body.quantity, reason, levelAfter: applied!.levelAfter },
+  });
+  await syncStockAttention(tx, actor, now);
+  return { stockItemId: item.id, locationId: place.id, received: body.quantity, levelAfter: applied!.levelAfter };
+}
+
+/**
+ * A MANAGER'S CORRECTION (the admin panel's Adjust). An increase lands in the
+ * place named, else the sell point; a decrease takes from the place named, else
+ * from the sell point first and then the cascade — the prototype's
+ * `adjustInventoryStock` — and is refused, not clamped, past what is there: a
+ * correction that silently corrected less than it said is not a correction.
+ */
+export async function adjustStock(
+  tx: Tx,
+  actor: StockActor,
+  body: StockAdjustBody,
+  now: Date,
+): Promise<StockAdjustResult> {
+  // An increase puts eaches on the item, so it holds the item against a size
+  // removal (`loadBranchItems`); a decrease can only take what the locked
+  // levels hold, which a removal (level 0 only) never races.
+  const item = (await loadBranchItems(tx, actor, [body.stockItemId], body.delta > 0 ? { lockFor: 'added' } : {})).get(
+    body.stockItemId,
+  )!;
+  const named = body.locationId ? await loadBranchLocation(tx, actor, body.locationId) : null;
+  const places = named ? [named] : await branchLocations(tx, actor.branchId);
+  if (places.length === 0) {
+    throw errors.conflict('STOCK_NO_PLACE', 'This branch has no stock place yet — add one under Inventory → Locations');
+  }
+  const adjustmentId = newId();
+  const reason = body.reason.trim();
+  const draft = (locationId: string, quantity: number): MovementDraft => ({
+    stockItemId: item.id,
+    stockLocationId: locationId,
+    kind: 'adjust',
+    quantity,
+    actionId: `adjust:${adjustmentId}:${locationId}`,
+    reason,
+    unitCostSatang: item.unitCostSatang,
+  });
+  const drafts: MovementDraft[] = [];
+  if (body.delta > 0) {
+    drafts.push(draft(places[0]!.id, body.delta));
+  } else {
+    const levels = await lockLevels(
+      tx,
+      places.map((p) => ({ stockItemId: item.id, stockLocationId: p.id })),
+    );
+    const held = places.reduce((sum, p) => sum + (levels.get(pairKey(item.id, p.id)) ?? 0), 0);
+    let remaining = -body.delta;
+    if (remaining > held) {
+      throw errors.conflict(
+        'STOCK_ADJUST_TOO_MANY',
+        `${named ? named.name : 'This branch'} holds only ${held} ${sizeName(item)} — nothing was changed`,
+        { held, delta: body.delta },
+      );
+    }
+    for (const p of places) {
+      if (remaining <= 0) break;
+      const take = Math.min(remaining, levels.get(pairKey(item.id, p.id)) ?? 0);
+      if (take <= 0) continue;
+      drafts.push(draft(p.id, -take));
+      remaining -= take;
+    }
+  }
+  const applied = await applyMovements(tx, await movementContext(tx, actor, now), drafts);
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'stock.adjust',
+    entityType: 'stock_item',
+    entityId: item.id,
+    requestId: actor.requestId ?? null,
+    after: { delta: body.delta, reason, movements: applied.map((m) => ({ locationId: m.stockLocationId, quantity: m.quantity })) },
+  });
+  await syncStockAttention(tx, actor, now);
+  return {
+    stockItemId: item.id,
+    delta: body.delta,
+    movements: applied.map((m) => ({ locationId: m.stockLocationId, quantity: m.quantity, levelAfter: m.levelAfter })),
+  };
+}
+
+// --- Purchase orders ----------------------------------------------------------------------
+
+type OrderRow = typeof purchaseOrder.$inferSelect;
+type OrderLineRow = typeof purchaseOrderLine.$inferSelect;
+
+/** What staff are called on screen: the nickname, else the name. */
+async function staffNames(db: Exec, accountIds: ReadonlyArray<string | null>): Promise<Map<string, string>> {
+  const ids = [...new Set(accountIds.filter((id): id is string => !!id))];
+  if (ids.length === 0) return new Map();
+  const rows = await db
+    .select({ id: account.id, name: employee.name, nickname: employee.nickname })
+    .from(account)
+    .leftJoin(employee, eq(employee.id, account.employeeId))
+    .where(inArray(account.id, ids));
+  return new Map(rows.map((r) => [r.id, r.nickname || r.name || 'Staff']));
+}
+
+async function orderViews(db: Exec, orders: readonly OrderRow[]): Promise<PurchaseOrderView[]> {
+  if (orders.length === 0) return [];
+  const lines = await db
+    .select()
+    .from(purchaseOrderLine)
+    .where(inArray(purchaseOrderLine.purchaseOrderId, orders.map((o) => o.id)))
+    .orderBy(asc(purchaseOrderLine.createdAt), asc(purchaseOrderLine.id));
+  const names = await staffNames(
+    db,
+    orders.flatMap((o) => [o.createdByAccountId, o.orderedByAccountId, o.receivedByAccountId]),
+  );
+  const nameOf = (id: string | null) => (id ? (names.get(id) ?? 'Staff') : null);
+  return orders.map((o) => ({
+    id: o.id,
+    branchId: o.branchId,
+    supplierName: o.supplierName,
+    supplierContact: o.supplierContact,
+    state: o.state,
+    receiveLocationId: o.receiveLocationId,
+    createdAt: o.createdAt.toISOString(),
+    createdBy: nameOf(o.createdByAccountId),
+    orderedAt: o.orderedAt ? o.orderedAt.toISOString() : null,
+    orderedBy: nameOf(o.orderedByAccountId),
+    expectedArrivalDate: o.expectedArrivalDate,
+    receivedAt: o.receivedAt ? o.receivedAt.toISOString() : null,
+    receivedBy: nameOf(o.receivedByAccountId),
+    notes: o.notes,
+    lines: lines
+      .filter((l) => l.purchaseOrderId === o.id)
+      .map((l) => ({
+        id: l.id,
+        stockItemId: l.stockItemId,
+        itemName: l.itemName,
+        variantLabel: l.variantLabel,
+        orderedQuantity: l.orderedQuantity,
+        receivedQuantity: l.receivedQuantity,
+      })),
+  }));
+}
+
+/** The branch's purchase orders, newest first (`getPurchaseOrders`). */
+export async function listPurchaseOrders(db: Exec, operatorId: string, branchId: string): Promise<PurchaseOrderView[]> {
+  const orders = await db
+    .select()
+    .from(purchaseOrder)
+    .where(
+      and(eq(purchaseOrder.operatorId, operatorId), eq(purchaseOrder.branchId, branchId), isNull(purchaseOrder.archivedAt)),
+    )
+    .orderBy(desc(purchaseOrder.createdAt), desc(purchaseOrder.id));
+  return orderViews(db, orders);
+}
+
+async function loadOrder(tx: Tx, actor: StockActor, orderId: string): Promise<OrderRow> {
+  const [row] = await tx
+    .select()
+    .from(purchaseOrder)
+    .where(
+      and(
+        eq(purchaseOrder.id, orderId),
+        eq(purchaseOrder.operatorId, actor.operatorId),
+        eq(purchaseOrder.branchId, actor.branchId),
+        isNull(purchaseOrder.archivedAt),
+      ),
+    )
+    .limit(1)
+    .for('no key update');
+  if (!row) throw errors.notFound('That purchase order is not one of this branch’s');
+  return row;
+}
+
+async function loadOrderLine(tx: Tx, order: OrderRow, lineId: string): Promise<OrderLineRow> {
+  const [row] = await tx
+    .select()
+    .from(purchaseOrderLine)
+    .where(and(eq(purchaseOrderLine.id, lineId), eq(purchaseOrderLine.purchaseOrderId, order.id)))
+    .limit(1)
+    .for('no key update');
+  if (!row) throw errors.notFound('That line is not on this order');
+  return row;
+}
+
+/** Lines change only while the order is still `to_order`. */
+function assertToOrder(order: OrderRow): void {
+  if (order.state === 'ordered') {
+    throw errors.conflict(
+      'PURCHASE_ORDER_PLACED',
+      `The order to ${order.supplierName} is already placed — its lines can no longer change`,
+      { orderId: order.id, state: order.state },
+    );
+  }
+  if (order.state === 'received') {
+    throw errors.conflict('PURCHASE_ORDER_RECEIVED', `The order to ${order.supplierName} is already received in full`, {
+      orderId: order.id,
+      state: order.state,
+    });
+  }
+}
+
+const UNKNOWN_SUPPLIER = 'Unknown supplier';
+
+/**
+ * PUT SIZES ON THE SUPPLIER'S OPEN ORDER (`addToPurchaseOrder`): the one order
+ * still `to_order` to that supplier at this branch, created when there is none;
+ * a size already on it has its quantity added rather than a second line. The
+ * supplier is the item's own (its reorder settings), the prototype's
+ * "Unknown supplier" when none is set.
+ */
+export async function addToPurchaseOrders(
+  tx: Tx,
+  actor: StockActor,
+  body: PurchaseOrderAddBody,
+  now: Date,
+): Promise<PurchaseOrderView[]> {
+  const wanted = new Map<string, number>();
+  for (const line of body.lines) wanted.set(line.stockItemId, (wanted.get(line.stockItemId) ?? 0) + line.quantity);
+  // FOR SHARE, in id order (`loadBranchItems` with `lockFor`): a size removal
+  // in flight (`saveStockItem`, FOR NO KEY UPDATE) finishes first and the size
+  // it removed is refused in the counter's words — STOCK_ITEM_REMOVED, "it
+  // cannot be ordered" — not as an unknown item (round 4, handover Q5); or this
+  // add commits first and the removal sees the line and refuses.
+  const items = await loadBranchItems(tx, actor, [...wanted.keys()], { lockFor: 'ordered' });
+  const bySupplier = new Map<string, { name: string; contact: string | null; lines: Array<[ItemRow, number]> }>();
+  for (const [stockItemId, quantity] of wanted) {
+    const item = items.get(stockItemId)!;
+    const name = item.supplierName?.trim() || UNKNOWN_SUPPLIER;
+    const key = name.toLowerCase();
+    const group = bySupplier.get(key) ?? { name, contact: item.supplierContact, lines: [] };
+    group.lines.push([item, quantity]);
+    bySupplier.set(key, group);
+  }
+  const touched: string[] = [];
+  for (const group of bySupplier.values()) {
+    const openOrder = async () =>
+      (
+        await tx
+          .select()
+          .from(purchaseOrder)
+          .where(
+            and(
+              eq(purchaseOrder.branchId, actor.branchId),
+              eq(purchaseOrder.state, 'to_order'),
+              isNull(purchaseOrder.archivedAt),
+              sql`lower(${purchaseOrder.supplierName}) = lower(${group.name})`,
+            ),
+          )
+          .limit(1)
+          .for('no key update')
+      )[0];
+    let order = await openOrder();
+    if (!order) {
+      // `purchase_order_open_unique` makes a race between two tills land on one order.
+      await tx
+        .insert(purchaseOrder)
+        .values({
+          id: newId(),
+          operatorId: actor.operatorId,
+          branchId: actor.branchId,
+          supplierName: group.name,
+          supplierContact: group.contact,
+          state: 'to_order',
+          createdByAccountId: actor.accountId,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing();
+      order = await openOrder();
+    }
+    if (!order) throw new Error('the open purchase order vanished between insert and read');
+    const before = await tx.select().from(purchaseOrderLine).where(eq(purchaseOrderLine.purchaseOrderId, order.id));
+    for (const [item, quantity] of group.lines) {
+      const existing = before.find((l) => l.stockItemId === item.id);
+      if (existing) {
+        const next = existing.orderedQuantity + quantity;
+        if (next > STOCK_MAX_EACHES) throw errors.badRequest(`${next} ${sizeName(item)} is more than one order can hold`);
+        await tx
+          .update(purchaseOrderLine)
+          .set({ orderedQuantity: next, updatedAt: now })
+          .where(eq(purchaseOrderLine.id, existing.id));
+      } else {
+        await tx.insert(purchaseOrderLine).values({
+          id: newId(),
+          operatorId: actor.operatorId,
+          purchaseOrderId: order.id,
+          stockItemId: item.id,
+          itemName: item.name,
+          variantLabel: item.variantLabel,
+          orderedQuantity: quantity,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+    await tx.update(purchaseOrder).set({ updatedAt: now }).where(eq(purchaseOrder.id, order.id));
+    await audit.record(tx, {
+      actorAccountId: actor.accountId,
+      operatorId: actor.operatorId,
+      branchId: actor.branchId,
+      action: 'purchase_order.add_lines',
+      entityType: 'purchase_order',
+      entityId: order.id,
+      requestId: actor.requestId ?? null,
+      before: { lines: before.map((l) => ({ stockItemId: l.stockItemId, orderedQuantity: l.orderedQuantity })) },
+      after: { added: group.lines.map(([item, quantity]) => ({ stockItemId: item.id, quantity })) },
+    });
+    touched.push(order.id);
+  }
+  await syncStockAttention(tx, actor, now);
+  const rows = await tx.select().from(purchaseOrder).where(inArray(purchaseOrder.id, touched));
+  return orderViews(tx, rows);
+}
+
+async function orderView(db: Exec, orderId: string): Promise<PurchaseOrderView | null> {
+  const rows = await db.select().from(purchaseOrder).where(eq(purchaseOrder.id, orderId));
+  return (await orderViews(db, rows))[0] ?? null;
+}
+
+/** Change a line's quantity while the order is `to_order`; one each at least. */
+export async function setPurchaseOrderLineQuantity(
+  tx: Tx,
+  actor: StockActor,
+  orderId: string,
+  lineId: string,
+  quantity: number,
+  now: Date,
+): Promise<PurchaseOrderView> {
+  const order = await loadOrder(tx, actor, orderId);
+  assertToOrder(order);
+  const line = await loadOrderLine(tx, order, lineId);
+  if (!Number.isInteger(quantity) || quantity < 1) throw errors.badRequest('Order at least one');
+  await tx.update(purchaseOrderLine).set({ orderedQuantity: quantity, updatedAt: now }).where(eq(purchaseOrderLine.id, line.id));
+  await tx.update(purchaseOrder).set({ updatedAt: now }).where(eq(purchaseOrder.id, order.id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'purchase_order.line_update',
+    entityType: 'purchase_order',
+    entityId: order.id,
+    requestId: actor.requestId ?? null,
+    before: { lineId, orderedQuantity: line.orderedQuantity },
+    after: { lineId, orderedQuantity: quantity },
+  });
+  return (await orderView(tx, order.id))!;
+}
+
+/** Take a line off a `to_order` order; the last line going takes the order with it. */
+export async function removePurchaseOrderLine(
+  tx: Tx,
+  actor: StockActor,
+  orderId: string,
+  lineId: string,
+  now: Date,
+): Promise<PurchaseOrderView | null> {
+  const order = await loadOrder(tx, actor, orderId);
+  assertToOrder(order);
+  const line = await loadOrderLine(tx, order, lineId);
+  await tx.delete(purchaseOrderLine).where(eq(purchaseOrderLine.id, line.id));
+  const [left] = await tx
+    .select({ n: sql<number>`count(*)::int` })
+    .from(purchaseOrderLine)
+    .where(eq(purchaseOrderLine.purchaseOrderId, order.id));
+  const deleted = (left?.n ?? 0) === 0;
+  if (deleted) await tx.delete(purchaseOrder).where(eq(purchaseOrder.id, order.id));
+  else await tx.update(purchaseOrder).set({ updatedAt: now }).where(eq(purchaseOrder.id, order.id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: deleted ? 'purchase_order.delete' : 'purchase_order.line_remove',
+    entityType: 'purchase_order',
+    entityId: order.id,
+    requestId: actor.requestId ?? null,
+    before: { line: { id: line.id, stockItemId: line.stockItemId, orderedQuantity: line.orderedQuantity } },
+    after: { orderDeleted: deleted },
+  });
+  await syncStockAttention(tx, actor, now);
+  return deleted ? null : orderView(tx, order.id);
+}
+
+/**
+ * PLACE THE ORDER with the supplier: `to_order → ordered`, stamped with who and
+ * when, and the expected arrival — the date given, else today + the largest
+ * lead time among its sizes (at least one day, as the prototype defaults).
+ */
+export async function markPurchaseOrderOrdered(
+  tx: Tx,
+  actor: StockActor,
+  orderId: string,
+  body: { expectedArrivalDate?: string; notes?: string },
+  now: Date,
+): Promise<PurchaseOrderView> {
+  const order = await loadOrder(tx, actor, orderId);
+  assertToOrder(order);
+  const lines = await tx.select().from(purchaseOrderLine).where(eq(purchaseOrderLine.purchaseOrderId, order.id));
+  if (lines.length === 0) throw errors.conflict('PURCHASE_ORDER_EMPTY', `The order to ${order.supplierName} has no lines`);
+  const items = lines.length
+    ? await tx.select({ lead: stockItem.leadTimeDays }).from(stockItem).where(inArray(stockItem.id, lines.map((l) => l.stockItemId)))
+    : [];
+  const ctx = await movementContext(tx, actor, now);
+  const lead = Math.max(1, ...items.map((i) => i.lead ?? 1));
+  const expected = body.expectedArrivalDate ?? addDaysToIsoDate(ctx.businessDate, lead);
+  const notes = body.notes?.trim() ? body.notes.trim() : order.notes;
+  await tx
+    .update(purchaseOrder)
+    .set({
+      state: 'ordered',
+      orderedAt: now,
+      orderedByAccountId: actor.accountId,
+      expectedArrivalDate: expected,
+      notes,
+      updatedAt: now,
+    })
+    .where(eq(purchaseOrder.id, order.id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'purchase_order.ordered',
+    entityType: 'purchase_order',
+    entityId: order.id,
+    requestId: actor.requestId ?? null,
+    before: { state: order.state },
+    after: { state: 'ordered', expectedArrivalDate: expected, notes },
+  });
+  return (await orderView(tx, order.id))!;
+}
+
+/**
+ * RECEIVE AGAINST AN ORDER LINE, into the place the member of staff chose,
+ * clamped to what is still outstanding on the line (an over-delivery is not
+ * received against the order). The order closes, `received`, when every line is
+ * in.
+ */
+export async function receivePurchaseOrderLine(
+  tx: Tx,
+  actor: StockActor,
+  orderId: string,
+  lineId: string,
+  body: { quantity: number; locationId: string },
+  now: Date,
+): Promise<{ order: PurchaseOrderView; requested: number; received: number; levelAfter: number }> {
+  const order = await loadOrder(tx, actor, orderId);
+  if (order.state === 'to_order') {
+    throw errors.conflict(
+      'PURCHASE_ORDER_NOT_PLACED',
+      `The order to ${order.supplierName} is not placed yet — mark it ordered first`,
+      { orderId },
+    );
+  }
+  if (order.state === 'received') {
+    throw errors.conflict('PURCHASE_ORDER_RECEIVED', `The order to ${order.supplierName} is already received in full`, {
+      orderId,
+    });
+  }
+  const line = await loadOrderLine(tx, order, lineId);
+  const place = await loadBranchLocation(tx, actor, body.locationId);
+  const outstanding = line.orderedQuantity - line.receivedQuantity;
+  const label = stockSizeName(line.itemName, line.variantLabel);
+  if (outstanding <= 0) {
+    throw errors.conflict(
+      'PURCHASE_ORDER_LINE_RECEIVED',
+      `All ${line.orderedQuantity} ${label} on this order are already in`,
+      { lineId },
+    );
+  }
+  const received = Math.min(body.quantity, outstanding);
+  // FOR SHARE: waits out a size removal in flight (`saveStockItem` holds the
+  // item FOR NO KEY UPDATE) and then reads what it left. A size taken off its
+  // item is on no screen and no count, so a delivery booked to it would be lost.
+  const [item] = await tx.select().from(stockItem).where(eq(stockItem.id, line.stockItemId)).limit(1).for('share');
+  if (!item || item.archivedAt) {
+    throw errors.conflict(
+      'STOCK_ITEM_REMOVED',
+      `${label} was removed from stock — it cannot be received; add the size back and order it again`,
+      { lineId, stockItemId: line.stockItemId },
+    );
+  }
+  const [applied] = await applyMovements(tx, await movementContext(tx, actor, now), [
+    {
+      stockItemId: line.stockItemId,
+      stockLocationId: place.id,
+      kind: 'receive',
+      quantity: received,
+      actionId: `po_receive:${line.id}:${newId()}`,
+      purchaseOrderLineId: line.id,
+      reason: `PO receipt: ${order.supplierName}`,
+      unitCostSatang: item?.unitCostSatang ?? null,
+    },
+  ]);
+  await tx
+    .update(purchaseOrderLine)
+    .set({ receivedQuantity: line.receivedQuantity + received, updatedAt: now })
+    .where(eq(purchaseOrderLine.id, line.id));
+  const lines = await tx.select().from(purchaseOrderLine).where(eq(purchaseOrderLine.purchaseOrderId, order.id));
+  const allIn = lines.every((l) => l.receivedQuantity >= l.orderedQuantity);
+  await tx
+    .update(purchaseOrder)
+    .set({
+      receiveLocationId: order.receiveLocationId ?? place.id,
+      updatedAt: now,
+      ...(allIn ? { state: 'received' as const, receivedAt: now, receivedByAccountId: actor.accountId } : {}),
+    })
+    .where(eq(purchaseOrder.id, order.id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'purchase_order.receive',
+    entityType: 'purchase_order',
+    entityId: order.id,
+    requestId: actor.requestId ?? null,
+    before: { lineId, receivedQuantity: line.receivedQuantity, state: order.state },
+    after: {
+      lineId,
+      locationId: place.id,
+      requested: body.quantity,
+      received,
+      receivedQuantity: line.receivedQuantity + received,
+      state: allIn ? 'received' : order.state,
+    },
+  });
+  await syncStockAttention(tx, actor, now);
+  return { order: (await orderView(tx, order.id))!, requested: body.quantity, received, levelAfter: applied!.levelAfter };
+}
+
+// --- The stock take --------------------------------------------------------------------
+
+/**
+ * A COUNT. Each counted shelf is set to what was counted: the expected figure
+ * is the record AT COMMIT (the levels locked), not the one on the counter's
+ * screen when the count began, so a sale rung up meanwhile is not counted
+ * twice. The difference is written as a `count` movement, flagged when it is
+ * above three, and audited — no approval gate (OD-S1).
+ *
+ * THE OPENING IS PER PLACE (OD-S5; stock walkthrough F1). The module counts
+ * one place at a time, so the first count at a place WITH NOTHING ON RECORD —
+ * never counted, and no movement ever changed what it holds — is that place's
+ * opening: its lines are never flagged and its reason says "Opening count". It
+ * used to be the branch's first count only, so a second place's first count
+ * (BOH counted 15/25/10 against an expected 0) was recorded as an ordinary
+ * flagged count. A place the ledger already stocked (a transfer in, a delivery)
+ * is NOT at its opening, even at its first count: a shortfall against the
+ * record there is a real loss, flagged and reported. Each line stores the
+ * answer (`stock_take_line.opening`) and the reports read it
+ * (`placeOpeningSql`); lines written before 0051 are judged there by the same
+ * rule. `stock_take.opening` is "every place this take counted was at its
+ * opening"; each line's own answer is `opening` on the result.
+ */
+export async function commitStockTake(
+  tx: Tx,
+  actor: StockActor,
+  body: StockTakeBody,
+  now: Date,
+): Promise<StockTakeResult> {
+  const seen = new Set<string>();
+  for (const line of body.lines) {
+    const key = pairKey(line.stockItemId, line.locationId);
+    if (seen.has(key)) throw errors.badRequest('One shelf is counted twice in this take — count each item once per place');
+    seen.add(key);
+  }
+  const items = await loadBranchItems(
+    tx,
+    actor,
+    body.lines.map((l) => l.stockItemId),
+    { lockFor: 'counted' },
+  );
+  const places = new Map<string, LocationRow>();
+  for (const id of new Set(body.lines.map((l) => l.locationId))) places.set(id, await loadBranchLocation(tx, actor, id));
+  // One count at a time per branch, so two first counts at a place cannot both
+  // be "the opening". Each line stores the answer given here (`opening`), and
+  // the reports read it — the commit's order is the only order that counts.
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`stock_take:${actor.branchId}`}))`);
+  // Lock the levels FIRST, then ask whether each place is at its opening. The
+  // movement writers (a delivery, a transfer, a sale) do not take the count
+  // lock, so a delivery still open when the count starts would be invisible to
+  // the question — and then, once it commits, the locked level would read what
+  // it delivered (stock fix gate F1). Once the level rows are locked, every
+  // movement that changed them has committed, and the next statement (READ
+  // COMMITTED) sees it: the answer and the expected figure come from the same
+  // point in the serial order.
+  const levels = await lockLevels(
+    tx,
+    body.lines.map((l) => ({ stockItemId: l.stockItemId, stockLocationId: l.locationId })),
+  );
+  const started = await placeRecordStarts(tx, actor, [...places.keys()]);
+  // The backstop: a place where this take counts against a figure the ledger
+  // put there (a level that is not zero) already has a record, whatever the
+  // history query answered.
+  const stocked = new Set(
+    body.lines
+      .filter((l) => (levels.get(pairKey(l.stockItemId, l.locationId)) ?? 0) !== 0)
+      .map((l) => l.locationId),
+  );
+  /** The places this take opens: never counted, nothing ever moved there, nothing held there now. */
+  const openingPlaces = new Set([...places.keys()].filter((id) => !started.has(id) && !stocked.has(id)));
+  const opening = openingPlaces.size === places.size;
+  const takeId = newId();
+  await tx.insert(stockTake).values({
+    id: takeId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    status: 'committed',
+    opening,
+    countedByAccountId: actor.accountId,
+    committedAt: now,
+    note: body.note?.trim() || (opening ? 'Opening count' : null),
+    createdAt: now,
+    updatedAt: now,
+  });
+  const lines: StockTakeResult['lines'] = [];
+  const drafts: MovementDraft[] = [];
+  for (const line of body.lines) {
+    const item = items.get(line.stockItemId)!;
+    const expected = levels.get(pairKey(line.stockItemId, line.locationId)) ?? 0;
+    const difference = line.countedQuantity - expected;
+    // A place's opening sets its starting figure; it is not a variance against
+    // one, so it is never flagged — the same as the seed's opening lines.
+    const placeOpening = openingPlaces.has(line.locationId);
+    const flagged = !placeOpening && stockTakeFlagged(difference);
+    const status = difference === 0 ? ('confirmed' as const) : ('adjusted' as const);
+    const lineId = newId();
+    await tx.insert(stockTakeLine).values({
+      id: lineId,
+      operatorId: actor.operatorId,
+      stockTakeId: takeId,
+      stockItemId: line.stockItemId,
+      stockLocationId: line.locationId,
+      expectedQuantity: expected,
+      countedQuantity: line.countedQuantity,
+      difference,
+      flagged,
+      opening: placeOpening,
+      status,
+      countedByAccountId: actor.accountId,
+      countedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+    if (difference !== 0) {
+      drafts.push({
+        stockItemId: line.stockItemId,
+        stockLocationId: line.locationId,
+        kind: 'count',
+        quantity: difference,
+        actionId: `count:${lineId}`,
+        stockTakeLineId: lineId,
+        reason: `${placeOpening ? 'Opening count' : 'Stock take'} — expected ${expected}, counted ${line.countedQuantity}${flagged ? ' (flagged)' : ''}`,
+        unitCostSatang: item.unitCostSatang,
+      });
+    }
+    lines.push({
+      id: lineId,
+      stockItemId: line.stockItemId,
+      locationId: line.locationId,
+      expectedQuantity: expected,
+      countedQuantity: line.countedQuantity,
+      difference,
+      flagged,
+      status,
+      opening: placeOpening,
+    });
+  }
+  await applyMovements(tx, await movementContext(tx, actor, now), drafts);
+  const flaggedLines = lines.filter((l) => l.flagged);
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: opening ? 'stock.opening_count' : 'stock.count',
+    entityType: 'stock_take',
+    entityId: takeId,
+    requestId: actor.requestId ?? null,
+    after: {
+      opening,
+      openingPlaces: [...openingPlaces].map((id) => ({ locationId: id, place: places.get(id)!.name })),
+      counted: lines.length,
+      adjusted: lines.filter((l) => l.difference !== 0).length,
+      flagged: flaggedLines.map((l) => ({
+        stockItemId: l.stockItemId,
+        name: sizeName(items.get(l.stockItemId)!),
+        locationId: l.locationId,
+        place: places.get(l.locationId)!.name,
+        expected: l.expectedQuantity,
+        counted: l.countedQuantity,
+        difference: l.difference,
+      })),
+      lines,
+    },
+  });
+  await syncStockAttention(tx, actor, now);
+  return { id: takeId, opening, lines };
+}
+
+/**
+ * WHEN EACH PLACE'S RECORD STARTED — the first committed count there, or the
+ * first movement that changed what the place holds (a transfer in, a delivery,
+ * a correction, a sale that took units), whichever came first. A place with no
+ * entry has nothing on record: its next count is its OPENING (OD-S5, per
+ * place). A place that has one is not, even if it was never counted — the
+ * ledger already put a figure there, and a count against that figure is an
+ * ordinary count whose shortfall is a real loss (stock walkthrough F1).
+ *
+ * A sale's shortfall-only row (quantity 0: units sold that were not on record)
+ * changes nothing a count is measured against, so it does not start a place.
+ *
+ * `locationIds` narrows it to those places; without it, every place of the branch.
+ */
+async function placeRecordStarts(
+  db: Exec,
+  scope: { operatorId: string; branchId: string },
+  locationIds?: string[],
+): Promise<Map<string, Date>> {
+  if (locationIds && locationIds.length === 0) return new Map();
+  const only = (column: SQL) =>
+    locationIds ? sql`and ${column} in (${sql.join(locationIds.map((id) => sql`${id}::uuid`), sql`, `)})` : sql``;
+  const { rows } = await db.execute<{ location_id: string; started_at: Date | string }>(sql`
+    select location_id, min(started_at) as started_at from (
+      select l.stock_location_id as location_id, t.committed_at as started_at
+        from pos.stock_take_line l
+        join pos.stock_take t on t.id = l.stock_take_id
+       where t.operator_id = ${scope.operatorId}::uuid and t.branch_id = ${scope.branchId}::uuid
+         and t.status = 'committed'
+         ${only(sql`l.stock_location_id`)}
+      union all
+      select m.stock_location_id, m.created_at
+        from pos.stock_movement m
+       where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
+         and m.quantity <> 0
+         ${only(sql`m.stock_location_id`)}
+    ) started
+    group by location_id`);
+  return new Map(rows.map((r) => [r.location_id, new Date(r.started_at)]));
+}
+
+/**
+ * IS THIS LINE ITS PLACE'S OPENING? The commit's own answer, stored on the line
+ * (`stock_take_line.opening`, 0051) under the branch's count lock — so the
+ * reports can never order two counts differently from how they were committed
+ * (stock walkthrough F1: a take stamped earlier but committed second was read
+ * as an opening too, and its real variance vanished).
+ *
+ * Lines written before 0051 carry NULL and are judged here, at READ time, by
+ * the same rule the commit uses (`placeRecordStarts`): an opening line is one
+ * whose place had no earlier committed count AND no earlier movement that
+ * changed what it holds — the take's own count movements aside. Staging's BOH,
+ * first counted against an expected 0 after FOH, still reads as its opening;
+ * a place stocked by a transfer or a delivery before its first count does not.
+ *
+ * WHY AT READ TIME, NOT A BACKFILL: the ledger stays append-only and untouched,
+ * so every level is still exactly the sum of its movements; old rows' stored
+ * `flagged` and movement reason stay what was written.
+ *
+ * `line` and `take` are the SQL aliases of `pos.stock_take_line` and
+ * `pos.stock_take` in the calling query — constants, never input.
+ */
+function placeOpeningSql(line: 'stock_take_line' | 'l', take: 'stock_take' | 't') {
+  const l = sql.raw(line);
+  const t = sql.raw(take);
+  return sql`coalesce(${l}.opening, (
+      not exists (
+        select 1 from pos.stock_take_line prior_line
+          join pos.stock_take prior_take on prior_take.id = prior_line.stock_take_id
+         where prior_take.branch_id = ${t}.branch_id
+           and prior_take.status = 'committed'
+           and prior_line.stock_location_id = ${l}.stock_location_id
+           and (prior_take.committed_at, prior_take.id) < (${t}.committed_at, ${t}.id))
+      and not exists (
+        select 1 from pos.stock_movement prior_move
+         where prior_move.branch_id = ${t}.branch_id
+           and prior_move.stock_location_id = ${l}.stock_location_id
+           and prior_move.quantity <> 0
+           and prior_move.created_at < ${t}.committed_at
+           and (prior_move.stock_take_line_id is null or not exists (
+                 select 1 from pos.stock_take_line own
+                  where own.id = prior_move.stock_take_line_id and own.stock_take_id = ${t}.id)))))`;
+}
+
+/**
+ * Whether each place of the branch — retired ones too — has had its opening:
+ * the count's review screen asks before the commit (F2), so a place's first
+ * count is described as what the platform will record it as. A place the
+ * ledger has already stocked — a transfer in, a delivery — is `opened` even
+ * before its first count: that count will be judged against the record.
+ */
+export async function stockPlaceOpenings(db: Exec, operatorId: string, branchId: string): Promise<StockPlaceOpening[]> {
+  const places = await listLocations(db, branchId, { includeRetired: true });
+  const started = await placeRecordStarts(db, { operatorId, branchId });
+  const openedAt = new Map([...started].map(([id, at]) => [id, at.toISOString()]));
+  return places.map((p) => ({ locationId: p.id, opened: openedAt.has(p.id), openedAt: openedAt.get(p.id) ?? null }));
+}
+
+// --- Places -------------------------------------------------------------------------------
+
+const locationView = (l: LocationRow): StockLocationView => ({
+  id: l.id,
+  name: l.name,
+  type: l.type,
+  sellPoint: l.sellPoint,
+  active: l.active,
+});
+
+/** Every place of the branch, retired ones included when asked (the Locations panel). */
+export async function listLocations(
+  db: Exec,
+  branchId: string,
+  opts: { includeRetired: boolean },
+): Promise<StockLocationView[]> {
+  if (!opts.includeRetired) return (await branchLocations(db, branchId)).map(locationView);
+  const rows = await db
+    .select()
+    .from(stockLocation)
+    .where(and(eq(stockLocation.branchId, branchId), isNull(stockLocation.archivedAt)))
+    .orderBy(desc(stockLocation.active), asc(stockLocation.name));
+  return rows.map(locationView);
+}
+
+async function assertLocationNameFree(tx: Tx, actor: StockActor, name: string, exceptId: string | null): Promise<void> {
+  const [clash] = await tx
+    .select({ id: stockLocation.id })
+    .from(stockLocation)
+    .where(
+      and(
+        eq(stockLocation.branchId, actor.branchId),
+        isNull(stockLocation.archivedAt),
+        sql`lower(${stockLocation.name}) = lower(${name})`,
+        exceptId ? ne(stockLocation.id, exceptId) : undefined,
+      ),
+    )
+    .limit(1);
+  if (clash) throw errors.conflict('STOCK_LOCATION_NAME_TAKEN', `There is already a place called "${name}" here`);
+}
+
+/**
+ * A NEW PLACE. A FOH rotation place becomes the sell point when the branch has
+ * none, so a branch is never left without one once it has a counter shelf
+ * (`StockLocationsPanel.tsx:168-178`).
+ */
+export async function createLocation(
+  tx: Tx,
+  actor: StockActor,
+  body: { name: string; type: StockLocationType },
+  now: Date,
+): Promise<StockLocationView> {
+  const name = body.name.trim();
+  await assertLocationNameFree(tx, actor, name, null);
+  const [current] = await tx
+    .select({ id: stockLocation.id })
+    .from(stockLocation)
+    .where(
+      and(
+        eq(stockLocation.branchId, actor.branchId),
+        eq(stockLocation.sellPoint, true),
+        eq(stockLocation.active, true),
+        isNull(stockLocation.archivedAt),
+      ),
+    )
+    .limit(1);
+  const id = newId();
+  const sellPoint = body.type === 'rotation' && !current;
+  await tx.insert(stockLocation).values({
+    id,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    name,
+    type: body.type,
+    sellPoint,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const [row] = await tx.select().from(stockLocation).where(eq(stockLocation.id, id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'stock_location.create',
+    entityType: 'stock_location',
+    entityId: id,
+    requestId: actor.requestId ?? null,
+    after: locationView(row!),
+  });
+  return locationView(row!);
+}
+
+/**
+ * RENAME, RETYPE, RETIRE OR REACTIVATE a place. The sell point can be neither
+ * retired nor retyped — another sell point first (`StockLocationsPanel.tsx:155-191`).
+ */
+export async function updateLocation(
+  tx: Tx,
+  actor: StockActor,
+  locationId: string,
+  patch: { name?: string; type?: StockLocationType; active?: boolean },
+  now: Date,
+): Promise<StockLocationView> {
+  const loc = await loadBranchLocation(tx, actor, locationId, { allowRetired: true, lock: true });
+  const isSellPoint = loc.sellPoint && loc.active;
+  if (isSellPoint && patch.active === false) {
+    throw errors.conflict(
+      'STOCK_SELL_POINT_RETIRE',
+      `${loc.name} is the sell point — set another sell point before retiring it`,
+      { locationId },
+    );
+  }
+  if (isSellPoint && patch.type && patch.type !== 'rotation') {
+    throw errors.conflict(
+      'STOCK_SELL_POINT_TYPE',
+      `${loc.name} is the sell point, so it stays a FOH rotation place — set another sell point before changing its type`,
+      { locationId },
+    );
+  }
+  const name = patch.name?.trim();
+  if (name && name.toLowerCase() !== loc.name.toLowerCase()) await assertLocationNameFree(tx, actor, name, loc.id);
+  const next = {
+    name: name ?? loc.name,
+    type: patch.type ?? loc.type,
+    active: patch.active ?? loc.active,
+    sellPoint: loc.sellPoint,
+  };
+  // A place that was the sell point and comes back while another is, comes back as storage.
+  if (next.active && !loc.active && loc.sellPoint) {
+    const [other] = await tx
+      .select({ id: stockLocation.id })
+      .from(stockLocation)
+      .where(
+        and(
+          eq(stockLocation.branchId, actor.branchId),
+          eq(stockLocation.sellPoint, true),
+          eq(stockLocation.active, true),
+          isNull(stockLocation.archivedAt),
+          ne(stockLocation.id, loc.id),
+        ),
+      )
+      .limit(1);
+    if (other) next.sellPoint = false;
+  }
+  if (next.type !== 'rotation') next.sellPoint = false;
+  await tx
+    .update(stockLocation)
+    .set({ ...next, updatedAt: now })
+    .where(eq(stockLocation.id, loc.id));
+  const after = { ...locationView(loc), ...next };
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'stock_location.update',
+    entityType: 'stock_location',
+    entityId: loc.id,
+    requestId: actor.requestId ?? null,
+    before: locationView(loc),
+    after,
+  });
+  await syncStockAttention(tx, actor, now);
+  return after;
+}
+
+/**
+ * MAKE A PLACE THE SELL POINT, clearing the flag everywhere else in the branch:
+ * exactly one, and only an active FOH rotation place (`setStockLocationSellPoint`).
+ */
+export async function setSellPoint(tx: Tx, actor: StockActor, locationId: string, now: Date): Promise<StockLocationView> {
+  const loc = await loadBranchLocation(tx, actor, locationId, { allowRetired: true, lock: true });
+  if (loc.type !== 'rotation') {
+    throw errors.conflict('STOCK_SELL_POINT_TYPE', 'Only a FOH rotation place can be the sell point', { locationId });
+  }
+  if (!loc.active) {
+    throw errors.conflict('STOCK_LOCATION_RETIRED', `${loc.name} is retired — reactivate it before making it the sell point`, {
+      locationId,
+    });
+  }
+  const [before] = await tx
+    .select({ id: stockLocation.id })
+    .from(stockLocation)
+    .where(and(eq(stockLocation.branchId, actor.branchId), eq(stockLocation.sellPoint, true), ne(stockLocation.id, loc.id)))
+    .limit(1);
+  // Clear first: `stock_location_sell_point_unique` allows one at a time.
+  await tx
+    .update(stockLocation)
+    .set({ sellPoint: false, updatedAt: now })
+    .where(and(eq(stockLocation.branchId, actor.branchId), eq(stockLocation.sellPoint, true), ne(stockLocation.id, loc.id)));
+  await tx.update(stockLocation).set({ sellPoint: true, updatedAt: now }).where(eq(stockLocation.id, loc.id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'stock_location.sell_point',
+    entityType: 'stock_location',
+    entityId: loc.id,
+    requestId: actor.requestId ?? null,
+    before: { sellPointLocationId: before?.id ?? null },
+    after: { sellPointLocationId: loc.id },
+  });
+  return { ...locationView(loc), sellPoint: true };
+}
+
+// --- Items, sizes and packs ----------------------------------------------------------------
+
+/** A slug for a pack's code: "Case of 24" → `case-of-24`. */
+const packCode = (label: string): string =>
+  label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'pack';
+
+/**
+ * A size may leave the form only when nothing is stranded by it: no place of
+ * the branch — a retired one included, which `availableFor` skips — holds any
+ * of it (a short, negative level counts too: only a count clears it), and no
+ * open order still has some of it outstanding. Called under the item lock
+ * `saveStockItem` takes, which the order paths' item locks serialise against.
+ */
+async function assertSizesRemovable(tx: Tx, branchId: string, removed: readonly ItemRow[]): Promise<void> {
+  const ids = removed.map((r) => r.id);
+  const levels = await tx
+    .select({
+      stockItemId: stockLevel.stockItemId,
+      quantity: stockLevel.quantity,
+      placeName: stockLocation.name,
+      retired: sql<boolean>`(not ${stockLocation.active} or ${stockLocation.archivedAt} is not null)`,
+    })
+    .from(stockLevel)
+    .innerJoin(stockLocation, eq(stockLocation.id, stockLevel.stockLocationId))
+    .where(and(inArray(stockLevel.stockItemId, ids), eq(stockLocation.branchId, branchId), ne(stockLevel.quantity, 0)))
+    .orderBy(asc(stockLocation.name), asc(stockLocation.id));
+  for (const r of removed) {
+    const mine = levels.filter((l) => l.stockItemId === r.id);
+    if (mine.length === 0) continue;
+    const held = mine.reduce((n, l) => n + l.quantity, 0);
+    const where = mine.map((l) => `${l.quantity} at ${l.placeName}${l.retired ? ', retired' : ''}`).join('; ');
+    const retired = mine.some((l) => l.retired);
+    throw errors.conflict(
+      'STOCK_SIZE_HOLDS_STOCK',
+      `${sizeName(r)} still holds ${held} (${where}) — ${retired ? 'reactivate the place, then ' : ''}count it out or move it before removing the size`,
+      { stockItemId: r.id, held, levels: mine.map((l) => ({ place: l.placeName, quantity: l.quantity, retired: l.retired })) },
+    );
+  }
+  const [onOrder] = await tx
+    .select({
+      stockItemId: purchaseOrderLine.stockItemId,
+      supplierName: purchaseOrder.supplierName,
+      orderId: purchaseOrder.id,
+      lineId: purchaseOrderLine.id,
+    })
+    .from(purchaseOrderLine)
+    .innerJoin(purchaseOrder, eq(purchaseOrder.id, purchaseOrderLine.purchaseOrderId))
+    .where(
+      and(
+        inArray(purchaseOrderLine.stockItemId, ids),
+        eq(purchaseOrder.branchId, branchId),
+        inArray(purchaseOrder.state, ['to_order', 'ordered']),
+        isNull(purchaseOrder.archivedAt),
+        sql`${purchaseOrderLine.orderedQuantity} > ${purchaseOrderLine.receivedQuantity}`,
+      ),
+    )
+    .orderBy(asc(purchaseOrder.createdAt), asc(purchaseOrderLine.id))
+    .limit(1);
+  if (onOrder) {
+    const r = removed.find((x) => x.id === onOrder.stockItemId)!;
+    throw errors.conflict(
+      'STOCK_SIZE_ON_ORDER',
+      `${sizeName(r)} is on the open order to ${onOrder.supplierName} — receive or remove that line first`,
+      { stockItemId: r.id, orderId: onOrder.orderId, lineId: onOrder.lineId },
+    );
+  }
+}
+
+/**
+ * CREATE OR EDIT ONE STOCKED ITEM with its sizes — the admin Inventory form.
+ *
+ * One row per size, sharing a group (`payload.groupId`). A size's stock is
+ * never written here: levels move only through movements, and a new item opens
+ * with a count or a delivery (OD-S5). A size that still holds stock anywhere,
+ * or is still wanted on an open order, cannot be removed (`assertSizesRemovable`). The link to the sellable goes through `setProductStockLinks`, so the
+ * all-or-none rule for a sized product (H3) and the "one item per sellable"
+ * rule are the catalogue link's own.
+ */
+export async function saveStockItem(
+  tx: Tx,
+  actor: StockActor,
+  groupId: string | null,
+  body: StockItemBody,
+  now: Date,
+): Promise<{ groupId: string; stockItemIds: string[] }> {
+  const live = await tx
+    .select()
+    .from(stockItem)
+    .where(and(eq(stockItem.branchId, actor.branchId), eq(stockItem.operatorId, actor.operatorId), isNull(stockItem.archivedAt)))
+    .orderBy(asc(stockItem.id))
+    .for('no key update');
+  const existing = groupId ? live.filter((i) => stockGroupKey(i) === groupId) : [];
+  if (groupId && existing.length === 0) throw errors.notFound('That stock item is not one of this branch’s');
+  const key = groupId ?? newId();
+  const name = body.name.trim();
+
+  // The sizes are the item's own.
+  const labels = new Set<string>();
+  for (const size of body.sizes) {
+    const label = size.label.trim().toLowerCase();
+    if (labels.has(label)) throw errors.badRequest(`Two sizes are both called "${size.label.trim()}"`);
+    labels.add(label);
+    if (size.stockItemId && !existing.some((e) => e.id === size.stockItemId)) {
+      throw errors.badRequest('A size on the form is not one of this item’s', { stockItemId: size.stockItemId });
+    }
+  }
+  const places = new Set(
+    (
+      await tx
+        .select({ id: stockLocation.id })
+        .from(stockLocation)
+        .where(and(eq(stockLocation.branchId, actor.branchId), isNull(stockLocation.archivedAt)))
+    ).map((l) => l.id),
+  );
+  for (const size of body.sizes) {
+    for (const locationId of Object.keys(size.parByLocation)) {
+      if (!places.has(locationId)) throw errors.badRequest('A par is set for a place that is not this branch’s', { locationId });
+    }
+  }
+
+  // The sellable it stocks.
+  const productRow = body.productId
+    ? (
+        await tx
+          .select()
+          .from(product)
+          .where(and(eq(product.id, body.productId), eq(product.operatorId, actor.operatorId), isNull(product.archivedAt)))
+          .limit(1)
+      )[0]
+    : undefined;
+  if (body.productId && (!productRow || (productRow.branchId && productRow.branchId !== actor.branchId))) {
+    throw errors.badRequest('That product is not sold at this branch', { productId: body.productId });
+  }
+  if (productRow) {
+    const problem = partialStockLinkProblem(productRow.name, productRow.variants ?? [], body.sizes);
+    if (problem) throw errors.badRequest(problem, { productId: productRow.id });
+    const other = live.find((i) => i.productId === productRow.id && !existing.some((e) => e.id === i.id));
+    if (other) {
+      throw errors.conflict(
+        'STOCK_ITEM_LINKED',
+        `"${productRow.name}" is already stocked by "${other.name}" — unlink it there first`,
+        { productId: productRow.id, stockItemId: other.id },
+      );
+    }
+  }
+
+  // Sizes taken off the form: archived, and only when they hold nothing and no
+  // open order still wants them — an archived item is on no screen, no count
+  // reaches it and nothing brings it back, so whatever it held would be lost.
+  const kept = new Set(body.sizes.flatMap((s) => (s.stockItemId ? [s.stockItemId] : [])));
+  const removed = existing.filter((e) => !kept.has(e.id));
+  if (removed.length > 0) await assertSizesRemovable(tx, actor.branchId, removed);
+
+  // Unlink first, so a size moving between products never meets the unique index half-way.
+  const previousProducts = [...new Set(existing.flatMap((e) => (e.productId ? [e.productId] : [])))];
+  const scope = { operatorId: actor.operatorId, branchId: actor.branchId, accountId: actor.accountId, requestId: actor.requestId ?? null };
+  for (const pid of previousProducts) {
+    const [prev] = await tx.select().from(product).where(eq(product.id, pid)).limit(1);
+    if (prev) await setProductStockLinks(tx, scope, prev, []);
+  }
+  if (removed.length > 0) {
+    await tx
+      .update(stockItem)
+      .set({ archivedAt: now, active: false, productId: null, variantId: null, updatedAt: now })
+      .where(inArray(stockItem.id, removed.map((r) => r.id)));
+  }
+
+  const payload: StockItemPayload = {
+    groupId: key,
+    ...(body.sku?.trim() ? { itemSku: body.sku.trim() } : {}),
+    ...(body.photoUrl ? { photoUrl: body.photoUrl, showPhotoInPos: body.showPhotoInPos } : {}),
+  };
+  const shared = {
+    name,
+    category: body.category?.trim() || null,
+    active: body.active,
+    unitCostSatang: body.unitCostSatang,
+    reorderPoint: body.reorder?.reorderPoint ?? null,
+    reorderQuantity: body.reorder?.reorderQuantity ?? null,
+    leadTimeDays: body.reorder?.leadTimeDays ?? null,
+    supplierName: body.reorder?.supplierName.trim() ?? null,
+    supplierContact: body.reorder?.supplierContact?.trim() || null,
+    payload,
+    updatedAt: now,
+  };
+  const ids: string[] = [];
+  const links: ProductStockLink[] = [];
+  for (const size of body.sizes) {
+    const row = {
+      ...shared,
+      sku: size.sku?.trim() || null,
+      variantLabel: productRow ? (size.variantId ? size.label.trim() : null) : size.label.trim(),
+      lowStockThreshold: size.lowStockThreshold,
+      parByLocation: size.parByLocation,
+    };
+    let id = size.stockItemId;
+    if (id) {
+      await tx.update(stockItem).set(row).where(eq(stockItem.id, id));
+    } else {
+      id = newId();
+      await tx.insert(stockItem).values({
+        ...row,
+        id,
+        operatorId: actor.operatorId,
+        branchId: actor.branchId,
+        createdAt: now,
+      });
+    }
+    ids.push(id);
+    if (productRow) links.push({ variantId: productRow.variants.length > 0 ? size.variantId : null, stockItemId: id });
+  }
+  if (productRow) await setProductStockLinks(tx, scope, productRow, links);
+
+  // Packs: the item's, on every size (the prototype shares them across variants).
+  const wantUnits = body.units.map((u) => ({ code: packCode(u.label), label: u.label.trim(), eaches: u.eaches }));
+  const codes = new Set<string>();
+  for (const u of wantUnits) {
+    if (codes.has(u.code)) throw errors.badRequest(`Two packs are both called "${u.label}"`);
+    codes.add(u.code);
+  }
+  const haveUnits = await tx
+    .select()
+    .from(stockUnit)
+    .where(and(inArray(stockUnit.stockItemId, ids), isNull(stockUnit.archivedAt)));
+  for (const id of ids) {
+    const mine = haveUnits.filter((u) => u.stockItemId === id);
+    const same =
+      mine.length === wantUnits.length &&
+      wantUnits.every((w) => mine.some((m) => m.code === w.code && m.label === w.label && m.eaches === w.eaches));
+    if (same) continue;
+    if (mine.length > 0) {
+      await tx.update(stockUnit).set({ archivedAt: now, updatedAt: now }).where(inArray(stockUnit.id, mine.map((m) => m.id)));
+    }
+    if (wantUnits.length > 0) {
+      await tx.insert(stockUnit).values(
+        wantUnits.map((u) => ({ id: newId(), operatorId: actor.operatorId, stockItemId: id, ...u, createdAt: now, updatedAt: now })),
+      );
+    }
+  }
+
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: groupId ? 'stock_item.update' : 'stock_item.create',
+    entityType: 'stock_item',
+    entityId: ids[0]!,
+    requestId: actor.requestId ?? null,
+    before: groupId
+      ? {
+          sizes: existing.map((e) => ({ id: e.id, label: e.variantLabel, productId: e.productId, active: e.active })),
+        }
+      : null,
+    after: {
+      groupId: key,
+      stockItemIds: ids,
+      removed: removed.map((r) => r.id),
+      ...body,
+      photoUrl: body.photoUrl ? '(photo)' : null,
+    },
+  });
+  await syncStockAttention(tx, actor, now);
+  return { groupId: key, stockItemIds: ids };
+}
+
+// --- Attention ------------------------------------------------------------------------------
+
+/** The branch's trading day at `now` — its clock, its day start. */
+async function branchToday(db: Exec, branchId: string, now: Date): Promise<string> {
+  const [br] = await db
+    .select({ timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(eq(branch.id, branchId))
+    .limit(1);
+  if (!br) throw errors.notFound('Branch not found');
+  return businessDate(now, br.timezone, parseDayStart(br.dayStart));
+}
+
+/**
+ * Per stock item: the business date of its first sale movement, and the units
+ * it used in the trend window — the `STOCK_TREND_HISTORY_DAYS` business days
+ * before `today` (today itself is not over) — sales, a unit sold past the
+ * record included, net of refunds.
+ */
+async function usageForTrend(
+  db: Exec,
+  branchId: string,
+  stockItemIds: readonly string[],
+  today: string,
+): Promise<Map<string, { firstSaleDate: string | null; usedInWindow: number }>> {
+  const out = new Map<string, { firstSaleDate: string | null; usedInWindow: number }>();
+  if (stockItemIds.length === 0) return out;
+  const from = addDaysToIsoDate(today, -STOCK_TREND_HISTORY_DAYS);
+  const to = addDaysToIsoDate(today, -1);
+  const { rows } = await db.execute<{ stock_item_id: string; first_sale: string | null; used: string | number | null }>(sql`
+    select m.stock_item_id,
+           (min(m.business_date) filter (where m.kind in ('sale','offline_sale')))::text as first_sale,
+           coalesce(sum(case when m.kind in ('sale','offline_sale') then -m.quantity + m.shortfall
+                             when m.kind = 'refund' then -m.quantity else 0 end)
+                    filter (where m.business_date between ${from}::date and ${to}::date), 0)::bigint as used
+      from pos.stock_movement m
+     where m.branch_id = ${branchId}::uuid
+       and m.stock_item_id in (${sql.join(stockItemIds.map((id) => sql`${id}::uuid`), sql`, `)})
+       and m.kind in ('sale','offline_sale','refund')
+     group by m.stock_item_id`);
+  for (const r of rows) out.set(r.stock_item_id, { firstSaleDate: r.first_sale, usedInWindow: Number(r.used ?? 0) });
+  return out;
+}
+
+/**
+ * One item's reorder point today — all its sizes together, by `reorderPointFor`:
+ * the static point (the first size that has one), the lead time likewise, the
+ * earliest first sale and the window's usage summed over the sizes. The
+ * low-stock attention fires on it, and the levels read carries it
+ * (`reorderPointNow`), so the stock screens judge "low" as the Alerts tab does.
+ */
+function groupReorderPoint(
+  sizes: readonly ItemRow[],
+  usage: Map<string, { firstSaleDate: string | null; usedInWindow: number }>,
+  today: string,
+): ReturnType<typeof reorderPointFor> {
+  const firstSales = sizes.flatMap((s) => {
+    const first = usage.get(s.id)?.firstSaleDate;
+    return first ? [first] : [];
+  });
+  return reorderPointFor({
+    staticPoint: sizes.find((s) => s.reorderPoint !== null)?.reorderPoint ?? null,
+    leadTimeDays: sizes.find((s) => s.leadTimeDays !== null)?.leadTimeDays ?? null,
+    firstSaleDate: firstSales.length ? [...firstSales].sort()[0]! : null,
+    today,
+    usedInWindow: sizes.reduce((n, s) => n + (usage.get(s.id)?.usedInWindow ?? 0), 0),
+  });
+}
+
+/** JSON with every object's keys sorted, so a jsonb read back compares equal to what was written. */
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map((v) => canonicalJson(v === undefined ? null : v)).join(',')}]`;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(',')}}`;
+}
+
+const sameJson = (a: unknown, b: unknown): boolean => canonicalJson(a) === canonicalJson(b);
+
+/**
+ * RE-READ THE BRANCH'S LOW-STOCK ATTENTION, so the rows a person looks at move
+ * with the stock. One open row per stocked item and branch (all its sizes are
+ * one item, as the prototype's Alerts shows them), carrying the rule that fired:
+ *
+ *   - "≤ reorder point" — the item's total, every size and place, at or below
+ *     its reorder point (`lib/inventory.ts:getReorderAlerts`);
+ *   - "Below par at FOH" — a size under its par at a place
+ *     (`StockSuggestions.tsx:buildSuggestions`).
+ *
+ * SUPPRESSED while an open purchase order (to order or ordered, something
+ * still outstanding) covers any of its sizes: the order is the answer, and a
+ * second nag for it is noise. A row whose rule no longer fires is resolved;
+ * the round-1 rows (`stock_shortfall`, `size_unknown`) are not touched here.
+ *
+ * ROUND 4 — THE REORDER POINT FOLLOWS THE ITEM'S USAGE (OD-27,
+ * `reorderPointFor`): the static point until the item has 30 days of sale
+ * history, then its average daily usage over 30 days × (lead time + a safety
+ * day), rounded up — ceil(used × (lead + 1) / 30); the row's rule
+ * says which fired ("≤ reorder point" or "≤ reorder point (30-day usage)").
+ *
+ * WHO CALLS IT (round 4, handover Q4): every path that moves stock — the stock
+ * module's own writes for the whole branch, and a sale's decrement and a
+ * refund's restock for just the items they moved (`only`) — plus the daily
+ * stock job for the whole branch, as the 30-day window slides with no movement
+ * at all. The attention READ (`listStockAttention`) writes nothing.
+ *
+ * Rows are written in `dedupe_key` order, so two acts re-reading overlapping
+ * items lock the same rows in the same order and never deadlock.
+ */
+export async function syncStockAttention(
+  tx: Tx,
+  scope: { operatorId: string; branchId: string; accountId?: string | null },
+  now: Date,
+  /** Only the items whose groups these stock items belong to; the whole branch when absent. */
+  only?: readonly string[],
+): Promise<void> {
+  if (only && only.length === 0) return;
+  const branchItems = await tx
+    .select()
+    .from(stockItem)
+    .where(
+      and(
+        eq(stockItem.operatorId, scope.operatorId),
+        eq(stockItem.branchId, scope.branchId),
+        eq(stockItem.active, true),
+        isNull(stockItem.archivedAt),
+      ),
+    );
+  const scopedGroups = only
+    ? new Set(branchItems.filter((i) => only.includes(i.id)).map((i) => stockGroupKey(i)))
+    : null;
+  const items = scopedGroups ? branchItems.filter((i) => scopedGroups.has(stockGroupKey(i))) : branchItems;
+  if (scopedGroups && items.length === 0) return;
+  const places = await branchLocations(tx, scope.branchId);
+  const placeById = new Map(places.map((p) => [p.id, p]));
+  const levels = items.length
+    ? await tx
+        .select({ stockItemId: stockLevel.stockItemId, stockLocationId: stockLevel.stockLocationId, quantity: stockLevel.quantity })
+        .from(stockLevel)
+        .where(inArray(stockLevel.stockItemId, items.map((i) => i.id)))
+    : [];
+  const today = await branchToday(tx, scope.branchId, now);
+  const usage = await usageForTrend(tx, scope.branchId, items.map((i) => i.id), today);
+  const levelOf = new Map(levels.map((l) => [pairKey(l.stockItemId, l.stockLocationId), l.quantity]));
+  const covered = new Set(
+    (
+      await tx
+        .select({ stockItemId: purchaseOrderLine.stockItemId })
+        .from(purchaseOrderLine)
+        .innerJoin(purchaseOrder, eq(purchaseOrder.id, purchaseOrderLine.purchaseOrderId))
+        .where(
+          and(
+            eq(purchaseOrder.branchId, scope.branchId),
+            inArray(purchaseOrder.state, ['to_order', 'ordered']),
+            isNull(purchaseOrder.archivedAt),
+            sql`${purchaseOrderLine.orderedQuantity} > ${purchaseOrderLine.receivedQuantity}`,
+          ),
+        )
+    ).map((r) => r.stockItemId),
+  );
+
+  const groups = new Map<string, ItemRow[]>();
+  for (const item of items) {
+    const key = stockGroupKey(item);
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  }
+  interface Wanted {
+    stockItemId: string;
+    kind: StockAttentionKind;
+    rule: string;
+    quantity: number;
+    summary: string;
+    detail: unknown;
+  }
+  const wanted = new Map<string, Wanted>();
+  for (const [key, sizes] of groups) {
+    sizes.sort((a, b) => a.id.localeCompare(b.id));
+    const total = sizes.reduce(
+      (sum, s) => sum + places.reduce((n, p) => n + (levelOf.get(pairKey(s.id, p.id)) ?? 0), 0),
+      0,
+    );
+    const point = groupReorderPoint(sizes, usage, today);
+    const reorderPoint = point.reorderPoint;
+    const reorder = reorderPoint !== null && total <= reorderPoint;
+    const reorderRule = point.rule === 'trend' ? STOCK_RULE_REORDER_TREND : STOCK_RULE_REORDER;
+    const belowPar: Array<{
+      stockItemId: string;
+      size: string | null;
+      locationId: string;
+      place: string;
+      level: number;
+      par: number;
+    }> = [];
+    for (const s of sizes) {
+      for (const [locationId, par] of Object.entries(s.parByLocation ?? {})) {
+        const place = placeById.get(locationId);
+        if (!place || !(par > 0)) continue;
+        const level = levelOf.get(pairKey(s.id, locationId)) ?? 0;
+        // The place's id with its name (walkthrough F3): the Alerts screen
+        // offers the transfer INTO this place, so it names it exactly.
+        if (level < par) belowPar.push({ stockItemId: s.id, size: s.variantLabel, locationId, place: place.name, level, par });
+      }
+    }
+    if (!reorder && belowPar.length === 0) continue;
+    if (sizes.some((s) => covered.has(s.id))) continue;
+    const rules = [
+      ...(reorder ? [reorderRule] : []),
+      ...[...new Set(belowPar.map((b) => b.place))].map(stockRuleBelowPar),
+    ];
+    const name = sizes[0]!.name;
+    const lead = sizes.find((s) => s.leadTimeDays !== null)?.leadTimeDays ?? null;
+    wanted.set(`low_stock:${scope.branchId}:${key}`, {
+      stockItemId: sizes[0]!.id,
+      kind: reorder ? 'reorder' : 'low_stock',
+      rule: rules.join(' · '),
+      quantity: reorder ? Math.max(0, reorderPoint! - total) : Math.max(...belowPar.map((b) => b.par - b.level)),
+      summary: reorder
+        ? point.rule === 'trend'
+          ? `${name}: ${total} on hand, at or below its reorder point of ${reorderPoint} — ${point.usedInWindow} used in the last ${STOCK_TREND_HISTORY_DAYS} days, ${lead} days' lead time + ${STOCK_TREND_SAFETY_DAYS}`
+          : `${name}: ${total} on hand, at or below its reorder point of ${reorderPoint}`
+        : `${name}: below par at ${[...new Set(belowPar.map((b) => b.place))].join(', ')}`,
+      detail: {
+        groupId: key,
+        total,
+        reorderPoint,
+        reorderRule: point.rule,
+        staticReorderPoint: point.staticPoint,
+        usedInWindow: point.usedInWindow,
+        belowPar,
+      },
+    });
+  }
+  const scopedKeys = scopedGroups ? new Set([...scopedGroups].map((g) => `low_stock:${scope.branchId}:${g}`)) : null;
+
+  const open = (
+    await tx
+      .select()
+      .from(stockAttention)
+      .where(
+        and(
+          eq(stockAttention.operatorId, scope.operatorId),
+          eq(stockAttention.branchId, scope.branchId),
+          inArray(stockAttention.kind, ['low_stock', 'reorder']),
+          isNull(stockAttention.resolvedAt),
+          scopedKeys ? inArray(stockAttention.dedupeKey, [...scopedKeys]) : undefined,
+        ),
+      )
+  ).sort((a, b) => a.dedupeKey.localeCompare(b.dedupeKey) || a.id.localeCompare(b.id));
+  for (const row of open) {
+    const want = wanted.get(row.dedupeKey);
+    if (!want) {
+      await tx
+        .update(stockAttention)
+        .set({ resolvedAt: now, resolvedByAccountId: scope.accountId ?? null, updatedAt: now })
+        .where(eq(stockAttention.id, row.id));
+      continue;
+    }
+    wanted.delete(row.dedupeKey);
+    if (
+      row.kind !== want.kind ||
+      row.rule !== want.rule ||
+      row.quantity !== want.quantity ||
+      row.summary !== want.summary ||
+      // The detail too (which rule set the point, the points, the window's usage):
+      // compared key-order free, since jsonb hands its keys back in its own order.
+      !sameJson(row.detail, want.detail)
+    ) {
+      await tx
+        .update(stockAttention)
+        .set({
+          kind: want.kind,
+          rule: want.rule,
+          quantity: want.quantity,
+          summary: want.summary,
+          detail: want.detail as never,
+          stockItemId: want.stockItemId,
+          updatedAt: now,
+        })
+        .where(eq(stockAttention.id, row.id));
+    }
+  }
+  for (const [dedupeKey, want] of [...wanted].sort(([a], [b]) => a.localeCompare(b))) {
+    await tx
+      .insert(stockAttention)
+      .values({
+        id: newId(),
+        operatorId: scope.operatorId,
+        branchId: scope.branchId,
+        stockItemId: want.stockItemId,
+        kind: want.kind,
+        dedupeKey,
+        rule: want.rule,
+        quantity: want.quantity,
+        summary: want.summary,
+        detail: want.detail as never,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing();
+  }
+}
+
+/** The branch's open attention, low stock and the round-1 shortfalls alike, newest first. */
+export async function listStockAttention(db: Exec, operatorId: string, branchId: string): Promise<StockAttentionView[]> {
+  const rows = await db
+    .select()
+    .from(stockAttention)
+    .where(
+      and(eq(stockAttention.operatorId, operatorId), eq(stockAttention.branchId, branchId), isNull(stockAttention.resolvedAt)),
+    )
+    .orderBy(desc(stockAttention.updatedAt), desc(stockAttention.id));
+  return rows.map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    stockItemId: r.stockItemId,
+    rule: r.rule,
+    quantity: r.quantity,
+    summary: r.summary,
+    occurrences: r.occurrences,
+    saleId: r.saleId,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    lowStock: r.kind === 'low_stock' || r.kind === 'reorder' ? lowStockOf(r.kind, r.detail, r.dedupeKey) : null,
+  }));
+}
+
+/**
+ * A low-stock row's figures as the Alerts screen reads them (walkthrough F3):
+ * the detail `syncStockAttention` writes, read leniently — a row written before
+ * a field existed answers it as unknown (a place's id: null, matched by name),
+ * never as a refusal of the whole list.
+ */
+function lowStockOf(kind: 'low_stock' | 'reorder', detail: unknown, dedupeKey: string): StockAttentionLowStock {
+  const d = detail && typeof detail === 'object' && !Array.isArray(detail) ? (detail as Record<string, unknown>) : {};
+  const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? Math.trunc(v) : null);
+  const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+  const belowPar = Array.isArray(d.belowPar) ? (d.belowPar as unknown[]) : [];
+  return {
+    // `low_stock:<branch>:<group>` names the group when the detail does not.
+    groupId: str(d.groupId) ?? dedupeKey.split(':').slice(2).join(':'),
+    total: num(d.total) ?? 0,
+    reorderPoint: num(d.reorderPoint),
+    reorderRule: d.reorderRule === 'trend' ? 'trend' : 'static',
+    staticReorderPoint: num(d.staticReorderPoint),
+    usedInWindow: num(d.usedInWindow),
+    reorder: kind === 'reorder',
+    belowPar: belowPar.flatMap((b) => {
+      if (!b || typeof b !== 'object') return [];
+      const e = b as Record<string, unknown>;
+      const stockItemId = str(e.stockItemId);
+      const place = str(e.place);
+      const level = num(e.level);
+      const par = num(e.par);
+      if (!stockItemId || place === null || level === null || par === null) return [];
+      return [{ stockItemId, size: str(e.size), locationId: str(e.locationId), place, level, par }];
+    }),
+  };
+}
+
+/** Somebody has looked: close one open attention row. A rule still firing raises a fresh one. */
+export async function resolveStockAttention(tx: Tx, actor: StockActor, attentionId: string, now: Date): Promise<void> {
+  const [row] = await tx
+    .select()
+    .from(stockAttention)
+    .where(
+      and(
+        eq(stockAttention.id, attentionId),
+        eq(stockAttention.operatorId, actor.operatorId),
+        eq(stockAttention.branchId, actor.branchId),
+      ),
+    )
+    .limit(1)
+    .for('update');
+  if (!row) throw errors.notFound('That stock alert is not one of this branch’s');
+  if (row.resolvedAt) return;
+  await tx
+    .update(stockAttention)
+    .set({ resolvedAt: now, resolvedByAccountId: actor.accountId, updatedAt: now })
+    .where(eq(stockAttention.id, row.id));
+  await audit.record(tx, {
+    actorAccountId: actor.accountId,
+    operatorId: actor.operatorId,
+    branchId: actor.branchId,
+    action: 'stock_attention.resolve',
+    entityType: 'stock_attention',
+    entityId: row.id,
+    requestId: actor.requestId ?? null,
+    before: { kind: row.kind, summary: row.summary },
+    after: { resolved: true },
+  });
+}
+
+// =====================================================================================
+// ROUND 4 — REPORTS, THE DAILY FACT AND COST OF GOODS, FROM THE LEDGER (plan §2.5).
+//
+// Every figure below is read from `pos.stock_movement` — and the counts and
+// orders its rows point at — so each report adds up to the movements it names:
+//
+//   - Discrepancies: the counted shelves of every stock take (each PLACE's
+//     opening left out: a starting figure is not a variance — `placeOpeningSql`);
+//     a non-zero line's difference IS its `count` movement.
+//   - Usage: per size, sales net of refunds over business dates — a unit a paid
+//     sale took past the record counts as used (the guest has it), and a refund
+//     counts only what it put back on a shelf (the restock decision's).
+//   - Shrinkage: count variances (each place's opening left out) plus
+//     corrections down.
+//   - Purchases: the purchase orders, each line's received units read back from
+//     its `receive` movements.
+//   - Value: what each size holds at the live places now × its cost, "no cost
+//     set" flagged.
+//
+// The prototype mocked Usage and Shrinkage (`StockReports.tsx:241-320`); its
+// Discrepancies, Purchases and Value were session figures. Cost figures are a
+// manager's (`seesCost` in the routes): null to anyone else.
+// =====================================================================================
+
+interface ReportItem {
+  id: string;
+  name: string;
+  variantLabel: string | null;
+  groupId: string;
+  productKind: string | null;
+  unitCostSatang: number | null;
+  archived: boolean;
+}
+
+/** Every stock item of the branch, removed sizes too — a past movement may name one. */
+async function reportItems(db: Exec, operatorId: string, branchId: string): Promise<Map<string, ReportItem>> {
+  const rows = await db
+    .select()
+    .from(stockItem)
+    .where(and(eq(stockItem.operatorId, operatorId), eq(stockItem.branchId, branchId)))
+    .orderBy(asc(stockItem.name), asc(stockItem.variantId), asc(stockItem.id));
+  const productIds = [...new Set(rows.flatMap((r) => (r.productId ? [r.productId] : [])))];
+  const kinds = new Map(
+    (productIds.length
+      ? await db.select({ id: product.id, kind: product.kind }).from(product).where(inArray(product.id, productIds))
+      : []
+    ).map((p) => [p.id, p.kind as string]),
+  );
+  return new Map(
+    rows.map((r) => [
+      r.id,
+      {
+        id: r.id,
+        name: r.name,
+        variantLabel: r.variantLabel,
+        groupId: stockGroupKey(r),
+        productKind: r.productId ? (kinds.get(r.productId) ?? null) : null,
+        unitCostSatang: r.unitCostSatang,
+        archived: r.archivedAt !== null,
+      },
+    ]),
+  );
+}
+
+const sizeOf = (item: ReportItem) => ({
+  stockItemId: item.id,
+  name: item.name,
+  variantLabel: item.variantLabel,
+  groupId: item.groupId,
+  productKind: item.productKind,
+});
+
+async function branchClock(db: Exec, branchId: string): Promise<{ operatorId: string; timezone: string; dayStartMinutes: number }> {
+  const [br] = await db
+    .select({ operatorId: branch.operatorId, timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(eq(branch.id, branchId))
+    .limit(1);
+  if (!br) throw errors.notFound('Branch not found');
+  return { operatorId: br.operatorId, timezone: br.timezone, dayStartMinutes: parseDayStart(br.dayStart) };
+}
+
+const int = (v: string | number | null | undefined): number => Number(v ?? 0);
+
+type ReportScope = { operatorId: string; branchId: string; from: string; to: string; withCost: boolean };
+
+/** Discrepancies: every counted shelf of a stock take in the range, newest first. */
+export async function stockDiscrepancies(
+  db: Exec,
+  scope: Omit<ReportScope, 'withCost'>,
+  items?: Map<string, ReportItem>,
+): Promise<StockDiscrepancyRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const clock = await branchClock(db, scope.branchId);
+  const rows = await db
+    .select({
+      id: stockTakeLine.id,
+      stockItemId: stockTakeLine.stockItemId,
+      locationId: stockTakeLine.stockLocationId,
+      locationName: stockLocation.name,
+      expected: stockTakeLine.expectedQuantity,
+      counted: stockTakeLine.countedQuantity,
+      difference: stockTakeLine.difference,
+      flagged: stockTakeLine.flagged,
+      countedAt: stockTakeLine.countedAt,
+    })
+    .from(stockTakeLine)
+    .innerJoin(stockTake, eq(stockTake.id, stockTakeLine.stockTakeId))
+    .innerJoin(stockLocation, eq(stockLocation.id, stockTakeLine.stockLocationId))
+    .where(
+      and(
+        eq(stockTake.operatorId, scope.operatorId),
+        eq(stockTake.branchId, scope.branchId),
+        eq(stockTake.status, 'committed'),
+        // Each place's opening left out — the commit's stored answer; a line
+        // written before 0051 is judged by the same rule at read time (F1).
+        sql`not ${placeOpeningSql('stock_take_line', 'stock_take')}`,
+      ),
+    )
+    .orderBy(desc(stockTakeLine.countedAt), asc(stockTakeLine.id));
+  const out: StockDiscrepancyRow[] = [];
+  for (const r of rows) {
+    const day = businessDate(r.countedAt, clock.timezone, clock.dayStartMinutes);
+    if (day < scope.from || day > scope.to) continue;
+    const item = byId.get(r.stockItemId);
+    if (!item) continue;
+    out.push({
+      id: r.id,
+      ...sizeOf(item),
+      locationId: r.locationId,
+      locationName: r.locationName,
+      expectedQuantity: r.expected,
+      countedQuantity: r.counted,
+      difference: r.difference,
+      flagged: r.flagged,
+      countedAt: r.countedAt.toISOString(),
+      businessDate: day,
+    });
+  }
+  return out;
+}
+
+/** Usage: per size, what sales took over the range, net of what refunds put back. */
+export async function stockUsage(
+  db: Exec,
+  scope: ReportScope,
+  items?: Map<string, ReportItem>,
+): Promise<StockUsageRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const { rows } = await db.execute<{
+    stock_item_id: string;
+    sold: string | number;
+    sold_offline: string | number;
+    refunded: string | number;
+    cost: string | number | null;
+    cost_missing: boolean;
+  }>(sql`
+    select m.stock_item_id,
+           sum(case when m.kind in ('sale','offline_sale') then -m.quantity + m.shortfall else 0 end)::bigint as sold,
+           sum(case when m.kind = 'offline_sale' then -m.quantity + m.shortfall else 0 end)::bigint as sold_offline,
+           sum(case when m.kind = 'refund' then m.quantity else 0 end)::bigint as refunded,
+           sum(case when m.kind in ('sale','offline_sale') then (-m.quantity + m.shortfall) * m.unit_cost_satang
+                    else -m.quantity * m.unit_cost_satang end)::bigint as cost,
+           bool_or(m.unit_cost_satang is null) as cost_missing
+      from pos.stock_movement m
+     where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
+       and m.business_date between ${scope.from}::date and ${scope.to}::date
+       and m.kind in ('sale','offline_sale','refund')
+     group by m.stock_item_id`);
+  const out: StockUsageRow[] = [];
+  for (const r of rows) {
+    const item = byId.get(r.stock_item_id);
+    if (!item) continue;
+    const sold = int(r.sold);
+    const refunded = int(r.refunded);
+    out.push({
+      ...sizeOf(item),
+      sold,
+      refunded,
+      net: sold - refunded,
+      soldOffline: int(r.sold_offline),
+      costSatang: scope.withCost && !r.cost_missing ? int(r.cost) : null,
+    });
+  }
+  return out.sort((a, b) => b.net - a.net || a.name.localeCompare(b.name) || a.stockItemId.localeCompare(b.stockItemId));
+}
+
+/** Shrinkage: per size, count variances (each place's opening left out) plus corrections down. */
+export async function stockShrinkage(
+  db: Exec,
+  scope: ReportScope,
+  items?: Map<string, ReportItem>,
+): Promise<StockShrinkageRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const { rows } = await db.execute<{
+    stock_item_id: string;
+    count_variance: string | number;
+    counted_short: string | number;
+    adjusted_down: string | number;
+    moved_cost: string | number | null;
+    cost_missing: boolean;
+  }>(sql`
+    select m.stock_item_id,
+           sum(case when m.kind = 'count' then m.quantity else 0 end)::bigint as count_variance,
+           count(*) filter (where m.kind = 'count' and m.quantity < 0)::bigint as counted_short,
+           sum(case when m.kind = 'adjust' then m.quantity else 0 end)::bigint as adjusted_down,
+           sum(m.quantity * m.unit_cost_satang)::bigint as moved_cost,
+           bool_or(m.unit_cost_satang is null) as cost_missing
+      from pos.stock_movement m
+      left join pos.stock_take_line l on l.id = m.stock_take_line_id
+      left join pos.stock_take t on t.id = l.stock_take_id
+     where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
+       and m.business_date between ${scope.from}::date and ${scope.to}::date
+       and ((m.kind = 'count' and (l.id is null or not ${placeOpeningSql('l', 't')}))
+            or (m.kind = 'adjust' and m.quantity < 0))
+     group by m.stock_item_id`);
+  const out: StockShrinkageRow[] = [];
+  for (const r of rows) {
+    const item = byId.get(r.stock_item_id);
+    if (!item) continue;
+    const countVariance = int(r.count_variance);
+    const adjustedDown = int(r.adjusted_down);
+    if (countVariance === 0 && adjustedDown === 0) continue;
+    out.push({
+      ...sizeOf(item),
+      countVariance,
+      countedShort: int(r.counted_short),
+      adjustedDown,
+      total: countVariance + adjustedDown,
+      lossSatang: scope.withCost ? -int(r.moved_cost) : null,
+      costMissing: r.cost_missing,
+    });
+  }
+  return out.sort((a, b) => a.total - b.total || a.name.localeCompare(b.name) || a.stockItemId.localeCompare(b.stockItemId));
+}
+
+/** Purchases: the orders created in the range, each line's receipts read back from the ledger. */
+export async function stockPurchases(
+  db: Exec,
+  scope: ReportScope,
+  items?: Map<string, ReportItem>,
+): Promise<StockPurchaseOrderRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const clock = await branchClock(db, scope.branchId);
+  const orders = (await listPurchaseOrders(db, scope.operatorId, scope.branchId)).filter((o) => {
+    const day = businessDate(new Date(o.createdAt), clock.timezone, clock.dayStartMinutes);
+    return day >= scope.from && day <= scope.to;
+  });
+  const lineIds = orders.flatMap((o) => o.lines.map((l) => l.id));
+  const received = new Map<string, { quantity: number; cost: number; costMissing: boolean }>();
+  if (lineIds.length > 0) {
+    const { rows } = await db.execute<{ line_id: string; quantity: string | number; cost: string | number | null; cost_missing: boolean }>(sql`
+      select m.purchase_order_line_id as line_id,
+             sum(m.quantity)::bigint as quantity,
+             sum(m.quantity * m.unit_cost_satang)::bigint as cost,
+             bool_or(m.unit_cost_satang is null) as cost_missing
+        from pos.stock_movement m
+       where m.operator_id = ${scope.operatorId}::uuid and m.kind = 'receive'
+         and m.purchase_order_line_id in (${sql.join(lineIds.map((id) => sql`${id}::uuid`), sql`, `)})
+       group by m.purchase_order_line_id`);
+    for (const r of rows) received.set(r.line_id, { quantity: int(r.quantity), cost: int(r.cost), costMissing: r.cost_missing });
+  }
+  return orders.map((o) => ({
+    id: o.id,
+    supplierName: o.supplierName,
+    state: o.state,
+    createdAt: o.createdAt,
+    createdBy: o.createdBy,
+    expectedArrivalDate: o.expectedArrivalDate,
+    lines: o.lines.map((l) => {
+      const item = byId.get(l.stockItemId);
+      const got = received.get(l.id);
+      // Nothing received yet costs nothing; a receipt with no frozen cost is unknown.
+      const receivedCost = !got ? 0 : got.costMissing ? null : got.cost;
+      return {
+        id: l.id,
+        stockItemId: l.stockItemId,
+        groupId: item?.groupId ?? l.stockItemId,
+        productKind: item?.productKind ?? null,
+        itemName: l.itemName,
+        variantLabel: l.variantLabel,
+        orderedQuantity: l.orderedQuantity,
+        receivedQuantity: l.receivedQuantity,
+        receivedInLedger: got?.quantity ?? 0,
+        unitCostSatang: scope.withCost ? (item?.unitCostSatang ?? null) : null,
+        receivedCostSatang: scope.withCost ? receivedCost : null,
+      };
+    }),
+  }));
+}
+
+/**
+ * Value: what each size holds now, × its cost; a size with no cost is flagged,
+ * never valued at nothing. "Holds" is the RECORD — every place of the branch,
+ * a retired one included (a manager may retire a shelf while stock sits on it,
+ * and `assertSizesRemovable` still counts it as held) — so `onHand` is
+ * Σ stock_level = the day's fact closing, and `valueSatang` its value. A
+ * retired place appears in `byLocation` only when it holds something, and its
+ * units are told apart in `retiredOnHand`.
+ */
+export async function stockValue(
+  db: Exec,
+  scope: Pick<ReportScope, 'operatorId' | 'branchId' | 'withCost'>,
+  items?: Map<string, ReportItem>,
+): Promise<StockValueRow[]> {
+  const byId = items ?? (await reportItems(db, scope.operatorId, scope.branchId));
+  const live = [...byId.values()].filter((i) => !i.archived);
+  const places = await branchLocations(db, scope.branchId);
+  const ids = live.map((i) => i.id);
+  const levels = ids.length
+    ? await db
+        .select({
+          stockItemId: stockLevel.stockItemId,
+          stockLocationId: stockLevel.stockLocationId,
+          quantity: stockLevel.quantity,
+          retired: sql<boolean>`(not ${stockLocation.active} or ${stockLocation.archivedAt} is not null)`,
+        })
+        .from(stockLevel)
+        .innerJoin(stockLocation, eq(stockLocation.id, stockLevel.stockLocationId))
+        .where(and(inArray(stockLevel.stockItemId, ids), eq(stockLocation.branchId, scope.branchId)))
+        .orderBy(asc(stockLocation.name), asc(stockLocation.id))
+    : [];
+  return live.map((item) => {
+    const byLocation: Record<string, number> = {};
+    for (const p of places) byLocation[p.id] = 0;
+    let retiredOnHand = 0;
+    for (const l of levels) {
+      if (l.stockItemId !== item.id) continue;
+      if (l.retired) {
+        if (l.quantity === 0) continue;
+        retiredOnHand += l.quantity;
+      }
+      byLocation[l.stockLocationId] = l.quantity;
+    }
+    const onHand = Object.values(byLocation).reduce((n, q) => n + q, 0);
+    const cost = scope.withCost ? item.unitCostSatang : null;
+    return {
+      ...sizeOf(item),
+      byLocation,
+      onHand,
+      retiredOnHand,
+      unitCostSatang: cost,
+      valueSatang: cost === null ? null : onHand * cost,
+      noCostSet: item.unitCostSatang === null,
+    };
+  });
+}
+
+/** The stock module's five reports, one read (`GET /branches/:branchId/stock/reports`). */
+export async function stockReports(db: Exec, scope: ReportScope): Promise<StockReports> {
+  if (scope.from > scope.to) throw errors.badRequest('The range ends before it starts');
+  const items = await reportItems(db, scope.operatorId, scope.branchId);
+  return {
+    branchId: scope.branchId,
+    from: scope.from,
+    to: scope.to,
+    withCost: scope.withCost,
+    discrepancies: await stockDiscrepancies(db, scope, items),
+    usage: await stockUsage(db, scope, items),
+    shrinkage: await stockShrinkage(db, scope, items),
+    purchases: await stockPurchases(db, scope, items),
+    value: await stockValue(db, scope, items),
+  };
+}
+
+/**
+ * COST OF GOODS, per product, over business dates: the units its sales took
+ * net of the units refunds put back, at the cost frozen on the sale line when it
+ * sold (`sale_line.payload.stock`, carried onto every movement). Attributed to
+ * the product the LINE sold, so relinking or removing a size later does not
+ * move past cost. A unit with no frozen cost makes `costTracked` false: the
+ * figure is understated, never silently "free" (prototype `lib/reporting.ts`).
+ */
+export async function stockCostOfGoods(
+  db: Exec,
+  scope: Omit<ReportScope, 'withCost'>,
+): Promise<StockCostOfGoods> {
+  if (scope.from > scope.to) throw errors.badRequest('The range ends before it starts');
+  const { rows } = await db.execute<{
+    product_id: string;
+    name: string;
+    kind: string | null;
+    quantity: string | number;
+    cogs: string | number | null;
+    untracked: boolean;
+  }>(sql`
+    select l.product_id, p.name, p.kind,
+           sum(case when m.kind in ('sale','offline_sale') then -m.quantity + m.shortfall else -m.quantity end)::bigint as quantity,
+           sum(case when m.kind in ('sale','offline_sale') then (-m.quantity + m.shortfall) * m.unit_cost_satang
+                    else -m.quantity * m.unit_cost_satang end)::bigint as cogs,
+           bool_or(m.unit_cost_satang is null) as untracked
+      from pos.stock_movement m
+      join pos.sale_line l on l.id = m.sale_line_id
+      join pos.product p on p.id = l.product_id
+     where m.operator_id = ${scope.operatorId}::uuid and m.branch_id = ${scope.branchId}::uuid
+       and m.business_date between ${scope.from}::date and ${scope.to}::date
+       and m.kind in ('sale','offline_sale','refund')
+     group by l.product_id, p.name, p.kind
+     order by p.name, l.product_id`);
+  return {
+    branchId: scope.branchId,
+    from: scope.from,
+    to: scope.to,
+    rows: rows.map((r) => ({
+      productId: r.product_id,
+      name: r.name,
+      productKind: r.kind,
+      quantity: int(r.quantity),
+      cogsSatang: int(r.cogs),
+      costTracked: !r.untracked,
+    })),
+  };
+}
+
+// --- The daily fact ---------------------------------------------------------------------
+
+export interface StockDayFact {
+  stockItemId: string;
+  businessDate: string;
+  opening: number;
+  sold: number;
+  refunded: number;
+  received: number;
+  transferred: number;
+  adjusted: number;
+  counted: number;
+  shortfall: number;
+  closing: number;
+  valueSatang: number | null;
+}
+
+/**
+ * ONE BRANCH'S STOCK DAY, per size, from the ledger. SIGN-EXACT by
+ * construction: every figure is the SIGNED sum of its kind's movements dated
+ * that day (sold ≤ 0, refunded and received ≥ 0, adjusted and counted either
+ * way), opening is every movement dated before it, and so
+ *
+ *     closing = opening + sold + refunded + received + adjusted + counted
+ *
+ * exactly; `transferred` is the gross units moved between places, whose out and
+ * in legs net to nothing inside the branch (checked, not assumed). `shortfall`
+ * is the units paid sales took past the record — told, never in the
+ * arithmetic. `value_satang` is closing × the cost frozen on the size's latest
+ * costed movement on or before the day, so a past day is valued at its own
+ * cost and a rerun after a price change writes nothing.
+ *
+ * A size is written for a day when it moved that day or held something at its
+ * start; a size that never moved has no row.
+ */
+export async function stockDayFacts(db: Exec, branchId: string, day: string): Promise<StockDayFact[]> {
+  const { rows } = await db.execute<{
+    stock_item_id: string;
+    opening: string | number;
+    sold: string | number;
+    refunded: string | number;
+    received: string | number;
+    transfer_out: string | number;
+    transfer_in: string | number;
+    adjusted: string | number;
+    counted: string | number;
+    shortfall: string | number;
+    today_moves: string | number;
+    cost: string | number | null;
+  }>(sql`
+    select m.stock_item_id,
+           coalesce(sum(m.quantity) filter (where m.business_date < ${day}::date), 0)::bigint as opening,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind in ('sale','offline_sale')), 0)::bigint as sold,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'refund'), 0)::bigint as refunded,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'receive'), 0)::bigint as received,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'transfer_out'), 0)::bigint as transfer_out,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'transfer_in'), 0)::bigint as transfer_in,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'adjust'), 0)::bigint as adjusted,
+           coalesce(sum(m.quantity) filter (where m.business_date = ${day}::date and m.kind = 'count'), 0)::bigint as counted,
+           coalesce(sum(m.shortfall) filter (where m.business_date = ${day}::date), 0)::bigint as shortfall,
+           count(*) filter (where m.business_date = ${day}::date)::bigint as today_moves,
+           (array_agg(m.unit_cost_satang order by m.business_date desc, m.occurred_at desc, m.created_at desc, m.id desc)
+              filter (where m.unit_cost_satang is not null))[1] as cost
+      from pos.stock_movement m
+     where m.branch_id = ${branchId}::uuid and m.business_date <= ${day}::date
+     group by m.stock_item_id
+     order by m.stock_item_id`);
+  const out: StockDayFact[] = [];
+  for (const r of rows) {
+    const opening = int(r.opening);
+    const transferOut = int(r.transfer_out);
+    const transferIn = int(r.transfer_in);
+    if (transferOut + transferIn !== 0) {
+      // Both legs of a transfer are one act on one day: a ledger where they do
+      // not net is not one this arithmetic can describe — say so, loudly.
+      throw new Error(`stock fact ${branchId} ${day}: the transfers of ${r.stock_item_id} do not net (${transferOut} out, ${transferIn} in)`);
+    }
+    if (opening === 0 && int(r.today_moves) === 0) continue;
+    const sold = int(r.sold);
+    const refunded = int(r.refunded);
+    const received = int(r.received);
+    const adjusted = int(r.adjusted);
+    const counted = int(r.counted);
+    const closing = opening + sold + refunded + received + adjusted + counted;
+    out.push({
+      stockItemId: r.stock_item_id,
+      businessDate: day,
+      opening,
+      sold,
+      refunded,
+      received,
+      transferred: transferIn,
+      adjusted,
+      counted,
+      shortfall: int(r.shortfall),
+      closing,
+      valueSatang: r.cost === null ? null : closing * Number(r.cost),
+    });
+  }
+  return out;
+}
+
+/**
+ * WRITE ONE BRANCH'S STOCK DAY (`analytics.fact_stock_daily`), idempotent per
+ * branch and date: recomputed from the ledger and upserted, and a row whose
+ * figures are unchanged is not written (the wallet liability fact's pattern) —
+ * so a rerun writes nothing, and a late offline sale corrects the day it
+ * belongs to and every stored day after it — including deleting the row of a
+ * size that sale emptied (it no longer opens with anything nor moves), which
+ * counts as written.
+ */
+export async function writeStockDailyFacts(
+  db: Exec,
+  branchId: string,
+  day: string,
+  now: Date = new Date(),
+): Promise<{ written: number; facts: StockDayFact[] }> {
+  const { operatorId } = await branchClock(db, branchId);
+  const facts = await stockDayFacts(db, branchId, day);
+  const f = factStockDaily;
+  let written = 0;
+  for (const fact of facts) {
+    const values = {
+      opening: fact.opening,
+      sold: fact.sold,
+      refunded: fact.refunded,
+      received: fact.received,
+      transferred: fact.transferred,
+      adjusted: fact.adjusted,
+      counted: fact.counted,
+      shortfall: fact.shortfall,
+      closing: fact.closing,
+      valueSatang: fact.valueSatang,
+    };
+    const rows = await db
+      .insert(f)
+      .values({ id: newId(), operatorId, branchId, stockItemId: fact.stockItemId, businessDate: day, ...values, createdAt: now, updatedAt: now })
+      .onConflictDoUpdate({
+        target: [f.branchId, f.stockItemId, f.businessDate],
+        set: { ...values, updatedAt: now },
+        setWhere: sql`(${f.opening}, ${f.sold}, ${f.refunded}, ${f.received}, ${f.transferred}, ${f.adjusted}, ${f.counted}, ${f.shortfall}, ${f.closing}, ${f.valueSatang})
+          is distinct from (excluded.opening, excluded.sold, excluded.refunded, excluded.received, excluded.transferred, excluded.adjusted, excluded.counted, excluded.shortfall, excluded.closing, excluded.value_satang)`,
+      })
+      .returning({ id: f.id });
+    written += rows.length;
+  }
+  // A size the ledger no longer has anything to say about that day (a late
+  // offline sale emptied it on an earlier day, so it opens at nothing and does
+  // not move) loses the row an earlier run wrote for it: a stored day must say
+  // what the ledger says of it, or not exist. Nothing to drop writes nothing.
+  const kept = facts.map((x) => x.stockItemId);
+  const dropped = await db
+    .delete(f)
+    .where(
+      and(
+        eq(f.branchId, branchId),
+        eq(f.businessDate, day),
+        ...(kept.length > 0 ? [notInArray(f.stockItemId, kept)] : []),
+      ),
+    )
+    .returning({ id: f.id });
+  written += dropped.length;
+  return { written, facts };
+}
+
+/** How many ended days back the stock job writes, so a job that was down closes the days it missed (the wallet jobs' week). */
+export const STOCK_FACT_LOOKBACK_DAYS = 7;
+
+/** The job's name, once: the runner, the tests and the Health page. */
+export const STOCK_DAILY_JOB = 'job:stock.daily';
+
+/**
+ * `job:stock.daily` — for every live branch: the ended days' facts (a week
+ * back, rewritten only where a figure moved), then the branch's low-stock
+ * attention re-read whole, because the usage window behind the trend reorder
+ * point (OD-27) slides every day whether or not anything moves. A branch that
+ * fails does not stop the others; the job then fails loudly with the count.
+ */
+export async function runStockDailyJob(db: Db, now: Date): Promise<Record<string, number>> {
+  let days = 0;
+  let rowsWritten = 0;
+  let branches = 0;
+  let failed = 0;
+  let firstError: unknown = null;
+  const live = await db
+    .select({ id: branch.id, operatorId: branch.operatorId, timezone: branch.timezone, dayStart: branch.businessDayStart })
+    .from(branch)
+    .where(isNull(branch.archivedAt))
+    .orderBy(asc(branch.id));
+  for (const br of live) {
+    try {
+      const today = businessDate(now, br.timezone, parseDayStart(br.dayStart));
+      for (let back = STOCK_FACT_LOOKBACK_DAYS; back >= 1; back -= 1) {
+        days += 1;
+        rowsWritten += (await writeStockDailyFacts(db, br.id, addDaysToIsoDate(today, -back), now)).written;
+      }
+      await db.transaction((tx) => syncStockAttention(tx, { operatorId: br.operatorId, branchId: br.id }, now));
+      branches += 1;
+    } catch (err) {
+      failed += 1;
+      firstError ??= err;
+    }
+  }
+  if (failed > 0) {
+    throw new Error(`stock daily: ${failed} of ${live.length} branches could not be written`, { cause: firstError });
+  }
+  return { branches, days, rowsWritten };
+}

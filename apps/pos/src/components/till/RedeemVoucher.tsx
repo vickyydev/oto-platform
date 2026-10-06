@@ -1,8 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { boothStaffLabel } from '@oto/shared';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Gift, ShieldX, Ticket, Trash2, X } from 'lucide-react';
-import type { VoucherView } from '@/api/vouchers';
+import { CheckCircle2, Gift, Printer, ShieldX, Ticket, Trash2, Wallet, X } from 'lucide-react';
+import {
+  vouchersApi,
+  type IssuableDefinition,
+  type VoucherCredit,
+  type VoucherView,
+} from '@/api/vouchers';
 import type { QuotedVoucher } from '@/api/sales';
 import {
   RECENT_SALE_MS,
@@ -144,7 +149,9 @@ export function VoucherCard({ held, quoted, busy, onRemove, note }: VoucherCardP
   const figure = !takesOff
     ? effect === 'free_item'
       ? 'Free'
-      : 'Hand over'
+      : view.effect.type === 'wallet_credit'
+        ? `+${baht(view.effect.valueSatang)} credit`
+        : 'Hand over'
     : quoted
       ? quoted.applicable
         ? `-${baht(quoted.amountSatang)}`
@@ -159,7 +166,7 @@ export function VoucherCard({ held, quoted, busy, onRemove, note }: VoucherCardP
             <div className="font-medium leading-tight">{view.prize.nameEn}</div>
             <div className="text-sm text-emerald-400 leading-snug">{view.summary}</div>
             <div className="text-xs text-emerald-500/70 font-mono">
-              {held.code} · Lucky Wheel voucher
+              {held.code} · {voucherSourceLabel(view.source)}
             </div>
             <div className="text-xs text-emerald-500/70 leading-snug">
               {voucherProvenance(view).join(' · ')}
@@ -204,7 +211,25 @@ export function VoucherCard({ held, quoted, busy, onRemove, note }: VoucherCardP
  */
 export function voucherIsGift(held: HeldVoucher | null): boolean {
   const type = held?.view.effect.type;
-  return type === 'free_item' || type === 'hand_over';
+  // S2-14a round 5: a wallet credit is a sale on its own too — it loads the
+  // credit when its ฿0 sale closes.
+  return type === 'free_item' || type === 'hand_over' || type === 'wallet_credit';
+}
+
+/** Where the paper came from, in the card's words. */
+export function voucherSourceLabel(source: string): string {
+  switch (source) {
+    case 'booth':
+      return 'Lucky Wheel voucher';
+    case 'campaign':
+      return 'Campaign voucher';
+    case 'manual':
+      return 'Till voucher';
+    case 'legacy':
+      return 'Voucher (old system)';
+    default:
+      return 'Voucher';
+  }
 }
 
 /**
@@ -215,7 +240,13 @@ export function voucherIsGift(held: HeldVoucher | null): boolean {
 export function VoucherFreeItemLine({ held }: { held: HeldVoucher }) {
   const { effect, prize } = held.view;
   const name =
-    effect.type === 'free_item' ? effect.product.name : effect.type === 'hand_over' ? prize.nameEn : null;
+    effect.type === 'free_item'
+      ? effect.product.name
+      : effect.type === 'hand_over'
+        ? prize.nameEn
+        : effect.type === 'wallet_credit'
+          ? `${baht(effect.valueSatang)} wallet credit`
+          : null;
   if (!name) return null;
   return (
     <div className="p-3 rounded-xl bg-card border" data-testid="voucher-free-item">
@@ -396,16 +427,233 @@ export function VoucherUsedNote({ held }: { held: HeldVoucher }) {
       ? `Hand over: ${effect.product.name}`
       : effect.type === 'hand_over'
         ? `Hand over: ${prize.nameEn}`
-        : summary;
+        : effect.type === 'wallet_credit'
+          ? `${baht(effect.valueSatang)} credit loaded`
+          : summary;
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div
+        className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-4 py-1.5 text-sm font-semibold text-emerald-500"
+        data-testid="voucher-used"
+      >
+        <CheckCircle2 className="w-4 h-4 shrink-0" />
+        <span>
+          Voucher <span className="font-mono">{held.code}</span> used · {line}
+        </span>
+      </div>
+      {effect.type === 'wallet_credit' && <VoucherCreditLoaded voucherId={held.view.id} />}
+    </div>
+  );
+}
+
+/**
+ * S2-14a round 5 — THE WALLET A WALLET-CREDIT VOUCHER LOADED, on the
+ * confirmation: its balance and its ONE QR, in the platform's figures, and the
+ * credit voucher to print for the guest. Read from the platform after the
+ * close (`GET /vouchers/:id/credit`); the till computes nothing.
+ */
+export function VoucherCreditLoaded({ voucherId }: { voucherId: string }) {
+  const [credit, setCredit] = useState<VoucherCredit | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    vouchersApi
+      .credit(voucherId)
+      .then((answer) => {
+        if (live) setCredit(answer);
+      })
+      .catch((err: unknown) => {
+        if (live) setNote(err instanceof Error ? err.message : 'The loaded credit could not be read.');
+      });
+    return () => {
+      live = false;
+    };
+  }, [voucherId]);
+  const print = () => {
+    setBusy(true);
+    vouchersApi
+      .printCredit(voucherId)
+      .then((answer) => setNote(answer.print.note ?? 'Credit voucher sent to the printer.'))
+      .catch((err: unknown) => setNote(err instanceof Error ? err.message : 'The credit voucher could not be printed.'))
+      .finally(() => setBusy(false));
+  };
+  if (!credit?.wallet) {
+    return note ? <div className="text-xs text-amber-400">{note}</div> : null;
+  }
   return (
     <div
-      className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-4 py-1.5 text-sm font-semibold text-emerald-500"
-      data-testid="voucher-used"
+      className="flex flex-wrap items-center justify-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-500"
+      data-testid="voucher-credit-loaded"
     >
-      <CheckCircle2 className="w-4 h-4 shrink-0" />
+      <Wallet className="w-4 h-4 shrink-0" />
       <span>
-        Voucher <span className="font-mono">{held.code}</span> used · {line}
+        Wallet <span className="font-mono">{credit.qrCode}</span> · {baht(credit.wallet.balanceSatang)} to spend
       </span>
+      <Button size="sm" variant="outline" className="h-7 px-2" disabled={busy} onClick={print}>
+        <Printer className="w-3.5 h-3.5 mr-1" />
+        {busy ? 'Printing…' : 'Print credit voucher'}
+      </Button>
+      {note && <span className="w-full text-center text-xs text-emerald-500/70">{note}</span>}
+    </div>
+  );
+}
+
+/**
+ * Staging F4 — whether a promotion's redemptions are all taken, by the
+ * platform's own figures on the picker (`redeemed` of `usageLimit`). The
+ * platform refuses to issue one (`VOUCHER_LIMIT_REACHED`); the picker greys it.
+ */
+export function definitionUsedUp(d: Pick<IssuableDefinition, 'usageLimit' | 'redeemed'>): boolean {
+  return d.usageLimit !== null && d.redeemed >= d.usageLimit;
+}
+
+/**
+ * S2-14a round 5 — ISSUE A VOUCHER AT THE TILL: pick one of the park's
+ * promotions the platform says this till may issue today, and the platform
+ * mints the code and prints the slip on this till's receipt printer. Built
+ * like the Redeem voucher row it sits under; what was issued, or why not, is
+ * the platform's answer in its words.
+ */
+export function IssueVoucherEntry({ memberId, disabled }: { memberId?: string | null; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<IssuableDefinition[] | null>(null);
+  const [chosen, setChosen] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [answer, setAnswer] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    if (!open || options) return;
+    let live = true;
+    vouchersApi
+      .issuable()
+      .then((res) => {
+        if (live) setOptions(res.definitions);
+      })
+      .catch((err: unknown) => {
+        if (live) {
+          setOptions([]);
+          setAnswer({ ok: false, text: err instanceof Error ? err.message : 'The promotions could not be read.' });
+        }
+      });
+    return () => {
+      live = false;
+    };
+  }, [open, options]);
+  const usedUpChosen = (options ?? []).some((d) => d.id === chosen && definitionUsedUp(d));
+  const issue = () => {
+    if (!chosen || busy || usedUpChosen) return;
+    setBusy(true);
+    setAnswer(null);
+    vouchersApi
+      .issue(chosen, memberId ?? null)
+      .then((res) =>
+        setAnswer({
+          ok: true,
+          text: `Issued ${res.voucher.nameEn} · ${res.voucher.code}${res.print.note ? ` — ${res.print.note}` : ' — printing'}`,
+        }),
+      )
+      .catch((err: unknown) => {
+        setAnswer({ ok: false, text: err instanceof Error ? err.message : 'The voucher was not issued.' });
+        // Used up since the list was read: read it again, so the picker greys it.
+        if ((err as { code?: unknown } | null)?.code === 'VOUCHER_LIMIT_REACHED') {
+          setChosen('');
+          setOptions(null);
+        }
+      })
+      .finally(() => setBusy(false));
+  };
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="text-xs text-foreground/50 underline-offset-2 hover:underline disabled:opacity-40"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        data-testid="issue-voucher-open"
+      >
+        Issue a voucher…
+      </button>
+    );
+  }
+  return (
+    <IssueVoucherRow
+      options={options}
+      chosen={chosen}
+      busy={busy}
+      {...(disabled !== undefined ? { disabled } : {})}
+      answer={answer}
+      onChoose={setChosen}
+      onIssue={issue}
+      onClose={() => setOpen(false)}
+    />
+  );
+}
+
+/**
+ * The open Issue row, drawn from what the entry holds — its own component so
+ * the layout and the picker's greyed promotions can be checked without a
+ * browser.
+ */
+export function IssueVoucherRow({
+  options,
+  chosen,
+  busy,
+  disabled,
+  answer,
+  onChoose,
+  onIssue,
+  onClose,
+}: {
+  options: IssuableDefinition[] | null;
+  chosen: string;
+  busy: boolean;
+  disabled?: boolean;
+  answer: { ok: boolean; text: string } | null;
+  onChoose: (id: string) => void;
+  onIssue: () => void;
+  onClose: () => void;
+}) {
+  const usedUpChosen = (options ?? []).some((d) => d.id === chosen && definitionUsedUp(d));
+  return (
+    <div className="min-w-0 max-w-full space-y-1.5" data-testid="issue-voucher">
+      {/*
+        Staging F7 — the row wraps inside the order panel: a long promotion name
+        no longer widens the select past the panel (which scrolled the till half
+        sideways and pushed Close out of view). The select may shrink to nothing
+        (`min-w-0`) and the buttons drop to their own line when it must.
+      */}
+      <div className="flex flex-wrap gap-2 min-w-0" data-testid="issue-voucher-row">
+        <select
+          value={chosen}
+          onChange={(e) => onChoose(e.target.value)}
+          aria-label="Voucher to issue"
+          className="min-w-0 w-full flex-1 basis-40 h-9 rounded-xl border border-foreground/10 bg-black/20 px-3 text-sm text-foreground truncate focus:outline-none focus:ring-2 focus:ring-primary/50"
+          disabled={disabled || busy || !options}
+        >
+          <option value="">{options ? 'Choose a promotion…' : 'Loading…'}</option>
+          {(options ?? []).map((d) => (
+            // Staging F4 — a promotion whose redemptions are all taken is shown,
+            // greyed and not choosable: the platform would refuse to issue it.
+            <option key={d.id} value={d.id} disabled={definitionUsedUp(d)}>
+              {d.nameEn}
+              {d.usageLimit !== null ? ` (${d.redeemed}/${d.usageLimit} used)` : ''}
+            </option>
+          ))}
+        </select>
+        <div className="flex gap-2 shrink-0 ml-auto">
+          <Button size="sm" variant="outline" className="h-9 px-3 shrink-0" disabled={disabled || busy || !chosen || usedUpChosen} onClick={onIssue}>
+            {busy ? 'Issuing…' : 'Issue & print'}
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={onClose} aria-label="Close">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+      {answer && (
+        <div className={`text-xs leading-snug ${answer.ok ? 'text-emerald-500' : 'text-rose-700 dark:text-rose-300'}`}>
+          {answer.text}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,92 @@
+[
+  {
+    "step": 1,
+    "title": "Register the Raspberry Pi",
+    "sourceScreenshot": "01-add-box.png",
+    "caption": "After imaging the Pi, create its box entry here, then use the one-time claim during installation. The reference form shows FortuneWheelBox, slot booth-1 and role Booth. It was opened for this guide and cancelled; the existing box was not recreated."
+  },
+  {
+    "step": 2,
+    "title": "Confirm the box is online",
+    "sourceScreenshot": "02-online-box.png",
+    "caption": "The physical FortuneWheelBox is online in slot booth-1, with hostname booth. Its queue shows zero unsynced items. The saved printer and station belong to this box."
+  },
+  {
+    "step": 3,
+    "title": "Connect the voucher printer",
+    "sourceScreenshot": "03-printer-settings.png",
+    "caption": "The saved Booth Voucher Printer uses LAN address 192.168.192.168:9100. This view shows its existing connection settings; nothing was changed. The live booth status in step 10 confirms it is reachable with paper OK."
+  },
+  {
+    "step": 4,
+    "title": "Assign the booth station",
+    "sourceScreenshot": "04-station.png",
+    "caption": "FWBooth1 is a Booth station on FortuneWheelBox, with receipt prefix B1 and Booth Voucher Printer assigned. This is the saved physical setup used for the bench spins."
+  },
+  {
+    "step": 5,
+    "title": "Choose the game and button",
+    "sourceScreenshot": "06-game-settings.png",
+    "caption": "The design is Classic wheel (v1), and the published game configuration is version 5. The daily limit is 100 spins and the red button sends Space. The staff session length is the default 12 hours."
+  },
+  {
+    "step": 6,
+    "title": "Check who may sign in",
+    "sourceScreenshot": "07-staff.png",
+    "caption": "Som and Khun Anan are assigned to this booth, and both show PIN set. The Console exposes Set PIN, Generate PIN and Remove PIN. No PIN values are shown in this walkthrough."
+  },
+  {
+    "step": 7,
+    "title": "Review the seven prizes",
+    "sourceScreenshot": "08-seven-prizes.png",
+    "caption": "Seven active prizes are configured: 100, 150, 200 and 300 THB vouchers, Free Bracelet Workshop, 1+1 Kids Ticket and Kids Pizza. Their chances total 100%. Three gift prizes have no cost entered; the Console displays that warning."
+  },
+  {
+    "step": 8,
+    "title": "Preview the wheel",
+    "sourceScreenshot": "09-wheel-preview.png",
+    "caption": "This is the Console draft preview. Its seven prizes and chances match published version 5. One sort-order value for the 300 THB prize differs from the published version; it was left untouched. Equal-size wedges do not represent the winning chances."
+  },
+  {
+    "step": 9,
+    "title": "Check the published version",
+    "sourceScreenshot": "10-published-version.png",
+    "caption": "Version 5 is the published configuration, recorded at 22:35 on 28 September. Publishing sends a saved version to the box; the next screenshot confirms the version actually running."
+  },
+  {
+    "step": 10,
+    "title": "Verify the live booth",
+    "sourceScreenshot": "05-live-booth.png",
+    "caption": "Published version 5 and running version 5 agree. The physical box is online and the printer is reachable with paper OK. The booth reports 24 spins today, below its daily limit of 100."
+  },
+  {
+    "step": 11,
+    "title": "Inspect all 24 bench spins",
+    "sourceScreenshot": "11-spins.png",
+    "caption": "For 28 September: 24 spins, 24 printed and 0 redeemed. Nine rows name a staff member; 15 earlier rows are unattributed. One earlier row is marked Clock uncertain. The three 22:57 offline-test spins are present as Printed."
+  },
+  {
+    "step": 12,
+    "title": "Reconcile the voucher ledger",
+    "sourceScreenshot": "14-voucher-ledger.png",
+    "caption": "With the booth and date selected, the ledger contains 24 issued vouchers for this trading day, matching the Spins panel. Other booths and older records are excluded from this count. None of these 24 vouchers has been redeemed."
+  },
+  {
+    "step": 13,
+    "title": "Match paper to the record",
+    "sourceScreenshot": "15-voucher-match.png",
+    "caption": "The latest captured example is the 200 THB voucher ending N7BZ, issued at 23:12 and marked Printed. For the demonstration video, film a fresh button press, the revealed prize and the printed slip; then refresh this list and match its final four characters."
+  },
+  {
+    "step": 14,
+    "title": "Show printing during the outage",
+    "sourceScreenshot": "12-box-log.png",
+    "caption": "At 22:57, failed cloud calls appear between three successful print-job messages. Those three outcomes now appear in the cloud ledger as 3NR3, BPJM and SE26. This is evidence of continued local printing and subsequent sync during the bench network test."
+  },
+  {
+    "step": 15,
+    "title": "Confirm recovery and hand over",
+    "sourceScreenshot": "13-heartbeats.png",
+    "caption": "Recent heartbeats show outbox 0 and the clock in step: no unsynced items remain at capture. Pair this walkthrough with the physical demonstration video to show the screen, button, printed voucher and matching Console record together."
+  }
+]

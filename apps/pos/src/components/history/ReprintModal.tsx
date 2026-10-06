@@ -20,8 +20,11 @@ interface ReprintModalProps {
   onOpenChange: (open: boolean) => void;
   items: ReprintItemOption[];
   operatorName: string;
-  /** Receives the human labels of every selected artifact. */
-  onConfirm: (labels: string[]) => void;
+  /**
+   * Receives the human labels of every selected artifact and — S2-11 — their
+   * ids, which History sends to the platform as the reprint kinds.
+   */
+  onConfirm: (labels: string[], ids: string[]) => void;
 }
 
 export function ReprintModal({
@@ -50,10 +53,12 @@ export function ReprintModal({
 
   const handleConfirm = () => {
     if (selectedIds.length === 0) return;
-    const labels = items
-      .filter((i) => selectedIds.includes(i.id))
-      .map((i) => (i.sublabel ? `${i.label} ${i.sublabel}` : i.label));
-    onConfirm(labels);
+    const picked = items.filter((i) => selectedIds.includes(i.id));
+    const labels = picked.map((i) => (i.sublabel ? `${i.label} ${i.sublabel}` : i.label));
+    onConfirm(
+      labels,
+      picked.map((i) => i.id),
+    );
     onOpenChange(false);
   };
 

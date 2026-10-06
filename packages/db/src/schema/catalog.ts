@@ -14,7 +14,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { archivedAt, idPk, pos, timestamps } from './helpers';
 import { branch, operator } from './tenancy';
-import { stockItem } from './future';
+import { stockItem } from './stock';
 
 // --- The catalogue (schema `pos`) ------------------------------------------
 // What the till sells and the rules that price it. It sits with the sales it

@@ -12,14 +12,16 @@ import {
   REDEEMABLE_STATUS,
   bookingView,
   findBookings,
+  loadBookingByQr,
   loadBookingForOperator,
   memberIdForPhone,
   normalizeReference,
   readBookings,
-  redeemBooking,
   stationAtBranch,
   viewBookings,
 } from '../services/bookings';
+import { BOOKING_LEDGER_MAX, bookingLedger } from '../services/booking-checkout';
+import { redeemBookingAtCounter } from '../services/booking-redemption';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -137,6 +139,48 @@ export async function bookingRoutes(app: App): Promise<void> {
   );
 
   /**
+   * THE CONSOLE'S BOOKINGS LIST (S2-12, SCRUM-209 round 1).
+   *
+   * Every booking at one branch whatever its state — waiting for payment,
+   * paid, redeemed, expired, failed — newest first, with the payment behind
+   * each: the `WEB` invoice, the attempt's status and the day the money was
+   * taken. The counter's waiting list above answers "who is arriving"; this
+   * answers "what happened to the money", which is the back office's question.
+   *
+   * Same permission as the counter's read, at the same branch: it names the
+   * same families.
+   */
+  app.get(
+    '/ledger',
+    {
+      config: { permission: 'pos:booking:read', target: { branchId: 'query.branchId' } },
+      schema: {
+        description: "One branch's bookings in every state, with the payment behind each — the Console's bookings list",
+        querystring: z.object({
+          branchId: z.string().uuid().optional(),
+          status: z.enum(BOOKING_STATUSES).optional(),
+          from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          limit: z.coerce.number().int().min(1).max(BOOKING_LEDGER_MAX).default(50),
+          offset: z.coerce.number().int().min(0).max(100_000).default(0),
+        }),
+      },
+    },
+    async (req) => {
+      const { auth, branch: br } = await actingBranch(req, req.query.branchId);
+      return bookingLedger(app.db, {
+        operatorId: auth.operatorId,
+        branchId: br.id,
+        status: req.query.status,
+        from: req.query.from,
+        to: req.query.to,
+        limit: req.query.limit,
+        offset: req.query.offset,
+      });
+    },
+  );
+
+  /**
    * One booking, by the reference printed on the customer's QR.
    *
    * Scoped to one branch for the reason in `services/bookings.ts`: a reference
@@ -146,11 +190,23 @@ export async function bookingRoutes(app: App): Promise<void> {
    *
    * 404 when there is none — the counter tells those apart from an undeployed
    * route by the error code, so this must be our own 404 and not Fastify's.
+   *
+   * `stationTrading`, on this read and the two below (SCRUM-477): with the
+   * station forced offline the platform refuses the lookup as it refuses
+   * `/members/lookup`, so the till's lane arbiter moves the lookup to the box
+   * and the booking is read from the box's copy — the copy Confirm & Issue
+   * then redeems. Before this the lookup rode the platform while only Confirm
+   * went to the box, and a QR typed at an offline till was never checked on
+   * the box at all.
    */
   app.get(
     '/by-reference/:reference',
     {
-      config: { permission: 'pos:booking:read', target: { branchId: 'query.branchId' } },
+      config: {
+        permission: 'pos:booking:read',
+        target: { branchId: 'query.branchId' },
+        stationTrading: true,
+      },
       schema: {
         description: 'One booking at this branch by its reference',
         params: z.object({ reference: z.string().min(1).max(64) }),
@@ -171,36 +227,94 @@ export async function bookingRoutes(app: App): Promise<void> {
   );
 
   /**
-   * Claim the booking for this station, before anything is minted or printed.
+   * One booking, by a whole booking QR the till read itself (S2-12 round 3 fix).
+   *
+   * A scanner plugged into the till, or the redeem dialog's typed field, has
+   * no key and cannot check a QR's signature; before this route it parsed the
+   * id out of the code's shape and opened the dialog on it, so a tampered QR
+   * opened it too. The till now sends the code it read, and nothing opens
+   * unless the platform matches the signature against the one it stored when
+   * the booking was paid. The permission is required at the booking's own
+   * branch, exactly as the id read below.
+   */
+  app.get(
+    '/by-qr',
+    {
+      config: { permission: 'pos:booking:read', stationTrading: true },
+      schema: {
+        description: 'One booking by the whole signed QR the till scanned — refused unless the signature is the one the park issued',
+        querystring: z.object({ code: z.string().min(1).max(128) }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const found = await loadBookingByQr(app.db, auth.operatorId, req.query.code);
+      await req.requirePermission('pos:booking:read', { branchId: found.branchId });
+      return bookingView(found, await readBookings(app.db, [found]));
+    },
+  );
+
+  /**
+   * One booking, by the id its signed QR carries (S2-12 round 3).
+   *
+   * The box checks a scanned booking QR's signature and hands the till the
+   * booking id (`bookingQrHandler` in `@oto/box-agent`); the till opens the
+   * redeem flow on it through this read. Same permission as the reference
+   * lookup, required at the booking's own branch — so the other park's till
+   * cannot read it by id any more than by reference.
+   */
+  app.get(
+    '/:id',
+    {
+      config: { permission: 'pos:booking:read', stationTrading: true },
+      schema: {
+        description: 'One booking by its id — the id a scanned booking QR names',
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const found = await loadBookingForOperator(app.db, auth.operatorId, req.params.id);
+      if (!found) throw errors.notFound('Booking not found');
+      await req.requirePermission('pos:booking:read', { branchId: found.branchId });
+      return bookingView(found, await readBookings(app.db, [found]));
+    },
+  );
+
+  /**
+   * REDEEM AN ONLINE BOOKING AT THE COUNTER — S2-12 (SCRUM-209 round 3).
+   *
+   * One transaction (`services/booking-redemption.ts`): claim the booking —
+   * the row lock, paid only, the unique redemption row — then commit and close
+   * a sale from the lines the family PAID for, with the booking on it and the
+   * paid-online tender, then mint the bands and queue the paper through the
+   * path every walk-in sale takes. The answer carries the booking, the sale,
+   * the bands and the print jobs, so the till shows and prints exactly what a
+   * walk-in sale shows and prints.
    *
    * A second redemption is refused by name — when, where and by whom the first
-   * happened — rather than answered with a silent success, because a booking
-   * redeemed twice is two families through the gate on one payment and the
-   * person at the counter is the only one who can tell which is which.
-   *
-   * A genuine RETRY is a different thing and is already handled: the till
-   * sends the same `Idempotency-Key`, and the plugin replays the stored answer
-   * without re-running the work.
+   * happened — and writes nothing: no sale, no band. A genuine RETRY carries
+   * the same `Idempotency-Key` and is answered from the stored response.
    *
    * The branch is not in the path, so ownership is established the way
    * `fleet.ts` and `ops.ts` establish theirs: load the row inside the caller's
-   * operator, then require the permission at the branch that comes back.
+   * operator, then require the permission at the branch that comes back. A
+   * redemption needs a till — the sale is numbered and printed at one — so a
+   * session standing at none, and naming none, is refused (after the booking's
+   * own refusals, and with nothing written).
    */
   app.post(
     '/:id/redeem',
     {
       config: { permission: 'pos:booking:redeem', stationTrading: true },
       schema: {
-        description: 'Redeem an online booking at the counter — once',
+        description: 'Redeem an online booking at the counter — once: the sale, its bands and its print jobs',
         params: z.object({ id: z.string().uuid() }),
         body: z.object({
           /** The station the till is holding; the session's own is the fallback. */
           stationId: z.string().uuid().optional(),
-          /**
-           * Bands already minted, for a surface that cannot ask first — the
-           * offline box. The counter claims before it mints and sends none.
-           */
-          bandCodes: z.array(z.string().min(1).max(64)).max(40).default([]),
+          /** The visit reception confirmed, whose children the kids' bands name. */
+          visitId: z.string().uuid().optional(),
         }),
       },
     },
@@ -220,17 +334,28 @@ export async function bookingRoutes(app: App): Promise<void> {
       }
 
       return withTx(app.db, opCtx(req), 'booking.redeem', async (tx) => {
-        const row = await redeemBooking(tx, {
+        const done = await redeemBookingAtCounter(tx, {
           bookingId: found.id,
           operatorId: auth.operatorId,
           actorAccountId: auth.accountId,
           stationId,
-          bandCodes: req.body.bandCodes,
+          visitId: req.body.visitId ?? null,
           requestId: req.id,
+          assertBranchAllowed: async (branchId) => {
+            await req.requirePermission('pos:booking:redeem', { branchId });
+          },
         });
         // Read back inside the transaction that wrote it, so the answer carries
-        // the redemption row this claim just made (SCRUM-304).
-        return { booking: bookingView(row, await readBookings(tx, [row])) };
+        // the redemption row — and its bands — this claim just made.
+        return {
+          booking: bookingView(done.booking, await readBookings(tx, [done.booking])),
+          sale: done.sale,
+          attempt: done.attempt,
+          bands: done.bands,
+          printing: done.printing,
+          // S2-14a — the credit the booking's tickets earned, as a walk-in's answer carries it.
+          grants: done.grants,
+        };
       });
     },
   );

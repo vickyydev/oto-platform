@@ -13,9 +13,8 @@ import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { FnbCustomerDisplay, FnbCustomerStage } from '@/components/fnb/FnbCustomerDisplay';
 import { FnbOrderLine, ManualDiscount, MenuItem, PartyBooking, SelectedModifier } from '@/types';
 import { getDiscountReasons, getMenuItems } from '@/mockApi';
+import { fnbLineTotal, itemOrderTotals } from '@/lib/cartWire';
 import {
-  computeFnbTotals,
-  computeLineTotal,
   describeModifiers,
   hasModifiers,
   modifierSignature,
@@ -80,7 +79,7 @@ export function PartyFnbModal({
 
   // Same shared tax + service engine as the standalone F&B station.
   const { subtotal, total, manualAmounts, taxBreakdown } = useMemo(
-    () => computeFnbTotals(lines, manualDiscounts),
+    () => itemOrderTotals(lines, manualDiscounts),
     [lines, manualDiscounts]
   );
 
@@ -101,7 +100,7 @@ export function PartyFnbModal({
     menuItem: item,
     qty,
     selectedModifiers: selected,
-    lineTotal: computeLineTotal(item, selected, qty),
+    lineTotal: fnbLineTotal(item, selected, qty),
     note,
   });
 
@@ -119,7 +118,7 @@ export function PartyFnbModal({
         const next = [...prev];
         const merged = next[idx];
         const newQty = merged.qty + qty;
-        next[idx] = { ...merged, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+        next[idx] = { ...merged, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
         return next;
       }
       return [...prev, makeLine(item, selected, qty, note)];
@@ -169,7 +168,7 @@ export function PartyFnbModal({
             .map((l) => {
               if (l.id !== prev[twinIdx].id) return l;
               const newQty = l.qty + addQty;
-              return { ...l, qty: newQty, lineTotal: computeLineTotal(item, selected, newQty) };
+              return { ...l, qty: newQty, lineTotal: fnbLineTotal(item, selected, newQty) };
             });
           setManualDiscounts((mds) => dropDiscountsForRemovedLines(mds, next.map((l) => l.id)));
           return next;
@@ -180,7 +179,7 @@ export function PartyFnbModal({
                 ...l,
                 selectedModifiers: selected,
                 qty,
-                lineTotal: computeLineTotal(item, selected, qty),
+                lineTotal: fnbLineTotal(item, selected, qty),
                 note,
               }
             : l,
@@ -206,7 +205,7 @@ export function PartyFnbModal({
       if (qty <= 0) return prev.filter((l) => l.id !== lineId);
       return prev.map((l) =>
         l.id === lineId
-          ? { ...l, qty, lineTotal: computeLineTotal(l.menuItem, l.selectedModifiers, qty) }
+          ? { ...l, qty, lineTotal: fnbLineTotal(l.menuItem, l.selectedModifiers, qty) }
           : l,
       );
     });

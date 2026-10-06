@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Request } from '@playwright/test';
 import { CENTRAL_FLORESTA, chooseBranch, openSection, signInAndWait } from './console';
 
 /**
@@ -15,16 +15,60 @@ import { CENTRAL_FLORESTA, chooseBranch, openSection, signInAndWait } from './co
  * on the page.
  */
 
-/** Booth 1 at Central Floresta, open on the Booths page. */
+/**
+ * The reads of a booth's draft (`GET /booths/:id/draft`) the page has sent and
+ * not yet had answered. Counted from before the Booths page opens, so no read
+ * it sends is missed.
+ */
+function draftReads(page: Page): { outstanding: () => number } {
+  const out = new Set<Request>();
+  page.on('request', (r) => {
+    if (r.method() === 'GET' && /\/booths\/[^/?]+\/draft(?:\?|$)/.test(r.url())) out.add(r);
+  });
+  const answered = (r: Request) => void out.delete(r);
+  page.on('requestfinished', answered);
+  page.on('requestfailed', answered);
+  return { outstanding: () => out.size };
+}
+
+/**
+ * Booth 1 at Central Floresta, open on the Booths page, with the last draft
+ * read the page sent answered — so what the forms show is what they will keep.
+ *
+ * WHY IT WAITS FOR THE READS (SCRUM-256). The settings form holds an edit, and
+ * every read of the booth that lands replaces it with the API's values
+ * (`BoothSettingsPanel`: "a fresh read of the booth replaces what is on
+ * screen"). The session-length case typed its 10 hours while a second read
+ * was still out; about one run in nine that read landed between the typing
+ * and the press, put the field back to empty, and Save — enabled only while
+ * the form differs from the draft — stayed disabled until the click gave up at
+ * the 15 s action timeout. Holding that read until the hours are typed gives
+ * the same "locator.click: Timeout 15000ms exceeded … element is not enabled"
+ * every run.
+ *
+ * The second read was this helper's own doing, when the booth list had come
+ * back before the branch was chosen. Playwright's `selectOption` dispatches a
+ * change event even for the option already chosen, which a person's browser
+ * never does, and the Booths page answers a branch change by dropping the
+ * selected booth while the draft it had read stays on screen. So the "Booth
+ * staff" heading was already there, and pressing Booth 1 selected it again and
+ * sent another read. The branch is now chosen only when it is not the one
+ * shown, and the helper returns only once no draft read is out and the booth
+ * on screen is Booth 1 — which holds whichever order the reads come back in.
+ */
 async function openBooth1(page: Page): Promise<void> {
+  const drafts = draftReads(page);
   await openSection(page, 'Booths');
-  await chooseBranch(page, CENTRAL_FLORESTA);
+  const shown = await page
+    .getByLabel('Branch')
+    .evaluate((el) => (el as HTMLSelectElement).selectedOptions[0]?.label ?? '');
+  if (shown !== CENTRAL_FLORESTA) await chooseBranch(page, CENTRAL_FLORESTA);
   const booth = page.getByRole('button', { name: /Booth 1/ });
   await expect(booth).toBeVisible({ timeout: 30_000 });
   await booth.click();
-  await expect(page.getByRole('heading', { name: 'Booth staff', exact: true })).toBeVisible({
-    timeout: 30_000,
-  });
+  await expect(page.getByText(/^Booth 1 · Prefix:/)).toBeVisible({ timeout: 30_000 });
+  await expect.poll(drafts.outstanding, { timeout: 30_000 }).toBe(0);
+  await expect(page.getByRole('heading', { name: 'Booth staff', exact: true })).toBeVisible();
 }
 
 test('Voucher types: a 50 THB off type is created, Kids Pizza is linked and worded with no expiry, and a type is archived', async ({
@@ -227,21 +271,36 @@ test('Booths: the staff session length is saved as 10 hours, is in the review be
   await signInAndWait(page);
   await openBooth1(page);
 
-  const settings = page
+  // The settings are a summary on the page and the form is in a drawer the
+  // summary opens (SCRUM-468) — the same fields, the same Save.
+  const summary = page
     .locator('section')
     .filter({ has: page.getByRole('heading', { name: 'Booth settings', exact: true }) });
+  await expect(summary).toContainText('12 hours (default)');
+  const edit = summary.getByRole('button', { name: 'Edit settings', exact: true });
+  await edit.click();
+  const settings = page.getByRole('dialog', { name: 'Booth settings' });
   const length = settings.getByLabel('Staff session length');
+  const save = settings.getByRole('button', { name: 'Save settings', exact: true });
   await expect(length).toHaveValue('');
   // More than a day is refused before it is sent.
   await length.fill('25');
-  await expect(settings.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled();
+  await expect(save).toBeDisabled();
   await length.fill('10');
-  await settings.getByRole('button', { name: 'Save settings', exact: true }).click();
-  // The booth is read again after the save: the value on screen is the API's.
-  await expect(settings.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled({
-    timeout: 30_000,
-  });
+  // Save opens when the form differs from the draft and is valid — with no
+  // read left to land (openBooth1), the 10 typed above is what it compares.
+  await expect(save).toBeEnabled();
+  await save.click();
+  // Accepted, the drawer closes and the booth is read again: the summary
+  // reads the API's value, not what was typed.
+  await expect(settings).toHaveCount(0, { timeout: 30_000 });
+  await expect(summary).toContainText('10 hours', { timeout: 30_000 });
+  // Opened again, the form holds the saved 10 with nothing left to save.
+  await edit.click();
   await expect(length).toHaveValue('10');
+  await expect(save).toBeDisabled();
+  await settings.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(settings).toHaveCount(0);
 
   // Until the publish the box still grants the published twelve hours, and the
   // staff panel says both.
@@ -370,7 +429,7 @@ test.describe.serial('The Pi booth, set up in the Console', () => {
 
     const prizes = page
       .locator('section')
-      .filter({ has: page.getByRole('heading', { name: 'Prizes and odds', exact: true }) });
+      .filter({ has: page.getByRole('heading', { name: 'The wheel', exact: true }) });
     await expect(prizes).toBeVisible({ timeout: 30_000 });
     const addPrize = async (name: string, chance: string, onTheWheel: boolean) => {
       await prizes.getByRole('button', { name: 'Add prize', exact: true }).click();
@@ -402,4 +461,89 @@ test.describe.serial('The Pi booth, set up in the Console', () => {
     );
     await expect(preview).not.toContainText('still drawn on the television');
   });
+
+  /**
+   * SCRUM-468: archiving was a one-way door, and the owner retyped a prize he
+   * had archived by mistake. The switched-off Mystery Box from the case above
+   * is archived from its editor, found again under "Show archived prizes" and
+   * brought back — switched off, so the wheel's odds are what they were. The
+   * editor also says where the slip's words live, and the live panel where
+   * the receipt and slip templates are.
+   */
+  test('Booths: an archived prize is found under “Show archived prizes” and restored switched off', async ({
+    page,
+  }) => {
+    await signInAndWait(page);
+    await openSection(page, 'Booths');
+    await chooseBranch(page, CENTRAL_FLORESTA);
+    await page.getByRole('button', { name: new RegExp(BOOTH) }).click();
+
+    // Beside the printer it names, The box card says where templates are edited.
+    const live = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'The box', exact: true }) });
+    await expect(live).toContainText('Receipt and slip templates', { timeout: 30_000 });
+    await expect(live).toContainText('Operations › Print Templates');
+
+    const prizes = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: 'The wheel', exact: true }) });
+    const edit = prizes.getByRole('button', { name: 'Edit Mystery Box', exact: true });
+    await expect(edit).toBeVisible({ timeout: 30_000 });
+
+    await edit.click();
+    const editor = page.getByRole('dialog', { name: 'Mystery Box' });
+    // Where the slip's words are: on the voucher type, which this prize has none of yet.
+    await expect(editor).toContainText('are set on the voucher type, not on the prize');
+    await expect(editor.getByRole('link', { name: 'Open Voucher types', exact: true })).toBeVisible();
+    await editor.getByRole('button', { name: 'Archive prize', exact: true }).click();
+    await editor.getByRole('button', { name: 'Archive', exact: true }).click();
+    await expect(editor).toHaveCount(0, { timeout: 30_000 });
+    await expect(edit).toHaveCount(0, { timeout: 30_000 });
+
+    // Found again behind the quiet tick, marked archived.
+    await prizes.getByLabel('Show archived prizes').check();
+    const archived = prizes.getByRole('list', { name: 'Archived prizes' });
+    const row = archived.getByRole('listitem').filter({ hasText: 'Mystery Box' });
+    await expect(row).toBeVisible({ timeout: 30_000 });
+    await expect(row).toContainText('archived');
+
+    // Restored: back in the table switched off, and nothing left archived.
+    await row.getByRole('button', { name: 'Restore Mystery Box', exact: true }).click();
+    await expect(edit).toBeVisible({ timeout: 30_000 });
+    await expect(prizes.getByRole('row').filter({ hasText: 'Mystery Box' })).toContainText(
+      'off the wheel',
+    );
+    await expect(prizes).toContainText('Nothing archived on this booth.');
+    // Off at 0%, the wheel still adds to 100% — the restore moved no odds.
+    await expect(prizes).toContainText('adds to 100%');
+  });
+});
+
+/**
+ * SCRUM-468: the slip's words — title, instruction, terms — are the voucher
+ * type's, and the owner looked for them in the prize editor. The editor now
+ * says so where the type is chosen, and its link lands on that type, open.
+ */
+test('Booths: the prize editor’s pointer to the slip’s words opens its voucher type', async ({
+  page,
+}) => {
+  await signInAndWait(page);
+  await openBooth1(page);
+
+  const prizes = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'The wheel', exact: true }) });
+  await prizes.getByRole('button', { name: 'Edit 100 THB Voucher', exact: true }).click();
+  const editor = page.getByRole('dialog', { name: '100 THB Voucher' });
+  await expect(editor).toContainText('are set on the voucher type, not on the prize');
+  await editor
+    .getByRole('link', { name: 'Edit the slip’s words on 100 THB Voucher', exact: true })
+    .click();
+
+  await page.waitForURL(/\/voucher-types\?type=/);
+  await expect(page.getByRole('heading', { name: 'Voucher types', exact: true }).first()).toBeVisible();
+  const type = page.getByRole('dialog', { name: '100 THB Voucher' });
+  await expect(type).toBeVisible({ timeout: 30_000 });
+  await expect(type.getByLabel('Title (English)')).toBeVisible();
 });

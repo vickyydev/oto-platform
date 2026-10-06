@@ -39,6 +39,7 @@ import { boxStoreFor } from '../lib/box-store';
 import { AppError } from '../lib/errors';
 import { usableSigningKeys } from '../lib/signing-keys';
 import { audit } from './audit';
+import { currentBandKey } from './bands';
 import { processRoles } from './jobs';
 import { recordRun, scrubDetail } from './ops';
 import { registerProductBarcodeHandler } from './scanning-product';
@@ -1068,6 +1069,20 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
     version: t.version,
   }));
 
+  /**
+   * OD-13 — THE PARK'S BAND KEY, to counter and gate boxes only.
+   *
+   * A counter with no internet mints the bands of the sales it takes, and a
+   * gate checks them, with the same HMAC key the platform mints and checks
+   * with — the same format both ways, so the gate cannot tell an offline band
+   * from an online one. A box that runs only booths sells nothing and admits
+   * nobody, so it is never sent the key (`boxCacheRole`). This document is
+   * fetched over the box's own credential and never logged; a Pi writes it
+   * with the credential's own permissions (`fileConfigCache`).
+   */
+  const role = await boxCacheRole(db, auth);
+  const bandKey = role === 'counter' ? currentBandKey() : null;
+
   const body = {
     box: {
       id: auth.boxId,
@@ -1109,6 +1124,7 @@ export async function configBundle(db: Db, auth: BoxAuth): Promise<BoxConfigBund
      */
     printTemplates,
     signingKeys,
+    ...(bandKey ? { bandKey } : {}),
     heartbeatIntervalS: settings.heartbeatIntervalS,
     minSupportedAgentVersion: settings.minAgentVersion,
   };
@@ -1227,18 +1243,48 @@ export async function pollCommands(
      * the whole list as a single array parameter.
      */
     const onlyKinds = kinds?.length ? sql` and kind = any(${sql.param([...kinds])}::text[])` : sql``;
+    /**
+     * THE ORDER IS SET BY THE FINAL SELECT, NOT BY THE SUBQUERY. Do not fold
+     * this back into a bare `update … returning`.
+     *
+     * The inner `order by` only decides WHICH rows the `limit` takes, the
+     * oldest ones. It says nothing about the order the rows come back in.
+     * Postgres plans `where id in (subquery)` as a join, and neither plan it
+     * picks here keeps the subquery's order: a HashAggregate over the ids
+     * then a primary-key lookup, or a hash semi-join. `returning` emits rows
+     * in the order the update visited them, which is hash order of the ids
+     * and effectively random. EXPLAIN shows this; an ordered test that
+     * passes once proves nothing.
+     *
+     * The box runs a poll's commands one after another, in the order it is
+     * handed them. So without the outer `order by`, a `config_apply` queued
+     * ahead of a `test_print` (SCRUM-472) could run second, and the box would
+     * print the template as it was before the save. The same goes for any two
+     * commands queued for one box in sequence.
+     *
+     * A data-modifying CTE with an ordered select over it is the one place the
+     * order can be guaranteed. It is done in SQL rather than by sorting in JS
+     * because `created_at` has microsecond precision and a JS `Date` keeps
+     * milliseconds. `id` breaks a tie, in the claim as well as the handout, so
+     * the same queue always gives the same batch in the same order.
+     */
     const claimed = await tx.execute<RawCommandRow>(
-      sql`update edge.box_command
-             set state = 'running', claimed_at = now(), attempts = attempts + 1, updated_at = now()
-           where id in (
-             select id from edge.box_command
-              where box_id = ${auth.boxId} and state = 'queued'
-                and (expires_at is null or expires_at > now())${onlyKinds}
-              order by created_at
-              limit ${max}
-              for update skip locked
-           )
-       returning id, kind, payload, action_id, attempts, expires_at, created_at`,
+      sql`with claimed as (
+            update edge.box_command
+               set state = 'running', claimed_at = now(), attempts = attempts + 1, updated_at = now()
+             where id in (
+               select id from edge.box_command
+                where box_id = ${auth.boxId} and state = 'queued'
+                  and (expires_at is null or expires_at > now())${onlyKinds}
+                order by created_at, id
+                limit ${max}
+                for update skip locked
+             )
+         returning id, kind, payload, action_id, attempts, expires_at, created_at
+          )
+          select id, kind, payload, action_id, attempts, expires_at, created_at
+            from claimed
+           order by created_at, id`,
     );
     return claimed.rows.map((row) => ({
       id: row.id,
@@ -1669,6 +1715,13 @@ export async function startVirtualBox(opts: VirtualBoxOptions): Promise<BoxAgent
      * set in the Console. A Raspberry Pi passes the same function.
      */
     booth: { verifySecret: (hash, secret) => verifyArgon2(hash, secret) },
+    /**
+     * How this box checks band codes (S2-11). The key lives in this process
+     * (`configureBandKey` at boot), so the virtual box reads it directly; a
+     * Raspberry Pi till would need the key provisioned, which is recorded as
+     * S2-24 work. Without this line every band scan answers "cannot check".
+     */
+    bands: { key: currentBandKey },
   });
   try {
     await agent.start();

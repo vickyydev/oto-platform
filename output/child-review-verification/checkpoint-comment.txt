@@ -1,0 +1,11 @@
+Main now includes 88140af: saved-child review on the separate screen.
+
+At the saved-child review step, the parent can select an existing child, correct the name or date of birth and Confirm. The till saves the change to the real member record. Done waits for every child to be confirmed and then returns to staff supervision. Adding or removing a child continues on the staff screen; private health, food and photo details stay there.
+
+The save retains its original correction and retry key if the reply is lost, the till locks or the connection drops. Unlocking does not repeat it automatically. Late replies cannot change another visitor or reassigned child. The public age picker now uses the same visit date as validation.
+
+All 149 affected checks in existing test files pass, including three native browser cases against a fresh database. Shared, box and POS typechecks and full lint pass; POS build and browser-test typing pass. The real browser check caught and fixed a rendering mismatch with the intentionally hidden staff step number. The corrected run verifies actual profile readback, a deliberately lost reply, an identical retry, preserved drafts and the staff handoff. No registration or money action is claimed by this review.
+
+Reviewed local screenshots attached: 23-local-child-save-pending.png (10902), 24-local-child-save-retry.png (10903), and 25-local-child-review-confirmed.png (10904). Each is stamped LOCAL CHECK. STATUS, the newest STOP POINT, sprint progress, QA results and release follow-ups are saved with this commit.
+
+SCRUM-201 remains In Progress because the full story and staging acceptance are incomplete. The last CI attempt was blocked before any steps by GitHub Actions billing/spending availability. The exact new main run and Render deployment are being checked. Continuing with the F&B guest display slice, then shop; no staging or physical-device success is claimed here.

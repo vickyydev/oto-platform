@@ -34,6 +34,8 @@ import {
   registerSyncKey,
 } from '../services/sync';
 import { recordPrintJobResult } from '../services/print';
+import { BoxPhotoBodySchema, linkBoxPhoto, presignBoxPhoto } from '../services/sync-checkin';
+import { buildPrintDocument } from '../services/sale-printing';
 import type { OpContext } from '../services/tx';
 
 /**
@@ -233,6 +235,68 @@ export async function boxRoutes(app: App): Promise<void> {
     },
   );
 
+  /**
+   * S2-11 — the content of a sale's print job, fetched by the box as it prints.
+   *
+   * A sale's `test_print` command carries `document: 'platform'` and the job
+   * id, and nothing a printout says: the receipt's member, a kids band's
+   * allergy line and its signed code live here, built from the ledger for this
+   * one request, and never in the command history or the job row. Scoped to
+   * the asking box — a job on another box answers 404 — and read-only, so the
+   * box may ask as often as its retries need.
+   */
+  app.get(
+    '/print-jobs/:id/document',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'The document for one of this box’s print jobs — a receipt, a prep ticket, a band or an item voucher — as the renderer’s `{ kind, data }` job. Built from the ledger when asked, so a reprint prints the sale as it stands. 404 for a job on another box, and for a job that has no platform document (a test page).',
+        params: z.object({ id: z.string().uuid() }),
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      return buildPrintDocument(app.db, auth, req.params.id);
+    },
+  );
+
+  // --- Photos taken at a counter with the link down (S2-13 round 4) ----------
+
+  app.post(
+    '/photos/:id/upload-url',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'Step 1 of the box’s photo upload: a presigned PUT for a check-in photo the box kept while offline. The photo id is the file’s id, so asking again is a fresh URL for the same object. `linked: true` with no URL when the row already holds it. 409 PHOTO_TARGET_NOT_READY while the row it belongs to has not been filed yet.',
+        params: z.object({ id: z.string().uuid() }),
+        body: BoxPhotoBodySchema,
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      return presignBoxPhoto(app.db, app.fileStorage, auth, req.params.id, req.body, boxCtx(req, auth));
+    },
+  );
+
+  app.post(
+    '/photos/:id/link',
+    {
+      config: { credential: 'box', ...limited },
+      schema: {
+        description:
+          'Step 3 of the box’s photo upload: link the uploaded photo to its registration, pickup-list person or release, exactly once. The same photo again answers `replay: true` and writes nothing; another photo on that row is refused PHOTO_TARGET_TAKEN.',
+        params: z.object({ id: z.string().uuid() }),
+        body: BoxPhotoBodySchema,
+      },
+    },
+    async (req) => {
+      const auth = boxAuth(req);
+      return linkBoxPhoto(app.db, auth, req.params.id, req.body, boxCtx(req, auth));
+    },
+  );
+
   // --- The sync core (S2-05) ------------------------------------------------
 
   app.post(
@@ -292,7 +356,12 @@ export async function boxRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = boxAuth(req);
-      const scopes = parseList(req.query.scopes, SYNC_CHANGE_SCOPES);
+      // `checkin` (S2-13 round 4), `wallets` (S2-14a round 4) and `stock`
+      // (S2-14b round 3) are served by `/cache` alone and never fed.
+      const scopes = parseList(req.query.scopes, SYNC_CHANGE_SCOPES).filter(
+        (name): name is Exclude<(typeof SYNC_CHANGE_SCOPES)[number], 'checkin' | 'wallets' | 'stock'> =>
+          name !== 'checkin' && name !== 'wallets' && name !== 'stock',
+      );
       return pullChanges(app.db, auth, {
         cursorSeq: req.query.cursorSeq,
         limit: req.query.limit,

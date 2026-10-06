@@ -13,11 +13,17 @@ import {
   VOUCHER_PRINT_REASONS,
   type Db,
 } from '@oto/db';
-import { newId } from '@oto/shared';
+import { newId, type BoothDutyRoster } from '@oto/shared';
 import { z } from 'zod';
 import { AppError } from '../lib/errors';
 import type { BoxAuth } from './box';
 import { audit } from './audit';
+import {
+  boothBusinessDate,
+  boothDutyRosterForBox,
+  isOnBoothDuty,
+  selfAssignBoothDuty,
+} from './booth-duty';
 import { raiseAlert } from './ops';
 import type { Tx } from './tx';
 import type { EventHandler, PreparedEvent } from './sync';
@@ -451,6 +457,26 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
         await linkVoucherIfPresent(tx, payload.spinId, payload.voucherId, operatorId);
       }
 
+      /**
+       * A stand-in joins the day's roster (SCRUM-473, D5.2). The box let
+       * this person sign in — the roster or the standing list — and has
+       * already printed their name on the slip as part of the day's label;
+       * when they are not on this day's roster, this is the platform hearing
+       * of it. A simulated spin proves nobody worked the booth, and adds
+       * nobody.
+       */
+      if (staffAccountId && !payload.simulated) {
+        await selfAssignBoothDuty(tx, {
+          stationId,
+          operatorId,
+          branchId: scope.auth.branchId,
+          businessDate: event.businessDate,
+          accountId: staffAccountId,
+          via: 'spin',
+          sourceEventId: event.envelope.eventId,
+        });
+      }
+
       await audit.record(tx, {
         actorAccountId: event.envelope.actorAccountId ?? null,
         operatorId,
@@ -834,7 +860,15 @@ export const BOOTH_HANDLERS: Record<string, EventHandler> = {
             ),
           )
           .limit(1);
-        if (!onStaff) {
+        /**
+         * Or on the day's roster (SCRUM-473): sign-in at a booth is the
+         * roster and the standing list together, so a reprint asked for by
+         * somebody the rota put on the booth today is the booth's own.
+         */
+        const onDuty =
+          !onStaff &&
+          (await isOnBoothDuty(tx, stationId, event.businessDate, requestedByAccountId));
+        if (!onStaff && !onDuty) {
           throw new AppError(
             422,
             'BOOTH_PRINT_REQUESTER_NOT_STAFF',
@@ -928,7 +962,11 @@ export interface BoothCacheItem {
   /**
    * `{ schemaVersion, settings, layout, prizes }`, plus `voucherDefinitions`
    * when a type the prizes use had a title or an instruction at the publish
-   * (SCRUM-400), exactly as published.
+   * (SCRUM-400), exactly as published. `settings` carries the booth's voucher
+   * slip choices (`voucherShowLogo`, `voucherHeaderText`, `voucherFooterText`,
+   * `voucherShowStaff`, `voucherShowTerms`, SCRUM-471) only where they differ
+   * from today's slip; the box resolves them with `boothVoucherSlip` in
+   * `@oto/shared`, and this passes them through untouched with the rest.
    */
   bundle: unknown;
   /**
@@ -938,6 +976,20 @@ export interface BoothCacheItem {
    * which the `staff` scope may not be served without.
    */
   allowedStaff: string[];
+  /**
+   * The day's roster (SCRUM-473): the branch's trading day as the cloud
+   * reckons it now, and everybody on the booth that day — the names the
+   * voucher's Staff row joins into one label, and the account ids that may
+   * sign in that day beside `allowedStaff`. Casual workers carry no account.
+   *
+   * A box built before this field ignores it: `BoothCacheEntrySchema` is a
+   * plain zod object, which strips a key it does not declare, and the bundle
+   * hash is over `bundle` alone — so an older box goes on printing the
+   * signed-in person, exactly as it did. The names are the one personal thing
+   * on this scope besides the ids, and they are what the owner decided the
+   * slip prints.
+   */
+  dutyRoster: BoothDutyRoster;
   /**
    * The terms and the expiry for the paper, as they are now, for the
    * definitions this bundle's prizes point at — beside the frozen bundle,
@@ -959,6 +1011,8 @@ export interface BoothCacheItem {
     termsEn: string | null;
     termsTh: string | null;
     expiryDays: number | null;
+    /** A fixed-code type's shared code, printed on every slip; null prints the minted code. */
+    fixedCode: string | null;
   }>;
 }
 
@@ -1017,7 +1071,7 @@ function definitionIdsIn(bundle: unknown): string[] {
  */
 export async function boothCacheItems(db: Db, auth: BoxAuth): Promise<BoothCacheItem[]> {
   const booths = await db
-    .select({ id: station.id })
+    .select({ id: station.id, branchId: station.branchId })
     .from(station)
     .where(
       and(eq(station.boxId, auth.boxId), eq(station.kind, 'booth'), isNull(station.archivedAt)),
@@ -1050,6 +1104,13 @@ export async function boothCacheItems(db: Db, auth: BoxAuth): Promise<BoothCache
       .where(eq(boothStaffAssignment.stationId, booth.id))
       .orderBy(asc(boothStaffAssignment.accountId));
 
+    const dutyRoster = await boothDutyRosterForBox(
+      db,
+      booth.id,
+      // The booth's own branch, whose trading day the roster is for.
+      await boothBusinessDate(db, booth.branchId),
+    );
+
     const wanted = definitionIdsIn(current.bundle);
     const definitions = wanted.length
       ? await db
@@ -1058,6 +1119,7 @@ export async function boothCacheItems(db: Db, auth: BoxAuth): Promise<BoothCache
             termsEn: voucherDefinition.termsEn,
             termsTh: voucherDefinition.termsTh,
             expiryDays: voucherDefinition.expiryDays,
+            fixedCode: voucherDefinition.fixedCode,
           })
           .from(voucherDefinition)
           .where(
@@ -1076,6 +1138,7 @@ export async function boothCacheItems(db: Db, auth: BoxAuth): Promise<BoothCache
       bundleHash: current.bundleHash,
       bundle: current.bundle,
       allowedStaff: staff.map((s) => s.accountId),
+      dutyRoster,
       voucherDefinitions: definitions,
     });
   }

@@ -1,6 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Loader2, Plus, RefreshCw, ShieldOff } from 'lucide-react';
+import {
+  Cpu,
+  CreditCard,
+  DoorOpen,
+  FerrisWheel,
+  Loader2,
+  Monitor,
+  MonitorSmartphone,
+  Plus,
+  RefreshCw,
+  Router,
+  ShieldOff,
+  Tablet,
+  type LucideIcon,
+} from 'lucide-react';
 import {
   boxVitals,
   fleetApi,
@@ -16,8 +30,26 @@ import {
 } from '@/api/fleet';
 import { directoryApi, type BranchRow } from '@/api/platform';
 import { Button } from '@/components/ui/button';
-import { EmptyState, ErrorNote, Loading, Panel, RouteUnavailable } from '@/components/Panel';
-import { Chip, StatusMark, StatusPill, type Tone } from '@/components/Status';
+import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
+import { StatusMark, type Tone } from '@/components/Status';
+import { CommandBar } from '@/components/redesign/CommandBar';
+import {
+  FilterChip,
+  SelectChip,
+  StatusChip,
+  Tag,
+  TitleChip,
+  TONE_INK,
+} from '@/components/redesign/chips';
+import {
+  CardFoot,
+  CardGroup,
+  CardShell,
+  DashedSlot,
+  PageGrid,
+  StripedList,
+} from '@/components/redesign/layout';
+import { EmptyNote } from '@/components/redesign/StatTile';
 import { Field, Select, TextInput } from '@/components/Form';
 import { BoxDrawer } from '@/components/devices/BoxDrawer';
 import { DisplayPairPanel } from '@/components/devices/DisplayPairPanel';
@@ -46,6 +78,20 @@ import {
   toneForBoxStatus,
 } from '@/lib/fleetWords';
 import { elapsed, formatWhen, timeAgo } from '@/lib/time';
+import { cn } from '@/lib/utils';
+
+/**
+ * The views the chip row offers (SCRUM-474). Each shows one of the page's own
+ * panels; "All" is the page as it always was. Nothing is fetched differently.
+ */
+const VIEWS = [
+  { id: 'all', label: 'All' },
+  { id: 'boxes', label: 'Boxes' },
+  { id: 'stations', label: 'Stations' },
+  { id: 'screens', label: 'Paired screens' },
+  { id: 'terminals', label: 'Card terminals' },
+] as const;
+type View = (typeof VIEWS)[number]['id'];
 
 /**
  * The fleet, as an administrator sets it up.
@@ -142,168 +188,221 @@ export function Devices() {
         ? grant.scopeId === null || grant.scopeId === me?.account.operatorId
         : grant.scopeType === 'branch' && grant.scopeId === s.branchId)));
 
+  const [view, setView] = useState<View>('all');
+  const showing = (id: View) => view === 'all' || view === id;
+  const liveBoxes = fleet.boxes.filter((b) => !b.archived);
+  const onlineBoxes = liveBoxes.filter((b) => b.status === 'online').length;
+  const liveStations = fleet.stations.filter((s) => !s.archived).length;
+  // Each half of the chip only once ITS read has answered for this branch: a
+  // 500, or a 403 for an account with this page but not admin:box:read, leaves
+  // the rows empty, and an empty array is not "0 boxes".
+  const fleetCounts = [
+    fleet.read.boxes &&
+      `${liveBoxes.length} box${liveBoxes.length === 1 ? '' : 'es'} · ${onlineBoxes} online`,
+    fleet.read.stations && `${liveStations} station${liveStations === 1 ? '' : 's'}`,
+  ].filter(Boolean);
+
   return (
-    <div className="flex flex-col gap-4">
-      {branches && branches.length > 1 && (
-        <Panel>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Two of the row's cells (SCRUM-435): one is 213 px wide on a
-                1280 px screen, and a <select> that narrow cuts the seeded
-                "Oto Play Park, Robinson Chalong" to "Oto Play Park, Robinson
-                Chal…". Half the row on a desktop, the whole of it below lg. */}
-            <Field label="Branch" className="sm:col-span-2">
-              <Select
+    <>
+      <CommandBar
+        sectionId="devices"
+        place={branchName(branchId)}
+        badges={
+          fleetCounts.length > 0 ? <TitleChip>{fleetCounts.join(' · ')}</TitleChip> : undefined
+        }
+        actions={
+          <>
+            {branches && branches.length > 1 && (
+              // SCRUM-435: sized by its longest option, so a name like "Oto
+              // Play Park, Robinson Chalong" is never cut to "…Chal…".
+              <SelectChip
+                label="Branch"
+                showLabel
                 value={branchId}
                 onChange={setBranchId}
                 options={branches.map((b) => ({ value: b.id, label: b.name }))}
               />
-            </Field>
-          </div>
-        </Panel>
-      )}
-
-      {fleet.error && <ErrorNote message={fleet.error} onRetry={fleet.reload} />}
-
-      <Panel
-        title="Boxes"
-        description="The machine at each counter, gate and booth. It holds the station's sale, drives its devices and keeps working when the internet does not."
-        actions={
-          <div className="flex items-center gap-2">
+            )}
             <Button
               variant="outline"
               size="sm"
-              className="h-9 gap-2"
+              className="h-9 gap-2 rounded-full px-3.5"
               onClick={fleet.reload}
               disabled={fleet.loading}
             >
-              {fleet.loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
+              {fleet.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Refresh
             </Button>
-            {canRegisterBox && !fleet.missing.boxes && (
-              <AddBoxButton branchId={branchId} onAdded={fleet.reload} />
-            )}
-          </div>
+          </>
         }
-      >
-        {fleet.missing.boxes ? (
-          <RouteUnavailable
-            what="The box register"
-            detail="Boxes appear here as soon as the fleet API is deployed to this environment; the virtual box registers itself on first boot."
-          />
-        ) : fleet.loading && fleet.boxes.length === 0 ? (
-          <Loading what="boxes" />
-        ) : fleet.boxes.length === 0 ? (
-          <EmptyState
-            title="No box at this branch yet"
-            detail="Add one to get a claim code; the Pi redeems it the first time it boots on site."
-          />
-        ) : (
-          <ul className="flex flex-col divide-y">
-            {fleet.boxes.map((box) => (
-              <BoxListRow
-                key={box.id}
-                box={box}
-                deviceCount={fleet.devices.filter((d) => d.boxId === box.id && !d.archived).length}
-                stationCount={fleet.stations.filter((s) => s.boxId === box.id && !s.archived).length}
-                timezone={timezone}
-                onOpen={() => setOpenBox(box)}
-              />
-            ))}
-          </ul>
-        )}
-      </Panel>
-
-      <Panel
-        title="Stations"
-        description="Where a session is held. Staff sign in, pick one of these and work — they never set one up themselves."
-        actions={
-          <div className="flex items-center gap-2">
-            {fleet.stations.some((s) => s.archived) && (
-              <Button variant="outline" size="sm" onClick={() => setShowArchived((v) => !v)}>
-                {showArchived ? 'Hide archived' : 'Show archived'}
-              </Button>
-            )}
-            {canCreateStation && !fleet.missing.stations && (
-              <Button
-                size="sm"
-                className="h-9 gap-2"
-                disabled={!branchId || fleet.boxes.length === 0}
-                title={
-                  !branchId
-                    ? 'Choose a branch first'
-                    : fleet.boxes.length === 0
-                      ? 'A station sits on a box, and this branch has none yet'
-                      : undefined
-                }
-                onClick={() => setOpenStation('new')}
-              >
-                <Plus className="w-4 h-4" />
-                New station
-              </Button>
-            )}
-          </div>
-        }
-      >
-        {fleet.missing.stations ? (
-          <RouteUnavailable what="The station register" />
-        ) : fleet.loading && stations.length === 0 ? (
-          <Loading what="stations" />
-        ) : stations.length === 0 ? (
-          <EmptyState
-            title="No stations yet"
-            detail="A station names a box, the devices it drives and who may pick it."
-          />
-        ) : (
-          <ul className="flex flex-col divide-y">
-            {stations.map((station) => (
-              <StationListRow
-                key={station.id}
-                station={station}
-                branchLabel={branchName(station.branchId) ?? currentBranchName}
-                onOpen={() => setOpenStation(station)}
-              />
-            ))}
-          </ul>
-        )}
-      </Panel>
-
-      <PairedScreens
-        key={branchId}
-        credentials={fleet.credentials}
-        missing={fleet.missing.credentials}
-        stations={fleet.stations.filter((s) => !s.archived)}
-        displayStations={displayStations}
-        snapshotStations={snapshotStations}
-        canReadUnassignedSnapshots={canReadUnassignedSnapshots}
-        boxLogStations={boxLogStations}
-        stationName={stationName}
-        timezone={timezone}
-        canPair={canPair}
-        canRevoke={canRevoke}
-        onChanged={fleet.reload}
-        onOpenBoxLog={stationId => {
-          const boxId = boxLogStations.find(station => station.id === stationId)?.boxId;
-          const box = fleet.boxes.find(candidate => candidate.id === boxId);
-          if (box) setOpenBox(box);
-        }}
       />
 
-      {/**
-       * The card terminals (S2-10a, SCRUM-206).
-       *
-       * On the PAGE rather than inside the box drawer, where the printer
-       * simulator sits, and for a reason a reader should be able to see: these
-       * controls do not ride the command queue — an approval code cannot be
-       * stored in a command payload the drawer renders as history — so they are
-       * not "things to ask a box to do". A tender is routed to a terminal by
-       * the STATION it hangs off, which is the list directly above this, and
-       * both of the park's EDCs are on one box anyway.
-       */}
-      <TerminalSimulatorPanel devices={fleet.devices} canCommand={canCommandBox} />
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Show">
+        {VIEWS.map((v) => (
+          <FilterChip key={v.id} active={view === v.id} onClick={() => setView(v.id)}>
+            {v.label}
+          </FilterChip>
+        ))}
+      </div>
+
+      {fleet.error && <ErrorNote message={fleet.error} onRetry={fleet.reload} />}
+
+      <PageGrid>
+        {showing('boxes') && (
+          <CardGroup
+            title="Boxes"
+            icon={Cpu}
+            note="the machine at each counter, gate and booth — it holds the station's sale, drives its devices and keeps working when the internet does not"
+          >
+            {fleet.missing.boxes ? (
+              <RouteUnavailable
+                what="The box register"
+                detail="Boxes appear here as soon as the fleet API is deployed to this environment; the virtual box registers itself on first boot."
+              />
+            ) : fleet.loading && fleet.boxes.length === 0 ? (
+              <Loading what="boxes" />
+            ) : (
+              <ul className="grid grid-cols-1 gap-5 @2xl:grid-cols-2 @4xl:grid-cols-3">
+                {fleet.boxes.map((box) => (
+                  <BoxCard
+                    key={box.id}
+                    box={box}
+                    deviceCount={fleet.devices.filter((d) => d.boxId === box.id && !d.archived).length}
+                    stationCount={fleet.stations.filter((s) => s.boxId === box.id && !s.archived).length}
+                    timezone={timezone}
+                    onOpen={() => setOpenBox(box)}
+                  />
+                ))}
+                {canRegisterBox ? (
+                  <li className="min-w-0 flex">
+                    <DashedSlot
+                      className="flex-1"
+                      icon={Plus}
+                      title={fleet.boxes.length === 0 ? 'No box at this branch yet' : 'Another box'}
+                      detail="Add one to get a claim code; the Pi redeems it the first time it boots on site."
+                      action={<AddBoxButton branchId={branchId} onAdded={fleet.reload} />}
+                    />
+                  </li>
+                ) : fleet.boxes.length === 0 ? (
+                  <li className="min-w-0 flex">
+                    <DashedSlot
+                      className="flex-1"
+                      title="No box at this branch yet"
+                      detail="Adding one needs admin:box:register. Once it is added, the Pi redeems its claim code the first time it boots on site."
+                    />
+                  </li>
+                ) : null}
+              </ul>
+            )}
+          </CardGroup>
+        )}
+
+        {showing('stations') && (
+          <CardGroup
+            title="Stations"
+            icon={Router}
+            note="where a session is held — staff sign in, pick one of these and work; they never set one up themselves"
+            actions={
+              <>
+                {fleet.stations.some((s) => s.archived) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full px-3.5"
+                    onClick={() => setShowArchived((v) => !v)}
+                  >
+                    {showArchived ? 'Hide archived' : 'Show archived'}
+                  </Button>
+                )}
+                {canCreateStation && !fleet.missing.stations && (
+                  <Button
+                    size="sm"
+                    className="h-9 gap-2 rounded-full px-4 font-bold"
+                    disabled={!branchId || fleet.boxes.length === 0}
+                    title={
+                      !branchId
+                        ? 'Choose a branch first'
+                        : fleet.boxes.length === 0
+                          ? 'A station sits on a box, and this branch has none yet'
+                          : undefined
+                    }
+                    onClick={() => setOpenStation('new')}
+                  >
+                    <Plus className="w-4 h-4" />
+                    New station
+                  </Button>
+                )}
+              </>
+            }
+          >
+            {fleet.missing.stations ? (
+              <RouteUnavailable what="The station register" />
+            ) : fleet.loading && stations.length === 0 ? (
+              <Loading what="stations" />
+            ) : stations.length === 0 ? (
+              <DashedSlot
+                title="No stations yet"
+                detail={`A station names a box, the devices it drives and who may pick it. ${
+                  !canCreateStation
+                    ? 'Adding one needs admin:station:create.'
+                    : fleet.boxes.length === 0
+                      ? 'It sits on a box, so the branch needs a box before New station, above, can add one.'
+                      : 'New station, above, adds the first.'
+                }`}
+              />
+            ) : (
+              <ul className="grid grid-cols-1 gap-5 @2xl:grid-cols-2 @4xl:grid-cols-3">
+                {stations.map((station) => (
+                  <StationCard
+                    key={station.id}
+                    station={station}
+                    branchLabel={branchName(station.branchId) ?? currentBranchName}
+                    onOpen={() => setOpenStation(station)}
+                  />
+                ))}
+              </ul>
+            )}
+          </CardGroup>
+        )}
+
+        {showing('screens') && (
+          <PairedScreens
+            key={branchId}
+            credentials={fleet.credentials}
+            missing={fleet.missing.credentials}
+            stations={fleet.stations.filter((s) => !s.archived)}
+            displayStations={displayStations}
+            snapshotStations={snapshotStations}
+            canReadUnassignedSnapshots={canReadUnassignedSnapshots}
+            boxLogStations={boxLogStations}
+            stationName={stationName}
+            timezone={timezone}
+            canPair={canPair}
+            canRevoke={canRevoke}
+            onChanged={fleet.reload}
+            onOpenBoxLog={stationId => {
+              const boxId = boxLogStations.find(station => station.id === stationId)?.boxId;
+              const box = fleet.boxes.find(candidate => candidate.id === boxId);
+              if (box) setOpenBox(box);
+            }}
+          />
+        )}
+
+        {/**
+         * The card terminals (S2-10a, SCRUM-206).
+         *
+         * On the PAGE rather than inside the box drawer, where the printer
+         * simulator sits, and for a reason a reader should be able to see: these
+         * controls do not ride the command queue — an approval code cannot be
+         * stored in a command payload the drawer renders as history — so they are
+         * not "things to ask a box to do". A tender is routed to a terminal by
+         * the STATION it hangs off, which is the list above this, and both of the
+         * park's EDCs are on one box anyway.
+         */}
+        {showing('terminals') && (
+          <TerminalSimulatorPanel devices={fleet.devices} canCommand={canCommandBox} />
+        )}
+      </PageGrid>
 
       {openBox && (
         <BoxDrawer
@@ -337,7 +436,7 @@ export function Devices() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -357,6 +456,8 @@ interface Fleet {
   credentials: CredentialRow[];
   /** Per list, because the API half of this ticket lands route by route. */
   missing: { boxes: boolean; stations: boolean; credentials: boolean };
+  /** Per list: the last read for this branch answered, so its rows are a reading. */
+  read: { boxes: boolean; stations: boolean; credentials: boolean };
   loading: boolean;
   error: string | null;
   reload: () => void;
@@ -368,6 +469,12 @@ function useFleet(branchId: string): Fleet {
   const [deviceLists, setDeviceLists] = useState<Record<string, BoxDeviceList>>({});
   const [credentials, setCredentials] = useState<CredentialRow[]>([]);
   const [missing, setMissing] = useState({ boxes: false, stations: false, credentials: false });
+  /**
+   * Which of the three reads last ANSWERED for this branch. Missing (404) and
+   * failed (anything else) both leave it false, so a count is only ever drawn
+   * from rows the API returned — never from the empty arrays this starts with.
+   */
+  const [read, setRead] = useState(NOTHING_READ);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -405,6 +512,7 @@ function useFleet(branchId: string): Fleet {
   useEffect(() => {
     newestRead.current.clear();
     setDeviceLists({});
+    setRead(NOTHING_READ);
   }, [branchId]);
 
   const load = useCallback(async () => {
@@ -426,6 +534,7 @@ function useFleet(branchId: string): Fleet {
 
     const failures: string[] = [];
     const absent = { boxes: false, stations: false, credentials: false };
+    const answered = { ...NOTHING_READ };
 
     const take = <T,>(
       result: PromiseSettledResult<T>,
@@ -434,6 +543,7 @@ function useFleet(branchId: string): Fleet {
     ) => {
       if (result.status === 'fulfilled') {
         apply(result.value);
+        answered[key] = true;
         return;
       }
       if (isMissingRoute(result.reason)) {
@@ -466,6 +576,7 @@ function useFleet(branchId: string): Fleet {
     await Promise.all(loadedBoxes.map((box) => readDevices(box.id)));
 
     setMissing(absent);
+    setRead(answered);
     setError(failures[0] ?? null);
     setLoading(false);
   }, [branchId, readDevices]);
@@ -494,17 +605,25 @@ function useFleet(branchId: string): Fleet {
     retryDevices: (boxId: string) => void readDevices(boxId),
     credentials,
     missing,
+    read,
     loading,
     error,
     reload: () => void load(),
   };
 }
 
+/** No read has answered yet — for a new branch, and before the first answer. */
+const NOTHING_READ = { boxes: false, stations: false, credentials: false };
+
 // ---------------------------------------------------------------------------
 // Boxes
 // ---------------------------------------------------------------------------
 
-function BoxListRow({
+/**
+ * One box as one equal card: what it is, where it stands, and whether it is
+ * still talking to us. The name is the button that opens its drawer.
+ */
+function BoxCard({
   box,
   deviceCount,
   stationCount,
@@ -523,47 +642,74 @@ function BoxListRow({
   const stations = box.stationCount ?? stationCount;
 
   return (
-    <li className="py-3 first:pt-0 last:pb-0">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusMark tone={tone} />
+    <li
+      className={cn(
+        'min-w-0 flex flex-col gap-3 rounded-[20px] border border-card-border bg-card p-[22px]',
+        box.archived && 'opacity-60',
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-primary/10 text-primary">
+          <Cpu className="w-5 h-5" aria-hidden="true" />
+        </span>
+        <span className="flex flex-wrap justify-end gap-1.5">
+          {box.archived && <Tag upper>archived</Tag>}
+          <Tag upper variant="mint">
+            {boxRoleWord(box.role)}
+          </Tag>
+        </span>
+      </div>
+
+      <div className="min-w-0">
         <button
           type="button"
           onClick={onOpen}
-          className="text-sm font-bold min-w-0 break-words text-left hover:underline underline-offset-4"
+          className="text-left text-[15.5px] font-bold break-words hover:underline underline-offset-4"
         >
           {box.name}
         </button>
-        <Chip>{boxRoleWord(box.role)}</Chip>
-        <StatusPill tone={toneForBoxStatus(box.status)}>{boxStatusWord(box.status)}</StatusPill>
-        {box.archived && <Chip>archived</Chip>}
-        <span className="text-sm text-muted-foreground ml-auto tabular-nums whitespace-nowrap">
-          {vitals.heartbeatAgeSeconds === null
-            ? 'never reported'
-            : `heartbeat ${elapsed(vitals.heartbeatAgeSeconds)} old`}
-        </span>
+        <p className="text-[12.5px] text-muted-foreground break-words">
+          <span className="font-mono">{box.slot}</span>
+          {box.hostname && (
+            <>
+              {' · '}
+              <span className="font-mono break-all">{box.hostname}</span>
+            </>
+          )}
+          {vitals.agentVersion && ` · agent ${vitals.agentVersion}`}
+        </p>
       </div>
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span className="font-mono">{box.slot}</span>
-        {box.hostname && <span className="font-mono break-all">{box.hostname}</span>}
-        {vitals.agentVersion && <span>agent {vitals.agentVersion}</span>}
-        {vitals.uptimeSeconds !== null && <span>up {elapsed(vitals.uptimeSeconds)}</span>}
-        {vitals.outboxDepth !== null && <span>outbox {vitals.outboxDepth}</span>}
+      <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>
           {devices} device{devices === 1 ? '' : 's'} · {stations} station{stations === 1 ? '' : 's'}
         </span>
-        <button type="button" onClick={onOpen} className="ml-auto font-semibold hover:text-foreground">
-          Open
-        </button>
-      </div>
+        {vitals.uptimeSeconds !== null && <span>up {elapsed(vitals.uptimeSeconds)}</span>}
+        {vitals.outboxDepth !== null && <span>outbox {vitals.outboxDepth}</span>}
+      </p>
 
       {box.claimCodeOutstanding && (
-        <p className="mt-1.5 text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           A claim code is outstanding
           {box.claimCodeExpiresAt ? ` until ${formatWhen(box.claimCodeExpiresAt, timezone)}` : ''} — the
           box registers itself the first time it boots with it.
         </p>
       )}
+
+      <CardFoot>
+        <span className={cn('inline-flex min-w-0 items-center gap-[7px] font-semibold', TONE_INK[tone])}>
+          <StatusMark tone={tone} />
+          <span className="min-w-0">
+            {boxStatusWord(box.status)} ·{' '}
+            {vitals.heartbeatAgeSeconds === null
+              ? 'never reported'
+              : `heartbeat ${elapsed(vitals.heartbeatAgeSeconds)} old`}
+          </span>
+        </span>
+        <button type="button" onClick={onOpen} className="font-semibold text-primary-ink hover:underline underline-offset-4">
+          Open →
+        </button>
+      </CardFoot>
     </li>
   );
 }
@@ -591,7 +737,7 @@ function AddBoxButton({ branchId, onAdded }: { branchId: string; onAdded: () => 
     <>
       <Button
         size="sm"
-        className="h-9 gap-2"
+        className="h-9 gap-2 rounded-full px-4 font-bold"
         disabled={!branchId}
         title={branchId ? undefined : 'Choose a branch first'}
         onClick={() => setOpen(true)}
@@ -732,7 +878,16 @@ function AddBoxPanel({
 // Stations
 // ---------------------------------------------------------------------------
 
-function StationListRow({
+const STATION_ICONS: Record<string, LucideIcon> = {
+  till: CreditCard,
+  kiosk: Tablet,
+  gate: DoorOpen,
+  display: Monitor,
+  booth: FerrisWheel,
+};
+
+/** One station as one equal card; its name opens the editor. */
+function StationCard({
   station,
   branchLabel,
   onOpen,
@@ -743,44 +898,47 @@ function StationListRow({
 }) {
   const capabilities = station.capabilities ?? [];
   const deviceCount = station.devices?.length ?? 0;
+  const Icon = STATION_ICONS[station.kind] ?? Router;
+  const tone: Tone = station.archived ? 'idle' : station.boxId ? 'ok' : 'warn';
   return (
-    <li className="py-3 first:pt-0 last:pb-0">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <StatusMark tone={station.archived ? 'idle' : station.boxId ? 'ok' : 'warn'} />
+    <li
+      className={cn(
+        'min-w-0 flex flex-col gap-3 rounded-[20px] border border-card-border bg-card p-[22px]',
+        station.archived && 'opacity-60',
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-primary/10 text-primary">
+          <Icon className="w-5 h-5" aria-hidden="true" />
+        </span>
+        <span className="flex flex-wrap justify-end gap-1.5">
+          {station.archived && <Tag upper>archived</Tag>}
+          {station.codePrefix && <Tag variant="mint">{station.codePrefix}</Tag>}
+          <Tag upper>{stationKindWord(station.kind)}</Tag>
+        </span>
+      </div>
+
+      <div className="min-w-0">
         <button
           type="button"
           onClick={onOpen}
-          className="text-sm font-bold min-w-0 break-words text-left hover:underline underline-offset-4"
+          className="text-left text-[15.5px] font-bold break-words hover:underline underline-offset-4"
         >
           {station.name}
         </button>
-        <Chip>{stationKindWord(station.kind)}</Chip>
-        {station.codePrefix && <Chip>{station.codePrefix}</Chip>}
-        {station.archived && <Chip>archived</Chip>}
-        <span className="text-sm text-muted-foreground ml-auto whitespace-nowrap tabular-nums">
-          config v{station.configVersion ?? 1}
-        </span>
+        <p className="text-[12.5px] text-muted-foreground break-words">
+          {deviceCount > 0 ? `${deviceCount} device${deviceCount === 1 ? '' : 's'} assigned` : 'no device assigned'}
+          {' · '}
+          <span className="tabular-nums">config v{station.configVersion ?? 1}</span>
+        </p>
       </div>
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span>
-          {station.boxId ? `on ${station.boxName ?? 'its box'}` : 'no box assigned'}
-        </span>
-        {deviceCount > 0 && (
-          <span>
-            {deviceCount} device{deviceCount === 1 ? '' : 's'} assigned
-          </span>
-        )}
-        {capabilities.length > 0 && <span>{capabilities.map(capabilityWord).join(', ')}</span>}
-        <button type="button" onClick={onOpen} className="ml-auto font-semibold hover:text-foreground">
-          Edit
-        </button>
-      </div>
+      {capabilities.length > 0 && (
+        <p className="text-xs text-muted-foreground">{capabilities.map(capabilityWord).join(', ')}</p>
+      )}
 
-      <p className="mt-1.5 flex items-start gap-2 text-xs text-muted-foreground">
-        {station.accessScope === 'selected_staff' && (
-          <ShieldOff className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-        )}
+      <p className="flex items-start gap-2 text-xs text-muted-foreground">
+        {station.accessScope === 'selected_staff' && <ShieldOff className="w-3.5 h-3.5 mt-0.5 shrink-0" />}
         <span className="min-w-0 break-words">
           {accessSentence(
             { accessScope: station.accessScope, staffCount: station.staff?.length ?? 0 },
@@ -788,6 +946,18 @@ function StationListRow({
           )}
         </span>
       </p>
+
+      <CardFoot>
+        <span className={cn('inline-flex min-w-0 items-center gap-[7px] font-semibold', TONE_INK[tone])}>
+          <StatusMark tone={tone} />
+          <span className="min-w-0 break-words">
+            {station.boxId ? `on ${station.boxName ?? 'its box'}` : 'no box assigned'}
+          </span>
+        </span>
+        <button type="button" onClick={onOpen} className="font-semibold text-primary-ink hover:underline underline-offset-4">
+          Edit →
+        </button>
+      </CardFoot>
     </li>
   );
 }
@@ -840,19 +1010,30 @@ function PairedScreens({
   );
 
   return (
-    <Panel
+    <CardShell
+      span={12}
+      icon={MonitorSmartphone}
       title="Paired screens"
-      description="A customer display, a kiosk or a booth holds a credential of its own rather than a person's session. A box pairs with a claim code instead."
+      note="a customer display, a kiosk or a booth holds a credential of its own rather than a person's session; a box pairs with a claim code instead"
       actions={
         !missing ? (
-          <div className="flex flex-wrap gap-2">
+          <>
             {credentials.some((credential) => credential.revokedAt) && (
-              <Button variant="outline" size="sm" onClick={() => setShowRevoked((value) => !value)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full px-3.5"
+                onClick={() => setShowRevoked((value) => !value)}
+              >
                 {showRevoked ? 'Hide revoked' : 'Show revoked'}
               </Button>
             )}
             {displayStations.length > 0 && (
-              <Button size="sm" className="h-9 gap-2" onClick={() => setPairingDisplay(true)}>
+              <Button
+                size="sm"
+                className="h-9 gap-2 rounded-full px-4 font-bold"
+                onClick={() => setPairingDisplay(true)}
+              >
                 <Plus className="w-4 h-4" />
                 Pair a display
               </Button>
@@ -861,26 +1042,28 @@ function PairedScreens({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 gap-2"
+                className="h-9 gap-2 rounded-full px-4"
                 onClick={() => setPairing(true)}
               >
                 <Plus className="w-4 h-4" />
                 Pair a screen
               </Button>
             )}
-          </div>
+          </>
         ) : undefined
       }
     >
       {missing ? (
         <RouteUnavailable what="Pairing" />
       ) : shown.length === 0 ? (
-        <EmptyState
+        <EmptyNote
+          className="py-3"
+          icon={MonitorSmartphone}
           title="Nothing is paired yet"
           detail="Open the customer display to get its code, then pair it to a station here. Kiosks and booths use Pair a screen."
         />
       ) : (
-        <ul className="flex flex-col divide-y">
+        <StripedList>
           {shown.map((credential) => (
             <CredentialRowItem
               key={credential.id}
@@ -898,7 +1081,7 @@ function PairedScreens({
               onChanged={onChanged}
             />
           ))}
-        </ul>
+        </StripedList>
       )}
 
       {pairing && (
@@ -940,7 +1123,7 @@ function PairedScreens({
           <Button variant="outline" onClick={() => setTestId(null)}>Close</Button>
         </Dialog>
       )}
-    </Panel>
+    </CardShell>
   );
 }
 
@@ -987,27 +1170,35 @@ function CredentialRowItem({
   };
 
   return (
-    <li className="py-3 first:pt-0 last:pb-0">
+    <li className="px-3 py-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <StatusMark tone={credential.revokedAt || outstanding ? 'idle' : 'ok'} />
         <span className="text-sm font-semibold min-w-0 break-words">
           {credential.label ?? credentialKindWord(credential.kind)}
         </span>
-        <Chip>{credentialKindWord(credential.kind)}</Chip>
-        {credential.revokedAt && <StatusPill tone="idle">Access revoked</StatusPill>}
+        <Tag>{credentialKindWord(credential.kind)}</Tag>
+        {credential.revokedAt && <StatusChip tone="idle">Access revoked</StatusChip>}
         {stationLabel && <span className="text-sm text-muted-foreground">on {stationLabel}</span>}
         {canSnapshot && (
-          <Button variant="outline" size="sm" className="ml-auto" onClick={onSnapshot}>
+          <Button variant="outline" size="sm" className="ml-auto rounded-full bg-card" onClick={onSnapshot}>
             Snapshot
           </Button>
         )}
-        {canTest && <Button variant="outline" size="sm" onClick={onTest}>Send test intent</Button>}
-        {canBoxLog && <Button variant="outline" size="sm" onClick={onBoxLog}>Open Box refusal log</Button>}
+        {canTest && (
+          <Button variant="outline" size="sm" className="rounded-full bg-card" onClick={onTest}>
+            Send test intent
+          </Button>
+        )}
+        {canBoxLog && (
+          <Button variant="outline" size="sm" className="rounded-full bg-card" onClick={onBoxLog}>
+            Open Box refusal log
+          </Button>
+        )}
         {canRevoke && !credential.revokedAt && (
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto"
+            className="ml-auto rounded-full bg-card"
             onClick={() => void revoke()}
             disabled={busy}
           >

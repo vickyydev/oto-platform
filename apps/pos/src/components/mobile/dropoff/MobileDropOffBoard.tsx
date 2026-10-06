@@ -1,26 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
-import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent, AuthorizedPickupSource } from '@/types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ReleaseView } from '@oto/shared';
+import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
 import {
-  getCheckIns,
-  getMockWristbands,
-  getDropOffPricing,
-  getNannyRoster,
-  assignNanny,
-  checkOut,
-  markArrived,
-  updateCheckIn,
-  resendWaConfirmation,
-  simulateWaConfirm,
-  markWaConnectionFailed,
   getEventsForDate,
   checkInEventAttendee,
   checkOutEventAttendee,
-  applyCheckInPhotos,
-  addPickupFromChatPhoto,
-  type CheckInEdits,
 } from '@/mockApi';
-import { remainingMinutes, dueState, computePrepaidFoodReconciliation } from '@/lib/dropoff';
+import {
+  boardApi,
+  boardChildToCheckIn,
+  checkinApi,
+  editsToPatch,
+  photoUrlOf,
+  requirePlatformBranchId,
+  TILL_NOT_LINKED,
+  type ApiBoard,
+  type CheckInEdits,
+} from '@/api/checkin';
+import { releaseApi } from '@/api/release';
+import { CheckInBookedModal, type BookedCheckInItem } from '@/components/dropoff/CheckInBookedModal';
+import { remainingMinutes, dueState } from '@/lib/dropoff';
 import { setDropOffHandoff } from '@/lib/dropoffHandoff';
 import { eventBraceletPrintJobs, dispatchPrintJobs } from '@/lib/printRouting';
 import { useOperator } from '@/auth/OperatorContext';
@@ -42,7 +42,7 @@ import { MobileEventAttendeeList } from '../parties/MobileEventAttendeeList';
 import { MobileChildCard } from './MobileChildCard';
 import { MobileChildDetail } from './MobileChildDetail';
 import { MobileCheckInConsent } from './MobileCheckInConsent';
-import { MobileCheckOutView } from './MobileCheckOutView';
+import { MobileCheckOutView, type CollectorInput } from './MobileCheckOutView';
 import { Search, Baby, X, PartyPopper, MapPin, Users, ChevronRight } from 'lucide-react';
 
 type Tab = CheckInStatus;
@@ -87,6 +87,28 @@ function familyTab(family: CheckIn[]): Tab {
   return 'out';
 }
 
+/** The platform's refusal, in its own words (they are written for the counter). */
+function messageOf(err: unknown): string {
+  return err instanceof Error && err.message ? err.message : 'Something went wrong — try again.';
+}
+
+/** A stay as the edit form holds it (prototype EditCheckInModal `toForm`). */
+function checkInToEdits(c: CheckIn): CheckInEdits {
+  return {
+    childName: c.childName,
+    childAge: c.childAge,
+    parentName: c.parentName,
+    contactMethod: c.contactMethod,
+    phone: c.phone,
+    serviceType: c.serviceType,
+    mayOrderFood: c.mayOrderFood,
+    foodRestrictions: c.foodRestrictions,
+    allergiesMedical: c.allergiesMedical,
+    bookedDurationMinutes: c.bookedDurationMinutes,
+    assignedNannyId: c.assignedNannyId,
+  };
+}
+
 /**
  * Portrait drop-off board for the mobile shell. Manages the full check-in /
  * check-out surface on a single phone screen:
@@ -98,6 +120,16 @@ function familyTab(family: CheckIn[]): Tab {
  *     food-authorization, and child-photo capture; staff then navigates to the
  *     Till for payment (same setDropOffHandoff path as the iPad).
  *   - Check-out: full-screen with live camera pickup-photo capture.
+ *
+ * THE DATA IS THE PLATFORM'S, through the same calls as the desktop board
+ * (`pages/DropOff.tsx`): the board from `boardApi.board`, every edit, nanny
+ * and contact-channel action through `boardApi`, the consent photo through
+ * `checkinApi.uploadPhoto`, a booked family's check-in through
+ * `boardApi.checkInBooked`, and the release through `releaseApi` (inside
+ * MobileCheckOutView). Nothing here writes to the in-memory store; the events
+ * tab alone stays on it, as the desktop board's does. Each call runs on the
+ * lane the arbiter says (`lib/lane.ts`), so the counter's box answers while the
+ * link is down.
  */
 export function MobileDropOffBoard() {
   const { operator } = useOperator();
@@ -106,7 +138,8 @@ export function MobileDropOffBoard() {
 
   // ── View ───────────────────────────────────────────────────────────────────
   const [view, setView] = useState<View>('board');
-  const [selectedFamily, setSelectedFamily] = useState<CheckIn[] | null>(null);
+  /** The family on the detail screen, by registration: re-read from every board answer. */
+  const [selectedRegId, setSelectedRegId] = useState<string | null>(null);
 
   // ── Board filters ──────────────────────────────────────────────────────────
   const [tab, setTab] = useState<Tab>('registered');
@@ -125,8 +158,72 @@ export function MobileDropOffBoard() {
     return () => window.clearInterval(id);
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- version is the refresh bump: getCheckIns() reads the in-memory store, which changes outside React
-  const all = useMemo(() => getCheckIns(), [version]);
+  // ── The board, from the platform (desktop `DropOff.tsx`, S2-13 round 2) ────
+  // Re-read after every action (the `version` bump) and every 30 seconds so a
+  // check-in at another till shows up here; the timers tick on `now` above.
+  const { station } = useStation();
+  const { branch } = useBranch();
+  const platformBranchId = useMemo(() => {
+    try {
+      return requirePlatformBranchId(branch.id);
+    } catch {
+      return null;
+    }
+  }, [branch.id]);
+  const [board, setBoard] = useState<ApiBoard | null>(null);
+  const [boardError, setBoardError] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<Record<string, string>>({});
+
+  const loadBoard = useCallback(async () => {
+    if (!platformBranchId) {
+      setBoard(null);
+      setBoardError(TILL_NOT_LINKED);
+      return;
+    }
+    try {
+      setBoard(await boardApi.board(platformBranchId));
+      setBoardError(null);
+    } catch (err) {
+      setBoardError(messageOf(err));
+    }
+  }, [platformBranchId]);
+
+  useEffect(() => {
+    void loadBoard();
+  }, [loadBoard, version]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => void loadBoard(), 30_000);
+    return () => window.clearInterval(id);
+  }, [loadBoard]);
+
+  // The consent photos, each asked for once (every read is access-logged, R-94).
+  useEffect(() => {
+    if (!board) return;
+    const wanted = new Set<string>();
+    for (const f of board.families) {
+      for (const c of f.children) {
+        const fileId = c.photoFileId ?? f.photoFileId;
+        if (fileId && !photos[fileId]) wanted.add(fileId);
+      }
+    }
+    for (const fileId of wanted) {
+      void photoUrlOf(fileId).then((url) => {
+        if (url) setPhotos((p) => (p[fileId] ? p : { ...p, [fileId]: url }));
+      });
+    }
+  }, [board, photos]);
+
+  const all = useMemo<CheckIn[]>(
+    () =>
+      (board?.families ?? []).flatMap((f) =>
+        f.children.map((c) => {
+          const fileId = c.photoFileId ?? f.photoFileId;
+          return boardChildToCheckIn(c, f, fileId ? photos[fileId] : null);
+        }),
+      ),
+    [board, photos],
+  );
 
   /** All check-ins grouped by registrationId. */
   const allByReg = useMemo(() => {
@@ -150,11 +247,16 @@ export function MobileDropOffBoard() {
     );
   }, [all]);
 
-  const freeNannies = useMemo(
-    () => getNannyRoster().filter((n) => n.available),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-reads the nanny roster from the store whenever the check-ins are re-read
-    [all, version],
-  );
+  const nannies = useMemo(() => board?.nannies ?? [], [board]);
+  const softMax = board?.nannyRatioSoftMax ?? 3;
+  const freeNannies = useMemo(() => nannies.filter((n) => n.onShift), [nannies]);
+
+  /** The family on the detail screen, as the latest board answer holds it. */
+  const selectedFamily = useMemo(() => {
+    if (!selectedRegId) return null;
+    const family = allByReg.get(selectedRegId);
+    return family ? [...family].sort((a, b) => a.childName.localeCompare(b.childName)) : null;
+  }, [allByReg, selectedRegId]);
 
   /**
    * Visible families: one CheckIn[] per registrationId, filtered and ordered.
@@ -234,18 +336,19 @@ export function MobileDropOffBoard() {
   const [messageCtx, setMessageCtx] = useState<MessagingContext | null>(null);
   const [checkOutFor, setCheckOutFor] = useState<CheckIn | null>(null);
   const [pickupsFor, setPickupsFor] = useState<CheckIn | null>(null);
+  // Booked (already-paid) children for the payment-free check-in.
+  const [checkInBookedFor, setCheckInBookedFor] = useState<CheckIn[] | null>(null);
 
   const [checkInFor, setCheckInFor] = useState<CheckIn | null>(null);
   const [consentPhoto, setConsentPhoto] = useState<string | undefined>();
   const [consentMayOrderFood, setConsentMayOrderFood] = useState(true);
   const [consentAck, setConsentAck] = useState(false);
+  const [consentBusy, setConsentBusy] = useState(false);
 
   const operatorName = operator?.name ?? 'Unknown';
   const operatorId = operator?.id ?? 'unknown';
 
   // ── Events check-in board (door check-in into today's events) ───────────────
-  const { station } = useStation();
-  const { branch } = useBranch();
   const today = todayISO();
   const [boardTab, setBoardTab] = useState<BoardTab>('dropoff');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -345,26 +448,8 @@ export function MobileDropOffBoard() {
     });
   };
 
-  const dropOffPricing = useMemo(() => getDropOffPricing(), []);
-
-  // Wristband + food reconciliation for the child being checked out.
-  // Uses wristband.foodProvision as the authoritative source (it carries live
-  // redeemedQty mutations from the F&B station, unlike checkIn.foodProvision).
-  const checkOutWristband = useMemo(
-    () =>
-      checkOutFor
-        ? getMockWristbands().find((w) => w.checkInId === checkOutFor.id)
-        : undefined,
-    [checkOutFor],
-  );
-
-  const checkOutReconciliation = useMemo(() => {
-    if (!checkOutFor) return null;
-    const fp = checkOutWristband?.foodProvision ?? checkOutFor.foodProvision;
-    if (!fp || fp.mode === 'none') return null;
-    const remaining = checkOutWristband?.creditBalanceTHB ?? 0;
-    return computePrepaidFoodReconciliation(fp, remaining);
-  }, [checkOutFor, checkOutWristband]);
+  /** The park's policy for unused prepaid food — the release view shows the platform's own answer once it has it. */
+  const prepaidFoodPolicy = board?.prepaidFoodUnused ?? 'refund';
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -374,47 +459,36 @@ export function MobileDropOffBoard() {
   };
 
   const openDetail = (family: CheckIn[]) => {
-    setSelectedFamily(family);
+    setSelectedRegId(family[0]?.registrationId ?? null);
     setView('detail');
   };
 
   const closeDetail = () => {
     setView('board');
-    setSelectedFamily(null);
+    setSelectedRegId(null);
   };
 
-  // Keep the selected family in sync with the latest data after mutations.
-  const syncSelectedFamily = (updatedChild: CheckIn) => {
-    if (!selectedFamily) return;
-    const stillInFamily = selectedFamily.some((c) => c.id === updatedChild.id);
-    if (!stillInFamily) return;
-    // Re-read the full registration from the latest data.
-    const latest = getCheckIns().filter((c) => c.registrationId === updatedChild.registrationId);
-    if (latest.length > 0) {
-      setSelectedFamily([...latest].sort((a, b) => a.childName.localeCompare(b.childName)));
-    }
-  };
+  // ── Platform handlers (the desktop board's calls) ──────────────────────────
 
-  // ── Mutator handlers ───────────────────────────────────────────────────────
-
-  const handleAssign = (nannyId: string) => {
+  // On shift is checked again by the platform: "not on shift" comes back as
+  // the refusal, and the soft ratio as a warning that never blocks.
+  const handleAssign = async (nannyId: string) => {
     if (!assignFor) return;
-    const res = assignNanny(assignFor.id, nannyId, { operatorName });
-    if (res) {
+    try {
+      const res = await boardApi.assignNanny(assignFor.id, nannyId);
       toast({
         title: 'Nanny assigned',
-        description: `${res.assignedNannyName} is looking after ${res.childName}.`,
+        description: [`${res.checkin.nannyName ?? 'The nanny'} is looking after ${res.checkin.childName}.`, ...res.warnings].join(' '),
       });
-      syncSelectedFamily(res);
-      refresh();
-    } else {
+    } catch (err) {
       toast({
         title: 'Could not assign',
-        description: 'That nanny is no longer available.',
+        description: messageOf(err),
         variant: 'destructive',
       });
     }
     setAssignFor(null);
+    refresh();
   };
 
   const handleCheckIn = (c: CheckIn) => {
@@ -424,33 +498,29 @@ export function MobileDropOffBoard() {
     setCheckInFor(c);
   };
 
-  const handleConsentDone = () => {
+  /**
+   * The parent hands the phone back: the food choice and the photo (child and
+   * guardian together, for pickup verification) are written to the platform —
+   * an audited edit and the registration's consent photo — and only then does
+   * staff go to the till for the payment. A refusal keeps the hand-over open.
+   */
+  const handleConsentDone = async () => {
     const c = checkInFor;
-    if (!c) return;
-    if (consentMayOrderFood !== c.mayOrderFood) {
-      updateCheckIn(
-        c.id,
-        {
-          childName: c.childName,
-          childAge: c.childAge,
-          parentName: c.parentName,
-          contactMethod: c.contactMethod,
-          phone: c.phone,
-          serviceType: c.serviceType,
-          mayOrderFood: consentMayOrderFood,
-          foodRestrictions: c.foodRestrictions,
-          allergiesMedical: c.allergiesMedical,
-          bookedDurationMinutes: c.bookedDurationMinutes,
-          assignedNannyId: c.assignedNannyId,
-        },
-        { operatorName, operatorId },
-      );
+    if (!c || consentBusy) return;
+    setConsentBusy(true);
+    try {
+      if (consentMayOrderFood !== c.mayOrderFood) {
+        await boardApi.edit(c.id, { mayOrderFood: consentMayOrderFood });
+      }
+      if (consentPhoto) {
+        await checkinApi.uploadPhoto(c.registrationId, consentPhoto, [c.id]);
+      }
+    } catch (err) {
+      toast({ title: 'Could not save', description: messageOf(err), variant: 'destructive' });
+      setConsentBusy(false);
+      return;
     }
-    // Persist the photo captured during consent (child + parent together) to the
-    // CheckIn record so it's available at pickup verification.
-    if (consentPhoto) {
-      applyCheckInPhotos(c.id, { childPhotoUrl: consentPhoto });
-    }
+    setConsentBusy(false);
     setCheckInFor(null);
     setDropOffHandoff(c.registrationId);
     navigate('/');
@@ -458,65 +528,63 @@ export function MobileDropOffBoard() {
 
   const handleManagePickups = (c: CheckIn) => setPickupsFor(c);
 
+  /**
+   * Promote a chat photo to the pickup list — through the platform
+   * (`releaseApi.promoteFromChat`: the image stored under the registration,
+   * the person added `from_chat`, audited).
+   */
   const handleAddPickupFromPhoto = (
     _messageId: string,
     imageUrl: string,
     input: { name: string; relationship?: string; phone?: string },
   ) => {
-    if (!messageCtx?.registrationId) return;
-    addPickupFromChatPhoto(
-      messageCtx.registrationId,
-      { ...input, imageUrl },
-      { operatorName, operatorId },
-    );
-    toast({ title: 'Pickup added', description: `${input.name} added to the authorized pickup list.` });
+    const registrationId = messageCtx?.registrationId;
+    if (!registrationId) return;
+    void releaseApi
+      .promoteFromChat(registrationId, { ...input, imageUrl })
+      .then((added) => {
+        toast({ title: 'Pickup added', description: `${added.name} added to the authorized pickup list.` });
+        refresh();
+      })
+      .catch((err: unknown) => {
+        toast({ title: 'Could not add the pickup', description: messageOf(err), variant: 'destructive' });
+      });
   };
 
+  /**
+   * After the view RELEASED the child on the platform (it writes the release
+   * itself — R-92, the pickup photo, the prepaid settlement), the board only
+   * tells the counter what was recorded and re-reads itself. It never releases
+   * a second time.
+   */
   const handleConfirmCheckOut = (
-    pickupPhotoUrl: string,
-    collectorInput: {
-      pickupId: string;
-      name: string;
-      relationship?: string;
-      isDropperOff: boolean;
-      source: AuthorizedPickupSource;
-    },
+    _pickupPhotoUrl: string,
+    _collectorInput: CollectorInput,
+    release: ReleaseView,
   ) => {
     if (!checkOutFor) return;
-    const policy = dropOffPricing.prepaidFoodRefundPolicy;
-    const prepaidReconciliation =
-      checkOutReconciliation && checkOutReconciliation.totalUnusedTHB > 0
-        ? { unusedTHB: checkOutReconciliation.totalUnusedTHB, policy }
-        : undefined;
-    const res = checkOut(
-      checkOutFor.id,
-      { operatorName, operatorId },
-      pickupPhotoUrl,
-      prepaidReconciliation,
-      collectorInput,
-    );
-    if (res) {
-      const settlement = res.prepaidFoodSettlement;
-      let description = `${res.childName} was released to their pickup.`;
-      if (settlement && settlement.unusedTHB > 0) {
-        if (settlement.settlementError === 'refund_no_sale') {
-          toast({
-            title: 'Manual refund required',
-            description: `฿${settlement.unusedTHB} unused prepaid food could not be auto-refunded — the check-in sale was not found in Order History. Please issue a manual refund of ฿${settlement.unusedTHB} to the family.`,
-            variant: 'destructive',
-          });
-        } else {
-          description +=
-            settlement.policy === 'refund'
-              ? ` Prepaid food refund of ฿${settlement.unusedTHB} recorded.`
-              : ` ฿${settlement.unusedTHB} prepaid food forfeited.`;
-        }
+    const childName = release.childName || checkOutFor.childName;
+    let description = `${childName} was released to their pickup.`;
+    const settlement = release.settlement ?? null;
+    if (settlement && settlement.unusedSatang > 0) {
+      const unusedTHB = settlement.unusedSatang / 100;
+      if (settlement.settlementError === 'refund_no_sale') {
+        toast({
+          title: 'Manual refund required',
+          description: `฿${unusedTHB} unused prepaid food could not be refunded automatically. Please issue a manual refund of ฿${unusedTHB} to the family.`,
+          variant: 'destructive',
+        });
+      } else {
+        description +=
+          settlement.policy === 'refund'
+            ? ` Prepaid food refund of ฿${unusedTHB} recorded.`
+            : ` ฿${unusedTHB} prepaid food forfeited.`;
       }
-      toast({ title: 'Checked out', description });
-      if (view === 'detail') closeDetail();
-      setCheckOutFor(null);
-      refresh();
     }
+    toast({ title: 'Checked out', description });
+    if (view === 'detail') closeDetail();
+    setCheckOutFor(null);
+    refresh();
   };
 
   const handleMessage = (c: CheckIn) => {
@@ -536,102 +604,140 @@ export function MobileDropOffBoard() {
     });
   };
 
+  /**
+   * "Mark Arrived" on a booked family. On the platform a booked child is one
+   * already paid for ("Leave as booked" at the till linked the sale), and
+   * arriving is checking them in on that sale with no payment (R-90) — the
+   * desktop board's booked check-in (`boardApi.checkInBooked`), with its
+   * nanny, consent and photo confirmation.
+   */
   const handleMarkArrived = (c: CheckIn) => {
-    const res = markArrived(c.id, { operatorName });
-    if (res) {
-      toast({ title: 'Moved to Registered', description: `${res.childName} has arrived.` });
-      syncSelectedFamily(res);
-      refresh();
-    }
+    const family = allByReg.get(c.registrationId) ?? [c];
+    const booked = family.filter((k) => k.status === 'registered' && !!k.scheduledFor);
+    setCheckInBookedFor(booked.length > 0 ? booked : [c]);
   };
 
-  const handleResend = (c: CheckIn) => {
-    const res = resendWaConfirmation(c.id);
-    if (res) {
-      toast({
-        title: 'Message resent',
-        description: `Connection check resent to ${res.parentName} (${res.phone}).`,
+  const handleConfirmCheckInBooked = async (items: BookedCheckInItem[]) => {
+    const family = checkInBookedFor ?? [];
+    try {
+      for (const it of items) {
+        if (!it.childPhotoUrl) continue;
+        const kid = family.find((k) => k.id === it.checkInId);
+        if (kid) await checkinApi.uploadPhoto(kid.registrationId, it.childPhotoUrl, [kid.id]);
+      }
+      const res = await boardApi.checkInBooked({
+        entries: items.map((it) => ({ checkinId: it.checkInId, nannyId: it.nannyId ?? null })),
+        consentAcknowledged: items.some((it) => it.confirmationsAccepted === true),
       });
-      syncSelectedFamily(res);
-      refresh();
-    } else {
+      setCheckInBookedFor(null);
+      const n = res.children.length;
+      toast({
+        title: 'Checked in',
+        description: [`${n} ${n === 1 ? 'child is' : 'children are'} now in the park.`, ...res.notes].join(' '),
+      });
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Check-in failed',
+        description: messageOf(err),
+      });
+    }
+    refresh();
+  };
+
+  // The contact-channel test (R-95): the message goes out through the
+  // platform's messaging adapter; the chip reads the family's state.
+  const handleResend = async (c: CheckIn) => {
+    if (!c.phone.trim()) {
       toast({
         title: 'No contact number',
         description: `Add a number for ${c.parentName} before resending.`,
         variant: 'destructive',
       });
+      return;
     }
-  };
-
-  const handleSimulateConfirm = (c: CheckIn) => {
-    const res = simulateWaConfirm(c.id);
-    if (res) {
+    try {
+      await boardApi.contactTest(c.registrationId);
       toast({
-        title: `${CHANNEL_LABEL[normalizeChannel(res.contactMethod)]} confirmed`,
-        description: `${res.parentName} tapped "Confirm received" — channel is verified.`,
+        title: 'Message resent',
+        description: `Connection check resent to ${c.parentName} (${c.phone}).`,
       });
-      syncSelectedFamily(res);
-      refresh();
+    } catch (err) {
+      toast({ title: 'Could not resend', description: messageOf(err), variant: 'destructive' });
     }
+    refresh();
   };
 
-  const handleMarkFailed = (c: CheckIn) => {
-    const res = markWaConnectionFailed(c.id);
-    if (res) {
+  const handleSimulateConfirm = async (c: CheckIn) => {
+    try {
+      await boardApi.contactStatus(c.registrationId, 'confirmed');
+      toast({
+        title: `${CHANNEL_LABEL[normalizeChannel(c.contactMethod)]} confirmed`,
+        description: `${c.parentName} tapped "Confirm received" — channel is verified.`,
+      });
+    } catch (err) {
+      toast({ title: 'Could not confirm', description: messageOf(err), variant: 'destructive' });
+    }
+    refresh();
+  };
+
+  const handleMarkFailed = async (c: CheckIn) => {
+    try {
+      await boardApi.contactStatus(c.registrationId, 'failed');
       toast({
         title: 'Marked as unreachable',
-        description: `Ask ${res.parentName} to update their number, then resend.`,
+        description: `Ask ${c.parentName} to update their number, then resend.`,
         variant: 'destructive',
       });
-      syncSelectedFamily(res);
-      refresh();
+    } catch (err) {
+      toast({ title: 'Could not save', description: messageOf(err), variant: 'destructive' });
     }
+    refresh();
   };
 
-  const handleSaveAndResend = (c: CheckIn, newPhone: string, newChannel: ContactChannel) => {
-    const edits: CheckInEdits = {
-      childName: c.childName,
-      childAge: c.childAge,
-      parentName: c.parentName,
-      contactMethod: newChannel,
-      phone: newPhone,
-      serviceType: c.serviceType,
-      mayOrderFood: c.mayOrderFood,
-      foodRestrictions: c.foodRestrictions,
-      allergiesMedical: c.allergiesMedical,
-      bookedDurationMinutes: c.bookedDurationMinutes,
-      assignedNannyId: c.assignedNannyId,
-    };
-    const res = updateCheckIn(c.id, edits, { operatorName, operatorId });
-    if (res) {
+  const handleSaveAndResend = async (c: CheckIn, newPhone: string, newChannel: ContactChannel) => {
+    try {
+      const body = editsToPatch(c, { ...checkInToEdits(c), phone: newPhone, contactMethod: newChannel });
+      // A changed number or channel is re-tested by the platform with the
+      // edit; an unchanged one is simply sent again.
+      const res = Object.keys(body).length ? await boardApi.edit(c.id, body) : null;
+      if (!res || res.contact?.status !== 'pending') await boardApi.contactTest(c.registrationId);
       toast({
         title: 'Number updated & re-sent',
-        description: `Confirmation resent to ${res.parentName} (${res.phone}).`,
+        description: `Confirmation resent to ${c.parentName} (${newPhone}).`,
       });
-      syncSelectedFamily(res);
-      refresh();
+    } catch (err) {
+      toast({ title: 'Could not save', description: messageOf(err), variant: 'destructive' });
     }
+    refresh();
   };
 
-  const handleSaveEdit = (edits: CheckInEdits) => {
+  // One audited PATCH: the platform writes the before/after of every changed
+  // field, and that IS the change log the edit modal reads back.
+  const handleSaveEdit = async (edits: CheckInEdits) => {
     if (!editFor) return;
-    const before = editFor.changeLog?.length ?? 0;
-    const res = updateCheckIn(editFor.id, edits, { operatorName, operatorId });
-    if (res) {
-      const changed = (res.changeLog?.length ?? 0) - before;
-      toast({
-        title: changed > 0 ? 'Changes saved' : 'No changes',
-        description:
-          changed > 0
-            ? `${changed} field${changed === 1 ? '' : 's'} updated for ${res.childName}.`
-            : `Nothing changed for ${res.childName}.`,
-      });
-      syncSelectedFamily(res);
-      refresh();
-    } else {
-      toast({ title: 'Could not save', variant: 'destructive' });
-    }
+    const target = editFor;
     setEditFor(null);
+    const body = editsToPatch(target, edits);
+    if (Object.keys(body).length === 0) {
+      toast({ title: 'No changes', description: `Nothing changed for ${target.childName}.` });
+      return;
+    }
+    try {
+      const res = await boardApi.edit(target.id, body);
+      toast({
+        title: res.changed > 0 ? 'Changes saved' : 'No changes',
+        description: [
+          res.changed > 0
+            ? `${res.changed} field${res.changed === 1 ? '' : 's'} updated for ${res.checkin.childName}.`
+            : `Nothing changed for ${res.checkin.childName}.`,
+          ...res.warnings,
+        ].join(' '),
+      });
+    } catch (err) {
+      toast({ title: 'Could not save', description: messageOf(err), variant: 'destructive' });
+    }
+    refresh();
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -639,7 +745,8 @@ export function MobileDropOffBoard() {
   return (
     <div className="h-full flex flex-col bg-background text-foreground overflow-hidden">
       {/* ── Board ── */}
-      {view === 'board' && (
+      {/* The board also stands in when the open family is no longer on it. */}
+      {(view === 'board' || !selectedFamily) && (
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Board switch: Drop-off | Events (hidden while an event roster is open) */}
           {!(boardTab === 'events' && selectedEvent) && (
@@ -820,7 +927,7 @@ export function MobileDropOffBoard() {
           {visibleFamilies.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground px-4">
               <Baby className="w-10 h-10 mb-3 opacity-40" />
-              <p className="text-sm">No children in this list.</p>
+              <p className="text-sm">{boardError ?? (board ? 'No children in this list.' : 'Loading…')}</p>
             </div>
           ) : (
             <ScrollArea className="flex-1 mt-2 min-h-0">
@@ -851,10 +958,10 @@ export function MobileDropOffBoard() {
           onCheckOut={(c) => setCheckOutFor(c)}
           onMarkArrived={handleMarkArrived}
           onEdit={setEditFor}
-          onResend={handleResend}
-          onSimulateConfirm={handleSimulateConfirm}
-          onMarkFailed={handleMarkFailed}
-          onSaveAndResend={handleSaveAndResend}
+          onResend={(c) => void handleResend(c)}
+          onSimulateConfirm={(c) => void handleSimulateConfirm(c)}
+          onMarkFailed={(c) => void handleMarkFailed(c)}
+          onSaveAndResend={(c, phone, channel) => void handleSaveAndResend(c, phone, channel)}
           onManagePickups={handleManagePickups}
         />
       )}
@@ -863,8 +970,7 @@ export function MobileDropOffBoard() {
       {checkOutFor && (
         <MobileCheckOutView
           checkIn={checkOutFor}
-          reconciliation={checkOutReconciliation}
-          prepaidFoodPolicy={dropOffPricing.prepaidFoodRefundPolicy}
+          prepaidFoodPolicy={prepaidFoodPolicy}
           onConfirm={handleConfirmCheckOut}
           onCancel={() => setCheckOutFor(null)}
         />
@@ -876,7 +982,7 @@ export function MobileDropOffBoard() {
           title={t('handToCustomer.checkInTitle', { name: checkInFor.parentName })}
           subtitle={t('handToCustomer.checkInSubtitle')}
           handBackLabel={t('handToCustomer.parentDoneHandBack')}
-          onDone={handleConsentDone}
+          onDone={() => void handleConsentDone()}
           onCancel={() => setCheckInFor(null)}
         >
           <MobileCheckInConsent
@@ -898,7 +1004,20 @@ export function MobileDropOffBoard() {
           open={!!assignFor}
           onOpenChange={(open) => !open && setAssignFor(null)}
           checkIn={assignFor}
-          onAssign={handleAssign}
+          nannies={nannies}
+          softMax={softMax}
+          onAssign={(id) => void handleAssign(id)}
+        />
+      )}
+
+      {checkInBookedFor && (
+        <CheckInBookedModal
+          open={!!checkInBookedFor}
+          onOpenChange={(open) => !open && setCheckInBookedFor(null)}
+          family={checkInBookedFor}
+          nannies={nannies}
+          softMax={softMax}
+          onConfirm={(items) => void handleConfirmCheckInBooked(items)}
         />
       )}
 
@@ -907,7 +1026,9 @@ export function MobileDropOffBoard() {
           open={!!editFor}
           onOpenChange={(open) => !open && setEditFor(null)}
           checkIn={editFor}
-          onSave={handleSaveEdit}
+          nannies={nannies}
+          softMax={softMax}
+          onSave={(edits) => void handleSaveEdit(edits)}
         />
       )}
 

@@ -208,3 +208,30 @@
     background-color: var(--elevate-2);
   }
 }
+
+/* SCRUM-474 — added for the console's approved design (additive only: no
+   existing token above changes value). Two things the artboards need that the
+   suite set did not name:
+
+   - --primary-ink, the brand coral deepened for TEXT on a primary tint — the
+     active nav pill and the command bar's active chips. The coral itself on
+     its own 10% wash reads at barely 3:1; this reads above 4.5:1.
+   - the four status inks as Tailwind colours, so a page writes
+     `text-status-warn` / `bg-status-ok/12` instead of an inline style. Same
+     values as --status-* above; they are aliases, not new hues. */
+@theme inline {
+  --color-primary-ink: hsl(var(--primary-ink));
+  --color-status-ok: hsl(var(--status-ok));
+  --color-status-warn: hsl(var(--status-warn));
+  --color-status-down: hsl(var(--status-down));
+  --color-status-idle: hsl(var(--status-idle));
+}
+
+:root,
+.light {
+  --primary-ink: 20 85% 38%;
+}
+
+.dark {
+  --primary-ink: 217 91% 76%;
+}

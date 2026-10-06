@@ -1,6 +1,19 @@
 import { createHash } from 'node:crypto';
 
-import { isLegacyBoothCode, normaliseBoothCode, verifyBoothCode } from '@oto/shared';
+import {
+  BAND_CODE_BODY_LENGTH,
+  BAND_CODE_SIGNATURE_LENGTH,
+  bandShortCode,
+  isLegacyBoothCode,
+  normaliseBandCode,
+  normaliseBoothCode,
+  parseBandCode,
+  parseBandShortCode,
+  parseBookingQr,
+  verifyBandCode,
+  verifyBookingQr,
+  verifyBoothCode,
+} from '@oto/shared';
 
 import type { StationScanMessage } from './contract';
 import type { BoxStore, StationEventSource } from './store';
@@ -14,13 +27,18 @@ import { silentLog, type AgentLog } from './transport';
  * produces the same thing: a string somebody pointed a machine at. What the
  * string MEANS — a band admitted, a booking redeemed, a voucher spent, a
  * product added — belongs to the tickets that own those flows, so this file is
- * deliberately the seam and not the handlers. S2-11, S2-12 and S2-13 each
- * register their own; a code nothing claims resolves `unhandled`, which is a
- * real outcome and is shown as one.
+ * deliberately the seam and not the handlers. S2-12 and S2-13 each register
+ * their own; a code nothing claims resolves `unhandled`, which is a real
+ * outcome and is shown as one. Two shapes the platform itself mints are
+ * claimed by the router rather than registered: the Lucky Wheel voucher
+ * (S2-10b) and the signed band code, whose signature the box checks with no
+ * network (`bandCodeHandler`, S2-11) — what a band then does at a gate is
+ * S2-12's.
  *
- * The one handler that lives here is `productBarcodeHandler` (S2-09b), and it
- * is here because the thing it decides — what a retail barcode LOOKS like — is
- * a property of the scanner and the printed label rather than of any catalogue.
+ * The one REGISTERED handler that lives here is `productBarcodeHandler`
+ * (S2-09b), and it is here because the thing it decides — what a retail
+ * barcode LOOKS like — is a property of the scanner and the printed label
+ * rather than of any catalogue.
  * The lookup it needs is handed in, so this package still knows nothing about
  * products and carries no database dependency.
  *
@@ -147,6 +165,14 @@ export interface ScanRouterOptions {
   publish?: (stationId: string, message: StationScanMessage) => void;
   now?: () => Date;
   log?: AgentLog;
+  /**
+   * The park's band key, asked per scan (S2-11). A router given this claims
+   * band codes itself and checks their signatures (`bandCodeHandler`); one
+   * given nothing — the api's stand-in for a box it does not run — leaves them
+   * `unknown`, as before, because a router with no key could only ever say it
+   * cannot check.
+   */
+  bandKey?: () => string | Uint8Array | null;
 }
 
 /** SHA-256 of the code, first `SCAN_FINGERPRINT_LENGTH` hex characters. */
@@ -162,8 +188,14 @@ export function scanFingerprint(code: string): string {
  * and answers the routine support question — which till printed this? It is a
  * HEURISTIC over the shape and nothing more: `T1-…` yields `T1`, a bare code
  * yields nothing, and no part of the system decides anything from it.
+ *
+ * A signed band code (S2-11) has no separator after its prefix — the prefix
+ * runs straight into the 27-character body — so its prefix is read by the
+ * band code's own parser, which knows where the body starts.
  */
 export function scanPrefix(code: string): string | undefined {
+  const band = parseBandCode(code);
+  if (band) return band.prefix;
   const match = /^([A-Z0-9]{1,4})[-_:]/.exec(code);
   return match ? match[1] : undefined;
 }
@@ -388,6 +420,275 @@ export function voucherCodeHandler(): ScanHandler {
   };
 }
 
+// --- The signed band code (S2-11) -------------------------------------------
+
+/** The name the band handler goes by on the tape, in the Box log drawer and on the station channel. */
+export const BAND_CODE_HANDLER = 'band';
+
+/**
+ * Why a band scan was not a band, as the tape counts it and the screen shows
+ * it. Short and non-leaking, like every `errorCode` on the tape.
+ */
+export const BAND_SIGNATURE_INVALID = 'BAND_SIGNATURE_INVALID';
+export const BAND_CODE_MALFORMED = 'BAND_CODE_MALFORMED';
+export const BAND_SHORT_CODE = 'BAND_SHORT_CODE';
+export const BAND_KEY_MISSING = 'BAND_KEY_MISSING';
+export const BAND_KEY_INVALID = 'BAND_KEY_INVALID';
+
+/**
+ * A prefix and body of 28 to 33 letters and digits, the one dot, then twelve
+ * more: the SHAPE of a signed band code with every character allowed.
+ *
+ * Wider on purpose than a code that parses (`parseBandCode`), which also
+ * requires the band alphabet and the body's exact length. A band with one
+ * character misread or altered — a letter the band alphabet leaves out, a
+ * character dropped — is still claimed here, so the answer is "this band is
+ * not valid, and why" rather than "that code means nothing here".
+ */
+const BAND_CODE_LIKE = new RegExp(
+  `^[0-9A-Z]{${BAND_CODE_BODY_LENGTH + 1},${BAND_CODE_BODY_LENGTH + 6}}\\.[0-9A-Z]{${BAND_CODE_SIGNATURE_LENGTH}}$`,
+);
+
+/**
+ * The short code as it is printed under a band's QR — and, on a band wide
+ * enough, as its Code 128: the prefix, a dash and six characters of the band
+ * alphabet (`bandShortCode` in `@oto/shared`), e.g. `T1-D4DQD2`. The dash is
+ * required here: it is always on the paper, and a string without one is left
+ * to whoever else claims it.
+ */
+function isPrintedBandShortCode(code: string): boolean {
+  return /^[0-9A-Z]{1,6}-[0-9A-Z]{6}$/.test(code) && parseBandShortCode(code) !== null;
+}
+
+/**
+ * Is this string a band code — the signed one or the short one under it — by
+ * its shape? Read the way the platform reads one (`normaliseBandCode`): upper
+ * case, trimmed, so a code typed into the Console's simulator in lower case is
+ * the same code.
+ */
+export function isBandCodeCandidate(code: string): boolean {
+  const normalised = normaliseBandCode(code);
+  return BAND_CODE_LIKE.test(normalised) || isPrintedBandShortCode(normalised);
+}
+
+/**
+ * What a band code names, and nothing it could be used as.
+ *
+ * The id of the band row (the ULID the code carries is that row's UUIDv7), the
+ * station prefix that minted it, the short code printed under the QR, and when
+ * it was minted — the UUIDv7's own millisecond timestamp. None of these opens
+ * a gate: turning an id back into a code takes the key. So this is what rides
+ * the station channel and the simulator's command result, where the signed
+ * code itself must never go.
+ */
+export interface BandIdentity {
+  bandId: string;
+  prefix: string;
+  shortCode: string;
+  mintedAt: string | null;
+}
+
+/** When a UUIDv7 was minted: its first 48 bits, in milliseconds. */
+function uuidv7Time(id: string): string | null {
+  const ms = Number.parseInt(id.replace(/-/g, '').slice(0, 12), 16);
+  return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
+}
+
+/**
+ * The handler: a band code read at a gate or a counter is checked on the box,
+ * with no network, and answered with the band it names.
+ *
+ * WHAT IT DECIDES, AND WHAT IT LEAVES TO THE GATE. It decides whether the
+ * string is a band this park printed — the HMAC over the prefix and body,
+ * checked against the park's key (`verifyBandCode` in `@oto/shared`) — and
+ * which band it is. Whether that band may go through a gate now (its status,
+ * its time, whether it is already inside) is the gate's question, and S2-12
+ * answers it from the identity this hands over. A code that fails is
+ * `refused` with the reason on the screen and a short code on the tape:
+ *
+ *   - `BAND_SIGNATURE_INVALID` — the right shape and the wrong signature: a
+ *     character altered, a code invented, or one signed with another park's
+ *     key;
+ *   - `BAND_CODE_MALFORMED` — shaped like a band code, but a character is not
+ *     one a band uses or the body is the wrong length;
+ *   - `BAND_SHORT_CODE` — the short line under the QR, read on its own. It
+ *     carries no signature and admits nobody, so the box says to scan the QR,
+ *     and hands the short code over so a till can still look the sale up.
+ *
+ * A box with no key cannot check anything and says so as an `error`
+ * (`BAND_KEY_MISSING`), which is the box failing rather than the band — it is
+ * never answered as a pass.
+ *
+ * THE SIGNED CODE STOPS HERE. `detail` carries the band's identity and a
+ * sentence for the screen, never the code: the station channel reaches every
+ * screen on the station, and the code is the credential.
+ */
+export function bandCodeHandler(key: () => string | Uint8Array | null): ScanHandler {
+  return {
+    name: BAND_CODE_HANDLER,
+    kind: 'band',
+    matches: isBandCodeCandidate,
+    handle(ctx) {
+      const code = normaliseBandCode(ctx.code);
+      if (isPrintedBandShortCode(code)) {
+        return {
+          outcome: 'refused',
+          errorCode: BAND_SHORT_CODE,
+          detail: {
+            message: 'That is the short code printed under the band’s QR — scan the QR to check the band',
+            shortCode: code,
+          },
+        };
+      }
+      const secret = key();
+      if (!secret) {
+        return {
+          outcome: 'error',
+          errorCode: BAND_KEY_MISSING,
+          detail: {
+            message: 'This box has no band key yet, so it cannot check a band — it arrives with the box’s configuration',
+          },
+        };
+      }
+      let verdict: ReturnType<typeof verifyBandCode>;
+      try {
+        verdict = verifyBandCode(code, secret);
+      } catch {
+        // A key shorter than a band key may be (`BAND_KEY_MIN_BYTES`): the
+        // box's configuration is wrong, and no band could pass against it.
+        return {
+          outcome: 'error',
+          errorCode: BAND_KEY_INVALID,
+          detail: { message: 'This box’s band key is not usable, so it cannot check a band' },
+        };
+      }
+      if (!verdict.ok) {
+        return verdict.reason === 'signature'
+          ? {
+              outcome: 'refused',
+              errorCode: BAND_SIGNATURE_INVALID,
+              detail: {
+                message: 'Not a band this park printed — its signature does not match, so it was altered or made elsewhere',
+                reason: 'signature',
+              },
+            }
+          : {
+              outcome: 'refused',
+              errorCode: BAND_CODE_MALFORMED,
+              detail: {
+                message: 'This reads like a band code, but a character is missing or is not one a band uses',
+                reason: 'format',
+              },
+            };
+      }
+      const band: BandIdentity = {
+        bandId: verdict.bandId,
+        prefix: verdict.prefix,
+        // Never null here: the code has just parsed and verified.
+        shortCode: bandShortCode(verdict.code) ?? verdict.prefix,
+        mintedAt: uuidv7Time(verdict.bandId),
+      };
+      return {
+        outcome: 'handled',
+        detail: { band, message: `Band ${band.shortCode} — signature checked on this box` },
+      };
+    },
+  };
+}
+
+// --- The signed booking QR (S2-12, SCRUM-209 round 3) ------------------------
+
+/** The name the booking handler goes by on the tape, in the Box log drawer and on the station channel. */
+export const BOOKING_QR_HANDLER = 'booking';
+
+/** Why a booking scan was not a booking this park signed — short and non-leaking, as on the tape. */
+export const BOOKING_QR_SIGNATURE_INVALID = 'BOOKING_QR_SIGNATURE_INVALID';
+export const BOOKING_QR_MALFORMED = 'BOOKING_QR_MALFORMED';
+export const BOOKING_KEY_MISSING = 'BOOKING_KEY_MISSING';
+export const BOOKING_KEY_INVALID = 'BOOKING_KEY_INVALID';
+
+/**
+ * The booking QR's header, read the way the platform reads it: trimmed, upper
+ * case. The header (`BK1:`) is one no band code or product barcode can carry
+ * — a band code is letters and digits then a dot, a barcode digits only — so a
+ * string that starts with it is a booking QR or a damaged one, never a guess.
+ */
+function hasBookingHeader(code: string): boolean {
+  return code.trim().toUpperCase().startsWith('BK1:');
+}
+
+/**
+ * The handler: the QR on a family's booking confirmation, read at the counter.
+ *
+ * It checks the signature with the park's key (`verifyBookingQr`, the same
+ * key the bands use under a different domain, so neither signature replays as
+ * the other) and answers with the booking it names and the action the till
+ * takes: open the redeem flow on that booking (`action: 'redeem_booking'`).
+ * Whether the booking is paid, or already redeemed, is the platform's answer
+ * at the moment of redemption — the box decides only that this park signed it.
+ *
+ * The code itself does not travel: `detail` carries the booking id and a
+ * sentence for the screen. A code with the header and the wrong signature is
+ * `refused`; a box with no key says so as an `error`, never as a pass.
+ */
+export function bookingQrHandler(key: () => string | Uint8Array | null): ScanHandler {
+  return {
+    name: BOOKING_QR_HANDLER,
+    kind: 'booking',
+    matches: hasBookingHeader,
+    handle(ctx) {
+      if (!parseBookingQr(ctx.code)) {
+        return {
+          outcome: 'refused',
+          errorCode: BOOKING_QR_MALFORMED,
+          detail: { message: 'This reads like a booking QR, but part of it is missing — type the booking reference instead' },
+        };
+      }
+      const secret = key();
+      if (!secret) {
+        return {
+          outcome: 'error',
+          errorCode: BOOKING_KEY_MISSING,
+          detail: {
+            message: 'This box has no park key yet, so it cannot check a booking QR — type the booking reference instead',
+          },
+        };
+      }
+      let verdict: ReturnType<typeof verifyBookingQr>;
+      try {
+        verdict = verifyBookingQr(ctx.code, secret);
+      } catch {
+        return {
+          outcome: 'error',
+          errorCode: BOOKING_KEY_INVALID,
+          detail: { message: 'This box’s park key is not usable, so it cannot check a booking QR' },
+        };
+      }
+      if (!verdict.ok) {
+        return {
+          outcome: 'refused',
+          errorCode: verdict.reason === 'signature' ? BOOKING_QR_SIGNATURE_INVALID : BOOKING_QR_MALFORMED,
+          detail: {
+            message:
+              verdict.reason === 'signature'
+                ? 'Not a booking this park issued — its signature does not match'
+                : 'This reads like a booking QR, but part of it is missing — type the booking reference instead',
+            reason: verdict.reason,
+          },
+        };
+      }
+      return {
+        outcome: 'handled',
+        detail: {
+          action: 'redeem_booking',
+          bookingId: verdict.bookingId,
+          message: 'Online booking — signature checked on this box',
+        },
+      };
+    },
+  };
+}
+
 export class ScanRouter {
   private readonly options: ScanRouterOptions;
   private readonly handlers: ScanHandler[] = [];
@@ -403,10 +704,29 @@ export class ScanRouter {
    * it matches.
    */
   private readonly voucher = voucherCodeHandler();
+  /**
+   * S2-11 — the signed band code, claimed by the router itself right after the
+   * voucher, and for the voucher's reason: its shape is the platform's own
+   * (`@oto/shared`'s band code), so no registration gives it a meaning and no
+   * broad matcher registered later may take one. Built only where there is a
+   * band key to check against — the agent's router, which is handed
+   * `bandKey` — and absent otherwise.
+   */
+  private readonly band: ScanHandler | null;
+  /**
+   * S2-12 — the signed booking QR, claimed by the router itself after the band
+   * and for the same reason: its header is the platform's own
+   * (`@oto/shared`'s `booking-qr.ts`). Always present, so a booking QR is
+   * CLASSIFIED as one on any router; one without the park key answers
+   * `BOOKING_KEY_MISSING` rather than letting the code fall to a broad matcher.
+   */
+  private readonly booking: ScanHandler;
 
   constructor(options: ScanRouterOptions) {
     this.options = options;
     this.log = options.log ?? silentLog;
+    this.band = options.bandKey ? bandCodeHandler(options.bandKey) : null;
+    this.booking = bookingQrHandler(options.bandKey ?? (() => null));
   }
 
   /**
@@ -428,27 +748,36 @@ export class ScanRouter {
    * drawer and the `/scanning` answer list. The router's own voucher handler
    * (`voucher` above) is first: it is always on and claims its shape before
    * any registration, so a list without it would describe a router that does
-   * not exist. The tickets' registrations follow in the order they were made.
+   * not exist. The band handler follows it where the router has one (`band`
+   * above), and the tickets' registrations follow in the order they were made.
    */
   registered(): string[] {
-    return [this.voucher.name, ...this.handlers.map((h) => h.name)];
+    return [
+      this.voucher.name,
+      ...(this.band ? [this.band.name] : []),
+      this.booking.name,
+      ...this.handlers.map((h) => h.name),
+    ];
   }
 
   /**
    * What the box thinks a code is, before any handler runs.
    *
-   * A kind is `unknown` until a ticket registers a matcher for it. Band codes
-   * are minted by S2-11 and booking QRs redeemed by S2-12, and inventing a
-   * shape for those here would be inventing a format the code that mints them
-   * would then have to match. A retail barcode is the exception and is matched
-   * (`isProductBarcode`), because its shape was decided by GS1 long before
-   * this park existed — and so is a Lucky Wheel voucher code, whose shape the
-   * platform decided and every booth mints (`isBoothVoucherCode`, S2-10b).
+   * A kind is `unknown` until something claims its shape. A booking QR is
+   * claimed by its header (`BK1:`, S2-12's `booking-qr.ts` — the format the
+   * api mints at payment, not one invented here). A retail
+   * barcode is matched (`isProductBarcode`), because its shape was decided by
+   * GS1 long before this park existed — and so are a Lucky Wheel voucher code
+   * (`isBoothVoucherCode`, S2-10b) and a band code (`isBandCodeCandidate`,
+   * S2-11), whose shapes the platform decided and mints.
    */
   classify(code: string): { kind: ScanCodeKind; handler: ScanHandler | null } {
-    // The router's own first: see `voucher`. A shape test on a string, total
-    // and synchronous, so it needs none of the guarding a ticket's matcher gets.
+    // The router's own first: see `voucher` and `band`. Shape tests on a
+    // string, total and synchronous, so they need none of the guarding a
+    // ticket's matcher gets.
     if (this.voucher.matches(code)) return { kind: this.voucher.kind, handler: this.voucher };
+    if (this.band?.matches(code)) return { kind: this.band.kind, handler: this.band };
+    if (this.booking.matches(code)) return { kind: this.booking.kind, handler: this.booking };
     for (const handler of this.handlers) {
       let claimed = false;
       try {

@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { and, eq } from 'drizzle-orm';
-import { account, child, fileObject, member, type Db } from '@oto/db';
-import { newId } from '@oto/shared';
+import { account, checkin, child, fileObject, guardian, member, registration, release, type Db } from '@oto/db';
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { audit } from '../services/audit';
+import { ClientIdSchema, REPLAY_HEADER, claimClientId } from '../services/client-id';
 import { storageFailureReason } from '../services/files';
 import { opCtx, withTx } from '../services/tx';
 import type { AuthContext } from '../plugins/session';
@@ -53,18 +53,32 @@ async function checkOwnerAccess(
   ownerEntityType: string,
   ownerEntityId: string,
   mode: 'read' | 'write',
-): Promise<void> {
+  db: Db,
+): Promise<string | null> {
   switch (ownerEntityType) {
     case 'account': {
       // Your own profile photo — or admin access to any account's.
-      if (ownerEntityId === auth.accountId) return;
+      if (ownerEntityId === auth.accountId) return null;
       await req.requirePermission(mode === 'read' ? 'admin:account:read' : 'admin:account:update');
-      return;
+      return null;
     }
     case 'member':
     case 'child': {
       await req.requirePermission(mode === 'read' ? 'pos:member:read' : 'pos:member:update');
-      return;
+      return null;
+    }
+    /**
+     * S2-13 — the check-in photos (plan §2.1, OD-C2): the child-and-guardian
+     * photo on a registration, an authorised collector's, a pickup's. Staff
+     * only, at the park the stay is at, behind `pos:checkin:*`.
+     */
+    case 'registration':
+    case 'guardian':
+    case 'release': {
+      const branchId = await checkinOwnerBranch(db, auth.operatorId, ownerEntityType, ownerEntityId);
+      await req.requirePermission(mode === 'read' ? 'pos:checkin:read' : 'pos:checkin:update', { branchId });
+      // The park the photo belongs to: its access-log row is filed there (R-94).
+      return branchId;
     }
     default:
       throw errors.forbidden(`Unsupported file owner ${ownerEntityType}`);
@@ -92,10 +106,49 @@ async function checkOwnerAccess(
  * A child carries no `operator_id` of its own; its tenancy is its guardian's,
  * so the join is the check.
  */
+/**
+ * The park a check-in photo's owner belongs to, inside the caller's operator —
+ * 404 for anybody else's, for `assertOwnerInOperator`'s reason. A guardian and
+ * a release reach their branch through the registration and the stay.
+ */
+async function checkinOwnerBranch(
+  db: Db,
+  operatorId: string,
+  ownerEntityType: 'registration' | 'guardian' | 'release',
+  ownerEntityId: string,
+): Promise<string> {
+  let row: { branchId: string; operatorId: string } | undefined;
+  if (ownerEntityType === 'registration') {
+    [row] = await db
+      .select({ branchId: registration.branchId, operatorId: registration.operatorId })
+      .from(registration)
+      .where(eq(registration.id, ownerEntityId))
+      .limit(1);
+  } else if (ownerEntityType === 'guardian') {
+    [row] = await db
+      .select({ branchId: registration.branchId, operatorId: registration.operatorId })
+      .from(guardian)
+      .innerJoin(registration, eq(registration.id, guardian.registrationId))
+      .where(eq(guardian.id, ownerEntityId))
+      .limit(1);
+  } else {
+    [row] = await db
+      .select({ branchId: checkin.branchId, operatorId: checkin.operatorId })
+      .from(release)
+      .innerJoin(checkin, eq(checkin.id, release.checkinId))
+      .where(eq(release.id, ownerEntityId))
+      .limit(1);
+  }
+  if (!row || row.operatorId !== operatorId) throw errors.notFound(`No such ${ownerEntityType}`);
+  return row.branchId;
+}
+
+const CHECKIN_OWNERS = new Set(['registration', 'guardian', 'release']);
+
 async function assertOwnerInOperator(
   db: Db,
   operatorId: string,
-  ownerEntityType: 'account' | 'member' | 'child',
+  ownerEntityType: 'account' | 'member' | 'child' | 'registration' | 'guardian' | 'release',
   ownerEntityId: string,
 ): Promise<void> {
   const notFound = (): never => {
@@ -130,6 +183,11 @@ async function assertOwnerInOperator(
       if (!row) notFound();
       return;
     }
+    case 'registration':
+    case 'guardian':
+    case 'release':
+      await checkinOwnerBranch(db, operatorId, ownerEntityType, ownerEntityId);
+      return;
   }
 }
 
@@ -174,18 +232,23 @@ export async function fileRoutes(app: App): Promise<void> {
     {
       config: { dynamicPermission: true },
       schema: {
-        description: 'Register a file and get a presigned upload URL',
+        description:
+          'Register a file and get a presigned upload URL. An optional body id names the file ' +
+          '(SCRUM-270): the same id again answers with that file and a fresh upload URL under ' +
+          'x-oto-replay; an id naming another record is refused 409 ID_IN_USE.',
         body: z.object({
+          /** Optional, client-minted (OD-12). Absent, the platform mints one as before. */
+          id: ClientIdSchema.optional(),
           contentType: z.string().min(1),
-          ownerEntityType: z.enum(['account', 'member', 'child']),
+          ownerEntityType: z.enum(['account', 'member', 'child', 'registration', 'guardian', 'release']),
           ownerEntityId: z.string().uuid(),
           filename: z.string().optional(),
         }),
       },
     },
-    async (req) => {
+    async (req, reply) => {
       const auth = req.requireAuth();
-      await checkOwnerAccess(req, auth, req.body.ownerEntityType, req.body.ownerEntityId, 'write');
+      await checkOwnerAccess(req, auth, req.body.ownerEntityType, req.body.ownerEntityId, 'write', app.db);
       await assertOwnerInOperator(
         app.db,
         auth.operatorId,
@@ -194,7 +257,29 @@ export async function fileRoutes(app: App): Promise<void> {
       );
       const storage = app.fileStorage;
       if (!storage) throw notConfigured();
-      const id = newId();
+      // A file belongs to its owner inside the caller's operator, and the write
+      // check above was made against THAT owner — so a replay is a file of the
+      // same owner, and any other file's id is somebody else's.
+      const claim = await claimClientId(
+        req.body.id,
+        async (id) => (await app.db.select().from(fileObject).where(eq(fileObject.id, id)).limit(1))[0],
+        (row) =>
+          row.operatorId === auth.operatorId &&
+          row.ownerEntityType === req.body.ownerEntityType &&
+          row.ownerEntityId === req.body.ownerEntityId,
+      );
+      if (claim.replay) {
+        // Nothing is written; the upload URL is signed afresh for the object
+        // the first attempt registered, because a caller retrying through a
+        // dropped connection never received the first one. Signing reaches no
+        // storage and no database.
+        const again = await withStorageLog(req, 'presign upload', () =>
+          storage.presignedPut(claim.row.objectKey),
+        );
+        reply.header(REPLAY_HEADER, 'true');
+        return { id: claim.id, uploadUrl: again };
+      }
+      const id = claim.id;
       const ext = req.body.filename?.split('.').pop()?.toLowerCase() ?? 'bin';
       const objectKey = `${auth.operatorId}/${req.body.ownerEntityType}/${req.body.ownerEntityId}/${id}.${ext}`;
       const uploadUrl = await withStorageLog(req, 'presign upload', () =>
@@ -252,12 +337,38 @@ export async function fileRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const [row] = await app.db.select().from(fileObject).where(eq(fileObject.id, req.params.id)).limit(1);
       if (!row || row.operatorId !== auth.operatorId) throw errors.notFound('File not found');
-      await checkOwnerAccess(req, auth, row.ownerEntityType, row.ownerEntityId, 'read');
+      const ownerBranchId = await checkOwnerAccess(req, auth, row.ownerEntityType, row.ownerEntityId, 'read', app.db);
       const storage = app.fileStorage;
       if (!storage) throw notConfigured();
       const url = await withStorageLog(req, 'presign download', () =>
         storage.presignedGet(row.objectKey),
       );
+      /**
+       * R-94 — every read of a check-in photo is ACCESS-LOGGED: a child's
+       * photo with the guardian is the most sensitive thing the park keeps,
+       * and who looked at it, when, is part of the record. The row is filed
+       * at the park the photo belongs to, with the till it was looked at
+       * from, and committed BEFORE the signed URL leaves: a read that could
+       * not be logged is not answered.
+       */
+      if (CHECKIN_OWNERS.has(row.ownerEntityType)) {
+        await withTx(app.db, opCtx(req), 'file.read', async (tx) => {
+          await audit.record(tx, {
+            actorAccountId: auth.accountId,
+            operatorId: auth.operatorId,
+            branchId: ownerBranchId ?? auth.branchId,
+            action: 'file.read',
+            entityType: 'file_object',
+            entityId: row.id,
+            after: {
+              ownerEntityType: row.ownerEntityType,
+              ownerEntityId: row.ownerEntityId,
+              stationId: auth.stationId ?? null,
+            },
+            requestId: req.id,
+          });
+        });
+      }
       return { url, contentType: row.contentType };
     },
   );

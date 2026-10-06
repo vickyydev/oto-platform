@@ -4,8 +4,9 @@ import { setSaleOpen } from '@/pwa/openSale';
 import { Discount, ManualDiscount, MerchItem, MerchOrder, MerchOrderLine, Wristband } from '@/types';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
-import { getActiveMerchItems, getDiscountByCode, getDiscountReasons, recordMerchOrder, getInventoryItem } from '@/mockApi';
-import { asksForSize, computeMerchLineTotal, isOutOfStock, merchSizes } from '@/lib/merch';
+import { getActiveMerchItems, getDiscountByCode, getDiscountReasons, recordMerchOrder } from '@/mockApi';
+import { asksForSize, isOutOfStock, merchSizes } from '@/lib/merch';
+import { merchLineTotal } from '@/lib/cartWire';
 import { readProductScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { validateItemPromoCode } from '@/lib/itemPromo';
 import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
@@ -18,6 +19,13 @@ import { useStation } from '@/station/StationContext';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { getDefaultTier } from '@/store/catalogStore';
 import { menuIsServerBacked } from '@/api/menu';
+import {
+  inventoryFor,
+  refreshSellableStock,
+  stockIsServerBacked,
+  useSellableStockVersion,
+  withPlatformStock,
+} from '@/api/stock';
 import {
   buildItemCartPayload,
   refusedPromoCodes,
@@ -36,7 +44,8 @@ import { VariantPickerModal } from '@/components/shared/VariantPickerModal';
 import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { MerchGrid } from '@/components/merch/MerchGrid';
 import { MerchCart } from '@/components/merch/MerchCart';
-import { FnbPayment, fnbPaymentResult } from '@/components/fnb/FnbPayment';
+import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
+import { walletKeyOf } from '@/api/wallet';
 import { PaymentExpiry, PaymentQr } from '@/components/till/PaymentQr';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -46,8 +55,9 @@ import { PublicMerchCustomerDisplay } from '@/components/merch/PublicMerchCustom
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { useOperator } from '@/auth/OperatorContext';
 import { toast } from '@/hooks/use-toast';
+import { announceSalePrinting } from '@/lib/printRouting';
 import { Button } from '@/components/ui/button';
-import { Monitor } from 'lucide-react';
+import { Monitor, Wallet } from 'lucide-react';
 
 type Stage = 'scan' | 'order' | 'payment' | 'confirmation';
 
@@ -66,6 +76,11 @@ export default function MerchStation() {
 
   const [stage, setStage] = useState<Stage>('scan');
   const [wristband, setWristband] = useState<Wristband | null>(null);
+  /**
+   * S2-14a round 2 — spend the scanned wallet here: the SAME pool as the F&B
+   * counter (the platform files it as a merch order). Preselected with credit.
+   */
+  const [useCredit, setUseCredit] = useState(true);
   const [cart, setCart] = useState<MerchOrderLine[]>([]);
   // Item awaiting a size: one the platform sells in two or more sizes (S2-09b),
   // or — on the ported catalogue — a multi-variant inventory item.
@@ -111,15 +126,17 @@ export default function MerchStation() {
    * grid at the next pull without the station being reopened.
    *
    * `getActiveMerchItems()` rather than the snapshot's raw list: it drops the
-   * retired rows and resolves each item's on-hand stock, which is still the
-   * ported stock module's (S2-14b).
+   * retired rows. Each item's on-hand stock is the PLATFORM's since S2-14b
+   * (`withPlatformStock`, `api/stock.ts`): everything the branch holds, which
+   * is what its guard at commit counts.
    */
   const catalogue = useCatalogStore();
+  const stockVersion = useSellableStockVersion();
   const merchItems = useMemo(
-    () => getActiveMerchItems(),
-    // Recomputed when either half of what it reads moves.
+    () => getActiveMerchItems().map(withPlatformStock),
+    // Recomputed when any of what it reads moves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [catalogue.merchItems, catalogue.inventory, soldEpoch],
+    [catalogue.merchItems, catalogue.inventory, soldEpoch, stockVersion],
   );
   const shopFromPlatform = menuIsServerBacked();
 
@@ -149,8 +166,9 @@ export default function MerchStation() {
 
   /**
    * THE PRICE THE PLATFORM QUOTES FOR THIS SALE. The prototype totalled the
-   * shop cart in the browser (`computeMerchTotals`); that is now the fallback,
-   * and when it is what is on screen the note above the charge button says so.
+   * shop cart in the browser (`computeMerchTotals`); the fallback is now the
+   * platform's own engine run on this till (`itemOrderTotals`, SCRUM-271), and
+   * when it is what is on screen the note above the charge button says so.
    */
   const sale = useItemCartQuoteWithPromos({
     kind: 'shop',
@@ -226,7 +244,7 @@ export default function MerchStation() {
       // Per-variant stock clamp when variantId is known; total stock otherwise.
       let maxStock: number;
       if (variantId && item.inventoryItemId) {
-        const invItem = getInventoryItem(item.inventoryItemId);
+        const invItem = inventoryFor(item.inventoryItemId);
         const v = invItem?.variants.find((vv) => vv.id === variantId);
         maxStock = v?.stock ?? Infinity;
       } else {
@@ -238,7 +256,7 @@ export default function MerchStation() {
         const newQty = current + 1;
         return prev.map((l) =>
           l === existing
-            ? { ...l, qty: newQty, lineTotal: computeMerchLineTotal(item, newQty) }
+            ? { ...l, qty: newQty, lineTotal: merchLineTotal(item, newQty) }
             : l,
         );
       }
@@ -246,7 +264,7 @@ export default function MerchStation() {
         id: `mline-${lineCounter++}`,
         merchItem: item,
         qty: 1,
-        lineTotal: computeMerchLineTotal(item, 1),
+        lineTotal: merchLineTotal(item, 1),
         ...(variantId ? { variantId, variantLabel } : {}),
       };
       return [...prev, line];
@@ -263,7 +281,7 @@ export default function MerchStation() {
       return;
     }
     if (item.inventoryItemId) {
-      const invItem = getInventoryItem(item.inventoryItemId);
+      const invItem = inventoryFor(item.inventoryItemId);
       if (invItem && invItem.variants.length > 1) {
         setPendingVariantItem(item);
         return;
@@ -276,7 +294,7 @@ export default function MerchStation() {
     if (!pendingVariantItem) return;
     const label = asksForSize(pendingVariantItem)
       ? merchSizes(pendingVariantItem).find((v) => v.id === variantId)?.label
-      : getInventoryItem(pendingVariantItem.inventoryItemId!)?.variants.find(
+      : inventoryFor(pendingVariantItem.inventoryItemId!)?.variants.find(
           (v) => v.id === variantId,
         )?.label;
     addToCart(pendingVariantItem, variantId, label);
@@ -365,14 +383,14 @@ export default function MerchStation() {
         // Per-variant stock clamp for inventory-backed lines.
         let maxStock: number;
         if (l.variantId && l.merchItem.inventoryItemId) {
-          const invItem = getInventoryItem(l.merchItem.inventoryItemId);
+          const invItem = inventoryFor(l.merchItem.inventoryItemId);
           const v = invItem?.variants.find((vv) => vv.id === l.variantId);
           maxStock = v?.stock ?? Infinity;
         } else {
           maxStock = l.merchItem.stock ?? Infinity;
         }
         const clamped = Math.min(qty, maxStock);
-        return { ...l, qty: clamped, lineTotal: computeMerchLineTotal(l.merchItem, clamped) };
+        return { ...l, qty: clamped, lineTotal: merchLineTotal(l.merchItem, clamped) };
       });
     });
   };
@@ -451,6 +469,7 @@ export default function MerchStation() {
 
   const loadBand = (wb: Wristband | null) => {
     setWristband(wb);
+    setUseCredit(true);
     setStage('order');
   };
 
@@ -464,6 +483,7 @@ export default function MerchStation() {
     setPlatformSale(null);
     setStage('scan');
     setWristband(null);
+    setUseCredit(true);
     setCart([]);
     setManualDiscounts([]);
     setPromoCodes([]);
@@ -529,14 +549,16 @@ export default function MerchStation() {
     const payment = fnbPaymentResult(settlements);
     setPlatformSale(written);
 
-    const balanceAfter = wristband?.creditBalanceTHB ?? null;
+    // S2-14a — the balance the platform left on the wallet, when credit paid.
+    const balanceAfter = walletBalanceAfter(settlements) ?? wristband?.creditBalanceTHB ?? null;
+    const paidWristband = wristband && balanceAfter !== null ? { ...wristband, creditBalanceTHB: balanceAfter } : wristband;
 
     // The record this till keeps, carrying the figures the guest was shown.
     const record: MerchOrder = {
       id: String(orderCounter++).padStart(4, '0'),
       operatorId: operator.id,
       operatorName: operator.name,
-      wristband: wristband ?? undefined,
+      wristband: paidWristband ?? undefined,
       lines: displayLines,
       manualDiscounts,
       total: written.totals.grossSatang / 100,
@@ -545,10 +567,17 @@ export default function MerchStation() {
       status: 'paid',
       refunds: [],
     };
-    recordMerchOrder(record); // decrements on-hand stock in the store
+    // S2-14b — the platform took the stock off its shelves when it closed the
+    // sale; the local record is kept, and the ported inventory is not touched.
+    recordMerchOrder(record, { decrementStock: false });
+    void refreshSellableStock();
     setCompletedOrder(record);
     setNewBalance(balanceAfter);
     setStage('confirmation');
+    // S2-11 — the platform printed the shop receipt when it closed the sale;
+    // the toast says where. This station never routed a receipt of its own,
+    // so a deployment with no print jobs has nothing to stand in for.
+    void announceSalePrinting(written.id, () => undefined);
   };
 
   if (stage === 'payment' && paymentSnapshotRef.current?.epoch !== paymentEpoch) {
@@ -564,6 +593,10 @@ export default function MerchStation() {
     finaliseSale: saleWriter.finalise,
     onComplete: (sale, settlements) => paymentSnapshotRef.current?.complete(sale, settlements),
     onLeftBehind: notePaymentLeftBehind,
+    // S2-14a round 2 — the scanned wallet, spent first by the platform on the confirm press.
+    wallet: wristband && wristband.creditBalanceTHB > 0
+      ? { key: walletKeyOf(wristband), useCredit, previewSatang: Math.round(wristband.creditBalanceTHB * 100) }
+      : null,
   });
   const backFromPayment = () => {
     if (!paymentStage.canBack) return;
@@ -581,7 +614,10 @@ export default function MerchStation() {
   const separateDisplay = useMerchDisplay(station?.stationId ?? null, {
     sessionKey: `${operator?.id ?? ''}:${station?.branchId ?? branch.id}:${station?.stationId ?? ''}:${saleEpochRef.current}`,
     stage: customerStage, online: !stationOffline(),
-    excluded: !!wristband || promoCodes.length > 0 || !shopFromPlatform,
+    // S2-14a round 2 — a scanned wallet no longer excludes the purchase: the
+    // credit the stage takes rides the payment frame as a figure, so the
+    // separate display shows "From your credit / Left to pay" (CLAUDE.md §7 rule 4).
+    excluded: promoCodes.length > 0 || !shopFromPlatform,
     lines, manualDiscounts, quote: sale.quote, pending: sale.pending, quoteFailed: !!sale.error,
     payment: paymentStage.display, completedOrder, platformSale,
   }, !locked && !stationOffline());
@@ -608,22 +644,24 @@ export default function MerchStation() {
               {/*
                 WHAT THIS STATION STILL DOES ON ITS OWN. The catalogue, the
                 prices and the sizes a tile asks for are the platform's (sizes
-                since S2-09b); the counts under each tile and the band's balance
-                are not, and each names the ticket that moves it.
+                since S2-09b), and so is the receipt printing (S2-11); the
+                counts under each tile and the band's balance are not, and each
+                names the ticket that moves it.
               */}
+              {(!stockIsServerBacked() || !shopFromPlatform) && (
               <div className="mb-4 shrink-0 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-foreground/15 bg-foreground/5 px-4 py-2 text-xs text-muted-foreground">
                 <span className="font-bold uppercase tracking-wide text-foreground/70">
                   This till&apos;s own record
                 </span>
-                <span>Stock counts and out-of-stock — S2-14b</span>
-                <span>Wallet credit — S2-14a</span>
-                <span>Receipt printing — S2-11</span>
+                {/* S2-14b — the counts are the platform's once it has answered. */}
+                {!stockIsServerBacked() && <span>Stock counts and out-of-stock — S2-14b</span>}
                 {!shopFromPlatform && (
                   <span className="text-amber-300">
                     Catalogue — this deployment has no menu route, so the ported one is shown
                   </span>
                 )}
               </div>
+              )}
               <div className="flex-1 min-h-0">
                 <MerchGrid items={merchItems} quantities={quantities} onAdd={handleAdd} />
               </div>
@@ -671,6 +709,8 @@ export default function MerchStation() {
               creditLabel="Credit"
               stage={paymentStage}
               onBack={backFromPayment}
+              useCredit={useCredit}
+              onUseCreditChange={setUseCredit}
             />
             <div className="mx-auto w-full max-w-2xl px-6 pb-6">
               {saleWriter.state.kind === 'failed' && <SaleWriteFailure
@@ -702,7 +742,16 @@ export default function MerchStation() {
         <VariantPickerModal
           open={true}
           itemName={pendingVariantItem.name}
-          variants={merchSizes(pendingVariantItem)}
+          variants={merchSizes(pendingVariantItem).map((size) => {
+            // S2-14b — each size with the platform's count, so a size that is
+            // out is greyed out in the picker and the rest stay on sale.
+            const counted = inventoryFor(pendingVariantItem.inventoryItemId)?.variants.find(
+              (v) => v.id === size.id,
+            );
+            return counted
+              ? { ...size, stock: counted.stock, lowStockThreshold: counted.lowStockThreshold }
+              : size;
+          })}
           onPick={handlePickMerchVariant}
           onCancel={() => setPendingVariantItem(null)}
         />
@@ -710,7 +759,7 @@ export default function MerchStation() {
 
       {/* Variant picker for multi-variant inventory items (the ported catalogue) */}
       {pendingVariantItem && !asksForSize(pendingVariantItem) && pendingVariantItem.inventoryItemId && (() => {
-        const invItem = getInventoryItem(pendingVariantItem.inventoryItemId!);
+        const invItem = inventoryFor(pendingVariantItem.inventoryItemId!);
         return invItem ? (
           <VariantPickerModal
             open={true}
@@ -757,7 +806,8 @@ export default function MerchStation() {
         </div>
         {inlineDisplay && (
           <div className={`w-1/2 h-full min-w-0 ${customerTheme === 'dark' ? 'dark' : 'light'}`}>
-            {separateDisplay.presentation ? <PublicMerchCustomerDisplay
+            {/* The in-till harness keeps the prototype's wallet visuals (the balance chip, the remaining credit); only the separate device reads the captured frame. */}
+            {separateDisplay.presentation && !wristband ? <PublicMerchCustomerDisplay
               stage={customerStage} cart={separateDisplay.presentation.cart}
               totals={separateDisplay.presentation.totals} payment={paymentStage.display}
             /> : stage === 'payment' ? (
@@ -767,6 +817,13 @@ export default function MerchStation() {
                 {paymentStage.display.online && paymentStage.display.status === 'pending' && (paymentStage.display.qrPayload || paymentStage.display.qrImageUrl) && (
                   <div className="rounded-3xl bg-white p-6"><PaymentQr payload={paymentStage.display.qrPayload} imageUrl={paymentStage.display.qrImageUrl} className="h-64 w-64" /></div>
                 )}
+                {(paymentStage.display.creditSatang ?? 0) > 0 && (
+                  <div className="flex w-full max-w-md items-center justify-between rounded-2xl border border-foreground/10 bg-foreground/5 px-6 py-4">
+                    <span className="flex items-center gap-3 text-xl text-foreground/80"><Wallet className="h-6 w-6 text-primary" />{t('merch.payment.fromCredit')}</span>
+                    <span className="text-2xl font-black tabular-nums text-primary">฿{(paymentStage.display.creditSatang ?? 0) / 100}</span>
+                  </div>
+                )}
+                {(paymentStage.display.creditSatang ?? 0) > 0 && <p className="text-xl text-foreground/70">{t('merch.payment.leftToPay')}</p>}
                 <div className="text-6xl font-black tabular-nums text-primary">฿{paymentStage.display.amountSatang / 100}</div>
                 {paymentStage.display.status === 'pending' && <PaymentExpiry expiresAt={paymentStage.display.expiresAt} />}
                 <p className="text-xl text-foreground/60">
@@ -783,6 +840,7 @@ export default function MerchStation() {
               promptpayAmount={null}
               completedOrder={completedOrder}
               newBalance={newBalance}
+              creditSatang={paymentStage.display.creditSatang ?? 0}
             />}
           </div>
         )}

@@ -18,3 +18,17 @@ export * from './sales';
 // `promo` is the voucher a prize turns into, `booth` is the wheel that draws it.
 export * from './promo';
 export * from './booth';
+// The facts (S2-12 round 4): read from everything above, written by jobs.
+export * from './analytics';
+// Child check-in and supervision (S2-13): after the sales ledger, whose sale,
+// band and refund a stay and its release point at.
+export * from './checkin';
+// Stored value (S2-14a): after the sales ledger, whose sale, refund and
+// payment attempt a wallet entry points back at.
+export * from './wallet';
+// Stock (S2-14b): after the catalogue it stocks and the sales ledger whose
+// lines and refunds its movements point back at.
+export * from './stock';
+// The End of Day (S2-15a): one combined cash count per branch-day, and the
+// paid-outs and safe drops it expects less of.
+export * from './cash';

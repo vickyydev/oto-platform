@@ -1,0 +1,8749 @@
+{
+ "about": [
+  "THE PROTOTYPE'S FIGURES, taken for SCRUM-271 (docs/progress/plans/offline/PLAN.md, Round 2:",
+  "\"one calculator\") from the till's own arithmetic immediately before it was deleted: apps/pos/src/lib/tax.ts",
+  "(computeTaxBreakdown, summarizeTax, roundTHB) and computeTotals (lib/sale.ts), computeFnbTotals and",
+  "computeLineTotal (lib/fnb.ts), computeMerchTotals and computeMerchLineTotal (lib/merch.ts), and the",
+  "reports in lib/reporting.ts as they stood, in baht floats, exactly as the screens received them.",
+  "",
+  "The carts are test/support/parityCases.ts; the catalogue below is the till's seed at the time, and",
+  "the test hands it back to the store so a later edit to the seed cannot move a figure. Every amount",
+  "here is BAHT as the prototype computed it, unrounded; test/one-calculator-parity.test.ts converts each",
+  "to satang and compares it with the satang engine (packages/shared) as apps/pos/src/lib/cartWire.ts",
+  "now calls it. Where the two may differ, the case says so and why (parityCases.ts, `differs`).",
+  "",
+  "NOT REGENERABLE by design: the arithmetic that produced these figures no longer exists. A new case",
+  "needs its prototype figure worked out from the prototype's code (imports/oto-pos/artifacts/oto-till,",
+  "the same files) — never taken from the engine it is meant to check."
+ ],
+ "catalogue": {
+  "ticketTypes": [
+   {
+    "id": "t-1h",
+    "name": "1 Hour Play",
+    "durationLabel": "1 Hour",
+    "hours": 1,
+    "prices": {
+     "tourist": {
+      "weekday": 690,
+      "weekend": 690
+     },
+     "expat": {
+      "weekday": 483,
+      "weekend": 552
+     },
+     "thai": {
+      "weekday": 420,
+      "weekend": 520
+     }
+    },
+    "adultRules": {
+     "tourist": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 500
+      }
+     },
+     "expat": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 500
+      }
+     },
+     "thai": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 500
+      }
+     }
+    },
+    "creditRule": {
+     "appliesTo": "adults",
+     "basis": "full_price"
+    },
+    "gateAccess": true,
+    "translations": {
+     "zh": {
+      "name": "1小时畅玩"
+     },
+     "th": {
+      "name": "เล่น 1 ชั่วโมง"
+     },
+     "ru": {
+      "name": "Игра 1 час"
+     },
+     "fr": {
+      "name": "Jeu 1 heure"
+     }
+    }
+   },
+   {
+    "id": "t-2h",
+    "name": "2 Hours Play",
+    "durationLabel": "2 Hours",
+    "hours": 2,
+    "prices": {
+     "tourist": {
+      "weekday": 890,
+      "weekend": 890
+     },
+     "expat": {
+      "weekday": 623,
+      "weekend": 712
+     },
+     "thai": {
+      "weekday": 520,
+      "weekend": 620
+     }
+    },
+    "adultRules": {
+     "tourist": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 500
+      }
+     },
+     "expat": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 500
+      }
+     },
+     "thai": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 500
+      }
+     }
+    },
+    "creditRule": {
+     "appliesTo": "adults",
+     "basis": "full_price"
+    },
+    "gateAccess": true
+   },
+   {
+    "id": "t-fd",
+    "name": "Full Day Pass",
+    "durationLabel": "All Day",
+    "hours": 8,
+    "prices": {
+     "tourist": {
+      "weekday": 1090,
+      "weekend": 1090
+     },
+     "expat": {
+      "weekday": 763,
+      "weekend": 872
+     },
+     "thai": {
+      "weekday": 620,
+      "weekend": 720
+     }
+    },
+    "adultRules": {
+     "tourist": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 500
+      }
+     },
+     "expat": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 500
+      }
+     },
+     "thai": {
+      "kind": "free_adults",
+      "freeAdults": 1,
+      "overflow": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 500
+      }
+     }
+    },
+    "creditRule": {
+     "appliesTo": "adults",
+     "basis": "full_price"
+    },
+    "gateAccess": true
+   },
+   {
+    "id": "t-pe",
+    "name": "Eat & Play Kids Pass",
+    "durationLabel": "All Day + Meal",
+    "hours": 8,
+    "prices": {
+     "tourist": {
+      "weekday": 1300,
+      "weekend": 1300
+     },
+     "expat": {
+      "weekday": 1300,
+      "weekend": 1300
+     },
+     "thai": {
+      "weekday": 1300,
+      "weekend": 1300
+     }
+    },
+    "adultRules": {
+     "tourist": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 350
+      }
+     },
+     "expat": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 350
+      }
+     },
+     "thai": {
+      "kind": "set_price",
+      "price": {
+       "weekday": 350,
+       "weekend": 350
+      }
+     }
+    },
+    "creditRule": {
+     "appliesTo": "both",
+     "basis": "full_price"
+    },
+    "gateAccess": true
+   }
+  ],
+  "addOns": [
+   {
+    "id": "a-socks",
+    "name": "Regular Socks",
+    "price": {
+     "weekday": 50,
+     "weekend": 50
+    },
+    "inventoryItemId": "inv-a-socks"
+   },
+   {
+    "id": "a-grip-socks",
+    "name": "Grip Socks",
+    "price": {
+     "weekday": 80,
+     "weekend": 80
+    },
+    "inventoryItemId": "inv-a-grip-socks"
+   },
+   {
+    "id": "a-locker",
+    "name": "Locker Rental",
+    "price": {
+     "weekday": 100,
+     "weekend": 100
+    },
+    "inventoryItemId": "inv-a-locker"
+   },
+   {
+    "id": "a-cup",
+    "name": "Refillable Drink Cup",
+    "price": {
+     "weekday": 150,
+     "weekend": 150
+    },
+    "inventoryItemId": "inv-a-cup"
+   },
+   {
+    "id": "a-glow",
+    "name": "Glow Band",
+    "price": {
+     "weekday": 60,
+     "weekend": 60
+    },
+    "inventoryItemId": "inv-a-glow"
+   }
+  ],
+  "menuItems": [
+   {
+    "id": "m-nuggets",
+    "name": "Chicken Nuggets",
+    "category": "food-lightbites",
+    "price": {
+     "weekday": 120,
+     "weekend": 120
+    },
+    "translations": {
+     "zh": {
+      "name": "鸡块"
+     },
+     "th": {
+      "name": "ไก่นักเก็ต"
+     },
+     "ru": {
+      "name": "Куриные наггетсы"
+     },
+     "fr": {
+      "name": "Nuggets de poulet"
+     }
+    }
+   },
+   {
+    "id": "m-fries",
+    "name": "French Fries",
+    "category": "food",
+    "price": {
+     "weekday": 90,
+     "weekend": 90
+    },
+    "translations": {
+     "zh": {
+      "name": "薯条"
+     },
+     "th": {
+      "name": "เฟรนช์ฟรายส์"
+     },
+     "ru": {
+      "name": "Картофель фри"
+     },
+     "fr": {
+      "name": "Frites"
+     }
+    },
+    "modifierGroups": [
+     {
+      "id": "fries-sauce",
+      "name": "Sauces",
+      "required": false,
+      "selectionType": "multi",
+      "max": 2,
+      "options": [
+       {
+        "id": "fries-sauce-ketchup",
+        "name": "Ketchup",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "fries-sauce-mayo",
+        "name": "Mayo",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "fries-sauce-cheese",
+        "name": "Cheese sauce",
+        "price": {
+         "weekday": 25,
+         "weekend": 25
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-pizza",
+    "name": "Margherita Pizza",
+    "category": "food-mains",
+    "price": {
+     "weekday": 220,
+     "weekend": 220
+    },
+    "modifierGroups": [
+     {
+      "id": "pizza-toppings",
+      "name": "Extra toppings",
+      "required": false,
+      "selectionType": "multi",
+      "options": [
+       {
+        "id": "pizza-cheese",
+        "name": "Extra cheese",
+        "price": {
+         "weekday": 40,
+         "weekend": 40
+        }
+       },
+       {
+        "id": "pizza-mushrooms",
+        "name": "Mushrooms",
+        "price": {
+         "weekday": 30,
+         "weekend": 30
+        }
+       },
+       {
+        "id": "pizza-ham",
+        "name": "Ham",
+        "price": {
+         "weekday": 50,
+         "weekend": 50
+        }
+       },
+       {
+        "id": "pizza-olives",
+        "name": "Olives",
+        "price": {
+         "weekday": 30,
+         "weekend": 30
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-burger",
+    "name": "Kids Beef Burger",
+    "category": "food-mains",
+    "price": {
+     "weekday": 180,
+     "weekend": 180
+    },
+    "modifierGroups": [
+     {
+      "id": "burger-cook",
+      "name": "Cooked how?",
+      "required": true,
+      "selectionType": "single",
+      "options": [
+       {
+        "id": "burger-rare",
+        "name": "Rare",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "burger-medium",
+        "name": "Medium",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "burger-well",
+        "name": "Well done",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-padthai",
+    "name": "Pad Thai",
+    "category": "food-mains",
+    "price": {
+     "weekday": 150,
+     "weekend": 150
+    }
+   },
+   {
+    "id": "m-hotdog",
+    "name": "Hot Dog",
+    "category": "food",
+    "price": {
+     "weekday": 110,
+     "weekend": 110
+    }
+   },
+   {
+    "id": "m-water",
+    "name": "Bottled Water",
+    "category": "drinks",
+    "price": {
+     "weekday": 25,
+     "weekend": 25
+    },
+    "inventoryItemId": "inv-m-water"
+   },
+   {
+    "id": "m-juice",
+    "name": "Fresh Orange Juice",
+    "category": "drinks",
+    "price": {
+     "weekday": 70,
+     "weekend": 70
+    }
+   },
+   {
+    "id": "m-soda",
+    "name": "Soft Drink",
+    "category": "drinks",
+    "price": {
+     "weekday": 45,
+     "weekend": 45
+    },
+    "modifierGroups": [
+     {
+      "id": "soda-ice",
+      "name": "Ice",
+      "required": true,
+      "selectionType": "single",
+      "options": [
+       {
+        "id": "soda-ice-normal",
+        "name": "Normal ice",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "soda-ice-less",
+        "name": "Less ice",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "soda-ice-none",
+        "name": "No ice",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-latte",
+    "name": "Iced Latte",
+    "category": "drinks-coffee",
+    "price": {
+     "weekday": 95,
+     "weekend": 95
+    },
+    "modifierGroups": [
+     {
+      "id": "latte-ice",
+      "name": "Ice",
+      "required": true,
+      "selectionType": "single",
+      "options": [
+       {
+        "id": "latte-ice-normal",
+        "name": "Normal ice",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "latte-ice-less",
+        "name": "Less ice",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "latte-ice-none",
+        "name": "No ice",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       }
+      ]
+     },
+     {
+      "id": "latte-milk",
+      "name": "Milk",
+      "required": false,
+      "selectionType": "single",
+      "options": [
+       {
+        "id": "latte-milk-regular",
+        "name": "Regular",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "latte-milk-oat",
+        "name": "Oat",
+        "price": {
+         "weekday": 25,
+         "weekend": 25
+        }
+       },
+       {
+        "id": "latte-milk-soy",
+        "name": "Soy",
+        "price": {
+         "weekday": 25,
+         "weekend": 25
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-shake",
+    "name": "Chocolate Milkshake",
+    "category": "drinks",
+    "price": {
+     "weekday": 120,
+     "weekend": 120
+    },
+    "modifierGroups": [
+     {
+      "id": "shake-size",
+      "name": "Size",
+      "required": true,
+      "selectionType": "single",
+      "options": [
+       {
+        "id": "shake-regular",
+        "name": "Regular",
+        "price": {
+         "weekday": 0,
+         "weekend": 0
+        }
+       },
+       {
+        "id": "shake-large",
+        "name": "Large",
+        "price": {
+         "weekday": 40,
+         "weekend": 40
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "m-beer",
+    "name": "Chang Beer",
+    "category": "bar",
+    "price": {
+     "weekday": 110,
+     "weekend": 110
+    }
+   },
+   {
+    "id": "m-wine",
+    "name": "House Wine",
+    "category": "bar",
+    "price": {
+     "weekday": 180,
+     "weekend": 180
+    }
+   },
+   {
+    "id": "m-mojito",
+    "name": "Mojito",
+    "category": "bar",
+    "price": {
+     "weekday": 200,
+     "weekend": 200
+    }
+   },
+   {
+    "id": "m-gintonic",
+    "name": "Gin & Tonic",
+    "category": "bar",
+    "price": {
+     "weekday": 190,
+     "weekend": 190
+    }
+   },
+   {
+    "id": "m-popcorn",
+    "name": "Popcorn",
+    "category": "snacks",
+    "price": {
+     "weekday": 60,
+     "weekend": 60
+    }
+   },
+   {
+    "id": "m-icecream",
+    "name": "Ice Cream Cone",
+    "category": "snacks",
+    "price": {
+     "weekday": 50,
+     "weekend": 50
+    }
+   },
+   {
+    "id": "m-cottoncandy",
+    "name": "Cotton Candy",
+    "category": "snacks",
+    "price": {
+     "weekday": 70,
+     "weekend": 70
+    }
+   },
+   {
+    "id": "m-fruitcup",
+    "name": "Fresh Fruit Cup",
+    "category": "snacks",
+    "price": {
+     "weekday": 80,
+     "weekend": 80
+    }
+   },
+   {
+    "id": "m-slushie",
+    "name": "Slushie",
+    "category": "drinks",
+    "price": {
+     "weekday": 90,
+     "weekend": 90
+    },
+    "inventoryItemId": "inv-m-slushie"
+   }
+  ],
+  "menuCategories": [
+   {
+    "id": "food",
+    "name": "Food",
+    "defaultPrepStation": "kitchen",
+    "defaultTaxCategory": "fnb",
+    "sortOrder": 0
+   },
+   {
+    "id": "food-mains",
+    "name": "Mains",
+    "parentId": "food",
+    "sortOrder": 0
+   },
+   {
+    "id": "drinks-coffee",
+    "name": "Coffee",
+    "parentId": "drinks",
+    "sortOrder": 0
+   },
+   {
+    "id": "drinks",
+    "name": "Drinks",
+    "defaultPrepStation": "bar",
+    "defaultTaxCategory": "fnb",
+    "sortOrder": 1
+   },
+   {
+    "id": "food-lightbites",
+    "name": "Light Bites",
+    "parentId": "food",
+    "sortOrder": 1
+   },
+   {
+    "id": "bar",
+    "name": "Bar",
+    "defaultPrepStation": "bar",
+    "defaultTaxCategory": "bar",
+    "sortOrder": 2
+   },
+   {
+    "id": "snacks",
+    "name": "Snacks",
+    "defaultPrepStation": "kitchen",
+    "defaultTaxCategory": "fnb",
+    "sortOrder": 3
+   }
+  ],
+  "modifierGroups": [
+   {
+    "id": "lib-spice",
+    "name": "Spice level",
+    "required": true,
+    "selectionType": "single",
+    "options": [
+     {
+      "id": "lib-spice-mild",
+      "name": "Mild",
+      "price": {
+       "weekday": 0,
+       "weekend": 0
+      }
+     },
+     {
+      "id": "lib-spice-medium",
+      "name": "Medium",
+      "price": {
+       "weekday": 0,
+       "weekend": 0
+      }
+     },
+     {
+      "id": "lib-spice-hot",
+      "name": "Thai hot",
+      "price": {
+       "weekday": 0,
+       "weekend": 0
+      }
+     }
+    ]
+   },
+   {
+    "id": "lib-sugar",
+    "name": "Sugar level",
+    "required": false,
+    "selectionType": "single",
+    "options": [
+     {
+      "id": "lib-sugar-0",
+      "name": "No sugar",
+      "price": {
+       "weekday": 0,
+       "weekend": 0
+      }
+     },
+     {
+      "id": "lib-sugar-50",
+      "name": "Half sweet",
+      "price": {
+       "weekday": 0,
+       "weekend": 0
+      }
+     },
+     {
+      "id": "lib-sugar-100",
+      "name": "Full sweet",
+      "price": {
+       "weekday": 0,
+       "weekend": 0
+      }
+     }
+    ]
+   },
+   {
+    "id": "lib-extras",
+    "name": "Add-ons",
+    "required": false,
+    "selectionType": "multi",
+    "max": 3,
+    "options": [
+     {
+      "id": "lib-extras-cheese",
+      "name": "Extra cheese",
+      "price": {
+       "weekday": 30,
+       "weekend": 30
+      }
+     },
+     {
+      "id": "lib-extras-egg",
+      "name": "Fried egg",
+      "price": {
+       "weekday": 25,
+       "weekend": 25
+      }
+     },
+     {
+      "id": "lib-extras-bacon",
+      "name": "Bacon",
+      "price": {
+       "weekday": 45,
+       "weekend": 45
+      }
+     }
+    ]
+   }
+  ],
+  "merchItems": [
+   {
+    "id": "mr-tshirt",
+    "name": "Oto T-Shirt",
+    "active": true,
+    "category": "Apparel",
+    "price": {
+     "weekday": 350,
+     "weekend": 350
+    },
+    "cost": 120,
+    "sku": "OTO-TS",
+    "inventoryItemId": "inv-mr-tshirt",
+    "stock": 40,
+    "lowStockThreshold": 8
+   },
+   {
+    "id": "mr-cap",
+    "name": "Oto Cap",
+    "active": true,
+    "category": "Apparel",
+    "price": {
+     "weekday": 250,
+     "weekend": 250
+    },
+    "cost": 90,
+    "sku": "OTO-CAP",
+    "inventoryItemId": "inv-mr-cap",
+    "stock": 25,
+    "lowStockThreshold": 6
+   },
+   {
+    "id": "mr-socks",
+    "name": "Grip Socks",
+    "active": true,
+    "category": "Apparel",
+    "price": {
+     "weekday": 120,
+     "weekend": 120
+    },
+    "cost": 35,
+    "sku": "OTO-SOCK",
+    "inventoryItemId": "inv-mr-socks",
+    "stock": 6,
+    "lowStockThreshold": 12
+   },
+   {
+    "id": "mr-bottle",
+    "name": "Water Bottle",
+    "active": true,
+    "category": "Accessories",
+    "price": {
+     "weekday": 180,
+     "weekend": 180
+    },
+    "cost": 60,
+    "sku": "OTO-BTL",
+    "inventoryItemId": "inv-mr-bottle",
+    "stock": 30,
+    "lowStockThreshold": 8
+   },
+   {
+    "id": "mr-plush",
+    "name": "Oto Mascot Plush",
+    "active": true,
+    "category": "Toys",
+    "price": {
+     "weekday": 450,
+     "weekend": 450
+    },
+    "cost": 160,
+    "sku": "OTO-PLUSH",
+    "inventoryItemId": "inv-mr-plush",
+    "stock": 18,
+    "lowStockThreshold": 5
+   },
+   {
+    "id": "mr-stickerpack",
+    "name": "Sticker Pack",
+    "active": true,
+    "category": "Toys",
+    "price": {
+     "weekday": 60,
+     "weekend": 60
+    },
+    "cost": 12,
+    "sku": "OTO-STK",
+    "inventoryItemId": "inv-mr-stickerpack",
+    "stock": 80,
+    "lowStockThreshold": 15
+   },
+   {
+    "id": "mr-keyring",
+    "name": "Mascot Keyring",
+    "active": true,
+    "category": "Accessories",
+    "price": {
+     "weekday": 90,
+     "weekend": 90
+    },
+    "cost": 25,
+    "sku": "OTO-KEY",
+    "inventoryItemId": "inv-mr-keyring",
+    "stock": 0,
+    "lowStockThreshold": 6
+   },
+   {
+    "id": "mr-lanyard",
+    "name": "Old Lanyard (retired)",
+    "active": false,
+    "category": "Accessories",
+    "price": {
+     "weekday": 70,
+     "weekend": 70
+    },
+    "cost": 20,
+    "sku": "OTO-LAN",
+    "inventoryItemId": "inv-mr-lanyard",
+    "stock": 4,
+    "lowStockThreshold": 0
+   }
+  ],
+  "taxConfig": {
+   "rates": [
+    {
+     "id": "vat",
+     "name": "VAT",
+     "percent": 7
+    }
+   ],
+   "categoryRules": [
+    {
+     "category": "tickets",
+     "taxRateId": "vat",
+     "taxMode": "inclusive",
+     "serviceChargePercent": 0,
+     "taxOnServiceCharge": false
+    },
+    {
+     "category": "fnb",
+     "taxRateId": "vat",
+     "taxMode": "inclusive",
+     "serviceChargePercent": 0,
+     "taxOnServiceCharge": false
+    },
+    {
+     "category": "bar",
+     "taxRateId": "vat",
+     "taxMode": "inclusive",
+     "serviceChargePercent": 0,
+     "taxOnServiceCharge": false
+    },
+    {
+     "category": "drop_off",
+     "taxRateId": "vat",
+     "taxMode": "inclusive",
+     "serviceChargePercent": 0,
+     "taxOnServiceCharge": false
+    },
+    {
+     "category": "parties",
+     "taxRateId": "vat",
+     "taxMode": "inclusive",
+     "serviceChargePercent": 0,
+     "taxOnServiceCharge": false
+    },
+    {
+     "category": "addons",
+     "taxRateId": "vat",
+     "taxMode": "inclusive",
+     "serviceChargePercent": 0,
+     "taxOnServiceCharge": false
+    },
+    {
+     "category": "merch",
+     "taxRateId": "vat",
+     "taxMode": "inclusive",
+     "serviceChargePercent": 0,
+     "taxOnServiceCharge": false
+    },
+    {
+     "category": "stored_value",
+     "taxMode": "none",
+     "serviceChargePercent": 0,
+     "taxOnServiceCharge": false
+    }
+   ],
+   "discountPlacement": "before_tax"
+  },
+  "discounts": [
+   {
+    "code": "STAFF10",
+    "label": "Staff Discount",
+    "type": "percent",
+    "value": 10,
+    "active": true,
+    "stackable": true,
+    "usedCount": 0,
+    "perCustomerUsage": {}
+   },
+   {
+    "code": "MEMBER20",
+    "label": "Member Discount",
+    "type": "percent",
+    "value": 20,
+    "active": true,
+    "stackable": true,
+    "usedCount": 0,
+    "perCustomerUsage": {}
+   },
+   {
+    "code": "SAVE100",
+    "label": "Promo Event",
+    "type": "fixed",
+    "value": 100,
+    "active": true,
+    "usageLimit": 50,
+    "usedCount": 3,
+    "perCustomerLimit": 1,
+    "perCustomerUsage": {},
+    "validUntil": "2026-12-31"
+   },
+   {
+    "code": "ICECREAM",
+    "label": "Free Ice Cream",
+    "type": "free_item",
+    "value": 0,
+    "freeItemId": "m-icecream",
+    "freeItemKind": "menu",
+    "target": {
+     "kind": "menuItems",
+     "menuItemIds": [
+      "m-icecream"
+     ]
+    },
+    "active": true,
+    "usageLimit": 100,
+    "usedCount": 0,
+    "perCustomerLimit": 1,
+    "perCustomerUsage": {},
+    "validUntil": "2026-12-31"
+   }
+  ],
+  "pricingOverrides": [
+   {
+    "id": "ov-songkran",
+    "name": "Songkran",
+    "startDate": "2026-04-13",
+    "endDate": "2026-04-15"
+   }
+  ]
+ },
+ "ticket": {
+  "T-weekday-t-1h-tourist-2k3a": {
+   "lineTotals": {
+    "l1": 2430
+   },
+   "subtotal": 2430,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 158.97196261682257,
+   "total": 2430,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2430,
+     "serviceCharge": 0,
+     "tax": 158.97196261682257,
+     "secondaryTax": 0,
+     "gross": 2430
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 158.97196261682257,
+     "shown": 158.97
+    }
+   ]
+  },
+  "T-weekday-t-1h-tourist-2k3a4s": {
+   "lineTotals": {
+    "l1": 2630
+   },
+   "subtotal": 2630,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 172.0560747663553,
+   "total": 2630,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2430,
+     "serviceCharge": 0,
+     "tax": 158.97196261682257,
+     "secondaryTax": 0,
+     "gross": 2430
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 172.0560747663553,
+     "shown": 172.06
+    }
+   ]
+  },
+  "T-weekday-t-1h-tourist-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1500
+   },
+   "subtotal": 1500,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 98.13084112149545,
+   "total": 1500,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1040,
+     "serviceCharge": 0,
+     "tax": 68.03738317757018,
+     "secondaryTax": 0,
+     "gross": 1040
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 98.13084112149545,
+     "shown": 98.13
+    }
+   ]
+  },
+  "T-weekday-t-1h-tourist-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-1h-tourist-5k0a1s": {
+   "lineTotals": {
+    "l1": 3500
+   },
+   "subtotal": 3500,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 228.97196261682268,
+   "total": 3500,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3450,
+     "serviceCharge": 0,
+     "tax": 225.7009345794395,
+     "secondaryTax": 0,
+     "gross": 3450
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 228.97196261682268,
+     "shown": 228.97
+    }
+   ]
+  },
+  "T-weekday-t-1h-expat-2k3a": {
+   "lineTotals": {
+    "l1": 2016
+   },
+   "subtotal": 2016,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 131.8878504672898,
+   "total": 2016,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2016,
+     "serviceCharge": 0,
+     "tax": 131.8878504672898,
+     "secondaryTax": 0,
+     "gross": 2016
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 131.8878504672898,
+     "shown": 131.89
+    }
+   ]
+  },
+  "T-weekday-t-1h-expat-2k3a4s": {
+   "lineTotals": {
+    "l1": 2216
+   },
+   "subtotal": 2216,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 144.97196261682254,
+   "total": 2216,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2016,
+     "serviceCharge": 0,
+     "tax": 131.8878504672898,
+     "secondaryTax": 0,
+     "gross": 2016
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 144.97196261682254,
+     "shown": 144.97
+    }
+   ]
+  },
+  "T-weekday-t-1h-expat-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1293
+   },
+   "subtotal": 1293,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 84.58878504672907,
+   "total": 1293,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 833,
+     "serviceCharge": 0,
+     "tax": 54.4953271028038,
+     "secondaryTax": 0,
+     "gross": 833
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 84.58878504672907,
+     "shown": 84.59
+    }
+   ]
+  },
+  "T-weekday-t-1h-expat-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-1h-expat-5k0a1s": {
+   "lineTotals": {
+    "l1": 2465
+   },
+   "subtotal": 2465,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 161.26168224299101,
+   "total": 2465,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2415,
+     "serviceCharge": 0,
+     "tax": 157.99065420560783,
+     "secondaryTax": 0,
+     "gross": 2415
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 161.26168224299101,
+     "shown": 161.26
+    }
+   ]
+  },
+  "T-weekday-t-1h-thai-2k3a": {
+   "lineTotals": {
+    "l1": 1890
+   },
+   "subtotal": 1890,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 123.64485981308417,
+   "total": 1890,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1890,
+     "serviceCharge": 0,
+     "tax": 123.64485981308417,
+     "secondaryTax": 0,
+     "gross": 1890
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 123.64485981308417,
+     "shown": 123.64
+    }
+   ]
+  },
+  "T-weekday-t-1h-thai-2k3a4s": {
+   "lineTotals": {
+    "l1": 2090
+   },
+   "subtotal": 2090,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 136.7289719626169,
+   "total": 2090,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1890,
+     "serviceCharge": 0,
+     "tax": 123.64485981308417,
+     "secondaryTax": 0,
+     "gross": 1890
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 136.7289719626169,
+     "shown": 136.73
+    }
+   ]
+  },
+  "T-weekday-t-1h-thai-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1230
+   },
+   "subtotal": 1230,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 80.46728971962625,
+   "total": 1230,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 770,
+     "serviceCharge": 0,
+     "tax": 50.37383177570098,
+     "secondaryTax": 0,
+     "gross": 770
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 80.46728971962625,
+     "shown": 80.47
+    }
+   ]
+  },
+  "T-weekday-t-1h-thai-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-1h-thai-5k0a1s": {
+   "lineTotals": {
+    "l1": 2150
+   },
+   "subtotal": 2150,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 140.65420560747668,
+   "total": 2150,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2100,
+     "serviceCharge": 0,
+     "tax": 137.3831775700935,
+     "secondaryTax": 0,
+     "gross": 2100
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 140.65420560747668,
+     "shown": 140.65
+    }
+   ]
+  },
+  "T-weekday-t-2h-tourist-2k3a": {
+   "lineTotals": {
+    "l1": 2830
+   },
+   "subtotal": 2830,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 185.14018691588808,
+   "total": 2830,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2830,
+     "serviceCharge": 0,
+     "tax": 185.14018691588808,
+     "secondaryTax": 0,
+     "gross": 2830
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 185.14018691588808,
+     "shown": 185.14
+    }
+   ]
+  },
+  "T-weekday-t-2h-tourist-2k3a4s": {
+   "lineTotals": {
+    "l1": 3030
+   },
+   "subtotal": 3030,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 198.2242990654208,
+   "total": 3030,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2830,
+     "serviceCharge": 0,
+     "tax": 185.14018691588808,
+     "secondaryTax": 0,
+     "gross": 2830
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 198.2242990654208,
+     "shown": 198.22
+    }
+   ]
+  },
+  "T-weekday-t-2h-tourist-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1700
+   },
+   "subtotal": 1700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 111.2149532710281,
+   "total": 1700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1240,
+     "serviceCharge": 0,
+     "tax": 81.12149532710282,
+     "secondaryTax": 0,
+     "gross": 1240
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 111.2149532710281,
+     "shown": 111.21
+    }
+   ]
+  },
+  "T-weekday-t-2h-tourist-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-2h-tourist-5k0a1s": {
+   "lineTotals": {
+    "l1": 4500
+   },
+   "subtotal": 4500,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 294.392523364486,
+   "total": 4500,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 4450,
+     "serviceCharge": 0,
+     "tax": 291.1214953271028,
+     "secondaryTax": 0,
+     "gross": 4450
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 294.392523364486,
+     "shown": 294.39
+    }
+   ]
+  },
+  "T-weekday-t-2h-expat-2k3a": {
+   "lineTotals": {
+    "l1": 2296
+   },
+   "subtotal": 2296,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 150.20560747663558,
+   "total": 2296,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2296,
+     "serviceCharge": 0,
+     "tax": 150.20560747663558,
+     "secondaryTax": 0,
+     "gross": 2296
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 150.20560747663558,
+     "shown": 150.21
+    }
+   ]
+  },
+  "T-weekday-t-2h-expat-2k3a4s": {
+   "lineTotals": {
+    "l1": 2496
+   },
+   "subtotal": 2496,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 163.2897196261683,
+   "total": 2496,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2296,
+     "serviceCharge": 0,
+     "tax": 150.20560747663558,
+     "secondaryTax": 0,
+     "gross": 2296
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 163.2897196261683,
+     "shown": 163.29
+    }
+   ]
+  },
+  "T-weekday-t-2h-expat-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1433
+   },
+   "subtotal": 1433,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 93.74766355140196,
+   "total": 1433,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 973,
+     "serviceCharge": 0,
+     "tax": 63.65420560747668,
+     "secondaryTax": 0,
+     "gross": 973
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 93.74766355140196,
+     "shown": 93.75
+    }
+   ]
+  },
+  "T-weekday-t-2h-expat-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-2h-expat-5k0a1s": {
+   "lineTotals": {
+    "l1": 3165
+   },
+   "subtotal": 3165,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 207.05607476635544,
+   "total": 3165,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3115,
+     "serviceCharge": 0,
+     "tax": 203.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3115
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 207.05607476635544,
+     "shown": 207.06
+    }
+   ]
+  },
+  "T-weekday-t-2h-thai-2k3a": {
+   "lineTotals": {
+    "l1": 2090
+   },
+   "subtotal": 2090,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 136.72897196261692,
+   "total": 2090,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2090,
+     "serviceCharge": 0,
+     "tax": 136.72897196261692,
+     "secondaryTax": 0,
+     "gross": 2090
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 136.72897196261692,
+     "shown": 136.73
+    }
+   ]
+  },
+  "T-weekday-t-2h-thai-2k3a4s": {
+   "lineTotals": {
+    "l1": 2290
+   },
+   "subtotal": 2290,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 149.81308411214965,
+   "total": 2290,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2090,
+     "serviceCharge": 0,
+     "tax": 136.72897196261692,
+     "secondaryTax": 0,
+     "gross": 2090
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 149.81308411214965,
+     "shown": 149.81
+    }
+   ]
+  },
+  "T-weekday-t-2h-thai-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1330
+   },
+   "subtotal": 1330,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 87.00934579439263,
+   "total": 1330,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 870,
+     "serviceCharge": 0,
+     "tax": 56.91588785046736,
+     "secondaryTax": 0,
+     "gross": 870
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 87.00934579439263,
+     "shown": 87.01
+    }
+   ]
+  },
+  "T-weekday-t-2h-thai-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-2h-thai-5k0a1s": {
+   "lineTotals": {
+    "l1": 2650
+   },
+   "subtotal": 2650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 173.36448598130858,
+   "total": 2650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2600,
+     "serviceCharge": 0,
+     "tax": 170.0934579439254,
+     "secondaryTax": 0,
+     "gross": 2600
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 173.36448598130858,
+     "shown": 173.36
+    }
+   ]
+  },
+  "T-weekday-t-fd-tourist-2k3a": {
+   "lineTotals": {
+    "l1": 3230
+   },
+   "subtotal": 3230,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 211.3084112149536,
+   "total": 3230,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3230,
+     "serviceCharge": 0,
+     "tax": 211.3084112149536,
+     "secondaryTax": 0,
+     "gross": 3230
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 211.3084112149536,
+     "shown": 211.31
+    }
+   ]
+  },
+  "T-weekday-t-fd-tourist-2k3a4s": {
+   "lineTotals": {
+    "l1": 3430
+   },
+   "subtotal": 3430,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 224.39252336448632,
+   "total": 3430,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3230,
+     "serviceCharge": 0,
+     "tax": 211.3084112149536,
+     "secondaryTax": 0,
+     "gross": 3230
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 224.39252336448632,
+     "shown": 224.39
+    }
+   ]
+  },
+  "T-weekday-t-fd-tourist-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1900
+   },
+   "subtotal": 1900,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 124.29906542056085,
+   "total": 1900,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1440,
+     "serviceCharge": 0,
+     "tax": 94.20560747663558,
+     "secondaryTax": 0,
+     "gross": 1440
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 124.29906542056085,
+     "shown": 124.3
+    }
+   ]
+  },
+  "T-weekday-t-fd-tourist-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-fd-tourist-5k0a1s": {
+   "lineTotals": {
+    "l1": 5500
+   },
+   "subtotal": 5500,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 359.81308411215025,
+   "total": 5500,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 5450,
+     "serviceCharge": 0,
+     "tax": 356.54205607476706,
+     "secondaryTax": 0,
+     "gross": 5450
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 359.81308411215025,
+     "shown": 359.81
+    }
+   ]
+  },
+  "T-weekday-t-fd-expat-2k3a": {
+   "lineTotals": {
+    "l1": 2576
+   },
+   "subtotal": 2576,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 168.52336448598135,
+   "total": 2576,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2576,
+     "serviceCharge": 0,
+     "tax": 168.52336448598135,
+     "secondaryTax": 0,
+     "gross": 2576
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 168.52336448598135,
+     "shown": 168.52
+    }
+   ]
+  },
+  "T-weekday-t-fd-expat-2k3a4s": {
+   "lineTotals": {
+    "l1": 2776
+   },
+   "subtotal": 2776,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 181.60747663551408,
+   "total": 2776,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2576,
+     "serviceCharge": 0,
+     "tax": 168.52336448598135,
+     "secondaryTax": 0,
+     "gross": 2576
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 181.60747663551408,
+     "shown": 181.61
+    }
+   ]
+  },
+  "T-weekday-t-fd-expat-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1573
+   },
+   "subtotal": 1573,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 102.90654205607495,
+   "total": 1573,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1113,
+     "serviceCharge": 0,
+     "tax": 72.81308411214968,
+     "secondaryTax": 0,
+     "gross": 1113
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 102.90654205607495,
+     "shown": 102.91
+    }
+   ]
+  },
+  "T-weekday-t-fd-expat-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-fd-expat-5k0a1s": {
+   "lineTotals": {
+    "l1": 3865
+   },
+   "subtotal": 3865,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 252.85046728971986,
+   "total": 3865,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3815,
+     "serviceCharge": 0,
+     "tax": 249.57943925233667,
+     "secondaryTax": 0,
+     "gross": 3815
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 252.85046728971986,
+     "shown": 252.85
+    }
+   ]
+  },
+  "T-weekday-t-fd-thai-2k3a": {
+   "lineTotals": {
+    "l1": 1940
+   },
+   "subtotal": 1940,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 126.91588785046747,
+   "total": 1940,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1940,
+     "serviceCharge": 0,
+     "tax": 126.91588785046747,
+     "secondaryTax": 0,
+     "gross": 1940
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 126.91588785046747,
+     "shown": 126.92
+    }
+   ]
+  },
+  "T-weekday-t-fd-thai-2k3a4s": {
+   "lineTotals": {
+    "l1": 2140
+   },
+   "subtotal": 2140,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 140.0000000000002,
+   "total": 2140,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1940,
+     "serviceCharge": 0,
+     "tax": 126.91588785046747,
+     "secondaryTax": 0,
+     "gross": 1940
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 140.0000000000002,
+     "shown": 140
+    }
+   ]
+  },
+  "T-weekday-t-fd-thai-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1080
+   },
+   "subtotal": 1080,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 70.65420560747668,
+   "total": 1080,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 620,
+     "serviceCharge": 0,
+     "tax": 40.56074766355141,
+     "secondaryTax": 0,
+     "gross": 620
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 70.65420560747668,
+     "shown": 70.65
+    }
+   ]
+  },
+  "T-weekday-t-fd-thai-0k2a": {
+   "lineTotals": {
+    "l1": 350
+   },
+   "subtotal": 350,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 22.897196261682268,
+   "total": 350,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 350,
+     "serviceCharge": 0,
+     "tax": 22.897196261682268,
+     "secondaryTax": 0,
+     "gross": 350
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 22.897196261682268,
+     "shown": 22.9
+    }
+   ]
+  },
+  "T-weekday-t-fd-thai-5k0a1s": {
+   "lineTotals": {
+    "l1": 3150
+   },
+   "subtotal": 3150,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 206.07476635514024,
+   "total": 3150,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3100,
+     "serviceCharge": 0,
+     "tax": 202.80373831775705,
+     "secondaryTax": 0,
+     "gross": 3100
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 206.07476635514024,
+     "shown": 206.07
+    }
+   ]
+  },
+  "T-weekday-t-pe-tourist-2k3a": {
+   "lineTotals": {
+    "l1": 3650
+   },
+   "subtotal": 3650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 238.78504672897225,
+   "total": 3650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 238.78504672897225,
+     "shown": 238.79
+    }
+   ]
+  },
+  "T-weekday-t-pe-tourist-2k3a4s": {
+   "lineTotals": {
+    "l1": 3850
+   },
+   "subtotal": 3850,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 251.86915887850498,
+   "total": 3850,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 251.86915887850498,
+     "shown": 251.87
+    }
+   ]
+  },
+  "T-weekday-t-pe-tourist-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 2110
+   },
+   "subtotal": 2110,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 138.03738317757018,
+   "total": 2110,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1650,
+     "serviceCharge": 0,
+     "tax": 107.9439252336449,
+     "secondaryTax": 0,
+     "gross": 1650
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 138.03738317757018,
+     "shown": 138.04
+    }
+   ]
+  },
+  "T-weekday-t-pe-tourist-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-pe-tourist-5k0a1s": {
+   "lineTotals": {
+    "l1": 6550
+   },
+   "subtotal": 6550,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 428.50467289719666,
+   "total": 6550,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 6500,
+     "serviceCharge": 0,
+     "tax": 425.23364485981347,
+     "secondaryTax": 0,
+     "gross": 6500
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 428.50467289719666,
+     "shown": 428.5
+    }
+   ]
+  },
+  "T-weekday-t-pe-expat-2k3a": {
+   "lineTotals": {
+    "l1": 3650
+   },
+   "subtotal": 3650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 238.78504672897225,
+   "total": 3650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 238.78504672897225,
+     "shown": 238.79
+    }
+   ]
+  },
+  "T-weekday-t-pe-expat-2k3a4s": {
+   "lineTotals": {
+    "l1": 3850
+   },
+   "subtotal": 3850,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 251.86915887850498,
+   "total": 3850,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 251.86915887850498,
+     "shown": 251.87
+    }
+   ]
+  },
+  "T-weekday-t-pe-expat-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 2110
+   },
+   "subtotal": 2110,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 138.03738317757018,
+   "total": 2110,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1650,
+     "serviceCharge": 0,
+     "tax": 107.9439252336449,
+     "secondaryTax": 0,
+     "gross": 1650
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 138.03738317757018,
+     "shown": 138.04
+    }
+   ]
+  },
+  "T-weekday-t-pe-expat-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-pe-expat-5k0a1s": {
+   "lineTotals": {
+    "l1": 6550
+   },
+   "subtotal": 6550,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 428.50467289719666,
+   "total": 6550,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 6500,
+     "serviceCharge": 0,
+     "tax": 425.23364485981347,
+     "secondaryTax": 0,
+     "gross": 6500
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 428.50467289719666,
+     "shown": 428.5
+    }
+   ]
+  },
+  "T-weekday-t-pe-thai-2k3a": {
+   "lineTotals": {
+    "l1": 3650
+   },
+   "subtotal": 3650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 238.78504672897225,
+   "total": 3650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 238.78504672897225,
+     "shown": 238.79
+    }
+   ]
+  },
+  "T-weekday-t-pe-thai-2k3a4s": {
+   "lineTotals": {
+    "l1": 3850
+   },
+   "subtotal": 3850,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 251.86915887850498,
+   "total": 3850,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 251.86915887850498,
+     "shown": 251.87
+    }
+   ]
+  },
+  "T-weekday-t-pe-thai-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 2110
+   },
+   "subtotal": 2110,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 138.03738317757018,
+   "total": 2110,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1650,
+     "serviceCharge": 0,
+     "tax": 107.9439252336449,
+     "secondaryTax": 0,
+     "gross": 1650
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 138.03738317757018,
+     "shown": 138.04
+    }
+   ]
+  },
+  "T-weekday-t-pe-thai-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekday-t-pe-thai-5k0a1s": {
+   "lineTotals": {
+    "l1": 6550
+   },
+   "subtotal": 6550,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 428.50467289719666,
+   "total": 6550,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 6500,
+     "serviceCharge": 0,
+     "tax": 425.23364485981347,
+     "secondaryTax": 0,
+     "gross": 6500
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 428.50467289719666,
+     "shown": 428.5
+    }
+   ]
+  },
+  "T-weekend-t-1h-tourist-2k3a": {
+   "lineTotals": {
+    "l1": 2880
+   },
+   "subtotal": 2880,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 188.41121495327116,
+   "total": 2880,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2880,
+     "serviceCharge": 0,
+     "tax": 188.41121495327116,
+     "secondaryTax": 0,
+     "gross": 2880
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 188.41121495327116,
+     "shown": 188.41
+    }
+   ]
+  },
+  "T-weekend-t-1h-tourist-2k3a4s": {
+   "lineTotals": {
+    "l1": 3080
+   },
+   "subtotal": 3080,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 201.49532710280388,
+   "total": 3080,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2880,
+     "serviceCharge": 0,
+     "tax": 188.41121495327116,
+     "secondaryTax": 0,
+     "gross": 2880
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 201.49532710280388,
+     "shown": 201.5
+    }
+   ]
+  },
+  "T-weekend-t-1h-tourist-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1650
+   },
+   "subtotal": 1650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 107.94392523364502,
+   "total": 1650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1190,
+     "serviceCharge": 0,
+     "tax": 77.85046728971975,
+     "secondaryTax": 0,
+     "gross": 1190
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 107.94392523364502,
+     "shown": 107.94
+    }
+   ]
+  },
+  "T-weekend-t-1h-tourist-0k2a": {
+   "lineTotals": {
+    "l1": 1000
+   },
+   "subtotal": 1000,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 65.42056074766356,
+   "total": 1000,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1000,
+     "serviceCharge": 0,
+     "tax": 65.42056074766356,
+     "secondaryTax": 0,
+     "gross": 1000
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 65.42056074766356,
+     "shown": 65.42
+    }
+   ]
+  },
+  "T-weekend-t-1h-tourist-5k0a1s": {
+   "lineTotals": {
+    "l1": 3500
+   },
+   "subtotal": 3500,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 228.97196261682268,
+   "total": 3500,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3450,
+     "serviceCharge": 0,
+     "tax": 225.7009345794395,
+     "secondaryTax": 0,
+     "gross": 3450
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 228.97196261682268,
+     "shown": 228.97
+    }
+   ]
+  },
+  "T-weekend-t-1h-expat-2k3a": {
+   "lineTotals": {
+    "l1": 2604
+   },
+   "subtotal": 2604,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 170.35514018691583,
+   "total": 2604,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2604,
+     "serviceCharge": 0,
+     "tax": 170.35514018691583,
+     "secondaryTax": 0,
+     "gross": 2604
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 170.35514018691583,
+     "shown": 170.36
+    }
+   ]
+  },
+  "T-weekend-t-1h-expat-2k3a4s": {
+   "lineTotals": {
+    "l1": 2804
+   },
+   "subtotal": 2804,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 183.43925233644856,
+   "total": 2804,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2604,
+     "serviceCharge": 0,
+     "tax": 170.35514018691583,
+     "secondaryTax": 0,
+     "gross": 2604
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 183.43925233644856,
+     "shown": 183.44
+    }
+   ]
+  },
+  "T-weekend-t-1h-expat-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1512
+   },
+   "subtotal": 1512,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 98.91588785046736,
+   "total": 1512,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1052,
+     "serviceCharge": 0,
+     "tax": 68.82242990654208,
+     "secondaryTax": 0,
+     "gross": 1052
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 98.91588785046736,
+     "shown": 98.92
+    }
+   ]
+  },
+  "T-weekend-t-1h-expat-0k2a": {
+   "lineTotals": {
+    "l1": 1000
+   },
+   "subtotal": 1000,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 65.42056074766356,
+   "total": 1000,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1000,
+     "serviceCharge": 0,
+     "tax": 65.42056074766356,
+     "secondaryTax": 0,
+     "gross": 1000
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 65.42056074766356,
+     "shown": 65.42
+    }
+   ]
+  },
+  "T-weekend-t-1h-expat-5k0a1s": {
+   "lineTotals": {
+    "l1": 2810
+   },
+   "subtotal": 2810,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 183.8317757009346,
+   "total": 2810,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2760,
+     "serviceCharge": 0,
+     "tax": 180.5607476635514,
+     "secondaryTax": 0,
+     "gross": 2760
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 183.8317757009346,
+     "shown": 183.83
+    }
+   ]
+  },
+  "T-weekend-t-1h-thai-2k3a": {
+   "lineTotals": {
+    "l1": 2540
+   },
+   "subtotal": 2540,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 166.1682242990655,
+   "total": 2540,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2540,
+     "serviceCharge": 0,
+     "tax": 166.1682242990655,
+     "secondaryTax": 0,
+     "gross": 2540
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 166.1682242990655,
+     "shown": 166.17
+    }
+   ]
+  },
+  "T-weekend-t-1h-thai-2k3a4s": {
+   "lineTotals": {
+    "l1": 2740
+   },
+   "subtotal": 2740,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 179.25233644859824,
+   "total": 2740,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2540,
+     "serviceCharge": 0,
+     "tax": 166.1682242990655,
+     "secondaryTax": 0,
+     "gross": 2540
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 179.25233644859824,
+     "shown": 179.25
+    }
+   ]
+  },
+  "T-weekend-t-1h-thai-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1480
+   },
+   "subtotal": 1480,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 96.8224299065422,
+   "total": 1480,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1020,
+     "serviceCharge": 0,
+     "tax": 66.72897196261692,
+     "secondaryTax": 0,
+     "gross": 1020
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 96.8224299065422,
+     "shown": 96.82
+    }
+   ]
+  },
+  "T-weekend-t-1h-thai-0k2a": {
+   "lineTotals": {
+    "l1": 1000
+   },
+   "subtotal": 1000,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 65.42056074766356,
+   "total": 1000,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1000,
+     "serviceCharge": 0,
+     "tax": 65.42056074766356,
+     "secondaryTax": 0,
+     "gross": 1000
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 65.42056074766356,
+     "shown": 65.42
+    }
+   ]
+  },
+  "T-weekend-t-1h-thai-5k0a1s": {
+   "lineTotals": {
+    "l1": 2650
+   },
+   "subtotal": 2650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 173.36448598130858,
+   "total": 2650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2600,
+     "serviceCharge": 0,
+     "tax": 170.0934579439254,
+     "secondaryTax": 0,
+     "gross": 2600
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 173.36448598130858,
+     "shown": 173.36
+    }
+   ]
+  },
+  "T-weekend-t-2h-tourist-2k3a": {
+   "lineTotals": {
+    "l1": 3280
+   },
+   "subtotal": 3280,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 214.57943925233667,
+   "total": 3280,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3280,
+     "serviceCharge": 0,
+     "tax": 214.57943925233667,
+     "secondaryTax": 0,
+     "gross": 3280
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 214.57943925233667,
+     "shown": 214.58
+    }
+   ]
+  },
+  "T-weekend-t-2h-tourist-2k3a4s": {
+   "lineTotals": {
+    "l1": 3480
+   },
+   "subtotal": 3480,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 227.6635514018694,
+   "total": 3480,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3280,
+     "serviceCharge": 0,
+     "tax": 214.57943925233667,
+     "secondaryTax": 0,
+     "gross": 3280
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 227.6635514018694,
+     "shown": 227.66
+    }
+   ]
+  },
+  "T-weekend-t-2h-tourist-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1850
+   },
+   "subtotal": 1850,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 121.02803738317778,
+   "total": 1850,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1390,
+     "serviceCharge": 0,
+     "tax": 90.9345794392525,
+     "secondaryTax": 0,
+     "gross": 1390
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 121.02803738317778,
+     "shown": 121.03
+    }
+   ]
+  },
+  "T-weekend-t-2h-tourist-0k2a": {
+   "lineTotals": {
+    "l1": 1000
+   },
+   "subtotal": 1000,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 65.42056074766356,
+   "total": 1000,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1000,
+     "serviceCharge": 0,
+     "tax": 65.42056074766356,
+     "secondaryTax": 0,
+     "gross": 1000
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 65.42056074766356,
+     "shown": 65.42
+    }
+   ]
+  },
+  "T-weekend-t-2h-tourist-5k0a1s": {
+   "lineTotals": {
+    "l1": 4500
+   },
+   "subtotal": 4500,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 294.392523364486,
+   "total": 4500,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 4450,
+     "serviceCharge": 0,
+     "tax": 291.1214953271028,
+     "secondaryTax": 0,
+     "gross": 4450
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 294.392523364486,
+     "shown": 294.39
+    }
+   ]
+  },
+  "T-weekend-t-2h-expat-2k3a": {
+   "lineTotals": {
+    "l1": 2924
+   },
+   "subtotal": 2924,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 191.28971962616833,
+   "total": 2924,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2924,
+     "serviceCharge": 0,
+     "tax": 191.28971962616833,
+     "secondaryTax": 0,
+     "gross": 2924
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 191.28971962616833,
+     "shown": 191.29
+    }
+   ]
+  },
+  "T-weekend-t-2h-expat-2k3a4s": {
+   "lineTotals": {
+    "l1": 3124
+   },
+   "subtotal": 3124,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 204.37383177570106,
+   "total": 3124,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2924,
+     "serviceCharge": 0,
+     "tax": 191.28971962616833,
+     "secondaryTax": 0,
+     "gross": 2924
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 204.37383177570106,
+     "shown": 204.37
+    }
+   ]
+  },
+  "T-weekend-t-2h-expat-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1672
+   },
+   "subtotal": 1672,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 109.38317757009361,
+   "total": 1672,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1212,
+     "serviceCharge": 0,
+     "tax": 79.28971962616833,
+     "secondaryTax": 0,
+     "gross": 1212
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 109.38317757009361,
+     "shown": 109.38
+    }
+   ]
+  },
+  "T-weekend-t-2h-expat-0k2a": {
+   "lineTotals": {
+    "l1": 1000
+   },
+   "subtotal": 1000,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 65.42056074766356,
+   "total": 1000,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1000,
+     "serviceCharge": 0,
+     "tax": 65.42056074766356,
+     "secondaryTax": 0,
+     "gross": 1000
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 65.42056074766356,
+     "shown": 65.42
+    }
+   ]
+  },
+  "T-weekend-t-2h-expat-5k0a1s": {
+   "lineTotals": {
+    "l1": 3610
+   },
+   "subtotal": 3610,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 236.16822429906563,
+   "total": 3610,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3560,
+     "serviceCharge": 0,
+     "tax": 232.89719626168244,
+     "secondaryTax": 0,
+     "gross": 3560
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 236.16822429906563,
+     "shown": 236.17
+    }
+   ]
+  },
+  "T-weekend-t-2h-thai-2k3a": {
+   "lineTotals": {
+    "l1": 2740
+   },
+   "subtotal": 2740,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 179.25233644859827,
+   "total": 2740,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2740,
+     "serviceCharge": 0,
+     "tax": 179.25233644859827,
+     "secondaryTax": 0,
+     "gross": 2740
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 179.25233644859827,
+     "shown": 179.25
+    }
+   ]
+  },
+  "T-weekend-t-2h-thai-2k3a4s": {
+   "lineTotals": {
+    "l1": 2940
+   },
+   "subtotal": 2940,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 192.336448598131,
+   "total": 2940,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2740,
+     "serviceCharge": 0,
+     "tax": 179.25233644859827,
+     "secondaryTax": 0,
+     "gross": 2740
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 192.336448598131,
+     "shown": 192.34
+    }
+   ]
+  },
+  "T-weekend-t-2h-thai-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1580
+   },
+   "subtotal": 1580,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 103.36448598130858,
+   "total": 1580,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1120,
+     "serviceCharge": 0,
+     "tax": 73.2710280373833,
+     "secondaryTax": 0,
+     "gross": 1120
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 103.36448598130858,
+     "shown": 103.36
+    }
+   ]
+  },
+  "T-weekend-t-2h-thai-0k2a": {
+   "lineTotals": {
+    "l1": 1000
+   },
+   "subtotal": 1000,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 65.42056074766356,
+   "total": 1000,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1000,
+     "serviceCharge": 0,
+     "tax": 65.42056074766356,
+     "secondaryTax": 0,
+     "gross": 1000
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 65.42056074766356,
+     "shown": 65.42
+    }
+   ]
+  },
+  "T-weekend-t-2h-thai-5k0a1s": {
+   "lineTotals": {
+    "l1": 3150
+   },
+   "subtotal": 3150,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 206.07476635514024,
+   "total": 3150,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3100,
+     "serviceCharge": 0,
+     "tax": 202.80373831775705,
+     "secondaryTax": 0,
+     "gross": 3100
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 206.07476635514024,
+     "shown": 206.07
+    }
+   ]
+  },
+  "T-weekend-t-fd-tourist-2k3a": {
+   "lineTotals": {
+    "l1": 3680
+   },
+   "subtotal": 3680,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 240.74766355140218,
+   "total": 3680,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3680,
+     "serviceCharge": 0,
+     "tax": 240.74766355140218,
+     "secondaryTax": 0,
+     "gross": 3680
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 240.74766355140218,
+     "shown": 240.75
+    }
+   ]
+  },
+  "T-weekend-t-fd-tourist-2k3a4s": {
+   "lineTotals": {
+    "l1": 3880
+   },
+   "subtotal": 3880,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 253.8317757009349,
+   "total": 3880,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3680,
+     "serviceCharge": 0,
+     "tax": 240.74766355140218,
+     "secondaryTax": 0,
+     "gross": 3680
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 253.8317757009349,
+     "shown": 253.83
+    }
+   ]
+  },
+  "T-weekend-t-fd-tourist-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 2050
+   },
+   "subtotal": 2050,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 134.1121495327103,
+   "total": 2050,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1590,
+     "serviceCharge": 0,
+     "tax": 104.01869158878503,
+     "secondaryTax": 0,
+     "gross": 1590
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 134.1121495327103,
+     "shown": 134.11
+    }
+   ]
+  },
+  "T-weekend-t-fd-tourist-0k2a": {
+   "lineTotals": {
+    "l1": 1000
+   },
+   "subtotal": 1000,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 65.42056074766356,
+   "total": 1000,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1000,
+     "serviceCharge": 0,
+     "tax": 65.42056074766356,
+     "secondaryTax": 0,
+     "gross": 1000
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 65.42056074766356,
+     "shown": 65.42
+    }
+   ]
+  },
+  "T-weekend-t-fd-tourist-5k0a1s": {
+   "lineTotals": {
+    "l1": 5500
+   },
+   "subtotal": 5500,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 359.81308411215025,
+   "total": 5500,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 5450,
+     "serviceCharge": 0,
+     "tax": 356.54205607476706,
+     "secondaryTax": 0,
+     "gross": 5450
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 359.81308411215025,
+     "shown": 359.81
+    }
+   ]
+  },
+  "T-weekend-t-fd-expat-2k3a": {
+   "lineTotals": {
+    "l1": 3244
+   },
+   "subtotal": 3244,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 212.22429906542084,
+   "total": 3244,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3244,
+     "serviceCharge": 0,
+     "tax": 212.22429906542084,
+     "secondaryTax": 0,
+     "gross": 3244
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 212.22429906542084,
+     "shown": 212.22
+    }
+   ]
+  },
+  "T-weekend-t-fd-expat-2k3a4s": {
+   "lineTotals": {
+    "l1": 3444
+   },
+   "subtotal": 3444,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 225.30841121495357,
+   "total": 3444,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3244,
+     "serviceCharge": 0,
+     "tax": 212.22429906542084,
+     "secondaryTax": 0,
+     "gross": 3244
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 225.30841121495357,
+     "shown": 225.31
+    }
+   ]
+  },
+  "T-weekend-t-fd-expat-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1832
+   },
+   "subtotal": 1832,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 119.85046728971963,
+   "total": 1832,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1372,
+     "serviceCharge": 0,
+     "tax": 89.75700934579436,
+     "secondaryTax": 0,
+     "gross": 1372
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 119.85046728971963,
+     "shown": 119.85
+    }
+   ]
+  },
+  "T-weekend-t-fd-expat-0k2a": {
+   "lineTotals": {
+    "l1": 1000
+   },
+   "subtotal": 1000,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 65.42056074766356,
+   "total": 1000,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1000,
+     "serviceCharge": 0,
+     "tax": 65.42056074766356,
+     "secondaryTax": 0,
+     "gross": 1000
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 65.42056074766356,
+     "shown": 65.42
+    }
+   ]
+  },
+  "T-weekend-t-fd-expat-5k0a1s": {
+   "lineTotals": {
+    "l1": 4410
+   },
+   "subtotal": 4410,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 288.50467289719666,
+   "total": 4410,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 4360,
+     "serviceCharge": 0,
+     "tax": 285.23364485981347,
+     "secondaryTax": 0,
+     "gross": 4360
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 288.50467289719666,
+     "shown": 288.5
+    }
+   ]
+  },
+  "T-weekend-t-fd-thai-2k3a": {
+   "lineTotals": {
+    "l1": 2440
+   },
+   "subtotal": 2440,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 159.62616822429936,
+   "total": 2440,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2440,
+     "serviceCharge": 0,
+     "tax": 159.62616822429936,
+     "secondaryTax": 0,
+     "gross": 2440
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 159.62616822429936,
+     "shown": 159.63
+    }
+   ]
+  },
+  "T-weekend-t-fd-thai-2k3a4s": {
+   "lineTotals": {
+    "l1": 2640
+   },
+   "subtotal": 2640,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 172.7102803738321,
+   "total": 2640,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2440,
+     "serviceCharge": 0,
+     "tax": 159.62616822429936,
+     "secondaryTax": 0,
+     "gross": 2440
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 172.7102803738321,
+     "shown": 172.71
+    }
+   ]
+  },
+  "T-weekend-t-fd-thai-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 1180
+   },
+   "subtotal": 1180,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 77.19626168224306,
+   "total": 1180,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 720,
+     "serviceCharge": 0,
+     "tax": 47.10280373831779,
+     "secondaryTax": 0,
+     "gross": 720
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 77.19626168224306,
+     "shown": 77.2
+    }
+   ]
+  },
+  "T-weekend-t-fd-thai-0k2a": {
+   "lineTotals": {
+    "l1": 500
+   },
+   "subtotal": 500,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 32.71028037383178,
+   "total": 500,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 500,
+     "serviceCharge": 0,
+     "tax": 32.71028037383178,
+     "secondaryTax": 0,
+     "gross": 500
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 32.71028037383178,
+     "shown": 32.71
+    }
+   ]
+  },
+  "T-weekend-t-fd-thai-5k0a1s": {
+   "lineTotals": {
+    "l1": 3650
+   },
+   "subtotal": 3650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 238.78504672897236,
+   "total": 3650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3600,
+     "serviceCharge": 0,
+     "tax": 235.51401869158917,
+     "secondaryTax": 0,
+     "gross": 3600
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 238.78504672897236,
+     "shown": 238.79
+    }
+   ]
+  },
+  "T-weekend-t-pe-tourist-2k3a": {
+   "lineTotals": {
+    "l1": 3650
+   },
+   "subtotal": 3650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 238.78504672897225,
+   "total": 3650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 238.78504672897225,
+     "shown": 238.79
+    }
+   ]
+  },
+  "T-weekend-t-pe-tourist-2k3a4s": {
+   "lineTotals": {
+    "l1": 3850
+   },
+   "subtotal": 3850,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 251.86915887850498,
+   "total": 3850,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 251.86915887850498,
+     "shown": 251.87
+    }
+   ]
+  },
+  "T-weekend-t-pe-tourist-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 2110
+   },
+   "subtotal": 2110,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 138.03738317757018,
+   "total": 2110,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1650,
+     "serviceCharge": 0,
+     "tax": 107.9439252336449,
+     "secondaryTax": 0,
+     "gross": 1650
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 138.03738317757018,
+     "shown": 138.04
+    }
+   ]
+  },
+  "T-weekend-t-pe-tourist-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekend-t-pe-tourist-5k0a1s": {
+   "lineTotals": {
+    "l1": 6550
+   },
+   "subtotal": 6550,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 428.50467289719666,
+   "total": 6550,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 6500,
+     "serviceCharge": 0,
+     "tax": 425.23364485981347,
+     "secondaryTax": 0,
+     "gross": 6500
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 428.50467289719666,
+     "shown": 428.5
+    }
+   ]
+  },
+  "T-weekend-t-pe-expat-2k3a": {
+   "lineTotals": {
+    "l1": 3650
+   },
+   "subtotal": 3650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 238.78504672897225,
+   "total": 3650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 238.78504672897225,
+     "shown": 238.79
+    }
+   ]
+  },
+  "T-weekend-t-pe-expat-2k3a4s": {
+   "lineTotals": {
+    "l1": 3850
+   },
+   "subtotal": 3850,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 251.86915887850498,
+   "total": 3850,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 251.86915887850498,
+     "shown": 251.87
+    }
+   ]
+  },
+  "T-weekend-t-pe-expat-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 2110
+   },
+   "subtotal": 2110,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 138.03738317757018,
+   "total": 2110,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1650,
+     "serviceCharge": 0,
+     "tax": 107.9439252336449,
+     "secondaryTax": 0,
+     "gross": 1650
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 138.03738317757018,
+     "shown": 138.04
+    }
+   ]
+  },
+  "T-weekend-t-pe-expat-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekend-t-pe-expat-5k0a1s": {
+   "lineTotals": {
+    "l1": 6550
+   },
+   "subtotal": 6550,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 428.50467289719666,
+   "total": 6550,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 6500,
+     "serviceCharge": 0,
+     "tax": 425.23364485981347,
+     "secondaryTax": 0,
+     "gross": 6500
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 428.50467289719666,
+     "shown": 428.5
+    }
+   ]
+  },
+  "T-weekend-t-pe-thai-2k3a": {
+   "lineTotals": {
+    "l1": 3650
+   },
+   "subtotal": 3650,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 238.78504672897225,
+   "total": 3650,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 238.78504672897225,
+     "shown": 238.79
+    }
+   ]
+  },
+  "T-weekend-t-pe-thai-2k3a4s": {
+   "lineTotals": {
+    "l1": 3850
+   },
+   "subtotal": 3850,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 251.86915887850498,
+   "total": 3850,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3650,
+     "serviceCharge": 0,
+     "tax": 238.78504672897225,
+     "secondaryTax": 0,
+     "gross": 3650
+    },
+    {
+     "category": "addons",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 251.86915887850498,
+     "shown": 251.87
+    }
+   ]
+  },
+  "T-weekend-t-pe-thai-1k1a2s-addons": {
+   "lineTotals": {
+    "l1": 2110
+   },
+   "subtotal": 2110,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 138.03738317757018,
+   "total": 2110,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1650,
+     "serviceCharge": 0,
+     "tax": 107.9439252336449,
+     "secondaryTax": 0,
+     "gross": 1650
+    },
+    {
+     "category": "addons",
+     "base": 460,
+     "serviceCharge": 0,
+     "tax": 30.093457943925273,
+     "secondaryTax": 0,
+     "gross": 460
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 138.03738317757018,
+     "shown": 138.04
+    }
+   ]
+  },
+  "T-weekend-t-pe-thai-0k2a": {
+   "lineTotals": {
+    "l1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.794392523364536,
+   "total": 700,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 700,
+     "serviceCharge": 0,
+     "tax": 45.794392523364536,
+     "secondaryTax": 0,
+     "gross": 700
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.794392523364536,
+     "shown": 45.79
+    }
+   ]
+  },
+  "T-weekend-t-pe-thai-5k0a1s": {
+   "lineTotals": {
+    "l1": 6550
+   },
+   "subtotal": 6550,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 428.50467289719666,
+   "total": 6550,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 6500,
+     "serviceCharge": 0,
+     "tax": 425.23364485981347,
+     "secondaryTax": 0,
+     "gross": 6500
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 428.50467289719666,
+     "shown": 428.5
+    }
+   ]
+  },
+  "T-two-lines": {
+   "lineTotals": {
+    "l1": 2580,
+    "l2": 1300
+   },
+   "subtotal": 3880,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 253.83177570093483,
+   "total": 3880,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 3450,
+     "serviceCharge": 0,
+     "tax": 225.7009345794395,
+     "secondaryTax": 0,
+     "gross": 3450
+    },
+    {
+     "category": "addons",
+     "base": 430,
+     "serviceCharge": 0,
+     "tax": 28.130841121495337,
+     "secondaryTax": 0,
+     "gross": 430
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 253.83177570093483,
+     "shown": 253.83
+    }
+   ]
+  },
+  "T-manual-order-fixed": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 150,
+   "manualAmounts": {
+    "md1": 150
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 136.07476635514024,
+   "total": 2080,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1986.726457399103,
+     "serviceCharge": 0,
+     "tax": 129.9727588952685,
+     "secondaryTax": 0,
+     "gross": 1986.726457399103
+    },
+    {
+     "category": "addons",
+     "base": 93.27354260089686,
+     "serviceCharge": 0,
+     "tax": 6.102007459871757,
+     "secondaryTax": 0,
+     "gross": 93.27354260089686
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 136.07476635514024,
+     "shown": 136.07
+    }
+   ]
+  },
+  "T-manual-line-fixed": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 90,
+   "manualAmounts": {
+    "md1": 90
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 140.00000000000023,
+   "total": 2140,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2044.0358744394618,
+     "serviceCharge": 0,
+     "tax": 133.7219730941706,
+     "secondaryTax": 0,
+     "gross": 2044.0358744394618
+    },
+    {
+     "category": "addons",
+     "base": 95.96412556053812,
+     "serviceCharge": 0,
+     "tax": 6.278026905829606,
+     "secondaryTax": 0,
+     "gross": 95.96412556053812
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 140.00000000000023,
+     "shown": 140
+    }
+   ]
+  },
+  "T-manual-line-comp": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 2230,
+   "manualAmounts": {
+    "md1": 2230
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 0,
+   "total": 0,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 0,
+     "serviceCharge": 0,
+     "tax": 0,
+     "secondaryTax": 0,
+     "gross": 0
+    },
+    {
+     "category": "addons",
+     "base": 0,
+     "serviceCharge": 0,
+     "tax": 0,
+     "secondaryTax": 0,
+     "gross": 0
+    }
+   ],
+   "taxRows": []
+  },
+  "T-manual-kids-comp": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 1780,
+   "manualAmounts": {
+    "md1": 1780
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 29.43925233644859,
+   "total": 449.99999999999994,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 429.8206278026905,
+     "serviceCharge": 0,
+     "tax": 28.119106491764796,
+     "secondaryTax": 0,
+     "gross": 429.8206278026905
+    },
+    {
+     "category": "addons",
+     "base": 20.17937219730942,
+     "serviceCharge": 0,
+     "tax": 1.3201458446837933,
+     "secondaryTax": 0,
+     "gross": 20.17937219730942
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 29.43925233644859,
+     "shown": 29.44
+    }
+   ]
+  },
+  "T-manual-socks-fixed-and-order-fixed": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 75,
+   "manualAmounts": {
+    "md1": 30,
+    "md2": 45
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 140.98130841121502,
+   "total": 2155,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2058.3632286995517,
+     "serviceCharge": 0,
+     "tax": 134.65927664389596,
+     "secondaryTax": 0,
+     "gross": 2058.3632286995517
+    },
+    {
+     "category": "addons",
+     "base": 96.63677130044843,
+     "serviceCharge": 0,
+     "tax": 6.322031767319061,
+     "secondaryTax": 0,
+     "gross": 96.63677130044843
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 140.98130841121502,
+     "shown": 140.98
+    }
+   ]
+  },
+  "T-manual-order-percent": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 290,
+   "manualAmounts": {
+    "md1": 290
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 126.91588785046743,
+   "total": 1940,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1853.0044843049327,
+     "serviceCharge": 0,
+     "tax": 121.22459243116396,
+     "secondaryTax": 0,
+     "gross": 1853.0044843049327
+    },
+    {
+     "category": "addons",
+     "base": 86.99551569506727,
+     "serviceCharge": 0,
+     "tax": 5.691295419303472,
+     "secondaryTax": 0,
+     "gross": 86.99551569506727
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 126.91588785046743,
+     "shown": 126.92
+    }
+   ]
+  },
+  "T-manual-adults-percent": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 53,
+   "manualAmounts": {
+    "md1": 53
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 142.42056074766356,
+   "total": 2177,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2079.3766816143498,
+     "serviceCharge": 0,
+     "tax": 136.03398851682664,
+     "secondaryTax": 0,
+     "gross": 2079.3766816143498
+    },
+    {
+     "category": "addons",
+     "base": 97.62331838565022,
+     "serviceCharge": 0,
+     "tax": 6.386572230836933,
+     "secondaryTax": 0,
+     "gross": 97.62331838565022
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 142.42056074766356,
+     "shown": 142.42
+    }
+   ]
+  },
+  "T-promo-fixed": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 100,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [
+    {
+     "code": "SAVE100",
+     "amount": 100
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 139.34579439252352,
+   "total": 2130,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2034.4843049327355,
+     "serviceCharge": 0,
+     "tax": 133.09710406102022,
+     "secondaryTax": 0,
+     "gross": 2034.4843049327355
+    },
+    {
+     "category": "addons",
+     "base": 95.51569506726457,
+     "serviceCharge": 0,
+     "tax": 6.248690331503298,
+     "secondaryTax": 0,
+     "gross": 95.51569506726457
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 139.34579439252352,
+     "shown": 139.35
+    }
+   ]
+  },
+  "T-promo-percent": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 223,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [
+    {
+     "code": "STAFF10",
+     "amount": 223
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 131.29906542056088,
+   "total": 2007,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1917,
+     "serviceCharge": 0,
+     "tax": 125.41121495327116,
+     "secondaryTax": 0,
+     "gross": 1917
+    },
+    {
+     "category": "addons",
+     "base": 90,
+     "serviceCharge": 0,
+     "tax": 5.887850467289724,
+     "secondaryTax": 0,
+     "gross": 90
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 131.29906542056088,
+     "shown": 131.3
+    }
+   ]
+  },
+  "T-promo-stacked-percents": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 624.4000000000001,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [
+    {
+     "code": "STAFF10",
+     "amount": 223
+    },
+    {
+     "code": "MEMBER20",
+     "amount": 401.40000000000003
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 105.03925233644861,
+   "total": 1605.6,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1533.6,
+     "serviceCharge": 0,
+     "tax": 100.32897196261683,
+     "secondaryTax": 0,
+     "gross": 1533.6
+    },
+    {
+     "category": "addons",
+     "base": 72,
+     "serviceCharge": 0,
+     "tax": 4.710280373831779,
+     "secondaryTax": 0,
+     "gross": 72
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 105.03925233644861,
+     "shown": 105.04
+    }
+   ]
+  },
+  "T-manual-then-promo": {
+   "lineTotals": {
+    "l1": 2130
+   },
+   "subtotal": 2130,
+   "promoDiscount": 193,
+   "manualDiscount": 200,
+   "manualAmounts": {
+    "md1": 200
+   },
+   "promos": [
+    {
+     "code": "STAFF10",
+     "amount": 193
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 113.63551401869177,
+   "total": 1737,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1737,
+     "serviceCharge": 0,
+     "tax": 113.63551401869177,
+     "secondaryTax": 0,
+     "gross": 1737
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 113.63551401869177,
+     "shown": 113.64
+    }
+   ]
+  },
+  "T-promo-addons-scoped": {
+   "lineTotals": {
+    "l1": 2330
+   },
+   "subtotal": 2330,
+   "promoDiscount": 100,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [
+    {
+     "code": "ADDON50",
+     "amount": 100
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 145.88785046728984,
+   "total": 2230,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2038.5836909871246,
+     "serviceCharge": 0,
+     "tax": 133.36528819541945,
+     "secondaryTax": 0,
+     "gross": 2038.5836909871246
+    },
+    {
+     "category": "addons",
+     "base": 191.41630901287553,
+     "serviceCharge": 0,
+     "tax": 12.522562271870385,
+     "secondaryTax": 0,
+     "gross": 191.41630901287553
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 145.88785046728984,
+     "shown": 145.89
+    }
+   ]
+  },
+  "T-ruling-1-free-item": {
+   "lineTotals": {
+    "l1": 2130,
+    "promo-ICECREAM": 50
+   },
+   "subtotal": 2180,
+   "promoDiscount": 50,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [
+    {
+     "code": "ICECREAM",
+     "amount": 50
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 136.07476635514035,
+   "total": 2080,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2080,
+     "serviceCharge": 0,
+     "tax": 136.07476635514035,
+     "secondaryTax": 0,
+     "gross": 2080
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 136.07476635514035,
+     "shown": 136.07
+    }
+   ]
+  },
+  "T-ruling-2-comped-kids-then-tickets-code": {
+   "lineTotals": {
+    "l1": 2780
+   },
+   "subtotal": 2780,
+   "promoDiscount": 1000,
+   "manualDiscount": 1780,
+   "manualAmounts": {
+    "md1": 1780
+   },
+   "promos": [
+    {
+     "code": "TICKETS100",
+     "amount": 1000
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 0,
+   "total": 0,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 0,
+     "serviceCharge": 0,
+     "tax": 0,
+     "secondaryTax": 0,
+     "gross": 0
+    },
+    {
+     "category": "addons",
+     "base": 0,
+     "serviceCharge": 0,
+     "tax": 0,
+     "secondaryTax": 0,
+     "gross": 0
+    }
+   ],
+   "taxRows": []
+  },
+  "T-ruling-2-two-tickets-codes": {
+   "lineTotals": {
+    "l1": 2970
+   },
+   "subtotal": 2970,
+   "promoDiscount": 2970,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [
+    {
+     "code": "KIDS23",
+     "amount": 614.1
+    },
+    {
+     "code": "TICKETSFREE",
+     "amount": 2355.9
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 0,
+   "total": 0,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 0,
+     "serviceCharge": 0,
+     "tax": 0,
+     "secondaryTax": 0,
+     "gross": 0
+    },
+    {
+     "category": "addons",
+     "base": 0,
+     "serviceCharge": 0,
+     "tax": 0,
+     "secondaryTax": 0,
+     "gross": 0
+    }
+   ],
+   "taxRows": []
+  },
+  "T-config-service_exclusive": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 223,
+   "taxTotal": 171.71,
+   "total": 2624.71,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2130,
+     "serviceCharge": 213,
+     "tax": 164.01000000000002,
+     "secondaryTax": 0,
+     "gross": 2507.01
+    },
+    {
+     "category": "addons",
+     "base": 100,
+     "serviceCharge": 10,
+     "tax": 7.700000000000001,
+     "secondaryTax": 0,
+     "gross": 117.7
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "service",
+     "label": "Service charge",
+     "amount": 223,
+     "shown": 223
+    },
+    {
+     "key": "exclusive:VAT",
+     "label": "VAT",
+     "amount": 171.71,
+     "shown": 171.71
+    }
+   ]
+  },
+  "T-config-service_exclusive-discounted": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 215.5,
+   "manualDiscount": 75,
+   "manualAmounts": {
+    "md1": 75
+   },
+   "promos": [
+    {
+     "code": "STAFF10",
+     "amount": 215.5
+    }
+   ],
+   "serviceCharge": 193.95,
+   "taxTotal": 149.34150000000002,
+   "total": 2282.7915000000003,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1852.5269058295964,
+     "serviceCharge": 185.25269058295964,
+     "tax": 142.64457174887895,
+     "secondaryTax": 0,
+     "gross": 2180.4241681614353
+    },
+    {
+     "category": "addons",
+     "base": 86.97309417040358,
+     "serviceCharge": 8.697309417040358,
+     "tax": 6.696928251121077,
+     "secondaryTax": 0,
+     "gross": 102.36733183856502
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "service",
+     "label": "Service charge",
+     "amount": 193.95,
+     "shown": 193.95
+    },
+    {
+     "key": "exclusive:VAT",
+     "label": "VAT",
+     "amount": 149.34150000000002,
+     "shown": 149.34
+    }
+   ]
+  },
+  "T-config-after_tax": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 145.8878504672898,
+   "total": 2230,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2130,
+     "serviceCharge": 0,
+     "tax": 139.34579439252343,
+     "secondaryTax": 0,
+     "gross": 2130
+    },
+    {
+     "category": "addons",
+     "base": 100,
+     "serviceCharge": 0,
+     "tax": 6.542056074766364,
+     "secondaryTax": 0,
+     "gross": 100
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 145.8878504672898,
+     "shown": 145.89
+    }
+   ]
+  },
+  "T-config-after_tax-discounted": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 215.5,
+   "manualDiscount": 75,
+   "manualAmounts": {
+    "md1": 75
+   },
+   "promos": [
+    {
+     "code": "STAFF10",
+     "amount": 215.5
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 145.8878504672898,
+   "total": 1939.5,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2130,
+     "serviceCharge": 0,
+     "tax": 139.34579439252343,
+     "secondaryTax": 0,
+     "gross": 2130
+    },
+    {
+     "category": "addons",
+     "base": 100,
+     "serviceCharge": 0,
+     "tax": 6.542056074766364,
+     "secondaryTax": 0,
+     "gross": 100
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 145.8878504672898,
+     "shown": 145.89
+    }
+   ]
+  },
+  "T-config-secondary": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 145.8878504672898,
+   "total": 2230,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2130,
+     "serviceCharge": 0,
+     "tax": 139.34579439252343,
+     "secondaryTax": 0,
+     "gross": 2130
+    },
+    {
+     "category": "addons",
+     "base": 100,
+     "serviceCharge": 0,
+     "tax": 6.542056074766364,
+     "secondaryTax": 0,
+     "gross": 100
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 145.8878504672898,
+     "shown": 145.89
+    }
+   ]
+  },
+  "T-config-secondary-discounted": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 215.5,
+   "manualDiscount": 75,
+   "manualAmounts": {
+    "md1": 75
+   },
+   "promos": [
+    {
+     "code": "STAFF10",
+     "amount": 215.5
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 126.88317757009364,
+   "total": 1939.5,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1852.5269058295964,
+     "serviceCharge": 0,
+     "tax": 121.19334897950648,
+     "secondaryTax": 0,
+     "gross": 1852.5269058295964
+    },
+    {
+     "category": "addons",
+     "base": 86.97309417040358,
+     "serviceCharge": 0,
+     "tax": 5.689828590587155,
+     "secondaryTax": 0,
+     "gross": 86.97309417040358
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 126.88317757009364,
+     "shown": 126.88
+    }
+   ]
+  },
+  "E-camp-pass": {
+   "lineTotals": {
+    "pass-E-camp-pass": 450
+   },
+   "subtotal": 450,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 29.439252336448646,
+   "total": 450,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 450,
+     "serviceCharge": 0,
+     "tax": 29.439252336448646,
+     "secondaryTax": 0,
+     "gross": 450
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 29.439252336448646,
+     "shown": 29.44
+    }
+   ]
+  },
+  "E-event-pass": {
+   "lineTotals": {
+    "pass-E-event-pass": 1250
+   },
+   "subtotal": 1250,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 81.77570093457962,
+   "total": 1250,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1250,
+     "serviceCharge": 0,
+     "tax": 81.77570093457962,
+     "secondaryTax": 0,
+     "gross": 1250
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 81.77570093457962,
+     "shown": 81.78
+    }
+   ]
+  },
+  "D-priced": {
+   "lineTotals": {
+    "line-ci-plain": 840
+   },
+   "subtotal": 840,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 54.95327102803739,
+   "total": 840,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 690,
+     "serviceCharge": 0,
+     "tax": 45.14018691588785,
+     "secondaryTax": 0,
+     "gross": 690
+    },
+    {
+     "category": "drop_off",
+     "base": 150,
+     "serviceCharge": 0,
+     "tax": 9.81308411214954,
+     "secondaryTax": 0,
+     "gross": 150
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 54.95327102803739,
+     "shown": 54.95
+    }
+   ]
+  },
+  "D-prepaid-items": {
+   "lineTotals": {
+    "line-ci-prepaid_items": 1040
+   },
+   "subtotal": 1040,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 68.03738317757012,
+   "total": 1040,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 690,
+     "serviceCharge": 0,
+     "tax": 45.14018691588785,
+     "secondaryTax": 0,
+     "gross": 690
+    },
+    {
+     "category": "drop_off",
+     "base": 150,
+     "serviceCharge": 0,
+     "tax": 9.81308411214954,
+     "secondaryTax": 0,
+     "gross": 150
+    },
+    {
+     "category": "fnb",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 13.084112149532729,
+     "secondaryTax": 0,
+     "gross": 200
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 68.03738317757012,
+     "shown": 68.04
+    }
+   ]
+  },
+  "D-prepaid-credit": {
+   "lineTotals": {
+    "line-ci-prepaid_credit": 1040,
+    "l1": 2230
+   },
+   "subtotal": 3270,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 200.84112149532717,
+   "total": 3270,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2820,
+     "serviceCharge": 0,
+     "tax": 184.48598130841128,
+     "secondaryTax": 0,
+     "gross": 2820
+    },
+    {
+     "category": "drop_off",
+     "base": 150,
+     "serviceCharge": 0,
+     "tax": 9.81308411214954,
+     "secondaryTax": 0,
+     "gross": 150
+    },
+    {
+     "category": "stored_value",
+     "base": 200,
+     "serviceCharge": 0,
+     "tax": 0,
+     "secondaryTax": 0,
+     "gross": 200
+    },
+    {
+     "category": "addons",
+     "base": 100,
+     "serviceCharge": 0,
+     "tax": 6.542056074766364,
+     "secondaryTax": 0,
+     "gross": 100
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 200.84112149532717,
+     "shown": 200.84
+    }
+   ]
+  },
+  "D-unpriced": {
+   "lineTotals": {
+    "l1": 2230,
+    "line-ci-unpriced": 0
+   },
+   "subtotal": 2230,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 191.02803738317766,
+   "total": 2920,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2820,
+     "serviceCharge": 0,
+     "tax": 184.48598130841128,
+     "secondaryTax": 0,
+     "gross": 2820
+    },
+    {
+     "category": "addons",
+     "base": 100,
+     "serviceCharge": 0,
+     "tax": 6.542056074766364,
+     "secondaryTax": 0,
+     "gross": 100
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 191.02803738317766,
+     "shown": 191.03
+    }
+   ]
+  },
+  "H-same-mode": {
+   "lineTotals": {
+    "l1": 2230
+   },
+   "subtotal": 2230,
+   "promoDiscount": 100,
+   "manualDiscount": 60,
+   "manualAmounts": {
+    "md1": 60
+   },
+   "promos": [
+    {
+     "code": "SAVE100",
+     "amount": 100
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 135.42056074766356,
+   "total": 2070,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 1977.1748878923768,
+     "serviceCharge": 0,
+     "tax": 129.3478898621181,
+     "secondaryTax": 0,
+     "gross": 1977.1748878923768
+    },
+    {
+     "category": "addons",
+     "base": 92.82511210762331,
+     "serviceCharge": 0,
+     "tax": 6.072670885545449,
+     "secondaryTax": 0,
+     "gross": 92.82511210762331
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 135.42056074766356,
+     "shown": 135.42
+    }
+   ]
+  },
+  "H-sold-weekday-read-weekend": {
+   "lineTotals": {
+    "l1": 1790
+   },
+   "subtotal": 1790,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 149.8130841121498,
+   "total": 2290,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 2240,
+     "serviceCharge": 0,
+     "tax": 146.5420560747666,
+     "secondaryTax": 0,
+     "gross": 2240
+    },
+    {
+     "category": "addons",
+     "base": 50,
+     "serviceCharge": 0,
+     "tax": 3.271028037383182,
+     "secondaryTax": 0,
+     "gross": 50
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 149.8130841121498,
+     "shown": 149.81
+    }
+   ]
+  },
+  "H-seeded-dropoff-service-sale": {
+   "lineTotals": {
+    "seedline-t": 300,
+    "seedline-svc": 150
+   },
+   "subtotal": 450,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 34.01869158878509,
+   "total": 520,
+   "categories": [
+    {
+     "category": "tickets",
+     "base": 520,
+     "serviceCharge": 0,
+     "tax": 34.01869158878509,
+     "secondaryTax": 0,
+     "gross": 520
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 34.01869158878509,
+     "shown": 34.02
+    }
+   ]
+  }
+ },
+ "fnb": {
+  "F-seed-order": {
+   "lineTotals": {
+    "f1": 120,
+    "f2": 180
+   },
+   "subtotal": 300,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 19.62616822429908,
+   "total": 300,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 300,
+     "serviceCharge": 0,
+     "tax": 19.62616822429908,
+     "secondaryTax": 0,
+     "gross": 300
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 19.62616822429908,
+     "shown": 19.63
+    }
+   ]
+  },
+  "F-modifiers": {
+   "lineTotals": {
+    "f1": 345,
+    "f2": 240,
+    "f3": 160
+   },
+   "subtotal": 745,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 48.73831775700944,
+   "total": 745,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 745,
+     "serviceCharge": 0,
+     "tax": 48.73831775700944,
+     "secondaryTax": 0,
+     "gross": 745
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 48.73831775700944,
+     "shown": 48.74
+    }
+   ]
+  },
+  "F-bar-and-kitchen-order-percent": {
+   "lineTotals": {
+    "f1": 310,
+    "f2": 360,
+    "f3": 110
+   },
+   "subtotal": 780,
+   "promoDiscount": 0,
+   "manualDiscount": 78,
+   "manualAmounts": {
+    "md1": 78
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 45.9252336448598,
+   "total": 702,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 603,
+     "serviceCharge": 0,
+     "tax": 39.448598130841106,
+     "secondaryTax": 0,
+     "gross": 603
+    },
+    {
+     "category": "bar",
+     "base": 99,
+     "serviceCharge": 0,
+     "tax": 6.476635514018696,
+     "secondaryTax": 0,
+     "gross": 99
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 45.9252336448598,
+     "shown": 45.93
+    }
+   ]
+  },
+  "F-line-fixed": {
+   "lineTotals": {
+    "f1": 95,
+    "f2": 50
+   },
+   "subtotal": 145,
+   "promoDiscount": 0,
+   "manualDiscount": 20,
+   "manualAmounts": {
+    "md1": 20
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 8.177570093457945,
+   "total": 125,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 125,
+     "serviceCharge": 0,
+     "tax": 8.177570093457945,
+     "secondaryTax": 0,
+     "gross": 125
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 8.177570093457945,
+     "shown": 8.18
+    }
+   ]
+  },
+  "F-line-comp-and-order-fixed": {
+   "lineTotals": {
+    "f1": 300,
+    "f2": 140
+   },
+   "subtotal": 440,
+   "promoDiscount": 0,
+   "manualDiscount": 170,
+   "manualAmounts": {
+    "md1": 140,
+    "md2": 30
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 17.66355140186917,
+   "total": 270,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 270,
+     "serviceCharge": 0,
+     "tax": 17.66355140186917,
+     "secondaryTax": 0,
+     "gross": 270
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 17.66355140186917,
+     "shown": 17.66
+    }
+   ]
+  },
+  "F-promo-and-manual": {
+   "lineTotals": {
+    "f1": 220,
+    "f2": 90
+   },
+   "subtotal": 310,
+   "promoDiscount": 28,
+   "manualDiscount": 30,
+   "manualAmounts": {
+    "md1": 30
+   },
+   "promos": [
+    {
+     "code": "STAFF10",
+     "amount": 28
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 16.485981308411226,
+   "total": 252,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 252,
+     "serviceCharge": 0,
+     "tax": 16.485981308411226,
+     "secondaryTax": 0,
+     "gross": 252
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 16.485981308411226,
+     "shown": 16.49
+    }
+   ]
+  },
+  "F-promo-drinks-scoped": {
+   "lineTotals": {
+    "f1": 95,
+    "f2": 120
+   },
+   "subtotal": 215,
+   "promoDiscount": 19,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [
+    {
+     "code": "DRINKS20",
+     "amount": 19
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 12.822429906542055,
+   "total": 196,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 196,
+     "serviceCharge": 0,
+     "tax": 12.822429906542055,
+     "secondaryTax": 0,
+     "gross": 196
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 12.822429906542055,
+     "shown": 12.82
+    }
+   ]
+  },
+  "F-prepaid-line": {
+   "lineTotals": {
+    "f1": 0,
+    "f2": 70
+   },
+   "subtotal": 70,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 4.579439252336456,
+   "total": 70,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 70,
+     "serviceCharge": 0,
+     "tax": 4.579439252336456,
+     "secondaryTax": 0,
+     "gross": 70
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 4.579439252336456,
+     "shown": 4.58
+    }
+   ]
+  },
+  "F-weekend": {
+   "lineTotals": {
+    "f1": 400,
+    "f2": 80
+   },
+   "subtotal": 480,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 31.40186915887854,
+   "total": 480,
+   "categories": [
+    {
+     "category": "bar",
+     "base": 400,
+     "serviceCharge": 0,
+     "tax": 26.168224299065457,
+     "secondaryTax": 0,
+     "gross": 400
+    },
+    {
+     "category": "fnb",
+     "base": 80,
+     "serviceCharge": 0,
+     "tax": 5.233644859813083,
+     "secondaryTax": 0,
+     "gross": 80
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 31.40186915887854,
+     "shown": 31.4
+    }
+   ]
+  },
+  "F-manual-percent-rounds": {
+   "lineTotals": {
+    "f1": 95
+   },
+   "subtotal": 95,
+   "promoDiscount": 0,
+   "manualDiscount": 14,
+   "manualAmounts": {
+    "md1": 14
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 5.299065420560751,
+   "total": 81,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 81,
+     "serviceCharge": 0,
+     "tax": 5.299065420560751,
+     "secondaryTax": 0,
+     "gross": 81
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 5.299065420560751,
+     "shown": 5.3
+    }
+   ]
+  },
+  "F-service-exclusive": {
+   "lineTotals": {
+    "f1": 220,
+    "f2": 270
+   },
+   "subtotal": 490,
+   "promoDiscount": 0,
+   "manualDiscount": 25,
+   "manualAmounts": {
+    "md1": 25
+   },
+   "promos": [],
+   "serviceCharge": 46.5,
+   "taxTotal": 35.80500000000001,
+   "total": 547.3050000000001,
+   "categories": [
+    {
+     "category": "fnb",
+     "base": 465,
+     "serviceCharge": 46.5,
+     "tax": 35.80500000000001,
+     "secondaryTax": 0,
+     "gross": 547.3050000000001
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "service",
+     "label": "Service charge",
+     "amount": 46.5,
+     "shown": 46.5
+    },
+    {
+     "key": "exclusive:VAT",
+     "label": "VAT",
+     "amount": 35.80500000000001,
+     "shown": 35.81
+    }
+   ]
+  },
+  "F-secondary-tax": {
+   "lineTotals": {
+    "f1": 190,
+    "f2": 240
+   },
+   "subtotal": 430,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 40.13084112149534,
+   "total": 442,
+   "categories": [
+    {
+     "category": "bar",
+     "base": 190,
+     "serviceCharge": 0,
+     "tax": 12.429906542056074,
+     "secondaryTax": 0,
+     "gross": 190
+    },
+    {
+     "category": "fnb",
+     "base": 240,
+     "serviceCharge": 0,
+     "tax": 15.700934579439263,
+     "secondaryTax": 12,
+     "gross": 252
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 28.130841121495337,
+     "shown": 28.13
+    },
+    {
+     "key": "exclusive:City tax",
+     "label": "City tax",
+     "amount": 12,
+     "shown": 12
+    }
+   ]
+  }
+ },
+ "shop": {
+  "S-tee-and-caps": {
+   "lineTotals": {
+    "s1": 350,
+    "s2": 500
+   },
+   "subtotal": 850,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 55.607476635514104,
+   "total": 850,
+   "categories": [
+    {
+     "category": "merch",
+     "base": 850,
+     "serviceCharge": 0,
+     "tax": 55.607476635514104,
+     "secondaryTax": 0,
+     "gross": 850
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 55.607476635514104,
+     "shown": 55.61
+    }
+   ]
+  },
+  "S-order-fixed": {
+   "lineTotals": {
+    "s1": 450,
+    "s2": 270
+   },
+   "subtotal": 720,
+   "promoDiscount": 0,
+   "manualDiscount": 50,
+   "manualAmounts": {
+    "md1": 50
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 43.8317757009346,
+   "total": 670,
+   "categories": [
+    {
+     "category": "merch",
+     "base": 670,
+     "serviceCharge": 0,
+     "tax": 43.8317757009346,
+     "secondaryTax": 0,
+     "gross": 670
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 43.8317757009346,
+     "shown": 43.83
+    }
+   ]
+  },
+  "S-promo-member": {
+   "lineTotals": {
+    "s1": 240
+   },
+   "subtotal": 240,
+   "promoDiscount": 48,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [
+    {
+     "code": "MEMBER20",
+     "amount": 48
+    }
+   ],
+   "serviceCharge": 0,
+   "taxTotal": 12.56074766355141,
+   "total": 192,
+   "categories": [
+    {
+     "category": "merch",
+     "base": 192,
+     "serviceCharge": 0,
+     "tax": 12.56074766355141,
+     "secondaryTax": 0,
+     "gross": 192
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 12.56074766355141,
+     "shown": 12.56
+    }
+   ]
+  },
+  "S-line-comp": {
+   "lineTotals": {
+    "s1": 180,
+    "s2": 240
+   },
+   "subtotal": 420,
+   "promoDiscount": 0,
+   "manualDiscount": 240,
+   "manualAmounts": {
+    "md1": 240
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 11.775700934579447,
+   "total": 180,
+   "categories": [
+    {
+     "category": "merch",
+     "base": 180,
+     "serviceCharge": 0,
+     "tax": 11.775700934579447,
+     "secondaryTax": 0,
+     "gross": 180
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 11.775700934579447,
+     "shown": 11.78
+    }
+   ]
+  },
+  "S-manual-percent-rounds": {
+   "lineTotals": {
+    "s1": 90
+   },
+   "subtotal": 90,
+   "promoDiscount": 0,
+   "manualDiscount": 6,
+   "manualAmounts": {
+    "md1": 6
+   },
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 5.495327102803742,
+   "total": 84,
+   "categories": [
+    {
+     "category": "merch",
+     "base": 84,
+     "serviceCharge": 0,
+     "tax": 5.495327102803742,
+     "secondaryTax": 0,
+     "gross": 84
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 5.495327102803742,
+     "shown": 5.5
+    }
+   ]
+  },
+  "S-weekend": {
+   "lineTotals": {
+    "s1": 250
+   },
+   "subtotal": 250,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 0,
+   "taxTotal": 16.35514018691589,
+   "total": 250,
+   "categories": [
+    {
+     "category": "merch",
+     "base": 250,
+     "serviceCharge": 0,
+     "tax": 16.35514018691589,
+     "secondaryTax": 0,
+     "gross": 250
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "inclusive:VAT",
+     "label": "VAT included",
+     "amount": 16.35514018691589,
+     "shown": 16.36
+    }
+   ]
+  },
+  "S-service-exclusive": {
+   "lineTotals": {
+    "s1": 700
+   },
+   "subtotal": 700,
+   "promoDiscount": 0,
+   "manualDiscount": 0,
+   "manualAmounts": {},
+   "promos": [],
+   "serviceCharge": 70,
+   "taxTotal": 53.900000000000006,
+   "total": 823.9,
+   "categories": [
+    {
+     "category": "merch",
+     "base": 700,
+     "serviceCharge": 70,
+     "tax": 53.900000000000006,
+     "secondaryTax": 0,
+     "gross": 823.9
+    }
+   ],
+   "taxRows": [
+    {
+     "key": "service",
+     "label": "Service charge",
+     "amount": 70,
+     "shown": 70
+    },
+    {
+     "key": "exclusive:VAT",
+     "label": "VAT",
+     "amount": 53.900000000000006,
+     "shown": 53.9
+    }
+   ]
+  }
+ },
+ "taxPreview": {
+  "X-inclusive": {
+   "serviceCharge": "฿0.00",
+   "tax": "฿6.54",
+   "secondaryTax": "฿0.00",
+   "gross": "฿100.00"
+  },
+  "X-service-exclusive": {
+   "serviceCharge": "฿10.00",
+   "tax": "฿7.70",
+   "secondaryTax": "฿0.00",
+   "gross": "฿117.70"
+  },
+  "X-secondary": {
+   "serviceCharge": "฿0.00",
+   "tax": "฿6.54",
+   "secondaryTax": "฿5.00",
+   "gross": "฿105.00"
+  },
+  "X-inclusive-7.5": {
+   "serviceCharge": "฿0.00",
+   "tax": "฿6.98",
+   "secondaryTax": "฿0.00",
+   "gross": "฿100.00"
+  },
+  "X-exclusive-8.25": {
+   "serviceCharge": "฿10.00",
+   "tax": "฿9.08",
+   "secondaryTax": "฿0.00",
+   "gross": "฿119.08"
+  }
+ },
+ "perUnit": [
+  [
+   100,
+   3,
+   33.33
+  ],
+  [
+   95,
+   2,
+   47.5
+  ],
+  [
+   270,
+   4,
+   67.5
+  ],
+  [
+   115,
+   3,
+   38.33
+  ],
+  [
+   1000,
+   7,
+   142.86
+  ],
+  [
+   10.5,
+   2,
+   5.25
+  ]
+ ],
+ "reports": {
+  "salesByCategory": [
+   {
+    "category": "tickets",
+    "grossRevenue": 16254.362331838565,
+    "taxCollected": 1063.3694983445798,
+    "serviceCharge": 0,
+    "count": 10,
+    "pctShare": 74.41587691867528
+   },
+   {
+    "category": "fnb",
+    "grossRevenue": 1988,
+    "taxCollected": 130.05607476635527,
+    "serviceCharge": 0,
+    "count": 5,
+    "pctShare": 9.101480592969702
+   },
+   {
+    "category": "merch",
+    "grossRevenue": 1700,
+    "taxCollected": 111.21495327102815,
+    "serviceCharge": 0,
+    "count": 3,
+    "pctShare": 7.7829562414730855
+   },
+   {
+    "category": "addons",
+    "grossRevenue": 1451.237668161435,
+    "taxCollected": 94.94078202925284,
+    "serviceCharge": 0,
+    "count": 8,
+    "pctShare": 6.644070157222287
+   },
+   {
+    "category": "stored_value",
+    "grossRevenue": 200,
+    "taxCollected": 0,
+    "serviceCharge": 0,
+    "count": 1,
+    "pctShare": 0.9156419107615394
+   },
+   {
+    "category": "drop_off",
+    "grossRevenue": 150,
+    "taxCollected": 9.81308411214954,
+    "serviceCharge": 0,
+    "count": 1,
+    "pctShare": 0.6867314330711546
+   },
+   {
+    "category": "bar",
+    "grossRevenue": 99,
+    "taxCollected": 6.476635514018696,
+    "serviceCharge": 0,
+    "count": 1,
+    "pctShare": 0.45324274582696206
+   }
+  ],
+  "paymentMix": [
+   {
+    "method": "card",
+    "amount": 11215.4,
+    "count": 6
+   },
+   {
+    "method": "cash",
+    "amount": 6289.75,
+    "count": 5
+   },
+   {
+    "method": "promptpay",
+    "amount": 3605.5,
+    "count": 5
+   },
+   {
+    "method": "wallet_credit",
+    "amount": 420,
+    "count": 3
+   }
+  ],
+  "ticketSalesByTier": [
+   {
+    "tier": "tourist",
+    "ticketRevenue": 16305.6,
+    "dropOffRevenue": 150,
+    "saleCount": 8
+   },
+   {
+    "tier": "thai",
+    "ticketRevenue": 1600,
+    "dropOffRevenue": 0,
+    "saleCount": 2
+   }
+  ],
+  "fnbSalesByItem": [
+   {
+    "itemId": "m-fries",
+    "name": "French Fries",
+    "qty": 5,
+    "revenue": 525
+   },
+   {
+    "itemId": "m-burger",
+    "name": "Kids Beef Burger",
+    "qty": 2,
+    "revenue": 360
+   },
+   {
+    "itemId": "m-pizza",
+    "name": "Margherita Pizza",
+    "qty": 1,
+    "revenue": 310
+   },
+   {
+    "itemId": "m-padthai",
+    "name": "Pad Thai",
+    "qty": 2,
+    "revenue": 300
+   },
+   {
+    "itemId": "m-latte",
+    "name": "Iced Latte",
+    "qty": 2,
+    "revenue": 240
+   },
+   {
+    "itemId": "m-shake",
+    "name": "Chocolate Milkshake",
+    "qty": 1,
+    "revenue": 160
+   },
+   {
+    "itemId": "m-juice",
+    "name": "Fresh Orange Juice",
+    "qty": 2,
+    "revenue": 140
+   },
+   {
+    "itemId": "m-nuggets",
+    "name": "Chicken Nuggets",
+    "qty": 1,
+    "revenue": 120
+   },
+   {
+    "itemId": "m-beer",
+    "name": "Chang Beer",
+    "qty": 1,
+    "revenue": 110
+   },
+   {
+    "itemId": "m-cottoncandy",
+    "name": "Cotton Candy",
+    "qty": 1,
+    "revenue": 70
+   },
+   {
+    "itemId": "m-icecream",
+    "name": "Ice Cream Cone",
+    "qty": 1,
+    "revenue": 0
+   }
+  ],
+  "merchSalesByItem": [
+   {
+    "itemId": "mr-cap",
+    "name": "Oto Cap",
+    "qty": 2,
+    "revenue": 500
+   },
+   {
+    "itemId": "mr-plush",
+    "name": "Oto Mascot Plush",
+    "qty": 1,
+    "revenue": 450
+   },
+   {
+    "itemId": "mr-tshirt",
+    "name": "Oto T-Shirt",
+    "qty": 1,
+    "revenue": 350
+   },
+   {
+    "itemId": "mr-keyring",
+    "name": "Mascot Keyring",
+    "qty": 3,
+    "revenue": 270
+   },
+   {
+    "itemId": "mr-stickerpack",
+    "name": "Sticker Pack",
+    "qty": 4,
+    "revenue": 240
+   },
+   {
+    "itemId": "mr-bottle",
+    "name": "Water Bottle",
+    "qty": 1,
+    "revenue": 180
+   }
+  ],
+  "ticketTypeSalesRows": [
+   {
+    "ticketTypeId": "t-2h",
+    "name": "2 Hours Play",
+    "lineCount": 8,
+    "kids": 15,
+    "adults": 10,
+    "revenue": 17060
+   },
+   {
+    "ticketTypeId": "t-fd",
+    "name": "Full Day Pass",
+    "lineCount": 2,
+    "kids": 2,
+    "adults": 3,
+    "revenue": 2380
+   },
+   {
+    "ticketTypeId": "t-1h",
+    "name": "1 Hour Play",
+    "lineCount": 1,
+    "kids": 1,
+    "adults": 0,
+    "revenue": 1040
+   }
+  ],
+  "ticketWeekdayWeekendSplit": [
+   {
+    "mode": "weekday",
+    "saleCount": 10,
+    "revenue": 18055.6
+   }
+  ],
+  "eventCampRevenueRows": [
+   {
+    "eventId": "ev-event",
+    "name": "Halloween",
+    "type": "event",
+    "date": "2026-07-04",
+    "passesSold": 1,
+    "attended": 0,
+    "estimatedRevenue": 1300.75
+   },
+   {
+    "eventId": "ev-camp",
+    "name": "Summer camp",
+    "type": "camp",
+    "date": "2026-07-02",
+    "passesSold": 2,
+    "attended": 1,
+    "estimatedRevenue": 900
+   }
+  ],
+  "dropOffNannyRevenueRows": [
+   {
+    "service": "drop_off",
+    "sessionCount": 1,
+    "totalHours": 1,
+    "feesTHB": 150
+   }
+  ],
+  "fnbProfitability": [
+   {
+    "itemId": "m-fries",
+    "name": "French Fries",
+    "qty": 5,
+    "revenue": 525,
+    "cogs": 61.25,
+    "margin": 463.75,
+    "marginPercent": 88.33333333333333,
+    "costTracked": true
+   },
+   {
+    "itemId": "m-burger",
+    "name": "Kids Beef Burger",
+    "qty": 2,
+    "revenue": 360,
+    "cogs": 0,
+    "margin": 360,
+    "marginPercent": 100,
+    "costTracked": false
+   },
+   {
+    "itemId": "m-pizza",
+    "name": "Margherita Pizza",
+    "qty": 1,
+    "revenue": 310,
+    "cogs": 0,
+    "margin": 310,
+    "marginPercent": 100,
+    "costTracked": false
+   },
+   {
+    "itemId": "m-padthai",
+    "name": "Pad Thai",
+    "qty": 2,
+    "revenue": 300,
+    "cogs": 0,
+    "margin": 300,
+    "marginPercent": 100,
+    "costTracked": false
+   },
+   {
+    "itemId": "m-latte",
+    "name": "Iced Latte",
+    "qty": 2,
+    "revenue": 240,
+    "cogs": 0,
+    "margin": 240,
+    "marginPercent": 100,
+    "costTracked": false
+   },
+   {
+    "itemId": "m-shake",
+    "name": "Chocolate Milkshake",
+    "qty": 1,
+    "revenue": 160,
+    "cogs": 0,
+    "margin": 160,
+    "marginPercent": 100,
+    "costTracked": false
+   },
+   {
+    "itemId": "m-juice",
+    "name": "Fresh Orange Juice",
+    "qty": 2,
+    "revenue": 140,
+    "cogs": 0,
+    "margin": 140,
+    "marginPercent": 100,
+    "costTracked": false
+   },
+   {
+    "itemId": "m-nuggets",
+    "name": "Chicken Nuggets",
+    "qty": 1,
+    "revenue": 120,
+    "cogs": 35.5,
+    "margin": 84.5,
+    "marginPercent": 70.41666666666667,
+    "costTracked": true
+   },
+   {
+    "itemId": "m-beer",
+    "name": "Chang Beer",
+    "qty": 1,
+    "revenue": 110,
+    "cogs": 0,
+    "margin": 110,
+    "marginPercent": 100,
+    "costTracked": false
+   },
+   {
+    "itemId": "m-cottoncandy",
+    "name": "Cotton Candy",
+    "qty": 1,
+    "revenue": 70,
+    "cogs": 0,
+    "margin": 70,
+    "marginPercent": 100,
+    "costTracked": false
+   },
+   {
+    "itemId": "m-icecream",
+    "name": "Ice Cream Cone",
+    "qty": 1,
+    "revenue": 0,
+    "cogs": 0,
+    "margin": 0,
+    "marginPercent": 0,
+    "costTracked": false
+   }
+  ],
+  "merchProfitability": [
+   {
+    "itemId": "mr-cap",
+    "name": "Oto Cap",
+    "qty": 2,
+    "revenue": 500,
+    "cogs": 160,
+    "margin": 340,
+    "marginPercent": 68,
+    "costTracked": true
+   },
+   {
+    "itemId": "mr-plush",
+    "name": "Oto Mascot Plush",
+    "qty": 1,
+    "revenue": 450,
+    "cogs": 199.99,
+    "margin": 250.01,
+    "marginPercent": 55.55777777777777,
+    "costTracked": true
+   },
+   {
+    "itemId": "mr-tshirt",
+    "name": "Oto T-Shirt",
+    "qty": 1,
+    "revenue": 350,
+    "cogs": 120.5,
+    "margin": 229.5,
+    "marginPercent": 65.57142857142857,
+    "costTracked": true
+   },
+   {
+    "itemId": "mr-keyring",
+    "name": "Mascot Keyring",
+    "qty": 3,
+    "revenue": 270,
+    "cogs": 75,
+    "margin": 195,
+    "marginPercent": 72.22222222222221,
+    "costTracked": true
+   },
+   {
+    "itemId": "mr-stickerpack",
+    "name": "Sticker Pack",
+    "qty": 4,
+    "revenue": 240,
+    "cogs": 48,
+    "margin": 192,
+    "marginPercent": 80,
+    "costTracked": true
+   },
+   {
+    "itemId": "mr-bottle",
+    "name": "Water Bottle",
+    "qty": 1,
+    "revenue": 180,
+    "cogs": 60,
+    "margin": 120,
+    "marginPercent": 66.66666666666666,
+    "costTracked": true
+   }
+  ],
+  "walletCreditSummary": {
+   "grantedTHB": 550.1,
+   "spentTHB": 229.5,
+   "refundedTHB": 20.2,
+   "expiredTHB": 220.3,
+   "netOutstandingTHB": 120.5,
+   "entryCount": 5
+  },
+  "walletLedgerRows": [
+   {
+    "wristbandCode": "1002",
+    "customerNickname": "Tom",
+    "kind": "expire",
+    "amountTHB": -220.3,
+    "source": "expiry",
+    "at": "2026-07-02T23:59:00.000Z"
+   },
+   {
+    "wristbandCode": "1002",
+    "customerNickname": "Tom",
+    "kind": "refund",
+    "amountTHB": 20.2,
+    "source": "refund",
+    "at": "2026-07-01T11:00:00.000Z"
+   },
+   {
+    "wristbandCode": "1002",
+    "customerNickname": "Tom",
+    "kind": "grant",
+    "amountTHB": 200.1,
+    "source": "prepaid_food",
+    "at": "2026-07-01T10:00:00.000Z"
+   },
+   {
+    "wristbandCode": "1001",
+    "customerNickname": "Mali",
+    "kind": "spend",
+    "amountTHB": -229.5,
+    "source": "fnb_order",
+    "at": "2026-06-15T14:10:00.000Z",
+    "by": "Nok"
+   },
+   {
+    "wristbandCode": "1001",
+    "customerNickname": "Mali",
+    "kind": "grant",
+    "amountTHB": 350,
+    "source": "ticket_sale",
+    "at": "2026-06-15T09:12:00.000Z"
+   }
+  ],
+  "promoUsageSummary": [
+   {
+    "code": "STAFF10",
+    "label": "Staff Discount",
+    "type": "percent",
+    "usedCount": 3,
+    "active": true,
+    "totalDiscountValueTHB": 223
+   },
+   {
+    "code": "SAVE100",
+    "label": "Promo Event",
+    "type": "fixed",
+    "usedCount": 2,
+    "usageLimit": 50,
+    "active": true,
+    "totalDiscountValueTHB": 0
+   },
+   {
+    "code": "MEMBER20",
+    "label": "Member Discount",
+    "type": "percent",
+    "usedCount": 1,
+    "active": true,
+    "totalDiscountValueTHB": 401.40000000000003
+   },
+   {
+    "code": "ICECREAM",
+    "label": "Free Ice Cream",
+    "type": "free_item",
+    "usedCount": 0,
+    "usageLimit": 100,
+    "active": true,
+    "totalDiscountValueTHB": 0
+   }
+  ],
+  "discountAndCompImpact": [
+   {
+    "source": "merch",
+    "transactionId": "M3",
+    "createdAt": "2026-07-02T17:00:00.000Z",
+    "operatorName": "Som (Reception)",
+    "type": "comp",
+    "reason": "Service recovery",
+    "amountTHB": 50,
+    "appliedBy": "Som (Reception)"
+   },
+   {
+    "source": "fnb",
+    "transactionId": "F4",
+    "createdAt": "2026-07-02T12:30:00.000Z",
+    "operatorName": "Nok (Reception)",
+    "type": "comp",
+    "reason": "Service recovery",
+    "amountTHB": 7.35,
+    "appliedBy": "Som (Reception)"
+   },
+   {
+    "source": "fnb",
+    "transactionId": "F4",
+    "createdAt": "2026-07-02T12:30:00.000Z",
+    "operatorName": "Nok (Reception)",
+    "type": "fixed",
+    "reason": "Service recovery",
+    "amountTHB": 7.35,
+    "appliedBy": "Som (Reception)"
+   },
+   {
+    "source": "sale",
+    "transactionId": "S6",
+    "createdAt": "2026-07-02T09:00:00.000Z",
+    "operatorName": "Som (Reception)",
+    "type": "comp",
+    "reason": "Service recovery",
+    "amountTHB": 12.5,
+    "appliedBy": "Som (Reception)"
+   },
+   {
+    "source": "fnb",
+    "transactionId": "F3",
+    "createdAt": "2026-07-01T18:00:00.000Z",
+    "operatorName": "Nok (Reception)",
+    "type": "percent",
+    "reason": "Service recovery",
+    "amountTHB": 7.35,
+    "appliedBy": "Som (Reception)"
+   },
+   {
+    "source": "merch",
+    "transactionId": "M2",
+    "createdAt": "2026-07-01T16:30:00.000Z",
+    "operatorName": "Som (Reception)",
+    "type": "fixed",
+    "reason": "Service recovery",
+    "amountTHB": 50,
+    "appliedBy": "Som (Reception)"
+   },
+   {
+    "source": "sale",
+    "transactionId": "S5",
+    "createdAt": "2026-07-01T13:30:00.000Z",
+    "operatorName": "Som (Reception)",
+    "type": "fixed",
+    "reason": "Service recovery",
+    "amountTHB": 12.5,
+    "appliedBy": "Som (Reception)"
+   },
+   {
+    "source": "sale",
+    "transactionId": "S3",
+    "createdAt": "2026-06-16T11:05:00.000Z",
+    "operatorName": "Som (Reception)",
+    "type": "fixed",
+    "reason": "Service recovery",
+    "amountTHB": 12.5,
+    "appliedBy": "Som (Reception)"
+   }
+  ],
+  "promoDiscountImpact": [
+   {
+    "transactionId": "S4",
+    "createdAt": "2026-07-01T12:00:00.000Z",
+    "operatorName": "Som (Reception)",
+    "code": "STAFF10",
+    "label": "Staff Discount",
+    "type": "percent",
+    "amountTHB": 223
+   },
+   {
+    "transactionId": "S4",
+    "createdAt": "2026-07-01T12:00:00.000Z",
+    "operatorName": "Som (Reception)",
+    "code": "MEMBER20",
+    "label": "Member Discount",
+    "type": "percent",
+    "amountTHB": 401.40000000000003
+   }
+  ],
+  "discountImpactByOperator": [
+   {
+    "appliedBy": "Som (Reception)",
+    "compCount": 3,
+    "compTotalTHB": 69.85,
+    "discountCount": 5,
+    "discountTotalTHB": 89.7
+   }
+  ],
+  "promoDiscountImpactByType": [
+   {
+    "type": "percent",
+    "count": 2,
+    "amountTHB": 624.4000000000001
+   }
+  ],
+  "taxReceiptRows": [
+   {
+    "kind": "fnb",
+    "transactionId": "F5",
+    "createdAt": "2026-07-03T15:00:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Nok (Reception)",
+    "netSubtotal": 70,
+    "serviceCharge": 0,
+    "taxTotal": 4.579439252336456,
+    "grandTotal": 70,
+    "taxSummaryLabel": "VAT included ฿4.58",
+    "categories": [
+     "fnb"
+    ],
+    "paymentMethod": "wallet_credit"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S10",
+    "createdAt": "2026-07-03T09:30:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Nok (Reception)",
+    "netSubtotal": 3270,
+    "serviceCharge": 0,
+    "taxTotal": 200.84112149532717,
+    "grandTotal": 3270,
+    "taxSummaryLabel": "VAT included ฿200.84",
+    "categories": [
+     "tickets",
+     "drop_off",
+     "stored_value",
+     "addons"
+    ],
+    "paymentMethod": "card"
+   },
+   {
+    "kind": "merch",
+    "transactionId": "M3",
+    "createdAt": "2026-07-02T17:00:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 420,
+    "serviceCharge": 0,
+    "taxTotal": 11.775700934579447,
+    "grandTotal": 180,
+    "taxSummaryLabel": "VAT included ฿11.78",
+    "categories": [
+     "merch"
+    ],
+    "paymentMethod": "promptpay"
+   },
+   {
+    "kind": "fnb",
+    "transactionId": "F4",
+    "createdAt": "2026-07-02T12:30:00.000Z",
+    "branchId": "br-chalong",
+    "operatorName": "Nok (Reception)",
+    "netSubtotal": 440,
+    "serviceCharge": 0,
+    "taxTotal": 17.66355140186917,
+    "grandTotal": 270,
+    "taxSummaryLabel": "VAT included ฿17.66",
+    "categories": [
+     "fnb"
+    ],
+    "paymentMethod": "cash"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S8",
+    "createdAt": "2026-07-02T11:00:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 450,
+    "serviceCharge": 0,
+    "taxTotal": 29.439252336448646,
+    "grandTotal": 450,
+    "taxSummaryLabel": "VAT included ฿29.44",
+    "categories": [
+     "tickets"
+    ],
+    "paymentMethod": "promptpay"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S7",
+    "createdAt": "2026-07-02T10:00:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 3880,
+    "serviceCharge": 0,
+    "taxTotal": 253.83177570093483,
+    "grandTotal": 3880,
+    "taxSummaryLabel": "VAT included ฿253.83",
+    "categories": [
+     "tickets",
+     "addons"
+    ],
+    "paymentMethod": "card"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S6",
+    "createdAt": "2026-07-02T09:00:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 2230,
+    "serviceCharge": 0,
+    "taxTotal": 0,
+    "grandTotal": 0,
+    "taxSummaryLabel": "",
+    "categories": [
+     "tickets",
+     "addons"
+    ],
+    "paymentMethod": "cash"
+   },
+   {
+    "kind": "fnb",
+    "transactionId": "F3",
+    "createdAt": "2026-07-01T18:00:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Nok (Reception)",
+    "netSubtotal": 780,
+    "serviceCharge": 0,
+    "taxTotal": 45.9252336448598,
+    "grandTotal": 702,
+    "taxSummaryLabel": "VAT included ฿45.93",
+    "categories": [
+     "fnb",
+     "bar"
+    ],
+    "paymentMethod": "promptpay"
+   },
+   {
+    "kind": "merch",
+    "transactionId": "M2",
+    "createdAt": "2026-07-01T16:30:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 720,
+    "serviceCharge": 0,
+    "taxTotal": 43.8317757009346,
+    "grandTotal": 670,
+    "taxSummaryLabel": "VAT included ฿43.83",
+    "categories": [
+     "merch"
+    ],
+    "paymentMethod": "split"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S5",
+    "createdAt": "2026-07-01T13:30:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 2230,
+    "serviceCharge": 0,
+    "taxTotal": 140.00000000000023,
+    "grandTotal": 2140,
+    "taxSummaryLabel": "VAT included ฿140.00",
+    "categories": [
+     "tickets",
+     "addons"
+    ],
+    "paymentMethod": "cash"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S4",
+    "createdAt": "2026-07-01T12:00:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 2230,
+    "serviceCharge": 0,
+    "taxTotal": 105.03925233644861,
+    "grandTotal": 1605.6,
+    "taxSummaryLabel": "VAT included ฿105.04",
+    "categories": [
+     "tickets",
+     "addons"
+    ],
+    "paymentMethod": "card"
+   },
+   {
+    "kind": "fnb",
+    "transactionId": "F2",
+    "createdAt": "2026-06-16T12:00:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Nok (Reception)",
+    "netSubtotal": 745,
+    "serviceCharge": 0,
+    "taxTotal": 48.73831775700944,
+    "grandTotal": 745,
+    "taxSummaryLabel": "VAT included ฿48.74",
+    "categories": [
+     "fnb"
+    ],
+    "paymentMethod": "card"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S3",
+    "createdAt": "2026-06-16T11:05:00.000Z",
+    "branchId": "br-chalong",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 2230,
+    "serviceCharge": 0,
+    "taxTotal": 136.07476635514024,
+    "grandTotal": 2080,
+    "taxSummaryLabel": "VAT included ฿136.07",
+    "categories": [
+     "tickets",
+     "addons"
+    ],
+    "paymentMethod": "promptpay"
+   },
+   {
+    "kind": "merch",
+    "transactionId": "M1",
+    "createdAt": "2026-06-15T16:00:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 850,
+    "serviceCharge": 0,
+    "taxTotal": 55.607476635514104,
+    "grandTotal": 850,
+    "taxSummaryLabel": "VAT included ฿55.61",
+    "categories": [
+     "merch"
+    ],
+    "paymentMethod": "cash"
+   },
+   {
+    "kind": "fnb",
+    "transactionId": "F1",
+    "createdAt": "2026-06-15T14:10:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Nok (Reception)",
+    "netSubtotal": 300,
+    "serviceCharge": 0,
+    "taxTotal": 19.62616822429908,
+    "grandTotal": 300,
+    "taxSummaryLabel": "VAT included ฿19.63",
+    "categories": [
+     "fnb"
+    ],
+    "paymentMethod": "split"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S9",
+    "createdAt": "2026-06-15T13:30:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 520,
+    "serviceCharge": 0,
+    "taxTotal": 34.01869158878509,
+    "grandTotal": 520,
+    "taxSummaryLabel": "VAT included ฿34.02",
+    "categories": [
+     "tickets"
+    ],
+    "paymentMethod": "promptpay"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S2",
+    "createdAt": "2026-06-15T10:40:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 1080,
+    "serviceCharge": 0,
+    "taxTotal": 70.65420560747668,
+    "grandTotal": 1080,
+    "taxSummaryLabel": "VAT included ฿70.65",
+    "categories": [
+     "tickets",
+     "addons"
+    ],
+    "paymentMethod": "card"
+   },
+   {
+    "kind": "ticket",
+    "transactionId": "S1",
+    "createdAt": "2026-06-15T09:12:00.000Z",
+    "branchId": "br-central",
+    "operatorName": "Som (Reception)",
+    "netSubtotal": 3030,
+    "serviceCharge": 0,
+    "taxTotal": 198.2242990654208,
+    "grandTotal": 3030,
+    "taxSummaryLabel": "VAT included ฿198.22",
+    "categories": [
+     "tickets",
+     "addons"
+    ],
+    "paymentMethod": "cash"
+   }
+  ],
+  "vatSummaryRange": [
+   {
+    "category": "tickets",
+    "netBase": 16254.362331838565,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 1063.3694983445798,
+    "gross": 16254.362331838565
+   },
+   {
+    "category": "fnb",
+    "netBase": 1988,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 130.05607476635527,
+    "gross": 1988
+   },
+   {
+    "category": "merch",
+    "netBase": 1700,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 111.21495327102815,
+    "gross": 1700
+   },
+   {
+    "category": "addons",
+    "netBase": 1451.237668161435,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 94.94078202925284,
+    "gross": 1451.237668161435
+   },
+   {
+    "category": "stored_value",
+    "netBase": 200,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 0,
+    "gross": 200
+   },
+   {
+    "category": "drop_off",
+    "netBase": 150,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 9.81308411214954,
+    "gross": 150
+   },
+   {
+    "category": "bar",
+    "netBase": 99,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 6.476635514018696,
+    "gross": 99
+   }
+  ],
+  "vatSummaryDay": [
+   {
+    "category": "tickets",
+    "period": "2026-06-15",
+    "netBase": 3970,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 259.7196261682246,
+    "gross": 3970
+   },
+   {
+    "category": "merch",
+    "period": "2026-06-15",
+    "netBase": 850,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 55.607476635514104,
+    "gross": 850
+   },
+   {
+    "category": "addons",
+    "period": "2026-06-15",
+    "netBase": 660,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 43.177570093458,
+    "gross": 660
+   },
+   {
+    "category": "fnb",
+    "period": "2026-06-15",
+    "netBase": 300,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 19.62616822429908,
+    "gross": 300
+   },
+   {
+    "category": "tickets",
+    "period": "2026-06-16",
+    "netBase": 1986.726457399103,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 129.9727588952685,
+    "gross": 1986.726457399103
+   },
+   {
+    "category": "fnb",
+    "period": "2026-06-16",
+    "netBase": 745,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 48.73831775700944,
+    "gross": 745
+   },
+   {
+    "category": "addons",
+    "period": "2026-06-16",
+    "netBase": 93.27354260089686,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 6.102007459871757,
+    "gross": 93.27354260089686
+   },
+   {
+    "category": "tickets",
+    "period": "2026-07-01",
+    "netBase": 3577.635874439462,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 234.05094505678744,
+    "gross": 3577.635874439462
+   },
+   {
+    "category": "merch",
+    "period": "2026-07-01",
+    "netBase": 670,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 43.8317757009346,
+    "gross": 670
+   },
+   {
+    "category": "fnb",
+    "period": "2026-07-01",
+    "netBase": 603,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 39.448598130841106,
+    "gross": 603
+   },
+   {
+    "category": "addons",
+    "period": "2026-07-01",
+    "netBase": 167.96412556053812,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 10.988307279661385,
+    "gross": 167.96412556053812
+   },
+   {
+    "category": "bar",
+    "period": "2026-07-01",
+    "netBase": 99,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 6.476635514018696,
+    "gross": 99
+   },
+   {
+    "category": "tickets",
+    "period": "2026-07-02",
+    "netBase": 3900,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 255.14018691588814,
+    "gross": 3900
+   },
+   {
+    "category": "addons",
+    "period": "2026-07-02",
+    "netBase": 430,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 28.130841121495337,
+    "gross": 430
+   },
+   {
+    "category": "fnb",
+    "period": "2026-07-02",
+    "netBase": 270,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 17.66355140186917,
+    "gross": 270
+   },
+   {
+    "category": "merch",
+    "period": "2026-07-02",
+    "netBase": 180,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 11.775700934579447,
+    "gross": 180
+   },
+   {
+    "category": "tickets",
+    "period": "2026-07-03",
+    "netBase": 2820,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 184.48598130841128,
+    "gross": 2820
+   },
+   {
+    "category": "stored_value",
+    "period": "2026-07-03",
+    "netBase": 200,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 0,
+    "gross": 200
+   },
+   {
+    "category": "drop_off",
+    "period": "2026-07-03",
+    "netBase": 150,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 9.81308411214954,
+    "gross": 150
+   },
+   {
+    "category": "addons",
+    "period": "2026-07-03",
+    "netBase": 100,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 6.542056074766364,
+    "gross": 100
+   },
+   {
+    "category": "fnb",
+    "period": "2026-07-03",
+    "netBase": 70,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 4.579439252336456,
+    "gross": 70
+   }
+  ],
+  "vatSummaryMonth": [
+   {
+    "category": "tickets",
+    "period": "2026-06",
+    "netBase": 5956.726457399103,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 389.6923850634931,
+    "gross": 5956.726457399103
+   },
+   {
+    "category": "fnb",
+    "period": "2026-06",
+    "netBase": 1045,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 68.36448598130852,
+    "gross": 1045
+   },
+   {
+    "category": "merch",
+    "period": "2026-06",
+    "netBase": 850,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 55.607476635514104,
+    "gross": 850
+   },
+   {
+    "category": "addons",
+    "period": "2026-06",
+    "netBase": 753.2735426008969,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 49.27957755332976,
+    "gross": 753.2735426008969
+   },
+   {
+    "category": "tickets",
+    "period": "2026-07",
+    "netBase": 10297.635874439462,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 673.6771132810868,
+    "gross": 10297.635874439462
+   },
+   {
+    "category": "fnb",
+    "period": "2026-07",
+    "netBase": 943,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 61.69158878504673,
+    "gross": 943
+   },
+   {
+    "category": "merch",
+    "period": "2026-07",
+    "netBase": 850,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 55.60747663551405,
+    "gross": 850
+   },
+   {
+    "category": "addons",
+    "period": "2026-07",
+    "netBase": 697.9641255605382,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 45.661204475923086,
+    "gross": 697.9641255605382
+   },
+   {
+    "category": "stored_value",
+    "period": "2026-07",
+    "netBase": 200,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 0,
+    "gross": 200
+   },
+   {
+    "category": "drop_off",
+    "period": "2026-07",
+    "netBase": 150,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 9.81308411214954,
+    "gross": 150
+   },
+   {
+    "category": "bar",
+    "period": "2026-07",
+    "netBase": 99,
+    "serviceCharge": 0,
+    "exclusiveTax": 0,
+    "inclusiveTax": 6.476635514018696,
+    "gross": 99
+   }
+  ]
+ }
+}

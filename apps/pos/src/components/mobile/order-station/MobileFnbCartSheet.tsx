@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { describeModifiers } from '@/lib/fnb';
-import { computeFnbTotals } from '@/lib/fnb';
-import { summarizeTax, roundTHB } from '@/lib/tax';
+import { itemOrderTotals, taxRowsOf } from '@/lib/cartWire';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import {
   ShoppingCart,
@@ -54,7 +53,7 @@ export function MobileFnbCartSheet({
   onSwitchTab,
   onCheckout,
 }: MobileFnbCartSheetProps) {
-  const { total, taxBreakdown } = computeFnbTotals(lines, manualDiscounts);
+  const { total, taxBreakdown } = itemOrderTotals(lines, manualDiscounts);
   const itemCount = lines.length;
   const isEmpty = itemCount === 0;
 
@@ -268,10 +267,10 @@ export function MobileFnbCartSheet({
               </Button>
 
               {!isEmpty &&
-                summarizeTax(taxBreakdown).map((row) => (
+                taxRowsOf(taxBreakdown).map((row) => (
                   <div key={row.key} className="flex justify-between text-sm text-muted-foreground">
                     <span>{row.label}</span>
-                    <span className="tabular-nums">฿{roundTHB(row.amount)}</span>
+                    <span className="tabular-nums">฿{row.amount}</span>
                   </div>
                 ))}
 

@@ -311,7 +311,7 @@ export const printJob = edge.table(
     ),
     check(
       'print_job_subject_check',
-      sql`${t.subjectType} is null or ${t.subjectType} in ('sale','sale_line','band','voucher','booking','visit','station')`,
+      sql`${t.subjectType} is null or ${t.subjectType} in ('sale','sale_line','band','voucher','booking','visit','station','wallet')`,
     ),
     check('print_job_copies_check', sql`${t.copies} > 0`),
     check('print_job_attempts_check', sql`${t.attempts} >= 0`),

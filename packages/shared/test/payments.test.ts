@@ -7,6 +7,7 @@ import {
   INVOICE_NO_MAX_LENGTH,
   INVOICE_NO_MAX_SEQ,
   INVOICE_NO_PATTERN,
+  invoiceStationSegment,
   PaymentRoutingSchema,
   PAYMENT_ATTEMPT_STATUSES,
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
@@ -17,6 +18,7 @@ import {
   projectAttemptPayload,
   QR_ROUTES,
   TERMINAL_REF_COUNTER_SCOPE,
+  WEB_INVOICE_STATION_CODE,
 } from '../src/payments';
 
 /**
@@ -239,5 +241,30 @@ describe('the terminal reference counter', () => {
     // (box_id, scope, counter_key, business_date), which IS "unique per
     // terminal per day" once counter_key is the device id.
     expect(TERMINAL_REF_COUNTER_SCOPE).toBe('terminal_ref');
+  });
+});
+
+describe('invoiceStationSegment (S2-12)', () => {
+  it('is the three characters a station takes in an invoice number', () => {
+    expect(invoiceStationSegment('T1')).toBe('T01');
+    expect(invoiceStationSegment('T01')).toBe('T01');
+    expect(invoiceStationSegment('B7')).toBe('B07');
+    expect(invoiceStationSegment('7')).toBe('007');
+    // A code that cannot number an invoice at all.
+    expect(invoiceStationSegment('TILL1')).toBeNull();
+    expect(invoiceStationSegment('')).toBeNull();
+  });
+
+  it("only WEB itself takes the booking site's segment", () => {
+    expect(WEB_INVOICE_STATION_CODE).toBe('WEB');
+    expect(invoiceStationSegment('WEB')).toBe(WEB_INVOICE_STATION_CODE);
+    expect(invoiceStationSegment('web')).toBe(WEB_INVOICE_STATION_CODE);
+    for (const code of ['W', 'WE', 'W1', 'WE1', 'EB', 'B']) {
+      expect(invoiceStationSegment(code), code).not.toBe(WEB_INVOICE_STATION_CODE);
+    }
+    // And a booking's invoice and a till's never share a stem.
+    const web = buildInvoiceNo({ stationCode: WEB_INVOICE_STATION_CODE, businessDate: '2026-09-30', seq: 1 });
+    const till = buildInvoiceNo({ stationCode: 'T1', businessDate: '2026-09-30', seq: 1 });
+    expect(web.slice(0, -6)).not.toBe(till.slice(0, -6));
   });
 });

@@ -149,8 +149,111 @@ export const BoothConfigSettingsSchema = z.object({
   /** Optional so parsing an older bundle never inserts a field into its hashed document. */
   spinDurationSeconds: z.number().int()
     .min(BOOTH_SPIN_DURATION_MIN_SECONDS).max(BOOTH_SPIN_DURATION_MAX_SECONDS).optional(),
+  /**
+   * The voucher slip this booth prints (SCRUM-471): Console → Booths →
+   * Voucher slip, stored on `booth.booth_settings.voucher_*`.
+   *
+   * **Each is optional, and present only when it differs from its default**
+   * (`BOOTH_VOUCHER_SLIP_DEFAULTS`), for the reason `staffSessionMinutes`
+   * gives: a bundle is hashed as stored, so a booth nobody has customised
+   * publishes the document — and the hash — it always did, and a box reading
+   * a bundle without them prints the slip it always printed. Read them through
+   * `boothVoucherSlip`, never directly.
+   *
+   * The texts carry no length limit here, on purpose: the settings route and
+   * the column's CHECK hold the limits, and a box refusing a whole wheel over
+   * a footer a newer cloud allowed to be longer would take the booth off the
+   * air for a line of small print. The renderer wraps what it is given.
+   */
+  voucherShowLogo: z.boolean().optional(),
+  voucherHeaderText: z.string().nullable().optional(),
+  voucherFooterText: z.string().nullable().optional(),
+  voucherShowStaff: z.boolean().optional(),
+  voucherShowTerms: z.boolean().optional(),
 });
 export type BoothConfigSettings = z.infer<typeof BoothConfigSettingsSchema>;
+
+/** The longest header line a booth's voucher takes — the print templates' own limit. */
+export const BOOTH_VOUCHER_HEADER_MAX_CHARS = 200;
+/** The longest footer line a booth's voucher takes — the print templates' own limit. */
+export const BOOTH_VOUCHER_FOOTER_MAX_CHARS = 400;
+
+/** What a booth's voucher slip shows, resolved: every field present. */
+export interface BoothVoucherSlip {
+  showLogo: boolean;
+  /** A line of its own under the venue line; null prints none. */
+  headerText: string | null;
+  /** The slip's last line; null prints none. */
+  footerText: string | null;
+  showStaff: boolean;
+  showTerms: boolean;
+}
+
+/**
+ * The slip every booth printed before SCRUM-471, and still prints until an
+ * administrator changes it: the logo, the Staff row and the terms, and no
+ * header or footer line. Also the column defaults of migration 0039.
+ */
+export const BOOTH_VOUCHER_SLIP_DEFAULTS: Readonly<BoothVoucherSlip> = Object.freeze({
+  showLogo: true,
+  headerText: null,
+  footerText: null,
+  showStaff: true,
+  showTerms: true,
+});
+
+/** A text as the slip stores it: trimmed, and "nothing" spelled null. */
+export function boothVoucherText(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+/**
+ * The slip a booth running these settings prints: each field as published, or
+ * its default when the bundle does not carry it — which is every bundle
+ * published before SCRUM-471 and every booth nobody has customised.
+ */
+export function boothVoucherSlip(settings: {
+  voucherShowLogo?: boolean;
+  voucherHeaderText?: string | null;
+  voucherFooterText?: string | null;
+  voucherShowStaff?: boolean;
+  voucherShowTerms?: boolean;
+}): BoothVoucherSlip {
+  const flag = (value: unknown, fallback: boolean): boolean =>
+    typeof value === 'boolean' ? value : fallback;
+  return {
+    showLogo: flag(settings.voucherShowLogo, BOOTH_VOUCHER_SLIP_DEFAULTS.showLogo),
+    headerText: boothVoucherText(settings.voucherHeaderText),
+    footerText: boothVoucherText(settings.voucherFooterText),
+    showStaff: flag(settings.voucherShowStaff, BOOTH_VOUCHER_SLIP_DEFAULTS.showStaff),
+    showTerms: flag(settings.voucherShowTerms, BOOTH_VOUCHER_SLIP_DEFAULTS.showTerms),
+  };
+}
+
+/**
+ * The slip fields a publish writes into `settings`: only those that differ
+ * from their defaults, so an untouched booth's bundle — and its hash — are
+ * what they were before the fields existed. The inverse of `boothVoucherSlip`.
+ */
+export function boothVoucherSlipBundleFields(slip: BoothVoucherSlip): {
+  voucherShowLogo?: boolean;
+  voucherHeaderText?: string;
+  voucherFooterText?: string;
+  voucherShowStaff?: boolean;
+  voucherShowTerms?: boolean;
+} {
+  const header = boothVoucherText(slip.headerText);
+  const footer = boothVoucherText(slip.footerText);
+  return {
+    ...(slip.showLogo !== BOOTH_VOUCHER_SLIP_DEFAULTS.showLogo ? { voucherShowLogo: slip.showLogo } : {}),
+    ...(header !== null ? { voucherHeaderText: header } : {}),
+    ...(footer !== null ? { voucherFooterText: footer } : {}),
+    ...(slip.showStaff !== BOOTH_VOUCHER_SLIP_DEFAULTS.showStaff ? { voucherShowStaff: slip.showStaff } : {}),
+    ...(slip.showTerms !== BOOTH_VOUCHER_SLIP_DEFAULTS.showTerms ? { voucherShowTerms: slip.showTerms } : {}),
+  };
+}
 
 /**
  * The session length a box uses when the published wheel names none: twelve
@@ -481,6 +584,113 @@ export function boothStaffLabel(
   if (n !== '') return n;
   if (c !== '') return c;
   return null;
+}
+
+// --- The day's booth staff (SCRUM-473) --------------------------------------
+
+/**
+ * The day's roster of one booth, as the box receives it on the `booth` cache
+ * scope beside `allowedStaff` (SCRUM-473, plan decisions D4-D6).
+ *
+ * `date` is the branch's trading day the roster is for; a box compares it with
+ * its own trading day and treats a roster for any other day as empty, so a box
+ * that has been offline since yesterday does not print yesterday's names.
+ *
+ * Each person carries the name the slip prints and, when they have one, the
+ * account that may sign in. A casual worker has no account and never will:
+ * named on the slip, never signed in (the owner's decision). The account ids
+ * are ALSO sign-in eligibility on that day — the union of the roster and the
+ * standing `allowedStaff` list (D5.2).
+ *
+ * **Optional on the entry, and old boxes ignore it**: the box's cache entry
+ * schema is a plain (non-strict) zod object, so a box built before this field
+ * strips it and goes on printing the signed-in person, exactly as before.
+ */
+export const BoothDutyRosterSchema = z.object({
+  /** `YYYY-MM-DD`, the branch's trading day. */
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  people: z
+    .array(
+      z.object({
+        /** Null for a casual worker. */
+        accountId: z.string().uuid().nullable(),
+        displayName: z.string().min(1),
+      }),
+    )
+    .default([]),
+});
+export type BoothDutyRoster = z.infer<typeof BoothDutyRosterSchema>;
+
+/**
+ * Names joined as a person would say them: "Tom", "Tom and Jerry",
+ * "Tom, Jerry and Nok". No Oxford comma — the slip is printed in the park's
+ * English, which does not use one, and the line is narrow.
+ *
+ * Blank names are dropped and a name repeated (case-insensitively, trimmed) is
+ * said once, so one person reaching the label two ways never prints twice.
+ * Null when nobody is left.
+ */
+export function joinBoothStaffNames(names: readonly (string | null | undefined)[]): string | null {
+  const seen = new Set<string>();
+  const kept: string[] = [];
+  for (const raw of names) {
+    const name = typeof raw === 'string' ? raw.trim() : '';
+    if (name === '') continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.push(name);
+  }
+  if (kept.length === 0) return null;
+  if (kept.length === 1) return kept[0]!;
+  return `${kept.slice(0, -1).join(', ')} and ${kept[kept.length - 1]}`;
+}
+
+/**
+ * The Staff row of a booth voucher, merged for the day (SCRUM-473, D6).
+ *
+ * The ladder, in order:
+ *
+ *  1. **A roster for today** — every name on it, joined naturally, plus the
+ *     person signed in when they are not already on it (a stand-in who signed
+ *     in through the standing list joins the day's label: D5.2). The signed-in
+ *     person is added by NAME only; the roster is names, and "Tom, Jerry and
+ *     Nok (S-7KMQ)" would print one person's code as though it were all three.
+ *     A stand-in with no name on record prints their code instead.
+ *  2. **Nobody attributed today** (no roster, or an empty one) and somebody
+ *     signed in — exactly today's slip: `signedInLabel` ("Nok (S-7KMQ)")
+ *     unchanged, byte for byte.
+ *  3. **Neither** — null, which the template prints as "unattributed", as today.
+ *
+ * The untouched-slip guarantee of step 2 is scoped to BEFORE anyone is
+ * attributed today. The moment the day's roster holds anyone — the rota's
+ * people, a manual add, or a stand-in self-assigned at their first sign-in at
+ * a booth with no rota — step 1 applies and the label is names only for the
+ * rest of the day: "Nok" replacing "Nok (S-7KMQ)" after the first attribution
+ * of the day is the owner's format ruling, not a regression.
+ *
+ * `roster` is taken only when its `date` is `today`; any other day's roster is
+ * treated as absent.
+ */
+export function boothDutyLabel(input: {
+  roster: BoothDutyRoster | null | undefined;
+  today: string;
+  signedIn: {
+    accountId: string;
+    name: string | null;
+    /** `boothStaffLabel(name, code)` — what the slip prints today. */
+    label: string | null;
+  } | null;
+}): string | null {
+  const people =
+    input.roster && input.roster.date === input.today ? input.roster.people : [];
+  if (people.length === 0) return input.signedIn?.label ?? null;
+  const names: (string | null)[] = people.map((p) => p.displayName);
+  const who = input.signedIn;
+  if (who && !people.some((p) => p.accountId === who.accountId)) {
+    names.push(who.name ?? who.label);
+  }
+  return joinBoothStaffNames(names);
 }
 
 // --- Signing in at the booth (SCRUM-223) ------------------------------------

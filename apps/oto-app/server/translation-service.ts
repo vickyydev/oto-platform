@@ -1,17 +1,5 @@
-import OpenAI from "openai";
+import { aiComplete, FAST_AI_MODEL, stripJsonFences } from "./lib/anthropic";
 import { batchProcess } from "./lib/batch";
-
-let _openai: OpenAI | null = null;
-
-function getOpenAI(): OpenAI {
-  if (!_openai) {
-    _openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      baseURL: process.env.OPENAI_BASE_URL,
-    });
-  }
-  return _openai;
-}
 
 const LANGUAGE_NAMES: Record<string, string> = {
   th: "Thai",
@@ -75,34 +63,24 @@ async function translateBatch(
       inputObj[item.key] = item.value;
     }
 
-    const response = await getOpenAI().chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are a professional translator specializing in UI/UX text localization. 
+    const content = await aiComplete({
+      model: FAST_AI_MODEL,
+      system: `You are a professional translator specializing in UI/UX text localization.
 Translate the provided JSON object values from English to ${languageName}. 
 Keep the keys exactly the same, only translate the values.
 Maintain the tone and context appropriate for a family-friendly children's play center check-in form.
 Return ONLY valid JSON with the same keys and translated values.
 For very short texts like "Yes" or "No", provide the appropriate ${languageName} equivalent.
 Do NOT translate placeholders like {{name}} - keep them as-is.`,
-        },
-        {
-          role: "user",
-          content: JSON.stringify(inputObj, null, 2),
-        },
-      ],
-      response_format: { type: "json_object" },
-      max_completion_tokens: 4096,
+      user: JSON.stringify(inputObj, null, 2),
+      maxTokens: 4096,
     });
 
-    const content = response.choices[0]?.message?.content;
     if (!content) {
       throw new Error("Empty response from translation API");
     }
 
-    const translations = JSON.parse(content) as Record<string, string>;
+    const translations = JSON.parse(stripJsonFences(content)) as Record<string, string>;
 
     return items.map((item) => ({
       key: item.key,
@@ -131,22 +109,14 @@ export async function translateSingleText(
   }
 
   try {
-    const response = await getOpenAI().chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        {
-          role: "system",
-          content: `Translate the following English text to ${languageName}. Return ONLY the translated text, no explanations.`,
-        },
-        {
-          role: "user",
-          content: text,
-        },
-      ],
-      max_completion_tokens: 1024,
+    const content = await aiComplete({
+      model: FAST_AI_MODEL,
+      system: `Translate the following English text to ${languageName}. Return ONLY the translated text, no explanations.`,
+      user: text,
+      maxTokens: 1024,
     });
 
-    return response.choices[0]?.message?.content?.trim() || text;
+    return content.trim() || text;
   } catch (error) {
     console.error("[TranslationService] Single translation failed:", error);
     return text;

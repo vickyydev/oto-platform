@@ -29,6 +29,8 @@ import {
 import {
   SIMULATOR_ACTIONS_WITH_SECRETS,
   SimulatorActionSchema,
+  WEB_INVOICE_STATION_CODE,
+  invoiceStationSegment,
   newId,
   STATION_SESSION_STAGES,
   type DeviceSettings,
@@ -39,6 +41,7 @@ import { pgErrorOf } from '../lib/scrub';
 import { holdsGrantAt } from './access-control';
 import { resolveEffectivePermissions } from './permissions';
 import { audit } from './audit';
+import { claimClientId, markReplay } from './client-id';
 import { BOOTH_CODE_PREFIX_RULE, isBoothCodePrefix } from './booth-admin';
 import { boxSettings, issueClaimCode, mintClaimCode, normaliseClaimCode, sha256Hex } from './box';
 import { atBranch } from '../lib/staff-scope';
@@ -240,6 +243,11 @@ export interface BoxHeartbeatView {
 }
 
 export interface StationWriteInput {
+  /**
+   * SCRUM-270 — the id a Console that minted one names the new station by
+   * (OD-12). Create only: an update never moves a station to another id.
+   */
+  id?: string | null;
   name: string;
   kind: StationKind;
   boxId: string | null;
@@ -339,6 +347,44 @@ function assertStationCodePrefix(kind: StationKind, codePrefix: string | null): 
     throw new AppError(400, 'BOOTH_CODE_PREFIX_INVALID', BOOTH_CODE_PREFIX_RULE, {
       field: 'codePrefix',
     });
+  }
+  /**
+   * Every other station's prefix starts the band codes it prints (S2-11).
+   * `mintBandCode` refuses anything outside one to six capital letters or
+   * digits, and a prefix saved past this check would not fail the save — it
+   * would fail every ticket sale at that station, rolling its printing back.
+   * The booth rule above is the stricter subset, so a booth never reaches
+   * this. Stations saved before the rule keep working until edited, exactly
+   * as the booth handles its own older rows.
+   */
+  if (kind !== 'booth' && codePrefix !== null && !/^[0-9A-Z]{1,6}$/.test(codePrefix)) {
+    throw new AppError(
+      400,
+      'STATION_CODE_PREFIX_INVALID',
+      'One to six capital letters or digits — the prefix starts every band code this station prints',
+      { field: 'codePrefix' },
+    );
+  }
+  /**
+   * S2-12 — `WEB` is the booking site's. A till's prefix is also the station
+   * segment of its gateway invoice numbers, and the booking site's online
+   * payments carry `WEB` in that place (`WEB_INVOICE_STATION_CODE`). A till
+   * coded `WEB` would number the same invoices, so the code is refused here,
+   * in every spelling that encodes to it. A station saved with it before this
+   * rule shares the booking site's counter (`services/payments/gateway.ts`)
+   * rather than colliding with it, until it is edited.
+   */
+  if (
+    kind !== 'booth' &&
+    codePrefix !== null &&
+    invoiceStationSegment(codePrefix) === WEB_INVOICE_STATION_CODE
+  ) {
+    throw new AppError(
+      400,
+      'STATION_CODE_PREFIX_RESERVED',
+      'WEB is reserved for the booking site’s online payments — pick another prefix for this station',
+      { field: 'codePrefix' },
+    );
   }
 }
 
@@ -1098,6 +1144,22 @@ export async function createStation(
   branchId: string,
   input: StationWriteInput,
 ): Promise<{ station: StationView }> {
+  /**
+   * SCRUM-270 — a body id that already names this branch's station is the
+   * create arriving again. Decided FIRST, before any check that reads the
+   * estate: a replayed booth would otherwise be refused for the code prefix
+   * it holds itself. Nothing is written, and the station is answered as it
+   * stands (`client-id.ts`).
+   */
+  const claim = await claimClientId(
+    input.id,
+    async (id) => (await db.select().from(station).where(eq(station.id, id)).limit(1))[0],
+    (row) => row.operatorId === actor.operatorId && row.branchId === branchId,
+  );
+  if (claim.replay) {
+    const [view] = await stationViews(db, [claim.row], { withStaff: true });
+    return markReplay({ station: view! });
+  }
   if (!input.boxId) {
     throw new AppError(
       400,
@@ -1119,7 +1181,7 @@ export async function createStation(
     staffAccountIds: input.staffAccountIds,
   });
 
-  const id = newId();
+  const id = claim.id;
   try {
     return await withTx(db, ctx, 'station.create', async (tx) => {
       await tx.insert(station).values({
@@ -1161,7 +1223,7 @@ export async function updateStation(
   ctx: OpContext,
   actor: { accountId: string; operatorId: string },
   before: typeof station.$inferSelect,
-  patch: Partial<StationWriteInput>,
+  patch: Partial<Omit<StationWriteInput, 'id'>>,
 ): Promise<{ station: StationView }> {
   /**
    * `boxId: null` is accepted only where the station already has none — a
@@ -1404,9 +1466,29 @@ export async function createBox(
   ctx: OpContext,
   actor: { accountId: string; operatorId: string },
   branchId: string,
-  input: { name: string; slot: string; role: BoxRole },
+  input: { id?: string | null; name: string; slot: string; role: BoxRole },
 ): Promise<{ box: BoxView; claimCode: string; expiresAt: string }> {
-  const id = newId();
+  /**
+   * SCRUM-270 — a body id naming this branch's box is the registration
+   * arriving again, and it is REFUSED rather than replayed: the answer to a
+   * registration is a one-time claim code, and a code handed out twice is not
+   * one-time (the rule above, and `secretResponse` on the route). The refusal
+   * names the box, so the caller can issue it a new code instead.
+   */
+  const claim = await claimClientId(
+    input.id,
+    async (id) => (await db.select().from(box).where(eq(box.id, id)).limit(1))[0],
+    (row) => row.operatorId === actor.operatorId && row.branchId === branchId,
+  );
+  if (claim.replay) {
+    throw new AppError(
+      409,
+      'BOX_ALREADY_REGISTERED',
+      'That box is already registered and its claim code was shown once — issue it a new claim code instead',
+      { boxId: claim.id },
+    );
+  }
+  const id = claim.id;
   let code!: { code: string; expiresAt: Date };
   try {
     const created = await withTx(db, ctx, 'box.create', async (tx) => {
@@ -2013,6 +2095,8 @@ export async function createDevice(
   actor: { accountId: string; operatorId: string },
   boxRow: typeof box.$inferSelect,
   input: {
+    /** SCRUM-270 — the id the caller names the device by, when it minted one (OD-12). */
+    id?: string | null;
     kind: DeviceKind;
     label: string;
     transport: DeviceTransport;
@@ -2025,7 +2109,15 @@ export async function createDevice(
     settings?: DeviceSettings | null;
   },
 ): Promise<{ device: DeviceView }> {
-  const id = newId();
+  // A device belongs to its box, which the route loaded inside the caller's
+  // operator; a device of any other box is somebody else's record.
+  const claim = await claimClientId(
+    input.id,
+    async (id) => (await db.select().from(device).where(eq(device.id, id)).limit(1))[0],
+    (row) => row.boxId === boxRow.id,
+  );
+  if (claim.replay) return markReplay({ device: deviceView(claim.row) });
+  const id = claim.id;
   try {
     return await withTx(db, ctx, 'device.create', async (tx) => {
       await tx.insert(device).values({
@@ -2225,7 +2317,7 @@ export async function pairCredential(
   ctx: OpContext,
   actor: { accountId: string; operatorId: string },
   stationRow: typeof station.$inferSelect,
-  input: { kind: DeviceCredentialKind; label?: string | null },
+  input: { id?: string | null; kind: DeviceCredentialKind; label?: string | null },
 ): Promise<{ credential: CredentialView; pairingCode: string; expiresAt: string }> {
   if (input.kind === 'box') {
     throw new AppError(
@@ -2234,7 +2326,28 @@ export async function pairCredential(
       'A box pairs by redeeming a claim code, not from a station',
     );
   }
-  const id = newId();
+  /**
+   * SCRUM-270 — a body id naming this station's credential is the pairing
+   * arriving again, and it is REFUSED, like a box registration: its answer is a
+   * one-time pairing code, and handing that out a second time would make it a
+   * two-time one. Without an id a second press still mints a second credential,
+   * visible and revocable, exactly as before.
+   */
+  const claim = await claimClientId(
+    input.id,
+    async (id) =>
+      (await db.select().from(deviceCredential).where(eq(deviceCredential.id, id)).limit(1))[0],
+    (row) => row.operatorId === actor.operatorId && row.stationId === stationRow.id,
+  );
+  if (claim.replay) {
+    throw new AppError(
+      409,
+      'CREDENTIAL_ALREADY_ISSUED',
+      'That pairing code was shown once — revoke this credential or pair the screen again for a new code',
+      { credentialId: claim.id },
+    );
+  }
+  const id = claim.id;
   const code = mintClaimCode();
   const expiresAt = new Date(Date.now() + boxSettings().claimCodeTtlS * 1000);
   const created = await withTx(db, ctx, 'device_credential.pair', async (tx) => {

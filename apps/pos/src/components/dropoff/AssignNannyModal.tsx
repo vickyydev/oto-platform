@@ -8,13 +8,17 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CheckIn } from '@/types';
-import { getNannyRoster, getDropOffPricing } from '@/mockApi';
+import { nannyChoicesFor, type ApiNanny } from '@/api/checkin';
 import { BadgeCheck, Baby, UserCheck, AlertTriangle } from 'lucide-react';
 
 interface AssignNannyModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   checkIn: CheckIn;
+  /** The park's roster with each nanny's live load (the board's, S2-13 round 2). */
+  nannies: readonly ApiNanny[];
+  /** The suggested ratio the warning is shown at — never a block. */
+  softMax: number;
   /** Called with the chosen nanny id once confirmed. */
   onAssign: (nannyId: string) => void;
 }
@@ -23,11 +27,12 @@ export function AssignNannyModal({
   open,
   onOpenChange,
   checkIn,
+  nannies: roster,
+  softMax,
   onAssign,
 }: AssignNannyModalProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const nannies = getNannyRoster(checkIn.id);
-  const softMax = getDropOffPricing().nannyRatioSoftMax;
+  const nannies = nannyChoicesFor(roster, checkIn);
   const selectedNanny = nannies.find((n) => n.id === selectedId);
   // Load if SHE took this child too (her current active kids + this one).
   const overRatio = !!selectedNanny && selectedNanny.load + 1 > softMax;

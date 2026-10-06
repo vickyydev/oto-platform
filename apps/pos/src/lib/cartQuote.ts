@@ -6,7 +6,7 @@ import type {
   ManualDiscount,
   MerchOrderLine,
 } from '@/types';
-import { computeTotals } from '@/lib/sale';
+import { PROTOTYPE_REDERIVATION, ticketTotals } from '@/lib/cartWire';
 import { todayRateMode } from '@/lib/pricingMode';
 import {
   localItemQuote,
@@ -35,9 +35,12 @@ import { ApiError } from '@/api/client';
  *   2. this device, running the platform's own engine (`@oto/shared`, integer
  *      satang, the tested one) — when there is no pricing route on this
  *      deployment, no station yet, or no answer;
- *   3. this device, running the prototype's own arithmetic — ONLY when the
- *      engine refuses the cart outright (a drop-off line with no length chosen
- *      yet, or a cart priced under a rate mode that has since changed). The
+ *   3. this device, re-deriving the cart the way the prototype's own
+ *      arithmetic did — ONLY when the engine refuses the cart outright (a
+ *      drop-off line with no length chosen yet, or a cart priced under a rate
+ *      mode that has since changed). Since SCRUM-271 the engine does this too
+ *      (`ticketTotals` in lib/cartWire.ts), reproducing the prototype's figure
+ *      rather than running a second calculator for it. The
  *      engine refuses rather than guess; the screen still has to show the guest
  *      a running total, and the prototype's figure is the one it has always
  *      shown. Nothing is sold from this source: the pay preflight refuses an
@@ -124,13 +127,17 @@ export interface CartQuoteState {
   error: QuoteError | null;
 }
 
-/** The prototype's own totals, for a cart the engine will not price. */
+/**
+ * The figure the prototype showed for a cart the engine will not price, as the
+ * engine re-derives it (`ticketTotals`: the subtotal from the stored lines,
+ * every base at today's rate mode).
+ */
 function prototypeTotals(
   lines: readonly CartLine[],
   discounts: readonly Discount[],
   manualDiscounts: readonly ManualDiscount[],
 ): OrderTotals {
-  const totals = computeTotals([...lines], [...discounts], [...manualDiscounts]);
+  const totals = ticketTotals(lines, discounts, manualDiscounts);
   return {
     subtotal: totals.subtotal,
     discountAmount: totals.discountAmount,
@@ -215,7 +222,7 @@ export function useCartQuote(args: {
           source: 'till',
           pricingMode: rate.mode,
           pricingModeReason: rate.reason,
-          engineVersion: 'prototype',
+          engineVersion: PROTOTYPE_REDERIVATION,
           reason: blocked,
         },
         engineRefused: blocked,
@@ -237,7 +244,7 @@ export function useCartQuote(args: {
           source: 'till',
           pricingMode: rate.mode,
           pricingModeReason: rate.reason,
-          engineVersion: 'prototype',
+          engineVersion: PROTOTYPE_REDERIVATION,
           reason: message,
         },
         engineRefused: message,

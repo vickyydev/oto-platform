@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { QuantityStepper } from '@/components/shared/QuantityStepper';
 import { resolveRateToday } from '@/lib/pricingMode';
-import { summarizeTax, roundTHB, type TaxBreakdown } from '@/lib/tax';
+import { taxRowsOf, type TaxBreakdownBaht } from '@/lib/cartWire';
 import { formatDiscountDetail, formatDiscountTarget } from '@/lib/manualDiscount';
 import { PromoCodeEntry, type PromoCodeRow } from '@/components/fnb/PromoCodeEntry';
 import {
@@ -22,7 +22,7 @@ interface MerchCartProps {
   total: number;
   manualDiscounts: ManualDiscount[];
   manualAmounts: Record<string, number>;
-  taxBreakdown: TaxBreakdown;
+  taxBreakdown: TaxBreakdownBaht;
   /**
    * WHERE THE FIGURES ON THIS PANEL CAME FROM (S2-09b), drawn just above the
    * charge button. Passed in, because which engine priced the sale is the
@@ -286,13 +286,13 @@ export function MerchCart({
         </Button>
 
         {!isEmpty &&
-          summarizeTax(taxBreakdown).map((row) => (
+          taxRowsOf(taxBreakdown).map((row) => (
             <div
               key={row.key}
               className="flex justify-between text-sm text-muted-foreground mb-1"
             >
               <span>{row.label}</span>
-              <span className="tabular-nums">฿{roundTHB(row.amount)}</span>
+              <span className="tabular-nums">฿{row.amount}</span>
             </div>
           ))}
 

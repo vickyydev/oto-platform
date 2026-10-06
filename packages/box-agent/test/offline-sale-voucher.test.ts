@@ -20,7 +20,10 @@ import { BOX_ID, STATION_ID, openTestStore, seededIndex } from './_support';
  * with the link down reaches the platform later, through a replay that prices
  * the cart without its `promoCodes` — so a voucher on it would be honoured on
  * the slip alone and never used up. The box refuses such a sale before it
- * numbers or queues anything, with the words the till shows.
+ * numbers or queues anything, with one fixed sentence of its own. (The till's
+ * own line for a voucher offline is the api's, `VOUCHER_MESSAGES.offline`, in
+ * other words; nothing carries the box's sentence to a till today, as
+ * `agent.sales()` has no caller outside this file — closing audit L20.)
  *
  * The agent here is the real one, on a real SQLite store, holding a credential
  * and a receipt mark and with no cloud at all: a box whose mall link is down.
@@ -31,7 +34,7 @@ const quiet = { info() {}, warn() {}, error() {} };
 const code = mintBoothCode('B1', seededIndex(7));
 const wrongCheck = `${code.slice(0, 10)}${code[10] === 'A' ? 'B' : 'A'}`;
 
-test('the refusal words are the ones the till shows', () => {
+test('the refusal is one fixed sentence, naming the reason and what to do', () => {
   assert.equal(
     OFFLINE_VOUCHER_REFUSAL,
     'Vouchers need the internet — take this one when the connection is back',

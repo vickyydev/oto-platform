@@ -31,6 +31,92 @@ export const PAYMENT_METHODS = ['cash', 'card', 'qr', 'wallet', 'voucher', 'tran
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 /**
+ * S2-12 (SCRUM-209 round 3) — THE "PAID ONLINE" TENDER on a booking's redemption sale.
+ *
+ * A family who booked and paid on the booking site is handed their bands at
+ * the counter against a sale that owes nothing to the till: the money reached
+ * the park through the gateway on the day it was paid, under the booking's own
+ * `WEB` invoice. The redemption sale is filed on the visit day (OD-A10) and is
+ * settled by this tender, which is recorded as `transfer` money — never
+ * `cash` — so no drawer opens for it and a cash-up that counts till takings
+ * leaves it out (`countsAsTillTakings`). It is a constant, not a row in the
+ * operator's tender list: staff never choose it, only redemption writes it.
+ */
+export const PAID_ONLINE_TENDER_CODE = 'paid_online';
+export const PAID_ONLINE_TENDER_METHOD: PaymentMethod = 'transfer';
+
+/**
+ * S2-14a round 2 (plan docs/progress/plans/wallet/PLAN.md §2.3) — STORED-VALUE
+ * CREDIT SPENT AT A COUNTER.
+ *
+ * Like the paid-online tender, a constant and never a row in the operator's
+ * tender list: staff never CHOOSE it on the grid. The till sends the scanned
+ * wallet key with the confirm press and the PLATFORM writes the attempt itself
+ * — method `wallet` (a word `pos.payment_attempt.method` has allowed since
+ * S2-10a, so no migration), code `wallet_credit` — in the same transaction as
+ * the wallet's `spend` entry. The method-KIND list below (`cash/card/qr/other`)
+ * describes the park's configurable tenders and does not gain a word: this
+ * tender is not configurable.
+ *
+ * NOT the terminal's Alipay / WeChat "wallet": that is an e-wallet the EDC
+ * takes, recorded as `qr` money with `payload.tender = 'wallet'` and a device.
+ * The two are told apart by method AND code (`isStoredValueTender`).
+ */
+export const WALLET_TENDER_CODE = 'wallet_credit';
+export const WALLET_TENDER_METHOD: PaymentMethod = 'wallet';
+
+/** True only for the platform-written stored-value tender — never for a terminal e-wallet. */
+export function isStoredValueTender(attempt: { method?: string | null; methodCode?: string | null }): boolean {
+  return attempt.method === WALLET_TENDER_METHOD || attempt.methodCode === WALLET_TENDER_CODE;
+}
+
+/**
+ * What the till sends with the confirm press to spend a scanned wallet.
+ *
+ *   key           the band's code (or short code) or the voucher's `QR-…`;
+ *   useCredit     "use credit": the platform takes min(balance, outstanding);
+ *   amountSatang  an exact figure instead — REFUSED, never floored, when the
+ *                 wallet holds less (the prototype's silent clamp,
+ *                 `mockApi.ts:397-405`, is corrected per the requirement).
+ */
+export const WalletTenderInstructionSchema = z
+  .object({
+    key: z.string().trim().min(1).max(200),
+    useCredit: z.boolean().optional(),
+    amountSatang: z.number().int().min(1).optional(),
+  })
+  .refine((w) => w.useCredit === true || w.amountSatang !== undefined, {
+    message: 'Say how much credit to use: "use credit" or an exact amount',
+    path: ['useCredit'],
+  });
+export type WalletTenderInstruction = z.infer<typeof WalletTenderInstructionSchema>;
+
+/**
+ * Whether a tender is money the till itself took, for the till's cash-up and
+ * takings (OD-A10). The paid-online tender is not: it was counted on the day
+ * the booking was paid, and counting it again at the counter would report the
+ * same baht twice. Nor is stored-value credit (S2-14a): it was money when the
+ * ticket that granted it was paid, and at the counter it moves a liability,
+ * not the drawer. A terminal e-wallet (Alipay, WeChat) IS till takings — it is
+ * recorded as `qr` money, so it never reads as stored value here.
+ *
+ * S2-15a — THE ONE GATE THE END OF DAY READS. Given the attempt's station, an
+ * attempt with none is not the till's either: money that reached the park with
+ * no counter in its path (the booking site's own QR) was never in a drawer or
+ * on a branch terminal's batch. Callers that do not pass `stationId` are
+ * answered on the tender alone, as before.
+ */
+export function countsAsTillTakings(attempt: {
+  method?: string | null;
+  methodCode?: string | null;
+  stationId?: string | null;
+}): boolean {
+  if ('stationId' in attempt && !attempt.stationId) return false;
+  if (attempt.methodCode === PAID_ONLINE_TENDER_CODE) return false;
+  return !isStoredValueTender(attempt);
+}
+
+/**
  * WHO answered, which is a different question from how the money was taken.
  *
  * A card can be `ghl` (the NEXGO on the serial cable), `simulator` (the same
@@ -243,6 +329,32 @@ function encodeStationCode(raw: string): string {
   const split = LETTERS_THEN_DIGITS.exec(clean);
   if (split) return `${split[1]}${split[2]!.padStart(3 - split[1]!.length, '0')}`;
   return clean.padStart(3, '0');
+}
+
+/**
+ * THE BOOKING SITE'S SEGMENT (S2-12, OD-A10).
+ *
+ * A booking paid online has no counter in its path, so its invoice number
+ * carries `WEB` where a till's carries its station code. The namespace is one
+ * and global (`payment_attempt_gateway_invoice_unique`), so no station may
+ * encode to these three characters: a till coded `WEB` would count the same
+ * invoice numbers on a counter of its own, and whichever of the two minted
+ * second would be refused all day. `services/fleet.ts` refuses the prefix.
+ */
+export const WEB_INVOICE_STATION_CODE = 'WEB';
+
+/**
+ * The three characters a station code takes in an invoice number, or null for
+ * a code that cannot number an invoice at all. Two different codes can take
+ * the same three (`T1` and `T01` are both `T01`), which is why a counter is
+ * kept per invoice stem rather than per station.
+ */
+export function invoiceStationSegment(raw: string): string | null {
+  try {
+    return encodeStationCode(raw);
+  } catch {
+    return null;
+  }
 }
 
 /** Build one gateway invoice number. Throws rather than minting one that cannot be honoured. */
