@@ -954,7 +954,7 @@ export const WALLET_SPENT_FACT = 'wallet.spent';
  */
 export const WALLET_SNAPSHOT_REFUSE_AFTER_S = 24 * 60 * 60;
 
-/** The most wallets one snapshot carries: the branch's live ones, newest first. */
+/** The most wallets one snapshot carries: operator-wide live wallets, local park first, then newest. */
 export const WALLET_SNAPSHOT_LIMIT = 5_000;
 
 /**
@@ -997,7 +997,7 @@ export interface WalletSnapshotItem {
   businessDate: string;
   /** The branch policy's offline cap per wallet per day; a station's own override rides `station_config`. */
   capSatang: number;
-  /** True when the branch has more live wallets than `WALLET_SNAPSHOT_LIMIT`: the rest refuse as unknown. */
+  /** True when the operator has more live wallets than `WALLET_SNAPSHOT_LIMIT`: the rest refuse as unknown. */
   truncated: boolean;
   wallets: WalletSnapshotEntry[];
 }

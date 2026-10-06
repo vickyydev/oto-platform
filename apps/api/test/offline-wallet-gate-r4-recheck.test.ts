@@ -1,8 +1,8 @@
 import { generateKeyPairSync } from 'node:crypto';
 import { verify as verifyArgon } from '@node-rs/argon2';
-import { and, asc, eq, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, isNull, ne, or } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { branch, product, station, walletEntry } from '@oto/db';
+import { branch, product, sale, station, walletEntry } from '@oto/db';
 import { createBoxAgent, memoryCredentialStore, type AgentFetch, type BoxAgent } from '@oto/box-agent';
 import { addDaysToIsoDate, businessDate, grantExpiresAt, mintVoucherQr, newId, parseDayStart } from '@oto/shared';
 import { RECEPTION, boxBySlot, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
@@ -162,5 +162,61 @@ describe('GATE RE-CHECK (4): a wallet a manager reactivated', () => {
       link.cut = false;
       await agent.setOffline(false);
     }
+  });
+});
+
+describe('an operator wallet at a second park', () => {
+  it('ships only this operator’s digests, then spends offline at the box’s park and syncs once', async () => {
+    const [issuingPark] = await ctx.db.select().from(branch).where(and(eq(branch.operatorId, operatorId), ne(branch.id, branchId)));
+    const [foreignPark] = await ctx.db.select().from(branch).where(ne(branch.operatorId, operatorId));
+    const crossKey = mintVoucherQr();
+    const foreignKey = mintVoucherQr();
+    const cross = await ctx.db.transaction((tx) => createWalletWithGrant(tx, { accountId: null, operatorId }, {
+      actionId: `test:cross-park:${newId()}`, branchId: issuingPark!.id, holderName: 'Walk-in guest',
+      amountSatang: 50_000, source: 'ticket_sale', keys: [{ kind: 'voucher_qr', value: crossKey }],
+    }));
+    const foreign = await ctx.db.transaction((tx) => createWalletWithGrant(tx, { accountId: null, operatorId: foreignPark!.operatorId }, {
+      actionId: `test:foreign:${newId()}`, branchId: foreignPark!.id, holderName: 'Walk-in guest',
+      amountSatang: 50_000, source: 'ticket_sale', keys: [{ kind: 'voucher_qr', value: foreignKey }],
+    }));
+    const snapshot = await walletCacheItem(ctx.db, { boxId, operatorId, branchId });
+    expect(snapshot.branchId).toBe(branchId);
+    expect(snapshot.capSatang).toBe((await walletPolicyOf(ctx.db, branchId)).offlineCapSatang);
+    expect(snapshot.wallets.some((entry) => entry.id === cross.wallet.id)).toBe(true);
+    expect(snapshot.wallets.some((entry) => entry.id === foreign.wallet.id)).toBe(false);
+    expect(JSON.stringify(snapshot)).not.toContain(crossKey);
+    expect(JSON.stringify(snapshot)).not.toContain(foreignKey);
+
+    await agent.syncWallets();
+    await agent.setOffline(true, { reason: 'cross-park wallet test' });
+    link.cut = true;
+    const saleId = newId();
+    try {
+      const order = {
+        saleId, actionId: `pay-${newId().slice(-12)}`, staffName: 'Nok',
+        cart: { items: [{ id: newId(), productId, quantity: 1 }], channel: 'fnb', pickupCode: '9', expectedTotalSatang: unitSatang },
+      };
+      const paid = await call('POST', `/box/v1/station/${till1}/intents`, {
+        type: 'payment.wallet', lastSeenSequence: 0,
+        payload: { ...order, wallet: { key: crossKey, actionId: newId(), useCredit: true } },
+        actionId: `cross-${newId().slice(-12)}`,
+      });
+      expect(paid.statusCode, JSON.stringify(paid.body)).toBe(200);
+      expect((paid.body.result as { walletSpend: { amountSatang: number }; finalised: boolean }).walletSpend.amountSatang).toBe(unitSatang);
+      expect((paid.body.result as { finalised: boolean }).finalised).toBe(true);
+    } finally {
+      link.cut = false;
+      await agent.setOffline(false);
+    }
+    for (let i = 0; i < 5 && (await agent.outbox()!.depth()).queued > 0; i += 1) await agent.outbox()!.flush();
+    expect((await agent.outbox()!.depth()).queued).toBe(0);
+    const entries = await ctx.db.select().from(walletEntry).where(eq(walletEntry.walletId, cross.wallet.id));
+    expect(entries.find((entry) => entry.kind === 'grant')?.branchId).toBe(issuingPark!.id);
+    expect(entries.filter((entry) => entry.kind === 'spend')).toHaveLength(1);
+    expect(entries.find((entry) => entry.kind === 'spend')?.branchId).toBe(branchId);
+    expect((await ctx.db.select().from(sale).where(eq(sale.id, saleId)))[0]?.status).toBe('finalised');
+    await agent.outbox()!.replayLastBatch(50);
+    for (let i = 0; i < 5 && (await agent.outbox()!.depth()).queued > 0; i += 1) await agent.outbox()!.flush();
+    expect((await ctx.db.select().from(walletEntry).where(and(eq(walletEntry.walletId, cross.wallet.id), eq(walletEntry.kind, 'spend'))))).toHaveLength(1);
   });
 });
