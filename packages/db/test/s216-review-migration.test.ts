@@ -39,14 +39,17 @@ const journal = read<Journal>('_journal.json');
 const SQL = readFileSync(join(MIGRATIONS, '0064_analytics_summaries.sql'), 'utf8');
 
 describe('migration 0064 (SCRUM-216 review)', () => {
-  it('is the last journal entry, index 64, after 0063 in both index and time', () => {
+  it('is journal entry 64, directly after 0063, in both index and time', () => {
     const entries = journal.entries;
     for (let i = 1; i < entries.length; i += 1) {
       expect(entries[i]!.idx, entries[i]!.tag).toBe(entries[i - 1]!.idx + 1);
       expect(entries[i]!.when, entries[i]!.tag).toBeGreaterThan(entries[i - 1]!.when);
     }
-    expect(entries.at(-1)).toMatchObject({ idx: 64, tag: '0064_analytics_summaries' });
-    expect(entries.at(-2)).toMatchObject({ idx: 63, tag: '0063_stock_single_each_pack' });
+    const e63 = entries.find((e) => e.idx === 63);
+    const e64 = entries.find((e) => e.idx === 64);
+    expect(e63).toMatchObject({ idx: 63, tag: '0063_stock_single_each_pack' });
+    expect(e64).toMatchObject({ idx: 64, tag: '0064_analytics_summaries' });
+    expect(entries.indexOf(e64!)).toBe(entries.indexOf(e63!) + 1);
   });
 
   it('chains its snapshot from 0063’s', () => {
