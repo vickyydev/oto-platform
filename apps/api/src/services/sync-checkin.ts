@@ -46,11 +46,13 @@ import {
   type PhotoTarget,
 } from '@oto/shared';
 import { z } from 'zod';
+import type { Logger } from 'pino';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { currentBandKey } from './bands';
 import type { BoxAuth } from './box';
-import { boardOf, supervisionConfigOf } from './checkin';
+import { autoSendRegistrationContact, boardOf, supervisionConfigOf } from './checkin';
+import { buildSmsSender } from './sms';
 import type { FileStorage } from './files';
 import { raiseAlert } from './ops';
 import type { OpContext, Tx } from './tx';
@@ -303,6 +305,12 @@ async function applyCheckinCreated(
     });
   }
   if (setAside.length > 0) await fileSetAsidePrepaid(tx, scope, event, payload, setAside);
+  // The durable registration fact queues this while the box is offline. A
+  // replay or restored outbox finds the family contact audit and sends no duplicate.
+  await autoSendRegistrationContact(tx, { accountId: actorOf(event), operatorId, sourceEventId: event.envelope.eventId }, {
+    id: payload.registrationId, branchId, guardianName: payload.guardianName.trim(), guardianPhone,
+    contactChannel: payload.contactChannel,
+  }, scope.log ? buildSmsSender({ adapter: 'console' }, scope.log as unknown as Logger) : null);
   return { entityType: 'registration', entityId: payload.registrationId };
 }
 

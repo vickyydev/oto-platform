@@ -7,6 +7,7 @@ import {
   branch,
   employee,
   member,
+  paymentAttempt,
   station,
 } from '@oto/db';
 import { isoDateInTz, newId, parseBookingQr, wallClockMinutesInTz } from '@oto/shared';
@@ -202,7 +203,7 @@ export interface BookingView {
   rateMode: string | null;
   parentName: string | null;
   phone: string | null;
-  /** Populated only where the booking site recorded one; payment is S2-10a. */
+  /** The verified paid attempt method, with the recorded payload for box reads. */
   paymentMethod: string | null;
   lines: BookingLineView[];
   redemption: RedemptionView | null;
@@ -272,6 +273,7 @@ export interface BookingReadModel {
   /** Keyed by booking id. Absent means "not redeemed". */
   redemptions: Map<string, StoredRedemption>;
   names: NameBook;
+  paymentMethods?: Map<string, string | null>;
 }
 
 const EMPTY_READ: BookingReadModel = { redemptions: new Map(), names: EMPTY_NAMES };
@@ -348,7 +350,11 @@ export async function readBookings(exec: Exec, rows: BookingRow[]): Promise<Book
     exec,
     rows.map((row) => row.id),
   );
-  return { redemptions, names: await namesFor(exec, rows, redemptions) };
+  const ids = rows.flatMap((row) => row.paymentAttemptId ? [row.paymentAttemptId] : []);
+  const paid = ids.length ? await exec.select({ id: paymentAttempt.id, method: paymentAttempt.methodCode }).from(paymentAttempt)
+    .where(and(inArray(paymentAttempt.id, ids), eq(paymentAttempt.status, 'approved'))) : [];
+  const paymentMethods = new Map(paid.map((attempt) => [attempt.id, attempt.method]));
+  return { redemptions, names: await namesFor(exec, rows, redemptions), paymentMethods };
 }
 
 export function bookingView(row: BookingRow, read: BookingReadModel = EMPTY_READ): BookingView {
@@ -369,7 +375,7 @@ export function bookingView(row: BookingRow, read: BookingReadModel = EMPTY_READ
     rateMode: stringOrNull(payload.rateMode),
     parentName: stringOrNull(payload.parentName),
     phone: stringOrNull(payload.phone),
-    paymentMethod: stringOrNull(payload.paymentMethod),
+    paymentMethod: (row.paymentAttemptId ? read.paymentMethods?.get(row.paymentAttemptId) : null) ?? stringOrNull(payload.paymentMethod),
     lines: linesOf(row),
     redemption: stored ? redemptionView(stored, names) : null,
   };

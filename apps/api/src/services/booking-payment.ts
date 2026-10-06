@@ -1,7 +1,7 @@
 import { and, asc, eq, isNull, lt } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Logger } from 'pino';
-import { booking, type Db } from '@oto/db';
+import { booking, paymentAttempt, type Db } from '@oto/db';
 import {
   BOOKING_QR_HEADER,
   BOOKING_QR_SEPARATOR,
@@ -124,10 +124,15 @@ export async function confirmBookingPaid(
   const key = resolveBandKey(env);
   const signature = key ? mintBookingQr(row.id, key).split(BOOKING_QR_SEPARATOR)[1]! : null;
 
+  const [paidAttempt] = await tx.select({ methodCode: paymentAttempt.methodCode }).from(paymentAttempt)
+    .where(eq(paymentAttempt.id, input.attemptId)).limit(1);
+  const payload = row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload) ? row.payload as Record<string, unknown> : {};
+
   const [after] = await tx
     .update(booking)
     .set({
       status: 'paid',
+      payload: { ...payload, paymentMethod: paidAttempt?.methodCode ?? null },
       paidAt: now,
       qrSignature: signature,
       qrKeyId: key ? bookingQrKeyId(key) : null,

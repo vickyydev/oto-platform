@@ -276,15 +276,6 @@ export function RedeemBookingModal({
   const regularAdults = foundBooking
     ? foundBooking.lines.reduce((s, l) => (l.dropOff ? s : s + l.adults), 0)
     : 0;
-  // S2-12 — the socks and extras paid for online, summed by name across lines,
-  // so reception hands them over with the wristbands.
-  const paidExtras = foundBooking
-    ? [...foundBooking.lines
-        .flatMap((l) => l.addOns)
-        .reduce((byName, a) => byName.set(a.name, (byName.get(a.name) ?? 0) + a.quantity), new Map<string, number>())
-        .entries()]
-    : [];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -366,14 +357,6 @@ export function RedeemBookingModal({
                           <span>
                             {b.lines.reduce((s, l) => s + l.kids + l.adults, 0)} guests
                           </span>
-                          {b.parentName && (
-                            <>
-                              <span>·</span>
-                              <span className="truncate">{b.parentName}</span>
-                            </>
-                          )}
-                          {/* The prototype showed a drop-off marker here; drop-off on a
-                              booking is S2-13 and the row does not carry one yet. */}
                         </div>
                       </div>
                       <Badge variant="secondary" className="shrink-0 text-xs">
@@ -453,9 +436,6 @@ export function RedeemBookingModal({
                 {foundBooking.willIssue.creditTotalTHB > 0 && (
                   <li>• ฿{foundBooking.willIssue.creditTotalTHB.toLocaleString()} credit</li>
                 )}
-                {paidExtras.map(([name, quantity]) => (
-                  <li key={name}>• {quantity} × {name}</li>
-                ))}
                 {dropOffChildren.length > 0 && (
                   <li>• Drop-off check-in for {dropOffChildren.join(', ')}</li>
                 )}
