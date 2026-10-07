@@ -14,6 +14,7 @@ import {
   date,
   unique,
   uniqueIndex,
+  check,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -220,6 +221,41 @@ export const insertDirectoryCacheSchema = createInsertSchema(directoryCache).omi
 });
 export type InsertDirectoryCache = z.infer<typeof insertDirectoryCacheSchema>;
 export type DirectoryCache = typeof directoryCache.$inferSelect;
+
+// ============================================
+// DIRECTORY CLIENTS (a service caller that names its tenant)
+// ============================================
+
+// The directory API's HR reads authenticate one shared key
+// (HR_DIRECTORY_API_KEY), and a shared key says nothing about whose data the
+// caller may touch. The write routes added for the POS seam
+// (server/directory/eventRoutes.ts) take one of these instead: a key issued
+// to one caller for one tenant, kept here only as its sha256, so a request is
+// confined to that tenant by the key it presents rather than by anything it
+// writes in the body. `script/directory-client.mjs` issues and revokes them.
+export const DIRECTORY_CLIENT_SCOPES = ["events:write"] as const;
+export type DirectoryClientScope = (typeof DIRECTORY_CLIENT_SCOPES)[number];
+
+export const directoryClients = pgTable(
+  "directory_clients",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+    name: text("name").notNull(),
+    keyHash: text("key_hash").notNull().unique(),
+    scopes: text("scopes").array().notNull().default(sql`'{}'::text[]`),
+    isActive: boolean("is_active").notNull().default(true),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("idx_directory_clients_tenant").on(t.tenantId),
+  ]
+);
+
+export type DirectoryClient = typeof directoryClients.$inferSelect;
 
 // ============================================
 // LOCATIONS (for tagging checklists/tasks)
@@ -1828,6 +1864,15 @@ export const coreEvents = pgTable(
     prepaymentDate: text("prepayment_date"),
     prepaymentMethod: text("prepayment_method"),
 
+    // The flat walk-up entry price of a camp day or a one-off event, as the
+    // POS sells it at the till (events-kiosk PLAN s3, "Pass price"): one
+    // weekday/weekend pair, whole baht like total_value above, never tiered
+    // and never a membership rate. Null means no price has been set; 0 is a
+    // free event. Parties do not carry one — their walk-up guests are billed
+    // to the party tab instead.
+    entryPriceWeekdayThb: integer("entry_price_weekday_thb"),
+    entryPriceWeekendThb: integer("entry_price_weekend_thb"),
+
     status: text("status").notNull().default("upcoming"),
 
     isArchived: boolean("is_archived").default(false).notNull(),
@@ -1845,6 +1890,10 @@ export const coreEvents = pgTable(
     index("idx_core_events_branch").on(t.branchId),
     index("idx_core_events_date").on(t.eventDate),
     index("idx_core_events_archived").on(t.isArchived),
+    check(
+      "core_events_entry_price_check",
+      sql`(${t.entryPriceWeekdayThb} IS NULL OR ${t.entryPriceWeekdayThb} >= 0) AND (${t.entryPriceWeekendThb} IS NULL OR ${t.entryPriceWeekendThb} >= 0)`,
+    ),
   ]
 );
 
@@ -3580,6 +3629,10 @@ export const campRegistrations = pgTable(
     checkedOutBy: varchar("checked_out_by", { length: 255 }),
     isOneTime: boolean("is_one_time").notNull().default(false),
     addedByManager: boolean("added_by_manager").notNull().default(false),
+    // A parent stays with the child at the camp. The POS prints a parent band
+    // beside the kid band at check-in when this is set (events-kiosk PLAN s3,
+    // "Bands at check-in").
+    parentAttending: boolean("parent_attending").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -3624,6 +3677,12 @@ export const campAttendance = pgTable(
     dropOffPerson: text("drop_off_person"),
     pickUpPerson: text("pick_up_person"),
     staffNotes: text("staff_notes"),
+    // The id the caller minted for a check-in written through the directory
+    // API (`POST /api/directory/events/:id/attendees/:attendeeId/checkins`).
+    // A retry carries the same id and is answered from this row instead of
+    // being refused as a second check-in. Null for every check-in made in the
+    // app itself, and for the "waiting" rows the app seeds ahead of the day.
+    checkinRef: uuid("checkin_ref"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -3631,6 +3690,9 @@ export const campAttendance = pgTable(
     index("idx_camp_attendance_reg").on(t.campRegistrationId),
     index("idx_camp_attendance_tenant_date").on(t.tenantId, t.attendanceDate),
     unique("uq_camp_attendance_reg_date").on(t.campRegistrationId, t.attendanceDate),
+    uniqueIndex("uq_camp_attendance_checkin_ref")
+      .on(t.checkinRef)
+      .where(sql`${t.checkinRef} IS NOT NULL`),
   ]
 );
 
@@ -3641,6 +3703,89 @@ export const insertCampAttendanceSchema = createInsertSchema(campAttendance).omi
 });
 export type InsertCampAttendance = z.infer<typeof insertCampAttendanceSchema>;
 export type CampAttendance = typeof campAttendance.$inferSelect;
+
+// ============================================
+// EVENT ATTENDEES (one row per child on a one-off event or a party)
+// ============================================
+
+// A camp keeps one `camp_registrations` row per child. A one-off event or a
+// party kept only counts and names typed as text (`studio_event_bookings`
+// .kids_count / .kid_names, `core_events.num_children`), so there was no row a
+// check-in could hang off. This is that row (events-kiosk PLAN Q7). It is
+// written by the directory API for walk-ups the POS adds at the door, and is
+// read by the POS through the view `otoapp_v.event_attendees`.
+//
+// `id` has a default, but the directory API inserts the id its caller minted,
+// so a retried request finds the row it already made instead of adding a
+// second child.
+export const EVENT_ATTENDEE_SOURCES = ["otoapp", "pos", "booking", "kiosk"] as const;
+export type EventAttendeeSource = (typeof EVENT_ATTENDEE_SOURCES)[number];
+
+export const eventAttendees = pgTable(
+  "event_attendees",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+    eventId: uuid("event_id").notNull().references(() => coreEvents.id, { onDelete: "cascade" }),
+    // The group booking this child arrived under, when there is one.
+    bookingId: uuid("booking_id").references(() => studioEventBookings.id, { onDelete: "set null" }),
+    childFullName: text("child_full_name").notNull(),
+    dateOfBirth: text("date_of_birth"), // yyyy-MM-dd, like camp_registrations
+    ageYears: integer("age_years"),
+    primaryLanguage: text("primary_language"),
+    allergies: text("allergies"),
+    foodRestrictions: text("food_restrictions"),
+    parentName: text("parent_name"),
+    parentPhone: text("parent_phone"),
+    parentAttending: boolean("parent_attending").notNull().default(false),
+    notes: text("notes"),
+    source: text("source", { enum: EVENT_ATTENDEE_SOURCES }).notNull().default("otoapp"),
+    createdBy: varchar("created_by", { length: 255 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("idx_event_attendees_event").on(t.eventId),
+    index("idx_event_attendees_tenant").on(t.tenantId),
+    index("idx_event_attendees_booking").on(t.bookingId),
+    check("event_attendees_source_check", sql`${t.source} IN ('otoapp', 'pos', 'booking', 'kiosk')`),
+    check("event_attendees_age_check", sql`${t.ageYears} IS NULL OR ${t.ageYears} >= 0`),
+  ]
+);
+
+export type EventAttendee = typeof eventAttendees.$inferSelect;
+
+// One check-in per attendee per day, the one-off-event twin of
+// `camp_attendance`, carrying the same three states and the same
+// `checkin_ref`: the id a directory caller minted for the check-in.
+export const eventAttendeeCheckins = pgTable(
+  "event_attendee_checkins",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+    eventId: uuid("event_id").notNull().references(() => coreEvents.id, { onDelete: "cascade" }),
+    attendeeId: uuid("attendee_id").notNull().references(() => eventAttendees.id, { onDelete: "cascade" }),
+    attendanceDate: date("attendance_date").notNull(),
+    status: campAttendanceStatusEnum("status").notNull().default("waiting"),
+    checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
+    checkedInBy: varchar("checked_in_by", { length: 255 }),
+    checkedOutAt: timestamp("checked_out_at", { withTimezone: true }),
+    checkedOutBy: varchar("checked_out_by", { length: 255 }),
+    checkinRef: uuid("checkin_ref"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("idx_event_attendee_checkins_event").on(t.eventId),
+    index("idx_event_attendee_checkins_tenant_date").on(t.tenantId, t.attendanceDate),
+    unique("uq_event_attendee_checkins_attendee_date").on(t.attendeeId, t.attendanceDate),
+    uniqueIndex("uq_event_attendee_checkins_checkin_ref")
+      .on(t.checkinRef)
+      .where(sql`${t.checkinRef} IS NOT NULL`),
+  ]
+);
+
+export type EventAttendeeCheckin = typeof eventAttendeeCheckins.$inferSelect;
 
 // BEO EXTENDED EVENT TYPE (combines event with all BEO data)
 // ============================================
