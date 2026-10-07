@@ -76,6 +76,9 @@ COPY --from=builder /app/dist ./dist
 # the runtime install is --omit=dev, so there is no tsx and no drizzle-kit here.
 COPY migrations/ ./migrations/
 COPY script/migrate.mjs ./script/migrate.mjs
+# Issues and revokes the directory API's tenant-bound keys; plain JavaScript
+# needing only pg, for the same reason as the migrator.
+COPY script/directory-client.mjs ./script/directory-client.mjs
 
 ARG APP_VERSION
 ARG APP_CHANGE_ID

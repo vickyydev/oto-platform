@@ -12,6 +12,7 @@
     "check:telemetry": "node server/lib/telemetry/check-sync.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node script/migrate.mjs",
+    "directory:client": "node script/directory-client.mjs",
     "import:core-uploads": "tsx script/importCoreLegacyUploads.ts"
   },
   "dependencies": {
