@@ -62,10 +62,13 @@ function BrandMark() {
   );
 }
 
+/** Centred when it fits, scrolled from the top when it does not (a long Thai line on a small screen). */
 function Center({ children }: { children: ReactNode }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center px-10 gap-6 overflow-y-auto animate-in fade-in zoom-in-95 duration-500">
-      {children}
+    <div className="flex-1 min-h-0 overflow-y-auto flex flex-col px-10 py-8">
+      <div className="my-auto flex flex-col items-center text-center gap-6 animate-in fade-in zoom-in-95 duration-500">
+        {children}
+      </div>
     </div>
   );
 }
@@ -172,7 +175,7 @@ function counts(t: TFunction, answer: KioskRedeemAnswer | null) {
   if (!answer?.booking) return null;
   const { kids, adults } = answer.booking;
   return (
-    <div className="grid grid-cols-2 gap-x-10 gap-y-3">
+    <div className="flex flex-wrap justify-center gap-x-10 gap-y-3">
       {kids > 0 && (
         <RedeemCountRow size="kiosk" icon={Ticket}>
           {kids === 1 ? t('kiosk.count.kidsOne') : t('kiosk.count.kidsMany', { count: kids })}
@@ -219,7 +222,7 @@ function IssuedCards({ answer }: { answer: KioskRedeemAnswer }) {
         </div>
       )}
       {answer.bands.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-1 text-center">
           <p className="text-foreground/50 text-lg">{t('kiosk.done.codes')}</p>
           <RedeemBandCodes
             size="kiosk"
@@ -316,23 +319,22 @@ export function KioskResult({
     const supervised = answer.desk.supervisedChildren;
     return (
       <>
-        <div
-          className="flex-1 flex flex-col items-center p-8 gap-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-500"
-          data-testid={`kiosk-result-${screen.kind}`}
-        >
-          <RedeemOutcomeHeader size="kiosk" tone="ok" title={t('kiosk.done.title')} reference={reference}>
-            <p className="text-2xl text-foreground/70 mt-3">{t('kiosk.done.subtitle')}</p>
-          </RedeemOutcomeHeader>
-          <IssuedCards answer={answer} />
-          {screen.kind === 'done_desk' && (
-            <div className="w-full max-w-xl">
-              <RedeemCallout size="kiosk" tone="amber" icon={Baby}>
-                {supervised === 1
-                  ? t('kiosk.doneDesk.noteOne')
-                  : t('kiosk.doneDesk.noteMany', { count: supervised })}
-              </RedeemCallout>
-            </div>
-          )}
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col p-8" data-testid={`kiosk-result-${screen.kind}`}>
+          <div className="my-auto flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-500">
+            <RedeemOutcomeHeader size="kiosk" tone="ok" title={t('kiosk.done.title')} reference={reference}>
+              <p className="text-2xl text-foreground/70 mt-3">{t('kiosk.done.subtitle')}</p>
+            </RedeemOutcomeHeader>
+            <IssuedCards answer={answer} />
+            {screen.kind === 'done_desk' && (
+              <div className="w-full max-w-xl">
+                <RedeemCallout size="kiosk" tone="amber" icon={Baby}>
+                  {supervised === 1
+                    ? t('kiosk.doneDesk.noteOne')
+                    : t('kiosk.doneDesk.noteMany', { count: supervised })}
+                </RedeemCallout>
+              </div>
+            )}
+          </div>
         </div>
         <div className="p-8 border-t border-foreground/10 flex justify-center">
           <BigButton onClick={onDone}>{t('common.done')}</BigButton>
@@ -344,19 +346,18 @@ export function KioskResult({
   const copy = problemCopy(t, lang, screen);
   return (
     <>
-      <div
-        className="flex-1 flex flex-col items-center justify-center p-8 gap-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-500"
-        data-testid={`kiosk-result-${screen.kind}`}
-      >
-        <RedeemOutcomeHeader size="kiosk" tone={copy.tone} icon={copy.icon} title={copy.title} reference={reference} />
-        <div className="max-w-2xl space-y-3 text-center">
-          {copy.lines.map((line) => (
-            <p key={line} className="text-2xl text-foreground/70">
-              {line}
-            </p>
-          ))}
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col p-8" data-testid={`kiosk-result-${screen.kind}`}>
+        <div className="my-auto flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-500">
+          <RedeemOutcomeHeader size="kiosk" tone={copy.tone} icon={copy.icon} title={copy.title} reference={reference} />
+          <div className="max-w-2xl space-y-3 text-center">
+            {copy.lines.map((line) => (
+              <p key={line} className="text-2xl text-foreground/70">
+                {line}
+              </p>
+            ))}
+          </div>
+          {counts(t, answer)}
         </div>
-        {counts(t, answer)}
       </div>
       <div className="p-8 border-t border-foreground/10 flex flex-col items-center gap-3">
         {copy.retry && <BigButton onClick={onScanAgain}>{t('kiosk.scanAgain')}</BigButton>}

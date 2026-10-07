@@ -63,7 +63,8 @@ const DESK_ORDER: Record<KioskDeskState, number> = { to_redeem: 0, to_check_in: 
  * desk nothing to open. What the desk has left to do is read live:
  *
  *   - failed, or handed off with nothing issued: the booking is redeemed at
- *     the till, so it is `to_redeem` while the booking is still `paid`;
+ *     the till, so it is `to_redeem` until the booking is redeemed (one the
+ *     kiosk refused as not paid included: the desk is where it is paid);
  *   - handed off after the regular bands printed (a mixed booking): the
  *     supervised children wait as booked stays on the kiosk's sale, so it is
  *     `to_check_in` while any of them is still `registered`.
@@ -134,13 +135,15 @@ export async function kioskDesk(
     const detail = (session.detail ?? {}) as { supervisedChildren?: unknown };
     const supervisedChildren = typeof detail.supervisedChildren === 'number' ? detail.supervisedChildren : 0;
     const bandIds = Array.isArray(session.bandIds) ? session.bandIds : [];
+    // Nothing issued: the desk has it until the booking is redeemed — a booking
+    // that is not paid is still opened at the desk, which is where it is paid.
     const state: KioskDeskState = session.saleId
       ? (booked.get(session.saleId) ?? 0) > 0
         ? 'to_check_in'
         : 'done'
-      : b.status === 'paid'
-        ? 'to_redeem'
-        : 'done';
+      : b.status === 'redeemed'
+        ? 'done'
+        : 'to_redeem';
     return {
       sessionId: session.id,
       stationId: session.stationId,

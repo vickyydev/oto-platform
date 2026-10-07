@@ -203,8 +203,8 @@ export type KioskPairingStatus = z.infer<typeof KioskPairingStatusSchema>;
  * THE STAFF DESK'S VIEW of the families a kiosk sent to it today (S2-20 K2).
  *
  *   to_redeem    nothing was issued (a printer fault, the box offline, every
- *                child supervised) and the booking is still paid: the desk
- *                redeems it at the till.
+ *                child supervised, not paid) and the booking is not redeemed
+ *                yet: the desk opens it at the till.
  *   to_check_in  the kiosk issued the regular bands and left drop-off or nanny
  *                children booked: the desk checks them in on the board.
  *   done         the desk (or another kiosk) has finished it since.
