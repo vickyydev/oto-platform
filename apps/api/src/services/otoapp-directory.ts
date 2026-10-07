@@ -14,6 +14,10 @@ import type { Env } from '../env';
  * lost answer — or a press of Retry on the Failures page — is a replay there,
  * never a second child.
  *
+ * S2-20 E4 adds `POST /api/directory/events/:id/edits`: a party's own fields
+ * as a till edited them, carrying the edit's id and the moment it was made, so
+ * the app can refuse an edit older than its own latest change.
+ *
  * Nothing here reads or writes a database. The POS reads the app's state back
  * through the app's published views, in the one read-only repository
  * (`otoapp-events.ts`), and the H1 grep holds every file in `src` to that.
@@ -78,10 +82,55 @@ export type DirectoryOutcome<T> =
       retryable: boolean;
     };
 
+/**
+ * S2-20 E4 — a party's own fields as a till edited them, in the app's words
+ * (`editBodySchema`, the app's eventRoutes.ts). Money is whole baht, as the app
+ * keeps it.
+ */
+export interface DirectoryEventEditFields {
+  title?: string;
+  status?: string;
+  eventDate?: string;
+  startTime?: string;
+  endTime?: string | null;
+  location?: string | null;
+  numChildren?: number | null;
+  numAdults?: number | null;
+  childName?: string | null;
+  kidTurningAge?: number | null;
+  parentName?: string | null;
+  whatsappPhone?: string | null;
+  decoration?: string | null;
+  activities?: string | null;
+  totalValueThb?: number | null;
+  prepaymentAmountThb?: number | null;
+  prepaymentDate?: string | null;
+}
+
+/** `POST /api/directory/events/:id/edits` — the edit's own id, and when it was made at the till. */
+export interface DirectoryEventEditBody {
+  id: string;
+  editedAt: string;
+  fields: DirectoryEventEditFields;
+}
+
+/** What the app answers with (`EventEditResult`, the app's eventWrites.ts). */
+export interface DirectoryEventEditAnswer {
+  edit: { id: string; eventId: string; editedAt: string; fields: string[] };
+  event: Record<string, unknown> & { id: string; updatedAt: string };
+  replayed: boolean;
+}
+
 export interface OtoAppDirectory {
   /** Whether this deployment has a directory to call at all. */
   readonly configured: boolean;
   addAttendee(eventId: string, body: DirectoryAttendeeBody): Promise<DirectoryOutcome<DirectoryAttendeeAnswer>>;
+  /**
+   * S2-20 E4 — write a till's party edit back. Optional so a directory built
+   * before E4 (a test's stub) still types; one without it is answered as
+   * "not configured", and the edit waits as pending.
+   */
+  editEvent?(eventId: string, body: DirectoryEventEditBody): Promise<DirectoryOutcome<DirectoryEventEditAnswer>>;
 }
 
 /** Said when this deployment has no directory: the write waits, it is not lost. */
@@ -168,6 +217,62 @@ export function buildOtoAppDirectory(
           };
         }
         return { ok: true, status: res.status, body: answer as DirectoryAttendeeAnswer };
+      }
+      const refusal = refusalOf(res.status, payload);
+      return {
+        ok: false,
+        status: res.status,
+        ...refusal,
+        retryable: res.status >= 500 || res.status === 429 || res.status === 408,
+      };
+    },
+    async editEvent(eventId, body) {
+      if (!configured) {
+        return {
+          ok: false,
+          status: null,
+          code: DIRECTORY_NOT_CONFIGURED,
+          message: 'This deployment has no OTO App directory configured, so the edit was not written there yet',
+          retryable: true,
+        };
+      }
+      const url = `${origin}/api/directory/events/${encodeURIComponent(eventId)}/edits`;
+      let res: Response;
+      try {
+        res = await fetchImpl(url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(env.OTOAPP_DIRECTORY_TIMEOUT_MS),
+        });
+      } catch (err) {
+        log?.warn({ err: (err as Error)?.name, host: new URL(origin).host }, 'otoapp directory unreachable');
+        return {
+          ok: false,
+          status: null,
+          code: DIRECTORY_UNREACHABLE,
+          message: 'The OTO App did not answer',
+          retryable: true,
+        };
+      }
+      let payload: unknown = null;
+      try {
+        payload = await res.json();
+      } catch {
+        payload = null;
+      }
+      if (res.ok) {
+        const answer = payload as Partial<DirectoryEventEditAnswer> | null;
+        if (!answer?.edit?.id || !answer.event?.id) {
+          return {
+            ok: false,
+            status: res.status,
+            code: 'OTOAPP_UNREADABLE_ANSWER',
+            message: 'The OTO App answered without the edit',
+            retryable: true,
+          };
+        }
+        return { ok: true, status: res.status, body: answer as DirectoryEventEditAnswer };
       }
       const refusal = refusalOf(res.status, payload);
       return {

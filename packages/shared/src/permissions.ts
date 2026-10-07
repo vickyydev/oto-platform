@@ -206,6 +206,16 @@ export const PERMISSIONS = [
   'pos:event:attendee_create',
   /** S2-20 E2 — sell a paid camp or event pass: an ordinary sale, then the child as above. */
   'pos:event:pass_sell',
+  /**
+   * S2-20 E4 — the party tab. `charge` puts extra tickets or F&B on a party's
+   * tab (a ledger entry, not a sale); `payment` takes money against its
+   * balance (a real tender, counted on End of Day's party prepayments line);
+   * `update` edits the party's own fields, written back to the OTO App. The
+   * prototype lets any signed-in staff member do all three (plan §10).
+   */
+  'pos:party:charge',
+  'pos:party:payment',
+  'pos:party:update',
   /** S2-20 E2 — the Admin Events panel's walk-up prices (camp day, event day, party guest). */
   'admin:event_pricing:manage',
   // POS — wallets (S2-14a)
@@ -426,6 +436,10 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:event:attendee_create',
     'pos:event:pass_sell',
     'admin:event_pricing:manage',
+    // S2-20 E4 — the party tab: charges, payments and edits (plan §10).
+    'pos:party:charge',
+    'pos:party:payment',
+    'pos:party:update',
     'pos:wallet:grant',
     'pos:wallet:spend',
     'pos:wallet:adjust',
@@ -479,6 +493,11 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     // sell an event pass, and reception holds the counter's events (plan §10).
     'pos:event:attendee_create',
     'pos:event:pass_sell',
+    // S2-20 E4 — the party tab, which the prototype lets any signed-in staff
+    // member charge, take the balance of and edit (plan §10).
+    'pos:party:charge',
+    'pos:party:payment',
+    'pos:party:update',
     'pos:wallet:grant',
     'pos:wallet:spend',
     'pos:stock:count',

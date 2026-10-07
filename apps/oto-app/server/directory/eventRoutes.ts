@@ -4,6 +4,7 @@ import { z } from "zod";
 import { directoryClientOf, requireDirectoryClient } from "./clientAuth";
 import {
   createEventAttendee,
+  editPartyEvent,
   findTenantEvent,
   recordAttendeeCheckin,
   type WriteOutcome,
@@ -15,8 +16,9 @@ import {
  *
  *   POST /api/directory/events/:id/attendees
  *   POST /api/directory/events/:id/attendees/:attendeeId/checkins
+ *   POST /api/directory/events/:id/edits     (a party's own fields, S2-20 E4)
  *
- * Both authenticate a tenant-bound directory key with the `events:write` scope
+ * All three authenticate a tenant-bound directory key with the `events:write` scope
  * (`clientAuth.ts`), never the shared HR key, and both take the id the caller
  * minted, so a retry is a replay (`eventWrites.ts`). The POS reads the result
  * back through the `otoapp_v` views (migration 0004).
@@ -66,6 +68,45 @@ export const checkinBodySchema = z
   })
   .strict();
 
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Expected HH:mm");
+const wholeBaht = z.number().int().min(0).max(100_000_000).nullable();
+
+/**
+ * A party's own fields as a till edited them (events-kiosk PLAN s3,
+ * `updateParty`). Only these: identity, the branch and the POS's ledgers are
+ * not fields of this body, and nothing else is accepted.
+ */
+export const editBodySchema = z
+  .object({
+    id: z.string().uuid(),
+    /** When the edit was made at the till: the app's own later changes win over it. */
+    editedAt: z.string().datetime({ offset: true }),
+    fields: z
+      .object({
+        title: z.string().trim().min(1).max(500),
+        status: z.string().trim().min(1).max(50),
+        eventDate: isoDate,
+        startTime: clockTime,
+        endTime: clockTime.nullable(),
+        location: optionalText(500),
+        numChildren: z.number().int().min(0).max(100_000).nullable(),
+        numAdults: z.number().int().min(0).max(100_000).nullable(),
+        childName: optionalText(200),
+        kidTurningAge: z.number().int().min(0).max(30).nullable(),
+        parentName: optionalText(200),
+        whatsappPhone: optionalText(50),
+        decoration: optionalText(2000),
+        activities: optionalText(2000),
+        totalValueThb: wholeBaht,
+        prepaymentAmountThb: wholeBaht,
+        prepaymentDate: isoDate.nullable(),
+      })
+      .partial()
+      .strict()
+      .refine((fields) => Object.values(fields).some((value) => value !== undefined), "The edit names no field"),
+  })
+  .strict();
+
 function send<T>(res: Response, outcome: WriteOutcome<T>) {
   if (outcome.ok) return res.status(outcome.status).json(outcome.body);
   const { status, error, message, details } = outcome;
@@ -110,6 +151,23 @@ export function directoryEventRouter(pool: Pool): Router {
         const event = await findTenantEvent(pool, client.tenantId, req.params.id);
         if (!event) return eventNotFound(res);
         return send(res, await recordAttendeeCheckin(pool, event, req.params.attendeeId, parsed.data));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.post(
+    "/api/directory/events/:id/edits",
+    auth,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const parsed = editBodySchema.safeParse(req.body);
+        if (!parsed.success) return invalid(res, parsed.error);
+        const client = directoryClientOf(res);
+        const event = await findTenantEvent(pool, client.tenantId, req.params.id);
+        if (!event) return eventNotFound(res);
+        return send(res, await editPartyEvent(pool, event, parsed.data));
       } catch (error) {
         next(error);
       }

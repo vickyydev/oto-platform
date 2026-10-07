@@ -505,6 +505,13 @@
       "when": 1791382385054,
       "tag": "0071_benefit_checkout",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1791377783904,
+      "tag": "0072_party_tab",
+      "breakpoints": true
     }
   ]
 }

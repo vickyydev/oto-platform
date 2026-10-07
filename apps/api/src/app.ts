@@ -47,6 +47,7 @@ import { releaseRoutes } from './routes/release';
 import { walletRoutes } from './routes/wallets';
 import { eventRoutes } from './routes/events';
 import { eventPricingRoutes } from './routes/event-pricing';
+import { partyRoutes } from './routes/parties';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
 import { analyticsRoutes } from './routes/analytics';
@@ -466,6 +467,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(eventRoutes, { prefix: '/events' });
   // S2-20 E2 — the branch's walk-up prices, beside the branch's other config.
   await app.register(eventPricingRoutes, { prefix: '/branches' });
+  // S2-20 E4 — the party tab: edits written back to the OTO App, charges, payments.
+  await app.register(partyRoutes, { prefix: '/parties' });
   // S2-15a round 1 — the End of Day (one combined count per branch-day) and
   // the paid-outs and safe drops it expects less of. Paths declared in full.
   await app.register((await import('./routes/end-of-day')).endOfDayRoutes);

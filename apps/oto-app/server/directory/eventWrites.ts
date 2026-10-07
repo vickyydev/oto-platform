@@ -58,7 +58,16 @@ export interface DirectoryEvent {
   tenantId: string;
   isCamp: boolean;
   branchTimezone: string;
+  /**
+   * One of the types that carry a BEO bill — birthday, private_event,
+   * school_group — which the POS reads as a party (PLAN Q10, the
+   * `otoapp_v.events` mapping). Only a party is edited from a till.
+   */
+  isParty?: boolean;
 }
+
+/** The app's event types the POS reads as a party (`otoapp_v.events`, migration 0004). */
+const PARTY_EVENT_TYPES = new Set(["birthday", "private_event", "school_group"]);
 
 /**
  * The event, if it is this tenant's and not archived. An id that is not a
@@ -84,6 +93,7 @@ export async function findTenantEvent(
     tenantId: row.tenant_id,
     isCamp: row.event_type === "camp",
     branchTimezone: row.timezone || "Asia/Bangkok",
+    isParty: PARTY_EVENT_TYPES.has(row.event_type),
   };
 }
 
@@ -612,4 +622,175 @@ async function dayRow(tx: PoolClient, t: CheckinTable, attendeeId: string, date:
 async function checkinShapeById(tx: PoolClient, t: CheckinTable, id: string): Promise<CheckinResult["checkin"] | null> {
   const { rows } = await tx.query<StoredCheckin>(`${checkinSelect(t)} where id = $1`, [id]);
   return rows[0] ? checkinShape(rows[0]) : null;
+}
+
+// --- Editing a party ----------------------------------------------------------
+
+/**
+ * The party fields a till may change, as this app names them on `core_events`
+ * (events-kiosk PLAN s3, `updateParty`: identity, the branch and the POS's own
+ * ledgers are never among them). Money is whole baht, as the app keeps it.
+ */
+export interface EventEditFields {
+  title?: string;
+  status?: string;
+  eventDate?: string;
+  startTime?: string;
+  endTime?: string | null;
+  location?: string | null;
+  numChildren?: number | null;
+  numAdults?: number | null;
+  childName?: string | null;
+  kidTurningAge?: number | null;
+  parentName?: string | null;
+  /** E.164, as the POS normalised it. */
+  whatsappPhone?: string | null;
+  decoration?: string | null;
+  activities?: string | null;
+  totalValueThb?: number | null;
+  prepaymentAmountThb?: number | null;
+  prepaymentDate?: string | null;
+}
+
+export interface EventEditInput {
+  /** The caller's id for this edit. */
+  id: string;
+  /** When the edit was made at the till: the app's own later changes win over it. */
+  editedAt: string;
+  fields: EventEditFields;
+}
+
+export interface EventEditResult {
+  edit: { id: string; eventId: string; editedAt: string; fields: string[] };
+  /** The edited fields as the event now holds them. */
+  event: Record<string, unknown> & { id: string; updatedAt: string };
+  /** The same edit was applied before: the event already says what it says. */
+  replayed: boolean;
+}
+
+/** Each field's column; the WhatsApp number fills the app's four phone columns. */
+const EDIT_COLUMNS: Record<Exclude<keyof EventEditFields, "whatsappPhone">, string> = {
+  title: "title",
+  status: "status",
+  eventDate: "event_date",
+  startTime: "start_time",
+  endTime: "end_time",
+  location: "location_text",
+  numChildren: "num_children",
+  numAdults: "num_adults",
+  childName: "child_name",
+  kidTurningAge: "kid_turning_age",
+  parentName: "parent_name",
+  decoration: "decoration",
+  activities: "activities",
+  totalValueThb: "total_value",
+  prepaymentAmountThb: "prepayment_amount",
+  prepaymentDate: "prepayment_date",
+};
+
+/** The free-text fields, where a blank means "none" rather than an empty string. */
+const EDIT_TEXT_FIELDS = new Set<keyof EventEditFields>([
+  "endTime",
+  "location",
+  "childName",
+  "parentName",
+  "whatsappPhone",
+  "decoration",
+  "activities",
+  "prepaymentDate",
+]);
+
+/**
+ * Change a party's own fields, as a till edited them (`updateParty`).
+ *
+ * ORDER, NOT A STORED ID. An edit sets values, so sending it twice sets the
+ * same values twice: the second send is a replay by nature, with nothing kept
+ * to recognise it by. What could go wrong is ORDER — an older edit arriving
+ * after a newer change and putting old values back. So the edit carries the
+ * moment it was made at the till, and:
+ *
+ *   - the event's `updated_at` is LATER than that — somebody changed the event
+ *     here after the till's edit (the app's own screens, or a newer edit from
+ *     a till): refused as `edit_superseded`, nothing written. The app is the
+ *     master (PLAN Q1) and its later change stands;
+ *   - otherwise the fields are written and `updated_at` becomes the edit's
+ *     moment, so the same edit again finds `updated_at` equal to it (a
+ *     replay, answered `replayed: true`) and any older edit finds it later.
+ *
+ * Only a party is edited this way, only its listed fields, and only this
+ * tenant's event (the key's): another tenant's is "not found".
+ */
+export async function editPartyEvent(
+  pool: Pool,
+  event: DirectoryEvent,
+  input: EventEditInput,
+): Promise<WriteOutcome<EventEditResult>> {
+  if (!event.isParty) return refuse(409, "not_a_party", "Only a party's details are edited from a till");
+  const keys = (Object.keys(input.fields) as Array<keyof EventEditFields>).filter(
+    (key) => input.fields[key] !== undefined,
+  );
+  if (keys.length === 0) return refuse(400, "nothing_to_change", "The edit names no field to change");
+
+  return inTransaction(pool, async (tx) => {
+    const { rows } = await tx.query<{ newer: boolean; same: boolean }>(
+      `select (updated_at at time zone 'UTC') > $3::timestamptz as newer,
+              (updated_at at time zone 'UTC') = $3::timestamptz as same
+         from core_events
+        where id = $1 and tenant_id = $2 and not is_archived
+        for update`,
+      [event.id, event.tenantId, input.editedAt],
+    );
+    const current = rows[0];
+    if (!current) return refuse(404, "event_not_found", "Event not found");
+    if (current.newer) {
+      return refuse(
+        409,
+        "edit_superseded",
+        "This party was changed in the OTO App after the edit was made at the till, so the edit was not applied",
+      );
+    }
+
+    const params: unknown[] = [event.id, event.tenantId];
+    const sets: string[] = [];
+    const set = (column: string, value: unknown) => {
+      params.push(value);
+      sets.push(`${column} = $${params.length}`);
+    };
+    for (const key of keys) {
+      const raw = input.fields[key];
+      const value = EDIT_TEXT_FIELDS.has(key) ? blank(raw as string | null | undefined) : raw;
+      if (key === "whatsappPhone") {
+        set("whatsapp_phone_raw", value);
+        set("whatsapp_phone_e164", value);
+        set("whatsapp_parse_valid", true);
+        set("whatsapp_parse_error", null);
+        continue;
+      }
+      set(EDIT_COLUMNS[key], typeof value === "string" ? value.trim() : value);
+    }
+    params.push(input.editedAt);
+    sets.push(`updated_at = ($${params.length}::timestamptz at time zone 'UTC')`);
+    await tx.query(`update core_events set ${sets.join(", ")} where id = $1 and tenant_id = $2`, params);
+
+    const { rows: after } = await tx.query<Record<string, unknown>>(
+      `select id, title, status, event_date as "eventDate", start_time as "startTime", end_time as "endTime",
+              location_text as location, num_children as "numChildren", num_adults as "numAdults",
+              child_name as "childName", kid_turning_age as "kidTurningAge", parent_name as "parentName",
+              whatsapp_phone_e164 as "whatsappPhone", decoration, activities,
+              total_value as "totalValueThb", prepayment_amount as "prepaymentAmountThb",
+              prepayment_date as "prepaymentDate", updated_at at time zone 'UTC' as "updatedAt"
+         from core_events where id = $1`,
+      [event.id],
+    );
+    const row = after[0]!;
+    return {
+      ok: true,
+      status: 200,
+      body: {
+        edit: { id: input.id, eventId: event.id, editedAt: new Date(input.editedAt).toISOString(), fields: keys },
+        event: { ...row, id: event.id, updatedAt: new Date(row.updatedAt as string | Date).toISOString() },
+        replayed: current.same,
+      },
+    };
+  });
 }

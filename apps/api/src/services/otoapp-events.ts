@@ -66,6 +66,12 @@ export interface SeamEvent {
   totalValueSatang: number | null;
   depositSatang: number | null;
   depositDate: string | null;
+  /**
+   * S2-20 E4 — when the OTO App last changed the event. A till's edit made
+   * before it is refused by the app (its later change stands), so it is not
+   * shown over it either. Optional so a seam event built by hand still types.
+   */
+  updatedAt?: Date | null;
 }
 
 export interface SeamAttendee {
@@ -215,13 +221,15 @@ type EventRow = {
   total_value_satang: string | null;
   deposit_satang: string | null;
   deposit_date: string | null;
+  updated_at: Date | string | null;
 };
 
 const EVENT_COLUMNS =
   sql.raw(`id, branch_id, type, app_event_type, title, status, archived, start_date,
   end_date, cancelled_days, start_time, end_time, location, expected_kids, expected_adults,
   entry_price_weekday_satang, entry_price_weekend_satang, child_name, kid_turning_age, booking_name,
-  parent_name, parent_phone, activities, decoration, total_value_satang, deposit_satang, deposit_date`);
+  parent_name, parent_phone, activities, decoration, total_value_satang, deposit_satang, deposit_date,
+  updated_at`);
 
 const toEvent = (r: EventRow): SeamEvent => ({
   id: r.id,
@@ -251,6 +259,7 @@ const toEvent = (r: EventRow): SeamEvent => ({
   totalValueSatang: money(r.total_value_satang),
   depositSatang: money(r.deposit_satang),
   depositDate: r.deposit_date,
+  updatedAt: r.updated_at === null ? null : new Date(r.updated_at),
 });
 
 /**

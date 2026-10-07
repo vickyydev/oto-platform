@@ -7,6 +7,7 @@ import {
   device,
   endOfDay,
   occupancyResolution,
+  partyPayment,
   paymentAttempt,
   refund,
   role,
@@ -136,6 +137,12 @@ export interface ExpectedInputs {
   creditSatang: number;
   /** Paid-outs and safe drops of the day, each taken off the expected cash. */
   movementsSatang: number;
+  /**
+   * S2-20 E4 — party payments taken this day for this day's parties, whatever
+   * the tender (`getEndOfDay` 2298-2304). Their attempts are on no other line.
+   * Absent is ฿0, the line's value before parties were on the platform.
+   */
+  partyPrepaySatang?: number;
 }
 
 /**
@@ -163,8 +170,8 @@ export function channelOfRefundSlice(
  * THE EXPECTED SIDE, in the prototype's order: cash; PromptPay / QR; a card
  * line per terminal of the branch (zero lines kept), then any other TID that
  * took money and the card money with no TID; a `method:<token>` line per other
- * kind of tender that took money; e-wallet, bank transfer and party prepayments
- * at zero (none of them is on the platform yet); credit. Pure.
+ * kind of tender that took money; e-wallet and bank transfer at zero (neither
+ * is on the platform yet); party prepayments (S2-20 E4); credit. Pure.
  */
 export function expectedLinesOf(input: ExpectedInputs): EodLine[] {
   const sums = new Map<string, number>();
@@ -202,8 +209,9 @@ export function expectedLinesOf(input: ExpectedInputs): EodLine[] {
     ...methods.map((c) => line(c, sums.get(c) ?? 0)),
     line('ewallet', 0),
     line('bank_transfer', 0),
-    // Parties are not on the platform yet: the prototype's own channel, at zero.
-    line('party_prepay', 0),
+    // S2-20 E4 — the prototype's own channel for party money, never folded
+    // into cash, card or PromptPay.
+    line('party_prepay', input.partyPrepaySatang ?? 0),
     line('credit', input.creditSatang),
   ];
 }
@@ -309,8 +317,11 @@ async function expectedInputsOf(db: Exec, operatorId: string, branchId: string, 
       stationId: paymentAttempt.stationId,
       tid: paymentAttempt.tid,
       amountSatang: paymentAttempt.amountSatang,
+      /** S2-20 E4 — set when the attempt is a party payment: that party's day. */
+      partyDate: partyPayment.partyDate,
     })
     .from(paymentAttempt)
+    .leftJoin(partyPayment, eq(partyPayment.paymentAttemptId, paymentAttempt.id))
     .where(
       and(
         eq(paymentAttempt.operatorId, operatorId),
@@ -319,7 +330,17 @@ async function expectedInputsOf(db: Exec, operatorId: string, branchId: string, 
         inArray(paymentAttempt.status, [...PAYMENT_ATTEMPT_TAKEN_STATUSES]),
       ),
     );
-  const attempts = taken.filter((a) => countsAsTillTakings(a));
+  /**
+   * S2-20 E4 — PARTY MONEY HAS ITS OWN LINE (`getEndOfDay` 2298-2304): a party
+   * payment is never on the cash, card or PromptPay line, whatever its tender
+   * (H10). It is on `party_prepay` when it was taken on this day for a party
+   * held on this day — the prototype's rule, Q3's default — and on no line of
+   * any day otherwise (plan §6, "payment timing").
+   */
+  const attempts = taken.filter((a) => a.partyDate === null && countsAsTillTakings(a));
+  const partyPrepaySatang = taken
+    .filter((a) => a.partyDate === date)
+    .reduce((sum, a) => sum + a.amountSatang, 0);
 
   const refunds = await db
     .select({ allocation: refund.tenderAllocation })
@@ -353,6 +374,7 @@ async function expectedInputsOf(db: Exec, operatorId: string, branchId: string, 
     terminals: await terminalsOf(db, branchId),
     creditSatang: credit.netSatang,
     movementsSatang: movements.reduce((sum, m) => sum + m.amountSatang, 0),
+    partyPrepaySatang,
   };
 }
 

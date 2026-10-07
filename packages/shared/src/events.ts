@@ -287,6 +287,111 @@ export const EventPartyWalkUpChargeSchema = z.object({
 });
 export type EventPartyWalkUpCharge = z.infer<typeof EventPartyWalkUpChargeSchema>;
 
+// --- The party tab (S2-20 E4) ------------------------------------------------------
+
+/** What a party charge was for (`PartyExtraCharge.kind`): extra play tickets or F&B. */
+export const PARTY_CHARGE_KINDS = ['ticket', 'fnb'] as const;
+export type PartyChargeKind = (typeof PARTY_CHARGE_KINDS)[number];
+
+/** One line of a charge's breakdown, as the till listed it (descriptive: the charge's total is what is owed). */
+export const PartyChargeItemSchema = z.object({
+  name: z.string().trim().min(1).max(300),
+  qty: z.number().int().min(0).max(10_000),
+  lineTotalSatang: z.number().int().min(0).max(10_000_000_000),
+});
+export type PartyChargeItem = z.infer<typeof PartyChargeItemSchema>;
+
+/**
+ * S2-20 E4 — a charge the till put on a party's tab (`PartyExtraCharge`): a
+ * ledger entry, never a sale — no kitchen ticket, no stock, no bands (Q3).
+ */
+export const PartyChargeViewSchema = z.object({
+  id: z.string(),
+  kind: z.enum(PARTY_CHARGE_KINDS),
+  items: z.array(PartyChargeItemSchema),
+  totalSatang: z.number().int(),
+  chargedBy: z.string().nullable(),
+  chargedById: z.string().nullable(),
+  chargedAt: z.string(),
+});
+export type PartyChargeView = z.infer<typeof PartyChargeViewSchema>;
+
+/**
+ * S2-20 E4 — a payment taken against a party's balance (`PartyPayment`). The
+ * money is a real tender (`pos.payment_attempt`, no sale behind it): `method`
+ * is the token the till chose, `kind` the ledger's word for the money.
+ */
+export const PartyPaymentViewSchema = z.object({
+  id: z.string(),
+  amountSatang: z.number().int(),
+  method: z.string(),
+  kind: z.string(),
+  takenBy: z.string().nullable(),
+  takenById: z.string().nullable(),
+  takenAt: z.string(),
+  /** The trading day the money was taken on. */
+  businessDate: IsoDate,
+  /** The party's day when the money was taken: End of Day counts it when the two are the same day. */
+  partyDate: IsoDate,
+  attemptId: z.string(),
+});
+export type PartyPaymentView = z.infer<typeof PartyPaymentViewSchema>;
+
+/** The stamp `updateParty` leaves: who edited the party at a till, and when. */
+export const PartyLastEditedSchema = z.object({
+  by: z.string().nullable(),
+  byId: z.string().nullable(),
+  at: z.string(),
+});
+
+/**
+ * S2-20 E4 — an edit made at a till that the OTO App has not taken yet:
+ * `pending` (no answer yet — shown on the party meanwhile) or `failed` (the app
+ * refused it — not shown, and retried from Failures once the cause is fixed).
+ */
+export const PartyEditStateSchema = z.object({
+  editId: z.string(),
+  state: z.enum(['pending', 'failed']),
+  error: z.string().nullable(),
+  at: z.string(),
+});
+export type PartyEditState = z.infer<typeof PartyEditStateSchema>;
+
+/**
+ * The party's bill as the platform works it out (`computePartyTotal`,
+ * `computePartyOutstanding`, lib/party.ts), in satang: total = base + line
+ * items + charges (walk-ups included); outstanding = max(0, total − deposit −
+ * payments).
+ */
+export const PartyBillSchema = z.object({
+  baseSatang: z.number().int(),
+  chargesSatang: z.number().int(),
+  totalSatang: z.number().int(),
+  depositSatang: z.number().int(),
+  paidSatang: z.number().int(),
+  outstandingSatang: z.number().int(),
+});
+export type PartyBill = z.infer<typeof PartyBillSchema>;
+
+/** `computePartyTotal` and `computePartyOutstanding` (lib/party.ts), in satang. */
+export function partyBillOf(input: {
+  baseSatang: number;
+  lineItemsSatang?: number;
+  chargesSatang: number;
+  depositSatang: number;
+  paidSatang: number;
+}): PartyBill {
+  const totalSatang = input.baseSatang + (input.lineItemsSatang ?? 0) + input.chargesSatang;
+  return {
+    baseSatang: input.baseSatang,
+    chargesSatang: input.chargesSatang,
+    totalSatang,
+    depositSatang: input.depositSatang,
+    paidSatang: input.paidSatang,
+    outstandingSatang: Math.max(0, totalSatang - input.depositSatang - input.paidSatang),
+  };
+}
+
 export const EventPartyViewSchema = z.object({
   childName: z.string().nullable(),
   kidTurningAge: z.number().int().nullable(),
@@ -301,6 +406,16 @@ export const EventPartyViewSchema = z.object({
   depositDate: z.string().nullable(),
   /** S2-20 E2 — the walk-ups the till charged to this party's tab, oldest first. */
   walkUpCharges: z.array(EventPartyWalkUpChargeSchema),
+  /**
+   * S2-20 E4 — the party tab's POS ledgers and the till's edits. Optional in
+   * the shape only so an answer from before E4 still reads; the api always
+   * sends them for a party.
+   */
+  charges: z.array(PartyChargeViewSchema).optional(),
+  payments: z.array(PartyPaymentViewSchema).optional(),
+  lastEdited: PartyLastEditedSchema.nullable().optional(),
+  editSync: PartyEditStateSchema.nullable().optional(),
+  bill: PartyBillSchema.optional(),
 });
 
 export const EventViewSchema = z.object({

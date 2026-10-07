@@ -52,7 +52,11 @@ export interface DrawerKick {
   stationId: string;
   /** The printer the pulse rides, as the cloud can see it. Null lets the box route it. */
   deviceId: string | null;
-  saleId: string;
+  /**
+   * The sale the cash closed. Null for money taken with no sale behind it —
+   * a party's balance (S2-20 E4), whose attempt is the only record it needs.
+   */
+  saleId: string | null;
   attemptId: string;
   /** `x-oto-action-id` — the same one on the sale, the attempt and the Box log line. */
   actionId: string;
@@ -87,7 +91,7 @@ export async function resolveDrawerKick(
   db: Exec,
   input: {
     stationRow: typeof station.$inferSelect;
-    saleId: string;
+    saleId: string | null;
     attemptId: string;
     actionId: string | null;
   },
@@ -185,7 +189,7 @@ export async function queueDrawerKick(
     const { commandId } = await queueCommand(db, withoutIdempotencyClaim(ctx), actor, boxRow, {
       kind: 'drawer_kick',
       payload: {
-        saleId: kick.saleId,
+        ...(kick.saleId ? { saleId: kick.saleId } : {}),
         attemptId: kick.attemptId,
         stationId: kick.stationId,
         ...(kick.deviceId ? { deviceId: kick.deviceId } : {}),

@@ -41,6 +41,14 @@ import {
 import type { Exec } from './tx';
 import { linksOfEvents, walkUpChargeOf } from './event-writes';
 import type { DirectoryAttendeeBody } from './otoapp-directory';
+import {
+  billOfParty,
+  editSyncOf,
+  lastEditedOf,
+  overlayPartyEdits,
+  partyLedgersOf,
+  type PartyLedgers,
+} from './party-tab';
 
 /** A link the POS wrote for a child it added, with who added them (S2-20 E2). */
 type LinkWithStaff = Awaited<ReturnType<typeof linksOfEvents>>[number];
@@ -235,6 +243,7 @@ function eventView(
   e: SeamEvent,
   attendees: EventAttendeeView[] | null,
   walkUpCharges: EventPartyWalkUpCharge[] = [],
+  tab: PartyLedgers | null = null,
 ): EventView {
   return {
     id: e.id,
@@ -268,6 +277,22 @@ function eventView(
             depositSatang: e.depositSatang,
             depositDate: e.depositDate,
             walkUpCharges,
+            // S2-20 E4 — the party tab: the POS's ledgers, the till's edit
+            // stamp and the bill. Read wherever the attendees are (a day's
+            // list, one event, a roster); the passes list reads neither.
+            ...(tab
+              ? {
+                  charges: tab.charges,
+                  payments: tab.payments,
+                  lastEdited: lastEditedOf(tab.edits),
+                  editSync: editSyncOf(tab.edits),
+                  bill: billOfParty(
+                    e,
+                    walkUpCharges.reduce((sum, c) => sum + c.amountSatang, 0),
+                    tab,
+                  ),
+                }
+              : {}),
           }
         : null,
     attendeeCount: attendees === null ? null : attendees.length,
@@ -306,7 +331,15 @@ async function withAttendees(
   }
   // S2-20 E2 — the POS's own record of the children it added.
   const links = await linksOfEvents(db, { branchId, eventIds });
-  return events.map((e) => {
+  // S2-20 E4 — the parties' tabs: the till's charges, payments and edits.
+  const tabs = await partyLedgersOf(db, {
+    branchId,
+    eventIds: events.filter((e) => e.type === 'party').map((e) => e.id),
+  });
+  return events.map((seamEvent) => {
+    const tab = seamEvent.type === 'party' ? (tabs.get(seamEvent.id) ?? null) : null;
+    // A party is shown as the till last edited it, until the OTO App takes the edit.
+    const e = tab ? overlayPartyEdits(seamEvent, tab.edits) : seamEvent;
     const own = links.filter((l) => l.otoappEventId === e.id);
     const seam = registrations.filter((r) => r.eventId === e.id);
     const inApp = new Set(seam.map((r) => r.id));
@@ -342,7 +375,7 @@ async function withAttendees(
               ),
             )
         : [];
-    return eventView(e, attendees, charges);
+    return eventView(e, attendees, charges, tab);
   });
 }
 

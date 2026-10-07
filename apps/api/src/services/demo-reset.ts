@@ -15,12 +15,16 @@ import {
   checkin,
   child,
   endOfDay,
+  eventAttendeeLink,
   guardian,
   kioskSession,
   occupancyResolution,
   member,
   memberAlias,
   memberTierVerification,
+  partyCharge,
+  partyEdit,
+  partyPayment,
   paymentAttempt,
   paymentNotification,
   purchaseOrder,
@@ -258,6 +262,20 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
    * at the kiosk made the whole reset fail.
    */
   counts.kiosk_session = (await tx.delete(kioskSession).returning({ id: kioskSession.id })).length;
+
+  /**
+   * S2-20 E4: a party's tab is a day of play too — its charges, its payments
+   * and the till's edits. A payment names its attempt (ON DELETE RESTRICT), so
+   * the payments go before the attempts below. The children the till added to
+   * events (E2) go with them: a pass names its sale and line, also restricting.
+   * The OTO App's own rows are not the platform's to reset.
+   */
+  counts.party_payment = (await tx.delete(partyPayment).returning({ id: partyPayment.id })).length;
+  counts.party_charge = (await tx.delete(partyCharge).returning({ id: partyCharge.id })).length;
+  counts.party_edit = (await tx.delete(partyEdit).returning({ id: partyEdit.id })).length;
+  counts.event_attendee_link = (
+    await tx.delete(eventAttendeeLink).returning({ id: eventAttendeeLink.id })
+  ).length;
 
   /**
    * SCRUM-503: S2-13's supervised stays are a day of play too — a drop-off or

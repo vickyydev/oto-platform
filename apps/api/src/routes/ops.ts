@@ -48,6 +48,7 @@ import {
   runsForFingerprint,
 } from '../services/ops';
 import { retryAttendeeWriteBack } from '../services/event-writes';
+import { PARTY_UPDATE_RUN, retryPartyEditWriteBack } from '../services/parties';
 
 /**
  * What the Console reads about how the platform is running (S2-03), and the
@@ -287,7 +288,7 @@ export async function opsRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Run a failed scheduled job again, or send again the OTO App write-backs of children a Failures group left waiting (`otoapp:attendee.create`, each under its own attendee id). Nothing else is safe from here',
+          'Run a failed scheduled job again, or send again the OTO App write-backs a Failures group left waiting: children (`otoapp:attendee.create`, each under its own attendee id) and party edits (`otoapp:party.update`, oldest first, each under its own edit id). Nothing else is safe from here',
         params: z.object({ runId: z.string().uuid() }),
       },
     },
@@ -307,6 +308,57 @@ export async function opsRoutes(app: App): Promise<void> {
        * the caller's reach, oldest first and bounded (E2 review, finding 1;
        * `retryAttendeeWriteBack`). Each link's own stored body is what is sent.
        */
+      /**
+       * S2-20 E4 — A TILL'S PARTY EDITS, sent again: the pressed run's edit,
+       * then every other edit one outage left waiting, oldest first so each
+       * party's edits reach the app in the order they were made
+       * (`retryPartyEditWriteBack`).
+       */
+      if (run.kind === 'integration' && run.name === PARTY_UPDATE_RUN) {
+        const editId = (run.detail as { editId?: unknown } | null)?.editId;
+        if (typeof editId !== 'string') {
+          throw errors.conflict('RUN_NOT_RETRYABLE', 'This run does not say which party edit it was writing');
+        }
+        const swept = await retryPartyEditWriteBack(
+          { db: app.db, directory: app.otoAppDirectory, log: req.log },
+          {
+            operatorId: auth.operatorId,
+            editId,
+            errorCode: run.errorCode,
+            reach: branchReach(await req.effectivePermissions(), 'admin:ops:manage', auth.operatorId),
+            requestId: req.id,
+          },
+        );
+        const edit = swept.edit;
+        await withTx(app.db, opCtx(req), 'ops.run_retry', async (tx) => {
+          await audit.record(tx, {
+            actorAccountId: auth.accountId,
+            operatorId: auth.operatorId,
+            branchId: run.branchId,
+            action: 'ops.run_retry',
+            entityType: 'ops_run',
+            entityId: run.id,
+            actionId: edit.actionId,
+            after: {
+              integration: run.name,
+              editId: edit.id,
+              syncState: edit.syncState,
+              sent: swept.sent,
+              synced: swept.synced,
+              waiting: swept.waiting,
+            },
+            requestId: req.id,
+          });
+        });
+        return {
+          ok: true as const,
+          outcome: edit.syncState === 'synced' && swept.waiting === 0 ? 'ok' : 'failed',
+          syncState: edit.syncState,
+          sent: swept.sent,
+          synced: swept.synced,
+          waiting: swept.waiting,
+        };
+      }
       if (run.kind === 'integration' && isRetryableRun(run.kind, run.name)) {
         const linkId = (run.detail as { linkId?: unknown } | null)?.linkId;
         if (typeof linkId !== 'string') {

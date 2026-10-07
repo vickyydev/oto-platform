@@ -42,3 +42,6 @@ export * from './kiosk';
 // Events, camps and parties (S2-20 E2): after the sales ledger and the members
 // whose sale, line, child and member an attendee link names.
 export * from './events';
+// The party tab (S2-20 E4): after the sales ledger, whose payment attempt a
+// party payment names.
+export * from './parties';

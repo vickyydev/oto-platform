@@ -2730,9 +2730,11 @@ function newestOf<T>(column: SQLWrapper): SQL<T | null> {
 /**
  * The integration runs a person may start again from the Failures page — each
  * one a call that carries its own client-minted id, so sending it again is a
- * replay at the other end (S2-20 E2: `otoapp:attendee.create`).
+ * replay at the other end (S2-20 E2: `otoapp:attendee.create`; E4:
+ * `otoapp:party.update`, a till's party edit, which the app takes in the order
+ * the edits were made and never twice over).
  */
-export const RETRYABLE_INTEGRATION_RUNS: readonly string[] = ['otoapp:attendee.create'];
+export const RETRYABLE_INTEGRATION_RUNS: readonly string[] = ['otoapp:attendee.create', 'otoapp:party.update'];
 
 /** Whether the Failures page may offer Retry for a run of this kind and name. */
 export function isRetryableRun(kind: string | null, name: string | null): boolean {

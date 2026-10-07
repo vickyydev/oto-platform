@@ -57,6 +57,10 @@ describe('route guards (S2-01b)', () => {
       'GET /wallets/scan',
       'PATCH /members/:id',
       'PATCH /members/children/:childId',
+      // S2-20 E4: the party tab — an edit written back to the OTO App, a charge
+      // on the tab and money against its balance — online only, like the
+      // walk-up that charges the same tab.
+      'PATCH /parties/:id',
       'POST /bookings/:id/redeem',
       // S2-20 E2: a pass is a sale and a walk-up a charge on a party's tab —
       // online only, like the sale path they ride and the members they name.
@@ -65,6 +69,8 @@ describe('route guards (S2-01b)', () => {
       'POST /members',
       'POST /members/:id/children',
       'POST /members/:id/tier-verification',
+      'POST /parties/:id/charges',
+      'POST /parties/:id/payments',
       'POST /payments/attempts',
       'POST /payments/attempts/:id/confirm',
       'POST /payments/attempts/:id/inquire',
