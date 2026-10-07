@@ -7,11 +7,13 @@
  * demo day made no booth activity, so the report at Demo Branch 2 said "No
  * spins in these days" on every date the demo control had filled.
  *
- * WHAT IT WRITES. Once, find-or-create: a booth at Demo Branch 2 (`Demo Booth
- * 1`, code prefix `DB`), its settings, a three-slice wheel of the park's money
- * vouchers with their cost prices, version 1 of that wheel, and the demo
- * cashier on its staff list. Per demo day: a handful of presses at that booth
- * (`DEMO_BOOTH_DAY`), each with the voucher it printed. The demo day's
+ * WHAT IT WRITES. Once, when there is no such booth: a booth at Demo Branch 2
+ * (`Demo Booth 1`, code prefix `DB`), its settings, a three-slice wheel of the
+ * park's money vouchers with their cost prices, version 1 of that wheel, and
+ * the demo cashier on its staff list. After that the Console owns the booth and
+ * the seed writes none of it again (`ensureDemoBooth`). Per demo day: a handful
+ * of presses at that booth (`DEMO_BOOTH_DAY`), each drawn from the wheel the
+ * booth runs and with the voucher it printed. The demo day's
  * `voucher-discount` sale redeems one more voucher won at this booth that
  * morning (`writeDemoBoothPress`, from `demo-day.ts`), which is how some of the
  * day's vouchers are redeemed: a voucher is only ever used up by a sale.
@@ -26,9 +28,11 @@
  * (`selfAssignBoothDuty`'s `self_assigned` row).
  *
  * WHAT IT NEVER TOUCHES. No real branch, booth, prize, wheel version or staff
- * list is written — FWBooth1 and the park's Booth 1 included. Two operator-wide
+ * list is written — FWBooth1 and the park's Booth 1 included. Three operator-wide
  * things are READ: the booth design (`Classic wheel`, a layout is shared by
- * every booth of the operator) and the money voucher types the prizes point at.
+ * every booth of the operator), the money voucher types the prizes point at,
+ * and the live booths' code prefixes, so the demo booth is never made with a
+ * prefix another booth prints under.
  *
  * A BOX NOBODY SEES. A spin names the box that filed it (`booth.spin.box_id`
  * is not null), so the booth stands on a box of its own: never registered, no
@@ -50,6 +54,7 @@ import { createHash, randomInt } from 'node:crypto';
 import {
   addDaysToIsoDate,
   BOOTH_CODE_MINT_ATTEMPTS,
+  BoothConfigPrizeSchema,
   isoDateInTz,
   mintBoothCode,
   newId,
@@ -143,12 +148,27 @@ export interface DemoBoothStaff {
 }
 
 /**
- * Demo Branch 2's booth, made once and found after: the box it stands on, the
- * station, its settings, its prizes (`DEMO_BOOTH_PRIZES`), version 1 of its
- * wheel, and the demo cashier on its staff list. Find-or-create throughout,
- * under one lock per operator, so two presses at once make one booth and a
- * booth somebody has since edited or republished from the Console stays as
- * they left it.
+ * Demo Branch 2's booth, made once and found after.
+ *
+ * MADE ONCE. When there is no live `Demo Booth 1` at the demo branch, this
+ * makes one: the box it stands on, the station, its settings, its prizes
+ * (`DEMO_BOOTH_PRIZES`), version 1 of its wheel, and the demo cashier on its
+ * staff list — all in one transaction, under one lock per operator, so two
+ * presses at once make one booth. The prefix is checked first against the
+ * Console's own rule: no two live booths of an operator share one.
+ *
+ * FOUND AFTER, AND LEFT ALONE. Once the booth exists the Console owns it: its
+ * prizes, its wheel and its staff list are never written again, so a prize
+ * somebody archived, renamed or re-costed, and a person somebody took off the
+ * list, stay as they left them.
+ *
+ * WHAT A PRESS DRAWS. The slices of the wheel the booth runs — its latest
+ * published version — read from that version's bundle, as a box draws from
+ * the bundle it was served and never from the live prize rows a Console edit
+ * may have changed since the publish. A slice is drawable as the box judges
+ * one (`judgePrizes` in @oto/box-agent): active, weighted above zero, and
+ * pointing at a voucher type. Its cost is the bundle's, and its expiry the
+ * bundle's days, else its type's as the box reads them now (`resolveExpiry`).
  */
 export async function ensureDemoBooth(
   db: Db,
@@ -159,204 +179,291 @@ export async function ensureDemoBooth(
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${operatorId}), hashtext('demo-day/booth'))`);
 
-    // The box: archived from birth, never registered. See the note at the top.
-    let [box] = await tx
-      .select({ id: s.box.id })
-      .from(s.box)
-      .where(and(eq(s.box.branchId, branchId), eq(s.box.slot, DEMO_BOOTH_BOX_SLOT)))
-      .orderBy(asc(s.box.createdAt))
-      .limit(1);
-    if (!box) {
-      box = { id: newId() };
-      await tx.insert(s.box).values({
-        id: box.id,
-        operatorId,
-        branchId,
-        name: DEMO_BOOTH_BOX_NAME,
-        slot: DEMO_BOOTH_BOX_SLOT,
-        role: 'booth',
-        status: 'unclaimed',
-        archivedAt: new Date(),
-      });
-    }
-
     let [station] = await tx
-      .select({ id: s.station.id, codePrefix: s.station.codePrefix })
+      .select({ id: s.station.id, codePrefix: s.station.codePrefix, boxId: s.station.boxId })
       .from(s.station)
       .where(and(eq(s.station.branchId, branchId), eq(s.station.name, DEMO_BOOTH_NAME), isNull(s.station.archivedAt)))
       .limit(1);
+    let made = false;
     if (!station) {
-      station = { id: newId(), codePrefix: DEMO_BOOTH_PREFIX };
-      await tx.insert(s.station).values({
-        id: station.id,
-        operatorId,
-        branchId,
-        boxId: box.id,
-        name: DEMO_BOOTH_NAME,
-        kind: 'booth',
-        codePrefix: DEMO_BOOTH_PREFIX,
-        // A booth's behaviour is its kind; capabilities describe a till.
-        capabilities: [],
-        // Nobody is on its list, so no station picker offers it.
-        accessScope: 'selected_staff',
-      });
+      station = await makeDemoBoothStation(tx, { branchId, operatorId });
+      made = true;
+    }
+    if (!station.codePrefix) {
+      throw new Error(`${DEMO_BOOTH_NAME} at the demo branch has no code prefix, so it prints no voucher. Give it one in Console > Booths.`);
+    }
+    if (!station.boxId) {
+      throw new Error(`${DEMO_BOOTH_NAME} at the demo branch stands on no box, so nothing runs its wheel.`);
     }
 
-    const [layout] = await tx
-      .select()
-      .from(s.boothLayout)
-      .where(and(eq(s.boothLayout.operatorId, operatorId), isNull(s.boothLayout.archivedAt)))
-      .orderBy(sql`${s.boothLayout.name} = ${DEMO_BOOTH_LAYOUT_NAME} desc`, asc(s.boothLayout.createdAt))
-      .limit(1);
-    if (!layout) throw new Error('No booth design to give the demo booth. Run `pnpm db:seed` first.');
-
-    await tx
-      .insert(s.boothSettings)
-      .values({ stationId: station.id, operatorId, branchId, layoutId: layout.id, buttonKey: 'Space', eligibility: 'none' })
-      .onConflictDoNothing({ target: s.boothSettings.stationId });
-
-    // The voucher types the wheel's prizes point at, by code (operator-wide).
-    const types = new Map<string, string>();
-    for (const row of await tx
-      .select({ id: s.voucherDefinition.id, code: s.voucherDefinition.code })
-      .from(s.voucherDefinition)
-      .where(
-        and(
-          eq(s.voucherDefinition.operatorId, operatorId),
-          inArray(s.voucherDefinition.code, DEMO_BOOTH_PRIZES.map((p) => p.definition)),
-        ),
-      )) {
-      types.set(row.code, row.id);
-    }
-    if (!types.has(DEMO_BOOTH_PRIZES[0].definition)) {
-      throw new Error(`No voucher type "${DEMO_BOOTH_PRIZES[0].definition}" for the demo booth's wheel. Run \`pnpm db:seed\` first.`);
-    }
-    const onWheel = DEMO_BOOTH_PRIZES.filter((p) => types.has(p.definition));
-    // Re-weighted over the types present, to exactly 10,000 (D4); the first takes the rounding.
-    const total = onWheel.reduce((sum, p) => sum + p.weightBp, 0);
-    const weights = onWheel.map((p) => Math.floor((p.weightBp * 10_000) / total));
-    weights[0]! += 10_000 - weights.reduce((sum, w) => sum + w, 0);
-    for (const [sortOrder, p] of onWheel.entries()) {
-      const [found] = await tx
-        .select({ id: s.boothPrize.id })
-        .from(s.boothPrize)
-        .where(and(eq(s.boothPrize.stationId, station.id), eq(s.boothPrize.nameEn, p.nameEn), isNull(s.boothPrize.archivedAt)))
-        .limit(1);
-      if (found) continue;
-      const { definition: code, ...fields } = p;
-      await tx.insert(s.boothPrize).values({
-        id: newId(),
-        operatorId,
-        branchId,
-        stationId: station.id,
-        voucherDefinitionId: types.get(code)!,
-        textColor: '#111111',
-        sortOrder,
-        ...fields,
-        weightBp: weights[sortOrder]!,
-      });
-    }
-
-    // Version 1 of the wheel, read back from the rows as the park's seed does.
+    // The wheel the booth runs: its latest published version.
     let [version] = await tx
-      .select({ id: s.boothConfigVersion.id })
+      .select({ id: s.boothConfigVersion.id, bundle: s.boothConfigVersion.bundle })
       .from(s.boothConfigVersion)
       .where(eq(s.boothConfigVersion.stationId, station.id))
       .orderBy(desc(s.boothConfigVersion.version))
       .limit(1);
     if (!version) {
-      const prizeRows = await tx
-        .select()
-        .from(s.boothPrize)
-        .where(and(eq(s.boothPrize.stationId, station.id), isNull(s.boothPrize.archivedAt)))
-        .orderBy(s.boothPrize.sortOrder);
-      const bundle = {
-        schemaVersion: 1,
-        settings: { eligibility: 'none', buttonKey: 'Space', dailySpinCap: null },
-        layout: {
-          id: layout.id,
-          name: layout.name,
-          version: layout.version,
-          design: layout.design,
-          assetManifest: layout.assetManifest,
-        },
-        prizes: prizeRows.map((p) => ({
-          id: p.id,
-          nameEn: p.nameEn,
-          nameTh: p.nameTh,
-          wheelLabel: p.wheelLabel,
-          weightBp: p.weightBp,
-          active: p.active,
-          dailyCap: p.dailyCap,
-          expiryDays: p.expiryDays,
-          costSatang: p.costSatang,
-          sliceColor: p.sliceColor,
-          textColor: p.textColor,
-          sortOrder: p.sortOrder,
-          voucherDefinitionId: p.voucherDefinitionId,
-        })),
-      };
-      version = { id: newId() };
-      await tx.insert(s.boothConfigVersion).values({
-        id: version.id,
-        operatorId,
-        branchId,
-        stationId: station.id,
-        version: 1,
-        layoutId: layout.id,
-        bundle,
-        bundleHash: createHash('sha256').update(stableJson(bundle)).digest('hex'),
-        // Nobody published it — it came from the demo seed, and the column says so.
-        publishedByAccountId: null,
-        note: 'Seeded demo wheel: the three money vouchers, at their face value.',
-      });
+      // A booth this run did not make, with no wheel published: somebody is
+      // setting it up in the Console, and the seed does not publish for them.
+      if (!made) {
+        throw new Error(
+          `${DEMO_BOOTH_NAME} at the demo branch has no published wheel. Publish it from Console > Booths, then add the demo day again.`,
+        );
+      }
+      version = await makeDemoWheel(tx, { stationId: station.id, branchId, operatorId, staff });
     }
 
-    // The demo cashier may sign in here: the standing list a booth's box checks.
-    await tx
-      .insert(s.boothStaffAssignment)
-      .values({ id: newId(), stationId: station.id, accountId: staff.accountId, addedBy: staff.addedByAccountId })
-      .onConflictDoNothing({ target: [s.boothStaffAssignment.stationId, s.boothStaffAssignment.accountId] });
-
-    // What the presses draw: each prize of the wheel, by its voucher type.
-    const prizes = new Map<DemoBoothPrizeCode, DemoBoothPrize>();
-    for (const row of await tx
-      .select({
-        id: s.boothPrize.id,
-        voucherDefinitionId: s.boothPrize.voucherDefinitionId,
-        costSatang: s.boothPrize.costSatang,
-        prizeExpiryDays: s.boothPrize.expiryDays,
-        typeExpiryDays: s.voucherDefinition.expiryDays,
-        code: s.voucherDefinition.code,
-      })
-      .from(s.boothPrize)
-      .innerJoin(s.voucherDefinition, eq(s.voucherDefinition.id, s.boothPrize.voucherDefinitionId))
-      .where(and(eq(s.boothPrize.stationId, station.id), isNull(s.boothPrize.archivedAt)))
-      .orderBy(s.boothPrize.sortOrder)) {
-      const code = row.code as DemoBoothPrizeCode;
-      if (prizes.has(code) || !DEMO_BOOTH_PRIZES.some((p) => p.definition === code)) continue;
-      prizes.set(code, {
-        id: row.id,
-        voucherDefinitionId: row.voucherDefinitionId!,
-        costSatang: row.costSatang,
-        expiryDays: row.prizeExpiryDays ?? row.typeExpiryDays ?? null,
-      });
-    }
+    const prizes = await drawableSlices(tx, operatorId, version.bundle);
     if (!prizes.has(DEMO_BOOTH_PRIZES[0].definition)) {
-      throw new Error(`The demo booth has no live "${DEMO_BOOTH_PRIZES[0].nameEn}" prize.`);
+      throw new Error(
+        `${DEMO_BOOTH_NAME}'s published wheel has no "${DEMO_BOOTH_PRIZES[0].nameEn}" slice to draw, and the demo day's voucher sale spends one. ` +
+          'Put one back on the wheel and publish it from Console > Booths.',
+      );
     }
 
     return {
       stationId: station.id,
-      boxId: box.id,
+      boxId: station.boxId,
       branchId,
       operatorId,
       timezone: branch.timezone,
       configVersionId: version.id,
-      codePrefix: station.codePrefix ?? DEMO_BOOTH_PREFIX,
+      codePrefix: station.codePrefix,
       prizes,
     };
   });
+}
+
+/**
+ * The booth's station, on a box of its own, made once. Refused before anything
+ * is written when another live booth of the operator already prints under the
+ * prefix: the Console's operator-wide rule (`assertBoothCodePrefixFree` in the
+ * api's services/fleet.ts), because the prefix starts every code a booth
+ * prints and two booths sharing one mint from one code space.
+ */
+async function makeDemoBoothStation(
+  tx: SeedWriter,
+  input: { branchId: string; operatorId: string },
+): Promise<{ id: string; codePrefix: string | null; boxId: string | null }> {
+  const { branchId, operatorId } = input;
+  const [other] = await tx
+    .select({ name: s.station.name, branchName: s.branch.name })
+    .from(s.station)
+    .innerJoin(s.branch, eq(s.branch.id, s.station.branchId))
+    .where(
+      and(
+        eq(s.station.operatorId, operatorId),
+        eq(s.station.kind, 'booth'),
+        eq(s.station.codePrefix, DEMO_BOOTH_PREFIX),
+        isNull(s.station.archivedAt),
+      ),
+    )
+    .limit(1);
+  if (other) {
+    throw new Error(
+      `Code prefix ${DEMO_BOOTH_PREFIX} is already used by ${other.name} at ${other.branchName}, so the demo booth cannot be made with it. ` +
+        'Every booth needs a prefix of its own, because it starts every voucher code the booth prints.',
+    );
+  }
+
+  // The box: archived from birth, never registered. See the note at the top.
+  // A booth made again after the last was archived stands on the same box.
+  let [box] = await tx
+    .select({ id: s.box.id })
+    .from(s.box)
+    .where(and(eq(s.box.branchId, branchId), eq(s.box.slot, DEMO_BOOTH_BOX_SLOT)))
+    .orderBy(asc(s.box.createdAt))
+    .limit(1);
+  if (!box) {
+    box = { id: newId() };
+    await tx.insert(s.box).values({
+      id: box.id,
+      operatorId,
+      branchId,
+      name: DEMO_BOOTH_BOX_NAME,
+      slot: DEMO_BOOTH_BOX_SLOT,
+      role: 'booth',
+      status: 'unclaimed',
+      archivedAt: new Date(),
+    });
+  }
+
+  const id = newId();
+  await tx.insert(s.station).values({
+    id,
+    operatorId,
+    branchId,
+    boxId: box.id,
+    name: DEMO_BOOTH_NAME,
+    kind: 'booth',
+    codePrefix: DEMO_BOOTH_PREFIX,
+    // A booth's behaviour is its kind; capabilities describe a till.
+    capabilities: [],
+    // Nobody is on its list, so no station picker offers it.
+    accessScope: 'selected_staff',
+  });
+  return { id, codePrefix: DEMO_BOOTH_PREFIX, boxId: box.id };
+}
+
+/**
+ * The new booth's wheel, made once with the booth: its settings, its prizes,
+ * version 1 read back from them as the park's seed reads its own, and the demo
+ * cashier on its staff list. Never run for a booth that already has a wheel.
+ */
+async function makeDemoWheel(
+  tx: SeedWriter,
+  input: { stationId: string; branchId: string; operatorId: string; staff: { accountId: string; addedByAccountId: string } },
+): Promise<{ id: string; bundle: unknown }> {
+  const { stationId, branchId, operatorId, staff } = input;
+
+  const [layout] = await tx
+    .select()
+    .from(s.boothLayout)
+    .where(and(eq(s.boothLayout.operatorId, operatorId), isNull(s.boothLayout.archivedAt)))
+    .orderBy(sql`${s.boothLayout.name} = ${DEMO_BOOTH_LAYOUT_NAME} desc`, asc(s.boothLayout.createdAt))
+    .limit(1);
+  if (!layout) throw new Error('No booth design to give the demo booth. Run `pnpm db:seed` first.');
+
+  await tx
+    .insert(s.boothSettings)
+    .values({ stationId, operatorId, branchId, layoutId: layout.id, buttonKey: 'Space', eligibility: 'none' })
+    .onConflictDoNothing({ target: s.boothSettings.stationId });
+
+  // The voucher types the wheel's prizes point at, by code (operator-wide).
+  const types = new Map<string, string>();
+  for (const row of await tx
+    .select({ id: s.voucherDefinition.id, code: s.voucherDefinition.code })
+    .from(s.voucherDefinition)
+    .where(
+      and(
+        eq(s.voucherDefinition.operatorId, operatorId),
+        inArray(s.voucherDefinition.code, DEMO_BOOTH_PRIZES.map((p) => p.definition)),
+      ),
+    )) {
+    types.set(row.code, row.id);
+  }
+  if (!types.has(DEMO_BOOTH_PRIZES[0].definition)) {
+    throw new Error(`No voucher type "${DEMO_BOOTH_PRIZES[0].definition}" for the demo booth's wheel. Run \`pnpm db:seed\` first.`);
+  }
+  const onWheel = DEMO_BOOTH_PRIZES.filter((p) => types.has(p.definition));
+  // Re-weighted over the types present, to exactly 10,000 (D4); the first takes the rounding.
+  const total = onWheel.reduce((sum, p) => sum + p.weightBp, 0);
+  const weights = onWheel.map((p) => Math.floor((p.weightBp * 10_000) / total));
+  weights[0]! += 10_000 - weights.reduce((sum, w) => sum + w, 0);
+  for (const [sortOrder, p] of onWheel.entries()) {
+    const { definition: code, ...fields } = p;
+    await tx.insert(s.boothPrize).values({
+      id: newId(),
+      operatorId,
+      branchId,
+      stationId,
+      voucherDefinitionId: types.get(code)!,
+      textColor: '#111111',
+      sortOrder,
+      ...fields,
+      weightBp: weights[sortOrder]!,
+    });
+  }
+
+  // Version 1 of the wheel, read back from the rows as the park's seed does.
+  const prizeRows = await tx
+    .select()
+    .from(s.boothPrize)
+    .where(and(eq(s.boothPrize.stationId, stationId), isNull(s.boothPrize.archivedAt)))
+    .orderBy(s.boothPrize.sortOrder);
+  const bundle = {
+    schemaVersion: 1,
+    settings: { eligibility: 'none', buttonKey: 'Space', dailySpinCap: null },
+    layout: {
+      id: layout.id,
+      name: layout.name,
+      version: layout.version,
+      design: layout.design,
+      assetManifest: layout.assetManifest,
+    },
+    prizes: prizeRows.map((p) => ({
+      id: p.id,
+      nameEn: p.nameEn,
+      nameTh: p.nameTh,
+      wheelLabel: p.wheelLabel,
+      weightBp: p.weightBp,
+      active: p.active,
+      dailyCap: p.dailyCap,
+      expiryDays: p.expiryDays,
+      costSatang: p.costSatang,
+      sliceColor: p.sliceColor,
+      textColor: p.textColor,
+      sortOrder: p.sortOrder,
+      voucherDefinitionId: p.voucherDefinitionId,
+    })),
+  };
+  const id = newId();
+  await tx.insert(s.boothConfigVersion).values({
+    id,
+    operatorId,
+    branchId,
+    stationId,
+    version: 1,
+    layoutId: layout.id,
+    bundle,
+    bundleHash: createHash('sha256').update(stableJson(bundle)).digest('hex'),
+    // Nobody published it — it came from the demo seed, and the column says so.
+    publishedByAccountId: null,
+    note: 'Seeded demo wheel: the three money vouchers, at their face value.',
+  });
+
+  // The demo cashier may sign in here: the standing list a booth's box checks.
+  await tx
+    .insert(s.boothStaffAssignment)
+    .values({ id: newId(), stationId, accountId: staff.accountId, addedBy: staff.addedByAccountId })
+    .onConflictDoNothing({ target: [s.boothStaffAssignment.stationId, s.boothStaffAssignment.accountId] });
+
+  return { id, bundle };
+}
+
+/**
+ * What the presses draw, by voucher type: the first drawable slice of each of
+ * the demo's types on a published bundle, in the bundle's slice order. Read
+ * from the bundle, never from the live `booth_prize` rows (see
+ * `ensureDemoBooth`), so every press names a slice of the very version that
+ * drew it, at the cost that version froze.
+ */
+async function drawableSlices(
+  tx: SeedWriter,
+  operatorId: string,
+  bundle: unknown,
+): Promise<Map<DemoBoothPrizeCode, DemoBoothPrize>> {
+  const read = BoothConfigPrizeSchema.array().safeParse((bundle as { prizes?: unknown } | null)?.prizes);
+  if (!read.success) throw new Error(`${DEMO_BOOTH_NAME}'s published wheel could not be read.`);
+  // As the box judges a slice before it draws: active, weighted above zero, and
+  // winning a voucher type (a slice with none cannot be published).
+  const drawable = read.data.filter((p) => p.active && p.weightBp > 0 && p.voucherDefinitionId !== null);
+  const typeIds = [...new Set(drawable.map((p) => p.voucherDefinitionId!))];
+  // The types as the box reads them now: their codes, and the expiry it falls back to.
+  const types = new Map<string, { code: string; expiryDays: number | null }>();
+  if (typeIds.length > 0) {
+    for (const row of await tx
+      .select({ id: s.voucherDefinition.id, code: s.voucherDefinition.code, expiryDays: s.voucherDefinition.expiryDays })
+      .from(s.voucherDefinition)
+      .where(and(eq(s.voucherDefinition.operatorId, operatorId), inArray(s.voucherDefinition.id, typeIds)))) {
+      types.set(row.id, { code: row.code, expiryDays: row.expiryDays });
+    }
+  }
+  const prizes = new Map<DemoBoothPrizeCode, DemoBoothPrize>();
+  for (const slice of drawable) {
+    const type = types.get(slice.voucherDefinitionId!);
+    if (!type) continue;
+    const code = type.code as DemoBoothPrizeCode;
+    if (prizes.has(code) || !DEMO_BOOTH_PRIZES.some((p) => p.definition === code)) continue;
+    prizes.set(code, {
+      id: slice.id,
+      voucherDefinitionId: slice.voucherDefinitionId!,
+      costSatang: slice.costSatang,
+      expiryDays: slice.expiryDays ?? type.expiryDays ?? null,
+    });
+  }
+  return prizes;
 }
 
 /** What one press left: the voucher it printed. */
@@ -525,8 +632,9 @@ export async function seedDemoBoothDay(
 }
 
 /**
- * The prize a press draws: the one asked for, or — on a wheel made without it,
- * its voucher type missing — the first prize, which every demo wheel has.
+ * The prize a press draws: the one asked for, or — on a wheel without it, its
+ * voucher type missing or its slice taken off the wheel — the first prize, which
+ * `ensureDemoBooth` makes sure the running wheel has.
  */
 function prizeOf(booth: DemoBooth, code: DemoBoothPrizeCode): DemoBoothPrize {
   return booth.prizes.get(code) ?? booth.prizes.get(DEMO_BOOTH_PRIZES[0].definition)!;

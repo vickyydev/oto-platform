@@ -592,8 +592,8 @@ export function describeDemoDay(counts: DemoDayCounts): string {
     : '';
   return (
     `Demo day ${counts.businessDate} at ${counts.branchName}: ` +
-    `${counts.sales} sales added, ${counts.skipped} already present${toppedUp}; ` +
-    `booth: ${counts.boothSpins} spins added, ${counts.boothSpinsPresent} already present${legacy}.`
+    `${plural(counts.sales, 'sale added', 'sales added')}, ${counts.skipped} already present${toppedUp}; ` +
+    `booth: ${plural(counts.boothSpins, 'spin added', 'spins added')}, ${counts.boothSpinsPresent} already present${legacy}.`
   );
 }
 

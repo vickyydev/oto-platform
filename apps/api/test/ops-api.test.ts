@@ -1,4 +1,4 @@
-import { and, desc, eq, like, or } from 'drizzle-orm';
+import { and, desc, eq, isNull, like, or } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { alert, auditLog, box, branch, device, opsExpectation, opsLast, opsRun } from '@oto/db';
 import { newId } from '@oto/shared';
@@ -809,8 +809,14 @@ describe('S2-04 — boxes on Health and the fleet watchdog', () => {
      * given one, and the scheduled job gives it none. That is deliberate;
      * nobody is on call for one tenant. It is stated as a number here so that
      * narrowing it later has to be a decision rather than a drift.
+     *
+     * Live boxes only, as `fleetHealth` reads them: an archived box is off the
+     * fleet. The demo day pressed above stands Demo Branch 2's booth on a box
+     * archived from birth, which the sweep rightly never examines.
      */
-    expect(summary.boxes).toBe((await ctx.db.select({ id: box.id }).from(box)).length);
+    expect(summary.boxes).toBe(
+      (await ctx.db.select({ id: box.id }).from(box).where(isNull(box.archivedAt))).length,
+    );
     // But only ONE is moved to offline by this pass, and it stays one however
     // many parks exist: `boxesSilenced` counts boxes that WERE online and have
     // now gone quiet, which is the box this block drives. Virtual box 2 and

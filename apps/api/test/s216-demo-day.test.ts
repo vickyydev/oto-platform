@@ -1,8 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
 import {
   account,
+  boothConfigVersion,
   boothPrize,
+  boothStaffAssignment,
   box,
   dailySummary,
   dirtyDate,
@@ -15,7 +17,7 @@ import {
   voucherDefinition,
   voucherPrint,
 } from '@oto/db';
-import { DEMO_BOOTH_NAME, DEMO_BRANCH_CODE, describeDemoDay, seedDemoDay } from '@oto/db/seed';
+import { DEMO_BOOTH_NAME, DEMO_BRANCH_CODE, describeDemoDay, seedDemoDay, type DemoDayCounts } from '@oto/db/seed';
 import {
   addDaysToIsoDate,
   businessDate,
@@ -55,6 +57,10 @@ import {
  *   convergence  a second run adds nothing; a day pressed before this fix — no
  *                discount row, no presses, no frozen days — is topped up once,
  *                and says so honestly; no live park or live booth moves
+ *   the Console  once made, the demo booth is the Console's: a slice archived,
+ *                renamed or re-costed and a person taken off its list stay so,
+ *                and a press draws from the wheel the booth runs — its latest
+ *                published bundle — never from the live rows
  */
 
 let ctx: TestContext;
@@ -460,6 +466,191 @@ describe('a re-press converges: it tops up what a day lacks and never writes any
 
   it('no live park, and no live park’s booth, was touched by any of it', async () => {
     expect(await liveBoothState()).toEqual(liveBefore);
+  });
+});
+
+describe('a demo booth edited in the Console stays as they left it, and a press draws from the wheel it runs', () => {
+  const send = (method: 'PATCH' | 'DELETE' | 'POST', url: string, payload?: Record<string, unknown>) =>
+    ctx.app.inject({ method, url, headers: { cookie: admin }, ...(payload ? { payload } : {}) });
+
+  /** What the booth's own rows are: its slices, live or not, its wheels and its staff list. */
+  async function boothRows(stationId: string) {
+    const prizes = await ctx.db.select().from(boothPrize).where(eq(boothPrize.stationId, stationId)).orderBy(asc(boothPrize.id));
+    const versions = await ctx.db
+      .select()
+      .from(boothConfigVersion)
+      .where(eq(boothConfigVersion.stationId, stationId))
+      .orderBy(asc(boothConfigVersion.version));
+    const staff = await ctx.db.select().from(boothStaffAssignment).where(eq(boothStaffAssignment.stationId, stationId));
+    return { prizes, versions, staff };
+  }
+
+  /** A day's presses, each with the slice of the bundle that drew it and the voucher it printed. */
+  async function pressesOn(stationId: string, on: string) {
+    const rows = await ctx.db
+      .select({ spin, voucher, version: boothConfigVersion })
+      .from(spin)
+      .innerJoin(voucher, eq(voucher.id, spin.voucherId))
+      .innerJoin(boothConfigVersion, eq(boothConfigVersion.id, spin.boothConfigVersionId))
+      .where(and(eq(spin.stationId, stationId), eq(spin.businessDate, on)))
+      .orderBy(asc(spin.occurredAt));
+    return rows.map((r) => {
+      const slices = (r.version.bundle as { prizes: Array<{ id: string; nameEn: string; costSatang: number; voucherDefinitionId: string }> }).prizes;
+      return { ...r, slice: slices.find((p) => p.id === r.spin.prizeId) };
+    });
+  }
+
+  it('archiving, renaming and re-costing a slice and taking Som off the list are kept; the next press draws the published wheel', async () => {
+    const booth = await demoBooth();
+    const before = await boothRows(booth.id);
+    expect(before.versions).toHaveLength(1);
+    const named = (name: string) => before.prizes.find((p) => p.nameEn === name && p.archivedAt === null)!;
+    const p100 = named('100 THB Voucher');
+    const p150 = named('150 THB Voucher');
+    const p200 = named('200 THB Voucher');
+
+    // In the Console, none of it published: the 200 off the wheel, the 150
+    // renamed, the 100 re-costed, and Som off the booth's staff list.
+    for (const res of [
+      await send('DELETE', `/booths/${booth.id}/prizes/${p200.id}`),
+      await send('PATCH', `/booths/${booth.id}/prizes/${p150.id}`, { nameEn: '150 THB Gift' }),
+      await send('PATCH', `/booths/${booth.id}/prizes/${p100.id}`, { costSatang: 9_999 }),
+      await send('DELETE', `/booths/${booth.id}/staff/${somId}`),
+    ]) {
+      expect(res.statusCode, res.body).toBe(200);
+    }
+    const edited = await boothRows(booth.id);
+    expect(edited.staff.map((r) => r.accountId)).not.toContain(somId);
+
+    // The next press puts nothing back: no prize made, no wheel published, nobody re-added.
+    const R = addDaysToIsoDate(T, -12);
+    expect(await seedDemoDay(ctx.db, { on: R })).toMatchObject({ sales: 11, boothSpins: 6, boothSpinsPresent: 0 });
+    expect(await boothRows(booth.id)).toEqual(edited);
+
+    // The box runs version 1 until a publish, so the presses draw version 1 —
+    // the 200 still on it, and the 100 at the cost that version froze.
+    const v1 = edited.versions[0]!;
+    const first = await pressesOn(booth.id, R);
+    expect(first).toHaveLength(6);
+    for (const p of first) {
+      expect(p.spin.boothConfigVersionId).toBe(v1.id);
+      expect(p.slice, `spin ${p.spin.id} drew a slice of the wheel it names`).toBeTruthy();
+      expect(p.voucher.voucherDefinitionId).toBe(p.slice!.voucherDefinitionId);
+      expect(p.voucher.costSatang).toBe(p.slice!.costSatang);
+    }
+    expect(first.map((p) => p.slice!.nameEn).sort()).toEqual([
+      '100 THB Voucher',
+      '100 THB Voucher',
+      '100 THB Voucher',
+      '150 THB Voucher',
+      '150 THB Voucher',
+      '200 THB Voucher',
+    ]);
+    expect(first.filter((p) => p.slice!.id === p100.id).map((p) => p.voucher.costSatang)).toEqual([10_000, 10_000, 10_000]);
+
+    // Published from the Console, with the chances re-fitted: the next day draws version 2.
+    expect((await send('PATCH', `/booths/${booth.id}/prizes/${p100.id}`, { weightBp: 7_000 })).statusCode).toBe(200);
+    const published = await send('POST', `/booths/${booth.id}/publish`, {});
+    expect(published.statusCode, published.body).toBe(200);
+    const republished = await boothRows(booth.id);
+    expect(republished.versions).toHaveLength(2);
+    const v2 = republished.versions[1]!;
+
+    const R2 = addDaysToIsoDate(T, -13);
+    expect(await seedDemoDay(ctx.db, { on: R2 })).toMatchObject({ sales: 11, boothSpins: 6, boothSpinsPresent: 0 });
+    expect(await boothRows(booth.id)).toEqual(republished);
+    const second = await pressesOn(booth.id, R2);
+    expect(second).toHaveLength(6);
+    for (const p of second) {
+      expect(p.spin.boothConfigVersionId).toBe(v2.id);
+      expect(p.slice, `spin ${p.spin.id} drew a slice of the wheel it names`).toBeTruthy();
+      expect(p.voucher.costSatang).toBe(p.slice!.costSatang);
+    }
+    // The 12:40 press would have drawn the 200, which is off the wheel now: it drew the 100.
+    expect(second.map((p) => p.slice!.nameEn).sort()).toEqual([
+      '100 THB Voucher',
+      '100 THB Voucher',
+      '100 THB Voucher',
+      '100 THB Voucher',
+      '150 THB Gift',
+      '150 THB Gift',
+    ]);
+    expect(second.filter((p) => p.slice!.id === p100.id).every((p) => p.voucher.costSatang === 9_999)).toBe(true);
+  });
+
+  it('a wheel published without the slice the voucher sale spends refuses the day, with nothing written', async () => {
+    const booth = await demoBooth();
+    const live = (await boothRows(booth.id)).prizes.filter((p) => p.archivedAt === null);
+    const p100 = live.find((p) => p.nameEn === '100 THB Voucher')!;
+    const p150 = live.find((p) => p.nameEn === '150 THB Gift')!;
+    for (const res of [
+      await send('PATCH', `/booths/${booth.id}/prizes/${p100.id}`, { active: false }),
+      await send('PATCH', `/booths/${booth.id}/prizes/${p150.id}`, { weightBp: 10_000 }),
+    ]) {
+      expect(res.statusCode, res.body).toBe(200);
+    }
+    const published = await send('POST', `/booths/${booth.id}/publish`, {});
+    expect(published.statusCode, published.body).toBe(200);
+    try {
+      const before = await demoRowCounts();
+      await expect(seedDemoDay(ctx.db, { on: addDaysToIsoDate(T, -14) })).rejects.toThrow(
+        `Demo Booth 1's published wheel has no "100 THB Voucher" slice to draw`,
+      );
+      expect(await demoRowCounts()).toEqual(before);
+    } finally {
+      // Back on the wheel, for whatever runs after.
+      for (const res of [
+        await send('PATCH', `/booths/${booth.id}/prizes/${p100.id}`, { active: true, weightBp: 7_000 }),
+        await send('PATCH', `/booths/${booth.id}/prizes/${p150.id}`, { weightBp: 3_000 }),
+      ]) {
+        expect(res.statusCode, res.body).toBe(200);
+      }
+      expect((await send('POST', `/booths/${booth.id}/publish`, {})).statusCode).toBe(200);
+    }
+  });
+
+  it('the booth is never made under a prefix another live booth of the operator prints with', async () => {
+    const old = await demoBooth();
+    // The demo booth retired, and a live park's booth took its prefix meanwhile.
+    const [parkBooth] = await ctx.db
+      .select()
+      .from(station)
+      .where(and(inArray(station.branchId, [hkt, chalong]), eq(station.kind, 'booth'), isNull(station.archivedAt)))
+      .limit(1);
+    expect(parkBooth, 'the seed has a booth at a live park').toBeTruthy();
+    await ctx.db.update(station).set({ archivedAt: new Date() }).where(eq(station.id, old.id));
+    await ctx.db.update(station).set({ codePrefix: 'DB' }).where(eq(station.id, parkBooth!.id));
+    try {
+      const before = await demoRowCounts();
+      await expect(seedDemoDay(ctx.db, { on: addDaysToIsoDate(T, -15) })).rejects.toThrow(
+        `Code prefix DB is already used by ${parkBooth!.name}`,
+      );
+      expect(await demoRowCounts()).toEqual(before);
+    } finally {
+      await ctx.db.update(station).set({ codePrefix: parkBooth!.codePrefix }).where(eq(station.id, parkBooth!.id));
+      await ctx.db.update(station).set({ archivedAt: null }).where(eq(station.id, old.id));
+    }
+  });
+
+  it('the message counts one in the singular', () => {
+    const counts: DemoDayCounts = {
+      branchName: 'Demo Branch 2',
+      branchCode: DEMO_BRANCH_CODE,
+      businessDate: T,
+      sales: 1,
+      lines: 1,
+      attempts: 1,
+      notifications: 0,
+      skipped: 10,
+      discounts: 0,
+      discountsToppedUp: 0,
+      boothSpins: 1,
+      boothSpinsPresent: 6,
+      legacyFixtureDays: 0,
+    };
+    expect(describeDemoDay(counts)).toBe(
+      `Demo day ${T} at Demo Branch 2: 1 sale added, 10 already present; booth: 1 spin added, 6 already present.`,
+    );
   });
 });
 
