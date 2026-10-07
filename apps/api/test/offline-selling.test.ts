@@ -280,7 +280,12 @@ describe('a forced-offline virtual station sells, prints from the box queue, and
     // Same snapshot in, same document out: the receipt and every band the box
     // printed are what the platform would print from its own rows today.
     const platform = await salePrintSnapshotOf(ctx.db, (await saleRow(cashSale.id))!);
-    expect(saleReceiptDocument(platform)).toEqual(saleReceiptDocument(logged!.snapshot!));
+    const fromPlatform = saleReceiptDocument(platform);
+    const fromBox = saleReceiptDocument(logged!.snapshot!);
+    // One CI run (37660215395, 00:58 Bangkok) saw these differ and the
+    // reporter swallowed the fields; on a mismatch, say exactly which.
+    expect(JSON.stringify(fromPlatform, null, 1)).toBe(JSON.stringify(fromBox, null, 1));
+    expect(fromPlatform).toEqual(fromBox);
     for (const b of platform.bands) {
       const boxBand = logged!.snapshot!.bands.find((x) => x.id === b.id)!;
       expect(saleBandDocument(platform, b)).toEqual(saleBandDocument(logged!.snapshot!, boxBand));
