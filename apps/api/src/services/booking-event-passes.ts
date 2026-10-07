@@ -283,7 +283,10 @@ export async function registerPaidBookingEventPasses(
       })
       .onConflictDoNothing({ target: eventAttendeeLink.id })
       .returning({ id: eventAttendeeLink.id });
-    if (!inserted) continue;
+    if (!inserted) {
+      await sayIdHeldElsewhere(tx, row, p, requestId);
+      continue;
+    }
     registered += 1;
     await audit.record(tx, {
       // No person: the gateway's confirmation registered it.
@@ -310,6 +313,45 @@ export async function registerPaidBookingEventPasses(
     });
   }
   return registered;
+}
+
+/**
+ * S2-20 E5 (review observation) — A PASS WHOSE ID ANOTHER BOOKING REGISTERED
+ * FIRST. The site mints the attendee id, and `assertPassIdsFree` reads it only
+ * when a booking is made: two unpaid bookings can carry one id, and the second
+ * paid meets the first's link. Its pass is left unregistered — it never names
+ * the first booking's child, so it never checks that child in — and that is
+ * said here, at the payment, as a pass that could not be registered is
+ * (`booking.event_passes_unregistered`), not first at the counter. A link this
+ * booking already holds (a restored database) is its own, and says nothing.
+ */
+async function sayIdHeldElsewhere(
+  tx: Tx,
+  row: typeof booking.$inferSelect,
+  p: StoredBookingEventPass,
+  requestId: string | null,
+): Promise<void> {
+  const [held] = await tx
+    .select({ bookingId: eventAttendeeLink.bookingId })
+    .from(eventAttendeeLink)
+    .where(eq(eventAttendeeLink.id, p.attendeeId))
+    .limit(1);
+  if (held && held.bookingId === row.id) return;
+  await audit.record(tx, {
+    actorAccountId: null,
+    operatorId: row.operatorId,
+    branchId: row.branchId,
+    action: 'booking.event_passes_unregistered',
+    entityType: 'booking',
+    entityId: row.id,
+    requestId,
+    after: {
+      reference: row.reference,
+      error: 'ATTENDEE_ID_IN_USE',
+      attendeeId: p.attendeeId,
+      eventId: p.eventId,
+    },
+  });
 }
 
 // --- 3 · Written back after the commit ----------------------------------------------

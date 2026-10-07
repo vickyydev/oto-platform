@@ -241,6 +241,18 @@ async function bookAndPay(lines: Array<Record<string, unknown>>, passes: Pass[])
   const made = await makeBooking(lines, passes);
   expect(made.statusCode, made.body).toBe(200);
   const id = made.json().id as string;
+  const row = await payFor(id);
+  return {
+    id,
+    reference: row.reference,
+    qr: bookingQrOf(row)!,
+    totalSatang: row.totalSatang,
+    eventPasses: made.json().eventPasses as BookingEventPass[],
+  };
+}
+
+/** The family pays a booking already made, on the simulated hosted page. */
+async function payFor(id: string) {
   const opened = await ctx.app.inject({
     method: 'POST',
     url: `/public/bookings/${id}/checkout`,
@@ -257,13 +269,7 @@ async function bookAndPay(lines: Array<Record<string, unknown>>, passes: Pass[])
   expect(pressed.statusCode, pressed.body).toBe(200);
   const [row] = await ctx.db.select().from(booking).where(eq(booking.id, id));
   expect(row!.status).toBe('paid');
-  return {
-    id,
-    reference: row!.reference,
-    qr: bookingQrOf(row!)!,
-    totalSatang: row!.totalSatang,
-    eventPasses: made.json().eventPasses as BookingEventPass[],
-  };
+  return row!;
 }
 
 const linkOf = async (id: string) => (await ctx.db.select().from(eventAttendeeLink).where(eq(eventAttendeeLink.id, id)))[0] ?? null;
@@ -744,6 +750,35 @@ describe('a pass that cannot be registered never takes the payment down', () => 
       .where(and(eq(auditLog.action, 'booking.event_passes_unregistered'), eq(auditLog.entityId, id)));
     expect(audits).toHaveLength(1);
     const res = await redeemAtCounter(id);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.eventPasses![0]).toMatchObject({ outcome: 'not_found', message: expect.stringContaining('never registered') });
+  });
+
+  it('a pass whose id another booking registered first is said at that payment, and never names the other booking’s child', async () => {
+    // Two unpaid bookings carrying one attendee id (a broken or hostile site):
+    // both pass the read at booking time, since neither is registered yet.
+    const shared = pass(ev.workshop, 'Mook');
+    const first = await makeBooking([], [shared]);
+    const second = await makeBooking([], [{ ...shared, attendee: { ...shared.attendee, name: 'Somebody else' } }]);
+    expect(first.statusCode, first.body).toBe(200);
+    expect(second.statusCode, second.body).toBe(200);
+    const firstId = first.json().id as string;
+    const secondId = second.json().id as string;
+    await payFor(firstId);
+    await payFor(secondId);
+    // The link is the first booking's, and the second booking's money stands.
+    expect(await linkOf(shared.attendeeId)).toMatchObject({ bookingId: firstId });
+    const said = (bookingId: string) =>
+      ctx.db
+        .select()
+        .from(auditLog)
+        .where(and(eq(auditLog.action, 'booking.event_passes_unregistered'), eq(auditLog.entityId, bookingId)));
+    expect(await said(firstId)).toEqual([]);
+    const audits = await said(secondId);
+    expect(audits).toHaveLength(1);
+    expect(audits[0]!.after).toMatchObject({ error: 'ATTENDEE_ID_IN_USE', attendeeId: shared.attendeeId, eventId: ev.workshop });
+    // At the counter the second booking's pass is the manager's, never the first's child.
+    const res = await redeemAtCounter(secondId);
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body.eventPasses![0]).toMatchObject({ outcome: 'not_found', message: expect.stringContaining('never registered') });
   });
