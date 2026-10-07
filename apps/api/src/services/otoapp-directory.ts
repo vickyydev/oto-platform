@@ -158,6 +158,7 @@ export interface OtoAppDirectory {
    * "not configured", and the edit waits as pending.
    */
   editEvent?(eventId: string, body: DirectoryEventEditBody): Promise<DirectoryOutcome<DirectoryEventEditAnswer>>;
+  /**
    * S2-20 E3 — check an attendee in for a day:
    * `POST /api/directory/events/:id/attendees/:attendeeId/checkins`. The body
    * carries the POS's check-in id, so a retry is a replay in the app.

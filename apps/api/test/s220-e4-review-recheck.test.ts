@@ -152,6 +152,10 @@ const directory: OtoAppDirectory = {
     if (!event) return { ok: false, status: 404, code: 'OTOAPP_EVENT_NOT_FOUND', message: 'Event not found', retryable: false };
     return refusalOf(await appWrites.createEventAttendee(appPool, event, body));
   },
+  async checkinAttendee() {
+    // E4's rechecks never check a child in; the seam only has to type.
+    return { ok: false, status: null, code: 'OTOAPP_DIRECTORY_UNREACHABLE', message: 'not used here', retryable: true };
+  },
   async editEvent(eventId, body) {
     editCalls.push({ eventId, body });
     for (const key of Object.keys(body)) expect(EDIT_KEYS.has(key), key).toBe(true);

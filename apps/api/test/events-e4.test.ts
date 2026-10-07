@@ -150,6 +150,10 @@ function refusalOf<T>(outcome: AppOutcome<T>): DirectoryOutcome<T> {
 
 const directory: OtoAppDirectory = {
   configured: true,
+  async checkinAttendee() {
+    // This suite never checks a child in; the seam only has to type.
+    return { ok: false as const, status: null, code: 'OTOAPP_DIRECTORY_UNREACHABLE', message: 'not used here', retryable: true as const };
+  },
   async addAttendee(eventId, body) {
     const event = await appWrites.findTenantEvent(appPool, appTenant, eventId);
     if (!event) return { ok: false, status: 404, code: 'OTOAPP_EVENT_NOT_FOUND', message: 'Event not found', retryable: false };

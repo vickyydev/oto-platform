@@ -289,8 +289,7 @@ export async function opsRoutes(app: App): Promise<void> {
       config: { dynamicPermission: true },
       schema: {
         description:
-          'Run a failed scheduled job again, or send again the OTO App write-backs a Failures group left waiting: children (`otoapp:attendee.create`, each under its own attendee id) and party edits (`otoapp:party.update`, oldest first, each under its own edit id). Nothing else is safe from here',
-          'Run a failed scheduled job again, or send again the OTO App write-backs a Failures group left waiting: children (`otoapp:attendee.create`, each under its own attendee id) and check-ins (`otoapp:attendee.checkin`, each under its own check-in id). Nothing else is safe from here',
+          'Run a failed scheduled job again, or send again the OTO App write-backs a Failures group left waiting: children (`otoapp:attendee.create`, each under its own attendee id), check-ins (`otoapp:attendee.checkin`, each under its own check-in id) and party edits (`otoapp:party.update`, oldest first, each under its own edit id). Nothing else is safe from here',
         params: z.object({ runId: z.string().uuid() }),
       },
     },
@@ -326,6 +325,42 @@ export async function opsRoutes(app: App): Promise<void> {
           {
             operatorId: auth.operatorId,
             editId,
+            errorCode: run.errorCode,
+            reach: branchReach(await req.effectivePermissions(), 'admin:ops:manage', auth.operatorId),
+            requestId: req.id,
+          },
+        );
+        const edit = swept.edit;
+        await withTx(app.db, opCtx(req), 'ops.run_retry', async (tx) => {
+          await audit.record(tx, {
+            actorAccountId: auth.accountId,
+            operatorId: auth.operatorId,
+            branchId: run.branchId,
+            action: 'ops.run_retry',
+            entityType: 'ops_run',
+            entityId: run.id,
+            actionId: edit.actionId,
+            after: {
+              integration: run.name,
+              editId: edit.id,
+              syncState: edit.syncState,
+              sent: swept.sent,
+              synced: swept.synced,
+              waiting: swept.waiting,
+            },
+            requestId: req.id,
+          });
+        });
+        return {
+          ok: true as const,
+          outcome: edit.syncState === 'synced' && swept.waiting === 0 ? 'ok' : 'failed',
+          syncState: edit.syncState,
+          sent: swept.sent,
+          synced: swept.synced,
+          waiting: swept.waiting,
+        };
+      }
+      /**
        * S2-20 E3 — THE OTO APP WRITE-BACKS OF CHECK-INS, sent again: the same
        * sweep as a child's (`retryCheckinWriteBack`), each under the check-in id
        * the till or the box minted, so the app answers a second send as a
@@ -347,7 +382,6 @@ export async function opsRoutes(app: App): Promise<void> {
             requestId: req.id,
           },
         );
-        const edit = swept.edit;
         const row = swept.checkin;
         await withTx(app.db, opCtx(req), 'ops.run_retry', async (tx) => {
           await audit.record(tx, {
@@ -357,11 +391,6 @@ export async function opsRoutes(app: App): Promise<void> {
             action: 'ops.run_retry',
             entityType: 'ops_run',
             entityId: run.id,
-            actionId: edit.actionId,
-            after: {
-              integration: run.name,
-              editId: edit.id,
-              syncState: edit.syncState,
             actionId: row.actionId,
             after: {
               integration: run.name,
@@ -376,8 +405,6 @@ export async function opsRoutes(app: App): Promise<void> {
         });
         return {
           ok: true as const,
-          outcome: edit.syncState === 'synced' && swept.waiting === 0 ? 'ok' : 'failed',
-          syncState: edit.syncState,
           outcome: row.syncState === 'synced' && swept.waiting === 0 ? 'ok' : 'failed',
           syncState: row.syncState,
           sent: swept.sent,

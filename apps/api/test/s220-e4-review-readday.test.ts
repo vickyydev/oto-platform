@@ -75,6 +75,10 @@ const ev = {
 
 const directory: OtoAppDirectory = {
   configured: true,
+  async checkinAttendee() {
+    // This suite never checks a child in; the seam only has to type.
+    return { ok: false as const, status: null, code: 'OTOAPP_DIRECTORY_UNREACHABLE', message: 'not used here', retryable: true as const };
+  },
   async addAttendee() {
     return { ok: false, status: null, code: 'OTOAPP_DIRECTORY_UNREACHABLE', message: 'not used here', retryable: true };
   },

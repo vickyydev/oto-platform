@@ -167,6 +167,10 @@ const directory: OtoAppDirectory = {
     const out = outcomeOf(await appWrites.createEventAttendee(appPool, event, body));
     return next === 'lost' ? unreachable() : out;
   },
+  async checkinAttendee() {
+    // E4's reviews never check a child in; the seam only has to type.
+    return unreachable();
+  },
   async editEvent(eventId, body) {
     editCalls.push({ eventId, body });
     const next = editPlan.shift() ?? 'app';

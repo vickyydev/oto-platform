@@ -62,6 +62,9 @@ const directory: OtoAppDirectory = {
   async addAttendee() {
     return { ok: false, status: null, code: 'OTOAPP_DIRECTORY_UNREACHABLE', message: 'not used here', retryable: true };
   },
+  async checkinAttendee() {
+    return { ok: false, status: null, code: 'OTOAPP_DIRECTORY_UNREACHABLE', message: 'not used here', retryable: true };
+  },
   async editEvent() {
     return { ok: false, status: null, code: 'OTOAPP_DIRECTORY_UNREACHABLE', message: 'not used here', retryable: true };
   },
