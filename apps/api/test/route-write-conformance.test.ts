@@ -262,6 +262,13 @@ const NO_DIRECT_WRITE = [
   'POST /box/v1/station/:stationId/lock',
   'POST /sales/quote',
   /**
+   * S2-21 round 2 — a scanned staff benefit QR, resolved to the person and
+   * their profile for today. It reads and keeps nothing: what a benefit uses
+   * up is claimed inside the sale's own transaction (round 3), and a refused
+   * QR must change nothing at all (the acceptance's revoked case).
+   */
+  'POST /benefits/resolve',
+  /**
    * SCRUM-494: POST /files already records the file and audit together. This
    * signed-in PUT sends only its photo bytes to private object storage; it
    * does not change a database row or its audit trail.

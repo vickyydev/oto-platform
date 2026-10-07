@@ -256,6 +256,10 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /booths/:id/prizes': NEXT_PASS,
   'POST /booths/:id/duty': NEXT_PASS,
   'POST /booths/:id/duty/sync': 'derived: the dated roster is keyed by booth and day, never by a client id',
+  // S2-21 round 2: the id is signed into the staff member's benefit QR, and a
+  // credential is never named by a client — as a voucher's code is not.
+  'POST /benefits/credentials':
+    'derived: the id is signed into the benefit QR only the platform mints; one live QR per person, online only, one press per Idempotency-Key',
   'POST /booths/:id/publish': 'derived: a published version of the booth’s own setup',
   'POST /boxes/:id/commands': ACTION_KEYED,
   'POST /boxes/:id/simulate': ACTION_KEYED,

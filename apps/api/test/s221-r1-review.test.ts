@@ -207,7 +207,7 @@ describe('who may (plan "Permissions")', () => {
     expect(has('staff', 'pos:benefit:apply')).toBe(true);
   });
 
-  it('every /benefits route is guarded, and they are exactly the round’s seven', () => {
+  it('every /benefits route is guarded, and they are exactly round 1’s seven and round 2’s five', () => {
     const routes = ctx.app.routeRegistry
       .filter((r) => r.url.startsWith('/benefits') && r.method !== 'HEAD')
       .map((r) => `${r.method} ${r.url} ${r.config.permission ?? 'UNGUARDED'}`)
@@ -221,6 +221,13 @@ describe('who may (plan "Permissions")', () => {
         'GET /benefits/profiles/:employeeId admin:benefit:read',
         'PUT /benefits/profiles/:employeeId admin:benefit:manage',
         'GET /benefits/profiles/:employeeId/effective admin:benefit:read',
+        // Round 2 (the benefit QR): printing, issuing and revoking are the
+        // operator admin's; a branch manager reads; the till resolves.
+        'GET /benefits/credentials admin:benefit:read',
+        'POST /benefits/credentials admin:benefit:credential_issue',
+        'GET /benefits/credentials/:credentialId/qr admin:benefit:credential_issue',
+        'POST /benefits/credentials/:credentialId/revoke admin:benefit:credential_issue',
+        'POST /benefits/resolve pos:benefit:apply',
       ].sort(),
     );
   });

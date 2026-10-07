@@ -148,7 +148,7 @@ export interface BenefitCredentialView {
   issuedBy: VersionAuthor | null;
   revokedAt: string | null;
   revokedBy: VersionAuthor | null;
-  /** When the cloud last resolved it; null if never. */
+  /** When a benefit was last applied with it (set from round 3); null if never. */
   lastSeenAt: string | null;
 }
 
@@ -532,9 +532,9 @@ export interface ResolvedBenefit {
  * `No staff benefit found for "<code>".`, and a person with nothing set up is
  * `<name> has no benefit configured.`
  *
- * It applies nothing and uses up nothing — the quota is round 3's, inside the
- * sale. It records when the QR was last seen (`last_seen_at`), bookkeeping
- * that is not an audit event.
+ * It applies nothing, uses up nothing and writes nothing — the quota is round
+ * 3's, claimed inside the sale's own transaction, which is also where
+ * `last_seen_at` is set.
  */
 export async function resolveBenefitCredential(
   db: Db,
@@ -604,10 +604,6 @@ export async function resolveBenefitCredential(
       BENEFIT_WORDS.notConfigured(person.name),
     );
   }
-  await db
-    .update(benefitCredential)
-    .set({ lastSeenAt: now })
-    .where(eq(benefitCredential.id, row.id));
   return {
     employeeId: person.id,
     name: person.name,

@@ -284,7 +284,7 @@ export async function benefitRoutes(app: App): Promise<void> {
       config: { permission: 'admin:benefit:read' },
       schema: {
         description:
-          'The benefit QRs issued in this operator — or one staff member’s with `employeeId` — newest first, with their status (`active`, `revoked`, `expired`), who issued and who revoked each, and when one was last resolved. Never the code: printing it is `GET /benefits/credentials/:id/qr`.',
+          'The benefit QRs issued in this operator — or one staff member’s with `employeeId` — newest first, with their status (`active`, `revoked`, `expired`), who issued and who revoked each, and when one last applied a benefit. Never the code: printing it is `GET /benefits/credentials/:id/qr`.',
         querystring: z.object({ employeeId: z.string().uuid().optional() }),
         response: { 200: z.object({ credentials: z.array(Credential) }) },
       },

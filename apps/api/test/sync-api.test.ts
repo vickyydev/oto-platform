@@ -1544,6 +1544,8 @@ describe('the cache bundle', () => {
     expect(bundle.schemaVersion).toBe(1);
     expect(Object.keys(bundle.scopes).sort()).toEqual([
       'bands',
+      // S2-21 round 2: benefit QR keys, the revocation list, comp and percent.
+      'benefits',
       'bookings',
       // The published wheel, since S2-07a filled the scope. This box has a
       // booth, so a full bundle now carries one.
@@ -1864,6 +1866,8 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
   /** The cache scopes a box with a till has always been sent, sorted. */
   const EVERY_SCOPE = [
     'bands',
+    // S2-21 round 2: benefit QR keys, the revocation list, comp and percent.
+    'benefits',
     'bookings',
     'booth',
     'catalogue',

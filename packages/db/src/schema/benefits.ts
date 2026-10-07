@@ -185,7 +185,7 @@ export const benefitCredential = promo.table(
     revokedByAccountId: uuid('revoked_by_account_id').references(() => account.id, {
       onDelete: 'restrict',
     }),
-    /** When the cloud last resolved it — "is this card in use". Not audited. */
+    /** When a benefit was last applied with it: "is this card in use". Set by round 3's apply. */
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'date' }),
     ...timestamps,
   },
