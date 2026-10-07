@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { bandShortCode } from './band-code';
+import type { EventsCacheItem } from './events';
 
 /**
  * S2-20 E3 (SCRUM-217) — CHECKING A CHILD IN AT AN EVENT, CHECKING THEM OUT,
@@ -271,6 +272,8 @@ export function eventBandDocument(f: EventBandFacts): EventBandDocument {
  * the overlay row — under the till's own check-in id, so a retry meets itself.
  */
 export const BRIDGE_EVENT_INTENTS = {
+  /** Today's events from the box's copy, with what this counter recorded laid over it. */
+  day: 'events.day',
   checkin: 'event.checkin',
   checkout: 'event.checkout',
   reprint: 'event.reprint',
@@ -357,6 +360,36 @@ export const OfflineEventCheckedOutSchema = z.object({
   offlineFresh: z.boolean().optional(),
 });
 export type OfflineEventCheckedOut = z.infer<typeof OfflineEventCheckedOutSchema>;
+
+/**
+ * What a counter's box records for an event check-in it made, as an overlay
+ * row (kind `checkin`, the event's id in `member_id`, `domain: 'event'` to tell
+ * it from a drop-off stay): the day as this counter now knows it. The band
+ * codes are kept so a reprint and a food counter's scan work before the copy
+ * of today's events catches up.
+ */
+export interface EventCheckinOverlayRecord {
+  domain: 'event';
+  checkinId: string;
+  eventId: string;
+  attendeeId: string;
+  date: string;
+  status: 'checked_in' | 'checked_out';
+  checkedInAt: string | null;
+  checkedOutAt: string | null;
+  childName: string;
+  parentName: string | null;
+  allergy: string | null;
+  dietary: string | null;
+  kidBand: { id: string; code: string } | null;
+  parentBand: { id: string; code: string } | null;
+}
+
+/** What the box answers `events.day` with: its copy of today's events, this counter's day laid over it. */
+export interface BridgeEventsDayAnswer extends Record<string, unknown> {
+  item: EventsCacheItem | null;
+  cacheAppliedAt: string | null;
+}
 
 /** The short code under a band's QR, for the till's toast: never the code itself. */
 export function eventBandShortCode(code: string | null | undefined): string | null {

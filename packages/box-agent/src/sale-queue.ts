@@ -1,4 +1,5 @@
 import {
+  eventBandDocument,
   isLegacyBoothCode,
   mintBandCode,
   normaliseBoothCode,
@@ -6,6 +7,7 @@ import {
   salePrintRequests,
   ulidFromUuid,
   verifyBoothCode,
+  type EventBandFacts,
   type PrintKind,
   type SalePrintRequest,
   type SalePrintSnapshot,
@@ -305,6 +307,44 @@ export interface SaleQueue {
    * the commit, as a sale's is.
    */
   issueCheckinBands(request: CheckinBandRequest): Promise<CheckinBandAnswer>;
+  /**
+   * S2-20 E3 — an EVENT check-in on the box lane: a kid band, and a parent band
+   * when the parent is attending, minted with the park's key under the
+   * station's prefix and printed from the shared event band composer — in ONE
+   * store transaction with whatever the caller writes beside them (the fact
+   * and its overlay row, `write`). The printer is touched after the commit.
+   */
+  issueEventBands(request: EventBandRequest): Promise<EventBandAnswer>;
+  /** S2-20 E3 — fresh paper for event bands the box holds the codes of. Writes nothing else. */
+  printEventBands(request: EventBandPrintRequest): Promise<{ jobs: SalePrintLogJob[]; notes: string[] }>;
+}
+
+/** What an event band prints, beside its code (`eventBandDocument` in `@oto/shared`). */
+export type EventBandPaper = Omit<EventBandFacts, 'kind' | 'code'>;
+
+export interface EventBandRequest {
+  stationId: string;
+  actionId: string | null;
+  /** A parent band too. */
+  parent: boolean;
+  paper: EventBandPaper;
+  /** Written inside the same transaction, after the bands are minted. */
+  write: (tx: BoxStore, minted: { kid: { id: string; code: string }; parent: { id: string; code: string } | null }) => Promise<void>;
+}
+
+export interface EventBandAnswer {
+  kid: { id: string; code: string };
+  parent: { id: string; code: string } | null;
+  printing: { jobs: SalePrintLogJob[]; notes: string[] };
+}
+
+export interface EventBandPrintRequest {
+  stationId: string;
+  actionId: string | null;
+  bands: ReadonlyArray<{ id: string; kind: 'kid' | 'adult'; code: string }>;
+  paper: EventBandPaper;
+  /** True on a copy asked for later (a reprint). */
+  copy: boolean;
 }
 
 /** One supervised child's band, as "Check in now" asks for it. */
@@ -611,6 +651,29 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
       queuedAt: at,
       updatedAt: at,
     };
+  }
+
+  /**
+   * S2-20 E3 — an event check-in's paper: one job per band, kid band first,
+   * composed by the shared event band composer the platform prints from too.
+   */
+  function eventBandRecords(
+    stationId: string,
+    actionId: string | null,
+    bands: ReadonlyArray<{ id: string; kind: 'kid' | 'adult'; code: string }>,
+    paper: EventBandPaper,
+    at: string,
+    copy: boolean,
+    logJobs: SalePrintLogJob[],
+  ): PrintJobRecord[] {
+    const ordered = [...bands].sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'kid' ? -1 : 1));
+    return ordered.map((b) => {
+      const kind: PrintKind = b.kind === 'kid' ? 'kids_wristband' : 'adult_wristband';
+      const id = uuidv7();
+      const document = { kind, data: eventBandDocument({ ...paper, kind: b.kind, code: b.code }) };
+      logJobs.push({ id, kind, subjectType: 'band', subjectId: b.id, status: 'queued', errorCode: null, copy });
+      return jobRecord(id, stationId, kind, document as PrintJobRecord['job'], actionId, at);
+    });
   }
 
   /** Put jobs on paper, in order, and say how each went. Never throws. */
@@ -1192,6 +1255,68 @@ export function createSaleQueue(deps: SaleQueueDeps): SaleQueue {
         bands: minted.length,
       });
       return { bands: minted, printing: { jobs: logJobs, notes } };
+    },
+
+    async issueEventBands(request) {
+      const key = deps.bandKey();
+      if (!key) {
+        throw new CheckinBandRefused(
+          'BAND_KEY_MISSING',
+          'No band can be issued at this counter while it is offline, so the child was not checked in — try again when the connection is back.',
+        );
+      }
+      if (!deps.sealer()) throw new Error('This box has no signing key yet; it cannot record a check-in');
+      const at = deps.now().toISOString();
+      let minted: EventBandAnswer['kid'] | null = null;
+      let parent: EventBandAnswer['parent'] = null;
+      let records: PrintJobRecord[] = [];
+      const logJobs: SalePrintLogJob[] = [];
+      await store.atomically(async (tx) => {
+        const mark = (await receiptMarks(tx)).find((m) => m.stationId === request.stationId);
+        const prefix = mark?.prefix ?? null;
+        if (!prefix) {
+          throw new CheckinBandRefused(
+            'STATION_NO_PREFIX',
+            'This counter has not been told its station code, so it cannot issue a band offline. Connect it once, then try again.',
+          );
+        }
+        const mint = () => {
+          const id = uuidv7();
+          return { id, code: mintBandCode(prefix, ulidFromUuid(id), key) };
+        };
+        minted = mint();
+        parent = request.parent ? mint() : null;
+        const bands = [
+          { ...minted, kind: 'kid' as const },
+          ...(parent ? [{ ...(parent as { id: string; code: string }), kind: 'adult' as const }] : []),
+        ];
+        records = eventBandRecords(request.stationId, request.actionId, bands, request.paper, at, false, logJobs);
+        if (tx.features().printJobs && deps.durablePrinting?.()) {
+          for (const record of records) await tx.putPrintJob(record);
+        }
+        await request.write(tx, { kid: minted, parent });
+      });
+      const notes: string[] = [];
+      await printJobs(records, logJobs, notes);
+      deps.note('info', 'an event child checked in on the box', {
+        stationId: request.stationId,
+        bands: parent ? 2 : 1,
+      });
+      return { kid: minted!, parent, printing: { jobs: logJobs, notes } };
+    },
+
+    async printEventBands(request) {
+      const at = deps.now().toISOString();
+      const logJobs: SalePrintLogJob[] = [];
+      const records = eventBandRecords(request.stationId, request.actionId, request.bands, request.paper, at, request.copy, logJobs);
+      if (store.features().printJobs && deps.durablePrinting?.()) {
+        await store.atomically(async (tx) => {
+          for (const record of records) await tx.putPrintJob(record);
+        });
+      }
+      const notes: string[] = [];
+      await printJobs(records, logJobs, notes);
+      return { jobs: logJobs, notes };
     },
 
     async notePrintOutcome(outcome) {

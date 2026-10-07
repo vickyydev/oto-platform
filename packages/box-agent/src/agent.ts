@@ -2875,6 +2875,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       appliedAt: new Date(clock()).toISOString(),
     });
     cacheScopesHeld.add('events');
+    // S2-20 E3: an event check-in this counter recorded offline that the
+    // platform has since taken is let go, now that the copy holds it.
+    await bridge?.pruneEventsOverlay().catch((err: unknown) => {
+      note('warn', 'the events overlay could not be pruned after a pull', { err: String(err) });
+    });
     return true;
   }
 

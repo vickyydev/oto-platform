@@ -156,6 +156,7 @@ import {
 import type { TerminalCommandOutcome, TerminalController, TerminalProtocol } from './terminal/index';
 import { boxBlobs, type BlobStore } from './blob-store';
 import { CheckinDesk, DeskRefusal, type BoxFoodOrder, type DeferredBand } from './checkin-desk';
+import { EventsDesk, EventsDeskRefusal } from './events-desk';
 import type { StationSessionManager } from './station-session';
 import {
   OFFLINE_UNLOCK_REFUSALS,
@@ -991,10 +992,31 @@ export class StationBridge {
   }
 
   private deskInstance: CheckinDesk | null = null;
+  private eventsDeskInstance: EventsDesk | null = null;
+
+  /** S2-20 E3 — the events desk: check-in, check-out and reprint at an event on the box lane. */
+  get eventsDesk(): EventsDesk {
+    this.eventsDeskInstance ??= new EventsDesk({
+      boxId: this.host.boxId,
+      store: this.host.store,
+      now: () => this.host.now(),
+      log: this.log,
+      sealer: () => this.host.sealer(),
+      sales: () => this.host.sales?.() ?? null,
+      tradingDay: () => this.tradingDay(),
+    });
+    return this.eventsDeskInstance;
+  }
+
+  /** The events overlay's end, after an `events` pull (S2-20 E3). */
+  async pruneEventsOverlay(): Promise<number> {
+    return this.eventsDesk.pruneOverlay();
+  }
 
   /** The check-in desk (S2-13 round 4): the gate, the board and the release on the box lane. */
   get desk(): CheckinDesk {
     this.deskInstance ??= new CheckinDesk({
+      eventBands: () => this.eventsDesk,
       boxId: this.host.boxId,
       store: this.host.store,
       now: () => this.host.now(),
@@ -1494,6 +1516,15 @@ export class StationBridge {
     if (caller.kind === 'till' && intent.type === BRIDGE_BOOKING_INTENTS.redeem) {
       const result = await this.bookingRedeem(station, caller, intent.payload);
       return { document: await this.host.sessions.open(stationId), result: { ...result } };
+    }
+    if (caller.kind === 'till' && this.eventsDesk.handles(intent.type)) {
+      try {
+        const result = await this.eventsDesk.intent(station, caller, intent.type, intent.payload, intent.actionId ?? null);
+        return { document: await this.host.sessions.open(stationId), result };
+      } catch (err) {
+        if (err instanceof EventsDeskRefusal) throw new BridgeError(err.status, err.code, err.message, err.details);
+        throw err;
+      }
     }
     if (caller.kind === 'till' && this.desk.handles(intent.type)) {
       try {

@@ -146,6 +146,15 @@ export interface CheckinDeskHost {
    * a member this box knows nothing of.
    */
   resolveMember(memberId: string): Promise<{ id: string; childIds: ReadonlySet<string> } | null>;
+  /**
+   * S2-20 E3 — an event child's kid band, from the events desk's copies: the
+   * food counter's scan falls back to it as the online scan does
+   * (`eventBandStayForKey`), and an order may name it as its holder.
+   */
+  eventBands?(): {
+    stayForKey(branchId: string, key: string): Promise<BandStayView | null>;
+    holder(checkinId: string): Promise<{ checkinId: string; childName: string; allergiesMedical: string | null; checkedOut: boolean } | null>;
+  } | null;
 }
 
 /**
@@ -521,7 +530,12 @@ export class CheckinDesk {
       return { stay: null, cacheAppliedAt: view.item ? view.appliedAt : null };
     }
     const found = await this.stayForKey(view, station.branchId, key);
-    return { stay: found ? await this.bandStayView(found.family, found.child) : null, cacheAppliedAt: view.appliedAt };
+    if (found) return { stay: await this.bandStayView(found.family, found.child), cacheAppliedAt: view.appliedAt };
+    // S2-20 E3 — an event child's kid band: their allergy and diet lines, no food.
+    const event = caller.can('pos:event:read')
+      ? await this.host.eventBands?.()?.stayForKey(station.branchId, key).catch(() => null)
+      : null;
+    return { stay: event ?? null, cacheAppliedAt: view.appliedAt };
   }
 
   /**
@@ -558,6 +572,18 @@ export class CheckinDesk {
           mayOrderFood: found.child.mayOrderFood,
           foodOverride: cart.bandHolder?.foodOverride === true,
         };
+      } else if (holderId && !found) {
+        // S2-20 E3 — an event child's kid band.
+        const event = (await this.host.eventBands?.()?.holder(holderId)) ?? null;
+        if (event) {
+          order.holder = {
+            checkinId: event.checkinId,
+            childName: event.childName,
+            allergiesMedical: event.allergiesMedical,
+            mayOrderFood: false,
+            foodOverride: cart.bandHolder?.foodOverride === true,
+          };
+        }
       }
       for (const line of prepaidLines) {
         const checkinId = line.prepaid!.checkinId;
@@ -582,7 +608,21 @@ export class CheckinDesk {
       }
       return found;
     };
-    if (holderId) {
+    // S2-20 E3 — an event child's kid band names their event check-in.
+    const eventHolder =
+      holderId && !this.findStay(view, holderId) ? ((await this.host.eventBands?.()?.holder(holderId)) ?? null) : null;
+    if (holderId && eventHolder) {
+      if (eventHolder.checkedOut) {
+        throw new DeskRefusal(409, 'BAND_NOT_IN_PARK', bandNotInParkRefusal(eventHolder.childName), { checkinId: holderId });
+      }
+      order.holder = {
+        checkinId: eventHolder.checkinId,
+        childName: eventHolder.childName,
+        allergiesMedical: eventHolder.allergiesMedical,
+        mayOrderFood: false,
+        foodOverride: cart.bandHolder?.foodOverride === true,
+      };
+    } else if (holderId) {
       const { child } = checkStay(holderId);
       order.holder = {
         checkinId: child.id,
@@ -1957,8 +1997,12 @@ export class CheckinDesk {
     const bundle = await store.readBundle(this.host.boxId, 'checkin').catch(() => null);
     if (!bundle) return 0;
     const pulledAt = Date.parse(bundle.appliedAt);
-    const rows = (await store.allOverlay(this.host.boxId)).filter((r) =>
-      (CHECKIN_OVERLAY_KINDS as readonly string[]).includes(r.kind),
+    const rows = (await store.allOverlay(this.host.boxId)).filter(
+      (r) =>
+        (CHECKIN_OVERLAY_KINDS as readonly string[]).includes(r.kind) &&
+        // S2-20 E3 — an event check-in's row is the events desk's to prune,
+        // after an `events` pull (`EventsDesk.pruneOverlay`).
+        (r.record as { domain?: unknown } | null)?.domain !== 'event',
     );
     if (rows.length === 0) return 0;
     const states = await store.outboxStates(
