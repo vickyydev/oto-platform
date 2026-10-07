@@ -77,6 +77,18 @@ export const KIOSK_REASONS = {
   printRouting: 'KIOSK_PRINT_ROUTING_FAILED',
   /** A press that never finished (the process stopped mid-redemption). */
   interrupted: 'KIOSK_INTERRUPTED',
+  /**
+   * SCRUM-504 — the set ran past the time the kiosk may hold its redemption
+   * open while it prints, and was called off: nothing was committed, and the
+   * wristbands that came out before it stopped are counted (`calledOffBands`).
+   */
+  printTimeout: 'KIOSK_PRINT_TIMEOUT',
+  /**
+   * SCRUM-504 — the redemption's hold on the database was lost while the set
+   * printed or just after it (the connection ended): nothing was committed, and
+   * the wristbands that came out are counted (`calledOffBands`).
+   */
+  printHoldLost: 'KIOSK_PRINT_HOLD_LOST',
   /** Anything else the platform did not expect. */
   internal: 'KIOSK_INTERNAL_ERROR',
   /**
@@ -234,6 +246,12 @@ export const KioskDeskEntrySchema = z
       .strict(),
     supervisedChildren: z.number().int().nonnegative(),
     bandsIssued: z.number().int().nonnegative(),
+    /**
+     * SCRUM-504 — wristbands that came out of the kiosk's printer for a set it
+     * then called off (as `KioskRedeemAnswer.calledOffBands`): the family may be
+     * holding them, and they open nothing at the gate. Absent or 0: none.
+     */
+    calledOffBands: z.number().int().nonnegative().optional(),
     state: z.enum(KIOSK_DESK_STATES),
   })
   .strict();
@@ -397,6 +415,14 @@ export const KioskRedeemAnswerSchema = z
       .nullable(),
     /** The bands that came out of the kiosk's printer. */
     bands: z.array(KioskBandSchema),
+    /**
+     * SCRUM-504 — on a `failed` ending only: how many wristbands came out of
+     * the printer before the set was called off (counting one still printing
+     * when the kiosk stopped waiting). Nothing was committed, so they open
+     * nothing at the gate, and the guest is asked to hand them to the desk.
+     * Absent or 0: no wristband came out.
+     */
+    calledOffBands: z.number().int().nonnegative().optional(),
     /** Wallet credit the tickets loaded (S2-14a), in satang. */
     walletCreditSatang: z.number().int().nonnegative(),
     /** Whether the guest must see the staff desk, and for how many supervised children. */

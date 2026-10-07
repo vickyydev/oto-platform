@@ -27,6 +27,7 @@ import { AppError } from '../lib/errors';
 import { reachCovers, type BranchReach } from './access-control';
 import { audit } from './audit';
 import { boxSettings, inProcessBox } from './box';
+import { calledOffBandsOf } from './kiosk';
 import { withTx, type OpContext } from './tx';
 
 /**
@@ -161,6 +162,8 @@ export async function kioskDesk(
       booking: b,
       supervisedChildren,
       bandsIssued: bandIds.length,
+      // SCRUM-504 — wristbands the family may be holding from a set the kiosk called off.
+      calledOffBands: calledOffBandsOf(session),
       state,
     };
   });

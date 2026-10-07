@@ -12,6 +12,7 @@ import { errors } from '../lib/errors';
 import { audit } from './audit';
 import type { BandView } from './bands';
 import {
+  BOOKING_CLAIM_WAIT_MS,
   linesOf,
   publishRedemption,
   redeemBooking,
@@ -107,6 +108,8 @@ export interface RedeemAtCounterArgs {
   /** The route's scope check on the branch the sale lands on. */
   assertBranchAllowed?: (branchId: string) => Promise<void>;
   now?: Date;
+  /** SCRUM-504 — the bound on waiting behind another claim; `BOOKING_CLAIM_WAIT_MS` unless a test scales it. */
+  claimWaitMs?: number;
 }
 
 export interface RedeemAtCounterResult {
@@ -253,7 +256,9 @@ export async function redeemBookingAtCounter(
 ): Promise<RedeemAtCounterResult> {
   const now = args.now ?? new Date();
 
-  // 1. THE CLAIM, before anything is priced, minted or printed.
+  // 1. THE CLAIM, before anything is priced, minted or printed. Waiting behind
+  // another claim on the same booking is bounded (SCRUM-504): a kiosk holds the
+  // row while its bands print, and the person here is told so by name.
   const claimed = await redeemBooking(tx, {
     bookingId: args.bookingId,
     operatorId: args.operatorId,
@@ -263,6 +268,7 @@ export async function redeemBookingAtCounter(
     requestId: args.requestId ?? null,
     now,
     deferPublish: true,
+    claimWaitMs: args.claimWaitMs ?? BOOKING_CLAIM_WAIT_MS,
   });
 
   // A redemption is a sale, and a sale is numbered and printed at a till. Asked

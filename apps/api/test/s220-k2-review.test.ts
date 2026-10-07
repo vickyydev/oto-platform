@@ -467,34 +467,49 @@ function faultPartWay(deviceId: string, fault: 'unreachable' | 'paper_out', when
 }
 
 describe('attack 1 — every failure ending, each its own reason, nothing kept', () => {
+  /**
+   * SCRUM-504 — the plain paper (the receipt, any credit voucher) prints
+   * before the bands, so a receipt-printer fault now stops the set before a
+   * band is sent: the case that once let every band out and then failed on
+   * the receipt is the receipt failing with no band out. `faultOn` decides,
+   * at each session the printer opens, whether the fault arrives there; the
+   * printer check opens one too, so "the second session" is its first job.
+   */
   const cases = [
     {
       what: 'the band printer stops after the first band',
       deviceId: () => bandPrinterId,
       fault: 'unreachable' as const,
       reason: 'PRINTER_UNREACHABLE',
-      after: 1,
+      bandsOut: 1,
+      faultOn: (start: number) => () => printedOn(bandPrinterId) - start >= 1,
     },
     {
       what: 'the band printer runs out of paper after the first band',
       deviceId: () => bandPrinterId,
       fault: 'paper_out' as const,
       reason: 'PRINTER_PAPER_OUT',
-      after: 1,
+      bandsOut: 1,
+      faultOn: (start: number) => () => printedOn(bandPrinterId) - start >= 1,
     },
     {
-      what: 'the receipt printer stops after every band came out',
+      what: 'the receipt printer stops at its first job, before any band',
       deviceId: () => receiptPrinterId,
       fault: 'unreachable' as const,
       reason: 'PRINTER_UNREACHABLE',
-      after: 3,
+      bandsOut: 0,
+      faultOn: () => {
+        let opens = 0;
+        return () => (opens += 1) >= 2;
+      },
     },
   ];
   for (const c of cases) {
     it(`a printer fault part-way through the set (${c.what}) calls the whole set off`, async () => {
       const paid = await bookAndPay([{ packageId: twoHoursId, kids: 2, adults: 1 }]);
       const startBand = printedOn(bandPrinterId);
-      const undo = faultPartWay(c.deviceId(), c.fault, () => printedOn(bandPrinterId) - startBand >= c.after);
+      const startReceipt = printedOn(receiptPrinterId);
+      const undo = faultPartWay(c.deviceId(), c.fault, c.faultOn(startBand));
       try {
         const sessionId = await startSession(K1);
         const aborted = await scan(K1, paid.qr, sessionId);
@@ -503,10 +518,11 @@ describe('attack 1 — every failure ending, each its own reason, nothing kept',
           outcome: 'failed',
           reason: c.reason,
           bands: [],
+          calledOffBands: c.bandsOut,
           walletCreditSatang: 0,
           desk: { required: true },
         });
-        expect(printedOn(bandPrinterId) - startBand, 'bands out before the fault').toBe(c.after);
+        expect(printedOn(bandPrinterId) - startBand, 'bands out before the fault').toBe(c.bandsOut);
         // Nothing of the redemption stands: the booking is still the family's to redeem.
         expect(await bookingStatus(paid.id)).toBe('paid');
         expect(await salesOf(paid.id)).toEqual([]);
@@ -517,10 +533,25 @@ describe('attack 1 — every failure ending, each its own reason, nothing kept',
           .where(and(eq(opsRun.name, KIOSK_PRINT_RUN), eq(opsRun.actionId, aborted.actionId)));
         expect(runs).toHaveLength(1);
         expect(runs[0]).toMatchObject({ kind: 'device', outcome: 'failed', errorCode: c.reason, stationId: K1.stationId });
-        const detail = runs[0]!.detail as { printed: number; jobs: number; committed: boolean; deviceId: string };
-        expect(detail).toMatchObject({ committed: false, deviceId: c.deviceId(), printed: c.after });
+        const detail = runs[0]!.detail as {
+          printed: number;
+          bandsPrinted: number;
+          jobs: number;
+          committed: boolean;
+          deviceId: string;
+        };
+        // Everything that came out is counted: the plain paper first, then the bands.
+        const plainPaper = printedOn(receiptPrinterId) - startReceipt;
+        expect(detail).toMatchObject({
+          committed: false,
+          deviceId: c.deviceId(),
+          printed: plainPaper + c.bandsOut,
+          bandsPrinted: c.bandsOut,
+        });
+        if (c.bandsOut > 0) expect(plainPaper, 'the plain paper printed before any band').toBeGreaterThan(0);
+        else expect(plainPaper, 'the receipt printer failed at its first job').toBe(0);
         expect(detail.printed).toBeLessThan(detail.jobs);
-        // Activity has the abort, and the desk has the family, with the booking, to redeem.
+        // Activity has the abort, and the desk has the family, with the booking, to redeem — and the bands to collect.
         expect(await auditCount('kiosk.abort', sessionId)).toBe(1);
         expect(await deskEntry(paid.id)).toMatchObject({
           sessionId,
@@ -528,6 +559,7 @@ describe('attack 1 — every failure ending, each its own reason, nothing kept',
           reason: c.reason,
           state: 'to_redeem',
           bandsIssued: 0,
+          calledOffBands: c.bandsOut,
         });
       } finally {
         undo();

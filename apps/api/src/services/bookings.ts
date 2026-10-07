@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm';
 import {
   account,
   attendee,
@@ -6,12 +6,14 @@ import {
   bookingRedemption,
   branch,
   employee,
+  kioskSession,
   member,
   paymentAttempt,
   station,
 } from '@oto/db';
 import { BookingSupervisionSnapshotSchema, type BookingSupervisionSnapshot, isoDateInTz, newId, parseBookingQr, wallClockMinutesInTz } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
+import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
 import { bookingChange, recordChange } from './sync';
 import type { Exec, Tx } from './tx';
@@ -595,13 +597,116 @@ export interface RedeemBookingArgs {
    * the bands it mints in the same transaction are on the redemption row.
    */
   deferPublish?: boolean;
+  /**
+   * SCRUM-504 — how long to wait behind another claim holding the booking's
+   * row before answering `BOOKING_REDEMPTION_IN_PROGRESS` instead. Unset: wait
+   * as long as the statement may (the box's replay of an offline redemption).
+   * The counter and the kiosk set it (`BOOKING_CLAIM_WAIT_MS`): a self-service
+   * kiosk holds the row while its bands print, which may outlast the
+   * statement timeout, and a person at a till is owed an answer, not a 500.
+   */
+  claimWaitMs?: number;
+}
+
+/** SCRUM-504 — the counter's and the kiosk's bound on waiting behind another claim on the same booking. */
+export const BOOKING_CLAIM_WAIT_MS = 5_000;
+
+/**
+ * How far back a kiosk press can have started and still be running: the
+ * guest's idle minute on the scan screen, the print's budget, and room to
+ * spare. A press older than this was left open by a stopped process.
+ */
+const CLAIM_PRESS_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * Take the booking's row lock, waiting at most `waitMs` behind another claim.
+ *
+ * The bound is the STATEMENT's (`statement_timeout`), not `lock_timeout`:
+ * Postgres times each lock acquisition separately, and a claim queued behind
+ * another waiting claim takes two in turn (the row's tuple lock, then the
+ * holder's transaction), so a lock timeout of five seconds is ten for the
+ * second in line and more for the third. It is set for this statement alone,
+ * inside a savepoint, and put back as it was: everything else the caller's
+ * transaction does keeps its own limits. A wait that runs out rolls the
+ * savepoint back (the caller's transaction stays usable) and answers who
+ * holds the booking, read from the claim a kiosk press writes before it locks
+ * (`kiosk_session.booking_id` on a press still running) — a plain read,
+ * which no row lock blocks.
+ *
+ * `FOR NO KEY UPDATE`, the strength Postgres's own update of a non-key column
+ * takes: two claims still queue on it, and so does every `FOR UPDATE` and
+ * `FOR SHARE` elsewhere, but a row that merely REFERENCES the booking (a
+ * foreign-key check's `FOR KEY SHARE`) is not held up behind a kiosk that
+ * keeps its claim open while its bands print — the second kiosk's own
+ * session row naming the booking, its failed ending, a payment attempt.
+ */
+async function lockForClaim(tx: Tx, args: RedeemBookingArgs, waitMs: number): Promise<BookingRow | undefined> {
+  const prior = (await tx.execute(sql`select current_setting('statement_timeout') as v`)).rows[0] as { v: string };
+  try {
+    return await tx.transaction(async (sp) => {
+      await sp.execute(sql`select set_config('statement_timeout', ${`${Math.max(1, Math.round(waitMs))}ms`}, true)`);
+      const [row] = await sp
+        .select()
+        .from(booking)
+        .where(and(eq(booking.id, args.bookingId), eq(booking.operatorId, args.operatorId)))
+        .for('no key update')
+        .limit(1);
+      await sp.execute(sql`select set_config('statement_timeout', ${prior.v}, true)`);
+      return row;
+    });
+  } catch (err) {
+    // 57014: this statement's own bound ran out; 55P03: a lock timeout the role or caller set.
+    const code = pgErrorOf(err)?.code;
+    if (code !== '57014' && code !== '55P03') throw err;
+    throw await claimInProgress(tx, args);
+  }
+}
+
+/**
+ * The refusal for a booking another claim holds right now: by name, so the
+ * person at the till knows to wait or walk over, rather than a timeout.
+ * Nothing about that claim is known to have finished, so the booking is
+ * neither redeemed nor refused here — the next try reads how it ended.
+ */
+async function claimInProgress(exec: Exec, args: RedeemBookingArgs): Promise<AppError> {
+  const [row] = await exec
+    .select({ reference: booking.reference })
+    .from(booking)
+    .where(and(eq(booking.id, args.bookingId), eq(booking.operatorId, args.operatorId)))
+    .limit(1);
+  // The earliest press still running on this booking is the one that took the
+  // lock first; a press left open by a stopped process is long past the window.
+  const [press] = await exec
+    .select({ stationName: station.name })
+    .from(kioskSession)
+    .innerJoin(station, eq(station.id, kioskSession.stationId))
+    .where(
+      and(
+        eq(kioskSession.bookingId, args.bookingId),
+        eq(kioskSession.operatorId, args.operatorId),
+        isNull(kioskSession.outcome),
+        isNotNull(kioskSession.actionId),
+        gt(kioskSession.startedAt, new Date(Date.now() - CLAIM_PRESS_WINDOW_MS)),
+      ),
+    )
+    .orderBy(asc(kioskSession.startedAt))
+    .limit(1);
+  const reference = row?.reference ?? 'This booking';
+  return errors.conflict(
+    'BOOKING_REDEMPTION_IN_PROGRESS',
+    press
+      ? `${reference} is being redeemed right now at ${press.stationName} — its wristbands are printing. Nothing was issued here: try again in a moment.`
+      : `${reference} is being redeemed right now at another counter. Nothing was issued here: try again in a moment.`,
+    { reference: row?.reference ?? null, stationName: press?.stationName ?? null },
+  );
 }
 
 /**
  * Redeem a booking once.
  *
  * Two things make "once" true rather than likely: the row is taken `FOR
- * UPDATE`, so a second request on another connection waits and then reads the
+ * UPDATE` (`FOR NO KEY UPDATE` with a bounded wait, `claimWaitMs`, SCRUM-504),
+ * so a second request on another connection waits and then reads the
  * redeemed row rather than the paid one it started from; and the update itself
  * still carries `status = 'paid'` in its predicate, so if that lock is ever
  * lost — a future caller that reads the row some other way — the write applies
@@ -617,12 +722,15 @@ export interface RedeemBookingArgs {
  * gate.
  */
 export async function redeemBooking(tx: Tx, args: RedeemBookingArgs): Promise<BookingRow> {
-  const [row] = await tx
-    .select()
-    .from(booking)
-    .where(and(eq(booking.id, args.bookingId), eq(booking.operatorId, args.operatorId)))
-    .for('update')
-    .limit(1);
+  const [row] =
+    args.claimWaitMs !== undefined
+      ? [await lockForClaim(tx, args, args.claimWaitMs)]
+      : await tx
+          .select()
+          .from(booking)
+          .where(and(eq(booking.id, args.bookingId), eq(booking.operatorId, args.operatorId)))
+          .for('update')
+          .limit(1);
   if (!row) throw errors.notFound('Booking not found');
   if (row.status === REDEEMED_STATUS) throw await alreadyRedeemed(tx, row);
   if (row.status !== REDEEMABLE_STATUS) {

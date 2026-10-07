@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   band,
   booking,
@@ -28,7 +28,13 @@ import {
   type KioskSessionStartRequest,
   type KioskState,
 } from '@oto/shared';
-import type { PrintNowOptions, PrintNowOutcome, PrintRequest } from '@oto/box-agent';
+import {
+  PRINT_CALLED_OFF,
+  type PrintJobOutcome,
+  type PrintNowOptions,
+  type PrintNowOutcome,
+  type PrintRequest,
+} from '@oto/box-agent';
 import type { FastifyBaseLogger } from 'fastify';
 import { AppError } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
@@ -45,7 +51,7 @@ import {
   type RedemptionView,
 } from './bookings';
 import { buildPrintDocument } from './sale-printing';
-import { withTx, type OpContext } from './tx';
+import { withTx, type OpContext, type Tx } from './tx';
 import { grantsOfSale } from './wallet';
 
 /**
@@ -81,6 +87,16 @@ import { grantsOfSale } from './wallet';
  *      a box that is not reachable rolls the whole of it back: no claim, no
  *      sale, no band, no grant. The booking stays paid and unredeemed, the
  *      session is `failed` with the reason, and the till can redeem it.
+ *
+ *      SCRUM-504 — THE HOLD WHILE IT PRINTS. A real label printer may take
+ *      seconds a band, and the pool ends a connection that sits idle in a
+ *      transaction for thirty. So the open transaction is touched while the
+ *      set prints (`KIOSK_PRINT_KEEPALIVE_MS`), and the set is held to a
+ *      budget below that window (`KIOSK_PRINT_BUDGET_MS`): whichever gives
+ *      first ends the print as a `failed` session with the paper that came out
+ *      counted, never as a dead connection and a 500. The receipt and the
+ *      credit voucher print BEFORE the bands, so a fault on plain paper costs
+ *      no gate credential; a fault anywhere still calls the whole set off.
  *
  *   3. NO PERSON. The actor is the kiosk's paired credential, carrying
  *      `pos:kiosk:redeem` (a device scope no role holds), and the sale names
@@ -217,7 +233,8 @@ class KioskStop extends Error {
 
   constructor(
     readonly reason: string,
-    readonly stage: 'lookup' | 'claim' | 'print',
+    /** `commit`: every job came out, and what failed was writing the redemption down after it (SCRUM-504). */
+    readonly stage: 'lookup' | 'claim' | 'print' | 'commit',
     readonly detail: Record<string, unknown> = {},
     readonly bookingId: string | null = null,
   ) {
@@ -245,6 +262,8 @@ export interface KioskContext {
   now?: () => Date;
   /** Tests only: a printer to use instead of the kiosk box's own. */
   printer?: KioskPrinter | null;
+  /** Tests only: the print's keep-alive and budget, scaled down with a test's own idle window. */
+  printLimits?: Partial<KioskPrintLimits>;
 }
 
 function opCtxOf(ctx: KioskContext, device: KioskDeviceAuth): OpContext {
@@ -485,6 +504,7 @@ async function answerOf(db: Db, row: SessionRow, replay: boolean): Promise<Kiosk
     bands: bands
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
       .map((b) => ({ kind: b.kind, shortCode: bandShortCode(b.code) })),
+    calledOffBands: calledOffBandsOf(row),
     walletCreditSatang: grants.reduce((sum, g) => sum + g.creditSatang, 0),
     // A guest is sent to the desk for every ending but a whole issue.
     desk: { required: outcome !== 'issued', supervisedChildren },
@@ -492,10 +512,183 @@ async function answerOf(db: Db, row: SessionRow, replay: boolean): Promise<Kiosk
   };
 }
 
+/**
+ * SCRUM-504 — wristbands that came out for a set the kiosk then called off:
+ * read from a `failed` session's detail (`bandsPrinted`, and one more when a
+ * band may still have been printing as the kiosk stopped waiting). Nothing was
+ * committed, so the gate refuses every one of them; the guest and the desk are
+ * told to collect them. Zero on every other ending.
+ */
+export function calledOffBandsOf(row: Pick<SessionRow, 'outcome' | 'detail'>): number {
+  if (row.outcome !== 'failed') return 0;
+  const detail = (row.detail ?? {}) as { bandsPrinted?: unknown; bandMayBeOut?: unknown };
+  const printed = typeof detail.bandsPrinted === 'number' && detail.bandsPrinted > 0 ? detail.bandsPrinted : 0;
+  return printed + (detail.bandMayBeOut === true ? 1 : 0);
+}
+
+// --- The print, with the redemption held open (SCRUM-504) --------------------------
+
+/**
+ * The pool ends a connection left idle inside a transaction for thirty
+ * seconds (`idle_in_transaction_session_timeout`, `packages/db` `getDb`), and
+ * one label job alone may take fifteen (`CHANNEL_TIMEOUTS.jobCompleteMs`). The
+ * redemption's transaction is open, and otherwise idle, for the whole print.
+ */
+export interface KioskPrintLimits {
+  /** How often the open transaction is touched (`select 1`) while the set prints. Well inside the window. */
+  keepaliveMs: number;
+  /**
+   * The longest the kiosk waits on a set with its redemption open. Below the
+   * window, so that even with no keep-alive at all the redemption is rolled
+   * back by the kiosk, not ended by the database: the set is called off (no
+   * further job starts), the kiosk stops waiting, and the bands that came out
+   * are counted. A set this long is one the desk issues instead.
+   */
+  budgetMs: number;
+}
+
+export const KIOSK_PRINT_KEEPALIVE_MS = 5_000;
+export const KIOSK_PRINT_BUDGET_MS = 25_000;
+
+const PRINT_LIMITS: KioskPrintLimits = { keepaliveMs: KIOSK_PRINT_KEEPALIVE_MS, budgetMs: KIOSK_PRINT_BUDGET_MS };
+
+/** What came of the print, as far as the kiosk waited for it. */
+interface HeldPrint {
+  /** The printer's own answer; null when the kiosk stopped waiting before it came. */
+  paper: PrintNowOutcome | null;
+  /** Why the kiosk stopped the print from its side, if it did: the budget ran out, or the hold was lost. */
+  stopped: 'budget' | 'hold' | null;
+}
+
+/**
+ * Print the set with the redemption's transaction held open: touched every
+ * `keepaliveMs` so the database does not end it, and given up after
+ * `budgetMs` so the kiosk ends it first if nothing else does. A keep-alive
+ * that fails means the hold is gone — the set is called off at once, since
+ * nothing printed after it could be committed.
+ *
+ * `out` is filled as each job comes out (`PrintNowOptions.onPrinted`), so a
+ * kiosk that stops waiting still knows what is in the tray.
+ */
+async function printHoldingTheRedemption(
+  tx: Tx,
+  printer: KioskPrinter,
+  requests: readonly PrintRequest[],
+  out: PrintJobOutcome[],
+  limits: KioskPrintLimits,
+  log: FastifyBaseLogger | undefined,
+): Promise<HeldPrint> {
+  const controller = new AbortController();
+  let stopped: HeldPrint['stopped'] = null;
+  let wake!: () => void;
+  const interrupted = new Promise<null>((resolve) => {
+    wake = () => resolve(null);
+  });
+  const stop = (why: 'budget' | 'hold') => {
+    if (stopped) return;
+    stopped = why;
+    controller.abort();
+    wake();
+  };
+  let touching: Promise<void> = Promise.resolve();
+  const keepalive = setInterval(() => {
+    touching = touching
+      .then(() => tx.execute(sql`select 1`))
+      .then(
+        () => undefined,
+        (err: unknown) => {
+          log?.warn({ err }, 'the kiosk redemption lost its hold on the database while it printed');
+          stop('hold');
+        },
+      );
+  }, limits.keepaliveMs);
+  const budget = setTimeout(() => stop('budget'), limits.budgetMs);
+
+  // Counted only while the kiosk waits: a band that comes out after it stopped
+  // waiting is the one `bandMayBeOut` already stands for.
+  const printing = Promise.resolve().then(() =>
+    printer.printNow(requests, {
+      signal: controller.signal,
+      onPrinted: (o) => {
+        if (!stopped) out.push(o);
+      },
+    }),
+  );
+  let paper: PrintNowOutcome | null;
+  try {
+    paper = await Promise.race([printing, interrupted]);
+  } finally {
+    clearInterval(keepalive);
+    clearTimeout(budget);
+    // A keep-alive in flight lands before the transaction is used again.
+    await touching;
+  }
+  if (!paper) {
+    // The set goes on to the end of the job in hand; say what it did, when it does.
+    printing.then(
+      (late) =>
+        log?.warn(
+          { printed: late.printed, complete: late.complete, fault: late.fault?.errorCode ?? null },
+          'a kiosk set the redemption stopped waiting for has answered',
+        ),
+      (err: unknown) => log?.warn({ err }, 'a kiosk set the redemption stopped waiting for failed'),
+    );
+  }
+  const why = stopped as HeldPrint['stopped'];
+  // Every job was out before the budget was noticed: the set is whole after all.
+  if (!paper && why === 'budget' && out.length === requests.length) {
+    return { paper: { complete: true, printed: out.length, outcomes: [...out], fault: null }, stopped: null };
+  }
+  // A keep-alive that failed as the last job came out: the hold is gone all the same.
+  return { paper, stopped: why === 'hold' ? 'hold' : paper ? null : why };
+}
+
+/**
+ * Whether an error is the database connection going away (ended by the
+ * server, the network, or a pool that closed it) rather than a refusal.
+ * Drizzle wraps the driver's error, so the whole `cause` chain is read.
+ */
+function connectionLost(err: unknown): boolean {
+  const raw = pgErrorOf(err)?.code;
+  const code = typeof raw === 'string' ? raw : '';
+  if (code.startsWith('08') || ['57P01', '57P02', '57P03', '25P03'].includes(code)) return true;
+  let current: unknown = err;
+  for (let depth = 0; depth < 5 && current; depth += 1) {
+    const message = current instanceof Error ? current.message : typeof current === 'string' ? current : '';
+    if (/connection (terminated|ended|closed|lost)|terminating connection|Client has encountered a connection error|Client was closed/i.test(message)) {
+      return true;
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 // --- The redemption ---------------------------------------------------------------
 
-/** Wristbands first: the hand-over is the bands, and a fault on them should cost no other paper. */
+/**
+ * Wristbands LAST (SCRUM-504): the receipt and the credit voucher go first,
+ * so a fault on plain paper calls the set off before any gate credential has
+ * come out of the printer. A fault on the bands still calls the whole set off.
+ */
 const BAND_KINDS: ReadonlySet<string> = new Set(['kids_wristband', 'adult_wristband']);
+
+/** What a print had put out when it stopped, for the session and the device run. */
+interface PaperOut {
+  requests: readonly PrintRequest[];
+  bandJobIds: ReadonlySet<string>;
+  /** Every job the printer said came out, in order. */
+  out: PrintJobOutcome[];
+  /** The kiosk stopped waiting before the printer answered: the next job may be coming out. */
+  unanswered: boolean;
+}
+
+function countOut(paper: PaperOut) {
+  const printed = paper.out.length;
+  const bandsPrinted = paper.out.filter((o) => paper.bandJobIds.has(o.id)).length;
+  const next = paper.requests[printed];
+  const bandMayBeOut = paper.unanswered && !!next && paper.bandJobIds.has(next.id);
+  return { printed, bandsPrinted, ...(bandMayBeOut ? { bandMayBeOut: true } : {}), jobs: paper.requests.length };
+}
 
 /**
  * Redeem one scanned booking at a kiosk: refuse it, send it to the desk, or
@@ -503,8 +696,11 @@ const BAND_KINDS: ReadonlySet<string> = new Set(['kids_wristband', 'adult_wristb
  *
  * Every ending is a 200 with the session's outcome: a refusal and a printer
  * fault are what happened at the kiosk, not errors in the request. A fault the
- * platform did not expect ends the session `failed` (`KIOSK_INTERNAL_ERROR`)
- * and is thrown, so it is a 500 and a log line as well.
+ * platform did not expect BEFORE the print began ends the session `failed`
+ * (`KIOSK_INTERNAL_ERROR`) and is thrown, so it is a 500 and a log line as
+ * well. Once the print has begun, paper may be in the tray, so every ending is
+ * a `failed` session that counts it — a lost connection included (SCRUM-504)
+ * — answered as a 200 and logged; never a 500 at the guest.
  */
 export async function redeemAtKiosk(
   db: Db,
@@ -540,6 +736,18 @@ export async function redeemAtKiosk(
   let found: BookingRow | null = null;
   /** S2-20 K2 — what the print did, set where it happened and written down once the redemption ends. */
   let printRun: KioskPrintRun | null = null;
+  /**
+   * SCRUM-504 — the print as the endings read it, kept outside the
+   * transaction. `sheet` is set once the first printer is asked: from then on,
+   * paper may be in the tray. `stop` is the print's own ending: when the
+   * connection has gone, the rollback fails and its error is what the
+   * transaction throws, but the ending is still this one.
+   */
+  const track: { sheet: PaperOut | null; stop: KioskStop | null } = { sheet: null, stop: null };
+  const stopPrint = (stop: KioskStop): KioskStop => {
+    track.stop = stop;
+    return stop;
+  };
   try {
     // 1. WHICH BOOKING — the whole signed QR, checked against the signature the
     // park stored when it was paid; anything else opens nothing.
@@ -585,12 +793,20 @@ export async function redeemAtKiosk(
     const printer = ctx.printer !== undefined ? ctx.printer : await kioskPrinterOf(db, st.boxId);
     if (!printer || !st.boxId) {
       // The kiosk's print, called off before it began: still the device's run (S2-20 K2).
-      printRun = { startedAt: new Date(), finishedAt: new Date(), jobs: 0, printed: 0, complete: false,
-        errorCode: KIOSK_REASONS.boxOffline, deviceId: null };
+      printRun = { startedAt: new Date(), finishedAt: new Date(), jobs: 0, printed: 0, bandsPrinted: 0,
+        complete: false, errorCode: KIOSK_REASONS.boxOffline, deviceId: null };
       throw new KioskStop(KIOSK_REASONS.boxOffline, 'lookup', {}, found.id);
     }
     const boxId = st.boxId;
     const bookingId = found.id;
+
+    // The press names its booking before it takes the lock (SCRUM-504): a till
+    // or another kiosk kept waiting behind this redemption's print is told
+    // where the booking is being redeemed (`redeemBooking`'s bounded wait).
+    await db
+      .update(kioskSession)
+      .set({ bookingId })
+      .where(and(eq(kioskSession.id, session.id), isNull(kioskSession.outcome)));
 
     // 4. ISSUE, THEN PRINT, THEN COMMIT — one transaction.
     const ended = await withTx(db, opCtxOf(ctx, device), 'kiosk.redeem', async (tx) => {
@@ -631,11 +847,11 @@ export async function redeemAtKiosk(
       if (bandJobs.some((j) => j.status !== 'queued')) {
         throw new KioskStop(KIOSK_REASONS.noBandPrinter, 'print', {}, bookingId);
       }
-      // Bands first; then the rest that has a printer here (a receipt, a credit
-      // voucher). A job this kiosk has no printer for was written `skipped`.
+      // The plain paper first (a receipt, a credit voucher), the bands last
+      // (SCRUM-504). A job this kiosk has no printer for was written `skipped`.
       const toPrint = [
-        ...printing.jobs.filter((j) => j.status === 'queued' && BAND_KINDS.has(j.kind)),
         ...printing.jobs.filter((j) => j.status === 'queued' && !BAND_KINDS.has(j.kind)),
+        ...printing.jobs.filter((j) => j.status === 'queued' && BAND_KINDS.has(j.kind)),
       ];
       const requests: PrintRequest[] = [];
       for (const job of toPrint) {
@@ -652,32 +868,63 @@ export async function redeemAtKiosk(
           templateVersion: document.templateVersion,
         });
       }
-      const printStartedAt = new Date();
-      let paper: PrintNowOutcome;
-      try {
-        paper = await printer.printNow(requests);
-      } catch (err) {
-        printRun = { startedAt: printStartedAt, finishedAt: new Date(), jobs: requests.length, printed: 0,
-          complete: false, errorCode: 'PRINT_FAILED', deviceId: null };
-        throw err;
-      }
-      printRun = {
-        startedAt: printStartedAt,
-        finishedAt: new Date(),
-        jobs: requests.length,
-        printed: paper.printed,
-        complete: paper.complete,
-        errorCode: paper.complete ? null : (paper.fault?.errorCode ?? 'PRINT_FAILED'),
-        deviceId: paper.fault?.deviceId ?? null,
+      const sheet: PaperOut = {
+        requests,
+        bandJobIds: new Set(toPrint.filter((j) => BAND_KINDS.has(j.kind)).map((j) => j.id)),
+        out: [],
+        unanswered: false,
       };
-      if (!paper.complete) {
-        throw new KioskStop(
-          paper.fault?.errorCode ?? 'PRINT_FAILED',
-          'print',
-          { printed: paper.printed, deviceId: paper.fault?.deviceId ?? null, jobs: requests.length },
-          bookingId,
+      // From here on, any ending counts the paper (SCRUM-504).
+      track.sheet = sheet;
+      const printStartedAt = new Date();
+      const runOf = (errorCode: string | null, deviceId: string | null): KioskPrintRun => {
+        const counted = countOut(sheet);
+        return {
+          startedAt: printStartedAt,
+          finishedAt: new Date(),
+          jobs: requests.length,
+          printed: counted.printed,
+          bandsPrinted: counted.bandsPrinted,
+          complete: errorCode === null,
+          errorCode,
+          deviceId,
+        };
+      };
+      let held: HeldPrint;
+      try {
+        held = await printHoldingTheRedemption(
+          tx,
+          printer,
+          requests,
+          sheet.out,
+          { ...PRINT_LIMITS, ...ctx.printLimits },
+          ctx.log,
         );
+      } catch (err) {
+        // The box's own print call threw: the paper counted so far is all the kiosk knows of.
+        ctx.log?.error({ err, sessionId: session.id }, 'the kiosk print failed unexpectedly');
+        sheet.unanswered = true;
+        printRun = runOf('PRINT_FAILED', null);
+        throw stopPrint(new KioskStop('PRINT_FAILED', 'print', countOut(sheet), bookingId));
       }
+      if (held.stopped || !held.paper) {
+        // The kiosk stopped the print: the budget ran out, or the hold on the database was lost.
+        sheet.unanswered = !held.paper;
+        const reason = held.stopped === 'hold' ? KIOSK_REASONS.printHoldLost : KIOSK_REASONS.printTimeout;
+        if (held.paper) sheet.out.splice(0, sheet.out.length, ...held.paper.outcomes.filter((o) => o.status === 'printed'));
+        printRun = runOf(reason, null);
+        throw stopPrint(new KioskStop(reason, 'print', countOut(sheet), bookingId));
+      }
+      const paper = held.paper;
+      // The printer's answer is the record of what came out.
+      sheet.out.splice(0, sheet.out.length, ...paper.outcomes.filter((o) => o.status === 'printed'));
+      if (!paper.complete) {
+        const code = paper.fault?.errorCode === PRINT_CALLED_OFF ? KIOSK_REASONS.printTimeout : (paper.fault?.errorCode ?? 'PRINT_FAILED');
+        const deviceId = paper.fault?.deviceId ?? null;
+        printRun = runOf(code, deviceId);
+        throw stopPrint(new KioskStop(code, 'print', { ...countOut(sheet), deviceId }, bookingId));
+      }
+      printRun = runOf(null, null);
       const printedAt = new Date();
       for (const outcome of paper.outcomes.filter((o) => o.status === 'printed')) {
         await tx
@@ -707,6 +954,7 @@ export async function redeemAtKiosk(
         stage: 'print',
         supervisedChildren,
         printed: paper.printed,
+        bandsPrinted: countOut(sheet).bandsPrinted,
         jobs: requests.length,
         walletGrants: done.grants.length,
       };
@@ -776,17 +1024,40 @@ export async function redeemAtKiosk(
     await recordKioskPrintRun(db, ctx, device, session, input.actionId, printRun, true);
     return answerOf(db, ended, false);
   } catch (err) {
-    const stop =
-      err instanceof KioskStop
-        ? err
-        : new KioskStop(KIOSK_REASONS.internal, 'claim', {}, found?.id ?? null);
-    if (!(err instanceof KioskStop)) {
+    const sheet = track.sheet;
+    let stop: KioskStop;
+    if (err instanceof KioskStop) stop = err;
+    else if (track.stop) {
+      // The print's own ending; the error is the rollback after it, on a connection already gone.
+      stop = track.stop;
+      ctx.log?.warn({ err, sessionId: session.id, reason: stop.reason }, 'the kiosk redemption could not roll back; nothing was committed');
+    } else if (sheet) {
+      /**
+       * SCRUM-504 — something the platform did not expect, after the print
+       * began: the connection ended under the commit, or a write after the
+       * paper failed. Nothing was committed, and paper may be in the tray, so
+       * the session counts it and the guest is answered, not given a 500.
+       */
+      const complete = sheet.out.length === sheet.requests.length;
+      stop = new KioskStop(
+        connectionLost(err) ? KIOSK_REASONS.printHoldLost : KIOSK_REASONS.internal,
+        complete ? 'commit' : 'print',
+        countOut(sheet),
+        found?.id ?? null,
+      );
+      ctx.log?.error(
+        { err, sessionId: session.id, reason: stop.reason, printed: sheet.out.length },
+        'a kiosk redemption failed after its print began; ended failed with the paper counted',
+      );
+    } else {
+      stop = new KioskStop(KIOSK_REASONS.internal, 'claim', {}, found?.id ?? null);
       ctx.log?.error({ err, sessionId: session.id }, 'a kiosk redemption failed unexpectedly; nothing was issued');
     }
     // After the rollback, on the pool: the record of the attempt outlives it (services/ops.ts).
     await recordKioskPrintRun(db, ctx, device, session, input.actionId, printRun, false);
     const ended = await endFailed(db, ctx, device, session, stop, now);
-    if (!(err instanceof KioskStop)) throw err;
+    // Before the print began, a fault nobody expected is a 500 as well; after it, never.
+    if (!(err instanceof KioskStop) && !track.stop && !sheet) throw err;
     return answerOf(db, ended, false);
   }
 }
@@ -799,8 +1070,14 @@ interface KioskPrintRun {
   finishedAt: Date;
   jobs: number;
   printed: number;
+  /** SCRUM-504 — how many of `printed` were wristbands (they print last). */
+  bandsPrinted: number;
   complete: boolean;
-  /** The printer's own code (`PRINTER_UNREACHABLE`, `PRINTER_PAPER_OUT`, …), or `KIOSK_BOX_OFFLINE`. */
+  /**
+   * The printer's own code (`PRINTER_UNREACHABLE`, `PRINTER_PAPER_OUT`, …),
+   * `KIOSK_BOX_OFFLINE`, or the kiosk's own stop (`KIOSK_PRINT_TIMEOUT`,
+   * `KIOSK_PRINT_HOLD_LOST`, SCRUM-504).
+   */
   errorCode: string | null;
   deviceId: string | null;
 }
@@ -817,8 +1094,9 @@ export const KIOSK_PRINT_RUN = 'device:kiosk.print';
  * register.
  *
  * `committed` says whether the redemption around the paper stood: a print that
- * came out whole under a redemption that then failed (the K1 pinned defect,
- * SCRUM-504) is still a print that worked, and the detail says the rest.
+ * came out whole under a redemption that then failed (its connection lost
+ * under the commit, SCRUM-504) is still a print that worked, and the detail
+ * says the rest — `printed` and `bandsPrinted` are the paper in the tray.
  *
  * Never thrown from: the guest's answer does not wait on the record of it.
  */
@@ -846,6 +1124,7 @@ async function recordKioskPrintRun(
         sessionId: session.id,
         jobs: run.jobs,
         printed: run.printed,
+        bandsPrinted: run.bandsPrinted,
         deviceId: run.deviceId,
         boxId: device.station.boxId,
         committed,

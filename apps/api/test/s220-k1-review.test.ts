@@ -18,6 +18,7 @@ import {
   device,
   deviceCredential,
   kioskSession,
+  opsRun,
   paymentAttempt,
   printJob,
   sale,
@@ -62,7 +63,13 @@ import { currentBandKey } from '../src/services/bands';
 import { attachInProcessBox, detachInProcessBox, issueClaimCode } from '../src/services/box';
 import { bookingQrOf } from '../src/services/booking-payment';
 import { redeemBookingAtCounter } from '../src/services/booking-redemption';
-import { authenticateKiosk, redeemAtKiosk, type KioskDeviceAuth, type KioskPrinter } from '../src/services/kiosk';
+import {
+  KIOSK_PRINT_RUN,
+  authenticateKiosk,
+  redeemAtKiosk,
+  type KioskDeviceAuth,
+  type KioskPrinter,
+} from '../src/services/kiosk';
 
 /**
  * S2-20 K1 (SCRUM-217) — INDEPENDENT REVIEW of the kiosk redemption core.
@@ -254,6 +261,67 @@ function faultWhen(kiosk: Kiosk, deviceId: string, fault: PrinterFault, when: ()
     (sim as { connect: typeof sim.connect }).connect = original;
     sim.clearFaults();
   };
+}
+
+/**
+ * SCRUM-504 — a band printer that takes `ms` to put each band out, as a real
+ * label printer may: the session a job is written into closes (and the label
+ * counts as out) only after the delay; a status check, which writes nothing,
+ * is as quick as ever. With `hold`, the given band waits on a gate instead.
+ */
+function slowLabels(kiosk: Kiosk, ms: number, hold?: { band: number; gate: Promise<void> }): () => void {
+  const sim = kiosk.agent!.printing()!.simulator(kiosk.bandPrinterId!)!;
+  const original = sim.connect;
+  let bands = 0;
+  (sim as { connect: typeof sim.connect }).connect = () => {
+    const channel = original.call(sim);
+    let wrote = false;
+    return {
+      write: (bytes: Uint8Array) => {
+        wrote = true;
+        return channel.write(bytes);
+      },
+      query: (bytes: Uint8Array, expect: number, timeoutMs: number) => channel.query(bytes, expect, timeoutMs),
+      close: async () => {
+        if (wrote) {
+          bands += 1;
+          if (hold && bands === hold.band) await hold.gate;
+          else await new Promise((r) => setTimeout(r, ms));
+        }
+        return channel.close();
+      },
+    };
+  };
+  return () => {
+    (sim as { connect: typeof sim.connect }).connect = original;
+  };
+}
+
+/**
+ * The production pool's own settings, with its idle-in-transaction window
+ * scaled down so a test can outlast it: a separate pool, named, so a test can
+ * find its connection in `pg_stat_activity`.
+ */
+function prodLikeDb(idleInTransactionMs: number, applicationName: string): { db: Db; end: () => Promise<void> } {
+  const url = (ctx.db as unknown as { $client: { options: { connectionString: string } } }).$client.options
+    .connectionString;
+  const pool = new pg.Pool({
+    connectionString: url,
+    idle_in_transaction_session_timeout: idleInTransactionMs,
+    statement_timeout: 10_000,
+    application_name: applicationName,
+  } as pg.PoolConfig);
+  pool.on('error', () => undefined);
+  // Postgres ends the idle connection itself; its client must not take the test process down with it.
+  pool.on('connect', (client) => client.on('error', () => undefined));
+  return { db: drizzle(pool, { schema }) as unknown as Db, end: () => pool.end().catch(() => undefined) };
+}
+
+async function printRunOf(actionId: string) {
+  return ctx.db
+    .select()
+    .from(opsRun)
+    .where(and(eq(opsRun.name, KIOSK_PRINT_RUN), eq(opsRun.actionId, actionId)));
 }
 
 /** Everything a redemption would write, counted platform-wide. */
@@ -537,9 +605,12 @@ describe('attack 1 — a print fault after the bands were issued', () => {
     expect(scan.statusCode, JSON.stringify(scan.body)).toBe(200);
     expect(scan.body).toMatchObject({ outcome: 'failed', reason: 'PRINTER_UNREACHABLE', bands: [], walletCreditSatang: 0 });
     expect(scan.body.desk.required).toBe(true);
-    // One band physically came out before the fault; nothing else did.
+    // SCRUM-504 — the plain paper went first (a receipt, any credit voucher),
+    // then one band came out before the fault: the guest is told of that band.
+    const plainPaper = seqOf(A, A.receiptPrinterId) - startReceipt;
+    expect(plainPaper, 'the receipt printed before any band').toBeGreaterThanOrEqual(1);
     expect(seqOf(A, A.bandPrinterId) - startBand).toBe(1);
-    expect(seqOf(A, A.receiptPrinterId) - startReceipt).toBe(0);
+    expect(scan.body.calledOffBands).toBe(1);
 
     // The money and the band: not one row of the redemption survived.
     expect(await bookingStatus(paid.id)).toBe('paid');
@@ -549,11 +620,17 @@ describe('attack 1 — a print fault after the bands were issued', () => {
     const [session] = await ctx.db.select().from(kioskSession).where(eq(kioskSession.id, scan.body.sessionId));
     expect(session).toMatchObject({ outcome: 'failed', reason: 'PRINTER_UNREACHABLE', saleId: null, bookingId: paid.id });
     expect(session!.bandIds).toEqual([]);
-    expect(session!.detail).toMatchObject({ stage: 'print', printed: 1, deviceId: A.bandPrinterId });
+    expect(session!.detail).toMatchObject({
+      stage: 'print',
+      printed: plainPaper + 1,
+      bandsPrinted: 1,
+      jobs: plainPaper + 3,
+      deviceId: A.bandPrinterId,
+    });
     const rows = await kioskAudit(scan.body.sessionId);
     expect(rows.map((r) => r.action)).toEqual(['kiosk.abort']);
     expectWhere(rows[0]!, A, scan.actionId);
-    expect(rows[0]!.after).toMatchObject({ reason: 'PRINTER_UNREACHABLE', stage: 'print', printed: 1 });
+    expect(rows[0]!.after).toMatchObject({ reason: 'PRINTER_UNREACHABLE', stage: 'print', printed: plainPaper + 1, bandsPrinted: 1 });
 
     // Nothing was queued, so nothing prints late when the printer comes back.
     await A.agent!.printing()!.jobs.tick();
@@ -574,23 +651,33 @@ describe('attack 1 — a print fault after the bands were issued', () => {
     expect(again.body).toMatchObject({ outcome: 'failed', reason: 'BOOKING_ALREADY_REDEEMED' });
   });
 
-  it('the receipt printer failing after every band came out: still nothing redeemed, and the session counts the bands out', async () => {
+  /**
+   * SCRUM-504 — the plain paper prints FIRST. This case once let every band
+   * out and then failed on the receipt: three gate credentials in the tray for
+   * a redemption that was called off. The receipt printer failing now stops
+   * the set before a band is sent.
+   */
+  it('the receipt printer failing as it prints: no band has come out, nothing redeemed, the guest told nothing was used', async () => {
     const paid = await bookAndPay(2, 1);
     const before = await footprint(paid.id);
     const startBand = seqOf(A, A.bandPrinterId);
-    const undo = faultWhen(A, A.receiptPrinterId!, 'unreachable', () => seqOf(A, A.bandPrinterId) - startBand >= 3);
+    const startReceipt = seqOf(A, A.receiptPrinterId);
+    // Its check passes (the first session), and its first job meets an unplugged printer.
+    let opens = 0;
+    const undo = faultWhen(A, A.receiptPrinterId!, 'unreachable', () => (opens += 1) >= 2);
     let scan: Awaited<ReturnType<typeof press>>;
     try {
       scan = await press(A, paid.qr);
     } finally {
       undo();
     }
-    expect(scan.body).toMatchObject({ outcome: 'failed', reason: 'PRINTER_UNREACHABLE' });
-    expect(seqOf(A, A.bandPrinterId) - startBand, 'all three bands came out before the receipt failed').toBe(3);
+    expect(scan.body).toMatchObject({ outcome: 'failed', reason: 'PRINTER_UNREACHABLE', calledOffBands: 0 });
+    expect(seqOf(A, A.bandPrinterId) - startBand, 'no band came out: the bands print last').toBe(0);
+    expect(seqOf(A, A.receiptPrinterId) - startReceipt).toBe(0);
     expect(await bookingStatus(paid.id)).toBe('paid');
     expect(await footprint(paid.id)).toEqual(before);
     const [session] = await ctx.db.select().from(kioskSession).where(eq(kioskSession.id, scan.body.sessionId));
-    expect(session!.detail).toMatchObject({ stage: 'print', printed: 3, deviceId: A.receiptPrinterId });
+    expect(session!.detail).toMatchObject({ stage: 'print', printed: 0, bandsPrinted: 0, deviceId: A.receiptPrinterId });
 
     // With the printer back, a new press at the kiosk issues it — once.
     const retried = await press(A, paid.qr);
@@ -599,64 +686,156 @@ describe('attack 1 — a print fault after the bands were issued', () => {
   });
 
   /**
-   * REVIEW DEFECT, PINNED AS IT STANDS — this test describes today's wrong
-   * behaviour on purpose, so the suite is green while the defect stands and
-   * goes red the day it is fixed. Whoever fixes it rewrites the last block to
-   * the right ending: the redemption commits, or it ends `failed` with the
-   * bands that came out counted (`detail.printed`), as a 200 answer.
+   * REVIEW DEFECT — FIXED (SCRUM-504). This case was pinned as it stood: the
+   * redemption's transaction sat open and idle for the whole of `printNow`;
+   * production's pool (`packages/db` `getDb`) ends a connection idle in a
+   * transaction after thirty seconds, and one label job alone may take
+   * fifteen (`CHANNEL_TIMEOUTS.jobCompleteMs`). A large family's set
+   * outlasted the window: Postgres ended the connection after the bands were
+   * out, the press threw (a 500 at the kiosk) and the session said
+   * `KIOSK_INTERNAL_ERROR` at stage `claim` with no count of the bands in the
+   * tray.
    *
-   * The redemption's transaction sits open and idle for the whole of
-   * `printNow`. Production's pool (`packages/db` `getDb`) sets
-   * `idle_in_transaction_session_timeout: 30_000`, and one label job alone may
-   * take up to `CHANNEL_TIMEOUTS.jobCompleteMs` (15 s): a large family's set,
-   * or one slow job, outlasts the window. Postgres ends the connection after
-   * the bands are out; nothing commits (the money is safe, and the gate refuses
-   * a band it has no row for), but the press throws (a 500 at the kiosk) and
-   * the session says `KIOSK_INTERNAL_ERROR` at stage `claim` with no `printed`
-   * count, so nothing tells staff a whole set of bands is in the tray. Every
-   * retry of a set that size does the same. The window is scaled down here
-   * (1.5 s against a 2.5 s print) so the test is quick; the mechanism is the
-   * production one.
+   * Now the print is held to a budget below the window: the set is called off
+   * (no further band starts), the kiosk stops waiting and rolls the
+   * redemption back itself — before the database would end the connection —
+   * and the guest is answered `failed` with the bands that came out counted.
+   * Here with no keep-alive at all, so the budget is the only bound: the
+   * window is scaled to 2.5 s, the budget to 1.5 s, a band to 1 s.
    */
-  it('REVIEW DEFECT (pinned): a print set longer than the idle-in-transaction window loses the bands it printed', async () => {
+  it('a print set longer than its budget is called off below the idle-in-transaction window, the bands that came out counted', async () => {
     const paid = await bookAndPay(2, 1);
-    const url = (ctx.db as unknown as { $client: { options: { connectionString: string } } }).$client.options
-      .connectionString;
-    const pool = new pg.Pool({ connectionString: url, idle_in_transaction_session_timeout: 1_500 } as pg.PoolConfig);
-    pool.on('error', () => undefined);
-    // Postgres ends the idle connection itself; its client must not take the test process down with it.
-    pool.on('connect', (client) => client.on('error', () => undefined));
-    const prodLike = drizzle(pool, { schema }) as unknown as Db;
-    const real = A.agent!.printing()!;
-    const slow: KioskPrinter = {
-      async printNow(requests, options) {
-        await new Promise((r) => setTimeout(r, 2_500));
-        return real.printNow(requests, options);
-      },
-    };
+    const prodLike = prodLikeDb(2_500, 'kiosk-504-budget');
     const before = await footprint(paid.id);
     const startBand = seqOf(A, A.bandPrinterId);
     const device = await deviceOf(A);
     const actionId = newId();
-    let thrown: unknown = null;
+    const undo = slowLabels(A, 1_000);
+    let answer: KioskRedeemAnswer;
     try {
-      await redeemAtKiosk(prodLike, { requestId: newId(), printer: slow }, device, { actionId, qr: paid.qr });
-    } catch (err) {
-      thrown = err;
+      answer = await redeemAtKiosk(
+        prodLike.db,
+        { requestId: newId(), printLimits: { keepaliveMs: 60_000, budgetMs: 1_500 } },
+        device,
+        { actionId, qr: paid.qr },
+      );
+      // The band in hand when the set was called off still comes out; no band after it starts.
+      await new Promise((r) => setTimeout(r, 1_500));
     } finally {
-      await pool.end().catch(() => undefined);
+      undo();
+      await prodLike.end();
     }
-    // What holds: nothing of the redemption was kept.
+    // A structured ending, never a thrown 500: the paper is counted for the guest.
+    expect(answer).toMatchObject({ outcome: 'failed', reason: KIOSK_REASONS.printTimeout, bands: [], walletCreditSatang: 0 });
+    expect(answer.desk.required).toBe(true);
+    // Band one came out within the budget, band two was printing when the kiosk stopped waiting.
+    expect(answer.calledOffBands).toBe(2);
+    expect(seqOf(A, A.bandPrinterId) - startBand, 'the third band never started').toBe(2);
+    // Nothing of the redemption was kept.
     expect(await bookingStatus(paid.id)).toBe('paid');
     expect(await footprint(paid.id)).toEqual(before);
-    // What is wrong: three bands came out, the press threw, and the session does not count them.
-    expect(seqOf(A, A.bandPrinterId) - startBand).toBe(3);
-    // The connection Postgres ended, surfacing as the transaction's failed rollback — not a kiosk ending.
-    expect(thrown).toBeInstanceOf(Error);
-    expect(String((thrown as Error).message)).toMatch(/rollback|connection|terminat/i);
+    // The session and the device run both count what came out.
     const [session] = await ctx.db.select().from(kioskSession).where(eq(kioskSession.actionId, actionId));
-    expect(session).toMatchObject({ outcome: 'failed', reason: KIOSK_REASONS.internal, saleId: null });
-    expect(session!.detail).toEqual({ stage: 'claim' });
+    expect(session).toMatchObject({ outcome: 'failed', reason: KIOSK_REASONS.printTimeout, saleId: null, bookingId: paid.id });
+    const detail = session!.detail as { stage: string; printed: number; bandsPrinted: number; bandMayBeOut?: boolean; jobs: number };
+    expect(detail).toMatchObject({ stage: 'print', bandsPrinted: 1, bandMayBeOut: true });
+    expect(detail.printed).toBe(detail.jobs - 3 + 1);
+    const [run] = await printRunOf(actionId);
+    expect(run).toMatchObject({ kind: 'device', outcome: 'failed', errorCode: KIOSK_REASONS.printTimeout });
+    expect(run!.detail).toMatchObject({ committed: false, printed: detail.printed, bandsPrinted: 1, jobs: detail.jobs });
+    const rows = await kioskAudit(session!.id);
+    expect(rows.map((r) => r.action)).toEqual(['kiosk.abort']);
+    expect(rows[0]!.after).toMatchObject({ reason: KIOSK_REASONS.printTimeout, stage: 'print', bandsPrinted: 1 });
+    // And the booking is still the family's: the next press, on a quick printer, issues it once.
+    const retried = await press(A, paid.qr);
+    expect(retried.body.outcome).toBe('issued');
+    expect(await ctx.db.select().from(sale).where(eq(sale.bookingId, paid.id))).toHaveLength(1);
+  }, 30_000);
+
+  it('the keep-alive holds the redemption open past the idle-in-transaction window: a slow set commits whole', async () => {
+    const paid = await bookAndPay(2, 1);
+    // Three bands at 0.8 s each against a 1.5 s window: the transaction would be ended mid-set without it.
+    const prodLike = prodLikeDb(1_500, 'kiosk-504-keepalive');
+    const startBand = seqOf(A, A.bandPrinterId);
+    const device = await deviceOf(A);
+    const actionId = newId();
+    const undo = slowLabels(A, 800);
+    let answer: KioskRedeemAnswer;
+    try {
+      answer = await redeemAtKiosk(
+        prodLike.db,
+        { requestId: newId(), printLimits: { keepaliveMs: 300, budgetMs: 20_000 } },
+        device,
+        { actionId, qr: paid.qr },
+      );
+    } finally {
+      undo();
+      await prodLike.end();
+    }
+    expect(answer).toMatchObject({ outcome: 'issued', reason: null, calledOffBands: 0 });
+    expect(answer.bands).toHaveLength(3);
+    expect(seqOf(A, A.bandPrinterId) - startBand).toBe(3);
+    expect(await bookingStatus(paid.id)).toBe('redeemed');
+    const sales = await ctx.db.select().from(sale).where(eq(sale.bookingId, paid.id));
+    expect(sales).toHaveLength(1);
+    const [session] = await ctx.db.select().from(kioskSession).where(eq(kioskSession.actionId, actionId));
+    expect(session).toMatchObject({ outcome: 'issued', saleId: sales[0]!.id });
+    expect(session!.detail).toMatchObject({ stage: 'print', bandsPrinted: 3 });
+    const [run] = await printRunOf(actionId);
+    expect(run).toMatchObject({ outcome: 'ok' });
+    expect(run!.detail).toMatchObject({ committed: true, bandsPrinted: 3 });
+  }, 30_000);
+
+  it('the hold lost mid-set (the connection ended): called off at once, counted, answered — not a 500', async () => {
+    const paid = await bookAndPay(2, 1);
+    const prodLike = prodLikeDb(30_000, 'kiosk-504-hold');
+    const before = await footprint(paid.id);
+    const startBand = seqOf(A, A.bandPrinterId);
+    const device = await deviceOf(A);
+    const actionId = newId();
+    let openGate!: () => void;
+    const gate = new Promise<void>((resolve) => (openGate = resolve));
+    // The second band sticks in the printer until the test lets it out.
+    const undo = slowLabels(A, 0, { band: 2, gate });
+    let answer: KioskRedeemAnswer;
+    try {
+      const pending = redeemAtKiosk(
+        prodLike.db,
+        { requestId: newId(), printLimits: { keepaliveMs: 200, budgetMs: 20_000 } },
+        device,
+        { actionId, qr: paid.qr },
+      );
+      for (let i = 0; i < 200 && seqOf(A, A.bandPrinterId) - startBand < 1; i += 1) {
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      expect(seqOf(A, A.bandPrinterId) - startBand, 'the first band came out').toBe(1);
+      // The database ends the redemption's connection while the second band is in the printer.
+      const killed = await ctx.db.execute(
+        sql`select pg_terminate_backend(pid) as ok from pg_stat_activity where application_name = 'kiosk-504-hold' and xact_start is not null`,
+      );
+      expect(killed.rows.length, 'the redemption held its transaction open while it printed').toBe(1);
+      answer = await pending;
+    } finally {
+      openGate();
+      // The band in the printer comes out once it is let go; nothing after it starts.
+      for (let i = 0; i < 80 && seqOf(A, A.bandPrinterId) - startBand < 2; i += 1) {
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      await new Promise((r) => setTimeout(r, 200));
+      undo();
+      await prodLike.end();
+    }
+    expect(answer).toMatchObject({ outcome: 'failed', reason: KIOSK_REASONS.printHoldLost, bands: [] });
+    expect(answer.calledOffBands, 'one band out, one in the printer when the hold went').toBe(2);
+    expect(seqOf(A, A.bandPrinterId) - startBand, 'the third band never started').toBe(2);
+    expect(await bookingStatus(paid.id)).toBe('paid');
+    expect(await footprint(paid.id)).toEqual(before);
+    const [session] = await ctx.db.select().from(kioskSession).where(eq(kioskSession.actionId, actionId));
+    expect(session).toMatchObject({ outcome: 'failed', reason: KIOSK_REASONS.printHoldLost, saleId: null });
+    expect(session!.detail).toMatchObject({ stage: 'print', bandsPrinted: 1, bandMayBeOut: true });
+    const [run] = await printRunOf(actionId);
+    expect(run).toMatchObject({ outcome: 'failed', errorCode: KIOSK_REASONS.printHoldLost });
+    expect(run!.detail).toMatchObject({ committed: false, bandsPrinted: 1 });
   }, 30_000);
 });
 
@@ -820,6 +999,49 @@ describe('attack 2 — idempotency', () => {
     expect(sales).toHaveLength(1);
     expect(sales[0]).toMatchObject({ stationId: B.stationId, deviceCredentialId: B.credentialId });
   });
+
+  /**
+   * SCRUM-504 — the wait above is bounded. A kiosk holds the booking's row
+   * while its bands print, which on a real label printer may run past the
+   * statement timeout: a till or a second kiosk waiting behind it used to
+   * hang there and get a 500. They are now told, within the bound, that the
+   * booking is being redeemed right now, and where.
+   */
+  it('a till and a second kiosk kept waiting behind a long print are told where it is being redeemed, not timed out', async () => {
+    const paid = await bookAndPay(2, 1);
+    const devA = await deviceOf(A);
+    const devB = await deviceOf(B);
+    const gated = gatedPrinter(A.agent!.printing()!);
+    const first = redeemAtKiosk(ctx.db, { requestId: newId(), printer: gated.printer }, devA, { actionId: newId(), qr: paid.qr });
+    await gated.reached;
+    const started = Date.now();
+    let till: Awaited<ReturnType<typeof ctx.app.inject>>;
+    let second: KioskRedeemAnswer;
+    try {
+      [till, second] = await Promise.all([
+        ctx.app.inject({ method: 'POST', url: `/bookings/${paid.id}/redeem`, headers: { cookie: reception }, payload: {} }),
+        redeemAtKiosk(ctx.db, { requestId: newId(), printer: okPrinter(B.bandPrinterId!) }, devB, {
+          actionId: newId(),
+          qr: paid.qr,
+        }),
+      ]);
+    } finally {
+      gated.release(true);
+    }
+    expect(Date.now() - started, 'answered within the bound, well inside the statement timeout').toBeLessThan(9_000);
+    expect(till.statusCode, till.body).toBe(409);
+    expect(till.json().error.code).toBe('BOOKING_REDEMPTION_IN_PROGRESS');
+    expect(till.json().error.message).toContain('Review Kiosk A');
+    expect(second).toMatchObject({ outcome: 'failed', reason: 'BOOKING_REDEMPTION_IN_PROGRESS', bands: [], calledOffBands: 0 });
+    // The first kiosk finishes it, once; asked again, the till reads it as redeemed.
+    expect((await first).outcome).toBe('issued');
+    const sales = await ctx.db.select().from(sale).where(eq(sale.bookingId, paid.id));
+    expect(sales).toHaveLength(1);
+    expect(sales[0]).toMatchObject({ stationId: A.stationId });
+    const again = await ctx.app.inject({ method: 'POST', url: `/bookings/${paid.id}/redeem`, headers: { cookie: reception }, payload: {} });
+    expect(again.statusCode).toBe(409);
+    expect(again.json().error.code).toBe('BOOKING_ALREADY_REDEEMED');
+  }, 30_000);
 });
 
 describe('attack 3 — the credential', () => {
