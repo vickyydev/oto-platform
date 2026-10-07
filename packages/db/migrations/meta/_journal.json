@@ -526,6 +526,13 @@
       "when": 1791392217987,
       "tag": "0074_benefit_daily",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1791392367730,
+      "tag": "0075_event_booking_pass",
+      "breakpoints": true
     }
   ]
 }

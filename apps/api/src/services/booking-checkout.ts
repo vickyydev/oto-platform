@@ -32,8 +32,11 @@ import {
   parseDayStart,
   priceCartLine,
   resolveRate,
+  type BookingEventPass,
+  type BookingEventPassInput,
   type CartAddOn,
   type PricingContext,
+  type StoredBookingEventPass,
   type TaxConfigShape,
   type TaxableCategory,
   type TicketCartLine,
@@ -54,6 +57,7 @@ import {
   requestHostedPayment,
 } from './payments/gateway';
 import { bookingView, readBookings, type BookingView } from './bookings';
+import { assertPassIdsFree, bookingEventPassesOf, quoteEventPasses } from './booking-event-passes';
 import { withTx, type Exec, type OpContext } from './tx';
 
 /**
@@ -143,6 +147,12 @@ export interface BookingQuote {
   holidayName: string | null;
   tier: string;
   lines: QuotedLine[];
+  /**
+   * S2-20 E5 — the event passes, priced at the visit date's rate (consistency
+   * #21). Each carries the child as the site captured them, for the OTO App's
+   * write-back when the booking is paid.
+   */
+  eventPasses: StoredBookingEventPass[];
   subtotalSatang: number;
   serviceChargeSatang: number;
   taxSatang: number;
@@ -285,7 +295,7 @@ export async function publicBasketInputs(
 export async function quoteBooking(
   exec: Exec,
   br: BranchRow,
-  input: { tier: string; visitDate: string; lines: BookingLineInput[] },
+  input: { tier: string; visitDate: string; lines: BookingLineInput[]; eventPasses?: BookingEventPassInput[] },
 ): Promise<BookingQuote> {
   const holidays = await exec
     .select()
@@ -305,7 +315,7 @@ export async function quoteBooking(
   if (!cfg) throw errors.badRequest('This park has no tax configuration yet, so nothing can be priced online');
 
   const wanted = input.lines.filter((line) => line.kids > 0 || line.adults > 0);
-  if (wanted.length === 0) throw errors.badRequest('Nothing selected');
+  if (wanted.length === 0 && (input.eventPasses?.length ?? 0) === 0) throw errors.badRequest('Nothing selected');
 
   const addOnIds = new Set<string>();
   const addOnCodes = new Set<string>([SOCKS_CODE]);
@@ -429,6 +439,18 @@ export async function quoteBooking(
       quoted[i]!.lineTotalSatang = cartLines[i]!.lineTotal;
     }
   }
+  // S2-20 E5 — the event passes: each at its event's flat price for the visit
+  // date's rate, totalled as the till's pass line is (one kid, `tickets`).
+  const passes = await quoteEventPasses(exec, br, {
+    tier: input.tier,
+    visitDate: input.visitDate,
+    mode,
+    passes: input.eventPasses ?? [],
+  });
+  for (const line of passes.cartLines) {
+    line.lineTotal = priceCartLine(line, ctx);
+    cartLines.push(line);
+  }
   const totals = computeTicketCartTotals(cartLines, [], [], cfg.config as TaxConfigShape, ctx);
   return {
     visitDate: input.visitDate,
@@ -437,6 +459,7 @@ export async function quoteBooking(
     holidayName: rate.overrideName ?? null,
     tier: input.tier,
     lines: quoted,
+    eventPasses: passes.passes,
     subtotalSatang: totals.subtotal,
     serviceChargeSatang: totals.serviceChargeTotal,
     taxSatang: totals.taxTotal,
@@ -456,6 +479,8 @@ export interface CreateBookingInput {
   tier: string;
   visitDate?: string;
   lines: BookingLineInput[];
+  /** S2-20 E5 — event passes, each with the attendee id the site minted and the child. */
+  eventPasses?: BookingEventPassInput[];
   contactChannel?: 'whatsapp' | 'telegram' | 'line';
   consentAck?: boolean;
   acknowledgedConfirmationIds?: string[];
@@ -476,6 +501,8 @@ export interface BookingAnswer {
   rateMode: 'weekday' | 'weekend';
   totalSatang: number;
   lines: Array<Record<string, unknown>>;
+  /** S2-20 E5 — the event passes as priced: no allergy, no phone. */
+  eventPasses: BookingEventPass[];
   status: string;
   expiresAt: string | null;
 }
@@ -493,6 +520,7 @@ export function storedBookingAnswer(row: BookingRow): BookingAnswer {
     rateMode: payload.rateMode === 'weekend' ? 'weekend' : 'weekday',
     totalSatang: row.totalSatang,
     lines: payload.lines ?? [],
+    eventPasses: bookingEventPassesOf(payload),
     status: row.status,
     expiresAt: row.expiresAt?.toISOString() ?? null,
   };
@@ -584,7 +612,15 @@ export async function createPublicBooking(
     throw errors.badRequest('Please accept the park confirmations before booking supervision.');
   }
   const acknowledged = consentConfig ? buildAcknowledgedConfirmations(consentConfig.policy, input.acknowledgedConfirmationIds ?? [], consentAt) : [];
-  const quote = await quoteBooking(db, br, { tier: input.tier, visitDate, lines: input.lines });
+  const quote = await quoteBooking(db, br, {
+    tier: input.tier,
+    visitDate,
+    lines: input.lines,
+    ...(input.eventPasses ? { eventPasses: input.eventPasses } : {}),
+  });
+  // S2-20 E5 — an attendee id the site minted that already names a child is
+  // refused now, before anything is written, never met at payment.
+  await assertPassIdsFree(db, quote.eventPasses);
   if (
     input.displayedTotalSatang !== undefined &&
     input.displayedTotalSatang !== quote.totalSatang
@@ -650,6 +686,8 @@ export async function createPublicBooking(
           contactChannel: input.contactChannel ?? 'whatsapp',
           locale: input.locale ?? 'en',
           lines: storedLines,
+          // S2-20 E5 — registered with the OTO App when the booking is paid.
+          ...(quote.eventPasses.length > 0 ? { eventPasses: quote.eventPasses } : {}),
           ...(supervised ? { consentRecordedAt: consentAt, acknowledgedConfirmations: acknowledged } : {}),
           clientSnapshot: input.clientSnapshot ?? null,
         },
@@ -694,6 +732,7 @@ export async function createPublicBooking(
         rateMode: quote.rateMode,
         kidsCount,
         adultsCount,
+        eventPasses: quote.eventPasses.length,
         expiresAt: expiresAt.toISOString(),
       },
       requestId: ctx.requestId,

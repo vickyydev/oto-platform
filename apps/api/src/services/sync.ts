@@ -58,6 +58,7 @@ import {
 import {
   BOOKING_REDEEMED_FACT,
   SYNC_QUARANTINE_REASONS,
+  BOOKING_EVENT_PASSES_ONLINE_ONLY,
   GATE_EVENT_TYPE,
   GateEventPayloadSchema,
   OfflineBookingRedeemedSchema,
@@ -892,7 +893,15 @@ export function bookingChange(
     reference: row.reference,
     bookingDate: row.bookingDate,
     // Older boxes refuse every status except paid: no ordinary bands for a supervised booking.
-    status: row.status === 'paid' && typeof bag?.registrationId === 'string' ? 'supervised_online_only' : row.status,
+    // S2-20 E5 — nor for one carrying event passes: their check-in reads the OTO
+    // App, and their money is filed with the tickets on one sale only the
+    // platform makes, so the box sends the family to a counter with the link up.
+    status:
+      row.status === 'paid' && typeof bag?.registrationId === 'string'
+        ? 'supervised_online_only'
+        : row.status === 'paid' && Array.isArray(bag?.eventPasses) && bag.eventPasses.length > 0
+          ? BOOKING_EVENT_PASSES_ONLINE_ONLY
+          : row.status,
     totalSatang: row.totalSatang,
     createdAt: row.createdAt.toISOString(),
     /** The lines, the tier, the name and phone, and the redemption once there is one. */

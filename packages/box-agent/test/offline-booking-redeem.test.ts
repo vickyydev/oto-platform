@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  BOOKING_EVENT_PASSES_NEED_INTERNET,
+  BOOKING_EVENT_PASSES_ONLINE_ONLY,
   BOX_BOOKING_REFUSALS,
   bandShortCode,
   mintBookingQr,
@@ -58,6 +60,8 @@ const PAID = '018f0000-0000-7000-8000-0000000b0001';
 const PENDING = '018f0000-0000-7000-8000-0000000b0002';
 const REDEEMED_ONLINE = '018f0000-0000-7000-8000-0000000b0003';
 const SUPERVISED = '018f0000-0000-7000-8000-0000000b0004';
+/** S2-20 E5 — a paid booking carrying event passes: redeemed with the link up only. */
+const WITH_PASSES = '018f0000-0000-7000-8000-0000000b0005';
 
 /** Two kids at ฿350 and two adults (one free, one at ฿150), two pairs of socks at ฿50: ฿950. */
 const TOTAL = 2 * 35000 + 15000 + 2 * 5000;
@@ -235,6 +239,7 @@ async function openRedeemBox(): Promise<RedeemBox> {
     bookingRow(PAID, 'OTO-PAID-0001', 'paid'),
     bookingRow(PENDING, 'OTO-PEND-0002', 'pending'),
     bookingRow(SUPERVISED, 'OTO-SUPV-0004', 'supervised_online_only'),
+    bookingRow(WITH_PASSES, 'OTO-PASS-0005', BOOKING_EVENT_PASSES_ONLINE_ONLY),
     bookingRow(REDEEMED_ONLINE, 'OTO-DONE-0003', 'redeemed', {
       redeemedAt: '2026-10-01T03:05:00.000Z',
       branchId: BRANCH_ID,
@@ -457,6 +462,14 @@ test('a cached pending booking is refused as not paid; an unknown one says see r
       assert.ok(err instanceof BridgeError);
       assert.equal(err.code, 'BOOKING_NEEDS_INTERNET');
       assert.match(err.message, /needs the internet/);
+      return true;
+    });
+    // S2-20 E5 — a booking carrying event passes: their check-in reads the OTO
+    // App and their money rides the platform's one redemption sale.
+    await assert.rejects(redeem(box, press({ bookingId: WITH_PASSES })), (err: unknown) => {
+      assert.ok(err instanceof BridgeError);
+      assert.equal(err.code, BOOKING_EVENT_PASSES_NEED_INTERNET.code);
+      assert.match(err.message, /event passes and needs the internet/);
       return true;
     });
     assert.equal((await facts(box)).length, 0, 'nothing sold, nothing queued');

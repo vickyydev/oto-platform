@@ -776,7 +776,8 @@ export const EventAttendeeLinkViewSchema = z.object({
   /** The OTO App's attendee once it answered — the same id, unless the app merged the child (its camp rule). */
   otoappAttendeeId: z.string().nullable(),
   merged: z.boolean(),
-  billing: z.enum(['sale', 'party_tab', 'free']),
+  /** S2-20 E5 — `booking`: a pass bought online, paid with the booking. */
+  billing: z.enum(['sale', 'party_tab', 'free', 'booking']),
   priceSatang: z.number().int(),
   attendanceDays: z.array(IsoDate),
   parentAttending: z.boolean(),

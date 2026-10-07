@@ -75,6 +75,7 @@ import { audit } from './services/audit';
 import type { FileStorage } from './services/files';
 import { buildSmsSender, type SmsSender } from './services/sms';
 import { buildOtoAppDirectory, type OtoAppDirectory } from './services/otoapp-directory';
+import { configureBookingPassDirectory } from './services/booking-event-passes';
 
 /** The Fastify instance with the Zod type provider — route schemas infer req.body/params. */
 export type App = FastifyInstance<
@@ -194,6 +195,10 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   );
   // S2-20 E2 — replaced in tests by a stub, as `sms` is.
   app.decorate('otoAppDirectory', buildOtoAppDirectory(opts.env, log));
+  // S2-20 E5 — a booked event pass is written back after the gateway's
+  // settlement commits, which has no request to reach the app from: read
+  // the decoration when it is needed, so a test's stub is the one used.
+  configureBookingPassDirectory(() => app.otoAppDirectory);
 
   await app.register(cookie);
   // First, so its onSend and onResponse hooks see every request — including

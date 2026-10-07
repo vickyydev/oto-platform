@@ -439,6 +439,18 @@ export interface CartInput {
     eventId: string;
   } | null;
   /**
+   * S2-20 E5 — THE EVENT PASSES AN ONLINE BOOKING PAID FOR, on its redemption
+   * sale beside its tickets (the booking's money is filed once, whole).
+   *
+   * Set ONLY by `services/booking-redemption.ts`, from the passes the booking
+   * stored when the booking site's quote priced them; the sales route's body
+   * schema does not carry it. Each is priced exactly as `eventPass` is — one
+   * kid at the flat price, under `tickets`, no band and no credit — at the
+   * figure the family paid (a flat pair), and only on a sale that names its
+   * booking.
+   */
+  bookingPasses?: ReadonlyArray<NonNullable<CartInput['eventPass']>> | null;
+  /**
    * S2-21 round 3 — A COLLEAGUE'S STAFF BENEFIT on this F&B order: the QR the
    * till scanned and the application id it minted for the scan. Priced on
    * every quote (nothing claimed), applied by the commit (the quota claimed in
@@ -1782,13 +1794,16 @@ export async function priceCart(
    */
   const pass = input.eventPass ?? null;
   if (pass) {
-    if ((input.lines?.length ?? 0) > 0 || (input.items?.length ?? 0) > 0) {
+    if ((input.lines?.length ?? 0) > 0 || (input.items?.length ?? 0) > 0 || (input.bookingPasses?.length ?? 0) > 0) {
       throw errors.badRequest('An event pass is sold on a sale of its own');
     }
+  }
+  const passes = [...(pass ? [pass] : []), ...(input.bookingPasses ?? [])];
+  for (const p of passes) {
     const passLine: TicketCartLine = {
-      id: pass.lineId,
-      packageId: pass.serviceId,
-      package: { prices: { [resolvedTier.code]: pass.price } },
+      id: p.lineId,
+      packageId: p.serviceId,
+      package: { prices: { [resolvedTier.code]: p.price } },
       tier: resolvedTier.code,
       kids: 1,
       adults: 0,
@@ -2103,20 +2118,23 @@ export async function priceCart(
     voucherLines,
   );
   // S2-20 E2 — the pass's unit carries the prototype's ticket name, its svc id
-  // and its "One-time" duration; it has no package, so it owes no band.
-  const lines = pass
-    ? built.map((line) =>
-        line.cartLineId === pass.lineId
+  // and its "One-time" duration; it has no package, so it owes no band. E5 —
+  // the same for each pass a redeemed booking paid for.
+  const passByLine = new Map(passes.map((p) => [p.lineId, p]));
+  const lines = passByLine.size > 0
+    ? built.map((line) => {
+        const p = line.cartLineId ? passByLine.get(line.cartLineId) : undefined;
+        return p
           ? {
               ...line,
-              componentKey: pass.serviceId,
-              label: pass.label,
+              componentKey: p.serviceId,
+              label: p.label,
               stayHours: 0,
               stayDurationLabel: EVENT_PASS_DURATION_LABEL,
-              payload: { ...(line.payload ?? {}), eventPass: { eventId: pass.eventId, attendeeId: pass.lineId } },
+              payload: { ...(line.payload ?? {}), eventPass: { eventId: p.eventId, attendeeId: p.lineId } },
             }
-          : line,
-      )
+          : line;
+      })
     : built;
 
   return {
@@ -3036,10 +3054,14 @@ export interface CommitResult {
  * together): a free-item line is one unit, kids, adults, socks, each add-on, a
  * fee and prepaid food each make one, and every F&B or shop line is one.
  */
-export function storedCartLineIds(input: Pick<CartInput, 'lines' | 'items' | 'eventPass'>): Set<string> {
+export function storedCartLineIds(
+  input: Pick<CartInput, 'lines' | 'items' | 'eventPass' | 'bookingPasses'>,
+): Set<string> {
   const ids = new Set<string>();
-  // S2-20 E2 — an event pass is one kid unit under its own line id.
+  // S2-20 E2 — an event pass is one kid unit under its own line id (E5: each
+  // of a redeemed booking's passes too).
   if (input.eventPass) ids.add(input.eventPass.lineId.toLowerCase());
+  for (const p of input.bookingPasses ?? []) ids.add(p.lineId.toLowerCase());
   for (const line of input.lines ?? []) {
     const pricesIntoAUnit =
       Boolean(line.promoItem) ||
@@ -3324,6 +3346,10 @@ export async function commitSale(
     );
   }
   await assertSaleActor(tx, actor, st, input);
+  // S2-20 E5 — a booking's event passes ride its redemption sale, and only that one.
+  if ((input.bookingPasses?.length ?? 0) > 0 && !input.bookingId) {
+    throw errors.badRequest('A booked event pass is filed on its booking’s redemption sale');
+  }
   if (input.bookingId && (st.capabilities ?? []).length > 0 && !(st.capabilities ?? []).includes('tickets')) {
     throw errors.conflict(
       'SALE_CHANNEL_MISMATCH',

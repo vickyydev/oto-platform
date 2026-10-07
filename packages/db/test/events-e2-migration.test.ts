@@ -90,6 +90,8 @@ describe('the attendee link migration — walk-ups and event passes', () => {
         'otoapp_attendee_id', 'otoapp_event_id', 'parent_attending', 'price_snapshot_satang', 'sale_id',
         'sale_line_id', 'source', 'station_id', 'sync_attempts', 'sync_error', 'sync_state', 'synced_at',
         'updated_at', 'writeback', 'action_id',
+        // S2-20 E5 — the booking that bought a pass online (events-e5-migration.test.ts).
+        'booking_id',
       ].sort(),
     );
     expect(await cols('event_drop_in_pricing')).toEqual(

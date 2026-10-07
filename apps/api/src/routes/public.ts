@@ -8,7 +8,11 @@ import {
   tier,
 } from '@oto/db';
 import {
+  BOOKING_EVENT_PASSES_MAX,
+  BookingEventPassInputSchema,
+  BookingEventPassSchema,
   BookingSupervisionInputSchema,
+  PublicEventPassesAnswerSchema,
   PublicSupervisionConfigSchema,
   TaxConfigSchema,
   TaxableCategorySchema,
@@ -35,6 +39,7 @@ import {
   publicBookingStatus,
 } from '../services/booking-checkout';
 import { supervisionConfigOf } from '../services/checkin';
+import { eventPassesFor } from '../services/events';
 import { opCtx } from '../services/tx';
 
 /**
@@ -244,6 +249,60 @@ export async function publicRoutes(app: App): Promise<void> {
     },
   );
 
+  /**
+   * S2-20 E5 — THE EVENT PASSES THE BOOKING SITE OFFERS (consistency #21):
+   * `getActiveEventPasses` for the visit date — a camp running that day and a
+   * one-off event that day or later, never a party, and only one with a price
+   * — read through the same service the till's pass cards are
+   * (`eventPassesFor`). What a stranger may read and no more: the title, the
+   * day and times, where, and the flat price; no roster, nobody's name.
+   */
+  app.get(
+    '/public/branches/:code/event-passes',
+    {
+      config: { ...ipLimited, public: true },
+      schema: {
+        description:
+          "Event passes on sale online for a visit date (the branch's trading day when none is given): camps running that day and one-off events that day or later, at their flat weekday / weekend price. No party, no roster.",
+        params: z.object({ code: z.string() }),
+        querystring: z.object({ date: z.string().optional() }),
+        response: { 200: PublicEventPassesAnswerSchema },
+      },
+    },
+    async (req) => {
+      const br = await loadBranchByCode(req.params.code);
+      const date = req.query.date ?? bookingToday(br);
+      if (!isIsoDate(date)) throw errors.badRequest('date must be yyyy-mm-dd');
+      const answer = await eventPassesFor(app.db, {
+        operatorId: br.operatorId,
+        branchId: br.id,
+        date,
+        now: new Date(),
+      });
+      return {
+        branchCode: br.code,
+        date: answer.date,
+        passes: answer.passes.flatMap((p) =>
+          p.type !== 'party' && p.entryPrice
+            ? [
+                {
+                  id: p.id,
+                  type: p.type,
+                  title: p.title,
+                  startDate: p.startDate,
+                  endDate: p.endDate,
+                  startTime: p.startTime,
+                  endTime: p.endTime,
+                  location: p.location,
+                  entryPrice: p.entryPrice,
+                },
+              ]
+            : [],
+        ),
+      };
+    },
+  );
+
   app.get(
     '/public/member-tier',
     {
@@ -303,6 +362,8 @@ export async function publicRoutes(app: App): Promise<void> {
     rateMode: z.enum(['weekday', 'weekend']),
     totalSatang: z.number().int(),
     lines: z.array(z.record(z.string(), z.unknown())),
+    /** S2-20 E5 — the event passes, as the platform priced them. */
+    eventPasses: z.array(BookingEventPassSchema),
     /** `pending` until the gateway confirms the money. */
     status: z.string(),
     /** The end of the hold for payment. */
@@ -332,7 +393,14 @@ export async function publicRoutes(app: App): Promise<void> {
           parentName: z.string().min(1).max(120),
           tier: z.string(),
           visitDate: z.string().optional(),
-          lines: z.array(BookingLine).min(1).max(10),
+          /** Ticket lines; none when the booking is event passes alone (S2-20 E5). */
+          lines: z.array(BookingLine).max(10),
+          /**
+           * S2-20 E5 — event passes (consistency #21), each with the attendee
+           * id the site minted when the pass was added: priced here, at the
+           * visit date's rate, and registered with the OTO App once paid.
+           */
+          eventPasses: z.array(BookingEventPassInputSchema).max(BOOKING_EVENT_PASSES_MAX).optional(),
           consentAck: z.boolean().optional(),
           acknowledgedConfirmationIds: z.array(z.string().max(100)).max(100).optional(),
           contactChannel: z.enum(['whatsapp', 'telegram', 'line']).optional(),

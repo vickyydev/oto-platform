@@ -149,6 +149,12 @@ describe('route guards (S2-01b)', () => {
       /** The same browser return as the POST below, reached by a GET. Writes nothing. */
       'GET /public/bookings/return',
       'GET /public/branches/:code/catalog',
+      /**
+       * S2-20 E5 — the event passes the booking site offers for a visit date
+       * (consistency #21): a title, a day, its times, a place and a flat
+       * price. No roster, no party, nobody's name.
+       */
+      'GET /public/branches/:code/event-passes',
       'GET /public/member-tier',
       'GET /ready',
       /**

@@ -17,6 +17,7 @@ import { archivedAt, idPk, pos, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
 import { box, station } from './fleet';
 import { child, member } from './members';
+import { booking } from './future';
 import { band, sale, saleLine } from './sales';
 
 // --- Events, camps and parties: what the POS writes (schema `pos`) ----------
@@ -59,9 +60,14 @@ export type EventAttendeeSyncState = (typeof EVENT_ATTENDEE_SYNC_STATES)[number]
  *   - `sale`      — a paid camp or event pass: an ordinary sale at the till;
  *   - `party_tab` — a party walk-up: the party-guest price, owed on the party's
  *                   tab, with no door payment;
- *   - `free`      — an event whose entry price is ฿0: the attendee, no sale.
+ *   - `free`      — an event whose entry price is ฿0: the attendee, no sale;
+ *   - `booking`   — S2-20 E5: a pass bought online (mockApi.ts `createBooking`
+ *                   1085-1115), paid with the booking's one payment. It names
+ *                   the booking from its registration at payment, and the
+ *                   redemption sale that files the booking's money — the pass
+ *                   among it — once the booking is redeemed.
  */
-export const EVENT_ATTENDEE_BILLINGS = ['sale', 'party_tab', 'free'] as const;
+export const EVENT_ATTENDEE_BILLINGS = ['sale', 'party_tab', 'free', 'booking'] as const;
 export type EventAttendeeBilling = (typeof EVENT_ATTENDEE_BILLINGS)[number];
 
 /**
@@ -103,10 +109,16 @@ export const eventAttendeeLink = pos.table(
     childId: uuid('child_id').references(() => child.id, { onDelete: 'restrict' }),
     /** The member the till identified, when it did. */
     memberId: uuid('member_id').references(() => member.id, { onDelete: 'restrict' }),
-    /** The pass sale; null for a party walk-up and a free event. */
+    /**
+     * The pass sale; null for a party walk-up and a free event. For a pass
+     * bought online (`booking`), null until the booking is redeemed, then the
+     * redemption sale the pass's money was filed on.
+     */
     saleId: uuid('sale_id').references(() => sale.id, { onDelete: 'restrict' }),
     saleLineId: uuid('sale_line_id').references(() => saleLine.id, { onDelete: 'restrict' }),
     billing: text('billing').$type<EventAttendeeBilling>().notNull(),
+    /** S2-20 E5 — the online booking that bought the pass (`source = 'booking'`). */
+    bookingId: uuid('booking_id').references(() => booking.id, { onDelete: 'restrict' }),
     /**
      * What this child was charged, frozen: the pass's flat entry price, or the
      * party-guest price that went on the tab, at the rate mode of the day.
@@ -151,6 +163,7 @@ export const eventAttendeeLink = pos.table(
     index('event_attendee_link_account_idx').on(t.accountId),
     index('event_attendee_link_station_idx').on(t.stationId),
     index('event_attendee_link_box_idx').on(t.boxId),
+    index('event_attendee_link_booking_idx').on(t.bookingId),
     /** What still owes the OTO App a write. */
     index('event_attendee_link_unsynced_idx')
       .on(t.syncState, t.createdAt)
@@ -158,12 +171,21 @@ export const eventAttendeeLink = pos.table(
     check('event_attendee_link_type_check', sql`${t.eventType} in ('party','camp','event')`),
     check('event_attendee_link_source_check', sql`${t.source} in ('till','booking','kiosk','otoapp')`),
     check('event_attendee_link_sync_check', sql`${t.syncState} in ('synced','pending','failed')`),
-    check('event_attendee_link_billing_check', sql`${t.billing} in ('sale','party_tab','free')`),
+    check('event_attendee_link_billing_check', sql`${t.billing} in ('sale','party_tab','free','booking')`),
     check('event_attendee_link_price_check', sql`${t.priceSnapshotSatang} >= 0`),
-    /** A paid pass names its sale; nothing else does. */
+    /**
+     * A till's paid pass names its sale; a walk-up on a party's tab and a free
+     * event never do; a pass bought online names its redemption sale once the
+     * booking is redeemed (S2-20 E5).
+     */
     check(
       'event_attendee_link_sale_check',
-      sql`(${t.billing} = 'sale') = (${t.saleId} is not null)`,
+      sql`(${t.billing} <> 'sale' or ${t.saleId} is not null) and (${t.billing} not in ('party_tab','free') or ${t.saleId} is null)`,
+    ),
+    /** A pass bought online names the booking that paid for it. */
+    check(
+      'event_attendee_link_booking_check',
+      sql`${t.billing} <> 'booking' or ${t.bookingId} is not null`,
     ),
     /** Synced means the app answered with an attendee. */
     check(

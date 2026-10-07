@@ -92,6 +92,16 @@ export const KIOSK_REASONS = {
   /** Anything else the platform did not expect. */
   internal: 'KIOSK_INTERNAL_ERROR',
   /**
+   * S2-20 E5 — an event pass on the booking could not be checked in here
+   * (Q11): nothing was committed, and the till redeems the booking.
+   */
+  eventPassFailed: 'KIOSK_EVENT_PASS_FAILED',
+  /**
+   * S2-20 E5 — the booking was issued here, but one of its event passes the
+   * OTO App no longer has, or not for today: the desk sorts that child out.
+   */
+  eventPassAtDesk: 'KIOSK_EVENT_PASS_AT_DESK',
+  /**
    * S2-20 K2 — Q9: nobody touched the screen or scanned for
    * `KIOSK_IDLE_TIMEOUT_MS`, so the kiosk went back to its attract screen.
    */

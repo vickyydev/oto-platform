@@ -22,6 +22,7 @@ import {
 } from '../services/bookings';
 import { BOOKING_LEDGER_MAX, bookingLedger } from '../services/booking-checkout';
 import { redeemBookingAtCounter } from '../services/booking-redemption';
+import { sendBookingPassCheckins } from '../services/booking-event-passes';
 import { opCtx, withTx } from '../services/tx';
 
 /**
@@ -333,7 +334,8 @@ export async function bookingRoutes(app: App): Promise<void> {
         if (!stationId) throw errors.badRequest('That station is not at this booking’s branch');
       }
 
-      return withTx(app.db, opCtx(req), 'booking.redeem', async (tx) => {
+      const owed: { checkinIds: string[] } = { checkinIds: [] };
+      const answer = await withTx(app.db, opCtx(req), 'booking.redeem', async (tx) => {
         const done = await redeemBookingAtCounter(tx, {
           bookingId: found.id,
           operatorId: auth.operatorId,
@@ -345,6 +347,7 @@ export async function bookingRoutes(app: App): Promise<void> {
             await req.requirePermission('pos:booking:redeem', { branchId });
           },
         });
+        owed.checkinIds = done.eventPasses.checkinIds;
         // Read back inside the transaction that wrote it, so the answer carries
         // the redemption row — and its bands — this claim just made.
         return {
@@ -355,8 +358,20 @@ export async function bookingRoutes(app: App): Promise<void> {
           printing: done.printing,
           // S2-14a — the credit the booking's tickets earned, as a walk-in's answer carries it.
           grants: done.grants,
+          // S2-20 E5 — the booking's event passes, checked in now or said why not.
+          eventPasses: done.eventPasses.checkins,
         };
       });
+      // S2-20 E5 — the OTO App is told of the passes checked in, after the
+      // commit (E3's write-back): what fails waits on Failures, `pending`.
+      if (owed.checkinIds.length > 0) {
+        await sendBookingPassCheckins(
+          { db: app.db, directory: app.otoAppDirectory, log: req.log },
+          owed.checkinIds,
+          { requestId: req.id },
+        );
+      }
+      return answer;
     },
   );
 }

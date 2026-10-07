@@ -12,6 +12,7 @@ import {
 } from '@oto/shared';
 import { resolveBandKey, type Env } from '../env';
 import { registerPaidBookingChildren } from './booking-supervision';
+import { registerPaidBookingEventPasses, writeBackBookingPasses } from './booking-event-passes';
 import { autoSendRegistrationContact } from './checkin';
 import { audit } from './audit';
 import { raiseAlert } from './ops';
@@ -129,6 +130,10 @@ export async function confirmBookingPaid(
   const [paidAttempt] = await tx.select({ methodCode: paymentAttempt.methodCode }).from(paymentAttempt)
     .where(eq(paymentAttempt.id, input.attemptId)).limit(1);
   const payload = await registerPaidBookingChildren(tx, row, now, input.requestId ?? null);
+  // S2-20 E5 — the event passes the booking paid for, registered in this same
+  // transaction (the money and the registration commit together); written to
+  // the OTO App after the commit (`afterBookingPaid`).
+  await registerPaidBookingEventPasses(tx, row, payload, now, input.requestId ?? null);
 
   const [after] = await tx
     .update(booking)
@@ -232,6 +237,13 @@ export async function afterBookingPaid(
           buildSmsSender({ adapter: 'console' }, log as unknown as Logger));
       });
     } catch (err) { log.warn({ err, bookingId: row.id }, 'the registration contact could not be sent'); }
+  }
+  // S2-20 E5 — the passes registered with the payment, written to the OTO App
+  // under the ids the site minted (E2's directory pattern: a replay there).
+  try {
+    await writeBackBookingPasses(db, log, row.id);
+  } catch (err) {
+    log.warn({ err, bookingId: row.id }, 'the booked event passes could not be written back');
   }
   await sendBookingConfirmation(log, row);
 }

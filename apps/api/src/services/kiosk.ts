@@ -42,6 +42,7 @@ import { audit } from './audit';
 import { recordRun } from './ops';
 import { inProcessBox } from './box';
 import { redeemBookingAtCounter } from './booking-redemption';
+import { bookingPassDirectory, sendBookingPassCheckins, storedEventPassesOf } from './booking-event-passes';
 import {
   kioskPressedAtOf,
   linesOf,
@@ -837,6 +838,8 @@ export async function redeemAtKiosk(
    * transaction throws, but the ending is still this one.
    */
   const track: { sheet: PaperOut | null; stop: KioskStop | null } = { sheet: null, stop: null };
+  /** S2-20 E5 — the event check-ins the redemption made, written back to the OTO App once it commits. */
+  const owedCheckins: { ids: string[] } = { ids: [] };
   const stopPrint = (stop: KioskStop): KioskStop => {
     track.stop = stop;
     return stop;
@@ -873,12 +876,16 @@ export async function redeemAtKiosk(
       throw new KioskStop('BOOKING_NOT_REDEEMABLE', 'lookup', { status: found.status }, found.id);
     }
 
-    // 2. THE SUPERVISED SPLIT (R-80).
+    // 2. THE SUPERVISED SPLIT (R-80). S2-20 E5 — event passes are issued here
+    // as the till issues them (Q11), so a booking of passes alone is redeemed,
+    // and one whose tickets are all supervised still issues its passes.
     const lines = linesOf(found).filter((l) => l.packageId && (l.kids > 0 || l.adults > 0));
-    if (lines.length === 0) throw new KioskStop('BOOKING_NOTHING_TO_ISSUE', 'lookup', {}, found.id);
+    const passCount = storedEventPassesOf(found.payload).length;
+    if (lines.length === 0 && passCount === 0) throw new KioskStop('BOOKING_NOTHING_TO_ISSUE', 'lookup', {}, found.id);
     const supervised = lines.filter((l) => l.supervision);
     const supervisedChildren = supervised.reduce((sum, l) => sum + l.kids, 0);
-    if (supervised.length === lines.length) {
+    const owesTicketBands = lines.some((l) => !l.supervision);
+    if (lines.length > 0 && supervised.length === lines.length && passCount === 0) {
       const ended = await endHandedOffToDesk(db, ctx, device, session, found, supervisedChildren, now);
       return answerOf(db, ended, false);
     }
@@ -937,8 +944,20 @@ export async function redeemAtKiosk(
 
       const printing = done.printing;
       if (!printing || printing.failed) throw new KioskStop(KIOSK_REASONS.printRouting, 'print', {}, bookingId);
-      const bandJobs = printing.jobs.filter((j) => BAND_KINDS.has(j.kind));
-      if (done.bands.length === 0 || bandJobs.length < done.bands.length) {
+      // S2-20 E5 — the booking's event passes (Q11): a check-in that could
+      // not be made calls the whole redemption off, as a band that does not
+      // print does; the till redeems it, and says why.
+      const passes = done.eventPasses;
+      if (passes.checkins.some((c) => c.outcome === 'failed')) {
+        throw new KioskStop(KIOSK_REASONS.eventPassFailed, 'claim', {}, bookingId);
+      }
+      // Every band the redemption owes — the tickets' and each checked-in
+      // pass's kid and parent band — prints here, before anything commits.
+      const passBandJobs = passes.jobs.filter((j) => BAND_KINDS.has(j.kind));
+      const bandJobs = [...printing.jobs.filter((j) => BAND_KINDS.has(j.kind)), ...passBandJobs];
+      const allBands = [...done.bands, ...passes.bands];
+      const passWithoutBands = passes.checkins.some((c) => c.outcome === 'checked_in' && !c.checkin?.kidBand);
+      if ((owesTicketBands && done.bands.length === 0) || passWithoutBands || bandJobs.length < allBands.length) {
         throw new KioskStop(KIOSK_REASONS.bandsNotIssued, 'print', {}, bookingId);
       }
       if (bandJobs.some((j) => j.status !== 'queued')) {
@@ -989,15 +1008,20 @@ export async function redeemAtKiosk(
       };
       let held: HeldPrint;
       try {
-        held = await printHoldingTheRedemption(
-          tx,
-          printer,
-          requests,
-          sheet.out,
-          { ...PRINT_LIMITS, ...ctx.printLimits },
-          watch,
-          ctx.log,
-        );
+        // S2-20 E5 — a booking whose only passes are for a later day owes no
+        // band today: nothing to print, and the printer is not asked.
+        held =
+          requests.length === 0
+            ? { paper: { complete: true, printed: 0, outcomes: [], fault: null }, stopped: null }
+            : await printHoldingTheRedemption(
+                tx,
+                printer,
+                requests,
+                sheet.out,
+                { ...PRINT_LIMITS, ...ctx.printLimits },
+                watch,
+                ctx.log,
+              );
       } catch (err) {
         // The box's own print call threw: the paper counted so far is all the kiosk knows of.
         ctx.log?.error({ err, sessionId: session.id }, 'the kiosk print failed unexpectedly');
@@ -1026,7 +1050,7 @@ export async function redeemAtKiosk(
         printRun = runOf(code, deviceId);
         throw stopPrint(new KioskStop(code, 'print', { ...countOut(sheet), deviceId }, bookingId));
       }
-      printRun = runOf(null, null);
+      printRun = requests.length > 0 ? runOf(null, null) : null;
       const printedAt = new Date();
       for (const outcome of paper.outcomes.filter((o) => o.status === 'printed')) {
         await tx
@@ -1043,15 +1067,19 @@ export async function redeemAtKiosk(
       }
 
       /**
-       * Q11 (the owner's default: yes) — redeeming a booking at the kiosk
-       * also checks in the event passes it carries, as the till's redemption
-       * does (`Till.tsx` 437-462). Not on main: online event passes, and the
-       * check-in they need, arrive with the events rounds (E3, E5). This is
-       * where that call goes, inside this transaction and after the paper.
+       * Q11 (the owner's default: yes) — redeeming a booking at the kiosk also
+       * checked in the event passes it carries, as the till's redemption does
+       * (`Till.tsx` 437-462): `redeemBookingAtCounter` made the check-ins in
+       * this transaction, and their bands were in the set that just printed.
+       * A pass the OTO App no longer has for this child, or not for today,
+       * is the desk's to sort out — never a false "all done".
        */
-
-      const outcome: KioskSessionOutcome = supervised.length > 0 ? 'handed_off' : 'issued';
-      const bandIds = done.bands.map((b) => b.id);
+      const passesForDesk = passes.checkins.filter(
+        (c) => c.outcome === 'not_found' || c.outcome === 'not_registered',
+      ).length;
+      const outcome: KioskSessionOutcome = supervised.length > 0 || passesForDesk > 0 ? 'handed_off' : 'issued';
+      const handOffReason = supervised.length > 0 ? KIOSK_REASONS.supervisedRest : KIOSK_REASONS.eventPassAtDesk;
+      const bandIds = allBands.map((b) => b.id);
       const detail = {
         stage: 'print',
         supervisedChildren,
@@ -1061,12 +1089,17 @@ export async function redeemAtKiosk(
         // SCRUM-504 — the receipt and vouchers queued to the box, printing after this commits.
         paperQueued: paperQueued.length,
         walletGrants: done.grants.length,
+        // S2-20 E5 — the booking's event passes: checked in here, and left for the desk.
+        eventPasses: passes.checkins.length,
+        eventPassesCheckedIn: passes.checkinIds.length,
+        eventPassesForDesk: passesForDesk,
       };
+      owedCheckins.ids = passes.checkinIds;
       const [row] = await tx
         .update(kioskSession)
         .set({
           outcome,
-          reason: outcome === 'handed_off' ? KIOSK_REASONS.supervisedRest : null,
+          reason: outcome === 'handed_off' ? handOffReason : null,
           endedAt: printedAt,
           bookingId,
           saleId: done.sale.id,
@@ -1096,6 +1129,8 @@ export async function redeemAtKiosk(
           printJobIds: requests.map((r) => r.id),
           queuedPrintJobIds: paperQueued.map((j) => j.id),
           walletIds: done.grants.map((g) => g.walletId),
+          // S2-20 E5 — the event passes checked in by this redemption (Q11).
+          eventCheckinIds: passes.checkinIds,
         },
         requestId: ctx.requestId,
         actionId: input.actionId,
@@ -1113,11 +1148,12 @@ export async function redeemAtKiosk(
           after: {
             ...where,
             outcome,
-            reason: KIOSK_REASONS.supervisedRest,
+            reason: handOffReason,
             bookingId,
             reference: done.booking.reference,
             saleId: done.sale.id,
             supervisedChildren,
+            eventPassesForDesk: passesForDesk,
             issued: true,
           },
           requestId: ctx.requestId,
@@ -1129,6 +1165,14 @@ export async function redeemAtKiosk(
     // The connection is back in the pool, which listens on it from here.
     watch.detach();
     await recordKioskPrintRun(db, ctx, device, session, input.actionId, printRun, true);
+    // S2-20 E5 — the OTO App is told of the passes this redemption checked in,
+    // after the commit (E3's write-back): what fails waits on Failures.
+    const directory = bookingPassDirectory();
+    if (directory && owedCheckins.ids.length > 0) {
+      await sendBookingPassCheckins({ db, directory, ...(ctx.log ? { log: ctx.log } : {}) }, owedCheckins.ids, {
+        requestId: ctx.requestId,
+      });
+    }
     return answerOf(db, ended, false);
   } catch (err) {
     // After the transaction gave its connection back, whichever way it ended.

@@ -164,7 +164,7 @@ function linkView(row: LinkRow): EventAttendeeLinkView {
  *   - the emergency contact has no field in the directory, so it rides in the
  *     note, ahead of the walk-up stamp.
  */
-function directoryBodyOf(
+export function directoryBodyOf(
   attendeeId: string,
   input: EventAttendeeInput,
   days: string[],

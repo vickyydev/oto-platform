@@ -11,7 +11,16 @@ import {
   paymentAttempt,
   station,
 } from '@oto/db';
-import { BookingSupervisionSnapshotSchema, type BookingSupervisionSnapshot, isoDateInTz, newId, parseBookingQr, wallClockMinutesInTz } from '@oto/shared';
+import {
+  BookingSupervisionSnapshotSchema,
+  bookingEventPassesOf,
+  isoDateInTz,
+  newId,
+  parseBookingQr,
+  wallClockMinutesInTz,
+  type BookingEventPass,
+  type BookingSupervisionSnapshot,
+} from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
 import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
@@ -210,6 +219,11 @@ export interface BookingView {
   /** The verified paid attempt method, with the recorded payload for box reads. */
   paymentMethod: string | null;
   lines: BookingLineView[];
+  /**
+   * S2-20 E5 — the event passes the booking paid for (consistency #21): the
+   * counter's redeem dialog names them, and redeeming checks them in.
+   */
+  eventPasses: BookingEventPass[];
   redemption: RedemptionView | null;
 }
 
@@ -384,6 +398,7 @@ export function bookingView(row: BookingRow, read: BookingReadModel = EMPTY_READ
     ...(typeof payload.registrationId === 'string' ? { registrationId: payload.registrationId } : {}),
     paymentMethod: (row.paymentAttemptId ? read.paymentMethods?.get(row.paymentAttemptId) : null) ?? stringOrNull(payload.paymentMethod),
     lines: linesOf(row),
+    eventPasses: bookingEventPassesOf(payload),
     redemption: stored ? redemptionView(stored, names) : null,
   };
 }

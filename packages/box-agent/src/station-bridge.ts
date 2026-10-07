@@ -3,6 +3,8 @@ import {
   BAND_FOOD_REFUSALS,
   BOOKING_REDEEMED_FACT,
   BOX_BOOKING_REFUSALS,
+  BOOKING_EVENT_PASSES_NEED_INTERNET,
+  BOOKING_EVENT_PASSES_ONLINE_ONLY,
   BOX_CATALOGUE_TOO_OLD,
   BOX_LANE_PAYMENT_REFUSAL,
   BOX_LANE_REFUSALS,
@@ -4560,6 +4562,15 @@ export class StationBridge {
         'This supervised booking needs the internet. Reconnect at reception to redeem it and check the children in.',
         { reference: booking.reference, status: booking.status },
       );
+    }
+    // S2-20 E5 — a booking carrying event passes is redeemed with the link up
+    // only: its passes are checked in against the OTO App, and its money is
+    // filed with its tickets on the one sale the platform makes.
+    if (booking.status === BOOKING_EVENT_PASSES_ONLINE_ONLY) {
+      throw new BridgeError(409, BOOKING_EVENT_PASSES_NEED_INTERNET.code, BOOKING_EVENT_PASSES_NEED_INTERNET.message, {
+        reference: booking.reference,
+        status: booking.status,
+      });
     }
     if (booking.status !== 'paid') {
       // The platform's own words (`redeemBooking` in `services/bookings.ts`).

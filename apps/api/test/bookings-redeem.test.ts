@@ -384,6 +384,8 @@ describe('SCRUM-234 — the till reads the booking the booking site wrote', () =
         'branchId',
         'branchName',
         'createdAt',
+        // S2-20 E5 — the event passes the booking paid for (consistency #21).
+        'eventPasses',
         'id',
         'lines',
         'memberId',

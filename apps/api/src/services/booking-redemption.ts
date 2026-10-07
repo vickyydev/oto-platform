@@ -8,6 +8,13 @@ import {
   type WalletGrantView,
 } from '@oto/shared';
 import { leaveAsBooked } from './checkin';
+import {
+  NO_PASS_CHECKINS,
+  bookingPassLinesOf,
+  checkInBookingPasses,
+  storedEventPassesOf,
+  type BookingPassCheckinResult,
+} from './booking-event-passes';
 import { errors } from '../lib/errors';
 import { audit } from './audit';
 import type { BandView } from './bands';
@@ -127,6 +134,12 @@ export interface RedeemAtCounterResult {
    * the same tickets grants them (OD-A7): the same finalise, the same law.
    */
   grants: WalletGrantView[];
+  /**
+   * S2-20 E5 — the booking's event passes, each checked in or said why not;
+   * the bands and paper of those checked in; and the check-ins the caller
+   * writes back to the OTO App once this transaction has committed.
+   */
+  eventPasses: BookingPassCheckinResult;
 }
 
 /** The socks add-on's catalogue code, as the booking site priced the `socks` integer (`booking-checkout.ts`). */
@@ -282,9 +295,13 @@ export async function redeemBookingAtCounter(
   }
 
   // 2. THE SALE, from every line the family paid for. A supervised child's line
-  // is filed under its stay's id, so finalising mints no band for it.
+  // is filed under its stay's id, so finalising mints no band for it. S2-20
+  // E5 — and every event pass the family paid for, beside the tickets, so the
+  // booking is one sale for what it was paid.
   const lines = linesOf(claimed).filter((l) => l.packageId && (l.kids > 0 || l.adults > 0));
-  if (lines.length === 0) {
+  const passes = storedEventPassesOf(claimed.payload);
+  const passLines = bookingPassLinesOf(claimed.payload);
+  if (lines.length === 0 && passes.length === 0) {
     throw errors.conflict(
       'BOOKING_NOTHING_TO_ISSUE',
       `Booking ${claimed.reference} carries no tickets, so there is nothing to issue at the counter`,
@@ -316,6 +333,7 @@ export async function redeemBookingAtCounter(
     bookingId: claimed.id,
     ...(typeof payload.registrationId === 'string' ? { registrationId: payload.registrationId } : {}),
     lines: cartLinesOfBooking(lines),
+    ...(passLines.length > 0 ? { bookingPasses: passLines } : {}),
     ...(lines.some((l) => l.socks > 0)
       ? {
           socks: socksProductId
@@ -389,6 +407,26 @@ export async function redeemBookingAtCounter(
     }
   }
 
+  // S2-20 E5 — THE EVENT PASSES, checked in as the till's redemption checks
+  // them in (Till.tsx 437-462; Q11 at the kiosk): bands minted and their paper
+  // queued — or, at the kiosk, written for it to print before it commits.
+  // Told to the OTO App by the caller, after the commit.
+  const eventPasses =
+    passes.length > 0
+      ? await checkInBookingPasses(tx, {
+          booking: claimed,
+          operatorId: args.operatorId,
+          stationId,
+          actorAccountId: args.actorAccountId,
+          requestId: args.requestId ?? null,
+          actionId: args.actionId ?? null,
+          saleId,
+          dispatch: args.printing === 'direct' ? 'caller' : 'box',
+          surface: args.deviceCredentialId ? 'kiosk' : 'counter',
+          now,
+        })
+      : NO_PASS_CHECKINS;
+
   // 4. THE BANDS ON THE REDEMPTION — short codes only: a band's full code is a
   // gate credential, and this row is read back to anyone at a counter.
   const bands = finalised.printing?.bands ?? [];
@@ -416,6 +454,9 @@ export async function redeemBookingAtCounter(
       bandIds: bands.map((b) => b.id),
       grantWalletIds: finalised.grants.map((g) => g.walletId),
       printJobIds: (finalised.printing?.jobs ?? []).map((j) => j.id),
+      // S2-20 E5 — the event passes it carried, and the check-ins they made.
+      eventPasses: passes.length,
+      eventCheckinIds: eventPasses.checkinIds,
       // S2-20 K1 — which surface: the counter, or the kiosk and its credential.
       surface: args.deviceCredentialId ? 'kiosk' : 'counter',
       ...(args.deviceCredentialId ? { stationId, deviceCredentialId: args.deviceCredentialId } : {}),
@@ -431,5 +472,6 @@ export async function redeemBookingAtCounter(
     printing: finalised.printing,
     bands,
     grants: finalised.grants,
+    eventPasses,
   };
 }
