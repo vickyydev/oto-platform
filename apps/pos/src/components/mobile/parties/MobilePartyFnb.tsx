@@ -13,6 +13,9 @@ import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { ModifierSheet } from '@/components/fnb/ModifierSheet';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { MobileFnbCartSheet } from '@/components/mobile/order-station/MobileFnbCartSheet';
+import { PartyChargeHeldNote } from '@/components/parties/PartyChargeHeldNote';
+import { toast } from '@/hooks/use-toast';
+import { PARTY_CHARGE_HELD, type PartyChargeConfirmation, type PartyChargeLine } from '@/api/parties';
 import { ArrowLeft, PartyPopper } from 'lucide-react';
 
 let partyMobileLineCounter = 1;
@@ -20,11 +23,12 @@ let partyMobileLineCounter = 1;
 interface MobilePartyFnbProps {
   party: PartyBooking;
   operatorName: string;
-  /** S2-20 E4: a request on the platform — the host leaves this screen once it is recorded. */
-  onCharge: (
-    items: { name: string; qty: number; lineTotal: number }[],
-    total: number,
-  ) => void | boolean | Promise<boolean>;
+  /**
+   * S2-20 E4: a request on the platform — the host leaves this screen once it
+   * is charged. A definite no leaves the order open to change; no answer holds
+   * it exactly as it was sent (`PartyChargeConfirmation`).
+   */
+  onCharge: (items: PartyChargeLine[], total: number) => PartyChargeConfirmation | Promise<PartyChargeConfirmation>;
   onBack: () => void;
 }
 
@@ -45,6 +49,18 @@ export function MobilePartyFnb({
   const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
   const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add');
   const [sheetLineId, setSheetLineId] = useState<string | null>(null);
+
+  // S2-20 E4 — an order whose charge nothing answered is held exactly as it
+  // was sent until the platform says yes or no: nothing adds to it, changes,
+  // clears or leaves it meanwhile, and Checkout sends it again.
+  const [held, setHeld] = useState(false);
+  const whileHeld = () => {
+    if (held) toast(PARTY_CHARGE_HELD);
+    return held;
+  };
+  const leave = () => {
+    if (!whileHeld()) onBack();
+  };
 
   const lines = cart;
 
@@ -94,6 +110,7 @@ export function MobilePartyFnb({
   };
 
   const handleAdd = (item: MenuItem) => {
+    if (whileHeld()) return;
     if (hasModifiers(item)) {
       setSheetItem(item);
       setSheetMode('add');
@@ -104,6 +121,7 @@ export function MobilePartyFnb({
   };
 
   const handleEditLine = (line: FnbOrderLine) => {
+    if (whileHeld()) return;
     setSheetItem(line.menuItem);
     setSheetMode('edit');
     setSheetLineId(line.id);
@@ -111,7 +129,7 @@ export function MobilePartyFnb({
 
   const handleSheetSave = (selected: SelectedModifier[], qty: number, note?: string) => {
     const item = sheetItem;
-    if (!item) return;
+    if (!item || whileHeld()) return;
     if (sheetMode === 'edit' && sheetLineId) {
       const editedId = sheetLineId;
       const sig = modifierSignature(selected);
@@ -160,6 +178,7 @@ export function MobilePartyFnb({
   };
 
   const handleChangeQty = (lineId: string, qty: number) => {
+    if (whileHeld()) return;
     if (qty <= 0) {
       setManualDiscounts((prev) => prev.filter((md) => md.targetLineId !== lineId));
     }
@@ -174,6 +193,7 @@ export function MobilePartyFnb({
   };
 
   const handleClearCart = () => {
+    if (whileHeld()) return;
     setCart([]);
     setOrderNote('');
     setManualDiscounts([]);
@@ -193,11 +213,15 @@ export function MobilePartyFnb({
       };
     });
     charging.current = true;
+    let result: PartyChargeConfirmation;
     try {
-      await onCharge(items, total);
+      result = await onCharge(items, total);
     } finally {
       charging.current = false;
     }
+    // Charged: the host leaves this screen. No answer: held as sent. A
+    // definite no: the order is staff's again.
+    if (!result.charged) setHeld(result.held);
   };
 
   return (
@@ -206,7 +230,7 @@ export function MobilePartyFnb({
       <div className="shrink-0 px-4 pt-3 pb-3 border-b flex items-center gap-3">
         <button
           type="button"
-          onClick={onBack}
+          onClick={leave}
           className="text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Back"
         >
@@ -221,6 +245,13 @@ export function MobilePartyFnb({
         </div>
         <PartyPopper className="w-4 h-4 text-primary shrink-0" />
       </div>
+
+      {/* S2-20 E4 — a charge nothing answered: the order waits here, held as sent. */}
+      {held && (
+        <div className="shrink-0 px-4 pt-3">
+          <PartyChargeHeldNote />
+        </div>
+      )}
 
       {/* Menu grid */}
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
@@ -238,11 +269,13 @@ export function MobilePartyFnb({
         onChangeQty={handleChangeQty}
         onEditLine={handleEditLine}
         onClear={handleClearCart}
-        onAddManualDiscount={() => setShowDiscountModal(true)}
-        onRemoveManualDiscount={(id) =>
-          setManualDiscounts((prev) => prev.filter((md) => md.id !== id))
-        }
-        onSwitchTab={onBack}
+        onAddManualDiscount={() => {
+          if (!whileHeld()) setShowDiscountModal(true);
+        }}
+        onRemoveManualDiscount={(id) => {
+          if (!whileHeld()) setManualDiscounts((prev) => prev.filter((md) => md.id !== id));
+        }}
+        onSwitchTab={leave}
         onCheckout={() => void handleCharge()}
       />
 
@@ -272,7 +305,9 @@ export function MobilePartyFnb({
           reasons={getDiscountReasons()}
           operatorId={operator.id}
           operatorName={operator.name}
-          onApply={(md) => setManualDiscounts((prev) => [...prev, md])}
+          onApply={(md) => {
+            if (!whileHeld()) setManualDiscounts((prev) => [...prev, md]);
+          }}
         />
       )}
     </div>

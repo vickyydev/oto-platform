@@ -23,6 +23,9 @@ import { dropDiscountsForRemovedLines } from '@/lib/manualDiscount';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
 import { useOperator } from '@/auth/OperatorContext';
+import { toast } from '@/hooks/use-toast';
+import { PARTY_CHARGE_HELD, type PartyChargeConfirmation, type PartyChargeLine } from '@/api/parties';
+import { PartyChargeHeldNote } from './PartyChargeHeldNote';
 import { Monitor, PartyPopper } from 'lucide-react';
 
 interface PartyFnbModalProps {
@@ -31,13 +34,11 @@ interface PartyFnbModalProps {
   party: PartyBooking;
   operatorName: string;
   /**
-   * S2-20 E4: a request on the platform, which may answer later, or no —
-   * `false` keeps the order open rather than closing as though it were charged.
+   * S2-20 E4: a request on the platform, which may answer later, or no. The
+   * modal closes on a charge; a definite no leaves the order open to change;
+   * no answer holds the order exactly as it was sent (`PartyChargeConfirmation`).
    */
-  onCharge: (
-    items: { name: string; qty: number; lineTotal: number }[],
-    total: number,
-  ) => void | boolean | Promise<boolean>;
+  onCharge: (items: PartyChargeLine[], total: number) => PartyChargeConfirmation | Promise<PartyChargeConfirmation>;
 }
 
 // The party F&B builder is the F&B order-station "order" stage verbatim: same
@@ -81,6 +82,15 @@ export function PartyFnbModal({
   const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
   const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add');
   const [sheetLineId, setSheetLineId] = useState<string | null>(null);
+
+  // S2-20 E4 — an order whose charge nothing answered is held exactly as it
+  // was sent until the platform says yes or no: nothing adds to it, changes,
+  // clears or leaves it meanwhile, and the charge press sends it again.
+  const [held, setHeld] = useState(false);
+  const whileHeld = () => {
+    if (held) toast(PARTY_CHARGE_HELD);
+    return held;
+  };
 
   const lines = cart;
 
@@ -133,6 +143,7 @@ export function PartyFnbModal({
   };
 
   const handleAdd = (item: MenuItem) => {
+    if (whileHeld()) return;
     if (hasModifiers(item)) {
       setSheetItem(item);
       setSheetMode('add');
@@ -143,6 +154,7 @@ export function PartyFnbModal({
   };
 
   const handleEditLine = (line: FnbOrderLine) => {
+    if (whileHeld()) return;
     // Every line opens the edit sheet — even no-modifier items — so staff can add
     // or change a free-text note (qty is still also editable inline via the stepper).
     setSheetItem(line.menuItem);
@@ -152,7 +164,7 @@ export function PartyFnbModal({
 
   const handleSheetSave = (selected: SelectedModifier[], qty: number, note?: string) => {
     const item = sheetItem;
-    if (!item) return;
+    if (!item || whileHeld()) return;
     if (sheetMode === 'edit' && sheetLineId) {
       const editedId = sheetLineId;
       const sig = modifierSignature(selected);
@@ -204,6 +216,7 @@ export function PartyFnbModal({
   };
 
   const handleChangeQty = (lineId: string, qty: number) => {
+    if (whileHeld()) return;
     if (qty <= 0) {
       // Line is being removed — drop any manual discount that targeted it.
       setManualDiscounts((prev) => prev.filter((md) => md.targetLineId !== lineId));
@@ -219,14 +232,17 @@ export function PartyFnbModal({
   };
 
   const handleApplyManualDiscount = (md: ManualDiscount) => {
+    if (whileHeld()) return;
     setManualDiscounts((prev) => [...prev, md]);
   };
 
   const handleRemoveManualDiscount = (id: string) => {
+    if (whileHeld()) return;
     setManualDiscounts((prev) => prev.filter((md) => md.id !== id));
   };
 
   const handleClearCart = () => {
+    if (whileHeld()) return;
     setCart([]);
     setOrderNote('');
     setManualDiscounts([]);
@@ -237,6 +253,7 @@ export function PartyFnbModal({
     setOrderNote('');
     setManualDiscounts([]);
     setShowDiscountModal(false);
+    setHeld(false);
     closeSheet();
   };
 
@@ -254,17 +271,26 @@ export function PartyFnbModal({
       };
     });
     charging.current = true;
+    let result: PartyChargeConfirmation;
     try {
-      if ((await onCharge(items, total)) === false) return;
+      result = await onCharge(items, total);
     } finally {
       charging.current = false;
+    }
+    if (!result.charged) {
+      // No answer: held as sent. A definite no: the order is staff's again.
+      setHeld(result.held);
+      return;
     }
     reset();
     onOpenChange(false);
   };
 
   const handleOpenChange = (next: boolean) => {
-    if (!next) reset();
+    if (!next) {
+      if (whileHeld()) return;
+      reset();
+    }
     onOpenChange(next);
   };
 
@@ -330,8 +356,11 @@ export function PartyFnbModal({
                   onClear={handleClearCart}
                   onCheckout={() => void handleCharge()}
                   onSwitchTab={() => handleOpenChange(false)}
-                  onAddManualDiscount={() => setShowDiscountModal(true)}
+                  onAddManualDiscount={() => {
+                    if (!whileHeld()) setShowDiscountModal(true);
+                  }}
                   onRemoveManualDiscount={handleRemoveManualDiscount}
+                  priceNote={held ? <PartyChargeHeldNote /> : undefined}
                 />
                 </div>
               </div>

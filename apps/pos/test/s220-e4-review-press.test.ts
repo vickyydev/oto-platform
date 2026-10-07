@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EventView, PartyPaymentView, PartyWriteAnswer } from '@oto/shared';
 import { api, ApiError, NetworkError } from '@/api/client';
 import { toOtoEvent } from '@/api/events';
+import { toast } from '@/hooks/use-toast';
 import { PartyBalanceModal } from '@/components/parties/PartyBalanceModal';
 import { PartyDetail } from '@/components/parties/PartyDetail';
 import { PartySettlementCustomerScreen } from '@/components/parties/PartySettlementCustomerScreen';
@@ -101,6 +102,8 @@ vi.mock('@/api/events', async (importOriginal) => {
 });
 
 const postMock = vi.mocked(api.post);
+const toastMock = vi.mocked(toast);
+const toastTitles = () => toastMock.mock.calls.map((c) => (c[0] as { title?: string }).title);
 
 // --- The platform behind the till ----------------------------------------------
 
@@ -268,6 +271,7 @@ beforeEach(() => {
   server.chargeSatang = 0;
   postMock.mockReset();
   postMock.mockImplementation(platformPay as unknown as typeof api.post);
+  toastMock.mockReset();
   day.revision = -1;
   day.current = () => {
     if (day.revision !== server.revision) {
@@ -690,5 +694,72 @@ describe('the fix — one collect is one request under one set of ids, and the t
     expect(bodies[1]!.paymentId).not.toBe(bodies[0]!.paymentId);
     expect(thisTill().map((p) => p.amountSatang)).toEqual([400_000]);
     expect(screen.words()).toContain('Collected ฿4000 ');
+  });
+});
+
+// =============================================================================
+// The second fix round's words: a reply that never came is never "not recorded"
+// =============================================================================
+
+describe('a reply that never came says the truth — not confirmed, press again — and a definite no keeps its words', () => {
+  it('iPad: recorded, its answer lost — "Payment not confirmed", never "Payment not recorded"; the press again confirms it', async () => {
+    const screen = ipad();
+    screen.open();
+    screen.press('Card');
+    screen.press('Take ฿9000 by Card');
+    server.loseNextAnswer = true;
+    await screen.received();
+    expect(toastTitles()).toEqual(['Payment not confirmed']);
+    const [shown] = toastMock.mock.calls[0]!;
+    expect((shown as { description: string }).description).toMatch(/may already be recorded.*Payment received again/);
+    await screen.received();
+    expect(toastTitles()).not.toContain('Payment not recorded');
+    expect(thisTill().map((p) => p.amountSatang)).toEqual([900_000]);
+    expect(screen.words()).toContain('Payment recorded');
+  });
+
+  it('iPad: a request that never arrived reads the same — the till cannot tell it from a lost answer', async () => {
+    const screen = ipad();
+    screen.open();
+    screen.press('Card');
+    screen.press('Take ฿9000 by Card');
+    server.dropNextRequest = true;
+    await screen.received();
+    expect(toastTitles()).toEqual(['Payment not confirmed']);
+    expect(screen.words()).toContain('Payment received'); // still on the collect step
+  });
+
+  it('iPad: a definite no keeps "Payment not recorded" — nothing was taken', async () => {
+    const screen = ipad();
+    screen.open();
+    screen.press('Card');
+    screen.press('Take ฿9000 by Card');
+    otherTillTakes(500_000);
+    await screen.received();
+    expect(toastTitles()).toEqual(['Payment not recorded']);
+  });
+
+  it('phone: recorded, its answer lost — "Payment not confirmed", never "Payment not recorded"; the press again confirms it', async () => {
+    const screen = phone();
+    screen.press('Card');
+    screen.press('Show bill · ฿9000 by Card');
+    screen.handBack();
+    server.loseNextAnswer = true;
+    await screen.received();
+    expect(toastTitles()).toEqual(['Payment not confirmed']);
+    await screen.received();
+    expect(toastTitles()).not.toContain('Payment not recorded');
+    expect(thisTill().map((p) => p.amountSatang)).toEqual([900_000]);
+    expect(screen.words()).toContain('Payment recorded');
+  });
+
+  it('phone: a definite refusal is "Payment not recorded"', async () => {
+    const screen = phone();
+    screen.press('Card');
+    screen.press('Show bill · ฿9000 by Card');
+    screen.handBack();
+    otherTillTakes(500_000);
+    await screen.received();
+    expect(toastTitles()).toEqual(['Payment not recorded']);
   });
 });

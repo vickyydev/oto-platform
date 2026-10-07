@@ -15,13 +15,19 @@ import {
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import {
+  PARTY_CHARGE_NOT_CONFIRMED,
+  PARTY_PAYMENT_NOT_CONFIRMED,
   chargePartyOnPlatform,
+  partyChargeConfirmationOf,
+  partyChargePress,
   partyEditOf,
   partyPaymentConfirmationOf,
   partyPaymentPress,
   partyWriteBlocker,
   payPartyOnPlatform,
   updatePartyOnPlatform,
+  type PartyChargeConfirmation,
+  type PartyChargeLine,
   type PartyPaymentConfirmation,
   type PartyWriteIds,
   type PartyWriteOutcome,
@@ -173,8 +179,9 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
    * The ids of each write, minted when it is first sent and kept for a retry
    * of the same press — so a press whose answer was lost is one charge, one
    * payment, one edit. A definite answer, either way, clears them. A payment
-   * names its press (amount, tender, the balance shown): another press is
-   * another payment, under ids of its own.
+   * names its press (amount, tender, the balance shown), and a charge its
+   * order (the party, the lines, the total): another press is another write,
+   * under ids of its own.
    */
   const ids = useRef<Partial<Record<WriteKey, { ids: PartyWriteIds; press: string }>>>({});
   const idsFor = (key: WriteKey, press = ''): PartyWriteIds => {
@@ -184,11 +191,24 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     ids.current[key] = minted;
     return minted.ids;
   };
-  /** What came of a write: true when the platform recorded it. Says why when it did not. */
-  const settled = (key: WriteKey, outcome: PartyWriteOutcome, failure: string) => {
+  /**
+   * What came of a write: true when the platform recorded it. Says why when it
+   * did not — and, when nothing answered (`unconfirmed`), that it may have
+   * landed and the same press confirms it, never that it did not.
+   */
+  const settled = (
+    key: WriteKey,
+    outcome: PartyWriteOutcome,
+    failure: string,
+    unconfirmed?: { title: string; description: string; variant?: 'destructive' },
+  ) => {
     if (outcome.ok || !outcome.retryable) ids.current[key] = undefined;
     if (!outcome.ok) {
-      toast({ title: failure, description: outcome.message, variant: 'destructive' });
+      toast(
+        outcome.retryable && unconfirmed
+          ? unconfirmed
+          : { title: failure, description: outcome.message, variant: 'destructive' },
+      );
       // The bill may have moved under the till (another till, a charge): read it again.
       onChanged();
       return false;
@@ -223,17 +243,25 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
       stationId: station.stationId,
       ids: idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
     });
-    settled('payment', outcome, 'Payment not recorded');
+    settled('payment', outcome, 'Payment not recorded', PARTY_PAYMENT_NOT_CONFIRMED);
     return partyPaymentConfirmationOf(outcome, amount);
   };
 
+  /**
+   * "Charge ฿… to party": the order as the modal sent it. A charge nothing
+   * answered is held by its modal exactly as it was sent, and its only press
+   * sends that order again — the same press, so the same ids and the same
+   * request — until the platform says yes or no.
+   */
   const handleChargeExtra =
     (kind: 'fnb' | 'ticket') =>
-    async (items: { name: string; qty: number; lineTotal: number }[], chargeTotal: number): Promise<boolean> => {
+    async (items: PartyChargeLine[], chargeTotal: number): Promise<PartyChargeConfirmation> => {
+      const press = partyChargePress(party.id, kind, items, chargeTotal);
       const blocked = blockerOf();
       if (!operator || blocked) {
         if (blocked) toast(blocked);
-        return false;
+        // Nothing was sent: an order held for its answer stays held, an open one stays open.
+        return { charged: false, held: ids.current[kind]?.press === press };
       }
       const outcome = await chargePartyOnPlatform({
         party,
@@ -241,9 +269,10 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
         items,
         total: chargeTotal,
         stationId: station?.stationId,
-        ids: idsFor(kind),
+        ids: idsFor(kind, press),
       });
-      return settled(kind, outcome, 'Not charged to the party');
+      settled(kind, outcome, 'Not charged to the party', PARTY_CHARGE_NOT_CONFIRMED);
+      return partyChargeConfirmationOf(outcome);
     };
 
   const saving = useRef(false);

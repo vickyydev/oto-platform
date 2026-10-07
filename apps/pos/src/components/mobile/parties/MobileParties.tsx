@@ -11,11 +11,17 @@ import { useBranch } from '@/branch/BranchContext';
 import { useStation } from '@/station/StationContext';
 import { EVENT_WRITE_PENDING, eventsToday, useEventsForDate } from '@/api/events';
 import {
+  PARTY_CHARGE_NOT_CONFIRMED,
+  PARTY_PAYMENT_NOT_CONFIRMED,
   chargePartyOnPlatform,
+  partyChargeConfirmationOf,
+  partyChargePress,
   partyPaymentConfirmationOf,
   partyPaymentPress,
   partyWriteBlocker,
   payPartyOnPlatform,
+  type PartyChargeConfirmation,
+  type PartyChargeLine,
   type PartyPaymentConfirmation,
   type PartyWriteIds,
   type PartyWriteOutcome,
@@ -110,7 +116,8 @@ export function MobileParties() {
    * S2-20 E4 — the party tab on the platform. The ids of a press are minted
    * when it is first sent and kept for a retry of it; a definite answer
    * clears them. A payment names its press (amount, tender, the balance
-   * shown): another press is another payment, under ids of its own.
+   * shown), and a charge its order (the party, the lines, the total): another
+   * press is another write, under ids of its own.
    */
   const ids = useRef<Partial<Record<'payment' | 'fnb', { ids: PartyWriteIds; press: string }>>>({});
   const idsFor = (key: 'payment' | 'fnb', press = ''): PartyWriteIds => {
@@ -120,11 +127,20 @@ export function MobileParties() {
     ids.current[key] = minted;
     return minted.ids;
   };
-  const settled = (key: 'payment' | 'fnb', outcome: PartyWriteOutcome, failure: string): boolean => {
+  /**
+   * What came of a write. Nothing answered (`unconfirmed`) is never told as
+   * "not recorded": it may have landed, and the same press confirms it.
+   */
+  const settled = (
+    key: 'payment' | 'fnb',
+    outcome: PartyWriteOutcome,
+    failure: string,
+    unconfirmed: { title: string; description: string; variant?: 'destructive' },
+  ): boolean => {
     if (outcome.ok || !outcome.retryable) ids.current[key] = undefined;
     bump();
     if (!outcome.ok) {
-      toast({ title: failure, description: outcome.message, variant: 'destructive' });
+      toast(outcome.retryable ? unconfirmed : { title: failure, description: outcome.message, variant: 'destructive' });
       return false;
     }
     setFresh(outcome.party);
@@ -159,7 +175,7 @@ export function MobileParties() {
       stationId: station.stationId,
       ids: idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
     });
-    settled('payment', outcome, 'Payment not recorded');
+    settled('payment', outcome, 'Payment not recorded', PARTY_PAYMENT_NOT_CONFIRMED);
     return partyPaymentConfirmationOf(outcome, amount);
   };
 
@@ -250,15 +266,20 @@ export function MobileParties() {
     bump();
   };
 
-  const handleChargeExtra = async (
-    items: { name: string; qty: number; lineTotal: number }[],
-    total: number,
-  ): Promise<boolean> => {
-    if (!operator || !selectedEvent || selectedEvent.type !== 'party') return false;
+  /**
+   * "Checkout" on a party's F&B: the order as the screen sent it. A charge
+   * nothing answered is held by the screen exactly as it was sent, and
+   * Checkout sends that order again — the same press, so the same ids and the
+   * same request — until the platform says yes or no.
+   */
+  const handleChargeExtra = async (items: PartyChargeLine[], total: number): Promise<PartyChargeConfirmation> => {
+    if (!operator || !selectedEvent || selectedEvent.type !== 'party') return { charged: false, held: false };
+    const press = partyChargePress(selectedEvent.id, 'fnb', items, total);
     const blocked = blockerOf();
     if (blocked) {
       toast(blocked);
-      return false;
+      // Nothing was sent: an order held for its answer stays held, an open one stays open.
+      return { charged: false, held: ids.current.fnb?.press === press };
     }
     const outcome = await chargePartyOnPlatform({
       party: selectedEvent as unknown as PartyBooking,
@@ -266,11 +287,10 @@ export function MobileParties() {
       items,
       total,
       stationId: station?.stationId,
-      ids: idsFor('fnb'),
+      ids: idsFor('fnb', press),
     });
-    if (!settled('fnb', outcome, 'Not charged to the party')) return false;
-    setStep('detail');
-    return true;
+    if (settled('fnb', outcome, 'Not charged to the party', PARTY_CHARGE_NOT_CONFIRMED)) setStep('detail');
+    return partyChargeConfirmationOf(outcome);
   };
 
   if (step === 'list' || !selectedEvent) {

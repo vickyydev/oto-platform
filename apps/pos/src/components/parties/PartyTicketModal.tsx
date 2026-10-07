@@ -29,6 +29,8 @@ import { dropOrphanedDiscounts } from '@/lib/manualDiscount';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
 import { useOperator } from '@/auth/OperatorContext';
+import { PARTY_CHARGE_HELD, type PartyChargeConfirmation, type PartyChargeLine } from '@/api/parties';
+import { PartyChargeHeldNote } from './PartyChargeHeldNote';
 import { StepCustomerType } from '@/components/till/StepCustomerType';
 import { StepAddTicket } from '@/components/till/StepAddTicket';
 import { OrderSummary } from '@/components/till/OrderSummary';
@@ -44,13 +46,11 @@ interface PartyTicketModalProps {
   party: PartyBooking;
   operatorName: string;
   /**
-   * S2-20 E4: a request on the platform, which may answer later, or no —
-   * `false` keeps the order open rather than closing as though it were charged.
+   * S2-20 E4: a request on the platform, which may answer later, or no. The
+   * modal closes on a charge; a definite no leaves the order open to change;
+   * no answer holds the order exactly as it was sent (`PartyChargeConfirmation`).
    */
-  onCharge: (
-    items: { name: string; qty: number; lineTotal: number }[],
-    total: number,
-  ) => void | boolean | Promise<boolean>;
+  onCharge: (items: PartyChargeLine[], total: number) => PartyChargeConfirmation | Promise<PartyChargeConfirmation>;
 }
 
 // Break a ticket line into its discountable component rows for the manual-discount
@@ -145,6 +145,15 @@ export function PartyTicketModal({
   const [verifyTier, setVerifyTier] = useState<CustomerTier | null>(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
 
+  // S2-20 E4 — an order whose charge nothing answered is held exactly as it
+  // was sent until the platform says yes or no: nothing adds to it, changes,
+  // clears or leaves it meanwhile, and the charge press sends it again.
+  const [held, setHeld] = useState(false);
+  const whileHeld = () => {
+    if (held) toast(PARTY_CHARGE_HELD);
+    return held;
+  };
+
   const activeLine = lines.find((l) => l.id === activeLineId) ?? null;
 
   const { subtotal, total } = useMemo(
@@ -161,31 +170,39 @@ export function PartyTicketModal({
     setShowVerifyModal(false);
     setVerifyTier(null);
     setShowDiscountModal(false);
+    setHeld(false);
   };
 
   const handleOpenChange = (next: boolean) => {
-    if (!next) reset();
+    if (!next) {
+      if (whileHeld()) return;
+      reset();
+    }
     onOpenChange(next);
   };
 
   // --- Tier step (mirrors the Till) ---------------------------------------
   const handlePickTier = (t: CustomerTier) => {
+    if (whileHeld()) return;
     setTier(t);
     setPhase('build');
   };
 
   const handleRequestVerify = (t: CustomerTier) => {
+    if (whileHeld()) return;
     setVerifyTier(t);
     setShowVerifyModal(true);
   };
 
   const handleVerified = ({ verification }: { member: Member | null; verification: TierVerification }) => {
+    if (whileHeld()) return;
     setTier(verification.tier);
     setPhase('build');
   };
 
   // --- Ticket lines (mirrors the Till, minus drop-off) --------------------
   const handleSelectTicket = (ticket: TicketType) => {
+    if (whileHeld()) return;
     const id = Math.random().toString(36).substring(7);
     const base = { ticketType: ticket, tier, kids: 1, adults: 1, socks: 0, addOns: [] };
     const line: CartLine = { id, ...base, lineTotal: computeLineTotal(base) };
@@ -197,6 +214,7 @@ export function PartyTicketModal({
     id: string,
     updates: Partial<Pick<CartLine, 'kids' | 'adults' | 'socks' | 'addOns'>>,
   ) => {
+    if (whileHeld()) return;
     setLines((prev) =>
       prev.map((l) => {
         if (l.id !== id) return l;
@@ -207,6 +225,7 @@ export function PartyTicketModal({
   };
 
   const handleRemoveLine = (id: string) => {
+    if (whileHeld()) return;
     setLines((prev) => {
       const next = prev.filter((l) => l.id !== id);
       setManualDiscounts((mds) => dropOrphanedDiscounts(mds, next));
@@ -216,10 +235,12 @@ export function PartyTicketModal({
   };
 
   const handleApplyManualDiscount = (md: ManualDiscount) => {
+    if (whileHeld()) return;
     setManualDiscounts((prev) => [...prev, md]);
   };
 
   const handleRemoveManualDiscount = (id: string) => {
+    if (whileHeld()) return;
     setManualDiscounts((prev) => prev.filter((md) => md.id !== id));
   };
 
@@ -238,10 +259,16 @@ export function PartyTicketModal({
       })),
     );
     setCharging(true);
+    let result: PartyChargeConfirmation;
     try {
-      if ((await onCharge(items, total)) === false) return;
+      result = await onCharge(items, total);
     } finally {
       setCharging(false);
+    }
+    if (!result.charged) {
+      // No answer: held as sent. A definite no: the order is staff's again.
+      setHeld(result.held);
+      return;
     }
     reset();
     onOpenChange(false);
@@ -345,12 +372,15 @@ export function PartyTicketModal({
                       onUpdateLine={handleUpdateLine}
                       onRemoveLine={handleRemoveLine}
                       onRemoveDiscount={() => {}}
-                      onAddManualDiscount={() => setShowDiscountModal(true)}
+                      onAddManualDiscount={() => {
+                        if (!whileHeld()) setShowDiscountModal(true);
+                      }}
                       onRemoveManualDiscount={handleRemoveManualDiscount}
                       onPay={() => void handleCharge()}
                       onCancel={() => handleOpenChange(false)}
                       canPay={canCharge && !charging}
                       payLabel={`Charge ฿${total} to party`}
+                      priceNote={held ? <PartyChargeHeldNote /> : undefined}
                     />
                   </div>
                 </div>

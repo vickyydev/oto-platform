@@ -13,9 +13,9 @@
 // and each answers with the party as it now stands, mapped here into the
 // prototype's `PartyBooking` so every screen keeps its exact rendering path:
 // the design, the words and `lib/party.ts`'s arithmetic are the prototype's,
-// only the data source changed. Each write carries an id minted when its form
-// opened and kept for a retry, so a press that went through twice is one
-// charge, one payment or one edit.
+// only the data source changed. Each write carries ids minted when its press is
+// first sent and kept for a retry of that press, so a press that went through
+// twice is one charge, one payment or one edit.
 
 import type { EventDetailAnswer, PartyEditFields, PartyWriteAnswer } from '@oto/shared';
 import type { PartyEditPatch } from '@/components/parties/PartyEditForm';
@@ -114,11 +114,67 @@ export interface PartyWriteIds {
   actionId: string;
 }
 
+/** One line of a charge as the till's order lists it, in baht. */
+export interface PartyChargeLine {
+  name: string;
+  qty: number;
+  lineTotal: number;
+}
+
+/**
+ * A REQUEST NOTHING ANSWERED MAY HAVE LANDED, so the till never says it did
+ * not: it says the write is not confirmed and asks for the same press again,
+ * which is sent as the same request under the same ids — the stored answer if
+ * the first one landed. A definite no keeps the prototype's words.
+ */
+export const PARTY_CHARGE_NOT_CONFIRMED = {
+  title: 'Charge not confirmed',
+  description:
+    "The platform has not confirmed it, so it may already be on the party's tab. The order is held as it was sent: press charge again — it is never charged twice.",
+  variant: 'destructive' as const,
+};
+export const PARTY_PAYMENT_NOT_CONFIRMED = {
+  title: 'Payment not confirmed',
+  description:
+    'The platform has not confirmed it, so it may already be recorded. Press Payment received again — it is never taken twice.',
+  variant: 'destructive' as const,
+};
+/** A press on an order held for its answer that would change or leave it. */
+export const PARTY_CHARGE_HELD = {
+  title: 'Order held',
+  description: 'This order is not confirmed yet. Press charge again to confirm it before changing or leaving it.',
+};
+
+/**
+ * What came of a charge to a party's tab (the iPad's F&B and ticket modals,
+ * the phone's F&B screen) — the payment's rule, for an order:
+ *
+ *   - charged: the order is on the tab, and the screen closes;
+ *   - not charged and `held`: nothing answered, so it may be on the tab
+ *     already. The screen holds the order exactly as it was sent — nothing
+ *     added, changed, cleared or left — and its only press sends that order
+ *     again, which is the same request under the same ids, until a definite
+ *     answer comes;
+ *   - not charged, not held: a definite no (or, before anything was sent, an
+ *     order that was not held). The order is the till's again, to change or
+ *     drop.
+ */
+export type PartyChargeConfirmation = { charged: true } | { charged: false; held: boolean };
+
+/** One press of a charge, told apart from another: the party, the kind, the order's lines and total. */
+export const partyChargePress = (partyId: string, kind: 'ticket' | 'fnb', items: PartyChargeLine[], total: number): string =>
+  JSON.stringify([partyId, kind, items.map((it) => [it.name, it.qty, satang(it.lineTotal)]), satang(total)]);
+
+/** A charge's outcome as its screen acts on it. */
+export function partyChargeConfirmationOf(outcome: PartyWriteOutcome): PartyChargeConfirmation {
+  return outcome.ok ? { charged: true } : { charged: false, held: outcome.retryable };
+}
+
 /** `addPartyExtraCharge`, on the platform: the till's items and total, in satang. */
 export async function chargePartyOnPlatform(args: {
   party: PartyBooking;
   kind: 'ticket' | 'fnb';
-  items: { name: string; qty: number; lineTotal: number }[];
+  items: PartyChargeLine[];
   total: number;
   stationId?: string | null;
   ids: PartyWriteIds;
