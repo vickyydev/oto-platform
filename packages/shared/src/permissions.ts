@@ -225,6 +225,19 @@ export const PERMISSIONS = [
   'catalog:menu:read',
   'catalog:menu:manage',
   'catalog:menu:import',
+  // Staff benefits (S2-21, SCRUM-218; plan docs/progress/plans/benefits/PLAN.md)
+  /**
+   * Apply a colleague's benefit at the F&B order station. Every counter role
+   * holds it: the prototype lets whoever is signed in at the till scan a
+   * benefit QR, their own included (plan Q9).
+   */
+  'pos:benefit:apply',
+  /** The Staff Benefits screen: the role templates, who has which, and their history. */
+  'admin:benefit:read',
+  /** Edit a role template, assign a benefit role, set or clear a person's override. */
+  'admin:benefit:manage',
+  /** Issue, revoke and print a staff member's benefit QR (round 2). */
+  'admin:benefit:credential_issue',
   // Analytics — the rollups Radar and Today read (S2-18)
   'analytics:read',
   // Which of the suite's apps a person may open (S2-02). Access is separate
@@ -397,6 +410,10 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     // Replacing the menu from a spreadsheet stops here: reception inherits the
     // read half through READ_COUNTER and neither of the write halves.
     'catalog:menu:import',
+    // Staff benefits: a manager reads the screen; changing it is the operator
+    // administrator's (plan "Permissions").
+    'admin:benefit:read',
+    'pos:benefit:apply',
     'analytics:read',
     'app:pos:access',
     'app:console:access',
@@ -431,11 +448,20 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     // between shelves and taking a delivery; setup and orders stay a manager's.
     'pos:stock:transfer',
     'pos:stock:receive',
+    'pos:benefit:apply',
     'app:pos:access',
     'app:booth:access',
     'booth:staff:sign_in',
   ],
   // `pos:cash:day_close` (S2-15a): `staff` opens the Today screen too, and the
   // prototype lets anybody who can open End of Day close it.
-  staff: [...READ_COUNTER, 'pos:cash:day_close', 'app:pos:access', 'app:booth:access', 'booth:staff:sign_in'],
+  // `pos:benefit:apply` (S2-21): the plan gives it to reception and staff alike.
+  staff: [
+    ...READ_COUNTER,
+    'pos:cash:day_close',
+    'pos:benefit:apply',
+    'app:pos:access',
+    'app:booth:access',
+    'booth:staff:sign_in',
+  ],
 };
