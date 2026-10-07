@@ -647,3 +647,245 @@ describe('the held order — a definite no gives it back; a press that sends not
     expect(toastTitles()).not.toContain('Not charged to the party');
   });
 });
+
+// =============================================================================
+// RE-REVIEW of the second fix round: the order between its press and its answer
+// =============================================================================
+
+/**
+ * The second fix round holds an order from the moment its answer is known to
+ * be lost. Between the press and that answer (a slow mall connection, up to
+ * the client's timeout) the order is still open: a tap, a line edit, a clear,
+ * Back and close all go through. The F&B screens guard the press with a ref
+ * nothing on screen reads; the ticket modal only greys its own press. So the
+ * order "held as it was sent" is whatever the screen holds when the answer is
+ * lost, not what was sent, and the next press is another press under new ids:
+ * the first items charged twice, the class the round closed for a change made
+ * after the answer.
+ */
+
+/** The next charge request waits at the platform until it is released; then it lands, and its answer is lost or comes back. */
+function slowCharge(outcome: 'lost' | 'answered'): () => void {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  postMock.mockImplementationOnce((async (path: string, body: unknown, opts?: { idempotencyKey?: string }) => {
+    await gate;
+    if (outcome === 'lost') server.loseNextAnswer = true;
+    return platformCharge(path, body, opts);
+  }) as unknown as typeof api.post);
+  return release;
+}
+
+/** How many of an item the party's tab carries, across every charge. */
+const onTab = (name: string) =>
+  server.charges.reduce((n, c) => n + c.items.filter((i) => i.name === name).reduce((q, i) => q + i.qty, 0), 0);
+
+describe('RE-REVIEW FINDING: the order is still open while its charge is on its way; the hold starts only at the lost answer', () => {
+  it('the make-up, press by press (iPad F&B): a drink tapped while Pad Thai is on its way goes on; the lost answer holds BOTH; the press is another charge', async () => {
+    const [a, b] = twoPlainItems();
+    const screen = ipadFnb();
+    screen.tap(a);
+    const release = slowCharge('lost');
+    const pressing = screen.charge(); // sent: Pad Thai, under ids A
+    screen.tap(b); // the guest wants a drink too: nothing refuses it
+    expect(screen.order()).toEqual({ 'mi-pad-thai': 1, 'mi-coke': 1 });
+    expect(toastTitles()).not.toContain('Order held');
+    release();
+    await pressing; // the platform charged Pad Thai; its answer is lost
+    expect(server.charges.map((c) => c.items.map((i) => i.name))).toEqual([['Pad Thai']]);
+    expect(toastTitles()).toEqual(['Charge not confirmed']);
+    // "Held as it was sent", but it was not sent this way.
+    expect(screen.heldNoteShown()).toBe(true);
+    expect(screen.order()).toEqual({ 'mi-pad-thai': 1, 'mi-coke': 1 });
+
+    await screen.charge(); // the press "Charge not confirmed" asks for
+    const [first, second] = sent();
+    expect(second!.chargeId).not.toBe(first!.chargeId);
+    expect(second!.key).not.toBe(first!.key);
+    expect(server.charges.map((c) => c.items.map((i) => i.name))).toEqual([['Pad Thai'], ['Pad Thai', 'Coke']]);
+    expect(onTab('Pad Thai')).toBe(2);
+    expect(chargedSatang()).toBe(first!.totalSatang + second!.totalSatang);
+    // To the satang: a ฿230 order (Pad Thai ฿180, Coke ฿50) is ฿410 on the tab.
+    expect([first!.totalSatang, second!.totalSatang, chargedSatang()]).toEqual([18_000, 23_000, 41_000]);
+    expect(screen.isOpen()).toBe(false);
+  });
+
+  it.fails('PINNED, iPad F&B: a drink tapped while the charge is on its way, the answer lost, the press again: Pad Thai is on the tab once', async () => {
+    const [a, b] = twoPlainItems();
+    const screen = ipadFnb();
+    screen.tap(a);
+    const release = slowCharge('lost');
+    const pressing = screen.charge();
+    screen.tap(b);
+    release();
+    await pressing;
+    expect(server.charges).toHaveLength(1);
+    await screen.charge();
+    if (screen.isOpen()) await screen.charge();
+    expect(onTab('Pad Thai')).toBe(1);
+    expect(onTab('Coke')).toBeLessThanOrEqual(1);
+  });
+
+  it.fails('PINNED, phone F&B: a drink tapped while the charge is on its way, the answer lost, Checkout again: Pad Thai is on the tab once', async () => {
+    const [a, b] = twoPlainItems();
+    const screen = phoneFnb();
+    screen.tap(a);
+    const release = slowCharge('lost');
+    const pressing = screen.charge();
+    screen.tap(b);
+    release();
+    await pressing;
+    expect(server.charges).toHaveLength(1);
+    await screen.charge();
+    if (screen.stillOnFnb()) await screen.charge();
+    expect(onTab('Pad Thai')).toBe(1);
+    expect(onTab('Coke')).toBeLessThanOrEqual(1);
+  });
+
+  it.fails('PINNED, iPad extra tickets: an adult added while the charge is on its way, the answer lost, the press again: the first ticket order is on the tab once', async () => {
+    const screen = ipadTickets();
+    await screen.startOrder();
+    const release = slowCharge('lost');
+    const pressing = screen.charge(); // sent: one kid, one adult
+    screen.addAnAdult(); // nothing refuses it while the charge is on its way
+    release();
+    await pressing;
+    expect(server.charges).toHaveLength(1);
+    await screen.charge();
+    if (screen.isOpen()) await screen.charge();
+    expect(server.charges).toHaveLength(1);
+    expect(chargedSatang()).toBe(sent()[0]!.totalSatang);
+  });
+
+  it.fails('PINNED, iPad F&B: a drink tapped while the charge is on its way and the answer comes: the drink is never dropped unsaid', async () => {
+    const [a, b] = twoPlainItems();
+    const screen = ipadFnb();
+    screen.tap(a);
+    const release = slowCharge('answered');
+    const pressing = screen.charge();
+    const before = toastMock.mock.calls.length;
+    screen.tap(b);
+    const toldAtTheTap = toastMock.mock.calls.length > before;
+    release();
+    await pressing;
+    expect(screen.isOpen()).toBe(false); // charged: the modal closes, with the order it holds
+    // Either the tap was refused out loud, or the drink is on the tab.
+    expect(toldAtTheTap || onTab('Coke') === 1).toBe(true);
+  });
+
+  /**
+   * Closed while the charge is on its way (Escape, the cross, "back to the
+   * tab"): the order is cleared and the modal shut, then the lost answer sets
+   * the hold on the CLOSED modal, which keeps its state. Opened again it is
+   * held with an empty order: every tap and close says "Order held", and the
+   * charge press has nothing to send. No way out short of reloading the till.
+   */
+  it.fails('PINNED, iPad F&B: closed while the charge is on its way, its answer lost; opened again, the screen is never held with nothing to send', async () => {
+    const [a] = twoPlainItems();
+    const screen = ipadFnb();
+    screen.tap(a);
+    const release = slowCharge('lost');
+    const pressing = screen.charge();
+    screen.tryToLeaveOrChange(); // clear and close, while it is on its way
+    release();
+    await pressing;
+    expect(server.charges).toHaveLength(1);
+    if (!screen.isOpen()) screen.open(); // staff come back to the party's F&B
+    if (screen.heldNoteShown()) {
+      // A held screen holds the order that was sent, so its press confirms it.
+      expect(screen.order()).toEqual({ 'mi-pad-thai': 1 });
+      await screen.charge();
+      expect(server.charges).toHaveLength(1);
+    }
+    // Either way, staff can leave.
+    screen.tryToLeaveOrChange();
+    expect(screen.isOpen()).toBe(false);
+  });
+});
+
+// =============================================================================
+// RE-REVIEW: the charge racing its own retry (holds today)
+// =============================================================================
+
+describe('RE-REVIEW: the charge racing its own retry, the platform still running the first when the second arrives', () => {
+  it('iPad F&B: timed out, pressed again while the platform still runs it (IDEMPOTENCY_IN_FLIGHT): still held and not confirmed; then the stored answer, one charge', async () => {
+    const [a, b] = twoPlainItems();
+    const running = new Set<string>();
+    let finish: () => Promise<void> = async () => undefined;
+    postMock.mockImplementation((async (path: string, body: unknown, opts?: { idempotencyKey?: string }) => {
+      const key = opts?.idempotencyKey;
+      if (key && running.has(key)) {
+        throw new ApiError(409, 'IDEMPOTENCY_IN_FLIGHT', 'The original request is still processing, retry the same key shortly');
+      }
+      return platformCharge(path, body, opts);
+    }) as unknown as typeof api.post);
+    postMock.mockImplementationOnce((async (path: string, body: unknown, opts?: { idempotencyKey?: string }) => {
+      const key = opts!.idempotencyKey!;
+      running.add(key);
+      finish = async () => {
+        running.delete(key);
+        await platformCharge(path, body, opts);
+      };
+      throw new NetworkError('timed out');
+    }) as unknown as typeof api.post);
+
+    const screen = ipadFnb();
+    screen.tap(a);
+    await screen.charge(); // timed out at the till; the platform is still on it
+    expect(screen.heldNoteShown()).toBe(true);
+    await screen.charge(); // the same request: still running
+    expect(screen.isOpen()).toBe(true);
+    expect(screen.heldNoteShown()).toBe(true);
+    screen.tap(b);
+    expect(screen.order()).toEqual({ 'mi-pad-thai': 1 });
+    await finish(); // the platform finishes the first and keeps its answer
+    await screen.charge(); // the stored answer
+    expect(postMock).toHaveBeenCalledTimes(3);
+    const calls = postMock.mock.calls;
+    expect(calls[1]![1]).toEqual(calls[0]![1]);
+    expect(calls[2]![1]).toEqual(calls[0]![1]);
+    expect(calls[2]![2]).toEqual(calls[0]![2]);
+    expect(server.charges.map((c) => c.items.map((i) => i.name))).toEqual([['Pad Thai']]);
+    expect(screen.isOpen()).toBe(false);
+    expect(toastTitles().filter((t) => t === 'Charge not confirmed')).toHaveLength(2);
+    expect(toastTitles()).not.toContain('Not charged to the party');
+  });
+
+  /** A platform fault (5xx) is no answer either: the store gives the key back and the same request runs again. */
+  const faultOnce = () =>
+    postMock.mockImplementationOnce((async () => {
+      throw new ApiError(503, 'UNAVAILABLE', 'The platform could not finish this request');
+    }) as unknown as typeof api.post);
+
+  it('phone F&B, a platform fault: "Charge not confirmed", held; Checkout again is the same request, one charge', async () => {
+    const [a] = twoPlainItems();
+    const screen = phoneFnb();
+    screen.tap(a);
+    faultOnce();
+    await screen.charge();
+    expect(toastTitles()).toEqual(['Charge not confirmed']);
+    expect(screen.heldNoteShown()).toBe(true);
+    await screen.charge();
+    expect(postMock.mock.calls[1]![1]).toEqual(postMock.mock.calls[0]![1]);
+    expect(postMock.mock.calls[1]![2]).toEqual(postMock.mock.calls[0]![2]);
+    expect(server.charges).toHaveLength(1);
+    expect(screen.stillOnFnb()).toBe(false);
+    expect(toastTitles()).not.toContain('Not charged to the party');
+  });
+
+  it('iPad extra tickets, a platform fault: "Charge not confirmed", held; the press again is the same request, one charge', async () => {
+    const screen = ipadTickets();
+    await screen.startOrder();
+    faultOnce();
+    await screen.charge();
+    expect(toastTitles()).toEqual(['Charge not confirmed']);
+    expect(screen.heldNoteShown()).toBe(true);
+    await screen.charge();
+    expect(postMock.mock.calls[1]![1]).toEqual(postMock.mock.calls[0]![1]);
+    expect(server.charges).toHaveLength(1);
+    expect(screen.isOpen()).toBe(false);
+    expect(toastTitles()).not.toContain('Not charged to the party');
+  });
+});

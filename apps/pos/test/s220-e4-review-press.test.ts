@@ -762,3 +762,84 @@ describe('a reply that never came says the truth — not confirmed, press again 
     expect(toastTitles()).toEqual(['Payment not recorded']);
   });
 });
+
+// =============================================================================
+// RE-REVIEW of the second fix round: every other reply that is not an answer
+// =============================================================================
+
+/**
+ * A platform fault (5xx: the idempotency store gives the key back, so the
+ * same request runs again) and the platform still running the first request
+ * (409 IDEMPOTENCY_IN_FLIGHT) are not answers either: neither may read
+ * "Payment not recorded", and the same press must come to one payment.
+ */
+function faultThenRun(kind: 'fault' | 'in-flight') {
+  const running = new Set<string>();
+  let finish: () => Promise<void> = async () => undefined;
+  postMock.mockImplementation((async (path: string, body: unknown, opts?: { idempotencyKey?: string }) => {
+    const key = opts?.idempotencyKey;
+    if (key && running.has(key)) {
+      throw new ApiError(409, 'IDEMPOTENCY_IN_FLIGHT', 'The original request is still processing, retry the same key shortly');
+    }
+    return platformPay(path, body, opts);
+  }) as unknown as typeof api.post);
+  postMock.mockImplementationOnce((async (path: string, body: unknown, opts?: { idempotencyKey?: string }) => {
+    if (kind === 'fault') throw new ApiError(503, 'UNAVAILABLE', 'The platform could not finish this request');
+    const key = opts!.idempotencyKey!;
+    running.add(key);
+    finish = async () => {
+      running.delete(key);
+      await platformPay(path, body, opts);
+    };
+    throw new NetworkError('timed out');
+  }) as unknown as typeof api.post);
+  return { finish: () => finish() };
+}
+
+describe('RE-REVIEW: a platform fault and a request still running are "Payment not confirmed" on both screens, and one press is one payment', () => {
+  for (const kind of ['fault', 'in-flight'] as const) {
+    it(`iPad, ${kind}: "Payment not confirmed", still on collect; the same press again is one payment of ฿9,000`, async () => {
+      const run = faultThenRun(kind);
+      const screen = ipad();
+      screen.open();
+      screen.press('Card');
+      screen.press('Take ฿9000 by Card');
+      await screen.received();
+      expect(toastTitles()).toEqual(['Payment not confirmed']);
+      expect(screen.words()).toContain('Payment received');
+      if (kind === 'in-flight') {
+        await screen.received(); // the platform is still on the first
+        expect(toastTitles()).toEqual(['Payment not confirmed', 'Payment not confirmed']);
+        await run.finish();
+      }
+      await screen.received();
+      expect(toastTitles()).not.toContain('Payment not recorded');
+      expect(thisTill().map((p) => p.amountSatang)).toEqual([900_000]);
+      const keys = new Set(postMock.mock.calls.map((c) => (c[2] as { idempotencyKey: string }).idempotencyKey));
+      expect(keys.size).toBe(1);
+      expect(screen.words()).toContain('Payment recorded');
+    });
+
+    it(`phone, ${kind}: "Payment not confirmed", still on collect; the same press again is one payment of ฿9,000`, async () => {
+      const run = faultThenRun(kind);
+      const screen = phone();
+      screen.press('Card');
+      screen.press('Show bill · ฿9000 by Card');
+      screen.handBack();
+      await screen.received();
+      expect(toastTitles()).toEqual(['Payment not confirmed']);
+      expect(screen.words()).toContain('Payment received');
+      if (kind === 'in-flight') {
+        await screen.received();
+        expect(toastTitles()).toEqual(['Payment not confirmed', 'Payment not confirmed']);
+        await run.finish();
+      }
+      await screen.received();
+      expect(toastTitles()).not.toContain('Payment not recorded');
+      expect(thisTill().map((p) => p.amountSatang)).toEqual([900_000]);
+      const keys = new Set(postMock.mock.calls.map((c) => (c[2] as { idempotencyKey: string }).idempotencyKey));
+      expect(keys.size).toBe(1);
+      expect(screen.words()).toContain('Payment recorded');
+    });
+  }
+});
