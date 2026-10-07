@@ -174,8 +174,9 @@ describe('E2 review — the attendee link migration', () => {
          join pg_attribute a on a.attrelid = t.oid and a.attnum = c.conkey[1]
         where c.contype = 'f' and n.nspname = 'pos' and t.relname in ('event_attendee_link', 'event_drop_in_pricing')`,
     );
-    // Nine on the link (operator, branch, child, member, sale, sale line, account, station, box), three on the prices.
-    expect(rows.filter((r) => r.tbl === 'event_attendee_link')).toHaveLength(9);
+    // Ten on the link (operator, branch, child, member, sale, sale line, account, station, box, and
+    // since S2-20 E5 the booking a pass bought online names), three on the prices.
+    expect(rows.filter((r) => r.tbl === 'event_attendee_link')).toHaveLength(10);
     expect(rows.filter((r) => r.tbl === 'event_drop_in_pricing')).toHaveLength(3);
     expect(rows.filter((r) => !r.indexed)).toEqual([]);
   });
