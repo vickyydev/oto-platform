@@ -12,10 +12,15 @@
  *
  * WHAT IT WRITES. Eleven sales at Demo Branch 2's Reception Till 1, one
  * trading day: cash (including a split), card on both terminals, QR, one
- * stored-value spend, a redeemed discount voucher and a partial cash refund.
- * The unresolved attempts remain. Beside them, once, the two frozen legacy
- * days (`legacy-fixtures.ts`, S2-15b round 6) that stand in for the Pisell and
- * Papaya history. The two terminals stand for the park's EDC 1
+ * stored-value spend, a manual discount, a redeemed booth voucher and a
+ * partial cash refund. The unresolved attempts remain. Each discount is
+ * recorded as the till records it — the sale's figures AND its
+ * `pos.sale_discount` row — so the Discounts & Comps panel and the day's
+ * summary agree. Beside the sales, the booth's day at Demo Branch 2's own
+ * booth (`demo-booth.ts`): a handful of presses and the vouchers they printed,
+ * one of them the voucher the voucher sale spends. And, once, the two frozen
+ * legacy days (`legacy-fixtures.ts`, S2-15b round 6) that stand in for the
+ * Pisell and Papaya history. The two terminals stand for the park's EDC 1
  * (NEXGO N5, `ghl_linkpos`) and EDC 3 (PAX A920Pro, `digio_tlv`) from
  * `DEVICE_INVENTORY.md:38-41`, each attempt carrying a clearly marked fixture
  * TID, so a demo of the Attempts list and End of Day shows two terminals and
@@ -36,6 +41,15 @@
  * list below, and adding one has to write that one on the next run without
  * rewriting the sales already in the ledger.
  *
+ * A RERUN TOPS UP, AND SAYS SO. A day written before the seed recorded what it
+ * now records gets the missing rows on the next run and nothing twice: a sale
+ * already present that carried a manual discount with no row for it gets the
+ * row the till would have written (`topUpManualDiscount`), the booth's presses
+ * missing from the day are filed (`seedDemoBoothDay`), and the frozen legacy
+ * days are loaded if absent. A sale already present is counted as present
+ * whatever was added to it; the additions are counted on their own
+ * (`discountsToppedUp`, `boothSpins`). A sale's own figures are never touched.
+ *
  * The added scenarios are checked as an End of Day fixture on an isolated test
  * date. The physical PAX TID is not configured in the seed, so only new demo
  * attempts carry a clearly marked fixture TID; no device setting is changed.
@@ -50,7 +64,6 @@
  * `D2` series. A request naming any other branch is refused before anything
  * is written.
  */
-import { randomBytes } from 'node:crypto';
 import {
   businessDate as businessDateOf,
   computeTaxBreakdown,
@@ -65,6 +78,15 @@ import {
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
 import * as s from '../schema/index';
+import {
+  demoBoothSpinsOn,
+  ensureDemoBooth,
+  seedDemoBoothDay,
+  writeDemoBoothPress,
+  type DemoBooth,
+  type DemoBoothPrizeCode,
+  type DemoBoothStaff,
+} from './demo-booth';
 import { seedLegacyFixtureDays } from './legacy-fixtures';
 import { stableId } from './stable-id';
 
@@ -160,8 +182,20 @@ interface DemoSale {
   lines: DemoLine[];
   /** Staff discount off the whole order, in satang. */
   discountSatang?: number;
-  /** A real, seeded discount definition applied to this sale, not a tender. */
-  voucherDefinitionCode?: string;
+  /**
+   * Why staff gave the manual discount: one of the till's reasons
+   * (`seedDiscountReasons`, apps/pos catalogStore.ts). Recorded on the sale's
+   * `pos.sale_discount` row, as the till records it.
+   */
+  discountReason?: string;
+  /**
+   * The voucher type of a booth voucher this sale redeemed, not a tender: the
+   * voucher is won at Demo Branch 2's booth that morning (`demo-booth.ts`)
+   * and spent here, and its discount is the sale's promo discount.
+   */
+  voucherDefinitionCode?: DemoBoothPrizeCode;
+  /** When, in minutes after the day start, that voucher was won at the booth. Before `atMinutes`. */
+  voucherWonAtMinutes?: number;
   tenders: DemoTender[];
   /** What the day looks like on the Sale list. `tendering` is a sale still owed money. */
   status: 'finalised' | 'tendering';
@@ -326,6 +360,7 @@ const DAY: DemoSale[] = [
       { kind: 'socks', label: 'Regular Socks', taxableCategory: 'addons', quantity: 3, unitSatang: b(80) },
     ],
     discountSatang: b(100),
+    discountReason: 'Loyalty',
     tenders: [
       // The split this ticket exists to allow: two approved attempts on one
       // sale, which the finalise path refused before S2-10a.
@@ -396,6 +431,7 @@ const DAY: DemoSale[] = [
       stayHours: 2, stayDurationLabel: '2 Hours' }],
     discountSatang: b(100),
     voucherDefinitionCode: 'spin-voucher-100',
+    voucherWonAtMinutes: 6 * HOUR + 10, // won at the booth at 11:10, spent here at 13:55
     tenders: [{ method: 'cash', methodCode: 'cash', provider: 'manual', status: 'approved' }],
     status: 'finalised',
   },
@@ -520,10 +556,45 @@ export interface DemoDayCounts {
   /** Sales already in the ledger for this day, which the run left alone. */
   skipped: number;
   /**
+   * Manual discount rows (`pos.sale_discount`) this run wrote: with the sales
+   * it wrote, and onto sales already present (`discountsToppedUp`).
+   */
+  discounts: number;
+  /**
+   * Of `discounts`, the rows added to sales already present that carried a
+   * manual discount with no row for it — a day written before the seed
+   * recorded them. Those sales are still counted in `skipped`.
+   */
+  discountsToppedUp: number;
+  /** Presses at Demo Branch 2's booth this run filed, the voucher sale's included. */
+  boothSpins: number;
+  /** The booth's presses for this day already filed, which the run left alone. */
+  boothSpinsPresent: number;
+  /**
    * The frozen legacy days (`legacy-fixtures.ts`, S2-15b round 6) this run
    * loaded at the demo branch: two the first time, none after.
    */
   legacyFixtureDays: number;
+}
+
+/**
+ * What a run did, in one line, for the Health page's demo control and the
+ * command line. A sale already present is "already present" whatever was added
+ * to it; what was added is said on its own.
+ */
+export function describeDemoDay(counts: DemoDayCounts): string {
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  const toppedUp = counts.discountsToppedUp
+    ? ` (${plural(counts.discountsToppedUp, 'manual discount row', 'manual discount rows')} added to them)`
+    : '';
+  const legacy = counts.legacyFixtureDays
+    ? `; ${plural(counts.legacyFixtureDays, 'frozen legacy day', 'frozen legacy days')} loaded`
+    : '';
+  return (
+    `Demo day ${counts.businessDate} at ${counts.branchName}: ` +
+    `${counts.sales} sales added, ${counts.skipped} already present${toppedUp}; ` +
+    `booth: ${counts.boothSpins} spins added, ${counts.boothSpinsPresent} already present${legacy}.`
+  );
 }
 
 /** Refused before anything is written: demo sales never reach a live park. */
@@ -597,6 +668,24 @@ export async function seedDemoDay(
     .where(and(eq(s.account.operatorId, operatorId), eq(s.employee.name, 'Som (Reception)')))
     .limit(1);
   if (!cashier) throw new Error('No reception account to attribute the day to. Run `pnpm db:seed` first.');
+  /** How the till names whoever applied a manual discount, and the booth's roster names its staff. */
+  const cashierName = (await displayNameOf(db, cashier.id)) ?? 'Som (Reception)';
+  const [manager] = await db
+    .select({ id: s.account.id })
+    .from(s.account)
+    .innerJoin(s.employee, eq(s.employee.id, s.account.employeeId))
+    .where(and(eq(s.account.operatorId, operatorId), eq(s.employee.name, 'Khun Lek (Manager)')))
+    .limit(1);
+
+  // Demo Branch 2's own booth: the voucher sale spends a voucher won there,
+  // and the booth's day is filed after the sales. Som works it, as the park's
+  // reception works its Booth 1; the manager put her on its staff list.
+  const booth: DemoBooth = await ensureDemoBooth(
+    db,
+    { id: branchId, operatorId, timezone },
+    { accountId: cashier.id, addedByAccountId: manager?.id ?? cashier.id },
+  );
+  const boothStaff: DemoBoothStaff = { accountId: cashier.id, displayName: cashierName };
 
   const terminals: Record<'edc1' | 'edc3', string | null> = { edc1: null, edc3: null };
   for (const [slot, label] of [
@@ -638,6 +727,10 @@ export async function seedDemoDay(
     attempts: 0,
     notifications: 0,
     skipped: 0,
+    discounts: 0,
+    discountsToppedUp: 0,
+    boothSpins: 0,
+    boothSpinsPresent: 0,
     legacyFixtureDays,
   };
   const ref = demoDayRef(on, branchCode);
@@ -653,8 +746,15 @@ export async function seedDemoDay(
       // or the one the demo branch's first days were written under. A row the
       // pre-round-3 control left at a live park on the same date is not this
       // branch's sale, and never stops this one being written.
-      if (await demoSaleAt(writer, station.id, ref, scenario.key)) {
+      const present = await demoSaleAt(writer, station.id, ref, scenario.key);
+      if (present) {
         counts.skipped += 1;
+        // Present, but written before the seed recorded its manual discount.
+        const manual = manualDiscountOf(scenario);
+        if (manual && (await topUpManualDiscount(writer, present, manual.reason))) {
+          counts.discounts += 1;
+          counts.discountsToppedUp += 1;
+        }
         return;
       }
 
@@ -759,6 +859,24 @@ export async function seedDemoDay(
         counts.lines += 1;
       }
 
+      // The manual discount, recorded as the till records one beside its sale.
+      const manual = manualDiscountOf(scenario);
+      if (manual) {
+        await writeManualDiscount(writer, {
+          saleId,
+          operatorId,
+          branchId,
+          businessDate: on,
+          sequence: 1,
+          amountSatang: money.discount,
+          reason: manual.reason,
+          appliedByAccountId: cashier.id,
+          appliedByName: cashierName,
+          appliedAt: occurredAt,
+        });
+        counts.discounts += 1;
+      }
+
       // What is left to cover once every tender before this one has taken its
       // share. The last tender takes the remainder, which is how a split adds up
       // to the gross exactly rather than to the gross plus a rounding.
@@ -857,8 +975,10 @@ export async function seedDemoDay(
       }
       if (scenario.voucherDefinitionCode) {
         await seedDemoVoucherDiscount(writer, { on, saleId, operatorId, branchId,
-          stationId: station.id, accountId: cashier.id, occurredAt,
-          definitionCode: scenario.voucherDefinitionCode, discountSatang: money.discount });
+          stationId: station.id, accountId: cashier.id, occurredAt, actionId,
+          definitionCode: scenario.voucherDefinitionCode, discountSatang: money.discount,
+          booth, boothStaff, wonAt: instantAt(scenario.voucherWonAtMinutes ?? scenario.atMinutes - HOUR) });
+        counts.boothSpins += 1;
       }
     });
   }
@@ -866,7 +986,29 @@ export async function seedDemoDay(
   await seedDemoCashRefund(db, { ref, operatorId, branchId, stationId: station.id,
     series: stationCodePrefix, occurredAt: instantAt(10 * HOUR + 30), createdByAccountId: cashier.id });
 
+  // The booth's own day: the presses whose vouchers nobody spent today.
+  counts.boothSpins += (await seedDemoBoothDay(db, booth, { on, ref, instantAt, staff: boothStaff })).written;
+  // Every press the booth has on the day that this run did not file: its own
+  // presses found filed, and the voucher sale's when that sale was already in
+  // the ledger (a day filled before the booth existed has none for it — that
+  // sale spent a voucher issued by hand).
+  counts.boothSpinsPresent = (await demoBoothSpinsOn(db, booth, on)) - counts.boothSpins;
+
   return counts;
+}
+
+/**
+ * The staff discount a scenario carries, rather than a voucher's, or null. A
+ * manual discount is unaccountable without its reason — the row's own CHECK
+ * refuses one — so a scenario that gives one with no reason is refused here,
+ * by name.
+ */
+function manualDiscountOf(scenario: DemoSale): { reason: string } | null {
+  if ((scenario.discountSatang ?? 0) <= 0 || scenario.voucherDefinitionCode) return null;
+  if (!scenario.discountReason) {
+    throw new Error(`Demo scenario "${scenario.key}" gives a manual discount with no reason.`);
+  }
+  return { reason: scenario.discountReason };
 }
 
 export interface DemoBranch {
@@ -1046,39 +1188,136 @@ async function seedDemoWalletSpend(writer: SeedWriter, input: {
   ]);
 }
 
+/**
+ * A booth voucher, won and spent. The family wins it at Demo Branch 2's booth
+ * that morning — the press, the voucher and its paper, filed as the booth's
+ * box reports them (`writeDemoBoothPress`), keyed by this sale so a sale
+ * written afresh after a demo reset wins its own — and spends it here, as the
+ * till spends one (`services/vouchers.ts`): held when it is scanned onto the
+ * cart, applied when Pay prices the sale with it, used up when the sale
+ * closes; the voucher then names the sale, and the sale's promo discount row
+ * names the voucher by its code, labelled as `voucherLineLabel` labels it.
+ */
 async function seedDemoVoucherDiscount(writer: SeedWriter, input: {
   on: string; saleId: string; operatorId: string; branchId: string; stationId: string;
-  accountId: string; occurredAt: Date; definitionCode: string; discountSatang: number;
+  accountId: string; occurredAt: Date; actionId: string; definitionCode: DemoBoothPrizeCode;
+  discountSatang: number; booth: DemoBooth; boothStaff: DemoBoothStaff; wonAt: Date;
 }): Promise<void> {
   const [definition] = await writer.select({ id: s.voucherDefinition.id, name: s.voucherDefinition.nameEn,
-    kind: s.voucherDefinition.kind, valueSatang: s.voucherDefinition.valueSatang,
-    costSatang: s.voucherDefinition.costSatang, expiryDays: s.voucherDefinition.expiryDays })
+    kind: s.voucherDefinition.kind, valueSatang: s.voucherDefinition.valueSatang })
     .from(s.voucherDefinition).where(and(eq(s.voucherDefinition.operatorId, input.operatorId),
       eq(s.voucherDefinition.code, input.definitionCode))).limit(1);
   if (!definition || definition.kind !== 'discount' || definition.valueSatang !== input.discountSatang) {
     throw new Error('The seeded demo discount voucher definition is missing or has changed');
   }
-  const voucherId = stableId(`${input.saleId}/voucher`, input.occurredAt);
-  const code = `DEMO${randomBytes(10).toString('hex').toUpperCase()}`;
-  await writer.insert(s.voucher).values({ id: voucherId, operatorId: input.operatorId,
-    branchId: input.branchId, voucherDefinitionId: definition.id, code, source: 'manual',
-    status: 'redeemed', costSatang: definition.costSatang, issuedByAccountId: input.accountId,
-    issuedAt: input.occurredAt,
-    expiresAt: definition.expiryDays ? new Date(input.occurredAt.getTime() + definition.expiryDays * 86_400_000) : null,
-    redeemedAt: input.occurredAt, redeemedByAccountId: input.accountId,
-    redeemedBranchId: input.branchId, redeemedStationId: input.stationId, saleId: input.saleId });
-  await writer.insert(s.voucherRedemption).values(['applied', 'consumed'].map((kind) => ({
-    id: stableId(`${voucherId}/${kind}`, input.occurredAt), operatorId: input.operatorId,
-    voucherId, kind: kind as 'applied' | 'consumed', saleId: input.saleId,
-    branchId: input.branchId, stationId: input.stationId, accountId: input.accountId,
-    occurredAt: input.occurredAt,
-  })));
+  const won = await writeDemoBoothPress(writer, input.booth, {
+    key: `${input.saleId}/booth`,
+    actionId: `${input.actionId}/booth-press`,
+    on: input.on,
+    at: input.wonAt,
+    prize: input.definitionCode,
+    staff: input.boothStaff,
+  });
+  const scannedAt = new Date(input.occurredAt.getTime() - 60_000);
+  await writer.insert(s.voucherRedemption).values(
+    ([['held', scannedAt], ['applied', input.occurredAt], ['consumed', input.occurredAt]] as const).map(([kind, at]) => ({
+      id: stableId(`${won.voucherId}/${kind}`, at), operatorId: input.operatorId,
+      voucherId: won.voucherId, kind, saleId: input.saleId,
+      branchId: input.branchId, stationId: input.stationId, accountId: input.accountId,
+      occurredAt: at,
+    })),
+  );
+  await writer.update(s.voucher).set({ status: 'redeemed', redeemedAt: input.occurredAt,
+    redeemedByAccountId: input.accountId, redeemedBranchId: input.branchId,
+    redeemedStationId: input.stationId, saleId: input.saleId, updatedAt: input.occurredAt })
+    .where(and(eq(s.voucher.id, won.voucherId), eq(s.voucher.status, 'issued')));
+  // A promo row names its code and what it took, and nobody: the till writes
+  // who rang the sale on the sale, not on a code's row.
   await writer.insert(s.saleDiscount).values({ id: stableId(`${input.saleId}/discount`, input.occurredAt),
     saleId: input.saleId, operatorId: input.operatorId, branchId: input.branchId,
     businessDate: input.on, sequence: 1, kind: 'promo', discountType: 'fixed',
-    valueSatang: input.discountSatang, amountSatang: input.discountSatang,
-    scope: 'order', code, label: definition.name, appliedByAccountId: input.accountId,
+    valueSatang: definition.valueSatang, amountSatang: input.discountSatang,
+    scope: 'order', code: won.code, label: `${definition.name} (voucher …${won.code.slice(-4)})`,
     appliedAt: input.occurredAt });
+}
+
+/**
+ * A manual discount as the till records one beside its sale (`commitSale` in
+ * apps/api services/sale.ts): kind `manual`, a fixed amount off the whole
+ * order, the reason staff chose, and who applied it with their name as it was.
+ */
+async function writeManualDiscount(writer: SeedWriter, input: {
+  saleId: string; operatorId: string; branchId: string; businessDate: string; sequence: number;
+  amountSatang: number; reason: string; appliedByAccountId: string; appliedByName: string | null; appliedAt: Date;
+}): Promise<void> {
+  await writer.insert(s.saleDiscount).values({
+    id: stableId(`${input.saleId}/discount/manual`, input.appliedAt),
+    saleId: input.saleId,
+    operatorId: input.operatorId,
+    branchId: input.branchId,
+    businessDate: input.businessDate,
+    sequence: input.sequence,
+    kind: 'manual',
+    discountType: 'fixed',
+    percentBp: null,
+    valueSatang: input.amountSatang,
+    amountSatang: input.amountSatang,
+    allocations: null,
+    scope: 'order',
+    reason: input.reason,
+    note: null,
+    appliedByAccountId: input.appliedByAccountId,
+    appliedByName: input.appliedByName,
+    appliedAt: input.appliedAt,
+  });
+}
+
+/**
+ * A sale already in the ledger whose manual discount has no row — every demo
+ * day pressed before the seed recorded them. The sale says what it carried
+ * (`manual_discount_satang`, frozen with it); the row the till would have
+ * written is added with that figure, applied by whoever rang the sale up, so
+ * the Discounts & Comps panel agrees with the day's summary. No trigger marks
+ * a day for a discount row, so the day is marked for the rollup here. A sale
+ * that has its row, or carried no manual discount, is left alone. Answers
+ * whether a row was added.
+ */
+async function topUpManualDiscount(writer: SeedWriter, saleId: string, reason: string): Promise<boolean> {
+  const [held] = await writer
+    .select({ operatorId: s.sale.operatorId, branchId: s.sale.branchId, businessDate: s.sale.businessDate,
+      occurredAt: s.sale.occurredAt, createdBy: s.sale.createdByAccountId, manual: s.sale.manualDiscountSatang })
+    .from(s.sale).where(eq(s.sale.id, saleId)).limit(1);
+  if (!held || held.manual <= 0) return false;
+  const discounts = await writer
+    .select({ kind: s.saleDiscount.kind, sequence: s.saleDiscount.sequence })
+    .from(s.saleDiscount).where(eq(s.saleDiscount.saleId, saleId));
+  if (discounts.some((d) => d.kind === 'manual')) return false;
+  await writeManualDiscount(writer, {
+    saleId,
+    operatorId: held.operatorId,
+    branchId: held.branchId,
+    businessDate: held.businessDate,
+    sequence: Math.max(0, ...discounts.map((d) => d.sequence)) + 1,
+    amountSatang: held.manual,
+    reason,
+    appliedByAccountId: held.createdBy,
+    appliedByName: await displayNameOf(writer, held.createdBy),
+    appliedAt: held.occurredAt,
+  });
+  await writer.execute(sql`select analytics.mark_dirty_date(${held.operatorId}::uuid, ${held.branchId}::uuid,
+    ${held.businessDate}::date, 'sales', 'seed:demo-day discount')`);
+  return true;
+}
+
+/** How a sale names an account (`displayNameOf` in services/sale.ts): the nickname, then the name. */
+async function displayNameOf(db: Db | SeedWriter, accountId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ name: s.employee.name, nickname: s.employee.nickname })
+    .from(s.account)
+    .leftJoin(s.employee, eq(s.account.employeeId, s.employee.id))
+    .where(eq(s.account.id, accountId))
+    .limit(1);
+  return row?.nickname ?? row?.name ?? null;
 }
 
 async function seedDemoCashRefund(db: Db, input: {
@@ -1345,13 +1584,11 @@ if (isMain) {
   const on = flag >= 0 ? process.argv[flag + 1] : undefined;
   seedDemoDay(getDb(), on ? { on } : {})
     .then((counts) => {
-      console.log(
-        counts.sales === 0
-          ? `Demo day ${counts.businessDate} at ${counts.branchName}: already seeded (${counts.skipped} sales), nothing written.`
-          : `Demo day ${counts.businessDate} at ${counts.branchName}: ${counts.sales} sales, ${counts.lines} lines, ${counts.attempts} payment attempts, ${counts.notifications} gateway notifications${counts.skipped ? `, ${counts.skipped} already present` : ''}.`,
-      );
-      if (counts.legacyFixtureDays > 0) {
-        console.log(`Frozen legacy fixture days loaded at ${counts.branchName}: ${counts.legacyFixtureDays}.`);
+      console.log(describeDemoDay(counts));
+      if (counts.sales > 0) {
+        console.log(
+          `Written: ${counts.lines} lines, ${counts.attempts} payment attempts, ${counts.notifications} gateway notifications, ${counts.discounts} manual discount rows.`,
+        );
       }
       return closeDb();
     })

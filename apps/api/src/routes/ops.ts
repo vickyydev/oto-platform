@@ -549,7 +549,7 @@ export async function opsRoutes(app: App): Promise<void> {
       // Floresta's Performance, End of Day or Radar figures.
       label: 'Add demo sales to Demo Branch 2 (today)',
       description:
-        'Adds the labelled trading-day scenarios once, at Demo Branch 2 (made on first use) — never at a live park. Keeps existing records and closed days unchanged.',
+        'Adds the labelled trading-day scenarios and a day at the branch’s own booth once, at Demo Branch 2 (made on first use) — never at a live park or a live booth. A day added before fills in what it lacks without writing anything twice. Keeps existing records and closed days unchanged.',
       sticky: true,
     },
     {
@@ -698,10 +698,12 @@ export async function opsRoutes(app: App): Promise<void> {
     accountId: string,
   ): Promise<string> {
     if (key === 'demo.day') {
-      const { seedDemoDay } = await import('@oto/db/seed');
-      // Each scenario commits atomically; repeating finishes an interrupted seed.
+      const { describeDemoDay, seedDemoDay } = await import('@oto/db/seed');
+      // Each scenario and each booth press commits atomically; repeating
+      // finishes an interrupted seed and tops up a day written before the seed
+      // recorded what it records now, without writing anything twice.
       const counts = await seedDemoDay(app.db);
-      return `Demo day ${counts.businessDate} at ${counts.branchName}: ${counts.sales} sales added, ${counts.skipped} already present. Existing records and closed-day totals were kept.`;
+      return `${describeDemoDay(counts)} Existing records and closed-day totals were kept.`;
     }
     if (key === 'watchdog.run') {
       const outcome = await jobRunner().runJob(WATCHDOG_JOB, { force: true });

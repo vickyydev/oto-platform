@@ -258,7 +258,8 @@ afterAll(async () => {
 describe('re-check — the press on a today the old control wrote at Central (finding 6)', () => {
   it('says truthfully that Demo Branch 2 got its eleven sales, and moves nothing at a live park', async () => {
     expect(pressMessage).toBe(
-      `Demo day ${T} at Demo Branch 2: 11 sales added, 0 already present. Existing records and closed-day totals were kept.`,
+      `Demo day ${T} at Demo Branch 2: 11 sales added, 0 already present; booth: 6 spins added, 0 already present. ` +
+        'Existing records and closed-day totals were kept.',
     );
     expect(moneyAfter).toEqual(moneyBefore);
     const demoTill = await tillAt(demo);

@@ -37,6 +37,7 @@ import { seedStock, syncStockSetup } from './stock';
 import { seedSupervision } from './supervision';
 import { seedWalletPolicies } from './wallet';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
+import { stableJson } from './stable-id';
 import * as s from '../schema/index';
 
 /**
@@ -52,12 +53,15 @@ export {
   DEMO_BRANCH_CODES,
   DEMO_BRANCH_NAME,
   DemoBranchRefusedError,
+  describeDemoDay,
   ensureDemoBranch,
   seedDemoDay,
   stableId as demoStableId,
   type DemoBranch,
   type DemoDayCounts,
 } from './demo-day';
+/** Demo Branch 2's own booth, whose day the demo day files beside its sales. */
+export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
 /** The frozen legacy days the demo day loads at Demo Branch 2 (S2-15b round 6). */
 export {
   LEGACY_FIXTURE_DAYS,
@@ -67,22 +71,6 @@ export {
 } from './legacy-fixtures';
 
 const b = satangFromBaht;
-
-/**
- * JSON with every object's keys in sorted order.
- *
- * A booth's `bundle_hash` is what the box compares to decide whether it is
- * already running a version, so it must not change because somebody wrote two
- * fields in a different order. The publish path (S2-07b) owns the canonical
- * form for versions a person creates; this is the same rule, applied to the
- * one version this file writes.
- */
-const stableJson = (value: unknown): string =>
-  JSON.stringify(value, (_key, v: unknown) => {
-    if (!v || typeof v !== 'object' || Array.isArray(v)) return v;
-    const src = v as Record<string, unknown>;
-    return Object.fromEntries(Object.keys(src).sort().map((k) => [k, src[k]]));
-  });
 
 // Prototype pricing constants (catalogStore.ts:176-258), in satang.
 const ADULT_ADMISSION: WWPrice = wwp(b(350), b(500));

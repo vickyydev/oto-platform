@@ -9,8 +9,8 @@ import { createHash } from 'node:crypto';
  * is a hash of the key instead of being random, which is what makes a second
  * run of a seed a no-op rather than a second copy.
  *
- * Shared by the demo day (`demo-day.ts`) and the legacy fixture days
- * (`legacy-fixtures.ts`).
+ * Shared by the demo day (`demo-day.ts`), its booth (`demo-booth.ts`) and the
+ * legacy fixture days (`legacy-fixtures.ts`).
  */
 export function stableId(key: string, at: Date): string {
   const ms = BigInt(at.getTime());
@@ -26,3 +26,19 @@ export function stableId(key: string, at: Date): string {
     rand.slice(8, 20),
   ].join('-');
 }
+
+/**
+ * JSON with every object's keys in sorted order.
+ *
+ * A booth's `bundle_hash` is what the box compares to decide whether it is
+ * already running a version, so it must not change because somebody wrote two
+ * fields in a different order. The publish path (S2-07b) owns the canonical
+ * form for versions a person creates; this is the same rule, applied to the
+ * versions the seed writes (the park's Booth 1 and Demo Branch 2's booth).
+ */
+export const stableJson = (value: unknown): string =>
+  JSON.stringify(value, (_key, v: unknown) => {
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return v;
+    const src = v as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(src).sort().map((k) => [k, src[k]]));
+  });
