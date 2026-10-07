@@ -53,6 +53,8 @@ import { commitSale } from '../src/services/sale';
 import { effectiveBenefitOn } from '../src/services/benefits';
 import { issueClaimCode } from '../src/services/box';
 import { openQrAttempt } from '../src/services/payments/gateway';
+import { recordManualTender } from '../src/services/payments/terminal';
+import { assertSaleBenefitsLive } from '../src/services/benefit-checkout';
 
 /**
  * S2-21 (SCRUM-218) round 3 — THE REVIEW: the money, attacked.
@@ -964,6 +966,110 @@ describe('REJECT 1 — a sale whose benefit was taken off takes money by no road
     const res = await roads['keyed-in card']!(saleId);
     expect(`${res.status} ${res.body.error?.code ?? ''}`).toBe('409 BENEFIT_APPLICATION_RELEASED');
     expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toEqual([]);
+  });
+});
+
+/**
+ * Fix round for REJECT 1 — the guard under a move racing it. The move (the
+ * same scan committed on the order rung up again) locks the application and
+ * then reads the old sale's attempts; the tender locks the old sale and then
+ * asks the guard. The guard holds the application FOR SHARE, so whichever
+ * comes second waits on the first and then refuses: never a card on a sale
+ * whose benefit has gone, never a benefit moved off a sale with a card on it.
+ */
+describe('REJECT 1 fixed — the tender guard and a move, at the same instant', () => {
+  /** Wait until some session is queued on a lock while touching `promo.benefit_application`. */
+  async function waitForApplicationLockWait(): Promise<void> {
+    const deadline = Date.now() + 15_000;
+    for (;;) {
+      const waiting = await ctx.db.execute(
+        sql`select count(*)::int as n from pg_stat_activity
+             where datname = current_database() and wait_event_type = 'Lock'
+               and query ilike '%benefit_application%'`,
+      );
+      if (Number((waiting.rows[0] as { n: number }).n) > 0) return;
+      if (Date.now() > deadline) throw new Error('nothing ever queued on the benefit application');
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+  }
+  const tenderActor = () => ({ accountId: receptionId, operatorId, assertBranchAllowed: async () => {} });
+
+  it('a card keyed in first: the move waits for it, then refuses; the benefit stays on the paid order', async () => {
+    await resetUsage(people.som);
+    const saleId = newId();
+    const scan = benefitOf(codes.som);
+    const rung = await commit(cart([line(item.espresso), line(item.hotdog)], scan), saleId);
+    expect(rung.status, rung.raw).toBe(200);
+
+    let letCardCommit!: () => void;
+    const gate = new Promise<void>((resolve) => (letCardCommit = resolve));
+    let cardRecorded!: () => void;
+    const recorded = new Promise<void>((resolve) => (cardRecorded = resolve));
+    const card = ctx.db.transaction(async (tx) => {
+      const out = await recordManualTender(tx, tenderActor(), {
+        saleId,
+        approvalCode: '654321',
+        tid: '12345678',
+        last4: '4242',
+        actionId: newId(),
+      });
+      cardRecorded();
+      await gate;
+      return out;
+    });
+    await recorded;
+    const movedId = newId();
+    const move = commit(cart([line(item.espresso), line(item.hotdog), line(item.water)], scan), movedId);
+    await waitForApplicationLockWait();
+    letCardCommit();
+    const [paid, moved] = await Promise.all([card, move]);
+
+    expect(paid.attempt.status).toBe('approved');
+    expect(`${moved.status} ${moved.body.error?.code ?? ''}`).toBe('409 BENEFIT_APPLICATION_USED');
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, movedId))).toEqual([]);
+    const [app] = await applicationsOf(saleId);
+    expect(app!.removedAt).toBeNull();
+    // The paid order can still close with its benefit.
+    await expect(assertSaleBenefitsLive(ctx.db, saleId)).resolves.toBeUndefined();
+    expect((await counter(people.som, 'free:coffee'))[0]!.qtyUsed).toBe(1);
+  });
+
+  it('the move first: the card waits for it, then is refused, and no attempt is written', async () => {
+    await resetUsage(people.som);
+    const saleId = newId();
+    const scan = benefitOf(codes.som);
+    const rung = await commit(cart([line(item.espresso), line(item.hotdog)], scan), saleId);
+    expect(rung.status, rung.raw).toBe(200);
+
+    let letMoveCommit!: () => void;
+    const gate = new Promise<void>((resolve) => (letMoveCommit = resolve));
+    let moveApplied!: () => void;
+    const applied = new Promise<void>((resolve) => (moveApplied = resolve));
+    const movedId = newId();
+    const move = ctx.db.transaction(async (tx) => {
+      const out = await commitSale(tx, serviceActor(), {
+        id: movedId,
+        ...cart([line(item.espresso), line(item.hotdog), line(item.water)], scan, {}, t1.id),
+      } as never);
+      moveApplied();
+      await gate;
+      return out;
+    });
+    await applied;
+    const card = call('POST', '/payments/manual', reception, {
+      saleId,
+      approvalCode: '123456',
+      tid: '12345678',
+      last4: '4242',
+    });
+    await waitForApplicationLockWait();
+    letMoveCommit();
+    const [, refused] = await Promise.all([move, card]);
+
+    expect(`${refused.status} ${refused.body.error?.code ?? ''}`).toBe('409 BENEFIT_APPLICATION_RELEASED');
+    expect(await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, saleId))).toEqual([]);
+    expect((await applicationsOf(saleId))[0]!.removedReason).toBe('moved');
+    expect((await applicationsOf(movedId))[0]!.removedAt).toBeNull();
   });
 });
 
