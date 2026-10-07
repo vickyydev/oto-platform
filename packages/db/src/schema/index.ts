@@ -33,3 +33,6 @@ export * from './stock';
 // paid-outs and safe drops it expects less of.
 export * from './cash';
 export * from './sale-extensions';
+// Staff benefits (S2-21): role templates and each person's benefit, versioned
+// by effective date — after `promo`'s neighbours and the tenancy they key on.
+export * from './benefits';

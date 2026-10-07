@@ -36,6 +36,7 @@ import { seedMenu } from './menu';
 import { seedStock, syncStockSetup } from './stock';
 import { seedSupervision } from './supervision';
 import { seedWalletPolicies } from './wallet';
+import { seedBenefits } from './benefits';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
 import { stableJson } from './stable-id';
 import * as s from '../schema/index';
@@ -60,6 +61,8 @@ export {
   type DemoBranch,
   type DemoDayCounts,
 } from './demo-day';
+/** The staff-benefit templates and profiles the demo tenant is seeded with (S2-21). */
+export { BENEFIT_SEED_EFFECTIVE_FROM, seedBenefitTemplates } from './benefits';
 /** Demo Branch 2's own booth, whose day the demo day files beside its sales. */
 export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
 /** The frozen legacy days the demo day loads at Demo Branch 2 (S2-15b round 6). */
@@ -432,7 +435,7 @@ export async function seed(db: Db = getDb()): Promise<void> {
   };
   const empAnan = await emp('Khun Anan (Owner)', 'reception', '+66900000001');
   const empSom = await emp('Som (Reception)', 'reception', '+66900000002');
-  await emp('Nok (Reception)', 'reception', '+66900000003');
+  const empNok = await emp('Nok (Reception)', 'reception', '+66900000003');
   const empLek = await emp('Khun Lek (Manager)', 'reception', '+66900000004');
   const empDao = await emp('Khun Dao (Manager)', 'reception', '+66900000005', {
     branch: chalongId,
@@ -815,6 +818,13 @@ export async function seed(db: Db = getDb()): Promise<void> {
   // Stock (S2-14b): the prototype's places, items and figures, opened by a
   // count — once per branch, after the menu whose products it stocks.
   await seedStock(db, { operatorId, branchId });
+  // Staff benefits (S2-21): the prototype's three role templates and its
+  // roster's benefit roles, after the menu whose Coffee category the free
+  // coffee points at.
+  await seedBenefits(db, {
+    operatorId,
+    employees: { anan: empAnan, som: empSom, nok: empNok, lek: empLek },
+  });
   // A product the tax-override resolver can point at. Found by name so the
   // menu's own Ice Cream Cone counts — this must not mint a second row — and,
   // if the menu somehow seeded none, created at the menu's price, not another.

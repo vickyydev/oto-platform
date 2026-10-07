@@ -63,6 +63,7 @@ import { permissionPlugin } from './plugins/permission';
 import { stationOfflinePlugin } from './plugins/station-offline';
 import { displayRoutes } from './routes/display';
 import { saleExtensionRoutes } from './routes/sale-extensions';
+import { benefitRoutes } from './routes/benefits';
 import { credentialPlugin } from './plugins/credential';
 import { telemetryPlugin } from './plugins/telemetry';
 import { pgErrorOf, scrubPgError, scrubUrl, uniqueViolationToAppError } from './lib/scrub';
@@ -429,6 +430,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(boothRoutes);
   await app.register((await import('./routes/vouchers')).voucherRoutes);
   await app.register((await import('./routes/voucher-definitions')).voucherDefinitionRoutes);
+  // S2-21 — Admin > Staff Benefits: the role templates and each person's benefit.
+  await app.register(benefitRoutes, { prefix: '/benefits' });
   /**
    * The tender surface (S2-10a): card routing, the inquiry, the audited staff
    * confirmation. Under `/payments` and not `/sales` because `/sales` is the

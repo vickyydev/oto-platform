@@ -96,6 +96,20 @@ export const employee = core.table(
     email: text('email'),
     departmentId: uuid('department_id').references(() => department.id),
     branchId: uuid('branch_id').references(() => branch.id),
+    /**
+     * Where this person's record is kept (S2-21; plan
+     * docs/progress/plans/benefits/PLAN.md §7). `platform`: written here — the
+     * seed, or an account created in the admin console. `otoapp`: copied from
+     * the OTO App's staff directory, which stays the employee master (C13);
+     * the copy job (`otoapp:employee.sync`, S2-17b) writes these and nothing
+     * else may edit them.
+     */
+    source: text('source').$type<EmployeeSource>().notNull().default('platform'),
+    /**
+     * The OTO App's id for this person, set on a copied row so the next copy
+     * finds it instead of making a second one. Null on a platform row.
+     */
+    externalId: text('external_id'),
     ...timestamps,
     ...archivedAt,
   },
@@ -104,8 +118,16 @@ export const employee = core.table(
     index('employee_department_idx').on(t.departmentId),
     index('employee_branch_idx').on(t.branchId),
     index('employee_phone_idx').on(t.phone),
+    check('employee_source_check', sql`${t.source} in ('platform','otoapp')`),
+    /** One live row per source person; archiving frees it (schema-shape rule). */
+    uniqueIndex('employee_external_id_unique')
+      .on(t.operatorId, t.externalId)
+      .where(sql`external_id is not null and archived_at is null`),
   ],
 );
+
+export const EMPLOYEE_SOURCES = ['platform', 'otoapp'] as const;
+export type EmployeeSource = (typeof EMPLOYEE_SOURCES)[number];
 
 /**
  * Enumerations are text + CHECK rather than pg enums (S2-01b). Adding a value
