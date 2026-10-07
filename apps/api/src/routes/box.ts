@@ -36,6 +36,7 @@ import {
 import { recordPrintJobResult } from '../services/print';
 import { BoxPhotoBodySchema, linkBoxPhoto, presignBoxPhoto } from '../services/sync-checkin';
 import { buildPrintDocument } from '../services/sale-printing';
+import { sendFiledCheckins } from '../services/event-checkins';
 import type { OpContext } from '../services/tx';
 
 /**
@@ -335,7 +336,17 @@ export async function boxRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = boxAuth(req);
-      return pushEvents(app.db, auth, req.body, boxCtx(req, auth));
+      const result = await pushEvents(app.db, auth, req.body, boxCtx(req, auth));
+      // S2-20 E3 — an event check-in the box made with the link down is owed
+      // to the OTO App the moment it is filed: sent now, a few at a time, and
+      // whatever is left or fails waits on the Failures page like any other.
+      if (result.applied > 0) {
+        await sendFiledCheckins(
+          { db: app.db, directory: app.otoAppDirectory, log: req.log },
+          { boxId: auth.boxId, limit: 10, requestId: req.id },
+        ).catch((err: unknown) => req.log.error({ err }, 'filed event check-ins could not be sent to the OTO App'));
+      }
+      return result;
     },
   );
 

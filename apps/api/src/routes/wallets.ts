@@ -8,7 +8,7 @@ import {
   WalletReportQuerySchema,
   type BandStayView,
 } from '@oto/shared';
-import { bandStayViewOf, stayForKey } from '../services/band-food';
+import { bandStayViewOf, eventBandStayForKey, stayForKey } from '../services/band-food';
 import type { FastifyRequest } from 'fastify';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
@@ -122,6 +122,15 @@ export async function walletRoutes(app: App): Promise<void> {
           .catch(() => false);
         const row = allowed ? await stayForKey(app.db, auth.operatorId, branchId, req.query.key, found?.id ?? null) : null;
         stay = row ? await bandStayViewOf(app.db, row) : null;
+        // S2-20 E3 — an event child's kid band: their allergy and diet lines,
+        // read with the events permission, as the roster shows them.
+        if (!stay) {
+          const mayReadEvents = await req
+            .requirePermission('pos:event:read', { branchId })
+            .then(() => true)
+            .catch(() => false);
+          stay = mayReadEvents ? await eventBandStayForKey(app.db, auth.operatorId, branchId, req.query.key) : null;
+        }
       }
       if (!found && !stay) throw notFound();
       return {

@@ -138,6 +138,7 @@ import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
  */
 import { CHECKIN_HANDLERS, checkinCacheItem } from './sync-checkin';
 import { WALLET_HANDLERS, walletCacheItem } from './sync-wallet';
+import { EVENT_HANDLERS } from './sync-events';
 import { stockCacheItem, withStockOversold } from './sync-stock';
 /** S2-20 E1 — the branch's events on its business day, read from the OTO App. */
 import { eventsCacheItem } from './events';
@@ -2433,6 +2434,11 @@ const HANDLERS: Record<string, EventHandler> = {
   ...CHECKIN_HANDLERS,
   /** S2-14a round 4 — `wallet.spent`: credit a box took offline under the cap (`sync-wallet.ts`). */
   ...WALLET_HANDLERS,
+  /**
+   * S2-20 E3 — `event.checked_in` and `event.checked_out`: a child checked in
+   * or out at an event with the link down, bands and all (`sync-events.ts`).
+   */
+  ...EVENT_HANDLERS,
 };
 
 /**

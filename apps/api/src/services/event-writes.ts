@@ -95,13 +95,13 @@ export interface EventWriteResult {
   drawerKick: DrawerKick | null;
 }
 
-interface BranchClock {
+export interface BranchClock {
   id: string;
   timezone: string;
   dayStartMinutes: number;
 }
 
-async function branchClockOf(db: Exec, operatorId: string, branchId: string): Promise<BranchClock> {
+export async function branchClockOf(db: Exec, operatorId: string, branchId: string): Promise<BranchClock> {
   const [row] = await db
     .select({ id: branch.id, timezone: branch.timezone, dayStart: branch.businessDayStart })
     .from(branch)
@@ -112,7 +112,7 @@ async function branchClockOf(db: Exec, operatorId: string, branchId: string): Pr
 }
 
 /** The seam installed but not granted: a fault to say, as the read routes say it. */
-async function seamRead<T>(read: () => Promise<T>): Promise<T> {
+export async function seamRead<T>(read: () => Promise<T>): Promise<T> {
   try {
     return await read();
   } catch (err) {
@@ -124,7 +124,7 @@ async function seamRead<T>(read: () => Promise<T>): Promise<T> {
 }
 
 /** What the park calls a member of staff: their nickname, then their name. */
-async function staffNameOf(db: Exec, accountId: string): Promise<string> {
+export async function staffNameOf(db: Exec, accountId: string): Promise<string> {
   const [row] = await db
     .select({ name: employee.name, nickname: employee.nickname })
     .from(account)

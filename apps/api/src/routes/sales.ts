@@ -901,7 +901,8 @@ export async function saleRoutes(app: App): Promise<void> {
         const bands = await findBandsByCode(app.db, auth.operatorId, req.query.band);
         const found = await listSales(app.db, auth.operatorId, {
           ...scope,
-          saleIds: [...new Set(bands.map((b) => b.saleId))],
+          // S2-20 E3 — an event band has no sale: History lists the sales, so it names none.
+          saleIds: [...new Set(bands.map((b) => b.saleId).filter((id): id is string => id !== null))],
         });
         return {
           match: { by: 'band' as const, bandIds: bands.map((b) => b.id) },

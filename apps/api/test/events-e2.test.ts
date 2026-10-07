@@ -162,6 +162,10 @@ const directory: OtoAppDirectory = {
       retryable: outcome.status >= 500,
     };
   },
+  // S2-20 E3 — check-ins are written back too; E2's suite checks nobody in.
+  async checkinAttendee() {
+    return { ok: false, status: null, code: 'OTOAPP_DIRECTORY_NOT_CONFIGURED', message: 'Not in this suite', retryable: true };
+  },
 };
 
 // --- Helpers ---------------------------------------------------------------------

@@ -242,7 +242,7 @@ export async function countAt(
       order by l.band_id, l.at desc, l.id desc
     ),
     inside as (
-      select b.id, b.sale_id
+      select b.id, b.sale_id, b.event_checkin_id
       from latest l
       join pos.band b on b.id = l.band_id
       where l.kind = 'entry' and b.gate_access
@@ -256,10 +256,13 @@ export async function countAt(
     )
     select
       coalesce((select json_agg(i.id order by i.id) from inside i), '[]'::json) as "adultBandIds",
-      coalesce((select json_agg(distinct i.sale_id) from inside i), '[]'::json) as "saleIds",
+      coalesce((select json_agg(distinct i.sale_id) filter (where i.sale_id is not null) from inside i), '[]'::json) as "saleIds",
+      -- A kid follows its group: the sale its ticket was on, or — S2-20 E3 —
+      -- the event check-in that issued it and its parent's band.
       (select count(*)::int from pos.band k
         where not k.gate_access and k.status = 'active'
-          and k.sale_id in (select i.sale_id from inside i)
+          and (k.sale_id in (select i.sale_id from inside i where i.sale_id is not null)
+            or k.event_checkin_id in (select i.event_checkin_id from inside i where i.event_checkin_id is not null))
           and not exists (select 1 from pos.checkin c where c.band_id = k.id)) as "kids",
       (select count(*)::int from pos.checkin c
         where c.branch_id = ${branchId}
@@ -303,7 +306,13 @@ export async function strandedOf(
 
   const bands = count.adultBandIds.length
     ? await exec
-        .select({ id: band.id, code: band.code, saleId: band.saleId, memberId: band.memberId })
+        .select({
+          id: band.id,
+          code: band.code,
+          saleId: band.saleId,
+          eventCheckinId: band.eventCheckinId,
+          memberId: band.memberId,
+        })
         .from(band)
         .where(inArray(band.id, count.adultBandIds))
         .orderBy(asc(band.code))
@@ -334,7 +343,9 @@ export async function strandedOf(
     )
     .orderBy(asc(checkin.checkedInAt), asc(checkin.id));
 
-  const saleIds = [...new Set([...bands.map((b) => b.saleId), ...checkins.map((c) => c.saleId).filter((id): id is string => !!id)])];
+  const saleIds = [
+    ...new Set([...bands.map((b) => b.saleId), ...checkins.map((c) => c.saleId)].filter((id): id is string => !!id)),
+  ];
   const sales = saleIds.length
     ? await exec.select({ id: sale.id, receiptNumber: sale.receiptNumber, memberId: sale.memberId }).from(sale).where(inArray(sale.id, saleIds))
     : [];
@@ -366,23 +377,34 @@ export async function strandedOf(
   const lastEvent = new Map<string, (typeof events)[number]>();
   for (const e of events) if (!lastEvent.has(e.bandId)) lastEvent.set(e.bandId, e);
 
-  const bandSaleIds = [...new Set(bands.map((b) => b.saleId))];
-  const kids = bandSaleIds.length
-    ? await exec
-        .select({ saleId: band.saleId, n: sql<number>`count(*)::int` })
-        .from(band)
-        .where(
-          and(
-            inArray(band.saleId, bandSaleIds),
-            eq(band.gateAccess, false),
-            eq(band.status, 'active'),
-            sql`not exists (select 1 from pos.checkin c where c.band_id = ${band.id})`,
-          ),
-        )
-        .groupBy(band.saleId)
-    : [];
-  const kidsBySale = new Map(kids.map((k) => [k.saleId, Number(k.n)]));
-  /** A sale's children go with its first listed band, so none is counted twice. */
+  /**
+   * The group a band's children follow: its sale, or — S2-20 E3 — the event
+   * check-in that issued an event parent band and its child's kid band.
+   */
+  const groupOf = (b: { saleId: string | null; eventCheckinId: string | null }): string =>
+    b.saleId ?? `event:${b.eventCheckinId ?? ''}`;
+  const bandSaleIds = [...new Set(bands.map((b) => b.saleId).filter((id): id is string => !!id))];
+  const bandCheckinIds = [...new Set(bands.map((b) => b.eventCheckinId).filter((id): id is string => !!id))];
+  const kids =
+    bandSaleIds.length || bandCheckinIds.length
+      ? await exec
+          .select({ saleId: band.saleId, eventCheckinId: band.eventCheckinId, n: sql<number>`count(*)::int` })
+          .from(band)
+          .where(
+            and(
+              or(
+                bandSaleIds.length ? inArray(band.saleId, bandSaleIds) : sql`false`,
+                bandCheckinIds.length ? inArray(band.eventCheckinId, bandCheckinIds) : sql`false`,
+              ),
+              eq(band.gateAccess, false),
+              eq(band.status, 'active'),
+              sql`not exists (select 1 from pos.checkin c where c.band_id = ${band.id})`,
+            ),
+          )
+          .groupBy(band.saleId, band.eventCheckinId)
+      : [];
+  const kidsByGroup = new Map(kids.map((k) => [groupOf(k), Number(k.n)]));
+  /** A group's children go with its first listed band, so none is counted twice. */
   const kidsShown = new Set<string>();
 
   const guardianOf = (memberId: string | null) => {
@@ -390,19 +412,21 @@ export async function strandedOf(
     return m ? { name: m.nickname || m.name, phone: m.phone } : null;
   };
   const rows: EodStrandedRow[] = bands.map((b) => {
-    const s = saleById.get(b.saleId);
+    const s = b.saleId ? saleById.get(b.saleId) : undefined;
     const ev = lastEvent.get(b.id);
-    const first = !kidsShown.has(b.saleId);
-    kidsShown.add(b.saleId);
+    const group = groupOf(b);
+    const first = !kidsShown.has(group);
+    kidsShown.add(group);
     return {
       kind: 'band',
       subjectId: b.id,
       bandCode: b.code,
       childName: null,
-      childrenWithBand: first ? (kidsBySale.get(b.saleId) ?? 0) : 0,
+      childrenWithBand: first ? (kidsByGroup.get(group) ?? 0) : 0,
       lastGateEvent: ev ? { kind: ev.kind, at: ev.createdAt.toISOString(), stationName: ev.stationName } : null,
       checkedInAt: null,
-      sale: { saleId: b.saleId, receiptNumber: s?.receiptNumber ?? null },
+      // An event parent band (S2-20 E3) was issued by a check-in, not a sale.
+      sale: b.saleId ? { saleId: b.saleId, receiptNumber: s?.receiptNumber ?? null } : null,
       guardian: guardianOf(b.memberId ?? s?.memberId ?? null),
     };
   });

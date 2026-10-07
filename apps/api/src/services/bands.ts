@@ -277,6 +277,98 @@ export async function mintSaleBands(
   return { bands: [...allExisting, ...minted], minted };
 }
 
+// --- Event bands (S2-20 E3) -------------------------------------------------------
+
+export interface MintEventBandsInput {
+  operatorId: string;
+  branchId: string;
+  /** The check-in that issues them, and the group the kid follows. */
+  eventCheckinId: string;
+  /** The saved child the till pre-filled the attendee from, when it did. */
+  childId: string | null;
+  memberId: string | null;
+  /** A parent band too: the parent is staying (`parentAttending`). */
+  parentAttending: boolean;
+  stationPrefix: string;
+  stationId: string | null;
+  boxId: string | null;
+  now: Date;
+  /** The facts of the issue for the `minted` event: the event and the attendee. Never a code. */
+  detail: Record<string, unknown>;
+}
+
+/**
+ * THE BANDS AN EVENT CHECK-IN ISSUES (`checkInEventAttendee`,
+ * mockApi.ts:3808-3837): a kid band always — no gate access, its own allergy
+ * and diet lines on paper — and, when the parent is attending, a parent band
+ * that operates the gate. Both name the check-in (`event_checkin_id`), which is
+ * the group the kid follows in the occupancy count, and neither names a sale.
+ * Event bands carry no credit (nothing is granted here).
+ *
+ * Idempotent like `mintSaleBands`: a band the check-in already has is not
+ * minted again, so a reprint of a check-in made while this deployment had no
+ * key issues what is missing and never a second band.
+ *
+ * @throws `BandKeyMissingError` when there is no key; the caller decides.
+ */
+export async function mintEventBands(
+  tx: Tx,
+  input: MintEventBandsInput,
+): Promise<{ kid: BandRow; parent: BandRow | null; minted: BandRow[] }> {
+  const key = currentBandKey();
+  if (!key) throw new BandKeyMissingError();
+  if (!input.stationPrefix) throw new Error('the station has no code prefix');
+  const existing = await tx
+    .select()
+    .from(band)
+    .where(eq(band.eventCheckinId, input.eventCheckinId))
+    .orderBy(asc(band.createdAt), asc(band.id));
+  let kid = existing.find((b) => b.kind === 'kid') ?? null;
+  let parent = existing.find((b) => b.kind === 'adult') ?? null;
+  const minted: BandRow[] = [];
+  let at = input.now.getTime();
+  const mint = async (kind: 'kid' | 'adult'): Promise<BandRow> => {
+    const id = newId();
+    const [row] = await tx
+      .insert(band)
+      .values({
+        id,
+        operatorId: input.operatorId,
+        branchId: input.branchId,
+        saleId: null,
+        eventCheckinId: input.eventCheckinId,
+        saleLineId: null,
+        memberId: input.memberId,
+        childId: kind === 'kid' ? input.childId : null,
+        kind,
+        // The kid band never opens the gate; the parent band does.
+        gateAccess: kind === 'adult',
+        code: mintBandCode(input.stationPrefix, ulidFromUuid(id), key),
+        status: 'active',
+        createdAt: new Date(at),
+        updatedAt: new Date(at),
+      })
+      .returning();
+    at += 1;
+    if (!row) throw new Error('the band was not written');
+    await tx.insert(bandEvent).values({
+      id: newId(),
+      bandId: row.id,
+      kind: 'minted',
+      stationId: input.stationId,
+      boxId: input.boxId,
+      // The facts of the issue. Never the code: it is a gate credential.
+      detail: { ...input.detail, eventCheckinId: input.eventCheckinId, gateAccess: kind === 'adult' },
+      createdAt: new Date(row.createdAt.getTime()),
+    });
+    minted.push(row);
+    return row;
+  };
+  if (!kid) kid = await mint('kid');
+  if (input.parentAttending && !parent) parent = await mint('adult');
+  return { kid, parent, minted };
+}
+
 /** No key, so no band. The sale still finalises; the answer says why no band printed. */
 export class BandKeyMissingError extends Error {
   readonly code = 'BAND_KEY_MISSING';
@@ -422,5 +514,6 @@ export async function revokeSaleBands(
 export async function saleIdsOfBands(db: Exec, bandIds: readonly string[]): Promise<string[]> {
   if (bandIds.length === 0) return [];
   const rows = await db.select({ saleId: band.saleId }).from(band).where(inArray(band.id, [...bandIds]));
-  return [...new Set(rows.map((r) => r.saleId))];
+  // S2-20 E3 — an event band has no sale to name.
+  return [...new Set(rows.map((r) => r.saleId).filter((id): id is string => id !== null))];
 }

@@ -8,6 +8,7 @@ import {
   child,
   device,
   employee,
+  eventCheckin,
   member,
   nanny,
   operator,
@@ -21,12 +22,14 @@ import {
 } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  eventBandDocument,
   groupPrepTickets,
   newId,
   reprintRootOf,
   salePrintDocumentOf,
   salePrintRequests,
   supervisionBadgeOf,
+  type EventBandDocument,
   type PrintKind,
   type SalePrintRequest,
   type SalePrintSnapshot,
@@ -561,6 +564,140 @@ export async function queueCheckinBandPrints(
   } catch {
     return { jobs: [], notes: ['Bands could not be queued for printing — reprint them from History'] };
   }
+}
+
+/**
+ * S2-20 E3 — THE BANDS AN EVENT CHECK-IN PRINTS, or prints again.
+ *
+ * A kid band, and a parent band when the parent is attending, written exactly
+ * as a sale's bands are (`writeJob`): a job row per band and the box command
+ * that makes the station's box print it, the content fetched from the
+ * platform when it prints (`buildPrintDocument`, `eventBandDocumentOf`). There
+ * is no sale: the check-in issued them.
+ *
+ *   - `first` — the check-in's own paper, under a savepoint like a sale's: a
+ *     print that cannot be queued never undoes the check-in, and the note says
+ *     to reprint (the prototype's "Checked in — no printer … bracelet not
+ *     printed": the check-in stands);
+ *   - `reprint` — fresh paper for the same bands, a copy that names the
+ *     original job (`reprintRootOf`), and a `reprinted` band event; the band,
+ *     its id and its code are unchanged (`recordBandReprint`).
+ */
+export async function queueEventBandPrints(
+  tx: Tx,
+  input: {
+    operatorId: string;
+    branchId: string;
+    stationId: string;
+    bands: ReadonlyArray<typeof band.$inferSelect>;
+    actorAccountId: string | null;
+    actionId: string;
+    requestId?: string;
+    now?: Date;
+    reprint?: { reason: string; accountId: string };
+  },
+): Promise<{ jobs: SalePrintJobView[]; notes: string[] }> {
+  const now = input.now ?? new Date();
+  if (input.bands.length === 0) return { jobs: [], notes: [] };
+  const run = async (sp: Tx) => {
+    const [stationRow] = await sp
+      .select()
+      .from(station)
+      .where(and(eq(station.id, input.stationId), eq(station.operatorId, input.operatorId)))
+      .limit(1);
+    if (!stationRow || stationRow.branchId !== input.branchId) {
+      throw new AppError(404, 'STATION_NOT_FOUND', 'No such station at this park');
+    }
+    if (!stationRow.boxId) {
+      if (input.reprint) {
+        throw new AppError(409, 'STATION_HAS_NO_BOX', `${stationRow.name} is not attached to a box, so nothing on it can print`);
+      }
+      return { jobs: [], notes: ['Bands not printed — this station is not attached to a box'] };
+    }
+    const scope: JobScope = {
+      operatorId: input.operatorId,
+      branchId: input.branchId,
+      saleId: null,
+      stationRow,
+      actorAccountId: input.actorAccountId,
+      actionId: input.actionId,
+      requestId: input.requestId,
+      now,
+    };
+    const jobs: SalePrintJobView[] = [];
+    const notes: string[] = [];
+    // The kid band first, then the parent's — the prototype's order.
+    const ordered = [...input.bands].sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'kid' ? -1 : 1));
+    for (const [index, b] of ordered.entries()) {
+      const kind: PrintKind = b.kind === 'kid' ? 'kids_wristband' : 'adult_wristband';
+      let reprintOf: string | null = null;
+      if (input.reprint && b.printedJobId) {
+        const [original] = await sp.select().from(printJob).where(eq(printJob.id, b.printedJobId)).limit(1);
+        reprintOf = original ? reprintRootOf({ id: original.id, reprintOf: original.reprintOf }) : null;
+      }
+      const job = await writeJob(
+        sp,
+        scope,
+        {
+          kind,
+          subjectType: 'band',
+          subjectId: b.id,
+          ...(input.reprint ? { reprintOf, reprintReason: input.reprint.reason } : {}),
+        },
+        index,
+      );
+      jobs.push(job);
+      const note = noteFor(job);
+      if (note) notes.push(note);
+      if (input.reprint) {
+        await recordBandReprint(sp, b, {
+          printJobId: job.id,
+          reason: input.reprint.reason,
+          stationId: stationRow.id,
+          boxId: stationRow.boxId,
+          accountId: input.reprint.accountId,
+        });
+      } else {
+        await sp.update(band).set({ printedJobId: job.id, updatedAt: now }).where(eq(band.id, b.id));
+      }
+    }
+    return { jobs, notes };
+  };
+  if (input.reprint) return run(tx);
+  try {
+    return await tx.transaction(run);
+  } catch {
+    return { jobs: [], notes: ['Bands could not be queued for printing — reprint them from the roster'] };
+  }
+}
+
+/**
+ * S2-20 E3 — what an event band's paper says (`eventBandDocument` in
+ * `@oto/shared`, the composer a box with no internet prints from too): the
+ * event's title, the day and its times, the child — and on the kid band their
+ * allergy and diet lines — or the parent on the parent band. Read from the
+ * check-in, which froze what the roster showed when the child arrived. Null
+ * when the band is not an event band.
+ */
+export async function eventBandDocumentOf(
+  db: Exec,
+  bandRow: typeof band.$inferSelect,
+): Promise<EventBandDocument | null> {
+  if (!bandRow.eventCheckinId) return null;
+  const [c] = await db.select().from(eventCheckin).where(eq(eventCheckin.id, bandRow.eventCheckinId)).limit(1);
+  if (!c) return null;
+  return eventBandDocument({
+    kind: bandRow.kind,
+    code: bandRow.code,
+    eventTitle: c.eventTitle,
+    date: c.attendanceDate,
+    startTime: c.startTime,
+    endTime: c.endTime,
+    childName: c.childName,
+    parentName: c.parentName,
+    allergy: c.allergy,
+    dietary: c.dietary,
+  });
 }
 
 function prepStationOf(line: SaleLineRow): string | null {
@@ -1138,6 +1275,15 @@ export async function buildPrintDocument(
     const data = await endOfDayReceiptDocumentOf(db, row.subjectId, copy);
     if (!data) throw noDocument();
     return { ...base, job: data as RenderJob };
+  }
+  /** S2-20 E3 — an event band has no sale: its paper is the check-in's (`eventBandDocumentOf`). */
+  if (row.subjectType === 'band' && row.subjectId && (row.kind === 'kids_wristband' || row.kind === 'adult_wristband')) {
+    const [bandRow] = await db.select().from(band).where(eq(band.id, row.subjectId)).limit(1);
+    if (bandRow?.eventCheckinId) {
+      const data = await eventBandDocumentOf(db, bandRow);
+      if (!data) throw noDocument();
+      return { ...base, job: { kind: row.kind, data } as RenderJob };
+    }
   }
   const saleIdOf = async (): Promise<string | null> => {
     if (!row.subjectId) return null;

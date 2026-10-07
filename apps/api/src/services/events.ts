@@ -5,7 +5,10 @@ import {
   EVENTS_FAR_FUTURE,
   ageOnDate,
   attendanceDaysOf,
+  attendsOn,
   businessDate,
+  eventAllergyOf,
+  eventText,
   parseDayStart,
   eventListedOn,
   eventPassOfferedOn,
@@ -40,6 +43,7 @@ import {
 } from './otoapp-events';
 import type { Exec } from './tx';
 import { linksOfEvents, walkUpChargeOf } from './event-writes';
+import { checkinsOfEvents, type RosterCheckin } from './event-checkins';
 import type { DirectoryAttendeeBody } from './otoapp-directory';
 import {
   billOfParty,
@@ -124,22 +128,15 @@ function entryPriceOf(e: SeamEvent): EventEntryPrice | null {
 }
 
 /** The OTO App's free text, or null when nothing was written. */
-const text = (value: string | null | undefined): string | null => {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-};
+const text = eventText;
 
 /**
  * The allergy and medical line, as the OTO App itself flags it: any text in
- * either field (`hasAllergy = !!(reg.allergiesNotes || reg.allergies)`,
- * camp-detail.tsx). Nothing is second-guessed — a parent who wrote "None" is
- * shown "None", because a missed allergy costs more than a read one.
+ * either field (Q13's default, `eventAllergyOf` in `@oto/shared`) — the same
+ * line the kid band prints and the food counter's scan reads (S2-20 E3).
  */
 function allergyOf(child: SeamChild | undefined): string | null {
-  const parts = [text(child?.allergies), text(child?.allergyNotes)].filter(
-    (p): p is string => p !== null,
-  );
-  return parts.length > 0 ? [...new Set(parts)].join(' — ') : null;
+  return eventAllergyOf(child?.allergies, child?.allergyNotes);
 }
 
 const instant = (d: Date | null): string | null => (d === null ? null : d.toISOString());
@@ -156,7 +153,46 @@ function checkinOf(row: SeamAttendance): EventCheckinView | null {
     checkedOutAt: instant(row.checkedOutAt),
     checkedOutBy: row.checkedOutBy,
     checkinRef: row.checkinRef,
+    posCheckinId: null,
+    kidBandShortCode: null,
+    parentBandShortCode: null,
+    syncState: null,
   };
+}
+
+/**
+ * S2-20 E3 — A CHILD'S DAYS, the OTO App's and the POS's together. The app is
+ * the master of attendance (Q1); the POS's mirror adds what only the till
+ * knows — the bands it printed and whether the app has its check-in yet — and
+ * stands for a day the app does not show yet (a write-back still pending, or a
+ * check-out the app's directory cannot take). A check-out recorded on either
+ * side is a check-out.
+ */
+function mergedCheckins(appRows: readonly SeamAttendance[], pos: readonly RosterCheckin[]): EventCheckinView[] {
+  const byDate = new Map<string, EventCheckinView>();
+  for (const row of appRows) {
+    const view = checkinOf(row);
+    if (view) byDate.set(view.date, view);
+  }
+  for (const p of pos) {
+    const app = byDate.get(p.row.attendanceDate);
+    const appOut = app?.status === 'checked_out' ? app : null;
+    const outAt = p.row.checkedOutAt?.toISOString() ?? appOut?.checkedOutAt ?? null;
+    byDate.set(p.row.attendanceDate, {
+      date: p.row.attendanceDate,
+      status: outAt ? 'checked_out' : 'checked_in',
+      checkedInAt: p.row.checkedInAt.toISOString(),
+      checkedInBy: p.row.checkedInByName ?? app?.checkedInBy ?? null,
+      checkedOutAt: outAt,
+      checkedOutBy: p.row.checkedOutByName ?? appOut?.checkedOutBy ?? null,
+      checkinRef: app?.checkinRef ?? p.row.id,
+      posCheckinId: p.row.id,
+      kidBandShortCode: p.kidShortCode,
+      parentBandShortCode: p.parentShortCode,
+      syncState: p.row.syncState,
+    });
+  }
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function attendeeView(
@@ -165,11 +201,15 @@ function attendeeView(
   child: SeamChild | undefined,
   rows: readonly SeamAttendance[],
   date: string,
+  pos: readonly RosterCheckin[] = [],
 ): EventAttendeeView {
   const isCamp = event.type === 'camp';
   const attendanceDays = attendanceDaysOf(event, a, date);
-  const attendsOnDate = isCamp ? attendanceDays.includes(date) : true;
-  const checkins = rows.map(checkinOf).filter((c): c is EventCheckinView => c !== null);
+  // S2-20 E3 (E1 review, finding 1) — from the camp's range, never from the
+  // written-out list, which is bounded: an open-ended camp that began over a
+  // year ago still expects its every-day child today.
+  const attendsOnDate = isCamp ? attendsOn(event, a, date) : true;
+  const checkins = mergedCheckins(rows, pos);
   const onDate = checkins.find((c) => c.date === date) ?? null;
   return {
     id: a.id,
@@ -200,13 +240,14 @@ function attendeeView(
  * S2-20 E2 — A CHILD THE POS ADDED THAT THE OTO APP DOES NOT HAVE YET: the
  * write-back is pending or was refused. The roster shows them from the POS's
  * own record of what it sent, marked, rather than leaving them off the list
- * (plan §4) — a child with a paid pass is at the door either way. No check-in
- * is read for them: the app has none to give.
+ * (plan §4) — a child with a paid pass is at the door either way. The app has
+ * no check-in to give for them; the POS's own (S2-20 E3) is laid over.
  */
 function unsyncedAttendeeView(
   event: SeamEvent,
   link: LinkWithStaff,
   date: string,
+  pos: readonly RosterCheckin[] = [],
 ): EventAttendeeView | null {
   const sent = link.writeback as DirectoryAttendeeBody | null;
   if (!sent || link.syncState === 'synced') return null;
@@ -214,6 +255,8 @@ function unsyncedAttendeeView(
   const attendanceDays = isCamp ? [...link.attendanceDays].sort() : [];
   const attendsOnDate = isCamp ? attendanceDays.includes(date) : true;
   const dateOfBirth = sent.dateOfBirth ?? null;
+  const checkins = mergedCheckins([], pos);
+  const onDate = checkins.find((c) => c.date === date) ?? null;
   return {
     id: link.id,
     childId: link.id,
@@ -233,8 +276,8 @@ function unsyncedAttendeeView(
     notes: text(sent.notes),
     isOneTime: true,
     source: 'pos',
-    checkins: [],
-    bucket: eventRosterBucket(null, isCamp, attendsOnDate),
+    checkins,
+    bucket: eventRosterBucket(onDate, isCamp, attendsOnDate),
     syncState: link.syncState,
   };
 }
@@ -336,6 +379,14 @@ async function withAttendees(
     branchId,
     eventIds: events.filter((e) => e.type === 'party').map((e) => e.id),
   });
+  // S2-20 E3 — and of the check-ins it made, the day's or every day's.
+  const posCheckins = await checkinsOfEvents(db, {
+    branchId,
+    eventIds,
+    ...(q.checkinsOf === 'date' ? { date: q.date } : {}),
+  });
+  const posOf = (eventId: string, attendeeId: string) =>
+    posCheckins.filter((c) => c.row.otoappEventId === eventId && c.names.includes(attendeeId));
   return events.map((seamEvent) => {
     const tab = seamEvent.type === 'party' ? (tabs.get(seamEvent.id) ?? null) : null;
     // A party is shown as the till last edited it, until the OTO App takes the edit.
@@ -353,12 +404,12 @@ async function withAttendees(
     }
     const attendees = [
       ...seam.map((r) => ({
-        ...attendeeView(e, r, childById.get(r.childId), rowsOf.get(r.id) ?? [], q.date),
+        ...attendeeView(e, r, childById.get(r.childId), rowsOf.get(r.id) ?? [], q.date, posOf(e.id, r.id)),
         syncState: stateOf.get(r.id) ?? null,
       })),
       ...own
         .filter((l) => !inApp.has(l.id) && !(l.otoappAttendeeId && inApp.has(l.otoappAttendeeId)))
-        .map((l) => unsyncedAttendeeView(e, l, q.date))
+        .map((l) => unsyncedAttendeeView(e, l, q.date, posOf(e.id, l.id)))
         .filter((a): a is EventAttendeeView => a !== null),
     ];
     const nameOf = new Map(attendees.map((a) => [a.id, a.name]));
@@ -498,6 +549,13 @@ export async function eventsCacheItem(
   now: Date,
 ): Promise<EventsCacheItem> {
   const day = await eventsForDay(db, { operatorId: scope.operatorId, branchId: scope.branchId, now });
+  // S2-20 E3 — the bands behind the day's POS check-ins, by id: the codes are
+  // in the box's `bands` copy, which a reprint and a food counter read offline.
+  const bandsOf = new Map(
+    (
+      await checkinsOfEvents(db, { branchId: day.branchId, eventIds: day.events.map((e) => e.id), date: day.date })
+    ).map((c) => [c.row.id, { kidBandId: c.row.kidBandId, parentBandId: c.row.parentBandId }]),
+  );
   const events: EventsCacheItem['events'] = day.events.map((e) => ({
     id: e.id,
     type: e.type,
@@ -522,7 +580,14 @@ export async function eventsCacheItem(
         attendsOnDate: a.attendsOnDate,
         bucket: a.bucket,
         checkin: onDate
-          ? { status: onDate.status, checkedInAt: onDate.checkedInAt, checkedOutAt: onDate.checkedOutAt }
+          ? {
+              status: onDate.status,
+              checkedInAt: onDate.checkedInAt,
+              checkedOutAt: onDate.checkedOutAt,
+              posCheckinId: onDate.posCheckinId,
+              kidBandId: onDate.posCheckinId ? (bandsOf.get(onDate.posCheckinId)?.kidBandId ?? null) : null,
+              parentBandId: onDate.posCheckinId ? (bandsOf.get(onDate.posCheckinId)?.parentBandId ?? null) : null,
+            }
           : null,
       };
     }),

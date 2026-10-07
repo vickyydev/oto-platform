@@ -1,5 +1,5 @@
-import { and, desc, eq, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
-import { auditLog, band, checkin, child, sale, saleLine, syncEvent, walletKey } from '@oto/db';
+import { and, desc, eq, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm';
+import { auditLog, band, checkin, child, eventCheckin, sale, saleLine, syncEvent, walletKey } from '@oto/db';
 import {
   BAND_FOOD_REFUSALS,
   allergiesMedicalOf,
@@ -98,6 +98,69 @@ export async function stayForKey(
     .orderBy(desc(checkin.checkedInAt))
     .limit(1);
   return row ?? null;
+}
+
+/**
+ * S2-20 E3 — THE EVENT CHILD A SCANNED BAND BELONGS TO, at this park, checked
+ * in and not out: a kid band an event check-in issued resolves to that child's
+ * allergy and diet lines the way a drop-off band resolves to its stay — the
+ * OTO App's any-text rule (Q13), frozen on the check-in when the band printed
+ * — with `mayOrderFood=false` and no prepaid food (`checkInEventAttendee`,
+ * mockApi.ts:3818-3826). Null when the key names no such band.
+ */
+export async function eventBandStayForKey(
+  db: Exec,
+  operatorId: string,
+  branchId: string,
+  key: string,
+): Promise<BandStayView | null> {
+  const bandIds = (await findBandsByCode(db, operatorId, key)).filter((b) => b.eventCheckinId).map((b) => b.id);
+  if (bandIds.length === 0) return null;
+  const [row] = await db
+    .select({ c: eventCheckin })
+    .from(band)
+    .innerJoin(eventCheckin, eq(eventCheckin.id, band.eventCheckinId))
+    .where(
+      and(
+        inArray(band.id, bandIds),
+        eq(band.operatorId, operatorId),
+        eq(band.status, 'active'),
+        eq(eventCheckin.branchId, branchId),
+        isNull(eventCheckin.checkedOutAt),
+      ),
+    )
+    .orderBy(desc(eventCheckin.checkedInAt))
+    .limit(1);
+  return row ? eventBandStayViewOf(row.c) : null;
+}
+
+/** An event check-in of this operator: a food order's band holder (S2-20 E3). */
+async function eventHolderOf(
+  db: Exec,
+  operatorId: string,
+  checkinId: string,
+): Promise<typeof eventCheckin.$inferSelect | null> {
+  const [row] = await db
+    .select()
+    .from(eventCheckin)
+    .where(and(eq(eventCheckin.id, checkinId), eq(eventCheckin.operatorId, operatorId)))
+    .limit(1);
+  // The park is the caller's to judge: a till at another park is told so.
+  return row ?? null;
+}
+
+/** An event check-in as the food counter reads it. */
+export function eventBandStayViewOf(row: typeof eventCheckin.$inferSelect): BandStayView {
+  return {
+    checkinId: row.id,
+    branchId: row.branchId,
+    childName: row.childName,
+    allergiesMedical: row.allergy?.trim() || null,
+    foodRestrictions: row.dietary?.trim() || null,
+    mayOrderFood: false,
+    foodProvision: null,
+    source: 'event',
+  };
 }
 
 /** The stay as the counter reads it: the snapshot the guardian gave, the saved record behind it. */
@@ -265,7 +328,27 @@ export async function resolveCartBandFood(
   };
 
   let holder: CartBandFood['holder'] = null;
-  if (holderId) {
+  // S2-20 E3 — an event child's kid band names their event check-in: the
+  // holder of an order the counter took against it, food not authorised
+  // (`mayOrderFood=false`) unless staff override, as the design's event band.
+  const eventHolder = holderId && !byId.has(holderId) ? await eventHolderOf(db, operatorId, holderId) : null;
+  if (holderId && eventHolder) {
+    const usable = eventHolder.branchId === branchId && !eventHolder.checkedOutAt;
+    if (mode === 'strict' && eventHolder.branchId !== branchId) {
+      throw errors.conflict('BAND_OTHER_PARK', bandOtherParkRefusal(eventHolder.childName), { checkinId: eventHolder.id });
+    }
+    if (mode === 'strict' && eventHolder.checkedOutAt) {
+      throw errors.conflict('BAND_NOT_IN_PARK', bandNotInParkRefusal(eventHolder.childName), { checkinId: eventHolder.id });
+    }
+    if (usable) {
+      holder = {
+        checkinId: eventHolder.id,
+        foodOverride: input.bandHolder?.foodOverride === true,
+        mayOrderFood: false,
+        childName: eventHolder.childName,
+      };
+    }
+  } else if (holderId) {
     const stay = checkStay(holderId);
     if (stay) {
       holder = {
@@ -933,7 +1016,13 @@ export async function bandHolderOfSale(
     .from(checkin)
     .where(and(eq(checkin.id, named), eq(checkin.operatorId, saleRow.operatorId), eq(checkin.branchId, saleRow.branchId)))
     .limit(1);
-  if (!stay) return null;
+  if (!stay) {
+    // S2-20 E3 — an order taken against an event child's band prints their
+    // own allergy line, frozen on the check-in when the band printed.
+    const event = await eventHolderOf(db, saleRow.operatorId, named);
+    if (!event || event.branchId !== saleRow.branchId) return null;
+    return { name: event.childName, allergiesMedical: event.allergy?.trim() || null };
+  }
   const view = await bandStayViewOf(db, stay);
   return { name: view.childName, allergiesMedical: view.allergiesMedical };
 }

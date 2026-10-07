@@ -320,19 +320,15 @@ describe('a camp on every day of its range (Q4), with its edges', () => {
   });
 
   /**
-   * KNOWN DEFECT, PINNED (review finding 1). `attendanceDaysOf` writes an
-   * every-day registration out through `campDays`, which stops at
-   * `CAMP_MAX_DAYS` (366) from the camp's start. An open-ended camp the OTO
-   * App still runs (no end date) that began more than a year ago is listed
-   * today, but its every-day children read `attendsOnDate: false` and sit in
-   * "not today" — the Check in button greyed with "Not registered for today".
-   * The OTO App reads the same registration as attending today
-   * (`/api/core/camp-checkins/today`). No such camp is in the production dump
-   * today (all eight camps carry an end date), so this does not block E1.
-   * `it.fails` holds the defect in view: when it is fixed this goes red, and
-   * the fix flips it to `it`.
+   * WAS A KNOWN DEFECT (review finding 1), pinned with `it.fails` and FIXED in
+   * E3: `attendsOnDate` is computed from the camp's range (`attendsOn` in
+   * `@oto/shared`), not from the day list `attendanceDaysOf` writes out —
+   * bounded at `CAMP_MAX_DAYS`, and for a range longer than that now the days
+   * that end at the day asked about. An open-ended camp the OTO App still runs
+   * that began more than a year ago expects its every-day children today, as
+   * the OTO App reads the same registration (`/api/core/camp-checkins/today`).
    */
-  it.fails('an open-ended camp that began more than a year ago still expects its every-day child today', async () => {
+  it('an open-ended camp that began more than a year ago still expects its every-day child today', async () => {
     // The OTO App's rule: an empty day list attends every day of the camp,
     // and an open-ended camp runs until it is given an end.
     const day = (await get<EventDayAnswer>(reception, `/events?branchId=${central}&date=${T}`)).body;

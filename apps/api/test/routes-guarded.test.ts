@@ -65,6 +65,11 @@ describe('route guards (S2-01b)', () => {
       // S2-20 E2: a pass is a sale and a walk-up a charge on a party's tab —
       // online only, like the sale path they ride and the members they name.
       'POST /events/:id/attendees',
+      // S2-20 E3: check-in and check-out are box facts — a station forced
+      // offline does them through its box — and a reprint is the platform's.
+      'POST /events/:id/attendees/:attendeeId/checkin',
+      'POST /events/:id/attendees/:attendeeId/checkout',
+      'POST /events/:id/attendees/:attendeeId/reprint',
       'POST /events/:id/passes',
       'POST /members',
       'POST /members/:id/children',

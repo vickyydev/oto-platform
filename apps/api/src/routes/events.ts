@@ -3,6 +3,11 @@ import type { FastifyRequest } from 'fastify';
 import {
   EventAttendeeCreateBodySchema,
   EventAttendeeWriteAnswerSchema,
+  EventCheckinAnswerSchema,
+  EventCheckinBodySchema,
+  EventCheckinParamsSchema,
+  EventCheckoutBodySchema,
+  EventReprintBodySchema,
   EventDayAnswerSchema,
   EventDetailAnswerSchema,
   EventPassSellBodySchema,
@@ -15,6 +20,7 @@ import {
 import type { App } from '../app';
 import { eventById, eventPassesFor, eventRoster, eventsForDay } from '../services/events';
 import { addEventAttendee, sellEventPass } from '../services/event-writes';
+import { checkInEventAttendee, checkOutEventAttendee, reprintEventBands } from '../services/event-checkins';
 import { queueDrawerKick } from '../services/payments/drawer';
 import type { ActorContext } from '../services/sale';
 import { opCtx } from '../services/tx';
@@ -137,6 +143,91 @@ export async function eventRoutes(app: App): Promise<void> {
       return answer;
     },
   );
+  // --- Check-in, check-out and reprint (S2-20 E3) ----------------------------------
+
+  app.post(
+    '/:id/attendees/:attendeeId/checkin',
+    {
+      config: {
+        permission: 'pos:event:checkin',
+        target: { branchId: 'body.branchId' },
+        // A box fact on the box lane: a station the Console forced offline is
+        // refused here, and the till checks the child in through its box.
+        stationTrading: true,
+      },
+      schema: {
+        description:
+          "Check a child in at an event for the branch's business date (`checkInEventAttendee`): a kid band always and " +
+          'a parent band when the parent is attending, minted and signed by the band service and printed at the station ' +
+          '(a device that is no station checks in and prints nothing). No supervision gate — events are not drop-off. ' +
+          'Refused 409 EVENT_ALREADY_CHECKED_IN when the child is already in for the day (here or in the OTO App), and ' +
+          '409 EVENT_NOT_REGISTERED_TODAY for a camp child not registered for the day. The check-in is then written to ' +
+          "the OTO App under the till's `checkinId` (`syncState`); the same id again answers what it made.",
+        params: EventCheckinParamsSchema,
+        body: EventCheckinBodySchema,
+        response: { 200: EventCheckinAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const actor = actorOf(req, 'pos:event:checkin');
+      const { answer } = await checkInEventAttendee(deps(req), opCtx(req), actor, req.params.id, req.params.attendeeId, {
+        ...req.body,
+        actionId: actionIdOf(req, req.body.actionId),
+      });
+      if (answer.replayed) reply.header('x-oto-replay', 'true');
+      return answer;
+    },
+  );
+
+  app.post(
+    '/:id/attendees/:attendeeId/checkout',
+    {
+      config: { permission: 'pos:event:checkin', target: { branchId: 'body.branchId' }, stationTrading: true },
+      schema: {
+        description:
+          "Check a child out of an event for the branch's business date (`checkOutEventAttendee`): refused 409 " +
+          'EVENT_NOT_CHECKED_IN or EVENT_ALREADY_CHECKED_OUT unless the child is in and not yet out. A child the OTO App ' +
+          "checked in is mirrored on the POS as they check out. Kept on the POS: the OTO App's directory has no " +
+          'check-out write yet.',
+        params: EventCheckinParamsSchema,
+        body: EventCheckoutBodySchema,
+        response: { 200: EventCheckinAnswerSchema },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req, 'pos:event:checkin');
+      const { answer } = await checkOutEventAttendee(deps(req), opCtx(req), actor, req.params.id, req.params.attendeeId, {
+        ...req.body,
+        actionId: actionIdOf(req, req.body.actionId),
+      });
+      return answer;
+    },
+  );
+
+  app.post(
+    '/:id/attendees/:attendeeId/reprint',
+    {
+      config: { permission: 'pos:event:checkin', target: { branchId: 'body.branchId' }, stationTrading: true },
+      schema: {
+        description:
+          "Reprint today's event bands at a station (`handleEventReprint`): the same bands, ids and codes on fresh paper, " +
+          'each a copy naming the original print. Only while the child is checked in and not out; a check-in with no ' +
+          'band yet is issued its bands here, once.',
+        params: EventCheckinParamsSchema,
+        body: EventReprintBodySchema,
+        response: { 200: EventCheckinAnswerSchema },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req, 'pos:event:checkin');
+      const { answer } = await reprintEventBands(deps(req), opCtx(req), actor, req.params.id, req.params.attendeeId, {
+        ...req.body,
+        actionId: actionIdOf(req, req.body.actionId),
+      });
+      return answer;
+    },
+  );
+
   app.get(
     '/',
     {

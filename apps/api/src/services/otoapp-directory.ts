@@ -69,6 +69,33 @@ export interface DirectoryAttendeeAnswer {
   merged: boolean;
 }
 
+/**
+ * S2-20 E3 — a check-in, as the app's directory takes it (`checkinBodySchema`,
+ * the app's eventRoutes.ts): the POS's own check-in id, the branch's business
+ * date, when it happened and who did it.
+ */
+export interface DirectoryCheckinBody {
+  id: string;
+  date: string;
+  checkedInAt?: string | null;
+  checkedInBy?: string | null;
+}
+
+/** What the app answers a check-in with (`CheckinResult`, the app's eventWrites.ts). */
+export interface DirectoryCheckinAnswer {
+  checkin: {
+    id: string;
+    checkinRef: string | null;
+    attendeeId: string;
+    eventId: string;
+    date: string;
+    status: 'waiting' | 'checked_in' | 'checked_out';
+    checkedInAt: string | null;
+    checkedInBy: string | null;
+  };
+  replayed: boolean;
+}
+
 export type DirectoryOutcome<T> =
   | { ok: true; status: number; body: T }
   | {
@@ -131,6 +158,15 @@ export interface OtoAppDirectory {
    * "not configured", and the edit waits as pending.
    */
   editEvent?(eventId: string, body: DirectoryEventEditBody): Promise<DirectoryOutcome<DirectoryEventEditAnswer>>;
+   * S2-20 E3 — check an attendee in for a day:
+   * `POST /api/directory/events/:id/attendees/:attendeeId/checkins`. The body
+   * carries the POS's check-in id, so a retry is a replay in the app.
+   */
+  checkinAttendee(
+    eventId: string,
+    attendeeId: string,
+    body: DirectoryCheckinBody,
+  ): Promise<DirectoryOutcome<DirectoryCheckinAnswer>>;
 }
 
 /** Said when this deployment has no directory: the write waits, it is not lost. */
@@ -167,64 +203,80 @@ export function buildOtoAppDirectory(
   const origin = env.OTOAPP_DIRECTORY_URL.replace(/\/+$/, '');
   const key = env.OTOAPP_DIRECTORY_KEY;
   const configured = Boolean(origin && key);
-  return {
-    configured,
-    async addAttendee(eventId, body) {
-      if (!configured) {
-        return {
-          ok: false,
-          status: null,
-          code: DIRECTORY_NOT_CONFIGURED,
-          message: 'This deployment has no OTO App directory configured, so the child was not written there yet',
-          retryable: true,
-        };
-      }
-      const url = `${origin}/api/directory/events/${encodeURIComponent(eventId)}/attendees`;
-      let res: Response;
-      try {
-        res = await fetchImpl(url, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(env.OTOAPP_DIRECTORY_TIMEOUT_MS),
-        });
-      } catch (err) {
-        // The key never reaches a log line; the error's name and the host do.
-        log?.warn({ err: (err as Error)?.name, host: new URL(origin).host }, 'otoapp directory unreachable');
-        return {
-          ok: false,
-          status: null,
-          code: DIRECTORY_UNREACHABLE,
-          message: 'The OTO App did not answer',
-          retryable: true,
-        };
-      }
-      let payload: unknown = null;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
-      if (res.ok) {
-        const answer = payload as Partial<DirectoryAttendeeAnswer> | null;
-        if (!answer?.attendee?.id) {
-          return {
-            ok: false,
-            status: res.status,
-            code: 'OTOAPP_UNREADABLE_ANSWER',
-            message: 'The OTO App answered without the attendee',
-            retryable: true,
-          };
-        }
-        return { ok: true, status: res.status, body: answer as DirectoryAttendeeAnswer };
-      }
-      const refusal = refusalOf(res.status, payload);
+
+  /**
+   * One POST to the directory, and what came of it. `readable` says whether a
+   * 2xx carries what the caller needs; one that does not is a fault to retry.
+   */
+  async function post<T>(
+    path: string,
+    body: unknown,
+    readable: (answer: unknown) => answer is T,
+    missing: string,
+    notConfigured: string,
+  ): Promise<DirectoryOutcome<T>> {
+    if (!configured) {
+      return { ok: false, status: null, code: DIRECTORY_NOT_CONFIGURED, message: notConfigured, retryable: true };
+    }
+    let res: Response;
+    try {
+      res = await fetchImpl(`${origin}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(env.OTOAPP_DIRECTORY_TIMEOUT_MS),
+      });
+    } catch (err) {
+      // The key never reaches a log line; the error's name and the host do.
+      log?.warn({ err: (err as Error)?.name, host: new URL(origin).host }, 'otoapp directory unreachable');
       return {
         ok: false,
-        status: res.status,
-        ...refusal,
-        retryable: res.status >= 500 || res.status === 429 || res.status === 408,
+        status: null,
+        code: DIRECTORY_UNREACHABLE,
+        message: 'The OTO App did not answer',
+        retryable: true,
       };
+    }
+    let payload: unknown = null;
+    try {
+      payload = await res.json();
+    } catch {
+      payload = null;
+    }
+    if (res.ok) {
+      if (!readable(payload)) {
+        return { ok: false, status: res.status, code: 'OTOAPP_UNREADABLE_ANSWER', message: missing, retryable: true };
+      }
+      return { ok: true, status: res.status, body: payload };
+    }
+    const refusal = refusalOf(res.status, payload);
+    return {
+      ok: false,
+      status: res.status,
+      ...refusal,
+      retryable: res.status >= 500 || res.status === 429 || res.status === 408,
+    };
+  }
+
+  return {
+    configured,
+    addAttendee(eventId, body) {
+      return post(
+        `/api/directory/events/${encodeURIComponent(eventId)}/attendees`,
+        body,
+        (answer): answer is DirectoryAttendeeAnswer => !!(answer as Partial<DirectoryAttendeeAnswer> | null)?.attendee?.id,
+        'The OTO App answered without the attendee',
+        'This deployment has no OTO App directory configured, so the child was not written there yet',
+      );
+    },
+    checkinAttendee(eventId, attendeeId, body) {
+      return post(
+        `/api/directory/events/${encodeURIComponent(eventId)}/attendees/${encodeURIComponent(attendeeId)}/checkins`,
+        body,
+        (answer): answer is DirectoryCheckinAnswer => !!(answer as Partial<DirectoryCheckinAnswer> | null)?.checkin?.id,
+        'The OTO App answered without the check-in',
+        'This deployment has no OTO App directory configured, so the check-in was not written there yet',
+      );
     },
     async editEvent(eventId, body) {
       if (!configured) {

@@ -49,6 +49,7 @@ import {
 } from '../services/ops';
 import { retryAttendeeWriteBack } from '../services/event-writes';
 import { PARTY_UPDATE_RUN, retryPartyEditWriteBack } from '../services/parties';
+import { ATTENDEE_CHECKIN_RUN, retryCheckinWriteBack } from '../services/event-checkins';
 
 /**
  * What the Console reads about how the platform is running (S2-03), and the
@@ -289,6 +290,7 @@ export async function opsRoutes(app: App): Promise<void> {
       schema: {
         description:
           'Run a failed scheduled job again, or send again the OTO App write-backs a Failures group left waiting: children (`otoapp:attendee.create`, each under its own attendee id) and party edits (`otoapp:party.update`, oldest first, each under its own edit id). Nothing else is safe from here',
+          'Run a failed scheduled job again, or send again the OTO App write-backs a Failures group left waiting: children (`otoapp:attendee.create`, each under its own attendee id) and check-ins (`otoapp:attendee.checkin`, each under its own check-in id). Nothing else is safe from here',
         params: z.object({ runId: z.string().uuid() }),
       },
     },
@@ -324,12 +326,29 @@ export async function opsRoutes(app: App): Promise<void> {
           {
             operatorId: auth.operatorId,
             editId,
+       * S2-20 E3 — THE OTO APP WRITE-BACKS OF CHECK-INS, sent again: the same
+       * sweep as a child's (`retryCheckinWriteBack`), each under the check-in id
+       * the till or the box minted, so the app answers a second send as a
+       * replay. A check-in whose child the app does not have yet sends that
+       * child first.
+       */
+      if (run.kind === 'integration' && run.name === ATTENDEE_CHECKIN_RUN) {
+        const checkinId = (run.detail as { checkinId?: unknown } | null)?.checkinId;
+        if (typeof checkinId !== 'string') {
+          throw errors.conflict('RUN_NOT_RETRYABLE', 'This run does not say which check-in it was writing');
+        }
+        const swept = await retryCheckinWriteBack(
+          { db: app.db, directory: app.otoAppDirectory, log: req.log },
+          {
+            operatorId: auth.operatorId,
+            checkinId,
             errorCode: run.errorCode,
             reach: branchReach(await req.effectivePermissions(), 'admin:ops:manage', auth.operatorId),
             requestId: req.id,
           },
         );
         const edit = swept.edit;
+        const row = swept.checkin;
         await withTx(app.db, opCtx(req), 'ops.run_retry', async (tx) => {
           await audit.record(tx, {
             actorAccountId: auth.accountId,
@@ -343,6 +362,11 @@ export async function opsRoutes(app: App): Promise<void> {
               integration: run.name,
               editId: edit.id,
               syncState: edit.syncState,
+            actionId: row.actionId,
+            after: {
+              integration: run.name,
+              checkinId: row.id,
+              syncState: row.syncState,
               sent: swept.sent,
               synced: swept.synced,
               waiting: swept.waiting,
@@ -354,6 +378,8 @@ export async function opsRoutes(app: App): Promise<void> {
           ok: true as const,
           outcome: edit.syncState === 'synced' && swept.waiting === 0 ? 'ok' : 'failed',
           syncState: edit.syncState,
+          outcome: row.syncState === 'synced' && swept.waiting === 0 ? 'ok' : 'failed',
+          syncState: row.syncState,
           sent: swept.sent,
           synced: swept.synced,
           waiting: swept.waiting,
