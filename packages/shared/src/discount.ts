@@ -85,6 +85,27 @@ export interface ManualDiscount {
   reason: string;
   /** Optional free text alongside the reason. The engine never reads it. */
   note?: string;
+  /**
+   * S2-21 round 3 — WHERE AN ORDER-SCOPE DISCOUNT'S MONEY SITS, line by line.
+   *
+   * Set only on the "Staff benefit" discount, which the platform builds from
+   * the staff-benefit engine (`staffBenefitDiscount`, benefit-checkout.ts) and
+   * never takes from a till. It stays ONE order-scope discount — one receipt
+   * row, after the order's own manual discounts, as the prototype folds it
+   * (plan Q11) — and its amount is still resolved against what the order has
+   * left (`computeManualDiscount`, capped at the shares' sum). What the shares
+   * change is the attribution: the amount is spent from these lines, in these
+   * proportions, and booked to their own taxable categories, so a coffee-only
+   * benefit reduces the coffee's VAT basis and nobody else's (plan §4, H14).
+   * A discount without it is attributed order-wide, exactly as before.
+   */
+  lineShares?: readonly { lineId: string; amount: Satang }[];
+}
+
+/** The total a discount's line shares name, or null when it names none. */
+export function lineSharesTotal(discount: Pick<ManualDiscount, 'lineShares'>): Satang | null {
+  if (!discount.lineShares || discount.lineShares.length === 0) return null;
+  return discount.lineShares.reduce((sum, share) => sum + Math.max(0, share.amount), 0);
 }
 
 /**
@@ -232,7 +253,11 @@ export function computeManualDiscount(
   let orderTotal = 0;
   for (const discount of manualDiscounts) {
     if (discount.scope !== 'order') continue;
-    const amount = resolveManualDiscountAmount(discount, running, rounding);
+    let amount = resolveManualDiscountAmount(discount, running, rounding);
+    // A discount that names its lines takes no more than they were given — a
+    // benefit comp is the F&B lines it covered, not anything else on the order.
+    const shares = lineSharesTotal(discount);
+    if (shares !== null) amount = Math.min(amount, shares);
     amounts[discount.id] = amount;
     orderTotal += amount;
     running -= amount;

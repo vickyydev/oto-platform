@@ -48,6 +48,24 @@ describe('benefitCodeShown', () => {
     );
   });
 
+  it('a QR with anything in front of its header is cut at its signature too (round 3)', () => {
+    // The four shapes the round 2 review probed: a wedge scanner's code id, a
+    // zero-width space and quotes from a pasted message, a typed label.
+    for (const prefix of [']Q1', '​', '"', 'QR: ', 'ß ']) {
+      const shown = benefitCodeShown(`${prefix}${QR}"`);
+      expect(shown, JSON.stringify(prefix)).toBe(`${prefix}${INPUT}`.trim());
+      expect(shown).not.toContain(SIGNATURE.slice(0, 12));
+    }
+    // Lower case, mid-string, and read twice in one burst: still nothing past the first dot.
+    expect(benefitCodeShown(`]q1${QR.toLowerCase()}`)).toBe(`]q1${INPUT.toLowerCase()}`);
+    expect(benefitCodeShown(`]Q1${QR}${QR}`)).toBe(`]Q1${INPUT}`);
+    // A mangled dot behind a prefix is cut at the longest signing input after the header.
+    const mangled = benefitCodeShown(`]Q1${QR.replace('.', '>')}`);
+    expect(mangled.endsWith('…')).toBe(true);
+    expect(mangled.includes(SIGNATURE.slice(4, 12))).toBe(false);
+    expect(BENEFIT_WORDS.notFound(`]Q1${QR}`)).toBe(`No staff benefit found for "]Q1${INPUT}".`);
+  });
+
   it('the not-found words never carry a signature', () => {
     expect(BENEFIT_WORDS.notFound(QR)).toBe(`No staff benefit found for "${INPUT}".`);
     expect(BENEFIT_WORDS.notFound(QR)).not.toContain(SIGNATURE.slice(0, 20));

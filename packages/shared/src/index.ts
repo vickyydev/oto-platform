@@ -55,3 +55,4 @@ export * from './benefits';
 export * from './kiosk';
 export * from './events';
 export * from './benefit-credential';
+export * from './benefit-checkout';

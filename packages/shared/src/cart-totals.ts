@@ -476,6 +476,14 @@ export interface TicketCartTotals {
   promoDiscountTotal: Satang;
   /** The prototype's `scannedDiscounts`. */
   appliedPromos: AppliedPromo[];
+  /**
+   * S2-21 round 3 — set only for a manual discount that names its lines
+   * (`ManualDiscount.lineShares`, the "Staff benefit" row): what it took from
+   * each unit it reached, by the unit's index in `cartUnits(lines, ctx)`, keyed
+   * by the discount's id. The ledger books it on those rows
+   * (`splitLedgerUnitMoney`), as it does a line-aimed promo's `units`.
+   */
+  manualUnits?: Record<string, { index: number; amount: Satang }[]>;
   discountTotal: Satang;
   serviceChargeTotal: Satang;
   taxTotal: Satang;
@@ -705,9 +713,46 @@ export function computeTicketCartTotals(
   // it has already run, so by here every id is unique and every amount is its
   // own discount's.
   const allocations: DiscountAllocation[] = [];
+  const manualUnits: Record<string, { index: number; amount: Satang }[]> = {};
   for (const discount of manualDiscounts) {
     const amount = manual.amounts[discount.id] ?? 0;
     if (amount <= 0) continue;
+    /**
+     * S2-21 round 3 — an order-scope discount that names its lines (the
+     * "Staff benefit" row) is spent from those lines and booked to their own
+     * categories, line by line. Its amount was already capped at the shares'
+     * sum, so the shares are scaled down only when the order had less left
+     * (another manual discount before it); a line with less left than its share
+     * (a line-scope discount on it) gives what it has, and that remainder alone
+     * is spread order-wide — the amount is placed whole either way.
+     */
+    if (discount.scope === 'order' && discount.lineShares && discount.lineShares.length > 0) {
+      const wanted = discount.lineShares.map((share) => Math.max(0, share.amount));
+      const wantedTotal = wanted.reduce((sum, w) => sum + w, 0);
+      const shares = wantedTotal <= amount ? wanted : apportion(amount, wanted);
+      const reached: { index: number; amount: Satang }[] = [];
+      let placed = 0;
+      discount.lineShares.forEach((share, position) => {
+        const scope = entriesOfLine(share.lineId);
+        const taken = spendScope(scope, shares[position] ?? 0);
+        const took = taken.reduce((sum, t) => sum + t, 0);
+        if (took <= 0) return;
+        placed += took;
+        scope.forEach((entry, i) => {
+          if ((taken[i] ?? 0) > 0) reached.push({ index: ledger.indexOf(entry), amount: taken[i]! });
+        });
+        allocations.push(
+          ...allocateAgainstRemaining(took, categoryBasesOf(scope.map((e) => e.unit)), remaining),
+        );
+      });
+      const rest = amount - placed;
+      if (rest > 0) {
+        spendScope(ledger, rest);
+        allocations.push({ amount: rest });
+      }
+      manualUnits[discount.id] = reached;
+      continue;
+    }
     const scope = scopeOfManual(discount);
     // It has spent its scope, so a promo code aimed at the same items finds
     // that much less of them. An order-scope discount spends the whole cart
@@ -832,6 +877,7 @@ export function computeTicketCartTotals(
     manualDiscountTotal: manual.total,
     promoDiscountTotal,
     appliedPromos,
+    ...(Object.keys(manualUnits).length > 0 ? { manualUnits } : {}),
     discountTotal,
     serviceChargeTotal: taxBreakdown.serviceChargeTotal,
     taxTotal: taxBreakdown.taxTotal,

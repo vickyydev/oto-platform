@@ -111,13 +111,17 @@ export function splitLedgerUnitMoney(
   const taxExcl = new Array<number>(units.length).fill(0);
 
   const pinned = new Array<number>(units.length).fill(0);
-  for (const applied of totals.appliedPromos) {
-    for (const aimed of applied.units ?? []) {
-      if (aimed.index < 0 || aimed.index >= units.length) {
-        throw new Error('a line-aimed discount names a unit this cart does not have');
-      }
-      pinned[aimed.index] = (pinned[aimed.index] ?? 0) + aimed.amount;
+  // A line-aimed promo's units, and (S2-21 round 3) a manual discount that
+  // named its lines — the "Staff benefit" row — booked on the units it took from.
+  const aimedUnits = [
+    ...totals.appliedPromos.flatMap((applied) => applied.units ?? []),
+    ...Object.values(totals.manualUnits ?? {}).flat(),
+  ];
+  for (const aimed of aimedUnits) {
+    if (aimed.index < 0 || aimed.index >= units.length) {
+      throw new Error('a line-aimed discount names a unit this cart does not have');
     }
+    pinned[aimed.index] = (pinned[aimed.index] ?? 0) + aimed.amount;
   }
 
   for (const [category, indexes] of byCategory) {

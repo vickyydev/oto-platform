@@ -189,10 +189,21 @@ export type BenefitCredentialRefusal =
  */
 const SHOWN_MAX = 'OTO-BEN:v1:'.length + (36 + 1) * 2 + (12 + 1) + 16;
 
+/** The header read anywhere in a string, whatever its case — `benefitCodeShown`'s question. */
+const HEADER_ANYWHERE = /OTO-BEN:/i;
+
 /**
  * What a refusal may say back of a scanned or typed code: anything without
  * the benefit QR's header as it was read (the prototype's own echo), and a
  * benefit QR only up to its signature — never the signature.
+ *
+ * THE HEADER IS LOOKED FOR ANYWHERE IN THE STRING, not only at its start
+ * (S2-21 round 3, from the round 2 review). A live QR read with something in
+ * front of it — `]Q1` from a keyboard-wedge scanner with Transmit Code ID on,
+ * a zero-width space or quotes from a pasted message, `QR:` — is not a QR this
+ * park recognises as one, and is refused as "not found"; it is still a live
+ * credential, so its echo stops at the first dot after the header like any
+ * other. What came in front of the header is shown as it was read.
  *
  * A refused QR is not a dead one. A box that has not pulled a rotated key yet,
  * a holder whose role is gone today and returns tomorrow, a park the QR is
@@ -207,10 +218,15 @@ const SHOWN_MAX = 'OTO-BEN:v1:'.length + (36 + 1) * 2 + (12 + 1) + 16;
  */
 export function benefitCodeShown(raw: string): string {
   const code = raw.trim();
-  if (!hasBenefitCredentialHeader(code)) return code;
-  const dot = code.indexOf('.');
+  // The index in the string AS READ: a case-insensitive search rather than an
+  // upper-cased copy, whose length can differ from the original's ("ß" → "SS").
+  const header = HEADER_ANYWHERE.exec(code);
+  if (!header) return code;
+  const at = header.index;
+  const dot = code.indexOf('.', at);
   const unsigned = dot === -1 ? code : code.slice(0, dot);
-  return unsigned.length > SHOWN_MAX ? `${unsigned.slice(0, SHOWN_MAX)}…` : unsigned;
+  const limit = at + SHOWN_MAX;
+  return unsigned.length > limit ? `${unsigned.slice(0, limit)}…` : unsigned;
 }
 
 /**
