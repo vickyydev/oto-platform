@@ -240,6 +240,58 @@ test('the roll runs out between two jobs: the set stops there and says one came 
 });
 
 /**
+ * SCRUM-504 — a job the printer failed PART-WAY says so (`partial`): the
+ * socket died with some of it written, or the roll ran out under it. The
+ * kiosk counts a band that may be half out of the printer as paper in the
+ * family's hands. A job refused before a byte was written says nothing of the
+ * kind.
+ */
+test('a job failed part-way is marked partial; one refused before a byte is not', async () => {
+  const box = openTestStore();
+  await box.store.init(BOX_ID);
+  let writes = 0;
+  const open: ChannelFactory = async () => ({
+    async write() {
+      writes += 1;
+      if (writes >= 2) throw new Error('socket reset by peer');
+    },
+    async query() {
+      return new Uint8Array([0x12]);
+    },
+    async close() {},
+  });
+  const printing = createPrintSubsystem({
+    bundle: () => ONE_PRINTER,
+    templates: () => [],
+    open,
+    report: () => undefined,
+    durable: () => ({ jobs: box.store, boxId: BOX_ID }),
+  });
+  const torn = await printing.printNow([receipt('job-1'), receipt('job-2'), receipt('job-3')]);
+  assert.equal(torn.complete, false);
+  assert.equal(torn.printed, 1);
+  assert.equal(torn.fault?.id, 'job-2');
+  assert.equal(torn.fault?.errorCode, 'PRINTER_WRITE_FAILED');
+  assert.equal(torn.fault?.partial, true, 'some of job-2 may be in the tray');
+  assert.equal(torn.outcomes[0]?.partial, undefined, 'a job that came out whole is not partial');
+
+  // The roll found empty as the next job opens: refused before a byte, nothing of it out.
+  const roll = rollPrinter(1);
+  const clean = createPrintSubsystem({
+    bundle: () => ONE_PRINTER,
+    templates: () => [],
+    open: roll.open,
+    report: () => undefined,
+    durable: () => ({ jobs: box.store, boxId: BOX_ID }),
+  });
+  const refused = await clean.printNow([receipt('job-4'), receipt('job-5')]);
+  assert.equal(refused.fault?.id, 'job-5');
+  assert.equal(refused.fault?.errorCode, 'PRINTER_PAPER_OUT');
+  assert.equal(refused.fault?.partial, undefined);
+  box.close();
+});
+
+/**
  * SCRUM-504 — the kiosk holds its redemption's transaction open while a set
  * prints, and calls a set off when it runs past its budget. Called off, the
  * set starts no further job; the caller is told of every job that came out,

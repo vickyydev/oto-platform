@@ -217,6 +217,13 @@ export interface PrintJobOutcome {
   /** Layout complaints the renderer reported. Never fatal; worth showing. */
   overflow: string[];
   elapsedMs: number | null;
+  /**
+   * SCRUM-504 — on a `failed` job from `printNow` only: the printer failed it
+   * part-way (`PrinterError.partial` — paper out mid-label, a write that
+   * stalled, a printer silent after the job), so some of it may be in the
+   * tray. Absent: nothing of it came out.
+   */
+  partial?: boolean;
 }
 
 /**
@@ -1451,6 +1458,8 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
               errorCode: error.code,
               errorMessage: error.message,
               overflow: job.overflow,
+              // SCRUM-504 — some of this job may be in the tray: the caller counts it.
+              ...(error.partial ? { partial: true } : {}),
             },
             printed,
           );
