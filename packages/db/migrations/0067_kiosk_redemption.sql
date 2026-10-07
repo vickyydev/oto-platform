@@ -1,8 +1,7 @@
 -- S2-20 K1 (SCRUM-217) — the self-service kiosk's redemption core. The plan is
 -- docs/progress/plans/events-kiosk/PLAN.md §5, §8 and the K1 row of §9.
--- PROVISIONAL NUMBER: renumbered in landing order (lanes H and I take 0066 and
--- 0067 the same week). It is journal entry 66 on its own branch, so the
--- journal's indexes stay unbroken there.
+-- Landed as 0067 after the staff benefits migration (0066); the snapshot was
+-- regenerated at landing so its chain and tables include 0066's.
 --
 -- 1. `pos.kiosk_session` — one row per session at a kiosk: the station, its
 --    paired credential and box, the press (`action_id`, unique per station, so

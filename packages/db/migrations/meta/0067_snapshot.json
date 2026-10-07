@@ -1,6 +1,6 @@
 {
-  "id": "4bc2f199-f017-4df2-a881-29cf235e2f19",
-  "prevId": "31e29a23-a078-4550-b3ac-9b3e25f508bf",
+  "id": "b088906c-b634-4ca9-a561-e1c0a84274eb",
+  "prevId": "73eed84d-548c-4534-acdc-35a5a6971beb",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -628,6 +628,19 @@
           "primaryKey": false,
           "notNull": false
         },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'platform'"
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -709,6 +722,28 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "employee_external_id_unique": {
+          "name": "employee_external_id_unique",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "external_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "external_id is not null and archived_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -758,7 +793,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "employee_source_check": {
+          "name": "employee_source_check",
+          "value": "\"core\".\"employee\".\"source\" in ('platform','otoapp')"
+        }
+      },
       "isRLSEnabled": false
     },
     "core.handoff_token": {
@@ -33335,6 +33375,385 @@
         "sale_extension_band_minutes_check": {
           "name": "sale_extension_band_minutes_check",
           "value": "\"pos\".\"sale_extension_band\".\"minutes_added\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "promo.benefit_profile": {
+      "name": "benefit_profile",
+      "schema": "promo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "operator_id": {
+          "name": "operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "employee_id": {
+          "name": "employee_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "benefit_role": {
+          "name": "benefit_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "override": {
+          "name": "override",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effective_from": {
+          "name": "effective_from",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_to": {
+          "name": "effective_to",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_account_id": {
+          "name": "created_by_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "benefit_profile_operator_idx": {
+          "name": "benefit_profile_operator_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_profile_employee_idx": {
+          "name": "benefit_profile_employee_idx",
+          "columns": [
+            {
+              "expression": "employee_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "effective_from",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_profile_created_by_idx": {
+          "name": "benefit_profile_created_by_idx",
+          "columns": [
+            {
+              "expression": "created_by_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_profile_open_unique": {
+          "name": "benefit_profile_open_unique",
+          "columns": [
+            {
+              "expression": "employee_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "effective_to is null and archived_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "benefit_profile_operator_id_operator_id_fk": {
+          "name": "benefit_profile_operator_id_operator_id_fk",
+          "tableFrom": "benefit_profile",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_profile_employee_id_employee_id_fk": {
+          "name": "benefit_profile_employee_id_employee_id_fk",
+          "tableFrom": "benefit_profile",
+          "tableTo": "employee",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_profile_created_by_account_id_account_id_fk": {
+          "name": "benefit_profile_created_by_account_id_account_id_fk",
+          "tableFrom": "benefit_profile",
+          "tableTo": "account",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "created_by_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "benefit_profile_role_check": {
+          "name": "benefit_profile_role_check",
+          "value": "\"promo\".\"benefit_profile\".\"benefit_role\" is null or \"promo\".\"benefit_profile\".\"benefit_role\" in ('owner','manager','staff')"
+        },
+        "benefit_profile_range_check": {
+          "name": "benefit_profile_range_check",
+          "value": "\"promo\".\"benefit_profile\".\"effective_to\" is null or \"promo\".\"benefit_profile\".\"effective_to\" >= \"promo\".\"benefit_profile\".\"effective_from\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "promo.benefit_role_template": {
+      "name": "benefit_role_template",
+      "schema": "promo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "operator_id": {
+          "name": "operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profile": {
+          "name": "profile",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_from": {
+          "name": "effective_from",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_to": {
+          "name": "effective_to",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_account_id": {
+          "name": "created_by_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "benefit_role_template_operator_idx": {
+          "name": "benefit_role_template_operator_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "role",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "effective_from",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_role_template_created_by_idx": {
+          "name": "benefit_role_template_created_by_idx",
+          "columns": [
+            {
+              "expression": "created_by_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_role_template_open_unique": {
+          "name": "benefit_role_template_open_unique",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "role",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "effective_to is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "benefit_role_template_operator_id_operator_id_fk": {
+          "name": "benefit_role_template_operator_id_operator_id_fk",
+          "tableFrom": "benefit_role_template",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_role_template_created_by_account_id_account_id_fk": {
+          "name": "benefit_role_template_created_by_account_id_account_id_fk",
+          "tableFrom": "benefit_role_template",
+          "tableTo": "account",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "created_by_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "benefit_role_template_role_check": {
+          "name": "benefit_role_template_role_check",
+          "value": "\"promo\".\"benefit_role_template\".\"role\" in ('owner','manager','staff')"
+        },
+        "benefit_role_template_range_check": {
+          "name": "benefit_role_template_range_check",
+          "value": "\"promo\".\"benefit_role_template\".\"effective_to\" is null or \"promo\".\"benefit_role_template\".\"effective_to\" >= \"promo\".\"benefit_role_template\".\"effective_from\""
         }
       },
       "isRLSEnabled": false
