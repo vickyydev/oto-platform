@@ -30,6 +30,7 @@ import {
   KIOSK_DEVICE_SCOPES,
   SIMULATOR_ACTIONS_WITH_SECRETS,
   SimulatorActionSchema,
+  hasBenefitCredentialHeader,
   WEB_INVOICE_STATION_CODE,
   invoiceStationSegment,
   newId,
@@ -1989,6 +1990,26 @@ export async function queueCommand(
         409,
         'SIMULATOR_ACTION_CARRIES_SECRET',
         'A badge or a PIN cannot travel through the command queue — it is stored and shown. That control needs the station channel.',
+      );
+    }
+    /**
+     * A staff benefit QR is a year-long signed credential, and a simulated
+     * scan of one through this queue would sit whole in `box_command`, the
+     * append-only audit row and the Console's command history. Refused for
+     * the same reason as a badge or a PIN; the station scan simulator
+     * (`POST /stations/:id/scan/simulate`) stores nothing and is the door
+     * for driving a benefit scan.
+     */
+    if (
+      name === 'scanner.scan' &&
+      'input' in action &&
+      typeof (action.input as { code?: unknown })?.code === 'string' &&
+      hasBenefitCredentialHeader((action.input as { code: string }).code)
+    ) {
+      throw new AppError(
+        409,
+        'SIMULATOR_ACTION_CARRIES_SECRET',
+        'A staff benefit code cannot travel through the command queue — it is stored and shown. Drive that scan through the station scan simulator instead.',
       );
     }
     /** And a device named in it must be one of THIS box's, as a test print's is. */
