@@ -561,7 +561,10 @@ export async function checkOutEventAttendee(
   const staffName = await staffNameOf(db, actor.accountId);
   const actionId = body.actionId ?? null;
 
-  const out = await withTx(db, ctx, 'event.checkout', async (tx) => {
+  // The answer is built after the commit, so nothing is returned from the
+  // transaction: the idempotency store keeps the route's answer (onSend).
+  const held: { row: CheckinRow | null } = { row: null };
+  await withTx(db, ctx, 'event.checkout', async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${dayLockKey(event.id, child, today)}, 0))`);
     let [row] = await posCheckinsOf(tx, event.id, child, today);
     if (!row) {
@@ -607,9 +610,10 @@ export async function checkOutEventAttendee(
         writtenBack: false,
       },
     });
-    return updated;
+    held.row = updated;
+    return undefined;
   });
-  return { answer: { checkin: await checkinViewOf(db, out), replayed: false, printJobs: [], notes: [] } };
+  return { answer: { checkin: await checkinViewOf(db, held.row!), replayed: false, printJobs: [], notes: [] } };
 }
 
 /** A mirror of a check-in the OTO App made itself: nothing to tell the app, so it is `synced`. */
@@ -691,7 +695,11 @@ export async function reprintEventBands(
   const actionId = body.actionId ?? newId();
   const reason = body.reason?.trim() || 'Lost band';
 
-  const result = await withTx(db, ctx, 'event.band_reprint', async (tx) => {
+  const result: { row: CheckinRow | null; printed: { jobs: SalePrintJobView[]; notes: string[] } } = {
+    row: null,
+    printed: { jobs: [], notes: [] },
+  };
+  await withTx(db, ctx, 'event.band_reprint', async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${dayLockKey(event.id, child, today)}, 0))`);
     let [row] = await posCheckinsOf(tx, event.id, child, today);
     if (!row) {
@@ -762,11 +770,13 @@ export async function reprintEventBands(
       },
     });
     const [now2] = await tx.select().from(eventCheckin).where(eq(eventCheckin.id, row.id)).limit(1);
-    return { row: now2 ?? row, printed };
+    result.row = now2 ?? row;
+    result.printed = printed;
+    return undefined;
   });
   return {
     answer: {
-      checkin: await checkinViewOf(db, result.row),
+      checkin: await checkinViewOf(db, result.row!),
       replayed: false,
       printJobs: result.printed.jobs.map(printJobView),
       notes: result.printed.notes,
