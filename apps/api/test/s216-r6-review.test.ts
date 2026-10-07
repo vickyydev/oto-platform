@@ -355,6 +355,9 @@ describe('review — every /analytics route is guarded per branch', () => {
       [
         'GET /analytics/booths',
         'GET /analytics/booths/export',
+        // S2-21 round 4: the staff benefits report, read as every report here is.
+        'GET /analytics/reports/benefits',
+        'GET /analytics/reports/benefits/transactions',
         'GET /analytics/reports/discounts',
         'GET /analytics/reports/discounts/transactions',
         'GET /analytics/reports/profitability',

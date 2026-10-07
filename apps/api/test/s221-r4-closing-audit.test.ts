@@ -331,6 +331,13 @@ describe('what remains open, named', () => {
    */
   it.todo('H7’s lag: the time between a revocation and every box’s next pull alerted on by an ops expectation');
   /**
+   * `benefit.comp` is written sensitive (`after.sensitive`) and reads on the
+   * Activity log by its action, but the Console's "Admin log" preset filters
+   * by a category the audit rows do not carry yet — the platform-wide audit
+   * classification work — so the preset cannot select it on its own.
+   */
+  it.todo('benefit.comp on the Activity “Admin log” preset, once audit rows carry a category');
+  /**
    * The owner's questions stay at the prototype's defaults (plan §10): Q1
    * whole-profile override, Q2 ฿500 / 30 % / 2 coffees, Q3 no comp permission,
    * Q4 a refund keeps the quota used, Q5 F&B only, Q6 the sale's business

@@ -647,6 +647,19 @@ describe('job:benefit.period_rollover — the previous period, closed at the day
     expect(await factRows()).toHaveLength(3);
   });
 
+  it('the daily rollup’s sweep of an ended day closes the same rows; whichever comes first, the other writes nothing', async () => {
+    // Rolled up today, really: the day has not ended, so its rows are provisional.
+    await rollup();
+    expect((await factRows()).every((r) => r.provisional)).toBe(true);
+    // A day on, the rollup's own sweep of ended provisional days closes them…
+    const tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
+    await runDailyRollupJob(ctx.db, tomorrow);
+    expect((await factRows()).every((r) => !r.provisional)).toBe(true);
+    // …and the rollover then finds nothing left to close.
+    const after = await runBenefitRolloverJob(ctx.db, tomorrow);
+    expect([after.daysClosed, after.rowsWritten]).toEqual([0, 0]);
+  });
+
   it('a row the day no longer has is removed by the next write', async () => {
     // Taken off below the routes (a demo reset's shape): its sale's day loses the row.
     await ctx.db

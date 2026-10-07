@@ -52,6 +52,12 @@ import type { Exec, Tx } from './tx';
  *                               new day's key has simply never been counted
  *                               under.
  *
+ * The daily rollup's own sweep of ended provisional days writes the same rows
+ * final too, so whichever of the two reaches an ended day first closes it and
+ * the other finds nothing to do. The rollover is the one that is due at the
+ * day start whatever the daily summary holds, and the one its own expectation
+ * watches on Health.
+ *
  * Each branch-day is computed and written under a transaction-scoped advisory
  * lock of its own; a row is written only where a figure moved, and a row the
  * day no longer has is removed, so a replayed run writes nothing.
@@ -218,8 +224,8 @@ export async function writeBenefitDay(
     }
     outcome.written += 1;
   }
-  // A row the day no longer has: its sale voided before it closed, its
-  // application moved to the order rung up again, a demo reset.
+  // A row the day no longer has: its sales deleted (a demo reset), or its
+  // applications taken off below the routes.
   for (const gone of held.values()) {
     await tx.delete(factBenefitDaily).where(eq(factBenefitDaily.id, gone.id));
     outcome.removed += 1;

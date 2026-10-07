@@ -641,9 +641,11 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
      * trading days that have ENDED — a week back, and any still provisional
      * however old — rewritten final into `analytics.fact_benefit_daily`
      * (`runBenefitRolloverJob` in `services/analytics-benefits.ts`). The daily
-     * rollup above writes the same rows as the day goes; this is the day
-     * start's close, so the first tick after a branch's day turns over closes
-     * yesterday and, on the first of a month, the month's staff credit period.
+     * rollup above writes the same rows as the day goes, and its sweep of
+     * ended days may close one first; this is the day start's close whatever
+     * the daily summary holds, so the first tick after a branch's day turns
+     * over closes yesterday and, on the first of a month, the month's staff
+     * credit period.
      * It is NOT what makes a new day's coffees or a new month's credit count
      * from zero — a period is a key, and a new key has never been counted
      * under — and registering it writes the expectation the watchdog raises
