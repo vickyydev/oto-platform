@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import {
   benefitApplication,
   benefitCredential,
@@ -42,6 +42,7 @@ import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { resolveBenefitCredential, type ResolvedBenefit } from './benefit-credentials';
 import { effectiveBenefitOn } from './benefits';
+import { accountNames } from './refund-slices';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -898,4 +899,89 @@ export async function saleBenefitOf(db: Exec | Db, saleId: string): Promise<Bene
     engineVersion: a.engineVersion,
     source: a.origin === 'box' ? 'box' : 'platform',
   };
+}
+
+// --- The Audit log behind Admin > Staff Benefits ------------------------------------
+
+export interface BenefitApplicationLogRow {
+  id: string;
+  /** When it was applied. */
+  at: string;
+  employeeId: string;
+  employeeName: string;
+  benefitRole: BenefitRole;
+  processedByAccountId: string;
+  processedByName: string | null;
+  isComp: boolean;
+  compedSatang: number;
+  freeItemsSatang: number;
+  creditSatang: number;
+  discountSatang: number;
+  totalReliefSatang: number;
+  appliedSatang: number;
+  saleId: string;
+  receiptNumber: string | null;
+  branchId: string;
+  stationId: string;
+  boxId: string | null;
+  origin: 'cloud' | 'box';
+}
+
+/**
+ * Every staff benefit applied to an order that was recorded (closed, refunded
+ * included — the prototype keeps the entry whatever happens to the order),
+ * newest first: the prototype's Audit log (`getBenefitAuditLog`,
+ * `StaffBenefitsPanel`) on the platform's rows. An application taken off or
+ * moved before its order was paid is not an entry, as the prototype never
+ * wrote one before confirmation.
+ */
+export async function listBenefitApplications(
+  db: Exec,
+  operatorId: string,
+  limit = 200,
+): Promise<BenefitApplicationLogRow[]> {
+  const rows = await db
+    .select({
+      application: benefitApplication,
+      employeeName: employee.name,
+      receiptNumber: sale.receiptNumber,
+    })
+    .from(benefitApplication)
+    .innerJoin(employee, eq(employee.id, benefitApplication.employeeId))
+    .innerJoin(sale, eq(sale.id, benefitApplication.saleId))
+    .where(
+      and(
+        eq(benefitApplication.operatorId, operatorId),
+        isNull(benefitApplication.removedAt),
+        inArray(sale.status, ['finalised', 'refunded']),
+      ),
+    )
+    .orderBy(desc(benefitApplication.occurredAt), desc(benefitApplication.id))
+    .limit(limit);
+  const nameOf = await accountNames(
+    db,
+    rows.map((r) => r.application.processedByAccountId),
+  );
+  return rows.map(({ application: a, employeeName, receiptNumber }) => ({
+    id: a.id,
+    at: a.occurredAt.toISOString(),
+    employeeId: a.employeeId,
+    employeeName,
+    benefitRole: a.benefitRole,
+    processedByAccountId: a.processedByAccountId,
+    processedByName: nameOf(a.processedByAccountId),
+    isComp: a.isComp,
+    compedSatang: a.compedSatang,
+    freeItemsSatang: a.freeItemsSatang,
+    creditSatang: a.creditSatang,
+    discountSatang: a.discountSatang,
+    totalReliefSatang: a.totalReliefSatang,
+    appliedSatang: a.appliedSatang,
+    saleId: a.saleId,
+    receiptNumber,
+    branchId: a.branchId,
+    stationId: a.stationId,
+    boxId: a.boxId,
+    origin: a.origin,
+  }));
 }

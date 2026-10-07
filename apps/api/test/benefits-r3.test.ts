@@ -745,3 +745,30 @@ describe('POST /benefits/resolve keeps nothing, and echoes a prefixed QR short o
     expect(await ctx.db.select().from(idempotencyKey).where(eq(idempotencyKey.key, key))).toHaveLength(0);
   });
 });
+
+describe('the Staff Benefits Audit log, on the platform’s rows', () => {
+  it('lists every benefit applied to a recorded order, newest first, and nothing taken off or still unpaid', async () => {
+    const log = await call<{
+      applications: Array<{
+        employeeName: string;
+        processedByName: string | null;
+        isComp: boolean;
+        totalReliefSatang: number;
+        receiptNumber: string | null;
+        stationId: string;
+        at: string;
+      }>;
+    }>('GET', '/benefits/applications', admin);
+    expect(log.status, log.raw).toBe(200);
+    const rows = log.body.applications;
+    // Khun Lek's mixed order and Khun Anan's comp were closed; the rest were
+    // taken off, voided, moved, or left rung up and unpaid.
+    expect(rows.map((r) => r.employeeName).sort()).toEqual(['Khun Anan (Owner)', 'Khun Lek (Manager)']);
+    expect(rows.every((r) => r.receiptNumber && r.stationId === stationId && r.processedByName)).toBe(true);
+    expect(rows.find((r) => r.isComp)?.employeeName).toBe('Khun Anan (Owner)');
+    expect([...rows].sort((a, b) => b.at.localeCompare(a.at))).toEqual(rows);
+    // Reception applies benefits; reading the log is the back office's.
+    const denied = await call('GET', '/benefits/applications', reception);
+    expect(denied.status).toBe(403);
+  });
+});

@@ -125,6 +125,39 @@ export function readVoucherScan(event: StationScanEvent): string | null {
   return typeof code === 'string' && code.length > 0 ? code : null;
 }
 
+/** The name the box's staff benefit handler goes by (`BENEFIT_CODE_HANDLER` in `@oto/box-agent`). */
+export const BENEFIT_CODE_HANDLER = 'benefit';
+
+/**
+ * A staff benefit QR read at this counter's scanner (S2-21 round 3), as the
+ * order station takes it: the QR the box checked (`detail.benefitCode`, which
+ * only the staff screen receives) and whose it is — or the box's refusal, in
+ * its words, when it would not admit it. Null when the scan is not a benefit
+ * QR.
+ */
+export type BenefitScanRead =
+  | { ok: true; code: string; name: string; benefitRole: 'owner' | 'manager' | 'staff' | null }
+  | { ok: false; message: string };
+
+export function readBenefitScan(event: StationScanEvent): BenefitScanRead | null {
+  if (event.codeKind !== 'benefit') return null;
+  const detail = event.detail ?? {};
+  if (event.outcome === 'handled' && event.handler === BENEFIT_CODE_HANDLER) {
+    const code = detail.benefitCode;
+    const benefit = detail.benefit as { name?: unknown; benefitRole?: unknown } | undefined;
+    if (typeof code !== 'string' || code.length === 0) return null;
+    const role = benefit?.benefitRole;
+    return {
+      ok: true,
+      code,
+      name: typeof benefit?.name === 'string' ? benefit.name : '',
+      benefitRole: role === 'owner' || role === 'manager' || role === 'staff' ? role : null,
+    };
+  }
+  const message = detail.message;
+  return { ok: false, message: typeof message === 'string' && message ? message : 'That staff benefit QR was not accepted.' };
+}
+
 /**
  * How long the stream has to open before this screen stops waiting for it.
  *

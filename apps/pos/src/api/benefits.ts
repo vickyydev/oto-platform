@@ -12,6 +12,9 @@ import { api, idemKey } from './client';
  *   staff      `GET /benefits/profiles`, `GET/PUT /benefits/profiles/:employeeId`
  *   QR         `GET/POST /benefits/credentials`, `GET /benefits/credentials/:id/qr`,
  *              `POST /benefits/credentials/:id/revoke` (round 2)
+ *   checkout   `POST /benefits/resolve`, `DELETE /sales/:id/benefit` (round 3);
+ *              the preview rides every quote and the claim the commit
+ *              (`api/sales.ts`, the cart's `benefit`)
  *
  * The platform keeps money in satang; the prototype's editor
  * (`BenefitProfileFields`) holds baht, so a profile is converted at this
@@ -76,6 +79,54 @@ export interface BenefitCredential {
   revokedAt: string | null;
   revokedBy: BenefitVersionAuthor | null;
   lastSeenAt: string | null;
+}
+
+/**
+ * A scanned or typed staff benefit QR as the platform resolved it (S2-21 round
+ * 3; `POST /benefits/resolve`): whose it is and what applies to them today.
+ * Never the QR.
+ */
+export interface ResolvedBenefitView {
+  employeeId: string;
+  name: string;
+  credentialId: string;
+  on: string;
+  benefitRole: BenefitRole;
+  hasOverride: boolean;
+  profile: PlatformProfile;
+  offline: { comp: boolean; standingDiscount: unknown; onlineOnly: ('freeItems' | 'credit')[] };
+  expiresAt: string;
+}
+
+/** One entry of the Staff Benefits Audit log, from the platform (round 3). */
+export interface BenefitApplicationLogRow {
+  id: string;
+  at: string;
+  employeeId: string;
+  employeeName: string;
+  benefitRole: BenefitRole;
+  processedByAccountId: string;
+  processedByName: string | null;
+  isComp: boolean;
+  compedSatang: number;
+  freeItemsSatang: number;
+  creditSatang: number;
+  discountSatang: number;
+  totalReliefSatang: number;
+  appliedSatang: number;
+  saleId: string;
+  receiptNumber: string | null;
+  branchId: string;
+  stationId: string;
+  boxId: string | null;
+  origin: 'cloud' | 'box';
+}
+
+/** What taking the benefit off a rung-up sale gave back (round 3). */
+export interface RemovedSaleBenefit {
+  removed: boolean;
+  saleId: string;
+  applicationId: string | null;
 }
 
 /** What the QR dialog prints: the name over the QR and the code it encodes. */
@@ -150,6 +201,23 @@ export const benefitsApi = {
       {},
       { idempotencyKey },
     ),
+  /** The Audit log: every benefit applied to a recorded order, newest first (round 3). */
+  applications: () =>
+    api.get<{ applications: BenefitApplicationLogRow[] }>('/benefits/applications'),
+  // --- At the F&B checkout (round 3) ---------------------------------------------
+  /**
+   * The scan dialog's check: who the QR names and whether they have anything
+   * set up, refused in the prototype's words. No idempotency key: it writes
+   * nothing, and the platform keeps none of its answers.
+   */
+  resolve: (code: string) => api.post<ResolvedBenefitView>('/benefits/resolve', { code }),
+  /**
+   * Take the benefit off an order already rung up (before any money): its
+   * free items and credit go back to the staff member, and the order is rung
+   * up again without it.
+   */
+  removeFromSale: (saleId: string, idempotencyKey: string = idemKey()) =>
+    api.delete<RemovedSaleBenefit>(`/sales/${path(saleId)}/benefit`, undefined, { idempotencyKey }),
 };
 
 // --- The editor's shape and the platform's ------------------------------------------

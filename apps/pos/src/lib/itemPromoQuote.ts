@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Discount, FnbOrderLine, ManualDiscount, MerchOrderLine } from '@/types';
-import { localItemQuote, quoteItemCart, type CartQuote, type ItemCartIdentity } from '@/api/sales';
+import {
+  localItemQuote,
+  quoteItemCart,
+  type CartBenefitPayload,
+  type CartQuote,
+  type ItemCartIdentity,
+} from '@/api/sales';
 import { ApiError } from '@/api/client';
 import type { CartQuoteState, QuoteError } from '@/lib/cartQuote';
 import { todayRateMode } from '@/lib/pricingMode';
@@ -54,6 +60,7 @@ function signatureOf(
   identity: ItemCartIdentity | null,
   mode: string,
   promoCodes: readonly string[] = [],
+  benefit: CartBenefitPayload | null = null,
 ): string {
   const linePart = lines
     .map((line) => {
@@ -72,7 +79,9 @@ function signatureOf(
   const promoPart = promos.map((p) => `${p.code}:${p.type}:${p.value}`).join('|');
   const who = identity ? `${identity.branchId}/${identity.stationId}/${identity.channel}` : 'none';
   // S2-10b — a voucher put on or taken off moves the price, so it re-asks.
-  return `${mode}#${who}#${linePart}#${manualPart}#${promoPart}#${promoCodes.join('|')}`;
+  // S2-21 round 3 — so does a staff benefit scanned or taken off (by its scan,
+  // never by the QR itself: the signature is kept, the QR is not).
+  return `${mode}#${who}#${linePart}#${manualPart}#${promoPart}#${promoCodes.join('|')}#${benefit?.applicationId ?? ''}`;
 }
 
 /** One empty list, so an order with no voucher does not hand a new array to every render. */
@@ -96,12 +105,19 @@ export function useItemCartQuoteWithPromos(args: {
    * line is the voucher's Kids Pizza is still asked about.
    */
   promoCodes?: readonly string[];
+  /**
+   * S2-21 round 3 — a colleague's staff benefit QR on the order. The platform
+   * prices it on every quote (nothing is claimed); this device never does, so
+   * its own fallback figure leaves the benefit out.
+   */
+  benefit?: CartBenefitPayload | null;
 }): CartQuoteState {
   const { kind, lines, manualDiscounts, promos, identity } = args;
   const promoCodes = args.promoCodes ?? NO_CODES;
+  const benefit = args.benefit ?? null;
   const enabled = args.enabled ?? true;
   const rate = todayRateMode();
-  const signature = signatureOf(lines, manualDiscounts, promos, identity, rate.mode, promoCodes);
+  const signature = signatureOf(lines, manualDiscounts, promos, identity, rate.mode, promoCodes, benefit);
 
   const local = useMemo(
     (): CartQuote =>
@@ -138,6 +154,7 @@ export function useItemCartQuoteWithPromos(args: {
         promos,
         promoCodes,
         identity,
+        ...(benefit ? { benefit } : {}),
       })
         .then((quote) => {
           // The order has moved on since this went out, or another request has

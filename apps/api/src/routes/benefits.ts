@@ -25,6 +25,7 @@ import {
   resolveBenefitCredential,
   revokeBenefitCredential,
 } from '../services/benefit-credentials';
+import { listBenefitApplications } from '../services/benefit-checkout';
 import { opCtx } from '../services/tx';
 
 /**
@@ -267,6 +268,51 @@ export async function benefitRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const on = req.query.on ?? (await todayOf(req));
       return effectiveBenefitOn(app.db, auth.operatorId, req.params.employeeId, on);
+    },
+  );
+
+  // --- The Audit log (round 3) -------------------------------------------------
+
+  app.get(
+    '/applications',
+    {
+      config: { permission: 'admin:benefit:read' },
+      schema: {
+        description:
+          'The Staff Benefits Audit log: every staff benefit applied to an order that was recorded, newest first (200 at most) — whose QR, their benefit role, who processed it at which station and box, whether it was a comp, the four amounts and the total in satang, what came off the bill, and the sale and its receipt number. Kept whatever later happens to the order. An application taken off, or moved to the order rung up again, before its order was paid is not an entry.',
+        response: {
+          200: z.object({
+            applications: z.array(
+              z.object({
+                id: z.string().uuid(),
+                at: z.string(),
+                employeeId: z.string().uuid(),
+                employeeName: z.string(),
+                benefitRole: Role,
+                processedByAccountId: z.string().uuid(),
+                processedByName: z.string().nullable(),
+                isComp: z.boolean(),
+                compedSatang: z.number().int(),
+                freeItemsSatang: z.number().int(),
+                creditSatang: z.number().int(),
+                discountSatang: z.number().int(),
+                totalReliefSatang: z.number().int(),
+                appliedSatang: z.number().int(),
+                saleId: z.string().uuid(),
+                receiptNumber: z.string().nullable(),
+                branchId: z.string().uuid(),
+                stationId: z.string().uuid(),
+                boxId: z.string().uuid().nullable(),
+                origin: z.enum(['cloud', 'box']),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return { applications: await listBenefitApplications(app.db, auth.operatorId) };
     },
   );
 

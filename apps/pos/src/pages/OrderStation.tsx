@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
-import { Discount, FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, Operator, SelectedModifier, Wristband } from '@/types';
+import { Discount, FnbOrder, FnbOrderLine, ManualDiscount, MenuItem, SelectedModifier, Wristband } from '@/types';
 import { useStation } from '@/station/StationContext';
 import { announceSalePrinting, dispatchPrintJobs, fnbPrintJobs, promptSetupStation } from '@/lib/printRouting';
 import { setSaleOpen } from '@/pwa/openSale';
@@ -12,10 +12,8 @@ import {
   getDiscountByCode,
   getDiscountReasons,
   recordFnbOrder,
-  previewStaffBenefit,
-  commitStaffBenefit,
-  attachBenefitAuditOrderId,
 } from '@/mockApi';
+import { benefitsApi } from '@/api/benefits';
 import { INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import { inventoryFor, refreshSellableStock, stockIsServerBacked } from '@/api/stock';
 import { VariantPickerModal, type PickableVariant } from '@/components/shared/VariantPickerModal';
@@ -26,7 +24,7 @@ import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
 import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { useFnbDisplay } from '@/lib/fnbDisplaySession';
-import { readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
+import { readBenefitScan, readVoucherScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { useScannerBurst } from '@/lib/scannerBurst';
 import {
   CANCELLED_AT_THE_TILL,
@@ -73,7 +71,8 @@ import { QuoteFaultNote } from '@/components/fnb/QuoteFaultNote';
 import { dropDiscountsForRemovedLines } from '@/lib/manualDiscount';
 import { ScanWristband } from '@/components/fnb/ScanWristband';
 import { FoodSafetyBanner } from '@/components/fnb/FoodSafetyBanner';
-import { BenefitScanModal } from '@/components/fnb/BenefitScanModal';
+import { BenefitScanModal, type ScannedBenefit } from '@/components/fnb/BenefitScanModal';
+import { newId } from '@oto/shared';
 import { MenuGrid } from '@/components/fnb/MenuGrid';
 import { FnbCart } from '@/components/fnb/FnbCart';
 import { FnbPayment, fnbPaymentResult, walletBalanceAfter } from '@/components/fnb/FnbPayment';
@@ -199,12 +198,14 @@ export default function OrderStation() {
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
   const [customerTheme] = useCustomerTheme();
 
-  // Staff benefit (Task #231): a scanned operator's QR applies their comp/
+  // Staff benefit (Task #231): a scanned staff member's QR applies their comp/
   // free-items/credit/standing-discount to the current cart, ONLY here at the
-  // F&B order station. The preview folds into `manualDiscounts` as a single
-  // synthetic entry so it flows through the existing totals/receipt seam.
+  // F&B order station. S2-21 round 3 — the PLATFORM prices it: the QR rides
+  // every quote and the commit (`benefitPayload`), the platform answers the
+  // four amounts and claims the quota when the order is rung up, and the
+  // breakdown and the "Staff benefit" row below are drawn from its answer.
   const [showBenefitScan, setShowBenefitScan] = useState(false);
-  const [benefitOperator, setBenefitOperator] = useState<Operator | null>(null);
+  const [benefit, setBenefit] = useState<ScannedBenefit | null>(null);
 
   // Modifier selection sheet. lineId is set when editing an existing cart line.
   const [sheetItem, setSheetItem] = useState<MenuItem | null>(null);
@@ -245,38 +246,14 @@ export default function OrderStation() {
     setStage('order');
   }, [branch.apiId]);
 
-  // Live preview of the scanned staff benefit against the current cart — a
-  // pure recompute each time lines change, so quota/credit-remaining stays
-  // accurate as the order is built (nothing is committed until payment).
-  const benefitPreview = useMemo(
-    () => (benefitOperator ? previewStaffBenefit(benefitOperator, lines) : null),
-    [benefitOperator, lines]
-  );
-
-  // Fold the benefit preview into ONE synthetic order-scope ManualDiscount so
-  // it flows through the existing totals/receipt/cart seam untouched — comp
-  // becomes a 'comp' discount, everything else a 'fixed' ฿ discount for the
-  // combined relief (free items + credit + standing %).
-  const benefitDiscount: ManualDiscount | null = useMemo(() => {
-    if (!benefitOperator || !benefitPreview || benefitPreview.totalReliefTHB <= 0) return null;
-    const isComp = benefitPreview.compedTHB > 0;
-    return {
-      id: STAFF_BENEFIT_DISCOUNT_ID,
-      scope: 'order',
-      type: isComp ? 'comp' : 'fixed',
-      value: isComp ? 0 : benefitPreview.totalReliefTHB,
-      reason: 'Staff benefit',
-      note: `Scanned: ${benefitOperator.name} (${benefitOperator.benefitRole ?? 'staff'})`,
-      amountTHB: benefitPreview.totalReliefTHB,
-      appliedBy: operator?.name ?? benefitOperator.name,
-      appliedById: operator?.id ?? benefitOperator.id,
-      appliedAt: new Date().toISOString(),
-    };
-  }, [benefitOperator, benefitPreview, operator]);
-
-  const effectiveManualDiscounts = useMemo(
-    () => (benefitDiscount ? [...manualDiscounts, benefitDiscount] : manualDiscounts),
-    [manualDiscounts, benefitDiscount]
+  /**
+   * The scanned benefit as the order carries it to the platform: the QR and
+   * this scan's application id (S2-21 round 3). Never a figure — the platform
+   * prices it on every quote and claims its quota at the commit.
+   */
+  const benefitPayload = useMemo(
+    () => (benefit ? { applicationId: benefit.applicationId, code: benefit.code } : null),
+    [benefit],
   );
 
   /**
@@ -326,14 +303,74 @@ export default function OrderStation() {
   const order = useItemCartQuoteWithPromos({
     kind: 'fnb',
     lines,
-    manualDiscounts: effectiveManualDiscounts,
+    manualDiscounts,
     promos: promoCodes,
     identity: orderIdentity,
     enabled: !locked && stage !== 'confirmation',
     // S2-10b — the held voucher rides by its code; the platform prices it.
     promoCodes: voucherCodes,
+    // S2-21 round 3 — the scanned staff benefit rides by its QR; the platform prices it.
+    benefit: benefitPayload,
   });
-  const { subtotal, total, manualAmounts, taxBreakdown } = order.totals;
+  const { subtotal, total, taxBreakdown } = order.totals;
+
+  /**
+   * THE BENEFIT AS THE PLATFORM PRICED IT for this scan — or, with the link
+   * down, as the counter's box did (comp and the standing percent; free items
+   * and credit "online only"). Null until a quote answers for this scan, and
+   * whenever the platform's figure is not the one on screen: this device never
+   * works a benefit out itself.
+   */
+  const benefitQuote =
+    benefit && order.quote.benefit && order.quote.benefit.applicationId === benefit.applicationId
+      ? order.quote.benefit
+      : null;
+
+  // The prototype's fold, from the platform's figures: ONE order-scope
+  // "Staff benefit" row on the panel, the receipt and the customer display —
+  // comp for an owner's comp, otherwise the combined relief. Display only: the
+  // platform builds the row itself and refuses one sent by a till.
+  const benefitDiscount: ManualDiscount | null = useMemo(() => {
+    if (!benefitQuote || benefitQuote.totalReliefSatang <= 0) return null;
+    return {
+      id: STAFF_BENEFIT_DISCOUNT_ID,
+      scope: 'order',
+      type: benefitQuote.isComp ? 'comp' : 'fixed',
+      value: benefitQuote.isComp ? 0 : benefitQuote.totalReliefSatang / 100,
+      reason: 'Staff benefit',
+      note: `Scanned: ${benefitQuote.name} (${benefitQuote.benefitRole})`,
+      amountTHB: benefitQuote.appliedSatang / 100,
+      appliedBy: operator?.name ?? benefitQuote.name,
+      appliedById: operator?.id ?? benefitQuote.employeeId,
+      appliedAt: new Date().toISOString(),
+    };
+  }, [benefitQuote, operator]);
+
+  const effectiveManualDiscounts = useMemo(
+    () => (benefitDiscount ? [...manualDiscounts, benefitDiscount] : manualDiscounts),
+    [manualDiscounts, benefitDiscount],
+  );
+  const manualAmounts = useMemo(
+    () =>
+      benefitDiscount && benefitQuote
+        ? { ...order.totals.manualAmounts, [STAFF_BENEFIT_DISCOUNT_ID]: benefitQuote.appliedSatang / 100 }
+        : order.totals.manualAmounts,
+    [order.totals.manualAmounts, benefitDiscount, benefitQuote],
+  );
+
+  /**
+   * A BENEFIT THE PLATFORM (OR THE BOX) REFUSED comes off the order, with its
+   * words — a revoked QR, someone who has left, nothing set up today, a QR
+   * already used on a closed sale. Keyed on the refusal itself, so each is acted
+   * on once.
+   */
+  useEffect(() => {
+    const refused = order.error;
+    if (!benefit || !refused || refused.kind !== 'refusal' || !refused.code?.startsWith('BENEFIT_')) return;
+    setBenefit(null);
+    toast({ title: 'Staff benefit not applied', description: refused.message, variant: 'destructive' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order.error]);
 
   /**
    * THE PLATFORM LOOKED AT THIS ORDER AND OBJECTED — SCRUM-342, told apart by
@@ -413,7 +450,7 @@ export default function OrderStation() {
     );
   }, [lines, order.quote.lineTotals]);
   const paymentEpoch = orderEpochRef.current;
-  const paymentScope = JSON.stringify([paymentEpoch, orderIdentity, lines, effectiveManualDiscounts, voucherCodes, orderNote, benefitOperator?.id]);
+  const paymentScope = JSON.stringify([paymentEpoch, orderIdentity, lines, manualDiscounts, voucherCodes, orderNote, benefit?.applicationId]);
   const paymentScopeRef = useRef({ epoch: paymentEpoch, scope: paymentScope });
   paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
   const paymentContextCurrent = (): boolean => orderEpochRef.current === paymentEpoch && paymentScopeRef.current.scope === paymentScope;
@@ -700,14 +737,36 @@ export default function OrderStation() {
     setManualDiscounts((prev) => [...prev, md]);
   };
 
+  /**
+   * Take the scanned benefit off the order. Rung up already (the payment
+   * screen was opened, then Back): the platform is asked to give its quota back
+   * now (`DELETE /sales/:id/benefit`) — best effort, since the sale cannot be
+   * closed with it any more and a void gives it back too — and the next Pay
+   * rings the order up again without it.
+   */
+  const removeBenefit = () => {
+    const rungUp = saleWriter.committed;
+    if (benefit && rungUp && rungUp.status === 'tendering') {
+      void benefitsApi.removeFromSale(rungUp.id).catch(() => undefined);
+    }
+    setBenefit(null);
+  };
+
   const handleRemoveManualDiscount = (id: string) => {
     // The staff-benefit row isn't stored in `manualDiscounts` — it's derived
-    // live from `benefitOperator` — so removing it means un-scanning instead.
+    // from the platform's figures for the scan — so removing it means
+    // un-scanning instead.
     if (id === STAFF_BENEFIT_DISCOUNT_ID) {
-      setBenefitOperator(null);
+      removeBenefit();
       return;
     }
     setManualDiscounts((prev) => prev.filter((md) => md.id !== id));
+  };
+
+  /** A benefit scanned at the dialog or at this counter's scanner. One per order: a new scan replaces it. */
+  const applyBenefit = (scanned: ScannedBenefit) => {
+    if (benefit && benefit.applicationId !== scanned.applicationId) removeBenefit();
+    setBenefit(scanned);
   };
 
   /**
@@ -823,6 +882,29 @@ export default function OrderStation() {
     void redeemVoucher(code);
   };
   useStationScans(locked ? undefined : station?.stationId, (event: StationScanEvent) => {
+    // S2-21 round 3 — a staff benefit QR at this counter's scanner, checked by
+    // the box: applied to the order on screen, or its refusal said here.
+    const benefitRead = readBenefitScan(event);
+    if (benefitRead) {
+      if (staffLocked.current) return;
+      if (!benefitRead.ok) {
+        toast({ title: 'Staff benefit not applied', description: benefitRead.message, variant: 'destructive' });
+        return;
+      }
+      if (stage === 'payment' || stage === 'confirmation') {
+        toast({ title: 'Go back to the order to apply a staff benefit', variant: 'destructive' });
+        return;
+      }
+      if (stage === 'scan') loadBand(null);
+      applyBenefit({
+        code: benefitRead.code,
+        applicationId: newId(),
+        name: benefitRead.name || null,
+        benefitRole: benefitRead.benefitRole,
+        provisional: false,
+      });
+      return;
+    }
     const code = readVoucherScan(event);
     if (code) redeemScannedVoucher(code);
   });
@@ -883,7 +965,7 @@ export default function OrderStation() {
     setManualDiscounts([]);
     setPromoCodes([]);
     setPromoError('');
-    setBenefitOperator(null);
+    setBenefit(null);
     setShowBenefitScan(false);
   };
 
@@ -917,7 +999,7 @@ export default function OrderStation() {
     setManualDiscounts([]);
     setPromoCodes([]);
     setPromoError('');
-    setBenefitOperator(null);
+    setBenefit(null);
     setShowBenefitScan(false);
     setCompletedOrder(null);
     setNewBalance(null);
@@ -1011,7 +1093,7 @@ export default function OrderStation() {
   const commitPayload = (): SaleCartPayload | null => {
     if (!orderIdentity || offLedgerOnly(lines)) return null;
     const held = voucher.held;
-    return buildItemCartPayload(displayLines, effectiveManualDiscounts, orderIdentity, total, {
+    return buildItemCartPayload(displayLines, manualDiscounts, orderIdentity, total, {
       mode: order.quote.pricingMode,
       modeReason: order.quote.pricingModeReason,
       // The codes the quote was answered for: the order the platform prices at
@@ -1020,6 +1102,18 @@ export default function OrderStation() {
       // S2-10b — the voucher rides by its code; `total` above is then the
       // platform's quoted figure, the only one that knows what it took off.
       ...(held ? { promoCodes: [held.code] } : {}),
+      // S2-21 round 3 — the staff benefit rides by its QR and this scan's id,
+      // with the relief the guest was shown: the platform claims the quota in
+      // the sale's own transaction and refuses a relief that has shrunk since.
+      ...(benefit
+        ? {
+            benefit: {
+              applicationId: benefit.applicationId,
+              code: benefit.code,
+              ...(benefitQuote ? { expectedReliefSatang: benefitQuote.totalReliefSatang } : {}),
+            },
+          }
+        : {}),
     });
   };
 
@@ -1143,27 +1237,23 @@ export default function OrderStation() {
     const servedWristband = wristband ? withPrepaidServed(wristband, lines) : wristband;
     const paidWristband = servedWristband && balanceAfter !== null ? { ...servedWristband, creditBalanceTHB: balanceAfter } : servedWristband;
 
-    // Commit the staff benefit LAST, right before the order is finalized —
-    // this is the one place usage/credit is actually consumed and audited
-    // (the preview above never touches usage counters).
+    // S2-21 round 3 — the staff benefit was applied by the platform when the
+    // order was rung up (its quota claimed in the sale's own transaction); the
+    // record keeps the platform's figures for the confirmation and the receipt.
     let staffBenefit: FnbOrder['staffBenefit'];
-    let committedDiscounts = manualDiscounts;
-    if (benefitOperator) {
-      const committed = commitStaffBenefit(benefitOperator, operator, lines);
-      if (committed && benefitDiscount) {
-        committedDiscounts = [...manualDiscounts, { ...benefitDiscount, amountTHB: committed.result.totalReliefTHB }];
-        staffBenefit = {
-          auditId: committed.auditId,
-          scannedOperatorId: benefitOperator.id,
-          scannedOperatorName: benefitOperator.name,
-          isComp: committed.result.compedTHB > 0,
-          compedTHB: committed.result.compedTHB,
-          freeItemsTHB: committed.result.freeItemsTHB,
-          creditTHB: committed.result.creditTHB,
-          discountTHB: committed.result.discountTHB,
-          totalReliefTHB: committed.result.totalReliefTHB,
-        };
-      }
+    const committedDiscounts = benefitDiscount ? [...manualDiscounts, benefitDiscount] : manualDiscounts;
+    if (benefitQuote && benefitQuote.totalReliefSatang > 0) {
+      staffBenefit = {
+        auditId: benefitQuote.applicationId,
+        scannedOperatorId: benefitQuote.employeeId,
+        scannedOperatorName: benefitQuote.name,
+        isComp: benefitQuote.isComp,
+        compedTHB: benefitQuote.compedSatang / 100,
+        freeItemsTHB: benefitQuote.freeItemsSatang / 100,
+        creditTHB: benefitQuote.creditSatang / 100,
+        discountTHB: benefitQuote.discountSatang / 100,
+        totalReliefTHB: benefitQuote.totalReliefSatang / 100,
+      };
     }
 
     /**
@@ -1196,7 +1286,6 @@ export default function OrderStation() {
     // order; the local record is kept and the ported inventory is not touched.
     recordFnbOrder(record, { decrementStock: false });
     void refreshSellableStock();
-    if (staffBenefit) attachBenefitAuditOrderId(staffBenefit.auditId, record.id);
     setCompletedOrder(record);
     setNewBalance(balanceAfter);
     setStage('confirmation');
@@ -1252,7 +1341,7 @@ export default function OrderStation() {
     // the production device (CLAUDE.md §7 rule 4) — shows "From your credit /
     // Left to pay" like the in-till harness. An order with a prepaid line stays
     // on the in-till display.
-    excluded: !!benefitOperator || !!voucher.held || !!voucherUsed || promoCodes.length > 0
+    excluded: !!benefit || !!voucher.held || !!voucherUsed || promoCodes.length > 0
       || !!offLedgerOnly(lines) || lines.some(line => line.isPrepaid),
     lines, orderNote, manualDiscounts: effectiveManualDiscounts, quote: order.quote,
     pending: order.pending, quoteFailed: !!order.error, payment: paymentStage.display, completedOrder, platformSale,
@@ -1403,14 +1492,17 @@ export default function OrderStation() {
                 manualAmounts={manualAmounts}
                 taxBreakdown={taxBreakdown}
                 benefitBreakdown={
-                  benefitOperator && benefitPreview && benefitPreview.totalReliefTHB > 0
+                  benefitQuote &&
+                  (benefitQuote.totalReliefSatang > 0 || benefitQuote.onlineOnly.length > 0)
                     ? {
-                        scannedOperatorName: benefitOperator.name,
-                        compedTHB: benefitPreview.compedTHB,
-                        freeItemsTHB: benefitPreview.freeItemsTHB,
-                        creditTHB: benefitPreview.creditTHB,
-                        discountTHB: benefitPreview.discountTHB,
-                        totalReliefTHB: benefitPreview.totalReliefTHB,
+                        scannedOperatorName: benefitQuote.name,
+                        compedTHB: benefitQuote.compedSatang / 100,
+                        freeItemsTHB: benefitQuote.freeItemsSatang / 100,
+                        creditTHB: benefitQuote.creditSatang / 100,
+                        discountTHB: benefitQuote.discountSatang / 100,
+                        totalReliefTHB: benefitQuote.totalReliefSatang / 100,
+                        // With the link down the box says which stages wait for it.
+                        ...(benefitQuote.onlineOnly.length > 0 ? { onlineOnly: benefitQuote.onlineOnly } : {}),
                       }
                     : null
                 }
@@ -1594,7 +1686,7 @@ export default function OrderStation() {
       <BenefitScanModal
         open={showBenefitScan}
         onOpenChange={setShowBenefitScan}
-        onScanned={(op) => setBenefitOperator(op)}
+        onScanned={applyBenefit}
       />
 
       {operator && (

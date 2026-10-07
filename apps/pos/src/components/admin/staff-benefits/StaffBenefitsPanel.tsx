@@ -11,9 +11,10 @@ import type { BenefitRole } from '@oto/shared';
 import type { BenefitProfile } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { useOperator } from '@/auth/OperatorContext';
-import { getBenefitAuditLog } from '@/mockApi';
+import type { BenefitAuditEntry } from '@/types';
 import {
   benefitsApi,
+  type BenefitApplicationLogRow,
   inForceOn,
   profileFromApi,
   profileToApi,
@@ -33,6 +34,29 @@ import { BenefitHistoryList, type BenefitHistoryEntry } from './BenefitHistoryLi
 import { summarizeProfile } from './summary';
 
 const ROLE_ORDER: BenefitRole[] = ['owner', 'manager', 'staff'];
+
+/**
+ * A platform application as the prototype's Audit log entry (S2-21 round 3):
+ * the same fields the panel always drew, in baht, with the order named by its
+ * receipt number.
+ */
+const auditEntryOf = (row: BenefitApplicationLogRow): BenefitAuditEntry => ({
+  id: row.id,
+  at: row.at,
+  scannedOperatorId: row.employeeId,
+  scannedOperatorName: row.employeeName,
+  benefitRole: row.benefitRole,
+  processedById: row.processedByAccountId,
+  processedByName: row.processedByName ?? '',
+  isComp: row.isComp,
+  compedTHB: row.compedSatang / 100,
+  freeItemsTHB: row.freeItemsSatang / 100,
+  creditTHB: row.creditSatang / 100,
+  discountTHB: row.discountSatang / 100,
+  totalReliefTHB: row.totalReliefSatang / 100,
+  orderId: row.receiptNumber ?? row.saleId,
+  branchId: row.branchId,
+});
 
 /** A template version as a history row. */
 const templateEntry = (v: BenefitTemplateVersion): BenefitHistoryEntry => ({
@@ -86,7 +110,9 @@ export function StaffBenefitsPanel() {
   const [qrOperator, setQrOperator] = useState<StaffBenefitRow | null>(null);
   // Audit log is append-only and only ever written from the F&B order station;
   // a fresh read on panel mount/navigation is enough for this admin view.
-  const [auditLog] = useState(() => getBenefitAuditLog());
+  // S2-21 round 3 — read from the platform: every benefit applied to a
+  // recorded order, the prototype's entry fields (`auditEntryOf`).
+  const [auditLog, setAuditLog] = useState<BenefitAuditEntry[]>([]);
 
   const reload = useCallback(async () => {
     setLoadError(null);
@@ -105,6 +131,14 @@ export function StaffBenefitsPanel() {
       setLoadError(err instanceof Error ? err.message : 'Could not load staff benefits');
     } finally {
       setLoaded(true);
+    }
+    // The log is read on its own: a deployment that cannot answer it still
+    // shows the templates and the staff, with the log empty.
+    try {
+      const log = await benefitsApi.applications();
+      setAuditLog(log.applications.map(auditEntryOf));
+    } catch {
+      setAuditLog([]);
     }
   }, []);
 

@@ -282,6 +282,48 @@ export interface SaleCartPayload {
    * ticket and serves the prepaid lines from it.
    */
   bandHolder?: { checkinId: string; foodOverride?: boolean };
+  /**
+   * S2-21 round 3 — a colleague's staff benefit QR on this F&B order, and the
+   * application id this till minted when it was scanned. The platform verifies
+   * the QR and prices the benefit on every quote, and claims its quota when
+   * the order is rung up; the box applies only the comp and the standing
+   * percent with the link down. The "Staff benefit" row is never sent among
+   * `manualDiscounts`: the platform builds it. `expectedReliefSatang` (the
+   * commit only) is the relief the guest was last shown — a commit that comes
+   * to less is refused rather than charged.
+   */
+  benefit?: CartBenefitPayload;
+}
+
+/** The benefit on a cart, as the till sends it. See `SaleCartPayload.benefit`. */
+export interface CartBenefitPayload {
+  applicationId: string;
+  code: string;
+  expectedReliefSatang?: number;
+}
+
+/**
+ * S2-21 round 3 — the staff benefit on an order as the PLATFORM (or, offline,
+ * the box) priced it: the four amounts the breakdown draws, what came off the
+ * bill, and the stages that are online only. Never the QR.
+ */
+export interface ApiBenefitBreakdown {
+  applicationId: string;
+  employeeId: string;
+  credentialId: string;
+  name: string;
+  benefitRole: 'owner' | 'manager' | 'staff';
+  isComp: boolean;
+  compedSatang: number;
+  freeItemsSatang: number;
+  creditSatang: number;
+  discountSatang: number;
+  totalReliefSatang: number;
+  appliedSatang: number;
+  onlineOnly: ('freeItems' | 'credit')[];
+  lines: { cartLineId: string; reliefSatang: number }[];
+  engineVersion: string;
+  source: 'platform' | 'box';
 }
 
 export interface SaleCommitBody {
@@ -481,6 +523,8 @@ export interface ApiSaleQuote {
    * the cart carries none.
    */
   voucher?: QuotedVoucher | null;
+  /** S2-21 round 3 — the staff benefit on this cart as the platform priced it. Null when none. */
+  benefit?: ApiBenefitBreakdown | null;
 }
 
 /**
@@ -956,6 +1000,8 @@ export function buildItemCartPayload(
     promos?: readonly Discount[];
     /** S2-10b — the voucher held for this order, by its code. See `SaleCartPayload.promoCodes`. */
     promoCodes?: readonly string[];
+    /** S2-21 round 3 — the scanned staff benefit. See `SaleCartPayload.benefit`. */
+    benefit?: CartBenefitPayload | null;
   } = {},
 ): SaleCartPayload {
   const rate = todayRateMode();
@@ -1011,6 +1057,7 @@ export function buildItemCartPayload(
           },
         }
       : {}),
+    ...(options.benefit ? { benefit: { ...options.benefit } } : {}),
   };
 }
 
@@ -1097,6 +1144,8 @@ export interface ItemQuoteArgs {
   promos?: readonly Discount[];
   /** S2-10b — the voucher held for this order, by its code. The platform prices it. */
   promoCodes?: readonly string[];
+  /** S2-21 round 3 — the scanned staff benefit. The platform prices it; this device never does. */
+  benefit?: CartBenefitPayload | null;
   config?: TaxConfig;
 }
 
@@ -1124,6 +1173,7 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
   const payload = buildItemCartPayload(lines, manualDiscounts, identity, local.totals.total, {
     ...(args.promos ? { promos: args.promos } : {}),
     ...(args.promoCodes ? { promoCodes: args.promoCodes } : {}),
+    ...(args.benefit ? { benefit: args.benefit } : {}),
   });
   try {
     const { quote } = await salesApi.quote(payload);
@@ -1154,6 +1204,8 @@ export async function quoteItemCart(args: ItemQuoteArgs): Promise<CartQuote> {
       // SCRUM-401 — the codes it refused, so the station can take them off the
       // order as the ticket tills do (`refusedPromoCodes`).
       rejectedPromoCodes: quote.rejectedPromoCodes ?? [],
+      // S2-21 round 3 — the staff benefit, as the platform (or the box) priced it.
+      benefit: quote.benefit ?? null,
     };
   } catch (err) {
     if (isMissingRoute(err)) {
@@ -1297,6 +1349,13 @@ export interface CartQuote {
    * `refusedPromoCodes`.
    */
   rejectedPromoCodes?: { code: string; reason: string }[];
+  /**
+   * S2-21 round 3 — the staff benefit on this order as the platform priced it
+   * (or the box, offline). Absent on a quote this till made itself: a
+   * benefit's figures are the platform's alone — this device has no usage to
+   * price free items or credit against.
+   */
+  benefit?: ApiBenefitBreakdown | null;
 }
 
 /**
