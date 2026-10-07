@@ -320,7 +320,9 @@ async function partyDaysOf(db: Exec, branchId: string, eventIds: readonly string
       throw new AppError(
         503,
         'EVENTS_SEAM_MISSING',
-        'Party money was taken on this day but the OTO App events seam (schema otoapp_v) is not on this database, ' +
+        // H1 forbids naming the seam's schema outside its repository, so the
+        // message names the seam by what it is, not by its identifier.
+        'Party money was taken on this day but the OTO App events seam is not on this database, ' +
           "so End of Day cannot tell which day's parties it paid for; restore the seam",
       );
     }
