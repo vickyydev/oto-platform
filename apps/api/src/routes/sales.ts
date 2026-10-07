@@ -758,12 +758,12 @@ export async function saleRoutes(app: App): Promise<void> {
             applicationId: z.string().uuid().nullable(),
             released: z.array(
               z.object({
-                itemKey: z.string(),
+                /** The counter: `free:<free item id>` or `credit`. */
+                item: z.string(),
                 periodKind: z.enum(['daily', 'monthly']),
                 periodKey: z.string(),
                 qty: z.number().int(),
                 creditSatang: z.number().int(),
-                limit: z.number(),
               }),
             ),
           }),

@@ -1462,6 +1462,12 @@ export class StationBridge {
       if (!caller.can('pos:sale:create')) {
         throw new BridgeError(403, 'FORBIDDEN', 'Missing permission: pos:sale:create');
       }
+      // S2-21 round 3 — pricing a staff benefit is applying one, as the
+      // platform's quote route holds it.
+      const sent = rec(intent.payload);
+      if ((rec(sent?.cart)?.benefit ?? sent?.benefit) && !caller.can('pos:benefit:apply')) {
+        throw new BridgeError(403, 'FORBIDDEN', 'Missing permission: pos:benefit:apply');
+      }
       const quote = await this.quote(station, intent.payload);
       return { document: await this.host.sessions.open(stationId), result: { quote } };
     }

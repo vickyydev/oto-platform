@@ -788,8 +788,12 @@ export interface RemovedBenefitView {
   saleId: string;
   /** The till's application id that was taken off, when one was. */
   applicationId: string | null;
-  /** The counters given back. */
-  released: BenefitUsageDelta[];
+  /**
+   * The counters given back. `item` is the counter's key (`free:<id>` or
+   * `credit`), named so that no answer field ends like a credential — the
+   * replay store's backstop reads a `*Key` field as one.
+   */
+  released: { item: string; periodKind: 'daily' | 'monthly'; periodKey: string; qty: number; creditSatang: number }[];
 }
 
 /**
@@ -842,7 +846,18 @@ export async function removeSaleBenefit(
     .limit(1);
   if (!live) return { removed: false, saleId, applicationId: null, released: [] };
   await releaseApplication(tx, live, actor, 'removed', now);
-  return { removed: true, saleId, applicationId: live.clientId, released: live.usageDeltas };
+  return {
+    removed: true,
+    saleId,
+    applicationId: live.clientId,
+    released: live.usageDeltas.map((d) => ({
+      item: d.itemKey,
+      periodKind: d.periodKind,
+      periodKey: d.periodKey,
+      qty: d.qty,
+      creditSatang: d.creditSatang,
+    })),
+  };
 }
 
 /**

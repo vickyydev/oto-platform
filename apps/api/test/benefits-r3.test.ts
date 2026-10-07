@@ -584,6 +584,13 @@ describe('idempotency on the application id, and giving the quota back (H2)', ()
     expect((closeB.body as Envelope).error!.code).toBe('BENEFIT_APPLICATION_RELEASED');
     const twice = await call<{ removed: boolean }>('DELETE', `/sales/${saleB}/benefit`, reception);
     expect(twice.body.removed).toBe(false);
+    // Its answer is an ordinary one: kept under its key and replayed, never
+    // mistaken for a credential by the store's backstop.
+    const key = idem();
+    const once = await call('DELETE', `/sales/${saleB}/benefit`, reception, undefined, { 'idempotency-key': key });
+    const replayed = await call('DELETE', `/sales/${saleB}/benefit`, reception, undefined, { 'idempotency-key': key });
+    expect(replayed.headers['x-oto-replay']).toBe('true');
+    expect(replayed.body).toEqual(once.body);
   });
 
   it('a void gives the quota back', async () => {

@@ -366,6 +366,10 @@ test('s221-r3 — offline, a revoked QR, a box with no list and a till’s own "
     assert.equal(notFood.code, 'BENEFIT_FNB_ONLY');
 
     const noRight: BridgeTillCaller = { ...box.till, can: (p: string) => p !== 'pos:benefit:apply' };
+    const quoted = await refusal(
+      ask(box, 'cart.quote', { channel: 'fnb', items: [itemLine(HOTDOG)], benefit: benefitOf(SOM) }, noRight),
+    );
+    assert.equal(quoted.code, 'FORBIDDEN', 'pricing a benefit is applying one');
     const saleId = uuidv7();
     const refused = await refusal(
       ask(
