@@ -45,22 +45,34 @@ import type { TicketCartLine } from './pricing';
 /** The reason the "Staff benefit" row carries — the prototype's word, kept. */
 export const STAFF_BENEFIT_REASON = 'Staff benefit';
 
+/** The reason's letters, as `isStaffBenefitReason` compares them. */
+const STAFF_BENEFIT_LETTERS = 'staffbenefit';
+
 /**
  * Is this a "Staff benefit" reason, however a till spelled or spaced it? Read
- * as it prints: compatibility forms folded (NFKC — a no-break or full-width
- * space, full-width letters), and every character that prints as nothing
- * dropped (format characters such as a zero-width space or joiner, a soft
- * hyphen, a bidi mark, and the other default-ignorable code points such as a
- * variation selector), before the spacing and the case are folded (H16).
+ * as it prints, by its LETTERS alone (H16): compatibility forms folded first
+ * (NFKC — a no-break or full-width space, full-width letters), then every
+ * character that prints as nothing dropped (format characters such as a
+ * zero-width space or joiner, a soft hyphen, a bidi mark, and the other
+ * default-ignorable code points — a variation selector, and the Hangul
+ * fillers, which Unicode files as letters although they print as a blank),
+ * then everything that is not a letter — a space of any kind, a blank symbol
+ * such as U+2800, punctuation, a digit, a combining mark — and the case.
+ *
+ * So the space between the two words may be any blank or none at all, and the
+ * blank may be one that prints as a space without being one (S2-21 round 4,
+ * from the round 3 re-check: "Staff" and "benefit" joined by U+3164 or
+ * U+2800). The platform and the box share this function, so both refuse the
+ * same spellings. A reason spelled with letters of another script that look
+ * Latin is not folded here: that is the owner's question.
  */
 export function isStaffBenefitReason(reason: string | null | undefined): boolean {
   return (
     (reason ?? '')
       .normalize('NFKC')
       .replace(/[\p{Cf}\p{Default_Ignorable_Code_Point}]/gu, '')
-      .trim()
-      .replace(/\s+/g, ' ')
-      .toLowerCase() === 'staff benefit'
+      .replace(/[^\p{L}]/gu, '')
+      .toLowerCase() === STAFF_BENEFIT_LETTERS
   );
 }
 

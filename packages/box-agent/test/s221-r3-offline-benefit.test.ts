@@ -370,6 +370,20 @@ test('s221-r3 — offline, a revoked QR, a box with no list and a till’s own "
     );
     assert.equal(hidden.code, 'BENEFIT_DISCOUNT_UNLINKED');
 
+    // S2-21 round 4: the letters alone — a blank that prints as a space without
+    // being one (U+3164, U+2800) joins the two words as a space would, on the
+    // box as on the platform (they share `isStaffBenefitReason`).
+    for (const reason of ['Staffㅤbenefit', 'Staff⠀benefit']) {
+      const blank = await refusal(
+        ask(box, 'cart.quote', {
+          channel: 'fnb',
+          items: [itemLine(HOTDOG)],
+          manualDiscounts: [{ id: uuidv7(), scope: 'order', type: 'comp', value: 0, reason }],
+        }),
+      );
+      assert.equal(blank.code, 'BENEFIT_DISCOUNT_UNLINKED', JSON.stringify(reason));
+    }
+
     // A manual discount carrying the scan's own id: refused by name, not by the engine's duplicate id.
     const scan = benefitOf(SOM);
     const twin = await refusal(

@@ -186,7 +186,36 @@ describe('the "Staff benefit" row', () => {
     ]) {
       expect(isStaffBenefitReason(r), JSON.stringify(r)).toBe(true);
     }
-    for (const r of ['Staff​benefits', 'Staff benefit!', 'Staff benefit​2']) {
+    for (const r of ['Staff​benefits', 'Staff benefits!', 'Staff family benefit']) {
+      expect(isStaffBenefitReason(r), JSON.stringify(r)).toBe(false);
+    }
+  });
+
+  /**
+   * S2-21 round 4 (the round 3 re-check's todo): the comparison is the
+   * letters alone, after NFKC and after dropping what prints as nothing — so a
+   * blank that prints as a space without being one (U+3164 HANGUL FILLER, a
+   * letter by its category; U+2800 BRAILLE PATTERN BLANK, a symbol) joins the
+   * two words as a space would, and so do punctuation, digits and marks.
+   */
+  it('reads the letters alone: any blank, or none, between the two words is the same reason', () => {
+    for (const r of [
+      'Staffㅤbenefit', // HANGUL FILLER instead of the space
+      'Staff⠀benefit', // BRAILLE PATTERN BLANK instead of the space
+      'Staffﾠbenefit', // HALFWIDTH HANGUL FILLER instead of the space
+      'Staffᅟbenefit', // HANGUL CHOSEONG FILLER instead of the space
+      'Staffbenefit', // no space at all
+      'Staff-benefit',
+      'Staff_benefit',
+      'Staff.benefit',
+      'Staff benefit!', // punctuation is not a letter
+      'Staff benefit​2', // nor is a digit
+      'S̲taff benefit', // nor a combining mark
+      ' STAFF\tBENEFIT ',
+    ]) {
+      expect(isStaffBenefitReason(r), JSON.stringify(r)).toBe(true);
+    }
+    for (const r of ['Staff', 'benefit', 'Staff benefits', 'Staff meal', 'Stafff benefit', 'Staff benefit plan']) {
       expect(isStaffBenefitReason(r), JSON.stringify(r)).toBe(false);
     }
   });

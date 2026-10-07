@@ -469,21 +469,39 @@ describe('finding 2 re-checked — "Staff benefit" spelled with what prints as n
   });
 
   /**
-   * NOT BLOCKING, same class and same stakes as finding 2. The fold DROPS a
-   * default-ignorable character instead of reading it as the blank it prints
-   * as, and U+2800 is neither ignorable nor `\s`. So a reason with the space
-   * itself replaced is not refused: 'Staffㅤbenefit' (HANGUL FILLER, the
-   * well-known blank-looking "invisible" letter) folds to 'staffbenefit', and
-   * 'Staff⠀benefit' (BRAILLE PATTERN BLANK) is kept as it is. Both print
-   * as "Staff benefit" in most fonts. Probed through POST /sales at d3c64fa3,
-   * type comp, note 'Scanned: Khun Anan (owner)': both 200, each recorded as a
-   * ฿25 comp row with that reason and no application behind it, audited to
-   * the signed-in account (no rights gained, as in finding 2). A fold that
-   * compares the letters alone —
-   * `.replace(/[^\p{L}]/gu, '')` against 'staffbenefit' after NFKC — closes
-   * every spacing, on the platform and on the box, which share the function.
+   * Recorded in the round 3 re-check as not blocking, and closed in round 4.
+   * The fold DROPPED a default-ignorable character instead of reading it as
+   * the blank it prints as, and U+2800 is neither ignorable nor `\s`. So a
+   * reason with the space itself replaced was not refused: 'Staffㅤbenefit'
+   * (HANGUL FILLER, the well-known blank-looking "invisible" letter) folded to
+   * 'staffbenefit', and 'Staff⠀benefit' (BRAILLE PATTERN BLANK) was kept as
+   * it was. Both print as "Staff benefit" in most fonts; probed through POST
+   * /sales at d3c64fa3 both were recorded as a ฿25 comp row with that reason
+   * and no application behind it. Now the fold compares the letters alone
+   * after NFKC and after dropping what prints as nothing
+   * (`isStaffBenefitReason`), on the platform and on the box, which share it.
    */
-  it.todo('"Staff" and "benefit" joined by U+3164 or U+2800 instead of a space are refused BENEFIT_DISCOUNT_UNLINKED');
+  it('"Staff" and "benefit" joined by U+3164 or U+2800 instead of a space are refused BENEFIT_DISCOUNT_UNLINKED', async () => {
+    for (const reason of ['Staffㅤbenefit', 'Staff⠀benefit', 'Staffﾠbenefit', 'Staffbenefit', 'Staff-benefit']) {
+      const q = await call('POST', '/sales/quote', reception, cart([line(item.water)], null, { manualDiscounts: [forged(reason)] }));
+      expect(`${q.status} ${q.body.error?.code ?? ''}`, JSON.stringify(reason)).toBe('409 BENEFIT_DISCOUNT_UNLINKED');
+      const saleId = newId();
+      const c = await commit(cart([line(item.water)], null, { manualDiscounts: [forged(reason)] }), saleId);
+      expect(`${c.status} ${c.body.error?.code ?? ''}`, JSON.stringify(reason)).toBe('409 BENEFIT_DISCOUNT_UNLINKED');
+      expect(await ctx.db.select().from(sale).where(eq(sale.id, saleId))).toEqual([]);
+    }
+  });
+
+  it('(and the fold refuses only the benefit’s own words) an ordinary manual reason is still recorded', async () => {
+    const saleId = newId();
+    const c = await commit(
+      cart([line(item.water)], null, {
+        manualDiscounts: [{ id: newId(), scope: 'order', type: 'comp', value: 0, reason: 'Staff meal' }],
+      }),
+      saleId,
+    );
+    expect(c.status, c.raw).toBe(200);
+  });
 });
 
 describe('finding 4 re-checked — a manual discount on the scan’s id, spelled another way', () => {
