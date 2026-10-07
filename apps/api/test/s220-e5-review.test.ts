@@ -90,8 +90,8 @@ import { linkedAgent, type CuttableLink } from './box-link';
  *      the reprint path, (d) and (g) on a redemption at the till and the kiosk,
  *      (f) on the public quote and on a redemption.
  *   4. THE SEED — two presses at once converge, Demo Branch 2 only.
- *   5. THE HAZARD MAP — H20 and H21 named to their tests (the register stops at
- *      H19), and the guards swept by scope: another park's manager and another
+ *   5. THE HAZARD MAP — H20 and H21 named to their tests (the register stopped
+ *      at H19), and the guards swept by scope: another park's manager and another
  *      operator's administrator.
  */
 
@@ -846,8 +846,10 @@ describe('2. the write-back at payment under an outage', () => {
 
 describe('3. the closing audit (a)-(g), driven again', () => {
   /**
-   * FINDING E5R-1 (pinned with `it.fails`; the carried note (a) is closed for
-   * a replay WITHOUT the POS's key only) — (a) THROUGH THE POS'S OWN RETRY.
+   * FINDING E5R-1 (fixed in the E5 fix round: the check-in route declares
+   * `replaysByOwnId`, so the store claims no key for it and the check-in id
+   * replays through `replayOf`; the pin below is flipped to a plain test) —
+   * (a) THROUGH THE POS'S OWN RETRY.
    * The till sends every check-in press under
    * `Idempotency-Key: event-checkin:<checkinId>` with the same body on each
    * retry (apps/pos/src/api/events.ts `checkin`; `checkInOnPlatform` keeps the
@@ -903,7 +905,7 @@ describe('3. the closing audit (a)-(g), driven again', () => {
     expect(late.json().error.code).toBe('EVENT_CHECKIN_TAKEN_BACK');
   });
 
-  it.fails('(a) a late replay of a taken-back check-in, sent as the POS sends it, is told it was taken back — never the revoked band codes', async () => {
+  it('(a) a late replay of a taken-back check-in, sent as the POS sends it, is told it was taken back — never the revoked band codes', async () => {
     // The first press, retried by the POS after its answer was lost: the same body, the same key.
     const late = await ctx.app.inject({
       method: 'POST',
@@ -1064,7 +1066,7 @@ function titlesOf(file: string): Array<{ call: string; title: string }> {
 }
 
 describe('5. the hazard map and the guards', () => {
-  it('H20 and H21 — the plan’s last two hazards, which the closing register stops short of — each name a plain test that runs', () => {
+  it('H20 and H21 — the plan’s last two hazards, which the closing register stopped short of — each name a plain test that runs', () => {
     const plan = readFileSync(join(TEST_DIR, '../../../docs/progress/plans/events-kiosk/PLAN.md'), 'utf8');
     const hazards = [...plan.matchAll(/^\| (H\d+) \|/gm)].map((m) => m[1]);
     expect(hazards).toEqual(Array.from({ length: 21 }, (_, i) => `H${i + 1}`));

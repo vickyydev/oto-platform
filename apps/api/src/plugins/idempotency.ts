@@ -48,6 +48,12 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
  * handing a scanned staff benefit QR to the staff screen — declares
  * `scannedCredential`, and the backstop then keeps that answer out without
  * calling it a mistake.
+ *
+ * A third declaration keeps a route out for a reason that is not a secret:
+ * `replaysByOwnId` (S2-20 E5). The route answers a repeat by the id the client
+ * minted in its body, decided against what is true now, so a stored snapshot
+ * would be the wrong answer once the thing it names has been taken back — an
+ * event check-in replayed as "checked in" with bands revoked since.
  */
 
 export interface IdempotencyClaim {
@@ -363,7 +369,7 @@ export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
 /** A route whose answer must never reach the replay store. */
 function unstorable(req: FastifyRequest): boolean {
   const config = req.routeOptions?.config as PermissionConfig | undefined;
-  return config?.secretResponse === true || config?.credential !== undefined;
+  return config?.secretResponse === true || config?.credential !== undefined || config?.replaysByOwnId === true;
 }
 
 declare module 'fastify' {

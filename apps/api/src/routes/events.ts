@@ -154,6 +154,10 @@ export async function eventRoutes(app: App): Promise<void> {
         // A box fact on the box lane: a station the Console forced offline is
         // refused here, and the till checks the child in through its box.
         stationTrading: true,
+        // The check-in id in the body IS this press's replay key (`replayOf`),
+        // decided against now: a check-in the OTO App took back since is told
+        // so, never replayed from the store with its revoked bands (E5R-1).
+        replaysByOwnId: true,
       },
       schema: {
         description:
@@ -162,7 +166,9 @@ export async function eventRoutes(app: App): Promise<void> {
           '(a device that is no station checks in and prints nothing). No supervision gate — events are not drop-off. ' +
           'Refused 409 EVENT_ALREADY_CHECKED_IN when the child is already in for the day (here or in the OTO App), and ' +
           '409 EVENT_NOT_REGISTERED_TODAY for a camp child not registered for the day. The check-in is then written to ' +
-          "the OTO App under the till's `checkinId` (`syncState`); the same id again answers what it made.",
+          "the OTO App under the till's `checkinId` (`syncState`); the same id again answers what it made, decided " +
+          'now — 409 EVENT_CHECKIN_TAKEN_BACK once the OTO App took it back and the child was checked in since. The ' +
+          '`checkinId` is the replay key: an `Idempotency-Key` is not stored for this route.',
         params: EventCheckinParamsSchema,
         body: EventCheckinBodySchema,
         response: { 200: EventCheckinAnswerSchema },

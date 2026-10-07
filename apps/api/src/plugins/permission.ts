@@ -105,6 +105,23 @@ export interface PermissionConfig {
    * that forgot to say so.
    */
   scannedCredential?: true;
+  /**
+   * S2-20 E5 (review E5R-1) — this route answers a repeat by the id the client
+   * minted in its BODY, and decides that repeat against what is true NOW. The
+   * replay store must not answer for it: a stored answer is a snapshot taken
+   * when the press was made, and it goes on being handed out for a day after
+   * the thing it names has been taken back. The event check-in is the case:
+   * the till retries a press under the same key and the same check-in id, and
+   * a stored "checked in" would name the short codes of bands revoked since
+   * (the OTO App undid the check-in and the child was checked in again), where
+   * the route itself says the check-in was taken back.
+   *
+   * Declared, the plugin claims no key for the route — exactly as for
+   * `secretResponse` — and the route's own replay is the answer: the id's row
+   * is read before anything else, and two presses of one id at once are
+   * decided one after the other under the route's own locks.
+   */
+  replaysByOwnId?: true;
   /** Cloud trading calls that a station's forced-offline test must refuse. */
   stationTrading?: true;
   /**

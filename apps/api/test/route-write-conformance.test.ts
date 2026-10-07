@@ -412,10 +412,11 @@ describe('one operation, one transaction (SCRUM-291)', () => {
  * (SCRUM-298); a comment that said "every other" without that qualification
  * was found by review to be papering over a live gap.
  *
- * Pinned, because these two declarations are the only way out of the
- * safeguard for a route that has a session: a thirteenth route quietly
- * acquiring one is a route that stopped being idempotent, and this is where
- * that becomes a line in a diff.
+ * Pinned, because these declarations — and `replaysByOwnId`, for a route that
+ * replays by the id in its body (S2-20 E5) — are the only way out of the
+ * safeguard for a route that has a session: a route quietly acquiring one is
+ * a route that stopped being idempotent, and this is where that becomes a
+ * line in a diff.
  */
 const OUTSIDE_THE_REPLAY_STORE = [
   'POST /accounts/:id/temp-password [secretResponse]',
@@ -524,6 +525,15 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /display/pairing/expire [credential:display-pairing]',
   'POST /display/intents [credential:display]',
   /**
+   * S2-20 E5 (review E5R-1) — an event check-in. The till retries a press
+   * under one key with one check-in id, and the route answers that id again
+   * itself (`replayOf`, read before anything else, under the child-day's
+   * locks), decided against what is true now: a check-in the OTO App took
+   * back since is refused EVENT_CHECKIN_TAKEN_BACK. A stored "checked in"
+   * would have named bands revoked since, for a day, before the route ran.
+   */
+  'POST /events/:id/attendees/:attendeeId/checkin [replaysByOwnId]',
+  /**
    * S2-20 K2 — a kiosk pairs as a display does, from its own browser secret:
    * the code is a single-use credential that never enters the store, and
    * minting again rotates it; expiring is idempotent.
@@ -627,18 +637,19 @@ describe('the idempotency key (SCRUM-291)', () => {
   it('only these mutating routes are outside the replay store', () => {
     const outside = app.routeRegistry
       .filter((r) => MUTATING.has(r.method))
-      .filter((r) => r.config.secretResponse || r.config.credential)
+      .filter((r) => r.config.secretResponse || r.config.credential || r.config.replaysByOwnId)
       .map((r) => {
         const why = [
           r.config.secretResponse ? 'secretResponse' : '',
           r.config.credential ? `credential:${r.config.credential}` : '',
+          r.config.replaysByOwnId ? 'replaysByOwnId' : '',
         ].filter(Boolean);
         return `${r.method} ${r.url} [${why.join(',')}]`;
       })
       .sort();
     expect(
       outside,
-      'a mutating route declared secretResponse or credential — it no longer takes an Idempotency-Key, so say so here on purpose',
+      'a mutating route declared secretResponse, credential or replaysByOwnId — it no longer takes an Idempotency-Key, so say so here on purpose',
     ).toEqual(OUTSIDE_THE_REPLAY_STORE.slice().sort());
   });
 
@@ -674,10 +685,12 @@ describe('the idempotency key (SCRUM-291)', () => {
       .filter((r) => MUTATING.has(r.method))
       .filter((r) => !outside.has(`${r.method} ${r.url}`));
     expect(covered.length).toBeGreaterThan(95);
-    // Nothing in `covered` can opt out: the two declarations that would are
-    // what put a route on the other list.
+    // Nothing in `covered` can opt out: the declarations that would are what
+    // put a route on the other list.
     expect(
-      covered.filter((r) => r.config.secretResponse || r.config.credential).map((r) => r.url),
+      covered
+        .filter((r) => r.config.secretResponse || r.config.credential || r.config.replaysByOwnId)
+        .map((r) => r.url),
     ).toEqual([]);
   });
 });
