@@ -31,6 +31,7 @@ import { boxSettings } from '../box';
 import { recordRun } from '../ops';
 import { assertSaleVouchersHeld } from '../vouchers';
 import { assertSaleExtensionCollectable } from '../sale-extension-lifecycle';
+import { assertSaleBenefitsLive } from '../benefit-checkout';
 import { settleRefundSlice } from '../refund-slices';
 import {
   attemptView,
@@ -565,9 +566,13 @@ export async function startTerminalTender(
    * S2-10b — THE TENDER GUARD: no card or QR is asked for on a sale priced
    * with a voucher that is no longer held for it (VOUCHER_NOT_HELD), before
    * the attempt is written or the box is told anything. The sale is locked
-   * above; `assertSaleVouchersHeld` locks the voucher after it.
+   * above; `assertSaleVouchersHeld` locks the voucher after it. S2-21 round 3 —
+   * nor on a sale whose staff benefit was taken off or moved to the order rung
+   * up again (BENEFIT_APPLICATION_RELEASED): the close would refuse it, and a
+   * card approved here would leave the money on a sale that cannot close.
    */
   await assertSaleExtensionCollectable(tx, saleRow.id);
+  await assertSaleBenefitsLive(tx, saleRow.id);
   await assertSaleVouchersHeld(
     tx,
     {
@@ -1425,9 +1430,11 @@ export async function recordManualTender(
   /**
    * S2-10b — THE TENDER GUARD, as for a terminal tender: an approval code is
    * not recorded against a sale priced with a voucher that is no longer held
-   * for it (VOUCHER_NOT_HELD).
+   * for it (VOUCHER_NOT_HELD), nor against one whose staff benefit is no
+   * longer its own (BENEFIT_APPLICATION_RELEASED).
    */
   await assertSaleExtensionCollectable(tx, saleRow.id);
+  await assertSaleBenefitsLive(tx, saleRow.id);
   await assertSaleVouchersHeld(
     tx,
     {

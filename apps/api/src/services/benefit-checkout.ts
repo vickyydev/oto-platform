@@ -865,17 +865,33 @@ export async function removeSaleBenefit(
  * benefit" row names an application; if that application was taken off,
  * voided or moved to the order rung up again, closing this sale would give the
  * relief with nothing claimed for it — refused, and the till rings it up again.
+ *
+ * THE TENDER GUARD, too: every road that takes money onto a sale asks this
+ * before it writes an attempt (cash and the part payment in `finaliseSale`, the
+ * terminal and the keyed-in card in payments/terminal.ts, the gateway QR in
+ * payments/gateway.ts), beside `assertSaleVouchersHeld` — money taken on a sale
+ * that can no longer close is money nothing here can settle. Called with the
+ * sale locked; the application is held FOR SHARE after it, so a move by the
+ * order rung up again (which locks the application and then reads this sale's
+ * attempts) waits for this tender's attempt and refuses, or has already moved
+ * it and this refuses. Same order as the removal and the void: sale, then
+ * application.
  */
 export async function assertSaleBenefitsLive(db: Exec, saleId: string): Promise<void> {
-  const rows = await db
-    .select({
-      applicationId: saleDiscount.benefitApplicationId,
-      removedAt: benefitApplication.removedAt,
-      appliedTo: benefitApplication.saleId,
-    })
+  const linked = await db
+    .select({ applicationId: saleDiscount.benefitApplicationId })
     .from(saleDiscount)
-    .innerJoin(benefitApplication, eq(benefitApplication.id, saleDiscount.benefitApplicationId))
     .where(and(eq(saleDiscount.saleId, saleId), isNotNull(saleDiscount.benefitApplicationId)));
+  const ids = linked.flatMap((r) => (r.applicationId ? [r.applicationId] : []));
+  if (ids.length === 0) return;
+  // Read apart from the join: Postgres names a locked relation unqualified,
+  // and this one lives in another schema.
+  const rows = await db
+    .select({ removedAt: benefitApplication.removedAt, appliedTo: benefitApplication.saleId })
+    .from(benefitApplication)
+    .where(inArray(benefitApplication.id, ids))
+    .orderBy(benefitApplication.id)
+    .for('share');
   if (rows.some((r) => r.removedAt !== null || r.appliedTo !== saleId)) {
     throw errors.conflict(BENEFIT_CHECKOUT_REFUSALS.RELEASED, BENEFIT_CHECKOUT_WORDS.released, {
       saleId,

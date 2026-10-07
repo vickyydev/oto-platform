@@ -49,6 +49,7 @@ import {
 } from '../booking-payment';
 import { assertSaleVouchersHeld } from '../vouchers';
 import { assertSaleExtensionCollectable, extensionHoldsClose } from '../sale-extension-lifecycle';
+import { assertSaleBenefitsLive } from '../benefit-checkout';
 import {
   attemptView,
   failAttempt,
@@ -569,6 +570,9 @@ export async function openQrAttempt(
         );
       }
       await assertSaleExtensionCollectable(tx, saleRow.id);
+      // S2-21 round 3 — nor for a sale whose staff benefit was taken off or
+      // moved to the order rung up again (BENEFIT_APPLICATION_RELEASED).
+      await assertSaleBenefitsLive(tx, saleRow.id);
       await assertSaleVouchersHeld(
         tx,
         {
