@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BenefitProfileFields } from './BenefitProfileFields';
 import { OperatorOverrideDialog } from './OperatorOverrideDialog';
+import { BenefitQrDialog } from './BenefitQrDialog';
 import { BenefitHistoryList, type BenefitHistoryEntry } from './BenefitHistoryList';
 import { summarizeProfile } from './summary';
 
@@ -53,13 +54,17 @@ const templateEntry = (v: BenefitTemplateVersion): BenefitHistoryEntry => ({
  * keystroke now saves on Save, with the day it starts — the UI additions are
  * that date, Save, the scheduled-change line and the history, each in the
  * panel's own card style. The Audit log section is still the till's in-memory
- * record until the benefit is applied on the platform (rounds 3 and 4); the QR
- * is issued in round 2.
+ * record until the benefit is applied on the platform (rounds 3 and 4).
+ *
+ * S2-21 round 2: the QR button opens the prototype's QR dialog on the
+ * platform's signed benefit QR — issued, printed and revoked there by whoever
+ * holds `admin:benefit:credential_issue` (`BenefitQrDialog`).
  */
 export function StaffBenefitsPanel() {
   const { menuCategories } = useCatalogStore();
   const { can } = useOperator();
   const canManage = can('admin:benefit:manage');
+  const canIssueQr = can('admin:benefit:credential_issue');
 
   const [today, setToday] = useState<string>('');
   const [templates, setTemplates] = useState<BenefitTemplateRow[]>([]);
@@ -78,6 +83,7 @@ export function StaffBenefitsPanel() {
   }>({ entries: [], loading: false, error: null });
 
   const [overrideOperator, setOverrideOperator] = useState<StaffBenefitRow | null>(null);
+  const [qrOperator, setQrOperator] = useState<StaffBenefitRow | null>(null);
   // Audit log is append-only and only ever written from the F&B order station;
   // a fresh read on panel mount/navigation is enough for this admin view.
   const [auditLog] = useState(() => getBenefitAuditLog());
@@ -322,10 +328,10 @@ export function StaffBenefitsPanel() {
                   <Button
                     variant="outline"
                     size="sm"
-                    // The benefit QR is issued by the platform in round 2
-                    // (plan §8); until then nobody has one to show, which is
-                    // the prototype's own rule for a person without a code.
-                    disabled
+                    onClick={() => setQrOperator(op)}
+                    // The prototype's rule for a person without a code: no
+                    // benefit role, no benefit and no QR (types.ts:7-12).
+                    disabled={!role && !op.upcoming.some((v) => v.benefitRole)}
                   >
                     <QrCodeIcon className="w-4 h-4" />
                     QR
@@ -369,6 +375,12 @@ export function StaffBenefitsPanel() {
         )}
       </section>
 
+      <BenefitQrDialog
+        staff={qrOperator}
+        canIssue={canIssueQr}
+        open={qrOperator !== null}
+        onOpenChange={(open) => !open && setQrOperator(null)}
+      />
       <OperatorOverrideDialog
         staff={overrideOperator}
         templates={templates}

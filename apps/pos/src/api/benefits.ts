@@ -10,6 +10,8 @@ import { api, idemKey } from './client';
  *
  *   templates  `GET /benefits/templates`, `GET/PUT /benefits/templates/:role`
  *   staff      `GET /benefits/profiles`, `GET/PUT /benefits/profiles/:employeeId`
+ *   QR         `GET/POST /benefits/credentials`, `GET /benefits/credentials/:id/qr`,
+ *              `POST /benefits/credentials/:id/revoke` (round 2)
  *
  * The platform keeps money in satang; the prototype's editor
  * (`BenefitProfileFields`) holds baht, so a profile is converted at this
@@ -60,6 +62,31 @@ export interface StaffBenefitRow {
   effectiveProfile: PlatformProfile;
 }
 
+/** A staff member's benefit QR, as the platform records it — never the code (round 2). */
+export interface BenefitCredential {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  kid: string;
+  version: number;
+  status: 'active' | 'revoked' | 'expired';
+  issuedAt: string;
+  expiresAt: string;
+  issuedBy: BenefitVersionAuthor | null;
+  revokedAt: string | null;
+  revokedBy: BenefitVersionAuthor | null;
+  lastSeenAt: string | null;
+}
+
+/** What the QR dialog prints: the name over the QR and the code it encodes. */
+export interface BenefitQrPayload {
+  credentialId: string;
+  employeeId: string;
+  name: string;
+  code: string;
+  expiresAt: string;
+}
+
 const path = (s: string) => encodeURIComponent(s);
 
 export const benefitsApi = {
@@ -102,6 +129,26 @@ export const benefitsApi = {
       {
         idempotencyKey,
       },
+    ),
+  // --- The benefit QR (round 2) ------------------------------------------------
+  credentials: (employeeId: string) =>
+    api.get<{ credentials: BenefitCredential[] }>(
+      `/benefits/credentials?employeeId=${path(employeeId)}`,
+    ),
+  /** One key per press: a retried Issue is the same QR, never a second. */
+  issueCredential: (employeeId: string, idempotencyKey: string = idemKey()) =>
+    api.post<{ credential: BenefitCredential }>(
+      '/benefits/credentials',
+      { employeeId },
+      { idempotencyKey },
+    ),
+  credentialQr: (credentialId: string) =>
+    api.get<BenefitQrPayload>(`/benefits/credentials/${path(credentialId)}/qr`),
+  revokeCredential: (credentialId: string, idempotencyKey: string = idemKey()) =>
+    api.post<{ changed: boolean; credential: BenefitCredential }>(
+      `/benefits/credentials/${path(credentialId)}/revoke`,
+      {},
+      { idempotencyKey },
     ),
 };
 
