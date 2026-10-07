@@ -104,6 +104,11 @@ export interface SeamAttendance {
   checkedInBy: string | null;
   checkedOutAt: Date | null;
   checkedOutBy: string | null;
+  /**
+   * When the app last changed this row. For a day the app's own "Undo check-in"
+   * set back to "waiting", no earlier than that undo.
+   */
+  updatedAt: Date | null;
 }
 
 export interface SeamChild {
@@ -422,9 +427,10 @@ export async function listAttendanceOfEvents(
     checked_in_by: string | null;
     checked_out_at: Date | string | null;
     checked_out_by: string | null;
+    updated_at: Date | string | null;
   }>(sql`
     select id, checkin_ref, attendee_id, event_id, record_kind, attendance_date, status,
-           checked_in_at, checked_in_by, checked_out_at, checked_out_by
+           checked_in_at, checked_in_by, checked_out_at, checked_out_by, updated_at
       from otoapp_v.event_attendance
      where branch_id = ${q.branchId}::uuid and event_id in (${uuidList(eventIds)})
        ${q.date === undefined ? sql`` : sql`and attendance_date = ${q.date}`}
@@ -442,6 +448,7 @@ export async function listAttendanceOfEvents(
     checkedInBy: r.checked_in_by,
     checkedOutAt: instant(r.checked_out_at),
     checkedOutBy: r.checked_out_by,
+    updatedAt: instant(r.updated_at),
   }));
 }
 

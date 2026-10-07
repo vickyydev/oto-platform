@@ -403,8 +403,10 @@ describe('the OTO App is the master on the box lane too', () => {
     );
     expect(online.statusCode, JSON.stringify(online.body)).toBe(200);
     expect(online.body.checkin.syncState).toBe('synced');
+    // The app's own "Undo check-in", stamped as the app stamps it: naive UTC, whatever the server's zone.
     await ctx.db.execute(sql`
-      update otoapp.camp_attendance set status = 'waiting', checked_in_at = null, checked_in_by = null, updated_at = now()
+      update otoapp.camp_attendance
+         set status = 'waiting', checked_in_at = null, checked_in_by = null, updated_at = now() at time zone 'UTC'
        where camp_registration_id = ${kid.taken} and attendance_date = ${T}`);
   });
 
@@ -475,5 +477,18 @@ describe('the OTO App is the master on the box lane too', () => {
       .where(and(eq(auditLog.action, 'event.checkin_undone'), eq(auditLog.entityId, takenFirst)));
     expect(undone!.after).toMatchObject({ reason: 'undone_in_otoapp', nextCheckinId: takenBox, boxId });
     expect(undone!.sourceEventId).not.toBeNull();
+    // The paper the first check-in printed is revoked, and the child may be wearing it: a person is told.
+    const told = await ctx.db
+      .select()
+      .from(alert)
+      .where(and(eq(alert.category, 'event.checked_in_twice'), sql`${alert.summary} like '%Tak%'`));
+    expect(told).toHaveLength(1);
+    expect(told[0]).toMatchObject({ severity: 'warning', status: 'open' });
+    expect(told[0]!.detail).toMatchObject({
+      bandsRecorded: true,
+      first: { checkinId: takenFirst, takenBack: true },
+      setAside: [{ checkinId: takenFirst, revokedBandIds: expect.arrayContaining(firstBands.map((b) => b.id)) }],
+      second: { checkinId: takenBox },
+    });
   });
 });

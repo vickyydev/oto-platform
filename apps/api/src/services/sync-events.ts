@@ -25,10 +25,12 @@ import {
 } from './event-checkins';
 import { staffNameOf } from './event-writes';
 import { raiseAlert } from './ops';
-import { getBranchEvent, type SeamAttendance, type SeamEvent } from './otoapp-events';
+import { getBranchEvent, listEventAttendance, type SeamAttendance, type SeamEvent } from './otoapp-events';
 import type { DirectoryCheckinBody } from './otoapp-directory';
 import type { Tx } from './tx';
 import type { BatchScope, EventHandler, PreparedEvent } from './sync';
+
+type CheckinRow = typeof eventCheckin.$inferSelect;
 
 /**
  * S2-20 E3 — THE CLOUD'S SIDE OF AN EVENT CHECK-IN ON THE BOX LANE (plan §5
@@ -56,10 +58,13 @@ import type { BatchScope, EventHandler, PreparedEvent } from './sync';
  *     the paper the box printed), and a warning alert names both so a person
  *     can check which band the child is wearing. Two exceptions, both because
  *     the OTO App is the master (Q1): a first check-in the app took back (its
- *     own "Undo check-in") is set aside and the box's takes the day; and a
- *     child the app checked in at its own screen — which prints no band — has
- *     the app's check-in mirrored with the box's bands recorded on it, the only
- *     bands that child wears (H9);
+ *     own "Undo check-in") BEFORE the box checked the child in is set aside —
+ *     its bands revoked, and the same alert raised, since the child may be
+ *     wearing them — and the box's takes the day (a box check-in made while
+ *     the first still stood is that day's second check-in, as above, and the
+ *     app's later undo stands over it); and a child the app checked in at its
+ *     own screen — which prints no band — has the app's check-in mirrored with
+ *     the box's bands recorded on it, the only bands that child wears (H9);
  *   - the bands are recorded as the box minted them (OD-13), each verified
  *     against the park's key first;
  *   - the check-in is then owed to the OTO App, `pending`, and sent once the
@@ -126,12 +131,49 @@ async function childOf(
   return known ?? unknownChild(payload);
 }
 
+/** The first check-in of the child's day, as the "checked in twice" alert and its audit name it. */
+interface FirstCheckin {
+  checkinId: string | null;
+  at: string | null;
+  where: 'pos' | 'otoapp';
+  /** The OTO App took this check-in back (its own "Undo check-in"). */
+  takenBack?: true;
+}
+
+/**
+ * What the box's check-in did to the child's day: resolved to the first
+ * check-in, its own bands not recorded (H4); or it took the day from a first
+ * check-in the OTO App had undone before it, which was set aside with its
+ * bands revoked.
+ */
+type TwiceOutcome =
+  | { kind: 'duplicate' }
+  | { kind: 'set_aside'; setAside: ReadonlyArray<{ checkinId: string; revokedBandIds: string[] }> };
+
+/**
+ * A person is told whenever a box's check-in meets another check-in of the
+ * same child-day: the child wears paper from one of them, and only a person
+ * can see which. Raised on every box-door set-aside too — it revokes bands the
+ * child may be wearing.
+ */
 async function alertCheckedInTwice(
   scope: BatchScope,
   event: PreparedEvent,
   payload: OfflineEventCheckedIn,
-  first: { checkinId: string | null; at: string | null; where: 'pos' | 'otoapp' },
+  first: FirstCheckin,
+  outcome: TwiceOutcome,
 ): Promise<void> {
+  const offline =
+    `${payload.childName} was checked in to ${payload.eventTitle} offline on ${scope.auth.name} (${scope.auth.slot}) ` +
+    `at ${payload.at}`;
+  const summary =
+    outcome.kind === 'set_aside'
+      ? `${offline}, after the OTO App had undone the check-in it held for ${payload.date}. That earlier check-in was ` +
+        "set aside and its bands revoked; the box's bands were recorded — check which band the child is wearing."
+      : `${offline}, but was already checked in for ${payload.date}` +
+        `${first.where === 'otoapp' ? ' in the OTO App' : ''}` +
+        `${first.takenBack ? "; the OTO App undid that check-in only later, so the box's does not check the child back in" : ''}. ` +
+        "The box's bands were not recorded — check which band the child is wearing.";
   try {
     await raiseAlert(
       scope.db,
@@ -140,16 +182,14 @@ async function alertCheckedInTwice(
         category: 'event.checked_in_twice',
         severity: 'warning',
         subject: `Event check-in for ${payload.childName}`,
-        summary:
-          `${payload.childName} was checked in to ${payload.eventTitle} offline on ${scope.auth.name} (${scope.auth.slot}) ` +
-          `at ${payload.at}, but was already checked in for ${payload.date}` +
-          `${first.where === 'otoapp' ? ' in the OTO App' : ''}. The box's bands were not recorded — ` +
-          'check which band the child is wearing.',
+        summary,
         detail: {
           eventId: payload.eventId,
           attendeeId: payload.attendeeId,
           date: payload.date,
           first,
+          bandsRecorded: outcome.kind === 'set_aside',
+          ...(outcome.kind === 'set_aside' ? { setAside: outcome.setAside } : {}),
           second: {
             boxId: scope.auth.boxId,
             checkinId: payload.checkinId,
@@ -345,6 +385,40 @@ async function refuseOffDay(
   throw conflict(why.code, why.message, { eventId: payload.eventId, attendeeId: payload.attendeeId, date: payload.date });
 }
 
+/**
+ * WHEN THE BOX CHECKED THE CHILD IN, DID THE FIRST CHECK-IN STILL STAND? A
+ * check-in the OTO App took back (`takenBackBy`) stood until the app's own
+ * "Undo check-in": no earlier than the app had it (`synced_at`, itself after
+ * `checked_in_at`), and no earlier than the app last changed the child's day
+ * row (`updated_at`, which the undo stamps). A box check-in made before that
+ * moment met the first check-in standing — the box's copy could not see it
+ * with the link down — so it is that day's second check-in (H4), and the
+ * app's later undo stands over it. Answers the taken-back row it met, or null
+ * when the box's check-in came after the undo and takes the day.
+ *
+ * Read by the box's clock against the platform's and the app's: a fact that
+ * cannot be shown to come after the undo is the second check-in, which takes
+ * nothing from the child and tells a person.
+ */
+async function stoodWhenBoxCheckedIn(
+  tx: Tx,
+  branchId: string,
+  eventId: string,
+  aliases: readonly string[],
+  date: string,
+  back: readonly CheckinRow[],
+  boxAt: Date,
+): Promise<CheckinRow | null> {
+  const appRows = (await listEventAttendance(tx, { branchId, eventId, date })).filter((r) => aliases.includes(r.attendeeId));
+  const appChangedAt = Math.max(-Infinity, ...appRows.map((r) => r.updatedAt?.getTime() ?? -Infinity));
+  return (
+    back.find((r) => {
+      const undoneNoEarlierThan = Math.max(r.checkedInAt.getTime(), r.syncedAt?.getTime() ?? -Infinity, appChangedAt);
+      return !(boxAt.getTime() >= undoneNoEarlierThan);
+    }) ?? null
+  );
+}
+
 async function applyEventCheckedIn(tx: Tx, scope: BatchScope, event: PreparedEvent, payload: OfflineEventCheckedIn) {
   const id = payload.checkinId.toLowerCase();
   const done = (entityId: string) => ({ entityType: 'event_checkin', entityId });
@@ -378,25 +452,36 @@ async function applyEventCheckedIn(tx: Tx, scope: BatchScope, event: PreparedEve
   }
 
   // ONE CHECK-IN PER CHILD PER DAY (H4): the first one stands — unless the
-  // OTO App took it back (its own "Undo check-in"), when the box's takes the
-  // day. The POS's rows are read before the app's day (`takenBackBy`).
+  // OTO App took it back (its own "Undo check-in") BEFORE the box checked the
+  // child in, when the box's takes the day. The POS's rows are read before the
+  // app's day (`takenBackBy`).
   const rows = await posCheckinsOf(tx, ev.id, child, payload.date);
   const appDay = await appDayOf(tx, scope.auth.branchId, ev.id, child.aliases, payload.date, id);
   const back = takenBackBy(rows, appDay);
-  const first = rows.find((r) => !back.includes(r));
-  if (!first && back.length > 0) {
-    await undoTakenBack(tx, back, {
-      operatorId: scope.auth.operatorId,
-      branchId: scope.auth.branchId,
-      actorAccountId: event.envelope.actorAccountId ?? null,
-      actionId: event.envelope.actionId ?? null,
-      sourceEventId: event.envelope.eventId,
-      stationId: stationOf(scope, event),
-      boxId: scope.auth.boxId,
-      nextCheckinId: id,
-      now: event.occurredAt,
-    });
-  }
+  const standing = rows.find((r) => !back.includes(r));
+  // A box's check-in made while the first one still stood — older than the
+  // app's undo — is the second check-in of the day, not one after the undo:
+  // it never overturns the undo, and never sets aside the paper the child got
+  // at the first.
+  const stoodThen =
+    !standing && back.length > 0
+      ? await stoodWhenBoxCheckedIn(tx, scope.auth.branchId, ev.id, child.aliases, payload.date, back, new Date(payload.at))
+      : null;
+  const first = standing ?? stoodThen;
+  const setAside =
+    !first && back.length > 0
+      ? await undoTakenBack(tx, back, {
+          operatorId: scope.auth.operatorId,
+          branchId: scope.auth.branchId,
+          actorAccountId: event.envelope.actorAccountId ?? null,
+          actionId: event.envelope.actionId ?? null,
+          sourceEventId: event.envelope.eventId,
+          stationId: stationOf(scope, event),
+          boxId: scope.auth.boxId,
+          nextCheckinId: id,
+          now: event.occurredAt,
+        })
+      : null;
   if (!first && appDay?.status === 'checked_in') {
     // Checked in at the OTO App's own screen, which prints no band: the bands
     // this box printed are the only ones the child wears, so they are recorded
@@ -404,10 +489,15 @@ async function applyEventCheckedIn(tx: Tx, scope: BatchScope, event: PreparedEve
     return mirrorWithBoxBands(tx, scope, event, payload, ev, child, appDay);
   }
   if (first || appDay) {
-    const firstFacts = first
-      ? { checkinId: first.id, at: first.checkedInAt.toISOString(), where: 'pos' as const }
-      : { checkinId: null, at: appDay!.checkedInAt?.toISOString() ?? null, where: 'otoapp' as const };
-    await alertCheckedInTwice(scope, event, payload, firstFacts);
+    const firstFacts: FirstCheckin = first
+      ? {
+          checkinId: first.id,
+          at: first.checkedInAt.toISOString(),
+          where: 'pos',
+          ...(first === stoodThen ? { takenBack: true as const } : {}),
+        }
+      : { checkinId: null, at: appDay!.checkedInAt?.toISOString() ?? null, where: 'otoapp' };
+    await alertCheckedInTwice(scope, event, payload, firstFacts, { kind: 'duplicate' });
     await audit.record(tx, {
       ...auditBase(scope, event),
       action: 'event.checkin_duplicate',
@@ -493,6 +583,18 @@ async function applyEventCheckedIn(tx: Tx, scope: BatchScope, event: PreparedEve
       ...trail(scope, event, payload),
     },
   });
+  if (setAside) {
+    // The paper the first check-in printed is revoked now, and the child may
+    // be wearing it: a person checks which band they have on.
+    const taken = back[0]!;
+    await alertCheckedInTwice(
+      scope,
+      event,
+      payload,
+      { checkinId: taken.id, at: taken.checkedInAt.toISOString(), where: 'pos', takenBack: true },
+      { kind: 'set_aside', setAside },
+    );
+  }
   return done(id);
 }
 

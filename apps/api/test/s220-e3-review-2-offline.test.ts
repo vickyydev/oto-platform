@@ -48,14 +48,14 @@ import { injectedTransport, type CuttableLink } from './box-link';
  *   - A FACT ALREADY FILED IS NOT JUDGED AGAIN: once a box's check-in is on the
  *     platform, the app moving the child off the day and the same fact arriving
  *     again under a fresh envelope changes nothing — no quarantine, no alert.
- *   - (pinned, finding R2-1) A BOX FACT OLDER THAN THE APP'S UNDO does not
- *     overturn it: the fix round's set-aside takes a day back from a till
- *     check-in the app undid even when the box's check-in came first, revokes
- *     the till's bands without an alert, and writes the child back in.
+ *   - (finding R2-1, fixed) A BOX FACT OLDER THAN THE APP'S UNDO does not
+ *     overturn it: a box check-in made while a till's check-in still stood is
+ *     that day's second check-in (H4) — the till's check-in and its bands
+ *     stand, the app is not told, and a person is told the child was checked
+ *     in twice.
  *
- * A defect found is pinned with `it.fails` (the E1 review's convention): the
- * suite stays green while it stands and turns red the day it is fixed, so the
- * fix flips it to `it`.
+ * A defect found was pinned with `it.fails` (the E1 review's convention); the
+ * fix round flipped R2-1's pins to plain tests.
  *
  * A real counter box (`createBoxAgent` over the `edge` schema); the OTO App is
  * its own write code (`server/directory/eventWrites.ts`) over its own tables.
@@ -91,6 +91,8 @@ const kid = {
   remy: newId(),
   /** Every day, parent attending, an allergy: checked in on the box (link down), then at a till, then undone in the app. */
   tia: newId(),
+  /** Every day, parent attending, an allergy: checked in at a till, then on the box (link down), then undone in the app. */
+  uma: newId(),
 };
 const PHONE = { mona: '+66812350001', nia: '+66812350002' };
 
@@ -272,6 +274,7 @@ beforeAll(async () => {
   await register(kid.fifi, 'Fifi', [], { phone: '+66812350003', allergies: 'Egg', parentAttending: true });
   await register(kid.remy, 'Remy', [T, addDaysToIsoDate(T, 1)], { phone: '+66812350004' });
   await register(kid.tia, 'Tia', [], { phone: '+66812350005', allergies: 'Soy', parentAttending: true });
+  await register(kid.uma, 'Uma', [], { phone: '+66812350006', allergies: 'Fish', parentAttending: true });
 
   agent = createBoxAgent({
     apiBaseUrl: 'http://events-review-2-box.test',
@@ -306,6 +309,8 @@ describe('E3 review round 2 — the box door, whatever ids it names', () => {
   const fifiBox = newId();
   const tiaBox = newId();
   const tiaTill = newId();
+  const umaTill = newId();
+  const umaBox = newId();
   const facts: { mona?: OfflineEventCheckedIn; nia?: OfflineEventCheckedIn; remy?: OfflineEventCheckedIn } = {};
 
   it('online: two walk-ups the app merges into its registrations; one is moved off today in the app, the other checked in by the app id', async () => {
@@ -366,11 +371,39 @@ describe('E3 review round 2 — the box door, whatever ids it names', () => {
     expect(atTill.statusCode, JSON.stringify(atTill.body)).toBe(200);
     expect((atTill.body as EventCheckinAnswer).checkin).toMatchObject({ id: tiaTill, syncState: 'synced' });
     expect(await appRows(kid.tia, T)).toEqual([{ status: 'checked_in', checkin_ref: tiaTill }]);
-    // Later, the OTO App's own "Undo check-in": the child's day is "waiting" again.
+    // Later, the OTO App's own "Undo check-in": the child's day is "waiting" again (naive UTC, as the app stamps it).
     await ctx.db.execute(sql`
       update otoapp.camp_attendance
-         set status = 'waiting', checked_in_at = null, checked_in_by = null, updated_at = now()
+         set status = 'waiting', checked_in_at = null, checked_in_by = null, updated_at = now() at time zone 'UTC'
        where camp_registration_id = ${kid.tia} and attendance_date = ${T}`);
+  });
+
+  it('Uma arrives: checked in at a till with the internet, then — its copy cannot see that — on the box; only then does the app undo the check-in it has', async () => {
+    const atTill = await call(
+      'POST',
+      `/events/${camp}/attendees/${kid.uma}/checkin`,
+      { branchId: central, checkinId: umaTill, stationId: otherTillId },
+      cookieB,
+    );
+    expect(atTill.statusCode, JSON.stringify(atTill.body)).toBe(200);
+    expect((atTill.body as EventCheckinAnswer).checkin).toMatchObject({ id: umaTill, syncState: 'synced' });
+    const tillRow = (await rowById(umaTill))!;
+    const onBox = await call('POST', `/box/v1/station/${tillId}/intents`, {
+      type: 'event.checkin',
+      lastSeenSequence: 0,
+      payload: { eventId: camp, attendeeId: kid.uma, checkinId: umaBox, staffName: 'Nok' },
+      actionId: `rv2-${newId().slice(-12)}`,
+    });
+    expect(onBox.statusCode, JSON.stringify(onBox.body)).toBe(200);
+    expect((onBox.body.result as EventCheckinAnswer).checkin.kidBand).not.toBeNull();
+    // The box's check-in is after the till's, and after the app had it: only the undo is later.
+    const boxAt = new Date((onBox.body.result as EventCheckinAnswer).checkin.checkedInAt);
+    expect(boxAt.getTime()).toBeGreaterThan(tillRow.syncedAt!.getTime());
+    // The OTO App's own "Undo check-in", stamped as the app stamps it (naive UTC).
+    await ctx.db.execute(sql`
+      update otoapp.camp_attendance
+         set status = 'waiting', checked_in_at = null, checked_in_by = null, updated_at = now() at time zone 'UTC'
+       where camp_registration_id = ${kid.uma} and attendance_date = ${T}`);
   });
 
   it("three facts by hand: Mona and Nia by the till's own link ids, Remy by the app's", async () => {
@@ -449,46 +482,37 @@ describe('E3 review round 2 — the box door, whatever ids it names', () => {
   });
 
   /**
-   * FINDING R2-1 (MEDIUM; Q1, H4, H9) — the box door's set-aside
-   * (`applyEventCheckedIn`: `takenBackBy` → `undoTakenBack`, sync-events.ts)
-   * never asks WHEN the box checked the child in. Tia was checked in on the
-   * box (link down) BEFORE the till checked her in online; the app had the
-   * till's check-in, and its own "Undo check-in" then took the day back. When
-   * the box's fact arrives — older than the till's check-in and older than the
-   * undo — it is treated as a new check-in after the undo:
-   *   - the till's check-in is set aside and its two bands revoked, with no
-   *     alert (only an `event.checkin_undone` audit row). The till's bands are
-   *     the later paper, likely the ones the child wears: the food counter
-   *     now reads NOTHING behind her kid band — no "Soy" line — and the gate
-   *     refuses her parent's band;
-   *   - the box's check-in is filed and written back, so the OTO App shows her
-   *     checked in again after its own undo — the master's undo overturned by
-   *     a fact that predates it.
-   * Before the fix round this exact case took H4's duplicate path: the first
-   * check-in stood, the box's bands were not recorded, the app was not told,
-   * and "checked in twice" asked a person to check the band.
-   *
-   * Expected: a box fact whose check-in is older than the check-in the app
-   * took back (it predates `checkedInAt`/`syncedAt` of the row set aside, so
-   * the app's undo came after it) is that same arrival, not a new one —
-   * resolved as H4's duplicate of the taken-back row: no set-aside, no
-   * write-back, the alert raised. (A box fact made AFTER the undo — the
-   * builder's own case in events-e3-offline — keeps taking the day.)
-   *
-   * Observed (this file, before pinning): the till's row `undone_at` set at
-   * the box fact's time; its kid and adult bands `revoked`; the box's row
-   * filed `synced`; the app's day `checked_in` with the box's id as its ref;
-   * `GET /wallets/scan` on the till's kid band 404; no alert of any category
-   * naming Tia.
+   * FINDING R2-1 (MEDIUM; Q1, H4, H9), fixed — the box door's set-aside
+   * (`applyEventCheckedIn`, sync-events.ts) now asks WHEN the box checked the
+   * child in. Tia was checked in on the box (link down) BEFORE the till
+   * checked her in online; the app had the till's check-in, and its own "Undo
+   * check-in" then took the day back. The box's fact — older than the till's
+   * check-in and older than the undo — is that day's second check-in, resolved
+   * as H4's duplicate of the till's: no set-aside, no write-back, its bands not
+   * recorded, and "checked in twice" asks a person to check the band. (A box
+   * fact made AFTER the undo — the builder's own case in events-e3-offline —
+   * keeps taking the day, and raises the same alert.)
    */
   describe('R2-1: a box fact older than a till check-in the OTO App then undid', () => {
-    it.fails("the app's undo stands: the box's older fact neither checks Tia back in at the app nor sets the till's check-in aside", async () => {
+    it("the app's undo stands: the box's older fact neither checks Tia back in at the app nor sets the till's check-in aside", async () => {
       expect(await appRows(kid.tia, T)).toEqual([{ status: 'waiting', checkin_ref: tiaTill }]);
       expect(await rowById(tiaTill)).toMatchObject({ undoneAt: null });
+      expect(await rowById(tiaBox)).toBeNull();
+      expect(await ctx.db.select().from(band).where(eq(band.eventCheckinId, tiaBox))).toEqual([]);
       expect(sentCheckins).not.toContain(tiaBox);
+      const [dup] = await ctx.db
+        .select()
+        .from(auditLog)
+        .where(and(eq(auditLog.action, 'event.checkin_duplicate'), sql`${auditLog.after}->>'boxCheckinId' = ${tiaBox}`));
+      expect(dup!.after).toMatchObject({ duplicateOf: { checkinId: tiaTill, where: 'pos', takenBack: true }, bandsRecorded: false });
+      const undone = await ctx.db
+        .select()
+        .from(auditLog)
+        .where(and(eq(auditLog.action, 'event.checkin_undone'), eq(auditLog.entityId, tiaTill)));
+      expect(undone).toEqual([]);
     });
 
-    it.fails('the band the till printed for Tia still names her allergy at the food counter', async () => {
+    it('the band the till printed for Tia still names her allergy at the food counter', async () => {
       const [kb] = await ctx.db.select().from(band).where(and(eq(band.eventCheckinId, tiaTill), eq(band.kind, 'kid')));
       expect(kb!.status).toBe('active');
       const scanned = await call('GET', `/wallets/scan?branchId=${central}&key=${encodeURIComponent(kb!.code)}`);
@@ -496,12 +520,34 @@ describe('E3 review round 2 — the box door, whatever ids it names', () => {
       expect(scanned.body.stay).toMatchObject({ childName: 'Tia', allergiesMedical: 'Soy' });
     });
 
-    it.fails('a person is told Tia was checked in twice, as H4 tells one of any second check-in from a box', async () => {
+    it('a person is told Tia was checked in twice, as H4 tells one of any second check-in from a box', async () => {
       const told = await ctx.db
         .select()
         .from(alert)
         .where(and(eq(alert.category, 'event.checked_in_twice'), sql`${alert.summary} like '%Tia%'`));
       expect(told).toHaveLength(1);
+      expect(told[0]).toMatchObject({ severity: 'warning', status: 'open' });
+      expect(told[0]!.detail).toMatchObject({
+        bandsRecorded: false,
+        first: { checkinId: tiaTill, where: 'pos', takenBack: true },
+        second: { checkinId: tiaBox },
+      });
+    });
+
+    it("a box check-in after the till's but before the app's undo is the day's second check-in too: both the till's and the undo stand, and a person is told", async () => {
+      expect(await rowById(umaTill)).toMatchObject({ undoneAt: null });
+      expect(await rowById(umaBox)).toBeNull();
+      expect(await ctx.db.select().from(band).where(eq(band.eventCheckinId, umaBox))).toEqual([]);
+      const tillBands = await ctx.db.select().from(band).where(eq(band.eventCheckinId, umaTill));
+      expect(tillBands.map((b) => b.status)).toEqual(['active', 'active']);
+      expect(await appRows(kid.uma, T)).toEqual([{ status: 'waiting', checkin_ref: umaTill }]);
+      expect(sentCheckins).not.toContain(umaBox);
+      const told = await ctx.db
+        .select()
+        .from(alert)
+        .where(and(eq(alert.category, 'event.checked_in_twice'), sql`${alert.summary} like '%Uma%'`));
+      expect(told).toHaveLength(1);
+      expect(told[0]!.detail).toMatchObject({ bandsRecorded: false, first: { checkinId: umaTill, takenBack: true } });
     });
 
     it('what holds today regardless: one check-in stands for her day, and the box fact did not wait in quarantine', async () => {

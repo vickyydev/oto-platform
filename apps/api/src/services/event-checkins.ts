@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
-import { band, eventAttendeeLink, eventCheckin, station } from '@oto/db';
+import { band, bandEvent, eventAttendeeLink, eventCheckin, station } from '@oto/db';
 import {
   EVENT_CHECKIN_REFUSALS,
   attendsOn,
@@ -18,6 +18,7 @@ import {
   type EventReprintBody,
 } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
+import { pgErrorOf } from '../lib/scrub';
 import type { BranchReach } from './access-control';
 import { audit } from './audit';
 import { BandKeyMissingError, mintEventBands } from './bands';
@@ -57,7 +58,13 @@ import { withTx, type Exec, type OpContext, type Tx } from './tx';
  *     (event, child, day) — a second till, or a box's fact from the link-down
  *     hours, is refused "Already checked in" and mints no second band (H4);
  *     a child the OTO App already has in for the day is refused too, because
- *     the app is the master of attendance (Q1);
+ *     the app is the master of attendance (Q1) — and a POS check-in the app
+ *     had and took back (its own "Undo check-in") no longer holds the day: it
+ *     is set aside (`undone_at`, its bands revoked) when the child is next
+ *     checked in;
+ *   - THE APP'S WORD, WHATEVER ID NAMES THE CHILD: the till's own link id for a
+ *     child the app merged into a registration of its own reads that
+ *     registration — its days, its allergy line, its id (`eventChildOf`);
  *   - "NOT REGISTERED FOR TODAY" IS THE PLATFORM'S REFUSAL, not only the
  *     disabled button the prototype had (H5, plan §4) — the day is the
  *     branch's business date, never the device's;
@@ -133,6 +140,14 @@ export async function linksNaming(db: Exec, eventId: string, attendeeId: string)
  * The child, from the OTO App's registration when the app has them, else from
  * the till's own record of what it sent (a write-back still pending). Null when
  * neither knows them on this event.
+ *
+ * The app is the master of who the child is and which days they attend (Q1),
+ * WHATEVER ID NAMES THEM: the roster names a child by the app's id, while the
+ * till's "Check in now" after a pass sale names them by the till's own link id
+ * — and for a child the app merged into a registration it already had (E2: the
+ * same name and phone) those differ. A synced link is therefore read through to
+ * the app's registration: its allergy line, its days, and its id, which the
+ * check-in is stored under.
  */
 export async function eventChildOf(
   db: Exec,
@@ -142,15 +157,31 @@ export async function eventChildOf(
   date: string,
 ): Promise<EventChild | null> {
   const id = attendeeId.toLowerCase();
-  const links = await linksNaming(db, event.id, id);
+  let links = await linksNaming(db, event.id, id);
   const registrations = await listEventAttendees(db, { branchId, eventId: event.id });
-  const seam = registrations.find((r) => r.id === id) ?? null;
-  const link = links[0] ?? null;
-  const aliases = [...new Set([id, ...links.flatMap((l) => [l.id, l.otoappAttendeeId ?? l.id])])];
+  const own = links.find((l) => l.id === id) ?? null;
+  const appId = registrations.some((r) => r.id === id)
+    ? id
+    : own?.syncState === 'synced' && own.otoappAttendeeId
+      ? own.otoappAttendeeId
+      : null;
+  const seam = appId ? (registrations.find((r) => r.id === appId) ?? null) : null;
+  if (seam && seam.id !== id) {
+    // Every link the app's registration is known by, so one child's day is one
+    // day whichever of their ids the press named.
+    const known = new Set(links.map((l) => l.id));
+    links = [...links, ...(await linksNaming(db, event.id, seam.id)).filter((l) => !known.has(l.id))].sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+    );
+  }
+  const link = own ?? links[0] ?? null;
+  const aliases = [
+    ...new Set([id, ...(seam ? [seam.id] : []), ...links.flatMap((l) => [l.id, l.otoappAttendeeId ?? l.id])]),
+  ];
   if (seam) {
     const [child] = await listSeamChildren(db, { branchId, ids: [seam.childId] });
     return {
-      attendeeId: id,
+      attendeeId: seam.id,
       link,
       aliases,
       childName: seam.childName,
@@ -161,10 +192,8 @@ export async function eventChildOf(
       attends: attendsOn(event, seam, date),
     };
   }
-  // A child the till added that the app does not hold under this id: from the
-  // body the till sent. A link the app merged into a registration of its own
-  // is named by the app's id on the roster, and found above.
-  const own = links.find((l) => l.id === id) ?? null;
+  // A child the till added that the app does not hold yet (or no longer
+  // shows): from the body the till sent.
   const sent = own?.writeback as DirectoryAttendeeBody | null | undefined;
   if (!own || !sent) return null;
   return {
@@ -180,7 +209,10 @@ export async function eventChildOf(
   };
 }
 
-/** The POS's check-ins of this child on this day, by any id the child is known by. */
+/**
+ * The POS's check-ins of this child on this day, by any id the child is known
+ * by — not one the OTO App took back (`undone_at`), which is history.
+ */
 export async function posCheckinsOf(
   db: Exec,
   eventId: string,
@@ -194,6 +226,7 @@ export async function posCheckinsOf(
       and(
         eq(eventCheckin.otoappEventId, eventId),
         eq(eventCheckin.attendanceDate, date),
+        isNull(eventCheckin.undoneAt),
         child.link
           ? or(inArray(eventCheckin.attendeeId, child.aliases), eq(eventCheckin.linkId, child.link.id))
           : inArray(eventCheckin.attendeeId, child.aliases),
@@ -202,16 +235,140 @@ export async function posCheckinsOf(
     .orderBy(asc(eventCheckin.checkedInAt));
 }
 
-/** The OTO App's own record of this child on this day, when it has one that is more than "waiting". */
+/**
+ * The OTO App's own record of this child on this day, when it has one that is
+ * more than "waiting". `exceptCheckinId`: the app's row holding THIS check-in
+ * id is this very press landed already (a copy of it got there first), not
+ * another check-in.
+ */
 export async function appDayOf(
   db: Exec,
   branchId: string,
   eventId: string,
   aliases: readonly string[],
   date: string,
+  exceptCheckinId?: string,
 ): Promise<SeamAttendance | null> {
   const rows = await listEventAttendance(db, { branchId, eventId, date });
-  return rows.find((r) => aliases.includes(r.attendeeId) && r.status !== 'waiting') ?? null;
+  return (
+    rows.find(
+      (r) =>
+        aliases.includes(r.attendeeId) &&
+        r.status !== 'waiting' &&
+        (exceptCheckinId === undefined || r.checkinRef !== exceptCheckinId),
+    ) ?? null
+  );
+}
+
+/**
+ * The POS's rows for the day that the OTO App had and has taken back: each one
+ * the app holds (`synced`) while the app's day no longer reads in or out — its
+ * own "Undo check-in" set it back to "waiting". The app is the master (Q1), so
+ * such a row no longer stands for the child's day. A row the app does not have
+ * yet (`pending`, `failed`) is the POS's word until it does, and stands.
+ *
+ * Read the POS's rows BEFORE the app's day: a row turns `synced` only after the
+ * app answered, so a row read as synced is one whose check-in the app's read
+ * that follows can see.
+ */
+export function takenBackBy(rows: readonly CheckinRow[], appDay: SeamAttendance | null): CheckinRow[] {
+  return appDay ? [] : rows.filter((r) => r.syncState === 'synced');
+}
+
+/**
+ * The child's day as a check-out or a reprint decides it, under the day's
+ * lock: the POS's check-in that stands for it (none when the app took it
+ * back), and the OTO App's own day, read after the POS's rows (`takenBackBy`).
+ */
+async function standingDayOf(
+  tx: Tx,
+  branchId: string,
+  eventId: string,
+  child: EventChild,
+  date: string,
+): Promise<{ row: CheckinRow | null; appDay: SeamAttendance | null }> {
+  const rows = await posCheckinsOf(tx, eventId, child, date);
+  const appDay = await seamRead(() => appDayOf(tx, branchId, eventId, child.aliases, date));
+  const back = takenBackBy(rows, appDay);
+  return { row: rows.find((r) => !back.includes(r)) ?? null, appDay };
+}
+
+/**
+ * Set aside the POS's check-ins the OTO App took back (`takenBackBy`), before
+ * the child's next check-in for the day: each row is marked undone and its
+ * active bands are revoked (S2-11's `revoked`: the paper the child may still
+ * wear opens no gate and reads no stay), one audit row each. Answers the rows
+ * this call set aside, with the bands it revoked.
+ */
+export async function undoTakenBack(
+  tx: Tx,
+  rows: readonly CheckinRow[],
+  input: {
+    operatorId: string;
+    branchId: string;
+    actorAccountId: string | null;
+    requestId?: string | null;
+    actionId: string | null;
+    sourceEventId?: string | null;
+    stationId: string | null;
+    boxId: string | null;
+    /** The check-in that takes the day now. */
+    nextCheckinId: string;
+    now: Date;
+  },
+): Promise<Array<{ checkinId: string; revokedBandIds: string[] }>> {
+  const setAside: Array<{ checkinId: string; revokedBandIds: string[] }> = [];
+  for (const row of rows) {
+    const [undone] = await tx
+      .update(eventCheckin)
+      .set({ undoneAt: input.now, updatedAt: input.now })
+      .where(and(eq(eventCheckin.id, row.id), isNull(eventCheckin.undoneAt)))
+      .returning({ id: eventCheckin.id });
+    if (!undone) continue;
+    const live = await tx
+      .select({ id: band.id })
+      .from(band)
+      .where(and(eq(band.eventCheckinId, row.id), eq(band.status, 'active')));
+    for (const b of live) {
+      await tx.update(band).set({ status: 'revoked', updatedAt: input.now }).where(eq(band.id, b.id));
+      await tx.insert(bandEvent).values({
+        id: newId(),
+        bandId: b.id,
+        kind: 'revoked',
+        stationId: input.stationId,
+        boxId: input.boxId,
+        // Why it died. Never the code: it is a gate credential.
+        detail: { eventCheckinId: row.id, reason: 'undone_in_otoapp', nextCheckinId: input.nextCheckinId },
+        createdAt: input.now,
+      });
+    }
+    await audit.record(tx, {
+      actorAccountId: input.actorAccountId,
+      operatorId: input.operatorId,
+      branchId: input.branchId,
+      action: 'event.checkin_undone',
+      entityType: 'event_checkin',
+      entityId: row.id,
+      actionId: input.actionId,
+      requestId: input.requestId ?? null,
+      ...(input.sourceEventId ? { sourceEventId: input.sourceEventId } : {}),
+      before: { undoneAt: null, syncState: row.syncState },
+      after: {
+        eventId: row.otoappEventId,
+        attendeeId: row.attendeeId,
+        date: row.attendanceDate,
+        undoneAt: input.now.toISOString(),
+        // The OTO App's own "Undo check-in" took the day back; the child is checked in again.
+        reason: 'undone_in_otoapp',
+        nextCheckinId: input.nextCheckinId,
+        revokedBandIds: live.map((b) => b.id),
+        stationId: input.stationId,
+        boxId: input.boxId,
+      },
+    });
+    setAside.push({ checkinId: row.id, revokedBandIds: live.map((b) => b.id) });
+  }
+  return setAside;
 }
 
 // --- Views ----------------------------------------------------------------------------
@@ -295,9 +452,23 @@ async function stationAt(
   return { id: st.id, boxId: st.boxId, prefix: st.prefix };
 }
 
-/** The lock key one child's day is decided under: by the till's link when there is one, else the roster's id. */
-const dayLockKey = (eventId: string, child: Pick<EventChild, 'attendeeId' | 'link'>, date: string) =>
-  `event-checkin:${eventId}:${child.link?.id ?? child.attendeeId}:${date}`;
+/**
+ * Take the locks one child's day is decided under: one per id the child is
+ * known by, in one order for every caller (so two presses never wait on each
+ * other crosswise). Two presses for the same child share at least one id —
+ * the app's, or the till's link — whichever id each named them by.
+ */
+async function lockChildDay(tx: Tx, eventId: string, child: Pick<EventChild, 'aliases'>, date: string): Promise<void> {
+  for (const alias of [...new Set(child.aliases)].sort()) {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`event-checkin:${eventId}:${alias}:${date}`}, 0))`);
+  }
+}
+
+/** A second check-in of one child-day that met the unique key (a racing box fact): "Already checked in". */
+function isDayTaken(err: unknown): boolean {
+  const pg = pgErrorOf(err);
+  return pg?.code === '23505' && pg.constraint === 'event_checkin_attendee_day_unique';
+}
 
 /**
  * `POST /events/:id/attendees/:attendeeId/checkin` — check a child in for the
@@ -327,8 +498,10 @@ export async function checkInEventAttendee(
   const child = await seamRead(() => eventChildOf(db, clock.id, event, attendeeId, today));
   if (!child) throw refuse(404, EVENT_CHECKIN_REFUSALS.attendeeUnknown);
   if (!child.attends) throw refuse(409, EVENT_CHECKIN_REFUSALS.notRegistered);
-  // The OTO App is the master (Q1): a child it already has in for the day is in.
-  const appDay = await seamRead(() => appDayOf(db, clock.id, event.id, child.aliases, today));
+  // The OTO App is the master (Q1): a child it already has in for the day is
+  // in — under another check-in id. Its row under THIS id is a copy of this
+  // press that landed first, answered below as this press.
+  const appDay = await seamRead(() => appDayOf(db, clock.id, event.id, child.aliases, today, checkinId));
   if (appDay) {
     throw refuse(409, EVENT_CHECKIN_REFUSALS.alreadyIn, { checkedInAt: appDay.checkedInAt?.toISOString() ?? null });
   }
@@ -350,7 +523,7 @@ export async function checkInEventAttendee(
   let jobs: SalePrintJobView[] = [];
   await withTx(db, ctx, 'event.checkin', async (tx) => {
     // Two presses for one child's day at once: the second waits for the first.
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${dayLockKey(event.id, child, today)}, 0))`);
+    await lockChildDay(tx, event.id, child, today);
     const [again] = await tx.select().from(eventCheckin).where(eq(eventCheckin.id, checkinId)).limit(1);
     if (again) {
       done.raced = again;
@@ -358,7 +531,23 @@ export async function checkInEventAttendee(
     }
     const held = await posCheckinsOf(tx, event.id, child, today);
     if (held.length > 0) {
-      throw refuse(409, EVENT_CHECKIN_REFUSALS.alreadyIn, { checkinId: held[0]!.id });
+      // A check-in the app had and took back (its own "Undo check-in") no
+      // longer holds the day: the app is the master (Q1). Any other stands.
+      const appNow = await seamRead(() => appDayOf(tx, clock.id, event.id, child.aliases, today, checkinId));
+      const back = takenBackBy(held, appNow);
+      const standing = held.find((r) => !back.includes(r));
+      if (standing) throw refuse(409, EVENT_CHECKIN_REFUSALS.alreadyIn, { checkinId: standing.id });
+      await undoTakenBack(tx, back, {
+        operatorId: actor.operatorId,
+        branchId: clock.id,
+        actorAccountId: actor.accountId,
+        requestId: actor.requestId ?? null,
+        actionId,
+        stationId: where?.id ?? null,
+        boxId: where?.boxId ?? null,
+        nextCheckinId: checkinId,
+        now,
+      });
     }
     await tx.insert(eventCheckin).values({
       id: checkinId,
@@ -427,6 +616,12 @@ export async function checkInEventAttendee(
       },
     });
     return undefined;
+  }).catch((err: unknown) => {
+    // A box's fact for the same child-day filed between the read and the
+    // write (it takes no lock of the till's): the unique key held, and the
+    // counter is told what it would have been told a moment later.
+    if (isDayTaken(err)) throw refuse(409, EVENT_CHECKIN_REFUSALS.alreadyIn);
+    throw err;
   });
 
   if (done.raced) return replayOf(deps, actor, done.raced, event.id, attendeeId);
@@ -556,7 +751,6 @@ export async function checkOutEventAttendee(
   const { clock, event, today } = await whereOf(deps, actor, body.branchId, eventId, now);
   const child = await seamRead(() => eventChildOf(db, clock.id, event, attendeeId, today));
   if (!child) throw refuse(404, EVENT_CHECKIN_REFUSALS.attendeeUnknown);
-  const appDay = await seamRead(() => appDayOf(db, clock.id, event.id, child.aliases, today));
   const where = await stationAt(db, actor.operatorId, clock.id, body.stationId);
   const staffName = await staffNameOf(db, actor.accountId);
   const actionId = body.actionId ?? null;
@@ -565,8 +759,9 @@ export async function checkOutEventAttendee(
   // transaction: the idempotency store keeps the route's answer (onSend).
   const held: { row: CheckinRow | null } = { row: null };
   await withTx(db, ctx, 'event.checkout', async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${dayLockKey(event.id, child, today)}, 0))`);
-    let [row] = await posCheckinsOf(tx, event.id, child, today);
+    await lockChildDay(tx, event.id, child, today);
+    const { row: standing, appDay } = await standingDayOf(tx, clock.id, event.id, child, today);
+    let row = standing;
     if (!row) {
       // Checked in at the OTO App alone: mirrored now, as it checks out.
       if (!appDay || appDay.status !== 'checked_in' || !appDay.checkedInAt) {
@@ -689,7 +884,6 @@ export async function reprintEventBands(
   const { clock, event, today } = await whereOf(deps, actor, body.branchId, eventId, now);
   const child = await seamRead(() => eventChildOf(db, clock.id, event, attendeeId, today));
   if (!child) throw refuse(404, EVENT_CHECKIN_REFUSALS.attendeeUnknown);
-  const appDay = await seamRead(() => appDayOf(db, clock.id, event.id, child.aliases, today));
   const where = await stationAt(db, actor.operatorId, clock.id, body.stationId);
   if (!where) throw errors.badRequest('A reprint names the station it prints at');
   const actionId = body.actionId ?? newId();
@@ -700,8 +894,9 @@ export async function reprintEventBands(
     printed: { jobs: [], notes: [] },
   };
   await withTx(db, ctx, 'event.band_reprint', async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${dayLockKey(event.id, child, today)}, 0))`);
-    let [row] = await posCheckinsOf(tx, event.id, child, today);
+    await lockChildDay(tx, event.id, child, today);
+    const { row: standing, appDay } = await standingDayOf(tx, clock.id, event.id, child, today);
+    let row = standing;
     if (!row) {
       if (!appDay || appDay.status !== 'checked_in' || !appDay.checkedInAt) throw refuse(409, EVENT_CHECKIN_REFUSALS.notIn);
       row = await mirrorAppCheckin(tx, { actor, clock, event, child, today, appDay, now, where, actionId });
@@ -1056,7 +1251,10 @@ export interface RosterCheckin {
   names: string[];
 }
 
-/** The POS's check-ins of some events — of one day, or of every day — with their bands' short codes. */
+/**
+ * The POS's check-ins of some events — of one day, or of every day — with their
+ * bands' short codes. Not one the OTO App took back (`undone_at`).
+ */
 export async function checkinsOfEvents(
   db: Exec,
   q: { branchId: string; eventIds: readonly string[]; date?: string },
@@ -1070,6 +1268,7 @@ export async function checkinsOfEvents(
       and(
         eq(eventCheckin.branchId, q.branchId),
         inArray(eventCheckin.otoappEventId, [...q.eventIds]),
+        isNull(eventCheckin.undoneAt),
         q.date ? eq(eventCheckin.attendanceDate, q.date) : undefined,
       ),
     )
@@ -1094,8 +1293,9 @@ export async function checkinsOfEvents(
 /**
  * THE EVENT CHILD A SCANNED BAND BELONGS TO, at this park, checked in and not
  * out — the food counter's lookup for an event band (plan §8: "The F&B lookup
- * learns the event band"). Null when the key names no event band of a child in
- * the park here.
+ * learns the event band"). The KID band only: the parent band is the parent's
+ * (mockApi.ts:3829-3838 — the parent's name, no allergy line). Null when the
+ * key names no event kid band of a child in the park here.
  */
 export async function eventStayForBandIds(
   db: Exec,
@@ -1112,9 +1312,11 @@ export async function eventStayForBandIds(
       and(
         inArray(band.id, [...bandIds]),
         eq(band.operatorId, operatorId),
+        eq(band.kind, 'kid'),
         eq(band.status, 'active'),
         eq(eventCheckin.branchId, branchId),
         isNull(eventCheckin.checkedOutAt),
+        isNull(eventCheckin.undoneAt),
       ),
     )
     .orderBy(sql`${eventCheckin.checkedInAt} desc`)
