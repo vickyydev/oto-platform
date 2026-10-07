@@ -468,12 +468,13 @@ function faultPartWay(deviceId: string, fault: 'unreachable' | 'paper_out', when
 
 describe('attack 1 — every failure ending, each its own reason, nothing kept', () => {
   /**
-   * SCRUM-504 — the plain paper (the receipt, any credit voucher) prints
-   * before the bands, so a receipt-printer fault now stops the set before a
-   * band is sent: the case that once let every band out and then failed on
-   * the receipt is the receipt failing with no band out. `faultOn` decides,
-   * at each session the printer opens, whether the fault arrives there; the
-   * printer check opens one too, so "the second session" is its first job.
+   * SCRUM-504 — only the bands print inside the kiosk's hold: the receipt
+   * and any credit voucher are queued to the box with the sale and print
+   * after the commit. A band fault part-way calls the set off with the bands
+   * that came out counted, and no plain paper out at all. (A receipt-printer
+   * fault, which once called the set off too, no longer touches the
+   * redemption: the case after this loop.) `faultOn` decides, at each session
+   * the printer opens, whether the fault arrives there.
    */
   const cases = [
     {
@@ -491,17 +492,6 @@ describe('attack 1 — every failure ending, each its own reason, nothing kept',
       reason: 'PRINTER_PAPER_OUT',
       bandsOut: 1,
       faultOn: (start: number) => () => printedOn(bandPrinterId) - start >= 1,
-    },
-    {
-      what: 'the receipt printer stops at its first job, before any band',
-      deviceId: () => receiptPrinterId,
-      fault: 'unreachable' as const,
-      reason: 'PRINTER_UNREACHABLE',
-      bandsOut: 0,
-      faultOn: () => {
-        let opens = 0;
-        return () => (opens += 1) >= 2;
-      },
     },
   ];
   for (const c of cases) {
@@ -540,16 +530,15 @@ describe('attack 1 — every failure ending, each its own reason, nothing kept',
           committed: boolean;
           deviceId: string;
         };
-        // Everything that came out is counted: the plain paper first, then the bands.
-        const plainPaper = printedOn(receiptPrinterId) - startReceipt;
+        // Everything that came out is counted: the bands, and nothing else came out.
         expect(detail).toMatchObject({
           committed: false,
           deviceId: c.deviceId(),
-          printed: plainPaper + c.bandsOut,
+          printed: c.bandsOut,
           bandsPrinted: c.bandsOut,
+          jobs: 3,
         });
-        if (c.bandsOut > 0) expect(plainPaper, 'the plain paper printed before any band').toBeGreaterThan(0);
-        else expect(plainPaper, 'the receipt printer failed at its first job').toBe(0);
+        expect(printedOn(receiptPrinterId) - startReceipt, 'no plain paper for a set called off').toBe(0);
         expect(detail.printed).toBeLessThan(detail.jobs);
         // Activity has the abort, and the desk has the family, with the booking, to redeem — and the bands to collect.
         expect(await auditCount('kiosk.abort', sessionId)).toBe(1);
@@ -573,6 +562,36 @@ describe('attack 1 — every failure ending, each its own reason, nothing kept',
       expect((await deskEntry(paid.id))?.state).toBe('done');
     });
   }
+
+  /**
+   * SCRUM-504 — the receipt printer unplugged. With the receipt inside the
+   * hold this once called the whole set off; now the receipt is the box's,
+   * queued with the sale, and the guest is issued as on any healthy press.
+   */
+  it('the receipt printer unplugged never calls the set off: the guest is issued, the receipt waits on the box', async () => {
+    const collect = async () => {
+      for (let round = 0; round < 50 && (await agent.runPendingCommands()) > 0; round += 1);
+    };
+    await collect();
+    const paid = await bookAndPay([{ packageId: twoHoursId, kids: 2, adults: 1 }]);
+    const startBand = printedOn(bandPrinterId);
+    const startReceipt = printedOn(receiptPrinterId);
+    const undo = faultPartWay(receiptPrinterId, 'unreachable', () => true);
+    try {
+      const sessionId = await startSession(K1);
+      const issued = await scan(K1, paid.qr, sessionId);
+      expect(issued.body).toMatchObject({ sessionId, outcome: 'issued', reason: null, calledOffBands: 0 });
+      expect(printedOn(bandPrinterId) - startBand).toBe(3);
+      expect(await bookingStatus(paid.id)).toBe('redeemed');
+      expect(await salesOf(paid.id)).toHaveLength(1);
+      await collect();
+      expect(printedOn(receiptPrinterId) - startReceipt, 'nothing came out of the unplugged printer').toBe(0);
+    } finally {
+      undo();
+      const cleared = await simulate('clear');
+      expect(cleared.printers.every((p) => p.faults.length === 0)).toBe(true);
+    }
+  });
 
   it('each simulator control gives its own reason, and Clear always brings the kiosk back', async () => {
     const seen = new Map<string, string>();

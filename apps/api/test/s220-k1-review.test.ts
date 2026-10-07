@@ -605,10 +605,10 @@ describe('attack 1 — a print fault after the bands were issued', () => {
     expect(scan.statusCode, JSON.stringify(scan.body)).toBe(200);
     expect(scan.body).toMatchObject({ outcome: 'failed', reason: 'PRINTER_UNREACHABLE', bands: [], walletCreditSatang: 0 });
     expect(scan.body.desk.required).toBe(true);
-    // SCRUM-504 — the plain paper went first (a receipt, any credit voucher),
-    // then one band came out before the fault: the guest is told of that band.
-    const plainPaper = seqOf(A, A.receiptPrinterId) - startReceipt;
-    expect(plainPaper, 'the receipt printed before any band').toBeGreaterThanOrEqual(1);
+    // SCRUM-504 — one band came out before the fault: the guest is told of
+    // that band. The plain paper is never in the kiosk's hold: queued with the
+    // sale, it went with the rollback, so no receipt came out.
+    expect(seqOf(A, A.receiptPrinterId) - startReceipt, 'no receipt for a redemption called off').toBe(0);
     expect(seqOf(A, A.bandPrinterId) - startBand).toBe(1);
     expect(scan.body.calledOffBands).toBe(1);
 
@@ -622,19 +622,20 @@ describe('attack 1 — a print fault after the bands were issued', () => {
     expect(session!.bandIds).toEqual([]);
     expect(session!.detail).toMatchObject({
       stage: 'print',
-      printed: plainPaper + 1,
+      printed: 1,
       bandsPrinted: 1,
-      jobs: plainPaper + 3,
+      jobs: 3,
       deviceId: A.bandPrinterId,
     });
     const rows = await kioskAudit(scan.body.sessionId);
     expect(rows.map((r) => r.action)).toEqual(['kiosk.abort']);
     expectWhere(rows[0]!, A, scan.actionId);
-    expect(rows[0]!.after).toMatchObject({ reason: 'PRINTER_UNREACHABLE', stage: 'print', printed: plainPaper + 1, bandsPrinted: 1 });
+    expect(rows[0]!.after).toMatchObject({ reason: 'PRINTER_UNREACHABLE', stage: 'print', printed: 1, bandsPrinted: 1 });
 
     // Nothing was queued, so nothing prints late when the printer comes back.
     await A.agent!.printing()!.jobs.tick();
     expect(seqOf(A, A.bandPrinterId) - startBand).toBe(1);
+    expect(seqOf(A, A.receiptPrinterId) - startReceipt).toBe(0);
 
     // The till redeems it, once; the kiosk then reads it as redeemed.
     const till = await ctx.app.inject({
@@ -652,36 +653,42 @@ describe('attack 1 — a print fault after the bands were issued', () => {
   });
 
   /**
-   * SCRUM-504 — the plain paper prints FIRST. This case once let every band
-   * out and then failed on the receipt: three gate credentials in the tray for
-   * a redemption that was called off. The receipt printer failing now stops
-   * the set before a band is sent.
+   * SCRUM-504 — the receipt printer failing. With the receipt inside the hold
+   * this case once let every band out and then failed on the receipt: three
+   * gate credentials in the tray for a redemption that was called off. Only
+   * the bands print inside the hold now: the receipt is queued to the box with
+   * the sale, prints after the commit, and a fault on it is the box's to retry
+   * and a reprint from History — never a redemption called off.
    */
-  it('the receipt printer failing as it prints: no band has come out, nothing redeemed, the guest told nothing was used', async () => {
+  it('the receipt printer failing as it prints: the bands come out and the redemption stands; the receipt waits on the box', async () => {
     const paid = await bookAndPay(2, 1);
-    const before = await footprint(paid.id);
     const startBand = seqOf(A, A.bandPrinterId);
     const startReceipt = seqOf(A, A.receiptPrinterId);
-    // Its check passes (the first session), and its first job meets an unplugged printer.
-    let opens = 0;
-    const undo = faultWhen(A, A.receiptPrinterId!, 'unreachable', () => (opens += 1) >= 2);
+    // The receipt printer unplugged: every session opened on it meets nothing.
+    const undo = faultWhen(A, A.receiptPrinterId!, 'unreachable', () => true);
     let scan: Awaited<ReturnType<typeof press>>;
     try {
       scan = await press(A, paid.qr);
+      expect(scan.body).toMatchObject({ outcome: 'issued', reason: null, calledOffBands: 0 });
+      expect(seqOf(A, A.bandPrinterId) - startBand, 'every band came out').toBe(3);
+      expect(await bookingStatus(paid.id)).toBe('redeemed');
+      // The box collects its commands, as its poll would: the receipt meets the unplugged printer.
+      for (let round = 0; round < 50 && (await A.agent!.runPendingCommands()) > 0; round += 1);
+      expect(seqOf(A, A.receiptPrinterId) - startReceipt).toBe(0);
     } finally {
       undo();
     }
-    expect(scan.body).toMatchObject({ outcome: 'failed', reason: 'PRINTER_UNREACHABLE', calledOffBands: 0 });
-    expect(seqOf(A, A.bandPrinterId) - startBand, 'no band came out: the bands print last').toBe(0);
-    expect(seqOf(A, A.receiptPrinterId) - startReceipt).toBe(0);
-    expect(await bookingStatus(paid.id)).toBe('paid');
-    expect(await footprint(paid.id)).toEqual(before);
+    const [only] = await ctx.db.select().from(sale).where(eq(sale.bookingId, paid.id));
+    expect(only).toMatchObject({ stationId: A.stationId, deviceCredentialId: A.credentialId });
     const [session] = await ctx.db.select().from(kioskSession).where(eq(kioskSession.id, scan.body.sessionId));
-    expect(session!.detail).toMatchObject({ stage: 'print', printed: 0, bandsPrinted: 0, deviceId: A.receiptPrinterId });
-
-    // With the printer back, a new press at the kiosk issues it — once.
-    const retried = await press(A, paid.qr);
-    expect(retried.body.outcome).toBe('issued');
+    expect(session).toMatchObject({ outcome: 'issued', saleId: only!.id });
+    expect(session!.detail).toMatchObject({ stage: 'print', printed: 3, bandsPrinted: 3, jobs: 3 });
+    const receipts = await ctx.db
+      .select()
+      .from(printJob)
+      .where(and(eq(printJob.subjectType, 'sale'), eq(printJob.subjectId, only!.id), eq(printJob.kind, 'receipt')));
+    expect(receipts).toHaveLength(1);
+    expect(receipts[0]!.status, 'not printed: the box retries it, or the desk reprints it').not.toBe('printed');
     expect(await ctx.db.select().from(sale).where(eq(sale.bookingId, paid.id))).toHaveLength(1);
   });
 

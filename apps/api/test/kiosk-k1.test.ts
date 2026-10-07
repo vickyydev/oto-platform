@@ -228,6 +228,21 @@ async function salesOf(bookingId: string) {
   return ctx.db.select().from(sale).where(eq(sale.bookingId, bookingId));
 }
 
+/**
+ * Let the kiosk box collect every command queued for it, as its own poll
+ * would — a few to a poll, oldest first. Since SCRUM-504 a kiosk sale queues
+ * its receipt and vouchers as box commands, so a single poll may not reach a
+ * command queued after them (the Console's simulator controls).
+ */
+async function collectAll(): Promise<void> {
+  for (let round = 0; round < 50; round += 1) {
+    const ran = await agent.runPendingCommands();
+    await agent.printing()!.jobs.tick();
+    if (ran === 0) return;
+  }
+  throw new Error('the kiosk box never ran out of commands');
+}
+
 beforeAll(async () => {
   ctx = await createTestContext({
     env: {
@@ -366,6 +381,7 @@ describe('check 5 — the kiosk redeems a paid booking for this branch', () => {
   it('issues its bands and wallet credit once, printed on the kiosk box before anything is committed', async () => {
     paid = await bookAndPay([{ packageId: twoHoursId, kids: 2, adults: 1 }]);
     const bandsBefore = printouts(bandPrinterId);
+    const receiptsBefore = printouts(receiptPrinterId);
     first = await kioskRedeem(paid.qr);
     expect(first.statusCode, JSON.stringify(first.body)).toBe(200);
     const answer = first.body;
@@ -409,17 +425,32 @@ describe('check 5 — the kiosk redeems a paid booking for this branch', () => {
       .where(and(eq(walletEntry.saleId, sales[0]!.id), eq(walletEntry.kind, 'grant')));
     expect(grants.reduce((s, g) => s + g.amountSatang, 0)).toBe(answer.walletCreditSatang);
 
-    // Every job printed through the kiosk box, in this request — and no box
-    // command was left behind to print any of them a second time.
+    // Every band printed through the kiosk box, in this request — and no box
+    // command was left behind to print one a second time. The receipt and the
+    // credit voucher are queued to the box with the sale, as a till's are, and
+    // print once it commits (SCRUM-504): nothing of them came out before it.
     const jobs = await ctx.db.select().from(printJob).where(eq(printJob.stationId, kioskId));
     expect(jobs.length).toBeGreaterThanOrEqual(4);
-    expect(jobs.every((j) => j.status === 'printed'), JSON.stringify(jobs.map((j) => [j.kind, j.status]))).toBe(true);
-    expect(jobs.filter((j) => j.kind === 'kids_wristband')).toHaveLength(2);
-    expect(jobs.filter((j) => j.kind === 'adult_wristband')).toHaveLength(1);
-    expect(jobs.some((j) => j.kind === 'credit_voucher'), 'the credit voucher printed too').toBe(true);
+    const bandJobs = jobs.filter((j) => j.kind === 'kids_wristband' || j.kind === 'adult_wristband');
+    const plainJobs = jobs.filter((j) => !bandJobs.includes(j));
+    expect(bandJobs.every((j) => j.status === 'printed'), JSON.stringify(bandJobs.map((j) => [j.kind, j.status]))).toBe(true);
+    expect(bandJobs.filter((j) => j.kind === 'kids_wristband')).toHaveLength(2);
+    expect(bandJobs.filter((j) => j.kind === 'adult_wristband')).toHaveLength(1);
+    expect(plainJobs.map((j) => j.kind)).toContain('receipt');
+    expect(plainJobs.some((j) => j.kind === 'credit_voucher'), 'the credit voucher is queued too').toBe(true);
+    expect(plainJobs.every((j) => j.status === 'queued'), JSON.stringify(plainJobs.map((j) => [j.kind, j.status]))).toBe(true);
     const commands = await ctx.db.select().from(boxCommand).where(eq(boxCommand.boxId, kioskBoxId));
-    expect(commands.filter((c) => (c.payload as { printJobId?: string }).printJobId)).toEqual([]);
+    const commanded = new Set(commands.map((c) => (c.payload as { printJobId?: string }).printJobId).filter(Boolean));
+    expect(bandJobs.filter((j) => commanded.has(j.id))).toEqual([]);
+    expect(plainJobs.every((j) => commanded.has(j.id)), 'each plain-paper job a box command').toBe(true);
     expect(printouts(bandPrinterId) - bandsBefore).toBe(3);
+    expect(printouts(receiptPrinterId) - receiptsBefore, 'no plain paper before the commit').toBe(0);
+    // The box collects them, as its poll would: the receipt and the voucher come out.
+    await collectAll();
+    const after = await ctx.db.select().from(printJob).where(eq(printJob.stationId, kioskId));
+    expect(after.every((j) => j.status === 'printed'), JSON.stringify(after.map((j) => [j.kind, j.status]))).toBe(true);
+    expect(printouts(receiptPrinterId) - receiptsBefore).toBe(plainJobs.length);
+    expect(printouts(bandPrinterId) - bandsBefore, 'no band printed a second time').toBe(3);
 
     // The session, and the audit row naming the station and the box.
     const [session] = await ctx.db.select().from(kioskSession).where(eq(kioskSession.id, answer.sessionId));
@@ -635,7 +666,7 @@ describe('check 6 — the kiosk printer forced offline aborts the whole redempti
       payload: { action: 'printer.fault', deviceId: bandPrinterId, fault: 'unreachable' },
     });
     expect(fault.statusCode, fault.body).toBe(200);
-    await agent.runPendingCommands();
+    await collectAll();
     const bandsPrinted = printouts(bandPrinterId);
     const receiptsPrinted = printouts(receiptPrinterId);
     const jobsBefore = (await ctx.db.select().from(printJob).where(eq(printJob.stationId, kioskId))).length;
@@ -683,9 +714,9 @@ describe('check 6 — the kiosk printer forced offline aborts the whole redempti
       payload: { action: 'printer.clear', deviceId: bandPrinterId },
     });
     expect(clear.statusCode, clear.body).toBe(200);
-    await agent.runPendingCommands();
-    await agent.printing()!.jobs.tick();
+    await collectAll();
     expect(printouts(bandPrinterId)).toBe(bandsPrinted);
+    expect(printouts(receiptPrinterId), 'nor any receipt: its command went with the rollback').toBe(receiptsPrinted);
   });
 
   it('the same press again is answered with the same abort, and redeems nothing', async () => {
@@ -708,19 +739,37 @@ describe('check 6 — the kiosk printer forced offline aborts the whole redempti
     expect(sales[0]).toMatchObject({ stationId: tillId, deviceCredentialId: null });
   });
 
-  it('paper out on the receipt printer calls it off before a band comes out', async () => {
+  /**
+   * SCRUM-504 — paper out on the RECEIPT printer once called the whole
+   * redemption off (the receipt printed inside the kiosk's hold). Only the
+   * bands print there now: the receipt is queued to the box with the sale and
+   * waits on the empty roll as a till's does, for a reprint from History. A
+   * fault on plain paper costs the family neither a band nor the kiosk.
+   */
+  it('paper out on the receipt printer never touches the redemption: the bands come out, the receipt waits on the box', async () => {
+    await collectAll();
     const next = await bookAndPay([{ packageId: twoHoursId, kids: 1, adults: 1 }]);
     agent.printing()!.setFault(receiptPrinterId, 'paper_out');
     const bandsPrinted = printouts(bandPrinterId);
+    const receiptsPrinted = printouts(receiptPrinterId);
     try {
       const scan = await kioskRedeem(next.qr);
-      expect(scan.body.outcome).toBe('failed');
-      expect(scan.body.reason).toBe('PRINTER_PAPER_OUT');
-      expect(printouts(bandPrinterId), 'the printers were asked first, so no band came out').toBe(bandsPrinted);
-      expect(await salesOf(next.id)).toEqual([]);
+      expect(scan.body.outcome).toBe('issued');
+      expect(scan.body.bands).toHaveLength(2);
+      expect(printouts(bandPrinterId) - bandsPrinted).toBe(2);
+      const [only] = await salesOf(next.id);
+      expect(only).toMatchObject({ stationId: kioskId, deviceCredentialId: credentialId });
+      await collectAll();
+      expect(printouts(receiptPrinterId), 'nothing came out of the empty roll').toBe(receiptsPrinted);
+      const [receiptJob] = await ctx.db
+        .select()
+        .from(printJob)
+        .where(and(eq(printJob.subjectType, 'sale'), eq(printJob.subjectId, only!.id), eq(printJob.kind, 'receipt')));
+      expect(receiptJob!.status, 'the receipt is the box’s to print once the roll is in').not.toBe('printed');
     } finally {
       agent.printing()!.clearFaults(receiptPrinterId);
     }
+    expect(await salesOf(next.id)).toHaveLength(1);
   });
 
   it('a kiosk box switched offline calls it off before anything is claimed', async () => {

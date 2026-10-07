@@ -101,8 +101,10 @@ export interface RedeemAtCounterArgs {
   actionId?: string | null;
   /**
    * S2-20 K1 — `direct`: the bands are minted and the jobs written as rows,
-   * but no box command is queued for them; the kiosk prints them itself
-   * before its transaction commits. `route` (the default) is the counter's.
+   * but no box command is queued for the bands; the kiosk prints them itself
+   * before its transaction commits. The rest of the paper (the receipt, a
+   * credit voucher) is queued to the box as the counter's is, and prints
+   * after the commit (SCRUM-504). `route` (the default) is the counter's.
    */
   printing?: 'route' | 'direct';
   /** The route's scope check on the branch the sale lands on. */

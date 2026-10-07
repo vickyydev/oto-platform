@@ -3782,9 +3782,11 @@ export interface FinaliseSaleInput {
    *
    * S2-20 K1 — `direct` for the self-service kiosk: the bands are minted and
    * the jobs written as rows exactly as `route` writes them, but no box
-   * command is queued for them. The kiosk's redemption prints them itself,
-   * before its transaction commits, and calls the whole redemption off when a
-   * printer fails (`services/kiosk.ts`).
+   * command is queued for the bands. The kiosk's redemption prints them
+   * itself, before its transaction commits, and calls the whole redemption off
+   * when a band does not come out (`services/kiosk.ts`). The receipt and the
+   * vouchers are queued to the box as `route` queues them, and print after
+   * the commit (SCRUM-504).
    */
   printing?: 'route' | 'skip' | 'direct';
   /**

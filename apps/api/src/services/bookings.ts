@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm';
 import {
   account,
   attendee,
@@ -663,6 +663,21 @@ async function lockForClaim(tx: Tx, args: RedeemBookingArgs, waitMs: number): Pr
 }
 
 /**
+ * When a kiosk press arrived: `detail.pressedAt` on a session the guest opened
+ * before they scanned (S2-20 K2), else the session's start, which is the press.
+ * Here rather than in `services/kiosk.ts`, which imports this module and reads
+ * a press's age the same way.
+ */
+export function kioskPressedAtOf(row: { startedAt: Date; detail: unknown }): Date {
+  const pressed = (row.detail as { pressedAt?: unknown } | null)?.pressedAt;
+  if (typeof pressed === 'string') {
+    const at = new Date(pressed);
+    if (!Number.isNaN(at.getTime())) return at;
+  }
+  return row.startedAt;
+}
+
+/**
  * The refusal for a booking another claim holds right now: by name, so the
  * person at the till knows to wait or walk over, rather than a timeout.
  * Nothing about that claim is known to have finished, so the booking is
@@ -674,10 +689,16 @@ async function claimInProgress(exec: Exec, args: RedeemBookingArgs): Promise<App
     .from(booking)
     .where(and(eq(booking.id, args.bookingId), eq(booking.operatorId, args.operatorId)))
     .limit(1);
-  // The earliest press still running on this booking is the one that took the
-  // lock first; a press left open by a stopped process is long past the window.
-  const [press] = await exec
-    .select({ stationName: station.name })
+  // The press that arrived first among those still running on this booking is
+  // the one that took the lock first: the others queued behind it, as this
+  // claim did. Ordered by when the PRESS arrived (`detail.pressedAt`), not by
+  // when the session started — since K2 a session starts when the guest first
+  // touches the screen, so a guest who touched first and pressed second is
+  // waiting, not holding. A press left open by a stopped process is long past
+  // the window.
+  const since = Date.now() - CLAIM_PRESS_WINDOW_MS;
+  const running = await exec
+    .select({ stationName: station.name, startedAt: kioskSession.startedAt, detail: kioskSession.detail })
     .from(kioskSession)
     .innerJoin(station, eq(station.id, kioskSession.stationId))
     .where(
@@ -686,11 +707,12 @@ async function claimInProgress(exec: Exec, args: RedeemBookingArgs): Promise<App
         eq(kioskSession.operatorId, args.operatorId),
         isNull(kioskSession.outcome),
         isNotNull(kioskSession.actionId),
-        gt(kioskSession.startedAt, new Date(Date.now() - CLAIM_PRESS_WINDOW_MS)),
       ),
-    )
-    .orderBy(asc(kioskSession.startedAt))
-    .limit(1);
+    );
+  const [press] = running
+    .map((p) => ({ stationName: p.stationName, pressedAt: kioskPressedAtOf(p).getTime() }))
+    .filter((p) => p.pressedAt > since)
+    .sort((a, b) => a.pressedAt - b.pressedAt);
   const reference = row?.reference ?? 'This booking';
   return errors.conflict(
     'BOOKING_REDEMPTION_IN_PROGRESS',

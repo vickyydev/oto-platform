@@ -218,10 +218,16 @@ interface JobScope {
   /**
    * S2-20 K1 — who puts these jobs on paper. `box` (the default): a box
    * command per routed job, collected on the box's next poll. `caller`: the
-   * rows alone, `queued`, for a caller that prints them itself before its
-   * transaction commits — the self-service kiosk, which calls its whole
-   * redemption off when a printer fails, so no command may be left to print
-   * the jobs of a redemption that never happened.
+   * BANDS are rows alone, `queued`, for a caller that prints them itself
+   * before its transaction commits — the self-service kiosk, which calls its
+   * whole redemption off when a band does not come out, so no command may be
+   * left to print a band of a redemption that never happened.
+   *
+   * SCRUM-504 — everything else (the receipt, a credit voucher, an item
+   * voucher) is queued to the box as at a till, in the caller's transaction:
+   * it prints after the redemption commits, so it can never carry a receipt
+   * number or a wallet that a rollback took back, and a fault on it is a
+   * reprint from History, never a redemption called off.
    */
   dispatch?: 'box' | 'caller';
 }
@@ -291,7 +297,9 @@ async function writeJob(tx: Tx, scope: JobScope, request: JobRequest, offsetMs: 
     })
     .returning();
   if (!row) throw new Error('the print job was not written');
-  if (routed && scope.dispatch !== 'caller') {
+  // A band the caller prints itself has no command (`JobScope.dispatch`).
+  const callerPrints = scope.dispatch === 'caller' && request.subjectType === 'band';
+  if (routed && !callerPrints) {
     await tx.insert(boxCommand).values({
       id: newId(),
       boxId,
@@ -355,7 +363,7 @@ export async function routeSalePrinting(
     actionId?: string | null;
     requestId?: string;
     now?: Date;
-    /** S2-20 K1 — `caller`: write the jobs, queue no box command (`JobScope.dispatch`). */
+    /** S2-20 K1 — `caller`: write the band jobs, queue no box command for them (`JobScope.dispatch`). */
     dispatch?: JobScope['dispatch'];
   },
 ): Promise<SalePrintingResult> {
