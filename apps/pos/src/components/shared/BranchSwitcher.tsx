@@ -3,9 +3,21 @@ import { Building2, ChevronDown, Check } from 'lucide-react';
 import { useBranch } from '@/branch/BranchContext';
 
 /**
+ * SCRUM-443 — HOW THE CHIP SHOWS A PARK'S NAME. The parks are named "Oto Play
+ * Park, Central Floresta" and "Oto Play Park, Robinson Chalong", and a single
+ * 110px line cut both to "Oto Play Park, Ce…", which names neither. The chip
+ * may not simply grow to fit: the header's nav is already short of room at
+ * 1600px (`StationHeader`), so every pixel the chip takes is a tab scrolled out
+ * of sight. Instead the name wraps onto a second line inside the chip's own
+ * 32px height — both parks read in full for barely more width than before —
+ * and a name longer than two lines is clamped and given in full on hover.
+ */
+const BRANCH_NAME_CLASS ='line-clamp-2 max-w-[120px] break-words text-left leading-tight';
+
+/**
  * Compact branch switcher used in the iPad StationHeader and the mobile top bar.
- * Shows the active branch name (abbreviated to save space) and a dropdown to
- * switch between registered branches.
+ * Shows the active branch name (on up to two lines, see `BRANCH_NAME_CLASS`)
+ * and a dropdown to switch between registered branches.
  */
 export function BranchSwitcher() {
   const { branch, branches, setActiveBranchId } = useBranch();
@@ -25,7 +37,7 @@ export function BranchSwitcher() {
     return (
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 h-8">
         <Building2 className="w-3.5 h-3.5 shrink-0" />
-        <span className="truncate max-w-[110px]">{branch.name}</span>
+        <span className={BRANCH_NAME_CLASS} title={branch.name}>{branch.name}</span>
       </span>
     );
   }
@@ -39,7 +51,7 @@ export function BranchSwitcher() {
         title="Switch branch"
       >
         <Building2 className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-        <span className="truncate max-w-[110px]">{branch.name}</span>
+        <span className={BRANCH_NAME_CLASS} title={branch.name}>{branch.name}</span>
         <ChevronDown className={`w-3 h-3 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
