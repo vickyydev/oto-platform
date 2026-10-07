@@ -14,6 +14,7 @@ import Messages from "@/pages/Messages";
 import Book from "@/pages/Book";
 import StationSetup from "@/pages/StationSetup";
 import Display from "@/pages/Display";
+import Kiosk from "@/pages/Kiosk";
 import Admin from "@/pages/Admin";
 import { AdminAccessGate } from "@/components/admin/AdminAccessGate";
 import { MobileStock } from "@/components/mobile/stock/MobileStock";
@@ -195,6 +196,11 @@ function App() {
     <Switch>
       <Route path="/display">
         <TooltipProvider><LanguageProvider storageKey="oto.display.language"><Display /></LanguageProvider></TooltipProvider>
+      </Route>
+      {/* S2-20 K2 — the self-service kiosk: a paired device, no staff session, a
+          guest's own language that goes back to the default for the next guest. */}
+      <Route path="/kiosk">
+        <TooltipProvider><LanguageProvider><Kiosk /></LanguageProvider></TooltipProvider>
       </Route>
       <Route component={StaffApp} />
     </Switch>

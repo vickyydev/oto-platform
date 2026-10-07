@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,6 +17,12 @@ interface StepIdentifyProps {
   /** Active camp/event passes for today, sold at a flat entry price (no tier). */
   eventPasses?: OtoEvent[];
   onSellEventPass?: (event: OtoEvent) => void;
+  /**
+   * S2-20 K2 — the families a self-service kiosk sent to this desk
+   * (`KioskDeskPanel`), drawn above everything else on the step a till rests
+   * on, so a guest who walks over is met with their booking already on screen.
+   */
+  kioskDesk?: ReactNode;
 }
 
 export function StepIdentify({
@@ -26,6 +33,7 @@ export function StepIdentify({
   onRedeemBooking,
   eventPasses = [],
   onSellEventPass,
+  kioskDesk,
 }: StepIdentifyProps) {
   const savedChildren = member?.savedChildren ?? [];
   const autoTier = member ? resolveAutoTier(member) : null;
@@ -40,6 +48,7 @@ export function StepIdentify({
       </div>
 
       <ScrollArea className="flex-1 min-h-0 -mx-2 px-2">
+        {kioskDesk}
         {member ? (
           /* Recognised member — identity + tier + saved children shown in place. */
           <div className="flex flex-col items-center text-center py-6">

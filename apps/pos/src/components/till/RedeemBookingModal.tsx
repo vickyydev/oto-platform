@@ -20,6 +20,8 @@ import {
   type UnmappedLine,
 } from '@/api/bookings';
 import { QrCode, CheckCircle2, AlertTriangle, Search, Ticket, Users, Baby, CreditCard, Smartphone, Loader2 } from 'lucide-react';
+// S2-20 K2 — the dialog's parts, shared with the self-service kiosk's screens.
+import { RedeemBandCodes, RedeemCallout, RedeemCountRow, RedeemOutcomeHeader } from './redeemParts';
 
 interface RedeemBookingModalProps {
   open: boolean;
@@ -391,31 +393,25 @@ export function RedeemBookingModal({
 
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 {regularAdults > 0 && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="w-4 h-4 shrink-0" />
-                    <span>{regularAdults} adult{regularAdults !== 1 ? 's' : ''}</span>
-                  </div>
+                  <RedeemCountRow icon={Users}>
+                    {regularAdults} adult{regularAdults !== 1 ? 's' : ''}
+                  </RedeemCountRow>
                 )}
                 {regularKids > 0 && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Ticket className="w-4 h-4 shrink-0" />
-                    <span>{regularKids} child{regularKids !== 1 ? 'ren' : ''}</span>
-                  </div>
+                  <RedeemCountRow icon={Ticket}>
+                    {regularKids} child{regularKids !== 1 ? 'ren' : ''}
+                  </RedeemCountRow>
                 )}
                 {dropOffChildren.length > 0 && (
-                  <div className="flex items-center gap-2 text-muted-foreground col-span-2">
-                    <Baby className="w-4 h-4 shrink-0" />
-                    <span>Drop-off: {dropOffChildren.join(', ')}</span>
-                  </div>
+                  <RedeemCountRow icon={Baby} wide>
+                    Drop-off: {dropOffChildren.join(', ')}
+                  </RedeemCountRow>
                 )}
                 {eventPasses.length > 0 && (
-                  <div className="flex items-center gap-2 text-muted-foreground col-span-2">
-                    <Ticket className="w-4 h-4 shrink-0" />
-                    <span>
-                      Event pass{eventPasses.length !== 1 ? 'es' : ''}:{' '}
-                      {eventPasses.map((p) => p.attendeeName).join(', ')}
-                    </span>
-                  </div>
+                  <RedeemCountRow icon={Ticket} wide>
+                    Event pass{eventPasses.length !== 1 ? 'es' : ''}:{' '}
+                    {eventPasses.map((p) => p.attendeeName).join(', ')}
+                  </RedeemCountRow>
                 )}
                 {foundBooking.paymentMethod && (
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -451,20 +447,16 @@ export function RedeemBookingModal({
             </div>
 
             {dropOffChildren.length > 0 && (
-              <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-                <Baby className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                <span>After confirming, you'll be prompted to check in the drop-off child{dropOffChildren.length > 1 ? 'ren' : ''} via the registration flow.</span>
-              </div>
+              <RedeemCallout tone="amber" icon={Baby}>
+                After confirming, you'll be prompted to check in the drop-off child{dropOffChildren.length > 1 ? 'ren' : ''} via the registration flow.
+              </RedeemCallout>
             )}
 
             {eventPasses.length > 0 && (
-              <div className="flex items-start gap-2 text-xs text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 rounded-lg px-3 py-2">
-                <Ticket className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                <span>
-                  Confirming checks {eventPasses.length > 1 ? 'these attendees' : 'this attendee'} into
-                  the event and prints bracelets — already paid online, no further charge.
-                </span>
-              </div>
+              <RedeemCallout tone="violet" icon={Ticket}>
+                Confirming checks {eventPasses.length > 1 ? 'these attendees' : 'this attendee'} into
+                the event and prints bracelets — already paid online, no further charge.
+              </RedeemCallout>
             )}
 
             {unmapped.length > 0 && (
@@ -515,32 +507,21 @@ export function RedeemBookingModal({
 
         {stage === 'issued' && foundBooking && issued && (
           <div className="space-y-5 pt-1">
-            <div className="flex flex-col items-center text-center gap-3 py-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-lg">Redeemed on this counter's box</p>
-                <p className="font-mono text-muted-foreground mt-0.5">{foundBooking.reference}</p>
-                {issued.receiptNumber && (
-                  <p className="text-sm text-muted-foreground mt-0.5">Receipt {issued.receiptNumber}</p>
-                )}
-              </div>
-            </div>
+            <RedeemOutcomeHeader tone="ok" title="Redeemed on this counter's box" reference={foundBooking.reference}>
+              {issued.receiptNumber && (
+                <p className="text-sm text-muted-foreground mt-0.5">Receipt {issued.receiptNumber}</p>
+              )}
+            </RedeemOutcomeHeader>
 
             {issued.bands.length > 0 && (
               <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm space-y-1">
                 <p className="text-muted-foreground">
                   Wristband codes — read them out if a band did not print:
                 </p>
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5" data-testid="band-codes">
-                  {issued.bands.map((band) => (
-                    <span key={band.id} className="whitespace-nowrap">
-                      <span className="font-mono font-semibold text-foreground">{band.shortCode ?? 'No code'}</span>
-                      {band.childName && <span className="text-muted-foreground"> {band.childName}</span>}
-                    </span>
-                  ))}
-                </div>
+                <RedeemBandCodes
+                  noCode="No code"
+                  bands={issued.bands.map((band) => ({ key: band.id, shortCode: band.shortCode, label: band.childName }))}
+                />
               </div>
             )}
 
@@ -559,15 +540,7 @@ export function RedeemBookingModal({
 
         {stage === 'already_redeemed' && foundBooking && (
           <div className="space-y-5 pt-1">
-            <div className="flex flex-col items-center text-center gap-3 py-4">
-              <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-amber-500" />
-              </div>
-              <div>
-                <p className="font-semibold text-lg">Already redeemed</p>
-                <p className="font-mono text-muted-foreground mt-0.5">{foundBooking.reference}</p>
-              </div>
-            </div>
+            <RedeemOutcomeHeader tone="warn" title="Already redeemed" reference={foundBooking.reference} />
 
             {redemption && (
               <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm space-y-1">

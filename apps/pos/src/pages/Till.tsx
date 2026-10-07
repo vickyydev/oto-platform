@@ -114,6 +114,7 @@ import { CustomerDisplay, CustomerStage } from '@/components/till/CustomerDispla
 import { SupervisionGate, slotAge, type SupervisedSlot } from '@/components/till/SupervisionGate';
 import { ConsentCapture } from '@/components/till/ConsentCapture';
 import { RedeemBookingModal } from '@/components/till/RedeemBookingModal';
+import { KioskDeskPanel } from '@/components/till/KioskDeskPanel';
 import { DoorCheckInChoiceModal, type DoorCheckInGroup } from '@/components/till/DoorCheckInChoiceModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Baby } from 'lucide-react';
@@ -3112,6 +3113,13 @@ export default function Till() {
               }}
               eventPasses={activeEventPasses}
               onSellEventPass={handleSellEventPassFromStep1}
+              kioskDesk={
+                <KioskDeskPanel
+                  branchId={apiBranchIdForSlug(branch.id)}
+                  onOpenBooking={(bookingId) => openScannedBooking({ bookingId })}
+                  onOpenCheckIn={() => navigate('/drop-off')}
+                />
+              }
             />
           )}
           {step === 2 && (
