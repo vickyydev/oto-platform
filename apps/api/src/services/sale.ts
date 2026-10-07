@@ -125,6 +125,24 @@ import { debitForSale, grantSaleCredit, grantsOfSale } from './wallet';
 import type { CartBandHolderInput, CartPrepaidInput, WalletGrantView, WalletTenderInstruction } from '@oto/shared';
 import { BAND_FOOD_REFUSALS } from '@oto/shared';
 import {
+  BENEFIT_CHECKOUT_REFUSALS,
+  BENEFIT_CHECKOUT_WORDS,
+  isStaffBenefitReason,
+  type BenefitBreakdown,
+  type CartBenefitInput,
+  type OfflineBenefitRecord,
+} from '@oto/shared';
+import {
+  applyCartBenefit,
+  assertSaleBenefitsLive,
+  benefitBreakdownOf,
+  priceCartBenefit,
+  priceOfflineCartBenefit,
+  releaseSaleBenefits,
+  saleBenefitOf,
+  type CartBenefitPricing,
+} from './benefit-checkout';
+import {
   assertSalePrepaidServable,
   boxCompletedSale,
   auditSettledAtPickup,
@@ -420,6 +438,22 @@ export interface CartInput {
     /** What the payload names: the OTO App's event and the till's attendee. */
     eventId: string;
   } | null;
+  /**
+   * S2-21 round 3 — A COLLEAGUE'S STAFF BENEFIT on this F&B order: the QR the
+   * till scanned and the application id it minted for the scan. Priced on
+   * every quote (nothing claimed), applied by the commit (the quota claimed in
+   * the sale's own transaction) — see `services/benefit-checkout.ts`. The till
+   * never sends the "Staff benefit" row itself; the platform builds it.
+   */
+  benefit?: CartBenefitInput | null;
+  /**
+   * S2-21 round 3 — the staff benefit a BOX applied offline, as its fact
+   * records it (never the QR). Set only by the offline replay
+   * (`replayOfflineSale`), which the route's body schema cannot reach; checked
+   * against the platform's own profile with the engine version it names
+   * (`priceOfflineCartBenefit`), never believed.
+   */
+  benefitOffline?: OfflineBenefitRecord | null;
 }
 
 /**
@@ -900,6 +934,13 @@ export interface PricedCart {
   cartLines: TicketCartLine[];
   /** S2-10b — the voucher this cart carries, as the platform priced it. Null when none. */
   voucher: PricedVoucher | null;
+  /**
+   * S2-21 round 3 — the staff benefit on this cart as the platform priced it,
+   * and the breakdown the till draws (with what came off the bill). Null when
+   * the cart carries none.
+   */
+  benefit: CartBenefitPricing | null;
+  benefitView: BenefitBreakdown | null;
 }
 
 /**
@@ -1826,6 +1867,40 @@ export async function priceCart(
   }
 
   /**
+   * S2-21 round 3 — THE STAFF BENEFIT, priced here from the platform's own
+   * profile and usage and never from the till: worked out on the order's own
+   * lines (the prototype's `applyStaffBenefits`, on the raw lines), and landed
+   * as one "Staff benefit" row AFTER the order's own manual discounts and
+   * before any promo code (plan Q11's default). A till's own "Staff benefit"
+   * row, with no application behind it, is refused rather than priced (H16).
+   */
+  for (const discount of input.manualDiscounts ?? []) {
+    if (isStaffBenefitReason(discount.reason)) {
+      throw errors.conflict(
+        BENEFIT_CHECKOUT_REFUSALS.DISCOUNT_UNLINKED,
+        BENEFIT_CHECKOUT_WORDS.unlinked,
+        { discountId: discount.id },
+      );
+    }
+  }
+  const benefit: CartBenefitPricing | null = input.benefitOffline
+    ? await priceOfflineCartBenefit(db, {
+        operatorId: actor.operatorId,
+        record: input.benefitOffline,
+        cartLines,
+      })
+    : input.benefit
+      ? await priceCartBenefit(db, {
+          operatorId: actor.operatorId,
+          businessDate: scope.businessDate,
+          channel: input.channel,
+          benefit: input.benefit,
+          cartLines,
+          now,
+        })
+      : null;
+
+  /**
    * S2-10b — THE VOUCHER, priced here from its definition and never from the
    * till. The cart names it by code; `resolveCartVoucher` finds it only among
    * the vouchers held for this cart (see `CartVoucherScope`), refuses a
@@ -1848,7 +1923,10 @@ export async function priceCart(
     input.promos ?? [],
   );
   const voucherClaim: CartVoucherClaim | null = voucherCart.claim;
-  const manualDiscounts = input.manualDiscounts ?? [];
+  // The order's own manual discounts, then the benefit's row (Q11).
+  const manualDiscounts: ManualDiscountInput[] = benefit?.discount
+    ? [...(input.manualDiscounts ?? []), benefit.discount]
+    : (input.manualDiscounts ?? []);
   const voucherInputs = voucherClaim
     ? voucherPricing(voucherClaim, cartLines, ctx, resolvedTier.code, {
         manualDiscounts: manualDiscounts as ManualDiscount[],
@@ -2074,6 +2152,13 @@ export async function priceCart(
     promoDifferences: resolvedPromos.differences,
     cartLines,
     voucher: pricedVoucher,
+    benefit,
+    benefitView: benefit
+      ? benefitBreakdownOf(
+          benefit,
+          benefit.discount ? (totals.manualAmounts[benefit.discount.id] ?? 0) : 0,
+        )
+      : null,
   };
 }
 
@@ -2272,6 +2357,12 @@ export async function quoteSale(
      * why not. The till shows this; it never computes it.
      */
     voucher: voucherViewOf(priced.voucher),
+    /**
+     * S2-21 round 3 — the staff benefit on this cart, as the platform priced
+     * it against today's usage: the four amounts the till's breakdown draws
+     * and what came off the bill. Nothing is claimed by a quote; never the QR.
+     */
+    benefit: priced.benefitView,
     taxBreakdown: priced.totals.taxBreakdown,
     lines: priced.lines,
     disagreements: priced.disagreements,
@@ -2920,6 +3011,12 @@ export interface CommitResult {
    * or nobody on it earns.
    */
   grants?: WalletGrantView[];
+  /**
+   * S2-21 round 3 — the staff benefit this sale was rung up with, as applied:
+   * the four amounts, what came off the bill and whose QR it was. Never the QR.
+   * Null when it carries none.
+   */
+  benefit?: BenefitBreakdown | null;
 }
 
 /**
@@ -3194,6 +3291,8 @@ export async function commitSale(
       voucher: null,
       // S2-14a — what closing it granted, read back: a retry gets the wallets the first call made.
       grants: already.status === 'finalised' ? await grantsOfSale(tx, already.id) : [],
+      // S2-21 round 3 — the benefit it was applied with, read back: a retry claims nothing.
+      benefit: await saleBenefitOf(tx, already.id),
     };
   }
 
@@ -3237,6 +3336,11 @@ export async function commitSale(
     );
   }
   const salesChannel: SalesChannel = input.bookingId ? 'booking' : resolveSalesChannel(st, input.channel);
+  // S2-21 round 3 — a staff benefit is applied at the F&B order station and
+  // nowhere else (R-70, plan Q5), whatever lane the cart claimed.
+  if ((input.benefit || input.benefitOffline) && salesChannel !== 'fnb') {
+    throw errors.conflict(BENEFIT_CHECKOUT_REFUSALS.FNB_ONLY, BENEFIT_CHECKOUT_WORDS.fnbOnly);
+  }
 
   const clock = resolveOccurredAt(input.occurredAt, now);
   /**
@@ -3557,12 +3661,48 @@ export async function commitSale(
     );
   }
 
+  /**
+   * S2-21 round 3 — THE STAFF BENEFIT, APPLIED: the quota claimed and the
+   * application written in this transaction, beside the sale and its lines
+   * and before its "Staff benefit" row, which links to it. A claim that loses
+   * the race for the last coffee refuses the whole sale (H1); a failure
+   * anywhere after the claim rolls it back with everything else (H2).
+   */
+  const benefit = priced.benefit;
+  const benefitDiscountId = benefit?.discount?.id ?? null;
+  const benefitAllocations = benefitDiscountId
+    ? benefitAllocationsOf(priced, benefitDiscountId)
+    : null;
+  const benefitRowId = benefit
+    ? await applyCartBenefit(
+        tx,
+        benefit,
+        {
+          accountId: personOf(actor, 'apply a staff benefit'),
+          operatorId: actor.operatorId,
+          requestId: actor.requestId ?? null,
+          actionId: input.actionId ?? null,
+        },
+        {
+          saleId,
+          branchId: priced.scope.branchId,
+          stationId: st.id,
+          boxId: st.boxId,
+          businessDate: priced.scope.businessDate,
+        },
+        benefitDiscountId ? (priced.totals.manualAmounts[benefitDiscountId] ?? 0) : 0,
+        benefitAllocations,
+        clock.occurredAt,
+      )
+    : null;
+
   // A manual discount always names who applied it, so a device cannot (S2-20 K1).
   const appliedBy = priced.manualDiscounts.length > 0 ? personOf(actor, 'apply a manual discount') : null;
   const appliedByName = appliedBy ? await displayNameOf(tx, appliedBy) : null;
   let sequence = 0;
   for (const discount of priced.manualDiscounts) {
     sequence += 1;
+    const isBenefit = benefitDiscountId !== null && discount.id === benefitDiscountId;
     await tx.insert(saleDiscount).values({
       id: newId(),
       saleId,
@@ -3579,8 +3719,10 @@ export async function commitSale(
       // they stay inside `computeTicketCartTotals` — so the reproducible record
       // of where each discount landed is the sale's `tax_breakdown` and the
       // per-line split. S2-11 (refunds) is the ticket that needs them per
-      // instrument.
-      allocations: null,
+      // instrument. The "Staff benefit" row is the exception (S2-21 round 3):
+      // it names its lines, so it records where its money sat (H14).
+      allocations: isBenefit ? benefitAllocations : null,
+      benefitApplicationId: isBenefit ? benefitRowId : null,
       scope:
         discount.scope === 'line' ? (discount.targetComponent ? 'component' : 'line') : 'order',
       targetLineId: discount.targetLineId ?? null,
@@ -3810,7 +3952,38 @@ export async function commitSale(
     rejectedPromoCodes: priced.rejectedPromoCodes,
     voucher: soldVoucherViewOf(priced.voucher),
     ...(promoPricing === 'as_recorded' ? { promoDifferences: priced.promoDifferences } : {}),
+    benefit: benefitRowId ? priced.benefitView : null,
   };
+}
+
+/**
+ * S2-21 round 3 — where the "Staff benefit" row's money sat: each cart line
+ * it took from, with the taxable category it was booked to, and whatever the
+ * lines no longer had, spread over the order (`manualUnits`, cart-totals.ts).
+ * The unit index is the priced line's (`buildPricedLines` writes one per unit).
+ */
+function benefitAllocationsOf(
+  priced: PricedCart,
+  discountId: string,
+): { cartLineId: string | null; category: string | null; amountSatang: number }[] {
+  const units = priced.totals.manualUnits?.[discountId] ?? [];
+  const byLine = new Map<string, { cartLineId: string; category: string; amountSatang: number }>();
+  for (const unit of units) {
+    const line = priced.lines[unit.index];
+    if (!line) continue;
+    const key = `${line.cartLineId}|${line.taxableCategory}`;
+    const held = byLine.get(key) ?? {
+      cartLineId: line.cartLineId,
+      category: line.taxableCategory,
+      amountSatang: 0,
+    };
+    held.amountSatang += unit.amount;
+    byLine.set(key, held);
+  }
+  const placed = [...byLine.values()];
+  const total = priced.totals.manualAmounts[discountId] ?? 0;
+  const rest = total - placed.reduce((sum, a) => sum + a.amountSatang, 0);
+  return rest > 0 ? [...placed, { cartLineId: null, category: null, amountSatang: rest }] : placed;
 }
 
 /** What the till confirms was taken at the cash step. */
@@ -4056,6 +4229,9 @@ export async function finaliseSale(
     throw errors.conflict('SALE_CLOSED', `This sale is ${row.status} and cannot be finalised`);
   }
   await assertSaleExtensionCollectable(tx, row.id);
+  // S2-21 round 3 — a sale whose staff benefit was taken off, voided or moved
+  // to the order rung up again is not closed with its relief and no claim.
+  await assertSaleBenefitsLive(tx, row.id);
 
   /**
    * S2-09b — AN ORDER WITH FOOD ON IT IS NOT CLOSED WITHOUT A PICK-UP CODE.
@@ -4742,6 +4918,15 @@ export async function voidSale(
     { accountId: actor.accountId, requestId: actor.requestId },
     reason,
   );
+  // S2-21 round 3 — and the staff benefit it was rung up with: its quota goes
+  // back to the person, audited `benefit.remove` (H2).
+  const releasedBenefitIds = await releaseSaleBenefits(
+    tx,
+    saleId,
+    { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null },
+    'voided',
+    now,
+  );
   // A void takes no money, so the document check that priced this sale has
   // paid for nothing: it is given back for the corrected sale (audit L6).
   const restoredTierClaimId = await restoreTierClaimOf(
@@ -4769,6 +4954,7 @@ export async function voidSale(
       failedAttemptIds: attempts.map((a) => a.id),
       releasedVoucherIds: held.map((v) => v.id),
       restoredTierClaimId,
+      releasedBenefitApplicationIds: releasedBenefitIds,
     },
   });
   return {

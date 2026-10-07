@@ -380,7 +380,17 @@ export async function benefitRoutes(app: App): Promise<void> {
   app.post(
     '/resolve',
     {
-      config: { permission: 'pos:benefit:apply' },
+      config: {
+        permission: 'pos:benefit:apply',
+        /**
+         * S2-21 round 3 (from the round 2 review) — resolve's answers are kept
+         * out of the replay store altogether. Each is computed from a scanned
+         * credential, and a refusal echoes what was read (short of a
+         * signature); the route writes nothing, so a retry is the same lookup
+         * asked again, not a second effect a stored answer must prevent.
+         */
+        secretResponse: true,
+      },
       schema: {
         description:
           'A scanned or typed staff benefit QR, resolved online: the staff member it names and the profile that applies to them today (the trading day of the session’s branch), with what of it a box may apply offline. Applies nothing and uses up nothing. Refused in the prototype’s words — `No staff benefit found for "<code>".` (404, a benefit QR echoed only up to its signature) for anything this park did not issue, `<name> has no benefit configured.` (409 `BENEFIT_NOT_CONFIGURED`) — and in the platform’s for a QR that is revoked (409 `BENEFIT_REVOKED`, "Benefit revoked"), expired, or whose holder has left.',

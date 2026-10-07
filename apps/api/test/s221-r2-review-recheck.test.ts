@@ -465,22 +465,31 @@ describe('REJECT 1’s other half: the cloud’s resolve refusals, under a key',
   });
 
   /**
-   * NOT BLOCKING, recorded for round 3 (where the till's benefit dialog becomes
-   * resolve's first caller). `benefitCodeShown` recognises a benefit QR only by
-   * a header at the START, so a live QR read with anything in front of it —
-   * `]Q1` from a keyboard-wedge scanner with Transmit Code ID on (the box's
-   * serial reader strips it; a browser field does not), a zero-width space or
-   * quotes from a pasted message, `QR:` — is echoed WHOLE in resolve's 404 and
-   * kept under an Idempotency-Key. Probed in review: all four shapes, 404,
-   * signature in the answer and in `core.idempotency_key.response_body`. The
-   * box never routes such a read to the benefit handler (no echo there), and
-   * the answer reaches only the caller who sent it. So too any other credential
-   * typed into resolve — a signed band code, a booking QR — since anything
-   * without the header is echoed as typed.
+   * Recorded here in round 2 as not blocking, and closed in round 3 (where the
+   * till's benefit dialog became resolve's first caller). `benefitCodeShown`
+   * recognised a benefit QR only by a header at the START, so a live QR read
+   * with anything in front of it — `]Q1` from a keyboard-wedge scanner with
+   * Transmit Code ID on (the box's serial reader strips it; a browser field
+   * does not), a zero-width space or quotes from a pasted message, `QR:` — was
+   * echoed WHOLE in resolve's 404 and kept under an Idempotency-Key. Now the
+   * header is found anywhere and the echo cut at the signature, and resolve's
+   * answers never enter the replay store (`secretResponse`).
    */
-  it.todo(
-    'a live QR with anything in front of its header is echoed short of its signature by resolve, and the store keeps no more',
-  );
+  it('a live QR with anything in front of its header is echoed short of its signature by resolve, and the store keeps no more', async () => {
+    for (const sent of [`]Q1${code}`, `\u200b${code}`, `"${code}"`, `QR: ${code}`]) {
+      const key = idem();
+      const res = await ctx.app.inject({
+        method: 'POST',
+        url: '/benefits/resolve',
+        headers: { cookie: admin, 'idempotency-key': key },
+        payload: { code: sent },
+      });
+      expect(res.statusCode, JSON.stringify(sent).slice(0, 12)).toBe(404);
+      expect(carriesSignature(res.body), res.body.slice(0, 240)).toBe(false);
+      expect(res.body).toContain('No staff benefit found for');
+      expect(await stored(key)).toBeNull();
+    }
+  });
 });
 
 describe('the Console’s Devices scanner simulator: a QR queued as a box command', () => {

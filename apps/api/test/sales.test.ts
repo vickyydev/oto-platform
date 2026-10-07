@@ -2043,6 +2043,10 @@ describe('the seam between this and the till', () => {
       '/sales/{id}/finalise',
       // S2-10b — the till's cancel of a sale that took no money.
       '/sales/{id}/void',
+      // S2-21 round 3 — a staff benefit previewed on the cart, and taken off a
+      // rung-up sale (the commit itself applies it).
+      '/sales/{id}/benefit/preview',
+      '/sales/{id}/benefit',
       // S2-11 — History's band and phone search, a refund, and a reprint.
       '/sales/lookup',
       '/sales/{id}/refunds',
@@ -2087,7 +2091,11 @@ describe('the seam between this and the till', () => {
     // is loaded first and checked for `pos:voucher:redeem` there. The void
     // (S2-10b) is the finalise route's twin: `pos:sale:void`, and the branch
     // checked on the sale row once it is loaded.
+    // S2-21 round 3 — the benefit's preview declares its cart's branch as the
+    // cart routes do; taking it off checks the branch on the sale row, as the
+    // void does.
     expect(guards).toEqual([
+      'DELETE /sales/:id/benefit pos:benefit:apply no-target',
       'DELETE /sales/:id/vouchers/:voucherId dynamic no-target',
       'GET /sales dynamic no-target',
       'GET /sales/:id pos:sale:read no-target',
@@ -2096,6 +2104,7 @@ describe('the seam between this and the till', () => {
       // reprint check their branch on the sale row, as finalise does.
       'GET /sales/lookup dynamic no-target',
       'POST /sales pos:sale:create body.branchId',
+      'POST /sales/:id/benefit/preview pos:benefit:apply body.branchId',
       'POST /sales/:id/extensions pos:sale:create no-target',
       'POST /sales/:id/extensions/:extensionId/bands pos:sale:create no-target',
       'POST /sales/:id/finalise pos:sale:update no-target',

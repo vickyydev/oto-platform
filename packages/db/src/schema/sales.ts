@@ -20,6 +20,10 @@ import { box, device, deviceCredential, station } from './fleet';
 import { child, member, visit } from './members';
 import { branchHoliday, product, ticketPackage } from './catalog';
 import { booking } from './future';
+// S2-21 round 3 — the "Staff benefit" row's application. A cycle with `benefits`
+// (which names the sale), harmless: both sides reference each other only
+// inside the lazy `references` callbacks.
+import { benefitApplication } from './benefits';
 import type { RefundAllocationEntry, RefundLineEntry, RefundMode } from '@oto/shared';
 
 // --- The sales ledger (schema `pos`) ---------------------------------------
@@ -877,10 +881,23 @@ export const saleDiscount = pos.table(
     /** The operator's name as it was, for the receipt and the report. */
     appliedByName: text('applied_by_name'),
     appliedAt: timestamp('applied_at', { withTimezone: true, mode: 'date' }),
+    /**
+     * S2-21 round 3 — the staff benefit this "Staff benefit" row is
+     * (`promo.benefit_application`). Null on every other row. The row stays
+     * kind `manual` (`comp` or `fixed`, reason "Staff benefit") as the
+     * prototype folds it, so the manual bucket and `sale_discount_parts_check`
+     * are untouched; the platform refuses a "Staff benefit" row a till sends
+     * with nothing behind it (`BENEFIT_DISCOUNT_UNLINKED`).
+     */
+    benefitApplicationId: uuid('benefit_application_id').references(
+      (): AnyPgColumn => benefitApplication.id,
+      { onDelete: 'restrict' },
+    ),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },
   (t) => [
     uniqueIndex('sale_discount_order_unique').on(t.saleId, t.sequence),
+    index('sale_discount_benefit_application_idx').on(t.benefitApplicationId),
     index('sale_discount_sale_idx').on(t.saleId),
     /** The discounts-given report: by day, by reason, by who. */
     index('sale_discount_branch_date_idx').on(t.branchId, t.businessDate),

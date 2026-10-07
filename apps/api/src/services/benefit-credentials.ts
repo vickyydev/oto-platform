@@ -538,7 +538,7 @@ export interface ResolvedBenefit {
  * `last_seen_at` is set.
  */
 export async function resolveBenefitCredential(
-  db: Db,
+  db: Exec,
   input: { operatorId: string; code: string; today: string; now?: Date },
 ): Promise<ResolvedBenefit> {
   const now = input.now ?? new Date();
@@ -547,7 +547,9 @@ export async function resolveBenefitCredential(
     new AppError(404, errorCode, BENEFIT_WORDS.notFound(code));
   if (!hasBenefitCredentialHeader(code)) throw notFound(BENEFIT_CREDENTIAL_REFUSALS.NOT_FOUND);
 
-  const keys = await usableSigningKeys(db, {
+  // Read inside the caller's transaction when there is one (a sale's commit):
+  // the select is the same on either handle.
+  const keys = await usableSigningKeys(db as Db, {
     operatorId: input.operatorId,
     purpose: BENEFIT_CREDENTIAL_KEY_PURPOSE,
     now,

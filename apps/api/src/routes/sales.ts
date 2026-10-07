@@ -3,7 +3,9 @@ import type { FastifyRequest } from 'fastify';
 import { and, eq } from 'drizzle-orm';
 import { member, sale } from '@oto/db';
 import {
+  BenefitBreakdownSchema,
   CartBandHolderSchema,
+  CartBenefitSchema,
   CartPrepaidSchema,
   REFUND_MODES,
   SALE_REPRINT_KINDS,
@@ -23,6 +25,7 @@ import { reprintSale } from '../services/sale-printing';
 import { gatewayFor } from '../services/payments/gateway';
 import { opCtx, withTx } from '../services/tx';
 import { queueDrawerKick, type DrawerKick } from '../services/payments/drawer';
+import { removeSaleBenefit } from '../services/benefit-checkout';
 import {
   commitSale,
   finaliseSale,
@@ -306,6 +309,15 @@ const Cart = z.object({
    * recorded one. The prep ticket prints that child's own allergy line.
    */
   bandHolder: CartBandHolderSchema.nullish(),
+  /**
+   * S2-21 round 3 — a colleague's staff benefit on this F&B order: the QR the
+   * till scanned and the application id it minted for the scan. Verified and
+   * priced on every quote; applied — its quota claimed — by the commit, in the
+   * sale's own transaction. Needs `pos:benefit:apply`. The "Staff benefit" row
+   * is the platform's: a till sending one among its manual discounts is
+   * refused `BENEFIT_DISCOUNT_UNLINKED`.
+   */
+  benefit: CartBenefitSchema.nullish(),
 });
 
 /** The till sends the cart nested under `cart`; a curl sends it flat. */
@@ -432,6 +444,22 @@ export async function saleRoutes(app: App): Promise<void> {
    * give one — checked against the branch the cart is for, not only the
    * session's.
    */
+  /**
+   * S2-21 round 3 — whoever prices or records a cart carrying a staff benefit
+   * must be allowed to apply one, at the branch the cart is for. A comp needs
+   * nothing more (plan Q3's default: the sensitive audit row is the control).
+   */
+  const requireBenefitPermission = async (
+    req: FastifyRequest,
+    cart: { benefit?: unknown; branchId?: string },
+    fallbackBranchId: string | null,
+  ): Promise<void> => {
+    if (!cart.benefit) return;
+    await req.requirePermission('pos:benefit:apply', {
+      branchId: cart.branchId ?? fallbackBranchId ?? undefined,
+    });
+  };
+
   const requireDiscountPermission = async (
     req: FastifyRequest,
     cart: { manualDiscounts?: unknown[]; promos?: unknown[]; promoCodes?: unknown[]; branchId?: string },
@@ -460,6 +488,7 @@ export async function saleRoutes(app: App): Promise<void> {
     async (req) => {
       const actor = actorOf(req, 'pos:sale:create');
       await requireDiscountPermission(req, req.body, actor.branchId);
+      await requireBenefitPermission(req, req.body, actor.branchId);
       return quoteSale(app.db, actor, req.body as CartInput);
     },
   );
@@ -501,6 +530,7 @@ export async function saleRoutes(app: App): Promise<void> {
       const stationId = body.stationId ?? cart.stationId;
       if (!stationId) throw errors.badRequest('A sale has to name the station that rang it up');
       await requireDiscountPermission(req, cart, actor.branchId);
+      await requireBenefitPermission(req, cart, actor.branchId);
 
       const headerActionId = req.headers['x-oto-action-id'];
       const input: CommitSaleInput = {
@@ -648,6 +678,112 @@ export async function saleRoutes(app: App): Promise<void> {
       );
       if (result.replay) reply.header('x-oto-replay', 'true');
       return result;
+    },
+  );
+
+  /**
+   * S2-21 round 3 — THE STAFF BENEFIT ON AN F&B ORDER, before and after Pay.
+   *
+   *   POST   /sales/:id/benefit/preview  the four amounts for this cart, from
+   *                                      the platform; claims nothing
+   *   POST   /sales                      APPLIES it: the quota is claimed in
+   *                                      the sale's own transaction (H1, H2)
+   *   DELETE /sales/:id/benefit          takes it off a rung-up sale before
+   *                                      any money, giving the quota back
+   *
+   * `:id` is the sale id the till minted for its cart — the one it sends to
+   * `POST /sales` — so on the preview it usually names no row yet. The rules
+   * are `services/benefit-checkout.ts`'s.
+   */
+  app.post(
+    '/:id/benefit/preview',
+    {
+      config: {
+        permission: 'pos:benefit:apply',
+        target: { branchId: 'body.branchId' },
+        stationTrading: true,
+        // The answer is read-only and cheap to ask again, and it is computed
+        // from a scanned credential: kept out of the replay store, like resolve.
+        secretResponse: true,
+      },
+      schema: {
+        description:
+          'Preview a scanned staff benefit on this F&B cart: the platform verifies the QR, reads the staff member’s profile for the sale’s trading day and their usage this period, and answers the four amounts (comp, free items, credit, standing discount), what comes off the bill after the order’s own manual discounts, each line’s share, and the cart’s totals with it. Writes nothing and claims nothing — the commit (`POST /sales` with `benefit`) applies it. `:id` is the till’s own sale id; a sale already closed is refused. Refused in the prototype’s words for a QR this park did not issue (`No staff benefit found for "<code>".`, echoed short of its signature) or a person with nothing set up, and `BENEFIT_FNB_ONLY` away from the F&B station.',
+        params: z.object({ id: z.string().uuid() }),
+        body: Cart.extend({ benefit: CartBenefitSchema }),
+        response: {
+          200: z.object({
+            saleId: z.string().uuid(),
+            benefit: BenefitBreakdownSchema.nullable(),
+            totals: z.record(z.number()),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req, 'pos:benefit:apply');
+      const auth = req.requireAuth();
+      const [held] = await app.db
+        .select({ status: sale.status, operatorId: sale.operatorId })
+        .from(sale)
+        .where(eq(sale.id, req.params.id))
+        .limit(1);
+      if (held && held.operatorId === auth.operatorId && held.status !== 'tendering') {
+        throw errors.conflict(
+          'SALE_CLOSED',
+          `This sale is ${held.status}: a staff benefit is previewed on an order still being rung up`,
+        );
+      }
+      await requireDiscountPermission(req, req.body, actor.branchId);
+      const quoted = (await quoteSale(app.db, actor, req.body as CartInput)) as {
+        benefit: z.infer<typeof BenefitBreakdownSchema> | null;
+        totals: Record<string, number>;
+      };
+      return { saleId: req.params.id, benefit: quoted.benefit, totals: quoted.totals };
+    },
+  );
+
+  app.delete(
+    '/:id/benefit',
+    {
+      config: { permission: 'pos:benefit:apply', stationTrading: true },
+      schema: {
+        description:
+          'Take the staff benefit off a sale that was rung up and took no money: its free items and credit go back to the staff member’s quota, the application is closed and audited `benefit.remove`, and the sale can no longer be closed with that relief (`BENEFIT_APPLICATION_RELEASED`) — the till rings the order up again. Answers `removed: false` when the sale carries no live benefit. Refused once money is taken or a tender is in progress, and on a closed sale: a benefit used on a closed sale stays used (plan Q4’s default). A void gives the quota back the same way.',
+        params: z.object({ id: z.string().uuid() }),
+        response: {
+          200: z.object({
+            removed: z.boolean(),
+            saleId: z.string().uuid(),
+            applicationId: z.string().uuid().nullable(),
+            released: z.array(
+              z.object({
+                itemKey: z.string(),
+                periodKind: z.enum(['daily', 'monthly']),
+                periodKey: z.string(),
+                qty: z.number().int(),
+                creditSatang: z.number().int(),
+                limit: z.number(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const actor = actorOf(req, 'pos:benefit:apply');
+      return withTx(app.db, opCtx(req), 'benefit.remove', (tx) =>
+        removeSaleBenefit(
+          tx,
+          {
+            accountId: actor.accountId,
+            operatorId: actor.operatorId,
+            requestId: actor.requestId ?? null,
+            ...(actor.assertBranchAllowed ? { assertBranchAllowed: actor.assertBranchAllowed } : {}),
+          },
+          req.params.id,
+        ),
+      );
     },
   );
 

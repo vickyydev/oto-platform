@@ -51,7 +51,7 @@ describe('benefitCodeShown', () => {
   it('a QR with anything in front of its header is cut at its signature too (round 3)', () => {
     // The four shapes the round 2 review probed: a wedge scanner's code id, a
     // zero-width space and quotes from a pasted message, a typed label.
-    for (const prefix of [']Q1', '​', '"', 'QR: ', 'ß ']) {
+    for (const prefix of [']Q1', '\u200b', '"', 'QR: ', 'ß ']) {
       const shown = benefitCodeShown(`${prefix}${QR}"`);
       expect(shown, JSON.stringify(prefix)).toBe(`${prefix}${INPUT}`.trim());
       expect(shown).not.toContain(SIGNATURE.slice(0, 12));

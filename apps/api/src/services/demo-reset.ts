@@ -4,6 +4,8 @@ import {
   auditLog,
   band,
   bandEvent,
+  benefitApplication,
+  benefitUsage,
   booking,
   bookingRedemption,
   cashMovement,
@@ -129,6 +131,8 @@ const FACT_ENTITY_TYPES = [
   'checkin',
   'release',
   'supervision_waiver',
+  // S2-21 round 3: a staff benefit applied to a sale of the day, and the quota it used.
+  'benefit_application',
 ];
 
 /** Rows removed per table, for the response and the audit entry. */
@@ -294,6 +298,17 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   counts.sale_discount = (
     await tx.delete(saleDiscount).returning({ id: saleDiscount.id })
   ).length;
+  /**
+   * S2-21 round 3: a staff benefit applied at the F&B station names its sale
+   * (ON DELETE RESTRICT), and its "Staff benefit" row named it back — that row
+   * went just above. The quota counters are the day's use of the benefit, so
+   * they go with it and the staff start the next day of play with their free
+   * coffees. The templates, profiles and QRs are configuration and stay.
+   */
+  counts.benefit_application = (
+    await tx.delete(benefitApplication).returning({ id: benefitApplication.id })
+  ).length;
+  counts.benefit_usage = (await tx.delete(benefitUsage).returning({ id: benefitUsage.id })).length;
   /**
    * S2-10a: a gateway notification points at the attempt it settled with ON
    * DELETE RESTRICT — the evidence of a payment may not be quietly detached

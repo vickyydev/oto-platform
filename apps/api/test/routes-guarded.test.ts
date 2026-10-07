@@ -43,6 +43,7 @@ describe('route guards (S2-01b)', () => {
       'DELETE /members/:id',
       'DELETE /members/:id/tier-verification',
       'DELETE /members/children/:childId',
+      'DELETE /sales/:id/benefit',
       'DELETE /sales/:id/vouchers/:voucherId',
       // SCRUM-477: a booking is read where it is redeemed — on the box, once
       // the station is forced offline — so the three lookups refuse with it.
@@ -70,6 +71,7 @@ describe('route guards (S2-01b)', () => {
       'POST /payments/manual',
       'POST /print-jobs/:id/reprint',
       'POST /sales',
+      'POST /sales/:id/benefit/preview',
       // SCRUM-495: extra time is a new charge against a cloud admission and
       // its bracelets, online only like the refund that corrects a sale; the
       // bracelet repair changes which bands the paid minutes sit on.

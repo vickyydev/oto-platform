@@ -1,5 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
+  boolean,
   check,
   date,
   index,
@@ -9,17 +11,21 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import type { BenefitProfile, BenefitRole } from '@oto/shared';
+import type { BenefitPeriod, BenefitProfile, BenefitRole } from '@oto/shared';
 import { archivedAt, idPk, promo, timestamps } from './helpers';
-import { account, employee, operator } from './tenancy';
+import { account, branch, employee, operator } from './tenancy';
+import { box, station } from './fleet';
+import { sale } from './sales';
 
 // --- Staff benefits (schema `promo`) ---------------------------------------------
 //
 // S2-21 (SCRUM-218), round 1 of docs/progress/plans/benefits/PLAN.md §7: the
 // role templates and each person's benefit, both with effective dates and a
-// history. Round 2 adds the credential (`benefit_credential`, at the end of
-// this file); the usage counters and the application record are round 3.
+// history. Round 2 adds the credential (`benefit_credential`); round 3 the
+// usage counters (`benefit_usage`) and the application record
+// (`benefit_application`), at the end of this file.
 //
 // **Versions, never edits.** A change is a NEW row. The row that was in force
 // on the change's date is closed (`effective_to` set to that date) and the new
@@ -209,6 +215,203 @@ export const benefitCredential = promo.table(
     check(
       'benefit_credential_revocation_check',
       sql`${t.revokedAt} is not null or ${t.revokedByAccountId} is null`,
+    ),
+  ],
+);
+
+// --- Round 3: checkout -------------------------------------------------------------
+
+/**
+ * One quota counter: how much of one free item, or of the credit pool, one
+ * person has used in one period (S2-21 round 3; plan §4 and §7).
+ *
+ * **The period is a key, never a job.** `period_key` is `YYYY-MM-DD` for a
+ * daily entitlement and `YYYY-MM` for a monthly one, taken from the trading day
+ * of the sale that used it (`benefitPeriodKey`); a new period is simply a key
+ * nobody has counted under yet, so nothing has to run at midnight for a new day
+ * to start at zero (the prototype's rule, plan §3 "Periods").
+ *
+ * **The claim is one conditional statement** (`claimBenefitUsage` in the api):
+ * an insert of the delta, or on the unique key an update that adds it only
+ * while the total stays within the quota. Two tills claiming the last coffee
+ * meet on the row lock; the second re-reads the row the first committed and
+ * finds no room — one success, one `BENEFIT_QUOTA_EXHAUSTED`, one row (H1).
+ *
+ * `item_key` is `free:<free item id>` for a free item and `credit` for the
+ * pool, so a free item an administrator happens to call `credit` cannot draw
+ * on the pool. Operator-wide like the templates: a staff member's coffee is
+ * counted once whichever branch pours it.
+ */
+export const benefitUsage = promo.table(
+  'benefit_usage',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    employeeId: uuid('employee_id')
+      .notNull()
+      .references(() => employee.id, { onDelete: 'restrict' }),
+    itemKey: text('item_key').notNull(),
+    periodKind: text('period_kind').$type<BenefitPeriod>().notNull(),
+    periodKey: text('period_key').notNull(),
+    /** Units of the free item relieved this period. 0 on the credit row. */
+    qtyUsed: integer('qty_used').notNull().default(0),
+    /** Satang drawn from the credit pool this period. 0 on a free-item row. */
+    creditUsedSatang: bigint('credit_used_satang', { mode: 'number' }).notNull().default(0),
+    /** Bumped by every claim and release, so a read can tell the row moved under it. */
+    version: integer('version').notNull().default(1),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('benefit_usage_unique').on(t.employeeId, t.itemKey, t.periodKey),
+    index('benefit_usage_operator_idx').on(t.operatorId, t.periodKey),
+    check('benefit_usage_period_kind_check', sql`${t.periodKind} in ('daily','monthly')`),
+    check(
+      'benefit_usage_non_negative_check',
+      sql`${t.qtyUsed} >= 0 and ${t.creditUsedSatang} >= 0 and ${t.version} >= 1`,
+    ),
+  ],
+);
+
+/** One counter a sale moved, as the application keeps it so it can be given back exactly. */
+export interface BenefitUsageDelta {
+  /** `free:<id>` or `credit` (`benefit_usage.item_key`). */
+  itemKey: string;
+  periodKind: BenefitPeriod;
+  periodKey: string;
+  /** Free-item units claimed (0 for credit). */
+  qty: number;
+  /** Credit satang claimed (0 for a free item). */
+  creditSatang: number;
+  /** The quota (units, or the pool in satang) the claim was checked against. */
+  limit: number;
+}
+
+/** Where a benefit was priced: at the platform, or on a box with the link down. */
+export const BENEFIT_APPLICATION_ORIGINS = ['cloud', 'box'] as const;
+export type BenefitApplicationOrigin = (typeof BENEFIT_APPLICATION_ORIGINS)[number];
+
+/**
+ * Why an application stopped applying: taken off its rung-up sale
+ * (`DELETE /sales/:id/benefit`), its sale voided, or moved to the corrected
+ * sale the same order was rung up as again.
+ */
+export const BENEFIT_REMOVAL_REASONS = ['removed', 'voided', 'moved'] as const;
+export type BenefitRemovalReason = (typeof BENEFIT_REMOVAL_REASONS)[number];
+
+/**
+ * One staff benefit applied to one sale — the persisted form of the
+ * prototype's `BenefitAuditEntry` (types.ts:514-535) and of
+ * `attachBenefitAuditOrderId`: whose QR, which credential, who processed it at
+ * which station and box, the comp flag and the four amounts in satang, and the
+ * counters it moved (S2-21 round 3; plan §7).
+ *
+ * **Written in the sale's own transaction**, with the quota claim and the
+ * "Staff benefit" discount row that links to it
+ * (`pos.sale_discount.benefit_application_id`): the sale, the claim and the
+ * record exist together or not at all (H2).
+ *
+ * **`client_id` is the till's**, minted once per scan. At most one LIVE
+ * application per client id (`benefit_application_client_live_unique`): a
+ * retried commit finds it, and an order rung up again under a new sale id
+ * moves it — the old row is closed `moved` and its counters given back before
+ * the new row claims — so one scan claims the quota once. A closed row is
+ * kept: it is what the old sale's discount row still points at, which is how
+ * that sale is refused at its close (`BENEFIT_APPLICATION_RELEASED`).
+ *
+ * `applied_satang` is what came off the bill: the total relief, or less when
+ * the order's own manual discounts had already taken part of it (H15). The
+ * four amounts are the engine's; the claim is what the engine worked out.
+ */
+export const benefitApplication = promo.table(
+  'benefit_application',
+  {
+    id: idPk(),
+    clientId: uuid('client_id').notNull(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    saleId: uuid('sale_id')
+      .notNull()
+      .references((): AnyPgColumn => sale.id, { onDelete: 'restrict' }),
+    /** The sale's trading day: the day the period keys were read from. */
+    businessDate: date('business_date', { mode: 'string' }).notNull(),
+    employeeId: uuid('employee_id')
+      .notNull()
+      .references(() => employee.id, { onDelete: 'restrict' }),
+    credentialId: uuid('credential_id')
+      .notNull()
+      .references(() => benefitCredential.id, { onDelete: 'restrict' }),
+    benefitRole: text('benefit_role').$type<BenefitRole>().notNull(),
+    /** The profile the relief was worked out from, as it stood: a later edit changes nothing here. */
+    profileSnapshot: jsonb('profile_snapshot').$type<BenefitProfile>().notNull(),
+    /** `PRICING_ENGINE_VERSION` of the arithmetic that produced the amounts. */
+    engineVersion: text('engine_version').notNull(),
+    /** The staff member at the till who applied it — their own QR included (plan Q9). */
+    processedByAccountId: uuid('processed_by_account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    stationId: uuid('station_id')
+      .notNull()
+      .references(() => station.id, { onDelete: 'restrict' }),
+    boxId: uuid('box_id').references(() => box.id, { onDelete: 'restrict' }),
+    origin: text('origin').$type<BenefitApplicationOrigin>().notNull().default('cloud'),
+    isComp: boolean('is_comp').notNull().default(false),
+    compedSatang: bigint('comped_satang', { mode: 'number' }).notNull().default(0),
+    freeItemsSatang: bigint('free_items_satang', { mode: 'number' }).notNull().default(0),
+    creditSatang: bigint('credit_satang', { mode: 'number' }).notNull().default(0),
+    discountSatang: bigint('discount_satang', { mode: 'number' }).notNull().default(0),
+    totalReliefSatang: bigint('total_relief_satang', { mode: 'number' }).notNull().default(0),
+    appliedSatang: bigint('applied_satang', { mode: 'number' }).notNull().default(0),
+    /** The counters it moved, so a release gives back exactly these. Empty offline. */
+    usageDeltas: jsonb('usage_deltas').$type<BenefitUsageDelta[]>().notNull().default([]),
+    /** Each relieved line's share, by the till's cart line id. */
+    lineRelief: jsonb('line_relief')
+      .$type<{ cartLineId: string; reliefSatang: number }[]>()
+      .notNull()
+      .default([]),
+    occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' }).notNull(),
+    removedAt: timestamp('removed_at', { withTimezone: true, mode: 'date' }),
+    removedByAccountId: uuid('removed_by_account_id').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
+    removedReason: text('removed_reason').$type<BenefitRemovalReason>(),
+    /** Plan Q4 only (a refund giving the quota back); unused while the prototype's rule stands. */
+    reversedAt: timestamp('reversed_at', { withTimezone: true, mode: 'date' }),
+    reversedByRefundId: uuid('reversed_by_refund_id'),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('benefit_application_client_live_unique')
+      .on(t.clientId)
+      .where(sql`removed_at is null`),
+    index('benefit_application_client_idx').on(t.clientId),
+    index('benefit_application_sale_idx').on(t.saleId),
+    index('benefit_application_operator_date_idx').on(t.operatorId, t.businessDate),
+    index('benefit_application_branch_date_idx').on(t.branchId, t.businessDate),
+    index('benefit_application_employee_idx').on(t.employeeId, t.occurredAt),
+    index('benefit_application_credential_idx').on(t.credentialId),
+    index('benefit_application_processed_by_idx').on(t.processedByAccountId),
+    index('benefit_application_station_idx').on(t.stationId),
+    index('benefit_application_box_idx').on(t.boxId),
+    index('benefit_application_removed_by_idx').on(t.removedByAccountId),
+    check('benefit_application_role_check', sql`${t.benefitRole} in ('owner','manager','staff')`),
+    check('benefit_application_origin_check', sql`${t.origin} in ('cloud','box')`),
+    check(
+      'benefit_application_amounts_check',
+      sql`${t.compedSatang} >= 0 and ${t.freeItemsSatang} >= 0 and ${t.creditSatang} >= 0 and ${t.discountSatang} >= 0 and ${t.appliedSatang} >= 0
+          and ${t.totalReliefSatang} = ${t.compedSatang} + ${t.freeItemsSatang} + ${t.creditSatang} + ${t.discountSatang}
+          and ${t.appliedSatang} <= ${t.totalReliefSatang}`,
+    ),
+    /** Removed means a time and a reason, together or not at all. */
+    check(
+      'benefit_application_removed_check',
+      sql`(${t.removedAt} is null) = (${t.removedReason} is null)
+          and (${t.removedReason} is null or ${t.removedReason} in ('removed','voided','moved'))`,
     ),
   ],
 );

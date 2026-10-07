@@ -498,6 +498,13 @@
       "when": 1791376664989,
       "tag": "0070_event_attendee_link",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1791375325668,
+      "tag": "0071_benefit_checkout",
+      "breakpoints": true
     }
   ]
 }

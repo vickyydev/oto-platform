@@ -8,6 +8,7 @@ import {
   LEGACY_SATANG_ENGINE_VERSION,
   PAYMENT_METHOD_KINDS,
   PAYMENT_PROVIDERS,
+  OfflineBenefitRecordSchema,
   TaxableCategorySchema,
   newId,
   normaliseBandCode,
@@ -284,6 +285,13 @@ const OfflineCartSchema = z.object({
    * complaint: it is a real thing a till can do and it deserves a real answer.
    */
   expectedTotalSatang: z.number().int().min(0),
+  /**
+   * S2-21 round 3 — the staff benefit the box applied offline: the comp or
+   * the standing percent from its `benefits` scope, as it recorded it, never
+   * the QR. Re-priced on replay with the engine version it names and refused
+   * on any disagreement (`BENEFIT_OFFLINE_DRIFT`); see `priceOfflineCartBenefit`.
+   */
+  benefit: OfflineBenefitRecordSchema.nullish(),
 });
 
 /**
@@ -567,6 +575,7 @@ export async function replayOfflineSale(
     ...(cart.pickupCode ? { pickupCode: cart.pickupCode } : {}),
     manualDiscounts: cart.manualDiscounts,
     promos: cart.promos,
+    ...(cart.benefit ? { benefitOffline: cart.benefit } : {}),
     note: cart.note ?? undefined,
     actionId: scope.actionId,
     /**

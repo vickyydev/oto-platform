@@ -269,6 +269,12 @@ const NO_DIRECT_WRITE = [
    */
   'POST /benefits/resolve',
   /**
+   * S2-21 round 3 — a staff benefit previewed on a cart: the four amounts the
+   * platform would give it today. It claims nothing — the quota is claimed by
+   * the commit, inside the sale's own transaction (H1, H2).
+   */
+  'POST /sales/:id/benefit/preview',
+  /**
    * SCRUM-494: POST /files already records the file and audit together. This
    * signed-in PUT sends only its photo bytes to private object storage; it
    * does not change a database row or its audit trail.
@@ -414,6 +420,15 @@ describe('one operation, one transaction (SCRUM-291)', () => {
 const OUTSIDE_THE_REPLAY_STORE = [
   'POST /accounts/:id/temp-password [secretResponse]',
   'POST /auth/handoff [secretResponse]',
+  /**
+   * S2-21 round 3 (from the round 2 review) — a scanned staff benefit QR
+   * resolved, and a benefit previewed on a cart. Both write nothing and both
+   * answer from a scanned credential, a refusal echoing what was read short of
+   * its signature: a retry is the same question asked again, so nothing is
+   * kept for one to replay.
+   */
+  'POST /benefits/resolve [secretResponse]',
+  'POST /sales/:id/benefit/preview [secretResponse]',
   /**
    * SCRUM-255(c) / SCRUM-327 — the three fleet routes that mint a one-time
    * code, which reached this list late.
