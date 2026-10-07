@@ -1,15 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent, EventAttendee, AuthorizedPickupSource } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
 import {
-  getEventDropInPricing,
   getEventById,
   checkInEventAttendee,
   checkOutEventAttendee,
   type NewEventAttendeeInput,
 } from '@/mockApi';
-import { EVENT_WRITE_PENDING, eventsToday, useEventsForDate } from '@/api/events';
+import { newId } from '@oto/shared';
+import {
+  EVENT_WRITE_PENDING,
+  eventWriteBlocker,
+  eventsToday,
+  sellOnPlatform,
+  useEventDropInPricing,
+  useEventsForDate,
+  type EventWriteIds,
+} from '@/api/events';
 import type { ReleaseView } from '@oto/shared';
 import type { Wristband } from '@/types';
 import { releaseApi } from '@/api/release';
@@ -31,7 +39,7 @@ import { setDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
 import { eventBraceletPrintJobs, dispatchPrintJobs } from '@/lib/printRouting';
-import { sellEventPass, checkInSoldPass, dispatchEventBracelets } from '@/lib/eventPass';
+import { dispatchEventBracelets } from '@/lib/eventPass';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -182,9 +190,10 @@ export default function DropOff() {
 
   /**
    * S2-20 E1 — the board's events are the OTO App's now, which the prototype's
-   * in-memory mutators cannot find: checking in or out, a reprint and a walk-up
-   * are written on the platform by E2 and E3, and until then say so rather
-   * than answer "already checked in" for a child nobody checked in.
+   * in-memory mutators cannot find: checking in or out and a reprint are
+   * written on the platform by E3, and until then say so rather than answer
+   * "already checked in" for a child nobody checked in. (A walk-up is on the
+   * platform since E2: `handleAddAttendeeSell`.)
    */
   const writePending = (eventId: string): boolean => {
     if (getEventById(eventId)) return false;
@@ -264,6 +273,33 @@ export default function DropOff() {
   // ─── Walk-up attendee (add at the door) ──────────────────────────────────
   const [showAddAttendee, setShowAddAttendee] = useState(false);
 
+  // S2-20 E2 — the branch's walk-up prices, from the platform: what a party
+  // walk-up adds to the tab (`getEventDropInPricing().partyGuestTHB`).
+  const dropInPricing = useEventDropInPricing(branchId);
+
+  /**
+   * S2-20 E2 (E1 review, finding 2) — Add attendee is refused BEFORE its form
+   * opens for anything the board can know: no platform branch, no connection,
+   * a camp not running today, an event with no entry price, or a paid pass on
+   * a device that is not a ticket till. Never after staff took the money.
+   */
+  const openAddAttendee = () => {
+    const ev = selectedEvent;
+    if (!ev) return;
+    const blocked = eventWriteBlocker(ev, {
+      branchSlug: branchId,
+      stationId: station?.stationId,
+      capabilities: station?.capabilities,
+      today,
+    });
+    if (blocked) {
+      toast(blocked);
+      return;
+    }
+    addAttendeeIdsRef.current = null;
+    setShowAddAttendee(true);
+  };
+
   // Entry fee for a camp/event pass sold at the door — a flat per-event price the
   // Events module owns (not tier-based). Party additions never take a door
   // payment (they ride the tab), so this stays 0 for parties.
@@ -272,32 +308,39 @@ export default function DropOff() {
 
   // The attendee persisted by the sell step, carried into the later check-in choice.
   const [addedAttendee, setAddedAttendee] = useState<EventAttendee | null>(null);
+  // S2-20 E2 — the ids this walk-up is sent under, kept for a retry of a lost
+  // answer and dropped after a refusal or with the form.
+  const addAttendeeIdsRef = useRef<EventWriteIds | null>(null);
 
-  // Step 1: create + bill the attendee through the shared seam (party tab vs. a
-  // synthetic 'tickets' sale at the flat entry price). Called at payment
-  // confirmation for a paid pass, or immediately for a party / free event. Returns
-  // false so the modal stays put if the sale could not be persisted.
-  const handleAddAttendeeSell = (result: {
+  // Step 1: create + bill the attendee (party tab vs. a 'tickets' sale at the
+  // flat entry price). Called at payment confirmation for a paid pass, or
+  // immediately for a party / free event. Returns false so the modal stays put
+  // if the sale could not be persisted. S2-20 E2 — on the platform
+  // (`sellOnPlatform`): the sale and the child in one transaction.
+  const handleAddAttendeeSell = async (result: {
     input: NewEventAttendeeInput;
     registerProperly: boolean;
     paymentMethod?: string;
-  }): boolean => {
+  }): Promise<boolean> => {
     const ev = selectedEvent;
     if (!ev) return false;
-    if (writePending(ev.id)) return false;
-    const attendee = sellEventPass({
+    const ids = (addAttendeeIdsRef.current ??= { attendeeId: newId(), saleId: newId(), actionId: newId() });
+    const sold = await sellOnPlatform({
       event: ev,
+      branchSlug: branchId,
+      stationId: station?.stationId,
       input: result.input,
       registerProperly: result.registerProperly,
       paymentMethod: result.paymentMethod,
-      today,
-      operator: { operatorName, operatorId },
+      doorFeeTHB: doorFeeFor(ev),
+      ids,
     });
-    if (!attendee) {
-      toast({ title: 'Could not add attendee', description: 'Payment or event details missing.' });
+    if (!sold.ok) {
+      if (!sold.retryable) addAttendeeIdsRef.current = null;
+      toast({ title: 'Could not add attendee', description: sold.message, variant: 'destructive' });
       return false;
     }
-    setAddedAttendee(attendee);
+    setAddedAttendee(sold.attendee);
     return true;
   };
 
@@ -308,29 +351,29 @@ export default function DropOff() {
     if (!ev || !attendee) {
       setShowAddAttendee(false);
       setAddedAttendee(null);
+      addAttendeeIdsRef.current = null;
       refreshEvents();
       return;
     }
+    // S2-20 E2 — said when the OTO App has not confirmed the child yet; the
+    // roster marks them, and the write is retried from the Failures page.
+    const notYetInApp = attendee.syncState && attendee.syncState !== 'synced'
+      ? ' The OTO App has not confirmed them yet.'
+      : '';
     if (checkInNow) {
-      const res = checkInSoldPass(station, ev, attendee.id, today, { operatorName, operatorId });
-      if (res) {
-        toast({
-          title: 'Checked in',
-          description: `${res.checkin.attendee.name} — band ${res.checkin.wristbandCode}${
-            res.checkin.parentWristbandCode ? ` · parent ${res.checkin.parentWristbandCode}` : ''
-          }${res.printed ? '' : ' · no printer — band not printed'}`,
-        });
-      } else {
-        toast({ title: 'Added', description: `${attendee.name} is on the ${ev.title} roster.` });
-      }
+      // S2-20 E2 — checking in on the platform (the bands) is E3. Until then
+      // the child is on the roster: the prototype's own words for an add
+      // whose check-in minted no band.
+      toast({ title: 'Added', description: `${attendee.name} is on the ${ev.title} roster.${notYetInApp}` });
     } else {
       toast({
         title: 'Pass sold — left as booked',
-        description: `${attendee.name} added to ${ev.title}. Check in later from the roster.`,
+        description: `${attendee.name} added to ${ev.title}. Check in later from the roster.${notYetInApp}`,
       });
     }
     setShowAddAttendee(false);
     setAddedAttendee(null);
+    addAttendeeIdsRef.current = null;
     refreshEvents();
   };
 
@@ -843,7 +886,7 @@ export default function DropOff() {
                 onCheckIn={(attendeeId) => handleEventCheckIn(selectedEvent.id, attendeeId)}
                 onCheckOut={(attendeeId) => handleEventCheckOut(selectedEvent.id, attendeeId)}
                 onReprint={(attendeeId) => handleEventReprint(selectedEvent.id, attendeeId)}
-                onAddAttendee={() => setShowAddAttendee(true)}
+                onAddAttendee={openAddAttendee}
                 refreshKey={eventsVersion}
               />
             ) : (
@@ -1066,14 +1109,19 @@ export default function DropOff() {
           open={showAddAttendee}
           onOpenChange={(o) => {
             setShowAddAttendee(o);
-            if (!o) setAddedAttendee(null);
+            if (!o) {
+              setAddedAttendee(null);
+              addAttendeeIdsRef.current = null;
+              // A walk-up sold and then closed without the choice is still on the roster.
+              refreshEvents();
+            }
           }}
           event={selectedEvent}
           isParty={selectedEvent.type === 'party'}
           doorFeeTHB={doorFeeFor(selectedEvent)}
           tabChargeTHB={
             selectedEvent.type === 'party'
-              ? resolveRateToday(getEventDropInPricing().partyGuestTHB)
+              ? resolveRateToday(dropInPricing.partyGuestTHB)
               : undefined
           }
           onSell={handleAddAttendeeSell}

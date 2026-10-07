@@ -25,6 +25,7 @@ import { SupervisionPanel } from '@/components/admin/supervision/SupervisionPane
 import { InventoryPanel } from '@/components/admin/inventory/InventoryPanel';
 import { BranchesPanel } from '@/components/admin/branches/BranchesPanel';
 import { StaffBenefitsPanel } from '@/components/admin/staff-benefits/StaffBenefitsPanel';
+import { EventsPanel } from '@/components/admin/events/EventsPanel';
 import { LoginUsersPanel } from '@/components/admin/access/LoginUsersPanel';
 import { OperatorsPanel } from '@/components/admin/access/OperatorsPanel';
 import { SalesReportPanel } from '@/components/admin/reports/SalesReportPanel';
@@ -118,6 +119,8 @@ export default function Admin() {
           <OperatorsPanel />
         ) : activeId === 'supervision' ? (
           <SupervisionPanel />
+        ) : activeId === 'events' ? (
+          <EventsPanel />
         ) : activeId === 'inventory' ? (
           <InventoryPanel />
         ) : activeId === 'branches' ? (

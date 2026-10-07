@@ -41,6 +41,8 @@ function child(over: Partial<EventAttendeeView>): EventAttendeeView {
     source: null,
     checkins: [],
     bucket: 'outstanding',
+    // S2-20 E2 — a child registered in the OTO App itself.
+    syncState: null,
     ...over,
   };
 }
@@ -143,6 +145,8 @@ describe('a party and a one-off event', () => {
           totalValueSatang: 1_200_000,
           depositSatang: 300_000,
           depositDate: '2026-10-20',
+          // S2-20 E2 — no walk-up charged yet.
+          walkUpCharges: [],
         },
         attendees: [],
       },

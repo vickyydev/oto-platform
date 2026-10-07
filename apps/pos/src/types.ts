@@ -1543,6 +1543,9 @@ export interface EventAttendee {
   rsvpStatus?: 'attending' | 'maybe' | 'declined';
   // Per-day check-in state. Camps key by ISO date; events/parties use event date.
   checkinByDate?: Record<string, EventAttendeeCheckin>;
+  // S2-20 E2 — a child the till added: whether the OTO App has them yet.
+  // Absent for a child registered in the OTO App itself.
+  syncState?: 'synced' | 'pending' | 'failed';
 }
 
 // Unified event record. type === 'party' → all PartyBooking fields are present

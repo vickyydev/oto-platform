@@ -10,7 +10,7 @@ import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { childReviewPatch, useChildReviewSave, useTicketDisplay } from '@/lib/displaySession';
 import { ChildReviewPromptSchema, childReviewAge, ConsentActionSchema, ConsentPromptSchema, consentActionAllowed,
-  stockSizeName, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
+  newId, stockSizeName, type ChildReviewPrompt, type ConsentPrompt } from '@oto/shared';
 import { useCustomerTheme } from '@/lib/themePref';
 import { computeLineTotal, computeLineBreakdown, priceForTier, unpricedCartLines } from '@/lib/pricing';
 import { resolveRateToday } from '@/lib/pricingMode';
@@ -31,7 +31,7 @@ import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
 import { prefillSlots, slotPatchFromSavedChild } from '@/lib/savedChildren';
 import type { SavedChild } from '@/types';
-import { sellEventPass, checkInSoldPass } from '@/lib/eventPass';
+import { checkInSoldPass } from '@/lib/eventPass';
 import { AddAttendeeModal } from '@/components/parties/AddAttendeeModal';
 import type { OtoEvent, EventAttendee } from '@/types';
 import { StationHeader } from '@/components/shared/StationHeader';
@@ -53,7 +53,7 @@ import {
   type RedeemOutcome,
 } from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
-import { EVENT_WRITE_PENDING, useEventPasses } from '@/api/events';
+import { eventWriteBlocker, eventsToday, sellOnPlatform, useEventPasses, type EventWriteIds } from '@/api/events';
 import { boxSaleIssue } from '@/api/boxSales';
 import {
   buildCartPayload,
@@ -287,35 +287,50 @@ export default function Till() {
   const [captureNameFor, setCaptureNameFor] = useState<OtoEvent | null>(null);
   const [captureNameInput, setCaptureNameInput] = useState<string>('');
 
+  // S2-20 E2 — the ids one sale of a pass is made under: minted when the pass
+  // form is first sent, kept for every retry of a lost answer (the platform
+  // then answers what it made), dropped with the form or after a refusal.
+  const eventPassIdsRef = useRef<EventWriteIds | null>(null);
+
   const closeEventPass = () => {
     setEventPassFor(null);
     setEventPassAttendee(null);
     setEventPassPrefilledMember(null);
     setEventPassesTick((t) => t + 1);
+    eventPassIdsRef.current = null;
   };
 
   // Step 1 of the pass flow: create + bill the attendee (at payment confirmation).
   // Returns false so the modal stays put if the sale could not be persisted.
-  const handleEventPassSell = (result: {
+  // S2-20 E2 — on the platform (`sellOnPlatform`): the sale and the child in one
+  // transaction, so a refusal here has taken nothing.
+  const handleEventPassSell = async (result: {
     input: NewEventAttendeeInput;
     registerProperly: boolean;
     paymentMethod?: string;
-  }): boolean => {
+    savedChildId?: string;
+  }): Promise<boolean> => {
     const ev = eventPassFor;
     if (!ev || !operator) return false;
-    const attendee = sellEventPass({
+    const ids = (eventPassIdsRef.current ??= { attendeeId: newId(), saleId: newId(), actionId: newId() });
+    const sold = await sellOnPlatform({
       event: ev,
+      branchSlug: branch.id,
+      stationId: station?.stationId,
       input: result.input,
       registerProperly: result.registerProperly,
       paymentMethod: result.paymentMethod,
-      today: new Date().toISOString().slice(0, 10),
-      operator: { operatorName: operator.name, operatorId: operator.id },
+      doorFeeTHB: resolveRateToday(ev.entryPriceTHB),
+      ids,
+      memberId: eventPassPrefilledMember?.id ?? null,
+      childId: result.savedChildId ?? null,
     });
-    if (!attendee) {
-      toast({ title: 'Could not sell pass', description: 'Payment or event details missing.' });
+    if (!sold.ok) {
+      if (!sold.retryable) eventPassIdsRef.current = null;
+      toast({ title: 'Could not sell pass', description: sold.message, variant: 'destructive' });
       return false;
     }
-    setEventPassAttendee(attendee);
+    setEventPassAttendee(sold.attendee);
     return true;
   };
 
@@ -327,25 +342,21 @@ export default function Till() {
       closeEventPass();
       return;
     }
+    // S2-20 E2 — said when the OTO App has not confirmed the child yet; the
+    // roster marks them, and the write is retried from the Failures page.
+    const notYetInApp = attendee.syncState && attendee.syncState !== 'synced'
+      ? ' The OTO App has not confirmed them yet.'
+      : '';
     if (checkInNow) {
-      const res = checkInSoldPass(station, ev, attendee.id, new Date().toISOString().slice(0, 10), {
-        operatorName: operator.name,
-        operatorId: operator.id,
-      });
-      if (res) {
-        toast({
-          title: 'Pass sold — checked in',
-          description: `${res.checkin.attendee.name} — band ${res.checkin.wristbandCode}${
-            res.checkin.parentWristbandCode ? ` · parent ${res.checkin.parentWristbandCode}` : ''
-          }${res.printed ? '' : ' · no printer — band not printed'}`,
-        });
-      } else {
-        toast({ title: 'Pass sold', description: `${attendee.name} is on the ${ev.title} roster.` });
-      }
+      // S2-20 E2 — checking a child in on the platform (the bands, the
+      // roster's check-in) is the next round, E3. Until then the pass is sold
+      // and the child is on the roster: the prototype's own words for a pass
+      // whose check-in minted no band.
+      toast({ title: 'Pass sold', description: `${attendee.name} is on the ${ev.title} roster.${notYetInApp}` });
     } else {
       toast({
         title: 'Pass sold — left as booked',
-        description: `${attendee.name} added to ${ev.title}. Check in later from the roster.`,
+        description: `${attendee.name} added to ${ev.title}. Check in later from the roster.${notYetInApp}`,
       });
     }
     closeEventPass();
@@ -779,12 +790,17 @@ export default function Till() {
    *  - No phone at all → open the modal cold (walk-in, no pre-fill).
    */
   const handleSellEventPassFromStep1 = (event: OtoEvent) => {
-    // S2-20 E1: the pass cards are the OTO App's events now, which the
-    // prototype's sale seam cannot register an attendee on; selling a pass is
-    // written on the platform by E2, and until then the card says so before
-    // anybody is asked for a name or a payment.
-    if (!getEventById(event.id)) {
-      toast(EVENT_WRITE_PENDING);
+    // S2-20 E2: what the till can know before the form opens — no platform
+    // branch, no connection, no entry price, not a ticket till — is said here,
+    // before anybody is asked for a name or a payment (E1 review, finding 2).
+    const blocked = eventWriteBlocker(event, {
+      branchSlug: branch.id,
+      stationId: station?.stationId,
+      capabilities: station?.capabilities,
+      today: eventsToday(),
+    });
+    if (blocked) {
+      toast(blocked);
       return;
     }
     const phone = customerPhone.trim();

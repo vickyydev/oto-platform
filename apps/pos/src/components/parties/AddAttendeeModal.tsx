@@ -51,12 +51,17 @@ interface AddAttendeeModalProps {
    * paid (so a completed payment always lands a roster entry), or immediately for
    * a free event / party. Return false if the sale could not be persisted — the
    * modal then stays on its current step instead of advancing to the choice.
+   *
+   * S2-20 E2: on the platform this is a request, so it may answer later; the
+   * modal waits for it, and its buttons do nothing more while it does.
+   * `savedChildId` is the saved child the form was pre-filled from, if any.
    */
   onSell: (result: {
     input: NewEventAttendeeInput;
     registerProperly: boolean;
     paymentMethod?: string;
-  }) => boolean;
+    savedChildId?: string;
+  }) => boolean | Promise<boolean>;
   /**
    * Resolve the check-in choice for the already-persisted attendee: checkInNow
    * mints + prints the band, otherwise they stay booked. The parent closes the modal.
@@ -154,6 +159,8 @@ export function AddAttendeeModal({
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   // Child selected in the picker: a SavedChild id, or '__new__' for a new child.
   const [pickedChildId, setPickedChildId] = useState<string | '__new__'>('__new__');
+  // S2-20 E2 — the sell request is on its way: nothing is pressed twice meanwhile.
+  const [selling, setSelling] = useState(false);
 
   // Reinitialise when the modal (re)opens so stale state from a previous sale is cleared.
   useEffect(() => {
@@ -161,6 +168,7 @@ export function AddAttendeeModal({
     const p = initialPhase(prefillMember, prefillSavedChildren);
     setPhase(p);
     setPaymentMethod(null);
+    setSelling(false);
     // Default picker to first saved child when there are any.
     const firstChild = prefillSavedChildren[0];
     setPickedChildId(firstChild ? firstChild.id : '__new__');
@@ -201,13 +209,32 @@ export function AddAttendeeModal({
     setPhase('form');
   };
 
-  const handleSubmitForm = () => {
-    if (!canSubmit) return;
+  // The saved child the form was pre-filled from, when it was.
+  const savedChildId = prefillMember && pickedChildId !== '__new__' ? pickedChildId : undefined;
+
+  /** One sell request at a time; false when it could not be persisted. */
+  const sell = async (paymentMethodUsed?: string): Promise<boolean> => {
+    if (selling) return false;
+    setSelling(true);
+    try {
+      return await onSell({
+        input: buildAttendeeInput(form),
+        registerProperly: form.registerProperly,
+        ...(paymentMethodUsed ? { paymentMethod: paymentMethodUsed } : {}),
+        ...(savedChildId ? { savedChildId } : {}),
+      });
+    } finally {
+      setSelling(false);
+    }
+  };
+
+  const handleSubmitForm = async () => {
+    if (!canSubmit || selling) return;
     // Parties ride the tab and always check in (no separate door payment, no
     // check-in choice — adding a party guest at the door means they're here now).
     // Persist first, then check in; only close on success.
     if (isParty) {
-      if (!onSell({ input: buildAttendeeInput(form), registerProperly: form.registerProperly })) return;
+      if (!(await sell())) return;
       onCheckIn(true);
       close();
       return;
@@ -219,22 +246,15 @@ export function AddAttendeeModal({
       return;
     }
     // Free (฿0) event: persist the attendee now, then offer the check-in choice.
-    if (!onSell({ input: buildAttendeeInput(form), registerProperly: form.registerProperly })) return;
+    if (!(await sell())) return;
     setPhase('checkin');
   };
 
-  const handleConfirmPayment = () => {
-    if (!paymentMethod) return;
+  const handleConfirmPayment = async () => {
+    if (!paymentMethod || selling) return;
     // Pass is paid — persist the attendee + sale immediately so a completed
     // payment always lands a roster entry, THEN let staff choose check-in.
-    if (
-      !onSell({
-        input: buildAttendeeInput(form),
-        registerProperly: form.registerProperly,
-        paymentMethod,
-      })
-    )
-      return;
+    if (!(await sell(paymentMethod))) return;
     setPhase('checkin');
   };
 
@@ -394,7 +414,7 @@ export function AddAttendeeModal({
           <Button variant="outline" onClick={phase === 'form' && prefillSavedChildren.length > 0 ? () => setPhase('childPicker') : close}>
             {phase === 'form' && prefillSavedChildren.length > 0 ? 'Back' : 'Cancel'}
           </Button>
-          <Button disabled={!canSubmit} onClick={handleSubmitForm}>
+          <Button disabled={!canSubmit || selling} onClick={() => void handleSubmitForm()}>
             {submitLabel}
           </Button>
         </div>
@@ -406,8 +426,9 @@ export function AddAttendeeModal({
             total={doorFeeTHB}
             selectedMethod={paymentMethod}
             onSelectMethod={setPaymentMethod}
-            onComplete={handleConfirmPayment}
+            onComplete={() => void handleConfirmPayment()}
             onBack={() => setPhase('form')}
+            busy={selling}
           />
         </div>
       </div>

@@ -10,21 +10,32 @@
 // path: the design, the words and the roster arithmetic in `lib/eventRoster.ts`
 // are the prototype's, only the data source changed.
 //
-// It is a READ. Adding a walk-up, selling a pass, checking a child in or out
-// and the party tab are written by E2 to E4; until then those buttons answer
-// with `EVENT_WRITE_PENDING` rather than act on an event the mock store has
-// never heard of.
+// S2-20 E2 adds the first writes: selling a pass and adding a walk-up
+// (`sellOnPlatform`, the port of `sellEventPass`), and the branch's walk-up
+// prices. Checking a child in or out, a reprint and the party tab are written
+// by E3 and E4; until then those buttons answer with `EVENT_WRITE_PENDING`
+// rather than act on an event the mock store has never heard of.
 
 import { useEffect, useRef, useState } from 'react';
 import type {
+  EventAttendeeCreateBody,
+  EventAttendeeInput,
   EventAttendeeView,
+  EventAttendeeWriteAnswer,
   EventCheckinView,
   EventDayAnswer,
+  EventDropInPricing,
+  EventDropInPricingAnswer,
+  EventPartyWalkUpCharge,
+  EventPassSellBody,
   EventPassesAnswer,
   EventView,
 } from '@oto/shared';
-import type { EventAttendee, EventAttendeeCheckin, OtoEvent, PartyBooking } from '@/types';
-import { branchTradingDate, serverTradingDate } from '@/lib/pricingMode';
+import type { NewEventAttendeeInput } from '@/mockApi';
+import type { EventAttendee, EventAttendeeCheckin, OtoEvent, PartyBooking, PartyExtraCharge } from '@/types';
+import { branchTradingDate, resolveRateToday, serverTradingDate } from '@/lib/pricingMode';
+import { paymentMethodKind } from '@/lib/payments';
+import { currentLane } from '@/lib/lane';
 import { apiBranchIdForSlug } from './catalogBridge';
 import { api, ApiError, NetworkError } from './client';
 
@@ -89,15 +100,37 @@ export function toEventAttendee(a: EventAttendeeView, type: OtoEvent['type']): E
     ...(a.notes ? { notes: a.notes } : {}),
     parentAttending: a.parentAttending,
     checkinByDate: Object.fromEntries(a.checkins.map((c) => [c.date, toEventCheckin(c)])),
+    // S2-20 E2 — a child the till added, and whether the OTO App has them yet.
+    ...(a.syncState ? { syncState: a.syncState } : {}),
+  };
+}
+
+/**
+ * S2-20 E2 — a party walk-up as the party's bill shows it: the "Walk-up guest —
+ * name" ticket charge `sellEventPass` puts on the tab (lib/eventPass.ts 65-71),
+ * so `partyExtraChargeGroups` lists it under "Extra tickets" and the
+ * outstanding balance counts it.
+ */
+export function walkUpChargeToExtra(c: EventPartyWalkUpCharge): PartyExtraCharge {
+  const amount = baht(c.amountSatang);
+  return {
+    id: c.id,
+    kind: 'ticket',
+    items: [{ name: `Walk-up guest — ${c.name}`, qty: 1, lineTotal: amount }],
+    total: amount,
+    chargedBy: c.chargedBy ?? '—',
+    chargedById: c.chargedById ?? '',
+    chargedAt: c.chargedAt,
   };
 }
 
 /**
  * An event in the prototype's `OtoEvent` shape, under the till's own branch
  * slug. A party carries the bill the OTO App holds — its total as the base,
- * its deposit — and empty POS ledgers until the party tab is on the platform
- * (E4); the kitchen plan, the run of show and the line items are not in the
- * views yet, so the party screen shows none.
+ * its deposit — and, of the POS ledgers, the walk-up charges the till added
+ * (E2); the rest of the tab is on the platform with E4. The kitchen plan, the
+ * run of show and the line items are not in the views yet, so the party
+ * screen shows none.
  */
 export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
   const event: OtoEvent = {
@@ -132,7 +165,7 @@ export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
     ...(v.party.depositDate ? { depositDate: v.party.depositDate } : {}),
     kitchen: { needed: false, kidsMenu: [], adultsMenu: [], foodItems: [], cake: { type: 'none' } },
     timeline: [],
-    partyExtraCharges: [],
+    partyExtraCharges: (v.party.walkUpCharges ?? []).map(walkUpChargeToExtra),
     partyPayments: [],
   };
   return { ...event, ...party };
@@ -148,7 +181,244 @@ export const eventsApi = {
     api.get<EventDayAnswer>(`/events?branchId=${branchId}${date ? `&date=${date}` : ''}`),
   passes: (branchId: string, date?: string) =>
     api.get<EventPassesAnswer>(`/events/passes?branchId=${branchId}${date ? `&date=${date}` : ''}`),
+  /**
+   * S2-20 E2 — a party walk-up or a child on a free event. Keyed by the
+   * till's attendee id, so a retry through a dropped connection replays.
+   */
+  addAttendee: (eventId: string, body: EventAttendeeCreateBody) =>
+    api.post<EventAttendeeWriteAnswer>(`/events/${encodeURIComponent(eventId)}/attendees`, body, {
+      idempotencyKey: `event-attendee:${body.attendeeId}`,
+      ...(body.actionId ? { headers: { 'x-oto-action-id': body.actionId } } : {}),
+    }),
+  /**
+   * S2-20 E2 — a paid pass, sold and paid in one press. The tender is in the
+   * key, as the sales finalise's is: the same tender retried replays, and a
+   * corrected one is a new request (which the platform answers from the
+   * attendee id if the first one did land).
+   */
+  sellPass: (eventId: string, body: EventPassSellBody) =>
+    api.post<EventAttendeeWriteAnswer>(`/events/${encodeURIComponent(eventId)}/passes`, body, {
+      idempotencyKey: `event-pass:${body.attendeeId}:${body.tender.method}:${body.tender.tenderedSatang ?? ''}`,
+      ...(body.actionId ? { headers: { 'x-oto-action-id': body.actionId } } : {}),
+    }),
+  /** S2-20 E2 — the branch's walk-up prices (camp day, event day, party guest), in satang. */
+  dropInPricing: (branchId: string) =>
+    api.get<EventDropInPricingAnswer>(`/branches/${encodeURIComponent(branchId)}/event-drop-in-pricing`),
+  saveDropInPricing: (branchId: string, pricing: EventDropInPricing) =>
+    api.put<EventDropInPricingAnswer>(`/branches/${encodeURIComponent(branchId)}/event-drop-in-pricing`, pricing),
 };
+
+// --- Writes (S2-20 E2) -------------------------------------------------------------
+
+/**
+ * WHAT STOPS A WALK-UP OR A PASS BEFORE ITS FORM OPENS (E1 review, finding 2).
+ *
+ * Everything the till can know before anybody is asked for a name or a payment
+ * is asked here, by the till's pass card and the board's Add attendee alike —
+ * so a refusal never arrives after staff confirmed money they had taken. What
+ * only the platform can say (a price changed under the till, a camp that ended
+ * a minute ago) is still refused there, with nothing written.
+ */
+export function eventWriteBlocker(
+  event: OtoEvent,
+  ctx: {
+    branchSlug: string;
+    stationId: string | null | undefined;
+    /** The station's sell lanes; absent or empty is "does everything". */
+    capabilities?: readonly string[] | null;
+    today: string;
+    online?: boolean;
+  },
+): { title: string; description: string } | null {
+  if (!apiBranchIdForSlug(ctx.branchSlug)) {
+    return { title: 'Not linked to the platform', description: EVENTS_NOT_LINKED };
+  }
+  const online = ctx.online ?? globalThis.navigator?.onLine !== false;
+  if (!online || currentLane() === 'box') {
+    return {
+      title: 'No connection',
+      description: 'Adding a child to an event needs the platform. Try again when this till is back online.',
+    };
+  }
+  if (event.type === 'camp') {
+    const end = event.dateRange?.end ?? null;
+    const start = event.dateRange?.start ?? event.date;
+    if (ctx.today < start || (end !== null && ctx.today > end)) {
+      return { title: 'Camp not running today', description: 'This camp is not running today, so nobody can be added to it here.' };
+    }
+  }
+  if (event.type !== 'party') {
+    if (!event.entryPriceTHB) {
+      return {
+        title: 'No entry price',
+        description: 'This event has no entry price in the OTO App yet, so nobody can be added to it at the till.',
+      };
+    }
+    const paid = resolveRateToday(event.entryPriceTHB) > 0;
+    const caps = ctx.capabilities ?? [];
+    if (paid && (!ctx.stationId || (caps.length > 0 && !caps.includes('tickets')))) {
+      return {
+        title: 'Not a ticket till',
+        description: 'This device is not set up as a ticket till, so it cannot take the payment for a pass.',
+      };
+    }
+  }
+  return null;
+}
+
+/** The ids one sale of a pass is made under, minted when its form opens and kept for every retry. */
+export interface EventWriteIds {
+  attendeeId: string;
+  saleId: string;
+  actionId: string;
+}
+
+/** The child as the platform takes them: the till's captured input, with nothing empty sent. */
+export function toAttendeeInput(input: NewEventAttendeeInput): EventAttendeeInput {
+  const clean = (v: string | undefined) => (v && v.trim() ? v.trim() : undefined);
+  const out: EventAttendeeInput = { name: input.name.trim(), parentName: input.parentName.trim() };
+  if (input.age !== undefined && Number.isInteger(input.age)) out.age = input.age;
+  if (input.dateOfBirth) out.dateOfBirth = input.dateOfBirth;
+  const fields = {
+    language: clean(input.language),
+    allergyDetail: clean(input.allergyDetail),
+    dietaryDetail: clean(input.dietaryDetail),
+    notes: clean(input.notes),
+    parentPhone: clean(input.parentPhone),
+    emergencyContact: clean(input.emergencyContact),
+  };
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined) (out as Record<string, unknown>)[key] = value;
+  }
+  if (input.allergyFlag) out.allergyFlag = true;
+  if (input.dietaryFlag) out.dietaryFlag = true;
+  if (input.parentAttending) out.parentAttending = true;
+  return out;
+}
+
+export type PlatformSellOutcome =
+  | { ok: true; attendee: EventAttendee; answer: EventAttendeeWriteAnswer }
+  | {
+      ok: false;
+      message: string;
+      /**
+       * Nothing answered, or the platform faulted: the same ids may be sent
+       * again, and are a replay if the first one landed. A definite refusal is
+       * not: the next press asks afresh, under new ids.
+       */
+      retryable: boolean;
+    };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * `sellEventPass` (lib/eventPass.ts), ON THE PLATFORM. A paid camp or event
+ * pass goes to `POST /events/:id/passes` with its tender — the sale and the
+ * child in one transaction, so nothing is created without the payment; a party
+ * walk-up and a free event go to `POST /events/:id/attendees`. Either way the
+ * attendee exists before the "check in now / leave booked" choice is asked, as
+ * the prototype's flow requires, and the answer says whether the OTO App has
+ * the child yet.
+ */
+export async function sellOnPlatform(args: {
+  event: OtoEvent;
+  branchSlug: string;
+  stationId: string | null | undefined;
+  input: NewEventAttendeeInput;
+  registerProperly: boolean;
+  /** The tender for a paid pass; absent for a party walk-up or a free event. */
+  paymentMethod?: string;
+  /** The fee the till showed, baht. Sent so a price that moved is refused, never charged. */
+  doorFeeTHB: number;
+  ids: EventWriteIds;
+  memberId?: string | null;
+  childId?: string | null;
+}): Promise<PlatformSellOutcome> {
+  const branchId = apiBranchIdForSlug(args.branchSlug);
+  if (!branchId) return { ok: false, message: EVENTS_NOT_LINKED, retryable: false };
+  // A member or saved child the platform knows carries its id; one from the
+  // prototype's in-memory store does not, and is simply not named.
+  const memberId = args.memberId && UUID.test(args.memberId) ? args.memberId : null;
+  const childId = memberId && args.childId && UUID.test(args.childId) ? args.childId : null;
+  const base: EventAttendeeCreateBody = {
+    branchId,
+    attendeeId: args.ids.attendeeId,
+    actionId: args.ids.actionId,
+    attendee: toAttendeeInput(args.input),
+    registerProperly: args.event.type === 'camp' ? args.registerProperly : false,
+    ...(args.stationId ? { stationId: args.stationId } : {}),
+    ...(memberId ? { memberId } : {}),
+    ...(childId ? { childId } : {}),
+  };
+  try {
+    const answer =
+      args.paymentMethod && args.event.type !== 'party'
+        ? await eventsApi.sellPass(args.event.id, {
+            ...base,
+            stationId: args.stationId ?? '',
+            saleId: args.ids.saleId,
+            tender: { method: args.paymentMethod, kind: paymentMethodKind(args.paymentMethod) },
+            expectedTotalSatang: Math.round(args.doorFeeTHB * 100),
+          })
+        : await eventsApi.addAttendee(args.event.id, base);
+    const attendee: EventAttendee = {
+      ...args.input,
+      id: answer.attendee.id,
+      ...(args.event.type === 'camp' ? { attendanceDays: answer.attendee.attendanceDays } : {}),
+      syncState: answer.attendee.syncState,
+    };
+    return { ok: true, attendee, answer };
+  } catch (err) {
+    const retryable =
+      err instanceof NetworkError ||
+      !(err instanceof ApiError) ||
+      err.status >= 500 ||
+      err.code === 'IDEMPOTENCY_IN_FLIGHT';
+    return { ok: false, message: messageOf(err), retryable };
+  }
+}
+
+/**
+ * THE BRANCH'S WALK-UP PRICES (`getEventDropInPricing`), in baht as the
+ * prototype's screens hold them: what a party walk-up adds to the tab. ฿0
+ * everywhere until the answer is in, which is also what an unpriced branch
+ * answers.
+ */
+export function useEventDropInPricing(branchSlug: string, refreshKey: unknown = 0): {
+  campDayTHB: { weekday: number; weekend: number };
+  eventDayTHB: { weekday: number; weekend: number };
+  partyGuestTHB: { weekday: number; weekend: number };
+} {
+  const [pricing, setPricing] = useState<EventDropInPricing | null>(null);
+  useEffect(() => {
+    const branchId = apiBranchIdForSlug(branchSlug);
+    if (!branchId) {
+      setPricing(null);
+      return;
+    }
+    let live = true;
+    eventsApi
+      .dropInPricing(branchId)
+      .then((answer) => {
+        if (live) setPricing(answer.pricing);
+      })
+      .catch(() => {
+        // Kept as it was: the walk-up form still opens; the platform prices the charge itself.
+      });
+    return () => {
+      live = false;
+    };
+  }, [branchSlug, refreshKey]);
+  const pair = (p: { weekday: number; weekend: number } | undefined) => ({
+    weekday: baht(p?.weekday),
+    weekend: baht(p?.weekend),
+  });
+  return {
+    campDayTHB: pair(pricing?.campDay),
+    eventDayTHB: pair(pricing?.eventDay),
+    partyGuestTHB: pair(pricing?.partyGuest),
+  };
+}
 
 export interface EventsForDate {
   /** The day's events, in the prototype's shape; the last answer while a new one loads. */

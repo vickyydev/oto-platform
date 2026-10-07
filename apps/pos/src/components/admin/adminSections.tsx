@@ -22,6 +22,7 @@ import {
   WalletCards,
   PercentCircle,
   FileSpreadsheet,
+  PartyPopper,
   type LucideIcon,
 } from 'lucide-react';
 import type { Permission } from '@oto/shared/permissions';
@@ -202,6 +203,16 @@ export const adminNav: AdminNavEntry[] = [
         icon: ShieldCheck,
         description: 'Set age-based nanny/drop-off rules and the sibling waiver.',
         localOnly: true,
+      },
+      {
+        // S2-20 E2 — the branch's walk-up prices (`EventDropInPricing`), the
+        // screen the prototype's `updateEventDropInPricing` never had.
+        id: 'events',
+        label: 'Events',
+        icon: PartyPopper,
+        description: 'Set the walk-up prices for a camp day, a one-off event and a party guest.',
+        // `PUT /branches/:branchId/event-drop-in-pricing`.
+        permission: 'admin:event_pricing:manage',
       },
       {
         id: 'templates',

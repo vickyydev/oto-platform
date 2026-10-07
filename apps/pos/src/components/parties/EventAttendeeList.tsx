@@ -159,6 +159,16 @@ function AttendeeCard({
                 Parent attending
               </span>
             )}
+            {/* S2-20 E2 — added at the till, and the OTO App has not confirmed
+                them yet: on the roster from the POS's own record, marked. */}
+            {attendee.syncState && attendee.syncState !== 'synced' && (
+              <span
+                className="text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 bg-amber-500/15 text-amber-400"
+                title="Not yet confirmed by the OTO App — retried from Failures"
+              >
+                Pending
+              </span>
+            )}
           </div>
           <div className="text-sm text-muted-foreground flex items-center gap-3 mt-0.5 flex-wrap">
             {attendee.age != null && <span>{attendee.age} yrs</span>}
