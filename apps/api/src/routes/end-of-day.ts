@@ -63,7 +63,9 @@ export async function endOfDayRoutes(app: App): Promise<void> {
           'money with no TID, other tenders, e-wallet, bank transfer, party prepayments and credit — net of refunds on ' +
           "their original sale's day, with the float carried from the latest earlier close or the standard ฿6,000. " +
           'An open day also lists the boxes that keep it provisional (undelivered records, an unmeasured clock) and ' +
-          'who is still counted inside; a closed day carries any manager override and its End of Day receipt.',
+          'who is still counted inside; a closed day carries any manager override and its End of Day receipt. 503 ' +
+          '(`EVENTS_SEAM_NOT_GRANTED`, `EVENTS_SEAM_MISSING`) when an open day has party money and the OTO App events ' +
+          'seam cannot be read to work out which day each party is held on — never a party prepayment line of ฿0.',
         params: BranchParams,
         querystring: EndOfDayQuerySchema,
         response: { 200: EndOfDayRecordSchema },
@@ -89,7 +91,8 @@ export async function endOfDayRoutes(app: App): Promise<void> {
           'anybody else; audited end_of_day.override). The End of Day receipt is numbered on the series of the ' +
           'counter this session took and queued on its receipt printer. With no counter taken, or a counter without ' +
           'a box or a receipt series, the day still closes and its receipt waits: the closed day says so, and a ' +
-          'reprint from a counter numbers and prints it. A counter of another branch is refused (404).',
+          'reprint from a counter numbers and prints it. A counter of another branch is refused (404). 503 as the read ' +
+          'is when the day has party money and the events seam cannot be read: nothing is closed.',
         params: BranchParams,
         body: EndOfDayCloseBodySchema,
         response: { 200: EndOfDayRecordSchema },

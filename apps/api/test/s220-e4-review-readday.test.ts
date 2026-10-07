@@ -41,7 +41,8 @@ import {
  *      the OTO App moved to another branch counts at neither;
  *   3. a replay after the move answers the payment first given;
  *   4. the seam gone from the database while party money is on the day — the
- *      read has nothing to work a day out from (pinned `it.fails`);
+ *      read has nothing to work a day out from, so it answers 503 and Close
+ *      Day closes nothing (pinned `it.fails`, flipped by the third fix round);
  *   5. a closed day keeps the line it was closed with when the party moves
  *      afterwards.
  */
@@ -303,8 +304,12 @@ describe('4 — the events seam gone from the database while party money is on t
    * schema is not there at all `getBranchEvents` answers [] and the day reads
    * party_prepay ฿0 with a 200, and Close Day would store that ฿0. Party money
    * on the day with no seam to read is the same fault as a seam not granted.
+   *
+   * The third fix round: party money on the day and no seam is a 503, as the
+   * seam not granted is (`EVENTS_SEAM_MISSING`), and Close Day, which works the
+   * expected side out again, closes nothing.
    */
-  it.fails('PINNED (minor): party money taken today and no seam to read it by — End of Day says so, it never reads ฿0', async () => {
+  it('PINNED (minor, fixed): party money taken today and no seam to read it by — End of Day says so, it never reads ฿0', async () => {
     await payAt(ev.seam, 70_000, new Date());
     const withSeam = await prepay(T);
     expect(withSeam).toBeGreaterThanOrEqual(70_000);
@@ -314,9 +319,24 @@ describe('4 — the events seam gone from the database while party money is on t
       const line = res.status === 200 ? (res.body.lines.find((l) => l.channel === 'party_prepay')?.expectedSatang ?? 0) : null;
       // Either the read refuses (a fault to fix) or it still knows the money: never a silent ฿0.
       expect(res.status === 200 && line === 0, `status ${res.status}, party_prepay ${line}`).toBe(false);
+      expect(res.status, res.raw).toBe(503);
+      expect(JSON.parse(res.raw)).toMatchObject({ error: { code: 'EVENTS_SEAM_MISSING' } });
+
+      // Close Day works the expected side out again: refused the same way, nothing stored.
+      const close = await call<EndOfDayRecord>('POST', admin, `/branches/${central}/end-of-day/close`, {
+        date: T,
+        countedSatang: 500_000,
+        floatLeftSatang: 500_000,
+        actuals: [{ channel: 'party_prepay', actualSatang: 0 }],
+        vouchers: { handedOut: null, redeemed: null },
+      });
+      expect(close.status, close.raw).toBe(503);
     } finally {
       await ctx.db.execute(sql`alter schema otoapp_v_away rename to otoapp_v`);
     }
+    const open = await endOfDay(T);
+    expect(open.status).toBe('open');
+    expect(open.lines.find((l) => l.channel === 'party_prepay')!.expectedSatang).toBe(withSeam);
   });
 });
 

@@ -47,7 +47,7 @@ import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { holdsGrantAt } from './access-control';
 import { strandedOf } from './occupancy';
-import { OtoAppSeamNotGrantedError, getBranchEvents } from './otoapp-events';
+import { OtoAppSeamNotGrantedError, getBranchEvents, otoAppEventsInstalled } from './otoapp-events';
 import { hasPermission, type EffectivePermission } from './permissions';
 import { accountNames } from './refund-slices';
 import { allocateReceipt } from './sale';
@@ -307,12 +307,23 @@ function movementViewOf(r: typeof cashMovement.$inferSelect, nameOf: (id: string
  * S2-20 E4 — the day each of some parties is held on, as the OTO App holds it
  * now (the seam, without a till's edits it has not taken): one read for all of
  * them, none when no party was paid. A party the seam no longer has at this
- * branch has no day. The seam installed but not granted is a fault to fix,
- * never "no party" — that would drop party money off the day unsaid.
+ * branch has no day. With party money on the day, a seam that cannot be read
+ * is a fault to fix, never "no party" — that would drop the money off the day
+ * unsaid, and Close Day would keep the ฿0: the seam installed but not granted,
+ * and the seam not on the database at all (where every seam read answers
+ * empty), are both a 503.
  */
 async function partyDaysOf(db: Exec, branchId: string, eventIds: readonly string[]): Promise<Map<string, string>> {
   if (eventIds.length === 0) return new Map();
   try {
+    if (!(await otoAppEventsInstalled(db))) {
+      throw new AppError(
+        503,
+        'EVENTS_SEAM_MISSING',
+        'Party money was taken on this day but the OTO App events seam (schema otoapp_v) is not on this database, ' +
+          "so End of Day cannot tell which day's parties it paid for; restore the seam",
+      );
+    }
     const parties = await getBranchEvents(db, { branchId, eventIds });
     return new Map(parties.filter((e) => e.type === 'party').map((e) => [e.id, e.startDate]));
   } catch (err) {
