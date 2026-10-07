@@ -5,8 +5,6 @@ import {
   EventAttendeeWriteAnswerSchema,
   EventDayAnswerSchema,
   EventDetailAnswerSchema,
-  EventDropInPricingAnswerSchema,
-  EventDropInPricingSchema,
   EventPassSellBodySchema,
   EventPassesAnswerSchema,
   EventRosterAnswerSchema,
@@ -16,12 +14,7 @@ import {
 } from '@oto/shared';
 import type { App } from '../app';
 import { eventById, eventPassesFor, eventRoster, eventsForDay } from '../services/events';
-import {
-  addEventAttendee,
-  getEventDropInPricing,
-  putEventDropInPricing,
-  sellEventPass,
-} from '../services/event-writes';
+import { addEventAttendee, sellEventPass } from '../services/event-writes';
 import { queueDrawerKick } from '../services/payments/drawer';
 import type { ActorContext } from '../services/sale';
 import { opCtx } from '../services/tx';
@@ -77,7 +70,11 @@ export async function eventRoutes(app: App): Promise<void> {
   app.post(
     '/:id/attendees',
     {
-      config: { permission: 'pos:event:attendee_create', target: { branchId: 'body.branchId' } },
+      config: {
+        permission: 'pos:event:attendee_create',
+        target: { branchId: 'body.branchId' },
+        stationTrading: true,
+      },
       schema: {
         description:
           'Add a child to an event where no money is taken at the door (`addEventAttendee`): a party walk-up, whose ' +
@@ -237,60 +234,6 @@ export async function eventRoutes(app: App): Promise<void> {
         eventId: req.params.id,
         date: req.query.date,
         now: new Date(),
-      });
-    },
-  );
-}
-
-/**
- * S2-20 E2 — THE BRANCH'S WALK-UP PRICES (Q8), registered under `/branches`:
- * camp day, event day and party guest, each a weekday/weekend pair in satang.
- * Only the party-guest price is read anywhere (a pass is priced from its event);
- * all three are stored and shown on the Admin Events panel.
- */
-export async function eventPricingRoutes(app: App): Promise<void> {
-  const BranchParams = z.object({ branchId: z.string().uuid() });
-
-  app.get(
-    '/:branchId/event-drop-in-pricing',
-    {
-      // The board reads the party-guest price to say what a walk-up adds to the tab.
-      config: { permission: 'pos:event:read', target: { branchId: 'params.branchId' } },
-      schema: {
-        description:
-          "The branch's walk-up prices — camp day, event day and party guest, each weekday/weekend in satang. A " +
-          'branch nobody priced answers ฿0 for each with `configured: false`, the prototype\'s own unpriced branch.',
-        params: BranchParams,
-        response: { 200: EventDropInPricingAnswerSchema },
-      },
-    },
-    async (req) => {
-      const auth = req.requireAuth();
-      return getEventDropInPricing(app.db, { operatorId: auth.operatorId, branchId: req.params.branchId });
-    },
-  );
-
-  app.put(
-    '/:branchId/event-drop-in-pricing',
-    {
-      config: { permission: 'admin:event_pricing:manage', target: { branchId: 'params.branchId' } },
-      schema: {
-        description:
-          "Set the branch's three walk-up prices (all of them, every time). Audited as `event_pricing.update` with " +
-          'the prices before and after.',
-        params: BranchParams,
-        body: EventDropInPricingSchema,
-        response: { 200: EventDropInPricingAnswerSchema },
-      },
-    },
-    async (req) => {
-      const auth = req.requireAuth();
-      return putEventDropInPricing(app.db, opCtx(req), {
-        operatorId: auth.operatorId,
-        accountId: auth.accountId,
-        branchId: req.params.branchId,
-        pricing: req.body,
-        requestId: req.id,
       });
     },
   );

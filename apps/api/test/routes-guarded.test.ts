@@ -57,6 +57,10 @@ describe('route guards (S2-01b)', () => {
       'PATCH /members/:id',
       'PATCH /members/children/:childId',
       'POST /bookings/:id/redeem',
+      // S2-20 E2: a pass is a sale and a walk-up a charge on a party's tab —
+      // online only, like the sale path they ride and the members they name.
+      'POST /events/:id/attendees',
+      'POST /events/:id/passes',
       'POST /members',
       'POST /members/:id/children',
       'POST /members/:id/tier-verification',
