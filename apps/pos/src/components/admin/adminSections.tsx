@@ -225,7 +225,9 @@ export const adminNav: AdminNavEntry[] = [
         label: 'Staff Benefits',
         icon: Gift,
         description: 'Configure Owner/Manager/Staff benefit profiles and per-operator overrides.',
-        localOnly: true,
+        // S2-21 round 1: the templates and each person's benefit are the
+        // platform's `/benefits/*`, which every route of reads with this.
+        permission: 'admin:benefit:read',
       },
     ],
   },

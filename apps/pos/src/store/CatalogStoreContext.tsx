@@ -42,7 +42,6 @@ import {
   deletePrintTemplate,
   upsertPricingOverride,
   deletePricingOverride,
-  setRoleBenefitTemplate,
   cloneBranchCatalog,
   branchHasCatalogData,
   upsertBranch,
@@ -334,8 +333,6 @@ export const MOCK_MUTATOR_TICKETS = {
   // Supervision policy and its drop-off / nanny prices.
   updateDropOffPricing: 'SCRUM-210',
   updateSupervisionPolicy: 'SCRUM-210',
-  // Per-role staff benefit templates.
-  setRoleBenefitTemplate: 'SCRUM-218',
   // The POS's own device list is not the fleet: the real one is the Console's
   // Devices area and each till's Station Setup, both already writable.
   upsertDevice: 'SCRUM-236',
@@ -366,7 +363,6 @@ const mockMutators = {
   deleteDevice,
   upsertPrintTemplate,
   deletePrintTemplate,
-  setRoleBenefitTemplate,
   cloneBranchCatalog,
   upsertStockLocation,
   setStockLocationSellPoint,
