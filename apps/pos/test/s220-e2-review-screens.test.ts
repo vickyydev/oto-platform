@@ -240,14 +240,17 @@ describe('"Not on the platform yet" — gone exactly where E2 builds the write, 
     }
   });
 
-  it('standing: the mobile board, the mobile party screens and the party tab (E3, E4)', () => {
+  it('standing: the mobile board and the mobile check-ins (E3); gone from the party tab, which E4 put on the platform', () => {
     const mobileBoard = source('components/mobile/dropoff/MobileDropOffBoard.tsx');
     expect(mobileBoard.match(/if \(writePending\(eventId\)\) return;/g)?.length).toBe(3);
     const mobileParties = source('components/mobile/parties/MobileParties.tsx');
     expect(mobileParties).toContain('toast(EVENT_WRITE_PENDING)');
-    expect(mobileParties.match(/writePending\(/g)!.length).toBeGreaterThanOrEqual(6);
+    // Check-in, reprint and check-out still wait for E3; the payment and the F&B do not.
+    expect(mobileParties.match(/if \(writePending\(eventId\)\) return;/g)?.length).toBe(3);
+    expect(fnBody(mobileParties, 'handleTakePayment')).not.toContain('writePending');
+    expect(fnBody(mobileParties, 'handleChargeExtra')).not.toContain('writePending');
     const partyDetail = source('components/parties/PartyDetail.tsx');
-    expect(partyDetail.match(/toast\(EVENT_WRITE_PENDING\)/g)?.length).toBe(4);
+    expect(partyDetail).not.toContain('EVENT_WRITE_PENDING');
   });
 
   it('the words of that gate are unchanged', () => {

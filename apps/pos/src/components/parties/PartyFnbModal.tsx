@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,7 +30,14 @@ interface PartyFnbModalProps {
   onOpenChange: (open: boolean) => void;
   party: PartyBooking;
   operatorName: string;
-  onCharge: (items: { name: string; qty: number; lineTotal: number }[], total: number) => void;
+  /**
+   * S2-20 E4: a request on the platform, which may answer later, or no —
+   * `false` keeps the order open rather than closing as though it were charged.
+   */
+  onCharge: (
+    items: { name: string; qty: number; lineTotal: number }[],
+    total: number,
+  ) => void | boolean | Promise<boolean>;
 }
 
 // The party F&B builder is the F&B order-station "order" stage verbatim: same
@@ -233,8 +240,11 @@ export function PartyFnbModal({
     closeSheet();
   };
 
-  const handleCharge = () => {
-    if (cart.length === 0) return;
+  // S2-20 E4 — the charge is on its way to the platform: not pressed twice meanwhile.
+  const charging = useRef(false);
+
+  const handleCharge = async () => {
+    if (cart.length === 0 || charging.current) return;
     const items = cart.map((l) => {
       const mods = describeModifiers(l.menuItem, l.selectedModifiers);
       return {
@@ -243,7 +253,12 @@ export function PartyFnbModal({
         lineTotal: l.lineTotal,
       };
     });
-    onCharge(items, total);
+    charging.current = true;
+    try {
+      if ((await onCharge(items, total)) === false) return;
+    } finally {
+      charging.current = false;
+    }
     reset();
     onOpenChange(false);
   };
@@ -313,7 +328,7 @@ export function PartyFnbModal({
                   onChangeQty={handleChangeQty}
                   onEditLine={handleEditLine}
                   onClear={handleClearCart}
-                  onCheckout={handleCharge}
+                  onCheckout={() => void handleCharge()}
                   onSwitchTab={() => handleOpenChange(false)}
                   onAddManualDiscount={() => setShowDiscountModal(true)}
                   onRemoveManualDiscount={handleRemoveManualDiscount}

@@ -1501,6 +1501,10 @@ export interface PartyBooking {
   lastEditedBy?: string; // operator name (auth context)
   lastEditedById?: string;
   lastEditedAt?: string; // ISO
+  // S2-20 E4 — the newest edit made at a till that the OTO App has not taken:
+  // `pending` (shown, not yet confirmed) or `failed` (refused, not shown).
+  // Absent when every edit is in the OTO App.
+  editSync?: { state: 'pending' | 'failed'; error: string | null };
 }
 
 // --- Events (unified: party | camp | event) ---------------------------------
@@ -1599,6 +1603,7 @@ export interface OtoEvent {
   lastEditedBy?: string;
   lastEditedById?: string;
   lastEditedAt?: string;
+  editSync?: PartyBooking['editSync'];
 }
 
 // --- Station / device setup -------------------------------------------------

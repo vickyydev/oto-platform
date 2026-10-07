@@ -43,7 +43,14 @@ interface PartyTicketModalProps {
   onOpenChange: (open: boolean) => void;
   party: PartyBooking;
   operatorName: string;
-  onCharge: (items: { name: string; qty: number; lineTotal: number }[], total: number) => void;
+  /**
+   * S2-20 E4: a request on the platform, which may answer later, or no —
+   * `false` keeps the order open rather than closing as though it were charged.
+   */
+  onCharge: (
+    items: { name: string; qty: number; lineTotal: number }[],
+    total: number,
+  ) => void | boolean | Promise<boolean>;
 }
 
 // Break a ticket line into its discountable component rows for the manual-discount
@@ -216,8 +223,11 @@ export function PartyTicketModal({
     setManualDiscounts((prev) => prev.filter((md) => md.id !== id));
   };
 
-  const handleCharge = () => {
-    if (lines.length === 0) return;
+  // S2-20 E4 — the charge is on its way to the platform: not pressed twice meanwhile.
+  const [charging, setCharging] = useState(false);
+
+  const handleCharge = async () => {
+    if (lines.length === 0 || charging) return;
     // Items are the per-component breakdown of each ticket line (descriptive);
     // the authoritative charge is `total` (after any manual discounts + tax).
     const items = lines.flatMap((l) =>
@@ -227,7 +237,12 @@ export function PartyTicketModal({
         lineTotal: b.subtotal,
       })),
     );
-    onCharge(items, total);
+    setCharging(true);
+    try {
+      if ((await onCharge(items, total)) === false) return;
+    } finally {
+      setCharging(false);
+    }
     reset();
     onOpenChange(false);
   };
@@ -332,9 +347,9 @@ export function PartyTicketModal({
                       onRemoveDiscount={() => {}}
                       onAddManualDiscount={() => setShowDiscountModal(true)}
                       onRemoveManualDiscount={handleRemoveManualDiscount}
-                      onPay={handleCharge}
+                      onPay={() => void handleCharge()}
                       onCancel={() => handleOpenChange(false)}
-                      canPay={canCharge}
+                      canPay={canCharge && !charging}
                       payLabel={`Charge ฿${total} to party`}
                     />
                   </div>

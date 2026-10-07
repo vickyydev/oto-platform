@@ -1,4 +1,5 @@
-import { Fragment, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
+import { newId } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,9 +12,17 @@ import {
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
-import { addPartyExtraCharge, addPartyPayment, getEventById, updateParty } from '@/mockApi';
 import { useOperator } from '@/auth/OperatorContext';
-import { EVENT_WRITE_PENDING } from '@/api/events';
+import { useStation } from '@/station/StationContext';
+import {
+  chargePartyOnPlatform,
+  partyEditOf,
+  partyWriteBlocker,
+  payPartyOnPlatform,
+  updatePartyOnPlatform,
+  type PartyWriteIds,
+  type PartyWriteOutcome,
+} from '@/api/parties';
 import { toast } from '@/hooks/use-toast';
 import { PartyBalanceModal } from './PartyBalanceModal';
 import { PartyFnbModal } from './PartyFnbModal';
@@ -103,8 +112,18 @@ function InfoRow({ icon: Icon, label, value }: { icon?: typeof Wallet; label: st
   );
 }
 
-export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailProps) {
+/** "a", "a and b", "a, b and c" — for naming what the OTO App keeps. */
+const listOf = (items: string[]) =>
+  items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+
+export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyDetailProps) {
   const { operator } = useOperator();
+  const { station } = useStation();
+  // S2-20 E4 — the party as the platform last answered a write with it, until
+  // the host's re-read of the day brings the same party back.
+  const [fresh, setFresh] = useState<PartyBooking | null>(null);
+  useEffect(() => setFresh(null), [shown]);
+  const party = fresh ?? shown;
   const [showBalance, setShowBalance] = useState(false);
   const [showFnb, setShowFnb] = useState(false);
   const [showTickets, setShowTickets] = useState(false);
@@ -130,51 +149,119 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
   const paid = partyPaymentsTotal(party);
   const lineItemsTotal = partyLineItemsTotal(party);
 
-  // S2-20 E1: a party read from the OTO App is not in the prototype's store,
-  // so editing it, charging it and taking its balance are refused before the
-  // modal opens (no settlement screen thanks a guest for an unrecorded
-  // payment) until the party tab is on the platform (E4).
-  const openUnlessPending = (open: () => void) => {
-    if (getEventById(party.id)) open();
-    else toast(EVENT_WRITE_PENDING);
+  /**
+   * S2-20 E4 — THE PARTY TAB IS THE PLATFORM'S. What the till can know is
+   * asked before a modal opens (no settlement screen thanks a guest for a
+   * payment nothing recorded): a till not linked to the platform, one with no
+   * connection, and — for money — a device that is not a till.
+   */
+  const blockerOf = (needsStation = false) =>
+    partyWriteBlocker({ branchSlug: party.branchId, stationId: station?.stationId, needsStation });
+  const openUnlessBlocked = (open: () => void, needsStation = false) => {
+    const blocked = blockerOf(needsStation);
+    if (blocked) toast(blocked);
+    else open();
   };
 
-  // S2-20 E1: a party read from the OTO App is not in the prototype's store,
-  // so its mutators find nothing; until the party tab is on the platform (E4)
-  // the till says so instead of closing the modal as if it had been recorded.
-  const handleTakePayment = (amount: number, method: PartyPaymentMethod) => {
-    if (!operator) return;
-    const taken = addPartyPayment(party.id, {
+  /**
+   * The ids of each write, minted when it is first sent and kept for a retry
+   * of the same press — so a press whose answer was lost is one charge, one
+   * payment, one edit. A definite answer, either way, clears them.
+   */
+  const ids = useRef<Partial<Record<'payment' | 'fnb' | 'ticket' | 'edit', PartyWriteIds>>>({});
+  const idsFor = (key: 'payment' | 'fnb' | 'ticket' | 'edit') => (ids.current[key] ??= { id: newId(), actionId: newId() });
+  /** What came of a write: true when the platform recorded it. Says why when it did not. */
+  const settled = (key: 'payment' | 'fnb' | 'ticket' | 'edit', outcome: PartyWriteOutcome, failure: string) => {
+    if (outcome.ok || !outcome.retryable) ids.current[key] = undefined;
+    if (!outcome.ok) {
+      toast({ title: failure, description: outcome.message, variant: 'destructive' });
+      // The bill may have moved under the till (another till, a charge): read it again.
+      onChanged();
+      return false;
+    }
+    setFresh(outcome.party);
+    onChanged();
+    return true;
+  };
+
+  const handleTakePayment = async (amount: number, method: PartyPaymentMethod): Promise<boolean> => {
+    const blocked = blockerOf(true);
+    if (!operator || blocked || !station) {
+      if (blocked) toast(blocked);
+      return false;
+    }
+    const outcome = await payPartyOnPlatform({
+      party,
       amount,
       method,
-      takenBy: operator.name,
-      takenById: operator.id,
+      outstanding,
+      stationId: station.stationId,
+      ids: idsFor('payment'),
     });
-    if (!taken) toast(EVENT_WRITE_PENDING);
-    onChanged();
+    return settled('payment', outcome, 'Payment not recorded');
   };
 
   const handleChargeExtra =
     (kind: 'fnb' | 'ticket') =>
-    (items: { name: string; qty: number; lineTotal: number }[], chargeTotal: number) => {
-      if (!operator) return;
-      const charged = addPartyExtraCharge(party.id, {
+    async (items: { name: string; qty: number; lineTotal: number }[], chargeTotal: number): Promise<boolean> => {
+      const blocked = blockerOf();
+      if (!operator || blocked) {
+        if (blocked) toast(blocked);
+        return false;
+      }
+      const outcome = await chargePartyOnPlatform({
+        party,
         kind,
         items,
         total: chargeTotal,
-        chargedBy: operator.name,
-        chargedById: operator.id,
+        stationId: station?.stationId,
+        ids: idsFor(kind),
       });
-      if (!charged) toast(EVENT_WRITE_PENDING);
-      onChanged();
+      return settled(kind, outcome, 'Not charged to the party');
     };
 
-  const handleSaveEdit = (patch: PartyEditPatch) => {
-    if (!operator) return;
-    const saved = updateParty(party.id, patch, { editedBy: operator.name, editedById: operator.id });
-    if (!saved) toast(EVENT_WRITE_PENDING);
-    setEditing(false);
-    onChanged();
+  const saving = useRef(false);
+  const handleSaveEdit = async (patch: PartyEditPatch) => {
+    if (!operator || saving.current) return;
+    // Only what changed is sent, and only what the OTO App holds; the rest of
+    // the form is the OTO App's to change, and the till says so.
+    const { fields, keptInOtoApp } = partyEditOf(party, patch);
+    const kept = keptInOtoApp.length > 0
+      ? `${listOf(keptInOtoApp)} ${keptInOtoApp.length === 1 ? 'is' : 'are'} kept in the OTO App — change ${keptInOtoApp.length === 1 ? 'it' : 'them'} there.`
+      : null;
+    if (Object.keys(fields).length === 0) {
+      if (kept) toast({ title: 'Not saved here', description: kept });
+      else setEditing(false);
+      return;
+    }
+    const blocked = blockerOf();
+    if (blocked) {
+      toast(blocked);
+      return;
+    }
+    saving.current = true;
+    try {
+      const outcome = await updatePartyOnPlatform({ party, fields, stationId: station?.stationId, ids: idsFor('edit') });
+      if (!settled('edit', outcome, 'Party not saved') || !outcome.ok) return;
+      setEditing(false);
+      const sync = outcome.answer.edit;
+      if (sync?.syncState === 'failed') {
+        toast({
+          title: 'Saved here — the OTO App refused it',
+          description: sync.syncError ?? 'Fix the cause, then retry it from Failures.',
+          variant: 'destructive',
+        });
+      } else if (sync?.syncState === 'pending') {
+        toast({
+          title: 'Saved — not in the OTO App yet',
+          description: `The OTO App has not confirmed this edit; it is retried from Failures.${kept ? ` ${kept}` : ''}`,
+        });
+      } else if (kept) {
+        toast({ title: 'Saved', description: kept });
+      }
+    } finally {
+      saving.current = false;
+    }
   };
 
   const cake = party.kitchen.cake;
@@ -440,10 +527,31 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
               {party.kidAge ? ` · turning ${party.kidAge}` : ''} · {party.startTime}–{party.endTime} ·{' '}
               {party.location}
             </p>
-            {party.lastEditedBy && party.lastEditedAt && (
+            {((party.lastEditedBy && party.lastEditedAt) || party.editSync) && (
               <div className="inline-flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                <Pencil className="w-3 h-3" />
-                Last edited by {party.lastEditedBy} · {fmtTimestamp(party.lastEditedAt)}
+                {party.lastEditedBy && party.lastEditedAt && (
+                  <>
+                    <Pencil className="w-3 h-3" />
+                    Last edited by {party.lastEditedBy} · {fmtTimestamp(party.lastEditedAt)}
+                  </>
+                )}
+                {/* S2-20 E4 — a till's edit the OTO App has not taken: Pending
+                    waits on an answer (shown meanwhile); Refused is the app
+                    saying no (not shown), retried from Failures once fixed. */}
+                {party.editSync && (
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 ${
+                      party.editSync.state === 'failed' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
+                    }`}
+                    title={
+                      party.editSync.state === 'failed'
+                        ? `The OTO App refused the last edit${party.editSync.error ? ` — ${party.editSync.error}` : ''}. Fix the cause, then retry from Failures`
+                        : 'The last edit is not yet confirmed by the OTO App — retried from Failures'
+                    }
+                  >
+                    {party.editSync.state === 'failed' ? 'Refused' : 'Pending'}
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -463,7 +571,7 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
               variant="outline"
               size="lg"
               className="gap-2 h-12"
-              onClick={() => openUnlessPending(() => setEditing(true))}
+              onClick={() => openUnlessBlocked(() => setEditing(true))}
             >
               <Pencil className="w-5 h-5" />
               Edit party
@@ -472,7 +580,7 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
               variant="outline"
               size="lg"
               className="gap-2 h-12"
-              onClick={() => openUnlessPending(() => setShowTickets(true))}
+              onClick={() => openUnlessBlocked(() => setShowTickets(true))}
             >
               <Ticket className="w-5 h-5" />
               Add tickets
@@ -481,7 +589,7 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
               variant="outline"
               size="lg"
               className="gap-2 h-12"
-              onClick={() => openUnlessPending(() => setShowFnb(true))}
+              onClick={() => openUnlessBlocked(() => setShowFnb(true))}
             >
               <GlassWater className="w-5 h-5" />
               Add F&amp;B to party
@@ -490,7 +598,7 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
               size="lg"
               className="gap-2 h-12"
               disabled={outstanding <= 0}
-              onClick={() => openUnlessPending(() => setShowBalance(true))}
+              onClick={() => openUnlessBlocked(() => setShowBalance(true), true)}
             >
               <Wallet className="w-5 h-5" />
               {outstanding > 0 ? `Take balance ฿${outstanding}` : 'Fully paid'}

@@ -12,9 +12,10 @@
 //
 // S2-20 E2 adds the first writes: selling a pass and adding a walk-up
 // (`sellOnPlatform`, the port of `sellEventPass`), and the branch's walk-up
-// prices. Checking a child in or out, a reprint and the party tab are written
-// by E3 and E4; until then those buttons answer with `EVENT_WRITE_PENDING`
-// rather than act on an event the mock store has never heard of.
+// prices. S2-20 E4 puts the party tab on the platform (`api/parties.ts`).
+// Checking a child in or out and a reprint are written by E3; until then
+// those buttons answer with `EVENT_WRITE_PENDING` rather than act on an event
+// the mock store has never heard of.
 
 import { useEffect, useRef, useState } from 'react';
 import type {
@@ -30,9 +31,18 @@ import type {
   EventPassSellBody,
   EventPassesAnswer,
   EventView,
+  PartyChargeView,
+  PartyPaymentView,
 } from '@oto/shared';
 import type { NewEventAttendeeInput } from '@/mockApi';
-import type { EventAttendee, EventAttendeeCheckin, OtoEvent, PartyBooking, PartyExtraCharge } from '@/types';
+import type {
+  EventAttendee,
+  EventAttendeeCheckin,
+  OtoEvent,
+  PartyBooking,
+  PartyExtraCharge,
+  PartyPayment,
+} from '@/types';
 import { branchTradingDate, resolveRateToday, serverTradingDate } from '@/lib/pricingMode';
 import { paymentMethodKind } from '@/lib/payments';
 import { currentLane } from '@/lib/lane';
@@ -134,12 +144,41 @@ export function walkUpChargeToExtra(c: EventPartyWalkUpCharge): PartyExtraCharge
 }
 
 /**
+ * S2-20 E4 — a charge the till put on a party's tab, as the bill shows it
+ * (`PartyExtraCharge`): its items and total in baht, who and when.
+ */
+export function partyChargeToExtra(c: PartyChargeView): PartyExtraCharge {
+  return {
+    id: c.id,
+    kind: c.kind,
+    items: c.items.map((it) => ({ name: it.name, qty: it.qty, lineTotal: baht(it.lineTotalSatang) })),
+    total: baht(c.totalSatang),
+    chargedBy: c.chargedBy ?? '—',
+    chargedById: c.chargedById ?? '',
+    chargedAt: c.chargedAt,
+  };
+}
+
+/** S2-20 E4 — a payment taken against a party's balance (`PartyPayment`), its tender's token kept. */
+export function partyPaymentToPrototype(p: PartyPaymentView): PartyPayment {
+  return {
+    id: p.id,
+    amount: baht(p.amountSatang),
+    method: p.method,
+    takenBy: p.takenBy ?? '—',
+    takenById: p.takenById ?? '',
+    takenAt: p.takenAt,
+  };
+}
+
+/**
  * An event in the prototype's `OtoEvent` shape, under the till's own branch
  * slug. A party carries the bill the OTO App holds — its total as the base,
- * its deposit — and, of the POS ledgers, the walk-up charges the till added
- * (E2); the rest of the tab is on the platform with E4. The kitchen plan, the
- * run of show and the line items are not in the views yet, so the party
- * screen shows none.
+ * its deposit — as the till last edited it, and the POS's tab (E4): the
+ * walk-up charges (E2) and the till's charges in the order they were made,
+ * the payments taken, and the `updateParty` stamp. The kitchen plan, the run
+ * of show and the line items are not in the views yet, so the party screen
+ * shows none.
  */
 export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
   const event: OtoEvent = {
@@ -174,8 +213,21 @@ export function toOtoEvent(v: EventView, branchSlug: string): OtoEvent {
     ...(v.party.depositDate ? { depositDate: v.party.depositDate } : {}),
     kitchen: { needed: false, kidsMenu: [], adultsMenu: [], foodItems: [], cake: { type: 'none' } },
     timeline: [],
-    partyExtraCharges: (v.party.walkUpCharges ?? []).map(walkUpChargeToExtra),
-    partyPayments: [],
+    // The walk-ups and the till's charges share one ledger, as in the
+    // prototype, in the order they went on the tab.
+    partyExtraCharges: [
+      ...(v.party.walkUpCharges ?? []).map(walkUpChargeToExtra),
+      ...(v.party.charges ?? []).map(partyChargeToExtra),
+    ].sort((a, b) => a.chargedAt.localeCompare(b.chargedAt)),
+    partyPayments: (v.party.payments ?? []).map(partyPaymentToPrototype),
+    ...(v.party.lastEdited
+      ? {
+          lastEditedBy: v.party.lastEdited.by ?? '—',
+          lastEditedById: v.party.lastEdited.byId ?? '',
+          lastEditedAt: v.party.lastEdited.at,
+        }
+      : {}),
+    ...(v.party.editSync ? { editSync: { state: v.party.editSync.state, error: v.party.editSync.error } } : {}),
   };
   return { ...event, ...party };
 }

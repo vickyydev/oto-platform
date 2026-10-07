@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { FnbOrderLine, ManualDiscount, MenuItem, PartyBooking, SelectedModifier } from '@/types';
 import { useOperator } from '@/auth/OperatorContext';
 import { getDiscountReasons, getMenuItems } from '@/mockApi';
@@ -20,7 +20,11 @@ let partyMobileLineCounter = 1;
 interface MobilePartyFnbProps {
   party: PartyBooking;
   operatorName: string;
-  onCharge: (items: { name: string; qty: number; lineTotal: number }[], total: number) => void;
+  /** S2-20 E4: a request on the platform — the host leaves this screen once it is recorded. */
+  onCharge: (
+    items: { name: string; qty: number; lineTotal: number }[],
+    total: number,
+  ) => void | boolean | Promise<boolean>;
   onBack: () => void;
 }
 
@@ -175,8 +179,11 @@ export function MobilePartyFnb({
     setManualDiscounts([]);
   };
 
-  const handleCharge = () => {
-    if (cart.length === 0) return;
+  // S2-20 E4 — the charge is on its way to the platform: not pressed twice meanwhile.
+  const charging = useRef(false);
+
+  const handleCharge = async () => {
+    if (cart.length === 0 || charging.current) return;
     const items = cart.map((l) => {
       const mods = describeModifiers(l.menuItem, l.selectedModifiers);
       return {
@@ -185,7 +192,12 @@ export function MobilePartyFnb({
         lineTotal: l.lineTotal,
       };
     });
-    onCharge(items, total);
+    charging.current = true;
+    try {
+      await onCharge(items, total);
+    } finally {
+      charging.current = false;
+    }
   };
 
   return (
@@ -231,7 +243,7 @@ export function MobilePartyFnb({
           setManualDiscounts((prev) => prev.filter((md) => md.id !== id))
         }
         onSwitchTab={onBack}
-        onCheckout={handleCharge}
+        onCheckout={() => void handleCharge()}
       />
 
       <ModifierSheet

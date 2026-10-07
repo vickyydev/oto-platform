@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { newId } from '@oto/shared';
 import { OtoEvent, PartyBooking, PartyPaymentMethod } from '@/types';
 import {
   getEventById,
-  addPartyPayment,
-  addPartyExtraCharge,
   checkInEventAttendee,
   checkOutEventAttendee,
 } from '@/mockApi';
@@ -11,6 +10,14 @@ import { useOperator } from '@/auth/OperatorContext';
 import { useBranch } from '@/branch/BranchContext';
 import { useStation } from '@/station/StationContext';
 import { EVENT_WRITE_PENDING, eventsToday, useEventsForDate } from '@/api/events';
+import {
+  chargePartyOnPlatform,
+  partyWriteBlocker,
+  payPartyOnPlatform,
+  type PartyWriteIds,
+  type PartyWriteOutcome,
+} from '@/api/parties';
+import { computePartyOutstanding } from '@/lib/party';
 import { eventBraceletPrintJobs, dispatchPrintJobs } from '@/lib/printRouting';
 import { toast } from '@/hooks/use-toast';
 import { MobileEventsList } from './MobileEventsList';
@@ -45,10 +52,11 @@ function writePending(eventId: string): boolean {
  *                           → fnb (menu grid + cart → charge)
  *        → detail (camp/event) — read-only attendee list, no billing actions
  *
- * The events are read from the platform (`GET /events`, S2-20 E1); the writes
- * still go through the mockApi mutators (addPartyPayment, addPartyExtraCharge)
- * until E2 to E4 put them on the platform. Version counter triggers re-reads
- * so the UI always reflects the latest state after a mutation.
+ * The events are read from the platform (`GET /events`, S2-20 E1), and a
+ * party's payment and F&B charge are written there (S2-20 E4,
+ * `api/parties.ts`); the check-in writes still wait for E3. Version counter
+ * triggers re-reads so the UI always reflects the latest state after a
+ * mutation.
  */
 // The branch's trading day, not the UTC date (plan §4).
 const todayISO = () => eventsToday();
@@ -68,7 +76,13 @@ export function MobileParties() {
 
   // The selected day's events, where the event on screen is found again after each bump.
   const { events: dayEvents } = useEventsForDate(branch.id, selectedDate || today, version);
-  const selectedEvent = findEvent(selectedId, dayEvents);
+  // S2-20 E4 — the party as the platform last answered a write with it, until
+  // the day's re-read brings it back: the "Payment recorded" screen shows the
+  // balance the payment left, not the one before it.
+  const [fresh, setFresh] = useState<PartyBooking | null>(null);
+  useEffect(() => setFresh(null), [dayEvents]);
+  const selectedEvent =
+    fresh && fresh.id === selectedId ? (fresh as unknown as OtoEvent) : findEvent(selectedId, dayEvents);
   const isPartyEvent = selectedEvent?.type === 'party';
   // Check-in is scoped to today's session only (matches the iPad Events tab).
   // Browsing another date shows the roster read-only.
@@ -90,16 +104,43 @@ export function MobileParties() {
     setStep('detail');
   };
 
-  const handleTakePayment = (amount: number, method: PartyPaymentMethod) => {
-    if (!operator || !selectedId) return;
-    if (writePending(selectedId)) return;
-    addPartyPayment(selectedId, {
+  /**
+   * S2-20 E4 — the party tab on the platform. The ids of a press are minted
+   * when it is first sent and kept for a retry of it; a definite answer
+   * clears them.
+   */
+  const ids = useRef<Partial<Record<'payment' | 'fnb', PartyWriteIds>>>({});
+  const idsFor = (key: 'payment' | 'fnb') => (ids.current[key] ??= { id: newId(), actionId: newId() });
+  const settled = (key: 'payment' | 'fnb', outcome: PartyWriteOutcome, failure: string): boolean => {
+    if (outcome.ok || !outcome.retryable) ids.current[key] = undefined;
+    bump();
+    if (!outcome.ok) {
+      toast({ title: failure, description: outcome.message, variant: 'destructive' });
+      return false;
+    }
+    setFresh(outcome.party);
+    return true;
+  };
+  const blockerOf = (needsStation = false) =>
+    partyWriteBlocker({ branchSlug: branch.id, stationId: station?.stationId, needsStation });
+
+  const handleTakePayment = async (amount: number, method: PartyPaymentMethod): Promise<boolean> => {
+    if (!operator || !selectedEvent || selectedEvent.type !== 'party') return false;
+    const blocked = blockerOf(true);
+    if (blocked || !station) {
+      if (blocked) toast(blocked);
+      return false;
+    }
+    const party = selectedEvent as unknown as PartyBooking;
+    const outcome = await payPartyOnPlatform({
+      party,
       amount,
       method,
-      takenBy: operator.name,
-      takenById: operator.id,
+      outstanding: computePartyOutstanding(party),
+      stationId: station.stationId,
+      ids: idsFor('payment'),
     });
-    bump();
+    return settled('payment', outcome, 'Payment not recorded');
   };
 
   const handleEventCheckIn = (eventId: string, attendeeId: string) => {
@@ -189,21 +230,27 @@ export function MobileParties() {
     bump();
   };
 
-  const handleChargeExtra = (
+  const handleChargeExtra = async (
     items: { name: string; qty: number; lineTotal: number }[],
     total: number,
-  ) => {
-    if (!operator || !selectedId) return;
-    if (writePending(selectedId)) return;
-    addPartyExtraCharge(selectedId, {
+  ): Promise<boolean> => {
+    if (!operator || !selectedEvent || selectedEvent.type !== 'party') return false;
+    const blocked = blockerOf();
+    if (blocked) {
+      toast(blocked);
+      return false;
+    }
+    const outcome = await chargePartyOnPlatform({
+      party: selectedEvent as unknown as PartyBooking,
       kind: 'fnb',
       items,
       total,
-      chargedBy: operator.name,
-      chargedById: operator.id,
+      stationId: station?.stationId,
+      ids: idsFor('fnb'),
     });
-    bump();
+    if (!settled('fnb', outcome, 'Not charged to the party')) return false;
     setStep('detail');
+    return true;
   };
 
   if (step === 'list' || !selectedEvent) {
@@ -221,13 +268,18 @@ export function MobileParties() {
           <MobilePartyDetail
             party={selectedEvent as unknown as PartyBooking}
             onBack={handleBackToList}
-            // S2-20 E1: refused before the payment or F&B flow opens, so the
-            // guest is never shown a "thank you" for money nothing recorded.
+            // S2-20 E4: what the till can know is asked before the payment or
+            // F&B flow opens, so the guest is never shown a "thank you" for
+            // money nothing recorded.
             onTakePayment={() => {
-              if (!writePending(selectedEvent.id)) setStep('payment');
+              const blocked = blockerOf(true);
+              if (blocked) toast(blocked);
+              else setStep('payment');
             }}
             onAddFnb={() => {
-              if (!writePending(selectedEvent.id)) setStep('fnb');
+              const blocked = blockerOf();
+              if (blocked) toast(blocked);
+              else setStep('fnb');
             }}
           />
         </div>

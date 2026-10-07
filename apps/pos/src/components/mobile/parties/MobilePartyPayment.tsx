@@ -38,7 +38,11 @@ const collectHint = (method: PartyPaymentMethod): string => {
 interface MobilePartyPaymentProps {
   party: PartyBooking;
   operatorName: string;
-  onConfirm: (amount: number, method: PartyPaymentMethod) => void;
+  /**
+   * S2-20 E4: a request on the platform, which may answer later, or no —
+   * "Payment recorded" follows only a payment that was; `false` stays on collect.
+   */
+  onConfirm: (amount: number, method: PartyPaymentMethod) => void | boolean | Promise<boolean>;
   onBack: () => void;
 }
 
@@ -62,6 +66,8 @@ export function MobilePartyPayment({
   const [method, setMethod] = useState<PartyPaymentMethod | ''>('');
   const [collectAmount, setCollectAmount] = useState(0);
   const [collectMethod, setCollectMethod] = useState<PartyPaymentMethod>('cash');
+  // S2-20 E4 — the payment is on its way to the platform: not pressed twice meanwhile.
+  const [recording, setRecording] = useState(false);
 
   useEffect(() => {
     setStep('pick');
@@ -70,6 +76,7 @@ export function MobilePartyPayment({
     setMethod('');
     setCollectAmount(0);
     setCollectMethod('cash');
+    setRecording(false);
   }, [party.id]);
 
   const amount = useMemo(() => {
@@ -92,10 +99,15 @@ export function MobilePartyPayment({
     setStep('collect');
   };
 
-  const handleReceived = () => {
-    if (collectAmount <= 0) return;
-    onConfirm(collectAmount, collectMethod);
-    setStep('done');
+  const handleReceived = async () => {
+    if (collectAmount <= 0 || recording) return;
+    setRecording(true);
+    try {
+      if ((await onConfirm(collectAmount, collectMethod)) === false) return;
+      setStep('done');
+    } finally {
+      setRecording(false);
+    }
   };
 
   const customerStage =
@@ -154,7 +166,8 @@ export function MobilePartyPayment({
           <Button
             size="lg"
             className="w-full h-14 text-lg gap-2"
-            onClick={handleReceived}
+            disabled={recording}
+            onClick={() => void handleReceived()}
           >
             <Check className="w-5 h-5" />
             Payment received

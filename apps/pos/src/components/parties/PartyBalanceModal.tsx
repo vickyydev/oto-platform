@@ -32,7 +32,12 @@ interface PartyBalanceModalProps {
   onOpenChange: (open: boolean) => void;
   party: PartyBooking;
   operatorName: string;
-  onConfirm: (amount: number, method: PartyPaymentMethod) => void;
+  /**
+   * S2-20 E4: on the platform this is a request, so it may answer later — and
+   * may answer no. The thank-you stage follows only a payment that was
+   * recorded; `false` keeps staff on the collect stage.
+   */
+  onConfirm: (amount: number, method: PartyPaymentMethod) => void | boolean | Promise<boolean>;
 }
 
 // Staff-side helper copy keyed by tender kind while waiting for the money to land.
@@ -79,6 +84,8 @@ export function PartyBalanceModal({
   const [collectMethod, setCollectMethod] = useState<PartyPaymentMethod>('cash');
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
   const [customerTheme] = useCustomerTheme();
+  // S2-20 E4 — the payment is on its way to the platform: not pressed twice meanwhile.
+  const [recording, setRecording] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -88,6 +95,7 @@ export function PartyBalanceModal({
       setMethod('');
       setCollectAmount(0);
       setCollectMethod('cash');
+      setRecording(false);
     }
   }, [open]);
 
@@ -107,10 +115,15 @@ export function PartyBalanceModal({
     setStage('collect');
   };
 
-  const handleReceived = () => {
-    if (collectAmount <= 0) return;
-    onConfirm(collectAmount, collectMethod);
-    setStage('done');
+  const handleReceived = async () => {
+    if (collectAmount <= 0 || recording) return;
+    setRecording(true);
+    try {
+      if ((await onConfirm(collectAmount, collectMethod)) === false) return;
+      setStage('done');
+    } finally {
+      setRecording(false);
+    }
   };
 
   // Customer display stage derives from the staff stage — one shared source.
@@ -324,7 +337,8 @@ export function PartyBalanceModal({
                       <Button
                         size="lg"
                         className="flex-1 h-14 text-lg gap-2"
-                        onClick={handleReceived}
+                        disabled={recording}
+                        onClick={() => void handleReceived()}
                       >
                         <Check className="w-5 h-5" />
                         Payment received
