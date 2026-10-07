@@ -934,12 +934,8 @@ describe('attack 5 — the desk shows a failed or handed-over session’s bookin
   });
 
   /**
-   * REVIEW DEFECT, PINNED AS IT STANDS — this test describes today's wrong
-   * behaviour on purpose, so the suite is green while the defect stands and
-   * goes red the day it is fixed. Whoever fixes it rewrites the last
-   * assertion to `to_check_in`.
-   *
-   * The desk keeps the LATEST failed or handed-off session per booking. A
+   * Fixed at landing: the desk once kept only the LATEST failed or
+   * handed-off session per booking, and this test pinned that wrong answer. A
    * family with a mixed booking gets their regular bands at the kiosk and is
    * told to see the desk for their drop-off child (`to_check_in`). If they
    * scan the same QR again — to check, or a sibling presses on — the kiosk
@@ -950,7 +946,7 @@ describe('attack 5 — the desk shows a failed or handed-over session’s bookin
    * checked in. The check-in board still lists the child, so nobody is lost —
    * but the desk's list is wrong about who is waiting.
    */
-  it('REVIEW DEFECT (pinned): a mixed booking scanned again drops off the desk while its supervised child waits', async () => {
+  it('a mixed booking scanned again stays at the desk while its supervised child waits', async () => {
     const mixed = await bookAndPay(
       [
         { packageId: twoHoursId, kids: 1, adults: 1 },
@@ -971,8 +967,9 @@ describe('attack 5 — the desk shows a failed or handed-over session’s bookin
       .from(checkin)
       .where(eq(checkin.saleId, saleRow!.id));
     expect(waiting.some((c) => c.status === 'registered')).toBe(true);
-    // What the desk says now — the defect: done, so the till's panel no longer shows the family.
-    expect((await deskEntry(mixed.id))?.state).toBe('done');
+    // The session with the sale speaks for the booking: the family stays
+    // listed for their drop-off child, whatever a later fruitless scan said.
+    expect((await deskEntry(mixed.id))?.state).toBe('to_check_in');
   });
 });
 

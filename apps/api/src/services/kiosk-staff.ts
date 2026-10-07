@@ -115,9 +115,16 @@ export async function kioskDesk(
     .orderBy(desc(kioskSession.endedAt))
     .limit(200);
 
-  // Latest session per booking.
+  // One entry per booking. A family who scanned twice is one family at the
+  // desk — and the session WITH a sale speaks for the booking: it carries what
+  // the kiosk issued and what still waits, where a later fruitless re-scan
+  // (already redeemed) would read the booking as done and drop the family
+  // while their supervised child still waits. Among equals, the newest wins.
   const latest = new Map<string, (typeof rows)[number]>();
-  for (const row of rows) if (!latest.has(row.booking.id)) latest.set(row.booking.id, row);
+  for (const row of rows) {
+    const held = latest.get(row.booking.id);
+    if (!held || (!held.session.saleId && row.session.saleId)) latest.set(row.booking.id, row);
+  }
 
   const saleIds = [...latest.values()]
     .map((r) => r.session.saleId)
