@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "id": "0e37f15d-51f6-44c1-92e7-5c5201db8d48",
+=======
+  "id": "b7ddb158-76cd-40ab-9a61-5095a20a8d93",
+>>>>>>> 6987d2f2 (feat(api): sell event passes and add walk-ups, written back to the OTO App)
   "prevId": "b088906c-b634-4ca9-a561-e1c0a84274eb",
   "version": "7",
   "dialect": "postgresql",
@@ -33379,6 +33383,7 @@
       },
       "isRLSEnabled": false
     },
+<<<<<<< HEAD
     "promo.benefit_credential": {
       "name": "benefit_credential",
       "schema": "promo",
@@ -33654,6 +33659,8 @@
       },
       "isRLSEnabled": false
     },
+=======
+>>>>>>> 6987d2f2 (feat(api): sell event passes and add walk-ups, written back to the OTO App)
     "promo.benefit_profile": {
       "name": "benefit_profile",
       "schema": "promo",
@@ -34410,6 +34417,712 @@
         }
       },
       "isRLSEnabled": false
+<<<<<<< HEAD
+=======
+    },
+    "pos.event_attendee_link": {
+      "name": "event_attendee_link",
+      "schema": "pos",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "operator_id": {
+          "name": "operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "branch_id": {
+          "name": "branch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "otoapp_event_id": {
+          "name": "otoapp_event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "otoapp_attendee_id": {
+          "name": "otoapp_attendee_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "child_id": {
+          "name": "child_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "member_id": {
+          "name": "member_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sale_id": {
+          "name": "sale_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sale_line_id": {
+          "name": "sale_line_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "billing": {
+          "name": "billing",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price_snapshot_satang": {
+          "name": "price_snapshot_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "parent_attending": {
+          "name": "parent_attending",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "attendance_days": {
+          "name": "attendance_days",
+          "type": "date[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::date[]"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'till'"
+        },
+        "sync_state": {
+          "name": "sync_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "sync_attempts": {
+          "name": "sync_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "sync_error": {
+          "name": "sync_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_sync_at": {
+          "name": "last_sync_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "synced_at": {
+          "name": "synced_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "merged": {
+          "name": "merged",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "writeback": {
+          "name": "writeback",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "station_id": {
+          "name": "station_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "box_id": {
+          "name": "box_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action_id": {
+          "name": "action_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "event_attendee_link_operator_idx": {
+          "name": "event_attendee_link_operator_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_branch_idx": {
+          "name": "event_attendee_link_branch_idx",
+          "columns": [
+            {
+              "expression": "branch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_event_idx": {
+          "name": "event_attendee_link_event_idx",
+          "columns": [
+            {
+              "expression": "otoapp_event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "otoapp_attendee_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_child_idx": {
+          "name": "event_attendee_link_child_idx",
+          "columns": [
+            {
+              "expression": "child_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_member_idx": {
+          "name": "event_attendee_link_member_idx",
+          "columns": [
+            {
+              "expression": "member_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_sale_idx": {
+          "name": "event_attendee_link_sale_idx",
+          "columns": [
+            {
+              "expression": "sale_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_sale_line_idx": {
+          "name": "event_attendee_link_sale_line_idx",
+          "columns": [
+            {
+              "expression": "sale_line_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_account_idx": {
+          "name": "event_attendee_link_account_idx",
+          "columns": [
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_station_idx": {
+          "name": "event_attendee_link_station_idx",
+          "columns": [
+            {
+              "expression": "station_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_box_idx": {
+          "name": "event_attendee_link_box_idx",
+          "columns": [
+            {
+              "expression": "box_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_attendee_link_unsynced_idx": {
+          "name": "event_attendee_link_unsynced_idx",
+          "columns": [
+            {
+              "expression": "sync_state",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "sync_state <> 'synced'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_attendee_link_operator_id_operator_id_fk": {
+          "name": "event_attendee_link_operator_id_operator_id_fk",
+          "tableFrom": "event_attendee_link",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_attendee_link_branch_id_branch_id_fk": {
+          "name": "event_attendee_link_branch_id_branch_id_fk",
+          "tableFrom": "event_attendee_link",
+          "tableTo": "branch",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "branch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_attendee_link_child_id_child_id_fk": {
+          "name": "event_attendee_link_child_id_child_id_fk",
+          "tableFrom": "event_attendee_link",
+          "tableTo": "child",
+          "schemaTo": "crm",
+          "columnsFrom": [
+            "child_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_attendee_link_member_id_member_id_fk": {
+          "name": "event_attendee_link_member_id_member_id_fk",
+          "tableFrom": "event_attendee_link",
+          "tableTo": "member",
+          "schemaTo": "crm",
+          "columnsFrom": [
+            "member_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_attendee_link_sale_id_sale_id_fk": {
+          "name": "event_attendee_link_sale_id_sale_id_fk",
+          "tableFrom": "event_attendee_link",
+          "tableTo": "sale",
+          "schemaTo": "pos",
+          "columnsFrom": [
+            "sale_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_attendee_link_sale_line_id_sale_line_id_fk": {
+          "name": "event_attendee_link_sale_line_id_sale_line_id_fk",
+          "tableFrom": "event_attendee_link",
+          "tableTo": "sale_line",
+          "schemaTo": "pos",
+          "columnsFrom": [
+            "sale_line_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_attendee_link_account_id_account_id_fk": {
+          "name": "event_attendee_link_account_id_account_id_fk",
+          "tableFrom": "event_attendee_link",
+          "tableTo": "account",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_attendee_link_station_id_station_id_fk": {
+          "name": "event_attendee_link_station_id_station_id_fk",
+          "tableFrom": "event_attendee_link",
+          "tableTo": "station",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "station_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_attendee_link_box_id_box_id_fk": {
+          "name": "event_attendee_link_box_id_box_id_fk",
+          "tableFrom": "event_attendee_link",
+          "tableTo": "box",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "box_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "event_attendee_link_type_check": {
+          "name": "event_attendee_link_type_check",
+          "value": "\"pos\".\"event_attendee_link\".\"event_type\" in ('party','camp','event')"
+        },
+        "event_attendee_link_source_check": {
+          "name": "event_attendee_link_source_check",
+          "value": "\"pos\".\"event_attendee_link\".\"source\" in ('till','booking','kiosk','otoapp')"
+        },
+        "event_attendee_link_sync_check": {
+          "name": "event_attendee_link_sync_check",
+          "value": "\"pos\".\"event_attendee_link\".\"sync_state\" in ('synced','pending','failed')"
+        },
+        "event_attendee_link_billing_check": {
+          "name": "event_attendee_link_billing_check",
+          "value": "\"pos\".\"event_attendee_link\".\"billing\" in ('sale','party_tab','free')"
+        },
+        "event_attendee_link_price_check": {
+          "name": "event_attendee_link_price_check",
+          "value": "\"pos\".\"event_attendee_link\".\"price_snapshot_satang\" >= 0"
+        },
+        "event_attendee_link_sale_check": {
+          "name": "event_attendee_link_sale_check",
+          "value": "(\"pos\".\"event_attendee_link\".\"billing\" = 'sale') = (\"pos\".\"event_attendee_link\".\"sale_id\" is not null)"
+        },
+        "event_attendee_link_synced_check": {
+          "name": "event_attendee_link_synced_check",
+          "value": "\"pos\".\"event_attendee_link\".\"sync_state\" <> 'synced' or (\"pos\".\"event_attendee_link\".\"otoapp_attendee_id\" is not null and \"pos\".\"event_attendee_link\".\"synced_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "pos.event_drop_in_pricing": {
+      "name": "event_drop_in_pricing",
+      "schema": "pos",
+      "columns": {
+        "branch_id": {
+          "name": "branch_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "operator_id": {
+          "name": "operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "camp_day_weekday_satang": {
+          "name": "camp_day_weekday_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "camp_day_weekend_satang": {
+          "name": "camp_day_weekend_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "event_day_weekday_satang": {
+          "name": "event_day_weekday_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "event_day_weekend_satang": {
+          "name": "event_day_weekend_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "party_guest_weekday_satang": {
+          "name": "party_guest_weekday_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "party_guest_weekend_satang": {
+          "name": "party_guest_weekend_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "updated_by_account_id": {
+          "name": "updated_by_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "event_drop_in_pricing_operator_idx": {
+          "name": "event_drop_in_pricing_operator_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "event_drop_in_pricing_updated_by_idx": {
+          "name": "event_drop_in_pricing_updated_by_idx",
+          "columns": [
+            {
+              "expression": "updated_by_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_drop_in_pricing_branch_id_branch_id_fk": {
+          "name": "event_drop_in_pricing_branch_id_branch_id_fk",
+          "tableFrom": "event_drop_in_pricing",
+          "tableTo": "branch",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "branch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_drop_in_pricing_operator_id_operator_id_fk": {
+          "name": "event_drop_in_pricing_operator_id_operator_id_fk",
+          "tableFrom": "event_drop_in_pricing",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_drop_in_pricing_updated_by_account_id_account_id_fk": {
+          "name": "event_drop_in_pricing_updated_by_account_id_account_id_fk",
+          "tableFrom": "event_drop_in_pricing",
+          "tableTo": "account",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "updated_by_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "event_drop_in_pricing_non_negative_check": {
+          "name": "event_drop_in_pricing_non_negative_check",
+          "value": "\"pos\".\"event_drop_in_pricing\".\"camp_day_weekday_satang\" >= 0 and \"pos\".\"event_drop_in_pricing\".\"camp_day_weekend_satang\" >= 0 and \"pos\".\"event_drop_in_pricing\".\"event_day_weekday_satang\" >= 0 and \"pos\".\"event_drop_in_pricing\".\"event_day_weekend_satang\" >= 0 and \"pos\".\"event_drop_in_pricing\".\"party_guest_weekday_satang\" >= 0 and \"pos\".\"event_drop_in_pricing\".\"party_guest_weekend_satang\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+>>>>>>> 6987d2f2 (feat(api): sell event passes and add walk-ups, written back to the OTO App)
     }
   },
   "enums": {},

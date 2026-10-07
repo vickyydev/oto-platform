@@ -2727,6 +2727,19 @@ function newestOf<T>(column: SQLWrapper): SQL<T | null> {
   return sql<T | null>`(array_agg(${column} order by ${opsRun.startedAt} desc))[1]`;
 }
 
+/**
+ * The integration runs a person may start again from the Failures page — each
+ * one a call that carries its own client-minted id, so sending it again is a
+ * replay at the other end (S2-20 E2: `otoapp:attendee.create`).
+ */
+export const RETRYABLE_INTEGRATION_RUNS: readonly string[] = ['otoapp:attendee.create'];
+
+/** Whether the Failures page may offer Retry for a run of this kind and name. */
+export function isRetryableRun(kind: string | null, name: string | null): boolean {
+  if (kind === 'job') return true;
+  return kind === 'integration' && name !== null && RETRYABLE_INTEGRATION_RUNS.includes(name);
+}
+
 /** `code: message`, both already scrubbed on write. Either may be absent. */
 function errorLine(code: string | null, message: string | null): string | null {
   if (code && message) return `${code}: ${message}`;
@@ -2808,8 +2821,10 @@ export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePag
     // Only a scheduled job is safe to start again from here. Anything that
     // took money, printed, opened a gate or told a device to do something has
     // already half-happened, and re-running it turns one failure into two
-    // events.
-    retryable: r.kind === 'job',
+    // events. S2-20 E2 adds the one integration that is built to be sent
+    // again: the OTO App write-back of a child, which carries the till's own
+    // attendee id and is a replay in the app, never a second child.
+    retryable: isRetryableRun(r.kind, r.name),
     branchId: r.branchId,
     stationId: r.stationId,
     actionId: r.actionId,

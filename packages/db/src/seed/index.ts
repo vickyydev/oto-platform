@@ -787,6 +787,25 @@ export async function seed(db: Db = getDb()): Promise<void> {
       .onConflictDoUpdate({ target: s.branchTaxConfig.branchId, set: { config: taxConfig } });
   }
 
+  // Walk-up prices (S2-20 E2): the prototype's HKT seeds — camp day ฿600,
+  // event day ฿350, party guest ฿450, the same on weekdays and weekends
+  // (catalogStore.ts `seedEventDropInPricing`). The second branch is the
+  // prototype's ฿0 everywhere, which is what a branch with no row answers, so
+  // it gets none. Seeded once; a manager's later edit is never overwritten.
+  await db
+    .insert(s.eventDropInPricing)
+    .values({
+      branchId,
+      operatorId,
+      campDayWeekdaySatang: b(600),
+      campDayWeekendSatang: b(600),
+      eventDayWeekdaySatang: b(350),
+      eventDayWeekendSatang: b(350),
+      partyGuestWeekdaySatang: b(450),
+      partyGuestWeekendSatang: b(450),
+    })
+    .onConflictDoNothing({ target: s.eventDropInPricing.branchId });
+
   // A product category + product so the tax-override resolver has targets.
   const [catRow] = await db
     .select({ id: s.productCategory.id })

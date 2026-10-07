@@ -17,6 +17,7 @@ import {
   type EventDayAnswer,
   type EventDetailAnswer,
   type EventEntryPrice,
+  type EventPartyWalkUpCharge,
   type EventPassesAnswer,
   type EventRosterAnswer,
   type EventRosterBucket,
@@ -38,6 +39,11 @@ import {
   type SeamEvent,
 } from './otoapp-events';
 import type { Exec } from './tx';
+import { linksOfEvents, walkUpChargeOf } from './event-writes';
+import type { DirectoryAttendeeBody } from './otoapp-directory';
+
+/** A link the POS wrote for a child it added, with who added them (S2-20 E2). */
+type LinkWithStaff = Awaited<ReturnType<typeof linksOfEvents>>[number];
 
 /**
  * S2-20 E1 — THE EVENTS READ SEAM (SCRUM-217; plan
@@ -178,10 +184,58 @@ function attendeeView(
     source: a.source,
     checkins,
     bucket: eventRosterBucket(onDate, isCamp, attendsOnDate),
+    syncState: null,
   };
 }
 
-function eventView(e: SeamEvent, attendees: EventAttendeeView[] | null): EventView {
+/**
+ * S2-20 E2 — A CHILD THE POS ADDED THAT THE OTO APP DOES NOT HAVE YET: the
+ * write-back is pending or was refused. The roster shows them from the POS's
+ * own record of what it sent, marked, rather than leaving them off the list
+ * (plan §4) — a child with a paid pass is at the door either way. No check-in
+ * is read for them: the app has none to give.
+ */
+function unsyncedAttendeeView(
+  event: SeamEvent,
+  link: LinkWithStaff,
+  date: string,
+): EventAttendeeView | null {
+  const sent = link.writeback as DirectoryAttendeeBody | null;
+  if (!sent || link.syncState === 'synced') return null;
+  const isCamp = event.type === 'camp';
+  const attendanceDays = isCamp ? [...link.attendanceDays].sort() : [];
+  const attendsOnDate = isCamp ? attendanceDays.includes(date) : true;
+  const dateOfBirth = sent.dateOfBirth ?? null;
+  return {
+    id: link.id,
+    childId: link.id,
+    recordKind: isCamp ? 'camp_registration' : 'event_attendee',
+    name: sent.childFullName,
+    age: sent.ageYears ?? ageOnDate(dateOfBirth, date),
+    dateOfBirth,
+    language: text(sent.primaryLanguage),
+    allergy: text(sent.allergies),
+    dietary: text(sent.foodRestrictions),
+    parentName: text(sent.parentName),
+    parentPhone: text(sent.parentPhone),
+    parentAttending: sent.parentAttending,
+    attendanceDays,
+    attendsAllDays: false,
+    attendsOnDate,
+    notes: text(sent.notes),
+    isOneTime: true,
+    source: 'pos',
+    checkins: [],
+    bucket: eventRosterBucket(null, isCamp, attendsOnDate),
+    syncState: link.syncState,
+  };
+}
+
+function eventView(
+  e: SeamEvent,
+  attendees: EventAttendeeView[] | null,
+  walkUpCharges: EventPartyWalkUpCharge[] = [],
+): EventView {
   return {
     id: e.id,
     branchId: e.branchId,
@@ -213,6 +267,7 @@ function eventView(e: SeamEvent, attendees: EventAttendeeView[] | null): EventVi
             totalValueSatang: e.totalValueSatang,
             depositSatang: e.depositSatang,
             depositDate: e.depositDate,
+            walkUpCharges,
           }
         : null,
     attendeeCount: attendees === null ? null : attendees.length,
@@ -249,14 +304,46 @@ async function withAttendees(
   for (const row of attendance) {
     rowsOf.set(row.attendeeId, [...(rowsOf.get(row.attendeeId) ?? []), row]);
   }
-  return events.map((e) =>
-    eventView(
-      e,
-      registrations
-        .filter((r) => r.eventId === e.id)
-        .map((r) => attendeeView(e, r, childById.get(r.childId), rowsOf.get(r.id) ?? [], q.date)),
-    ),
-  );
+  // S2-20 E2 — the POS's own record of the children it added.
+  const links = await linksOfEvents(db, { branchId, eventIds });
+  return events.map((e) => {
+    const own = links.filter((l) => l.otoappEventId === e.id);
+    const seam = registrations.filter((r) => r.eventId === e.id);
+    const inApp = new Set(seam.map((r) => r.id));
+    // The link's state for a child the app does hold: by the app's id (a
+    // merged registration's is not the till's), and by the till's own id for
+    // a write the app took but whose answer never came back.
+    const stateOf = new Map<string, EventAttendeeView['syncState']>();
+    for (const l of own) {
+      if (l.otoappAttendeeId && inApp.has(l.otoappAttendeeId)) stateOf.set(l.otoappAttendeeId, 'synced');
+      else if (inApp.has(l.id)) stateOf.set(l.id, l.syncState);
+    }
+    const attendees = [
+      ...seam.map((r) => ({
+        ...attendeeView(e, r, childById.get(r.childId), rowsOf.get(r.id) ?? [], q.date),
+        syncState: stateOf.get(r.id) ?? null,
+      })),
+      ...own
+        .filter((l) => !inApp.has(l.id) && !(l.otoappAttendeeId && inApp.has(l.otoappAttendeeId)))
+        .map((l) => unsyncedAttendeeView(e, l, q.date))
+        .filter((a): a is EventAttendeeView => a !== null),
+    ];
+    const nameOf = new Map(attendees.map((a) => [a.id, a.name]));
+    const charges =
+      e.type === 'party'
+        ? own
+            .filter((l) => l.billing === 'party_tab')
+            .map((l) =>
+              walkUpChargeOf(
+                l,
+                (l.writeback as DirectoryAttendeeBody | null)?.childFullName ??
+                  nameOf.get(l.otoappAttendeeId ?? l.id) ??
+                  'Guest',
+              ),
+            )
+        : [];
+    return eventView(e, attendees, charges);
+  });
 }
 
 /** The prototype's day order: by start time (`getEventsForDate`), then title for a stable tie. */

@@ -247,6 +247,13 @@ export const EventAttendeeViewSchema = z.object({
   checkins: z.array(EventCheckinViewSchema),
   /** Where the child sits on the day asked about. */
   bucket: z.enum(EVENT_ROSTER_BUCKETS),
+  /**
+   * S2-20 E2 — for a child the POS added, whether the OTO App has them yet;
+   * null for one registered in the OTO App itself. A `pending` or `failed`
+   * child is on the roster from the POS's own record (plan §4: "a failed write
+   * shows pending on the roster instead of disappearing").
+   */
+  syncState: z.enum(['synced', 'pending', 'failed']).nullable(),
 });
 export type EventAttendeeView = z.infer<typeof EventAttendeeViewSchema>;
 
@@ -263,6 +270,23 @@ export const EventEntryPriceSchema = z.object({
   weekendSatang: z.number().int(),
 });
 
+/**
+ * S2-20 E2 — a walk-up guest the till added to a party: the "Walk-up guest —
+ * name" ticket charge `sellEventPass` puts on the party's tab at the
+ * party-guest price (lib/eventPass.ts 63-71). Read from the POS's own record
+ * until the party tab is on the platform (E4).
+ */
+export const EventPartyWalkUpChargeSchema = z.object({
+  /** The attendee link: the walk-up's own id. */
+  id: z.string(),
+  name: z.string(),
+  amountSatang: z.number().int(),
+  chargedBy: z.string().nullable(),
+  chargedById: z.string().nullable(),
+  chargedAt: z.string(),
+});
+export type EventPartyWalkUpCharge = z.infer<typeof EventPartyWalkUpChargeSchema>;
+
 export const EventPartyViewSchema = z.object({
   childName: z.string().nullable(),
   kidTurningAge: z.number().int().nullable(),
@@ -275,6 +299,8 @@ export const EventPartyViewSchema = z.object({
   totalValueSatang: z.number().int().nullable(),
   depositSatang: z.number().int().nullable(),
   depositDate: z.string().nullable(),
+  /** S2-20 E2 — the walk-ups the till charged to this party's tab, oldest first. */
+  walkUpCharges: z.array(EventPartyWalkUpChargeSchema),
 });
 
 export const EventViewSchema = z.object({
@@ -410,3 +436,208 @@ export const EventsCacheItemSchema = z.object({
   events: z.array(EventsCacheEventSchema),
 });
 export type EventsCacheItem = z.infer<typeof EventsCacheItemSchema>;
+
+// --- Writes: walk-ups and passes (S2-20 E2) --------------------------------------
+
+/**
+ * The note a walk-up is stamped with (`addEventAttendee`, mockApi.ts:3745):
+ * who added the child, and whether "Also register for the full camp" was on.
+ */
+export function walkUpStamp(operatorName: string, registerProperly: boolean): string {
+  return `Walk-up added by ${operatorName}${registerProperly ? ' (registered for full range)' : ' (today only)'}`;
+}
+
+/** The roster note: staff's own note, then the stamp (`notes ? notes + ' — ' + stamp : stamp`). */
+export function walkUpNotes(notes: string | null | undefined, stamp: string): string {
+  const own = notes?.trim();
+  return own ? `${own} — ${stamp}` : stamp;
+}
+
+/**
+ * The days a walk-up is registered for (`addEventAttendee`, mockApi.ts:3737):
+ *
+ *   - a camp, "Also register for the full camp" on, with a last day: every
+ *     REMAINING day, today to the end — what the switch's own words say ("added
+ *     to every remaining camp day"); the prototype's code added every day from
+ *     the camp's first (Q5's default takes the label);
+ *   - any other camp walk-up — the switch off, or an open-ended camp, which
+ *     the prototype could only add for today (`registerProperly && dateRange`):
+ *     today only;
+ *   - a one-off event or a party: no days, they are one day.
+ */
+export function walkUpAttendanceDays(event: DatedEvent, registerProperly: boolean, today: string): string[] {
+  if (event.type !== 'camp') return [];
+  if (registerProperly && event.endDate !== null) {
+    return campDays(today > event.startDate ? today : event.startDate, event.endDate);
+  }
+  return [today];
+}
+
+/**
+ * How a walk-up is paid for (`sellEventPass`, lib/eventPass.ts 55-72):
+ *
+ *   - a party: the branch's party-guest walk-up price, on the party's tab, with
+ *     no door payment;
+ *   - a camp or an event: its own flat entry price, as a pass sale — or, at ฿0,
+ *     the attendee with no sale.
+ *
+ * Both are resolved at the day's rate mode and never tiered (R-98).
+ */
+export type EventWalkUpBilling = 'sale' | 'party_tab' | 'free';
+
+export function walkUpBillingOf(type: OtoEventType, feeSatang: number): EventWalkUpBilling {
+  if (type === 'party') return 'party_tab';
+  return feeSatang > 0 ? 'sale' : 'free';
+}
+
+/** The pass's line on the sale (`sellEventPass` 82-86): the svc ids kept for reports (Q2). */
+export function eventPassService(type: 'camp' | 'event'): { serviceId: string; label: string } {
+  return type === 'camp'
+    ? { serviceId: 'svc-camp-pass', label: 'Camp day pass' }
+    : { serviceId: 'svc-event-pass', label: 'Event entry pass' };
+}
+
+/** The pass's duration, as the prototype's synthetic ticket type carried it. */
+export const EVENT_PASS_DURATION_LABEL = 'One-time';
+
+/**
+ * The child as the till captured them (`NewEventAttendeeInput`,
+ * mockApi.ts:3685; `buildAttendeeInput`, AttendeeFormFields.tsx). A child's
+ * name and a guardian's name are the two the form insists on.
+ */
+export const EventAttendeeInputSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  age: z.number().int().min(0).max(30).optional(),
+  dateOfBirth: IsoDate.optional(),
+  language: z.string().trim().max(100).optional(),
+  allergyFlag: z.boolean().optional(),
+  allergyDetail: z.string().trim().max(1500).optional(),
+  dietaryFlag: z.boolean().optional(),
+  dietaryDetail: z.string().trim().max(1500).optional(),
+  notes: z.string().trim().max(1000).optional(),
+  parentName: z.string().trim().min(1).max(200),
+  parentPhone: z.string().trim().max(50).optional(),
+  emergencyContact: z.string().trim().max(200).optional(),
+  parentAttending: z.boolean().optional(),
+});
+export type EventAttendeeInput = z.infer<typeof EventAttendeeInputSchema>;
+
+/** `POST /events/:id/attendees` — a party walk-up or a child on a free event. */
+export const EventAttendeeCreateBodySchema = z.object({
+  branchId: z.string().uuid(),
+  /**
+   * The attendee's id, minted by the till (UUIDv7). The OTO App stores the
+   * child under it, so a retry with it is a replay, here and there.
+   */
+  attendeeId: z.string().uuid(),
+  attendee: EventAttendeeInputSchema,
+  /** "Also register for the full camp" (camps only). */
+  registerProperly: z.boolean().default(false),
+  /** The station the till is, when it has one. */
+  stationId: z.string().uuid().optional(),
+  /** The member the till identified, and the saved child it pre-filled from. */
+  memberId: z.string().uuid().optional(),
+  childId: z.string().uuid().optional(),
+  actionId: z.string().min(1).max(200).optional(),
+});
+export type EventAttendeeCreateBody = z.infer<typeof EventAttendeeCreateBodySchema>;
+
+/** The tender a pass is paid with — the till's "Confirm Payment Received". */
+export const EventPassTenderSchema = z.object({
+  /** The payment method's token, as configured for the branch. */
+  method: z.string().min(1).max(40),
+  kind: z.string().max(20).optional(),
+  /** What this tender settles; the whole fee when absent. A pass is paid in one tender. */
+  amountSatang: z.number().int().min(0).optional(),
+  tenderedSatang: z.number().int().min(0).optional(),
+  changeSatang: z.number().int().min(0).optional(),
+  reference: z.string().max(120).optional(),
+});
+export type EventPassTender = z.infer<typeof EventPassTenderSchema>;
+
+/** `POST /events/:id/passes` — a paid camp or event pass, sold and paid in one press. */
+export const EventPassSellBodySchema = EventAttendeeCreateBodySchema.extend({
+  stationId: z.string().uuid(),
+  /** The pass sale's id, minted by the till. */
+  saleId: z.string().uuid(),
+  tender: EventPassTenderSchema,
+  /** The fee the till showed. Compared, never charged: a stale price is refused. */
+  expectedTotalSatang: z.number().int().min(0).optional(),
+});
+export type EventPassSellBody = z.infer<typeof EventPassSellBodySchema>;
+
+export const EVENT_ATTENDEE_SYNC_STATE_VALUES = ['synced', 'pending', 'failed'] as const;
+export type EventAttendeeSyncStateValue = (typeof EVENT_ATTENDEE_SYNC_STATE_VALUES)[number];
+
+/** A child the POS added, as the till is answered. */
+export const EventAttendeeLinkViewSchema = z.object({
+  /** The till's attendee id. */
+  id: z.string(),
+  eventId: z.string(),
+  eventType: z.enum(OTO_EVENT_TYPES),
+  /** The OTO App's attendee once it answered — the same id, unless the app merged the child (its camp rule). */
+  otoappAttendeeId: z.string().nullable(),
+  merged: z.boolean(),
+  billing: z.enum(['sale', 'party_tab', 'free']),
+  priceSatang: z.number().int(),
+  attendanceDays: z.array(IsoDate),
+  parentAttending: z.boolean(),
+  syncState: z.enum(EVENT_ATTENDEE_SYNC_STATE_VALUES),
+  /** Why the OTO App does not have the child yet; null once it does. */
+  syncError: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type EventAttendeeLinkView = z.infer<typeof EventAttendeeLinkViewSchema>;
+
+export const EventAttendeeWriteAnswerSchema = z.object({
+  attendee: EventAttendeeLinkViewSchema,
+  /** The same attendee id was sent before; this is what that request made. */
+  replayed: z.boolean(),
+  /** The pass sale, when there is one. */
+  sale: z
+    .object({
+      id: z.string(),
+      receiptNumber: z.string().nullable(),
+      grossSatang: z.number().int(),
+      status: z.string(),
+    })
+    .nullable(),
+  /** What closing the sale did not put on paper; empty when everything printed. */
+  printingNotes: z.array(z.string()),
+});
+export type EventAttendeeWriteAnswer = z.infer<typeof EventAttendeeWriteAnswerSchema>;
+
+// --- The branch's walk-up prices (Q8) ---------------------------------------------
+
+const SatangPair = z.object({
+  weekday: z.number().int().min(0).max(100_000_000),
+  weekend: z.number().int().min(0).max(100_000_000),
+});
+
+/**
+ * `EventDropInPricing` (types.ts:1876), in satang: three weekday/weekend pairs.
+ * Only `partyGuest` is read anywhere — a pass is priced from its own event —
+ * but all three are stored and shown on the Admin Events panel (Q8's default).
+ */
+export const EventDropInPricingSchema = z.object({
+  campDay: SatangPair,
+  eventDay: SatangPair,
+  partyGuest: SatangPair,
+});
+export type EventDropInPricing = z.infer<typeof EventDropInPricingSchema>;
+
+export const EventDropInPricingAnswerSchema = z.object({
+  branchId: z.string(),
+  pricing: EventDropInPricingSchema,
+  /** False for a branch nobody has priced: every price is then ฿0, the prototype's own unpriced branch. */
+  configured: z.boolean(),
+  updatedAt: z.string().nullable(),
+});
+export type EventDropInPricingAnswer = z.infer<typeof EventDropInPricingAnswerSchema>;
+
+/** A branch nobody priced: ฿0 everywhere (catalogStore.ts, the second branch's seed). */
+export const EVENT_DROP_IN_PRICING_NONE: EventDropInPricing = {
+  campDay: { weekday: 0, weekend: 0 },
+  eventDay: { weekday: 0, weekend: 0 },
+  partyGuest: { weekday: 0, weekend: 0 },
+};

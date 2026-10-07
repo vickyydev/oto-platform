@@ -42,10 +42,12 @@ import {
   findRun,
   healthSnapshot,
   integrationsSnapshot,
+  isRetryableRun,
   raiseAlert,
   recordRun,
   runsForFingerprint,
 } from '../services/ops';
+import { retryAttendeeWriteBack } from '../services/event-writes';
 
 /**
  * What the Console reads about how the platform is running (S2-03), and the
@@ -294,6 +296,39 @@ export async function opsRoutes(app: App): Promise<void> {
       const run = await findRun(app.db, req.params.runId, auth.operatorId);
       if (!run) throw errors.notFound('No such run');
       await requireOpsScope(req, run.branchId);
+      /**
+       * S2-20 E2 — THE OTO APP WRITE-BACK OF A CHILD, sent again. The one
+       * integration built for it: the call carries the attendee id the till
+       * minted, so the app answers a second send as a replay, never a second
+       * child (H3). The run names the link in its detail; the link's own
+       * stored body is what is sent, under the same id.
+       */
+      if (run.kind === 'integration' && isRetryableRun(run.kind, run.name)) {
+        const linkId = (run.detail as { linkId?: unknown } | null)?.linkId;
+        if (typeof linkId !== 'string') {
+          throw errors.conflict('RUN_NOT_RETRYABLE', 'This run does not say which attendee it was writing');
+        }
+        const link = await retryAttendeeWriteBack(
+          { db: app.db, directory: app.otoAppDirectory, log: req.log },
+          { operatorId: auth.operatorId, linkId, requestId: req.id },
+        );
+        await withTx(app.db, opCtx(req), 'ops.run_retry', async (tx) => {
+          await audit.record(tx, {
+            actorAccountId: auth.accountId,
+            operatorId: auth.operatorId,
+            branchId: run.branchId,
+            action: 'ops.run_retry',
+            entityType: 'ops_run',
+            entityId: run.id,
+            actionId: link.actionId,
+            after: { integration: run.name, linkId: link.id, syncState: link.syncState },
+            requestId: req.id,
+          });
+        });
+        // `ok` is "the retry was sent", as for a job: whether the app took it
+        // is `syncState`, and a failure again has a run of its own saying so.
+        return { ok: true as const, outcome: link.syncState === 'synced' ? 'ok' : 'failed', syncState: link.syncState };
+      }
       /**
        * A job is a sweep: running it again is the whole design. Everything
        * else recorded here — a request, a device call, an adapter — has

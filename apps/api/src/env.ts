@@ -562,6 +562,35 @@ const EnvSchema = z.object({
         });
       }
     }),
+
+  /**
+   * THE OTO APP'S DIRECTORY API (S2-20 E2, events-kiosk PLAN §8 round 0).
+   *
+   * The OTO App owns every event registration (conflict C10). When a till
+   * adds a walk-up or sells an event pass, the child is written there through
+   * `POST /api/directory/events/:id/attendees`, with a key the app issued to
+   * this api for one tenant (`npm run directory:client` in the app). Unset, no
+   * write-back is attempted: the sale and the POS's record still stand, and
+   * each child waits as `pending` on the roster and on the Failures page until
+   * a retry finds the app configured.
+   */
+  /** The app's origin, e.g. `https://oto-app.onrender.com`. No trailing path. */
+  OTOAPP_DIRECTORY_URL: z
+    .string()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (!value) return;
+      try {
+        const url = new URL(value);
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('not http(s)');
+      } catch {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'OTOAPP_DIRECTORY_URL: an http(s) origin' });
+      }
+    }),
+  /** The tenant-bound directory key (`odk_…`). **Secret.** Never logged, never on a page. */
+  OTOAPP_DIRECTORY_KEY: z.string().default(''),
+  /** How long one directory call may take before it counts as no answer. */
+  OTOAPP_DIRECTORY_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

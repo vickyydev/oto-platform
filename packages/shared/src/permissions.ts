@@ -198,6 +198,16 @@ export const PERMISSIONS = [
    * allergy notes and their parents' phones, as `pos:checkin:read` does.
    */
   'pos:event:read',
+  /**
+   * S2-20 E2 — add a child to an event where no money is taken at the door: a
+   * party walk-up (the party-guest price goes on the tab) or a free event. The
+   * child is written to the OTO App through its directory API.
+   */
+  'pos:event:attendee_create',
+  /** S2-20 E2 — sell a paid camp or event pass: an ordinary sale, then the child as above. */
+  'pos:event:pass_sell',
+  /** S2-20 E2 — the Admin Events panel's walk-up prices (camp day, event day, party guest). */
+  'admin:event_pricing:manage',
   // POS — wallets (S2-14a)
   'pos:wallet:read',
   'pos:wallet:grant',
@@ -411,6 +421,11 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:checkin:update',
     'pos:checkin:release',
     'pos:checkin:guardian_manage',
+    // S2-20 E2 — walk-ups and event passes at the door (plan §10), and the
+    // branch's walk-up prices on the Admin Events panel.
+    'pos:event:attendee_create',
+    'pos:event:pass_sell',
+    'admin:event_pricing:manage',
     'pos:wallet:grant',
     'pos:wallet:spend',
     'pos:wallet:adjust',
@@ -460,6 +475,10 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:checkin:update',
     'pos:checkin:release',
     'pos:checkin:guardian_manage',
+    // S2-20 E2 — the prototype lets any signed-in staff member add a walk-up or
+    // sell an event pass, and reception holds the counter's events (plan §10).
+    'pos:event:attendee_create',
+    'pos:event:pass_sell',
     'pos:wallet:grant',
     'pos:wallet:spend',
     'pos:stock:count',

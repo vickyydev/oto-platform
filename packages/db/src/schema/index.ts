@@ -39,3 +39,6 @@ export * from './benefits';
 // The self-service kiosk (S2-20 K1): after the sales ledger and the fleet,
 // whose sale, station, box and device credential a kiosk session names.
 export * from './kiosk';
+// Events, camps and parties (S2-20 E2): after the sales ledger and the members
+// whose sale, line, child and member an attendee link names.
+export * from './events';

@@ -45,7 +45,7 @@ import { fileRoutes } from './routes/files';
 import { checkinRoutes } from './routes/checkin';
 import { releaseRoutes } from './routes/release';
 import { walletRoutes } from './routes/wallets';
-import { eventRoutes } from './routes/events';
+import { eventPricingRoutes, eventRoutes } from './routes/events';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
 import { analyticsRoutes } from './routes/analytics';
@@ -72,6 +72,7 @@ import { pgErrorOf, scrubPgError, scrubUrl, uniqueViolationToAppError } from './
 import { audit } from './services/audit';
 import type { FileStorage } from './services/files';
 import { buildSmsSender, type SmsSender } from './services/sms';
+import { buildOtoAppDirectory, type OtoAppDirectory } from './services/otoapp-directory';
 
 /** The Fastify instance with the Zod type provider — route schemas infer req.body/params. */
 export type App = FastifyInstance<
@@ -89,6 +90,8 @@ declare module 'fastify' {
     reporter: ErrorReporter;
     fileStorage: FileStorage | null;
     sms: SmsSender;
+    /** S2-20 E2 — the OTO App's directory API, where walk-ups and passes are written back. */
+    otoAppDirectory: OtoAppDirectory;
   }
 }
 
@@ -187,6 +190,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
       log,
     ),
   );
+  // S2-20 E2 — replaced in tests by a stub, as `sms` is.
+  app.decorate('otoAppDirectory', buildOtoAppDirectory(opts.env, log));
 
   await app.register(cookie);
   // First, so its onSend and onResponse hooks see every request — including
@@ -458,6 +463,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(walletRoutes, { prefix: '/wallets' });
   // S2-20 E1 — the OTO App's events, camps and parties, read through its views.
   await app.register(eventRoutes, { prefix: '/events' });
+  // S2-20 E2 — the branch's walk-up prices, beside the branch's other config.
+  await app.register(eventPricingRoutes, { prefix: '/branches' });
   // S2-15a round 1 — the End of Day (one combined count per branch-day) and
   // the paid-outs and safe drops it expects less of. Paths declared in full.
   await app.register((await import('./routes/end-of-day')).endOfDayRoutes);

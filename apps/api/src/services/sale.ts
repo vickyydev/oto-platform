@@ -62,6 +62,7 @@ import {
   bandShortCode,
   LEGACY_SATANG_ENGINE_VERSION,
   DEFAULT_ROUNDING,
+  EVENT_PASS_DURATION_LABEL,
   PROTOTYPE_BAHT_ROUNDING,
   priceCartLine,
   refundStatusOf,
@@ -394,6 +395,31 @@ export interface CartInput {
    * authorise food, the design's food-consent override (`foodOverride`).
    */
   bandHolder?: CartBandHolderInput | null;
+  /**
+   * S2-20 E2 — AN EVENT PASS: one child's flat entry to a camp or a one-off
+   * event, sold at the till (`sellEventPass`, lib/eventPass.ts 73-101).
+   *
+   * Set ONLY by `services/event-writes.ts`, which reads the price from the
+   * event itself through the OTO App's seam: the sales route's body schema
+   * does not carry it, so a till cannot name its own pass price. It is priced
+   * as the prototype modelled it — a one-kid line at the event's weekday /
+   * weekend pair, resolved at the day's rate mode, the same at every tier
+   * (R-98), under the `tickets` category (Q2) with the svc id kept as the
+   * line's component key — and it owes no band and earns no credit: an event
+   * band is minted at check-in (E3), and the pass has no ticket package.
+   */
+  eventPass?: {
+    /** The cart line's id: the attendee id the till minted. */
+    lineId: string;
+    /** `svc-camp-pass` or `svc-event-pass`. */
+    serviceId: string;
+    /** "Camp day pass" or "Event entry pass". */
+    label: string;
+    /** The event's flat entry price, satang. */
+    price: { weekday: number; weekend: number };
+    /** What the payload names: the OTO App's event and the till's attendee. */
+    eventId: string;
+  } | null;
 }
 
 /**
@@ -764,6 +790,8 @@ export interface SaleLinePayload {
    * food-consent override when staff recorded one.
    */
   holder?: { checkinId: string; foodOverride?: { accountId: string; at: string } };
+  /** S2-20 E2 — on an event pass's line: the OTO App's event and the till's attendee. */
+  eventPass?: { eventId: string; attendeeId: string };
 }
 
 /** A priced unit, ready to become a `pos.sale_line` row. */
@@ -1707,6 +1735,31 @@ export async function priceCart(
   }
 
   /**
+   * S2-20 E2 — THE EVENT PASS, priced here like any ticket line: the engine
+   * prices one kid at the event's flat pair at this rate mode. The pair is
+   * the price at whatever tier resolved, because a pass is never tiered.
+   */
+  const pass = input.eventPass ?? null;
+  if (pass) {
+    if ((input.lines?.length ?? 0) > 0 || (input.items?.length ?? 0) > 0) {
+      throw errors.badRequest('An event pass is sold on a sale of its own');
+    }
+    const passLine: TicketCartLine = {
+      id: pass.lineId,
+      packageId: pass.serviceId,
+      package: { prices: { [resolvedTier.code]: pass.price } },
+      tier: resolvedTier.code,
+      kids: 1,
+      adults: 0,
+      socks: 0,
+      addOns: [],
+      lineTotal: 0,
+    };
+    passLine.lineTotal = priceCartLine(passLine, ctx);
+    cartLines.push(passLine);
+  }
+
+  /**
    * S2-09b — the F&B and shop lines, priced from the catalogue and appended to
    * the cart the engine totals, so one cascade covers the whole bill.
    */
@@ -1957,7 +2010,7 @@ export async function priceCart(
   }
 
   const pickupCode = normalisePickupCode(input.pickupCode);
-  const lines = buildPricedLines(
+  const built = buildPricedLines(
     cartLines,
     ctx,
     totals,
@@ -1968,6 +2021,22 @@ export async function priceCart(
     pickupCode,
     voucherLines,
   );
+  // S2-20 E2 — the pass's unit carries the prototype's ticket name, its svc id
+  // and its "One-time" duration; it has no package, so it owes no band.
+  const lines = pass
+    ? built.map((line) =>
+        line.cartLineId === pass.lineId
+          ? {
+              ...line,
+              componentKey: pass.serviceId,
+              label: pass.label,
+              stayHours: 0,
+              stayDurationLabel: EVENT_PASS_DURATION_LABEL,
+              payload: { ...(line.payload ?? {}), eventPass: { eventId: pass.eventId, attendeeId: pass.lineId } },
+            }
+          : line,
+      )
+    : built;
 
   return {
     scope,
@@ -2867,8 +2936,10 @@ export interface CommitResult {
  * together): a free-item line is one unit, kids, adults, socks, each add-on, a
  * fee and prepaid food each make one, and every F&B or shop line is one.
  */
-export function storedCartLineIds(input: Pick<CartInput, 'lines' | 'items'>): Set<string> {
+export function storedCartLineIds(input: Pick<CartInput, 'lines' | 'items' | 'eventPass'>): Set<string> {
   const ids = new Set<string>();
+  // S2-20 E2 — an event pass is one kid unit under its own line id.
+  if (input.eventPass) ids.add(input.eventPass.lineId.toLowerCase());
   for (const line of input.lines ?? []) {
     const pricesIntoAUnit =
       Boolean(line.promoItem) ||
