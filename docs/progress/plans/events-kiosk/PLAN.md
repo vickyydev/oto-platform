@@ -434,6 +434,12 @@ Size: XL. K1 and K2 can run while round 0 is built.
     ("Vegetarian", "No pork") in the allergy field. Under the OTO App's
     any-text rule about 22% of real camp children would carry the red
     Allergy / Medical badge. Default: the app's rule as it stands.
+- **Q14. The desk and other parks' bookings** (from the K2 review): a
+    booking from another park scanned at a kiosk is listed on this
+    park's desk as to-redeem with a raw reason code in the staff line,
+    and a cancelled or expired booking stays to-redeem all day.
+    Default: listed (the desk is where a confused guest is helped);
+    wording and an end-of-day sweep to confirm.
 - **Robustness note, not a question:** the event view checks dates with
     a yyyy-mm-dd pattern while the OTO App stores them as free text; all
     155 production dates conform today, but one stray value would turn a
