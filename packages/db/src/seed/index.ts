@@ -74,6 +74,8 @@ export {
 } from './benefits';
 /** Demo Branch 2's own booth, whose day the demo day files beside its sales. */
 export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
+/** The demo day's events, camp and party in the OTO App, and its walk-up prices (S2-20 E5). */
+export { describeDemoEvents, seedDemoEvents, type DemoEventsCounts } from './demo-events';
 /** What the demo day refuses with before it writes, in words a person can act on (SCRUM-503). */
 export { DemoDayRefusedError } from './demo-refusal';
 /** The frozen legacy days the demo day loads at Demo Branch 2 (S2-15b round 6). */

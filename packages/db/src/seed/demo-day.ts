@@ -88,6 +88,7 @@ import {
   type DemoBoothStaff,
 } from './demo-booth';
 import { DemoDayRefusedError } from './demo-refusal';
+import { describeDemoEvents, seedDemoEvents, type DemoEventsCounts } from './demo-events';
 import { seedLegacyFixtureDays } from './legacy-fixtures';
 import { stableId } from './stable-id';
 
@@ -576,6 +577,12 @@ export interface DemoDayCounts {
    * loaded at the demo branch: two the first time, none after.
    */
   legacyFixtureDays: number;
+  /**
+   * S2-20 E5 — the day's events, camp and party in the OTO App, and the
+   * branch's walk-up prices (`demo-events.ts`). Absent from a count made by
+   * hand; a run always sets it.
+   */
+  events?: DemoEventsCounts;
 }
 
 /**
@@ -594,7 +601,8 @@ export function describeDemoDay(counts: DemoDayCounts): string {
   return (
     `Demo day ${counts.businessDate} at ${counts.branchName}: ` +
     `${plural(counts.sales, 'sale added', 'sales added')}, ${counts.skipped} already present${toppedUp}; ` +
-    `booth: ${plural(counts.boothSpins, 'spin added', 'spins added')}, ${counts.boothSpinsPresent} already present${legacy}.`
+    `booth: ${plural(counts.boothSpins, 'spin added', 'spins added')}, ${counts.boothSpinsPresent} already present${legacy}.` +
+    describeDemoEvents(counts.events)
   );
 }
 
@@ -996,6 +1004,15 @@ export async function seedDemoDay(
   // day filed by a booth since archived in the Console is still counted
   // (SCRUM-503).
   counts.boothSpinsPresent = (await demoBoothSpinsOn(db, booth, on, ref.dayPrefix)) - counts.boothSpins;
+
+  // S2-20 E5 — the day's events, camp and party, in the OTO App's own tables
+  // at the demo branch's app row, and the branch's walk-up prices
+  // (`demo-events.ts`). Convergent, like everything above.
+  counts.events = await seedDemoEvents(
+    db,
+    { id: branchId, name: branchName, operatorId, timezone },
+    { on, at: instantAt(0) },
+  );
 
   return counts;
 }
