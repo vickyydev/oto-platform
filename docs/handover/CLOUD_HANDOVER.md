@@ -17,7 +17,7 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-Current checkpoint: S2-15 analytics is COMPLETE - SCRUM-216 and SCRUM-214 are Deployed with reviewed staging evidence (ten frames on 216, three on 214). SCRUM-493's four build parts are all Deployed; 493 waits only on SCRUM-497 answers. Main and staging are at db2e89ff. Next in sprint order: S2-20 (SCRUM-217) and S2-21 (SCRUM-218), both blocked on the directory groundwork slice (otoapp_v views, core.employee mirror, write-back endpoints - touches apps/oto-app) which waits on the owner's go-ahead.
+Current checkpoint: S2-15 analytics COMPLETE (SCRUM-216 and SCRUM-214 Deployed with evidence); CP4 reached - the full-POS demo is ready for Tony on staging (db2e89ff). S2-20 (SCRUM-217) and S2-21 (SCRUM-218) are In Progress in three parallel lanes: lane H `lane/g17-round0` (events round 0 / S2-17b slice: otoapp_v views, additive OTO App migration, directory identity + write-back POSTs), lane K `lane/s220-k1` (kiosk redemption core), lane I `lane/s221-r1` (benefits round 1 on seeded employees). Provisional migrations H=0066, I=0067, K=0068; the lander renumbers in landing order. Then K2, E1-E5 and benefits rounds 2-4 per the plans in docs/progress/plans/{events-kiosk,benefits}/PLAN.md.
 
 _Updated: 7 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block carry exact deployments and checkpoints._
 
