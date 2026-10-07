@@ -956,6 +956,13 @@ export interface BenefitApplicationLogRow {
   stationId: string;
   boxId: string | null;
   origin: 'cloud' | 'box';
+  /**
+   * The order as it stands now (S2-21 round 4, plan Q4's default): a refund
+   * gives no quota back and leaves the entry as it was, so the entry says what
+   * the order has since given back in money — `refunded` once all of it was.
+   */
+  saleStatus: 'finalised' | 'refunded';
+  refundedSatang: number;
 }
 
 /**
@@ -965,17 +972,27 @@ export interface BenefitApplicationLogRow {
  * `StaffBenefitsPanel`) on the platform's rows. An application taken off or
  * moved before its order was paid is not an entry, as the prototype never
  * wrote one before confirmation.
+ *
+ * `branchIds` is the reader's reach (S2-21 round 4, from the round 3 review):
+ * the templates and the staff list are operator-wide configuration, but these
+ * rows are one branch's sales — receipt numbers, stations, boxes and amounts —
+ * so a reader scoped to some branches reads only theirs. `'all'` is a reader
+ * who holds `admin:benefit:read` across the operator.
  */
 export async function listBenefitApplications(
   db: Exec,
   operatorId: string,
+  branchIds: readonly string[] | 'all' = 'all',
   limit = 200,
 ): Promise<BenefitApplicationLogRow[]> {
+  if (branchIds !== 'all' && branchIds.length === 0) return [];
   const rows = await db
     .select({
       application: benefitApplication,
       employeeName: employee.name,
       receiptNumber: sale.receiptNumber,
+      saleStatus: sale.status,
+      refundedSatang: sale.refundedSatang,
     })
     .from(benefitApplication)
     .innerJoin(employee, eq(employee.id, benefitApplication.employeeId))
@@ -983,6 +1000,7 @@ export async function listBenefitApplications(
     .where(
       and(
         eq(benefitApplication.operatorId, operatorId),
+        branchIds === 'all' ? undefined : inArray(benefitApplication.branchId, [...branchIds]),
         isNull(benefitApplication.removedAt),
         inArray(sale.status, ['finalised', 'refunded']),
       ),
@@ -993,7 +1011,7 @@ export async function listBenefitApplications(
     db,
     rows.map((r) => r.application.processedByAccountId),
   );
-  return rows.map(({ application: a, employeeName, receiptNumber }) => ({
+  return rows.map(({ application: a, employeeName, receiptNumber, saleStatus, refundedSatang }) => ({
     id: a.id,
     at: a.occurredAt.toISOString(),
     employeeId: a.employeeId,
@@ -1014,5 +1032,7 @@ export async function listBenefitApplications(
     stationId: a.stationId,
     boxId: a.boxId,
     origin: a.origin,
+    saleStatus: saleStatus === 'refunded' ? 'refunded' : 'finalised',
+    refundedSatang,
   }));
 }

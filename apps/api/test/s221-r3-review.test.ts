@@ -39,6 +39,7 @@ import {
 import { boxCredential } from '@oto/box-agent';
 import {
   ADMIN,
+  BRANCH_MANAGER,
   CHALONG_MANAGER,
   OTO_OPERATOR_NAME,
   RECEPTION,
@@ -1317,18 +1318,38 @@ describe('the Staff Benefits Audit log route (pulled forward from round 4)', () 
   });
 
   /**
-   * NOT BLOCKING, for round 4 (which owns the Audit log). Probed in review: a
-   * manager whose `branch_manager` grant is scoped to Robinson Chalong reads
-   * Central Floresta's applications — receipt numbers, stations, boxes and the
-   * amounts — because `listBenefitApplications` filters by operator only and
-   * the route names no branch target. The templates and the staff list are
-   * operator-wide configuration; these rows are one branch's sales.
+   * Recorded in review as not blocking, for round 4 (which owns the Audit
+   * log), and closed there. Probed in review: a manager whose `branch_manager`
+   * grant is scoped to Robinson Chalong read Central Floresta's applications —
+   * receipt numbers, stations, boxes and the amounts — because
+   * `listBenefitApplications` filtered by operator only and the route named no
+   * branch target. The templates and the staff list are operator-wide
+   * configuration; these rows are one branch's sales, and are now read by the
+   * caller's reach.
    */
-  it.todo('a manager scoped to another park does not read this park’s benefit applications');
-  it('(today’s answer, so the todo above is not mistaken for untested) a back-office reader is answered', async () => {
+  it('a manager scoped to another park does not read this park’s benefit applications', async () => {
     const chalong = await signInAs(ctx.app, CHALONG_MANAGER.phone, CHALONG_MANAGER.password);
     const res = await call<{ applications: { branchId: string }[] }>('GET', '/benefits/applications', chalong);
     expect(res.status).toBe(200);
+    expect(res.body.applications.filter((a) => a.branchId === branchId)).toEqual([]);
+    // Asked for by name, this park is refused rather than answered empty.
+    const named = await call('GET', `/benefits/applications?branchId=${branchId}`, chalong);
+    expect(named.status).toBe(403);
+  });
+
+  it('this park’s own manager reads its applications, by reach and by name', async () => {
+    const own = await signInAs(ctx.app, BRANCH_MANAGER.phone, BRANCH_MANAGER.password);
+    const all = await call<{ applications: { branchId: string }[] }>('GET', '/benefits/applications', own);
+    expect(all.status).toBe(200);
+    expect(all.body.applications.length).toBeGreaterThan(0);
+    expect(all.body.applications.every((a) => a.branchId === branchId)).toBe(true);
+    const named = await call<{ applications: { branchId: string }[] }>(
+      'GET',
+      `/benefits/applications?branchId=${branchId}`,
+      own,
+    );
+    expect(named.status).toBe(200);
+    expect(named.body.applications.length).toBe(all.body.applications.length);
   });
 });
 

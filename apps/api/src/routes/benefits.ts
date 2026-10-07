@@ -26,6 +26,7 @@ import {
   revokeBenefitCredential,
 } from '../services/benefit-credentials';
 import { listBenefitApplications } from '../services/benefit-checkout';
+import { branchReach } from '../services/access-control';
 import { opCtx } from '../services/tx';
 
 /**
@@ -279,7 +280,8 @@ export async function benefitRoutes(app: App): Promise<void> {
       config: { permission: 'admin:benefit:read' },
       schema: {
         description:
-          'The Staff Benefits Audit log: every staff benefit applied to an order that was recorded, newest first (200 at most) — whose QR, their benefit role, who processed it at which station and box, whether it was a comp, the four amounts and the total in satang, what came off the bill, and the sale and its receipt number. Kept whatever later happens to the order. An application taken off, or moved to the order rung up again, before its order was paid is not an entry.',
+          'The Staff Benefits Audit log: every staff benefit applied to an order that was recorded, newest first (200 at most) — whose QR, their benefit role, who processed it at which station and box, whether it was a comp, the four amounts and the total in satang, what came off the bill, and the sale and its receipt number. Kept whatever later happens to the order: a refund gives no quota back (plan Q4’s default) and the entry says what the order has since given back in money (`saleStatus`, `refundedSatang`). An application taken off, or moved to the order rung up again, before its order was paid is not an entry. Read per branch: a reader holding `admin:benefit:read` at some branches reads only their applications; `branchId` narrows to one branch, refused (403) for a branch the caller does not hold.',
+        querystring: z.object({ branchId: z.string().uuid().optional() }),
         response: {
           200: z.object({
             applications: z.array(
@@ -304,6 +306,8 @@ export async function benefitRoutes(app: App): Promise<void> {
                 stationId: z.string().uuid(),
                 boxId: z.string().uuid().nullable(),
                 origin: z.enum(['cloud', 'box']),
+                saleStatus: z.enum(['finalised', 'refunded']),
+                refundedSatang: z.number().int(),
               }),
             ),
           }),
@@ -312,7 +316,26 @@ export async function benefitRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const auth = req.requireAuth();
-      return { applications: await listBenefitApplications(app.db, auth.operatorId) };
+      /**
+       * S2-21 round 4 (from the round 3 review) — WHOSE ROWS. The templates
+       * and the staff list are operator-wide configuration; these rows are one
+       * branch's sales, so they are read by the caller's reach, as the audit
+       * log's own route reads its rows (`branchReach`).
+       */
+      if (req.query.branchId) {
+        await req.requirePermission('admin:benefit:read', { branchId: req.query.branchId });
+        return {
+          applications: await listBenefitApplications(app.db, auth.operatorId, [req.query.branchId]),
+        };
+      }
+      const reach = branchReach(await req.effectivePermissions(), 'admin:benefit:read', auth.operatorId);
+      return {
+        applications: await listBenefitApplications(
+          app.db,
+          auth.operatorId,
+          reach.kind === 'operator' ? 'all' : reach.branchIds,
+        ),
+      };
     },
   );
 

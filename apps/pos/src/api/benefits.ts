@@ -120,6 +120,12 @@ export interface BenefitApplicationLogRow {
   stationId: string;
   boxId: string | null;
   origin: 'cloud' | 'box';
+  /**
+   * The order as it stands now (round 4): a refund gives no quota back (plan
+   * Q4's default) and the entry stays, saying what the order gave back in money.
+   */
+  saleStatus: 'finalised' | 'refunded';
+  refundedSatang: number;
 }
 
 /** What taking the benefit off a rung-up sale gave back (round 3). */

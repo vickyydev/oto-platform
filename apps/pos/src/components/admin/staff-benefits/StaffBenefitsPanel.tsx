@@ -40,7 +40,7 @@ const ROLE_ORDER: BenefitRole[] = ['owner', 'manager', 'staff'];
  * the same fields the panel always drew, in baht, with the order named by its
  * receipt number.
  */
-const auditEntryOf = (row: BenefitApplicationLogRow): BenefitAuditEntry => ({
+const auditEntryOf = (row: BenefitApplicationLogRow): BenefitAuditEntry & { refundedTHB: number } => ({
   id: row.id,
   at: row.at,
   scannedOperatorId: row.employeeId,
@@ -56,6 +56,9 @@ const auditEntryOf = (row: BenefitApplicationLogRow): BenefitAuditEntry => ({
   totalReliefTHB: row.totalReliefSatang / 100,
   orderId: row.receiptNumber ?? row.saleId,
   branchId: row.branchId,
+  // S2-21 round 4 — what the order has since given back in money. The entry
+  // and the quota stay as they were (plan Q4's default).
+  refundedTHB: row.refundedSatang / 100,
 });
 
 /** A template version as a history row. */
@@ -77,8 +80,12 @@ const templateEntry = (v: BenefitTemplateVersion): BenefitHistoryEntry => ({
  * the OTO App is the employee master. What the prototype saved on every
  * keystroke now saves on Save, with the day it starts — the UI additions are
  * that date, Save, the scheduled-change line and the history, each in the
- * panel's own card style. The Audit log section is still the till's in-memory
- * record until the benefit is applied on the platform (rounds 3 and 4).
+ * panel's own card style.
+ *
+ * S2-21 rounds 3 and 4: the Audit log is the platform's
+ * (`GET /benefits/applications`), read by the reader's branch reach; an entry
+ * whose order was since refunded says so ("· refunded ฿…", a UI addition) —
+ * the relief and the quota stay as they were (plan Q4's default).
  *
  * S2-21 round 2: the QR button opens the prototype's QR dialog on the
  * platform's signed benefit QR — issued, printed and revoked there by whoever
@@ -112,7 +119,7 @@ export function StaffBenefitsPanel() {
   // a fresh read on panel mount/navigation is enough for this admin view.
   // S2-21 round 3 — read from the platform: every benefit applied to a
   // recorded order, the prototype's entry fields (`auditEntryOf`).
-  const [auditLog, setAuditLog] = useState<BenefitAuditEntry[]>([]);
+  const [auditLog, setAuditLog] = useState<Array<BenefitAuditEntry & { refundedTHB: number }>>([]);
 
   const reload = useCallback(async () => {
     setLoadError(null);
@@ -401,6 +408,7 @@ export function StaffBenefitsPanel() {
                     {entry.isComp ? 'Full comp' : `฿${entry.totalReliefTHB} relief`} · processed by{' '}
                     {entry.processedByName} · {new Date(entry.at).toLocaleString()}
                     {entry.orderId && <> · order #{entry.orderId}</>}
+                    {entry.refundedTHB > 0 && <> · refunded ฿{entry.refundedTHB}</>}
                   </div>
                 </div>
               </div>
