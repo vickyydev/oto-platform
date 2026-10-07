@@ -183,7 +183,13 @@ export async function scanningRoutes(app: App): Promise<void> {
   app.post(
     '/stations/:id/scan',
     {
-      config: { dynamicPermission: true },
+      /**
+       * `scannedCredential`: a staff benefit QR comes back in
+       * `detail.benefitCode` for the staff screen to present to the cloud
+       * (S2-21 round 2). That answer is never kept under an Idempotency-Key;
+       * every other scan's answer is, so a retried scan is not a second one.
+       */
+      config: { dynamicPermission: true, scannedCredential: true },
       schema: {
         description:
           'Deliver a scanned code to the station’s box: it classifies the code, gives it to whichever handler claimed it, writes a fingerprint-only line on the station tape and tells every screen watching. The code itself stops at the box.',
@@ -212,7 +218,8 @@ export async function scanningRoutes(app: App): Promise<void> {
   app.post(
     '/stations/:id/scan/simulate',
     {
-      config: { dynamicPermission: true },
+      // The scan door's answer, so the scan door's rule for a benefit QR.
+      config: { dynamicPermission: true, scannedCredential: true },
       schema: {
         description:
           'Pretend a scanner. The code is turned into the key events or the byte record a DS2278 would produce and fed through the same reader that reads the real device, so the burst rule and the record rule are what decide — not the simulator.',

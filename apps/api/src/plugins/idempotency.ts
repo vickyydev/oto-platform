@@ -44,7 +44,10 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
  *
  * `carriesSecret` is the backstop under both, for the route that forgets:
  * a body with a credential-shaped field in it is never written, here or in
- * `withTx`.
+ * `withTx`. A route whose answers only SOMETIMES carry one — the scan door,
+ * handing a scanned staff benefit QR to the staff screen — declares
+ * `scannedCredential`, and the backstop then keeps that answer out without
+ * calling it a mistake.
  */
 
 export interface IdempotencyClaim {
@@ -70,6 +73,14 @@ const SECRET_FIELDS = new Set([
   'pairingcode',
   'otp',
   'apikey',
+  /**
+   * S2-21 round 2 — a staff benefit QR, scanned at a counter and handed back
+   * to the staff screen so it can present it to the cloud for free items or
+   * credit. It is the credential that comps an order, it is not minted by the
+   * route that answers with it, and like `claimCode` it is a `*Code` the
+   * suffix rule deliberately does not match.
+   */
+  'benefitcode',
 ]);
 
 /**
@@ -322,11 +333,22 @@ export const idempotencyPlugin = fp(async (app: FastifyInstance) => {
        * Nothing is written and the key is given back — the same treatment a
        * 5xx gets, for the same reason: an answer that must not be replayed is
        * not an answer to keep. The line names the route so it can be declared.
+       *
+       * A route that declared `scannedCredential` said this would happen: some
+       * of its answers hand back a credential somebody scanned, and the rest
+       * are worth replaying, so `secretResponse` would cost it every retry.
+       * The answer is kept out the same way, and that is no error.
        */
-      req.log.error(
-        { route: req.routeOptions?.url, method: req.method, reqId: req.id },
-        'response carries a credential and was not stored — declare secretResponse on this route',
-      );
+      const config = req.routeOptions?.config as PermissionConfig | undefined;
+      const where = { route: req.routeOptions?.url, method: req.method, reqId: req.id };
+      if (config?.scannedCredential === true) {
+        req.log.debug(where, 'an answer carrying a scanned credential was not stored');
+      } else {
+        req.log.error(
+          where,
+          'response carries a credential and was not stored — declare secretResponse on this route',
+        );
+      }
       await release(app.db, claim.accountId, claim.key);
       return payload;
     }

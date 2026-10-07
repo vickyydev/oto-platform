@@ -1,7 +1,15 @@
 import { generateKeyPairSync } from 'node:crypto';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { auditLog, benefitCredential, employee, signingKey, station, stationEvent } from '@oto/db';
+import {
+  auditLog,
+  benefitCredential,
+  employee,
+  idempotencyKey,
+  signingKey,
+  station,
+  stationEvent,
+} from '@oto/db';
 import {
   createBoxAgent,
   memoryCredentialStore,
@@ -438,6 +446,41 @@ describe('check 3’s revoked case: refused with "benefit revoked", and nothing 
     const onBox = await agent.scanner()!.deliver(tillId, { code, source: 'simulator' });
     expect(onBox.outcome).toBe('handled');
     expect((onBox.detail?.benefit as { name: string }).name).toBe('Nok (Reception)');
+  });
+
+  it('the till’s scan door hands the QR to the staff screen and never keeps that answer under a key; other scans still replay', async () => {
+    const key = idem();
+    const scanned = await call<{ outcome: string; detail?: { benefitCode?: string } }>(
+      'POST',
+      `/stations/${tillId}/scan`,
+      admin,
+      { code, source: 'camera' },
+      { 'idempotency-key': key },
+    );
+    expect(scanned.status).toBe(200);
+    expect(scanned.body.outcome).toBe('handled');
+    expect(scanned.body.detail?.benefitCode).toBe(code);
+    // Given back rather than kept: nothing under the key to replay for a day.
+    expect(
+      await ctx.db.select().from(idempotencyKey).where(eq(idempotencyKey.key, key)),
+    ).toHaveLength(0);
+
+    // `scannedCredential` keeps out only an answer that carries one: any other
+    // scan's answer is kept, so a retried scan is not a second scan.
+    const other = idem();
+    const scan = () =>
+      call(
+        'POST',
+        `/stations/${tillId}/scan`,
+        admin,
+        { code: 'NOT-A-CODE-OF-OURS', source: 'camera' },
+        { 'idempotency-key': other },
+      );
+    const first = await scan();
+    const again = await scan();
+    expect(first.status).toBe(200);
+    expect(again.headers['x-oto-replay']).toBe('true');
+    expect(again.body).toEqual(first.body);
   });
 
   it('the cloud refuses it from the moment it is revoked; the box from its next pull', async () => {

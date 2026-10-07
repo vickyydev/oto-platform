@@ -94,6 +94,17 @@ export interface PermissionConfig {
    * key whose answer is never written.
    */
   secretResponse?: true;
+  /**
+   * S2-21 round 2 — SOME of this route's answers carry a credential that was
+   * scanned rather than minted: the scan door hands a staff benefit QR back to
+   * the staff screen, which presents it to the cloud for free items or credit.
+   * Its other answers — a product added, a band read — are worth replaying, so
+   * `secretResponse` would cost the till every retry. Declared, an answer that
+   * carries one (`carriesSecret`, `plugins/idempotency.ts`) is kept out of the
+   * store and its key given back, and the backstop does not log it as a route
+   * that forgot to say so.
+   */
+  scannedCredential?: true;
   /** Cloud trading calls that a station's forced-offline test must refuse. */
   stationTrading?: true;
   /**
