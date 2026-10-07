@@ -1,6 +1,6 @@
 {
-  "id": "5177d988-5a3e-4b0e-aada-32dad9172482",
-  "prevId": "62ec077a-b491-4e9e-a635-abe41fb8ac20",
+  "id": "e5a777a2-a341-4504-8866-205f97ffa435",
+  "prevId": "5177d988-5a3e-4b0e-aada-32dad9172482",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -17006,6 +17006,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "benefit_application_id": {
+          "name": "benefit_application_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -17032,6 +17038,21 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sale_discount_benefit_application_idx": {
+          "name": "sale_discount_benefit_application_idx",
+          "columns": [
+            {
+              "expression": "benefit_application_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -17174,6 +17195,20 @@
           "schemaTo": "core",
           "columnsFrom": [
             "applied_by_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "sale_discount_benefit_application_id_benefit_application_id_fk": {
+          "name": "sale_discount_benefit_application_id_benefit_application_id_fk",
+          "tableFrom": "sale_discount",
+          "tableTo": "benefit_application",
+          "schemaTo": "promo",
+          "columnsFrom": [
+            "benefit_application_id"
           ],
           "columnsTo": [
             "id"
@@ -33395,6 +33430,552 @@
       },
       "isRLSEnabled": false
     },
+    "promo.benefit_application": {
+      "name": "benefit_application",
+      "schema": "promo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "operator_id": {
+          "name": "operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "branch_id": {
+          "name": "branch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sale_id": {
+          "name": "sale_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "business_date": {
+          "name": "business_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "employee_id": {
+          "name": "employee_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_id": {
+          "name": "credential_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "benefit_role": {
+          "name": "benefit_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profile_snapshot": {
+          "name": "profile_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "processed_by_account_id": {
+          "name": "processed_by_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "station_id": {
+          "name": "station_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "box_id": {
+          "name": "box_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'cloud'"
+        },
+        "is_comp": {
+          "name": "is_comp",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "comped_satang": {
+          "name": "comped_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "free_items_satang": {
+          "name": "free_items_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "credit_satang": {
+          "name": "credit_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "discount_satang": {
+          "name": "discount_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_relief_satang": {
+          "name": "total_relief_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "applied_satang": {
+          "name": "applied_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "usage_deltas": {
+          "name": "usage_deltas",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "line_relief": {
+          "name": "line_relief",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "removed_by_account_id": {
+          "name": "removed_by_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "removed_reason": {
+          "name": "removed_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reversed_at": {
+          "name": "reversed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reversed_by_refund_id": {
+          "name": "reversed_by_refund_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "benefit_application_client_live_unique": {
+          "name": "benefit_application_client_live_unique",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "removed_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_client_idx": {
+          "name": "benefit_application_client_idx",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_sale_idx": {
+          "name": "benefit_application_sale_idx",
+          "columns": [
+            {
+              "expression": "sale_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_operator_date_idx": {
+          "name": "benefit_application_operator_date_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "business_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_branch_date_idx": {
+          "name": "benefit_application_branch_date_idx",
+          "columns": [
+            {
+              "expression": "branch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "business_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_employee_idx": {
+          "name": "benefit_application_employee_idx",
+          "columns": [
+            {
+              "expression": "employee_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_credential_idx": {
+          "name": "benefit_application_credential_idx",
+          "columns": [
+            {
+              "expression": "credential_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_processed_by_idx": {
+          "name": "benefit_application_processed_by_idx",
+          "columns": [
+            {
+              "expression": "processed_by_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_station_idx": {
+          "name": "benefit_application_station_idx",
+          "columns": [
+            {
+              "expression": "station_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_box_idx": {
+          "name": "benefit_application_box_idx",
+          "columns": [
+            {
+              "expression": "box_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_application_removed_by_idx": {
+          "name": "benefit_application_removed_by_idx",
+          "columns": [
+            {
+              "expression": "removed_by_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "benefit_application_operator_id_operator_id_fk": {
+          "name": "benefit_application_operator_id_operator_id_fk",
+          "tableFrom": "benefit_application",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_application_branch_id_branch_id_fk": {
+          "name": "benefit_application_branch_id_branch_id_fk",
+          "tableFrom": "benefit_application",
+          "tableTo": "branch",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "branch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_application_sale_id_sale_id_fk": {
+          "name": "benefit_application_sale_id_sale_id_fk",
+          "tableFrom": "benefit_application",
+          "tableTo": "sale",
+          "schemaTo": "pos",
+          "columnsFrom": [
+            "sale_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_application_employee_id_employee_id_fk": {
+          "name": "benefit_application_employee_id_employee_id_fk",
+          "tableFrom": "benefit_application",
+          "tableTo": "employee",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_application_credential_id_benefit_credential_id_fk": {
+          "name": "benefit_application_credential_id_benefit_credential_id_fk",
+          "tableFrom": "benefit_application",
+          "tableTo": "benefit_credential",
+          "schemaTo": "promo",
+          "columnsFrom": [
+            "credential_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_application_processed_by_account_id_account_id_fk": {
+          "name": "benefit_application_processed_by_account_id_account_id_fk",
+          "tableFrom": "benefit_application",
+          "tableTo": "account",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "processed_by_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_application_station_id_station_id_fk": {
+          "name": "benefit_application_station_id_station_id_fk",
+          "tableFrom": "benefit_application",
+          "tableTo": "station",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "station_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_application_box_id_box_id_fk": {
+          "name": "benefit_application_box_id_box_id_fk",
+          "tableFrom": "benefit_application",
+          "tableTo": "box",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "box_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_application_removed_by_account_id_account_id_fk": {
+          "name": "benefit_application_removed_by_account_id_account_id_fk",
+          "tableFrom": "benefit_application",
+          "tableTo": "account",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "removed_by_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "benefit_application_role_check": {
+          "name": "benefit_application_role_check",
+          "value": "\"promo\".\"benefit_application\".\"benefit_role\" in ('owner','manager','staff')"
+        },
+        "benefit_application_origin_check": {
+          "name": "benefit_application_origin_check",
+          "value": "\"promo\".\"benefit_application\".\"origin\" in ('cloud','box')"
+        },
+        "benefit_application_amounts_check": {
+          "name": "benefit_application_amounts_check",
+          "value": "\"promo\".\"benefit_application\".\"comped_satang\" >= 0 and \"promo\".\"benefit_application\".\"free_items_satang\" >= 0 and \"promo\".\"benefit_application\".\"credit_satang\" >= 0 and \"promo\".\"benefit_application\".\"discount_satang\" >= 0 and \"promo\".\"benefit_application\".\"applied_satang\" >= 0\n          and \"promo\".\"benefit_application\".\"total_relief_satang\" = \"promo\".\"benefit_application\".\"comped_satang\" + \"promo\".\"benefit_application\".\"free_items_satang\" + \"promo\".\"benefit_application\".\"credit_satang\" + \"promo\".\"benefit_application\".\"discount_satang\"\n          and \"promo\".\"benefit_application\".\"applied_satang\" <= \"promo\".\"benefit_application\".\"total_relief_satang\""
+        },
+        "benefit_application_removed_check": {
+          "name": "benefit_application_removed_check",
+          "value": "(\"promo\".\"benefit_application\".\"removed_at\" is null) = (\"promo\".\"benefit_application\".\"removed_reason\" is null)\n          and (\"promo\".\"benefit_application\".\"removed_reason\" is null or \"promo\".\"benefit_application\".\"removed_reason\" in ('removed','voided','moved'))"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "promo.benefit_credential": {
       "name": "benefit_credential",
       "schema": "promo",
@@ -34045,6 +34626,177 @@
         "benefit_role_template_range_check": {
           "name": "benefit_role_template_range_check",
           "value": "\"promo\".\"benefit_role_template\".\"effective_to\" is null or \"promo\".\"benefit_role_template\".\"effective_to\" >= \"promo\".\"benefit_role_template\".\"effective_from\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "promo.benefit_usage": {
+      "name": "benefit_usage",
+      "schema": "promo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "operator_id": {
+          "name": "operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "employee_id": {
+          "name": "employee_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_key": {
+          "name": "item_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_kind": {
+          "name": "period_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_key": {
+          "name": "period_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "qty_used": {
+          "name": "qty_used",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "credit_used_satang": {
+          "name": "credit_used_satang",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "benefit_usage_unique": {
+          "name": "benefit_usage_unique",
+          "columns": [
+            {
+              "expression": "employee_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "item_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "period_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_usage_operator_idx": {
+          "name": "benefit_usage_operator_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "period_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "benefit_usage_operator_id_operator_id_fk": {
+          "name": "benefit_usage_operator_id_operator_id_fk",
+          "tableFrom": "benefit_usage",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_usage_employee_id_employee_id_fk": {
+          "name": "benefit_usage_employee_id_employee_id_fk",
+          "tableFrom": "benefit_usage",
+          "tableTo": "employee",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "benefit_usage_period_kind_check": {
+          "name": "benefit_usage_period_kind_check",
+          "value": "\"promo\".\"benefit_usage\".\"period_kind\" in ('daily','monthly')"
+        },
+        "benefit_usage_non_negative_check": {
+          "name": "benefit_usage_non_negative_check",
+          "value": "\"promo\".\"benefit_usage\".\"qty_used\" >= 0 and \"promo\".\"benefit_usage\".\"credit_used_satang\" >= 0 and \"promo\".\"benefit_usage\".\"version\" >= 1"
         }
       },
       "isRLSEnabled": false

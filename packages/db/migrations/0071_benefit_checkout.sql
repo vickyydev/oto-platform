@@ -1,6 +1,7 @@
 -- S2-21 (SCRUM-218), staff benefits round 3 — checkout. The plan is
 -- docs/progress/plans/benefits/PLAN.md §4, §7 and §8 round 3. Forward-only.
--- PROVISIONAL NUMBER: 0070, journal index 70; the lander renumbers it.
+-- Landed as 0071, after the event attendee link (0070); the snapshot was
+-- regenerated at landing so its chain and tables carry 0070's.
 --
 -- `promo.benefit_usage`: one quota counter per person, item (`free:<id>` or
 -- `credit`) and period key (`YYYY-MM-DD` daily, `YYYY-MM` monthly). The claim
