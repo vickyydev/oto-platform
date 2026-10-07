@@ -71,7 +71,15 @@ const link: CuttableLink = { cut: false };
 const appTenant = newId();
 const appCentral = newId();
 const camp = newId();
-const kid = { lin: newId(), edge: newId(), twice: newId() };
+const kid = {
+  lin: newId(),
+  edge: newId(),
+  twice: newId(),
+  /** Registered for today when the box pulls its copy; the OTO App then moves them to tomorrow. */
+  moved: newId(),
+  /** Checked in at a till; the OTO App's own "Undo check-in" takes it back; the box checks them in. */
+  taken: newId(),
+};
 
 interface AppEvent {
   id: string;
@@ -197,6 +205,8 @@ beforeAll(async () => {
   await register(kid.lin, 'Lin', [], { allergies: 'Peanuts', diet: 'Vegetarian', parentAttending: true });
   await register(kid.edge, 'Edge', [addDaysToIsoDate(T, -1)]);
   await register(kid.twice, 'Twice', []);
+  await register(kid.moved, 'Mo', [T]);
+  await register(kid.taken, 'Tak', [], { allergies: 'Milk', parentAttending: true });
 
   credentials = memoryCredentialStore();
   agent = makeAgent();
@@ -368,5 +378,102 @@ describe('an event check-in with the link down (S2-20 E3)', () => {
     const rows = await ctx.db.execute<{ n: number }>(sql`
       select count(*)::int as n from edge.box_overlay where box_id = ${agent.state.boxId!} and payload->'record'->>'domain' = 'event'`);
     expect(Number(rows.rows[0]!.n)).toBe(0);
+  });
+});
+
+/**
+ * S2-20 E3 fix round — THE OTO APP IS THE MASTER ON THE BOX LANE TOO (Q1, H5).
+ * A box's fact is filed against what the app says when it arrives, not what
+ * the box's copy said: a child the app moved off the day waits in quarantine
+ * for a person (the app is not told, the box's bands are not recorded, and an
+ * alert says so), and a child whose first check-in the app took back (its own
+ * "Undo check-in") is checked in by the box's fact.
+ */
+describe('the OTO App is the master on the box lane too', () => {
+  const takenFirst = newId();
+  const takenBox = newId();
+  const movedBox = newId();
+
+  it('online, a child is checked in and the app undoes it', async () => {
+    const online = await call(
+      'POST',
+      `/events/${camp}/attendees/${kid.taken}/checkin`,
+      { branchId: central, checkinId: takenFirst, stationId: counterId },
+      cookieB,
+    );
+    expect(online.statusCode, JSON.stringify(online.body)).toBe(200);
+    expect(online.body.checkin.syncState).toBe('synced');
+    await ctx.db.execute(sql`
+      update otoapp.camp_attendance set status = 'waiting', checked_in_at = null, checked_in_by = null, updated_at = now()
+       where camp_registration_id = ${kid.taken} and attendance_date = ${T}`);
+  });
+
+  it('the box pulls the day and the link goes down; the app then moves another child off today', async () => {
+    // The copy already reads the undone child as expected: the app's day is what it was.
+    await agent.syncEvents();
+    await agent.setOffline(true, { reason: 'the app is the master' });
+    link.cut = true;
+    await ctx.db.execute(sql`
+      update otoapp.camp_registrations set attendance_days = ${JSON.stringify([addDaysToIsoDate(T, 1)])}::jsonb where id = ${kid.moved}`);
+    await ctx.db.execute(sql`delete from otoapp.camp_attendance where camp_registration_id = ${kid.moved} and attendance_date = ${T}`);
+  });
+
+  it('with the link down, the box checks both in from its copy', async () => {
+    for (const [attendeeId, checkinId] of [
+      [kid.moved, movedBox],
+      [kid.taken, takenBox],
+    ] as const) {
+      const res = await onBox('event.checkin', { eventId: camp, attendeeId, checkinId, staffName: 'Nok' });
+      expect(res.statusCode, JSON.stringify(res.body)).toBe(200);
+    }
+  });
+
+  it("the link comes back: the moved child's fact waits in quarantine as a conflict, with an alert; nothing filed, nothing sent", async () => {
+    link.cut = false;
+    await agent.setOffline(false);
+    await flushAll();
+    const quarantined = await ctx.db
+      .select()
+      .from(syncQuarantine)
+      .where(and(eq(syncQuarantine.status, 'open'), sql`${syncQuarantine.payload}::text like ${`%${movedBox}%`}`));
+    expect(quarantined.map((q) => [q.reason, q.errorCode])).toEqual([['conflict', 'SYNC_EVENT_NOT_REGISTERED']]);
+    expect(await ctx.db.select().from(eventCheckin).where(eq(eventCheckin.id, movedBox))).toEqual([]);
+    expect(await ctx.db.select().from(band).where(eq(band.eventCheckinId, movedBox))).toEqual([]);
+    expect(sentCheckins).not.toContain(movedBox);
+    const app = await ctx.db.execute(sql`
+      select 1 from otoapp_v.event_attendance where event_id = ${camp} and attendee_id = ${kid.moved} and attendance_date = ${T}`);
+    expect(app.rows).toEqual([]);
+    const [warned] = await ctx.db.select().from(alert).where(eq(alert.category, 'event.checkin_off_day'));
+    expect(warned).toMatchObject({ severity: 'warning', status: 'open' });
+    expect(warned!.summary).toContain('Mo');
+  });
+
+  it("…and the child whose check-in the app undid is checked in by the box's fact: the first set aside, its bands revoked, the app told", async () => {
+    const rows = await ctx.db
+      .select()
+      .from(eventCheckin)
+      .where(and(eq(eventCheckin.attendeeId, kid.taken), eq(eventCheckin.attendanceDate, T)));
+    const first = rows.find((r) => r.id === takenFirst)!;
+    const boxRow = rows.find((r) => r.id === takenBox)!;
+    expect(rows).toHaveLength(2);
+    expect(first.undoneAt).not.toBeNull();
+    expect(boxRow).toMatchObject({ origin: 'box', syncState: 'synced', undoneAt: null, allergy: 'Milk' });
+    const firstBands = await ctx.db.select().from(band).where(eq(band.eventCheckinId, takenFirst));
+    expect(firstBands.map((b) => b.status)).toEqual(['revoked', 'revoked']);
+    const boxBands = await ctx.db.select().from(band).where(eq(band.eventCheckinId, takenBox));
+    expect(boxBands.map((b) => [b.kind, b.status]).sort()).toEqual([
+      ['adult', 'active'],
+      ['kid', 'active'],
+    ]);
+    const app = await ctx.db.execute<{ status: string; checkin_ref: string }>(sql`
+      select status, checkin_ref from otoapp_v.event_attendance
+       where event_id = ${camp} and attendee_id = ${kid.taken} and attendance_date = ${T}`);
+    expect(app.rows[0]).toMatchObject({ status: 'checked_in', checkin_ref: takenBox });
+    const [undone] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'event.checkin_undone'), eq(auditLog.entityId, takenFirst)));
+    expect(undone!.after).toMatchObject({ reason: 'undone_in_otoapp', nextCheckinId: takenBox, boxId });
+    expect(undone!.sourceEventId).not.toBeNull();
   });
 });

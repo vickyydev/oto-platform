@@ -4,6 +4,7 @@ import {
   EVENT_FACTS,
   OfflineEventCheckedInSchema,
   OfflineEventCheckedOutSchema,
+  eventListedOn,
   newId,
   normaliseBandCode,
   parseBandCode,
@@ -14,10 +15,17 @@ import {
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { currentBandKey } from './bands';
-import { appDayOf, eventChildOf, posCheckinsOf, type EventChild } from './event-checkins';
+import {
+  appDayOf,
+  eventChildOf,
+  posCheckinsOf,
+  takenBackBy,
+  undoTakenBack,
+  type EventChild,
+} from './event-checkins';
 import { staffNameOf } from './event-writes';
 import { raiseAlert } from './ops';
-import { getBranchEvent, type SeamEvent } from './otoapp-events';
+import { getBranchEvent, type SeamAttendance, type SeamEvent } from './otoapp-events';
 import type { DirectoryCheckinBody } from './otoapp-directory';
 import type { Tx } from './tx';
 import type { BatchScope, EventHandler, PreparedEvent } from './sync';
@@ -37,12 +45,21 @@ import type { BatchScope, EventHandler, PreparedEvent } from './sync';
  *   - idempotent on the check-in id the box minted: the same fact again meets
  *     the row it wrote and writes nothing;
  *   - tenancy from the box's credential, never the payload;
+ *   - "NOT REGISTERED FOR TODAY" HOLDS ON THIS DOOR TOO (H5): the fact's day is
+ *     checked against what the OTO App says NOW, not the box's copy — a day the
+ *     event is not on, or a child the app moved off that day, is refused into
+ *     quarantine as a `conflict`, with a warning alert, and the app is not told;
  *   - ONE CHECK-IN PER CHILD PER DAY (H4): a child the platform already has in
  *     for the day — checked in at a till with the internet, at another box, or
  *     in the OTO App itself — RESOLVES TO THAT FIRST CHECK-IN. The box's fact
  *     is filed against it, NO SECOND BAND IS RECORDED (so the gate never admits
  *     the paper the box printed), and a warning alert names both so a person
- *     can check which band the child is wearing;
+ *     can check which band the child is wearing. Two exceptions, both because
+ *     the OTO App is the master (Q1): a first check-in the app took back (its
+ *     own "Undo check-in") is set aside and the box's takes the day; and a
+ *     child the app checked in at its own screen — which prints no band — has
+ *     the app's check-in mirrored with the box's bands recorded on it, the only
+ *     bands that child wears (H9);
  *   - the bands are recorded as the box minted them (OD-13), each verified
  *     against the park's key first;
  *   - the check-in is then owed to the OTO App, `pending`, and sent once the
@@ -92,6 +109,12 @@ async function eventAtPark(tx: Tx, scope: BatchScope, eventId: string): Promise<
   return event;
 }
 
+/** A child the platform does not know on this event: as the box's copy named them. */
+function unknownChild(payload: { attendeeId: string }): Pick<EventChild, 'attendeeId' | 'link' | 'aliases'> {
+  const id = payload.attendeeId.toLowerCase();
+  return { attendeeId: id, link: null, aliases: [id] };
+}
+
 /** The child as the platform knows them now, or as the box's copy had them when the app no longer does. */
 async function childOf(
   tx: Tx,
@@ -100,8 +123,7 @@ async function childOf(
   payload: { attendeeId: string; date: string },
 ): Promise<Pick<EventChild, 'attendeeId' | 'link' | 'aliases'>> {
   const known = await eventChildOf(tx, scope.auth.branchId, event, payload.attendeeId, payload.date);
-  const id = payload.attendeeId.toLowerCase();
-  return known ?? { attendeeId: id, link: null, aliases: [id] };
+  return known ?? unknownChild(payload);
 }
 
 async function alertCheckedInTwice(
@@ -192,6 +214,137 @@ async function recordBoxBand(
   return minted.id;
 }
 
+/**
+ * THE OTO APP'S OWN CHECK-IN, WEARING THE BOX'S BANDS (H9). The app's check-in
+ * screen prints no band, so when a child it checked in is checked in again on
+ * a box with the link down, the bands that box printed are the only ones the
+ * child wears. The app's check-in is mirrored here under the box's check-in id
+ * — `origin = 'otoapp'`, `synced`: the app has it, and is not told again — and
+ * the box's bands are recorded on it, so the food counter reads the child's
+ * allergy line and the gate admits the parent. The child's lines are what the
+ * bands printed (the box's copy), frozen.
+ */
+async function mirrorWithBoxBands(
+  tx: Tx,
+  scope: BatchScope,
+  event: PreparedEvent,
+  payload: OfflineEventCheckedIn,
+  ev: SeamEvent,
+  child: Pick<EventChild, 'attendeeId' | 'link'>,
+  appDay: SeamAttendance,
+) {
+  const id = payload.checkinId.toLowerCase();
+  await tx.insert(eventCheckin).values({
+    id,
+    operatorId: scope.auth.operatorId,
+    branchId: scope.auth.branchId,
+    otoappEventId: ev.id,
+    attendeeId: child.attendeeId,
+    linkId: child.link?.id ?? null,
+    eventType: ev.type,
+    attendanceDate: payload.date,
+    childName: payload.childName,
+    parentName: payload.parentName ?? null,
+    parentAttending: payload.parentAttending,
+    allergy: payload.allergy?.trim() || null,
+    dietary: payload.dietary?.trim() || null,
+    eventTitle: payload.eventTitle || ev.title,
+    startTime: payload.startTime ?? ev.startTime,
+    endTime: payload.endTime ?? ev.endTime,
+    // The app's check-in, as the app made it.
+    checkedInAt: appDay.checkedInAt ?? new Date(payload.at),
+    checkedInByName: appDay.checkedInBy,
+    stationId: stationOf(scope, event),
+    boxId: scope.auth.boxId,
+    origin: 'otoapp',
+    otoappCheckinId: appDay.id,
+    sourceEventId: event.envelope.eventId,
+    boxSeq: event.envelope.boxSeq,
+    syncState: 'synced',
+    syncedAt: event.receivedAt,
+    actionId: event.envelope.actionId ?? null,
+    createdAt: event.occurredAt,
+    updatedAt: event.occurredAt,
+  });
+  const detail = { eventId: ev.id, attendeeId: child.attendeeId, date: payload.date, mirrorOf: 'otoapp' };
+  const kidBandId = payload.kidBand ? await recordBoxBand(tx, scope, event, id, payload.kidBand, 'kid', detail) : null;
+  const parentBandId = payload.parentBand
+    ? await recordBoxBand(tx, scope, event, id, payload.parentBand, 'adult', detail)
+    : null;
+  if (kidBandId || parentBandId) {
+    await tx.update(eventCheckin).set({ kidBandId, parentBandId }).where(eq(eventCheckin.id, id));
+  }
+  await audit.record(tx, {
+    ...auditBase(scope, event),
+    action: 'event.checkin_duplicate',
+    entityType: 'event_checkin',
+    entityId: id,
+    after: {
+      eventId: ev.id,
+      attendeeId: child.attendeeId,
+      date: payload.date,
+      duplicateOf: { checkinId: null, otoappCheckinId: appDay.id, at: appDay.checkedInAt?.toISOString() ?? null, where: 'otoapp' },
+      boxCheckinId: id,
+      // Recorded: the app's own check-in has no band, so these are the child's only ones.
+      bandsRecorded: true,
+      mirroredAs: id,
+      kidBandId,
+      parentBandId,
+      ...trail(scope, event, payload),
+    },
+  });
+  return { entityType: 'event_checkin', entityId: id };
+}
+
+/**
+ * A box's check-in the platform cannot take as it stands, because the OTO App
+ * — the master of who attends which day (Q1) — says the child is not on that
+ * day, or the event is not: the box decided from a copy taken before the app
+ * changed. The bands the box printed are not recorded and the app is not told;
+ * a person decides (the fact waits on Failures > Quarantine), told here which
+ * child it is and that the food counter will not read their band.
+ */
+async function refuseOffDay(
+  scope: BatchScope,
+  event: PreparedEvent,
+  payload: OfflineEventCheckedIn,
+  why: { code: string; message: string; reason: 'not_on_day' | 'not_registered' },
+): Promise<never> {
+  try {
+    await raiseAlert(
+      scope.db,
+      {
+        key: `event.checkin_off_day:${payload.eventId}:${payload.attendeeId}:${payload.date}`,
+        category: 'event.checkin_off_day',
+        severity: 'warning',
+        subject: `Event check-in for ${payload.childName}`,
+        summary:
+          `${payload.childName} was checked in to ${payload.eventTitle} offline on ${scope.auth.name} (${scope.auth.slot}) ` +
+          `for ${payload.date}, but ${why.reason === 'not_on_day' ? 'the event is not on that day' : 'is not registered for that day'} ` +
+          'in the OTO App. The check-in was not filed and the OTO App was not told; the bands the box printed are not ' +
+          'recorded, so the food counter will not read them — check the child and their allergy line.',
+        detail: {
+          eventId: payload.eventId,
+          attendeeId: payload.attendeeId,
+          date: payload.date,
+          reason: why.reason,
+          boxId: scope.auth.boxId,
+          checkinId: payload.checkinId,
+          kidBandId: payload.kidBand?.id ?? null,
+          parentBandId: payload.parentBand?.id ?? null,
+          eventIdOfFact: event.envelope.eventId,
+        },
+        operatorId: scope.auth.operatorId,
+        branchId: scope.auth.branchId,
+      },
+      { flapWindowSeconds: 0 },
+    );
+  } catch (err) {
+    scope.log?.error({ err, checkinId: payload.checkinId }, 'an off-day event check-in could not be alerted; its quarantine row names it');
+  }
+  throw conflict(why.code, why.message, { eventId: payload.eventId, attendeeId: payload.attendeeId, date: payload.date });
+}
+
 async function applyEventCheckedIn(tx: Tx, scope: BatchScope, event: PreparedEvent, payload: OfflineEventCheckedIn) {
   const id = payload.checkinId.toLowerCase();
   const done = (entityId: string) => ({ entityType: 'event_checkin', entityId });
@@ -204,11 +357,52 @@ async function applyEventCheckedIn(tx: Tx, scope: BatchScope, event: PreparedEve
     return done(held.id);
   }
   const ev = await eventAtPark(tx, scope, payload.eventId);
-  const child = await childOf(tx, scope, ev, payload);
+  const known = await eventChildOf(tx, scope.auth.branchId, ev, payload.attendeeId, payload.date);
+  const child = known ?? unknownChild(payload);
 
-  // ONE CHECK-IN PER CHILD PER DAY (H4): the first one stands.
-  const [first] = await posCheckinsOf(tx, ev.id, child, payload.date);
-  const appDay = first ? null : await appDayOf(tx, scope.auth.branchId, ev.id, child.aliases, payload.date);
+  // "NOT REGISTERED FOR TODAY" ON THE BOX DOOR TOO (H5): the online rules, on
+  // the fact's own day, from what the OTO App says now — not the box's copy.
+  if (!eventListedOn(ev, payload.date)) {
+    return refuseOffDay(scope, event, payload, {
+      code: 'SYNC_EVENT_NOT_ON_DAY',
+      message: `${ev.title} is not on ${payload.date}, so nobody can be checked in to it that day`,
+      reason: 'not_on_day',
+    });
+  }
+  if (known && !known.attends) {
+    return refuseOffDay(scope, event, payload, {
+      code: 'SYNC_EVENT_NOT_REGISTERED',
+      message: `${payload.childName} is not registered for ${payload.date} in the OTO App`,
+      reason: 'not_registered',
+    });
+  }
+
+  // ONE CHECK-IN PER CHILD PER DAY (H4): the first one stands — unless the
+  // OTO App took it back (its own "Undo check-in"), when the box's takes the
+  // day. The POS's rows are read before the app's day (`takenBackBy`).
+  const rows = await posCheckinsOf(tx, ev.id, child, payload.date);
+  const appDay = await appDayOf(tx, scope.auth.branchId, ev.id, child.aliases, payload.date, id);
+  const back = takenBackBy(rows, appDay);
+  const first = rows.find((r) => !back.includes(r));
+  if (!first && back.length > 0) {
+    await undoTakenBack(tx, back, {
+      operatorId: scope.auth.operatorId,
+      branchId: scope.auth.branchId,
+      actorAccountId: event.envelope.actorAccountId ?? null,
+      actionId: event.envelope.actionId ?? null,
+      sourceEventId: event.envelope.eventId,
+      stationId: stationOf(scope, event),
+      boxId: scope.auth.boxId,
+      nextCheckinId: id,
+      now: event.occurredAt,
+    });
+  }
+  if (!first && appDay?.status === 'checked_in') {
+    // Checked in at the OTO App's own screen, which prints no band: the bands
+    // this box printed are the only ones the child wears, so they are recorded
+    // on the app's check-in, mirrored here (H9) — the app is not told again.
+    return mirrorWithBoxBands(tx, scope, event, payload, ev, child, appDay);
+  }
   if (first || appDay) {
     const firstFacts = first
       ? { checkinId: first.id, at: first.checkedInAt.toISOString(), where: 'pos' as const }

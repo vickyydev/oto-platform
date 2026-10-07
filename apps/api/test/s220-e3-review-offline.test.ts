@@ -44,14 +44,14 @@ import { injectedTransport, type CuttableLink } from './box-link';
  *   - A check-in made with the link down reconciles ONCE: one row, its bands,
  *     one audit, one write to the OTO App — and the same again (a replayed
  *     batch, a re-sent fact under a fresh envelope) changes nothing.
- *   - (pinned, finding) A box fed a stale copy cannot check in a child the app
- *     moved to another day: the platform files it, bands it and writes the
+ *   - (a finding, fixed) A box fed a stale copy cannot check in a child the
+ *     app moved to another day: the platform filed it, banded it and wrote the
  *     app an attendance for a day the child is not registered.
- *   - (pinned, finding) "Not registered for today" holds on the box replay
+ *   - (a finding, fixed) "Not registered for today" holds on the box replay
  *     door too, and so does "this event is not on that day".
- *   - (pinned, finding) A child the app checked in at its own screen while the
- *     box was down keeps an allergy line at the food counter on the band the
- *     box printed — the only band they have.
+ *   - (a finding, fixed) A child the app checked in at its own screen while
+ *     the box was down keeps an allergy line at the food counter on the band
+ *     the box printed — the only band they have.
  */
 
 const keys = generateKeyPairSync('ed25519');
@@ -345,49 +345,61 @@ describe('E3 review — event check-ins on the box lane', () => {
   });
 
   /**
-   * FINDING (H5 on the box door) — `applyEventCheckedIn` (sync-events.ts) never
-   * asks whether the child attends the day, so a box whose copy was taken
-   * before the OTO App moved the child files the check-in as it stands, keeps
-   * its bands live and writes the app a `checked_in` attendance for a day the
-   * child is not registered. Expected: refused into quarantine for a person
-   * (the drop-off path's own answer to a fact the platform cannot take), the
-   * app untouched.
+   * WAS A DEFECT (H5 on the box door; pinned with `it.fails`, fixed in the E3
+   * fix round) — `applyEventCheckedIn` (sync-events.ts) never asked whether the
+   * child attends the day, so a box whose copy was taken before the OTO App
+   * moved the child filed the check-in as it stood, kept its bands live and
+   * wrote the app a `checked_in` attendance for a day the child is not
+   * registered. Now refused into quarantine for a person (the drop-off path's
+   * own answer to a fact the platform cannot take), the app untouched.
    */
-  it.fails('a box fed a stale copy does not check in a child the app moved to another day: the app gets no attendance for it', async () => {
+  it('a box fed a stale copy does not check in a child the app moved to another day: the app gets no attendance for it', async () => {
     expect(await appRows(kid.mover, T)).toEqual([]);
     const rows = await posRows(kid.mover, T);
     expect(rows.filter((r) => r.syncState === 'synced')).toEqual([]);
   });
 
-  it.fails('a hand-written fact for a child not registered today is not filed as a check-in, and not sent to the app', async () => {
+  it('a hand-written fact for a child not registered today is not filed as a check-in, and not sent to the app', async () => {
     expect(await ctx.db.select().from(eventCheckin).where(eq(eventCheckin.id, edgeFact.id))).toEqual([]);
     expect(await appRows(kid.edge, T)).toEqual([]);
   });
 
-  it.fails('a hand-written fact for a day the camp is not on is not filed as a check-in, and not sent to the app', async () => {
+  it('a hand-written fact for a day the camp is not on is not filed as a check-in, and not sent to the app', async () => {
     expect(await ctx.db.select().from(eventCheckin).where(eq(eventCheckin.id, rangeFact.id))).toEqual([]);
     expect(await appRows(kid.every, addDaysToIsoDate(T, 5))).toEqual([]);
   });
 
-  it('a child the app checked in meanwhile: the box fact resolves to the app’s check-in, with a warning — no second POS check-in', async () => {
+  /**
+   * With F5 fixed (below), the box's fact for a child the app checked in at its
+   * own screen still makes no second check-in — the app's stands, untold — but
+   * it is mirrored under the box's check-in id with the box's bands on it: the
+   * only bands the child wears. (Before the fix this test read: no POS row, no
+   * band recorded, `bandsRecorded: false`.)
+   */
+  it('a child the app checked in meanwhile: the box fact resolves to the app’s check-in, mirrored with the box’s bands — no second check-in', async () => {
     const rows = await posRows(kid.appFirst, T);
-    expect(rows).toEqual([]);
-    expect(await ctx.db.select().from(band).where(eq(band.eventCheckinId, appFirstId))).toEqual([]);
+    expect(rows.map((r) => [r.id, r.origin, r.syncState, r.writeback])).toEqual([[appFirstId, 'otoapp', 'synced', null]]);
+    expect(rows[0]!.otoappCheckinId).not.toBeNull();
+    expect((await ctx.db.select().from(band).where(eq(band.eventCheckinId, appFirstId))).map((b) => b.kind)).toEqual(['kid']);
+    // The app's own check-in stands as it made it, and was not written to again.
+    expect(await appRows(kid.appFirst, T)).toEqual([{ status: 'checked_in', checkin_ref: null }]);
+    expect(sentCheckins).not.toContain(appFirstId);
     const [dup] = await ctx.db
       .select()
       .from(auditLog)
       .where(and(eq(auditLog.action, 'event.checkin_duplicate'), sql`${auditLog.after}->>'boxCheckinId' = ${appFirstId}`));
-    expect(dup!.after).toMatchObject({ bandsRecorded: false, duplicateOf: { where: 'otoapp' } });
+    expect(dup!.after).toMatchObject({ bandsRecorded: true, duplicateOf: { where: 'otoapp' } });
   });
 
   /**
-   * FINDING (H9, ties to the builder's question 2) — when the first check-in
-   * is the OTO App's own, it has no band: the bands the box printed are the
-   * ONLY ones the child wears, yet they are not recorded, so the food counter
-   * reads no allergy on the child's band (and the gate refuses the parent's).
-   * Expected: the app's check-in mirrored, and the box's bands recorded on it.
+   * WAS A DEFECT (H9, ties to the builder's question 2; pinned with `it.fails`,
+   * fixed in the E3 fix round) — when the first check-in is the OTO App's own,
+   * it has no band: the bands the box printed are the ONLY ones the child
+   * wears, yet they were not recorded, so the food counter read no allergy on
+   * the child's band (and the gate refused the parent's). Now the app's
+   * check-in is mirrored, and the box's bands recorded on it.
    */
-  it.fails("the band the box printed for that child still names their allergy at the food counter", async () => {
+  it("the band the box printed for that child still names their allergy at the food counter", async () => {
     const scan = await call('GET', `/wallets/scan?branchId=${central}&key=${encodeURIComponent(appFirstKidShort)}`);
     expect(scan.statusCode, JSON.stringify(scan.body)).toBe(200);
     expect(scan.body.stay).toMatchObject({ childName: 'Appfirst', allergiesMedical: 'Egg', mayOrderFood: false });
