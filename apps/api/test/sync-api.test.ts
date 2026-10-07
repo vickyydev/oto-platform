@@ -1552,6 +1552,8 @@ describe('the cache bundle', () => {
       // S2-13 round 4: the check-in board a counter works from offline.
       'checkin',
       'deny_list',
+      // S2-20 E1: today's events from the OTO App (none on this database).
+      'events',
       'members',
       'receipt_series',
       'staff',
@@ -1868,6 +1870,8 @@ describe('the cache follows what the box is for (SCRUM-412)', () => {
     // S2-13 round 4: the check-in board a counter works from offline.
     'checkin',
     'deny_list',
+    // S2-20 E1: today's events from the OTO App (none on this database).
+    'events',
     'members',
     'receipt_series',
     'staff',
