@@ -245,7 +245,28 @@ export interface PrintNowOptions {
    * that has no receipt printer) says so, and that job is `skipped`.
    */
   mustPrint?: (request: PrintRequest) => boolean;
+  /**
+   * SCRUM-504 — the caller calling the set off from outside: the kiosk's
+   * redemption holds a database transaction open while the set prints, and a
+   * set that runs past its budget is stopped rather than left to outlast the
+   * hold. Once aborted, no further printer is asked and no further job is
+   * started; the job already on a printer finishes (a label half-sent is
+   * paper either way), and the set answers `complete: false` with a fault
+   * `PRINT_CALLED_OFF` on the first job it did not start, `printed` counting
+   * what came out. A set whose last job came out before the abort was seen is
+   * whole, and says so.
+   */
+  signal?: AbortSignal;
+  /**
+   * SCRUM-504 — told each time a job comes out, before the next one starts,
+   * so a caller that has to stop waiting still knows what is in the tray.
+   * Never awaited; a throw from it is the caller's and is not caught here.
+   */
+  onPrinted?: (outcome: PrintJobOutcome) => void;
 }
+
+/** SCRUM-504 — the fault a set answers with when its caller called it off (`PrintNowOptions.signal`). */
+export const PRINT_CALLED_OFF = 'PRINT_CALLED_OFF';
 
 export interface PrintSubsystemOptions {
   /** The config bundle as it stands now — read fresh on every attempt. */
@@ -360,6 +381,9 @@ export interface PrintSubsystem {
    *     byte is written;
    *  3. the jobs print in order, and the first that does not come out stops
    *     the set. What came out before it is counted in `printed`.
+   *
+   * The caller may call the set off between jobs (`options.signal`, SCRUM-504)
+   * and is told of each job as it comes out (`options.onPrinted`).
    *
    * Behind the same per-device lock as every job, so a till's receipt and a
    * kiosk's band never share a socket.
@@ -1357,9 +1381,23 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         }
       }
 
+      /** SCRUM-504 — the set called off from outside, at the first job it did not start. */
+      const calledOff = (job: (typeof planned)[number], printed: number): PrintNowOutcome =>
+        stop(
+          {
+            ...baseOf(job.request, job.role),
+            status: 'failed',
+            deviceId: job.device.id,
+            errorCode: PRINT_CALLED_OFF,
+            errorMessage: 'The set was called off before this job started',
+          },
+          printed,
+        );
+
       // 2. Every printer the set uses, asked how it is before a byte is written.
       const asked = new Set<string>();
       for (const job of planned) {
+        if (opts.signal?.aborted) return calledOff(job, 0);
         if (asked.has(job.device.id)) continue;
         asked.add(job.device.id);
         const read = await serialise(job.device.id, () => job.adapter.probe());
@@ -1382,13 +1420,14 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
       // 3. In order; the first job that does not come out ends the set.
       let printed = 0;
       for (const job of planned) {
+        if (opts.signal?.aborted) return calledOff(job, printed);
         try {
           const result = await serialise(job.device.id, () =>
             job.adapter.print({ bytes: job.bytes, copies: job.request.copies ?? 1 }),
           );
           health[job.device.id] = result.health;
           printed += 1;
-          outcomes.push({
+          const out: PrintJobOutcome = {
             ...baseOf(job.request, job.role),
             attempts: 1,
             status: 'printed',
@@ -1397,7 +1436,9 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
             errorMessage: null,
             overflow: job.overflow,
             elapsedMs: result.elapsedMs,
-          });
+          };
+          outcomes.push(out);
+          opts.onPrinted?.(out);
         } catch (err) {
           const error = asPrinterError(err);
           noteFailure(job.device.id, error);

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import type { PrintJob } from '@oto/print';
 import type { BoxConfigBundle } from '../src/protocol';
 import type { ChannelFactory } from '../src/printing/channel';
-import { createPrintSubsystem, type PrintRequest } from '../src/printing/queue';
+import { PRINT_CALLED_OFF, createPrintSubsystem, type PrintRequest } from '../src/printing/queue';
 import {
   BOX_ID,
   STATION_ID,
@@ -236,5 +236,70 @@ test('the roll runs out between two jobs: the set stops there and says one came 
   assert.deepEqual(await box.store.loadPendingPrintJobs(BOX_ID), [], 'and nothing left for the tick');
   assert.deepEqual(await printing.tick(), []);
   assert.equal(printer.slips(), 1);
+  box.close();
+});
+
+/**
+ * SCRUM-504 — the kiosk holds its redemption's transaction open while a set
+ * prints, and calls a set off when it runs past its budget. Called off, the
+ * set starts no further job; the caller is told of every job that came out,
+ * as it came out, so it can count the paper even when it stops waiting.
+ */
+test('a set called off from outside stops before its next job, and every job that came out was told', async () => {
+  const box = openTestStore();
+  await box.store.init(BOX_ID);
+  const printer = rollPrinter(99);
+  const reported: unknown[] = [];
+  const printing = createPrintSubsystem({
+    bundle: () => ONE_PRINTER,
+    templates: () => [],
+    open: printer.open,
+    report: (outcome) => {
+      reported.push(outcome);
+    },
+    durable: () => ({ jobs: box.store, boxId: BOX_ID }),
+  });
+
+  // Called off as the first job comes out: the second never starts.
+  const controller = new AbortController();
+  const told: string[] = [];
+  const outcome = await printing.printNow([receipt('job-1'), receipt('job-2'), receipt('job-3')], {
+    signal: controller.signal,
+    onPrinted: (o) => {
+      told.push(o.id);
+      controller.abort();
+    },
+  });
+  assert.equal(outcome.complete, false);
+  assert.equal(outcome.printed, 1, 'the job already on the printer finished; nothing after it started');
+  assert.equal(outcome.fault?.id, 'job-2');
+  assert.equal(outcome.fault?.errorCode, PRINT_CALLED_OFF);
+  assert.deepEqual(outcome.outcomes.map((o) => [o.id, o.status]), [
+    ['job-1', 'printed'],
+    ['job-2', 'failed'],
+  ]);
+  assert.deepEqual(told, ['job-1']);
+  assert.equal(printer.slips(), 1);
+
+  // Called off before it began: no printer asked, nothing printed.
+  const early = new AbortController();
+  early.abort();
+  const none = await printing.printNow([receipt('job-4')], { signal: early.signal });
+  assert.equal(none.complete, false);
+  assert.equal(none.printed, 0);
+  assert.equal(none.fault?.errorCode, PRINT_CALLED_OFF);
+  assert.equal(printer.slips(), 1);
+
+  // The last job came out before the call-off was seen: the set is whole.
+  const late = new AbortController();
+  const whole = await printing.printNow([receipt('job-5')], { signal: late.signal, onPrinted: () => late.abort() });
+  assert.equal(whole.complete, true);
+  assert.equal(whole.printed, 1);
+  assert.equal(printer.slips(), 2);
+
+  // Called off or not, nothing is left behind for the tick, and nothing reported.
+  assert.deepEqual(reported, []);
+  assert.deepEqual(printing.pending(), []);
+  assert.deepEqual(await box.store.loadPendingPrintJobs(BOX_ID), []);
   box.close();
 });
