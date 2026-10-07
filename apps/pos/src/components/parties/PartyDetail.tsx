@@ -17,9 +17,12 @@ import { useStation } from '@/station/StationContext';
 import {
   chargePartyOnPlatform,
   partyEditOf,
+  partyPaymentConfirmationOf,
+  partyPaymentPress,
   partyWriteBlocker,
   payPartyOnPlatform,
   updatePartyOnPlatform,
+  type PartyPaymentConfirmation,
   type PartyWriteIds,
   type PartyWriteOutcome,
 } from '@/api/parties';
@@ -112,6 +115,9 @@ function InfoRow({ icon: Icon, label, value }: { icon?: typeof Wallet; label: st
   );
 }
 
+/** S2-20 E4 — the party writes a till keeps ids for. */
+type WriteKey = 'payment' | 'fnb' | 'ticket' | 'edit';
+
 /** "a", "a and b", "a, b and c" — for naming what the OTO App keeps. */
 const listOf = (items: string[]) =>
   items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
@@ -166,12 +172,20 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
   /**
    * The ids of each write, minted when it is first sent and kept for a retry
    * of the same press — so a press whose answer was lost is one charge, one
-   * payment, one edit. A definite answer, either way, clears them.
+   * payment, one edit. A definite answer, either way, clears them. A payment
+   * names its press (amount, tender, the balance shown): another press is
+   * another payment, under ids of its own.
    */
-  const ids = useRef<Partial<Record<'payment' | 'fnb' | 'ticket' | 'edit', PartyWriteIds>>>({});
-  const idsFor = (key: 'payment' | 'fnb' | 'ticket' | 'edit') => (ids.current[key] ??= { id: newId(), actionId: newId() });
+  const ids = useRef<Partial<Record<WriteKey, { ids: PartyWriteIds; press: string }>>>({});
+  const idsFor = (key: WriteKey, press = ''): PartyWriteIds => {
+    const held = ids.current[key];
+    if (held && held.press === press) return held.ids;
+    const minted = { ids: { id: newId(), actionId: newId() }, press };
+    ids.current[key] = minted;
+    return minted.ids;
+  };
   /** What came of a write: true when the platform recorded it. Says why when it did not. */
-  const settled = (key: 'payment' | 'fnb' | 'ticket' | 'edit', outcome: PartyWriteOutcome, failure: string) => {
+  const settled = (key: WriteKey, outcome: PartyWriteOutcome, failure: string) => {
     if (outcome.ok || !outcome.retryable) ids.current[key] = undefined;
     if (!outcome.ok) {
       toast({ title: failure, description: outcome.message, variant: 'destructive' });
@@ -184,21 +198,33 @@ export function PartyDetail({ party: shown, surface, onBack, onChanged }: PartyD
     return true;
   };
 
-  const handleTakePayment = async (amount: number, method: PartyPaymentMethod): Promise<boolean> => {
+  /**
+   * "Payment received": the amount, the tender and the balance as the modal
+   * froze them when staff left the bill — never the balance as it reads now,
+   * so a retry of the press is the same request and a balance that moved is
+   * always refused, never recorded short.
+   */
+  const handleTakePayment = async (
+    amount: number,
+    method: PartyPaymentMethod,
+    shownOutstanding: number,
+  ): Promise<PartyPaymentConfirmation> => {
     const blocked = blockerOf(true);
     if (!operator || blocked || !station) {
       if (blocked) toast(blocked);
-      return false;
+      // Nothing was sent: the same press may go again.
+      return { recorded: false, retry: true };
     }
     const outcome = await payPartyOnPlatform({
       party,
       amount,
       method,
-      outstanding,
+      outstanding: shownOutstanding,
       stationId: station.stationId,
-      ids: idsFor('payment'),
+      ids: idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
     });
-    return settled('payment', outcome, 'Payment not recorded');
+    settled('payment', outcome, 'Payment not recorded');
+    return partyPaymentConfirmationOf(outcome, amount);
   };
 
   const handleChargeExtra =

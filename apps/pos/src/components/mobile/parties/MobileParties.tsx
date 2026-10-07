@@ -12,12 +12,14 @@ import { useStation } from '@/station/StationContext';
 import { EVENT_WRITE_PENDING, eventsToday, useEventsForDate } from '@/api/events';
 import {
   chargePartyOnPlatform,
+  partyPaymentConfirmationOf,
+  partyPaymentPress,
   partyWriteBlocker,
   payPartyOnPlatform,
+  type PartyPaymentConfirmation,
   type PartyWriteIds,
   type PartyWriteOutcome,
 } from '@/api/parties';
-import { computePartyOutstanding } from '@/lib/party';
 import { eventBraceletPrintJobs, dispatchPrintJobs } from '@/lib/printRouting';
 import { toast } from '@/hooks/use-toast';
 import { MobileEventsList } from './MobileEventsList';
@@ -107,10 +109,17 @@ export function MobileParties() {
   /**
    * S2-20 E4 — the party tab on the platform. The ids of a press are minted
    * when it is first sent and kept for a retry of it; a definite answer
-   * clears them.
+   * clears them. A payment names its press (amount, tender, the balance
+   * shown): another press is another payment, under ids of its own.
    */
-  const ids = useRef<Partial<Record<'payment' | 'fnb', PartyWriteIds>>>({});
-  const idsFor = (key: 'payment' | 'fnb') => (ids.current[key] ??= { id: newId(), actionId: newId() });
+  const ids = useRef<Partial<Record<'payment' | 'fnb', { ids: PartyWriteIds; press: string }>>>({});
+  const idsFor = (key: 'payment' | 'fnb', press = ''): PartyWriteIds => {
+    const held = ids.current[key];
+    if (held && held.press === press) return held.ids;
+    const minted = { ids: { id: newId(), actionId: newId() }, press };
+    ids.current[key] = minted;
+    return minted.ids;
+  };
   const settled = (key: 'payment' | 'fnb', outcome: PartyWriteOutcome, failure: string): boolean => {
     if (outcome.ok || !outcome.retryable) ids.current[key] = undefined;
     bump();
@@ -124,23 +133,34 @@ export function MobileParties() {
   const blockerOf = (needsStation = false) =>
     partyWriteBlocker({ branchSlug: branch.id, stationId: station?.stationId, needsStation });
 
-  const handleTakePayment = async (amount: number, method: PartyPaymentMethod): Promise<boolean> => {
-    if (!operator || !selectedEvent || selectedEvent.type !== 'party') return false;
+  /**
+   * "Payment received": the amount, the tender and the balance as the payment
+   * screen froze them when staff fixed the amount — never the balance as it
+   * reads now, so a retry of the press is the same request and a balance that
+   * moved is always refused, never recorded short.
+   */
+  const handleTakePayment = async (
+    amount: number,
+    method: PartyPaymentMethod,
+    shownOutstanding: number,
+  ): Promise<PartyPaymentConfirmation> => {
+    // Nothing is sent in either case below: the same press may go again.
+    if (!operator || !selectedEvent || selectedEvent.type !== 'party') return { recorded: false, retry: true };
     const blocked = blockerOf(true);
     if (blocked || !station) {
       if (blocked) toast(blocked);
-      return false;
+      return { recorded: false, retry: true };
     }
-    const party = selectedEvent as unknown as PartyBooking;
     const outcome = await payPartyOnPlatform({
-      party,
+      party: selectedEvent as unknown as PartyBooking,
       amount,
       method,
-      outstanding: computePartyOutstanding(party),
+      outstanding: shownOutstanding,
       stationId: station.stationId,
-      ids: idsFor('payment'),
+      ids: idsFor('payment', partyPaymentPress(amount, method, shownOutstanding)),
     });
-    return settled('payment', outcome, 'Payment not recorded');
+    settled('payment', outcome, 'Payment not recorded');
+    return partyPaymentConfirmationOf(outcome, amount);
   };
 
   const handleEventCheckIn = (eventId: string, attendeeId: string) => {

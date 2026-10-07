@@ -5,6 +5,7 @@ import { api, ApiError, NetworkError } from '@/api/client';
 import { toOtoEvent } from '@/api/events';
 import { PartyBalanceModal } from '@/components/parties/PartyBalanceModal';
 import { PartyDetail } from '@/components/parties/PartyDetail';
+import { PartySettlementCustomerScreen } from '@/components/parties/PartySettlementCustomerScreen';
 import { MobileParties } from '@/components/mobile/parties/MobileParties';
 import { MobilePartyDetail } from '@/components/mobile/parties/MobilePartyDetail';
 import { MobilePartyPayment } from '@/components/mobile/parties/MobilePartyPayment';
@@ -30,15 +31,22 @@ import { renderHook, type RenderedHook } from './support/hooks';
  * One story to the satang: what staff collected, what the settlement screen
  * thanks the guest for, and what the platform recorded are the same money.
  *
- * FINDING (pinned with `it.fails` until the fix round flips it): the till
- * freezes the amount it collects when staff leave the review step, but sends
- * as `expectedOutstandingSatang` the balance of the party as it is shown at
- * the moment of the press — and after a refusal or a lost answer the party is
- * read again under the open collect step (`settled` → `onChanged`/`bump`). So
- * the press after a refusal, or the retry after a lost answer, carries the NEW
- * balance with the OLD amount: the balance guard passes, the cap records less
- * than was collected, and the retry of a recorded payment is no longer the
- * same request under its key, so it is refused and then taken a second time.
+ * FINDING (pinned with `it.fails` by the review, flipped by the fix round):
+ * the till froze the amount it collects when staff leave the review step, but
+ * sent as `expectedOutstandingSatang` the balance of the party as it was shown
+ * at the moment of the press — and after a refusal or a lost answer the party
+ * is read again under the open collect step (`settled` → `onChanged`/`bump`).
+ * So the press after a refusal, or the retry after a lost answer, carried the
+ * NEW balance with the OLD amount: the balance guard passed, the cap recorded
+ * less than was collected, and the retry of a recorded payment was no longer
+ * the same request under its key, so it was refused and then taken a second
+ * time.
+ *
+ * THE FIX: the balance shown is frozen with the amount and passed through
+ * `onConfirm`, so every retry under the same ids is the same request and a
+ * moved balance is always refused; a definite refusal takes staff back to the
+ * bill as it now reads; and the thank-you shows the money the platform
+ * recorded (`answer.payment.amountSatang`).
  */
 
 // The till's JSX compiles to `React.createElement` here, as in the other screen tests.
@@ -116,9 +124,12 @@ const server = {
   /** The next request never reaches the platform at all. */
   dropNextRequest: false,
   revision: 0,
+  /** An F&B charge on the tab, in satang (the fix round: a balance with satang). */
+  chargeSatang: 0,
 };
 
-const owed = () => Math.max(0, BASE - DEPOSIT - server.payments.reduce((s, p) => s + p.amountSatang, 0));
+const owed = () =>
+  Math.max(0, BASE + server.chargeSatang - DEPOSIT - server.payments.reduce((s, p) => s + p.amountSatang, 0));
 
 function viewOf(): EventView {
   const payments: PartyPaymentView[] = server.payments.map((p, i) => ({
@@ -164,14 +175,26 @@ function viewOf(): EventView {
       depositSatang: DEPOSIT,
       depositDate: T,
       walkUpCharges: [],
-      charges: [],
+      charges: server.chargeSatang
+        ? [
+            {
+              id: 'c-fnb',
+              kind: 'fnb',
+              items: [{ name: 'Pad Thai', qty: 1, lineTotalSatang: server.chargeSatang }],
+              totalSatang: server.chargeSatang,
+              chargedBy: 'Som (Reception)',
+              chargedById: 'acc',
+              chargedAt: `${T}T04:00:00.000Z`,
+            },
+          ]
+        : [],
       payments,
       lastEdited: null,
       editSync: null,
       bill: {
         baseSatang: BASE,
-        chargesSatang: 0,
-        totalSatang: BASE,
+        chargesSatang: server.chargeSatang,
+        totalSatang: BASE + server.chargeSatang,
         depositSatang: DEPOSIT,
         paidSatang: paid,
         outstandingSatang: owed(),
@@ -242,6 +265,7 @@ beforeEach(() => {
   server.loseNextAnswer = false;
   server.dropNextRequest = false;
   server.revision = 0;
+  server.chargeSatang = 0;
   postMock.mockReset();
   postMock.mockImplementation(platformPay as unknown as typeof api.post);
   day.revision = -1;
@@ -360,6 +384,8 @@ function ipad() {
       return pressed;
     },
     words: () => textOf(sync().result.current).replace(/\s+/g, ' '),
+    /** The balance modal as it is on screen now. */
+    tree: () => sync().result.current,
   };
 }
 
@@ -469,7 +495,7 @@ describe('the plain path — what is collected is what is recorded and what the 
 });
 
 // =============================================================================
-// Two tills, and an answer lost on the way back (FINDING — it.fails)
+// Two tills, and an answer lost on the way back (FINDING — flipped by the fix round)
 // =============================================================================
 
 describe('two tills on one party, and a lost answer — the till must not record other money than it collected', () => {
@@ -481,7 +507,7 @@ describe('two tills on one party, and a lost answer — the till must not record
    * (฿4,000) with the OLD amount (฿9,000), the guard passes, the cap records
    * ฿4,000, and the screen thanks the guest for ฿9,000.
    */
-  it.fails('iPad: after a refusal the next press records nothing, or exactly what was collected', async () => {
+  it('iPad: after a refusal the next press records nothing, or exactly what was collected', async () => {
     const screen = ipad();
     screen.open();
     screen.press('Card');
@@ -503,7 +529,7 @@ describe('two tills on one party, and a lost answer — the till must not record
    * dropped, and the next press records ฿4,000 more. ฿9,000 on the platform
    * for ฿5,000 in the drawer.
    */
-  it.fails('iPad: a recorded payment whose answer was lost is answered again on the retry, never taken twice', async () => {
+  it('iPad: a recorded payment whose answer was lost is answered again on the retry, never taken twice', async () => {
     const screen = ipad();
     screen.open();
     screen.press('Partial amount');
@@ -516,7 +542,7 @@ describe('two tills on one party, and a lost answer — the till must not record
     expect(thisTill().reduce((s, p) => s + p.amountSatang, 0)).toBe(500_000);
   });
 
-  it.fails('phone: after a refusal the next press records nothing, or exactly what was collected', async () => {
+  it('phone: after a refusal the next press records nothing, or exactly what was collected', async () => {
     const screen = phone();
     screen.press('Card');
     expect(screen.press('Show bill · ฿9000 by Card')).toBe(true);
@@ -529,7 +555,7 @@ describe('two tills on one party, and a lost answer — the till must not record
     expect([0, 900_000]).toContain(thisTill().reduce((s, p) => s + p.amountSatang, 0));
   });
 
-  it.fails('phone: a recorded payment whose answer was lost is answered again on the retry, never taken twice', async () => {
+  it('phone: a recorded payment whose answer was lost is answered again on the retry, never taken twice', async () => {
     const screen = phone();
     screen.press('Partial amount');
     screen.type('5000');
@@ -542,22 +568,127 @@ describe('two tills on one party, and a lost answer — the till must not record
     expect(thisTill().reduce((s, p) => s + p.amountSatang, 0)).toBe(500_000);
   });
 
-  it('what the defect is made of, today: the press after a refusal sends the old amount with the new balance', async () => {
+  // The review's pin of the defect's make-up ("the press after a refusal sends
+  // the old amount with the new balance") is turned round by the fix round:
+  // what the fix is made of, press by press.
+  it('what the fix is made of: the refused press is not sent again; back on the bill as it now reads, the next collect is its own request', async () => {
     const screen = ipad();
     screen.open();
     screen.press('Card');
     screen.press('Take ฿9000 by Card');
     otherTillTakes(500_000);
-    await screen.received();
-    await screen.received();
-    const bodies = postMock.mock.calls.map((c) => c[1] as { amountSatang: number; expectedOutstandingSatang: number });
+    await screen.received(); // refused: the balance moved
+    // Back on the bill, as it now reads — no "Payment received" to press again.
+    expect(screen.words()).toContain('Take balance payment');
+    expect(screen.words()).toContain('Outstanding ฿4000');
+    expect(await screen.received()).toBe(false);
+    expect(screen.press('Take ฿4000 by Card')).toBe(true);
+    expect(await screen.received()).toBe(true);
+    const bodies = postMock.mock.calls.map((c) => c[1] as { paymentId: string; amountSatang: number; expectedOutstandingSatang: number });
     expect(bodies.map((b) => [b.amountSatang, b.expectedOutstandingSatang])).toEqual([
       [900_000, 900_000],
-      [900_000, 400_000],
+      [400_000, 400_000],
     ]);
-    // …and the platform, as designed, caps it: ฿4,000 recorded against ฿9,000 collected,
-    // while the screen says "Collected now ฿9000".
+    // A new collect is a new payment, under ids of its own.
+    expect(bodies[1]!.paymentId).not.toBe(bodies[0]!.paymentId);
     expect(thisTill().map((p) => p.amountSatang)).toEqual([400_000]);
-    expect(screen.words()).toContain('Collected now ฿9000');
+    expect(screen.words()).toContain('Collected now ฿4000 ');
+  });
+});
+
+// =============================================================================
+// The fix round's own presses: one collect, one request; the thanks are the
+// money recorded
+// =============================================================================
+
+describe('the fix — one collect is one request under one set of ids, and the thanks are what was recorded', () => {
+  it('iPad: the retry after a lost answer is byte-identical — body and key — and is answered with the recorded payment', async () => {
+    const screen = ipad();
+    screen.open();
+    screen.press('Card');
+    screen.press('Take ฿9000 by Card');
+    server.loseNextAnswer = true;
+    await screen.received(); // recorded; its answer lost; the party read again (฿0 owed)
+    expect(screen.words()).toContain('Payment received'); // still collecting
+    await screen.received();
+    const [first, second] = postMock.mock.calls;
+    expect(second![1]).toEqual(first![1]);
+    expect(second![2]).toEqual(first![2]);
+    expect(thisTill().map((p) => p.amountSatang)).toEqual([900_000]);
+    expect(screen.words()).toContain('Payment recorded');
+    expect(screen.words()).toContain('Collected now ฿9000 ');
+  });
+
+  it('iPad: a request that never arrived, then Back and another amount — one payment, of the new amount, no key reused', async () => {
+    const screen = ipad();
+    screen.open();
+    screen.press('Partial amount');
+    screen.type('5000');
+    screen.press('Cash');
+    screen.press('Take ฿5000 by Cash');
+    server.dropNextRequest = true;
+    await screen.received();
+    expect(screen.press('Back')).toBe(true);
+    screen.type('3000');
+    expect(screen.press('Take ฿3000 by Cash')).toBe(true);
+    expect(await screen.received()).toBe(true);
+    const [first, second] = postMock.mock.calls;
+    expect((second![2] as { idempotencyKey: string }).idempotencyKey).not.toBe((first![2] as { idempotencyKey: string }).idempotencyKey);
+    expect(thisTill().map((p) => p.amountSatang)).toEqual([300_000]);
+    expect(screen.words()).toContain('Collected now ฿3000 ');
+  });
+
+  it('iPad: a balance with satang is taken in whole baht — "Collected now" and the guest’s thank-you show the money recorded, not the money asked', async () => {
+    server.chargeSatang = 50; // ฿0.50 on the tab: ฿9,000.50 owed
+    const screen = ipad();
+    screen.open();
+    expect(screen.press('Card')).toBe(true);
+    expect(screen.press('Take ฿9000.5 by Card')).toBe(true);
+    expect(await screen.received()).toBe(true);
+    expect(thisTill()).toEqual([expect.objectContaining({ askedSatang: 900_050, amountSatang: 900_000 })]);
+    expect(screen.words()).toContain('Collected now ฿9000 ');
+    expect(screen.words()).not.toContain('฿9000.5');
+    const display = elementOf(screen.tree(), PartySettlementCustomerScreen);
+    expect(display!.props).toMatchObject({ stage: 'thankyou', amount: 9000 });
+  });
+
+  it('phone: the retry after a lost answer is byte-identical, and "Collected" is the payment recorded', async () => {
+    server.chargeSatang = 50;
+    const screen = phone();
+    screen.press('Card');
+    expect(screen.press('Show bill · ฿9000.5 by Card')).toBe(true);
+    screen.handBack();
+    server.loseNextAnswer = true;
+    await screen.received();
+    expect(screen.words()).toContain('Payment received');
+    await screen.received();
+    const [first, second] = postMock.mock.calls;
+    expect(second![1]).toEqual(first![1]);
+    expect(second![2]).toEqual(first![2]);
+    expect(thisTill().map((p) => p.amountSatang)).toEqual([900_000]);
+    expect(screen.words()).toContain('Payment recorded');
+    expect(screen.words()).toContain('Collected ฿9000 ');
+  });
+
+  it('phone: a refusal is back on the bill as it now reads; the next collect is its own request for what is now owed', async () => {
+    const screen = phone();
+    screen.press('Card');
+    screen.press('Show bill · ฿9000 by Card');
+    screen.handBack();
+    otherTillTakes(500_000);
+    await screen.received();
+    expect(screen.words()).toContain('Take payment');
+    expect(screen.words()).toContain('Outstanding ฿4000');
+    expect(screen.press('Show bill · ฿4000 by Card')).toBe(true);
+    screen.handBack();
+    expect(await screen.received()).toBe(true);
+    const bodies = postMock.mock.calls.map((c) => c[1] as { paymentId: string; amountSatang: number; expectedOutstandingSatang: number });
+    expect(bodies.map((b) => [b.amountSatang, b.expectedOutstandingSatang])).toEqual([
+      [900_000, 900_000],
+      [400_000, 400_000],
+    ]);
+    expect(bodies[1]!.paymentId).not.toBe(bodies[0]!.paymentId);
+    expect(thisTill().map((p) => p.amountSatang)).toEqual([400_000]);
+    expect(screen.words()).toContain('Collected ฿4000 ');
   });
 });

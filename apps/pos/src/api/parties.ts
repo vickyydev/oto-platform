@@ -154,7 +154,11 @@ export async function payPartyOnPlatform(args: {
   party: PartyBooking;
   amount: number;
   method: PartyPaymentMethod;
-  /** The outstanding balance the till showed, in baht. */
+  /**
+   * The outstanding balance the till showed when staff fixed the amount to
+   * collect, in baht — frozen with the amount, never re-read under the collect
+   * step, so every retry of one press is the same request.
+   */
   outstanding: number;
   stationId: string;
   ids: PartyWriteIds;
@@ -175,6 +179,32 @@ export async function payPartyOnPlatform(args: {
   } catch (err) {
     return failureOf(err);
   }
+}
+
+/**
+ * What came of "Payment received" on a party's payment screen (the iPad's
+ * balance modal, the phone's payment screen):
+ *
+ *   - recorded, with the money the platform recorded, in baht — what staff are
+ *     told was collected and what the guest is thanked for, which is the
+ *     collected amount floored to whole baht and capped at the balance;
+ *   - not recorded and nothing answered (`retry`): the screen stays on the
+ *     collect step, and the next press is the same request under the same ids
+ *     — the stored answer if the first one landed;
+ *   - not recorded, a definite no: the screen goes back to the bill as it now
+ *     reads, and staff choose again.
+ */
+export type PartyPaymentConfirmation = { recorded: true; amount: number } | { recorded: false; retry: boolean };
+
+/** One press of "Payment received", told apart from another: its amount, tender and the balance shown. */
+export const partyPaymentPress = (amount: number, method: PartyPaymentMethod, shownOutstanding: number): string =>
+  JSON.stringify([satang(amount), method, satang(shownOutstanding)]);
+
+/** A payment's outcome as its screen acts on it; `asked` stands in only if an answer names no payment. */
+export function partyPaymentConfirmationOf(outcome: PartyWriteOutcome, asked: number): PartyPaymentConfirmation {
+  if (!outcome.ok) return { recorded: false, retry: outcome.retryable };
+  const recorded = outcome.answer.payment?.amountSatang;
+  return { recorded: true, amount: recorded === undefined ? asked : recorded / 100 };
 }
 
 // --- Edits ---------------------------------------------------------------------

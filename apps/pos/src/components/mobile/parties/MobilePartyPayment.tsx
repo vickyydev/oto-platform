@@ -12,6 +12,7 @@ import {
   paymentMethodIcon,
   paymentMethodKind,
 } from '@/lib/payments';
+import type { PartyPaymentConfirmation } from '@/api/parties';
 import { PartySettlementCustomerScreen } from '@/components/parties/PartySettlementCustomerScreen';
 import { HandToCustomer } from '@/components/mobile/HandToCustomer';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -39,10 +40,17 @@ interface MobilePartyPaymentProps {
   party: PartyBooking;
   operatorName: string;
   /**
-   * S2-20 E4: a request on the platform, which may answer later, or no —
-   * "Payment recorded" follows only a payment that was; `false` stays on collect.
+   * S2-20 E4: a request on the platform, which may answer later, or no — sent
+   * with the balance shown when the amount was fixed, frozen with it.
+   * "Payment recorded" follows only a payment that was, with the money the
+   * platform recorded; nothing answered stays on collect for the same press
+   * again; a definite no goes back to the bill as it now reads.
    */
-  onConfirm: (amount: number, method: PartyPaymentMethod) => void | boolean | Promise<boolean>;
+  onConfirm: (
+    amount: number,
+    method: PartyPaymentMethod,
+    shownOutstanding: number,
+  ) => void | PartyPaymentConfirmation | Promise<PartyPaymentConfirmation>;
   onBack: () => void;
 }
 
@@ -66,6 +74,9 @@ export function MobilePartyPayment({
   const [method, setMethod] = useState<PartyPaymentMethod | ''>('');
   const [collectAmount, setCollectAmount] = useState(0);
   const [collectMethod, setCollectMethod] = useState<PartyPaymentMethod>('cash');
+  // S2-20 E4 — the balance the amount was fixed against, frozen with it: a
+  // re-read of the party under the collect step never changes what is sent.
+  const [collectOutstanding, setCollectOutstanding] = useState(0);
   // S2-20 E4 — the payment is on its way to the platform: not pressed twice meanwhile.
   const [recording, setRecording] = useState(false);
 
@@ -76,6 +87,7 @@ export function MobilePartyPayment({
     setMethod('');
     setCollectAmount(0);
     setCollectMethod('cash');
+    setCollectOutstanding(0);
     setRecording(false);
   }, [party.id]);
 
@@ -92,6 +104,7 @@ export function MobilePartyPayment({
     if (!method || amount <= 0) return;
     setCollectAmount(amount);
     setCollectMethod(method);
+    setCollectOutstanding(outstanding);
     setStep('bill-review');
   };
 
@@ -103,7 +116,12 @@ export function MobilePartyPayment({
     if (collectAmount <= 0 || recording) return;
     setRecording(true);
     try {
-      if ((await onConfirm(collectAmount, collectMethod)) === false) return;
+      const result = await onConfirm(collectAmount, collectMethod, collectOutstanding);
+      if (result && !result.recorded) {
+        if (!result.retry) setStep('pick');
+        return;
+      }
+      if (result) setCollectAmount(result.amount);
       setStep('done');
     } finally {
       setRecording(false);

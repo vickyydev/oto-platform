@@ -18,6 +18,7 @@ import {
   paymentMethodIcon,
   paymentMethodKind,
 } from '@/lib/payments';
+import type { PartyPaymentConfirmation } from '@/api/parties';
 import { PartySettlementCustomerScreen } from './PartySettlementCustomerScreen';
 import {
   Wallet,
@@ -34,10 +35,17 @@ interface PartyBalanceModalProps {
   operatorName: string;
   /**
    * S2-20 E4: on the platform this is a request, so it may answer later — and
-   * may answer no. The thank-you stage follows only a payment that was
-   * recorded; `false` keeps staff on the collect stage.
+   * may answer no. It is sent with the balance shown when the amount was
+   * fixed, frozen with it. The thank-you stage follows only a payment that was
+   * recorded, and shows the money the platform recorded; nothing answered
+   * keeps staff on the collect stage for the same press again; a definite no
+   * takes them back to the bill as it now reads.
    */
-  onConfirm: (amount: number, method: PartyPaymentMethod) => void | boolean | Promise<boolean>;
+  onConfirm: (
+    amount: number,
+    method: PartyPaymentMethod,
+    shownOutstanding: number,
+  ) => void | PartyPaymentConfirmation | Promise<PartyPaymentConfirmation>;
 }
 
 // Staff-side helper copy keyed by tender kind while waiting for the money to land.
@@ -82,6 +90,9 @@ export function PartyBalanceModal({
   // the customer and the amount we finalize can never drift from live data.
   const [collectAmount, setCollectAmount] = useState(0);
   const [collectMethod, setCollectMethod] = useState<PartyPaymentMethod>('cash');
+  // S2-20 E4 — the balance the amount was fixed against, frozen with it: a
+  // re-read of the party under the collect stage never changes what is sent.
+  const [collectOutstanding, setCollectOutstanding] = useState(0);
   const [showCustomerDisplay, setShowCustomerDisplay] = useCustomerDisplayPref();
   const [customerTheme] = useCustomerTheme();
   // S2-20 E4 — the payment is on its way to the platform: not pressed twice meanwhile.
@@ -95,6 +106,7 @@ export function PartyBalanceModal({
       setMethod('');
       setCollectAmount(0);
       setCollectMethod('cash');
+      setCollectOutstanding(0);
       setRecording(false);
     }
   }, [open]);
@@ -112,6 +124,7 @@ export function PartyBalanceModal({
     if (!method || amount <= 0) return;
     setCollectAmount(amount);
     setCollectMethod(method);
+    setCollectOutstanding(outstanding);
     setStage('collect');
   };
 
@@ -119,7 +132,12 @@ export function PartyBalanceModal({
     if (collectAmount <= 0 || recording) return;
     setRecording(true);
     try {
-      if ((await onConfirm(collectAmount, collectMethod)) === false) return;
+      const result = await onConfirm(collectAmount, collectMethod, collectOutstanding);
+      if (result && !result.recorded) {
+        if (!result.retry) setStage('review');
+        return;
+      }
+      if (result) setCollectAmount(result.amount);
       setStage('done');
     } finally {
       setRecording(false);
