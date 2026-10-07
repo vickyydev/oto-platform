@@ -54,6 +54,15 @@ export const EVENT_WRITE_PENDING = {
   description: 'This event comes from the OTO App, and the till cannot change it here yet. Use the OTO App for now.',
 } as const;
 
+/**
+ * S2-20 E2 (review, finding 10) — what a pass or walk-up says when staff chose
+ * "Check in now" (or a party's "Add & check in"). The child is added on the
+ * platform, but checking in — the bands — is E3's, so the toast says the child
+ * is not checked in and keeps the gate's own instruction for that half, rather
+ * than the prototype's words for a check-in that ran and minted no band.
+ */
+export const EVENT_CHECKIN_NOT_YET = 'Checking in is not on the platform yet — use the OTO App for now.';
+
 /** The branch's trading day: the platform's answer while it is live, else this device's clock on the branch's calendar. */
 export function eventsToday(): string {
   return serverTradingDate() ?? branchTradingDate();

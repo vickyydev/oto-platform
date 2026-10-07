@@ -268,7 +268,11 @@ describe("the pass flow's words are the prototype's", () => {
       "toast({ title: 'Could not sell pass', description: sold.message, variant: 'destructive' });",
       "title: 'Pass sold — left as booked',",
       'description: `${attendee.name} added to ${ev.title}. Check in later from the roster.${notYetInApp}`,',
-      "toast({ title: 'Pass sold', description: `${attendee.name} is on the ${ev.title} roster.${notYetInApp}` });",
+      // E2 fix round (finding 10): "Check in now" says the child is NOT checked
+      // in, with the gate's instruction — not the prototype's words for a
+      // check-in that ran and minted no band.
+      "title: 'Pass sold — not checked in',",
+      'description: `${attendee.name} is on the ${ev.title} roster. ${EVENT_CHECKIN_NOT_YET}${notYetInApp}`,',
       'New guest — enter name',
       "recognised. Enter the guest's name to register them so they're remembered next time.",
       'Name / nickname',
@@ -286,7 +290,8 @@ describe("the pass flow's words are the prototype's", () => {
     const board = source('pages/DropOff.tsx');
     for (const words of [
       "toast({ title: 'Could not add attendee', description: sold.message, variant: 'destructive' });",
-      "toast({ title: 'Added', description: `${attendee.name} is on the ${ev.title} roster.${notYetInApp}` });",
+      "title: 'Added — not checked in',",
+      'description: `${attendee.name} is on the ${ev.title} roster. ${EVENT_CHECKIN_NOT_YET}${notYetInApp}`,',
       "title: 'Pass sold — left as booked',",
     ]) {
       expect(board, words).toContain(words);
@@ -308,10 +313,16 @@ describe("the pass flow's words are the prototype's", () => {
     expect(source('api/events.ts')).toContain("items: [{ name: `Walk-up guest — ${c.name}`, qty: 1, lineTotal: amount }],");
   });
 
-  it('the roster marks a child the app has not confirmed with the one new word, "Pending"', () => {
+  it('the roster marks a child the app has not confirmed: "Pending" while it waits, "Refused" when the app said no (finding 9)', () => {
     const list = source('components/parties/EventAttendeeList.tsx');
     expect(list).toMatch(/attendee\.syncState && attendee\.syncState !== 'synced' && \(/);
-    expect(list).toMatch(/>\s*Pending\s*</);
+    expect(list).toContain("{attendee.syncState === 'failed' ? 'Refused' : 'Pending'}");
+  });
+
+  it("“Check in now” keeps the gate's instruction for the check-in it cannot do yet (finding 10)", () => {
+    expect(source('api/events.ts')).toContain(
+      "export const EVENT_CHECKIN_NOT_YET = 'Checking in is not on the platform yet — use the OTO App for now.';",
+    );
   });
 });
 

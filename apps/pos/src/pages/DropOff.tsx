@@ -10,6 +10,7 @@ import {
 } from '@/mockApi';
 import { newId } from '@oto/shared';
 import {
+  EVENT_CHECKIN_NOT_YET,
   EVENT_WRITE_PENDING,
   eventWriteBlocker,
   eventsToday,
@@ -362,9 +363,14 @@ export default function DropOff() {
       : '';
     if (checkInNow) {
       // S2-20 E2 — checking in on the platform (the bands) is E3. Until then
-      // the child is on the roster: the prototype's own words for an add
-      // whose check-in minted no band.
-      toast({ title: 'Added', description: `${attendee.name} is on the ${ev.title} roster.${notYetInApp}` });
+      // the child is on the roster, NOT checked in — a party's "Add & check
+      // in" included — and the toast says so with the gate's own instruction
+      // (E2 review, finding 10), never the prototype's words for a check-in
+      // that ran and minted no band.
+      toast({
+        title: 'Added — not checked in',
+        description: `${attendee.name} is on the ${ev.title} roster. ${EVENT_CHECKIN_NOT_YET}${notYetInApp}`,
+      });
     } else {
       toast({
         title: 'Pass sold — left as booked',

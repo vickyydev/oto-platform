@@ -160,13 +160,21 @@ function AttendeeCard({
               </span>
             )}
             {/* S2-20 E2 — added at the till, and the OTO App has not confirmed
-                them yet: on the roster from the POS's own record, marked. */}
+                them yet: on the roster from the POS's own record, marked.
+                Pending waits on an answer; Refused is the app saying no, which
+                a retry repeats until the cause is fixed (E2 review, finding 9). */}
             {attendee.syncState && attendee.syncState !== 'synced' && (
               <span
-                className="text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 bg-amber-500/15 text-amber-400"
-                title="Not yet confirmed by the OTO App — retried from Failures"
+                className={`text-[10px] font-bold uppercase tracking-wide rounded-full px-2 py-0.5 ${
+                  attendee.syncState === 'failed' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
+                }`}
+                title={
+                  attendee.syncState === 'failed'
+                    ? 'The OTO App refused this child — fix the cause, then retry from Failures'
+                    : 'Not yet confirmed by the OTO App — retried from Failures'
+                }
               >
-                Pending
+                {attendee.syncState === 'failed' ? 'Refused' : 'Pending'}
               </span>
             )}
           </div>

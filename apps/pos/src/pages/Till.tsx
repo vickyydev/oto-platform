@@ -53,7 +53,14 @@ import {
   type RedeemOutcome,
 } from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
-import { eventWriteBlocker, eventsToday, sellOnPlatform, useEventPasses, type EventWriteIds } from '@/api/events';
+import {
+  EVENT_CHECKIN_NOT_YET,
+  eventWriteBlocker,
+  eventsToday,
+  sellOnPlatform,
+  useEventPasses,
+  type EventWriteIds,
+} from '@/api/events';
 import { boxSaleIssue } from '@/api/boxSales';
 import {
   buildCartPayload,
@@ -350,9 +357,13 @@ export default function Till() {
     if (checkInNow) {
       // S2-20 E2 — checking a child in on the platform (the bands, the
       // roster's check-in) is the next round, E3. Until then the pass is sold
-      // and the child is on the roster: the prototype's own words for a pass
-      // whose check-in minted no band.
-      toast({ title: 'Pass sold', description: `${attendee.name} is on the ${ev.title} roster.${notYetInApp}` });
+      // and the child is on the roster, NOT checked in, and the toast says so
+      // with the gate's own instruction (E2 review, finding 10) — never the
+      // prototype's words for a check-in that ran and minted no band.
+      toast({
+        title: 'Pass sold — not checked in',
+        description: `${attendee.name} is on the ${ev.title} roster. ${EVENT_CHECKIN_NOT_YET}${notYetInApp}`,
+      });
     } else {
       toast({
         title: 'Pass sold — left as booked',
