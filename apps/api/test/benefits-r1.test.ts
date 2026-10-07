@@ -1,7 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { auditLog, benefitProfile, benefitRoleTemplate, employee, productCategory } from '@oto/db';
-import { BENEFIT_SEED_EFFECTIVE_FROM, seed } from '@oto/db/seed';
+import { BENEFIT_SEED_EFFECTIVE_FROM, benefitSeedFutureFrom, seed } from '@oto/db/seed';
 import { addDaysToIsoDate, newId, type BenefitProfile } from '@oto/shared';
 import {
   ADMIN,
@@ -220,10 +220,22 @@ describe('the seeded park (check 1 on seeded employees; the Q2 amounts)', () => 
     for (const t of body.templates) {
       expect(t.current!.effectiveFrom).toBe(BENEFIT_SEED_EFFECTIVE_FROM);
       expect(t.current!.createdBy).toBeNull();
-      expect(t.upcoming).toEqual([]);
     }
+    expect(by.owner!.upcoming).toEqual([]);
+    expect(by.staff!.upcoming).toEqual([]);
+    // Round 4's seed: one Manager edit dated in the future — the credit at
+    // ฿600 from the first of the month after next — in the history from the
+    // first sign-in, and today untouched.
+    const future = benefitSeedFutureFrom(body.today);
+    expect(by.manager!.current!.effectiveTo).toBe(future);
+    expect(by.manager!.upcoming.map((v) => [v.effectiveFrom, v.effectiveTo, v.createdBy])).toEqual([[future, null, null]]);
+    expect(by.manager!.upcoming[0]!.profile).toEqual({
+      ...by.manager!.current!.profile,
+      credit: { amountSatang: 60_000, period: 'monthly' },
+    });
     const lek = await effective(people.lek);
     expect(lek.profile.credit).toEqual({ amountSatang: 50_000, period: 'monthly' });
+    expect((await effective(people.lek, future)).profile.credit).toEqual({ amountSatang: 60_000, period: 'monthly' });
   });
 });
 
@@ -232,6 +244,9 @@ describe('check 2 — a Manager edit dated tomorrow leaves today alone (H4, H5)'
   let tomorrow: string;
   let seededManagerId: string;
   let futureId: string;
+  /** Round 4's seeded future edit (฿600 from the month after next), and its day. */
+  let seededFutureId: string;
+  let seededFuture: string;
 
   it('saves ฿600 from tomorrow; today stays ฿500', async () => {
     const before = await templates();
@@ -239,6 +254,9 @@ describe('check 2 — a Manager edit dated tomorrow leaves today alone (H4, H5)'
     tomorrow = addDaysToIsoDate(today, 1);
     const manager0 = before.templates.find((t) => t.role === 'manager')!;
     seededManagerId = manager0.current!.id;
+    seededFutureId = manager0.upcoming[0]!.id;
+    seededFuture = manager0.upcoming[0]!.effectiveFrom;
+    expect(seededFuture > tomorrow).toBe(true);
 
     const profile = {
       ...manager0.current!.profile,
@@ -256,9 +274,13 @@ describe('check 2 — a Manager edit dated tomorrow leaves today alone (H4, H5)'
     expect(res.body.changed).toBe(true);
     expect(res.body.template.current!.id).toBe(seededManagerId);
     expect(res.body.template.current!.profile.credit?.amountSatang).toBe(50_000);
-    expect(res.body.template.upcoming).toHaveLength(1);
+    // Soonest first: this edit, then the seed's own, which this one runs up to.
+    expect(res.body.template.upcoming.map((v) => [v.effectiveFrom, v.effectiveTo])).toEqual([
+      [tomorrow, seededFuture],
+      [seededFuture, null],
+    ]);
     futureId = res.body.template.upcoming[0]!.id;
-    expect(res.body.template.upcoming[0]!.effectiveFrom).toBe(tomorrow);
+    expect(res.body.template.upcoming[1]!.id).toBe(seededFutureId);
     expect(res.body.template.upcoming[0]!.profile.credit?.amountSatang).toBe(60_000);
 
     // What a scan of Khun Lek applies: ฿500 today, ฿600 tomorrow.
@@ -272,13 +294,13 @@ describe('check 2 — a Manager edit dated tomorrow leaves today alone (H4, H5)'
   it('keeps both versions: the seeded row closed on tomorrow, its profile untouched', async () => {
     const res = await get<{ versions: TemplateVersion[] }>(admin, '/benefits/templates/manager');
     expect(res.status).toBe(200);
-    expect(res.body.versions.map((v) => v.id)).toEqual([futureId, seededManagerId]);
-    const [future, seeded] = res.body.versions;
+    expect(res.body.versions.map((v) => v.id)).toEqual([futureId, seededFutureId, seededManagerId]);
+    const [future, , seeded] = res.body.versions;
     expect(seeded!.effectiveFrom).toBe(BENEFIT_SEED_EFFECTIVE_FROM);
     expect(seeded!.effectiveTo).toBe(tomorrow);
     expect(seeded!.profile.credit?.amountSatang).toBe(50_000);
     expect(future!.effectiveFrom).toBe(tomorrow);
-    expect(future!.effectiveTo).toBeNull();
+    expect(future!.effectiveTo).toBe(seededFuture);
     // Who changed it and when.
     expect(future!.createdBy!.name).toBe('Khun Anan (Owner)');
     expect(Date.now() - Date.parse(future!.createdAt)).toBeLessThan(60_000);
@@ -296,7 +318,8 @@ describe('check 2 — a Manager edit dated tomorrow leaves today alone (H4, H5)'
     expect(row!.entityType).toBe('benefit_role_template');
     expect(row!.operatorId).toBe(operatorId);
     expect((row!.before as { id: string; effectiveTo: string | null }).id).toBe(seededManagerId);
-    expect((row!.before as { effectiveTo: string | null }).effectiveTo).toBeNull();
+    // In force until the seed's future edit, when this one was saved.
+    expect((row!.before as { effectiveTo: string | null }).effectiveTo).toBe(seededFuture);
     const after = row!.after as {
       effectiveFrom: string;
       closedVersionId: string;
@@ -314,7 +337,7 @@ describe('check 2 — a Manager edit dated tomorrow leaves today alone (H4, H5)'
       effectiveFrom: tomorrow,
     });
     expect(res.status).toBe(200);
-    expect(res.body.template.upcoming.map((v) => v.profile.credit?.amountSatang)).toEqual([70_000]);
+    expect(res.body.template.upcoming.map((v) => v.profile.credit?.amountSatang)).toEqual([70_000, 60_000]);
     const history = await get<{ versions: TemplateVersion[] }>(
       admin,
       '/benefits/templates/manager',
@@ -323,7 +346,7 @@ describe('check 2 — a Manager edit dated tomorrow leaves today alone (H4, H5)'
     // Replaced before it started: an empty range, in force on no day.
     expect(replaced.effectiveFrom).toBe(tomorrow);
     expect(replaced.effectiveTo).toBe(tomorrow);
-    expect(history.body.versions).toHaveLength(3);
+    expect(history.body.versions).toHaveLength(4);
     expect((await effective(people.lek, tomorrow)).profile.credit?.amountSatang).toBe(70_000);
   });
 
@@ -338,7 +361,7 @@ describe('check 2 — a Manager edit dated tomorrow leaves today alone (H4, H5)'
     expect(res.status).toBe(200);
     expect(res.body.template.current!.effectiveFrom).toBe(today);
     expect(res.body.template.current!.effectiveTo).toBe(tomorrow);
-    expect(res.body.template.upcoming.map((v) => v.profile.credit?.amountSatang)).toEqual([70_000]);
+    expect(res.body.template.upcoming.map((v) => v.profile.credit?.amountSatang)).toEqual([70_000, 60_000]);
     expect((await effective(people.lek)).profile.standingDiscount?.percent).toBe(20);
     expect((await effective(people.lek, tomorrow)).profile.standingDiscount?.percent).toBe(30);
     // And the seeded version now ends today.
@@ -359,7 +382,8 @@ describe('check 2 — a Manager edit dated tomorrow leaves today alone (H4, H5)'
           eq(benefitRoleTemplate.role, 'manager'),
         ),
       );
-    for (let d = -2; d <= 5; d++) {
+    // Past the seed's future edit, too (at most two months and a day ahead).
+    for (let d = -2; d <= 70; d++) {
       const day = addDaysToIsoDate(today, d);
       const inForce = rows.filter(
         (r) => r.effectiveFrom <= day && (r.effectiveTo === null || r.effectiveTo > day),

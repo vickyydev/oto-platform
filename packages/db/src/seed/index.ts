@@ -18,7 +18,9 @@
 import { createHash, randomInt } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
 import {
+  businessDate,
   newId,
+  parseDayStart,
   normalizePhone,
   ROLE_BUNDLES,
   SYSTEM_ROLES,
@@ -36,7 +38,7 @@ import { seedMenu } from './menu';
 import { seedStock, syncStockSetup } from './stock';
 import { seedSupervision } from './supervision';
 import { seedWalletPolicies } from './wallet';
-import { seedBenefits } from './benefits';
+import { seedBenefitCredentials, seedBenefits } from './benefits';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
 import { stableJson } from './stable-id';
 import * as s from '../schema/index';
@@ -62,7 +64,14 @@ export {
   type DemoDayCounts,
 } from './demo-day';
 /** The staff-benefit templates and profiles the demo tenant is seeded with (S2-21). */
-export { BENEFIT_SEED_EFFECTIVE_FROM, seedBenefitTemplates } from './benefits';
+export {
+  BENEFIT_SEED_EFFECTIVE_FROM,
+  BENEFIT_SEED_FUTURE_CREDIT_SATANG,
+  benefitQrKeyOf,
+  benefitSeedFutureFrom,
+  seedBenefitCredentials,
+  seedBenefitTemplates,
+} from './benefits';
 /** Demo Branch 2's own booth, whose day the demo day files beside its sales. */
 export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
 /** What the demo day refuses with before it writes, in words a person can act on (SCRUM-503). */
@@ -155,7 +164,17 @@ export async function platformSync(db: Db = getDb()): Promise<Record<SystemRole,
   return roleIds;
 }
 
-export async function seed(db: Db = getDb()): Promise<void> {
+/** What a run of the seed may be handed beside the database. */
+export interface SeedOptions {
+  /**
+   * The deployment's `BENEFIT_QR_PRIVATE_KEY` (S2-21 round 4): given, the four
+   * demo employees are issued their staff benefit QRs under it. The command
+   * line passes the environment's; a test passes its own or none.
+   */
+  benefitQrPrivateKey?: string | null;
+}
+
+export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<void> {
   const roleIds = await platformSync(db);
 
   // `operator` has no natural business key, so the name is the seed's own
@@ -842,10 +861,31 @@ export async function seed(db: Db = getDb()): Promise<void> {
   // Staff benefits (S2-21): the prototype's three role templates and its
   // roster's benefit roles, after the menu whose Coffee category the free
   // coffee points at.
+  const [benefitClock] = await db
+    .select({ timezone: s.branch.timezone, dayStart: s.branch.businessDayStart })
+    .from(s.branch)
+    .where(eq(s.branch.id, branchId))
+    .limit(1);
+  const benefitEmployees = { anan: empAnan, som: empSom, nok: empNok, lek: empLek };
   await seedBenefits(db, {
     operatorId,
-    employees: { anan: empAnan, som: empSom, nok: empNok, lek: empLek },
+    employees: benefitEmployees,
+    // The trading day at the demo park: the future Manager edit is dated from it.
+    today: businessDate(new Date(), benefitClock!.timezone, parseDayStart(String(benefitClock!.dayStart).slice(0, 5))),
   });
+  // Their benefit QRs (round 4), when the deployment's key is given: a QR no
+  // key verifies would scan nowhere, so without it none is issued.
+  if (opts.benefitQrPrivateKey?.trim()) {
+    const issued = await seedBenefitCredentials(db, {
+      operatorId,
+      issuedByAccountId: adminAccountId,
+      employees: benefitEmployees,
+      privateKey: opts.benefitQrPrivateKey,
+    });
+    console.log(`Staff benefit QRs: ${issued} issued (a person who has ever held one keeps theirs).`);
+  } else {
+    console.log('Staff benefit QRs: none issued — BENEFIT_QR_PRIVATE_KEY is not set for the seed.');
+  }
   // A product the tax-override resolver can point at. Found by name so the
   // menu's own Ice Cream Cone counts — this must not mint a second row — and,
   // if the menu somehow seeded none, created at the menu's price, not another.
@@ -1901,7 +1941,7 @@ if (isMain) {
       ? `Platform sync only (SEED_PROFILE=${profile}): system roles, permissions, tenders and stock setup.`
       : `Full seed (SEED_PROFILE=${profile}): platform rows plus the demo tenant.`,
   );
-  (platformOnly ? platformSync() : seed())
+  (platformOnly ? platformSync() : seed(getDb(), { benefitQrPrivateKey: process.env.BENEFIT_QR_PRIVATE_KEY }))
     .then(() => closeDb())
     .catch((err) => {
       console.error(err);
