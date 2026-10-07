@@ -1,7 +1,6 @@
 -- SCRUM-502 — the prepaid food lines of one supervised stay, found by the stay.
--- PROVISIONAL NUMBER: renumbered in landing order (lanes in flight take 0068
--- and 0069 the same week). It is journal entry 68 on its own branch, so the
--- journal's indexes stay unbroken there.
+-- Landed as 0069, after the benefit credentials migration (0068); the
+-- snapshot was regenerated at landing so its chain and tables carry 0068's.
 --
 -- The platform counts what a box's own completed sales have served from each
 -- in-park stay's prepaid food (`boxPrepaidFiled`) every time it builds that

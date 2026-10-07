@@ -1,6 +1,6 @@
 {
-  "id": "f3c6e575-0539-457c-a216-3059293cf8a5",
-  "prevId": "b088906c-b634-4ca9-a561-e1c0a84274eb",
+  "id": "62ec077a-b491-4e9e-a635-abe41fb8ac20",
+  "prevId": "0e37f15d-51f6-44c1-92e7-5c5201db8d48",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -33391,6 +33391,281 @@
         "sale_extension_band_minutes_check": {
           "name": "sale_extension_band_minutes_check",
           "value": "\"pos\".\"sale_extension_band\".\"minutes_added\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "promo.benefit_credential": {
+      "name": "benefit_credential",
+      "schema": "promo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "operator_id": {
+          "name": "operator_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "employee_id": {
+          "name": "employee_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kid": {
+          "name": "kid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "code_hash": {
+          "name": "code_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issued_by_account_id": {
+          "name": "issued_by_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issued_at": {
+          "name": "issued_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_by_account_id": {
+          "name": "revoked_by_account_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "benefit_credential_operator_idx": {
+          "name": "benefit_credential_operator_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_credential_employee_idx": {
+          "name": "benefit_credential_employee_idx",
+          "columns": [
+            {
+              "expression": "employee_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "issued_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_credential_issued_by_idx": {
+          "name": "benefit_credential_issued_by_idx",
+          "columns": [
+            {
+              "expression": "issued_by_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_credential_revoked_by_idx": {
+          "name": "benefit_credential_revoked_by_idx",
+          "columns": [
+            {
+              "expression": "revoked_by_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_credential_revoked_idx": {
+          "name": "benefit_credential_revoked_idx",
+          "columns": [
+            {
+              "expression": "operator_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "revoked_at is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "benefit_credential_code_hash_unique": {
+          "name": "benefit_credential_code_hash_unique",
+          "columns": [
+            {
+              "expression": "code_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "benefit_credential_operator_id_operator_id_fk": {
+          "name": "benefit_credential_operator_id_operator_id_fk",
+          "tableFrom": "benefit_credential",
+          "tableTo": "operator",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_credential_employee_id_employee_id_fk": {
+          "name": "benefit_credential_employee_id_employee_id_fk",
+          "tableFrom": "benefit_credential",
+          "tableTo": "employee",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_credential_issued_by_account_id_account_id_fk": {
+          "name": "benefit_credential_issued_by_account_id_account_id_fk",
+          "tableFrom": "benefit_credential",
+          "tableTo": "account",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "issued_by_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "benefit_credential_revoked_by_account_id_account_id_fk": {
+          "name": "benefit_credential_revoked_by_account_id_account_id_fk",
+          "tableFrom": "benefit_credential",
+          "tableTo": "account",
+          "schemaTo": "core",
+          "columnsFrom": [
+            "revoked_by_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "benefit_credential_expiry_check": {
+          "name": "benefit_credential_expiry_check",
+          "value": "\"promo\".\"benefit_credential\".\"expires_at\" > \"promo\".\"benefit_credential\".\"issued_at\""
+        },
+        "benefit_credential_version_check": {
+          "name": "benefit_credential_version_check",
+          "value": "\"promo\".\"benefit_credential\".\"version\" >= 1"
+        },
+        "benefit_credential_revocation_check": {
+          "name": "benefit_credential_revocation_check",
+          "value": "\"promo\".\"benefit_credential\".\"revoked_at\" is not null or \"promo\".\"benefit_credential\".\"revoked_by_account_id\" is null"
         }
       },
       "isRLSEnabled": false
