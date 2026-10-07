@@ -55,7 +55,8 @@ import { renderHook, type RenderedHook } from './support/hooks';
  * The last describe pins what the window does NOT hold: the ticket modal
  * builds the lines it sends again at every press, at the rate mode of that
  * moment, so a held ticket order whose rate mode moves is another press under
- * other ids — the first tickets charged twice (`it.fails`).
+ * other ids — the first tickets charged twice. Fixed at landing: the hold
+ * keeps what it sent and re-sends it verbatim.
  */
 
 Object.assign(globalThis, { React });
@@ -968,7 +969,7 @@ describe('held, then no connection: nothing is sent and the order stays held —
  * from the live modifier library at each press, which does not reload under
  * an open screen today.
  */
-describe('FINDING: a held ticket order is built again at each press, at the rate mode of that moment', () => {
+describe('a held ticket order is the order of its first press, whatever the rate mode does', () => {
   /** The ticket on the order prices differently on a weekend: else these pins prove nothing. */
   function weekendDiffers(s: Surface) {
     const line = (JSON.parse(s.snapshot()) as { lines: unknown[][] }).lines[0]!;
@@ -986,7 +987,7 @@ describe('FINDING: a held ticket order is built again at each press, at the rate
     );
   }
 
-  it.fails('PINNED: the answer lost, the platform then answers weekend for today; the press again is the same request — the tickets are on the tab once', async () => {
+  it('the answer lost, the platform then answers weekend for today; the press again is the same request — the tickets are on the tab once', async () => {
     const s = ipadTickets();
     await s.build();
     weekendDiffers(s);
@@ -1009,7 +1010,7 @@ describe('FINDING: a held ticket order is built again at each press, at the rate
     expect(chargedSatang()).toBe(Math.round(shown * 100));
   });
 
-  it.fails('PINNED: the answer lost, the rate mode moves, no connection: the press sends nothing and the order stays held', async () => {
+  it('the answer lost, the rate mode moves, no connection: the press sends nothing and the order stays held', async () => {
     const s = ipadTickets();
     await s.build();
     weekendDiffers(s);

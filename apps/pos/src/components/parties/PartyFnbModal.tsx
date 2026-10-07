@@ -268,7 +268,10 @@ export function PartyFnbModal({
     });
     // Held from here: the order on screen is the order sent. On its way
     // already (a second press), nothing more is sent.
-    const result = await hold.charge(() => onCharge(items, total));
+    const result = await hold.charge(
+      () => ({ items, total }),
+      (sent) => onCharge(sent.items, sent.total),
+    );
     // No answer: still held as sent. A definite no: the order is staff's again.
     if (!result?.charged) return;
     reset();

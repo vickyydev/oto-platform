@@ -213,7 +213,10 @@ export function MobilePartyFnb({
     // Held from here: the order on screen is the order sent. Charged: the
     // host leaves this screen. No answer: still held as sent. A definite no:
     // the order is staff's again. On its way already, nothing more is sent.
-    await hold.charge(() => onCharge(items, total));
+    await hold.charge(
+      () => ({ items, total }),
+      (sent) => onCharge(sent.items, sent.total),
+    );
   };
 
   return (

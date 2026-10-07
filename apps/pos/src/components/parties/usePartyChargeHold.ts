@@ -35,9 +35,17 @@ export interface PartyChargeHold {
   unanswered: boolean;
   /** A press that would change or leave the order: true, and said, while it is held. */
   refused: () => boolean;
-  /** Send the order; null when a charge is already on its way. */
-  charge: (
-    send: () => PartyChargeConfirmation | Promise<PartyChargeConfirmation>,
+  /**
+   * Send the order; null when a charge is already on its way. `build` prices
+   * the order ONCE, at the first press of a hold: an unanswered hold re-sends
+   * exactly what it sent, however the screen would price it now — the rate
+   * mode can move under an open modal (the header's indicator polls, the
+   * cached mode lapses, the day rolls), and a repriced press would be a new
+   * press under new ids: a second charge.
+   */
+  charge: <P>(
+    build: () => P,
+    send: (payload: P) => PartyChargeConfirmation | Promise<PartyChargeConfirmation>,
   ) => Promise<PartyChargeConfirmation | null>;
   /** The screen is reset: no order, no hold. */
   release: () => void;
@@ -57,15 +65,28 @@ export function usePartyChargeHold(): PartyChargeHold {
     return true;
   };
 
-  const charge = async (send: () => PartyChargeConfirmation | Promise<PartyChargeConfirmation>) => {
+  /** What an unanswered hold sent, re-sent verbatim by the next press. */
+  const sent = useRef<unknown>(null);
+
+  const charge = async <P,>(
+    build: () => P,
+    send: (payload: P) => PartyChargeConfirmation | Promise<PartyChargeConfirmation>,
+  ) => {
     if (current.current === 'sending') return null;
+    // The payload belongs to the hold's FIRST press: held and unanswered, the
+    // same order goes out again under the same ids, never a repriced one.
+    const payload =
+      current.current === 'unanswered' && sent.current !== null ? (sent.current as P) : build();
+    sent.current = payload;
     to('sending');
     let result: PartyChargeConfirmation | null = null;
     try {
-      result = await send();
+      result = await send(payload);
     } finally {
       // No result at all is no answer: the order stays held as it was sent.
-      to(result === null || (!result.charged && result.held) ? 'unanswered' : 'open');
+      const unanswered = result === null || (!result.charged && result.held);
+      to(unanswered ? 'unanswered' : 'open');
+      if (!unanswered) sent.current = null;
     }
     return result;
   };
@@ -76,6 +97,9 @@ export function usePartyChargeHold(): PartyChargeHold {
     unanswered: hold === 'unanswered',
     refused,
     charge,
-    release: () => to('open'),
+    release: () => {
+      sent.current = null;
+      to('open');
+    },
   };
 }
