@@ -193,22 +193,31 @@ describe('the E1 gates: gone exactly where E4 builds the action, kept where E3 b
     }
   });
 
-  it('the phone: payment and F&B on the platform; check-in, check-out and reprint still gated for E3', () => {
+  it('the phone: payment and F&B on the platform; and (S2-20 E5) check-in, check-out and reprint too', () => {
     const mobile = source('components/mobile/parties/MobileParties.tsx');
     for (const name of ['handleTakePayment', 'handleChargeExtra']) {
       expect(handler(mobile, name)).not.toMatch(/writePending|addParty/);
     }
-    for (const name of ['handleEventCheckIn', 'handleEventReprint', 'handleEventCheckOut']) {
-      expect(handler(mobile, name)).toMatch(/if \(writePending\(eventId\)\) return;/);
+    // The E1 gate E3 left on the phone's Events tab was taken by E5's closing sweep.
+    const calls: Record<string, string> = {
+      handleEventCheckIn: 'checkInOnPlatform(',
+      handleEventReprint: 'reprintOnPlatform(',
+      handleEventCheckOut: 'checkOutOnPlatform(',
+    };
+    for (const [name, call] of Object.entries(calls)) {
+      expect(handler(mobile, name)).not.toMatch(/writePending/);
+      expect(handler(mobile, name)).toContain(call);
     }
     expect(mobile).toMatch(/onTakePayment=\{\(\) => \{\s*const blocked = blockerOf\(true\);/);
     expect(mobile).toMatch(/onAddFnb=\{\(\) => \{\s*const blocked = blockerOf\(\);/);
   });
 
-  it('both Check-in boards are off their E1 gates - E3 built the action E4 left alone', () => {
+  it('both Check-in boards: E3 took their E1 gates, as the merged tree shows', () => {
     for (const rel of ['pages/DropOff.tsx', 'components/mobile/dropoff/MobileDropOffBoard.tsx']) {
       const board = source(rel);
-      expect((board.match(/if \(writePending\(eventId\)\) return;/g) ?? []).length).toBe(0);
+      expect(board).not.toContain('EVENT_WRITE_PENDING');
+      expect(board).not.toMatch(/writePending\(/);
+      for (const call of ['checkInOnPlatform(', 'checkOutOnPlatform(', 'reprintOnPlatform(']) expect(board, `${rel} ${call}`).toContain(call);
     }
   });
 });
