@@ -79,7 +79,266 @@ export const KIOSK_REASONS = {
   interrupted: 'KIOSK_INTERRUPTED',
   /** Anything else the platform did not expect. */
   internal: 'KIOSK_INTERNAL_ERROR',
+  /**
+   * S2-20 K2 — Q9: nobody touched the screen or scanned for
+   * `KIOSK_IDLE_TIMEOUT_MS`, so the kiosk went back to its attract screen.
+   */
+  idle: 'KIOSK_IDLE_TIMEOUT',
+  /** S2-20 K2 — the guest pressed "Start over" before scanning anything. */
+  cancelled: 'KIOSK_GUEST_CANCELLED',
+  /**
+   * S2-20 K2 — the screen opened a new session while an earlier one at the
+   * same kiosk was still open with nothing scanned: the earlier guest had
+   * gone, and the screen could not say so (a dropped answer, a reload).
+   */
+  superseded: 'KIOSK_SESSION_SUPERSEDED',
 } as const;
+
+// --- S2-20 K2: the kiosk's own screen ---------------------------------------
+
+/**
+ * Q9 (the owner's default): 60 seconds of no touch or scan returns the kiosk
+ * to its attract screen, and a session that scanned nothing is recorded
+ * `abandoned` (`kiosk.abandon`, with the station and the box). A press in
+ * flight is never timed out: the guest is watching the printer.
+ */
+export const KIOSK_IDLE_TIMEOUT_MS = 60_000;
+
+/** Why a session was abandoned, as the screen says it. */
+export const KIOSK_ABANDON_CAUSES = ['idle', 'cancelled'] as const;
+export type KioskAbandonCause = (typeof KIOSK_ABANDON_CAUSES)[number];
+
+/**
+ * A guest leaving the attract screen: the session is opened before anything
+ * is scanned, so walking away from it can be recorded at all. The id is minted
+ * on the kiosk, which makes a resent start the same session.
+ */
+export const KioskSessionStartRequestSchema = z
+  .object({
+    sessionId: z.string().uuid(),
+  })
+  .strict();
+export type KioskSessionStartRequest = z.infer<typeof KioskSessionStartRequestSchema>;
+
+/** A session as the kiosk is told about it: when, and how it ended. Nothing else. */
+export const KioskSessionAnswerSchema = z
+  .object({
+    sessionId: z.string().uuid(),
+    startedAt: z.string(),
+    endedAt: z.string().nullable(),
+    outcome: z.enum(KIOSK_SESSION_OUTCOMES).nullable(),
+  })
+  .strict();
+export type KioskSessionAnswer = z.infer<typeof KioskSessionAnswerSchema>;
+
+export const KioskAbandonRequestSchema = z
+  .object({
+    cause: z.enum(KIOSK_ABANDON_CAUSES),
+  })
+  .strict();
+export type KioskAbandonRequest = z.infer<typeof KioskAbandonRequestSchema>;
+
+/**
+ * What abandoning answered. `abandoned` is false when the session had already
+ * ended (the press decided it) or a press is still running on it — a session
+ * that scanned something is never written off as walked away from.
+ */
+export const KioskAbandonAnswerSchema = KioskSessionAnswerSchema.extend({
+  abandoned: z.boolean(),
+}).strict();
+export type KioskAbandonAnswer = z.infer<typeof KioskAbandonAnswerSchema>;
+
+/** What the kiosk's screen reads about itself: which kiosk it is, and its idle timeout. */
+export const KioskStateSchema = z
+  .object({
+    station: z.object({ id: z.string().uuid(), name: z.string() }).strict(),
+    branchName: z.string().nullable(),
+    idleTimeoutMs: z.number().int().positive(),
+  })
+  .strict();
+export type KioskState = z.infer<typeof KioskStateSchema>;
+
+/**
+ * THE KIOSK'S PAIRING CODE — a display's six digits behind a `K`.
+ *
+ * A kiosk pairs the way a customer display does: the screen makes its own
+ * secret, shows a short code, and a manager types the code into Console >
+ * Devices. The two kinds of code share one store, so the letter is what keeps
+ * them apart: a display's code is six digits and the display claim takes
+ * nothing else, and a kiosk's is `K` and six digits and the kiosk claim takes
+ * nothing else. A kiosk code typed into "Pair a display" is refused, and the
+ * other way round, instead of pairing a kiosk screen as somebody's display.
+ */
+export const KIOSK_PAIRING_CODE_PREFIX = 'K';
+export const KioskPairingCodeSchema = z.string().regex(/^K\d{6}$/);
+
+/** A code as a person typed it — spaces, a dash, a lower-case k or no K at all — or null. */
+export function normaliseKioskPairingCode(raw: string): string | null {
+  const compact = raw.replace(/[\s-]/g, '').toUpperCase();
+  if (/^\d{6}$/.test(compact)) return `${KIOSK_PAIRING_CODE_PREFIX}${compact}`;
+  return /^K\d{6}$/.test(compact) ? compact : null;
+}
+
+/** `K482913` as the screen shows it: `K 482 913`. */
+export function formatKioskPairingCode(code: string): string {
+  return /^K\d{6}$/.test(code) ? `${code[0]} ${code.slice(1, 4)} ${code.slice(4)}` : code;
+}
+
+export const KioskPairingStartAnswerSchema = z
+  .object({
+    pairingCode: KioskPairingCodeSchema,
+    expiresAt: z.string(),
+  })
+  .strict();
+
+export const KioskPairingStatusSchema = z
+  .object({
+    status: z.enum(['pending', 'paired', 'expired']),
+    station: z.object({ id: z.string().uuid(), name: z.string() }).strict().optional(),
+  })
+  .strict();
+export type KioskPairingStatus = z.infer<typeof KioskPairingStatusSchema>;
+
+/**
+ * THE STAFF DESK'S VIEW of the families a kiosk sent to it today (S2-20 K2).
+ *
+ *   to_redeem    nothing was issued (a printer fault, the box offline, every
+ *                child supervised) and the booking is still paid: the desk
+ *                redeems it at the till.
+ *   to_check_in  the kiosk issued the regular bands and left drop-off or nanny
+ *                children booked: the desk checks them in on the board.
+ *   done         the desk (or another kiosk) has finished it since.
+ *
+ * Staff-facing, so the booking is named; still no child, no allergy, no phone
+ * — the till's redeem dialog reads those when it opens the booking.
+ */
+export const KIOSK_DESK_STATES = ['to_redeem', 'to_check_in', 'done'] as const;
+export type KioskDeskState = (typeof KIOSK_DESK_STATES)[number];
+
+export const KioskDeskEntrySchema = z
+  .object({
+    sessionId: z.string().uuid(),
+    stationId: z.string().uuid(),
+    stationName: z.string(),
+    endedAt: z.string(),
+    outcome: z.enum(['failed', 'handed_off']),
+    reason: z.string().nullable(),
+    booking: z
+      .object({
+        id: z.string().uuid(),
+        reference: z.string(),
+        kids: z.number().int().nonnegative(),
+        adults: z.number().int().nonnegative(),
+        status: z.string(),
+      })
+      .strict(),
+    supervisedChildren: z.number().int().nonnegative(),
+    bandsIssued: z.number().int().nonnegative(),
+    state: z.enum(KIOSK_DESK_STATES),
+  })
+  .strict();
+export type KioskDeskEntry = z.infer<typeof KioskDeskEntrySchema>;
+
+export const KioskDeskAnswerSchema = z
+  .object({
+    businessDate: z.string(),
+    entries: z.array(KioskDeskEntrySchema),
+  })
+  .strict();
+export type KioskDeskAnswer = z.infer<typeof KioskDeskAnswerSchema>;
+
+/** The Console's Kiosk tile on Health: one row per kiosk station in the reader's reach. */
+export const KioskHealthRowSchema = z
+  .object({
+    stationId: z.string().uuid(),
+    name: z.string(),
+    branchId: z.string().uuid(),
+    branchName: z.string(),
+    box: z
+      .object({
+        id: z.string().uuid(),
+        name: z.string(),
+        online: z.boolean(),
+        lastHeartbeatAt: z.string().nullable(),
+      })
+      .strict()
+      .nullable(),
+    screen: z
+      .object({
+        paired: z.boolean(),
+        label: z.string().nullable(),
+        lastSeenAt: z.string().nullable(),
+        online: z.boolean(),
+      })
+      .strict(),
+    printer: z
+      .object({
+        deviceId: z.string().uuid(),
+        label: z.string(),
+        reachability: z.string(),
+        paperStatus: z.string(),
+        faults: z.array(z.string()),
+      })
+      .strict()
+      .nullable(),
+    today: z
+      .object({
+        businessDate: z.string(),
+        sessions: z.number().int().nonnegative(),
+        issued: z.number().int().nonnegative(),
+        handedOff: z.number().int().nonnegative(),
+        failed: z.number().int().nonnegative(),
+        abandoned: z.number().int().nonnegative(),
+        open: z.number().int().nonnegative(),
+      })
+      .strict(),
+    lastRedemptionAt: z.string().nullable(),
+  })
+  .strict();
+export type KioskHealthRow = z.infer<typeof KioskHealthRowSchema>;
+
+export const KioskHealthAnswerSchema = z.object({ kiosks: z.array(KioskHealthRowSchema) }).strict();
+export type KioskHealthAnswer = z.infer<typeof KioskHealthAnswerSchema>;
+
+/**
+ * THE VIRTUAL KIOSK'S SIMULATOR CONTROLS (S2-20 K2): every failure screen the
+ * kiosk has, driven without hardware. Applied at once to the box this api
+ * runs, as the terminal simulator's are — a guest is standing at the screen
+ * in the rehearsal, and "on its next poll" is a guest who scanned first.
+ *
+ *   printer_offline  the kiosk's band printer stops answering
+ *   paper_out        the kiosk's band printer answers, with no paper
+ *   box_offline      the kiosk's box cuts its link to the platform
+ *   clear            every printer fault cleared and the box back online
+ */
+export const KIOSK_SIMULATOR_CONTROLS = ['printer_offline', 'paper_out', 'box_offline', 'clear'] as const;
+export type KioskSimulatorControl = (typeof KIOSK_SIMULATOR_CONTROLS)[number];
+
+export const KioskSimulatorRequestSchema = z
+  .object({
+    control: z.enum(KIOSK_SIMULATOR_CONTROLS),
+  })
+  .strict();
+
+export const KioskSimulatorAnswerSchema = z
+  .object({
+    stationId: z.string().uuid(),
+    boxId: z.string().uuid(),
+    control: z.enum(KIOSK_SIMULATOR_CONTROLS),
+    boxOffline: z.boolean(),
+    printers: z.array(
+      z
+        .object({
+          deviceId: z.string().uuid(),
+          label: z.string(),
+          faults: z.array(z.string()),
+        })
+        .strict(),
+    ),
+    actionId: z.string(),
+  })
+  .strict();
+export type KioskSimulatorAnswer = z.infer<typeof KioskSimulatorAnswerSchema>;
 
 /**
  * One scan's redemption, pressed at the kiosk.
@@ -97,6 +356,12 @@ export const KioskRedeemRequestSchema = z
   .object({
     actionId: z.string().uuid(),
     qr: z.string().min(1).max(128),
+    /**
+     * S2-20 K2 — the session the screen opened when the guest left the
+     * attract screen. The press takes that row over, so one guest is one
+     * session; absent (a K1 caller) or already ended, the press opens its own.
+     */
+    sessionId: z.string().uuid().optional(),
   })
   .strict();
 export type KioskRedeemRequest = z.infer<typeof KioskRedeemRequestSchema>;

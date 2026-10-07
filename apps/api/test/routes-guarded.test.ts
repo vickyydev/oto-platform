@@ -359,6 +359,8 @@ describe('route guards (S2-01b)', () => {
     expect(bridge).toEqual([
       'GET /box/v1/station/:stationId/channel [session]',
       'GET /box/v1/station/:stationId/display/session [display]',
+      // S2-20 K2 — the kiosk's own screen: which kiosk it is, polled.
+      'GET /box/v1/station/:stationId/kiosk/state [kiosk]',
       'GET /box/v1/station/:stationId/members/lookup [session]',
       'GET /box/v1/station/:stationId/session [session]',
       'GET /box/v1/station/:stationId/status [session]',
@@ -366,6 +368,9 @@ describe('route guards (S2-01b)', () => {
       'POST /box/v1/station/:stationId/intents [session]',
       // S2-20 K1 — the self-service kiosk, on its own paired credential and device scope.
       'POST /box/v1/station/:stationId/kiosk/redeem [kiosk]',
+      // S2-20 K2 — a guest's session, opened at the attract screen and abandoned on the idle timeout (Q9).
+      'POST /box/v1/station/:stationId/kiosk/sessions [kiosk]',
+      'POST /box/v1/station/:stationId/kiosk/sessions/:sessionId/abandon [kiosk]',
       'POST /box/v1/station/:stationId/lease [session]',
       'POST /box/v1/station/:stationId/lease/release [session]',
       'POST /box/v1/station/:stationId/lease/renew [session]',

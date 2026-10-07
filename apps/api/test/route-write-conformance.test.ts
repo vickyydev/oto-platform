@@ -485,6 +485,14 @@ const OUTSIDE_THE_REPLAY_STORE = [
    * row (`kiosk_session_action_unique`), and a replayed press issues nothing.
    */
   'POST /box/v1/station/:stationId/kiosk/redeem [credential:kiosk]',
+  /**
+   * S2-20 K2 — the kiosk's own screen: a guest's session is opened under the
+   * id the kiosk minted (a resent start is the same session), and abandoning
+   * one ends it only while it is open with nothing pressed — a second
+   * abandon finds it ended and writes nothing.
+   */
+  'POST /box/v1/station/:stationId/kiosk/sessions [credential:kiosk]',
+  'POST /box/v1/station/:stationId/kiosk/sessions/:sessionId/abandon [credential:kiosk]',
   'POST /box/v1/station/:stationId/unlock [secretResponse]',
   // Independent display credentials have no staff account replay key. Minting
   // rotates the pending single-use hash and must never store its secret reply;
@@ -493,6 +501,13 @@ const OUTSIDE_THE_REPLAY_STORE = [
   'POST /display/pairing [secretResponse,credential:display-pairing]',
   'POST /display/pairing/expire [credential:display-pairing]',
   'POST /display/intents [credential:display]',
+  /**
+   * S2-20 K2 — a kiosk pairs as a display does, from its own browser secret:
+   * the code is a single-use credential that never enters the store, and
+   * minting again rotates it; expiring is idempotent.
+   */
+  'POST /kiosk/pairing [secretResponse,credential:kiosk-pairing]',
+  'POST /kiosk/pairing/expire [credential:kiosk-pairing]',
   'POST /me/staff-token [secretResponse]',
   /**
    * S2-10a — what the card terminal did, reported by the box that drove it.

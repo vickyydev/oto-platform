@@ -53,6 +53,7 @@ import { boxRoutes } from './routes/box';
 import { fleetRoutes } from './routes/fleet';
 import { stationSessionRoutes } from './routes/stations';
 import { stationBridgeRoutes } from './routes/station-bridge';
+import { kioskRoutes } from './routes/kiosk';
 import { printRoutes } from './routes/print';
 import { scanningRoutes } from './routes/scanning';
 import { staffTokenRoutes } from './routes/staff-token';
@@ -477,6 +478,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
    * the station forced offline.
    */
   await app.register(stationBridgeRoutes);
+  // S2-20 K2 — the self-service kiosk's pairing, the staff desk, the Kiosk tile and the virtual kiosk's simulator.
+  await app.register(kioskRoutes);
   await app.register((await import('./routes/box-booth-staff')).boxBoothStaffRoutes);
   await app.register(publicRoutes);
 

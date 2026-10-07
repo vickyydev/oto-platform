@@ -13,19 +13,27 @@ import {
   type Db,
 } from '@oto/db';
 import {
+  KIOSK_IDLE_TIMEOUT_MS,
   KIOSK_REASONS,
   KIOSK_REDEEM_SCOPE,
   bandShortCode,
   newId,
+  type KioskAbandonAnswer,
+  type KioskAbandonRequest,
   type KioskDeviceScope,
   type KioskRedeemAnswer,
   type KioskRedeemRequest,
+  type KioskSessionAnswer,
   type KioskSessionOutcome,
+  type KioskSessionStartRequest,
+  type KioskState,
 } from '@oto/shared';
 import type { PrintNowOptions, PrintNowOutcome, PrintRequest } from '@oto/box-agent';
 import type { FastifyBaseLogger } from 'fastify';
 import { AppError } from '../lib/errors';
+import { pgErrorOf } from '../lib/scrub';
 import { audit } from './audit';
+import { recordRun } from './ops';
 import { inProcessBox } from './box';
 import { redeemBookingAtCounter } from './booking-redemption';
 import {
@@ -269,7 +277,51 @@ async function openSession(
   device: KioskDeviceAuth,
   actionId: string,
   now: Date,
+  sessionId?: string,
 ): Promise<{ row: SessionRow; fresh: boolean }> {
+  // The same press again, wherever it was first written down.
+  const [pressed] = await db
+    .select()
+    .from(kioskSession)
+    .where(and(eq(kioskSession.stationId, device.station.id), eq(kioskSession.actionId, actionId)))
+    .limit(1);
+  if (pressed) {
+    ctx.log?.info({ sessionId: pressed.id, outcome: pressed.outcome }, 'kiosk press replayed');
+    return { row: pressed, fresh: false };
+  }
+  /**
+   * S2-20 K2 — THE GUEST'S SESSION, taken over by their first press. The
+   * screen opened it when they left the attract screen; the press writes its
+   * action id onto it, conditional on nothing having been pressed on it and it
+   * not having ended (an idle timeout, a newer session), so one guest is one
+   * row on the Kiosk tile. Any miss falls through to a row of the press's own,
+   * as K1 wrote it — a second scan by the same guest, after the first one's
+   * answer, is a second session.
+   *
+   * `detail.pressedAt` is when the press arrived, which is what "still being
+   * redeemed or left open by a stopped process" is measured from: the
+   * session's own `started_at` is when the guest first touched the screen.
+   */
+  if (sessionId) {
+    const [taken] = await db
+      .update(kioskSession)
+      .set({ actionId, detail: { pressedAt: now.toISOString() } })
+      .where(
+        and(
+          eq(kioskSession.id, sessionId),
+          eq(kioskSession.stationId, device.station.id),
+          isNull(kioskSession.actionId),
+          isNull(kioskSession.outcome),
+        ),
+      )
+      .returning()
+      .catch((err: unknown) => {
+        // Two copies of one press racing: the other took the action id first.
+        if (pgErrorOf(err)?.code === '23505') return [];
+        throw err;
+      });
+    if (taken) return { row: taken, fresh: true };
+  }
   const id = newId();
   const [inserted] = await db
     .insert(kioskSession)
@@ -463,12 +515,12 @@ export async function redeemAtKiosk(
   const now = ctx.now?.() ?? new Date();
   const st = device.station;
 
-  const opened = await openSession(db, ctx, device, input.actionId, now);
+  const opened = await openSession(db, ctx, device, input.actionId, now, input.sessionId);
   if (!opened.fresh) {
     if (opened.row.outcome) return answerOf(db, opened.row, true);
     // The same press while it is still running — or one a stopped process
     // left open, which is ended now rather than answered "in progress" for ever.
-    if (now.getTime() - opened.row.startedAt.getTime() < KIOSK_PRESS_STALE_MS) {
+    if (now.getTime() - pressedAtOf(opened.row).getTime() < KIOSK_PRESS_STALE_MS) {
       throw new AppError(409, KIOSK_REASONS.inProgress, 'This scan is still being redeemed — wait a moment', {
         sessionId: opened.row.id,
       });
@@ -486,6 +538,8 @@ export async function redeemAtKiosk(
   const session = opened.row;
 
   let found: BookingRow | null = null;
+  /** S2-20 K2 — what the print did, set where it happened and written down once the redemption ends. */
+  let printRun: KioskPrintRun | null = null;
   try {
     // 1. WHICH BOOKING — the whole signed QR, checked against the signature the
     // park stored when it was paid; anything else opens nothing.
@@ -529,7 +583,12 @@ export async function redeemAtKiosk(
     // 3. THE KIOSK'S PRINTER, before anything is claimed: a box that cannot
     // print is a redemption that cannot finish.
     const printer = ctx.printer !== undefined ? ctx.printer : await kioskPrinterOf(db, st.boxId);
-    if (!printer || !st.boxId) throw new KioskStop(KIOSK_REASONS.boxOffline, 'lookup', {}, found.id);
+    if (!printer || !st.boxId) {
+      // The kiosk's print, called off before it began: still the device's run (S2-20 K2).
+      printRun = { startedAt: new Date(), finishedAt: new Date(), jobs: 0, printed: 0, complete: false,
+        errorCode: KIOSK_REASONS.boxOffline, deviceId: null };
+      throw new KioskStop(KIOSK_REASONS.boxOffline, 'lookup', {}, found.id);
+    }
     const boxId = st.boxId;
     const bookingId = found.id;
 
@@ -593,7 +652,24 @@ export async function redeemAtKiosk(
           templateVersion: document.templateVersion,
         });
       }
-      const paper = await printer.printNow(requests);
+      const printStartedAt = new Date();
+      let paper: PrintNowOutcome;
+      try {
+        paper = await printer.printNow(requests);
+      } catch (err) {
+        printRun = { startedAt: printStartedAt, finishedAt: new Date(), jobs: requests.length, printed: 0,
+          complete: false, errorCode: 'PRINT_FAILED', deviceId: null };
+        throw err;
+      }
+      printRun = {
+        startedAt: printStartedAt,
+        finishedAt: new Date(),
+        jobs: requests.length,
+        printed: paper.printed,
+        complete: paper.complete,
+        errorCode: paper.complete ? null : (paper.fault?.errorCode ?? 'PRINT_FAILED'),
+        deviceId: paper.fault?.deviceId ?? null,
+      };
       if (!paper.complete) {
         throw new KioskStop(
           paper.fault?.errorCode ?? 'PRINT_FAILED',
@@ -697,6 +773,7 @@ export async function redeemAtKiosk(
       }
       return row;
     });
+    await recordKioskPrintRun(db, ctx, device, session, input.actionId, printRun, true);
     return answerOf(db, ended, false);
   } catch (err) {
     const stop =
@@ -706,8 +783,243 @@ export async function redeemAtKiosk(
     if (!(err instanceof KioskStop)) {
       ctx.log?.error({ err, sessionId: session.id }, 'a kiosk redemption failed unexpectedly; nothing was issued');
     }
+    // After the rollback, on the pool: the record of the attempt outlives it (services/ops.ts).
+    await recordKioskPrintRun(db, ctx, device, session, input.actionId, printRun, false);
     const ended = await endFailed(db, ctx, device, session, stop, now);
     if (!(err instanceof KioskStop)) throw err;
     return answerOf(db, ended, false);
   }
+}
+
+// --- The print, on the operational record (S2-20 K2) ---------------------------
+
+/** What the kiosk's print did, captured inside the redemption and written down after it. */
+interface KioskPrintRun {
+  startedAt: Date;
+  finishedAt: Date;
+  jobs: number;
+  printed: number;
+  complete: boolean;
+  /** The printer's own code (`PRINTER_UNREACHABLE`, `PRINTER_PAPER_OUT`, …), or `KIOSK_BOX_OFFLINE`. */
+  errorCode: string | null;
+  deviceId: string | null;
+}
+
+/** The ops_run name of every kiosk print: one name, so the Failures page groups by the fault. */
+export const KIOSK_PRINT_RUN = 'device:kiosk.print';
+
+/**
+ * THE KIOSK'S PRINT IS A DEVICE RUN (plan §10: `ops_run` kind `device` for the
+ * kiosk print). One row per press that reached the printer — or was called off
+ * because the box could not be reached — `ok` when every job came out and
+ * `failed` with the printer's code otherwise, so "the kiosk printer keeps
+ * running out of paper" is one line on Failures and its last success is on the
+ * register.
+ *
+ * `committed` says whether the redemption around the paper stood: a print that
+ * came out whole under a redemption that then failed (the K1 pinned defect,
+ * SCRUM-504) is still a print that worked, and the detail says the rest.
+ *
+ * Never thrown from: the guest's answer does not wait on the record of it.
+ */
+async function recordKioskPrintRun(
+  db: Db,
+  ctx: KioskContext,
+  device: KioskDeviceAuth,
+  session: SessionRow,
+  actionId: string,
+  run: KioskPrintRun | null,
+  committed: boolean,
+): Promise<void> {
+  if (!run) return;
+  try {
+    await recordRun(db, {
+      kind: 'device',
+      name: KIOSK_PRINT_RUN,
+      outcome: run.complete ? 'ok' : 'failed',
+      startedAt: run.startedAt,
+      finishedAt: run.finishedAt,
+      ...(run.complete
+        ? {}
+        : { error: new AppError(500, run.errorCode ?? 'PRINT_FAILED', 'The kiosk print did not complete') }),
+      detail: {
+        sessionId: session.id,
+        jobs: run.jobs,
+        printed: run.printed,
+        deviceId: run.deviceId,
+        boxId: device.station.boxId,
+        committed,
+      },
+      requestId: ctx.requestId,
+      actionId,
+      operatorId: device.station.operatorId,
+      branchId: device.station.branchId,
+      stationId: device.station.id,
+    });
+  } catch (err) {
+    ctx.log?.warn({ err, sessionId: session.id }, 'the kiosk print run could not be recorded');
+  }
+}
+
+// --- The guest's session (S2-20 K2) ----------------------------------------------
+
+/** When the press on a session arrived: `detail.pressedAt` on a taken-over session, else its start. */
+function pressedAtOf(row: SessionRow): Date {
+  const pressed = (row.detail as { pressedAt?: unknown } | null)?.pressedAt;
+  if (typeof pressed === 'string') {
+    const at = new Date(pressed);
+    if (!Number.isNaN(at.getTime())) return at;
+  }
+  return row.startedAt;
+}
+
+function sessionAnswerOf(row: SessionRow) {
+  return {
+    sessionId: row.id,
+    startedAt: row.startedAt.toISOString(),
+    endedAt: row.endedAt?.toISOString() ?? null,
+    outcome: (row.outcome ?? null) as KioskSessionOutcome | null,
+  };
+}
+
+/** How many superseded sessions get an audit row each on one start. */
+const SUPERSEDE_AUDIT_LIMIT = 20;
+
+/**
+ * A GUEST LEAVES THE ATTRACT SCREEN: their session opens before anything is
+ * scanned, so walking away from it can be recorded (Q9).
+ *
+ * The id is the screen's, so a start sent twice is one session. Any earlier
+ * session at this kiosk that is still open with nothing pressed on it is
+ * ended `abandoned` (`KIOSK_SESSION_SUPERSEDED`) in the same transaction: the
+ * screen is one guest at a time, and a new guest means the last one left
+ * without the screen being able to say so. A session with a press running is
+ * left alone — its press decides it.
+ */
+export async function startKioskSession(
+  db: Db,
+  ctx: KioskContext,
+  device: KioskDeviceAuth,
+  input: KioskSessionStartRequest,
+): Promise<KioskSessionAnswer> {
+  const now = ctx.now?.() ?? new Date();
+  const st = device.station;
+  return withTx(db, opCtxOf(ctx, device), 'kiosk.session_start', async (tx) => {
+    const [existing] = await tx.select().from(kioskSession).where(eq(kioskSession.id, input.sessionId)).limit(1);
+    if (existing) {
+      if (existing.stationId !== st.id) {
+        throw new AppError(409, 'KIOSK_SESSION_TAKEN', 'That session id belongs to another kiosk');
+      }
+      return sessionAnswerOf(existing);
+    }
+    const left = await tx
+      .update(kioskSession)
+      .set({
+        outcome: 'abandoned',
+        reason: KIOSK_REASONS.superseded,
+        endedAt: now,
+        detail: { stage: 'attract' },
+      })
+      .where(and(eq(kioskSession.stationId, st.id), isNull(kioskSession.outcome), isNull(kioskSession.actionId)))
+      .returning({ id: kioskSession.id });
+    // One audit row each, up to a bound: a screen that lost every answer for a day is one line too many.
+    for (const gone of left.slice(0, SUPERSEDE_AUDIT_LIMIT)) {
+      await audit.record(tx, {
+        actorAccountId: null,
+        operatorId: st.operatorId,
+        branchId: st.branchId,
+        action: 'kiosk.abandon',
+        entityType: 'kiosk_session',
+        entityId: gone.id,
+        before: { outcome: null },
+        after: { ...whereOf(device), outcome: 'abandoned', reason: KIOSK_REASONS.superseded },
+        requestId: ctx.requestId,
+      });
+    }
+    const [row] = await tx
+      .insert(kioskSession)
+      .values({
+        id: input.sessionId,
+        operatorId: st.operatorId,
+        branchId: st.branchId,
+        stationId: st.id,
+        deviceCredentialId: device.credentialId,
+        boxId: st.boxId,
+        startedAt: now,
+      })
+      .returning();
+    return sessionAnswerOf(row!);
+  });
+}
+
+/**
+ * Q9 — THE GUEST WALKED AWAY: 60 seconds of no touch or scan (or "Start
+ * over" before any scan) returns the kiosk to its attract screen, and the
+ * session is recorded `abandoned` with `kiosk.abandon`, naming the station and
+ * the box.
+ *
+ * Only a session that scanned nothing is abandoned. One whose press is
+ * running, or has ended, is answered as it stands with `abandoned: false` —
+ * the press decides how a session that scanned something ended, and a
+ * redemption is never written off as walked away from.
+ */
+export async function abandonKioskSession(
+  db: Db,
+  ctx: KioskContext,
+  device: KioskDeviceAuth,
+  sessionId: string,
+  input: KioskAbandonRequest,
+): Promise<KioskAbandonAnswer> {
+  const now = ctx.now?.() ?? new Date();
+  const st = device.station;
+  const reason = input.cause === 'cancelled' ? KIOSK_REASONS.cancelled : KIOSK_REASONS.idle;
+  return withTx(db, opCtxOf(ctx, device), 'kiosk.abandon', async (tx) => {
+    const [ended] = await tx
+      .update(kioskSession)
+      .set({ outcome: 'abandoned', reason, endedAt: now, detail: { stage: 'scan', cause: input.cause } })
+      .where(
+        and(
+          eq(kioskSession.id, sessionId),
+          eq(kioskSession.stationId, st.id),
+          isNull(kioskSession.outcome),
+          isNull(kioskSession.actionId),
+        ),
+      )
+      .returning();
+    if (ended) {
+      await audit.record(tx, {
+        actorAccountId: null,
+        operatorId: st.operatorId,
+        branchId: st.branchId,
+        action: 'kiosk.abandon',
+        entityType: 'kiosk_session',
+        entityId: ended.id,
+        before: { outcome: null },
+        after: { ...whereOf(device), outcome: 'abandoned', reason, cause: input.cause },
+        requestId: ctx.requestId,
+      });
+      return { ...sessionAnswerOf(ended), abandoned: true };
+    }
+    const [held] = await tx
+      .select()
+      .from(kioskSession)
+      .where(and(eq(kioskSession.id, sessionId), eq(kioskSession.stationId, st.id)))
+      .limit(1);
+    if (!held) throw new AppError(404, 'KIOSK_SESSION_NOT_FOUND', 'No such session at this kiosk');
+    return { ...sessionAnswerOf(held), abandoned: false };
+  });
+}
+
+/** What the kiosk's screen reads about itself. Polled, so it is also how the Console knows the screen is up. */
+export async function kioskState(db: Db, device: KioskDeviceAuth): Promise<KioskState> {
+  const [br] = await db
+    .select({ name: branch.name })
+    .from(branch)
+    .where(eq(branch.id, device.station.branchId))
+    .limit(1);
+  return {
+    station: { id: device.station.id, name: device.station.name },
+    branchName: br?.name ?? null,
+    idleTimeoutMs: KIOSK_IDLE_TIMEOUT_MS,
+  };
 }

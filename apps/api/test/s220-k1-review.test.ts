@@ -955,13 +955,29 @@ describe('attack 3 — the credential', () => {
         .replace(/:bookingId|:id(?=\/|$)/g, paid.id)
         .replace(/:[A-Za-z]+/g, () => newId())
         .replace(/\*/g, 'x');
+    /**
+     * S2-20 K2 — the kiosk's own surface is the routes that declare its
+     * credential: the redeem, and the screen's state, a guest's session and
+     * walking away. Pinned here by name, so the set the walk below leaves out
+     * cannot grow without this line changing.
+     */
+    const kioskOwn = ctx.app.routeRegistry
+      .filter((r) => r.config.credential === 'kiosk' && r.method !== 'HEAD')
+      .map((r) => `${r.method} ${r.url}`)
+      .sort();
+    expect(kioskOwn).toEqual([
+      'GET /box/v1/station/:stationId/kiosk/state',
+      `POST ${KIOSK_ROUTE}`,
+      'POST /box/v1/station/:stationId/kiosk/sessions',
+      'POST /box/v1/station/:stationId/kiosk/sessions/:sessionId/abandon',
+    ]);
     const routes = ctx.app.routeRegistry.filter(
       (r) =>
         r.method !== 'HEAD' &&
         r.method !== 'OPTIONS' &&
         !r.config.public &&
         r.url !== '/*' &&
-        r.url.replace(/\/$/, '') !== KIOSK_ROUTE,
+        r.config.credential !== 'kiosk',
     );
     expect(routes.length).toBeGreaterThan(100);
     const call = (r: (typeof routes)[number], headers: Record<string, string>) => {

@@ -11,6 +11,7 @@ import {
 import type { PermissionConfig } from './permission';
 import { authenticateDisplay, displayBearerHash, displayUnpaired, observeRejectedDisplayCall, type DisplayDeviceAuth } from '../services/display';
 import { authenticateKiosk, kioskUnpaired, type KioskDeviceAuth } from '../services/kiosk';
+import { kioskBearerHash } from '../services/kiosk-pairing';
 
 /**
  * `config.credential` was a label; this makes it a guard (S2-04 review, F3).
@@ -43,6 +44,8 @@ declare module 'fastify' {
     displayPairingHash: string | null;
     /** Set by this plugin on a `credential: 'kiosk'` route, null everywhere else (S2-20 K1). */
     kioskDevice: KioskDeviceAuth | null;
+    /** The unpaired kiosk browser's own bearer, hashed, on a `credential: 'kiosk-pairing'` route (S2-20 K2). */
+    kioskPairingHash: string | null;
   }
 }
 
@@ -84,12 +87,19 @@ export function kioskDeviceOf(req: FastifyRequest): KioskDeviceAuth {
   return req.kioskDevice;
 }
 
+/** The kiosk browser asking to be paired, for a route that declared `credential: 'kiosk-pairing'` (S2-20 K2). */
+export function kioskPairingHashOf(req: FastifyRequest): string {
+  if (!req.kioskPairingHash) throw kioskUnpaired();
+  return req.kioskPairingHash;
+}
+
 export const credentialPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest('boxAuth', null);
   app.decorateRequest('boothDevice', null);
   app.decorateRequest('displayDevice', null);
   app.decorateRequest('displayPairingHash', null);
   app.decorateRequest('kioskDevice', null);
+  app.decorateRequest('kioskPairingHash', null);
 
   app.addHook('onRoute', (route: RouteOptions) => {
     const kind = (route.config as PermissionConfig | undefined)?.credential;
@@ -119,6 +129,15 @@ export const credentialPlugin = fp(async (app: FastifyInstance) => {
           }
           throw error;
         }
+        return;
+      }
+      if (kind === 'kiosk-pairing') {
+        /**
+         * S2-20 K2 — a kiosk browser that is not paired yet, asking for or
+         * about its code: its own 64-hex bearer, which is all it has, and
+         * which becomes its credential when a manager claims the code.
+         */
+        req.kioskPairingHash = kioskBearerHash(req.headers.authorization);
         return;
       }
       if (kind === 'kiosk') {

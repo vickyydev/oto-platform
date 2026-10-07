@@ -5,8 +5,13 @@ import {
   BridgeUnlockRequestSchema,
   BridgeUnlockResponseSchema,
   KIOSK_REDEEM_SCOPE,
+  KioskAbandonAnswerSchema,
+  KioskAbandonRequestSchema,
   KioskRedeemAnswerSchema,
   KioskRedeemRequestSchema,
+  KioskSessionAnswerSchema,
+  KioskSessionStartRequestSchema,
+  KioskStateSchema,
   STATION_VIEWS,
   StationIntentSchema,
   StationSessionDocumentSchema,
@@ -17,7 +22,7 @@ import { AppError } from '../lib/errors';
 import { displayDeviceOf, kioskDeviceOf } from '../plugins/credential';
 import { holdsGrantAt } from '../services/access-control';
 import { displayIntent, displaySession } from '../services/display';
-import { redeemAtKiosk } from '../services/kiosk';
+import { abandonKioskSession, kioskState, redeemAtKiosk, startKioskSession } from '../services/kiosk';
 import { bridgeForStation, platformCaller, unlockThroughBridge } from '../services/station-bridge';
 import { loadStationRow, type StationRow } from '../services/station-session';
 import { actionIdOf, openChannel } from './stations';
@@ -441,6 +446,84 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
       }
       reply.header('cache-control', 'private, no-store');
       return redeemAtKiosk(app.db, { requestId: req.id, log: req.log }, device, req.body);
+    },
+  );
+
+  // --- The kiosk's own screen (S2-20 K2) ---------------------------------------
+
+  /** The paired kiosk at this station, or the refusal a kiosk paired elsewhere gets. */
+  const kioskAt = (req: FastifyRequest, stationId: string) => {
+    const device = kioskDeviceOf(req);
+    if (device.station.id !== stationId) {
+      throw new AppError(403, 'KIOSK_OTHER_STATION', 'This kiosk is paired to another station');
+    }
+    return device;
+  };
+
+  app.get(
+    '/box/v1/station/:stationId/kiosk/state',
+    {
+      config: { credential: 'kiosk', kioskScope: KIOSK_REDEEM_SCOPE },
+      schema: {
+        description:
+          "What a paired kiosk's screen reads about itself: which kiosk it is and its idle timeout. Polled, which is also how the Console knows the screen is up.",
+        params: Params,
+        response: { 200: KioskStateSchema },
+      },
+    },
+    async (req, reply) => {
+      const device = kioskAt(req, req.params.stationId);
+      reply.header('cache-control', 'private, no-store');
+      return kioskState(app.db, device);
+    },
+  );
+
+  app.post(
+    '/box/v1/station/:stationId/kiosk/sessions',
+    {
+      /**
+       * A guest leaving the attract screen. Outside the replay store with the
+       * rest of the kiosk's calls: the session id is minted on the kiosk, so a
+       * start sent twice is one session.
+       */
+      config: { credential: 'kiosk', kioskScope: KIOSK_REDEEM_SCOPE },
+      schema: {
+        description:
+          "Open a guest's session at a self-service kiosk before anything is scanned, so walking away can be recorded (Q9). The id is the kiosk's; an earlier session at this kiosk left open with nothing scanned is ended abandoned.",
+        params: Params,
+        body: KioskSessionStartRequestSchema,
+        response: { 200: KioskSessionAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const device = kioskAt(req, req.params.stationId);
+      reply.header('cache-control', 'private, no-store');
+      return startKioskSession(app.db, { requestId: req.id, log: req.log }, device, req.body);
+    },
+  );
+
+  app.post(
+    '/box/v1/station/:stationId/kiosk/sessions/:sessionId/abandon',
+    {
+      config: { credential: 'kiosk', kioskScope: KIOSK_REDEEM_SCOPE },
+      schema: {
+        description:
+          "The guest walked away (60 seconds of no touch or scan, or Start over before scanning): the session is recorded abandoned, with kiosk.abandon naming the station and the box. A session with a press running or ended is answered as it stands.",
+        params: Params.extend({ sessionId: z.string().uuid() }),
+        body: KioskAbandonRequestSchema,
+        response: { 200: KioskAbandonAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const device = kioskAt(req, req.params.stationId);
+      reply.header('cache-control', 'private, no-store');
+      return abandonKioskSession(
+        app.db,
+        { requestId: req.id, log: req.log },
+        device,
+        req.params.sessionId,
+        req.body,
+      );
     },
   );
 }
