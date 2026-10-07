@@ -367,6 +367,15 @@ Size: L.
   worth a choice: keep (default, the design's words) or shorten the
   guest side to a plain refusal and keep the name on the till side only.
 
+- **Q13. Lookalike letters in the "Staff benefit" reason** (from the
+  rounds 3-4 reviews): the platform now reads the reason letters-only
+  after normalisation, so invisible and spacing tricks are refused -
+  but letters from other alphabets that merely look alike (Cyrillic,
+  small caps, dotless i) still read as an ordinary manual reason. No
+  rights are gained (reception may discount by hand, audited); the
+  question is only whether such a reason should be refused for
+  tidiness. Default: left as an ordinary manual discount.
+
 ## 11. Hazards, each with its test
 
 | # | Hazard | Test |
