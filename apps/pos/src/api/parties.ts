@@ -158,6 +158,10 @@ export const PARTY_CHARGE_HELD = {
  *   - not charged, not held: a definite no (or, before anything was sent, an
  *     order that was not held). The order is the till's again, to change or
  *     drop.
+ *
+ * The screen holds the order from the press itself, not only from an answer
+ * that never came: while the request is on its way the order on screen is the
+ * order sent, and nothing changes or leaves it (`usePartyChargeHold`).
  */
 export type PartyChargeConfirmation = { charged: true } | { charged: false; held: boolean };
 

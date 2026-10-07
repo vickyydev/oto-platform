@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FnbOrderLine, ManualDiscount, MenuItem, PartyBooking, SelectedModifier } from '@/types';
 import { useOperator } from '@/auth/OperatorContext';
 import { getDiscountReasons, getMenuItems } from '@/mockApi';
@@ -14,8 +14,8 @@ import { ModifierSheet } from '@/components/fnb/ModifierSheet';
 import { ManualDiscountModal } from '@/components/shared/ManualDiscountModal';
 import { MobileFnbCartSheet } from '@/components/mobile/order-station/MobileFnbCartSheet';
 import { PartyChargeHeldNote } from '@/components/parties/PartyChargeHeldNote';
-import { toast } from '@/hooks/use-toast';
-import { PARTY_CHARGE_HELD, type PartyChargeConfirmation, type PartyChargeLine } from '@/api/parties';
+import { usePartyChargeHold } from '@/components/parties/usePartyChargeHold';
+import type { PartyChargeConfirmation, PartyChargeLine } from '@/api/parties';
 import { ArrowLeft, PartyPopper } from 'lucide-react';
 
 let partyMobileLineCounter = 1;
@@ -25,8 +25,10 @@ interface MobilePartyFnbProps {
   operatorName: string;
   /**
    * S2-20 E4: a request on the platform — the host leaves this screen once it
-   * is charged. A definite no leaves the order open to change; no answer holds
-   * it exactly as it was sent (`PartyChargeConfirmation`).
+   * is charged. From the press to the answer the order is held exactly as it
+   * was sent and the screen is not left; a definite no leaves the order open
+   * to change; no answer keeps it held (`PartyChargeConfirmation`,
+   * `usePartyChargeHold`).
    */
   onCharge: (items: PartyChargeLine[], total: number) => PartyChargeConfirmation | Promise<PartyChargeConfirmation>;
   onBack: () => void;
@@ -50,14 +52,13 @@ export function MobilePartyFnb({
   const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add');
   const [sheetLineId, setSheetLineId] = useState<string | null>(null);
 
-  // S2-20 E4 — an order whose charge nothing answered is held exactly as it
-  // was sent until the platform says yes or no: nothing adds to it, changes,
-  // clears or leaves it meanwhile, and Checkout sends it again.
-  const [held, setHeld] = useState(false);
-  const whileHeld = () => {
-    if (held) toast(PARTY_CHARGE_HELD);
-    return held;
-  };
+  // S2-20 E4 — from Checkout until the platform says yes or no, the order is
+  // held exactly as it was sent: nothing adds to it, changes, clears or leaves
+  // it meanwhile (each is refused with "Order held"; Back too, so the answer
+  // always lands on this screen), and after an answer that never came
+  // Checkout sends it again.
+  const hold = usePartyChargeHold();
+  const whileHeld = hold.refused;
   const leave = () => {
     if (!whileHeld()) onBack();
   };
@@ -199,11 +200,8 @@ export function MobilePartyFnb({
     setManualDiscounts([]);
   };
 
-  // S2-20 E4 — the charge is on its way to the platform: not pressed twice meanwhile.
-  const charging = useRef(false);
-
   const handleCharge = async () => {
-    if (cart.length === 0 || charging.current) return;
+    if (cart.length === 0) return;
     const items = cart.map((l) => {
       const mods = describeModifiers(l.menuItem, l.selectedModifiers);
       return {
@@ -212,16 +210,10 @@ export function MobilePartyFnb({
         lineTotal: l.lineTotal,
       };
     });
-    charging.current = true;
-    let result: PartyChargeConfirmation;
-    try {
-      result = await onCharge(items, total);
-    } finally {
-      charging.current = false;
-    }
-    // Charged: the host leaves this screen. No answer: held as sent. A
-    // definite no: the order is staff's again.
-    if (!result.charged) setHeld(result.held);
+    // Held from here: the order on screen is the order sent. Charged: the
+    // host leaves this screen. No answer: still held as sent. A definite no:
+    // the order is staff's again. On its way already, nothing more is sent.
+    await hold.charge(() => onCharge(items, total));
   };
 
   return (
@@ -247,7 +239,7 @@ export function MobilePartyFnb({
       </div>
 
       {/* S2-20 E4 — a charge nothing answered: the order waits here, held as sent. */}
-      {held && (
+      {hold.unanswered && (
         <div className="shrink-0 px-4 pt-3">
           <PartyChargeHeldNote />
         </div>

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -23,9 +23,9 @@ import { dropDiscountsForRemovedLines } from '@/lib/manualDiscount';
 import { useCustomerDisplayPref } from '@/lib/customerDisplayPref';
 import { useCustomerTheme } from '@/lib/themePref';
 import { useOperator } from '@/auth/OperatorContext';
-import { toast } from '@/hooks/use-toast';
-import { PARTY_CHARGE_HELD, type PartyChargeConfirmation, type PartyChargeLine } from '@/api/parties';
+import type { PartyChargeConfirmation, PartyChargeLine } from '@/api/parties';
 import { PartyChargeHeldNote } from './PartyChargeHeldNote';
+import { usePartyChargeHold } from './usePartyChargeHold';
 import { Monitor, PartyPopper } from 'lucide-react';
 
 interface PartyFnbModalProps {
@@ -34,9 +34,10 @@ interface PartyFnbModalProps {
   party: PartyBooking;
   operatorName: string;
   /**
-   * S2-20 E4: a request on the platform, which may answer later, or no. The
+   * S2-20 E4: a request on the platform, which may answer later, or no. From
+   * the press to the answer the order is held exactly as it was sent; the
    * modal closes on a charge; a definite no leaves the order open to change;
-   * no answer holds the order exactly as it was sent (`PartyChargeConfirmation`).
+   * no answer keeps it held (`PartyChargeConfirmation`, `usePartyChargeHold`).
    */
   onCharge: (items: PartyChargeLine[], total: number) => PartyChargeConfirmation | Promise<PartyChargeConfirmation>;
 }
@@ -83,14 +84,12 @@ export function PartyFnbModal({
   const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add');
   const [sheetLineId, setSheetLineId] = useState<string | null>(null);
 
-  // S2-20 E4 — an order whose charge nothing answered is held exactly as it
-  // was sent until the platform says yes or no: nothing adds to it, changes,
-  // clears or leaves it meanwhile, and the charge press sends it again.
-  const [held, setHeld] = useState(false);
-  const whileHeld = () => {
-    if (held) toast(PARTY_CHARGE_HELD);
-    return held;
-  };
+  // S2-20 E4 — from the charge press until the platform says yes or no, the
+  // order is held exactly as it was sent: nothing adds to it, changes, clears
+  // or leaves it meanwhile (each is refused with "Order held"), and after an
+  // answer that never came the charge press sends it again.
+  const hold = usePartyChargeHold();
+  const whileHeld = hold.refused;
 
   const lines = cart;
 
@@ -253,15 +252,12 @@ export function PartyFnbModal({
     setOrderNote('');
     setManualDiscounts([]);
     setShowDiscountModal(false);
-    setHeld(false);
+    hold.release();
     closeSheet();
   };
 
-  // S2-20 E4 — the charge is on its way to the platform: not pressed twice meanwhile.
-  const charging = useRef(false);
-
   const handleCharge = async () => {
-    if (cart.length === 0 || charging.current) return;
+    if (cart.length === 0) return;
     const items = cart.map((l) => {
       const mods = describeModifiers(l.menuItem, l.selectedModifiers);
       return {
@@ -270,18 +266,11 @@ export function PartyFnbModal({
         lineTotal: l.lineTotal,
       };
     });
-    charging.current = true;
-    let result: PartyChargeConfirmation;
-    try {
-      result = await onCharge(items, total);
-    } finally {
-      charging.current = false;
-    }
-    if (!result.charged) {
-      // No answer: held as sent. A definite no: the order is staff's again.
-      setHeld(result.held);
-      return;
-    }
+    // Held from here: the order on screen is the order sent. On its way
+    // already (a second press), nothing more is sent.
+    const result = await hold.charge(() => onCharge(items, total));
+    // No answer: still held as sent. A definite no: the order is staff's again.
+    if (!result?.charged) return;
     reset();
     onOpenChange(false);
   };
@@ -360,7 +349,7 @@ export function PartyFnbModal({
                     if (!whileHeld()) setShowDiscountModal(true);
                   }}
                   onRemoveManualDiscount={handleRemoveManualDiscount}
-                  priceNote={held ? <PartyChargeHeldNote /> : undefined}
+                  priceNote={hold.unanswered ? <PartyChargeHeldNote /> : undefined}
                 />
                 </div>
               </div>

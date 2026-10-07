@@ -41,6 +41,13 @@ import { renderHook, type RenderedHook } from './support/hooks';
  * "Charge not confirmed", never "Not charged to the party": it may have landed.
  * The review's three `it.fails` pins now pass as they stand; its make-up test
  * is turned round into what the fix is made of.
+ *
+ * The re-review found the hold starting only at the lost answer, with the
+ * order open while its request was on its way. The third fix round holds it
+ * FROM THE PRESS (`usePartyChargeHold`): on its way and unanswered are one
+ * hold, every change or way out is refused with "Order held", and the answer,
+ * whichever it is, lands on the screen that sent it. Its five `it.fails` pins
+ * pass as they stand; its make-up test is turned round the same way.
  */
 
 Object.assign(globalThis, { React });
@@ -431,6 +438,11 @@ function ipadTickets() {
       sync();
     },
     heldNoteShown: () => isEl(summary().props.priceNote) && (summary().props.priceNote as El).type === PartyChargeHeldNote,
+    /** The order summary's Cancel: leaves the modal. */
+    cancel() {
+      (summary().props.onCancel as () => void)();
+      sync();
+    },
     async charge() {
       (summary().props.onPay as () => void)();
       await settle();
@@ -662,6 +674,9 @@ describe('the held order — a definite no gives it back; a press that sends not
  * lost, not what was sent, and the next press is another press under new ids:
  * the first items charged twice, the class the round closed for a change made
  * after the answer.
+ *
+ * FIXED (third round): the hold starts at the press. The pins below pass as
+ * they stand; the make-up is turned round into what the fix is made of.
  */
 
 /** The next charge request waits at the platform until it is released; then it lands, and its answer is lost or comes back. */
@@ -682,37 +697,43 @@ function slowCharge(outcome: 'lost' | 'answered'): () => void {
 const onTab = (name: string) =>
   server.charges.reduce((n, c) => n + c.items.filter((i) => i.name === name).reduce((q, i) => q + i.qty, 0), 0);
 
-describe('RE-REVIEW FINDING: the order is still open while its charge is on its way; the hold starts only at the lost answer', () => {
-  it('the make-up, press by press (iPad F&B): a drink tapped while Pad Thai is on its way goes on; the lost answer holds BOTH; the press is another charge', async () => {
+describe('RE-REVIEW FINDING (fixed): the order is held from its press, not only from the lost answer', () => {
+  // The re-review's make-up, turned round: what the fix is made of, press by press.
+  it('what the fix is made of, press by press (iPad F&B): a drink tapped while Pad Thai is on its way is refused; the lost answer holds the order sent; the press again is the same request', async () => {
     const [a, b] = twoPlainItems();
     const screen = ipadFnb();
     screen.tap(a);
     const release = slowCharge('lost');
     const pressing = screen.charge(); // sent: Pad Thai, under ids A
-    screen.tap(b); // the guest wants a drink too: nothing refuses it
-    expect(screen.order()).toEqual({ 'mi-pad-thai': 1, 'mi-coke': 1 });
-    expect(toastTitles()).not.toContain('Order held');
+    // Held from the press: the drink, a clear, a line edit and close are each refused out loud.
+    screen.tap(b);
+    screen.tryToLeaveOrChange();
+    expect(screen.order()).toEqual({ 'mi-pad-thai': 1 });
+    expect(screen.isOpen()).toBe(true);
+    expect(toastTitles()).toEqual(['Order held', 'Order held', 'Order held', 'Order held']);
+    // On its way: nothing to press again yet, so no "press charge again" note.
+    expect(screen.heldNoteShown()).toBe(false);
     release();
     await pressing; // the platform charged Pad Thai; its answer is lost
     expect(server.charges.map((c) => c.items.map((i) => i.name))).toEqual([['Pad Thai']]);
-    expect(toastTitles()).toEqual(['Charge not confirmed']);
-    // "Held as it was sent", but it was not sent this way.
+    expect(toastTitles().filter((t) => t !== 'Order held')).toEqual(['Charge not confirmed']);
+    // Held as it was sent, and it was sent this way.
     expect(screen.heldNoteShown()).toBe(true);
-    expect(screen.order()).toEqual({ 'mi-pad-thai': 1, 'mi-coke': 1 });
+    expect(screen.order()).toEqual({ 'mi-pad-thai': 1 });
 
     await screen.charge(); // the press "Charge not confirmed" asks for
     const [first, second] = sent();
-    expect(second!.chargeId).not.toBe(first!.chargeId);
-    expect(second!.key).not.toBe(first!.key);
-    expect(server.charges.map((c) => c.items.map((i) => i.name))).toEqual([['Pad Thai'], ['Pad Thai', 'Coke']]);
-    expect(onTab('Pad Thai')).toBe(2);
-    expect(chargedSatang()).toBe(first!.totalSatang + second!.totalSatang);
-    // To the satang: a ฿230 order (Pad Thai ฿180, Coke ฿50) is ฿410 on the tab.
-    expect([first!.totalSatang, second!.totalSatang, chargedSatang()]).toEqual([18_000, 23_000, 41_000]);
+    expect(postMock.mock.calls[1]![1]).toEqual(postMock.mock.calls[0]![1]);
+    expect(second!.key).toBe(first!.key);
+    expect(server.charges.map((c) => c.items.map((i) => i.name))).toEqual([['Pad Thai']]);
+    expect(onTab('Pad Thai')).toBe(1);
+    // To the satang: the ฿180 order sent is ฿180 on the tab.
+    expect([first!.totalSatang, chargedSatang()]).toEqual([18_000, 18_000]);
     expect(screen.isOpen()).toBe(false);
+    expect(toastTitles()).not.toContain('Not charged to the party');
   });
 
-  it.fails('PINNED, iPad F&B: a drink tapped while the charge is on its way, the answer lost, the press again: Pad Thai is on the tab once', async () => {
+  it('PINNED, iPad F&B: a drink tapped while the charge is on its way, the answer lost, the press again: Pad Thai is on the tab once', async () => {
     const [a, b] = twoPlainItems();
     const screen = ipadFnb();
     screen.tap(a);
@@ -728,7 +749,7 @@ describe('RE-REVIEW FINDING: the order is still open while its charge is on its 
     expect(onTab('Coke')).toBeLessThanOrEqual(1);
   });
 
-  it.fails('PINNED, phone F&B: a drink tapped while the charge is on its way, the answer lost, Checkout again: Pad Thai is on the tab once', async () => {
+  it('PINNED, phone F&B: a drink tapped while the charge is on its way, the answer lost, Checkout again: Pad Thai is on the tab once', async () => {
     const [a, b] = twoPlainItems();
     const screen = phoneFnb();
     screen.tap(a);
@@ -744,7 +765,7 @@ describe('RE-REVIEW FINDING: the order is still open while its charge is on its 
     expect(onTab('Coke')).toBeLessThanOrEqual(1);
   });
 
-  it.fails('PINNED, iPad extra tickets: an adult added while the charge is on its way, the answer lost, the press again: the first ticket order is on the tab once', async () => {
+  it('PINNED, iPad extra tickets: an adult added while the charge is on its way, the answer lost, the press again: the first ticket order is on the tab once', async () => {
     const screen = ipadTickets();
     await screen.startOrder();
     const release = slowCharge('lost');
@@ -759,7 +780,7 @@ describe('RE-REVIEW FINDING: the order is still open while its charge is on its 
     expect(chargedSatang()).toBe(sent()[0]!.totalSatang);
   });
 
-  it.fails('PINNED, iPad F&B: a drink tapped while the charge is on its way and the answer comes: the drink is never dropped unsaid', async () => {
+  it('PINNED, iPad F&B: a drink tapped while the charge is on its way and the answer comes: the drink is never dropped unsaid', async () => {
     const [a, b] = twoPlainItems();
     const screen = ipadFnb();
     screen.tap(a);
@@ -782,7 +803,7 @@ describe('RE-REVIEW FINDING: the order is still open while its charge is on its 
    * held with an empty order: every tap and close says "Order held", and the
    * charge press has nothing to send. No way out short of reloading the till.
    */
-  it.fails('PINNED, iPad F&B: closed while the charge is on its way, its answer lost; opened again, the screen is never held with nothing to send', async () => {
+  it('PINNED, iPad F&B: closed while the charge is on its way, its answer lost; opened again, the screen is never held with nothing to send', async () => {
     const [a] = twoPlainItems();
     const screen = ipadFnb();
     screen.tap(a);
@@ -802,6 +823,68 @@ describe('RE-REVIEW FINDING: the order is still open while its charge is on its 
     // Either way, staff can leave.
     screen.tryToLeaveOrChange();
     expect(screen.isOpen()).toBe(false);
+  });
+
+  /** The answer lands on the screen that sent it, whichever answer it is. */
+  it('iPad F&B: close refused while the charge is on its way; a definite no then lands on the still-open modal and gives the order back', async () => {
+    const [a, b] = twoPlainItems();
+    const screen = ipadFnb();
+    screen.tap(a);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    postMock.mockImplementationOnce((async (path: string, body: unknown, opts?: { idempotencyKey?: string }) => {
+      await gate;
+      server.refuseNext = new ApiError(409, 'EVENT_ARCHIVED', 'This party has been archived in the OTO App');
+      return platformCharge(path, body, opts);
+    }) as unknown as typeof api.post);
+    const pressing = screen.charge();
+    screen.tryToLeaveOrChange();
+    expect(screen.isOpen()).toBe(true);
+    release();
+    await pressing;
+    expect(server.charges).toHaveLength(0);
+    expect(toastTitles().filter((t) => t !== 'Order held')).toEqual(['Not charged to the party']);
+    expect(screen.isOpen()).toBe(true);
+    expect(screen.heldNoteShown()).toBe(false);
+    expect(screen.order()).toEqual({ 'mi-pad-thai': 1 });
+    // Staff's again: the drink goes on, and the modal can be left.
+    screen.tap(b);
+    expect(screen.order()).toEqual({ 'mi-pad-thai': 1, 'mi-coke': 1 });
+    screen.tryToLeaveOrChange();
+    expect(screen.isOpen()).toBe(false);
+  });
+
+  it('iPad extra tickets: Cancel refused while the charge is on its way; the answer comes and the modal closes on the one charge', async () => {
+    const screen = ipadTickets();
+    await screen.startOrder();
+    const release = slowCharge('answered');
+    const pressing = screen.charge();
+    screen.cancel();
+    expect(screen.isOpen()).toBe(true);
+    expect(toastTitles()).toEqual(['Order held']);
+    release();
+    await pressing;
+    expect(server.charges).toHaveLength(1);
+    expect(chargedSatang()).toBe(sent()[0]!.totalSatang);
+    expect(screen.isOpen()).toBe(false);
+  });
+
+  it('phone F&B: Back refused while the charge is on its way, so the answer lands on the screen that sent it; charged, the phone goes back to the party', async () => {
+    const [a, b] = twoPlainItems();
+    const screen = phoneFnb();
+    screen.tap(a);
+    const release = slowCharge('answered');
+    const pressing = screen.charge();
+    screen.back(); // the arrow and the cart sheet's way back: both refused
+    screen.tap(b);
+    expect(screen.stillOnFnb()).toBe(true);
+    expect(toastTitles()).toEqual(['Order held', 'Order held', 'Order held']);
+    release();
+    await pressing;
+    expect(server.charges.map((c) => c.items.map((i) => i.name))).toEqual([['Pad Thai']]);
+    expect(screen.stillOnFnb()).toBe(false);
   });
 });
 
