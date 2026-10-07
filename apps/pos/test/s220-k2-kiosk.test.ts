@@ -9,6 +9,7 @@ import {
 import { renderHook, type RenderedHook } from './support/hooks';
 import { KioskError, type KioskApi } from '@/api/kiosk';
 import {
+  calledOffBandsOf,
   deskReasonOf,
   kioskScreenOf,
   useKioskFlow,
@@ -158,6 +159,28 @@ describe('one guest-readable screen per ending (QA steps 5 and 6, from the kiosk
     expect(
       deskReasonOf({ outcome: 'handed_off', reason: KIOSK_REASONS.supervisedRest, supervisedChildren: 1, bandsIssued: 2 }),
     ).toMatch(/1 supervised child to check in here/);
+  });
+
+  it('SCRUM-504: tells the desk when wristbands came out of a set the kiosk called off, and to take them back', () => {
+    const base = { outcome: 'failed' as const, supervisedChildren: 0, bandsIssued: 0 };
+    const two = deskReasonOf({ ...base, reason: 'PRINTER_UNREACHABLE', calledOffBands: 2 });
+    expect(two).toMatch(/printer was offline: nothing was issued/);
+    expect(two).toMatch(/2 wristbands may have come out at the kiosk/);
+    expect(two).toMatch(/take them back from the family; they open nothing at the gate/);
+    expect(deskReasonOf({ ...base, reason: KIOSK_REASONS.printTimeout, calledOffBands: 1 })).toMatch(
+      /took too long: nothing was issued\. 1 wristband may have come out at the kiosk — take it back from the family; it opens nothing at the gate/,
+    );
+    expect(deskReasonOf({ ...base, reason: KIOSK_REASONS.printHoldLost, calledOffBands: 1 })).toMatch(/lost its connection/);
+    // None out: the line is as it was.
+    expect(deskReasonOf({ ...base, reason: 'PRINTER_UNREACHABLE', calledOffBands: 0 })).toBe(
+      'The kiosk printer was offline: nothing was issued.',
+    );
+    // The guest's screen reads the same count off the answer, on a failed ending only.
+    expect(calledOffBandsOf(failed('PRINTER_UNREACHABLE', { calledOffBands: 2 }))).toBe(2);
+    expect(calledOffBandsOf(failed('PRINTER_UNREACHABLE'))).toBe(0);
+    expect(calledOffBandsOf(answer({ calledOffBands: 3 }))).toBe(0);
+    expect(kioskScreenOf(failed(KIOSK_REASONS.printTimeout)).kind).toBe('printer');
+    expect(kioskScreenOf(failed(KIOSK_REASONS.printHoldLost)).kind).toBe('printer');
   });
 });
 

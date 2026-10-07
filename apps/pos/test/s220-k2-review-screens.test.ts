@@ -67,6 +67,8 @@ const failed = (reason: string, extra: Partial<KioskRedeemAnswer> = {}) =>
 const ENDINGS: Array<{ what: string; answer: KioskRedeemAnswer; screen: KioskScreenKind }> = [
   { what: 'printer offline', answer: failed('PRINTER_UNREACHABLE'), screen: 'printer' },
   { what: 'paper out', answer: failed('PRINTER_PAPER_OUT'), screen: 'printer' },
+  // SCRUM-504 — the set called off after two wristbands had come out.
+  { what: 'part-printed', answer: failed('PRINTER_UNREACHABLE', { calledOffBands: 2 }), screen: 'printer' },
   { what: 'box offline', answer: failed(KIOSK_REASONS.boxOffline), screen: 'offline' },
   {
     what: 'already redeemed',
@@ -150,12 +152,49 @@ describe('attack 1 — every failure screen, in every language, in guest words w
     expect(text).toMatch(/already been used/);
   });
 
-  it('a printer fault tells the guest nothing was used up; paper out says paper', () => {
+  it('a printer fault before any wristband came out tells the guest nothing was used up; paper out says paper', () => {
     const off = textOf(inLanguage('en', createElement(KioskResult, { screen: kioskScreenOf(failed('PRINTER_UNREACHABLE')), onDone: noop, onScanAgain: noop })));
     const paper = textOf(inLanguage('en', createElement(KioskResult, { screen: kioskScreenOf(failed('PRINTER_PAPER_OUT')), onDone: noop, onScanAgain: noop })));
+    expect(off).toMatch(/Nothing was used up/);
     expect(off).toMatch(/still ready/);
     expect(paper).toMatch(/paper/i);
     expect(off).not.toMatch(/paper/i);
+  });
+
+  /**
+   * SCRUM-504 — a set called off after wristbands came out. "Nothing was used
+   * up" would send the family off with bands that open nothing at the gate,
+   * so the screen says some may have come out and asks for them at the desk —
+   * in every language, and on every ending that counted any.
+   */
+  it('a part-printed set: some wristbands may have come out, hand them to the desk — never "nothing was used up"', () => {
+    const partial = (reason: string, n: number) =>
+      createElement(KioskResult, { screen: kioskScreenOf(failed(reason, { calledOffBands: n })), onDone: noop, onScanAgain: noop });
+    const en = textOf(inLanguage('en', partial('PRINTER_UNREACHABLE', 2)));
+    expect(en).toMatch(/Some wristbands may have come out/);
+    expect(en).toMatch(/will not open the gate/);
+    expect(en).toMatch(/hand them to our team at the desk/);
+    expect(en).toMatch(/still ready/);
+    expect(en).not.toMatch(/Nothing was used up/);
+    // The kiosk's own stops read as a printer that could not finish, with the same words.
+    for (const reason of [KIOSK_REASONS.printTimeout, KIOSK_REASONS.printHoldLost]) {
+      expect(kioskScreenOf(failed(reason)).kind, reason).toBe('printer');
+      expect(textOf(inLanguage('en', partial(reason, 1)))).toMatch(/Some wristbands may have come out/);
+    }
+    // A failure that is not the printer's, after bands came out, still asks for them.
+    const desk = textOf(inLanguage('en', partial(KIOSK_REASONS.internal, 1)));
+    expect(desk).toMatch(/Some wristbands may have come out/);
+    // Every language has its own words for it, apart from the nothing-used-up line.
+    for (const { code: lang } of LANGUAGES) {
+      const none = textOf(inLanguage(lang, createElement(KioskResult, { screen: kioskScreenOf(failed('PRINTER_UNREACHABLE')), onDone: noop, onScanAgain: noop })));
+      const some = textOf(inLanguage(lang, partial('PRINTER_UNREACHABLE', 2)));
+      expect(some, lang).not.toBe(none);
+      expect(some, lang).not.toMatch(/kiosk\.printer\./);
+      if (lang !== 'en') expect(some, lang).not.toMatch(/Some wristbands may have come out/);
+    }
+    // Zero, or a count on an ending that issued, is never read as part-printed.
+    const issued = textOf(inLanguage('en', createElement(KioskResult, { screen: kioskScreenOf(answer({ calledOffBands: 0 })), onDone: noop, onScanAgain: noop })));
+    expect(issued).not.toMatch(/may have come out/);
   });
 });
 

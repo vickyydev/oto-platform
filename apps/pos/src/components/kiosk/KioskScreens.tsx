@@ -27,7 +27,7 @@ import {
   type RedeemTone,
 } from '@/components/till/redeemParts';
 import { useLanguage, type TFunction } from '@/i18n/LanguageContext';
-import type { KioskScreen } from '@/lib/kiosk';
+import { calledOffBandsOf, type KioskScreen } from '@/lib/kiosk';
 
 /**
  * S2-20 K2 (SCRUM-217) — THE SELF-SERVICE KIOSK'S SCREENS.
@@ -263,6 +263,12 @@ function whenWhere(t: TFunction, lang: string, answer: KioskRedeemAnswer | null)
 }
 
 function problemCopy(t: TFunction, lang: string, screen: KioskScreen): ProblemCopy {
+  /**
+   * SCRUM-504 — wristbands came out before the set was called off. Nothing
+   * was used up, but the guest may be holding bands that open nothing at the
+   * gate: they are asked to hand them in, never told nothing came out.
+   */
+  const partial = calledOffBandsOf(screen.answer) > 0;
   switch (screen.kind) {
     case 'desk_supervised':
       return { tone: 'ok', icon: Baby, title: t('kiosk.deskSupervised.title'), lines: [t('kiosk.deskSupervised.subtitle')] };
@@ -271,7 +277,10 @@ function problemCopy(t: TFunction, lang: string, screen: KioskScreen): ProblemCo
         tone: 'warn',
         icon: Printer,
         title: t('kiosk.printer.title'),
-        lines: [t(screen.paperOut ? 'kiosk.printer.paperOut' : 'kiosk.printer.fault'), t('kiosk.printer.subtitle')],
+        lines: [
+          t(screen.paperOut ? 'kiosk.printer.paperOut' : 'kiosk.printer.fault'),
+          t(partial ? 'kiosk.printer.partial' : 'kiosk.printer.subtitle'),
+        ],
       };
     case 'offline':
       return { tone: 'warn', icon: WifiOff, title: t('kiosk.offline.title'), lines: [t('kiosk.offline.subtitle')] };
@@ -297,7 +306,12 @@ function problemCopy(t: TFunction, lang: string, screen: KioskScreen): ProblemCo
     case 'other_branch':
       return { tone: 'warn', icon: MapPin, title: t('kiosk.otherBranch.title'), lines: [t('kiosk.otherBranch.subtitle')] };
     default:
-      return { tone: 'warn', icon: Info, title: t('kiosk.desk.title'), lines: [t('kiosk.desk.subtitle')] };
+      return {
+        tone: 'warn',
+        icon: Info,
+        title: t('kiosk.desk.title'),
+        lines: [t('kiosk.desk.subtitle'), ...(partial ? [t('kiosk.printer.partial')] : [])],
+      };
   }
 }
 

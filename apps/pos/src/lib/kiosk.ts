@@ -34,7 +34,11 @@ export type KioskScreenKind =
   | 'done_desk'
   /** Every child is a drop-off or nanny child: nothing was issued, the desk does it all. */
   | 'desk_supervised'
-  /** A printer fault or paper out: nothing was issued, the booking is still good. */
+  /**
+   * A printer fault or paper out: nothing was issued, the booking is still
+   * good. When wristbands came out before the set was called off
+   * (`answer.calledOffBands`, SCRUM-504), the guest is asked to hand them in.
+   */
   | 'printer'
   /** The kiosk's box is offline, or the kiosk cannot reach the park. */
   | 'offline'
@@ -57,13 +61,23 @@ export interface KioskScreen {
   paperOut: boolean;
 }
 
-/** Reasons that mean the paper never came out, whoever's code they are. */
+/** Reasons that mean the set did not come out whole, whoever's code they are. */
 const PRINT_REASONS: ReadonlySet<string> = new Set([
   KIOSK_REASONS.noBandPrinter,
   KIOSK_REASONS.bandsNotIssued,
   KIOSK_REASONS.printRouting,
+  KIOSK_REASONS.printTimeout,
+  KIOSK_REASONS.printHoldLost,
   'PRINT_FAILED',
 ]);
+
+/**
+ * SCRUM-504 — wristbands that came out of the printer for a set the kiosk
+ * then called off: nothing was committed, so they open nothing at the gate.
+ */
+export function calledOffBandsOf(answer: Pick<KioskRedeemAnswer, 'outcome' | 'calledOffBands'> | null): number {
+  return answer?.outcome === 'failed' ? (answer.calledOffBands ?? 0) : 0;
+}
 
 const UNRECOGNISED_REASONS: ReadonlySet<string> = new Set([
   KIOSK_REASONS.notABookingQr,
@@ -444,7 +458,9 @@ export function useKioskPairing(options: KioskPairingOptions): KioskPairing {
  * why the kiosk stopped, and so what the desk does next. Staff-facing, so it
  * may name the printer and the box; it still names no child.
  */
-export function deskReasonOf(entry: Pick<KioskDeskEntry, 'outcome' | 'reason' | 'supervisedChildren' | 'bandsIssued'>): string {
+export function deskReasonOf(
+  entry: Pick<KioskDeskEntry, 'outcome' | 'reason' | 'supervisedChildren' | 'bandsIssued' | 'calledOffBands'>,
+): string {
   const reason = entry.reason ?? '';
   const children = (n: number) => `${n} supervised child${n === 1 ? '' : 'ren'}`;
   if (entry.outcome === 'handed_off') {
@@ -452,15 +468,38 @@ export function deskReasonOf(entry: Pick<KioskDeskEntry, 'outcome' | 'reason' | 
       ? `Regular bands printed at the kiosk; ${children(entry.supervisedChildren)} to check in here.`
       : `Drop-off or nanny booking (${children(entry.supervisedChildren)}): nothing was issued at the kiosk.`;
   }
+  const why = failedReasonOf(reason);
+  /**
+   * SCRUM-504 — a set called off part-way: nothing was issued, but bands may
+   * be in the family's hands. They open nothing at the gate; the desk takes
+   * them back, so nobody is left holding a band that looks like a ticket.
+   */
+  const out = entry.calledOffBands ?? 0;
+  if (out > 0) {
+    const bands = out === 1 ? '1 wristband' : `${out} wristbands`;
+    return `${why} ${bands} may have come out at the kiosk — take ${out === 1 ? 'it' : 'them'} back from the family; ${out === 1 ? 'it opens' : 'they open'} nothing at the gate.`;
+  }
+  return why;
+}
+
+/** Why the kiosk stopped, in the till's English, for a session that issued nothing. */
+function failedReasonOf(reason: string): string {
   if (reason === 'PRINTER_UNREACHABLE' || reason === 'PRINTER_OFFLINE') {
     return 'The kiosk printer was offline: nothing was issued.';
   }
   if (reason === 'PRINTER_PAPER_OUT') return 'The kiosk printer ran out of paper: nothing was issued.';
+  if (reason === KIOSK_REASONS.printTimeout) return 'The kiosk printer took too long: nothing was issued.';
+  if (reason === KIOSK_REASONS.printHoldLost) {
+    return 'The kiosk lost its connection to the park while printing: nothing was issued.';
+  }
   if (reason.startsWith('PRINTER_') || PRINT_REASONS.has(reason)) {
     return 'The kiosk printer failed: nothing was issued.';
   }
   if (reason === KIOSK_REASONS.boxOffline) return "The kiosk's box was offline: nothing was issued.";
   if (reason === 'BOOKING_ALREADY_REDEEMED') return 'Already redeemed: the family scanned it again at the kiosk.';
   if (reason === 'BOOKING_NOT_REDEEMABLE') return 'Not paid: the kiosk could not issue it.';
+  if (reason === 'BOOKING_REDEMPTION_IN_PROGRESS') {
+    return 'Being redeemed elsewhere at the same moment: open the booking to see how that ended.';
+  }
   return `The kiosk could not finish (${reason || 'no reason given'}): nothing was issued.`;
 }
