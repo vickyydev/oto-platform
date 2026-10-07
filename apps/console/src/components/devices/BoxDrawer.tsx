@@ -194,6 +194,7 @@ export function BoxDrawer({
           paper-out reach the printer" stays one press and one glance. */}
       <SimulatorPanel
         box={box}
+        kioskStations={stations.filter((s) => s.kind === 'kiosk' && !s.archived)}
         deviceList={deviceList}
         onRetryDevices={onRetryDevices}
         canCommand={canCommand}

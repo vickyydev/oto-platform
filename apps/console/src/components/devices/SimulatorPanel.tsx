@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Loader2, ScanLine, Zap } from 'lucide-react';
-import type { PrinterFault, SimulatorAction } from '@oto/shared';
-import { isMissingRoute, type BoxRow, type DeviceRow } from '@/api/fleet';
+import type { KioskSimulatorAnswer, KioskSimulatorControl, PrinterFault, SimulatorAction } from '@oto/shared';
+import { isMissingRoute, type BoxRow, type DeviceRow, type StationRow } from '@/api/fleet';
 import { simulatorApi } from '@/components/devices/simulatorApi';
 import { Button } from '@/components/ui/button';
 import { EmptyState, Loading, RouteUnavailable, StaleNote, Unreadable } from '@/components/Panel';
@@ -83,12 +83,15 @@ const DEFAULT_BUTTON_KEY = 'F9';
 
 export function SimulatorPanel({
   box,
+  kioskStations = [],
   deviceList,
   onRetryDevices,
   canCommand,
   onSent,
 }: {
   box: BoxRow;
+  /** S2-20 K2 — the self-service kiosk stations on this box, whose failure screens the kiosk block drives. */
+  kioskStations?: StationRow[];
   /**
    * The box's devices and what they are worth. "Nothing on this box is
    * simulated" is a statement about the box; it may only be made from a device
@@ -170,6 +173,10 @@ export function SimulatorPanel({
             rather than pretending.
           </p>
 
+          {kioskStations.map((station) => (
+            <KioskControls key={station.id} station={station} disabled={!canCommand} />
+          ))}
+
           {printers.length === 0 ? (
             <EmptyState
               title="No simulated printer on this box"
@@ -239,6 +246,80 @@ export function SimulatorPanel({
         </>
       )}
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+/**
+ * S2-20 K2 — THE SELF-SERVICE KIOSK'S FAILURE SCREENS, one press each.
+ *
+ * The rows below drive any printer through the command queue; these three
+ * name the kiosk's own band printer and box and act AT ONCE on the box this
+ * api runs, so the rehearsal is "press Printer offline, scan a booking, read
+ * the screen" with no poll in between. Clear puts every printer back and the
+ * box online. A kiosk whose box is a Raspberry Pi answers that it is not
+ * running here, and the queued controls below are the way to it.
+ */
+const KIOSK_CONTROLS: Array<{ control: KioskSimulatorControl; label: string; detail: string }> = [
+  { control: 'printer_offline', label: 'Printer offline', detail: "The kiosk's band printer stops answering." },
+  { control: 'paper_out', label: 'Paper out', detail: "The kiosk's band printer answers with no paper." },
+  { control: 'box_offline', label: 'Box offline', detail: "The kiosk's box cuts its link to the platform." },
+  { control: 'clear', label: 'Clear all', detail: 'Every printer fault cleared and the box back online.' },
+];
+
+function KioskControls({ station, disabled }: { station: StationRow; disabled: boolean }) {
+  const [busy, setBusy] = useState<KioskSimulatorControl | null>(null);
+  const [state, setState] = useState<KioskSimulatorAnswer | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+
+  const press = async (control: KioskSimulatorControl) => {
+    setBusy(control);
+    setFailed(null);
+    try {
+      setState(await simulatorApi.kiosk(station.id, control));
+    } catch (err) {
+      setFailed(err instanceof Error ? err.message : 'That could not be applied');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const faults = state ? state.printers.flatMap((p) => p.faults.map((f) => `${p.label}: ${f}`)) : [];
+  return (
+    <div className="mb-3 rounded-xl border p-3" data-testid="kiosk-simulator">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-semibold">Self-service kiosk — {station.name}</p>
+        {state && (
+          <>
+            <StatusPill tone={state.boxOffline ? 'down' : 'ok'}>{state.boxOffline ? 'box offline' : 'box online'}</StatusPill>
+            <StatusPill tone={faults.length > 0 ? 'down' : 'ok'}>
+              {faults.length > 0 ? faults.join(', ') : 'printers clear'}
+            </StatusPill>
+          </>
+        )}
+      </div>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Each press takes effect at once on this box, so the next scan at the kiosk shows its failure screen. Every
+        press is on Activity as kiosk.simulate.
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {KIOSK_CONTROLS.map(({ control, label, detail }) => (
+          <Button
+            key={control}
+            variant="outline"
+            size="sm"
+            title={detail}
+            disabled={disabled || busy !== null}
+            onClick={() => void press(control)}
+          >
+            {busy === control ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+            {label}
+          </Button>
+        ))}
+      </div>
+      {failed && <p className="mt-2 text-sm text-destructive break-words">{failed}</p>}
+    </div>
   );
 }
 

@@ -624,6 +624,19 @@ export const fleetApi = {
       idempotencyKey: idemKey(),
     }),
 
+  /**
+   * S2-20 K2 — claim the K code shown by a self-service kiosk, for a kiosk
+   * station. As a display's: the kiosk made its own secret, and this binds it;
+   * no secret comes back here.
+   */
+  claimKiosk: (stationId: string, body: { pairingCode: string; name: string }) =>
+    api.post<{
+      station: { id: string; name: string; kind: string };
+      device: { id: string; name: string };
+    }>(`/stations/${encodeURIComponent(stationId)}/kiosks/claim`, body, {
+      idempotencyKey: idemKey(),
+    }),
+
   /** Revoking is not deleting: the row stays, with who revoked it and why. */
   revokeCredential: (id: string, reason?: string) =>
     api.post<{ ok: true }>(`/credentials/${encodeURIComponent(id)}/revoke`, { reason }, {

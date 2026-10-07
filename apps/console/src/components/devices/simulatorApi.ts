@@ -1,5 +1,5 @@
 import { api, idemKey } from '@/api/client';
-import type { SimulatorAction } from '@oto/shared';
+import type { KioskSimulatorAnswer, KioskSimulatorControl, SimulatorAction } from '@oto/shared';
 
 /**
  * Driving a box's device simulators from the Console.
@@ -48,6 +48,19 @@ export const simulatorApi = {
    * not run in its own process answers `BOX_NOT_IN_THIS_PROCESS` rather than
    * reporting a success to nobody.
    */
+  /**
+   * S2-20 K2 — THE VIRTUAL KIOSK'S FAILURE SCREENS, at once. Its band printer
+   * offline or out of paper, its box offline, or all of it cleared: applied
+   * to the agent in this api's own process, like the terminal's, so a scan
+   * made the next second meets the fault. Audited as `kiosk.simulate`.
+   */
+  kiosk: (stationId: string, control: KioskSimulatorControl) =>
+    api.post<KioskSimulatorAnswer>(
+      `/stations/${encodeURIComponent(stationId)}/kiosk/simulate`,
+      { control },
+      { idempotencyKey: idemKey() },
+    ),
+
   terminal: (action: TerminalSimulatorAction) =>
     api.post<{ applied: boolean; deviceLabel: string; actionId: string }>(
       '/payments/terminal-simulator',

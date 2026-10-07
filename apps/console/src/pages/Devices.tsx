@@ -53,6 +53,7 @@ import { EmptyNote } from '@/components/redesign/StatTile';
 import { Field, Select, TextInput } from '@/components/Form';
 import { BoxDrawer } from '@/components/devices/BoxDrawer';
 import { DisplayPairPanel } from '@/components/devices/DisplayPairPanel';
+import { KioskPairPanel } from '@/components/devices/KioskPairPanel';
 import { DisplaySnapshotPanel } from '@/components/devices/DisplaySnapshotPanel';
 import { DisplayIntentTestPanel } from '@/components/devices/DisplayDiagnosticsPanel';
 import { OneTimeCode } from '@/components/devices/OneTimeCode';
@@ -171,6 +172,8 @@ export function Devices() {
             : grant.scopeType === 'branch' && grant.scopeId === s.branchId),
       ),
   );
+  // S2-20 K2 — the self-service kiosks this account may pair a screen to, as a display's stations above.
+  const kioskStations = displayStations.filter((s) => s.kind === 'kiosk');
   const currentBranchName = branchName(branchId) ?? 'this branch';
   const canReadUnassignedSnapshots = permissions.some(
     (grant) =>
@@ -372,6 +375,7 @@ export function Devices() {
             missing={fleet.missing.credentials}
             stations={fleet.stations.filter((s) => !s.archived)}
             displayStations={displayStations}
+            kioskStations={kioskStations}
             snapshotStations={snapshotStations}
             canReadUnassignedSnapshots={canReadUnassignedSnapshots}
             boxLogStations={boxLogStations}
@@ -971,6 +975,7 @@ function PairedScreens({
   missing,
   stations,
   displayStations,
+  kioskStations,
   snapshotStations,
   canReadUnassignedSnapshots,
   boxLogStations,
@@ -985,6 +990,8 @@ function PairedScreens({
   missing: boolean;
   stations: StationRow[];
   displayStations: StationRow[];
+  /** S2-20 K2 — kiosk stations a self-service kiosk can be paired to here. */
+  kioskStations: StationRow[];
   snapshotStations: StationRow[];
   canReadUnassignedSnapshots: boolean;
   boxLogStations: StationRow[];
@@ -997,6 +1004,7 @@ function PairedScreens({
 }) {
   const [pairing, setPairing] = useState(false);
   const [pairingDisplay, setPairingDisplay] = useState(false);
+  const [pairingKiosk, setPairingKiosk] = useState(false);
   const [showRevoked, setShowRevoked] = useState(false);
   const [snapshotId, setSnapshotId] = useState<string | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
@@ -1038,6 +1046,16 @@ function PairedScreens({
                 Pair a display
               </Button>
             )}
+            {kioskStations.length > 0 && (
+              <Button
+                size="sm"
+                className="h-9 gap-2 rounded-full px-4 font-bold"
+                onClick={() => setPairingKiosk(true)}
+              >
+                <Plus className="w-4 h-4" />
+                Pair a kiosk
+              </Button>
+            )}
             {canPair && stations.length > 0 && (
               <Button
                 variant="outline"
@@ -1060,7 +1078,7 @@ function PairedScreens({
           className="py-3"
           icon={MonitorSmartphone}
           title="Nothing is paired yet"
-          detail="Open the customer display to get its code, then pair it to a station here. Kiosks and booths use Pair a screen."
+          detail="Open the customer display or the self-service kiosk to get its code, then pair it to a station here. Booths use Pair a screen."
         />
       ) : (
         <StripedList>
@@ -1086,6 +1104,15 @@ function PairedScreens({
 
       {pairing && (
         <PairPanel stations={stations} onClose={() => setPairing(false)} onPaired={onChanged} />
+      )}
+      {pairingKiosk && kioskStations.length > 0 && (
+        <Dialog title="Pair a kiosk" onClose={() => setPairingKiosk(false)}>
+          <KioskPairPanel
+            stations={kioskStations}
+            onClose={() => setPairingKiosk(false)}
+            onPaired={onChanged}
+          />
+        </Dialog>
       )}
       {pairingDisplay && displayStations.length > 0 && (
         <Dialog title="Pair a display" onClose={() => setPairingDisplay(false)}>
@@ -1239,7 +1266,8 @@ function PairPanel({
   onPaired: () => void;
 }) {
   const [stationId, setStationId] = useState(stations[0]?.id ?? '');
-  const [kind, setKind] = useState<CredentialKind>('kiosk');
+  // A self-service kiosk pairs from its own code (Pair a kiosk, S2-20 K2), as a display does.
+  const [kind, setKind] = useState<CredentialKind>('booth');
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
@@ -1348,7 +1376,7 @@ function PairPanel({
             <Select
               value={kind}
               onChange={(v) => setKind(v as CredentialKind)}
-              options={PAIRABLE_KINDS.filter((k) => k !== 'display').map((k) => ({
+              options={PAIRABLE_KINDS.filter((k) => k !== 'display' && k !== 'kiosk').map((k) => ({
                 value: k,
                 label: credentialKindWord(k),
               }))}

@@ -13,6 +13,7 @@ import {
 import { analyticsFreshnessLines, type AnalyticsFreshnessLine } from '@/lib/analyticsFreshness';
 import { Button } from '@/components/ui/button';
 import { BoothSummary } from '@/components/health/BoothSummary';
+import { KioskSummary } from '@/components/health/KioskSummary';
 import { FleetSummary } from '@/components/devices/FleetSummary';
 import { ErrorNote, Loading, RouteUnavailable } from '@/components/Panel';
 import {
@@ -255,6 +256,9 @@ export function Health() {
           box drives a booth.
         */}
         <BoothSummary boxes={snapshot?.boxes} alerts={alerts} timezone={timezone} />
+
+        {/* S2-20 K2 — the self-service kiosks, beside the booths: up, printing, and today's sessions. */}
+        <KioskSummary timezone={timezone} refreshKey={lastCheckedAt} />
 
         <TestControls canManage={canManage} onRan={() => void refresh()} />
       </PageGrid>
