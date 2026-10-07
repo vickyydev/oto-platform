@@ -1,5 +1,5 @@
 {
-  "id": "36629d1e-f776-4ba6-b5cb-99b5bb6f83f6",
+  "id": "52b3e2e9-0056-41c9-ad3e-919f4952fcfd",
   "prevId": "0e0ecc0d-4496-4f27-ade0-76b1311eab41",
   "version": "7",
   "dialect": "postgresql",
@@ -35892,6 +35892,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "undone_at": {
+          "name": "undone_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "kid_band_id": {
           "name": "kid_band_id",
           "type": "uuid",
@@ -36024,6 +36030,7 @@
             }
           ],
           "isUnique": true,
+          "where": "undone_at is null",
           "concurrently": false,
           "method": "btree",
           "with": {}
