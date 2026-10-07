@@ -57,9 +57,10 @@ afterAll(async () => {
 });
 
 describe('review — the party tab migration', () => {
-  it('is chained: the head of the journal, its snapshot following its predecessor’s, holding the three tables', () => {
+  it('is chained after its predecessor, its snapshot following, holding the three tables', () => {
     const at = journal.entries.indexOf(mine);
-    expect(at).toBe(journal.entries.length - 1);
+    // Found by tag, placed by its predecessor — never "the last entry".
+    expect(at).toBeGreaterThan(0);
     const before = journal.entries[at - 1]!;
     expect(mine.idx).toBe(before.idx + 1);
     const snap = snapshotOf(mine.idx);

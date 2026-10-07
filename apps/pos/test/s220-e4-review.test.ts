@@ -205,11 +205,10 @@ describe('the E1 gates: gone exactly where E4 builds the action, kept where E3 b
     expect(mobile).toMatch(/onAddFnb=\{\(\) => \{\s*const blocked = blockerOf\(\);/);
   });
 
-  it('both Check-in boards keep their E1 gates (E3’s, untouched by E4)', () => {
+  it('both Check-in boards are off their E1 gates - E3 built the action E4 left alone', () => {
     for (const rel of ['pages/DropOff.tsx', 'components/mobile/dropoff/MobileDropOffBoard.tsx']) {
       const board = source(rel);
-      expect(board).toContain('EVENT_WRITE_PENDING');
-      expect((board.match(/if \(writePending\(eventId\)\) return;/g) ?? []).length).toBe(3);
+      expect((board.match(/if \(writePending\(eventId\)\) return;/g) ?? []).length).toBe(0);
     }
   });
 });

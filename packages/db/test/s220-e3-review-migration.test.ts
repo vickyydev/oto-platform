@@ -84,15 +84,16 @@ async function refusal(url: string, text: string, values: unknown[] = []): Promi
 }
 
 describe('E3 review — the event check-in migration', () => {
-  it('sits on a contiguous journal, straight after the attendee link (0070), later than it', () => {
+  it('sits on a contiguous journal, straight after its predecessor, later than it', () => {
     expect(mine).toBeDefined();
     journal.entries.forEach((entry, i) => expect(entry.idx, entry.tag).toBe(i));
-    expect(before.tag.endsWith('_event_attendee_link')).toBe(true);
+    // Placed by its predecessor, whichever migration landed before it:
+    // lanes land between each other and the journal keeps growing.
     expect(mine.idx).toBe(before.idx + 1);
     expect(mine.when).toBeGreaterThan(before.when);
   });
 
-  it("its snapshot is 0070's plus the new table, and pos.band's own change — nothing else", () => {
+  it("its snapshot is its predecessor's plus the new table, and pos.band's own change — nothing else", () => {
     const prev = snap(before.tag);
     const next = snap(mine.tag);
     expect(next.prevId).toBe(prev.id);
