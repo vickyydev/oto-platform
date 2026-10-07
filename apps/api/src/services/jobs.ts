@@ -6,6 +6,7 @@ import type { Env } from '../env';
 import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
 import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB, runDailyRollupJob, runHourlyRollupJob } from './analytics-rollup';
 import { ROLLUP_BOOTH_JOB, runBoothRollupJob } from './analytics-booth';
+import { BENEFIT_ROLLOVER_JOB, runBenefitRolloverJob } from './analytics-benefits';
 import { BOOTH_DUTY_JOB, runMorningBoothDutySync } from './booth-duty';
 import { EVENTS_CACHE_REFRESH_JOB, runEventsCacheRefresh } from './events';
 import {
@@ -631,6 +632,29 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       description: "Rolls each branch's booth spins and vouchers into the booth fact: today, and every day a booth fact marked",
       intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
       run: async ({ db, now }) => ({ detail: await runBoothRollupJob(db, now) }),
+    },
+    /**
+     * `job:benefit.period_rollover` — THE STAFF BENEFITS' PREVIOUS PERIOD,
+     * CLOSED (S2-21 round 4, benefits PLAN §5).
+     *
+     * Every five minutes, as the other day-end jobs: each live branch's
+     * trading days that have ENDED — a week back, and any still provisional
+     * however old — rewritten final into `analytics.fact_benefit_daily`
+     * (`runBenefitRolloverJob` in `services/analytics-benefits.ts`). The daily
+     * rollup above writes the same rows as the day goes; this is the day
+     * start's close, so the first tick after a branch's day turns over closes
+     * yesterday and, on the first of a month, the month's staff credit period.
+     * It is NOT what makes a new day's coffees or a new month's credit count
+     * from zero — a period is a key, and a new key has never been counted
+     * under — and registering it writes the expectation the watchdog raises
+     * `ops.missing` from on the Health page when it stops.
+     */
+    {
+      name: BENEFIT_ROLLOVER_JOB,
+      description:
+        "Closes each branch's staff benefit figures at its day start: every ended trading day, a week back and any still provisional, rewritten final into the benefits fact",
+      intervalSeconds: 300,
+      run: async ({ db, now }) => ({ detail: await runBenefitRolloverJob(db, now) }),
     },
     /**
      * `job:events.cache_refresh` — TODAY'S EVENTS FOR THE BOXES (S2-20 E1,

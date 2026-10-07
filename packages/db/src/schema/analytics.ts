@@ -14,7 +14,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { analytics, idPk, timestamps } from './helpers';
-import { account, branch, operator } from './tenancy';
+import { account, branch, employee, operator } from './tenancy';
 import { station } from './fleet';
 import { boothPrize } from './booth';
 
@@ -497,6 +497,86 @@ export const factBoothDaily = analytics.table(
     check(
       'fact_booth_daily_counts_check',
       sql`${t.spins} >= 0 and ${t.vouchersIssued} >= 0 and ${t.vouchersRedeemed} >= 0 and ${t.redemptionLagSumS} >= 0 and ${t.uptimeS} >= 0 and ${t.prizeCostSatang} >= 0`,
+    ),
+  ],
+);
+
+/**
+ * THE STAFF BENEFITS' DAY (S2-21, SCRUM-218, round 4 of
+ * docs/progress/plans/benefits/PLAN.md §5, §7): per branch, trading day,
+ * beneficiary and benefit role, what the staff benefits took off the bills of
+ * the day's recorded orders, split the prototype's four ways — comp, free
+ * items, staff credit, standing discount — each with how many applications
+ * used that stage, and the free-item units relieved.
+ *
+ * Read from `promo.benefit_application` — the live applications of the
+ * branch-day's finalised and refunded sales, as the Staff Benefits Audit log
+ * lists them — and from nothing else. A refund leaves a row as it was: the
+ * relief was given and its quota stays used (plan Q4's default).
+ *
+ *   applied_satang  what came off the bills (the cascade may cap the relief
+ *                   under the order's own manual discounts, H15);
+ *   provisional     the day had not ended at its branch when the row was
+ *                   written. `job:benefit.period_rollover` closes each ended
+ *                   day — rewrites its rows final — at the branch's day start.
+ *
+ * Written by the daily rollup in the same transaction as the day's report
+ * rows, and by the rollover, each under the branch-day's benefit lock; a row
+ * is written only where a figure moved and a row the day no longer has is
+ * removed, so a replayed run writes nothing.
+ */
+export const factBenefitDaily = analytics.table(
+  'fact_benefit_daily',
+  {
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    businessDate: date('business_date', { mode: 'string' }).notNull(),
+    /** The beneficiary: whose QR it was. */
+    employeeId: uuid('employee_id')
+      .notNull()
+      .references(() => employee.id, { onDelete: 'restrict' }),
+    /** Their benefit role on the application, as it was snapshotted. */
+    benefitRole: text('benefit_role').notNull(),
+    applications: integer('applications').notNull().default(0),
+    compCount: integer('comp_count').notNull().default(0),
+    compedSatang: bigint('comped_satang', { mode: 'number' }).notNull().default(0),
+    freeItemsCount: integer('free_items_count').notNull().default(0),
+    freeItemUnits: integer('free_item_units').notNull().default(0),
+    freeItemsSatang: bigint('free_items_satang', { mode: 'number' }).notNull().default(0),
+    creditCount: integer('credit_count').notNull().default(0),
+    creditSatang: bigint('credit_satang', { mode: 'number' }).notNull().default(0),
+    discountCount: integer('discount_count').notNull().default(0),
+    discountSatang: bigint('discount_satang', { mode: 'number' }).notNull().default(0),
+    totalReliefSatang: bigint('total_relief_satang', { mode: 'number' }).notNull().default(0),
+    appliedSatang: bigint('applied_satang', { mode: 'number' }).notNull().default(0),
+    provisional: boolean('provisional').notNull().default(false),
+    computedAt: timestamp('computed_at', { withTimezone: true, mode: 'date' }).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('fact_benefit_daily_unique').on(t.branchId, t.businessDate, t.employeeId, t.benefitRole),
+    index('fact_benefit_daily_operator_date_idx').on(t.operatorId, t.businessDate),
+    index('fact_benefit_daily_employee_idx').on(t.employeeId, t.businessDate),
+    /** The rollover's look-up: rows still provisional, per branch. */
+    index('fact_benefit_daily_provisional_idx')
+      .on(t.branchId, t.businessDate)
+      .where(sql`provisional`),
+    check('fact_benefit_daily_role_check', sql`${t.benefitRole} in ('owner','manager','staff')`),
+    check(
+      'fact_benefit_daily_counts_check',
+      sql`${t.applications} > 0 and ${t.compCount} >= 0 and ${t.freeItemsCount} >= 0 and ${t.freeItemUnits} >= 0 and ${t.creditCount} >= 0 and ${t.discountCount} >= 0
+          and ${t.compCount} <= ${t.applications} and ${t.freeItemsCount} <= ${t.applications} and ${t.creditCount} <= ${t.applications} and ${t.discountCount} <= ${t.applications}`,
+    ),
+    check(
+      'fact_benefit_daily_amounts_check',
+      sql`${t.compedSatang} >= 0 and ${t.freeItemsSatang} >= 0 and ${t.creditSatang} >= 0 and ${t.discountSatang} >= 0 and ${t.appliedSatang} >= 0
+          and ${t.totalReliefSatang} = ${t.compedSatang} + ${t.freeItemsSatang} + ${t.creditSatang} + ${t.discountSatang}
+          and ${t.appliedSatang} <= ${t.totalReliefSatang}`,
     ),
   ],
 );

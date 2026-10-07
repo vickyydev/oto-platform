@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { AnalyticsSummaryQuerySchema, type AnalyticsSaleKind } from './analytics';
 import type { Satang } from './money';
 import { summarizeTax, type TaxBreakdown } from './tax';
+import { BENEFIT_ROLES } from './benefits';
 
 /**
  * S2-15b (SCRUM-216) rounds 4 and 5 — THE REPORTS PANELS AND THE BOOTH REPORT,
@@ -625,3 +626,143 @@ export function boothFunnelRatios(sums: { vouchersIssued: number; vouchersRedeem
     meanRedemptionLagS: sums.vouchersRedeemed > 0 ? Math.round(sums.lagSumS / sums.vouchersRedeemed) : null,
   };
 }
+
+// --- The staff benefits report (S2-21, SCRUM-218, round 4) ---------------------------------
+
+/**
+ * `GET /analytics/reports/benefits` — the plan's `GET /reports/benefits`
+ * (docs/progress/plans/benefits/PLAN.md §5), read the way every report here
+ * is: per branch on `analytics:read`, from the rolled-up fact
+ * (`analytics.fact_benefit_daily`) and never the sales, with the
+ * per-application list read through a date-bounded query beside it. Narrowed,
+ * optionally, to one beneficiary and to one benefit role.
+ *
+ * The split by comp, free items, staff credit and standing discount lives
+ * here. Discounts & Comps keeps the prototype's one "Staff benefit" row per
+ * order (plan Q10's default); this is where the four parts are read either way.
+ */
+export const BenefitReportQuerySchema = AnalyticsReportQuerySchema.extend({
+  /** One beneficiary (a `core.employee` of the operator). */
+  employeeId: z.string().uuid().optional(),
+  /** One benefit role. */
+  role: z.enum(BENEFIT_ROLES).optional(),
+});
+export type BenefitReportQuery = z.input<typeof BenefitReportQuerySchema>;
+
+/** What the staff benefits took off the bills, split the prototype's four ways, with how often each applied. */
+const BenefitReliefSumsSchema = z.object({
+  /** Applications counted: benefits applied to recorded (finalised or refunded) orders. */
+  applications: Count,
+  compCount: Count,
+  compedSatang: Money,
+  freeItemsCount: Count,
+  /** Free-item units relieved (two coffees are 2). */
+  freeItemUnits: Count,
+  freeItemsSatang: Money,
+  creditCount: Count,
+  creditSatang: Money,
+  discountCount: Count,
+  discountSatang: Money,
+  /** The four added up: the relief the engine worked out. */
+  totalReliefSatang: Money,
+  /** What came off the bills: the relief, or less where the order's own manual discount capped it (H15). */
+  appliedSatang: Money,
+});
+export type BenefitReliefSums = z.infer<typeof BenefitReliefSumsSchema>;
+
+/** Nothing applied: the sums every report row starts from. */
+export function emptyBenefitReliefSums(): BenefitReliefSums {
+  return {
+    applications: 0,
+    compCount: 0,
+    compedSatang: 0,
+    freeItemsCount: 0,
+    freeItemUnits: 0,
+    freeItemsSatang: 0,
+    creditCount: 0,
+    creditSatang: 0,
+    discountCount: 0,
+    discountSatang: 0,
+    totalReliefSatang: 0,
+    appliedSatang: 0,
+  };
+}
+
+/** The sums' own fields — and only those: a report row carries its head beside them. */
+const BENEFIT_RELIEF_SUM_KEYS = Object.keys(emptyBenefitReliefSums()) as Array<keyof BenefitReliefSums>;
+
+/** Add one set of sums into another (a report row's head fields are left alone). */
+export function addBenefitReliefSums<T extends BenefitReliefSums>(into: T, add: BenefitReliefSums): T {
+  for (const key of BENEFIT_RELIEF_SUM_KEYS) into[key] += add[key];
+  return into;
+}
+
+const BenefitRoleSchema = z.enum(BENEFIT_ROLES);
+
+export const BenefitReportSchema = ReportScopeSchema.extend({
+  /** The narrowing asked for, echoed; null when none. */
+  employeeId: z.string().uuid().nullable(),
+  role: BenefitRoleSchema.nullable(),
+  /** The range added up. */
+  totals: BenefitReliefSumsSchema,
+  /** Per benefit role. */
+  byRole: z.array(BenefitReliefSumsSchema.extend({ role: BenefitRoleSchema })),
+  /** Per beneficiary and the role they had: whose benefit it was. */
+  byBeneficiary: z.array(
+    BenefitReliefSumsSchema.extend({ employeeId: z.string().uuid(), name: z.string(), role: BenefitRoleSchema }),
+  ),
+  /**
+   * Per branch and trading day. `provisional` while the day has not ended at
+   * its branch or `job:benefit.period_rollover` has not yet closed it.
+   */
+  days: z.array(
+    BenefitReliefSumsSchema.extend({ businessDate: Day, branchId: z.string().uuid(), provisional: z.boolean() }),
+  ),
+  /** When the rollup that writes the fact last ran to the end; null when it never has. */
+  lastRolledUpAt: z.string().nullable(),
+});
+export type BenefitReport = z.infer<typeof BenefitReportSchema>;
+
+export const BenefitTransactionsQuerySchema = BenefitReportQuerySchema;
+
+/**
+ * Every staff benefit applied to a recorded order of the range, newest first:
+ * the beneficiary, who processed it, the sale, the four amounts and what came
+ * off the bill — and the order as it stands now (a refund gives no quota back
+ * under plan Q4's default, so the row stays and says what was refunded).
+ */
+export const BenefitTransactionsSchema = ReportScopeSchema.extend({
+  rows: z.array(
+    z.object({
+      /** The application (`promo.benefit_application.id`). */
+      id: z.string().uuid(),
+      at: z.string(),
+      businessDate: Day,
+      branchId: z.string().uuid(),
+      branchName: z.string(),
+      stationId: z.string().uuid(),
+      boxId: z.string().uuid().nullable(),
+      /** Priced on the platform, or by a box with the link down (comp and percent only). */
+      origin: z.enum(['cloud', 'box']),
+      employeeId: z.string().uuid(),
+      beneficiaryName: z.string(),
+      benefitRole: BenefitRoleSchema,
+      processedByAccountId: z.string().uuid(),
+      processedByName: z.string(),
+      saleId: z.string().uuid(),
+      /** The receipt number, or the sale id where none was printed. */
+      transactionId: z.string(),
+      saleStatus: z.enum(['finalised', 'refunded']),
+      refundedSatang: Money,
+      isComp: z.boolean(),
+      compedSatang: Money,
+      freeItemsSatang: Money,
+      freeItemUnits: Count,
+      creditSatang: Money,
+      discountSatang: Money,
+      totalReliefSatang: Money,
+      appliedSatang: Money,
+    }),
+  ),
+});
+export type BenefitTransactions = z.infer<typeof BenefitTransactionsSchema>;

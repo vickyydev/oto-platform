@@ -17,6 +17,7 @@ import {
   type AnalyticsSaleFacts,
 } from '@oto/shared';
 import { rollupReportDay, saleKindOf } from './analytics-reports';
+import { rollupBenefitDay } from './analytics-benefits';
 import type { Exec, Tx } from './tx';
 
 /**
@@ -338,7 +339,7 @@ export async function rollupDailyBranchDay(
   date: string,
   now: Date,
   claim?: { claim: DirtyClaim; claimedBy: string },
-  reports?: { written: number; removed: number },
+  reports?: { written: number; removed: number; benefitWritten?: number; benefitRemoved?: number },
 ): Promise<RollupDayOutcome> {
   return db.transaction(async (tx) => {
     await lockBranchDay(tx, 'daily', clock.id, date);
@@ -404,6 +405,21 @@ export async function rollupDailyBranchDay(
     if (reports) {
       reports.written += reported.written;
       reports.removed += reported.removed;
+    }
+    // S2-21 round 4 — the staff benefits' day (`analytics.fact_benefit_daily`),
+    // of the same read and in the same transaction: every day a late fact
+    // marked is recomputed here too. Closed at the day start by
+    // `job:benefit.period_rollover`.
+    const benefits = await rollupBenefitDay(tx, {
+      operatorId: clock.operatorId,
+      branchId: clock.id,
+      date,
+      now,
+      provisional,
+    });
+    if (reports) {
+      reports.benefitWritten = (reports.benefitWritten ?? 0) + benefits.written;
+      reports.benefitRemoved = (reports.benefitRemoved ?? 0) + benefits.removed;
     }
     // A day whose facts moved goes to the hourly summariser; today is rolled
     // there on every run regardless.
@@ -573,6 +589,9 @@ export interface DailyRollupDetail extends Record<string, number> {
   /** Report rows (round 4) written or removed because a figure moved. */
   reportRowsWritten: number;
   reportRowsRemoved: number;
+  /** Staff benefit rows (S2-21 round 4, `fact_benefit_daily`) written or removed. */
+  benefitRowsWritten: number;
+  benefitRowsRemoved: number;
 }
 
 interface PlannedDay {
@@ -632,8 +651,10 @@ export async function runDailyRollupJob(db: Db, now: Date): Promise<DailyRollupD
     calendarDays: 0,
     reportRowsWritten: 0,
     reportRowsRemoved: 0,
+    benefitRowsWritten: 0,
+    benefitRowsRemoved: 0,
   };
-  const reports = { written: 0, removed: 0 };
+  const reports = { written: 0, removed: 0, benefitWritten: 0, benefitRemoved: 0 };
   let failed = 0;
   let firstError: unknown = null;
   for (const day of ordered(plan)) {
@@ -656,6 +677,8 @@ export async function runDailyRollupJob(db: Db, now: Date): Promise<DailyRollupD
   }
   detail.reportRowsWritten = reports.written;
   detail.reportRowsRemoved = reports.removed;
+  detail.benefitRowsWritten = reports.benefitWritten;
+  detail.benefitRowsRemoved = reports.benefitRemoved;
   try {
     detail.calendarDays = await refreshDimDate(db, now);
   } catch (err) {

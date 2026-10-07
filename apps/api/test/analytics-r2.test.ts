@@ -773,6 +773,8 @@ describe('the daily and hourly rollup (SCRUM-216 round 2)', () => {
     expect(dailyRun).toMatchObject({ outcome: 'ok' });
     expect(Object.keys(dailyRun!.detail as Record<string, unknown>).sort()).toEqual(
       [
+        'benefitRowsRemoved',
+        'benefitRowsWritten',
         'branches',
         'calendarDays',
         'claimed',

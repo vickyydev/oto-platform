@@ -519,6 +519,13 @@
       "when": 1791391107086,
       "tag": "0073_event_checkin",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1791392217987,
+      "tag": "0074_benefit_daily",
+      "breakpoints": true
     }
   ]
 }

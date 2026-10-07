@@ -8,6 +8,10 @@ import {
   AnalyticsSummaryQuerySchema,
   AnalyticsSummarySchema,
   AnalyticsVatQuerySchema,
+  BenefitReportQuerySchema,
+  BenefitReportSchema,
+  BenefitTransactionsQuerySchema,
+  BenefitTransactionsSchema,
   BoothReportQuerySchema,
   BoothReportSchema,
   BranchSourceBodySchema,
@@ -46,6 +50,7 @@ import {
   type ReportScope,
 } from '../services/analytics-reports';
 import { boothReportCsv, boothReportOf } from '../services/analytics-booth';
+import { assertReportEmployee, benefitReportOf, benefitTransactionsOf } from '../services/analytics-benefits';
 import { hasPermission } from '../services/permissions';
 
 /**
@@ -364,6 +369,61 @@ export async function analyticsRoutes(app: App): Promise<void> {
       },
     },
     async (req) => taxReceiptsOf(app.db, await reportScope(req, req.query)),
+  );
+
+  /**
+   * S2-21 (SCRUM-218) round 4 — the staff benefits report: the benefits
+   * plan's `GET /reports/benefits` (§5), read as every report here is (per
+   * branch on analytics:read, from the rolled-up fact). The split by comp,
+   * free items, staff credit and standing discount is here; Discounts & Comps
+   * keeps the prototype's one "Staff benefit" row per order (plan Q10's
+   * default).
+   */
+  app.get(
+    '/reports/benefits',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'The staff benefits report, from `analytics.fact_benefit_daily` (never the sales): what staff benefits took off ' +
+          'the bills of recorded orders, split comp / free items / staff credit / standing discount with how many ' +
+          'applications used each and the free-item units, and what came off the bills — for the range, per benefit ' +
+          'role, per beneficiary and per branch-day (`provisional` until the day is closed at its branch). Narrowed ' +
+          'by `employeeId` (404 for a staff member of another operator) and `role`. A refund leaves the relief and ' +
+          'the quota as they were (plan Q4’s default). ' +
+          REPORT_SCOPE_WORDS,
+        querystring: BenefitReportQuerySchema,
+        response: { 200: BenefitReportSchema },
+      },
+    },
+    async (req) => {
+      const scope = await reportScope(req, req.query);
+      await assertReportEmployee(app.db, req.requireAuth().operatorId, req.query.employeeId);
+      return benefitReportOf(app.db, scope, { employeeId: req.query.employeeId, role: req.query.role });
+    },
+  );
+
+  app.get(
+    '/reports/benefits/transactions',
+    {
+      config: { dynamicPermission: true },
+      schema: {
+        description:
+          'Every staff benefit applied to a finalised or refunded order of the range, newest first, read through a ' +
+          'date-bounded query (a list is not a summary): the beneficiary and their role, who processed it at which ' +
+          'station and box, the sale and its receipt, the four amounts, the free-item units, what came off the bill, ' +
+          'and the order as it stands now (`saleStatus`, `refundedSatang`). Narrowed by `employeeId` and `role`. ' +
+          'Refused with 400 past 20,000 rows. ' +
+          REPORT_SCOPE_WORDS,
+        querystring: BenefitTransactionsQuerySchema,
+        response: { 200: BenefitTransactionsSchema },
+      },
+    },
+    async (req) => {
+      const scope = await reportScope(req, req.query);
+      await assertReportEmployee(app.db, req.requireAuth().operatorId, req.query.employeeId);
+      return benefitTransactionsOf(app.db, scope, { employeeId: req.query.employeeId, role: req.query.role });
+    },
   );
 
   app.get(
