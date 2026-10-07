@@ -230,7 +230,13 @@ describe('a real card tender leaves four digits and nothing else', () => {
 
     const written = await everythingWritten();
     expect(written, 'a masked PAN reached the database').not.toContain(MASKED_PAN);
-    expect(written, 'a masked PAN reached the database').not.toContain('424242');
+    // The needle must not be six hex-valid digits: this sweep is a substring
+    // search over whole rows full of uuids and hashes, and a run of CI found
+    // '424242' inside a random id. Any real leak of the number beyond last4
+    // carries either the masked form above, a longer digit run, or the
+    // first-six against asterisks.
+    expect(written, 'a masked PAN reached the database').not.toContain('42424242');
+    expect(written, 'a masked PAN reached the database').not.toMatch(/424242\*+/);
     expect(written, 'a cardholder name reached the database').not.toContain(CARDHOLDER);
     expect(written, 'a raw GHL card_no reached the database').not.toContain(GHL_CARD_NO);
   });
