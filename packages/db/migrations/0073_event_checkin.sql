@@ -8,9 +8,11 @@
 --    check-in id the till or the box minted and the directory call carries, so
 --    a retry is a replay in the app; `sync_state` says whether the app has it
 --    yet (the E2 write-back and Failures/Retry pattern). One check-in per child
---    per day: `event_checkin_attendee_day_unique` (H4). The child's name, the
---    allergy and diet lines, the parent and the event's title and times are
---    what the bands printed, frozen.
+--    per day: `event_checkin_attendee_day_unique` (H4), among the check-ins the
+--    app has not taken back — `undone_at` is set on one the app undid (its own
+--    "Undo check-in") when the child is next checked in, so the till can check
+--    them in again. The child's name, the allergy and diet lines, the parent
+--    and the event's title and times are what the bands printed, frozen.
 --
 -- 2. `pos.band` gains event bands: `sale_id` becomes nullable, an
 --    `event_checkin_id` column names the check-in that issued an event band,
@@ -42,6 +44,7 @@ CREATE TABLE "pos"."event_checkin" (
 	"checked_out_at" timestamp with time zone,
 	"checked_out_by_account_id" uuid,
 	"checked_out_by_name" text,
+	"undone_at" timestamp with time zone,
 	"kid_band_id" uuid,
 	"parent_band_id" uuid,
 	"station_id" uuid,
@@ -77,7 +80,7 @@ ALTER TABLE "pos"."event_checkin" ADD CONSTRAINT "event_checkin_kid_band_id_band
 ALTER TABLE "pos"."event_checkin" ADD CONSTRAINT "event_checkin_parent_band_id_band_id_fk" FOREIGN KEY ("parent_band_id") REFERENCES "pos"."band"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pos"."event_checkin" ADD CONSTRAINT "event_checkin_station_id_station_id_fk" FOREIGN KEY ("station_id") REFERENCES "core"."station"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pos"."event_checkin" ADD CONSTRAINT "event_checkin_box_id_box_id_fk" FOREIGN KEY ("box_id") REFERENCES "core"."box"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-CREATE UNIQUE INDEX "event_checkin_attendee_day_unique" ON "pos"."event_checkin" USING btree ("otoapp_event_id","attendee_id","attendance_date");--> statement-breakpoint
+CREATE UNIQUE INDEX "event_checkin_attendee_day_unique" ON "pos"."event_checkin" USING btree ("otoapp_event_id","attendee_id","attendance_date") WHERE undone_at is null;--> statement-breakpoint
 CREATE INDEX "event_checkin_operator_idx" ON "pos"."event_checkin" USING btree ("operator_id");--> statement-breakpoint
 CREATE INDEX "event_checkin_branch_day_idx" ON "pos"."event_checkin" USING btree ("branch_id","attendance_date");--> statement-breakpoint
 CREATE INDEX "event_checkin_link_idx" ON "pos"."event_checkin" USING btree ("link_id");--> statement-breakpoint

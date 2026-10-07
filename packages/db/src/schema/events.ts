@@ -190,11 +190,14 @@ export type EventCheckinOrigin = (typeof EVENT_CHECKIN_ORIGINS)[number];
  * `attendee_id` is the child as the roster named them when they were checked
  * in: the app's registration (or one-off attendee) id, or — for a child the
  * till added that the app does not have yet — the till's own attendee id, with
- * `link_id` naming that link. ONE CHECK-IN PER CHILD PER DAY is the unique key
- * (H4): a second till, or a box's fact from the link-down hours, meets it and
- * mints no second band. A child checked in at the OTO App alone is mirrored
- * here only when the till checks them out or reprints their band
- * (`origin = 'otoapp'`).
+ * `link_id` naming that link. A child the app merged into a registration of
+ * its own is stored under the app's id, whichever id the till named them by.
+ * ONE CHECK-IN PER CHILD PER DAY is the unique key (H4): a second till, or a
+ * box's fact from the link-down hours, meets it and mints no second band. A
+ * check-in the app took back (`undone_at`) stands aside from that key. A child
+ * checked in at the OTO App alone is mirrored here when the till checks them
+ * out or reprints their band, or when a box checked them in offline and its
+ * bands are the only ones they wear (`origin = 'otoapp'`).
  *
  * The child's name, allergy and diet lines, the parent and the event's title
  * and times are what the bands printed, frozen: a reprint prints the same
@@ -241,6 +244,15 @@ export const eventCheckin = pos.table(
     checkedOutAt: timestamp('checked_out_at', { withTimezone: true, mode: 'date' }),
     checkedOutByAccountId: uuid('checked_out_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
     checkedOutByName: text('checked_out_by_name'),
+    /**
+     * The OTO App took this check-in back after it had it (its own "Undo
+     * check-in": the day reads "waiting" again). Set when the till, or a box's
+     * fact, next checks the child in for the day — this row's bands are revoked
+     * then. An undone row is history: the roster, the food counter and the next
+     * check-in pass it by, and one check-in per child per day holds among the
+     * rows that are not undone.
+     */
+    undoneAt: timestamp('undone_at', { withTimezone: true, mode: 'date' }),
     /** The bands it printed. Each band names this row back (`band.event_checkin_id`). */
     kidBandId: uuid('kid_band_id').references((): AnyPgColumn => band.id, { onDelete: 'restrict' }),
     parentBandId: uuid('parent_band_id').references((): AnyPgColumn => band.id, { onDelete: 'restrict' }),
@@ -265,8 +277,10 @@ export const eventCheckin = pos.table(
     ...timestamps,
   },
   (t) => [
-    /** One check-in per child per day (R-97, H4). */
-    uniqueIndex('event_checkin_attendee_day_unique').on(t.otoappEventId, t.attendeeId, t.attendanceDate),
+    /** One check-in per child per day (R-97, H4), among the check-ins the OTO App has not taken back. */
+    uniqueIndex('event_checkin_attendee_day_unique')
+      .on(t.otoappEventId, t.attendeeId, t.attendanceDate)
+      .where(sql`undone_at is null`),
     index('event_checkin_operator_idx').on(t.operatorId),
     index('event_checkin_branch_day_idx').on(t.branchId, t.attendanceDate),
     index('event_checkin_link_idx').on(t.linkId),

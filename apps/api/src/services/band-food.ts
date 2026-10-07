@@ -106,7 +106,10 @@ export async function stayForKey(
  * allergy and diet lines the way a drop-off band resolves to its stay — the
  * OTO App's any-text rule (Q13), frozen on the check-in when the band printed
  * — with `mayOrderFood=false` and no prepaid food (`checkInEventAttendee`,
- * mockApi.ts:3818-3826). Null when the key names no such band.
+ * mockApi.ts:3818-3826). The KID band only: the parent band is the parent's
+ * own (mockApi.ts:3829-3838 — the parent's name and no allergy line), as a
+ * drop-off guardian's band resolves to no stay. Null when the key names no such
+ * band.
  */
 export async function eventBandStayForKey(
   db: Exec,
@@ -114,7 +117,9 @@ export async function eventBandStayForKey(
   branchId: string,
   key: string,
 ): Promise<BandStayView | null> {
-  const bandIds = (await findBandsByCode(db, operatorId, key)).filter((b) => b.eventCheckinId).map((b) => b.id);
+  const bandIds = (await findBandsByCode(db, operatorId, key))
+    .filter((b) => b.eventCheckinId && b.kind === 'kid')
+    .map((b) => b.id);
   if (bandIds.length === 0) return null;
   const [row] = await db
     .select({ c: eventCheckin })
@@ -124,9 +129,11 @@ export async function eventBandStayForKey(
       and(
         inArray(band.id, bandIds),
         eq(band.operatorId, operatorId),
+        eq(band.kind, 'kid'),
         eq(band.status, 'active'),
         eq(eventCheckin.branchId, branchId),
         isNull(eventCheckin.checkedOutAt),
+        isNull(eventCheckin.undoneAt),
       ),
     )
     .orderBy(desc(eventCheckin.checkedInAt))
@@ -333,11 +340,13 @@ export async function resolveCartBandFood(
   // (`mayOrderFood=false`) unless staff override, as the design's event band.
   const eventHolder = holderId && !byId.has(holderId) ? await eventHolderOf(db, operatorId, holderId) : null;
   if (holderId && eventHolder) {
-    const usable = eventHolder.branchId === branchId && !eventHolder.checkedOutAt;
+    // A check-in the OTO App took back (`undone_at`) holds nobody in the park.
+    const gone = !!eventHolder.checkedOutAt || !!eventHolder.undoneAt;
+    const usable = eventHolder.branchId === branchId && !gone;
     if (mode === 'strict' && eventHolder.branchId !== branchId) {
       throw errors.conflict('BAND_OTHER_PARK', bandOtherParkRefusal(eventHolder.childName), { checkinId: eventHolder.id });
     }
-    if (mode === 'strict' && eventHolder.checkedOutAt) {
+    if (mode === 'strict' && gone) {
       throw errors.conflict('BAND_NOT_IN_PARK', bandNotInParkRefusal(eventHolder.childName), { checkinId: eventHolder.id });
     }
     if (usable) {

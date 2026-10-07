@@ -168,5 +168,11 @@ describe('the event check-in migration — check-in, check-out and the event ban
     expect(await bandOf({})).toBe('23514');
     // The kid band still never opens the gate.
     expect(await bandOf({ event_checkin_id: checkinId, gate_access: true })).toBe('23514');
+
+    // A check-in the OTO App took back (`undone_at`) stands aside from the day's
+    // key: the child can be checked in again, and only once again.
+    await client.query(`update pos.event_checkin set undone_at = now() where id = $1`, [checkinId]);
+    expect(await checkin({})).toBeNull();
+    expect(await checkin({})).toBe('23505');
   });
 });

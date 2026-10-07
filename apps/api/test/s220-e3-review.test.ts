@@ -64,21 +64,21 @@ import {
  *  1. THE MIRROR — the same check-in id twice at once lands once in the app;
  *     a lost answer and its Retry land once; the app's own check-in (its
  *     screen) beats a POS one racing it; an undo in the app is not undone by
- *     a replay or a Retry — and (pinned, finding) not by the roster either.
+ *     a replay or a Retry — and (a finding, fixed) not by the roster either.
  *  2. THE BAND — the real codes against the park's key and the gate's own copy
  *     of the bands; the food counter's scan by short code, and nothing once the
  *     child is out; a reprint replayed under one key prints once, through the
  *     S2-11 reprint path, audited; no supervision gate on any event path.
  *  3. THE SERVER RULE, WHATEVER IDS ARE SENT — capitals, another event's child,
- *     a check-in id spent on another child, and (pinned, finding) the till's
+ *     a check-in id spent on another child, and (a finding, fixed) the till's
  *     own id for a child the app merged into its registration.
- *  4. (pinned, finding) A MERGED WALK-UP'S BAND carries the app's allergy line.
+ *  4. (a finding, fixed) A MERGED WALK-UP'S BAND carries the app's allergy line.
  *  5. THE CAMP RANGE END TO END — its first and last day in, the days outside
  *     out, and 00:30 on the day after on the branch's business date (H20).
  *
  * A defect found is pinned with `it.fails` (the E1 review's convention): the
  * suite stays green while it stands and turns red the day it is fixed, so the
- * fix flips it to `it`.
+ * fix flips it to `it`. The E3 fix round flipped every pin in this file.
  */
 
 let ctx: TestContext;
@@ -391,17 +391,17 @@ describe('1. the mirror: a POS check-in lands in the OTO App once, and the app s
   });
 
   /**
-   * FINDING (low) — the replay contract ("the same check-in id again answers
-   * what it made") gives way to the app read: a second copy of one press whose
-   * `prior` read ran before the first copy committed, and whose read of the app
-   * ran after the first copy's write-back, finds the app holding the child —
-   * under ITS OWN check-in id — and is refused "Already checked in" (seen in
-   * the race above). `appDayOf` should not count the app's row as another
-   * check-in when its `checkinRef` is this very id. Pinned deterministically
-   * from the state that copy sees: the app holds this id, the POS's read of its
-   * own rows came up empty.
+   * WAS A DEFECT (low; pinned with `it.fails`, fixed in the E3 fix round) — the
+   * replay contract ("the same check-in id again answers what it made") gave
+   * way to the app read: a second copy of one press whose `prior` read ran
+   * before the first copy committed, and whose read of the app ran after the
+   * first copy's write-back, found the app holding the child — under ITS OWN
+   * check-in id — and was refused "Already checked in" (seen in the race
+   * above). `appDayOf` now passes by the app's row whose `checkinRef` is this
+   * very id. Pinned deterministically from the state that copy sees: the app
+   * holds this id, the POS's read of its own rows came up empty.
    */
-  it.fails("a copy of one press that finds the app already holding its own check-in id is answered as that check-in, not refused", async () => {
+  it("a copy of one press that finds the app already holding its own check-in id is answered as that check-in, not refused", async () => {
     const id = newId();
     const event = (await appWrites.findTenantEvent(appPool, appTenant, ev.camp))!;
     expect((await appWrites.recordAttendeeCheckin(appPool, event, kid.copy, { id, date: T })).status).toBe(201);
@@ -480,13 +480,15 @@ describe('1. the mirror: a POS check-in lands in the OTO App once, and the app s
     });
 
     /**
-     * FINDING (Q1) — the roster lays the POS's synced mirror over the app's
-     * "waiting" and shows the child IN after the app undid the check-in: the
-     * mirror resurrects on the board what the master took back, against
+     * WAS A DEFECT (Q1; pinned with `it.fails`, fixed in the E3 fix round) —
+     * the roster laid the POS's synced mirror over the app's "waiting" and
+     * showed the child IN after the app undid the check-in: the mirror
+     * resurrected on the board what the master took back, against
      * `mergedCheckins`' own contract ("stands for a day the app does not show
-     * YET"). The till is then also refused a fresh check-in for the child.
+     * YET"). The till was then also refused a fresh check-in for the child;
+     * that is covered in `events-e3.test.ts` ("an undo in the OTO App").
      */
-    it.fails('the roster follows the app: the child is no longer in once the app undid the check-in', async () => {
+    it('the roster follows the app: the child is no longer in once the app undid the check-in', async () => {
       const { body: roster } = await get<EventRosterAnswer>(reception, `/events/${ev.camp}/roster?branchId=${central}&date=${T}`);
       expect(roster.groups.in).not.toContain(kid.undo);
       expect(roster.groups.outstanding).toContain(kid.undo);
@@ -542,15 +544,17 @@ describe('2. the band: verified at the gate and at the food counter, reprinted t
   });
 
   /**
-   * FINDING (low) — the PARENT band at the food counter resolves to the child:
-   * `eventBandStayForKey` takes any band of the check-in, so the parent's own
-   * band reads "Banda — Sesame", and an order taken on it names the child as
-   * its holder (the prep ticket prints the child's allergy on the parent's
+   * WAS A DEFECT (low; pinned with `it.fails`, fixed in the E3 fix round) —
+   * the PARENT band at the food counter resolved to the child:
+   * `eventBandStayForKey` took any band of the check-in, so the parent's own
+   * band read "Banda — Sesame", and an order taken on it named the child as
+   * its holder (the prep ticket printed the child's allergy on the parent's
    * food). The prototype's parent wristband names the parent and carries no
    * allergy line (mockApi.ts:3829-3838: holderName = parentName, no
-   * allergiesMedical); a drop-off guardian's band resolves to no stay at all.
+   * allergiesMedical); a drop-off guardian's band resolves to no stay at all,
+   * and now so does the event parent band.
    */
-  it.fails("the parent band is the parent's: it does not read as the child, nor carry the child's allergy", async () => {
+  it("the parent band is the parent's: it does not read as the child, nor carry the child's allergy", async () => {
     const parent = await get<{ stay: Record<string, unknown> | null }>(
       reception,
       `/wallets/scan?branchId=${central}&key=${encodeURIComponent(parentBand.code)}`,
@@ -675,14 +679,15 @@ describe('3. "Not registered for today" through every door, whatever ids are sen
   });
 
   /**
-   * FINDING (H5) — the till's own id for a child the OTO App MERGED into a
-   * registration it already had (E2: same name and phone) bypasses the rule.
-   * `eventChildOf` finds no registration under the till's id and falls back to
-   * the link's own record of the days it sent ([today]), never the app's
-   * registration, which has since moved the child off today. The app's id is
-   * refused; the till's id — the one "Check in now" sends after a pass sale —
-   * checks the child in, bands them and writes an attendance row into the app
-   * for a day the child is not registered.
+   * WAS A DEFECT (H5; pinned with `it.fails`, fixed in the E3 fix round) — the
+   * till's own id for a child the OTO App MERGED into a registration it already
+   * had (E2: same name and phone) bypassed the rule. `eventChildOf` found no
+   * registration under the till's id and fell back to the link's own record of
+   * the days it sent ([today]), never the app's registration, which has since
+   * moved the child off today. The app's id was refused; the till's id — the
+   * one "Check in now" sends after a pass sale — checked the child in, banded
+   * them and wrote an attendance row into the app for a day the child is not
+   * registered. A synced link is now read through to the app's registration.
    */
   describe("a walk-up the app merged into its registration, then moved off today in the app", () => {
     let linkId: string;
@@ -704,7 +709,7 @@ describe('3. "Not registered for today" through every door, whatever ids are sen
       expect(res.body.error.code).toBe('EVENT_NOT_REGISTERED_TODAY');
     });
 
-    it.fails("by the till's own id for the same child: refused the same, nothing written, nothing sent", async () => {
+    it("by the till's own id for the same child: refused the same, nothing written, nothing sent", async () => {
       const id = newId();
       const res = await post<{ error: { code: string } }>(reception, checkinUrl(ev.camp, linkId), body(id));
       expect(res.status).toBe(409);
@@ -720,12 +725,14 @@ describe('3. "Not registered for today" through every door, whatever ids are sen
 // =============================================================================
 
 /**
- * FINDING (H9, Q13) — the allergy line of a child the OTO App merged into a
- * registration it already had comes from the till's walk-up form, not from the
- * app's registration: "Check in now" after the pass sale names the child by
- * the till's id, `eventChildOf` falls back to the body the till sent, and an
- * allergy the app holds ("Peanuts") is printed on no band and read by no food
- * counter. The roster (by the app's id) shows the allergy; the band does not.
+ * WAS A DEFECT (H9, Q13; pinned with `it.fails`, fixed in the E3 fix round) —
+ * the allergy line of a child the OTO App merged into a registration it
+ * already had came from the till's walk-up form, not from the app's
+ * registration: "Check in now" after the pass sale names the child by the
+ * till's id, `eventChildOf` fell back to the body the till sent, and an
+ * allergy the app holds ("Peanuts") was printed on no band and read by no food
+ * counter. The roster (by the app's id) showed the allergy; the band did not.
+ * The check-in now reads the app's registration and is stored under its id.
  */
 describe('4. a returning camp child sold a day pass at the till: the band carries the allergy the app holds', () => {
   let linkId: string;
@@ -747,7 +754,7 @@ describe('4. a returning camp child sold a day pass at the till: the band carrie
     expect(roster.event.attendees!.find((a) => a.id === kid.mergedAllergy)).toMatchObject({ allergy: 'Peanuts' });
   });
 
-  it.fails('the kid band prints the allergy line, and the food counter reads it', async () => {
+  it('the kid band prints the allergy line, and the food counter reads it', async () => {
     const [kb] = await bandsOf(answer.checkin.id);
     const doc = await buildPrintDocument(ctx.db, { boxId: tillBox, operatorId }, kb!.printedJobId!);
     expect(doc.job).toMatchObject({ data: { holderName: 'Mia', allergy: 'Peanuts' } });

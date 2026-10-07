@@ -167,6 +167,10 @@ function checkinOf(row: SeamAttendance): EventCheckinView | null {
  * stands for a day the app does not show yet (a write-back still pending, or a
  * check-out the app's directory cannot take). A check-out recorded on either
  * side is a check-out.
+ *
+ * A POS check-in the app HAS (`synced`) is the app's from then on: when the
+ * app's day no longer reads in or out — its own "Undo check-in" set it back to
+ * "waiting" — the mirror does not bring the child back (`takenBackBy`).
  */
 function mergedCheckins(appRows: readonly SeamAttendance[], pos: readonly RosterCheckin[]): EventCheckinView[] {
   const byDate = new Map<string, EventCheckinView>();
@@ -176,6 +180,7 @@ function mergedCheckins(appRows: readonly SeamAttendance[], pos: readonly Roster
   }
   for (const p of pos) {
     const app = byDate.get(p.row.attendanceDate);
+    if (p.row.syncState === 'synced' && !app) continue;
     const appOut = app?.status === 'checked_out' ? app : null;
     const outAt = p.row.checkedOutAt?.toISOString() ?? appOut?.checkedOutAt ?? null;
     byDate.set(p.row.attendanceDate, {

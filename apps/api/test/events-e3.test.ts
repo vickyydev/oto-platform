@@ -105,6 +105,8 @@ const kid = {
   flaky: newId(),
   /** Every day of a camp that began over a year ago and has no end (item 6). */
   club: newId(),
+  /** Checked in at the till; the OTO App's own "Undo check-in" takes it back; checked in again. */
+  undo: newId(),
 };
 let workshopKid: string;
 let partyKid: string;
@@ -285,6 +287,7 @@ beforeAll(async () => {
   await register({ id: kid.appOnly, eventId: ev.camp, name: 'Appy', days: [] });
   await register({ id: kid.flaky, eventId: ev.camp, name: 'Flaky', days: [] });
   await register({ id: kid.club, eventId: ev.oldOpenCamp, name: 'Clubber', days: [] });
+  await register({ id: kid.undo, eventId: ev.camp, name: 'Undine', days: [], allergies: 'Shellfish', parentAttending: true });
 
   const workshop = (await appWrites.findTenantEvent(appPool, appTenant, ev.workshop))!;
   workshopKid = newId();
@@ -762,6 +765,106 @@ describe('an event band at the food counter, the gate, History and the occupancy
     const after = await countAt(ctx.db, central, from, new Date(Date.now() + 1000));
     expect(after.adults - before.adults).toBe(1);
     expect(after.kids - before.kids).toBe(1);
+  });
+});
+
+// =============================================================================
+// Q1 — the OTO App's own "Undo check-in" after it had the till's check-in
+// =============================================================================
+
+describe("an undo in the OTO App after it had the till's check-in (Q1: the app is the master)", () => {
+  const first = newId();
+  const second = newId();
+  let firstBands: (typeof band.$inferSelect)[];
+
+  const scan = (code: string) =>
+    get<{ stay: Record<string, unknown> | null }>(reception, `/wallets/scan?branchId=${central}&key=${encodeURIComponent(code)}`);
+  const roster = async () =>
+    (await get<EventRosterAnswer>(reception, `/events/${ev.camp}/roster?branchId=${central}&date=${T}`)).body;
+
+  beforeAll(async () => {
+    const res = await post<EventCheckinAnswer>(reception, checkinUrl(ev.camp, kid.undo), checkinBody({ checkinId: first }));
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.checkin.syncState).toBe('synced');
+    firstBands = await bandsOfCheckin(first);
+    expect(firstBands.map((b) => b.kind).sort()).toEqual(['adult', 'kid']);
+    // The OTO App's own "Undo check-in" (`POST /api/core/camp-checkins/:id/undo-check-in`), as SQL.
+    await ctx.db.execute(sql`
+      update otoapp.camp_attendance
+         set status = 'waiting', checked_in_at = null, checked_in_by = null, updated_at = now()
+       where camp_registration_id = ${kid.undo} and attendance_date = ${T}`);
+  });
+
+  it('the roster follows the app: the child is expected again, and the till cannot check out or reprint a day the app took back', async () => {
+    const body = await roster();
+    expect(body.groups.outstanding).toContain(kid.undo);
+    expect(body.groups.in).not.toContain(kid.undo);
+    const out = await post<{ error: { code: string } }>(reception, checkoutUrl(ev.camp, kid.undo), { branchId: central });
+    expect(out.status).toBe(409);
+    expect(out.body.error.code).toBe('EVENT_NOT_CHECKED_IN');
+    const reprint = await post<{ error: { code: string } }>(reception, reprintUrl(ev.camp, kid.undo), { branchId: central, stationId: till });
+    expect(reprint.status).toBe(409);
+    expect(reprint.body.error.code).toBe('EVENT_NOT_CHECKED_IN');
+  });
+
+  it('the till checks the child in again: new bands, the app holds the new check-in, the first one set aside with its bands revoked', async () => {
+    const res = await post<EventCheckinAnswer>(reception, checkinUrl(ev.camp, kid.undo), checkinBody({ checkinId: second }));
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.checkin).toMatchObject({ id: second, status: 'checked_in', syncState: 'synced' });
+    expect(await appDay(ev.camp, kid.undo, T)).toMatchObject({ status: 'checked_in', checkin_ref: second });
+
+    const [old] = await ctx.db.select().from(eventCheckin).where(eq(eventCheckin.id, first));
+    expect(old!.undoneAt).not.toBeNull();
+    const oldNow = await bandsOfCheckin(first);
+    expect(oldNow.map((b) => b.status)).toEqual(['revoked', 'revoked']);
+    const revoked = await ctx.db
+      .select()
+      .from(bandEvent)
+      .where(and(eq(bandEvent.kind, 'revoked'), sql`${bandEvent.detail}->>'eventCheckinId' = ${first}`));
+    expect(revoked).toHaveLength(2);
+    const [undone] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'event.checkin_undone'), eq(auditLog.entityId, first)));
+    expect(undone!.after).toMatchObject({ reason: 'undone_in_otoapp', nextCheckinId: second });
+    expect([...(undone!.after as { revokedBandIds: string[] }).revokedBandIds].sort()).toEqual(firstBands.map((b) => b.id).sort());
+
+    const fresh = await bandsOfCheckin(second);
+    expect(fresh.map((b) => b.kind).sort()).toEqual(['adult', 'kid']);
+    expect(fresh.map((b) => b.id)).not.toEqual(firstBands.map((b) => b.id));
+
+    // The board shows the new check-in, with its own bands.
+    const body = await roster();
+    expect(body.groups.in).toContain(kid.undo);
+    const undine = body.event.attendees!.find((a) => a.id === kid.undo)!;
+    expect(undine.checkins.find((c) => c.date === T)).toMatchObject({ posCheckinId: second, checkinRef: second });
+
+    // The food counter reads the new kid band, and nobody behind the revoked one.
+    const oldKid = firstBands.find((b) => b.kind === 'kid')!;
+    const was = await scan(oldKid.code);
+    expect(was.status === 404 || was.body.stay === null).toBe(true);
+    const now = await scan(fresh.find((b) => b.kind === 'kid')!.code);
+    expect(now.body.stay).toMatchObject({ childName: 'Undine', allergiesMedical: 'Shellfish', mayOrderFood: false });
+  });
+
+  it('the day is held again: a third check-in is refused, and the replay of the second answers the second', async () => {
+    const third = await post<{ error: { code: string } }>(reception, checkinUrl(ev.camp, kid.undo), checkinBody());
+    expect(third.status).toBe(409);
+    expect(third.body.error.code).toBe('EVENT_ALREADY_CHECKED_IN');
+    const replay = await post<EventCheckinAnswer>(reception, checkinUrl(ev.camp, kid.undo), checkinBody({ checkinId: second }));
+    expect(replay.status).toBe(200);
+    expect(replay.body).toMatchObject({ replayed: true, checkin: { id: second } });
+    const rows = await ctx.db
+      .select()
+      .from(eventCheckin)
+      .where(and(eq(eventCheckin.attendeeId, kid.undo), eq(eventCheckin.attendanceDate, T)));
+    expect(rows.map((r) => [r.id, r.undoneAt === null])).toEqual(
+      expect.arrayContaining([
+        [first, false],
+        [second, true],
+      ]),
+    );
+    expect(rows).toHaveLength(2);
   });
 });
 
