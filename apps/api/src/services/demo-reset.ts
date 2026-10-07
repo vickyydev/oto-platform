@@ -16,6 +16,7 @@ import {
   child,
   endOfDay,
   eventAttendeeLink,
+  eventCheckin,
   guardian,
   kioskSession,
   occupancyResolution,
@@ -273,6 +274,21 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   counts.party_payment = (await tx.delete(partyPayment).returning({ id: partyPayment.id })).length;
   counts.party_charge = (await tx.delete(partyCharge).returning({ id: partyCharge.id })).length;
   counts.party_edit = (await tx.delete(partyEdit).returning({ id: partyEdit.id })).length;
+  /**
+   * S2-20 E5: an event check-in (E3) is a day of play too. It names the till's
+   * link (ON DELETE RESTRICT) and its bands name it back — a check-in and its
+   * kid band point at each other — so one event check-in made the whole reset
+   * refuse. The cycle is broken first, then the event bands and their history
+   * go, then the check-ins, all before the links below.
+   */
+  await tx.update(eventCheckin).set({ kidBandId: null, parentBandId: null });
+  const eventBands = await tx.select({ id: band.id }).from(band).where(isNotNull(band.eventCheckinId));
+  if (eventBands.length > 0) {
+    const ids = eventBands.map((b) => b.id);
+    await tx.delete(bandEvent).where(inArray(bandEvent.bandId, ids));
+    await tx.delete(band).where(inArray(band.id, ids));
+  }
+  counts.event_checkin = (await tx.delete(eventCheckin).returning({ id: eventCheckin.id })).length;
   counts.event_attendee_link = (
     await tx.delete(eventAttendeeLink).returning({ id: eventAttendeeLink.id })
   ).length;

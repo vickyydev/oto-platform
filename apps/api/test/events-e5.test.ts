@@ -841,3 +841,21 @@ describe('the kiosk checks a booking’s passes in as the till does (Q11)', () =
     expect(counter.body.eventPasses![0]).toMatchObject({ outcome: 'checked_in' });
   });
 });
+
+// =============================================================================
+// The demo reset clears the events story's day of play
+// =============================================================================
+
+describe('the demo reset clears a day of event check-ins (it refused before E5)', () => {
+  it('the check-ins, their bands and the links go — the OTO App’s own rows stay the app’s', async () => {
+    expect((await ctx.db.select().from(eventCheckin)).length).toBeGreaterThan(0);
+    const { resetDemoData } = await import('../src/services/demo-reset');
+    const counts = await resetDemoData(ctx.db);
+    expect(counts.event_checkin).toBeGreaterThan(0);
+    expect(await ctx.db.select().from(eventCheckin)).toEqual([]);
+    expect(await ctx.db.select().from(eventAttendeeLink)).toEqual([]);
+    expect(await ctx.db.select().from(band)).toEqual([]);
+    const app = await ctx.db.execute<{ n: number }>(sql`select count(*)::int as n from otoapp.camp_registrations where event_id = ${ev.camp}`);
+    expect(app.rows[0]!.n).toBeGreaterThan(0);
+  });
+});
