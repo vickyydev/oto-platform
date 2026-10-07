@@ -132,8 +132,27 @@ export async function confirmBookingPaid(
   const payload = await registerPaidBookingChildren(tx, row, now, input.requestId ?? null);
   // S2-20 E5 — the event passes the booking paid for, registered in this same
   // transaction (the money and the registration commit together); written to
-  // the OTO App after the commit (`afterBookingPaid`).
-  await registerPaidBookingEventPasses(tx, row, payload, now, input.requestId ?? null);
+  // the OTO App after the commit (`afterBookingPaid`). In a savepoint of their
+  // own: a pass that cannot be registered never takes the payment down with
+  // it — the money is the family's either way — and is said, so the counter's
+  // redemption names it ("never registered — ask a manager").
+  try {
+    await tx.transaction((sp) => registerPaidBookingEventPasses(sp, row, payload, now, input.requestId ?? null));
+  } catch (err) {
+    await audit.record(tx, {
+      actorAccountId: null,
+      operatorId: row.operatorId,
+      branchId: row.branchId,
+      action: 'booking.event_passes_unregistered',
+      entityType: 'booking',
+      entityId: row.id,
+      requestId: input.requestId ?? null,
+      after: {
+        reference: row.reference,
+        error: (err as { code?: unknown })?.code ?? (err instanceof Error ? err.name : 'unknown'),
+      },
+    });
+  }
 
   const [after] = await tx
     .update(booking)

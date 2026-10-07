@@ -715,6 +715,40 @@ describe('each pass is registered with the payment and written to the OTO App (H
   });
 });
 
+describe('a pass that cannot be registered never takes the payment down', () => {
+  it('the booking is paid, the failure is audited, and the counter is told the pass was never registered', async () => {
+    const broken = pass(ev.camp, 'Broken');
+    const made = await makeBooking([{ packageId: twoHoursId, kids: 1, adults: 0 }], [broken]);
+    expect(made.statusCode, made.body).toBe(200);
+    const id = made.json().id as string;
+    // A stored day the database cannot read as a date: the registration's insert refuses it.
+    await ctx.db.execute(sql`
+      update pos.booking
+         set payload = jsonb_set(payload, '{eventPasses,0,attendanceDays}', '["2026-13-45"]'::jsonb)
+       where id = ${id}`);
+    const opened = await ctx.app.inject({ method: 'POST', url: `/public/bookings/${id}/checkout`, remoteAddress: familyAddress(), payload: { method: 'card' } });
+    expect(opened.statusCode, opened.body).toBe(200);
+    const pressed = await ctx.app.inject({
+      method: 'POST',
+      url: `/webhooks/2c2p/hosted/${opened.json().attemptId as string}`,
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'action=pay',
+    });
+    expect(pressed.statusCode, pressed.body).toBe(200);
+    const [row] = await ctx.db.select().from(booking).where(eq(booking.id, id));
+    expect(row!.status).toBe('paid');
+    expect(await linkOf(broken.attendeeId)).toBeNull();
+    const audits = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'booking.event_passes_unregistered'), eq(auditLog.entityId, id)));
+    expect(audits).toHaveLength(1);
+    const res = await redeemAtCounter(id);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.eventPasses![0]).toMatchObject({ outcome: 'not_found', message: expect.stringContaining('never registered') });
+  });
+});
+
 describe('a pass for a later day stays booked; a child already in is skipped', () => {
   it('a booking of passes alone is redeemed: the camp child checked in at the board first is skipped, the later event left booked', async () => {
     const camp = pass(ev.camp, 'Early');
