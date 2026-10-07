@@ -297,6 +297,8 @@ const PLATFORM_NAMED: Record<string, string> = {
   'POST /sales/:id/extensions': `${ACTION_KEYED} (\`sale_extension_action_unique\`); paid time extensions are online only`,
   'POST /sales/tier-claims': `${ACTION_KEYED} (\`sale_tier_claim_action_unique\`)`,
   'POST /stations/:id/displays/claim': 'derived: the credential a paired display is answered with, once',
+  // S2-20 K2 — the kiosk pairs as a display does: the credential its K code buys, once.
+  'POST /stations/:id/kiosks/claim': 'derived: the credential a paired self-service kiosk is answered with, once',
   'POST /tiers': CODE_NAMED,
   'POST /voucher-definitions': NEXT_PASS,
   // S2-14a round 5: the voucher's CODE is what anybody refers to, and it is
