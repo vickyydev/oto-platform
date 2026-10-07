@@ -845,11 +845,13 @@ export async function checkOutEventAttendee(
  * S2-20 E5 (closing audit, c) — THE MIRROR THAT MET A BOX'S ROW. A check-out or
  * a reprint of a child checked in at the OTO App alone writes the app's
  * check-in into the POS's mirror; a box's fact for the same child-day may be
- * filed in the same instant. Both take the child-day's locks now
- * (`lockChildDay`, the box door included), so the two are decided one after
- * the other; should the unique key still meet a row first — an id the box
- * named the child by that the till's press did not share — the press is
- * decided once more, with that row standing, rather than ending in a 500.
+ * filed in the same instant. Two presses at the till take the child-day's
+ * locks (`lockChildDay`), so they are decided one after the other; the box
+ * door takes no lock of the till's — it decides from the rows it reads and,
+ * should the unique key meet the till's row first, decides its fact once more
+ * itself (`decidedOnceMore`, sync-events.ts). Should the till's write meet the
+ * box's row first instead, the press is decided once more here, with that row
+ * standing, rather than ending in a 500.
  */
 async function onceMoreIfDayTaken<T>(work: () => Promise<T>): Promise<T> {
   try {
