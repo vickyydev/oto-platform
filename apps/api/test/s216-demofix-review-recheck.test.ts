@@ -326,11 +326,12 @@ describe('what a press draws, against what a box would', () => {
 describe('convergence after all of it', () => {
   it('a re-press of today moves no byte the demo day owns, and no live park row', async () => {
     // Today's day was filed by the first booth, now archived. A re-press finds
-    // every press filed (a press's id is the day's key, not the booth's) and
-    // writes none — but counts "already present" at the NEW booth only, so it
-    // says 0 where six presses stand at the archived one.
+    // every press filed (a press's id is the day's key, not the booth's),
+    // writes none, and counts the six standing at the archived booth as
+    // already present: the day's presses are counted by the day (SCRUM-503;
+    // this said 0 when they were counted at the newest booth only).
     const first = await seedDemoDay(ctx.db);
-    expect(first).toMatchObject({ sales: 0, skipped: 11, boothSpins: 0, boothSpinsPresent: 0 });
+    expect(first).toMatchObject({ sales: 0, skipped: 11, boothSpins: 0, boothSpinsPresent: 6 });
     const today = await ctx.db.select().from(spin).where(and(eq(spin.branchId, demo), eq(spin.businessDate, T)));
     expect(today).toHaveLength(6);
     const before = await demoDayRows();

@@ -988,11 +988,13 @@ export async function seedDemoDay(
 
   // The booth's own day: the presses whose vouchers nobody spent today.
   counts.boothSpins += (await seedDemoBoothDay(db, booth, { on, ref, instantAt, staff: boothStaff })).written;
-  // Every press the booth has on the day that this run did not file: its own
+  // Every press the day has that this run did not file: the booth's own
   // presses found filed, and the voucher sale's when that sale was already in
   // the ledger (a day filled before the booth existed has none for it — that
-  // sale spent a voucher issued by hand).
-  counts.boothSpinsPresent = (await demoBoothSpinsOn(db, booth, on)) - counts.boothSpins;
+  // sale spent a voucher issued by hand). Counted by the day's action ids, so a
+  // day filed by a booth since archived in the Console is still counted
+  // (SCRUM-503).
+  counts.boothSpinsPresent = (await demoBoothSpinsOn(db, booth, on, ref.dayPrefix)) - counts.boothSpins;
 
   return counts;
 }
@@ -1138,6 +1140,8 @@ interface DemoDayRef {
   action: (scenario: string) => string;
   /** The un-namespaced action id the demo branch's first days used. */
   legacyAction: (scenario: string) => string;
+  /** What every action id of this day at this branch starts with (`action` of any scenario). */
+  dayPrefix: string;
 }
 
 function demoDayRef(on: string, branchCode: string): DemoDayRef {
@@ -1145,6 +1149,7 @@ function demoDayRef(on: string, branchCode: string): DemoDayRef {
     key: (scenario) => `${branchCode}/${on}/${scenario}`,
     action: (scenario) => `demo-day/${on}/${branchCode}/${scenario}`,
     legacyAction: (scenario) => `demo-day/${on}/${scenario}`,
+    dayPrefix: `demo-day/${on}/${branchCode}/`,
   };
 }
 

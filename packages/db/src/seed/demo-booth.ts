@@ -640,12 +640,31 @@ function prizeOf(booth: DemoBooth, code: DemoBoothPrizeCode): DemoBoothPrize {
   return booth.prizes.get(code) ?? booth.prizes.get(DEMO_BOOTH_PRIZES[0].definition)!;
 }
 
-/** Every press the demo booth has on a trading day, whichever run filed it. */
-export async function demoBoothSpinsOn(db: Db, booth: Pick<DemoBooth, 'stationId'>, on: string): Promise<number> {
+/**
+ * Every press the demo day has on a trading day at the demo branch, whichever
+ * run filed it and AT WHICHEVER BOOTH: the day's presses are found by the
+ * day's own action ids (`dayActionPrefix`, every press's action id starts with
+ * it), not by the booth that stands today. A demo booth archived in the
+ * Console is made again on the next press, and the day it filed is still the
+ * day's (SCRUM-503): counted at the newest booth only, a re-press said
+ * "0 spins added, 0 already present" though the day's presses stood.
+ */
+export async function demoBoothSpinsOn(
+  db: Db,
+  booth: Pick<DemoBooth, 'branchId'>,
+  on: string,
+  dayActionPrefix: string,
+): Promise<number> {
   const [row] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(s.spin)
-    .where(and(eq(s.spin.stationId, booth.stationId), eq(s.spin.businessDate, on)));
+    .where(
+      and(
+        eq(s.spin.branchId, booth.branchId),
+        eq(s.spin.businessDate, on),
+        sql`starts_with(${s.spin.actionId}, ${dayActionPrefix})`,
+      ),
+    );
   return Number(row?.n ?? 0);
 }
 
