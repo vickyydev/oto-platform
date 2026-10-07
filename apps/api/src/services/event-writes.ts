@@ -125,7 +125,9 @@ async function staffNameOf(db: Exec, accountId: string): Promise<string> {
     .leftJoin(employee, eq(account.employeeId, employee.id))
     .where(eq(account.id, accountId))
     .limit(1);
-  return row?.nickname?.trim() || row?.name?.trim() || 'Staff';
+  // Bounded to what the OTO App's directory takes as `createdBy` (255) with room
+  // to spare in the note it stamps (2000).
+  return (row?.nickname?.trim() || row?.name?.trim() || 'Staff').slice(0, 120);
 }
 
 type LinkRow = typeof eventAttendeeLink.$inferSelect;
