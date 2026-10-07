@@ -277,10 +277,10 @@ export const EventCheckinViewSchema = z.object({
    * (never the codes — a band code is a gate credential), and whether the OTO
    * App has the check-in yet. Null on a check-in made in the OTO App alone.
    */
-  posCheckinId: z.string().nullable().default(null),
-  kidBandShortCode: z.string().nullable().default(null),
-  parentBandShortCode: z.string().nullable().default(null),
-  syncState: z.enum(['synced', 'pending', 'failed']).nullable().default(null),
+  posCheckinId: z.string().nullable().optional(),
+  kidBandShortCode: z.string().nullable().optional(),
+  parentBandShortCode: z.string().nullable().optional(),
+  syncState: z.enum(['synced', 'pending', 'failed']).nullable().optional(),
 });
 export type EventCheckinView = z.infer<typeof EventCheckinViewSchema>;
 
@@ -582,6 +582,12 @@ export const EventsCacheAttendeeSchema = z.object({
   parentName: z.string().nullable(),
   parentAttending: z.boolean(),
   attendsOnDate: z.boolean(),
+  /**
+   * S2-20 E3 — a camp registration's own days, when it names them (absent for
+   * one that attends every day, and off a camp): the board marks "not today"
+   * from them with the link down, as it does online.
+   */
+  attendanceDays: z.array(IsoDate).optional(),
   bucket: z.enum(EVENT_ROSTER_BUCKETS),
   checkin: z
     .object({
@@ -594,9 +600,9 @@ export const EventsCacheAttendeeSchema = z.object({
        * holds, so a reprint or a food counter's scan with the link down finds
        * them there. Null for a check-in made in the OTO App alone.
        */
-      posCheckinId: z.string().nullable().default(null),
-      kidBandId: z.string().nullable().default(null),
-      parentBandId: z.string().nullable().default(null),
+      posCheckinId: z.string().nullable().optional(),
+      kidBandId: z.string().nullable().optional(),
+      parentBandId: z.string().nullable().optional(),
     })
     .nullable(),
 });

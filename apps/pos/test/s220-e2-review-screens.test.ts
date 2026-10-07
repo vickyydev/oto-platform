@@ -232,17 +232,21 @@ describe('"Not on the platform yet" — gone exactly where E2 builds the write, 
     expect(fnBody(board, 'openAddAttendee')).not.toContain('writePending');
   });
 
-  it('standing: check-in, check-out and reprint on the board (E3)', () => {
+  it('gone since E3: check-in, check-out and reprint on the board and the mobile board are on the platform', () => {
     const board = source('pages/DropOff.tsx');
-    expect(fnBody(board, 'writePending')).toContain('toast(EVENT_WRITE_PENDING)');
-    for (const handler of ['handleEventCheckIn', 'handleEventCheckOut', 'handleEventReprint']) {
-      expect(fnBody(board, handler), handler).toMatch(/if \(writePending\(eventId\)\) return;/);
+    expect(board).not.toContain('writePending');
+    expect(fnBody(board, 'handleEventCheckIn')).toContain('checkInChild(');
+    expect(fnBody(board, 'checkInChild')).toContain('checkInOnPlatform(');
+    expect(fnBody(board, 'handleEventCheckOut')).toContain('checkOutOnPlatform(');
+    expect(fnBody(board, 'handleEventReprint')).toContain('reprintOnPlatform(');
+    const mobileBoard = source('components/mobile/dropoff/MobileDropOffBoard.tsx');
+    expect(mobileBoard).not.toContain('writePending');
+    for (const call of ['checkInOnPlatform(', 'checkOutOnPlatform(', 'reprintOnPlatform(']) {
+      expect(mobileBoard, call).toContain(call);
     }
   });
 
-  it('standing: the mobile board and the mobile check-ins (E3); gone from the party tab, which E4 put on the platform', () => {
-    const mobileBoard = source('components/mobile/dropoff/MobileDropOffBoard.tsx');
-    expect(mobileBoard.match(/if \(writePending\(eventId\)\) return;/g)?.length).toBe(3);
+  it('standing: the mobile party screens only - E3 took the board and E4 the party money', () => {
     const mobileParties = source('components/mobile/parties/MobileParties.tsx');
     expect(mobileParties).toContain('toast(EVENT_WRITE_PENDING)');
     // Check-in, reprint and check-out still wait for E3; the payment and the F&B do not.
@@ -271,11 +275,12 @@ describe("the pass flow's words are the prototype's", () => {
       "toast({ title: 'Could not sell pass', description: sold.message, variant: 'destructive' });",
       "title: 'Pass sold — left as booked',",
       'description: `${attendee.name} added to ${ev.title}. Check in later from the roster.${notYetInApp}`,',
-      // E2 fix round (finding 10): "Check in now" says the child is NOT checked
-      // in, with the gate's instruction — not the prototype's words for a
-      // check-in that ran and minted no band.
-      "title: 'Pass sold — not checked in',",
-      'description: `${attendee.name} is on the ${ev.title} roster. ${EVENT_CHECKIN_NOT_YET}${notYetInApp}`,',
+      // E3: "Check in now" checks the child in on the platform, in the
+      // prototype's words (`handleEventPassCheckIn`), and a check-in the
+      // platform refused leaves the pass sold with the reason said.
+      "title: 'Pass sold — checked in',",
+      "description: `${attendee.name} — ${bandLineOf(outcome.answer)}${printed ? '' : ' · no printer — band not printed'}${notYetInApp}`,",
+      "title: 'Pass sold',",
       'New guest — enter name',
       "recognised. Enter the guest's name to register them so they're remembered next time.",
       'Name / nickname',
@@ -293,8 +298,10 @@ describe("the pass flow's words are the prototype's", () => {
     const board = source('pages/DropOff.tsx');
     for (const words of [
       "toast({ title: 'Could not add attendee', description: sold.message, variant: 'destructive' });",
-      "title: 'Added — not checked in',",
-      'description: `${attendee.name} is on the ${ev.title} roster. ${EVENT_CHECKIN_NOT_YET}${notYetInApp}`,',
+      // E3: the prototype's words for "Add & check in" (`handleAddAttendeeCheckIn`).
+      "title: 'Checked in',",
+      "description: `${attendee.name} — ${bandLineOf(outcome.answer)}${printed ? '' : ' · no printer — band not printed'}${notYetInApp}`,",
+      "title: 'Added',",
       "title: 'Pass sold — left as booked',",
     ]) {
       expect(board, words).toContain(words);
@@ -322,10 +329,10 @@ describe("the pass flow's words are the prototype's", () => {
     expect(list).toContain("{attendee.syncState === 'failed' ? 'Refused' : 'Pending'}");
   });
 
-  it("“Check in now” keeps the gate's instruction for the check-in it cannot do yet (finding 10)", () => {
-    expect(source('api/events.ts')).toContain(
-      "export const EVENT_CHECKIN_NOT_YET = 'Checking in is not on the platform yet — use the OTO App for now.';",
-    );
+  it('“Check in now” no longer needs the gate’s instruction: E3 checks the child in (finding 10, closed)', () => {
+    expect(source('api/events.ts')).not.toContain('EVENT_CHECKIN_NOT_YET');
+    expect(source('pages/Till.tsx')).not.toContain('EVENT_CHECKIN_NOT_YET');
+    expect(source('pages/DropOff.tsx')).not.toContain('EVENT_CHECKIN_NOT_YET');
   });
 });
 

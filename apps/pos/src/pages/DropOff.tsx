@@ -2,21 +2,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent, EventAttendee, AuthorizedPickupSource } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
+import { type NewEventAttendeeInput } from '@/mockApi';
+import { EVENT_CHECKIN_REFUSALS, newId, type EventCheckinAnswer } from '@oto/shared';
 import {
-  getEventById,
-  checkInEventAttendee,
-  checkOutEventAttendee,
-  type NewEventAttendeeInput,
-} from '@/mockApi';
-import { newId } from '@oto/shared';
-import {
-  EVENT_CHECKIN_NOT_YET,
-  EVENT_WRITE_PENDING,
+  bandLineOf,
+  checkInOnPlatform,
+  checkOutOnPlatform,
   eventWriteBlocker,
   eventsToday,
+  printJobsOf,
+  reprintOnPlatform,
   sellOnPlatform,
   useEventDropInPricing,
   useEventsForDate,
+  type EventCheckinIds,
   type EventWriteIds,
 } from '@/api/events';
 import type { ReleaseView } from '@oto/shared';
@@ -37,10 +36,8 @@ import { useBranch } from '@/branch/BranchContext';
 import { remainingMinutes, dueState } from '@/lib/dropoff';
 import { resolveRateToday } from '@/lib/pricingMode';
 import { setDropOffHandoff } from '@/lib/dropoffHandoff';
-import { useOperator } from '@/auth/OperatorContext';
 import { useStation } from '@/station/StationContext';
-import { eventBraceletPrintJobs, dispatchPrintJobs } from '@/lib/printRouting';
-import { dispatchEventBracelets } from '@/lib/eventPass';
+import { dispatchPlatformPrinting } from '@/lib/printRouting';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -143,7 +140,6 @@ function checkInToEdits(c: CheckIn): CheckInEdits {
 }
 
 export default function DropOff() {
-  const { operator } = useOperator();
   const { station } = useStation();
   const [, navigate] = useLocation();
   const search = useSearch();
@@ -186,89 +182,114 @@ export default function DropOff() {
     [selectedEventId, todaysEvents],
   );
 
-  const operatorName = operator?.name ?? 'Unknown';
-  const operatorId = operator?.id ?? 'unknown';
-
   /**
-   * S2-20 E1 — the board's events are the OTO App's now, which the prototype's
-   * in-memory mutators cannot find: checking in or out and a reprint are
-   * written on the platform by E3, and until then say so rather than answer
-   * "already checked in" for a child nobody checked in. (A walk-up is on the
-   * platform since E2: `handleAddAttendeeSell`.)
+   * S2-20 E3 — check-in, check-out and reprint are on the platform: the bands
+   * minted, signed and printed there and the OTO App told — or, with the link
+   * down, on this counter's box (`api/events.ts`, `viaLane`). One check-in id
+   * per child's day, kept while a retry may replay it, so a press through a
+   * dropped connection never bands a child twice.
    */
-  const writePending = (eventId: string): boolean => {
-    if (getEventById(eventId)) return false;
-    toast(EVENT_WRITE_PENDING);
-    return true;
+  const checkinIdsRef = useRef(new Map<string, EventCheckinIds>());
+  const checkInChild = async (ev: OtoEvent, attendeeId: string) => {
+    const key = `${ev.id}|${attendeeId}|${today}`;
+    let ids = checkinIdsRef.current.get(key);
+    if (!ids) {
+      ids = { checkinId: newId(), actionId: newId() };
+      checkinIdsRef.current.set(key, ids);
+    }
+    const outcome = await checkInOnPlatform({
+      event: ev,
+      attendeeId,
+      branchSlug: branchId,
+      stationId: station?.stationId,
+      ids,
+    });
+    if (outcome.ok || !outcome.retryable) checkinIdsRef.current.delete(key);
+    return outcome;
   };
 
-  const handleEventCheckIn = (eventId: string, attendeeId: string) => {
-    if (writePending(eventId)) return;
-    const result = checkInEventAttendee(eventId, attendeeId, today, { operatorName, operatorId });
-    if (!result) {
-      toast({ title: 'Already checked in', description: 'This child is already checked in for today.' });
+  /**
+   * What the platform put on paper, in the till's own two toasts (the shared
+   * seam the prototype's `dispatchEventBracelets` used). False when nothing
+   * went to a printer.
+   */
+  const announceBands = (answer: EventCheckinAnswer): boolean => {
+    if (answer.printJobs.length === 0) {
+      if (answer.notes.length > 0 && station) dispatchPlatformPrinting([], answer.notes);
+      return false;
+    }
+    dispatchPlatformPrinting(printJobsOf(answer), answer.notes);
+    return answer.printJobs.some((j) => j.status === 'queued' || j.status === 'printed');
+  };
+
+  const handleEventCheckIn = async (eventId: string, attendeeId: string) => {
+    const ev = todaysEvents.find((e) => e.id === eventId);
+    if (!ev) return;
+    const outcome = await checkInChild(ev, attendeeId);
+    if (!outcome.ok) {
+      toast(
+        outcome.code === EVENT_CHECKIN_REFUSALS.alreadyIn.code
+          ? { title: 'Already checked in', description: 'This child is already checked in for today.' }
+          : { ...outcome.toast, variant: 'destructive' },
+      );
       refreshEvents();
       return;
     }
 
-    // Dispatch bracelet print jobs through the active station (shared seam).
-    const ev = todaysEvents.find((e) => e.id === eventId);
-    if (ev && !dispatchEventBracelets(station, ev, result, today)) {
+    // The bands print at the active station (the platform's print seam).
+    if (!announceBands(outcome.answer) && !station) {
       toast({
         title: 'Checked in — no printer',
         description: 'Check-in recorded. No station configured — bracelet not printed.',
       });
     }
 
+    const name = ev.attendees?.find((a) => a.id === attendeeId)?.name ?? 'Child';
     toast({
       title: 'Checked in',
-      description: `${result.attendee.name} — band ${result.wristbandCode}${result.parentWristbandCode ? ` · parent ${result.parentWristbandCode}` : ''}`,
+      description: `${name} — ${bandLineOf(outcome.answer)}`,
     });
     refreshEvents();
   };
 
-  const handleEventCheckOut = (eventId: string, attendeeId: string) => {
-    if (writePending(eventId)) return;
-    const att = checkOutEventAttendee(eventId, attendeeId, today, { operatorName, operatorId });
-    if (att) {
-      toast({ title: 'Checked out', description: `${att.name} has been checked out.` });
+  const handleEventCheckOut = async (eventId: string, attendeeId: string) => {
+    const ev = todaysEvents.find((e) => e.id === eventId);
+    if (!ev) return;
+    const outcome = await checkOutOnPlatform({ event: ev, attendeeId, branchSlug: branchId, stationId: station?.stationId });
+    if (outcome.ok) {
+      const name = ev.attendees?.find((a) => a.id === attendeeId)?.name ?? 'Child';
+      toast({ title: 'Checked out', description: `${name} has been checked out.` });
+    } else {
+      toast({ ...outcome.toast, variant: 'destructive' });
     }
     refreshEvents();
   };
 
   // Reprint a lost band for an already-checked-in attendee, reusing the stored
-  // wristband code(s) — does not touch the check-in record.
-  const handleEventReprint = (eventId: string, attendeeId: string) => {
+  // bands — does not touch the check-in record.
+  const handleEventReprint = async (eventId: string, attendeeId: string) => {
     const ev = todaysEvents.find((e) => e.id === eventId);
     const attendee = ev?.attendees?.find((a) => a.id === attendeeId);
     const record = attendee?.checkinByDate?.[today];
     if (!ev || !attendee || !record?.checkedInAt || record.checkedOutAt) return;
-    // No band code is known for a check-in the platform did not make (E3).
-    if (writePending(eventId)) return;
-    if (!station) {
+    if (!station?.stationId) {
       toast({
         title: 'No printer',
         description: 'No station configured — band not reprinted.',
       });
       return;
     }
-    const jobs = eventBraceletPrintJobs(station, {
-      eventTitle: ev.title,
-      eventDate: today,
-      startTime: ev.startTime,
-      endTime: ev.endTime,
-      kidName: attendee.name,
-      wristbandCode: record.wristbandCode,
-      dietaryDetail: attendee.dietaryFlag ? attendee.dietaryDetail : undefined,
-      allergyDetail: attendee.allergyFlag ? attendee.allergyDetail : undefined,
-      parentName: record.parentWristbandCode ? attendee.parentName : undefined,
-      parentWristbandCode: record.parentWristbandCode,
-    });
-    dispatchPrintJobs(jobs);
+    const outcome = await reprintOnPlatform({ event: ev, attendeeId, branchSlug: branchId, stationId: station.stationId });
+    if (!outcome.ok) {
+      toast({ ...outcome.toast, variant: 'destructive' });
+      return;
+    }
+    dispatchPlatformPrinting(printJobsOf(outcome.answer), outcome.answer.notes);
     toast({
       title: 'Band reprinted',
-      description: `${attendee.name} — band ${record.wristbandCode}${record.parentWristbandCode ? ` · parent ${record.parentWristbandCode}` : ''}`,
+      description: `${attendee.name} — ${bandLineOf(outcome.answer)}`,
     });
+    refreshEvents();
   };
 
   // ─── Walk-up attendee (add at the door) ──────────────────────────────────
@@ -346,7 +367,7 @@ export default function DropOff() {
   };
 
   // Step 2: resolve the check-in choice for the already-persisted attendee.
-  const handleAddAttendeeCheckIn = (checkInNow: boolean) => {
+  const handleAddAttendeeCheckIn = async (checkInNow: boolean) => {
     const ev = selectedEvent;
     const attendee = addedAttendee;
     if (!ev || !attendee) {
@@ -362,15 +383,21 @@ export default function DropOff() {
       ? ' The OTO App has not confirmed them yet.'
       : '';
     if (checkInNow) {
-      // S2-20 E2 — checking in on the platform (the bands) is E3. Until then
-      // the child is on the roster, NOT checked in — a party's "Add & check
-      // in" included — and the toast says so with the gate's own instruction
-      // (E2 review, finding 10), never the prototype's words for a check-in
-      // that ran and minted no band.
-      toast({
-        title: 'Added — not checked in',
-        description: `${attendee.name} is on the ${ev.title} roster. ${EVENT_CHECKIN_NOT_YET}${notYetInApp}`,
-      });
+      // S2-20 E3 — checked in on the platform, bands and all (the prototype's
+      // `checkInSoldPass`), a party's "Add & check in" included.
+      const outcome = await checkInChild(ev, attendee.id);
+      if (outcome.ok) {
+        const printed = announceBands(outcome.answer);
+        toast({
+          title: 'Checked in',
+          description: `${attendee.name} — ${bandLineOf(outcome.answer)}${printed ? '' : ' · no printer — band not printed'}${notYetInApp}`,
+        });
+      } else {
+        toast({
+          title: 'Added',
+          description: `${attendee.name} is on the ${ev.title} roster. ${outcome.toast.description}${notYetInApp}`,
+        });
+      }
     } else {
       toast({
         title: 'Pass sold — left as booked',

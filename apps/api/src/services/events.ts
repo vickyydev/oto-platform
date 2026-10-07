@@ -578,6 +578,7 @@ export async function eventsCacheItem(
         parentName: a.parentName,
         parentAttending: a.parentAttending,
         attendsOnDate: a.attendsOnDate,
+        ...(e.type === 'camp' && !a.attendsAllDays ? { attendanceDays: a.attendanceDays } : {}),
         bucket: a.bucket,
         checkin: onDate
           ? {

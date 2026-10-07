@@ -1,13 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ReleaseView } from '@oto/shared';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EVENT_CHECKIN_REFUSALS, newId, type ReleaseView } from '@oto/shared';
 import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
 import {
-  getEventById,
-  checkInEventAttendee,
-  checkOutEventAttendee,
-} from '@/mockApi';
-import { EVENT_WRITE_PENDING, eventsToday, useEventsForDate } from '@/api/events';
+  bandLineOf,
+  checkInOnPlatform,
+  checkOutOnPlatform,
+  eventsToday,
+  printJobsOf,
+  reprintOnPlatform,
+  useEventsForDate,
+  type EventCheckinIds,
+} from '@/api/events';
 import {
   boardApi,
   boardChildToCheckIn,
@@ -23,8 +27,7 @@ import { releaseApi } from '@/api/release';
 import { CheckInBookedModal, type BookedCheckInItem } from '@/components/dropoff/CheckInBookedModal';
 import { remainingMinutes, dueState } from '@/lib/dropoff';
 import { setDropOffHandoff } from '@/lib/dropoffHandoff';
-import { eventBraceletPrintJobs, dispatchPrintJobs } from '@/lib/printRouting';
-import { useOperator } from '@/auth/OperatorContext';
+import { dispatchPlatformPrinting } from '@/lib/printRouting';
 import { useStation } from '@/station/StationContext';
 import { useBranch } from '@/branch/BranchContext';
 import { useLocation } from 'wouter';
@@ -134,7 +137,6 @@ function checkInToEdits(c: CheckIn): CheckInEdits {
  * link is down.
  */
 export function MobileDropOffBoard() {
-  const { operator } = useOperator();
   const { t } = useLanguage();
   const [, navigate] = useLocation();
 
@@ -347,8 +349,6 @@ export function MobileDropOffBoard() {
   const [consentAck, setConsentAck] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
 
-  const operatorName = operator?.name ?? 'Unknown';
-  const operatorId = operator?.id ?? 'unknown';
 
   // ── Events check-in board (door check-in into today's events) ───────────────
   const today = todayISO();
@@ -376,17 +376,6 @@ export function MobileDropOffBoard() {
     [dayEvents],
   );
 
-  /**
-   * S2-20 E1 — the events are the OTO App's now, which the prototype's
-   * in-memory mutators cannot find: a check-in, a check-out and a reprint are
-   * written on the platform by E3, and until then say so rather than answer
-   * "already checked in" for a child nobody checked in.
-   */
-  const writePending = (eventId: string): boolean => {
-    if (getEventById(eventId)) return false;
-    toast(EVENT_WRITE_PENDING);
-    return true;
-  };
   const selectedEvent = useMemo(
     () => (selectedEventId ? todaysEvents.find((e) => e.id === selectedEventId) ?? null : null),
     [selectedEventId, todaysEvents],
@@ -402,81 +391,84 @@ export function MobileDropOffBoard() {
     return n;
   }, [todaysEvents, today]);
 
-  const handleEventCheckIn = (eventId: string, attendeeId: string) => {
-    if (writePending(eventId)) return;
-    const result = checkInEventAttendee(eventId, attendeeId, today, { operatorName, operatorId });
-    if (!result) {
-      toast({ title: 'Already checked in', description: 'This child is already checked in for today.' });
+  /**
+   * S2-20 E3 — check-in, check-out and reprint are on the platform: the bands
+   * minted, signed and printed there and the OTO App told — or, with the link
+   * down, on this counter's box (`api/events.ts`, `viaLane`). One check-in id
+   * per child's day, kept while a retry may replay it.
+   */
+  const checkinIdsRef = useRef(new Map<string, EventCheckinIds>());
+
+  const handleEventCheckIn = async (eventId: string, attendeeId: string) => {
+    const ev = todaysEvents.find((e) => e.id === eventId);
+    if (!ev) return;
+    const key = `${eventId}|${attendeeId}|${today}`;
+    let ids = checkinIdsRef.current.get(key);
+    if (!ids) {
+      ids = { checkinId: newId(), actionId: newId() };
+      checkinIdsRef.current.set(key, ids);
+    }
+    const outcome = await checkInOnPlatform({ event: ev, attendeeId, branchSlug: branch.id, stationId: station?.stationId, ids });
+    if (outcome.ok || !outcome.retryable) checkinIdsRef.current.delete(key);
+    if (!outcome.ok) {
+      toast(
+        outcome.code === EVENT_CHECKIN_REFUSALS.alreadyIn.code
+          ? { title: 'Already checked in', description: 'This child is already checked in for today.' }
+          : { ...outcome.toast, variant: 'destructive' },
+      );
       refreshEvents();
       return;
     }
-    const ev = todaysEvents.find((e) => e.id === eventId);
-    if (ev) {
-      if (station) {
-        const jobs = eventBraceletPrintJobs(station, {
-          eventTitle: ev.title,
-          eventDate: today,
-          startTime: ev.startTime,
-          endTime: ev.endTime,
-          kidName: result.attendee.name,
-          wristbandCode: result.wristbandCode,
-          dietaryDetail: result.attendee.dietaryFlag ? result.attendee.dietaryDetail : undefined,
-          allergyDetail: result.attendee.allergyFlag ? result.attendee.allergyDetail : undefined,
-          parentName: result.parentWristbandCode ? result.attendee.parentName : undefined,
-          parentWristbandCode: result.parentWristbandCode,
-        });
-        dispatchPrintJobs(jobs);
-      } else {
-        toast({
-          title: 'Checked in — no printer',
-          description: 'Check-in recorded. No station configured — bracelet not printed.',
-        });
-      }
+    const jobs = printJobsOf(outcome.answer);
+    if (jobs.length > 0 || (outcome.answer.notes.length > 0 && station)) {
+      dispatchPlatformPrinting(jobs, outcome.answer.notes);
+    } else if (!station) {
+      toast({
+        title: 'Checked in — no printer',
+        description: 'Check-in recorded. No station configured — bracelet not printed.',
+      });
     }
+    const name = ev.attendees?.find((a) => a.id === attendeeId)?.name ?? 'Child';
     toast({
       title: 'Checked in',
-      description: `${result.attendee.name} — band ${result.wristbandCode}${result.parentWristbandCode ? ` · parent ${result.parentWristbandCode}` : ''}`,
+      description: `${name} — ${bandLineOf(outcome.answer)}`,
     });
     refreshEvents();
   };
 
-  const handleEventCheckOut = (eventId: string, attendeeId: string) => {
-    if (writePending(eventId)) return;
-    const att = checkOutEventAttendee(eventId, attendeeId, today, { operatorName, operatorId });
-    if (att) {
-      toast({ title: 'Checked out', description: `${att.name} has been checked out.` });
+  const handleEventCheckOut = async (eventId: string, attendeeId: string) => {
+    const ev = todaysEvents.find((e) => e.id === eventId);
+    if (!ev) return;
+    const outcome = await checkOutOnPlatform({ event: ev, attendeeId, branchSlug: branch.id, stationId: station?.stationId });
+    if (outcome.ok) {
+      const name = ev.attendees?.find((a) => a.id === attendeeId)?.name ?? 'Child';
+      toast({ title: 'Checked out', description: `${name} has been checked out.` });
+    } else {
+      toast({ ...outcome.toast, variant: 'destructive' });
     }
     refreshEvents();
   };
 
-  const handleEventReprint = (eventId: string, attendeeId: string) => {
+  const handleEventReprint = async (eventId: string, attendeeId: string) => {
     const ev = todaysEvents.find((e) => e.id === eventId);
     const attendee = ev?.attendees?.find((a) => a.id === attendeeId);
     const record = attendee?.checkinByDate?.[today];
     if (!ev || !attendee || !record) return;
-    // No band code is known for a check-in the platform did not make (E3).
-    if (writePending(eventId)) return;
-    if (!station) {
+    if (!station?.stationId) {
       toast({ title: 'No printer configured', description: 'Set up this station before reprinting a band.' });
       return;
     }
-    const jobs = eventBraceletPrintJobs(station, {
-      eventTitle: ev.title,
-      eventDate: today,
-      startTime: ev.startTime,
-      endTime: ev.endTime,
-      kidName: attendee.name,
-      wristbandCode: record.wristbandCode,
-      dietaryDetail: attendee.dietaryFlag ? attendee.dietaryDetail : undefined,
-      allergyDetail: attendee.allergyFlag ? attendee.allergyDetail : undefined,
-      parentName: record.parentWristbandCode ? attendee.parentName : undefined,
-      parentWristbandCode: record.parentWristbandCode,
-    });
-    dispatchPrintJobs(jobs);
+    const outcome = await reprintOnPlatform({ event: ev, attendeeId, branchSlug: branch.id, stationId: station.stationId });
+    if (!outcome.ok) {
+      toast({ ...outcome.toast, variant: 'destructive' });
+      return;
+    }
+    dispatchPlatformPrinting(printJobsOf(outcome.answer), outcome.answer.notes);
     toast({
       title: 'Reprinting band',
-      description: `${attendee.name} — band ${record.wristbandCode}${record.parentWristbandCode ? ` · parent ${record.parentWristbandCode}` : ''}`,
+      description: `${attendee.name} — ${bandLineOf(outcome.answer)}`,
     });
+    refreshEvents();
   };
 
   /** The park's policy for unused prepaid food — the release view shows the platform's own answer once it has it. */

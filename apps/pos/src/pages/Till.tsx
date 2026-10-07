@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { CustomerTier, CartLine, CheckIn, ContactChannel, Discount, ManualDiscount, Sale, SaleQuotedPricing, TicketType, Member, TierVerification, DropOffServiceType, SelectedAddOn, INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import type { DiscountComponentOption } from '@/components/shared/ManualDiscountModal';
 import { useStation } from '@/station/StationContext';
-import { announceSalePrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
+import { announceSalePrinting, dispatchPlatformPrinting, dispatchPrintJobs, promptSetupStation, ticketPrintJobs } from '@/lib/printRouting';
 import { announceBookingRedemption, redeemBookingOnPlatform, redeemedOutcome } from '@/lib/bookingRedemption';
 import { takeCorrectedOrder } from '@/lib/correctedOrder';
 import { takeDropOffHandoff } from '@/lib/dropoffHandoff';
@@ -54,9 +54,11 @@ import {
 } from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
 import {
-  EVENT_CHECKIN_NOT_YET,
+  bandLineOf,
+  checkInOnPlatform,
   eventWriteBlocker,
   eventsToday,
+  printJobsOf,
   sellOnPlatform,
   useEventPasses,
   type EventWriteIds,
@@ -298,6 +300,8 @@ export default function Till() {
   // form is first sent, kept for every retry of a lost answer (the platform
   // then answers what it made), dropped with the form or after a refusal.
   const eventPassIdsRef = useRef<EventWriteIds | null>(null);
+  // S2-20 E3 — the check-in id "Check in now" sends, kept while a retry may replay it.
+  const eventPassCheckinIdRef = useRef<string | null>(null);
 
   const closeEventPass = () => {
     setEventPassFor(null);
@@ -305,6 +309,7 @@ export default function Till() {
     setEventPassPrefilledMember(null);
     setEventPassesTick((t) => t + 1);
     eventPassIdsRef.current = null;
+    eventPassCheckinIdRef.current = null;
   };
 
   // Step 1 of the pass flow: create + bill the attendee (at payment confirmation).
@@ -342,7 +347,7 @@ export default function Till() {
   };
 
   // Step 2: resolve the check-in choice for the already-persisted attendee.
-  const handleEventPassCheckIn = (checkInNow: boolean) => {
+  const handleEventPassCheckIn = async (checkInNow: boolean) => {
     const ev = eventPassFor;
     const attendee = eventPassAttendee;
     if (!ev || !attendee || !operator) {
@@ -355,15 +360,33 @@ export default function Till() {
       ? ' The OTO App has not confirmed them yet.'
       : '';
     if (checkInNow) {
-      // S2-20 E2 — checking a child in on the platform (the bands, the
-      // roster's check-in) is the next round, E3. Until then the pass is sold
-      // and the child is on the roster, NOT checked in, and the toast says so
-      // with the gate's own instruction (E2 review, finding 10) — never the
-      // prototype's words for a check-in that ran and minted no band.
-      toast({
-        title: 'Pass sold — not checked in',
-        description: `${attendee.name} is on the ${ev.title} roster. ${EVENT_CHECKIN_NOT_YET}${notYetInApp}`,
+      // S2-20 E3 — `checkInSoldPass`, on the platform: the child checked in
+      // for today, the kid band (and the parent band) minted and printed at
+      // this station, the OTO App told. The ids are the pass's own, so a
+      // retry through a dropped connection replays rather than bands twice.
+      const outcome = await checkInOnPlatform({
+        event: ev,
+        attendeeId: attendee.id,
+        branchSlug: branch.id,
+        stationId: station?.stationId,
+        ids: { checkinId: (eventPassCheckinIdRef.current ??= newId()), actionId: newId() },
       });
+      if (outcome.ok) {
+        eventPassCheckinIdRef.current = null;
+        const jobs = printJobsOf(outcome.answer);
+        if (jobs.length > 0 || outcome.answer.notes.length > 0) dispatchPlatformPrinting(jobs, outcome.answer.notes);
+        const printed = jobs.some((j) => j.status === 'queued' || j.status === 'printed');
+        toast({
+          title: 'Pass sold — checked in',
+          description: `${attendee.name} — ${bandLineOf(outcome.answer)}${printed ? '' : ' · no printer — band not printed'}${notYetInApp}`,
+        });
+      } else {
+        if (!outcome.retryable) eventPassCheckinIdRef.current = null;
+        toast({
+          title: 'Pass sold',
+          description: `${attendee.name} is on the ${ev.title} roster. ${outcome.toast.description}${notYetInApp}`,
+        });
+      }
     } else {
       toast({
         title: 'Pass sold — left as booked',

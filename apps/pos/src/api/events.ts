@@ -12,27 +12,38 @@
 //
 // S2-20 E2 adds the first writes: selling a pass and adding a walk-up
 // (`sellOnPlatform`, the port of `sellEventPass`), and the branch's walk-up
-// prices. S2-20 E4 puts the party tab on the platform (`api/parties.ts`).
-// Checking a child in or out and a reprint are written by E3; until then
-// those buttons answer with `EVENT_WRITE_PENDING` rather than act on an event
-// the mock store has never heard of.
+// prices. S2-20 E3 checks a child in and out and reprints their bands
+// (`checkInOnPlatform`, the port of `checkInEventAttendee`; `checkOutOnPlatform`;
+// `reprintOnPlatform`), on the platform or — with the link down — on the
+// counter's box, and reads today's events from the box then too. S2-20 E4
+// puts the party tab on the platform (`api/parties.ts`).
 
 import { useEffect, useRef, useState } from 'react';
-import type {
-  EventAttendeeCreateBody,
-  EventAttendeeInput,
-  EventAttendeeView,
-  EventAttendeeWriteAnswer,
-  EventCheckinView,
-  EventDayAnswer,
-  EventDropInPricing,
-  EventDropInPricingAnswer,
-  EventPartyWalkUpCharge,
-  EventPassSellBody,
-  EventPassesAnswer,
-  EventView,
-  PartyChargeView,
-  PartyPaymentView,
+import {
+  BRIDGE_EVENT_INTENTS,
+  EVENT_CHECKIN_REFUSALS,
+  eventRosterStats,
+  newId,
+  type BridgeEventsDayAnswer,
+  type EventAttendeeCreateBody,
+  type EventAttendeeInput,
+  type EventAttendeeView,
+  type EventAttendeeWriteAnswer,
+  type EventCheckinAnswer,
+  type EventCheckinBody,
+  type EventCheckinView,
+  type EventCheckoutBody,
+  type EventDayAnswer,
+  type EventDropInPricing,
+  type EventDropInPricingAnswer,
+  type EventPartyWalkUpCharge,
+  type EventPassSellBody,
+  type EventPassesAnswer,
+  type EventReprintBody,
+  type EventView,
+  type EventsCacheItem,
+  type PartyChargeView,
+  type PartyPaymentView,
 } from '@oto/shared';
 import type { NewEventAttendeeInput } from '@/mockApi';
 import type {
@@ -45,9 +56,11 @@ import type {
 } from '@/types';
 import { branchTradingDate, resolveRateToday, serverTradingDate } from '@/lib/pricingMode';
 import { paymentMethodKind } from '@/lib/payments';
-import { currentLane } from '@/lib/lane';
+import { currentLane, viaLane } from '@/lib/lane';
 import { apiBranchIdForSlug } from './catalogBridge';
-import { api, ApiError, NetworkError } from './client';
+import { api, ApiError, idemKey, NetworkError } from './client';
+import { bridgeApi, bridgeStaffName } from './bridge';
+import type { ApiSalePrintJob } from './history';
 
 /** A till with no platform branch, in the counter's words (like the check-in board's). */
 export const EVENTS_NOT_LINKED =
@@ -64,15 +77,6 @@ export const EVENT_WRITE_PENDING = {
   description: 'This event comes from the OTO App, and the till cannot change it here yet. Use the OTO App for now.',
 } as const;
 
-/**
- * S2-20 E2 (review, finding 10) — what a pass or walk-up says when staff chose
- * "Check in now" (or a party's "Add & check in"). The child is added on the
- * platform, but checking in — the bands — is E3's, so the toast says the child
- * is not checked in and keeps the gate's own instruction for that half, rather
- * than the prototype's words for a check-in that ran and minted no band.
- */
-export const EVENT_CHECKIN_NOT_YET = 'Checking in is not on the platform yet — use the OTO App for now.';
-
 /** The branch's trading day: the platform's answer while it is live, else this device's clock on the branch's calendar. */
 export function eventsToday(): string {
   return serverTradingDate() ?? branchTradingDate();
@@ -81,15 +85,18 @@ export function eventsToday(): string {
 const baht = (satang: number | null | undefined): number => (satang ?? 0) / 100;
 
 /**
- * One day's check-in, in the prototype's shape. The band codes are E3's — a
- * child checked in through the OTO App has none — so the badge reads "Band —"
- * rather than inventing one.
+ * One day's check-in, in the prototype's shape. S2-20 E3 — the band codes are
+ * the SHORT codes of the bands the POS printed (`T1-7KMQ4X`, what is under the
+ * QR; never the signed code, which is a gate credential); a child checked in
+ * through the OTO App alone has none, so the badge reads "Band —" rather than
+ * inventing one.
  */
 export function toEventCheckin(c: EventCheckinView): EventAttendeeCheckin {
   return {
     checkedInAt: c.checkedInAt ?? c.checkedOutAt ?? '',
     ...(c.status === 'checked_out' && c.checkedOutAt ? { checkedOutAt: c.checkedOutAt } : {}),
-    wristbandCode: '—',
+    wristbandCode: c.kidBandShortCode ?? '—',
+    ...(c.parentBandShortCode ? { parentWristbandCode: c.parentBandShortCode } : {}),
     operatorName: c.checkedInBy ?? '—',
     operatorId: '',
   };
@@ -237,9 +244,160 @@ function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+/** One intent to this till's box, answered in the platform's shape. */
+async function onBox<R>(stationId: string, type: string, payload: Record<string, unknown>, actionId?: string): Promise<R> {
+  const answer = await bridgeApi.intent<R>(stationId, type, payload, { actionId: actionId ?? newId() });
+  return answer.result as R;
+}
+
+/**
+ * S2-20 E3 — the box's copy of today's events, in the platform's day shape, so
+ * the board renders it through the same mapping. The copy is cut down to what
+ * a counter needs (no phones, no notes, no party bill), and names the bands by
+ * id, so a check-in made elsewhere reads "Band —" until the link is back.
+ */
+export function dayAnswerOfCacheItem(item: EventsCacheItem): EventDayAnswer {
+  const events: EventView[] = item.events.map((e) => {
+    const attendees: EventAttendeeView[] = e.attendees.map((a) => ({
+      id: a.id,
+      childId: a.id,
+      recordKind: e.type === 'camp' ? 'camp_registration' : 'event_attendee',
+      name: a.name,
+      age: a.age,
+      dateOfBirth: null,
+      language: null,
+      allergy: a.allergy,
+      dietary: a.dietary,
+      parentName: a.parentName,
+      parentPhone: null,
+      parentAttending: a.parentAttending,
+      // The board lights the day from this list: the registration's own days
+      // when it names them, else — every day of the camp — today.
+      attendanceDays: e.type !== 'camp' ? [] : (a.attendanceDays ?? (a.attendsOnDate ? [item.date] : [])),
+      attendsAllDays: false,
+      attendsOnDate: a.attendsOnDate,
+      notes: null,
+      isOneTime: false,
+      source: null,
+      checkins: a.checkin
+        ? [
+            {
+              date: item.date,
+              status: a.checkin.status,
+              checkedInAt: a.checkin.checkedInAt,
+              checkedInBy: null,
+              checkedOutAt: a.checkin.checkedOutAt,
+              checkedOutBy: null,
+              checkinRef: a.checkin.posCheckinId ?? null,
+              posCheckinId: a.checkin.posCheckinId ?? null,
+              kidBandShortCode: null,
+              parentBandShortCode: null,
+              syncState: null,
+            },
+          ]
+        : [],
+      bucket: a.bucket,
+      syncState: null,
+    }));
+    return {
+      id: e.id,
+      branchId: item.branchId,
+      type: e.type,
+      appEventType: e.type,
+      status: e.status,
+      appStatus: e.status,
+      archived: false,
+      title: e.title,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      cancelledDays: [],
+      startTime: e.startTime,
+      endTime: e.endTime,
+      location: e.location,
+      expectedKids: null,
+      expectedAdults: null,
+      entryPrice: e.entryPrice,
+      party: null,
+      attendeeCount: attendees.length,
+      attendees,
+      roster: eventRosterStats(attendees.map((a) => a.bucket)),
+    };
+  });
+  return { branchId: item.branchId, date: item.date, events };
+}
+
+/** The copy's words when the box has none for today. */
+const notOnBox = () => new Error(EVENT_CHECKIN_REFUSALS.notOnBox.message);
+
 export const eventsApi = {
+  /**
+   * S2-20 E3 — on the lane the arbiter says (`lib/lane.ts`): the platform
+   * while the link is up; with it down, today's events from the counter's box,
+   * so a child can still be checked in at the door.
+   */
   day: (branchId: string, date?: string) =>
-    api.get<EventDayAnswer>(`/events?branchId=${branchId}${date ? `&date=${date}` : ''}`),
+    viaLane(
+      () => api.get<EventDayAnswer>(`/events?branchId=${branchId}${date ? `&date=${date}` : ''}`),
+      async (stationId) => {
+        const answer = await onBox<BridgeEventsDayAnswer>(stationId, BRIDGE_EVENT_INTENTS.day, {});
+        if (!answer.item || (date && answer.item.date !== date)) throw notOnBox();
+        return dayAnswerOfCacheItem(answer.item);
+      },
+    ),
+  /**
+   * S2-20 E3 — check a child in for today: the bands minted and printed, the
+   * OTO App told. Keyed by the till's check-in id, so a retry through a
+   * dropped connection — on either lane — replays rather than banding twice.
+   */
+  checkin: (eventId: string, attendeeId: string, body: EventCheckinBody) =>
+    viaLane(
+      () =>
+        api.post<EventCheckinAnswer>(
+          `/events/${encodeURIComponent(eventId)}/attendees/${encodeURIComponent(attendeeId)}/checkin`,
+          body,
+          {
+            idempotencyKey: `event-checkin:${body.checkinId}`,
+            ...(body.actionId ? { headers: { 'x-oto-action-id': body.actionId } } : {}),
+          },
+        ),
+      (stationId) =>
+        onBox<EventCheckinAnswer>(
+          stationId,
+          BRIDGE_EVENT_INTENTS.checkin,
+          { eventId, attendeeId, checkinId: body.checkinId, staffName: bridgeStaffName() },
+          body.actionId,
+        ),
+    ),
+  checkout: (eventId: string, attendeeId: string, body: EventCheckoutBody) =>
+    viaLane(
+      () =>
+        api.post<EventCheckinAnswer>(
+          `/events/${encodeURIComponent(eventId)}/attendees/${encodeURIComponent(attendeeId)}/checkout`,
+          body,
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) =>
+        onBox<EventCheckinAnswer>(stationId, BRIDGE_EVENT_INTENTS.checkout, {
+          eventId,
+          attendeeId,
+          staffName: bridgeStaffName(),
+        }),
+    ),
+  reprint: (eventId: string, attendeeId: string, body: EventReprintBody) =>
+    viaLane(
+      () =>
+        api.post<EventCheckinAnswer>(
+          `/events/${encodeURIComponent(eventId)}/attendees/${encodeURIComponent(attendeeId)}/reprint`,
+          body,
+          { idempotencyKey: idemKey() },
+        ),
+      (stationId) =>
+        onBox<EventCheckinAnswer>(stationId, BRIDGE_EVENT_INTENTS.reprint, {
+          eventId,
+          attendeeId,
+          ...(body.reason ? { reason: body.reason } : {}),
+        }),
+    ),
   passes: (branchId: string, date?: string) =>
     api.get<EventPassesAnswer>(`/events/passes?branchId=${branchId}${date ? `&date=${date}` : ''}`),
   /**
@@ -437,6 +595,131 @@ export async function sellOnPlatform(args: {
       err.code === 'IDEMPOTENCY_IN_FLIGHT';
     return { ok: false, message: messageOf(err), retryable };
   }
+}
+
+// --- Check-in, check-out and reprint (S2-20 E3) -------------------------------------
+
+/** What a check-in, check-out or reprint press came to, for the screen to say in its own words. */
+export type EventCheckinOutcome =
+  | { ok: true; answer: EventCheckinAnswer }
+  | {
+      ok: false;
+      /** The prototype's toast for a refusal it had words for, else the platform's. */
+      toast: { title: string; description: string };
+      /** The platform's code, when it gave one. */
+      code: string | null;
+      /** Nothing answered, or a fault: the same ids may be sent again and replay. */
+      retryable: boolean;
+    };
+
+const REFUSAL_TITLES: Record<string, string> = Object.fromEntries(
+  Object.values(EVENT_CHECKIN_REFUSALS).map((r) => [r.code, r.title]),
+);
+
+function refusalOf(err: unknown, fallbackTitle: string): Extract<EventCheckinOutcome, { ok: false }> {
+  const code = err instanceof ApiError ? err.code : null;
+  const retryable =
+    err instanceof NetworkError || !(err instanceof ApiError) || err.status >= 500 || err.code === 'IDEMPOTENCY_IN_FLIGHT';
+  return {
+    ok: false,
+    toast: { title: (code && REFUSAL_TITLES[code]) || fallbackTitle, description: messageOf(err) },
+    code,
+    retryable,
+  };
+}
+
+/** The ids one check-in press is sent under, minted when it is pressed and kept for its retries. */
+export interface EventCheckinIds {
+  checkinId: string;
+  actionId: string;
+}
+
+/**
+ * `checkInEventAttendee` (mockApi.ts:3785), ON THE PLATFORM — or on the box
+ * with the link down. The bands are minted, signed and printed there; the
+ * answer names their short codes and the print jobs, and says what did not
+ * print.
+ */
+export async function checkInOnPlatform(args: {
+  event: Pick<OtoEvent, 'id'>;
+  attendeeId: string;
+  branchSlug: string;
+  stationId: string | null | undefined;
+  ids: EventCheckinIds;
+}): Promise<EventCheckinOutcome> {
+  const branchId = apiBranchIdForSlug(args.branchSlug);
+  if (!branchId) {
+    return { ok: false, toast: { title: 'Not linked to the platform', description: EVENTS_NOT_LINKED }, code: null, retryable: false };
+  }
+  try {
+    const answer = await eventsApi.checkin(args.event.id, args.attendeeId, {
+      branchId,
+      checkinId: args.ids.checkinId,
+      actionId: args.ids.actionId,
+      ...(args.stationId ? { stationId: args.stationId } : {}),
+    });
+    return { ok: true, answer };
+  } catch (err) {
+    return refusalOf(err, 'Could not check in');
+  }
+}
+
+/** `checkOutEventAttendee` (mockApi.ts:3846), on the platform or the box. */
+export async function checkOutOnPlatform(args: {
+  event: Pick<OtoEvent, 'id'>;
+  attendeeId: string;
+  branchSlug: string;
+  stationId: string | null | undefined;
+}): Promise<EventCheckinOutcome> {
+  const branchId = apiBranchIdForSlug(args.branchSlug);
+  if (!branchId) {
+    return { ok: false, toast: { title: 'Not linked to the platform', description: EVENTS_NOT_LINKED }, code: null, retryable: false };
+  }
+  try {
+    const answer = await eventsApi.checkout(args.event.id, args.attendeeId, {
+      branchId,
+      actionId: newId(),
+      ...(args.stationId ? { stationId: args.stationId } : {}),
+    });
+    return { ok: true, answer };
+  } catch (err) {
+    return refusalOf(err, 'Could not check out');
+  }
+}
+
+/** DropOff.tsx `handleEventReprint`, on the platform or the box: the same bands, fresh paper. */
+export async function reprintOnPlatform(args: {
+  event: Pick<OtoEvent, 'id'>;
+  attendeeId: string;
+  branchSlug: string;
+  stationId: string;
+}): Promise<EventCheckinOutcome> {
+  const branchId = apiBranchIdForSlug(args.branchSlug);
+  if (!branchId) {
+    return { ok: false, toast: { title: 'Not linked to the platform', description: EVENTS_NOT_LINKED }, code: null, retryable: false };
+  }
+  try {
+    const answer = await eventsApi.reprint(args.event.id, args.attendeeId, {
+      branchId,
+      stationId: args.stationId,
+      actionId: newId(),
+    });
+    return { ok: true, answer };
+  } catch (err) {
+    return refusalOf(err, 'Band not reprinted');
+  }
+}
+
+/** "band T1-7KMQ4X · parent T1-9QW2ZD", as the prototype's toast reads it. */
+export function bandLineOf(answer: EventCheckinAnswer): string {
+  const kid = answer.checkin.kidBand?.shortCode ?? '—';
+  const parent = answer.checkin.parentBand?.shortCode;
+  return `band ${kid}${parent ? ` · parent ${parent}` : ''}`;
+}
+
+/** The print jobs in the till's sale-print shape, for `dispatchPlatformPrinting`. */
+export function printJobsOf(answer: EventCheckinAnswer): ApiSalePrintJob[] {
+  return answer.printJobs as unknown as ApiSalePrintJob[];
 }
 
 /**
