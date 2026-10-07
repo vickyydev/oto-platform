@@ -484,6 +484,13 @@
       "when": 1791361382553,
       "tag": "0068_benefit_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1791369119839,
+      "tag": "0069_sale_line_prepaid_stay_index",
+      "breakpoints": true
     }
   ]
 }

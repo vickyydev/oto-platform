@@ -1,0 +1,13 @@
+-- SCRUM-502 — the prepaid food lines of one supervised stay, found by the stay.
+-- PROVISIONAL NUMBER: renumbered in landing order (lanes in flight take 0068
+-- and 0069 the same week). It is journal entry 68 on its own branch, so the
+-- journal's indexes stay unbroken there.
+--
+-- The platform counts what a box's own completed sales have served from each
+-- in-park stay's prepaid food (`boxPrepaidFiled`) every time it builds that
+-- box's check-in copy, and what open orders hold (`prepaidHeldOnOpenOrders`).
+-- Both look a stay up by `payload -> 'prepaid' ->> 'checkinId'` on
+-- `pos.sale_line`, which no index covered, so the lookup read every food line
+-- the park had sold and slowed as the history grew. Partial: only lines that
+-- name a stay are in it. Expand-only.
+CREATE INDEX "sale_line_prepaid_stay_idx" ON "pos"."sale_line" USING btree ((payload -> 'prepaid' ->> 'checkinId')) WHERE (payload -> 'prepaid' ->> 'checkinId') is not null;

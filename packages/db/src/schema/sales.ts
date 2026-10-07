@@ -771,6 +771,16 @@ export const saleLine = pos.table(
     index('sale_line_category_date_idx').on(t.taxableCategory, t.businessDate),
     index('sale_line_child_idx').on(t.childId),
     index('sale_line_band_idx').on(t.bandId),
+    /**
+     * SCRUM-502 — the prepaid lines served from one supervised stay, found by
+     * the stay rather than by reading every food line the park ever sold: the
+     * prepaid units a box's own sales have filed (`boxPrepaidFiled`, which rides
+     * every box's check-in copy) and the units held on open orders
+     * (`prepaidHeldOnOpenOrders`). Only lines that name a stay are in it.
+     */
+    index('sale_line_prepaid_stay_idx')
+      .on(sql`(payload -> 'prepaid' ->> 'checkinId')`)
+      .where(sql`(payload -> 'prepaid' ->> 'checkinId') is not null`),
     check(
       'sale_line_kind_check',
       sql`${t.kind} in ('kids','adults_paid','adults_free','socks','addon','service_fee','food_provision','promo_item','fnb_item','merch_item')`,
