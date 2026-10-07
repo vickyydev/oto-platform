@@ -383,7 +383,7 @@ export async function benefitRoutes(app: App): Promise<void> {
       config: { permission: 'pos:benefit:apply' },
       schema: {
         description:
-          'A scanned or typed staff benefit QR, resolved online: the staff member it names and the profile that applies to them today (the trading day of the session’s branch), with what of it a box may apply offline. Applies nothing and uses up nothing. Refused in the prototype’s words — `No staff benefit found for "<code>".` (404) for anything this park did not issue, `<name> has no benefit configured.` (409 `BENEFIT_NOT_CONFIGURED`) — and in the platform’s for a QR that is revoked (409 `BENEFIT_REVOKED`, "Benefit revoked"), expired, or whose holder has left.',
+          'A scanned or typed staff benefit QR, resolved online: the staff member it names and the profile that applies to them today (the trading day of the session’s branch), with what of it a box may apply offline. Applies nothing and uses up nothing. Refused in the prototype’s words — `No staff benefit found for "<code>".` (404, a benefit QR echoed only up to its signature) for anything this park did not issue, `<name> has no benefit configured.` (409 `BENEFIT_NOT_CONFIGURED`) — and in the platform’s for a QR that is revoked (409 `BENEFIT_REVOKED`, "Benefit revoked"), expired, or whose holder has left.',
         body: z.object({ code: z.string().min(1).max(512) }),
         response: {
           200: z.object({

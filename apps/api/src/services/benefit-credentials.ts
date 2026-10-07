@@ -529,8 +529,9 @@ export interface ResolvedBenefit {
  *
  * Refusals keep the prototype's words where it had them
  * (`BenefitScanModal.tsx:34-38`): anything that is not a QR this park issued is
- * `No staff benefit found for "<code>".`, and a person with nothing set up is
- * `<name> has no benefit configured.`
+ * `No staff benefit found for "<code>".` — a benefit QR echoed only up to its
+ * signature (`benefitCodeShown`), since a refused QR may still be a live one —
+ * and a person with nothing set up is `<name> has no benefit configured.`
  *
  * It applies nothing, uses up nothing and writes nothing — the quota is round
  * 3's, claimed inside the sale's own transaction, which is also where

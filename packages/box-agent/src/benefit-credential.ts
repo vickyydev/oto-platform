@@ -278,7 +278,12 @@ export const BENEFIT_CODE_HANDLER = 'benefit';
  * free items or credit is the cloud's and the till has to present the QR to
  * it — the voucher code travels for the same reason. The customer display
  * never receives `benefitCode` (`redactScanForCustomer` strips it), and the
- * tape keeps a fingerprint, as for every scan.
+ * tape keeps a fingerprint, as for every scan. A refusal travels with no
+ * `benefitCode` at all, and its words echo the QR only up to its signature
+ * (`BENEFIT_WORDS.notFound`, `benefitCodeShown` in `@oto/shared`): a QR this
+ * box refuses for reasons of its own — a key it has not pulled, a holder with
+ * no benefit today — is still a live credential, and its words reach every
+ * screen watching, the guest's included.
  */
 export function benefitCredentialHandler(
   read: () => Promise<BenefitBoxContext | null> | BenefitBoxContext | null,

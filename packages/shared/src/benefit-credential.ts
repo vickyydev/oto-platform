@@ -183,12 +183,45 @@ export type BenefitCredentialRefusal =
   (typeof BENEFIT_CREDENTIAL_REFUSALS)[keyof typeof BENEFIT_CREDENTIAL_REFUSALS];
 
 /**
+ * The longest signing input the v1 shape admits: header and version, two
+ * uuids, a twelve-digit expiry and a sixteen-character key id, with their
+ * colons. Nothing a refusal echoes of a benefit QR is longer than this.
+ */
+const SHOWN_MAX = 'OTO-BEN:v1:'.length + (36 + 1) * 2 + (12 + 1) + 16;
+
+/**
+ * What a refusal may say back of a scanned or typed code: anything without
+ * the benefit QR's header as it was read (the prototype's own echo), and a
+ * benefit QR only up to its signature — never the signature.
+ *
+ * A refused QR is not a dead one. A box that has not pulled a rotated key yet,
+ * a holder whose role is gone today and returns tomorrow, a park the QR is
+ * not from, and a QR with one id altered but its genuine signature still on
+ * it are all refused, and every one of them carries a signature that verifies
+ * somewhere. The words are shown on the till, ride the scan to every screen
+ * watching the station — the one facing the guest included — and sit in an
+ * error answer the replay store keeps, so they must hold nothing a camera
+ * could turn back into the QR. Cut at the first dot (the signing input has
+ * none) and, should a scanner have mangled the dot, at the length a signing
+ * input can be.
+ */
+export function benefitCodeShown(raw: string): string {
+  const code = raw.trim();
+  if (!hasBenefitCredentialHeader(code)) return code;
+  const dot = code.indexOf('.');
+  const unsigned = dot === -1 ? code : code.slice(0, dot);
+  return unsigned.length > SHOWN_MAX ? `${unsigned.slice(0, SHOWN_MAX)}…` : unsigned;
+}
+
+/**
  * What the till says. The first two are the prototype's own
- * (`BenefitScanModal.tsx:34-38`) and are kept word for word; the rest are the
- * platform's, for refusals the prototype could not make.
+ * (`BenefitScanModal.tsx:34-38`) and are kept word for word — `notFound`
+ * echoes what was read as the prototype does, short of a benefit QR's
+ * signature (`benefitCodeShown`); the rest are the platform's, for refusals
+ * the prototype could not make.
  */
 export const BENEFIT_WORDS = {
-  notFound: (code: string) => `No staff benefit found for "${code}".`,
+  notFound: (code: string) => `No staff benefit found for "${benefitCodeShown(code)}".`,
   notConfigured: (name: string) => `${name} has no benefit configured.`,
   revoked: (name: string | null) =>
     name

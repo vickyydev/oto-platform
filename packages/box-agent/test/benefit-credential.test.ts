@@ -258,7 +258,13 @@ test('H7: revoked, left, unknown and not-configured are refused — "Benefit rev
 
   const unknown = checkBenefitOnBox(qr(NOBODY), { scope: scope(), today: TODAY, now: NOW });
   assert.equal(!unknown.ok && unknown.refusal, BENEFIT_CREDENTIAL_REFUSALS.NOT_FOUND);
-  assert.equal(!unknown.ok && unknown.message, `No staff benefit found for "${qr(NOBODY)}".`);
+  // The prototype's words, echoing the QR only up to its signature: a QR
+  // refused here is still a live one, and the words reach every screen.
+  const nobody = qr(NOBODY);
+  assert.equal(
+    !unknown.ok && unknown.message,
+    `No staff benefit found for "${nobody.slice(0, nobody.lastIndexOf('.'))}".`,
+  );
 
   const nothingToday = checkBenefitOnBox(qr(DAO), { scope: scope(), today: TODAY, now: NOW });
   assert.equal(

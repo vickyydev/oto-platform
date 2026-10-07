@@ -386,7 +386,11 @@ describe('resolving a scanned QR (POST /benefits/resolve)', () => {
     const forged = await resolve(tampered);
     expect(forged.status).toBe(404);
     expect(forged.body.error!.code).toBe('BENEFIT_CREDENTIAL_INVALID');
-    expect(forged.body.error!.message).toBe(`No staff benefit found for "${tampered}".`);
+    // Echoed up to its signature and no further: the signature on an altered
+    // QR is still the genuine QR's own.
+    expect(forged.body.error!.message).toBe(
+      `No staff benefit found for "${tampered.slice(0, tampered.lastIndexOf('.'))}".`,
+    );
   });
 
   it('a person who has left is refused, and their QR joins the box’s list', async () => {
