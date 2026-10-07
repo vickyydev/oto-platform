@@ -90,11 +90,18 @@ export async function walletRoutes(app: App): Promise<void> {
    * — what the design's band carried (`types.ts:Wristband`). Either may be
    * absent; 404 only when the key names neither. The stay is read with
    * `pos:checkin:read` at the park and left out for an account without it.
+   *
+   * `stationTrading` (SCRUM-503), as the booking reads have it (SCRUM-477):
+   * with the station forced offline from the Console the platform refuses the
+   * scan as it refuses `/members/lookup`, so the till's lane arbiter moves the
+   * scan to the box (`checkin.band_food` and `wallet.lookup`) and the test
+   * state reads bands the way a real outage does. Before this a till in that
+   * state still read every band from the platform.
    */
   app.get(
     '/scan',
     {
-      config: { permission: 'pos:wallet:read', target: { branchId: 'query.branchId' } },
+      config: { permission: 'pos:wallet:read', target: { branchId: 'query.branchId' }, stationTrading: true },
       schema: {
         description:
           'The counter’s band scan: the wallet a key names (balance, keys, ledger) and the child’s in-park stay at this ' +

@@ -51,6 +51,9 @@ describe('route guards (S2-01b)', () => {
       'GET /bookings/by-reference/:reference',
       'GET /members/lookup',
       'GET /vouchers/lookup',
+      // SCRUM-503: the counter's band scan is read on the box once the station
+      // is forced offline, as a real outage reads it.
+      'GET /wallets/scan',
       'PATCH /members/:id',
       'PATCH /members/children/:childId',
       'POST /bookings/:id/redeem',

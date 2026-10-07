@@ -1696,6 +1696,23 @@ describe('forced-offline cloud trading is fenced by the selected virtual station
     expect((await commitCart(newId(), otherCookie, otherStationId)).statusCode).toBe(200);
   });
 
+  it('SCRUM-503 — the counter’s band scan is refused with the switch on, so the till reads the band on its box', async () => {
+    const scanUrl = `/wallets/scan?key=offline-proof-band&branchId=${proofBranchId}`;
+    // Off: the platform answers the scan (no wallet and no stay carry this key).
+    const before = await proof.app.inject({ method: 'GET', url: scanUrl, headers: { cookie: staffCookie } });
+    expect(before.statusCode, before.body).toBe(404);
+    expect(before.json().error.code).toBe('WALLET_NOT_FOUND');
+    // On: refused as every cloud trading read is, which is what moves the till's scan to its box.
+    await offline(true);
+    const during = await proof.app.inject({ method: 'GET', url: scanUrl, headers: { cookie: staffCookie } });
+    expect(during.statusCode, during.body).toBe(503);
+    expect(during.json().error.code).toBe('STATION_FORCED_OFFLINE');
+    // Another till, on a box nobody switched off, still scans on the platform.
+    expect((await proof.app.inject({ method: 'GET', url: scanUrl, headers: { cookie: otherCookie } })).statusCode).toBe(404);
+    await offline(false);
+    expect((await proof.app.inject({ method: 'GET', url: scanUrl, headers: { cookie: staffCookie } })).statusCode).toBe(404);
+  });
+
   it('does not mistake watchdog silence or a physical Pi for the virtual forced-offline toggle', async () => {
     await proof.db.update(box).set({ status: 'offline' }).where(eq(box.id, proofBoxId));
     expect((await proof.app.inject({ method: 'GET', url: lookupUrl, headers: { cookie: staffCookie } })).statusCode).toBe(200);
