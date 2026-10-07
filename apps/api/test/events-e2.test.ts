@@ -694,6 +694,148 @@ describe('check 7 — a forced write-back failure is pending, on the roster, and
   });
 });
 
+// =============================================================================
+// Check 7 — one Retry reaches every child an outage left waiting (E2 review, finding 1)
+// =============================================================================
+
+describe('check 7 — one Retry from a Failures group sends every child the outage left waiting', () => {
+  type RetryAnswer = { ok: boolean; outcome: string; syncState: string; sent: number; synced: number; waiting: number };
+
+  /** The links that still owe the app a write, oldest first. */
+  async function waiting(): Promise<string[]> {
+    const rows = await ctx.db
+      .select({ id: eventAttendeeLink.id })
+      .from(eventAttendeeLink)
+      .where(sql`${eventAttendeeLink.syncState} <> 'synced'`)
+      .orderBy(eventAttendeeLink.createdAt, eventAttendeeLink.id);
+    return rows.map((r) => r.id);
+  }
+
+  /** The newest failed run of one child — what the page's Retry presses for its group. */
+  async function failedRunOf(linkId: string) {
+    const [run] = await ctx.db
+      .select()
+      .from(opsRun)
+      .where(and(eq(opsRun.name, ATTENDEE_CREATE_RUN), eq(opsRun.outcome, 'failed'), sql`${opsRun.detail}->>'linkId' = ${linkId}`))
+      .orderBy(desc(opsRun.startedAt));
+    return run!;
+  }
+
+  /** A pass sold while the app is down: its sale stands and its child waits. */
+  async function soldInOutage(name: string): Promise<string> {
+    const attendeeId = newId();
+    plan.push('unreachable');
+    const res = await post<EventAttendeeWriteAnswer>(reception, `/events/${ev.workshop}/passes`, passBody({ attendeeId, name, tendered: 50_000 }));
+    expect(res.body.attendee.syncState).toBe('pending');
+    return attendeeId;
+  }
+
+  it('starts with nothing waiting, so every count below is this block\'s own', async () => {
+    expect(await waiting()).toEqual([]);
+  });
+
+  it('two children of one outage, one refusal of another kind: the outage\'s Retry sends both of its children and leaves the refusal alone', async () => {
+    const first = await soldInOutage('Ploy');
+    const second = await soldInOutage('Pim');
+    plan.push('refused');
+    const refusedId = newId();
+    const refused = await post<EventAttendeeWriteAnswer>(reception, `/events/${ev.free}/attendees`, attendeeBody({ attendeeId: refusedId, name: 'Fah' }));
+    expect(refused.body.attendee.syncState).toBe('failed');
+    expect(await waiting()).toEqual([first, second, refusedId]);
+
+    // The page's Retry for the outage's group: its newest run, which names `second`.
+    const before = calls.length;
+    const res = await post<RetryAnswer>(admin, `/ops/runs/${(await failedRunOf(second)).id}/retry`, {});
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body).toMatchObject({ ok: true, outcome: 'ok', syncState: 'synced', sent: 2, synced: 2, waiting: 0 });
+    // The pressed run's child first, then the rest oldest first; never the refusal.
+    expect(calls.slice(before).map((c) => c.body.id)).toEqual([second, first]);
+    expect(await linkOf(first)).toMatchObject({ syncState: 'synced', otoappAttendeeId: first, syncAttempts: 2 });
+    expect(await linkOf(second)).toMatchObject({ syncState: 'synced', otoappAttendeeId: second, syncAttempts: 2 });
+    expect(await linkOf(refusedId)).toMatchObject({ syncState: 'failed', syncAttempts: 1 });
+    expect((await appAttendees(ev.workshop)).filter((r) => r.id === first || r.id === second)).toHaveLength(2);
+    const [entry] = await ctx.db.select().from(auditLog).where(eq(auditLog.action, 'ops.run_retry')).orderBy(desc(auditLog.createdAt));
+    expect(entry!.after).toMatchObject({ integration: ATTENDEE_CREATE_RUN, linkId: second, sent: 2, synced: 2, waiting: 0 });
+
+    // The refusal's own group sends it — the cause fixed at the app, here the stub's next answer.
+    const own = await post<RetryAnswer>(admin, `/ops/runs/${(await failedRunOf(refusedId)).id}/retry`, {});
+    expect(own.body).toMatchObject({ outcome: 'ok', syncState: 'synced', sent: 1, waiting: 0 });
+    expect(await waiting()).toEqual([]);
+  });
+
+  it('the app still down: the Retry sends one child, stops, and says how many still wait', async () => {
+    const first = await soldInOutage('Nam');
+    const second = await soldInOutage('Nan');
+    const before = calls.length;
+    plan.push('unreachable');
+    const res = await post<RetryAnswer>(admin, `/ops/runs/${(await failedRunOf(second)).id}/retry`, {});
+    expect(res.body).toMatchObject({ ok: true, outcome: 'failed', syncState: 'pending', sent: 1, synced: 0, waiting: 2 });
+    expect(calls.length - before).toBe(1);
+    expect(await linkOf(first)).toMatchObject({ syncState: 'pending', syncAttempts: 1 });
+
+    // Back up: the same group's Retry finishes both.
+    const again = await post<RetryAnswer>(admin, `/ops/runs/${(await failedRunOf(second)).id}/retry`, {});
+    expect(again.body).toMatchObject({ outcome: 'ok', sent: 2, synced: 2, waiting: 0 });
+    expect(await waiting()).toEqual([]);
+  });
+
+  it('a child committed but never sent (the process stopped between the commit and the send) is reached by the next Retry', async () => {
+    const stranded = await soldInOutage('Kai');
+    // As if the send never ran: no attempt, no error, no run on the Failures page.
+    await ctx.db.delete(opsRun).where(sql`${opsRun.detail}->>'linkId' = ${stranded}`);
+    await ctx.db
+      .update(eventAttendeeLink)
+      .set({ syncAttempts: 0, syncError: null, lastSyncAt: null })
+      .where(eq(eventAttendeeLink.id, stranded));
+    const later = await soldInOutage('Dao');
+    const res = await post<RetryAnswer>(admin, `/ops/runs/${(await failedRunOf(later)).id}/retry`, {});
+    expect(res.body).toMatchObject({ outcome: 'ok', sent: 2, synced: 2, waiting: 0 });
+    expect(await linkOf(stranded)).toMatchObject({ syncState: 'synced', syncAttempts: 1 });
+  });
+
+  it('bounded, oldest first, and only where the caller may manage ops', async () => {
+    const { retryAttendeeWriteBack } = await import('../src/services/event-writes');
+    const a = await soldInOutage('A');
+    const b = await soldInOutage('B');
+    const c = await soldInOutage('C');
+    const deps = { db: ctx.db, directory };
+
+    // Reach at another branch only: the pressed child is sent (the route checked
+    // its branch), and nobody else at Central is.
+    let before = calls.length;
+    const narrow = await retryAttendeeWriteBack(deps, {
+      operatorId,
+      linkId: c,
+      errorCode: 'OTOAPP_DIRECTORY_UNREACHABLE',
+      reach: { kind: 'branches', branchIds: [chalong] },
+    });
+    expect(narrow).toMatchObject({ sent: 1, synced: 1, waiting: 0, stoppedEarly: false });
+    expect(calls.slice(before).map((x) => x.body.id)).toEqual([c]);
+    expect(await waiting()).toEqual([a, b]);
+
+    // A bound of one: the oldest first, and the rest still counted as waiting.
+    before = calls.length;
+    const bounded = await retryAttendeeWriteBack(deps, {
+      operatorId,
+      linkId: c,
+      errorCode: 'OTOAPP_DIRECTORY_UNREACHABLE',
+      reach: { kind: 'operator' },
+      limit: 1,
+    });
+    expect(bounded).toMatchObject({ sent: 1, synced: 1, waiting: 1 });
+    expect(calls.slice(before).map((x) => x.body.id)).toEqual([a]);
+    expect(await waiting()).toEqual([b]);
+
+    // Another operator's caller reaches nothing of this one.
+    await expect(
+      retryAttendeeWriteBack(deps, { operatorId: newId(), linkId: b, errorCode: null, reach: { kind: 'operator' } }),
+    ).rejects.toMatchObject({ statusCode: 404 });
+    const rest = await retryAttendeeWriteBack(deps, { operatorId, linkId: b, errorCode: null, reach: { kind: 'operator' } });
+    expect(rest).toMatchObject({ sent: 1, synced: 1, waiting: 0 });
+    expect(await waiting()).toEqual([]);
+  });
+});
+
 describe('who may', () => {
   it('signed out is 401; a role without the permission and another park are refused', async () => {
     const out = await post(null, `/events/${ev.free}/attendees`, attendeeBody({}));

@@ -286,7 +286,8 @@ export async function opsRoutes(app: App): Promise<void> {
       // The branch is on the run, so it is read before it is asked about.
       config: { dynamicPermission: true },
       schema: {
-        description: 'Run a failed scheduled job again. Only jobs; nothing else is safe from here',
+        description:
+          'Run a failed scheduled job again, or send again the OTO App write-backs of children a Failures group left waiting (`otoapp:attendee.create`, each under its own attendee id). Nothing else is safe from here',
         params: z.object({ runId: z.string().uuid() }),
       },
     },
@@ -297,21 +298,31 @@ export async function opsRoutes(app: App): Promise<void> {
       if (!run) throw errors.notFound('No such run');
       await requireOpsScope(req, run.branchId);
       /**
-       * S2-20 E2 — THE OTO APP WRITE-BACK OF A CHILD, sent again. The one
-       * integration built for it: the call carries the attendee id the till
+       * S2-20 E2 — THE OTO APP WRITE-BACKS OF CHILDREN, sent again. The one
+       * integration built for it: each call carries the attendee id the till
        * minted, so the app answers a second send as a replay, never a second
-       * child (H3). The run names the link in its detail; the link's own
-       * stored body is what is sent, under the same id.
+       * child (H3). The run names one link in its detail, but the page offers
+       * one Retry per group — every child one outage left behind — so the press
+       * sends that link first and then every other child still waiting within
+       * the caller's reach, oldest first and bounded (E2 review, finding 1;
+       * `retryAttendeeWriteBack`). Each link's own stored body is what is sent.
        */
       if (run.kind === 'integration' && isRetryableRun(run.kind, run.name)) {
         const linkId = (run.detail as { linkId?: unknown } | null)?.linkId;
         if (typeof linkId !== 'string') {
           throw errors.conflict('RUN_NOT_RETRYABLE', 'This run does not say which attendee it was writing');
         }
-        const link = await retryAttendeeWriteBack(
+        const swept = await retryAttendeeWriteBack(
           { db: app.db, directory: app.otoAppDirectory, log: req.log },
-          { operatorId: auth.operatorId, linkId, requestId: req.id },
+          {
+            operatorId: auth.operatorId,
+            linkId,
+            errorCode: run.errorCode,
+            reach: branchReach(await req.effectivePermissions(), 'admin:ops:manage', auth.operatorId),
+            requestId: req.id,
+          },
         );
+        const link = swept.link;
         await withTx(app.db, opCtx(req), 'ops.run_retry', async (tx) => {
           await audit.record(tx, {
             actorAccountId: auth.accountId,
@@ -321,13 +332,28 @@ export async function opsRoutes(app: App): Promise<void> {
             entityType: 'ops_run',
             entityId: run.id,
             actionId: link.actionId,
-            after: { integration: run.name, linkId: link.id, syncState: link.syncState },
+            after: {
+              integration: run.name,
+              linkId: link.id,
+              syncState: link.syncState,
+              sent: swept.sent,
+              synced: swept.synced,
+              waiting: swept.waiting,
+            },
             requestId: req.id,
           });
         });
-        // `ok` is "the retry was sent", as for a job: whether the app took it
-        // is `syncState`, and a failure again has a run of its own saying so.
-        return { ok: true as const, outcome: link.syncState === 'synced' ? 'ok' : 'failed', syncState: link.syncState };
+        // `ok` is "the retry was sent", as for a job. `outcome` is whether
+        // every child this Retry reaches is now in the app; each failure again
+        // has a run of its own saying so.
+        return {
+          ok: true as const,
+          outcome: link.syncState === 'synced' && swept.waiting === 0 ? 'ok' : 'failed',
+          syncState: link.syncState,
+          sent: swept.sent,
+          synced: swept.synced,
+          waiting: swept.waiting,
+        };
       }
       /**
        * A job is a sweep: running it again is the whole design. Everything

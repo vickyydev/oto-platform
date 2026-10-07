@@ -2823,7 +2823,11 @@ export async function failureGroups(db: Db, q: FailureQuery): Promise<FailurePag
     // already half-happened, and re-running it turns one failure into two
     // events. S2-20 E2 adds the one integration that is built to be sent
     // again: the OTO App write-back of a child, which carries the till's own
-    // attendee id and is a replay in the app, never a second child.
+    // attendee id and is a replay in the app, never a second child. A group of
+    // the app's refusals stays retryable on purpose: its cause is fixed at the
+    // app (the directory key, an event restored), and only then does a Retry
+    // help — it resends that group's refusals and never an unrelated one
+    // (`retryAttendeeWriteBack`).
     retryable: isRetryableRun(r.kind, r.name),
     branchId: r.branchId,
     stationId: r.stationId,

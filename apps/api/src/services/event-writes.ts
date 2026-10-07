@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import {
   account,
@@ -34,10 +34,16 @@ import {
   type EventWalkUpBilling,
 } from '@oto/shared';
 import { AppError, errors } from '../lib/errors';
+import type { BranchReach } from './access-control';
 import { audit } from './audit';
 import { recordRun } from './ops';
 import { OtoAppSeamNotGrantedError, getBranchEvent, type SeamEvent } from './otoapp-events';
-import type { DirectoryAttendeeBody, OtoAppDirectory } from './otoapp-directory';
+import type {
+  DirectoryAttendeeAnswer,
+  DirectoryAttendeeBody,
+  DirectoryOutcome,
+  OtoAppDirectory,
+} from './otoapp-directory';
 import type { DrawerKick } from './payments/drawer';
 import { commitSale, finaliseSale, resolvePricingScope, type ActorContext } from './sale';
 import { withTx, type Exec, type OpContext } from './tx';
@@ -554,10 +560,23 @@ export async function pushAttendee(
   linkId: string,
   meta: { requestId?: string | null } = {},
 ): Promise<LinkRow> {
+  return (await sendAttendee(deps, linkId, meta)).row;
+}
+
+/**
+ * One send, and what came of it: the link as it now stands, and the
+ * directory's answer — null when nothing was sent because the link was
+ * already synced. The sweep below reads the answer to know when to stop.
+ */
+async function sendAttendee(
+  deps: EventWriteDeps,
+  linkId: string,
+  meta: { requestId?: string | null },
+): Promise<{ row: LinkRow; outcome: DirectoryOutcome<DirectoryAttendeeAnswer> | null }> {
   const db = deps.db;
   const [row] = await db.select().from(eventAttendeeLink).where(eq(eventAttendeeLink.id, linkId)).limit(1);
   if (!row) throw errors.notFound('That attendee is not on record');
-  if (row.syncState === 'synced') return row;
+  if (row.syncState === 'synced') return { row, outcome: null };
   const body = row.writeback as DirectoryAttendeeBody | null;
   if (!body) throw new Error(`event attendee link ${row.id} is not synced and holds no write-back body`);
 
@@ -605,10 +624,10 @@ export async function pushAttendee(
     await recordRun(db, { ...runBase, outcome: 'ok' }).catch((err: unknown) =>
       deps.log?.error({ err, linkId: row.id }, 'the attendee write-back ran but its ops run could not be written'),
     );
-    if (updated) return updated;
+    if (updated) return { row: updated, outcome };
     // Another retry finished first; its row is the answer.
     const [now] = await db.select().from(eventAttendeeLink).where(eq(eventAttendeeLink.id, row.id)).limit(1);
-    return now ?? row;
+    return { row: now ?? row, outcome };
   }
 
   const state = outcome.retryable ? 'pending' : 'failed';
@@ -630,27 +649,141 @@ export async function pushAttendee(
   }).catch((err: unknown) =>
     deps.log?.error({ err, linkId: row.id }, 'the attendee write-back failed and its ops run could not be written'),
   );
-  if (updated) return updated;
+  if (updated) return { row: updated, outcome };
   const [now] = await db.select().from(eventAttendeeLink).where(eq(eventAttendeeLink.id, row.id)).limit(1);
-  return now ?? row;
+  return { row: now ?? row, outcome };
+}
+
+/** The most children one press of Retry sends; the rest wait for the next press. */
+export const WRITE_BACK_SWEEP_LIMIT = 50;
+
+/** What one press of Retry did. */
+export interface WriteBackSweep {
+  /** The child the pressed run names, as it now stands. */
+  link: LinkRow;
+  /** Children sent to the app by this press, that one included when it was sent. */
+  sent: number;
+  /** Of those, how many the app now holds. */
+  synced: number;
+  /**
+   * Children this Retry reaches that are still not in the app afterwards:
+   * not taken, past the bound, or held back because the app stopped answering.
+   */
+  waiting: number;
+  /** The sweep stopped before the end because the app did not answer, or refused the key. */
+  stoppedEarly: boolean;
 }
 
 /**
- * THE FAILURES PAGE'S RETRY of a write-back: the link the run names, inside
- * the caller's operator, sent again under the same id. The run's own branch
- * was already checked by the ops route; this checks the link agrees.
+ * Whether one answer says the rest of a sweep would fare no better: no answer
+ * or a fault (the app is still down), or the app refusing this deployment's
+ * key, which it would refuse for every other child too.
+ */
+const stopsTheSweep = (outcome: DirectoryOutcome<DirectoryAttendeeAnswer> | null): boolean =>
+  outcome !== null && !outcome.ok && (outcome.retryable || outcome.status === 401 || outcome.status === 403);
+
+/**
+ * THE FAILURES PAGE'S RETRY of a write-back — every child the outage left
+ * waiting, not only the one the pressed run names (E2 review, finding 1).
+ *
+ * The page groups failures by (kind, name, error code), so every child one
+ * outage left behind shares ONE group, and the page offers one Retry per
+ * group, on its newest run. Sending only that run's child stranded the others:
+ * every later press named a child already synced and sent nothing. So a press
+ * sends, under each child's own id (a replay in the app, never a second child):
+ *
+ *   1. the child the pressed run names, first;
+ *   2. then, oldest first and at most `WRITE_BACK_SWEEP_LIMIT` in all, every
+ *      other child of the caller's operator, at a branch the caller may manage
+ *      ops at, that still owes the app a write: each one `pending` (no answer,
+ *      a fault, or never sent at all — the process stopped between the commit
+ *      and the send) and each one `failed` with the pressed group's own error
+ *      code (a refusal whose cause somebody fixed, such as the directory key);
+ *   3. and stops at the first child the app still does not answer, or whose
+ *      key it refuses, because every other send would end the same way.
+ *
+ * A refusal of another kind is left alone: pressing Retry on an outage does
+ * not repeat an unrelated refusal. The pressed run's branch was checked by the
+ * ops route; the reach given here is the rest of the caller's.
  */
 export async function retryAttendeeWriteBack(
   deps: EventWriteDeps,
-  q: { operatorId: string; linkId: string; requestId?: string | null },
-): Promise<LinkRow> {
-  const [row] = await deps.db
+  q: {
+    operatorId: string;
+    linkId: string;
+    /** The pressed run's error code — its Failures group. */
+    errorCode: string | null;
+    /** Where the caller holds `admin:ops:manage`, inside the operator. */
+    reach: BranchReach;
+    requestId?: string | null;
+    limit?: number;
+  },
+): Promise<WriteBackSweep> {
+  const db = deps.db;
+  const limit = Math.max(1, q.limit ?? WRITE_BACK_SWEEP_LIMIT);
+  const meta = { requestId: q.requestId ?? null };
+  const [row] = await db
     .select({ id: eventAttendeeLink.id, operatorId: eventAttendeeLink.operatorId })
     .from(eventAttendeeLink)
     .where(eq(eventAttendeeLink.id, q.linkId))
     .limit(1);
   if (!row || row.operatorId !== q.operatorId) throw errors.notFound('That attendee is not on record');
-  return pushAttendee(deps, row.id, { requestId: q.requestId ?? null });
+
+  let sent = 0;
+  let synced = 0;
+  const own = await sendAttendee(deps, row.id, meta);
+  if (own.outcome) {
+    sent += 1;
+    if (own.row.syncState === 'synced') synced += 1;
+  }
+  let stoppedEarly = stopsTheSweep(own.outcome);
+
+  // What this Retry reaches. `sync_state <> 'synced'` is the partial index's
+  // own predicate, so the scan stays on the few rows that owe a write.
+  const reachClause =
+    q.reach.kind === 'operator'
+      ? undefined
+      : q.reach.branchIds.length === 0
+        ? sql`false`
+        : inArray(eventAttendeeLink.branchId, q.reach.branchIds);
+  const sameGroupRefusal = q.errorCode
+    ? and(
+        eq(eventAttendeeLink.syncState, 'failed'),
+        sql`starts_with(${eventAttendeeLink.syncError}, ${`${q.errorCode}:`})`,
+      )
+    : undefined;
+  const waitingClause = and(
+    eq(eventAttendeeLink.operatorId, q.operatorId),
+    isNull(eventAttendeeLink.archivedAt),
+    sql`${eventAttendeeLink.syncState} <> 'synced'`,
+    sameGroupRefusal ? or(eq(eventAttendeeLink.syncState, 'pending'), sameGroupRefusal) : eq(eventAttendeeLink.syncState, 'pending'),
+    reachClause,
+  );
+
+  if (!stoppedEarly && sent < limit) {
+    const others = await db
+      .select({ id: eventAttendeeLink.id })
+      .from(eventAttendeeLink)
+      .where(and(waitingClause, ne(eventAttendeeLink.id, row.id)))
+      .orderBy(asc(eventAttendeeLink.createdAt), asc(eventAttendeeLink.id))
+      .limit(limit - sent);
+    for (const other of others) {
+      const pushed = await sendAttendee(deps, other.id, meta);
+      if (!pushed.outcome) continue;
+      sent += 1;
+      if (pushed.row.syncState === 'synced') synced += 1;
+      if (stopsTheSweep(pushed.outcome)) {
+        stoppedEarly = true;
+        break;
+      }
+    }
+  }
+
+  const [left] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(eventAttendeeLink)
+    .where(waitingClause);
+  return { link: own.row, sent, synced, waiting: left?.n ?? 0, stoppedEarly };
 }
 
 // --- Reads the roster and the party bill take from the POS's own record ---------

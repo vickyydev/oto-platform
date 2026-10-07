@@ -76,9 +76,10 @@ import {
  *     operator 404 with nothing written, and an Idempotency-Key on both.
  *  4. Q5 AND Q8 AS STATED. Full camp from today to its last day for one day's
  *     price; three walk-up prices kept, only the party guest's read.
- *  5. A DEFECT, pinned with `it.fails`: the Failures page retries a GROUP by
- *     its latest run, and for this integration that pushes one child — every
- *     other child the same outage left pending is never offered again.
+ *  5. The Failures page retries a GROUP by its latest run. It was a defect,
+ *     pinned with `it.fails` (one child pushed, the rest of the outage stranded);
+ *     fixed in the E2 fix round, the pin now holds as a plain `it`: one Retry
+ *     sends every child the outage left waiting.
  */
 
 let ctx: TestContext;
@@ -937,7 +938,7 @@ describe("4. Q5 and Q8's defaults", () => {
 });
 
 // =============================================================================
-// 5. The Failures page retries a group by its latest run — one child, not the outage
+// 5. The Failures page retries a group by its latest run — the whole outage, not one child
 // =============================================================================
 
 describe('5. an outage that leaves several children pending, and the Failures page', () => {
@@ -957,15 +958,16 @@ describe('5. an outage that leaves several children pending, and the Failures pa
   });
 
   /**
-   * DEFECT. The Console's Failures page offers one action per group — "Retry
-   * the latest run" (apps/console/src/pages/Failures.tsx, `RetryButton`,
+   * WAS A DEFECT (pinned with `it.fails`, fixed in the E2 fix round). The
+   * Console's Failures page offers one action per group — "Retry the latest
+   * run" (apps/console/src/pages/Failures.tsx, `RetryButton`,
    * `failuresApi.retry(group.lastRunId)`) — and the group is the fingerprint
-   * (kind, name, error code), so every child one outage left behind shares
-   * it. For a job, re-running the latest run is a sweep and covers them all;
-   * for `otoapp:attendee.create` it pushes the ONE link that run names. Every
-   * other child stays pending, and the page never offers them again.
+   * (kind, name, error code), so every child one outage left behind shares it.
+   * For a job, re-running the latest run is a sweep and covers them all; for
+   * `otoapp:attendee.create` it pushed the ONE link that run named, and every
+   * other child stayed pending with nothing on the page to reach it.
    */
-  it.fails('one Retry from that group, with the app back, brings every child the outage left pending to the app', async () => {
+  it('one Retry from that group, with the app back, brings every child the outage left pending to the app', async () => {
     const group = (await failureGroup('OTOAPP_BAD_GATEWAY'))!;
     const retried = await post<{ syncState: string }>(admin, `/ops/runs/${group.lastRunId}/retry`, {});
     expect(retried.status).toBe(200);
@@ -973,21 +975,19 @@ describe('5. an outage that leaves several children pending, and the Failures pa
     expect(await linkOf(ids.older)).toMatchObject({ syncState: 'synced' });
   });
 
-  it('as built: the older child is stranded — the group\'s Retry sends nothing more for it; only its own run, by id, outside the page, reaches it', async () => {
+  it('as fixed: nothing is stranded — a later Retry of the group, and the older run by its own id, send nothing more', async () => {
     expect(await linkOf(ids.newer)).toMatchObject({ syncState: 'synced' });
-    expect(await linkOf(ids.older)).toMatchObject({ syncState: 'pending' });
+    expect(await linkOf(ids.older)).toMatchObject({ syncState: 'synced' });
+    expect(await appRows(ids.older)).toHaveLength(1);
+    expect(await appRows(ids.newer)).toHaveLength(1);
     const group = (await failureGroup('OTOAPP_BAD_GATEWAY'))!;
     const sentBefore = sent.length;
     await post(admin, `/ops/runs/${group.lastRunId}/retry`, {});
     await post(admin, `/ops/runs/${group.lastRunId}/retry`, {});
-    expect(sent.length).toBe(sentBefore);
-    expect(await linkOf(ids.older)).toMatchObject({ syncState: 'pending' });
-    expect(await appRows(ids.older)).toHaveLength(0);
-
-    // The API could have: the older run, retried by its own id.
     const [olderRun] = await runsOf(ids.older);
     const direct = await post<{ syncState: string }>(admin, `/ops/runs/${olderRun!.id}/retry`, {});
     expect(direct.body.syncState).toBe('synced');
+    expect(sent.length).toBe(sentBefore);
     expect(await appRows(ids.older)).toHaveLength(1);
   });
 });
