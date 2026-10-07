@@ -10,8 +10,10 @@ import {
   boxCommand,
   settlementBatch,
   settlementLine,
+  checkin,
   child,
   endOfDay,
+  guardian,
   kioskSession,
   occupancyResolution,
   member,
@@ -22,6 +24,8 @@ import {
   purchaseOrder,
   purchaseOrderLine,
   refund,
+  registration,
+  release,
   sale,
   saleDiscount,
   saleExtension,
@@ -32,6 +36,7 @@ import {
   stockMovement,
   stockTake,
   stockTakeLine,
+  supervisionWaiver,
   visit,
   visitChild,
   voucher,
@@ -50,12 +55,13 @@ import type { Exec, Tx } from './tx';
  * separates the two by OWNER rather than by age:
  *
  *   facts         what a day of play produces — visits, bookings, sales,
- *                 payments, wallets, bands, stock counts, closed days and
- *                 the cash taken out of the drawers, and the members
- *                 walked up to the counter during the session
+ *                 payments, wallets, bands, supervised stays, stock counts,
+ *                 closed days and the cash taken out of the drawers, and the
+ *                 members walked up to the counter during the session
  *   configuration what someone sat down and set up — operators, branches,
  *                 departments, employees, accounts, roles and assignments,
- *                 tiers, packages, holidays, tax, products, stations
+ *                 tiers, packages, holidays, tax, products, stations, the
+ *                 supervision policy, drop-off pricing and the nannies
  *
  * Only the first list is deleted, and only on a deployment that opted in
  * (OPS_TEST_CONTROLS). See routes/ops.ts for the gate.
@@ -117,6 +123,12 @@ const FACT_ENTITY_TYPES = [
   'occupancy_resolution',
   // S2-20 K1: a scan at the self-service kiosk, and what it redeemed or why not.
   'kiosk_session',
+  // SCRUM-503: a supervised stay, its registration, collectors, hand-back and waiver.
+  'registration',
+  'guardian',
+  'checkin',
+  'release',
+  'supervision_waiver',
 ];
 
 /** Rows removed per table, for the response and the audit entry. */
@@ -242,6 +254,28 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
    * at the kiosk made the whole reset fail.
    */
   counts.kiosk_session = (await tx.delete(kioskSession).returning({ id: kioskSession.id })).length;
+
+  /**
+   * SCRUM-503: S2-13's supervised stays are a day of play too — a drop-off or
+   * nanny child registered, checked in, handed back. A stay names its sale, its
+   * band, its visit and its child (all ON DELETE RESTRICT), a hand-back names
+   * the refund that settled its prepaid food, and a registration names the
+   * member the session created; so one drop-off child checked in during a test
+   * made the whole reset refuse. They go here, before any of those: the sibling
+   * waivers, the hand-backs, the stays, the authorised collectors, then the
+   * registrations they all hang off.
+   *
+   * What stays is what the reset never touched: the park's supervision policy,
+   * drop-off pricing, confirmation wording, nannies and their shifts
+   * (configuration), and the photos' file records — the reset clears database
+   * rows, not stored files, and the counts below are rows removed, so no
+   * photo is counted as gone.
+   */
+  counts.supervision_waiver = (await tx.delete(supervisionWaiver).returning({ id: supervisionWaiver.id })).length;
+  counts.release = (await tx.delete(release).returning({ id: release.id })).length;
+  counts.checkin = (await tx.delete(checkin).returning({ id: checkin.id })).length;
+  counts.guardian = (await tx.delete(guardian).returning({ id: guardian.id })).length;
+  counts.registration = (await tx.delete(registration).returning({ id: registration.id })).length;
 
   counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
   counts.wallet_key = (await tx.delete(walletKey).returning({ id: walletKey.id })).length;
