@@ -12,11 +12,13 @@ import { CENTRAL_BRANCH_CODE, createTestContext, teardownAll, type TestContext }
  * S2-20 E5 — THE EVENTS STORY'S CLOSING REGISTER (SCRUM-217; the E5 row of
  * docs/progress/plans/events-kiosk/PLAN.md §9, and §12's hazards).
  *
- *   1. EVERY HAZARD H1-H19 IS NAMED TO A TEST THAT RUNS. The register below
+ *   1. EVERY HAZARD H1-H21 IS NAMED TO A TEST THAT RUNS. The register below
  *      names, for each hazard, the test that holds it — by its file and its
  *      title — and this suite checks each one is there and is a plain test:
- *      not pinned to fail (`it.fails`), not skipped, not a todo. The tests
- *      themselves run in their own files (the s220 / events / kiosk suites).
+ *      not pinned to fail (`it.fails`), not skipped, not a todo. The hazards
+ *      are the plan's own (§12, read from PLAN.md), so a hazard added there
+ *      and not named here fails. The tests themselves run in their own files
+ *      (the s220 / events / kiosk / g17 suites).
  *   2. NO WIRED SCREEN IS LEFT ON A MOCK PATH: the screens the events story
  *      wired read the platform, never `mockApi`'s event functions or the
  *      prototype's in-browser event mutators.
@@ -84,7 +86,18 @@ const REGISTER: Record<string, Array<[string, string]>> = {
     ['events-e1.test.ts', 'H19 — a missed refresh raises the expectation alert'],
     ['s220-e1-review.test.ts', 'H19 — its expectation raises ops.missing when the refresh stops running'],
   ],
+  H20: [['s220-e3-review.test.ts', "00:30 on the day after the camp is the branch's business date"]],
+  H21: [
+    ['g17-round0-review.test.ts', "an id another tenant's attendee holds is refused"],
+    ['g17-round0-review.test.ts', "tenant B's key on tenant A's event is 404 and writes nothing"],
+  ],
 };
+
+/** The hazards of the plan's §12 table, in its order. */
+function planHazards(): string[] {
+  const plan = readFileSync(join(TEST_DIR, '../../../docs/progress/plans/events-kiosk/PLAN.md'), 'utf8');
+  return [...plan.matchAll(/^\| (H\d+) \|/gm)].map((m) => m[1]!);
+}
 
 /** The title of every `it`/`describe`/`test` in a file, with how it is declared (`it`, `it.fails`, …). */
 function titlesOf(file: string): Array<{ call: string; title: string }> {
@@ -103,9 +116,10 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-describe('every hazard H1-H19 is named to a test that runs', () => {
-  it('the register covers H1 to H19, each with at least one test', () => {
-    expect(Object.keys(REGISTER)).toEqual(Array.from({ length: 19 }, (_, i) => `H${i + 1}`));
+describe('every hazard H1-H21 is named to a test that runs', () => {
+  it('the register covers every hazard of the plan, H1 to H21, each with at least one test', () => {
+    expect(planHazards()).toEqual(Array.from({ length: 21 }, (_, i) => `H${i + 1}`));
+    expect(Object.keys(REGISTER)).toEqual(planHazards());
     for (const [hazard, tests] of Object.entries(REGISTER)) expect(tests.length, hazard).toBeGreaterThan(0);
   });
 
