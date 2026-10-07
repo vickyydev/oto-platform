@@ -76,7 +76,8 @@ describe('E2 review — the attendee link migration', () => {
     journal.entries.forEach((entry, i) => expect(entry.idx, entry.tag).toBe(i));
     expect(mine.idx).toBe(before.idx + 1);
     expect(mine.when).toBeGreaterThan(before.when);
-    expect(journal.entries.at(-1)).toBe(mine);
+    // Found by tag, placed by its predecessor — never "the last entry":
+    // lanes land behind this one and the journal keeps growing.
   });
 
   it("its snapshot is its predecessor's plus exactly the two new tables", () => {
