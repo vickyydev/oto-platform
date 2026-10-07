@@ -573,6 +573,52 @@ describe('check 5 — the kiosk redeems a paid booking for this branch', () => {
       kind: 'kids_wristband',
     });
   });
+
+  /**
+   * SCRUM-504 (a K1 review nick) — "Check in now" after the sale takes the
+   * kiosk's sale as the board's check-in-booked does: from a till, the band
+   * prints there; from a session standing at no till, refused.
+   */
+  it('"Check in now" on the kiosk’s sale prints the supervised child’s band at the till too', async () => {
+    const mixed = await bookAndPay(
+      [
+        { packageId: twoHoursId, kids: 1, adults: 1 },
+        { packageId: oneHourId, kids: 1, adults: 0, supervision: SUPERVISED_CHILD },
+      ],
+      { supervised: true },
+    );
+    const scan = await kioskRedeem(mixed.qr);
+    expect(scan.body.outcome).toBe('handed_off');
+    const [kioskSale] = await salesOf(mixed.id);
+    const [row] = await ctx.db.select().from(booking).where(eq(booking.id, mixed.id));
+    const checkinId = (row!.payload as { lines: Array<{ supervision?: { checkinId: string } }> }).lines[1]!.supervision!
+      .checkinId;
+
+    const loose = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const refused = await ctx.app.inject({
+      method: 'POST',
+      url: '/checkin/check-in-now',
+      headers: { cookie: loose },
+      payload: { saleId: kioskSale!.id, entries: [{ checkinId }] },
+    });
+    expect(refused.statusCode, refused.body).toBe(409);
+    expect(refused.json().error.code).toBe('CHECKIN_KIOSK_SALE_NEEDS_TILL');
+
+    const checked = await ctx.app.inject({
+      method: 'POST',
+      url: '/checkin/check-in-now',
+      headers: { cookie: reception },
+      payload: { saleId: kioskSale!.id, entries: [{ checkinId }] },
+    });
+    expect(checked.statusCode, checked.body).toBe(200);
+    const [inPark] = await ctx.db.select().from(checkin).where(eq(checkin.id, checkinId));
+    expect(inPark!.status).toBe('in_park');
+    const [deskJob] = await ctx.db
+      .select()
+      .from(printJob)
+      .where(and(eq(printJob.subjectType, 'band'), eq(printJob.subjectId, inPark!.bandId!)));
+    expect(deskJob).toMatchObject({ stationId: tillId, kind: 'kids_wristband' });
+  });
 });
 
 describe('check 6 — the kiosk printer forced offline aborts the whole redemption', () => {

@@ -2455,8 +2455,11 @@ function replayScope(scope: BatchScope, event: PreparedEvent): ReplayScope {
     );
   }
   // The same line `station.takeover` holds, for a stronger reason: a money row
-  // nobody can be named on is the row an investigation is looking for, and
-  // `pos.sale.created_by_account_id` is NOT NULL precisely so it cannot exist.
+  // nobody can be named on is the row an investigation is looking for. Since
+  // S2-20 K1, `pos.sale.created_by_account_id` is nullable for a sale a paired
+  // device rang up (the kiosk, named by `device_credential_id`), and
+  // `sale_actor_check` refuses a sale with neither; a box replay has no
+  // device credential, so it must name the account.
   const actorAccountId = event.envelope.actorAccountId ?? null;
   if (!actorAccountId) {
     throw new RefuseEvent(

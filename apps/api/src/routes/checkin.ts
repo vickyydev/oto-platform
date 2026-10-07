@@ -237,7 +237,11 @@ export async function checkinRoutes(app: App): Promise<void> {
       const actor = actorOf(req);
       const branchId = await saleBranchOf(app, actor.operatorId, req.body.saleId);
       await req.requirePermission('pos:checkin:update', { branchId });
-      return withTx(app.db, { ...opCtx(req), branchId }, 'checkin.check_in', (tx) => checkInNow(tx, actor, req.body));
+      return withTx(app.db, { ...opCtx(req), branchId }, 'checkin.check_in', (tx) =>
+        // SCRUM-504 — as the board's check-in-booked: a child the kiosk's sale
+        // left booked prints at the till this session stands at.
+        checkInNow(tx, actor, req.body, new Date(), { printAt: req.auth?.stationId ?? null }),
+      );
     },
   );
 
