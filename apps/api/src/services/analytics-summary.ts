@@ -176,25 +176,36 @@ export async function lastReportsRolledUpAt(
   now: Date,
 ): Promise<Map<string, Date | null>> {
   return freshnessOf(db, branches, now, async (live, todayOf, archived) => {
-    const ids = [...live, ...archived];
     const written = new Map<string, Date>();
-    if (ids.length === 0) return written;
-    const idList = sql.join(
-      ids.map((id) => sql`${id}::uuid`),
-      sql`, `,
+    if (live.length === 0 && archived.length === 0) return written;
+    const list = (values: readonly string[], cast: string) =>
+      sql.join(
+        values.map((v) => sql`${v}::${sql.raw(cast)}`),
+        sql`, `,
+      );
+    // A live park's rows of its today only (its whole history is not read for
+    // a timestamp); an archived park's rows of any day.
+    const which = sql.join(
+      [
+        ...(live.length > 0
+          ? [sql`(branch_id in (${list(live, 'uuid')}) and business_date in (${list([...new Set(todayOf.values())], 'date')}))`]
+          : []),
+        ...(archived.length > 0 ? [sql`branch_id in (${list(archived, 'uuid')})`] : []),
+      ],
+      sql` or `,
     );
     const { rows } = await db.execute<{ branch_id: string; business_date: string; at: Date | string }>(sql`
       select r.branch_id, r.business_date::text as business_date, max(r.computed_at) as at
         from (
-          select branch_id, business_date, computed_at from analytics.daily_category_summary where source = ${SOURCE} and branch_id in (${idList})
+          select branch_id, business_date, computed_at from analytics.daily_category_summary where source = ${SOURCE} and (${which})
           union all
-          select branch_id, business_date, computed_at from analytics.daily_tender_summary where source = ${SOURCE} and branch_id in (${idList})
+          select branch_id, business_date, computed_at from analytics.daily_tender_summary where source = ${SOURCE} and (${which})
           union all
-          select branch_id, business_date, computed_at from analytics.daily_item_summary where source = ${SOURCE} and branch_id in (${idList})
+          select branch_id, business_date, computed_at from analytics.daily_item_summary where source = ${SOURCE} and (${which})
           union all
-          select branch_id, business_date, computed_at from analytics.daily_ticket_summary where source = ${SOURCE} and branch_id in (${idList})
+          select branch_id, business_date, computed_at from analytics.daily_ticket_summary where source = ${SOURCE} and (${which})
           union all
-          select branch_id, business_date, computed_at from analytics.daily_discount_summary where source = ${SOURCE} and branch_id in (${idList})
+          select branch_id, business_date, computed_at from analytics.daily_discount_summary where source = ${SOURCE} and (${which})
         ) r
        group by r.branch_id, r.business_date`);
     const archivedSet = new Set(archived);
