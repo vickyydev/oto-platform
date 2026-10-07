@@ -8,7 +8,7 @@ import { createTestDatabase, stopTestServer } from '../src/testing';
 /**
  * S2-21 (SCRUM-218) round 2 — the benefit QR's record, found by its tag
  * (`*_benefit_credentials`) rather than its number, which is provisional
- * (0069) until the lander renumbers it.
+ * (landed as 0068; found by tag).
  *
  *   - forward-only and additive: the previous snapshot survives intact, the
  *     only new table is `promo.benefit_credential`, and the SQL drops,
