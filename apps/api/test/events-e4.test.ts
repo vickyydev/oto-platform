@@ -828,6 +828,30 @@ describe('the write-back when the OTO App does not answer, and Failures', () => 
     expect(body.event.party!.editSync).toMatchObject({ state: 'failed' });
   });
 
+  it('a newer edit does not carry an older one the OTO App changed the party after', async () => {
+    editPlan.push('unreachable');
+    const stale = await patch(ev.edited, { location: 'Till room' });
+    expect(stale.body.edit!.syncState).toBe('pending');
+    await ctx.db.execute(sql`
+      update otoapp.core_events set location_text = 'App room', updated_at = (now() at time zone 'UTC') + interval '2 seconds'
+       where id = ${ev.edited}`);
+    // Made after the app's change (its clock a moment ahead here), so the app takes it.
+    await new Promise((resolve) => setTimeout(resolve, 2_100));
+    const calls = editCalls.length;
+    const fresh = await patch(ev.edited, { expectedAdults: 30 });
+    expect(fresh.body.edit!.syncState).toBe('synced');
+    expect(editCalls.slice(calls).map((c) => c.body.fields)).toEqual([{ numAdults: 30 }]);
+    const row = await ctx.db.execute<{ location_text: string; num_adults: number }>(
+      sql`select location_text, num_adults from otoapp.core_events where id = ${ev.edited}`,
+    );
+    expect(row.rows[0]).toMatchObject({ location_text: 'App room', num_adults: 30 });
+    // The stale edit, sent on its own, is refused as superseded.
+    const retried = await call<RetryAnswer>('POST', admin, `/ops/runs/${(await failedRunOf(stale.body.edit!.id)).id}/retry`, {});
+    expect(retried.body).toMatchObject({ syncState: 'failed' });
+    expect((await editOf(stale.body.edit!.id)).syncError).toMatch(/OTOAPP_EDIT_SUPERSEDED/);
+    expect((await getParty(ev.edited)).body.event.location).toBe('App room');
+  });
+
   it('a refusal of another kind is failed and left out of the outage’s Retry', async () => {
     editPlan.push('refused');
     const res = await patch(ev.party, { activities: 'Magic show' });

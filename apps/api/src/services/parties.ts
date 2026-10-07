@@ -29,7 +29,14 @@ import {
   type DirectoryOutcome,
   type OtoAppDirectory,
 } from './otoapp-directory';
-import { lockParty, overlayPartyEdits, partyFieldsOf, partyLedgersOf, billOfParty } from './party-tab';
+import {
+  billOfParty,
+  editStillShown,
+  lockParty,
+  overlayPartyEdits,
+  partyFieldsOf,
+  partyLedgersOf,
+} from './party-tab';
 import { openAttempt, settleAttempt, tenderMethodOf } from './payments/attempt';
 import { resolveDrawerKick, type DrawerKick } from './payments/drawer';
 import type { ActorContext } from './sale';
@@ -622,9 +629,10 @@ export async function updateParty(
  * (`edit_superseded`), and a newer edit must not overtake an older one the app
  * has not taken yet. So a send carries, under this edit's id and its moment,
  * every older edit of the same party still waiting (`pending`) with this one
- * last — and when the app takes it, all of them are taken. A refused older
- * edit (`failed`) is not carried: the app said no to it, and a newer edit must
- * not put it back.
+ * last — and when the app takes it, all of them are taken. Not carried: a
+ * refused older edit (`failed`) — the app said no to it — and an older edit
+ * the app changed the party after, which it would refuse on its own; a newer
+ * edit must not put either back.
  *
  * Recorded twice over, as a child's write-back is: on the edit (`sync_state`,
  * the attempts, the error) and as an `ops_run` of kind `integration` named
@@ -663,7 +671,12 @@ async function sendPartyEdit(
       ),
     )
     .orderBy(asc(partyEdit.createdAt), asc(partyEdit.id));
-  const carried = [...older, row];
+  // An older edit the OTO App changed the party after is not carried: inside
+  // this newer edit it would put back values the app has since replaced. Sent
+  // on its own it is refused as superseded, which is the truth. (When the
+  // party cannot be read, every waiting edit is carried, as it would be shown.)
+  const seam = await getBranchEvent(db, { branchId: row.branchId, eventId: row.otoappEventId }).catch(() => null);
+  const carried = [...older.filter((e) => !seam || editStillShown(e, seam)), row];
   const merged = Object.assign({}, ...carried.map((e) => e.fields as PartyEditFields)) as PartyEditFields;
 
   const startedAt = new Date();
