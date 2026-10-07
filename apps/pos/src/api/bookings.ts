@@ -5,8 +5,12 @@ import { buildCreditGrants } from '@/lib/sale';
 import { getTicketTypes } from '@/store/catalogStore';
 import { SOCKS_ADDON_ID, SOCKS_LABEL, toBaht } from '@/lib/cartWire';
 import {
+  BOOKING_EVENT_PASSES_NEED_INTERNET,
+  BOOKING_EVENT_PASSES_ONLINE_ONLY,
   BRIDGE_BOOKING_INTENTS,
   parseBookingQr,
+  type BookingEventPass,
+  type BookingPassCheckin,
   type BridgeBookingRedeemAnswer,
   type BridgeBookingView,
 } from '@oto/shared';
@@ -100,6 +104,11 @@ export interface PlatformBooking {
   /** Populated only where the booking site recorded one; payment is S2-10a. */
   paymentMethod: string | null;
   lines: PlatformBookingLine[];
+  /**
+   * S2-20 E5 — the event passes the booking paid for. Optional: a box's copy
+   * (and a deployment from before E5) does not carry them.
+   */
+  eventPasses?: BookingEventPass[];
   redemption: PlatformRedemption | null;
 }
 
@@ -123,6 +132,12 @@ export interface BookingRedeemResult {
   sale: { id: string; receiptNumber: string | null; totals: { grossSatang: number } };
   bands: RedeemedBand[];
   printing: { jobs: ApiSalePrintJob[]; notes: string[]; failed: { code: string; message: string } | null } | null;
+  /**
+   * S2-20 E5 — the booking's event passes: each checked into its event now
+   * (bands minted, their paper queued) or said why not. Absent from a box's
+   * answer and from a deployment before E5.
+   */
+  eventPasses?: BookingPassCheckin[];
   /**
    * S2-12 round 5 — set when the counter's BOX redeemed it, with the link
    * down: the box already printed the paper from its own queue, so the till
@@ -411,6 +426,8 @@ export interface MappedBooking {
 /** The platform's booking status, as reception reads it. */
 function notPaidReasonFor(p: PlatformBooking): string | null {
   if (p.status === 'supervised_online_only') return 'This supervised booking needs the internet. Reconnect at reception to redeem it and check the children in.';
+  // S2-20 E5 — the box's copy of a booking that carries event passes.
+  if (p.status === BOOKING_EVENT_PASSES_ONLINE_ONLY) return BOOKING_EVENT_PASSES_NEED_INTERNET.message;
   if (p.status === 'paid' || p.status === 'redeemed' || p.redemption) return null;
   if (p.status === 'pending') {
     return `Booking ${p.reference} is not paid yet — the family has not finished paying online. Nothing can be issued against it.`;
@@ -457,9 +474,11 @@ function paidAddOns(line: PlatformBookingLine): SelectedAddOn[] {
  * A supervised child's line carries its registration and stay, so the summary
  * names the drop-off and the till offers the board's check-in.
  *
- * WHAT IT CANNOT KNOW, and so does not invent: event passes and promo codes
- * are not priced by `POST /public/bookings`. They stay empty here, so the
- * summary shows what the platform actually took money for.
+ * WHAT IT CANNOT KNOW, and so does not invent: promo codes are not priced by
+ * `POST /public/bookings`, so they stay empty here and the summary shows what
+ * the platform actually took money for. Event passes ARE (S2-20 E5): the
+ * platform priced and registered them, and the summary names them as the
+ * prototype's dialog does.
  *
  */
 export function toPosBooking(p: PlatformBooking): MappedBooking {
@@ -519,6 +538,18 @@ export function toPosBooking(p: PlatformBooking): MappedBooking {
       status: p.redemption || p.status === 'redeemed' ? 'redeemed' : 'paid',
       redeemedAt: p.redemption?.at,
       issuedWristbandCodes: p.redemption?.bandCodes,
+      ...((p.eventPasses ?? []).length > 0
+        ? {
+            eventPasses: (p.eventPasses ?? []).map((pass) => ({
+              eventId: pass.eventId,
+              attendeeId: pass.attendeeId,
+              eventTitle: pass.eventTitle,
+              attendeeName: pass.attendeeName,
+              parentAttending: pass.parentAttending,
+              priceTHB: toBaht(pass.priceSatang),
+            })),
+          }
+        : {}),
     },
     unmapped,
     paid: notPaidReasonFor(p) === null,

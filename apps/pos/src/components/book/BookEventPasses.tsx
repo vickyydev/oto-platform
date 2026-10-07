@@ -25,6 +25,12 @@ import {
 // attendee draft (reuses the SAME AttendeeForm the reception door modal edits).
 export interface PassSelection {
   id: string;
+  /**
+   * S2-20 E5 — the attendee's id (UUIDv7), minted when the pass is added and
+   * kept through edits: the OTO App keeps the child under it once the booking
+   * is paid, so every write of it is a replay.
+   */
+  attendeeId: string;
   event: OtoEvent;
   form: AttendeeForm;
 }

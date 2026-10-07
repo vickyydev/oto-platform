@@ -646,8 +646,9 @@ export default function MobileTill() {
     }
 
     // The platform files every paid line, a supervised child's included; that
-    // child's band is minted when the board checks the child in.
-    if (booking.lines.length === 0) {
+    // child's band is minted when the board checks the child in. A booking of
+    // event passes alone has no ticket line and is still redeemed (S2-20 E5).
+    if (booking.lines.length === 0 && (booking.eventPasses ?? []).length === 0) {
       return {
         ok: false,
         message: 'None of this booking’s tickets are in this branch’s catalogue, so nothing can be issued here.',

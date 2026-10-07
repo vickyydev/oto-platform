@@ -264,8 +264,8 @@ export function RedeemBookingModal({
     }
   }
 
-  // Supervised children come from the booking's registration. Event passes are
-  // not sold online yet, so that panel stays empty until they are.
+  // Supervised children come from the booking's registration; event passes
+  // from the passes the platform priced and registered (S2-20 E5).
   const dropOffChildren = foundBooking
     ? foundBooking.lines.flatMap((l) => (l.dropOff ? [l.dropOff.childName] : []))
     : [];
@@ -492,7 +492,11 @@ export function RedeemBookingModal({
               <Button
                 className="flex-1 h-12"
                 onClick={() => void handleConfirm()}
-                disabled={confirming || foundBooking.lines.length === 0 || notPaid !== null}
+                disabled={
+                  confirming ||
+                  (foundBooking.lines.length === 0 && (foundBooking.eventPasses ?? []).length === 0) ||
+                  notPaid !== null
+                }
               >
                 {confirming ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

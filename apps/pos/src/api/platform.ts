@@ -1,4 +1,10 @@
-import type { BookingSupervisionInput, PublicSupervisionConfig } from '@oto/shared';
+import type {
+  BookingEventPass,
+  BookingEventPassInput,
+  BookingSupervisionInput,
+  PublicEventPassesAnswer,
+  PublicSupervisionConfig,
+} from '@oto/shared';
 // Typed calls to the Sprint 1 API surface, with mapping between the API's
 // satang integers and the prototype UI's whole-baht numbers done in mappers.ts.
 import { newId as newRecordId } from '@oto/shared';
@@ -570,6 +576,12 @@ export const publicApi = {
       socks?: number;
       addOns?: Array<{ id: string; quantity: number }>;
     }>;
+    /**
+     * S2-20 E5 — event passes (consistency #21): priced by the platform at the
+     * visit date's rate, and registered with the OTO App once the booking is
+     * paid, under the attendee id this page minted when the pass was added.
+     */
+    eventPasses?: BookingEventPassInput[];
     contactChannel?: 'whatsapp' | 'telegram' | 'line';
     locale?: string;
     clientSnapshot?: unknown;
@@ -582,9 +594,19 @@ export const publicApi = {
       rateMode: 'weekday' | 'weekend';
       totalSatang: number;
       lines: unknown[];
+      eventPasses?: BookingEventPass[];
       status: string;
       expiresAt: string | null;
     }>('/public/bookings', body, { idempotencyKey: idemKey() }),
+  /**
+   * S2-20 E5 — the event passes on sale online for a visit date: camps running
+   * that day and one-off events that day or later, at their flat price. An
+   * empty list on a deployment without the OTO App's events.
+   */
+  eventPasses: (branchCode: string, date: string) =>
+    api.get<PublicEventPassesAnswer>(
+      `/public/branches/${encodeURIComponent(branchCode)}/event-passes?date=${encodeURIComponent(date)}`,
+    ),
   /**
    * The booking's one payment: the page to send the browser to. A
    * `redirectUrl` starting with `/` is the platform's own (the simulator's pay /

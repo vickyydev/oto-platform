@@ -24,14 +24,13 @@ import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { inventoryFor, refreshSellableStock } from '@/api/stock';
 import { isSocksAddOnId } from '@/api/menu';
-import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getDefaultTier, getSupervisionPolicy, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getDefaultTier, getSupervisionPolicy, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
 import { SavedChildrenReview } from '@/components/shared/SavedChildrenReview';
 import { prefillSlots, slotPatchFromSavedChild } from '@/lib/savedChildren';
 import type { SavedChild } from '@/types';
-import { checkInSoldPass } from '@/lib/eventPass';
 import { AddAttendeeModal } from '@/components/parties/AddAttendeeModal';
 import type { OtoEvent, EventAttendee } from '@/types';
 import { StationHeader } from '@/components/shared/StationHeader';
@@ -960,8 +959,9 @@ export default function Till() {
     }
 
     // The platform files every paid line, a supervised child's included; that
-    // child's band is minted when the board checks the child in.
-    if (booking.lines.length === 0) {
+    // child's band is minted when the board checks the child in. A booking of
+    // event passes alone has no ticket line and is still redeemed (S2-20 E5).
+    if (booking.lines.length === 0 && (booking.eventPasses ?? []).length === 0) {
       return {
         ok: false,
         message: 'None of this booking’s tickets are in this branch’s catalogue, so nothing can be issued here.',
@@ -990,30 +990,10 @@ export default function Till() {
     // queue, so only what did not print is said.
     announceBookingRedemption(booking.reference, redeemed);
 
-    // Event passes sold online are registered (not checked in) attendees. On
-    // redemption, check each one into its event — minting bracelets and marking
-    // attended, with NO re-payment (already paid at booking). checkInSoldPass is
-    // idempotent: an attendee already checked in returns null and is skipped, so
-    // re-scanning a mixed booking won't double-issue event bracelets.
-    if (booking.eventPasses && booking.eventPasses.length > 0) {
-      const today = new Date().toISOString().slice(0, 10);
-      let checkedIn = 0;
-      for (const pass of booking.eventPasses) {
-        const ev = getEventById(pass.eventId);
-        if (!ev) continue;
-        const res = checkInSoldPass(station, ev, pass.attendeeId, today, {
-          operatorName: operator.name,
-          operatorId: operator.id,
-        });
-        if (res) checkedIn++;
-      }
-      if (checkedIn > 0) {
-        toast({
-          title: 'Event passes checked in',
-          description: `${checkedIn} attendee(s) checked into their event — bracelets printed.`,
-        });
-      }
-    }
+    // Event passes sold online are checked into their events by the platform's
+    // redemption itself (S2-20 E5), with NO re-payment — a child already in is
+    // skipped — and `announceBookingRedemption` above said what was checked in
+    // and dispatched the bracelets' paper.
 
     // If the booking has drop-off children, prompt staff to check them in now.
     if (booking.registrationId) {

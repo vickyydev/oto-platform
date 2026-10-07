@@ -26,9 +26,12 @@ import { BookConfirmation } from '@/components/book/BookConfirmation';
 import { BookCheckingPayment } from '@/components/book/BookCheckingPayment';
 import { BookEventPassForm, type PassSelection } from '@/components/book/BookEventPasses';
 import {
+  buildAttendeeInput,
   emptyAttendeeForm,
   type AttendeeForm,
 } from '@/components/shared/AttendeeFormFields';
+import { toAttendeeInput } from '@/api/events';
+import { newId, type PublicEventPass } from '@oto/shared';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
@@ -172,6 +175,29 @@ function buildPassLine(pass: PassSelection, tier: CustomerTier): CartLine {
     socks: 0,
     addOns: [],
     lineTotal: fee,
+  };
+}
+
+/**
+ * S2-20 E5 — an event pass the platform offers online, in the prototype's
+ * `OtoEvent` shape the pass section reads: its day (a camp's range), its
+ * times, where, and its flat weekday / weekend price in baht.
+ */
+function publicPassToOtoEvent(p: PublicEventPass, branchSlug: string): OtoEvent {
+  return {
+    id: p.id,
+    branchId: branchSlug,
+    type: p.type,
+    status: 'upcoming',
+    title: p.title,
+    date: p.startDate,
+    startTime: p.startTime,
+    endTime: p.endTime ?? '',
+    location: p.location ?? '',
+    expectedKids: 0,
+    expectedAdults: 0,
+    ...(p.type === 'camp' && p.endDate ? { dateRange: { start: p.startDate, end: p.endDate } } : {}),
+    entryPriceTHB: { weekday: p.entryPrice.weekdaySatang / 100, weekend: p.entryPrice.weekendSatang / 100 },
   };
 }
 
@@ -446,9 +472,28 @@ export default function Book() {
   // hands the rest of the app (the till's routes) back to today.
   useEffect(() => () => setPricingDate(null), []);
 
-  // Online event passes need the event roster on the platform; until it is,
-  // the pass section stays empty rather than offering a pass Pay would refuse.
-  const activeEvents = useMemo<OtoEvent[]>(() => [], []);
+  // S2-20 E5 — the event passes on sale online for the chosen day, from the
+  // platform (`getActiveEventPasses`): what Pay sends is priced by the
+  // platform's own quote at the same day's rate, and registered with the OTO
+  // App once the booking is paid. None while they load, or where the park has
+  // no events — the section then stays out of the way.
+  const [activeEvents, setActiveEvents] = useState<OtoEvent[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    const branchCode = getActiveBranch().id;
+    publicApi
+      .eventPasses(branchCode, visitDate)
+      .then((answer) => {
+        if (!cancelled) setActiveEvents(answer.passes.map((p) => publicPassToOtoEvent(p, branchCode)));
+      })
+      .catch(() => {
+        // Passes are an offer: a blip leaves the tickets bookable, with none shown.
+        if (!cancelled) setActiveEvents([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [visitDate]);
 
   // Lifted per-child supervision draft (mirrors the reception flow's superSlots),
   // plus the booking-level consent the customer gives on the ConsentCapture step.
@@ -712,6 +757,7 @@ export default function Book() {
   const handleAddPass = (event: OtoEvent) => {
     setEditingPass({
       id: Math.random().toString(36).substring(2, 9),
+      attendeeId: newId(),
       event,
       form: {
         ...emptyAttendeeForm,
@@ -777,15 +823,19 @@ export default function Book() {
             ? { addOns: l.addOns.map((a) => ({ id: a.id, quantity: a.quantity })) }
             : {}),
         }));
-      // Online payment covers play tickets, socks, extras and supervised
-      // children. The platform quote does not price an event pass, so a basket
-      // holding one is told here, before anything is written, and in words.
-      const bookedAtReception = passes.length > 0;
-      if (serverLines.length === 0 || bookedAtReception) {
+      // Online payment covers play tickets, socks, extras, supervised children
+      // and — S2-20 E5 — event passes, which the platform prices at the same
+      // day's rate and registers with the event once the money is confirmed.
+      const serverPasses = passes.map((p) => ({
+        eventId: p.event.id,
+        attendeeId: p.attendeeId,
+        attendee: toAttendeeInput(buildAttendeeInput(p.form)),
+      }));
+      if (serverLines.length === 0 && serverPasses.length === 0) {
         setBookingBusy(false);
         toast({
-          title: 'Online payment covers play tickets',
-          description: 'Event passes are booked at reception.',
+          title: 'Nothing to book online',
+          description: 'Add a play ticket or an event pass first.',
           variant: 'destructive',
         });
         return;
@@ -800,6 +850,7 @@ export default function Book() {
           // The chosen day: the platform quotes it, and refuses a total that is not its own.
           visitDate,
           lines: serverLines,
+          ...(serverPasses.length > 0 ? { eventPasses: serverPasses } : {}),
           contactChannel,
           consentAck,
           acknowledgedConfirmationIds,
@@ -821,6 +872,19 @@ export default function Book() {
             creditTotalTHB: buildCreditGrants(normalizedLines).filter((g) => g.type === 'fnb_credit').reduce((n, g) => n + (g.valueTHB ?? 0), 0),
           },
           createdAt: new Date().toISOString(), status: 'paid',
+          // The passes as the platform priced them, for the confirmation.
+          ...((res.eventPasses ?? []).length > 0
+            ? {
+                eventPasses: (res.eventPasses ?? []).map((p) => ({
+                  eventId: p.eventId,
+                  attendeeId: p.attendeeId,
+                  eventTitle: p.eventTitle,
+                  attendeeName: p.attendeeName,
+                  parentAttending: p.parentAttending,
+                  priceTHB: p.priceSatang / 100,
+                })),
+              }
+            : {}),
         };
         saveCheckout({ bookingId: res.id, reference: res.reference, name: nickname, booking: made });
         window.location.assign(paymentPageHref(pay.redirectUrl));

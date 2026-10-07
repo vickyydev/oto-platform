@@ -5,6 +5,7 @@ import {
   type BookingRedeemResult,
   type RedeemOutcome,
 } from '@/api/bookings';
+import type { ApiSalePrintJob } from '@/api/history';
 import { dispatchPlatformPrinting } from '@/lib/printRouting';
 import { toast } from '@/hooks/use-toast';
 
@@ -106,6 +107,38 @@ export function announceBookingRedemption(reference: string, redeemed: BookingRe
     // A deployment from before round 3 answers the claim alone, with no bands.
     description: `${reference} — ${(redeemed.bands ?? []).length} wristband(s) issued.`,
   });
+  announceEventPassCheckins(redeemed);
+}
+
+/**
+ * S2-20 E5 — THE BOOKING'S EVENT PASSES, checked in by the platform's own
+ * redemption (the prototype's Till.tsx 437-462 did it in the browser, from the
+ * mock's copy of the event): their bracelets' paper is dispatched as the board's
+ * check-in dispatches it, the count is said in the prototype's words, and a pass
+ * that was not checked in is said with why — a child already in is skipped
+ * silently, as `checkInSoldPass` returned null for one.
+ */
+function announceEventPassCheckins(redeemed: BookingRedeemResult): void {
+  const passes = redeemed.eventPasses ?? [];
+  if (passes.length === 0) return;
+  const checkedIn = passes.filter((p) => p.outcome === 'checked_in');
+  const jobs = checkedIn.flatMap((p) => p.printJobs) as unknown as ApiSalePrintJob[];
+  const notes = checkedIn.flatMap((p) => p.notes);
+  if (jobs.length > 0 || notes.length > 0) dispatchPlatformPrinting(jobs, notes);
+  if (checkedIn.length > 0) {
+    toast({
+      title: 'Event passes checked in',
+      description: `${checkedIn.length} attendee(s) checked into their event — bracelets printed.`,
+    });
+  }
+  for (const p of passes) {
+    if (p.outcome === 'checked_in' || p.outcome === 'already_in') continue;
+    toast({
+      title: `${p.attendeeName} — not checked in`,
+      description: `${p.eventTitle}: ${p.message ?? 'not checked in here'}`,
+      variant: p.outcome === 'not_today' ? 'default' : 'destructive',
+    });
+  }
 }
 
 /**
