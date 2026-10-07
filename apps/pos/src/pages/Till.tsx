@@ -24,7 +24,7 @@ import { setSaleOpen } from '@/pwa/openSale';
 import { getAddOns } from '@/store/catalogStore';
 import { inventoryFor, refreshSellableStock } from '@/api/stock';
 import { isSocksAddOnId } from '@/api/menu';
-import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getDefaultTier, getSupervisionPolicy, getActiveEventPasses, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
+import { getDiscountReasons, recordSale, getTicketTypes, getDropOffPricing, getDefaultTier, getSupervisionPolicy, getEventById, getDiscountByCode, incrementPromoUsage, ensureSaleGrantWallet, issueWalkInBands, type CheckInPaymentInput, type NewEventAttendeeInput } from '@/mockApi';
 import { useBranch } from '@/branch/BranchContext';
 import { apiCheckinToCheckIn, checkinApi, foodProvisionToWire, TILL_NOT_LINKED, waitingStaysOf, type ApiNanny } from '@/api/checkin';
 import { validatePromoCode, resolveFreeItem } from '@/lib/promoVoucher';
@@ -53,6 +53,7 @@ import {
   type RedeemOutcome,
 } from '@/api/bookings';
 import { apiBranchIdForSlug } from '@/api/catalogBridge';
+import { EVENT_WRITE_PENDING, useEventPasses } from '@/api/events';
 import { boxSaleIssue } from '@/api/boxSales';
 import {
   buildCartPayload,
@@ -271,11 +272,9 @@ export default function Till() {
   const [eventPassAttendee, setEventPassAttendee] = useState<EventAttendee | null>(null);
   // Re-derive active passes whenever the till re-renders after a sale closes.
   const [eventPassesTick, setEventPassesTick] = useState(0);
-  const activeEventPasses = useMemo<OtoEvent[]>(
-    () => getActiveEventPasses(new Date().toISOString().slice(0, 10), branch.id),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- eventPassesTick re-reads the active passes from the store after a sale closes (see above)
-    [eventPassesTick, branch.id],
-  );
+  // S2-20 E1 — `GET /events/passes` for the branch's trading day: each camp
+  // running today and each event today or later, at its flat price.
+  const activeEventPasses = useEventPasses(branch.id, eventPassesTick);
 
   // Member identified for the event-pass pre-fill flow (may differ from the
   // main sale member when selling an event at step 1 before the ticket cart opens).
@@ -779,6 +778,14 @@ export default function Till() {
    *  - No phone at all → open the modal cold (walk-in, no pre-fill).
    */
   const handleSellEventPassFromStep1 = (event: OtoEvent) => {
+    // S2-20 E1: the pass cards are the OTO App's events now, which the
+    // prototype's sale seam cannot register an attendee on; selling a pass is
+    // written on the platform by E2, and until then the card says so before
+    // anybody is asked for a name or a payment.
+    if (!getEventById(event.id)) {
+      toast(EVENT_WRITE_PENDING);
+      return;
+    }
     const phone = customerPhone.trim();
     if (!phone) {
       // No phone entered — open cold.

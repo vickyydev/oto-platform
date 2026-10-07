@@ -11,8 +11,10 @@ import {
   partyLineItemsTotal,
   PARTY_STATUS_LABELS,
 } from '@/lib/party';
-import { addPartyExtraCharge, addPartyPayment, updateParty } from '@/mockApi';
+import { addPartyExtraCharge, addPartyPayment, getEventById, updateParty } from '@/mockApi';
 import { useOperator } from '@/auth/OperatorContext';
+import { EVENT_WRITE_PENDING } from '@/api/events';
+import { toast } from '@/hooks/use-toast';
 import { PartyBalanceModal } from './PartyBalanceModal';
 import { PartyFnbModal } from './PartyFnbModal';
 import { PartyTicketModal } from './PartyTicketModal';
@@ -128,14 +130,27 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
   const paid = partyPaymentsTotal(party);
   const lineItemsTotal = partyLineItemsTotal(party);
 
+  // S2-20 E1: a party read from the OTO App is not in the prototype's store,
+  // so editing it, charging it and taking its balance are refused before the
+  // modal opens (no settlement screen thanks a guest for an unrecorded
+  // payment) until the party tab is on the platform (E4).
+  const openUnlessPending = (open: () => void) => {
+    if (getEventById(party.id)) open();
+    else toast(EVENT_WRITE_PENDING);
+  };
+
+  // S2-20 E1: a party read from the OTO App is not in the prototype's store,
+  // so its mutators find nothing; until the party tab is on the platform (E4)
+  // the till says so instead of closing the modal as if it had been recorded.
   const handleTakePayment = (amount: number, method: PartyPaymentMethod) => {
     if (!operator) return;
-    addPartyPayment(party.id, {
+    const taken = addPartyPayment(party.id, {
       amount,
       method,
       takenBy: operator.name,
       takenById: operator.id,
     });
+    if (!taken) toast(EVENT_WRITE_PENDING);
     onChanged();
   };
 
@@ -143,19 +158,21 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
     (kind: 'fnb' | 'ticket') =>
     (items: { name: string; qty: number; lineTotal: number }[], chargeTotal: number) => {
       if (!operator) return;
-      addPartyExtraCharge(party.id, {
+      const charged = addPartyExtraCharge(party.id, {
         kind,
         items,
         total: chargeTotal,
         chargedBy: operator.name,
         chargedById: operator.id,
       });
+      if (!charged) toast(EVENT_WRITE_PENDING);
       onChanged();
     };
 
   const handleSaveEdit = (patch: PartyEditPatch) => {
     if (!operator) return;
-    updateParty(party.id, patch, { editedBy: operator.name, editedById: operator.id });
+    const saved = updateParty(party.id, patch, { editedBy: operator.name, editedById: operator.id });
+    if (!saved) toast(EVENT_WRITE_PENDING);
     setEditing(false);
     onChanged();
   };
@@ -446,7 +463,7 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
               variant="outline"
               size="lg"
               className="gap-2 h-12"
-              onClick={() => setEditing(true)}
+              onClick={() => openUnlessPending(() => setEditing(true))}
             >
               <Pencil className="w-5 h-5" />
               Edit party
@@ -455,7 +472,7 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
               variant="outline"
               size="lg"
               className="gap-2 h-12"
-              onClick={() => setShowTickets(true)}
+              onClick={() => openUnlessPending(() => setShowTickets(true))}
             >
               <Ticket className="w-5 h-5" />
               Add tickets
@@ -464,7 +481,7 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
               variant="outline"
               size="lg"
               className="gap-2 h-12"
-              onClick={() => setShowFnb(true)}
+              onClick={() => openUnlessPending(() => setShowFnb(true))}
             >
               <GlassWater className="w-5 h-5" />
               Add F&amp;B to party
@@ -473,7 +490,7 @@ export function PartyDetail({ party, surface, onBack, onChanged }: PartyDetailPr
               size="lg"
               className="gap-2 h-12"
               disabled={outstanding <= 0}
-              onClick={() => setShowBalance(true)}
+              onClick={() => openUnlessPending(() => setShowBalance(true))}
             >
               <Wallet className="w-5 h-5" />
               {outstanding > 0 ? `Take balance ฿${outstanding}` : 'Fully paid'}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { OtoEvent, PartyBooking, PartyPaymentMethod } from '@/types';
 import {
-  getEventsForDate,
+  getEventById,
   addPartyPayment,
   addPartyExtraCharge,
   checkInEventAttendee,
@@ -10,6 +10,7 @@ import {
 import { useOperator } from '@/auth/OperatorContext';
 import { useBranch } from '@/branch/BranchContext';
 import { useStation } from '@/station/StationContext';
+import { EVENT_WRITE_PENDING, eventsToday, useEventsForDate } from '@/api/events';
 import { eventBraceletPrintJobs, dispatchPrintJobs } from '@/lib/printRouting';
 import { toast } from '@/hooks/use-toast';
 import { MobileEventsList } from './MobileEventsList';
@@ -20,9 +21,20 @@ import { MobilePartyFnb } from './MobilePartyFnb';
 
 type Step = 'list' | 'detail' | 'payment' | 'fnb';
 
-function findEvent(id: string | null, date: string, branch: string): OtoEvent | null {
+function findEvent(id: string | null, events: readonly OtoEvent[]): OtoEvent | null {
   if (!id) return null;
-  return getEventsForDate(date, branch).find((e) => e.id === id) ?? null;
+  return events.find((e) => e.id === id) ?? null;
+}
+
+/**
+ * S2-20 E1 — the events are the OTO App's now, which the prototype's in-memory
+ * mutators cannot find: a check-in, a reprint, a payment and a charge are
+ * written on the platform by E2 to E4, and until then say so.
+ */
+function writePending(eventId: string): boolean {
+  if (getEventById(eventId)) return false;
+  toast(EVENT_WRITE_PENDING);
+  return true;
 }
 
 /**
@@ -33,11 +45,13 @@ function findEvent(id: string | null, date: string, branch: string): OtoEvent | 
  *                           → fnb (menu grid + cart → charge)
  *        → detail (camp/event) — read-only attendee list, no billing actions
  *
- * All data flows through the existing mockApi mutators (addPartyPayment,
- * addPartyExtraCharge). Version counter triggers re-reads so the UI always
- * reflects the latest state after a mutation.
+ * The events are read from the platform (`GET /events`, S2-20 E1); the writes
+ * still go through the mockApi mutators (addPartyPayment, addPartyExtraCharge)
+ * until E2 to E4 put them on the platform. Version counter triggers re-reads
+ * so the UI always reflects the latest state after a mutation.
  */
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// The branch's trading day, not the UTC date (plan §4).
+const todayISO = () => eventsToday();
 
 export function MobileParties() {
   const { operator } = useOperator();
@@ -52,7 +66,9 @@ export function MobileParties() {
 
   const bump = () => setVersion((v) => v + 1);
 
-  const selectedEvent = findEvent(selectedId, selectedDate, branch.id);
+  // The selected day's events, where the event on screen is found again after each bump.
+  const { events: dayEvents } = useEventsForDate(branch.id, selectedDate || today, version);
+  const selectedEvent = findEvent(selectedId, dayEvents);
   const isPartyEvent = selectedEvent?.type === 'party';
   // Check-in is scoped to today's session only (matches the iPad Events tab).
   // Browsing another date shows the roster read-only.
@@ -76,6 +92,7 @@ export function MobileParties() {
 
   const handleTakePayment = (amount: number, method: PartyPaymentMethod) => {
     if (!operator || !selectedId) return;
+    if (writePending(selectedId)) return;
     addPartyPayment(selectedId, {
       amount,
       method,
@@ -87,6 +104,7 @@ export function MobileParties() {
 
   const handleEventCheckIn = (eventId: string, attendeeId: string) => {
     if (!operator) return;
+    if (writePending(eventId)) return;
     const result = checkInEventAttendee(eventId, attendeeId, today, {
       operatorName: operator.name,
       operatorId: operator.id,
@@ -96,7 +114,7 @@ export function MobileParties() {
       bump();
       return;
     }
-    const ev = getEventsForDate(today, branch.id).find((e) => e.id === eventId);
+    const ev = getEventById(eventId);
     if (ev) {
       if (station) {
         const jobs = eventBraceletPrintJobs(station, {
@@ -127,7 +145,8 @@ export function MobileParties() {
   };
 
   const handleEventReprint = (eventId: string, attendeeId: string) => {
-    const ev = getEventsForDate(today, branch.id).find((e) => e.id === eventId);
+    if (writePending(eventId)) return;
+    const ev = getEventById(eventId);
     const attendee = ev?.attendees?.find((a) => a.id === attendeeId);
     const record = attendee?.checkinByDate?.[today];
     if (!ev || !attendee || !record) return;
@@ -159,6 +178,7 @@ export function MobileParties() {
 
   const handleEventCheckOut = (eventId: string, attendeeId: string) => {
     if (!operator) return;
+    if (writePending(eventId)) return;
     const att = checkOutEventAttendee(eventId, attendeeId, today, {
       operatorName: operator.name,
       operatorId: operator.id,
@@ -174,6 +194,7 @@ export function MobileParties() {
     total: number,
   ) => {
     if (!operator || !selectedId) return;
+    if (writePending(selectedId)) return;
     addPartyExtraCharge(selectedId, {
       kind: 'fnb',
       items,
@@ -200,8 +221,14 @@ export function MobileParties() {
           <MobilePartyDetail
             party={selectedEvent as unknown as PartyBooking}
             onBack={handleBackToList}
-            onTakePayment={() => setStep('payment')}
-            onAddFnb={() => setStep('fnb')}
+            // S2-20 E1: refused before the payment or F&B flow opens, so the
+            // guest is never shown a "thank you" for money nothing recorded.
+            onTakePayment={() => {
+              if (!writePending(selectedEvent.id)) setStep('payment');
+            }}
+            onAddFnb={() => {
+              if (!writePending(selectedEvent.id)) setStep('fnb');
+            }}
           />
         </div>
       );

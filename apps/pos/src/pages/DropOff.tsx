@@ -4,11 +4,12 @@ import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent, E
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
 import {
   getEventDropInPricing,
-  getEventsForDate,
+  getEventById,
   checkInEventAttendee,
   checkOutEventAttendee,
   type NewEventAttendeeInput,
 } from '@/mockApi';
+import { EVENT_WRITE_PENDING, eventsToday, useEventsForDate } from '@/api/events';
 import type { ReleaseView } from '@oto/shared';
 import type { Wristband } from '@/types';
 import { releaseApi } from '@/api/release';
@@ -106,7 +107,9 @@ function familyTab(family: CheckIn[]): Tab {
   return 'out';
 }
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// S2-20 E1 — the events board's day is the branch's trading day, not the UTC
+// date (plan §4).
+const todayISO = () => eventsToday();
 
 /** The platform's refusal, in its own words (they are written for the counter). */
 function messageOf(err: unknown): string {
@@ -149,13 +152,24 @@ export default function DropOff() {
   const today = todayISO();
   const branchId = branch.id;
 
+  // S2-20 E1 — `GET /events` for today, read again when eventsVersion or the
+  // board tab moves (where the prototype re-read its store) and every 30 s on
+  // the Events tab, as the drop-off board polls: another till's or the OTO
+  // App's check-ins land without a reload.
+  const [eventsPoll, setEventsPoll] = useState(0);
+  useEffect(() => {
+    if (boardTab !== 'events') return;
+    const id = window.setInterval(() => setEventsPoll((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, [boardTab]);
+  const { events: dayEvents, loaded: eventsLoaded, error: eventsError } = useEventsForDate(
+    branchId,
+    today,
+    `${eventsVersion}|${boardTab}|${eventsPoll}`,
+  );
   const todaysEvents = useMemo(
-    () =>
-      getEventsForDate(today, branchId).filter(
-        (e) => (e.attendees?.length ?? 0) > 0,
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- kept as written: eventsVersion and boardTab re-read the events store; adding today would also re-read it on its own when the date turns
-    [eventsVersion, boardTab, branchId],
+    () => dayEvents.filter((e) => (e.attendees?.length ?? 0) > 0),
+    [dayEvents],
   );
 
   const selectedEvent = useMemo(
@@ -166,7 +180,20 @@ export default function DropOff() {
   const operatorName = operator?.name ?? 'Unknown';
   const operatorId = operator?.id ?? 'unknown';
 
+  /**
+   * S2-20 E1 — the board's events are the OTO App's now, which the prototype's
+   * in-memory mutators cannot find: checking in or out, a reprint and a walk-up
+   * are written on the platform by E2 and E3, and until then say so rather
+   * than answer "already checked in" for a child nobody checked in.
+   */
+  const writePending = (eventId: string): boolean => {
+    if (getEventById(eventId)) return false;
+    toast(EVENT_WRITE_PENDING);
+    return true;
+  };
+
   const handleEventCheckIn = (eventId: string, attendeeId: string) => {
+    if (writePending(eventId)) return;
     const result = checkInEventAttendee(eventId, attendeeId, today, { operatorName, operatorId });
     if (!result) {
       toast({ title: 'Already checked in', description: 'This child is already checked in for today.' });
@@ -191,6 +218,7 @@ export default function DropOff() {
   };
 
   const handleEventCheckOut = (eventId: string, attendeeId: string) => {
+    if (writePending(eventId)) return;
     const att = checkOutEventAttendee(eventId, attendeeId, today, { operatorName, operatorId });
     if (att) {
       toast({ title: 'Checked out', description: `${att.name} has been checked out.` });
@@ -205,6 +233,8 @@ export default function DropOff() {
     const attendee = ev?.attendees?.find((a) => a.id === attendeeId);
     const record = attendee?.checkinByDate?.[today];
     if (!ev || !attendee || !record?.checkedInAt || record.checkedOutAt) return;
+    // No band code is known for a check-in the platform did not make (E3).
+    if (writePending(eventId)) return;
     if (!station) {
       toast({
         title: 'No printer',
@@ -254,6 +284,7 @@ export default function DropOff() {
   }): boolean => {
     const ev = selectedEvent;
     if (!ev) return false;
+    if (writePending(ev.id)) return false;
     const attendee = sellEventPass({
       event: ev,
       input: result.input,
@@ -820,6 +851,8 @@ export default function DropOff() {
                 events={todaysEvents}
                 today={today}
                 eventsVersion={eventsVersion}
+                loaded={eventsLoaded}
+                error={eventsError}
                 onSelect={setSelectedEventId}
               />
             )
@@ -1055,19 +1088,26 @@ export default function DropOff() {
 function EventsBoardList({
   events,
   today,
+  loaded,
+  error,
   onSelect,
 }: {
   events: OtoEvent[];
   today: string;
   eventsVersion: number;
+  /** S2-20 E1: false until today's first answer is in, so "No events today" is never said early. */
+  loaded: boolean;
+  /** S2-20 E1: why there is no list (no platform branch, a refused read), said where the list would be. */
+  error: string | null;
   onSelect: (id: string) => void;
 }) {
   if (events.length === 0) {
+    if (!loaded) return <div className="flex-1" />;
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
         <PartyPopper className="w-12 h-12 mb-3 opacity-40" />
-        <p className="font-semibold">No events today</p>
-        <p className="text-sm mt-1 text-muted-foreground/70">Events with registered attendees appear here.</p>
+        <p className="font-semibold">{error ? 'Events could not be loaded' : 'No events today'}</p>
+        <p className="text-sm mt-1 text-muted-foreground/70">{error ?? 'Events with registered attendees appear here.'}</p>
       </div>
     );
   }

@@ -3,10 +3,11 @@ import type { ReleaseView } from '@oto/shared';
 import { CheckIn, CheckInStatus, ContactChannel, DropOffServiceType, OtoEvent } from '@/types';
 import { CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
 import {
-  getEventsForDate,
+  getEventById,
   checkInEventAttendee,
   checkOutEventAttendee,
 } from '@/mockApi';
+import { EVENT_WRITE_PENDING, eventsToday, useEventsForDate } from '@/api/events';
 import {
   boardApi,
   boardChildToCheckIn,
@@ -50,7 +51,8 @@ type ServiceFilter = 'all' | DropOffServiceType;
 type View = 'board' | 'detail';
 type BoardTab = 'dropoff' | 'events';
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// S2-20 E1 — the branch's trading day, not the UTC date (plan §4).
+const todayISO = () => eventsToday();
 
 const EVENT_TYPE_BADGE: Record<OtoEvent['type'], string> = {
   party: 'bg-violet-500/15 text-violet-400',
@@ -355,11 +357,36 @@ export function MobileDropOffBoard() {
   const [eventsVersion, setEventsVersion] = useState(0);
   const refreshEvents = () => setEventsVersion((v) => v + 1);
 
-  const todaysEvents = useMemo(
-    () => getEventsForDate(today, branch.id).filter((e) => (e.attendees?.length ?? 0) > 0),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- eventsVersion is the refresh bump: getEventsForDate() reads the in-memory events store, which changes outside React
-    [eventsVersion, today, branch.id],
+  // S2-20 E1 — `GET /events` for today, read again on the refresh bump, on
+  // a switch to the Events tab and every 30 s while it is open, as the
+  // drop-off board polls.
+  const [eventsPoll, setEventsPoll] = useState(0);
+  useEffect(() => {
+    if (boardTab !== 'events') return;
+    const id = window.setInterval(() => setEventsPoll((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, [boardTab]);
+  const { events: dayEvents, loaded: eventsLoaded, error: eventsError } = useEventsForDate(
+    branch.id,
+    today,
+    `${eventsVersion}|${boardTab}|${eventsPoll}`,
   );
+  const todaysEvents = useMemo(
+    () => dayEvents.filter((e) => (e.attendees?.length ?? 0) > 0),
+    [dayEvents],
+  );
+
+  /**
+   * S2-20 E1 — the events are the OTO App's now, which the prototype's
+   * in-memory mutators cannot find: a check-in, a check-out and a reprint are
+   * written on the platform by E3, and until then say so rather than answer
+   * "already checked in" for a child nobody checked in.
+   */
+  const writePending = (eventId: string): boolean => {
+    if (getEventById(eventId)) return false;
+    toast(EVENT_WRITE_PENDING);
+    return true;
+  };
   const selectedEvent = useMemo(
     () => (selectedEventId ? todaysEvents.find((e) => e.id === selectedEventId) ?? null : null),
     [selectedEventId, todaysEvents],
@@ -376,6 +403,7 @@ export function MobileDropOffBoard() {
   }, [todaysEvents, today]);
 
   const handleEventCheckIn = (eventId: string, attendeeId: string) => {
+    if (writePending(eventId)) return;
     const result = checkInEventAttendee(eventId, attendeeId, today, { operatorName, operatorId });
     if (!result) {
       toast({ title: 'Already checked in', description: 'This child is already checked in for today.' });
@@ -413,6 +441,7 @@ export function MobileDropOffBoard() {
   };
 
   const handleEventCheckOut = (eventId: string, attendeeId: string) => {
+    if (writePending(eventId)) return;
     const att = checkOutEventAttendee(eventId, attendeeId, today, { operatorName, operatorId });
     if (att) {
       toast({ title: 'Checked out', description: `${att.name} has been checked out.` });
@@ -425,6 +454,8 @@ export function MobileDropOffBoard() {
     const attendee = ev?.attendees?.find((a) => a.id === attendeeId);
     const record = attendee?.checkinByDate?.[today];
     if (!ev || !attendee || !record) return;
+    // No band code is known for a check-in the platform did not make (E3).
+    if (writePending(eventId)) return;
     if (!station) {
       toast({ title: 'No printer configured', description: 'Set up this station before reprinting a band.' });
       return;
@@ -799,6 +830,8 @@ export function MobileDropOffBoard() {
               <EventsCheckInList
                 events={todaysEvents}
                 today={today}
+                loaded={eventsLoaded}
+                error={eventsError}
                 onSelect={setSelectedEventId}
               />
             )
@@ -1054,19 +1087,26 @@ export function MobileDropOffBoard() {
 function EventsCheckInList({
   events,
   today,
+  loaded,
+  error,
   onSelect,
 }: {
   events: OtoEvent[];
   today: string;
+  /** S2-20 E1: false until today's first answer is in, so "No events today" is never said early. */
+  loaded: boolean;
+  /** S2-20 E1: why there is no list, said where the list would be. */
+  error: string | null;
   onSelect: (id: string) => void;
 }) {
   if (events.length === 0) {
+    if (!loaded) return <div className="flex-1" />;
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground px-4">
         <PartyPopper className="w-10 h-10 mb-3 opacity-40" />
-        <p className="text-sm font-semibold">No events today</p>
+        <p className="text-sm font-semibold">{error ? 'Events could not be loaded' : 'No events today'}</p>
         <p className="text-xs mt-1 text-muted-foreground/70">
-          Events with registered attendees appear here.
+          {error ?? 'Events with registered attendees appear here.'}
         </p>
       </div>
     );

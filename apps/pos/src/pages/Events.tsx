@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { useSearch } from 'wouter';
 import { StationHeader } from '@/components/shared/StationHeader';
 import { EventType, PartyBooking } from '@/types';
-import { getEventsForDate } from '@/mockApi';
+import { addDaysToIsoDate } from '@oto/shared';
+import { eventsToday, useEventsForDate } from '@/api/events';
 import { useBranch } from '@/branch/BranchContext';
 import { computePartyOutstanding, PARTY_STATUS_LABELS } from '@/lib/party';
 import { Button } from '@/components/ui/button';
@@ -41,13 +42,14 @@ const STATUS_STYLE: Record<PartyBooking['status'], string> = {
   cancelled: 'bg-destructive/15 text-destructive',
 };
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// S2-20 E1 — the branch's trading day, not the UTC date (plan §4): between
+// midnight and 07:00 in Bangkok the UTC date is still yesterday.
+const todayISO = () => eventsToday();
 
-const shiftDate = (iso: string, days: number) => {
-  const d = new Date(iso + 'T00:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-};
+// Calendar arithmetic with no timezone in it. The prototype's local-midnight
+// round trip through `toISOString` lands on the previous day east of UTC, so
+// "next day" never moved in Bangkok.
+const shiftDate = (iso: string, days: number) => addDaysToIsoDate(iso, days);
 
 const fmtDate = (iso: string) =>
   new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {
@@ -74,11 +76,8 @@ export default function Events() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [version, setVersion] = useState(0);
 
-  const allEvents = useMemo(
-    () => getEventsForDate(date, branch.id),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- version is bumped by onChanged to re-read the events store after a change
-    [date, branch.id, version],
-  );
+  // `GET /events` for the day (S2-20 E1); `version` is bumped by onChanged to read it again after a change.
+  const { events: allEvents, loaded, error } = useEventsForDate(branch.id, date, version);
   const events = useMemo(
     () => (typeFilter === 'all' ? allEvents : allEvents.filter((e) => e.type === typeFilter)),
     [allEvents, typeFilter],
@@ -160,10 +159,17 @@ export default function Events() {
               </div>
 
               {events.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
-                  <PartyPopper className="w-12 h-12 mb-3 opacity-40" />
-                  <p>No events booked for this day.</p>
-                </div>
+                // Nothing until the first answer for the day is in, so an
+                // empty day is never claimed before it is known; a refused
+                // read says why in the same place.
+                loaded ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground">
+                    <PartyPopper className="w-12 h-12 mb-3 opacity-40" />
+                    <p>{error ?? 'No events booked for this day.'}</p>
+                  </div>
+                ) : (
+                  <div className="flex-1" />
+                )
               ) : (
                 <ScrollArea className="flex-1 -mx-1 px-1">
                   <div className="space-y-2">

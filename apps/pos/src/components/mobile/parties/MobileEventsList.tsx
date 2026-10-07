@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { EventType, PartyBooking } from '@/types';
-import { getEventsForDate } from '@/mockApi';
+import { addDaysToIsoDate } from '@oto/shared';
+import { eventsToday, useEventsForDate } from '@/api/events';
 import { useBranch } from '@/branch/BranchContext';
 import { computePartyOutstanding, PARTY_STATUS_LABELS } from '@/lib/party';
 import { Button } from '@/components/ui/button';
@@ -43,13 +44,12 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: 'event', label: 'Events' },
 ];
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// S2-20 E1 — the branch's trading day, not the UTC date (plan §4).
+const todayISO = () => eventsToday();
 
-const shiftDate = (iso: string, days: number) => {
-  const d = new Date(iso + 'T00:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-};
+// Calendar arithmetic with no timezone in it: the prototype's local-midnight
+// round trip through `toISOString` lands on the previous day east of UTC.
+const shiftDate = (iso: string, days: number) => addDaysToIsoDate(iso, days);
 
 const fmtDate = (iso: string) =>
   new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', {
@@ -69,11 +69,8 @@ export function MobileEventsList({ version, onSelectEvent }: MobileEventsListPro
   const [date, setDate] = useState(todayISO());
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
-  const allEvents = useMemo(
-    () => getEventsForDate(date, branch.id),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- version is the host's refresh bump: getEventsForDate() reads the in-memory events store, which changes outside React
-    [date, branch.id, version],
-  );
+  // `GET /events` for the day (S2-20 E1); `version` is the host's refresh bump.
+  const { events: allEvents, loaded, error } = useEventsForDate(branch.id, date, version);
   const events = useMemo(
     () => (typeFilter === 'all' ? allEvents : allEvents.filter((e) => e.type === typeFilter)),
     [allEvents, typeFilter],
@@ -141,10 +138,15 @@ export function MobileEventsList({ version, onSelectEvent }: MobileEventsListPro
 
       {/* Event list */}
       {events.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground p-8">
-          <PartyPopper className="w-12 h-12 mb-3 opacity-40" />
-          <p className="text-sm">No events for this day.</p>
-        </div>
+        // Nothing until the day's first answer is in; a refused read says why.
+        loaded ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground p-8">
+            <PartyPopper className="w-12 h-12 mb-3 opacity-40" />
+            <p className="text-sm">{error ?? 'No events for this day.'}</p>
+          </div>
+        ) : (
+          <div className="flex-1" />
+        )
       ) : (
         <ScrollArea className="flex-1">
           <div className="p-4 space-y-3">

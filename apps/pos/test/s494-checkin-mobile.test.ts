@@ -220,8 +220,11 @@ describe('s494-checkin: the phone check-in shell writes nothing to the in-memory
       // A chained call may break the line before its dot.
       expect(src, call).toMatch(new RegExp(`${owner}\\s*\\.${method!.replace('(', '\\(')}`));
     }
-    // Only the events tab stays on the in-memory store, as the desktop board's does.
-    expect(mockImportsOf(src).sort()).toEqual(['checkInEventAttendee', 'checkOutEventAttendee', 'getEventsForDate']);
+    // Only the events tab's writes stay on the in-memory store, as the desktop
+    // board's do: since S2-20 E1 the day's events are read from the platform,
+    // and `getEventById` only asks whether an event is the mock store's own
+    // before a check-in, which E3 puts on the platform.
+    expect(mockImportsOf(src).sort()).toEqual(['checkInEventAttendee', 'checkOutEventAttendee', 'getEventById']);
   });
 
   it('the phone release view releases through the platform', () => {
