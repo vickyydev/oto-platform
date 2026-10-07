@@ -399,9 +399,11 @@ describe("2. after the OTO App's own undo, two tills check the child in again at
   it('the first press replayed afterwards, and its Retry, change nothing: no band, no send, the winner stands', async () => {
     const bandsBefore = (await ctx.db.select({ n: sql<number>`count(*)::int` }).from(band))[0]!.n;
     const sentBefore = sent.length;
-    const replay = await post<EventCheckinAnswer>(reception, checkinUrl(kid.uno), body(first));
-    expect(replay.status, JSON.stringify(replay.body)).toBe(200);
-    expect(replay.body).toMatchObject({ replayed: true, printJobs: [], checkin: { id: first } });
+    // S2-20 E5 (closing audit, a): the press is told its check-in was taken
+    // back, never answered "checked in" with the codes of its revoked bands.
+    const replay = await post<Refusal>(reception, checkinUrl(kid.uno), body(first));
+    expect(replay.status, JSON.stringify(replay.body)).toBe(409);
+    expect(replay.body.error.code).toBe('EVENT_CHECKIN_TAKEN_BACK');
     await retryCheckinWriteBack({ db: ctx.db, directory }, { operatorId, checkinId: first, errorCode: null, reach: { kind: 'operator' } });
     expect(sent.slice(sentBefore).some((s) => s.body.id === first)).toBe(false);
     expect((await ctx.db.select({ n: sql<number>`count(*)::int` }).from(band))[0]!.n).toBe(bandsBefore);
