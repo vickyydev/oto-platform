@@ -698,12 +698,20 @@ export async function opsRoutes(app: App): Promise<void> {
     accountId: string,
   ): Promise<string> {
     if (key === 'demo.day') {
-      const { describeDemoDay, seedDemoDay } = await import('@oto/db/seed');
+      const { DemoDayRefusedError, describeDemoDay, seedDemoDay } = await import('@oto/db/seed');
       // Each scenario and each booth press commits atomically; repeating
       // finishes an interrupted seed and tops up a day written before the seed
       // recorded what it records now, without writing anything twice.
-      const counts = await seedDemoDay(app.db);
-      return `${describeDemoDay(counts)} Existing records and closed-day totals were kept.`;
+      try {
+        const counts = await seedDemoDay(app.db);
+        return `${describeDemoDay(counts)} Existing records and closed-day totals were kept.`;
+      } catch (err) {
+        // SCRUM-503: a refusal — a code prefix in use, a demo booth left
+        // without a wheel — reaches the person who pressed in its own words,
+        // as the refusal it is (409), not as a server fault. A fault stays one.
+        if (err instanceof DemoDayRefusedError) throw errors.conflict('DEMO_DAY_REFUSED', err.message);
+        throw err;
+      }
     }
     if (key === 'watchdog.run') {
       const outcome = await jobRunner().runJob(WATCHDOG_JOB, { force: true });

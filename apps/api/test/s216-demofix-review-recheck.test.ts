@@ -222,7 +222,7 @@ describe('the demo booth in the Console', () => {
     expect(refused.json<{ error: { code: string } }>().error.code).toBe('BOX_HAS_LIVE_STATIONS');
   });
 
-  it('OBSERVED: a demo booth renamed (outside the Console) stops the next press — it is not found by name, and its own prefix refuses a new one', async () => {
+  it('OBSERVED: a demo booth renamed (outside the Console) stops the next press — it is not found by name, and its own prefix refuses a new one, in words', async () => {
     const booth = await demoBooth();
     await ctx.db.update(station).set({ name: 'Demo Booth One' }).where(eq(station.id, booth.id));
     try {
@@ -231,14 +231,14 @@ describe('the demo booth in the Console', () => {
         'Code prefix DB is already used by Demo Booth One at Demo Branch 2',
       );
       expect(await demoDayRows()).toEqual(before);
-      // OBSERVED: through Health's control the refusal's words never reach the
-      // person who pressed it — a plain Error is the api's generic 500.
+      // Through Health's control the refusal's own words reach the person who
+      // pressed it, as a 409 in the api's error shape (SCRUM-503; this was the
+      // api's generic 500 while the seed threw a plain Error).
       const pressed = await send('POST', '/ops/test-controls/demo.day');
-      expect(pressed.statusCode).toBe(500);
-      expect(pressed.json<{ error: { code: string; message: string } }>().error).toEqual({
-        code: 'INTERNAL',
-        message: 'Internal server error',
-      });
+      expect(pressed.statusCode).toBe(409);
+      const { error } = pressed.json<{ error: { code: string; message: string } }>();
+      expect(error.code).toBe('DEMO_DAY_REFUSED');
+      expect(error.message).toMatch(/^Code prefix DB is already used by Demo Booth One at Demo Branch 2, so the demo booth cannot be made with it./);
       expect(await demoDayRows()).toEqual(before);
     } finally {
       await ctx.db.update(station).set({ name: DEMO_BOOTH_NAME }).where(eq(station.id, booth.id));

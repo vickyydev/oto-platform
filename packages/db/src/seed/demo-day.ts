@@ -87,6 +87,7 @@ import {
   type DemoBoothPrizeCode,
   type DemoBoothStaff,
 } from './demo-booth';
+import { DemoDayRefusedError } from './demo-refusal';
 import { seedLegacyFixtureDays } from './legacy-fixtures';
 import { stableId } from './stable-id';
 
@@ -598,7 +599,7 @@ export function describeDemoDay(counts: DemoDayCounts): string {
 }
 
 /** Refused before anything is written: demo sales never reach a live park. */
-export class DemoBranchRefusedError extends Error {
+export class DemoBranchRefusedError extends DemoDayRefusedError {
   constructor(code: string) {
     super(`Demo sales are written to ${DEMO_BRANCH_NAME} only; "${code}" is not a demo branch.`);
     this.name = 'DemoBranchRefusedError';
@@ -634,7 +635,7 @@ export async function seedDemoDay(
     .where(and(eq(s.station.branchId, branchId), eq(s.station.name, STATION_NAME)))
     .limit(1);
   if (!station?.codePrefix) {
-    throw new Error(`No station "${STATION_NAME}" with a code prefix at ${branchName}.`);
+    throw new DemoDayRefusedError(`No station "${STATION_NAME}" with a code prefix at ${branchName}.`);
   }
   const stationCodePrefix = station.codePrefix;
 
@@ -643,7 +644,7 @@ export async function seedDemoDay(
     .from(s.branchTaxConfig)
     .where(eq(s.branchTaxConfig.branchId, branchId))
     .limit(1);
-  if (!taxRow) throw new Error(`No tax config for ${branchName}.`);
+  if (!taxRow) throw new DemoDayRefusedError(`No tax config for ${branchName}.`);
   const taxConfig = taxRow.config as TaxConfigShape;
 
   const packages = new Map<string, string>();
@@ -667,7 +668,7 @@ export async function seedDemoDay(
     .innerJoin(s.employee, eq(s.employee.id, s.account.employeeId))
     .where(and(eq(s.account.operatorId, operatorId), eq(s.employee.name, 'Som (Reception)')))
     .limit(1);
-  if (!cashier) throw new Error('No reception account to attribute the day to. Run `pnpm db:seed` first.');
+  if (!cashier) throw new DemoDayRefusedError('No reception account to attribute the day to. Run `pnpm db:seed` first.');
   /** How the till names whoever applied a manual discount, and the booth's roster names its staff. */
   const cashierName = (await displayNameOf(db, cashier.id)) ?? 'Som (Reception)';
   const [manager] = await db
@@ -1049,7 +1050,7 @@ export async function ensureDemoBranch(db: Db): Promise<DemoBranch> {
         .limit(1)
     : [];
   if (!operator || !template) {
-    throw new Error('No park to model the demo branch on. Run `pnpm db:seed` first — this seeds on top of it.');
+    throw new DemoDayRefusedError('No park to model the demo branch on. Run `pnpm db:seed` first — this seeds on top of it.');
   }
   const operatorId = operator.id;
 
@@ -1213,7 +1214,7 @@ async function seedDemoVoucherDiscount(writer: SeedWriter, input: {
     .from(s.voucherDefinition).where(and(eq(s.voucherDefinition.operatorId, input.operatorId),
       eq(s.voucherDefinition.code, input.definitionCode))).limit(1);
   if (!definition || definition.kind !== 'discount' || definition.valueSatang !== input.discountSatang) {
-    throw new Error('The seeded demo discount voucher definition is missing or has changed');
+    throw new DemoDayRefusedError('The seeded demo discount voucher definition is missing or has changed');
   }
   const won = await writeDemoBoothPress(writer, input.booth, {
     key: `${input.saleId}/booth`,
@@ -1352,7 +1353,7 @@ async function seedDemoCashRefund(db: Db, input: {
     const [manager] = await writer.select({ id: s.account.id }).from(s.account)
       .innerJoin(s.employee, eq(s.employee.id, s.account.employeeId))
       .where(and(eq(s.account.operatorId, input.operatorId), eq(s.employee.name, 'Khun Lek (Manager)'))).limit(1);
-    if (!sale || !cashAttempt || !manager) throw new Error('The demo cash refund needs its original sale, cash tender and branch manager');
+    if (!sale || !cashAttempt || !manager) throw new DemoDayRefusedError('The demo cash refund needs its original sale, cash tender and branch manager');
     const number = await allocateReceipt(writer, { operatorId: input.operatorId, branchId: input.branchId,
       stationId: input.stationId, series: `${input.series}-R`, at: input.occurredAt }, 'refund');
     const amountSatang = b(100);

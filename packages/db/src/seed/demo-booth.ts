@@ -63,6 +63,7 @@ import {
 import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { Db } from '../index';
 import * as s from '../schema/index';
+import { DemoDayRefusedError } from './demo-refusal';
 import { stableId, stableJson } from './stable-id';
 
 const b = satangFromBaht;
@@ -190,10 +191,10 @@ export async function ensureDemoBooth(
       made = true;
     }
     if (!station.codePrefix) {
-      throw new Error(`${DEMO_BOOTH_NAME} at the demo branch has no code prefix, so it prints no voucher. Give it one in Console > Booths.`);
+      throw new DemoDayRefusedError(`${DEMO_BOOTH_NAME} at the demo branch has no code prefix, so it prints no voucher. Give it one in Console > Booths.`);
     }
     if (!station.boxId) {
-      throw new Error(`${DEMO_BOOTH_NAME} at the demo branch stands on no box, so nothing runs its wheel.`);
+      throw new DemoDayRefusedError(`${DEMO_BOOTH_NAME} at the demo branch stands on no box, so nothing runs its wheel.`);
     }
 
     // The wheel the booth runs: its latest published version.
@@ -207,7 +208,7 @@ export async function ensureDemoBooth(
       // A booth this run did not make, with no wheel published: somebody is
       // setting it up in the Console, and the seed does not publish for them.
       if (!made) {
-        throw new Error(
+        throw new DemoDayRefusedError(
           `${DEMO_BOOTH_NAME} at the demo branch has no published wheel. Publish it from Console > Booths, then add the demo day again.`,
         );
       }
@@ -216,7 +217,7 @@ export async function ensureDemoBooth(
 
     const prizes = await drawableSlices(tx, operatorId, version.bundle);
     if (!prizes.has(DEMO_BOOTH_PRIZES[0].definition)) {
-      throw new Error(
+      throw new DemoDayRefusedError(
         `${DEMO_BOOTH_NAME}'s published wheel has no "${DEMO_BOOTH_PRIZES[0].nameEn}" slice to draw, and the demo day's voucher sale spends one. ` +
           'Put one back on the wheel and publish it from Console > Booths.',
       );
@@ -261,7 +262,7 @@ async function makeDemoBoothStation(
     )
     .limit(1);
   if (other) {
-    throw new Error(
+    throw new DemoDayRefusedError(
       `Code prefix ${DEMO_BOOTH_PREFIX} is already used by ${other.name} at ${other.branchName}, so the demo booth cannot be made with it. ` +
         'Every booth needs a prefix of its own, because it starts every voucher code the booth prints.',
     );
@@ -323,7 +324,7 @@ async function makeDemoWheel(
     .where(and(eq(s.boothLayout.operatorId, operatorId), isNull(s.boothLayout.archivedAt)))
     .orderBy(sql`${s.boothLayout.name} = ${DEMO_BOOTH_LAYOUT_NAME} desc`, asc(s.boothLayout.createdAt))
     .limit(1);
-  if (!layout) throw new Error('No booth design to give the demo booth. Run `pnpm db:seed` first.');
+  if (!layout) throw new DemoDayRefusedError('No booth design to give the demo booth. Run `pnpm db:seed` first.');
 
   await tx
     .insert(s.boothSettings)
@@ -344,7 +345,7 @@ async function makeDemoWheel(
     types.set(row.code, row.id);
   }
   if (!types.has(DEMO_BOOTH_PRIZES[0].definition)) {
-    throw new Error(`No voucher type "${DEMO_BOOTH_PRIZES[0].definition}" for the demo booth's wheel. Run \`pnpm db:seed\` first.`);
+    throw new DemoDayRefusedError(`No voucher type "${DEMO_BOOTH_PRIZES[0].definition}" for the demo booth's wheel. Run \`pnpm db:seed\` first.`);
   }
   const onWheel = DEMO_BOOTH_PRIZES.filter((p) => types.has(p.definition));
   // Re-weighted over the types present, to exactly 10,000 (D4); the first takes the rounding.
@@ -435,7 +436,7 @@ async function drawableSlices(
   bundle: unknown,
 ): Promise<Map<DemoBoothPrizeCode, DemoBoothPrize>> {
   const read = BoothConfigPrizeSchema.array().safeParse((bundle as { prizes?: unknown } | null)?.prizes);
-  if (!read.success) throw new Error(`${DEMO_BOOTH_NAME}'s published wheel could not be read.`);
+  if (!read.success) throw new DemoDayRefusedError(`${DEMO_BOOTH_NAME}'s published wheel could not be read.`);
   // As the box judges a slice before it draws: active, weighted above zero, and
   // winning a voucher type (a slice with none cannot be published).
   const drawable = read.data.filter((p) => p.active && p.weightBp > 0 && p.voucherDefinitionId !== null);

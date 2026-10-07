@@ -65,6 +65,8 @@ export {
 export { BENEFIT_SEED_EFFECTIVE_FROM, seedBenefitTemplates } from './benefits';
 /** Demo Branch 2's own booth, whose day the demo day files beside its sales. */
 export { DEMO_BOOTH_NAME, DEMO_BOOTH_PREFIX } from './demo-booth';
+/** What the demo day refuses with before it writes, in words a person can act on (SCRUM-503). */
+export { DemoDayRefusedError } from './demo-refusal';
 /** The frozen legacy days the demo day loads at Demo Branch 2 (S2-15b round 6). */
 export {
   LEGACY_FIXTURE_DAYS,
