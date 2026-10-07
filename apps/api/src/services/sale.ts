@@ -1872,10 +1872,13 @@ export async function priceCart(
    * lines (the prototype's `applyStaffBenefits`, on the raw lines), and landed
    * as one "Staff benefit" row AFTER the order's own manual discounts and
    * before any promo code (plan Q11's default). A till's own "Staff benefit"
-   * row, with no application behind it, is refused rather than priced (H16).
+   * row, with no application behind it, is refused rather than priced (H16) —
+   * and so is a manual discount carrying the scan's application id, which is
+   * the id of the row the platform builds for the benefit.
    */
+  const scanApplicationId = input.benefitOffline?.applicationId ?? input.benefit?.applicationId ?? null;
   for (const discount of input.manualDiscounts ?? []) {
-    if (isStaffBenefitReason(discount.reason)) {
+    if (isStaffBenefitReason(discount.reason) || discount.id === scanApplicationId) {
       throw errors.conflict(
         BENEFIT_CHECKOUT_REFUSALS.DISCOUNT_UNLINKED,
         BENEFIT_CHECKOUT_WORDS.unlinked,

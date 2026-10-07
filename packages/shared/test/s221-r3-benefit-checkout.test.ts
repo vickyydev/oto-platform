@@ -169,6 +169,27 @@ describe('the "Staff benefit" row', () => {
     for (const r of ['Staff benefit', ' staff  BENEFIT ', 'STAFF BENEFIT']) expect(isStaffBenefitReason(r)).toBe(true);
     for (const r of ['Staff / family', 'Staff benefits', '', null]) expect(isStaffBenefitReason(r)).toBe(false);
   });
+
+  it('recognises it however it prints: no character that shows nothing, nor a compatibility form, hides it', () => {
+    for (const r of [
+      'Staff benefit​', // zero-width space
+      '﻿Staff benefit', // byte-order mark
+      'Staff‍ benefit', // zero-width joiner
+      'Sta­ff benefit', // soft hyphen
+      '‮Staff benefit‬', // bidi override
+      'Staff⁠ benefit', // word joiner
+      'Staff benefit️', // variation selector
+      'Staffㅤ benefit', // Hangul filler
+      'Staff benefit', // no-break space
+      'Staff　benefit', // ideographic space
+      'Ｓｔａｆｆ ｂｅｎｅｆｉｔ', // full-width letters
+    ]) {
+      expect(isStaffBenefitReason(r), JSON.stringify(r)).toBe(true);
+    }
+    for (const r of ['Staff​benefits', 'Staff benefit!', 'Staff benefit​2']) {
+      expect(isStaffBenefitReason(r), JSON.stringify(r)).toBe(false);
+    }
+  });
 });
 
 describe('where the row’s money sits (H14)', () => {

@@ -876,7 +876,13 @@ export function priceOfflineSale(
    * and the standing percent — by the engine every surface prices with,
    * landed as the same one row after the order's own manual discounts.
    */
-  if (cart.manualDiscounts.some((d) => isStaffBenefitReason(d.reason))) {
+  // A manual discount carrying the scan's application id would ride on the
+  // id of the row this builds for the benefit: refused as the platform does.
+  if (
+    cart.manualDiscounts.some(
+      (d) => isStaffBenefitReason(d.reason) || d.id === cart.benefit?.applicationId,
+    )
+  ) {
     throw new OfflinePriceError(
       BENEFIT_CHECKOUT_REFUSALS.DISCOUNT_UNLINKED,
       BENEFIT_CHECKOUT_WORDS.unlinked,

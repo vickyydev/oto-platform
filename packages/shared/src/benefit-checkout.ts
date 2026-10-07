@@ -45,9 +45,23 @@ import type { TicketCartLine } from './pricing';
 /** The reason the "Staff benefit" row carries — the prototype's word, kept. */
 export const STAFF_BENEFIT_REASON = 'Staff benefit';
 
-/** Is this a "Staff benefit" reason, however a till spelled or spaced it? */
+/**
+ * Is this a "Staff benefit" reason, however a till spelled or spaced it? Read
+ * as it prints: compatibility forms folded (NFKC — a no-break or full-width
+ * space, full-width letters), and every character that prints as nothing
+ * dropped (format characters such as a zero-width space or joiner, a soft
+ * hyphen, a bidi mark, and the other default-ignorable code points such as a
+ * variation selector), before the spacing and the case are folded (H16).
+ */
 export function isStaffBenefitReason(reason: string | null | undefined): boolean {
-  return (reason ?? '').trim().replace(/\s+/g, ' ').toLowerCase() === 'staff benefit';
+  return (
+    (reason ?? '')
+      .normalize('NFKC')
+      .replace(/[\p{Cf}\p{Default_Ignorable_Code_Point}]/gu, '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase() === 'staff benefit'
+  );
 }
 
 /**

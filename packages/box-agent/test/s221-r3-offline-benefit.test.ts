@@ -360,6 +360,28 @@ test('s221-r3 — offline, a revoked QR, a box with no list and a till’s own "
     );
     assert.equal(forged.code, 'BENEFIT_DISCOUNT_UNLINKED');
 
+    // Read as it prints: a zero-width space does not hide the reason.
+    const hidden = await refusal(
+      ask(box, 'cart.quote', {
+        channel: 'fnb',
+        items: [itemLine(HOTDOG)],
+        manualDiscounts: [{ id: uuidv7(), scope: 'order', type: 'comp', value: 0, reason: 'Staff benefit​' }],
+      }),
+    );
+    assert.equal(hidden.code, 'BENEFIT_DISCOUNT_UNLINKED');
+
+    // A manual discount carrying the scan's own id: refused by name, not by the engine's duplicate id.
+    const scan = benefitOf(SOM);
+    const twin = await refusal(
+      ask(box, 'cart.quote', {
+        channel: 'fnb',
+        items: [itemLine(HOTDOG)],
+        benefit: scan,
+        manualDiscounts: [{ id: scan.applicationId, scope: 'order', type: 'fixed', value: 10, reason: 'Service recovery' }],
+      }),
+    );
+    assert.equal(twin.code, 'BENEFIT_DISCOUNT_UNLINKED');
+
     const notFood = await refusal(
       ask(box, 'cart.quote', { channel: 'shop', items: [itemLine(HOTDOG)], benefit: benefitOf(SOM) }),
     );

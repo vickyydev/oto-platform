@@ -1334,23 +1334,56 @@ describe('the Staff Benefits Audit log route (pulled forward from round 4)', () 
 
 describe('recorded in review, not blocking', () => {
   /**
-   * H16's server half compares the reason after folding case and `\s`
-   * whitespace (`isStaffBenefitReason`), so a reason with a format character
-   * in it — `Staff benefit` + U+200B, which prints as "Staff benefit" — is
-   * not refused. Probed in review: POST /sales with that reason, type comp and
-   * the note "Scanned: Khun Anan (owner)" is recorded (200) as an unlinked
-   * "Staff benefit" comp row on the receipt. No rights are gained — reception
-   * may comp by hand (plan Q3, R-08) and the row is audited as the signed-in
-   * account's manual discount — but the receipt and Discounts & Comps then
-   * carry a "Staff benefit" row with nobody's application behind it, which is
-   * what H16 exists to stop. Folding NFKC and dropping \p{Cf} before the
-   * comparison closes it, on the box (`priceOfflineSale`) as on the platform.
+   * Recorded in review as not blocking, and closed in the fix round. H16's
+   * server half compared the reason after folding case and `\s` whitespace
+   * only (`isStaffBenefitReason`), so a reason with a format character in it —
+   * `Staff benefit` + U+200B, which prints as "Staff benefit" — was not
+   * refused: POST /sales with that reason, type comp and the note "Scanned:
+   * Khun Anan (owner)" was recorded (200) as an unlinked "Staff benefit" comp
+   * row on the receipt. No rights were gained — reception may comp by hand
+   * (plan Q3, R-08) and the row was audited as the signed-in account's manual
+   * discount — but the receipt and Discounts & Comps then carried a "Staff
+   * benefit" row with nobody's application behind it, which is what H16
+   * exists to stop. Now the reason is folded NFKC and every character that
+   * prints as nothing is dropped before the comparison, on the box
+   * (`priceOfflineSale`) as on the platform.
    */
-  it.todo('a "Staff benefit" reason carrying a zero-width or other format character is refused BENEFIT_DISCOUNT_UNLINKED');
+  it('a "Staff benefit" reason carrying a zero-width or other format character is refused BENEFIT_DISCOUNT_UNLINKED', async () => {
+    for (const reason of ['Staff benefit​', '⁠Staff‍ benefit', 'Sta­ff benefit﻿']) {
+      const forged = {
+        id: newId(),
+        scope: 'order',
+        type: 'comp',
+        value: 0,
+        reason,
+        note: 'Scanned: Khun Anan (owner)',
+      };
+      const q = await quote(cart([line(item.water)], null, { manualDiscounts: [forged] }));
+      expect(`${q.status} ${q.body.error?.code ?? ''}`, JSON.stringify(reason)).toBe('409 BENEFIT_DISCOUNT_UNLINKED');
+      const saleId = newId();
+      const c = await commit(cart([line(item.water)], null, { manualDiscounts: [forged] }), saleId);
+      expect(`${c.status} ${c.body.error?.code ?? ''}`, JSON.stringify(reason)).toBe('409 BENEFIT_DISCOUNT_UNLINKED');
+      expect(await ctx.db.select().from(sale).where(eq(sale.id, saleId))).toEqual([]);
+    }
+  });
   /**
-   * A manual discount whose id is the scan's application id is refused with
-   * nothing written (the case in (3) above), but by the engine's duplicate-id
-   * `Error` — a 500 INTERNAL — rather than a named 4xx (probed in review).
+   * Recorded in review as not blocking, and closed in the fix round. A manual
+   * discount whose id is the scan's application id was refused with nothing
+   * written (the case in (3) above), but by the engine's duplicate-id `Error`
+   * — a 500 INTERNAL — rather than a named 4xx. Now it is refused before the
+   * pricing, as a discount riding on the benefit's own row.
    */
-  it.todo('a manual discount keyed on the scan’s application id is refused with a named 4xx, not a 500');
+  it('a manual discount keyed on the scan’s application id is refused with a named 4xx, not a 500', async () => {
+    await resetUsage(people.som);
+    const scan = benefitOf(codes.som);
+    const twin = { id: scan.applicationId, scope: 'order', type: 'fixed', value: 10, reason: 'Service recovery' };
+    const q = await quote(cart([line(item.espresso)], scan, { manualDiscounts: [twin] }));
+    expect(`${q.status} ${q.body.error?.code ?? ''}`).toBe('409 BENEFIT_DISCOUNT_UNLINKED');
+    const saleId = newId();
+    const c = await commit(cart([line(item.espresso)], scan, { manualDiscounts: [twin] }), saleId);
+    expect(`${c.status} ${c.body.error?.code ?? ''}`).toBe('409 BENEFIT_DISCOUNT_UNLINKED');
+    expect(await ctx.db.select().from(sale).where(eq(sale.id, saleId))).toEqual([]);
+    expect(await applicationsOf(saleId)).toEqual([]);
+    expect(await usageOf(people.som)).toEqual([]);
+  });
 });
