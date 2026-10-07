@@ -749,11 +749,11 @@ describe('5. the bound, an archived child, and a waiting row with no stored body
    * the fix, only a press of that row's own run met it; the sweep now meets it
    * on EVERY write-back Retry of the operator, oldest first.
    *
-   * As built: the press is a 500. Children sent before the row are in the app
-   * (their runs say so), children after it are not reached, and the press
-   * leaves no `ops.run_retry` audit row.
+   * Fixed at landing: the sweep walks past a row with no body (it stays
+   * counted as waiting), so the press answers and the children after it are
+   * reached.
    */
-  it('as built: a waiting row with no stored body turns every write-back Retry of its operator into a 500', async () => {
+  it('a waiting row with no stored body is walked past, still counted as waiting', async () => {
     await settle();
     const bodiless = await insertLink({
       eventId: ev.edge,
@@ -767,19 +767,22 @@ describe('5. the bound, an archived child, and a waiting row with no stored body
     const run = (await lastFailedRun(pressedChild)).id;
     const auditsBefore = await ctx.db.select({ id: auditLog.id }).from(auditLog).where(eq(auditLog.action, 'ops.run_retry'));
     try {
-      const res = await post<Refusal>(admin, `/ops/runs/${run}/retry`, {});
-      expect(res.status).toBe(500);
-      // The pressed child went first and landed; the row after the bodiless one was never reached.
+      const res = await post<RetryAnswer>(admin, `/ops/runs/${run}/retry`, {});
+      expect(res.status).toBe(200);
+      // The pressed child and the row after the bodiless one both landed;
+      // the bodiless row is untouched and still counted as waiting.
       expect(await linkOf(pressedChild)).toMatchObject({ syncState: 'synced' });
-      expect(await linkOf(later)).toMatchObject({ syncState: 'pending', syncAttempts: 0 });
+      expect(await linkOf(later)).toMatchObject({ syncState: 'synced' });
+      expect(await linkOf(bodiless)).toMatchObject({ syncState: 'pending', syncAttempts: 0 });
+      expect(res.body.waiting).toBe(1);
       const auditsAfter = await ctx.db.select({ id: auditLog.id }).from(auditLog).where(eq(auditLog.action, 'ops.run_retry'));
-      expect(auditsAfter.length).toBe(auditsBefore.length);
+      expect(auditsAfter.length).toBe(auditsBefore.length + 1);
     } finally {
       await ctx.db.update(eventAttendeeLink).set({ archivedAt: new Date() }).where(inArray(eventAttendeeLink.id, [bodiless, later]));
     }
   });
 
-  it.fails('wanted: a row with no stored body is skipped (or reported), and the press still reaches the children after it', async () => {
+  it('a press skips the bodiless row and still reaches the children after it', async () => {
     await settle();
     const bodiless = await insertLink({
       eventId: ev.edge,

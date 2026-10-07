@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import {
   account,
@@ -764,7 +764,12 @@ export async function retryAttendeeWriteBack(
     const others = await db
       .select({ id: eventAttendeeLink.id })
       .from(eventAttendeeLink)
-      .where(and(waitingClause, ne(eventAttendeeLink.id, row.id)))
+      // A waiting row with no stored body cannot be sent (`sendAttendee`
+      // refuses one loudly), and the schema allows it for rounds this one
+      // has not built. The sweep walks past such a row — it stays counted
+      // as waiting below — rather than turning every press into an error
+      // and stranding the children behind it.
+      .where(and(waitingClause, ne(eventAttendeeLink.id, row.id), isNotNull(eventAttendeeLink.writeback)))
       .orderBy(asc(eventAttendeeLink.createdAt), asc(eventAttendeeLink.id))
       .limit(limit - sent);
     for (const other of others) {
