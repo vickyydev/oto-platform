@@ -360,6 +360,12 @@ Size: L.
 - **Q11. Order with other discounts.** The prototype adds the benefit after
   the order's own manual discounts (both before promo codes). The plan
   puts the benefit first. Default: the prototype.
+- **Q12. The staff name on the guest screen** (from the round 2 review):
+  when a benefit card is refused as not set up or revoked, the refusal
+  on the customer display names the staff member. The words follow the
+  prototype's dialog, but the guest-facing copy showing a staff name is
+  worth a choice: keep (default, the design's words) or shorten the
+  guest side to a plain refusal and keep the name on the till side only.
 
 ## 11. Hazards, each with its test
 
