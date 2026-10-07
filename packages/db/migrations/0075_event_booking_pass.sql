@@ -1,7 +1,7 @@
 -- S2-20 E5 (SCRUM-217) — event passes bought online. The plan is
 -- docs/progress/plans/events-kiosk/PLAN.md, the E5 row of §9 and consistency
--- #21. PROVISIONAL NUMBER: built on 0073; the lander renumbers it and
--- regenerates the snapshot at landing.
+-- #21. Landed as 0075, after the benefits daily fact (0074); the snapshot
+-- was regenerated at landing so its chain and tables carry 0074’s.
 --
 -- `pos.event_attendee_link` learns the pass a family bought on the booking
 -- site (mockApi.ts `createBooking` 1085-1115): registered when the booking is
