@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { and, eq, isNull } from 'drizzle-orm';
 import { account, station } from '@oto/db';
 import type { App } from '../app';
-import { errors } from '../lib/errors';
+import { AppError, errors } from '../lib/errors';
+import { BENEFIT_QR_NOT_A_SIGN_IN, hasBenefitCredentialHeader } from '@oto/shared';
 import { clearSessionCookie, setSessionCookie, SESSION_COOKIE } from '../plugins/session';
 import {
   codeRefusalForUnknownPhone,
@@ -58,8 +59,25 @@ export async function authRoutes(app: App): Promise<void> {
       // the Postgres-backed failure throttle rather than by a permission.
       config: { public: true },
       schema: {
-        description: 'Sign in with phone + password; sets the session cookie.',
+        description:
+          'Sign in with phone + password; sets the session cookie. A staff benefit QR read into the phone field is refused 400 `BENEFIT_NOT_A_SIGN_IN`: it applies a benefit at the F&B order station and signs nobody in.',
         body: z.object({ phone: PhoneSchema, password: z.string().min(1) }),
+      },
+      /**
+       * S2-21 round 2 (plan H8) — a staff benefit QR is not a sign-in.
+       *
+       * A scanner held to the lock screen types whatever it reads into the
+       * focused field, and a benefit QR is longer than any phone number, so
+       * the schema alone would answer it with a bare VALIDATION error. It is
+       * named instead, before validation, in sign-in's own words — and it is
+       * no attempt on anybody's account: nothing is looked up, counted or
+       * throttled, and the QR is not logged.
+       */
+      preValidation: async (req) => {
+        const phone = (req.body as { phone?: unknown } | null | undefined)?.phone;
+        if (typeof phone === 'string' && hasBenefitCredentialHeader(phone)) {
+          throw new AppError(400, 'BENEFIT_NOT_A_SIGN_IN', BENEFIT_QR_NOT_A_SIGN_IN);
+        }
       },
     },
     async (req, reply) => {

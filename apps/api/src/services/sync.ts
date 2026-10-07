@@ -141,6 +141,7 @@ import { WALLET_HANDLERS, walletCacheItem } from './sync-wallet';
 import { stockCacheItem, withStockOversold } from './sync-stock';
 /** S2-20 E1 — the branch's events on its business day, read from the OTO App. */
 import { eventsCacheItem } from './events';
+import { benefitsCacheItem } from './benefit-credentials';
 import { describeRegressedPaidFact, type RegressedPaidFact } from './sync-epoch-regressed';
 import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
@@ -4391,12 +4392,18 @@ export async function pullChanges(
   const asked: readonly SyncChangeScope[] | undefined = query.scopes?.length
     ? query.scopes
     : undefined;
-  // `checkin` (S2-13 round 4), `wallets` (S2-14a round 4) and `stock` (S2-14b
-  // round 3) are cache scopes only: never written to the change feed, so a
-  // feed narrowed to one of them is narrowed to nothing of it.
+  // `checkin` (S2-13 round 4), `wallets` (S2-14a round 4), `stock` (S2-14b
+  // round 3), `events` (S2-20 E1) and `benefits` (S2-21 round 2) are cache scopes only: never
+  // written to the change feed, so a feed narrowed to one of them is narrowed
+  // to nothing of it.
   const feedOnly = (names: readonly string[]): SyncChangeScope[] =>
     names.filter(
-      (name): name is SyncChangeScope => name !== 'checkin' && name !== 'wallets' && name !== 'stock',
+      (name): name is SyncChangeScope =>
+        name !== 'checkin' &&
+        name !== 'wallets' &&
+        name !== 'stock' &&
+        name !== 'events' &&
+        name !== 'benefits',
     );
   const scopes =
     role === 'counter'
@@ -4499,6 +4506,15 @@ export const CACHE_SCOPES = [
    * Volatile.
    */
   'events',
+   * S2-21 round 2 — staff benefits with the link down: the `benefit_qr` public
+   * keys, the revocation list, and each person's comp and standing percent by
+   * trading day; the quotas stay in the cloud. One item, built by
+   * `benefitsCacheItem` in `benefit-credentials.ts`. ADMINISTERED, not
+   * volatile: a revocation is somebody's decision, so it moves the bundle's
+   * version and every box takes it on its next refresh rather than on a tick
+   * of its own. Not offered to a box that runs only booths.
+   */
+  'benefits',
 ] as const;
 export type CacheScope = (typeof CACHE_SCOPES)[number];
 
@@ -4947,6 +4963,13 @@ export async function cacheBundle(
     if (scope === 'wallets') {
       // One item, applied whole: balances, the cap, this box's filed spends.
       put('wallets', [await walletCacheItem(db, auth)]);
+      continue;
+    }
+
+    if (scope === 'benefits') {
+      // One item, applied whole: half a revocation list is a revoked QR
+      // admitted.
+      put('benefits', [await benefitsCacheItem(db, operatorId, branchId)]);
       continue;
     }
 

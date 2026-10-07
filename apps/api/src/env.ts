@@ -288,6 +288,41 @@ const EnvSchema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
   /**
+   * The Ed25519 private key that signs staff benefit QRs (S2-21 round 2),
+   * PKCS#8 PEM — the shift token's scheme under its own key and its own
+   * `core.signing_key` purpose, `benefit_qr`.
+   *
+   * Its public half is published at boot and travels to every box in the
+   * `benefits` cache scope, so a box can check a benefit QR with no internet
+   * and can never mint one. Accepted in the same three shapes as
+   * `STAFF_TOKEN_PRIVATE_KEY`.
+   *
+   * A key of its own rather than the shift token's: a benefit QR is printed on
+   * a card that lives for a year, a shift token dies overnight, and retiring
+   * one must not end the other.
+   *
+   * Empty means issuing a QR answers 503 and says what to set; every QR
+   * already printed still verifies wherever its public half is held. Not
+   * generated at boot, for the shift token's reason: a key minted per
+   * instance would make every QR in the park stop verifying on the next deploy.
+   *
+   *   openssl genpkey -algorithm ed25519
+   */
+  BENEFIT_QR_PRIVATE_KEY: z
+    .string()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (!value.trim()) return;
+      try {
+        parseStaffTokenKey(value);
+      } catch (err) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `BENEFIT_QR_PRIVATE_KEY: ${(err as Error).message}`,
+        });
+      }
+    }),
+  /**
    * Staging opt-in for the destructive operational controls — today the demo
    * reset (S2-01c). Deliberately its own flag rather than a NODE_ENV test:
    * the staging deployment runs as a production build, so the only honest way

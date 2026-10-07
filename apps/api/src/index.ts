@@ -6,6 +6,7 @@ import { buildFileStorage } from './services/files';
 import { createJobRunner, processRoles } from './services/jobs';
 import { boxSettings, startVirtualBox, stopVirtualBox } from './services/box';
 import { publishStaffTokenKey } from './services/staff-token';
+import { publishBenefitQrKey } from './services/benefit-credentials';
 
 /**
  * Process entry point. Everything here exists because of how the api is
@@ -46,6 +47,19 @@ app.log.info(
   staffTokenKid
     ? 'staff token signing key published'
     : 'no staff token signing key — tills at this deployment cannot unlock without the internet',
+);
+
+/**
+ * The staff benefit QR's public half (S2-21 round 2), published the same way
+ * and for the same reason: every box checks benefit QRs against it in its
+ * `benefits` scope. Idempotent on (purpose, kid); a new key adds a row.
+ */
+const benefitQrKid = await publishBenefitQrKey(db, env);
+app.log.info(
+  benefitQrKid ? { kid: benefitQrKid } : { reason: 'BENEFIT_QR_PRIVATE_KEY is not set' },
+  benefitQrKid
+    ? 'benefit QR signing key published'
+    : 'no benefit QR signing key — Staff Benefits cannot issue or show a QR at this deployment',
 );
 
 const jobs = createJobRunner({ db, env, log: app.log });

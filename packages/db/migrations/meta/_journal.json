@@ -477,6 +477,13 @@
       "when": 1791359348291,
       "tag": "0067_kiosk_redemption",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1791361382553,
+      "tag": "0069_benefit_credentials",
+      "breakpoints": true
     }
   ]
 }

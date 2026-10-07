@@ -149,13 +149,13 @@ export async function benefitToday(
 
 // --- Ranges ---------------------------------------------------------------------------
 
-interface Ranged {
+export interface Ranged {
   effectiveFrom: string;
   effectiveTo: string | null;
 }
 
 /** In force on `day`: `[from, to)`. An empty range is in force on no day. */
-const inForceOn = (row: Ranged, day: string): boolean =>
+export const inForceOn = (row: Ranged, day: string): boolean =>
   row.effectiveFrom <= day && (row.effectiveTo === null || row.effectiveTo > day);
 
 /** Starts after `day` and is in force on some day. */
@@ -316,7 +316,7 @@ const bySavedDesc = (
   b: { createdAt: Date; id: string },
 ): number => b.createdAt.getTime() - a.createdAt.getTime() || (a.id < b.id ? 1 : -1);
 
-async function templateRows(
+export async function templateRows(
   db: Exec,
   operatorId: string,
   role?: BenefitRole,
@@ -331,7 +331,7 @@ async function templateRows(
     );
 }
 
-async function profileRows(
+export async function profileRows(
   db: Exec,
   operatorId: string,
   employeeIds?: string[],
@@ -370,7 +370,7 @@ function templateViewOf(
 }
 
 /** What applies to a person on `day`, from their versions and the template versions. */
-function effectiveOn(
+export function effectiveOn(
   personRows: readonly ProfileRow[],
   templates: readonly TemplateRow[],
   day: string,
@@ -395,7 +395,7 @@ function effectiveOn(
 }
 
 /** Drop the `undefined` keys `resolveEffectiveBenefitProfile` leaves, so JSON and equality agree. */
-function compact(profile: BenefitProfile): BenefitProfile {
+export function compact(profile: BenefitProfile): BenefitProfile {
   const out: BenefitProfile = {};
   if (profile.comp !== undefined) out.comp = profile.comp;
   if (profile.freeItems !== undefined) out.freeItems = profile.freeItems;
@@ -440,7 +440,7 @@ export async function benefitTemplateHistory(
   };
 }
 
-interface EmployeeRow {
+export interface EmployeeRow {
   id: string;
   name: string;
   nickname: string | null;
@@ -534,7 +534,7 @@ export async function listStaffBenefits(
 }
 
 /** The employee, inside the caller's operator, or 404 — another operator's id included. */
-async function loadEmployee(
+export async function loadEmployee(
   db: Exec,
   operatorId: string,
   employeeId: string,
@@ -595,7 +595,7 @@ export async function effectiveBenefitOn(
 // --- Writes ---------------------------------------------------------------------------
 
 /** One writer at a time per template or per person, so two saves cannot both find the same gap. */
-async function lockScope(tx: Exec, scope: string, key: string): Promise<void> {
+export async function lockScope(tx: Exec, scope: string, key: string): Promise<void> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${scope}), hashtext(${key}))`);
 }
 

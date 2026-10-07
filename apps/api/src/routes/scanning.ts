@@ -4,6 +4,7 @@ import {
   HidBurstReader,
   SerialScanReader,
   ScanRouter,
+  readBenefitScope,
   buttonKeyProblem,
   simulateHidKeys,
   simulateSerialRecord,
@@ -11,11 +12,12 @@ import {
   type ScanResult,
   type ScanSource,
 } from '@oto/box-agent';
-import { SCAN_SOURCES } from '@oto/shared';
+import { BENEFIT_QR_NOT_A_SIGN_IN, SCAN_SOURCES, hasBenefitCredentialHeader } from '@oto/shared';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
 import { boxStoreFor } from '../lib/box-store';
 import { virtualBoxAgent } from '../services/box';
+import { benefitToday } from '../services/benefits';
 import { registerProductBarcodeHandler } from '../services/scanning-product';
 import { publishStationScan } from '../services/station-scans';
 import { loadStationRow, managerForStation } from '../services/station-session';
@@ -110,7 +112,11 @@ export async function scanningRoutes(app: App): Promise<void> {
    */
   type Manager = ReturnType<typeof managerForStation>['manager'];
 
-  function routerFor(boxId: string, manager: Manager): ScanRouter {
+  function routerFor(
+    boxId: string,
+    manager: Manager,
+    at: { operatorId: string; branchId: string },
+  ): ScanRouter {
     const agent = virtualBoxAgent();
     const own = agent && agent.state.boxId === boxId ? agent.scanner() : null;
     const router =
@@ -124,6 +130,23 @@ export async function scanningRoutes(app: App): Promise<void> {
         // its manager's scans are taped where the box is joined.
         publish: (id, message) => publishStationScan(manager, id, message),
         log: app.log,
+        /**
+         * S2-21 round 2 — a staff benefit QR is checked against the BOX's
+         * copy of the `benefits` scope, read from the box's own store as the
+         * offline unlock reads its staff list, on the branch's trading day.
+         * A box whose copy is not in this database (one running on a Pi)
+         * holds none here, and the QR is answered `BENEFIT_REVOCATION_UNKNOWN`
+         * — never admitted unchecked.
+         */
+        benefits: async () => {
+          const held = await boxStoreFor(app.db)
+            .readBundle(boxId, 'benefits')
+            .catch(() => null);
+          return {
+            scope: held ? readBenefitScope(held.payload) : null,
+            today: await benefitToday(app.db, at),
+          };
+        },
       });
     // The product barcode handler (S2-09b). Registered here rather than at boot
     // because both routers pass through this function and only one of them
@@ -171,7 +194,7 @@ export async function scanningRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { row, boxId, auth, manager } = await station(req, req.params.id);
-      const router = routerFor(boxId, manager);
+      const router = routerFor(boxId, manager, row);
       const input: ScanInput = {
         code: req.body.code,
         source: req.body.source as ScanSource,
@@ -206,7 +229,7 @@ export async function scanningRoutes(app: App): Promise<void> {
     },
     async (req) => {
       const { row, boxId, auth, manager } = await station(req, req.params.id);
-      const router = routerFor(boxId, manager);
+      const router = routerFor(boxId, manager, row);
       const actionId = actionIdOf(req);
 
       let produced: ScanInput | null = null;
@@ -264,7 +287,7 @@ export async function scanningRoutes(app: App): Promise<void> {
       config: { auth: 'session' },
       schema: {
         description:
-          'Present a staff badge or type a PIN at the till. The value reaches the box’s scanning service as a `staff_badge` code and is never written down: the station tape gets a fingerprint and the outcome. No handler is registered yet — staff credentials are S2-07b — so today the honest answer is `unhandled`, and the till says so.',
+          'Present a staff badge or type a PIN at the till. The value reaches the box’s scanning service as a `staff_badge` code and is never written down: the station tape gets a fingerprint and the outcome. No handler is registered yet — staff credentials are S2-07b — so today the honest answer is `unhandled`, and the till says so. A staff benefit QR (`OTO-BEN:`) is refused before the box sees it (`outcome: refused`): it applies a benefit at the F&B order station and signs nobody in.',
         body: z.object({
           value: z.string().min(1).max(256),
           /** `manual` when typed, `keyboard` when a scanner typed it into the page. */
@@ -290,8 +313,24 @@ export async function scanningRoutes(app: App): Promise<void> {
         );
       }
       const row = await loadStationRow(app.db, auth.operatorId, auth.stationId);
+      /**
+       * S2-21 round 2 (plan H8) — a staff benefit QR is not a badge.
+       *
+       * Refused here, before the box sees it: the box's scanning service would
+       * claim it as a benefit and hand it to the station's screens as one to
+       * apply, which is the wrong thing to happen on a lock screen. It opens
+       * no session and is not counted against anybody; the till says what it
+       * is. Never logged: it is a credential for something else.
+       */
+      if (hasBenefitCredentialHeader(req.body.value)) {
+        req.log.info(
+          { event: 'auth.badge_benefit_qr_refused', stationId: row.id },
+          'a staff benefit QR was presented as a badge',
+        );
+        return { outcome: 'refused', handler: null, message: BENEFIT_QR_NOT_A_SIGN_IN };
+      }
       const { manager, boxId } = managerForStation(app.db, row, req.log);
-      const router = routerFor(boxId, manager);
+      const router = routerFor(boxId, manager, row);
       /**
        * A badge value is a credential on its way to an authentication path. It
        * is carried and never stored — the same rule

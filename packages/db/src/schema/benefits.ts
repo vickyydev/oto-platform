@@ -1,5 +1,15 @@
 import { sql } from 'drizzle-orm';
-import { check, date, index, jsonb, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+  check,
+  date,
+  index,
+  integer,
+  jsonb,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import type { BenefitProfile, BenefitRole } from '@oto/shared';
 import { archivedAt, idPk, promo, timestamps } from './helpers';
 import { account, employee, operator } from './tenancy';
@@ -8,8 +18,8 @@ import { account, employee, operator } from './tenancy';
 //
 // S2-21 (SCRUM-218), round 1 of docs/progress/plans/benefits/PLAN.md §7: the
 // role templates and each person's benefit, both with effective dates and a
-// history. The credential, the usage counters and the application record are
-// rounds 2 and 3.
+// history. Round 2 adds the credential (`benefit_credential`, at the end of
+// this file); the usage counters and the application record are round 3.
 //
 // **Versions, never edits.** A change is a NEW row. The row that was in force
 // on the change's date is closed (`effective_to` set to that date) and the new
@@ -120,6 +130,85 @@ export const benefitProfile = promo.table(
     check(
       'benefit_profile_range_check',
       sql`${t.effectiveTo} is null or ${t.effectiveTo} >= ${t.effectiveFrom}`,
+    ),
+  ],
+);
+
+/**
+ * One staff benefit QR (S2-21 round 2; plan §4 and §7): a credential the
+ * platform signed for one person, revocable, with an expiry of its own.
+ *
+ * **The row is the credential's record, never the credential.** The QR is
+ * `OTO-BEN:v1:<employee>:<id>:<exp>:<kid>` and an Ed25519 signature
+ * (`@oto/shared` benefit-credential.ts); none of that is a secret except the
+ * private key, which lives in the api's environment and nowhere else. What is
+ * kept is what a revocation and an audit need: whose it is, which key signed
+ * it, when it ends, who issued and who revoked it. `code_hash` is SHA-256 over
+ * the whole printed code, so the cloud can tell the QR it issued from another
+ * string that happens to verify — and it is a hash, so this table cannot be
+ * read back into QRs. The printable code is re-derived when an administrator
+ * asks for it (Ed25519 signatures are deterministic), which needs the same key
+ * still configured.
+ *
+ * **What ends one.** `revoked_at` — the administrator's revoke, refused by
+ * the cloud at once and by a box from its next `benefits` pull; `expires_at`
+ * — its own terms; and the person leaving (`core.employee.archived_at`),
+ * which refuses every QR of theirs without touching these rows.
+ */
+export const benefitCredential = promo.table(
+  'benefit_credential',
+  {
+    /** The `<credential>` in the QR, and the value a revocation names. UUIDv7. */
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    employeeId: uuid('employee_id')
+      .notNull()
+      .references(() => employee.id, { onDelete: 'restrict' }),
+    /**
+     * Which `core.signing_key` row (purpose `benefit_qr`) verifies it. Text,
+     * not a foreign key, for the reason `core.staff_token.kid` gives: a QR
+     * signed under a key since retired is still a fact about what was issued.
+     */
+    kid: text('kid').notNull(),
+    /** The QR format's version (`BENEFIT_CREDENTIAL_VERSION`). */
+    version: integer('version').notNull().default(1),
+    /** Lower-case hex SHA-256 of the printed code. Never the code. */
+    codeHash: text('code_hash').notNull(),
+    issuedByAccountId: uuid('issued_by_account_id')
+      .notNull()
+      .references(() => account.id, { onDelete: 'restrict' }),
+    issuedAt: timestamp('issued_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
+    revokedByAccountId: uuid('revoked_by_account_id').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
+    /** When the cloud last resolved it — "is this card in use". Not audited. */
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'date' }),
+    ...timestamps,
+  },
+  (t) => [
+    index('benefit_credential_operator_idx').on(t.operatorId),
+    /** One person's QRs, newest first — the Staff Benefits QR dialog. */
+    index('benefit_credential_employee_idx').on(t.employeeId, t.issuedAt),
+    index('benefit_credential_issued_by_idx').on(t.issuedByAccountId),
+    index('benefit_credential_revoked_by_idx').on(t.revokedByAccountId),
+    /**
+     * The revocation list the `benefits` scope carries: revoked and still
+     * inside their own lifetime. Partial, so it holds what a box is sent.
+     */
+    index('benefit_credential_revoked_idx')
+      .on(t.operatorId, t.expiresAt)
+      .where(sql`revoked_at is not null`),
+    uniqueIndex('benefit_credential_code_hash_unique').on(t.codeHash),
+    check('benefit_credential_expiry_check', sql`${t.expiresAt} > ${t.issuedAt}`),
+    check('benefit_credential_version_check', sql`${t.version} >= 1`),
+    /** A revoker without a revocation reads as revoked and is not. */
+    check(
+      'benefit_credential_revocation_check',
+      sql`${t.revokedAt} is not null or ${t.revokedByAccountId} is null`,
     ),
   ],
 );

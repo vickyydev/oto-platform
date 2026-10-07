@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { EMPLOYEE_SOURCES } from '@oto/db';
-import { BENEFIT_ROLES, BenefitProfileSchema, BenefitProfileShapeSchema } from '@oto/shared';
+import {
+  BENEFIT_ONLINE_ONLY_STAGES,
+  BENEFIT_ROLES,
+  BenefitProfileSchema,
+  BenefitProfileShapeSchema,
+  BenefitTargetSchema,
+} from '@oto/shared';
 import type { App } from '../app';
 import {
   benefitTemplateHistory,
@@ -12,6 +18,13 @@ import {
   saveStaffBenefit,
   staffBenefitHistory,
 } from '../services/benefits';
+import {
+  benefitCredentialQr,
+  issueBenefitCredential,
+  listBenefitCredentials,
+  resolveBenefitCredential,
+  revokeBenefitCredential,
+} from '../services/benefit-credentials';
 import { opCtx } from '../services/tx';
 
 /**
@@ -68,6 +81,21 @@ const Staff = z.object({
   current: ProfileVersion.nullable(),
   upcoming: z.array(ProfileVersion),
   effectiveProfile: BenefitProfileShapeSchema,
+});
+
+const Credential = z.object({
+  id: z.string().uuid(),
+  employeeId: z.string().uuid(),
+  employeeName: z.string(),
+  kid: z.string(),
+  version: z.number().int(),
+  status: z.enum(['active', 'revoked', 'expired']),
+  issuedAt: z.string(),
+  expiresAt: z.string(),
+  issuedBy: Author,
+  revokedAt: z.string().nullable(),
+  revokedBy: Author,
+  lastSeenAt: z.string().nullable(),
 });
 
 const EffectiveFrom = IsoDay.optional().describe(
@@ -239,6 +267,152 @@ export async function benefitRoutes(app: App): Promise<void> {
       const auth = req.requireAuth();
       const on = req.query.on ?? (await todayOf(req));
       return effectiveBenefitOn(app.db, auth.operatorId, req.params.employeeId, on);
+    },
+  );
+
+  // --- The benefit QR (round 2) ----------------------------------------------
+  //
+  // Issued, printed and revoked under `admin:benefit:credential_issue`, which
+  // only the operator's administrators hold: a branch manager reads the
+  // screen and sees which QRs exist, and cannot print one — the printed code
+  // IS the credential, and showing it is handing it over. Resolved at the till
+  // under `pos:benefit:apply`. The rules are in `services/benefit-credentials.ts`.
+
+  app.get(
+    '/credentials',
+    {
+      config: { permission: 'admin:benefit:read' },
+      schema: {
+        description:
+          'The benefit QRs issued in this operator — or one staff member’s with `employeeId` — newest first, with their status (`active`, `revoked`, `expired`), who issued and who revoked each, and when one was last resolved. Never the code: printing it is `GET /benefits/credentials/:id/qr`.',
+        querystring: z.object({ employeeId: z.string().uuid().optional() }),
+        response: { 200: z.object({ credentials: z.array(Credential) }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return {
+        credentials: await listBenefitCredentials(app.db, auth.operatorId, {
+          employeeId: req.query.employeeId,
+        }),
+      };
+    },
+  );
+
+  app.post(
+    '/credentials',
+    {
+      config: { permission: 'admin:benefit:credential_issue' },
+      schema: {
+        description:
+          'Issue a staff member’s benefit QR: an Ed25519-signed `OTO-BEN:v1` credential under the `benefit_qr` key, good for a year. One live QR per person — a second is refused (`BENEFIT_CREDENTIAL_LIVE`) until the first is revoked — and nobody without a benefit role gets one (`BENEFIT_NO_ROLE`). The answer is the credential’s record, never the code, so a retried request replays nothing that can be scanned. 503 `BENEFIT_QR_UNAVAILABLE` when the deployment has no `BENEFIT_QR_PRIVATE_KEY`. Audited `benefit.credential_issue`.',
+        body: z.object({ employeeId: z.string().uuid() }),
+        response: { 200: z.object({ credential: Credential }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return issueBenefitCredential(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        req.body.employeeId,
+        app.env,
+        await todayOf(req),
+      );
+    },
+  );
+
+  app.get(
+    '/credentials/:credentialId/qr',
+    {
+      config: { permission: 'admin:benefit:credential_issue' },
+      schema: {
+        description:
+          'The printable payload behind the Staff Benefits QR dialog: the staff member’s name and the code the QR encodes (and the line printed under it). Re-derived from the record and the key, never stored; refused for a QR that is revoked, expired, or whose holder has left, and for one signed under a key this deployment no longer holds. Not cached.',
+        params: z.object({ credentialId: z.string().uuid() }),
+        response: {
+          200: z.object({
+            credentialId: z.string().uuid(),
+            employeeId: z.string().uuid(),
+            name: z.string(),
+            code: z.string(),
+            expiresAt: z.string(),
+          }),
+        },
+      },
+    },
+    async (req, reply) => {
+      const auth = req.requireAuth();
+      const payload = await benefitCredentialQr(
+        app.db,
+        auth.operatorId,
+        req.params.credentialId,
+        app.env,
+      );
+      void reply.header('cache-control', 'no-store');
+      return payload;
+    },
+  );
+
+  app.post(
+    '/credentials/:credentialId/revoke',
+    {
+      config: { permission: 'admin:benefit:credential_issue' },
+      schema: {
+        description:
+          'Revoke a benefit QR. The cloud refuses it from this moment ("Benefit revoked"); every box refuses it from its next pull of the `benefits` cache scope, which carries the revocation list — until then, a box that is offline is bounded by the QR’s own expiry. Revoking one already revoked changes nothing (`changed: false`). Audited `benefit.credential_revoke`.',
+        params: z.object({ credentialId: z.string().uuid() }),
+        response: { 200: z.object({ changed: z.boolean(), credential: Credential }) },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return revokeBenefitCredential(
+        app.db,
+        opCtx(req),
+        { accountId: auth.accountId, operatorId: auth.operatorId },
+        req.params.credentialId,
+      );
+    },
+  );
+
+  app.post(
+    '/resolve',
+    {
+      config: { permission: 'pos:benefit:apply' },
+      schema: {
+        description:
+          'A scanned or typed staff benefit QR, resolved online: the staff member it names and the profile that applies to them today (the trading day of the session’s branch), with what of it a box may apply offline. Applies nothing and uses up nothing. Refused in the prototype’s words — `No staff benefit found for "<code>".` (404) for anything this park did not issue, `<name> has no benefit configured.` (409 `BENEFIT_NOT_CONFIGURED`) — and in the platform’s for a QR that is revoked (409 `BENEFIT_REVOKED`, "Benefit revoked"), expired, or whose holder has left.',
+        body: z.object({ code: z.string().min(1).max(512) }),
+        response: {
+          200: z.object({
+            employeeId: z.string().uuid(),
+            name: z.string(),
+            credentialId: z.string().uuid(),
+            on: IsoDay,
+            benefitRole: Role,
+            hasOverride: z.boolean(),
+            profile: BenefitProfileShapeSchema,
+            offline: z.object({
+              comp: z.boolean(),
+              standingDiscount: z
+                .object({ percent: z.number(), target: BenefitTargetSchema.optional() })
+                .nullable(),
+              onlineOnly: z.array(z.enum(BENEFIT_ONLINE_ONLY_STAGES)),
+            }),
+            expiresAt: z.string(),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      return resolveBenefitCredential(app.db, {
+        operatorId: auth.operatorId,
+        code: req.body.code,
+        today: await todayOf(req),
+      });
     },
   );
 }
