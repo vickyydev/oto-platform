@@ -323,7 +323,13 @@ describe('the fact job (S2-12 round 4)', () => {
   });
 
   it('the job run twice in one quarter-hour writes each bucket once', async () => {
-    const now = new Date();
+    // Both runs must share a bucket: a wall clock within a second of a
+    // quarter-hour boundary would put the second run in the next one.
+    const raw = new Date();
+    const now =
+      quarterHourFloor(new Date(raw.getTime() + 1000)).getTime() === quarterHourFloor(raw).getTime()
+        ? raw
+        : new Date(raw.getTime() + 2000);
     const one = await runOccupancyJob(db, now);
     const two = await runOccupancyJob(db, new Date(now.getTime() + 1000));
     expect(one.buckets).toBe(two.buckets);
