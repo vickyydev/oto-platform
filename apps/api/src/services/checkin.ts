@@ -786,7 +786,12 @@ interface ChoiceContext {
  * operator's, and every child is still `registered`, at the sale's park, and
  * on that sale under its own drop-off line.
  */
-async function loadChoice(tx: Tx, actor: Actor, saleId: string, checkinIds: readonly string[]): Promise<ChoiceContext> {
+async function loadChoice(
+  tx: Tx,
+  actor: Pick<Actor, 'operatorId'>,
+  saleId: string,
+  checkinIds: readonly string[],
+): Promise<ChoiceContext> {
   const [saleRow] = await tx
     .select()
     .from(sale)
@@ -839,6 +844,43 @@ export interface CheckInNowResult {
 }
 
 /**
+ * S2-20 K1 — WHERE A SUPERVISED CHILD'S BAND PRINTS when the self-service
+ * kiosk rang their sale up.
+ *
+ * A mixed booking redeemed at the kiosk leaves its drop-off and nanny children
+ * booked for the desk (R-80), and the desk checks them in from the board. The
+ * band is minted on the kiosk's sale as always, but it is printed where the
+ * person checking the child in is standing — the kiosk's printer is in the
+ * lobby, and a supervised child's band in a self-service tray is the bypass
+ * R-80 exists to stop. So a check-in on a kiosk's sale needs a till at the
+ * same park; anything else is refused before the child goes in the park.
+ *
+ * Null for every sale a till rang up: their bands print where they always did.
+ */
+async function kioskSaleBandPrintStation(
+  tx: Tx,
+  saleStation: typeof station.$inferSelect | null,
+  printAt: string | null,
+  stays: readonly CheckinRow[],
+): Promise<string | null> {
+  if (saleStation?.kind !== 'kiosk') return null;
+  const names = nameList(stays.map((s) => s.childName));
+  const refuse = () =>
+    errors.conflict(
+      'CHECKIN_KIOSK_SALE_NEEDS_TILL',
+      `${names} ${stays.length === 1 ? 'was' : 'were'} booked through the self-service kiosk — take a till at this park first, so the band prints where you are. Nobody was checked in.`,
+    );
+  if (!printAt) throw refuse();
+  const [till] = await tx
+    .select({ id: station.id, kind: station.kind, branchId: station.branchId, archivedAt: station.archivedAt })
+    .from(station)
+    .where(eq(station.id, printAt))
+    .limit(1);
+  if (!till || till.kind !== 'till' || till.archivedAt || till.branchId !== saleStation.branchId) throw refuse();
+  return till.id;
+}
+
+/**
  * "CHECK IN NOW" — ONE TRANSACTION: the stays go in the park with their timer
  * started, the sale is linked to each, their bands are minted on their own
  * lines through `mintSaleBands`, linked back, and queued for print.
@@ -854,7 +896,15 @@ export async function checkInNow(
     entries: readonly { checkinId: string; nannyId?: string | null; service?: SupervisionRequirement }[];
   },
   now: Date = new Date(),
-  opts: { event?: 'check_in_now' | 'check_in_booked' } = {},
+  opts: {
+    event?: 'check_in_now' | 'check_in_booked';
+    /**
+     * S2-20 K1 — the station the person checking the child in is standing at.
+     * Read only for a sale the self-service kiosk rang up: that child is
+     * checked in at the desk, and the band prints there (`kioskSaleBandPrintStation`).
+     */
+    printAt?: string | null;
+  } = {},
 ): Promise<CheckInNowResult> {
   const event = opts.event ?? 'check_in_now';
   // A retry of a check-in that landed (the answer was lost on the way back)
@@ -949,6 +999,7 @@ export async function checkInNow(
 
   // The bands, through the landed path, named for each stay's child.
   const [stationRow] = await tx.select().from(station).where(eq(station.id, saleRow.stationId)).limit(1);
+  const printAt = await kioskSaleBandPrintStation(tx, stationRow ?? null, opts.printAt ?? null, stays);
   let minted: (typeof band.$inferSelect)[];
   try {
     minted = (
@@ -1006,6 +1057,7 @@ export async function checkInNow(
     actionId: actor.actionId,
     requestId: actor.requestId,
     now,
+    ...(printAt ? { stationId: printAt } : {}),
   });
 
   const after = await tx.select().from(checkin).where(inArray(checkin.id, stays.map((s) => s.id))).orderBy(asc(checkin.createdAt), asc(checkin.id));
@@ -1025,7 +1077,8 @@ export async function checkInNow(
  */
 export async function leaveAsBooked(
   tx: Tx,
-  actor: Actor,
+  // Null for the self-service kiosk's redemption (S2-20 K1): a device left them booked.
+  actor: Omit<Actor, 'accountId'> & { accountId: string | null },
   input: { saleId: string; scheduledFor?: string; entries: readonly { checkinId: string }[] },
   now: Date = new Date(),
 ): Promise<{ saleId: string; children: CheckinView[] }> {
@@ -1803,6 +1856,8 @@ export async function checkInBooked(
   actor: Actor,
   input: { entries: readonly { checkinId: string; nannyId?: string | null }[]; consentAcknowledged?: boolean },
   now: Date = new Date(),
+  /** S2-20 K1 — the station the desk is standing at, for a child the kiosk's sale left booked. */
+  opts: { printAt?: string | null } = {},
 ): Promise<CheckInNowResult & { saleIds: string[] }> {
   const ids = input.entries.map((e) => e.checkinId);
   if (new Set(ids).size !== ids.length) throw errors.badRequest('A child was named twice.');
@@ -1874,7 +1929,10 @@ export async function checkInBooked(
     notes: [],
   };
   for (const [saleId, entries] of bySale) {
-    const done = await checkInNow(tx, actor, { saleId, entries }, now, { event: 'check_in_booked' });
+    const done = await checkInNow(tx, actor, { saleId, entries }, now, {
+      event: 'check_in_booked',
+      printAt: opts.printAt ?? null,
+    });
     result.saleIds.push(saleId);
     result.children.push(...done.children);
     result.bands.push(...done.bands);

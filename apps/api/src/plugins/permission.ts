@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyRequest, RouteOptions } from 'fastify';
-import type { Permission } from '@oto/shared';
+import type { KioskDeviceScope, Permission } from '@oto/shared';
 
 /**
  * Permissions declared on the route, not remembered in the handler (S2-01b).
@@ -70,9 +70,15 @@ export interface PermissionConfig {
    * five entries to the pinned list of genuinely open endpoints, which is the
    * one thing that list exists to stop.
    */
-  credential?: 'box' | 'box-claim' | 'booth' | 'display' | 'display-pairing';
+  credential?: 'box' | 'box-claim' | 'booth' | 'display' | 'display-pairing' | 'kiosk';
   /** Required capability of a paired display, checked without a staff cookie. */
   displayScope?: 'display:read' | 'display:intents';
+  /**
+   * S2-20 K1 — the device scope a paired kiosk must carry on a
+   * `credential: 'kiosk'` route. Its own word rather than a `permission`: no
+   * role holds it, so no session could ever pass a `permission` guard on it.
+   */
+  kioskScope?: KioskDeviceScope;
   /**
    * This route's answer IS a credential — a box secret, a temporary password,
    * a hand-off token — so it must never enter the idempotency store, which

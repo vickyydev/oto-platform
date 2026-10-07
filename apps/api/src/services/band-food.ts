@@ -623,7 +623,7 @@ export async function setAsideSettledPrepaid(
   tx: Tx,
   saleRow: SaleRow,
   lines: readonly SettledPrepaidLine[],
-  actor: { accountId: string; requestId?: string | null; actionId?: string | null },
+  actor: { accountId: string | null; requestId?: string | null; actionId?: string | null },
   receiptNumber: string | null,
 ): Promise<void> {
   if (lines.length === 0) return;
@@ -691,7 +691,7 @@ export async function setAsideUsedUpPrepaid(
   tx: Tx,
   saleRow: SaleRow,
   lines: readonly UsedUpPrepaidLine[],
-  actor: { accountId: string; requestId?: string | null; actionId?: string | null },
+  actor: { accountId: string | null; requestId?: string | null; actionId?: string | null },
   receiptNumber: string | null,
 ): Promise<void> {
   if (lines.length === 0) return;
@@ -755,7 +755,7 @@ export async function setAsideUsedUpPrepaid(
 export async function auditSettledAtPickup(
   tx: Tx,
   saleRow: Pick<SaleRow, 'id' | 'operatorId' | 'branchId' | 'stationId' | 'receiptNumber'>,
-  actor: { accountId: string; requestId?: string | null; actionId?: string | null },
+  actor: { accountId: string | null; requestId?: string | null; actionId?: string | null },
 ): Promise<void> {
   const rows = await tx
     .select({ id: saleLine.id, kind: saleLine.kind, quantity: saleLine.quantity, payload: saleLine.payload })
@@ -822,7 +822,7 @@ export async function auditSettledAtPickup(
 export async function redeemSalePrepaid(
   tx: Tx,
   saleRow: SaleRow,
-  actor: { accountId: string; requestId?: string | null; actionId?: string | null },
+  actor: { accountId: string | null; requestId?: string | null; actionId?: string | null },
   now: Date,
   gate: PrepaidGate = 'file',
 ): Promise<PrepaidRedemption[]> {

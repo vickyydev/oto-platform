@@ -575,7 +575,12 @@ async function alreadyRedeemed(exec: Exec, row: BookingRow): Promise<AppError> {
 export interface RedeemBookingArgs {
   bookingId: string;
   operatorId: string;
-  actorAccountId: string;
+  /**
+   * Who claimed it. Null when nobody was signed in — the self-service kiosk
+   * (S2-20 K1), whose credential the redemption's sale names instead; the
+   * claim row then names the kiosk's station and no account.
+   */
+  actorAccountId: string | null;
   /** The station the till is standing at, already checked to be at this branch. */
   stationId: string | null;
   /**

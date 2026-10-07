@@ -16,7 +16,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { idPk, pos, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
-import { box, device, station } from './fleet';
+import { box, device, deviceCredential, station } from './fleet';
 import { child, member, visit } from './members';
 import { branchHoliday, product, ticketPackage } from './catalog';
 import { booking } from './future';
@@ -295,15 +295,28 @@ export const sale = pos.table(
 
     // --- Who ---------------------------------------------------------------
     /**
-     * The account that rang it up. Not nullable: the till cannot reach the pay
-     * button without a signed-in staff session, and an unattributable money row
-     * is the thing an investigation is looking for. If this ever cannot be
-     * supplied the write fails loudly at the till instead of recording a sale
-     * nobody made.
+     * The account that rang it up. The till cannot reach the pay button
+     * without a signed-in staff session, and an unattributable money row is
+     * the thing an investigation is looking for.
+     *
+     * S2-20 K1 — NULL ONLY FOR A SALE A PAIRED DEVICE RANG UP: the
+     * self-service kiosk redeems a booking with nobody signed in, and the
+     * device that did it is `device_credential_id` below. `sale_actor_check`
+     * holds the rule the NOT NULL used to: a sale with neither is still
+     * refused by the database, whoever writes it.
      */
-    createdByAccountId: uuid('created_by_account_id')
-      .notNull()
-      .references(() => account.id, { onDelete: 'restrict' }),
+    createdByAccountId: uuid('created_by_account_id').references(() => account.id, {
+      onDelete: 'restrict',
+    }),
+    /**
+     * S2-20 K1 — the paired device that rang it up when no person did: the
+     * kiosk's own credential (`core.device_credential`, kind `kiosk`), which
+     * names one kiosk station and is revocable from the Console. Null on every
+     * sale a person rang up.
+     */
+    deviceCredentialId: uuid('device_credential_id').references(() => deviceCredential.id, {
+      onDelete: 'restrict',
+    }),
     /**
      * The offline staff token the box verified, by its `jti`. No foreign key:
      * `core.staff_token` names a retention job it may one day be swept by, and
@@ -424,6 +437,7 @@ export const sale = pos.table(
     index('sale_visit_idx').on(t.visitId),
     index('sale_booking_idx').on(t.bookingId),
     index('sale_account_idx').on(t.createdByAccountId),
+    index('sale_device_credential_idx').on(t.deviceCredentialId),
     index('sale_voided_by_idx').on(t.voidedByAccountId),
     index('sale_holiday_idx').on(t.holidayId),
     index('sale_received_idx').on(t.receivedAt),
@@ -467,6 +481,15 @@ export const sale = pos.table(
     ),
     check('sale_pricing_mode_check', sql`${t.pricingMode} in ('weekday','weekend')`),
     check('sale_clock_trust_check', sql`${t.clockTrust} in ('trusted','skewed','untrusted')`),
+    /**
+     * S2-20 K1 — somebody rang it up: a person, or a paired device. The rule
+     * the NOT NULL on `created_by_account_id` used to hold, widened by the one
+     * principal that is not a person.
+     */
+    check(
+      'sale_actor_check',
+      sql`${t.createdByAccountId} is not null or ${t.deviceCredentialId} is not null`,
+    ),
     /** The totals have to add up, whoever wrote them. */
     check(
       'sale_totals_check',

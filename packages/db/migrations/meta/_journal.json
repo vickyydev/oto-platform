@@ -470,6 +470,13 @@
       "when": 1791288253702,
       "tag": "0066_staff_benefits",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1791288254702,
+      "tag": "0067_kiosk_redemption",
+      "breakpoints": true
     }
   ]
 }

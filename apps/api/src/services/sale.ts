@@ -6,6 +6,7 @@ import {
   branchHoliday,
   branchTaxConfig,
   checkin,
+  deviceCredential,
   employee,
   member,
   modifierGroup,
@@ -45,6 +46,7 @@ import {
   itemPricePair,
   itemTaxCategory,
   itemUnitPrice,
+  KIOSK_REDEEM_SCOPE,
   ledgerUnitComponentKey,
   ledgerUnitKindOf,
   ledgerUnitLabel,
@@ -482,6 +484,80 @@ export interface ActorContext {
    * route supplies it.
    */
   assertBranchAllowed?: (branchId: string) => Promise<void>;
+}
+
+/**
+ * S2-20 K1 — WHO A SALE IS WRITTEN FOR: a person at a till, or a paired
+ * device with nobody signed in.
+ *
+ * The self-service kiosk redeems a booking through the counter's own path
+ * (`services/booking-redemption.ts` — one implementation, two surfaces), and
+ * there is no account behind it: the actor is the kiosk's credential, which
+ * names one kiosk station and is revocable from the Console. So the three
+ * doors a redemption passes — pricing, the commit and the finalise — take
+ * this wider shape, and every `ActorContext` a route builds is one of them
+ * unchanged.
+ *
+ * Exactly one of the two is set; `pos.sale.sale_actor_check` is the
+ * database's half of that rule. A device reaches none of the acts only a
+ * person may do: a manual discount or a voucher is refused by name
+ * (`personOf`) rather than written against nobody, and a document check — a
+ * till session's own — never resolves for one. Voiding and refunding still
+ * take an `ActorContext`: a person.
+ */
+export interface SaleActor extends Omit<ActorContext, 'accountId'> {
+  accountId: string | null;
+  /** The paired credential that rang it up (`core.device_credential`), when no person did. */
+  deviceCredentialId?: string | null;
+}
+
+/** The person behind an act only a person may do, or a refusal naming the act. */
+function personOf(actor: SaleActor, act: string): string {
+  if (actor.accountId) return actor.accountId;
+  throw errors.forbidden(`Only a member of staff can ${act}`);
+}
+
+/**
+ * S2-20 K1 — WHO MAY RING THIS SALE UP, asked before anything is priced or
+ * written. A person, as always. A paired device: only a kiosk's own live
+ * credential, carrying the kiosk scope, at the kiosk station it is paired to,
+ * and only for a booking's redemption — the one thing a kiosk does. Never
+ * believed from the caller: the credential row is read here, in the sale's own
+ * transaction, so a credential revoked a moment ago rings nothing up.
+ */
+async function assertSaleActor(
+  tx: Tx,
+  actor: SaleActor,
+  st: typeof station.$inferSelect,
+  input: Pick<CommitSaleInput, 'bookingId'>,
+): Promise<void> {
+  if (actor.accountId && actor.deviceCredentialId) {
+    throw errors.badRequest('A sale is rung up by a person or by a paired device, not both');
+  }
+  if (actor.accountId) return;
+  const credentialId = actor.deviceCredentialId;
+  if (!credentialId) throw errors.forbidden('A sale has to name who rang it up');
+  const [held] = await tx
+    .select({
+      kind: deviceCredential.kind,
+      stationId: deviceCredential.stationId,
+      scopes: deviceCredential.scopes,
+      pairedAt: deviceCredential.pairedAt,
+      revokedAt: deviceCredential.revokedAt,
+    })
+    .from(deviceCredential)
+    .where(and(eq(deviceCredential.id, credentialId), eq(deviceCredential.operatorId, actor.operatorId)))
+    .limit(1);
+  const paired =
+    !!held &&
+    held.kind === 'kiosk' &&
+    held.revokedAt === null &&
+    held.pairedAt !== null &&
+    held.stationId === st.id &&
+    st.kind === 'kiosk' &&
+    held.scopes.includes(KIOSK_REDEEM_SCOPE);
+  if (!paired) throw errors.forbidden('Only a kiosk paired to this station can ring a sale up here');
+  if (!input.bookingId) throw errors.forbidden('A kiosk rings up nothing but the redemption of an online booking');
 }
 
 // --- Pricing ----------------------------------------------------------------
@@ -1430,7 +1506,7 @@ async function resolveItemLines(
  */
 export async function priceCart(
   db: Exec,
-  actor: ActorContext,
+  actor: SaleActor,
   input: CartInput,
   now: Date = new Date(),
   voucherScope: CartVoucherScope = { mode: 'quote', stationId: null },
@@ -1476,7 +1552,16 @@ export async function priceCart(
    * the reason. Pricing is not the act that needs refusing; `commitSale`
    * refuses on the same reason before it takes any money for it.
    */
-  const claimed = await resolveTierClaim(db, actor, scope.branchId, input, now);
+  // A claim is the till session's own document check; a device has none (S2-20 K1).
+  const claimed = actor.accountId
+    ? await resolveTierClaim(
+        db,
+        { accountId: actor.accountId, operatorId: actor.operatorId },
+        scope.branchId,
+        input,
+        now,
+      )
+    : { claim: null, refusal: null };
   const resolvedTier: PricedCart['tier'] = priceBasis
     ? { code: priceBasis.tier, source: input.memberId ? 'member' : 'default' }
     : claimed.claim ?? (await resolveTier(db, actor.operatorId, input.memberId, input.tier));
@@ -1648,7 +1733,8 @@ export async function priceCart(
     priceBasis ? new Map(priceBasis.options.map((o) => [o.id, o])) : undefined,
     sizes,
     bandFood,
-    { accountId: actor.accountId, at: now.toISOString() },
+    // Staff record an override; a device records none (S2-20 K1).
+    actor.accountId ? { accountId: actor.accountId, at: now.toISOString() } : null,
   );
   /**
    * The design's food-consent rule (`OrderStation.tsx:handleAdd`): food is not
@@ -3006,7 +3092,7 @@ function kidsWithoutRegistration(verdict: SupervisionVerdict, namedRegistrationI
  */
 export async function commitSale(
   tx: Tx,
-  actor: ActorContext,
+  actor: SaleActor,
   input: CommitSaleInput,
   now: Date = new Date(),
   options: CommitSaleOptions = {},
@@ -3051,13 +3137,20 @@ export async function commitSale(
    * sale that names its booking may claim it: the channel is how a report
    * tells money paid online from money taken at the counter.
    */
-  if (input.bookingId && st.kind !== 'till') {
+  /**
+   * S2-20 K1 — the self-service kiosk redeems a booking too, through this same
+   * path: a kiosk station is the one other kind that may ("one redemption, two
+   * surfaces"). It is still the booking channel — money paid online — and the
+   * station says where the bands came out.
+   */
+  if (input.bookingId && st.kind !== 'till' && st.kind !== 'kiosk') {
     throw errors.conflict(
       'SALE_CHANNEL_MISMATCH',
       `A ${st.kind} station cannot redeem an online booking`,
       { stationKind: st.kind, claimedChannel: 'booking' },
     );
   }
+  await assertSaleActor(tx, actor, st, input);
   if (input.bookingId && (st.capabilities ?? []).length > 0 && !(st.capabilities ?? []).includes('tickets')) {
     throw errors.conflict(
       'SALE_CHANNEL_MISMATCH',
@@ -3255,6 +3348,8 @@ export async function commitSale(
     salesChannel,
     actionId: input.actionId ?? null,
     createdByAccountId: actor.accountId,
+    // S2-20 K1 — the kiosk's credential when no person rang it up (`sale_actor_check`).
+    deviceCredentialId: actor.deviceCredentialId ?? null,
     memberId: input.memberId ?? null,
     visitId: input.visitId ?? null,
     bookingId: input.bookingId ?? null,
@@ -3391,7 +3486,9 @@ export async function commitSale(
     );
   }
 
-  const appliedByName = priced.manualDiscounts.length > 0 ? await displayNameOf(tx, actor.accountId) : null;
+  // A manual discount always names who applied it, so a device cannot (S2-20 K1).
+  const appliedBy = priced.manualDiscounts.length > 0 ? personOf(actor, 'apply a manual discount') : null;
+  const appliedByName = appliedBy ? await displayNameOf(tx, appliedBy) : null;
   let sequence = 0;
   for (const discount of priced.manualDiscounts) {
     sequence += 1;
@@ -3420,7 +3517,7 @@ export async function commitSale(
       targetLabel: discount.targetLabel ?? null,
       reason: discount.reason,
       note: discount.note ?? null,
-      appliedByAccountId: actor.accountId,
+      appliedByAccountId: appliedBy,
       appliedByName,
       appliedAt: now,
     });
@@ -3484,6 +3581,8 @@ export async function commitSale(
    * here, so its voucher is used up right here.
    */
   if (priced.voucher) {
+    // A voucher is held at a till by the person who scanned it (S2-20 K1).
+    const holder = { accountId: personOf(actor, 'redeem a voucher'), requestId: actor.requestId };
     const voucherScope = {
       saleId,
       operatorId: actor.operatorId,
@@ -3500,17 +3599,12 @@ export async function commitSale(
         label: priced.voucher.label,
         effect: priced.voucher.effect,
       },
-      { accountId: actor.accountId, requestId: actor.requestId },
+      holder,
       priced.voucher.amountSatang,
       clock.occurredAt,
     );
     if (finalising) {
-      await consumeSaleVouchers(
-        tx,
-        voucherScope,
-        { accountId: actor.accountId, requestId: actor.requestId },
-        clock.occurredAt,
-      );
+      await consumeSaleVouchers(tx, voucherScope, holder, clock.occurredAt);
     }
   }
 
@@ -3685,8 +3779,14 @@ export interface FinaliseSaleInput {
   /**
    * S2-11 — `skip` for a sale whose paper was already printed where it was
    * taken (the offline replay). Everything else routes its printing.
+   *
+   * S2-20 K1 — `direct` for the self-service kiosk: the bands are minted and
+   * the jobs written as rows exactly as `route` writes them, but no box
+   * command is queued for them. The kiosk's redemption prints them itself,
+   * before its transaction commits, and calls the whole redemption off when a
+   * printer fails (`services/kiosk.ts`).
    */
-  printing?: 'route' | 'skip';
+  printing?: 'route' | 'skip' | 'direct';
   /**
    * OD-4 — the number a box printed at an offline counter. Adopted when it is
    * free in the station's series; when it is not, the sale is filed under the
@@ -3832,7 +3932,7 @@ function walletSpendSource(row: { salesChannel: string | null }): 'fnb_order' | 
  */
 export async function finaliseSale(
   tx: Tx,
-  actor: ActorContext,
+  actor: SaleActor,
   saleId: string,
   input: FinaliseSaleInput = {},
   now: Date = new Date(),
@@ -4259,12 +4359,11 @@ export async function finaliseSale(
    * it single-use. If another sale got there first this throws, and the
    * tender, the receipt number and the close all roll back with it.
    */
-  const { consumed } = await consumeSaleVouchers(
-    tx,
-    voucherScope,
-    { accountId: actor.accountId, requestId: actor.requestId },
-    now,
-  );
+  // A device-rung sale (S2-20 K1) carries no voucher — only a person records
+  // one against a sale (`commitSale`) — so there is nothing to use up.
+  const { consumed } = actor.accountId
+    ? await consumeSaleVouchers(tx, voucherScope, { accountId: actor.accountId, requestId: actor.requestId }, now)
+    : { consumed: [] as string[] };
 
   if (!st?.codePrefix) {
     throw errors.badRequest(
@@ -4404,6 +4503,8 @@ export async function finaliseSale(
           actionId: input.actionId ?? null,
           requestId: actor.requestId,
           now,
+          // S2-20 K1 — the kiosk prints its own jobs before it commits.
+          ...(input.printing === 'direct' ? { dispatch: 'caller' as const } : {}),
         });
 
   return {

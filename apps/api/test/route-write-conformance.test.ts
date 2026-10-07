@@ -478,6 +478,13 @@ const OUTSIDE_THE_REPLAY_STORE = [
    * fencing, as `POST /display/intents` is.
    */
   'POST /box/v1/station/:stationId/display/intents [credential:display]',
+  /**
+   * S2-20 K1 — the self-service kiosk's redemption. Its principal is a paired
+   * device, not an account, so the replay store has nothing to own a key with;
+   * the press is idempotent by its own action id instead, kept on the session
+   * row (`kiosk_session_action_unique`), and a replayed press issues nothing.
+   */
+  'POST /box/v1/station/:stationId/kiosk/redeem [credential:kiosk]',
   'POST /box/v1/station/:stationId/unlock [secretResponse]',
   // Independent display credentials have no staff account replay key. Minting
   // rotates the pending single-use hash and must never store its secret reply;

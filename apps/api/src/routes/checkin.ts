@@ -432,7 +432,8 @@ async function boardRoutes(app: App): Promise<void> {
       const first = await loadStay(app.db, actor.operatorId, req.body.entries[0]!.checkinId);
       await req.requirePermission('pos:checkin:update', { branchId: first.branchId });
       return withTx(app.db, { ...opCtx(req), branchId: first.branchId }, 'checkin.check_in_booked', (tx) =>
-        checkInBooked(tx, actor, req.body),
+        // S2-20 K1 — a child the kiosk's sale left booked prints at the till this session stands at.
+        checkInBooked(tx, actor, req.body, new Date(), { printAt: req.auth?.stationId ?? null }),
       );
     },
   );

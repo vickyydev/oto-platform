@@ -22,9 +22,9 @@ import {
 import {
   commitSale,
   finaliseSale,
-  type ActorContext,
   type CartLineInput,
   type CommitSaleInput,
+  type SaleActor,
   type SaleView,
 } from './sale';
 import type { SalePrintingResult } from './sale-printing';
@@ -71,7 +71,17 @@ import type { Tx } from './tx';
 export interface RedeemAtCounterArgs {
   bookingId: string;
   operatorId: string;
-  actorAccountId: string;
+  /**
+   * The account at the counter. Null at the self-service kiosk (S2-20 K1),
+   * where nobody is signed in and `deviceCredentialId` is the actor.
+   */
+  actorAccountId: string | null;
+  /**
+   * S2-20 K1 — the kiosk's paired credential, when the redemption is
+   * self-service: the sale names it (`pos.sale.device_credential_id`) and
+   * `commitSale` checks it is live and paired to this kiosk station.
+   */
+  deviceCredentialId?: string | null;
   /**
    * The till, already checked to stand at the booking's branch. Null when the
    * session stands at none and named none: the booking's own refusals (not
@@ -81,6 +91,19 @@ export interface RedeemAtCounterArgs {
   /** The visit reception confirmed at this till, whose children the kids' bands name. */
   visitId?: string | null;
   requestId?: string | null;
+  /**
+   * S2-20 K1 — the press this redemption is: the sale's action id
+   * (`sale_action_unique`), its paid-online tender's and its print jobs'. The
+   * kiosk sends the one it minted at the scan; the counter's route has its
+   * idempotency key instead and sends none.
+   */
+  actionId?: string | null;
+  /**
+   * S2-20 K1 — `direct`: the bands are minted and the jobs written as rows,
+   * but no box command is queued for them; the kiosk prints them itself
+   * before its transaction commits. `route` (the default) is the counter's.
+   */
+  printing?: 'route' | 'direct';
   /** The route's scope check on the branch the sale lands on. */
   assertBranchAllowed?: (branchId: string) => Promise<void>;
   now?: Date;
@@ -266,8 +289,10 @@ export async function redeemBookingAtCounter(
   const socksProductId = lines.some((l) => l.socks > 0) ? await socksProductOf(tx, claimed) : null;
   const socksUnit = lines.find((l) => l.socks > 0)?.socksUnitSatang ?? 0;
 
-  const actor: ActorContext = {
+  const actor: SaleActor = {
     accountId: args.actorAccountId,
+    // S2-20 K1 — the kiosk's credential, checked by `commitSale` against this station.
+    deviceCredentialId: args.deviceCredentialId ?? null,
     operatorId: args.operatorId,
     branchId: claimed.branchId,
     ...(args.requestId ? { requestId: args.requestId } : {}),
@@ -292,6 +317,7 @@ export async function redeemBookingAtCounter(
       : {}),
     expectedTotalSatang: claimed.totalSatang,
     note: `Online booking ${claimed.reference}`,
+    ...(args.actionId ? { actionId: args.actionId } : {}),
   };
 
   let committed;
@@ -331,6 +357,9 @@ export async function redeemBookingAtCounter(
         bookingReference: claimed.reference,
         onlineInvoiceNo: await onlineInvoiceOf(tx, claimed.id),
       },
+      ...(args.actionId ? { actionId: args.actionId } : {}),
+      // S2-20 K1 — the kiosk prints the jobs itself, before it commits.
+      ...(args.printing === 'direct' ? { printing: 'direct' as const } : {}),
     },
     now,
   );
@@ -379,8 +408,12 @@ export async function redeemBookingAtCounter(
       bandIds: bands.map((b) => b.id),
       grantWalletIds: finalised.grants.map((g) => g.walletId),
       printJobIds: (finalised.printing?.jobs ?? []).map((j) => j.id),
+      // S2-20 K1 — which surface: the counter, or the kiosk and its credential.
+      surface: args.deviceCredentialId ? 'kiosk' : 'counter',
+      ...(args.deviceCredentialId ? { stationId, deviceCredentialId: args.deviceCredentialId } : {}),
     },
     requestId: args.requestId ?? null,
+    actionId: args.actionId ?? null,
   });
 
   return {

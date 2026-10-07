@@ -22,7 +22,13 @@ export async function assertExtensionRefund(tx: Tx, chargeSaleId: string, amount
 }
 
 /** Called inside paid finalisation, never by a UI promise or a terminal acknowledgement. */
-export async function applySaleExtension(tx: Tx, charge: typeof sale.$inferSelect, actor: Actor, now: Date) {
+export async function applySaleExtension(
+  tx: Tx,
+  charge: typeof sale.$inferSelect,
+  // A device-rung sale (S2-20 K1) applies none, and the audit row names nobody.
+  actor: { accountId: string | null; requestId?: string | null },
+  now: Date,
+) {
   const extension = await assertSaleExtensionCollectable(tx, charge.id);
   if (!extension || extension.status !== 'pending') return;
   const source = { id: extension.sourceSaleId };

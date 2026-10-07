@@ -27,6 +27,7 @@ import {
   type StationKind,
 } from '@oto/db';
 import {
+  KIOSK_DEVICE_SCOPES,
   SIMULATOR_ACTIONS_WITH_SECRETS,
   SimulatorActionSchema,
   WEB_INVOICE_STATION_CODE,
@@ -2368,6 +2369,8 @@ export async function pairCredential(
       label: input.label ?? null,
       pairingCodeHash: sha256Hex(normaliseClaimCode(code)),
       pairingCodeExpiresAt: expiresAt,
+      // S2-20 K1 — a kiosk carries its device scope from the mint: pos:kiosk:redeem, and no person does.
+      ...(input.kind === 'kiosk' ? { scopes: [...KIOSK_DEVICE_SCOPES] } : {}),
     });
     const [row] = await tx
       .select()

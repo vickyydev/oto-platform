@@ -364,6 +364,8 @@ describe('route guards (S2-01b)', () => {
       'GET /box/v1/station/:stationId/status [session]',
       'POST /box/v1/station/:stationId/display/intents [display]',
       'POST /box/v1/station/:stationId/intents [session]',
+      // S2-20 K1 — the self-service kiosk, on its own paired credential and device scope.
+      'POST /box/v1/station/:stationId/kiosk/redeem [kiosk]',
       'POST /box/v1/station/:stationId/lease [session]',
       'POST /box/v1/station/:stationId/lease/release [session]',
       'POST /box/v1/station/:stationId/lease/renew [session]',

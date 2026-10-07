@@ -10,6 +10,7 @@ import {
 } from '../services/device-credential';
 import type { PermissionConfig } from './permission';
 import { authenticateDisplay, displayBearerHash, displayUnpaired, observeRejectedDisplayCall, type DisplayDeviceAuth } from '../services/display';
+import { authenticateKiosk, kioskUnpaired, type KioskDeviceAuth } from '../services/kiosk';
 
 /**
  * `config.credential` was a label; this makes it a guard (S2-04 review, F3).
@@ -40,6 +41,8 @@ declare module 'fastify' {
     boothDevice: BoothDeviceAuth | null;
     displayDevice: DisplayDeviceAuth | null;
     displayPairingHash: string | null;
+    /** Set by this plugin on a `credential: 'kiosk'` route, null everywhere else (S2-20 K1). */
+    kioskDevice: KioskDeviceAuth | null;
   }
 }
 
@@ -75,11 +78,18 @@ export function displayPairingHashOf(req: FastifyRequest): string {
   return req.displayPairingHash;
 }
 
+/** The paired kiosk, for a handler on a route that declared `credential: 'kiosk'`. */
+export function kioskDeviceOf(req: FastifyRequest): KioskDeviceAuth {
+  if (!req.kioskDevice) throw kioskUnpaired();
+  return req.kioskDevice;
+}
+
 export const credentialPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest('boxAuth', null);
   app.decorateRequest('boothDevice', null);
   app.decorateRequest('displayDevice', null);
   app.decorateRequest('displayPairingHash', null);
+  app.decorateRequest('kioskDevice', null);
 
   app.addHook('onRoute', (route: RouteOptions) => {
     const kind = (route.config as PermissionConfig | undefined)?.credential;
@@ -109,6 +119,19 @@ export const credentialPlugin = fp(async (app: FastifyInstance) => {
           }
           throw error;
         }
+        return;
+      }
+      if (kind === 'kiosk') {
+        /**
+         * S2-20 K1 — the self-service kiosk's own credential, carrying the
+         * device scope the route names (`pos:kiosk:redeem`). No staff cookie
+         * is read here and none is needed: nobody is signed in at a kiosk.
+         */
+        req.kioskDevice = await authenticateKiosk(
+          app.db,
+          req.headers.authorization,
+          req.routeOptions.config.kioskScope,
+        );
         return;
       }
       if (kind === 'box') {

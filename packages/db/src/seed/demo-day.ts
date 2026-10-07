@@ -1287,7 +1287,8 @@ async function topUpManualDiscount(writer: SeedWriter, saleId: string, reason: s
     .select({ operatorId: s.sale.operatorId, branchId: s.sale.branchId, businessDate: s.sale.businessDate,
       occurredAt: s.sale.occurredAt, createdBy: s.sale.createdByAccountId, manual: s.sale.manualDiscountSatang })
     .from(s.sale).where(eq(s.sale.id, saleId)).limit(1);
-  if (!held || held.manual <= 0) return false;
+  // A sale a paired device rang up (S2-20 K1) names nobody to apply a manual discount; the demo's never are.
+  if (!held || held.manual <= 0 || !held.createdBy) return false;
   const discounts = await writer
     .select({ kind: s.saleDiscount.kind, sequence: s.saleDiscount.sequence })
     .from(s.saleDiscount).where(eq(s.saleDiscount.saleId, saleId));

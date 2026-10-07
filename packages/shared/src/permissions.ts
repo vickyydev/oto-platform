@@ -145,6 +145,13 @@ export const PERMISSIONS = [
    * tab something reception can recover from without finding a manager.
    */
   'pos:station:takeover',
+  /**
+   * `pos:kiosk:redeem` is deliberately NOT here (S2-20 K1). It is the
+   * self-service kiosk's device scope, carried by a kiosk's paired credential
+   * and by no person, and every name in this list is held by `platform_admin`
+   * and `operator_admin` (`ALL` below). It lives in `kiosk.ts` as
+   * `KIOSK_REDEEM_SCOPE`, beside the contract it guards.
+   */
   // POS — selling (S2-09 … S2-11)
   'pos:sale:read',
   'pos:sale:create',

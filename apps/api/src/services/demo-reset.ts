@@ -12,6 +12,7 @@ import {
   settlementLine,
   child,
   endOfDay,
+  kioskSession,
   occupancyResolution,
   member,
   memberAlias,
@@ -114,6 +115,8 @@ const FACT_ENTITY_TYPES = [
   'settlement_batch',
   // S2-15a round 2: a manual resolution of somebody still counted inside at close.
   'occupancy_resolution',
+  // S2-20 K1: a scan at the self-service kiosk, and what it redeemed or why not.
+  'kiosk_session',
 ];
 
 /** Rows removed per table, for the response and the audit entry. */
@@ -232,6 +235,13 @@ async function resetDemoDataIn(tx: Tx): Promise<DemoResetCounts> {
   counts.settlement_command = commandIds.length
     ? (await tx.delete(boxCommand).where(inArray(boxCommand.id, commandIds)).returning({ id: boxCommand.id })).length
     : 0;
+
+  /**
+   * S2-20 K1: a kiosk session names the booking and the sale it redeemed with
+   * (both ON DELETE RESTRICT), so the sessions go before either — or one scan
+   * at the kiosk made the whole reset fail.
+   */
+  counts.kiosk_session = (await tx.delete(kioskSession).returning({ id: kioskSession.id })).length;
 
   counts.wallet_entry = (await tx.delete(walletEntry).returning({ id: walletEntry.id })).length;
   counts.wallet_key = (await tx.delete(walletKey).returning({ id: walletKey.id })).length;

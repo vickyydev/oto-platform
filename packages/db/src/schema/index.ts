@@ -36,3 +36,6 @@ export * from './sale-extensions';
 // Staff benefits (S2-21): role templates and each person's benefit, versioned
 // by effective date — after `promo`'s neighbours and the tenancy they key on.
 export * from './benefits';
+// The self-service kiosk (S2-20 K1): after the sales ledger and the fleet,
+// whose sale, station, box and device credential a kiosk session names.
+export * from './kiosk';

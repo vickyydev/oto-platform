@@ -215,6 +215,15 @@ interface JobScope {
   actionId: string;
   requestId?: string;
   now: Date;
+  /**
+   * S2-20 K1 — who puts these jobs on paper. `box` (the default): a box
+   * command per routed job, collected on the box's next poll. `caller`: the
+   * rows alone, `queued`, for a caller that prints them itself before its
+   * transaction commits — the self-service kiosk, which calls its whole
+   * redemption off when a printer fails, so no command may be left to print
+   * the jobs of a redemption that never happened.
+   */
+  dispatch?: 'box' | 'caller';
 }
 
 /**
@@ -282,7 +291,7 @@ async function writeJob(tx: Tx, scope: JobScope, request: JobRequest, offsetMs: 
     })
     .returning();
   if (!row) throw new Error('the print job was not written');
-  if (routed) {
+  if (routed && scope.dispatch !== 'caller') {
     await tx.insert(boxCommand).values({
       id: newId(),
       boxId,
@@ -340,7 +349,15 @@ async function linesOf(db: Exec, saleId: string): Promise<SaleLineRow[]> {
 export async function routeSalePrinting(
   tx: Tx,
   saleRow: SaleRow,
-  opts: { actorAccountId: string | null; operatorId: string; actionId?: string | null; requestId?: string; now?: Date },
+  opts: {
+    actorAccountId: string | null;
+    operatorId: string;
+    actionId?: string | null;
+    requestId?: string;
+    now?: Date;
+    /** S2-20 K1 — `caller`: write the jobs, queue no box command (`JobScope.dispatch`). */
+    dispatch?: JobScope['dispatch'];
+  },
 ): Promise<SalePrintingResult> {
   const now = opts.now ?? new Date();
   try {
@@ -364,6 +381,7 @@ export async function routeSalePrinting(
         actionId: opts.actionId ?? newId(),
         requestId: opts.requestId,
         now,
+        dispatch: opts.dispatch ?? 'box',
       };
       const notes: string[] = [];
 
@@ -486,13 +504,28 @@ export async function queueCheckinBandPrints(
   tx: Tx,
   saleRow: SaleRow,
   bandIds: readonly string[],
-  opts: { actorAccountId: string; actionId?: string | null; requestId?: string; now?: Date },
+  opts: {
+    actorAccountId: string;
+    actionId?: string | null;
+    requestId?: string;
+    now?: Date;
+    /**
+     * S2-20 K1 — where to print, when it is not where the sale was rung up: a
+     * child whose booking the self-service kiosk redeemed is checked in at the
+     * desk, and the band comes out at the desk's till, not in the kiosk's tray.
+     */
+    stationId?: string | null;
+  },
 ): Promise<{ jobs: SalePrintJobView[]; notes: string[] }> {
   const now = opts.now ?? new Date();
   if (bandIds.length === 0) return { jobs: [], notes: [] };
   try {
     return await tx.transaction(async (sp) => {
-      const [stationRow] = await sp.select().from(station).where(eq(station.id, saleRow.stationId)).limit(1);
+      const [stationRow] = await sp
+        .select()
+        .from(station)
+        .where(eq(station.id, opts.stationId ?? saleRow.stationId))
+        .limit(1);
       if (!stationRow?.boxId) {
         return { jobs: [], notes: ['Bands not printed — this station is not attached to a box'] };
       }
@@ -865,7 +898,9 @@ export async function endOfDayReceiptJobs(db: Exec, endOfDayId: string): Promise
 
 // --- The document the box prints ------------------------------------------------
 
-async function staffNameOf(db: Exec, accountId: string): Promise<string | undefined> {
+/** Null for a sale a paired device rang up (S2-20 K1): nobody to name on the receipt. */
+async function staffNameOf(db: Exec, accountId: string | null): Promise<string | undefined> {
+  if (!accountId) return undefined;
   const [row] = await db
     .select({ name: employee.name, nickname: employee.nickname })
     .from(account)

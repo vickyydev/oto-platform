@@ -52,3 +52,4 @@ export * from './booking-supervision';
 export * from './analytics';
 export * from './analytics-reports';
 export * from './benefits';
+export * from './kiosk';

@@ -4,6 +4,9 @@ import {
   BridgeStatusSchema,
   BridgeUnlockRequestSchema,
   BridgeUnlockResponseSchema,
+  KIOSK_REDEEM_SCOPE,
+  KioskRedeemAnswerSchema,
+  KioskRedeemRequestSchema,
   STATION_VIEWS,
   StationIntentSchema,
   StationSessionDocumentSchema,
@@ -11,9 +14,10 @@ import {
 import { BridgeError, type BridgeTillCaller } from '@oto/box-agent';
 import type { App } from '../app';
 import { AppError } from '../lib/errors';
-import { displayDeviceOf } from '../plugins/credential';
+import { displayDeviceOf, kioskDeviceOf } from '../plugins/credential';
 import { holdsGrantAt } from '../services/access-control';
 import { displayIntent, displaySession } from '../services/display';
+import { redeemAtKiosk } from '../services/kiosk';
 import { bridgeForStation, platformCaller, unlockThroughBridge } from '../services/station-bridge';
 import { loadStationRow, type StationRow } from '../services/station-session';
 import { actionIdOf, openChannel } from './stations';
@@ -406,6 +410,37 @@ export async function stationBridgeRoutes(app: App): Promise<void> {
       }
       // As the read above: the platform's display intent, with its record.
       return displayIntent(app.db, device, req.body, req.log);
+    },
+  );
+
+  // --- The self-service kiosk, with its own credential (S2-20 K1) ------------
+
+  app.post(
+    '/box/v1/station/:stationId/kiosk/redeem',
+    {
+      /**
+       * The kiosk's paired credential carrying `pos:kiosk:redeem` — a device
+       * scope no role holds, so no staff session can reach this route and the
+       * kiosk's credential reaches no staff route. Outside the replay store
+       * like every credential route: a press is idempotent by its own action
+       * id, kept on the session row (`kiosk_session_action_unique`).
+       */
+      config: { credential: 'kiosk', kioskScope: KIOSK_REDEEM_SCOPE },
+      schema: {
+        description:
+          "Redeem a scanned booking QR at a self-service kiosk: refused by name, sent to the staff desk for a supervised child, or issued — the till's own redemption, with the bands printed on the kiosk's box before anything is committed and the whole redemption called off on a printer fault. Every ending is the session's outcome; the same press again is answered as the first. Carries no allergy, medical, name or contact data.",
+        params: Params,
+        body: KioskRedeemRequestSchema,
+        response: { 200: KioskRedeemAnswerSchema },
+      },
+    },
+    async (req, reply) => {
+      const device = kioskDeviceOf(req);
+      if (device.station.id !== req.params.stationId) {
+        throw new AppError(403, 'KIOSK_OTHER_STATION', 'This kiosk is paired to another station');
+      }
+      reply.header('cache-control', 'private, no-store');
+      return redeemAtKiosk(app.db, { requestId: req.id, log: req.log }, device, req.body);
     },
   );
 }
