@@ -24,6 +24,10 @@ import { booking } from './future';
 // (which names the sale), harmless: both sides reference each other only
 // inside the lazy `references` callbacks.
 import { benefitApplication } from './benefits';
+// S2-20 E3 — an event band names its check-in. The two modules name each
+// other only inside the lazy `references` callbacks, so the cycle is resolved
+// before either is read.
+import { eventCheckin } from './events';
 import type { RefundAllocationEntry, RefundLineEntry, RefundMode } from '@oto/shared';
 
 // --- The sales ledger (schema `pos`) ---------------------------------------
@@ -1382,6 +1386,14 @@ export type BandEventKind = (typeof BAND_EVENT_KINDS)[number];
  * to outlive what it points at.
  *
  * Statused, not archived: a band is never hidden, only stopped.
+ *
+ * **S2-20 E3 — an event band has no sale.** A child checked in at a camp, an
+ * event or a party wears a kid band, and a parent who stays a parent band,
+ * issued by the CHECK-IN (`pos.event_checkin`) rather than a sale: the pass
+ * was paid for earlier (or the event is free, or it rides the party's tab).
+ * So a band names exactly one owner — its sale, or its event check-in
+ * (`band_owner_check`) — and the check-in is the group the kid follows in the
+ * occupancy count, as the sale is for a ticket's bands.
  */
 export const band = pos.table(
   'band',
@@ -1394,10 +1406,12 @@ export const band = pos.table(
     branchId: uuid('branch_id')
       .notNull()
       .references(() => branch.id, { onDelete: 'restrict' }),
-    /** The sale that paid for this person's admission. */
-    saleId: uuid('sale_id')
-      .notNull()
-      .references(() => sale.id, { onDelete: 'restrict' }),
+    /** The sale that paid for this person's admission. Null on an event band (S2-20 E3). */
+    saleId: uuid('sale_id').references(() => sale.id, { onDelete: 'restrict' }),
+    /** S2-20 E3 — the event check-in that issued this band. Null on a sale's band. */
+    eventCheckinId: uuid('event_checkin_id').references((): AnyPgColumn => eventCheckin.id, {
+      onDelete: 'restrict',
+    }),
     /** The ticket unit it was issued against — the kids row or the adults row. */
     saleLineId: uuid('sale_line_id').references((): AnyPgColumn => saleLine.id, {
       onDelete: 'restrict',
@@ -1427,6 +1441,7 @@ export const band = pos.table(
     index('band_operator_idx').on(t.operatorId),
     index('band_branch_idx').on(t.branchId),
     index('band_sale_idx').on(t.saleId),
+    index('band_event_checkin_idx').on(t.eventCheckinId),
     index('band_sale_line_idx').on(t.saleLineId),
     index('band_member_idx').on(t.memberId),
     index('band_child_idx').on(t.childId),
@@ -1438,6 +1453,8 @@ export const band = pos.table(
     check('band_child_kind_check', sql`${t.childId} is null or ${t.kind} = 'kid'`),
     /** Kids' bands never operate the gate (`mockApi.ts:issueWalkInBands`). */
     check('band_gate_access_kind_check', sql`not ${t.gateAccess} or ${t.kind} = 'adult'`),
+    /** S2-20 E3 — exactly one owner: the sale that paid, or the event check-in that issued it. */
+    check('band_owner_check', sql`(${t.saleId} is null) <> (${t.eventCheckinId} is null)`),
   ],
 );
 

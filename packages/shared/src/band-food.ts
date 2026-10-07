@@ -49,6 +49,14 @@ export interface BandStayView {
   foodRestrictions: string | null;
   mayOrderFood: boolean;
   foodProvision: BandFoodProvisionView | null;
+  /**
+   * S2-20 E3 — what the band belongs to: a drop-off or nanny stay (absent on
+   * older answers), or an event check-in (`checkinId` is then the
+   * `pos.event_checkin` id). An event band carries the allergy and diet lines,
+   * `mayOrderFood=false` and no prepaid food (`checkInEventAttendee`,
+   * mockApi.ts:3818-3826: "event attendees don't order F&B on wristband credit").
+   */
+  source?: 'dropoff' | 'event';
 }
 
 export const BandScanQuerySchema = z.object({

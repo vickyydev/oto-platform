@@ -1,10 +1,23 @@
 import { sql } from 'drizzle-orm';
-import { bigint, boolean, check, date, index, integer, jsonb, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  boolean,
+  check,
+  date,
+  index,
+  integer,
+  jsonb,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  type AnyPgColumn,
+} from 'drizzle-orm/pg-core';
 import { archivedAt, idPk, pos, timestamps } from './helpers';
 import { account, branch, operator } from './tenancy';
 import { box, station } from './fleet';
 import { child, member } from './members';
-import { sale, saleLine } from './sales';
+import { band, sale, saleLine } from './sales';
 
 // --- Events, camps and parties: what the POS writes (schema `pos`) ----------
 //
@@ -157,6 +170,125 @@ export const eventAttendeeLink = pos.table(
       'event_attendee_link_synced_check',
       sql`${t.syncState} <> 'synced' or (${t.otoappAttendeeId} is not null and ${t.syncedAt} is not null)`,
     ),
+  ],
+);
+
+/** Where a check-in was made: a till online, a box with the link down, or the OTO App itself. */
+export const EVENT_CHECKIN_ORIGINS = ['till', 'box', 'otoapp'] as const;
+export type EventCheckinOrigin = (typeof EVENT_CHECKIN_ORIGINS)[number];
+
+/**
+ * ONE CHILD'S DAY AT AN EVENT, AS THE POS KEEPS IT (S2-20 E3; plan §8, Q1).
+ *
+ * The OTO App stays the master of who attended which day (`camp_attendance`,
+ * and `event_attendee_checkins` for a one-off event): this row is the POS's
+ * MIRROR of a check-in it made — the bands it minted and printed, who did it
+ * and where — and the record of the write that tells the app. Its `id` is the
+ * check-in id the till (or the box) minted, and the id the directory call
+ * carries: the app keeps the check-in under it, so a retry is a replay there.
+ *
+ * `attendee_id` is the child as the roster named them when they were checked
+ * in: the app's registration (or one-off attendee) id, or — for a child the
+ * till added that the app does not have yet — the till's own attendee id, with
+ * `link_id` naming that link. ONE CHECK-IN PER CHILD PER DAY is the unique key
+ * (H4): a second till, or a box's fact from the link-down hours, meets it and
+ * mints no second band. A child checked in at the OTO App alone is mirrored
+ * here only when the till checks them out or reprints their band
+ * (`origin = 'otoapp'`).
+ *
+ * The child's name, allergy and diet lines, the parent and the event's title
+ * and times are what the bands printed, frozen: a reprint prints the same
+ * paper, and the food counter's scan of the kid band reads its allergy and
+ * diet lines from here (R-50, R-68).
+ *
+ * A check-out is kept here and NOT written back: the OTO App's directory has a
+ * check-in write and no check-out write yet (E3 report, QUESTIONS).
+ */
+export const eventCheckin = pos.table(
+  'event_checkin',
+  {
+    /** The check-in id the till or the box minted — the directory call's `id`. */
+    id: idPk(),
+    operatorId: uuid('operator_id')
+      .notNull()
+      .references(() => operator.id, { onDelete: 'restrict' }),
+    branchId: uuid('branch_id')
+      .notNull()
+      .references(() => branch.id, { onDelete: 'restrict' }),
+    /** The OTO App's event. No foreign key: the app's tables are its own (C10). */
+    otoappEventId: uuid('otoapp_event_id').notNull(),
+    /** The child as the roster named them (see above). No foreign key, for the same reason. */
+    attendeeId: uuid('attendee_id').notNull(),
+    /** The till's link, when the child is one the POS added. */
+    linkId: uuid('link_id').references(() => eventAttendeeLink.id, { onDelete: 'restrict' }),
+    eventType: text('event_type').$type<EventAttendeeType>().notNull(),
+    /** The branch's business date the check-in is for. */
+    attendanceDate: date('attendance_date', { mode: 'string' }).notNull(),
+    // What the bands printed, frozen.
+    childName: text('child_name').notNull(),
+    parentName: text('parent_name'),
+    parentAttending: boolean('parent_attending').notNull().default(false),
+    /** The OTO App's allergy and medical text, as the roster showed it (Q13: any text). */
+    allergy: text('allergy'),
+    dietary: text('dietary'),
+    eventTitle: text('event_title').notNull(),
+    startTime: text('start_time'),
+    endTime: text('end_time'),
+    checkedInAt: timestamp('checked_in_at', { withTimezone: true, mode: 'date' }).notNull(),
+    checkedInByAccountId: uuid('checked_in_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    /** The name the OTO App is told, and the board shows: a nickname, as the park calls its staff. */
+    checkedInByName: text('checked_in_by_name'),
+    checkedOutAt: timestamp('checked_out_at', { withTimezone: true, mode: 'date' }),
+    checkedOutByAccountId: uuid('checked_out_by_account_id').references(() => account.id, { onDelete: 'restrict' }),
+    checkedOutByName: text('checked_out_by_name'),
+    /** The bands it printed. Each band names this row back (`band.event_checkin_id`). */
+    kidBandId: uuid('kid_band_id').references((): AnyPgColumn => band.id, { onDelete: 'restrict' }),
+    parentBandId: uuid('parent_band_id').references((): AnyPgColumn => band.id, { onDelete: 'restrict' }),
+    stationId: uuid('station_id').references(() => station.id, { onDelete: 'restrict' }),
+    boxId: uuid('box_id').references(() => box.id, { onDelete: 'restrict' }),
+    origin: text('origin').$type<EventCheckinOrigin>().notNull().default('till'),
+    /** A box's check-in: the fact that carried it, and its place in the box's journal. */
+    sourceEventId: uuid('source_event_id'),
+    boxSeq: bigint('box_seq', { mode: 'number' }),
+    /** The OTO App's row for the day, once it answered. */
+    otoappCheckinId: uuid('otoapp_checkin_id'),
+    syncState: text('sync_state').$type<EventAttendeeSyncState>().notNull().default('pending'),
+    syncAttempts: integer('sync_attempts').notNull().default(0),
+    /** The last refusal or fault, as `CODE: message`, short and scrubbed. Null once synced. */
+    syncError: text('sync_error'),
+    lastSyncAt: timestamp('last_sync_at', { withTimezone: true, mode: 'date' }),
+    syncedAt: timestamp('synced_at', { withTimezone: true, mode: 'date' }),
+    /** The directory body as sent, replayed on a retry. Null for a mirror of the app's own check-in. */
+    writeback: jsonb('writeback'),
+    /** `x-oto-action-id` of the press — the audit row's and the ops runs'. */
+    actionId: text('action_id'),
+    ...timestamps,
+  },
+  (t) => [
+    /** One check-in per child per day (R-97, H4). */
+    uniqueIndex('event_checkin_attendee_day_unique').on(t.otoappEventId, t.attendeeId, t.attendanceDate),
+    index('event_checkin_operator_idx').on(t.operatorId),
+    index('event_checkin_branch_day_idx').on(t.branchId, t.attendanceDate),
+    index('event_checkin_link_idx').on(t.linkId),
+    index('event_checkin_kid_band_idx').on(t.kidBandId),
+    index('event_checkin_parent_band_idx').on(t.parentBandId),
+    index('event_checkin_in_by_idx').on(t.checkedInByAccountId),
+    index('event_checkin_out_by_idx').on(t.checkedOutByAccountId),
+    index('event_checkin_station_idx').on(t.stationId),
+    index('event_checkin_box_idx').on(t.boxId),
+    index('event_checkin_source_event_idx').on(t.sourceEventId),
+    /** What still owes the OTO App a write. */
+    index('event_checkin_unsynced_idx')
+      .on(t.syncState, t.createdAt)
+      .where(sql`sync_state <> 'synced'`),
+    check('event_checkin_type_check', sql`${t.eventType} in ('party','camp','event')`),
+    check('event_checkin_origin_check', sql`${t.origin} in ('till','box','otoapp')`),
+    check('event_checkin_sync_check', sql`${t.syncState} in ('synced','pending','failed')`),
+    check(
+      'event_checkin_out_after_in_check',
+      sql`${t.checkedOutAt} is null or ${t.checkedOutAt} >= ${t.checkedInAt}`,
+    ),
+    check('event_checkin_synced_check', sql`${t.syncState} <> 'synced' or ${t.syncedAt} is not null`),
   ],
 );
 

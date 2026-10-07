@@ -512,6 +512,13 @@
       "when": 1791387914530,
       "tag": "0072_party_tab",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1791377524354,
+      "tag": "0073_event_checkin",
+      "breakpoints": true
     }
   ]
 }

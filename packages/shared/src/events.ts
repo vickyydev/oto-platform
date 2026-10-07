@@ -120,6 +120,13 @@ export function eventPassOfferedOn(
  * them. A camp registration that names no day attends every day of the camp —
  * the OTO App's own rule — so those are written out (through `asOf` for an
  * open-ended camp); a one-off event or a party is one day and carries none.
+ *
+ * S2-20 E3 (E1 review, finding 1) — a range longer than `CAMP_MAX_DAYS` (an
+ * open-ended camp the OTO App has run for over a year) is written out as the
+ * `CAMP_MAX_DAYS` days that END at `asOf`, not the ones that start the camp:
+ * the screens light the day asked about from this list, and the window that
+ * began the camp no longer holds it. Whether the child attends a day is
+ * `attendsOn`'s answer, from the range itself, never from this bounded list.
  */
 export function attendanceDaysOf(
   event: DatedEvent,
@@ -128,8 +135,38 @@ export function attendanceDaysOf(
 ): string[] {
   if (event.type !== 'camp') return [];
   if (!registration.attendsAllDays) return [...registration.attendanceDays].filter(isIsoDate).sort();
+  if (!isIsoDate(event.startDate) || !isIsoDate(asOf)) return [];
   const last = event.endDate ?? (asOf > event.startDate ? asOf : event.startDate);
-  return campDays(event.startDate, last);
+  // The window's last day: the camp's last, unless the camp runs on past the
+  // first CAMP_MAX_DAYS and `asOf` is further in — then `asOf`.
+  const firstWindowEnd = addDaysToIsoDate(event.startDate, CAMP_MAX_DAYS - 1);
+  const end = last <= firstWindowEnd ? last : asOf > firstWindowEnd ? (asOf < last ? asOf : last) : firstWindowEnd;
+  const backFromEnd = addDaysToIsoDate(end, -(CAMP_MAX_DAYS - 1));
+  return campDays(backFromEnd > event.startDate ? backFromEnd : event.startDate, end);
+}
+
+/**
+ * S2-20 E3 — DOES THIS REGISTRATION ATTEND `date`? Computed from the camp's
+ * range, never from the written-out list (`attendanceDaysOf`, which is bounded):
+ *
+ *   - a one-off event or a party: always — it is one day, and the day's list
+ *     already said the event is on;
+ *   - a camp registration that names no day (the OTO App's "every day"): every
+ *     day the camp runs, an open-ended camp from its first day on, however long
+ *     ago that was;
+ *   - a camp registration that names its days: those days.
+ *
+ * The roster's "not today", the board's disabled Check in and the platform's
+ * own refusal of a check-in (H5) all read this one answer.
+ */
+export function attendsOn(
+  event: DatedEvent,
+  registration: { attendsAllDays: boolean; attendanceDays: readonly string[] },
+  date: string,
+): boolean {
+  if (event.type !== 'camp') return true;
+  if (registration.attendsAllDays) return eventListedOn(event, date);
+  return registration.attendanceDays.includes(date);
 }
 
 /** One day's check-in, as the roster reads it: present only once the child arrived. */
@@ -194,6 +231,24 @@ export function eventRosterStats(buckets: readonly EventRosterBucket[]): EventRo
   };
 }
 
+/** The OTO App's free text, or null when nothing was written. */
+export function eventText(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/**
+ * The allergy and medical line, as the OTO App itself flags it: any text in
+ * either field (`hasAllergy = !!(reg.allergiesNotes || reg.allergies)`,
+ * camp-detail.tsx) — Q13's default. Nothing is second-guessed: a parent who
+ * wrote "None" is shown "None", because a missed allergy costs more than a
+ * read one. The roster, the kid band and the food counter's scan all read it.
+ */
+export function eventAllergyOf(allergies: string | null | undefined, allergyNotes: string | null | undefined): string | null {
+  const parts = [eventText(allergies), eventText(allergyNotes)].filter((p): p is string => p !== null);
+  return parts.length > 0 ? [...new Set(parts)].join(' — ') : null;
+}
+
 /** Whole years of age on `date` for a `yyyy-mm-dd` date of birth; null when either is not a date. */
 export function ageOnDate(dateOfBirth: string | null, date: string): number | null {
   if (!dateOfBirth || !isIsoDate(dateOfBirth) || !isIsoDate(date) || dateOfBirth > date) return null;
@@ -216,6 +271,16 @@ export const EventCheckinViewSchema = z.object({
   checkedOutBy: z.string().nullable(),
   /** The id a directory caller minted for the check-in; null for one made in the OTO App. */
   checkinRef: z.string().nullable(),
+  /**
+   * S2-20 E3 — the POS's own record of this day, when a till checked the child
+   * in (or out): its id, the short codes of the kid and parent bands it printed
+   * (never the codes — a band code is a gate credential), and whether the OTO
+   * App has the check-in yet. Null on a check-in made in the OTO App alone.
+   */
+  posCheckinId: z.string().nullable().default(null),
+  kidBandShortCode: z.string().nullable().default(null),
+  parentBandShortCode: z.string().nullable().default(null),
+  syncState: z.enum(['synced', 'pending', 'failed']).nullable().default(null),
 });
 export type EventCheckinView = z.infer<typeof EventCheckinViewSchema>;
 
@@ -523,6 +588,15 @@ export const EventsCacheAttendeeSchema = z.object({
       status: z.enum(['checked_in', 'checked_out']),
       checkedInAt: z.string().nullable(),
       checkedOutAt: z.string().nullable(),
+      /**
+       * S2-20 E3 — the POS's check-in behind it, and the bands it printed, by
+       * id: the codes are in the box's `bands` copy, which the gate already
+       * holds, so a reprint or a food counter's scan with the link down finds
+       * them there. Null for a check-in made in the OTO App alone.
+       */
+      posCheckinId: z.string().nullable().default(null),
+      kidBandId: z.string().nullable().default(null),
+      parentBandId: z.string().nullable().default(null),
     })
     .nullable(),
 });

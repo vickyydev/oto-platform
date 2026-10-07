@@ -55,5 +55,6 @@ export * from './benefits';
 export * from './kiosk';
 export * from './events';
 export * from './parties';
+export * from './event-checkin';
 export * from './benefit-credential';
 export * from './benefit-checkout';

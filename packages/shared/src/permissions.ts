@@ -216,6 +216,12 @@ export const PERMISSIONS = [
   'pos:party:charge',
   'pos:party:payment',
   'pos:party:update',
+  /**
+   * S2-20 E3 — check a child in at an event (a kid band, and a parent band when
+   * the parent is attending), check them out, and reprint their bands. The
+   * check-in is written back to the OTO App through its directory API.
+   */
+  'pos:event:checkin',
   /** S2-20 E2 — the Admin Events panel's walk-up prices (camp day, event day, party guest). */
   'admin:event_pricing:manage',
   // POS — wallets (S2-14a)
@@ -435,6 +441,8 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     // branch's walk-up prices on the Admin Events panel.
     'pos:event:attendee_create',
     'pos:event:pass_sell',
+    // S2-20 E3 — check-in, check-out and reprint at the door.
+    'pos:event:checkin',
     'admin:event_pricing:manage',
     // S2-20 E4 — the party tab: charges, payments and edits (plan §10).
     'pos:party:charge',
@@ -498,6 +506,9 @@ export const ROLE_BUNDLES: Record<SystemRole, Permission[]> = {
     'pos:party:charge',
     'pos:party:payment',
     'pos:party:update',
+    // S2-20 E3 — the prototype lets any signed-in staff member check a child
+    // in or out at an event and reprint the band (DropOff.tsx's Events tab).
+    'pos:event:checkin',
     'pos:wallet:grant',
     'pos:wallet:spend',
     'pos:stock:count',
