@@ -423,6 +423,22 @@ Size: XL. K1 and K2 can run while round 0 is built.
 - **Q11. At the kiosk, does redeeming a booking also check its booked
     event passes in,** as the till does (Till.tsx 437-462)? Default: yes,
     the same as the till.
+- **Q12. Cancelled events** (from the E1 review): the prototype's
+    getActiveEventPasses never looked at status, so a cancelled camp or
+    event still gets a pass card at the till - 10 of 156 production
+    events are cancelled. Default: the prototype (cards shown) until
+    answered; one answer with Q3's cancelled camp days.
+- **Q13. Allergy text quality** (evidence for the badge rule): in the
+    production dump 45 of 203 camp registrations hold "No", "None", "-"
+    or "No allergy" as allergy text, and others hold diet words
+    ("Vegetarian", "No pork") in the allergy field. Under the OTO App's
+    any-text rule about 22% of real camp children would carry the red
+    Allergy / Medical badge. Default: the app's rule as it stands.
+- **Robustness note, not a question:** the event view checks dates with
+    a yyyy-mm-dd pattern while the OTO App stores them as free text; all
+    155 production dates conform today, but one stray value would turn a
+    day's whole answer into an error instead of dropping one row. Worth
+    a dropped-row path in a later round.
 
 ## 12. Hazards, each with its test
 
