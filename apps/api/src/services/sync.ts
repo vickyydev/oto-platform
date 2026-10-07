@@ -4506,6 +4506,7 @@ export const CACHE_SCOPES = [
    * Volatile.
    */
   'events',
+  /**
    * S2-21 round 2 — staff benefits with the link down: the `benefit_qr` public
    * keys, the revocation list, and each person's comp and standing percent by
    * trading day; the quotas stay in the cloud. One item, built by

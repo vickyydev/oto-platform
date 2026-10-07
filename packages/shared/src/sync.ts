@@ -311,6 +311,7 @@ export const SYNC_CHANGE_SCOPES = [
    * `edge.sync_change`, and volatile — every check-in moves it.
    */
   'events',
+  /**
    * S2-21 round 2 — staff benefits as a box needs them with the link down:
    * the `benefit_qr` public keys, the revocation list, and each person's comp
    * and standing percent by trading day. The quotas (free items, credit) stay
