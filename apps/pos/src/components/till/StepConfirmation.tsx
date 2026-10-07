@@ -161,9 +161,17 @@ const ROWS_SCROLL = 'flex-1 -mx-2 px-2 [&_[data-radix-scroll-area-viewport]>div]
 
 /**
  * The bracelet row's text and duration badge share what the icon leaves. The
- * text keeps room for its longest word ("bracelets"); the badge gives way
- * first, so on a narrow column a long label ("All Day + Meal") wraps inside
- * the badge rather than running off the card's edge or over the text.
+ * text column starts from nothing (`flex-1`, basis 0) and takes whatever the
+ * badge leaves, down to a floor of 88px, room for its longest word
+ * ("bracelets"). The badge keeps its one-line width until the text is down to
+ * that floor, and only then wraps. So on a narrow column the text gives way
+ * first: with the Credit Grants column showing, "2× Child bracelets" goes onto
+ * two lines and the caption is cut ("All Day + M…", in full on hover only), and
+ * the badge wraps after it: "ALL DAY + MEAL" on two lines at 1600px, a word a
+ * line at 1366 and 1280. The badge may wrap at all so that it stays inside the
+ * card instead of being cut to "ALL" at its edge. Giving the badge way first
+ * would not bring the ticket name back: the caption is longer than the text
+ * and the badge together at those widths.
  */
 const ROW_TEXT = 'min-w-[5.5rem] flex-1';
 const DURATION_BADGE = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-center';
