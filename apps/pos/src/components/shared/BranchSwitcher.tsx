@@ -11,12 +11,24 @@ import { useBranch } from '@/branch/BranchContext';
  * of sight. Instead the name wraps onto a second line inside the chip's own
  * 32px height — both parks read in full for barely more width than before —
  * and a name longer than two lines is clamped and given in full on hover.
+ *
+ * Only from `md:` up, where the till header starts (768px, the width
+ * `useIsMobile` hands over at). A wrapping name may shrink to its longest
+ * word, and the phone top bar (`MobileShell`) has no room to spare: there a
+ * two-line name squeezed the chip from 164px to about 100px and cut both
+ * parks to "Oto / Play…". Below `md:` the chip keeps the one 110px line it
+ * always had, so the phone bar is laid out exactly as before. From `md:` up
+ * the name is never narrower than that line (`md:min-w-[110px]`): where the
+ * till header runs short of room (an iPad upright) the chip is no narrower
+ * than it was before, and both parks still read in full on two lines.
  */
-const BRANCH_NAME_CLASS ='line-clamp-2 max-w-[120px] break-words text-left leading-tight';
+const BRANCH_NAME_CLASS =
+  'truncate max-w-[110px] md:line-clamp-2 md:min-w-[110px] md:max-w-[120px] md:whitespace-normal md:break-words md:text-left md:leading-tight';
 
 /**
  * Compact branch switcher used in the iPad StationHeader and the mobile top bar.
- * Shows the active branch name (on up to two lines, see `BRANCH_NAME_CLASS`)
+ * Shows the active branch name (on up to two lines in the till header, one in
+ * the phone bar; see `BRANCH_NAME_CLASS`)
  * and a dropdown to switch between registered branches.
  */
 export function BranchSwitcher() {
