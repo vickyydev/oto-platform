@@ -306,7 +306,9 @@ export function FnbCart({
                       <div className="min-w-0 flex-1">
                         <div className="font-bold leading-tight flex items-center gap-1.5">
                           <Gift className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-                          <span className="truncate text-violet-100">{line.menuItem.name}</span>
+                          {/* SCRUM-503: the panel's own ink, as the lines beside it; the prototype's violet-100 was
+                              drawn for a dark surface and read pale-on-pale here, so it stays behind `dark:`. */}
+                          <span className="truncate text-foreground dark:text-violet-100">{line.menuItem.name}</span>
                           <span className="ml-1 rounded px-1.5 py-0.5 bg-violet-500/30 text-violet-300 text-[10px] font-bold uppercase tracking-wide shrink-0">
                             Prepaid
                           </span>

@@ -172,7 +172,8 @@ export function FnbConfirmation({
                       <span className="min-w-0">
                         <span className="font-bold tabular-nums">{line.qty}×</span>{' '}
                         {isPrepaid && <Gift className="inline w-3.5 h-3.5 text-violet-400 mr-1 -mt-0.5" />}
-                        <span className={isPrepaid ? 'text-violet-100' : ''}>{line.menuItem.name}</span>
+                        {/* SCRUM-503: the card's own ink, as the order panel's prepaid line now has it. */}
+                        <span className={isPrepaid ? 'text-foreground dark:text-violet-100' : ''}>{line.menuItem.name}</span>
                         {isPrepaid && (
                           <span className="ml-1.5 rounded px-1.5 py-0.5 bg-violet-500/30 text-violet-300 text-[10px] font-bold uppercase tracking-wide">
                             Prepaid
