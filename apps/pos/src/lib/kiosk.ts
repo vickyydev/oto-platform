@@ -188,8 +188,7 @@ export function useKioskFlow(options: KioskFlowOptions): KioskFlow {
     const opened: OpenSession = { id, started, pressed: false };
     session.current = opened;
     return opened;
-    // `mint` and `unpaired` read refs only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   /** Record the guest walking away, if they scanned nothing. Never waits, never throws. */
@@ -207,7 +206,7 @@ export function useKioskFlow(options: KioskFlowOptions): KioskFlow {
         },
       );
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const begin = useCallback(() => {
@@ -263,7 +262,7 @@ export function useKioskFlow(options: KioskFlowOptions): KioskFlow {
         go({ kind: 'result', screen });
       })();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [go, openSession],
   );
 
@@ -309,8 +308,7 @@ export function useKioskFlow(options: KioskFlowOptions): KioskFlow {
     };
     timer = setTimeout(check, Math.max(0, lastActivity.current + idleMs - now()));
     return () => clearTimeout(timer);
-    // `now` reads a ref.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [stage, idleMs, abandonSession, go]);
 
   return { stage, begin, scanned, startOver, finish, tryAgain, activity };
@@ -414,8 +412,7 @@ export function useKioskPairing(options: KioskPairingOptions): KioskPairing {
       controller.abort();
       clearTimeout(timer);
     };
-    // `fresh` reads a ref.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [bearer, round, paused]);
 
   const reset = useCallback(() => {
