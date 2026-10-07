@@ -269,7 +269,11 @@ function faultWhen(kiosk: Kiosk, deviceId: string, fault: PrinterFault, when: ()
  * counts as out) only after the delay; a status check, which writes nothing,
  * is as quick as ever. With `hold`, the given band waits on a gate instead.
  */
-function slowLabels(kiosk: Kiosk, ms: number, hold?: { band: number; gate: Promise<void> }): () => void {
+function slowLabels(
+  kiosk: Kiosk,
+  ms: number,
+  hold?: { band: number; gate: Promise<void>; entered?: () => void },
+): () => void {
   const sim = kiosk.agent!.printing()!.simulator(kiosk.bandPrinterId!)!;
   const original = sim.connect;
   let bands = 0;
@@ -285,8 +289,13 @@ function slowLabels(kiosk: Kiosk, ms: number, hold?: { band: number; gate: Promi
       close: async () => {
         if (wrote) {
           bands += 1;
-          if (hold && bands === hold.band) await hold.gate;
-          else await new Promise((r) => setTimeout(r, ms));
+          if (hold && bands === hold.band) {
+            // Tell the test this band is now in the printer, so it can act
+            // (kill a connection, pull a cable) at exactly this moment
+            // instead of racing the print loop on a slow machine.
+            hold.entered?.();
+            await hold.gate;
+          } else await new Promise((r) => setTimeout(r, ms));
         }
         return channel.close();
       },
@@ -802,8 +811,10 @@ describe('attack 1 — a print fault after the bands were issued', () => {
     const actionId = newId();
     let openGate!: () => void;
     const gate = new Promise<void>((resolve) => (openGate = resolve));
+    let bandTwoIn!: () => void;
+    const secondInPrinter = new Promise<void>((resolve) => (bandTwoIn = resolve));
     // The second band sticks in the printer until the test lets it out.
-    const undo = slowLabels(A, 0, { band: 2, gate });
+    const undo = slowLabels(A, 0, { band: 2, gate, entered: bandTwoIn });
     let answer: KioskRedeemAnswer;
     try {
       const pending = redeemAtKiosk(
@@ -812,10 +823,11 @@ describe('attack 1 — a print fault after the bands were issued', () => {
         device,
         { actionId, qr: paid.qr },
       );
-      for (let i = 0; i < 200 && seqOf(A, A.bandPrinterId) - startBand < 1; i += 1) {
-        await new Promise((r) => setTimeout(r, 25));
-      }
-      expect(seqOf(A, A.bandPrinterId) - startBand, 'the first band came out').toBe(1);
+      // Not a wall-clock wait: the kill below must land while the second band
+      // sits in the printer, or a slow machine kills before it started and
+      // the honest count is one, not two.
+      await secondInPrinter;
+      expect(seqOf(A, A.bandPrinterId) - startBand, 'the first band is out and the second is in the printer').toBe(2);
       // The database ends the redemption's connection while the second band is in the printer.
       const killed = await ctx.db.execute(
         sql`select pg_terminate_backend(pid) as ok from pg_stat_activity where application_name = 'kiosk-504-hold' and xact_start is not null`,
