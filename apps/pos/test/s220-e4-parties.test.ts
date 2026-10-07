@@ -126,7 +126,6 @@ const partyView = (over: Partial<NonNullable<EventView['party']>> = {}): EventVi
         takenById: 'acc',
         takenAt: `${T}T07:00:00.000Z`,
         businessDate: T,
-        partyDate: T,
         attemptId: 'att',
       },
     ],

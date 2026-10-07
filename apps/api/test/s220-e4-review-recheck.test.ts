@@ -40,28 +40,30 @@ import {
 
 /**
  * S2-20 E4 — RE-CHECK REVIEW (SCRUM-217; events-kiosk PLAN, the E4 row of §9,
- * §6, Q3's default; the fix round's 18e4966d).
+ * §6, Q3's default).
  *
- * The fix round keeps a party payment under the date the OTO App holds when
- * the payment is taken (`confirmed.startDate`), not the date a till's pending
- * edit shows. That is right when the OTO App later refuses the edit (the
- * builder's test in events-e4). This file runs the other two ways a pending
- * edit resolves, and what a pending edit does to the money itself:
+ * The re-check pinned the first fix round's snapshot rule as built: a party
+ * payment kept under the date the OTO App held when the money was taken, so a
+ * date edit the app took later left the money on the old day's line. The
+ * second fix round takes the PROTOTYPE'S RULE instead (the owner's standing
+ * ruling): End of Day works a party's day out when it is read, from the date
+ * the OTO App holds for the party then, as `getPartiesForDate` does. This file
+ * now pins that rule through the ways a till's pending date edit resolves:
  *
- *   - the OTO App TAKES the date edit later: the money stays under the old
- *     date — today's party_prepay carries money for a party now held
- *     tomorrow, while money taken today for a party confirmed for tomorrow is
- *     on no line (Q3). Two payments, same day, same party day: two answers;
- *   - the till pulls a party IN to today (pending), takes its money today, and
- *     the OTO App takes the edit: today's party, paid today, on no line;
- *   - a replay of either payment answers the date it was kept under;
+ *   - the OTO App TAKES a move to tomorrow later: while the edit is pending
+ *     the money is on today's line (the app still holds today); once it is
+ *     taken the money leaves today's line with the party, and — taken today
+ *     for a party held tomorrow — is on no line (Q3, plan §6), like money
+ *     taken today for a party confirmed for tomorrow all along;
+ *   - the till pulls a party IN to today, takes its money today, and the OTO
+ *     App takes the edit: today's party, paid today, on today's line;
+ *   - a replay of either payment, by key and by id, answers the same payment:
+ *     the payment carries no party day, so a move cannot change its answer;
+ *   - the date the app held when the money was taken stays on the row as a
+ *     record of the moment, and nothing counts by it;
  *   - a pending PRICE edit raises the bill the payment is capped against; if
  *     the OTO App refuses it, the party is paid past its bill and the screen
- *     says ฿0 owed.
- *
- * Every one of these is the snapshot rule as built, pinned as built — the
- * owner's question (a), Q6: the prototype works a party's day out when End of
- * Day is read (`getPartiesForDate`), the platform when the money is taken.
+ *     says ฿0 owed (the owner's note; unchanged).
  */
 
 let ctx: TestContext;
@@ -315,22 +317,36 @@ async function retryEditOf(editId: string, plan: Plan) {
   return res.body;
 }
 
-/** party_prepay for a day, summed straight from the tables: taken that day, for that day's party. */
+/**
+ * party_prepay for a day, summed straight from the tables: taken that day, for
+ * the parties the OTO App holds on that day as it is read now — never the date
+ * kept on the payment row.
+ */
 async function partyPrepayFromTables(date: string): Promise<number> {
   const rows = await ctx.db
-    .select({ amount: paymentAttempt.amountSatang, businessDate: paymentAttempt.businessDate, partyDate: partyPayment.partyDate })
+    .select({ amount: paymentAttempt.amountSatang, businessDate: paymentAttempt.businessDate, eventId: partyPayment.otoappEventId })
     .from(partyPayment)
     .innerJoin(paymentAttempt, eq(paymentAttempt.id, partyPayment.paymentAttemptId))
     .where(eq(partyPayment.branchId, central));
-  return rows.filter((r) => r.businessDate === date && r.partyDate === date).reduce((s, r) => s + r.amount, 0);
+  const held = await ctx.db.execute<{ id: string }>(
+    sql`select id::text as id from otoapp.core_events where event_date = ${date}`,
+  );
+  const heldThatDay = new Set(held.rows.map((r) => r.id));
+  return rows.filter((r) => r.businessDate === date && heldThatDay.has(r.eventId)).reduce((s, r) => s + r.amount, 0);
+}
+
+/** The party's day as the OTO App held it when the money was taken: the row's record of the moment. */
+async function keptDateOf(paymentId: string): Promise<string> {
+  const [row] = await ctx.db.select({ partyDate: partyPayment.partyDate }).from(partyPayment).where(eq(partyPayment.id, paymentId));
+  return row!.partyDate;
 }
 
 // =============================================================================
 // (2) The day rule after the fix round: a pending date edit the OTO App TAKES later
 // =============================================================================
 
-describe("Q3's day rule and a till's pending date edit — the snapshot as built (owner question (a), Q6)", () => {
-  it("moved out to tomorrow while the OTO App is unreachable, paid today, then taken by the OTO App: today's party_prepay carries money for a party held tomorrow", async () => {
+describe("Q3's day rule and a till's pending date edit — the party's day worked out when End of Day is read (the prototype's getPartiesForDate)", () => {
+  it('moved out to tomorrow while the OTO App is unreachable, paid today, then taken by the OTO App: the money leaves today’s line with the party', async () => {
     const today = line(await endOfDay(T), 'party_prepay');
     const tomorrow = line(await endOfDay(d1()), 'party_prepay');
 
@@ -346,36 +362,46 @@ describe("Q3's day rule and a till's pending date edit — the snapshot as built
     const body = paymentBody({ amount: 100_000, method: 'card', expected: owed });
     const paid = await call<PartyWriteAnswer>('POST', reception, `/parties/${ev.movedOut}/payments`, body, { 'idempotency-key': key });
     expect(paid.status, JSON.stringify(paid.body)).toBe(200);
-    expect(paid.body.payment).toMatchObject({ amountSatang: 100_000, businessDate: T, partyDate: T });
+    expect(paid.body.payment).toMatchObject({ amountSatang: 100_000, businessDate: T });
+    expect(paid.body.payment).not.toHaveProperty('partyDate');
+
+    // While the move is pending the OTO App still holds the party today: today's line.
+    expect(line(await endOfDay(T), 'party_prepay')).toBe(today + 100_000);
+    expect(line(await endOfDay(T), 'party_prepay')).toBe(await partyPrepayFromTables(T));
 
     // The OTO App is back and takes the move: the party is held tomorrow.
     expect(await retryEditOf(moved.body.edit!.id, 'app')).toMatchObject({ syncState: 'synced' });
     const shown = (await getParty(ev.movedOut)).body.event;
     expect(shown.startDate).toBe(d1());
     expect(shown.party!.editSync).toBeNull();
-    expect(shown.party!.payments).toEqual([expect.objectContaining({ id: body.paymentId, partyDate: T })]);
+    expect(shown.party!.payments).toEqual([paid.body.payment]);
 
     // A party confirmed for tomorrow all along, paid today: on no line (Q3, plan §6).
     const plain = await pay(ev.tomorrow, paymentBody({ amount: 100_000, method: 'card' }));
     expect(plain.status, JSON.stringify(plain.body)).toBe(200);
-    expect(plain.body.payment).toMatchObject({ businessDate: T, partyDate: d1() });
+    expect(plain.body.payment).toMatchObject({ businessDate: T });
 
-    // Two parties, both held tomorrow, both paid ฿1,000 today: one counts today, the other nowhere.
-    expect(line(await endOfDay(T), 'party_prepay')).toBe(today + 100_000);
+    // Two parties, both held tomorrow, both paid ฿1,000 today: one story — on no line of either day.
+    expect(line(await endOfDay(T), 'party_prepay')).toBe(today);
     expect(line(await endOfDay(T), 'party_prepay')).toBe(await partyPrepayFromTables(T));
     expect(line(await endOfDay(d1()), 'party_prepay')).toBe(tomorrow);
+    // The row still says where the party was when the money was taken; nothing counts by it.
+    expect(await keptDateOf(body.paymentId)).toBe(T);
 
-    // A replay of the payment, by key and by id, answers the date it was kept under.
+    // A replay of the payment answers the same payment, by key (the stored answer, verbatim) and by id.
     const byKey = await call<PartyWriteAnswer>('POST', reception, `/parties/${ev.movedOut}/payments`, body, { 'idempotency-key': key });
     expect(byKey.status).toBe(200);
-    expect(byKey.body.payment).toMatchObject({ id: body.paymentId, partyDate: T });
+    expect(byKey.body).toEqual(paid.body);
     const byId = await pay(ev.movedOut, { ...body, actionId: newId() });
     expect(byId.status, JSON.stringify(byId.body)).toBe(200);
-    expect(byId.body).toMatchObject({ replayed: true, payment: { id: body.paymentId, partyDate: T } });
+    expect(byId.body).toMatchObject({ replayed: true });
+    expect(byId.body.payment).toEqual(paid.body.payment);
     expect(await attemptsOfParty(ev.movedOut)).toHaveLength(1);
+    // ... and the replays moved no money between lines.
+    expect(line(await endOfDay(T), 'party_prepay')).toBe(today);
   });
 
-  it("pulled in to today while the OTO App is unreachable, paid today, then taken: today's party, paid today, is on no line", async () => {
+  it("pulled in to today while the OTO App is unreachable, paid today, then taken: today's party, paid today, is on today's line", async () => {
     const today = line(await endOfDay(T), 'party_prepay');
 
     editPlan.push('unreachable');
@@ -384,18 +410,22 @@ describe("Q3's day rule and a till's pending date edit — the snapshot as built
     expect(pulled.body.party).toMatchObject({ startDate: T });
     const paid = await pay(ev.pulledIn, paymentBody({ amount: 100_000, method: 'card', expected: 300_000 }));
     expect(paid.status, JSON.stringify(paid.body)).toBe(200);
-    // Kept under the day the OTO App held when it was taken: tomorrow.
-    expect(paid.body.payment).toMatchObject({ businessDate: T, partyDate: d1() });
+    expect(paid.body.payment).toMatchObject({ businessDate: T });
+    // Pending, the OTO App still holds it tomorrow: not on today's line yet.
+    expect(line(await endOfDay(T), 'party_prepay')).toBe(today);
 
     expect(await retryEditOf(pulled.body.edit!.id, 'app')).toMatchObject({ syncState: 'synced' });
     expect((await getParty(ev.pulledIn)).body.event.startDate).toBe(T);
+    // Taken: the party is today's, and so is its money.
+    expect(line(await endOfDay(T), 'party_prepay')).toBe(today + 100_000);
+    expect(await keptDateOf(paid.body.payment!.id)).toBe(d1());
 
     // A party confirmed for today all along, paid today: on today's line.
     const plain = await pay(ev.today, paymentBody({ amount: 100_000, method: 'card' }));
-    expect(plain.body.payment).toMatchObject({ businessDate: T, partyDate: T });
+    expect(plain.body.payment).toMatchObject({ businessDate: T });
 
-    // Two parties, both held today, both paid ฿1,000 today: one counts today, the other nowhere.
-    expect(line(await endOfDay(T), 'party_prepay')).toBe(today + 100_000);
+    // Two parties, both held today, both paid ฿1,000 today: both count today.
+    expect(line(await endOfDay(T), 'party_prepay')).toBe(today + 200_000);
     expect(line(await endOfDay(T), 'party_prepay')).toBe(await partyPrepayFromTables(T));
     expect(line(await endOfDay(d1()), 'party_prepay')).toBe(await partyPrepayFromTables(d1()));
   });

@@ -318,6 +318,26 @@ const uuidList = (ids: readonly string[]) =>
   );
 
 /**
+ * Some of the branch's events by id, archived or not, in one read — an id that
+ * is not one of this branch's events has no row. S2-20 E4: End of Day asks
+ * which day each paid party is held on, as the OTO App holds it when the day
+ * is read (the prototype's `getPartiesForDate`).
+ */
+export async function getBranchEvents(
+  exec: Exec,
+  q: { branchId: string; eventIds: readonly string[] },
+): Promise<SeamEvent[]> {
+  const eventIds = [...new Set(q.eventIds.filter((id) => UUID.test(id)))];
+  if (!UUID.test(q.branchId) || eventIds.length === 0) return [];
+  if (!(await otoAppEventsInstalled(exec))) return [];
+  const res = await exec.execute<EventRow>(sql`
+    select ${EVENT_COLUMNS}
+      from otoapp_v.events
+     where branch_id = ${q.branchId}::uuid and id in (${uuidList(eventIds)})`);
+  return res.rows.map(toEvent);
+}
+
+/**
  * The children registered on some of the branch's events, in one read — what
  * a day's list needs (S2-20 E1), where one read per event would be a round of
  * queries per camp. Ordered by event, then as `listEventAttendees` orders.

@@ -20,7 +20,8 @@ import { paymentAttempt } from './sales';
 //                  `pos.payment_attempt` (no sale behind it), so the amount,
 //                  the tender, the trading day and when it was paid are the
 //                  ledger's and are not copied here; this row says which party
-//                  it was for, and that party's day when it was taken;
+//                  it was for (and, as a record of that moment only, the
+//                  party's day then);
 //   party_edit     an edit made at a till, and whether the OTO App has taken
 //                  it yet (`sync_state`), written back through the app's
 //                  directory API under the edit's own id.
@@ -87,9 +88,12 @@ export const partyCharge = pos.table(
  * MONEY TAKEN AGAINST A PARTY'S BALANCE (`addPartyPayment`, mockApi.ts:3938).
  * `id` is the payment id the till minted, so a retry is the same payment. The
  * money is the attempt's — one attempt per payment, and an attempt belongs to
- * at most one payment. `party_date` is the party's day when the money was
- * taken: End of Day counts a payment on the `party_prepay` line when its
- * trading day is that day (the prototype's rule, Q3's default).
+ * at most one payment. `party_date` is the party's day as the OTO App held it
+ * when the money was taken — a record of that moment, which nothing counts
+ * by: End of Day counts a payment on the `party_prepay` line when its trading
+ * day is the day the party is held on AS THE DAY IS READ (the prototype's
+ * `getPartiesForDate`, Q3's default), so a party moved later takes its money's
+ * line with it.
  */
 export const partyPayment = pos.table(
   'party_payment',
@@ -118,7 +122,7 @@ export const partyPayment = pos.table(
   (t) => [
     uniqueIndex('party_payment_attempt_unique').on(t.paymentAttemptId),
     index('party_payment_operator_idx').on(t.operatorId),
-    /** End of Day: a branch-day's party payments. */
+    /** A branch's party payments by the party's day when they were taken (migration 0072). */
     index('party_payment_branch_day_idx').on(t.branchId, t.partyDate),
     /** A party's bill reads its payments. */
     index('party_payment_event_idx').on(t.otoappEventId),

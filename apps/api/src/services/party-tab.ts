@@ -132,7 +132,6 @@ export async function partyLedgersOf(
       takenById: p.row.accountId,
       takenAt: (p.paidAt ?? p.createdAt).toISOString(),
       businessDate: p.businessDate,
-      partyDate: p.row.partyDate,
       attemptId: p.row.paymentAttemptId,
     });
   }

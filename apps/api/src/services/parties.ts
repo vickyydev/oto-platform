@@ -66,7 +66,9 @@ import { withTx, type Exec, type OpContext } from './tx';
  *     at ฿0; the cap is worked out inside the transaction under the party's
  *     lock, so two tills cannot both take the last of a balance (H11). End of
  *     Day counts it on its own `party_prepay` line, on the day it is taken,
- *     for that day's party, and never on the cash, card or QR line (H10).
+ *     when the party is held that day — the party's day worked out when End
+ *     of Day is read, as the prototype's `getPartiesForDate` does — and never
+ *     on the cash, card or QR line (H10).
  *
  * Every write is keyed by the id the till minted (the charge's, the payment's,
  * the edit's): the same id again answers what it made, and writes nothing.
@@ -289,8 +291,12 @@ export interface PartyPaymentResult {
  * tender always is, with no sale — so it is in the trading day's money, the
  * card terminal's batch reconciliation and the drawer, but in no sale, no
  * receipt and no VAT line (Q3). Its trading day is the branch's business day
- * when it is taken; the party's day — as the OTO App holds it, not as a till's
- * edit it has not taken would move it — is kept beside it for End of Day.
+ * when it is taken. WHICH PARTY'S DAY it counts on is End of Day's to work
+ * out when the day is read (`end-of-day.ts`, the prototype's
+ * `getPartiesForDate`): the party's date as the OTO App holds it then, so a
+ * party moved after it was paid takes its money's line with it. The date the
+ * app held when the money was taken is kept on the row and in the audit as a
+ * record of that moment only; nothing counts by it.
  */
 export async function payParty(
   deps: PartyDeps,
@@ -339,9 +345,9 @@ export async function payParty(
     }
 
     const { confirmed, bill } = await liveBill(tx, clock.id, event.id);
-    // The party's day this money is kept under for End of Day: the date the
-    // OTO App holds, never a till's edit it has not taken yet — an edit it
-    // refuses later would leave the payment on another day's party_prepay.
+    // The party's day as the OTO App holds it as the money is taken — a record
+    // of the moment (the row's `party_date`, the audit's `partyDate`). End of
+    // Day does not read it: it works the party's day out when the day is read.
     const partyDate = confirmed.startDate;
     if (body.expectedOutstandingSatang !== undefined && body.expectedOutstandingSatang !== bill.outstandingSatang) {
       throw errors.conflict(

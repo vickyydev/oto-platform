@@ -329,10 +329,13 @@ export const PartyPaymentViewSchema = z.object({
   takenBy: z.string().nullable(),
   takenById: z.string().nullable(),
   takenAt: z.string(),
-  /** The trading day the money was taken on. */
+  /**
+   * The trading day the money was taken on. End of Day counts it on that
+   * day's `party_prepay` line when the party is held that day — the party's
+   * day as it stands when End of Day is read, so a party moved after it was
+   * paid takes its money's line with it (the prototype's `getPartiesForDate`).
+   */
   businessDate: IsoDate,
-  /** The party's day when the money was taken: End of Day counts it when the two are the same day. */
-  partyDate: IsoDate,
   attemptId: z.string(),
 });
 export type PartyPaymentView = z.infer<typeof PartyPaymentViewSchema>;

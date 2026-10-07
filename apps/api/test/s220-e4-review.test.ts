@@ -262,21 +262,27 @@ async function attemptsOf(eventId: string) {
     .where(eq(partyPayment.otoappEventId, eventId));
 }
 
-/** The party_prepay rule straight off the tables: taken on D, for D's parties, at Central. */
+/**
+ * The party_prepay rule straight off the tables: taken on D, at Central, for
+ * the parties the OTO App holds on D as it is read now (`getPartiesForDate`).
+ */
 async function partyPrepayFromTables(date: string): Promise<number> {
   const rows = await ctx.db
-    .select({ amount: paymentAttempt.amountSatang })
+    .select({ amount: paymentAttempt.amountSatang, eventId: partyPayment.otoappEventId })
     .from(partyPayment)
     .innerJoin(paymentAttempt, eq(paymentAttempt.id, partyPayment.paymentAttemptId))
     .where(
       and(
         eq(paymentAttempt.branchId, central),
         eq(paymentAttempt.businessDate, date),
-        eq(partyPayment.partyDate, date),
         inArray(paymentAttempt.status, [...PAYMENT_ATTEMPT_TAKEN_STATUSES]),
       ),
     );
-  return rows.reduce((s, r) => s + r.amount, 0);
+  const held = await ctx.db.execute<{ id: string }>(
+    sql`select id::text as id from otoapp.core_events where event_date = ${date}`,
+  );
+  const heldThatDay = new Set(held.rows.map((r) => r.id));
+  return rows.filter((r) => heldThatDay.has(r.eventId)).reduce((s, r) => s + r.amount, 0);
 }
 
 /** Every table a sale of goods, a kitchen ticket, a stock move or a band would touch. */
@@ -449,7 +455,7 @@ describe('1 — one party, replayed, raced, beside a part-refunded sale: the led
     const key = { 'idempotency-key': `party-payment:${body.paymentId}` };
     const first = await pay(ev.money, body, reception, key);
     expect(first.status, first.raw).toBe(200);
-    expect(first.body.payment).toMatchObject({ amountSatang: 300_000, businessDate: T, partyDate: T, kind: 'card' });
+    expect(first.body.payment).toMatchObject({ amountSatang: 300_000, businessDate: T, kind: 'card' });
     taken.push(300_000);
 
     const again = await pay(ev.money, body, reception, key);
@@ -573,7 +579,7 @@ describe("2 — Q3's day rule: the day the money is taken, for that day's party,
   it("04:30 the next calendar morning is still the day that is finishing: today's party counts today", async () => {
     const before = lineOf(await endOfDay(T), 'party_prepay');
     const { answer } = await payAt(ev.today, 10_000, at(addDaysToIsoDate(T, 1), '04:30'));
-    expect(answer.payment).toMatchObject({ businessDate: T, partyDate: T });
+    expect(answer.payment).toMatchObject({ businessDate: T });
     expect(lineOf(await endOfDay(T), 'party_prepay')).toBe(before + 10_000);
   });
 
@@ -581,7 +587,7 @@ describe("2 — Q3's day rule: the day the money is taken, for that day's party,
     const today = lineOf(await endOfDay(T), 'party_prepay');
     const tomorrow = lineOf(await endOfDay(addDaysToIsoDate(T, 1)), 'party_prepay');
     const { answer } = await payAt(ev.tomorrow, 10_000, at(addDaysToIsoDate(T, 1), '04:59'));
-    expect(answer.payment).toMatchObject({ businessDate: T, partyDate: addDaysToIsoDate(T, 1) });
+    expect(answer.payment).toMatchObject({ businessDate: T });
     expect(lineOf(await endOfDay(T), 'party_prepay')).toBe(today);
     expect(lineOf(await endOfDay(addDaysToIsoDate(T, 1)), 'party_prepay')).toBe(tomorrow);
   });
@@ -591,9 +597,9 @@ describe("2 — Q3's day rule: the day the money is taken, for that day's party,
     const today = lineOf(await endOfDay(T), 'party_prepay');
     const tomorrow = lineOf(await endOfDay(d1), 'party_prepay');
     const forTomorrow = await payAt(ev.tomorrow, 20_000, at(d1, '05:00'));
-    expect(forTomorrow.answer.payment).toMatchObject({ businessDate: d1, partyDate: d1 });
+    expect(forTomorrow.answer.payment).toMatchObject({ businessDate: d1 });
     const forToday = await payAt(ev.today, 20_000, at(d1, '05:00'));
-    expect(forToday.answer.payment).toMatchObject({ businessDate: d1, partyDate: T });
+    expect(forToday.answer.payment).toMatchObject({ businessDate: d1 });
     expect(lineOf(await endOfDay(T), 'party_prepay')).toBe(today);
     expect(lineOf(await endOfDay(d1), 'party_prepay')).toBe(tomorrow + 20_000);
     expect(lineOf(await endOfDay(d1), 'party_prepay')).toBe(await partyPrepayFromTables(d1));

@@ -450,8 +450,9 @@ describe('check 3 — the party tab: base price, deposit, POS charges, payments 
       kind: 'card',
       takenBy: 'Som (Reception)',
       businessDate: T,
-      partyDate: T,
     });
+    // The party's day is End of Day's to work out when it is read: not on the payment.
+    expect(res.body.payment).not.toHaveProperty('partyDate');
     expect(res.body.party.party!.bill!.outstandingSatang).toBe(owed - 500_000);
     expect(res.body.party.party!.bill!.paidSatang).toBe(500_000);
 
@@ -573,14 +574,14 @@ describe("Q3's default — a payment counts on the day it is taken, for that day
     const today = await endOfDay(T);
     const res = await pay(ev.tomorrow, paymentBody({ amount: 100_000 }));
     expect(res.status, JSON.stringify(res.body)).toBe(200);
-    expect(res.body.payment).toMatchObject({ businessDate: T, partyDate: addDaysToIsoDate(T, 1) });
+    expect(res.body.payment).toMatchObject({ businessDate: T });
     const after = await endOfDay(T);
     expect(line(after, 'party_prepay')).toBe(line(today, 'party_prepay'));
     expect(line(after, 'cash')).toBe(line(today, 'cash'));
     expect(line(await endOfDay(addDaysToIsoDate(T, 1)), 'party_prepay')).toBe(0);
   });
 
-  it("a till's date edit the OTO App has not taken does not move the payment's day; refused later, the money is still on the party's day", async () => {
+  it("a till's date edit the OTO App has not taken does not move the money's line; refused later, the money is still on the party's day", async () => {
     const tomorrow = addDaysToIsoDate(T, 1);
     editPlan.push('unreachable');
     const moved = await patch(ev.moving, { date: tomorrow });
@@ -593,8 +594,8 @@ describe("Q3's default — a payment counts on the day it is taken, for that day
     const before = await endOfDay(T);
     const res = await pay(ev.moving, paymentBody({ amount: 100_000, method: 'card' }));
     expect(res.status, JSON.stringify(res.body)).toBe(200);
-    // Kept under the day the OTO App holds: today's party, taken today.
-    expect(res.body.payment).toMatchObject({ businessDate: T, partyDate: T });
+    // Counted on the day the OTO App holds: today's party, taken today.
+    expect(res.body.payment).toMatchObject({ businessDate: T });
     const [entry] = await ctx.db
       .select()
       .from(auditLog)
@@ -614,7 +615,7 @@ describe("Q3's default — a payment counts on the day it is taken, for that day
     expect(retried.body).toMatchObject({ syncState: 'failed' });
     const shown = (await getParty(ev.moving)).body.event;
     expect(shown.startDate).toBe(T);
-    expect(shown.party!.payments).toEqual([expect.objectContaining({ id: res.body.payment!.id, partyDate: T })]);
+    expect(shown.party!.payments).toEqual([expect.objectContaining({ id: res.body.payment!.id, businessDate: T })]);
     expect(line(await endOfDay(T), 'party_prepay')).toBe(line(before, 'party_prepay') + 100_000);
     expect(line(await endOfDay(tomorrow), 'party_prepay')).toBe(0);
   });

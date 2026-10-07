@@ -47,6 +47,7 @@ import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { holdsGrantAt } from './access-control';
 import { strandedOf } from './occupancy';
+import { OtoAppSeamNotGrantedError, getBranchEvents } from './otoapp-events';
 import { hasPermission, type EffectivePermission } from './permissions';
 import { accountNames } from './refund-slices';
 import { allocateReceipt } from './sale';
@@ -138,9 +139,10 @@ export interface ExpectedInputs {
   /** Paid-outs and safe drops of the day, each taken off the expected cash. */
   movementsSatang: number;
   /**
-   * S2-20 E4 — party payments taken this day for this day's parties, whatever
-   * the tender (`getEndOfDay` 2298-2304). Their attempts are on no other line.
-   * Absent is ฿0, the line's value before parties were on the platform.
+   * S2-20 E4 — party payments taken this day for the parties held this day,
+   * whatever the tender (`getEndOfDay` 2298-2304) — the party's day as it is
+   * when the day is read. Their attempts are on no other line. Absent is ฿0,
+   * the line's value before parties were on the platform.
    */
   partyPrepaySatang?: number;
 }
@@ -302,6 +304,26 @@ function movementViewOf(r: typeof cashMovement.$inferSelect, nameOf: (id: string
 }
 
 /**
+ * S2-20 E4 — the day each of some parties is held on, as the OTO App holds it
+ * now (the seam, without a till's edits it has not taken): one read for all of
+ * them, none when no party was paid. A party the seam no longer has at this
+ * branch has no day. The seam installed but not granted is a fault to fix,
+ * never "no party" — that would drop party money off the day unsaid.
+ */
+async function partyDaysOf(db: Exec, branchId: string, eventIds: readonly string[]): Promise<Map<string, string>> {
+  if (eventIds.length === 0) return new Map();
+  try {
+    const parties = await getBranchEvents(db, { branchId, eventIds });
+    return new Map(parties.filter((e) => e.type === 'party').map((e) => [e.id, e.startDate]));
+  } catch (err) {
+    if (err instanceof OtoAppSeamNotGrantedError) {
+      throw new AppError(503, 'EVENTS_SEAM_NOT_GRANTED', err.message, { missing: err.missing });
+    }
+    throw err;
+  }
+}
+
+/**
  * The money of one branch-day, read from the platform's records: the attempts
  * dated this business day that took money at a counter, and the refund slices
  * of the sales dated this business day — a refund comes off its ORIGINAL
@@ -317,8 +339,8 @@ async function expectedInputsOf(db: Exec, operatorId: string, branchId: string, 
       stationId: paymentAttempt.stationId,
       tid: paymentAttempt.tid,
       amountSatang: paymentAttempt.amountSatang,
-      /** S2-20 E4 — set when the attempt is a party payment: that party's day. */
-      partyDate: partyPayment.partyDate,
+      /** S2-20 E4 — set when the attempt is a party payment: the OTO App's party it paid. */
+      partyEventId: partyPayment.otoappEventId,
     })
     .from(paymentAttempt)
     .leftJoin(partyPayment, eq(partyPayment.paymentAttemptId, paymentAttempt.id))
@@ -336,11 +358,21 @@ async function expectedInputsOf(db: Exec, operatorId: string, branchId: string, 
    * (H10). It is on `party_prepay` when it was taken on this day for a party
    * held on this day — the prototype's rule, Q3's default — and on no line of
    * any day otherwise (plan §6, "payment timing").
+   *
+   * The party's day is worked out HERE, when the day is read, from the date
+   * the OTO App holds for the party now — as the prototype's
+   * `getPartiesForDate(date)` reads each party's date when End of Day is
+   * read — never a date kept when the money was taken: a party moved after it
+   * was paid takes its money's line with it. (A till's edit the OTO App has
+   * not taken does not move it; a party the app no longer has at this branch
+   * is held on no day.) A closed day keeps the lines it was closed with.
    */
-  const attempts = taken.filter((a) => a.partyDate === null && countsAsTillTakings(a));
-  const partyPrepaySatang = taken
-    .filter((a) => a.partyDate === date)
-    .reduce((sum, a) => sum + a.amountSatang, 0);
+  const attempts = taken.filter((a) => a.partyEventId === null && countsAsTillTakings(a));
+  const paidParties = taken.flatMap((a) => (a.partyEventId ? [{ eventId: a.partyEventId, amountSatang: a.amountSatang }] : []));
+  const partyDay = await partyDaysOf(db, branchId, paidParties.map((p) => p.eventId));
+  const partyPrepaySatang = paidParties
+    .filter((p) => partyDay.get(p.eventId) === date)
+    .reduce((sum, p) => sum + p.amountSatang, 0);
 
   const refunds = await db
     .select({ allocation: refund.tenderAllocation })

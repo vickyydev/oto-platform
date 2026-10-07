@@ -144,7 +144,6 @@ function viewOf(): EventView {
     takenById: 'acc',
     takenAt: `${T}T0${Math.min(9, i + 5)}:00:00.000Z`,
     businessDate: T,
-    partyDate: T,
     attemptId: `att-${i}`,
   }));
   const paid = server.payments.reduce((s, p) => s + p.amountSatang, 0);
