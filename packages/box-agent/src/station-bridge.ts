@@ -170,6 +170,7 @@ import type {
   OverlayWrite,
   QueuedFact,
 } from './store';
+import { sqliteWriterBusy } from './store-sqlite';
 import { silentLog, type AgentLog } from './transport';
 
 /**
@@ -433,6 +434,14 @@ interface HeldSession {
 
 /** Scope of the durable unlock throttle in `box_throttle`. */
 const UNLOCK_THROTTLE_SCOPE = 'bridge_unlock';
+
+/**
+ * SCRUM-502 — how a prepaid press waits for the store's one writer
+ * (`recordInTurn`): every 25 ms, for up to five seconds, the store's own
+ * `busy_timeout`.
+ */
+const PREPAID_TURN_WAIT_MS = 25;
+const PREPAID_TURN_ATTEMPTS = 200;
 
 /**
  * Wrong passwords counted in the store's `box_throttle`, so pulling a Pi's
@@ -2600,6 +2609,31 @@ export class StationBridge {
     );
   }
 
+  /**
+   * SCRUM-502 — TWO PRESSES FOR THE LAST PREPAID MEAL AT ONCE.
+   *
+   * A Pi's store is one SQLite connection with one writer at a time, so the
+   * second press's transaction cannot open while the first press's is open, and
+   * its till was shown the store's own error instead of the counter's answer.
+   * Nothing of that press was written, so a sale that serves prepaid food waits
+   * its turn and is recorded again: the prepaid count is then read after the
+   * first press, and the counter's own rule decides — the meal is served, or it
+   * was the last one and the press is refused as already served, in the
+   * counter's words (`servePrepaidAhead`). Every other sale, and every other
+   * fault, is answered as before. The wait is bounded like the store's own busy
+   * wait (`busy_timeout`, five seconds); a store still busy after it says so.
+   */
+  private async recordInTurn(food: BoxFoodOrder, record: () => Promise<OfflineSaleAnswer>): Promise<OfflineSaleAnswer> {
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await record();
+      } catch (err) {
+        if (food.prepaid.size === 0 || !sqliteWriterBusy(err) || attempt >= PREPAID_TURN_ATTEMPTS) throw err;
+        await new Promise((resolve) => setTimeout(resolve, PREPAID_TURN_WAIT_MS));
+      }
+    }
+  }
+
   /** SCRUM-498 — the prepaid units the sale serves, counted in its transaction (`CheckinDesk.servePrepaidAhead`). */
   private async servePrepaidAhead(tx: BoxStore, food: BoxFoodOrder, mode: 'refuse' | 'record', at: string): Promise<void> {
     try {
@@ -2846,7 +2880,7 @@ export class StationBridge {
     ];
     let recorded: OfflineSaleAnswer;
     try {
-      recorded = await queue.record({
+      recorded = await this.recordInTurn(sale.food, () => queue.record({
         saleId: body.saleId,
         stationId: station.id,
         actorAccountId: caller.accountId,
@@ -2870,7 +2904,7 @@ export class StationBridge {
         memo: memo as unknown as Record<string, unknown>,
         ...(opts.alongside ? { alongside: opts.alongside } : {}),
         afterQueued,
-      });
+      }));
     } catch (err) {
       if (err instanceof OfflineSaleRefused) this.refuse('voucher');
       if (err instanceof ReceiptSeriesUnavailable) {

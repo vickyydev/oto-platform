@@ -601,6 +601,25 @@ export function sqliteProblemOf(err: unknown): SqliteStoreProblem {
   return typeof code === 'number' && (code & 0xff) === SQLITE_CORRUPT ? 'damaged' : 'unreadable';
 }
 
+/** SQLite's primary result codes for a write that met another writer's lock. */
+const SQLITE_BUSY = 5;
+const SQLITE_LOCKED = 6;
+
+/**
+ * SCRUM-502 — whether SQLite refused a write only because another write held
+ * the store at that moment: the box's one connection already inside another
+ * press's transaction (`cannot start a transaction within a transaction`), or
+ * the file locked past `busy_timeout`. Nothing of the refused write was kept,
+ * so the same write may be made again once the other one has finished. Any
+ * other fault is not this, and is never read as it.
+ */
+export function sqliteWriterBusy(err: unknown): boolean {
+  const e = err as { code?: unknown; errcode?: unknown; message?: unknown } | null;
+  if (!e || e.code !== 'ERR_SQLITE_ERROR') return false;
+  if (typeof e.errcode === 'number' && [SQLITE_BUSY, SQLITE_LOCKED].includes(e.errcode & 0xff)) return true;
+  return typeof e.message === 'string' && e.message.includes('cannot start a transaction within a transaction');
+}
+
 /** The error's own words, one line: `file is not a database`, `database disk image is malformed`. */
 export function sqliteMessage(err: unknown): string {
   const text = err instanceof Error ? err.message : String(err);

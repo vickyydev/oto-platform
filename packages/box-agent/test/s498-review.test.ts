@@ -407,11 +407,38 @@ test('s498 review — two presses for the last meal at once serve it once', asyn
     const refused = outcomes.filter((o): o is PromiseRejectedResult => o.status === 'rejected');
     assert.equal(served.length, 1, 'one press serves the meal');
     assert.equal(refused.length, 1);
-    // The loser is refused by the counter, or by the store's one-writer rule on SQLite; either way it writes nothing.
-    const reason = refused[0]!.reason as { code?: unknown };
-    assert.ok(reason instanceof BridgeError ? reason.code === 'PREPAID_USED_UP' : reason.code === 'ERR_SQLITE_ERROR', String(reason));
+    // SCRUM-502: the loser waits for the store's one writer and is then refused
+    // by the counter, in its words — never by the store's own error.
+    const reason = refused[0]!.reason as unknown;
+    assert.ok(reason instanceof BridgeError, String(reason));
+    assert.equal(reason.code, 'PREPAID_USED_UP');
+    assert.equal(reason.message, "Mint's prepaid Hot dog has already been served.");
     assert.equal(await box.harness.store.readCounter(BOX_ID, prepaidCounterKey(ids.mint, HOTDOG)), 1);
     assert.equal((await queuedFacts(box)).filter((e) => e.type === 'sale.finalised').length, 1);
+  } finally {
+    box.close();
+  }
+});
+
+test('SCRUM-502 — three presses at once for two meals: two are served, the third is told the meal was already served', async () => {
+  const box = await openFoodBox();
+  try {
+    await box.write('checkin', [checkinItem({ mintFood: hotDogs(2) })]);
+    const press = (n: number) =>
+      ask(box, 'sale.finalise', {
+        saleId: uuidv7(),
+        actionId: `race3-${n}`,
+        cart: { channel: 'fnb', pickupCode: `8${n}`, bandHolder: { checkinId: ids.mint }, items: [prepaidLine(ids.mint)], expectedTotalSatang: 0 },
+      });
+    const outcomes = await Promise.allSettled([press(1), press(2), press(3)]);
+    assert.equal(outcomes.filter((o) => o.status === 'fulfilled').length, 2, 'a press that waited its turn is served while a meal is left');
+    const refused = outcomes.filter((o): o is PromiseRejectedResult => o.status === 'rejected').map((o) => o.reason as unknown);
+    assert.equal(refused.length, 1);
+    assert.ok(refused[0] instanceof BridgeError, String(refused[0]));
+    assert.equal(refused[0].code, 'PREPAID_USED_UP');
+    assert.equal(refused[0].message, "Mint's prepaid Hot dog has already been served.");
+    assert.equal(await box.harness.store.readCounter(BOX_ID, prepaidCounterKey(ids.mint, HOTDOG)), 2);
+    assert.equal((await queuedFacts(box)).filter((e) => e.type === 'sale.finalised').length, 2);
   } finally {
     box.close();
   }
