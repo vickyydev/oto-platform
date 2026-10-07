@@ -17,13 +17,13 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-Current checkpoint: SCRUM-493's four build parts (494, 495, 496, 498) are all Deployed with staging cards; 493 waits only on SCRUM-497 answers. S2-15b analytics (SCRUM-216) is in build: rounds 1-3 are on main (main head c578ebb0 - Performance screens on real platform figures), rounds 4-5 (admin Reports panels + booth report) build on `lane/s216-r45`. Staging runs c578ebb0 (all five platform services).
+Current checkpoint: S2-15 analytics is COMPLETE - SCRUM-216 and SCRUM-214 are Deployed with reviewed staging evidence (ten frames on 216, three on 214). SCRUM-493's four build parts are all Deployed; 493 waits only on SCRUM-497 answers. Main and staging are at db2e89ff. Next in sprint order: S2-20 (SCRUM-217) and S2-21 (SCRUM-218), both blocked on the directory groundwork slice (otoapp_v views, core.employee mirror, write-back endpoints - touches apps/oto-app) which waits on the owner's go-ahead.
 
 _Updated: 7 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block carry exact deployments and checkpoints._
 
 | Item | State |
 |---|---|
-| Main | Green through 9183c986 (run 37543774627, live on staging); ca6322a7 (analytics round 6) under its run. Migrations through 0065 (0064 analytics summaries, 0065 analytics reports). Next free: 0066 |
+| Main | Green through db2e89ff (run 37565255501), live on all five staging services. Migrations through 0065 (0064 analytics summaries, 0065 analytics reports). Next free: 0066 |
 | SCRUM-494 (till consistency, band details and services) | Deployed. Register entries 1-9 are on main and live |
 | SCRUM-215 (S2-15a End of Day) | Deployed. Follow-up work is on branch `lane/eod-followups` |
 | SCRUM-499 (Lucky Wheel fixed-code vouchers) and SCRUM-500 | Deployed |
@@ -31,7 +31,7 @@ _Updated: 7 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block
 | SCRUM-496 (stock, booking and check-in consistency) | Deployed with staging cards |
 | SCRUM-497 | Details for the owner to confirm (register entries 44-65). Each keeps the approved design's behaviour until answered |
 | SCRUM-498 | Deployed with staging cards. SCRUM-493 waits only on SCRUM-497 answers |
-| SCRUM-216 (S2-15b analytics) | Build complete, rounds 1-6 on main (head ca6322a7, CI watched): schema + rollup (0064), driven-day proof, Performance on real figures, Reports panels + CSVs and the Console booth report (0065), frozen legacy days + branch source switch + closing sweep. Remaining: the staging walkthrough with evidence cards, then Deployed. Owner questions 1-17 in docs/progress/plans/analytics/PLAN.md section 9. Then SCRUM-214 to Deployed, then the rest of `docs/progress/SPRINT_2_PLAN.md`'s execution order |
+| SCRUM-216 and SCRUM-214 (S2-15 analytics) | Deployed with reviewed staging evidence. Six build rounds + a demo-seed fix round; the walkthrough's 25 frames and retakes live in docs/qa/jira-comments/attachments/SCRUM-216 with corrected NOTES.md. Owner questions 1-17 in docs/progress/plans/analytics/PLAN.md section 9; demo-day follow-ups on SCRUM-503 |
 | SCRUM-488 | Owner's End of Day ruling applied; four round-1 points to confirm |
 
 **Unlanded work** is saved, unreviewed, under `wip/saved-20261006/*`. Treat those branches as reference only until a lane picks one up.

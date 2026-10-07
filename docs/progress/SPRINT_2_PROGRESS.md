@@ -1,5 +1,23 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 7 October 2026 - S2-15b analytics complete; SCRUM-216 and SCRUM-214 Deployed
+
+Six build rounds and a demo-seed fix round, every landing reviewed
+independently and watched by SHA: the analytics schema and rollup
+(0064), a trading day hand-summed to the satang, Performance on real
+figures (live days provisional, All branches per-branch guarded), the
+four Reports panels with CSV exports and masked voucher labels (0065),
+the Console booth report on fact_booth_daily, two frozen legacy fixture
+days proven byte-identical under rerun (H10), and the per-branch
+reporting source switch (advisory-locked, idempotent, audited).
+Staging runs main db2e89ff on all five platform services. The closing
+walkthrough (25 frames + retakes, all independently image-checked,
+key frames verified personally) is attached: SCRUM-216 carries ten
+frames, SCRUM-214 three; both Deployed. Follow-ups on SCRUM-503;
+owner questions 1-17 in docs/progress/plans/analytics/PLAN.md and on
+SCRUM-497. Next free migration: 0066. Next in order: S2-20 and S2-21,
+both waiting on the directory groundwork go-ahead.
+
 ## Platform lane checkpoint - 7 October 2026 - analytics round 3 on main; rounds 4-5 building
 
 Analytics round 3 landed on main as c578ebb0 (CI watched by SHA): the
