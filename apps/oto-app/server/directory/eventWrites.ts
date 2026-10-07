@@ -550,13 +550,27 @@ export async function recordAttendeeCheckin(
       });
     }
 
-    await tx.query(
-      `update ${t.table}
-          set status = 'checked_in', checked_in_at = ${t.write("$2")}, checked_in_by = $3,
-              checkin_ref = $4, updated_at = ${t.write("now()")}
-        where id = $1`,
-      [day.id, at, by, input.id],
-    );
+    await tx.query("savepoint checkin_write");
+    try {
+      await tx.query(
+        `update ${t.table}
+            set status = 'checked_in', checked_in_at = ${t.write("$2")}, checked_in_by = $3,
+                checkin_ref = $4, updated_at = ${t.write("now()")}
+          where id = $1`,
+        [day.id, at, by, input.id],
+      );
+    } catch (err) {
+      if ((err as { code?: string }).code !== "23505") throw err;
+      // Another waiting row took this very id while this one held only its
+      // own day's lock (two days, or two attendees, sent with one id). The
+      // savepoint keeps the transaction alive, and the id's owner decides
+      // the answer: by now the winner has committed, so this refuses as
+      // `id_in_use` rather than surfacing a 500.
+      await tx.query("rollback to savepoint checkin_write");
+      const taken = await replayOf(tx, t, input, attendeeId);
+      if (taken) return taken;
+      throw err;
+    }
     return { ok: true, status: 201, body: { checkin: (await checkinShapeById(tx, t, day.id))!, replayed: false } };
   });
 }
@@ -570,11 +584,21 @@ async function replayOf(
 ): Promise<WriteOutcome<CheckinResult> | null> {
   const { rows } = await tx.query<StoredCheckin>(`${checkinSelect(t)} where checkin_ref = $1`, [input.id]);
   const used = rows[0];
-  if (!used) return null;
-  if (used.attendee_id === attendeeId && used.attendance_date === input.date) {
-    return { ok: true, status: 200, body: { checkin: checkinShape(used), replayed: true } };
+  if (used) {
+    if (used.attendee_id === attendeeId && used.attendance_date === input.date) {
+      return { ok: true, status: 200, body: { checkin: checkinShape(used), replayed: true } };
+    }
+    return refuse(409, "id_in_use", "This check-in id already belongs to another attendee or day");
   }
-  return refuse(409, "id_in_use", "This check-in id already belongs to another attendee or day");
+  // One id space across both tables, as the module header promises: an id
+  // spent on a one-off event is not accepted again on a camp day, or the
+  // other way round, even though each table holds its own unique key.
+  const other = t === CAMP ? ONE_OFF : CAMP;
+  const elsewhere = await tx.query(`select 1 from ${other.table} where checkin_ref = $1`, [input.id]);
+  if (elsewhere.rowCount) {
+    return refuse(409, "id_in_use", "This check-in id already belongs to another attendee or day");
+  }
+  return null;
 }
 
 async function dayRow(tx: PoolClient, t: CheckinTable, attendeeId: string, date: string): Promise<StoredCheckin | null> {

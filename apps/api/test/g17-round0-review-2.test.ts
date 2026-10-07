@@ -316,3 +316,66 @@ describe('G. H1: no table hanging off core_events is named in apps/api/src', () 
     expect(hits).toEqual([]);
   });
 });
+
+describe('H. one id space across both tables, and a raced id on two waiting rows', () => {
+  it('an id spent on a one-off event is refused on a camp day, and the other way round', async () => {
+    const workshop = (await writes.findTenantEvent(appPool, tenant, ev.workshop))!;
+    const camp = (await writes.findTenantEvent(appPool, tenant, ev.camp))!;
+    const onWorkshop = kid([]);
+    const onCamp = kid([D1, D2]);
+    expect((await writes.createEventAttendee(appPool, workshop, onWorkshop)).status).toBe(201);
+    expect((await writes.createEventAttendee(appPool, camp, onCamp)).status).toBe(201);
+
+    const spentOneOff = newId();
+    expect(
+      (await writes.recordAttendeeCheckin(appPool, workshop, onWorkshop.id, { id: spentOneOff, date: D1 })).status,
+    ).toBe(201);
+    const crossed = await writes.recordAttendeeCheckin(appPool, camp, onCamp.id, { id: spentOneOff, date: D1 });
+    expect(`${crossed.status} ${crossed.error}`).toBe('409 id_in_use');
+
+    const spentCamp = newId();
+    expect(
+      (await writes.recordAttendeeCheckin(appPool, camp, onCamp.id, { id: spentCamp, date: D2 })).status,
+    ).toBe(201);
+    const crossedBack = await writes.recordAttendeeCheckin(appPool, workshop, onWorkshop.id, {
+      id: spentCamp,
+      date: D2,
+    });
+    expect(`${crossedBack.status} ${crossedBack.error}`).toBe('409 id_in_use');
+    // Nothing was written for either refused call.
+    expect(await count('camp_attendance', 'checkin_ref = $1', [spentOneOff])).toBe(0);
+    expect(await count('event_attendee_checkins', 'checkin_ref = $1', [spentCamp])).toBe(0);
+  });
+
+  it('one id sent for two waiting days at once: the loser is refused, not a 500', async () => {
+    const camp = (await writes.findTenantEvent(appPool, tenant, ev.camp))!;
+    const child = kid([D1, D2]);
+    expect((await writes.createEventAttendee(appPool, camp, child)).status).toBe(201);
+    const ref = newId();
+    // Hold D2's waiting row so its copy queues at the day lock while D1's
+    // copy runs to commit. The loser's update then meets the unique key on
+    // checkin_ref, and the savepoint turns that into the id's owner deciding:
+    // another day holds it, so `id_in_use` — never an unhandled 23505.
+    const results = await whileLocked(
+      `select ca.id from camp_attendance ca
+         join camp_registrations cr on cr.id = ca.camp_registration_id
+        where cr.id = $1 and ca.attendance_date = $2 for update of ca`,
+      [child.id, D2],
+      () =>
+        Promise.all([
+          writes.recordAttendeeCheckin(appPool, camp, child.id, { id: ref, date: D1 }),
+          writes.recordAttendeeCheckin(appPool, camp, child.id, { id: ref, date: D2 }),
+        ]),
+    );
+    expect(summary(results)).toEqual(['201', '409 id_in_use']);
+    expect(await count('camp_attendance', 'checkin_ref = $1', [ref])).toBe(1);
+    // D2's row is untouched and still waiting for its own check-in.
+    const d2 = await appPool.query(
+      `select ca.status, ca.checkin_ref from camp_attendance ca
+         join camp_registrations cr on cr.id = ca.camp_registration_id
+        where cr.id = $1 and ca.attendance_date = $2`,
+      [child.id, D2],
+    );
+    expect(d2.rows[0]).toMatchObject({ status: 'waiting', checkin_ref: null });
+  });
+});
