@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { FnbOrder } from '@/types';
+import type { FnbOrder, WalletEntry } from '@/types';
 import { buildPrepTickets, describeModifiers } from '@/lib/fnb';
 import { prepStationsPrinted } from '@/lib/salePrinting';
 import type { ApiSalePrintJob } from '@/api/history';
@@ -59,6 +59,39 @@ interface FnbConfirmationProps {
   platformPrintJobs?: readonly ApiSalePrintJob[] | null;
 }
 
+/**
+ * SCRUM-484 — THE WALLET LEDGER HERE INCLUDES THIS ORDER'S OWN SPEND.
+ *
+ * Both stations hand this screen the band's tab as it was SCANNED, before the
+ * order, with only its balance moved to the platform's figure after the spend
+ * (`newBalance`). Its ledger therefore ended one entry short: the credit this
+ * order had just spent was in the Wallet view and the platform's ledger, and
+ * missing from the list under the balance it explained.
+ *
+ * The entry added is the one the prototype appended to the band when an order
+ * spent its credit (`chargeFnbCredit`, mockApi.ts) and the one the platform
+ * writes for it: a `spend` from `fnb_order`, of the credit the platform took
+ * (`payment.creditUsed`, read from its settlement), by the member of staff who
+ * closed the order. An order that spent no credit adds nothing.
+ */
+export function confirmationLedger(
+  order: Pick<FnbOrder, 'wristband' | 'payment' | 'operatorName' | 'createdAt'>,
+): WalletEntry[] {
+  const scanned = order.wristband?.ledger ?? [];
+  const spent = order.payment.creditUsed;
+  if (!(spent > 0)) return scanned;
+  return [
+    ...scanned,
+    {
+      kind: 'spend',
+      amountTHB: -spent,
+      source: 'fnb_order',
+      at: order.createdAt,
+      ...(order.operatorName ? { by: order.operatorName } : {}),
+    },
+  ];
+}
+
 export function FnbConfirmation({
   order,
   newBalance,
@@ -94,6 +127,7 @@ export function FnbConfirmation({
   // no template configured, default to showing everything.
   const receiptTpl = getPrintTemplate('receipt');
   const showReceiptItems = receiptTpl ? !!receiptTpl.fields.itemizedLines : true;
+  const ledger = confirmationLedger(order);
 
   return (
     <div
@@ -344,10 +378,10 @@ export function FnbConfirmation({
               </div>
               <div className="text-2xl font-bold text-primary tabular-nums">฿{newBalance}</div>
             </div>
-            {order.wristband.ledger && order.wristband.ledger.length > 0 && (
-              <div className="border-t border-primary/20 pt-2 space-y-1">
+            {ledger.length > 0 && (
+              <div className="border-t border-primary/20 pt-2 space-y-1" data-testid="wallet-ledger">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">Wallet ledger</div>
-                {order.wristband.ledger.slice().reverse().map((entry, i) => (
+                {ledger.slice().reverse().map((entry, i) => (
                   <div key={i} className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="capitalize">
                       {entry.kind}

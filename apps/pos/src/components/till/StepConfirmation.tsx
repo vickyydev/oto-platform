@@ -146,6 +146,29 @@ interface StepConfirmationProps {
 }
 
 /**
+ * SCRUM-484 — WHY THE ROWS FIT THEIR COLUMN. Radix draws a scroll area's
+ * content in a `display: table` box, and a table is as wide as its content's
+ * narrowest possible layout — which, for a row with a one-line `truncate`
+ * caption, is the WHOLE caption. With the Credit Grants column beside it the
+ * bracelets column is half the width, so every row was laid out wider than
+ * the card and the card cut off its right end: "ALL DAY + MEAL" read "ALL",
+ * a "1 Hour" badge vanished, and the credit rows lost their label's end and
+ * their number. As a block the content is the column's width, the captions
+ * truncate as they were meant to, and the badge keeps its place (the same
+ * override the F&B and shop carts use).
+ */
+const ROWS_SCROLL = 'flex-1 -mx-2 px-2 [&_[data-radix-scroll-area-viewport]>div]:!block';
+
+/**
+ * The bracelet row's text and duration badge share what the icon leaves. The
+ * text keeps room for its longest word ("bracelets"); the badge gives way
+ * first, so on a narrow column a long label ("All Day + Meal") wraps inside
+ * the badge rather than running off the card's edge or over the text.
+ */
+const ROW_TEXT = 'min-w-[5.5rem] flex-1';
+const DURATION_BADGE = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-center';
+
+/**
  * The short codes the platform printed on these bands (`T1-7KMQ4X`), each with
  * the child it was issued to — what staff read out when a band does not print.
  * Never the signed code: that is the gate credential and no read carries it.
@@ -172,12 +195,14 @@ function CreditGrantRow({ voucher: grant, index, qrCode }: { voucher: CreditGran
       <QrCode seed={qrCode ?? grant.id} className="w-16 h-16" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
+          {/* `shrink-0`: in a row held to its column (ROWS_SCROLL) a long
+              label would otherwise squeeze the icon rather than truncate. */}
           {isCredit ? (
-            <UtensilsCrossed className="w-4 h-4" />
+            <UtensilsCrossed className="w-4 h-4 shrink-0" />
           ) : (
-            <ShoppingBag className="w-4 h-4" />
+            <ShoppingBag className="w-4 h-4 shrink-0" />
           )}
-          <span className="truncate">{grant.label}</span>
+          <span className="truncate" title={grant.label}>{grant.label}</span>
         </div>
         {isCredit ? (
           <div className="text-2xl font-bold text-primary leading-tight">
@@ -289,7 +314,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }
               {totalBracelets} total
             </span>
           </div>
-          <ScrollArea className="flex-1 -mx-2 px-2">
+          <ScrollArea className={ROWS_SCROLL}>
             <div className="space-y-3">
               {braceletRows.map((row) => (
                 <div
@@ -304,18 +329,18 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }
                   >
                     {row.kind === 'child' ? <Baby className="w-6 h-6" /> : <User className="w-6 h-6" />}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className={ROW_TEXT}>
                     <div className="text-lg font-bold">
                       {row.count}× {row.kind === 'child' ? 'Child' : 'Adult'} bracelet{row.count > 1 ? 's' : ''}
                     </div>
-                    <div className="text-sm text-muted-foreground truncate">
+                    <div className="text-sm text-muted-foreground truncate" title={`${row.duration} • ${row.ticket}`}>
                       {row.duration} • {row.ticket}
                     </div>
                     <BandCodes bands={bandsOnRow(row.lineId, row.kind)} />
                   </div>
                   <div
                     className={cn(
-                      'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide shrink-0',
+                      DURATION_BADGE,
                       row.kind === 'child' ? 'bg-primary/15 text-primary' : 'bg-sky-500/15 text-sky-400'
                     )}
                   >
@@ -358,7 +383,7 @@ export function StepConfirmation({ sale, onNewSale, saleNumber, note, boxIssue }
                 No credit grants for this order.
               </div>
             ) : (
-              <ScrollArea className="flex-1 -mx-2 px-2">
+              <ScrollArea className={ROWS_SCROLL}>
                 <div className="space-y-3">
                   {sale.creditGrants.map((v, i) => (
                     <CreditGrantRow

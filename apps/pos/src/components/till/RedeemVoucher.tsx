@@ -508,6 +508,11 @@ export function definitionUsedUp(d: Pick<IssuableDefinition, 'usageLimit' | 'red
   return d.usageLimit !== null && d.redeemed >= d.usageLimit;
 }
 
+/** A promotion as the Issue picker names it: its name and, when it has a limit, how much of it is used. */
+function issueOptionLabel(d: Pick<IssuableDefinition, 'nameEn' | 'usageLimit' | 'redeemed'>): string {
+  return d.usageLimit !== null ? `${d.nameEn} (${d.redeemed}/${d.usageLimit} used)` : d.nameEn;
+}
+
 /**
  * S2-14a round 5 — ISSUE A VOUCHER AT THE TILL: pick one of the park's
  * promotions the platform says this till may issue today, and the platform
@@ -614,29 +619,38 @@ export function IssueVoucherRow({
   onClose: () => void;
 }) {
   const usedUpChosen = (options ?? []).some((d) => d.id === chosen && definitionUsedUp(d));
+  const placeholder = options ? 'Choose a promotion…' : 'Loading…';
+  const chosenDef = (options ?? []).find((d) => d.id === chosen);
   return (
     <div className="min-w-0 max-w-full space-y-1.5" data-testid="issue-voucher">
       {/*
         Staging F7 — the row wraps inside the order panel: a long promotion name
         no longer widens the select past the panel (which scrolled the till half
         sideways and pushed Close out of view). The select may shrink to nothing
-        (`min-w-0`) and the buttons drop to their own line when it must.
+        (`min-w-0`) and the buttons drop to their own line.
+
+        SCRUM-484 — and the select now always takes the whole first line
+        (`basis-full`). Sharing it with the buttons left it 160px in the 360px
+        panel, which cut its own prompt to "Choose a prom…" and every promotion
+        to its first two words. A name longer than the panel is still cut — a
+        closed select draws one line — so the select carries the chosen
+        promotion's full name as its tooltip.
       */}
       <div className="flex flex-wrap gap-2 min-w-0" data-testid="issue-voucher-row">
         <select
           value={chosen}
           onChange={(e) => onChoose(e.target.value)}
           aria-label="Voucher to issue"
-          className="min-w-0 w-full flex-1 basis-40 h-9 rounded-xl border border-foreground/10 bg-black/20 px-3 text-sm text-foreground truncate focus:outline-none focus:ring-2 focus:ring-primary/50"
+          title={chosenDef ? issueOptionLabel(chosenDef) : placeholder}
+          className="min-w-0 w-full flex-1 basis-full h-9 rounded-xl border border-foreground/10 bg-black/20 px-3 text-sm text-foreground truncate focus:outline-none focus:ring-2 focus:ring-primary/50"
           disabled={disabled || busy || !options}
         >
-          <option value="">{options ? 'Choose a promotion…' : 'Loading…'}</option>
+          <option value="">{placeholder}</option>
           {(options ?? []).map((d) => (
             // Staging F4 — a promotion whose redemptions are all taken is shown,
             // greyed and not choosable: the platform would refuse to issue it.
             <option key={d.id} value={d.id} disabled={definitionUsedUp(d)}>
-              {d.nameEn}
-              {d.usageLimit !== null ? ` (${d.redeemed}/${d.usageLimit} used)` : ''}
+              {issueOptionLabel(d)}
             </option>
           ))}
         </select>
