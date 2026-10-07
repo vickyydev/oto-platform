@@ -49,6 +49,13 @@ $$;
 -- (Head Office, or a park the platform has not been told about) has no row
 -- here, so a POS read filtered by its own branch can never see it.
 --
+-- The match is case-SENSITIVE and lowercase only: the platform writes
+-- `core_branch_id` as its own lowercase uuid, and the column's unique index
+-- (`branches_core_branch_id_unique`) is over the raw text. A case-insensitive
+-- match would let 'abc…' and 'ABC…' — two app branches, possibly in two
+-- tenants — both map onto one platform branch; this way only the form the
+-- platform writes maps at all, so one platform branch has one app branch.
+--
 -- Money is satang, as the platform counts it: the app keeps whole baht.
 -- Timestamps are the app's naive UTC, given their zone.
 CREATE VIEW otoapp_v.events AS
@@ -57,7 +64,7 @@ SELECT
   e.tenant_id,
   e.branch_id AS otoapp_branch_id,
   CASE
-    WHEN b.core_branch_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    WHEN b.core_branch_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       THEN b.core_branch_id::uuid
   END AS branch_id,
   CASE e.event_type
@@ -102,7 +109,7 @@ SELECT
   e.updated_at AT TIME ZONE 'UTC' AS updated_at
 FROM core_events e
 JOIN branches b ON b.id = e.branch_id AND b.tenant_id = e.tenant_id
-WHERE b.core_branch_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+WHERE b.core_branch_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
 --> statement-breakpoint
 
 -- One row per child registered on an event: a camp's `camp_registrations`

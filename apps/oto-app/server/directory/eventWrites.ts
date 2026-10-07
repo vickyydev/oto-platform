@@ -481,18 +481,27 @@ const checkinShape = (row: StoredCheckin): CheckinResult["checkin"] => ({
  * - The day's row is "waiting" (the app seeds these for camp days) or absent:
  *   it becomes "checked_in" with the caller's time and name, and the id is
  *   kept on it.
+ * - The day's row already carries this id: a copy of this same check-in got
+ *   there first while this one queued on the row's lock (both passed the
+ *   lookup above before either committed). That is a replay too.
  * - The day's row is already checked in or out under some other id — the app's
  *   own check-in screen, or another caller — so this is refused as
  *   `already_checked_in` with the row that stands. One check-in per attendee
  *   per day, held by the table's unique key and by the row lock taken here.
+ *
+ * Ids are compared as Postgres returns them, lowercase, so the attendee id from
+ * the path and the check-in id are lowercased first: an id the caller sends in
+ * capitals is the same id.
  */
 export async function recordAttendeeCheckin(
   pool: Pool,
   event: DirectoryEvent,
-  attendeeId: string,
-  input: CheckinInput,
+  rawAttendeeId: string,
+  rawInput: CheckinInput,
 ): Promise<WriteOutcome<CheckinResult>> {
-  if (!UUID.test(attendeeId)) return refuse(404, "attendee_not_found", "No such attendee on this event");
+  if (!UUID.test(rawAttendeeId)) return refuse(404, "attendee_not_found", "No such attendee on this event");
+  const attendeeId = rawAttendeeId.toLowerCase();
+  const input: CheckinInput = { ...rawInput, id: rawInput.id.toLowerCase() };
   const t = event.isCamp ? CAMP : ONE_OFF;
   const attendeeTable = event.isCamp ? "camp_registrations" : "event_attendees";
 
@@ -525,6 +534,14 @@ export async function recordAttendeeCheckin(
       if (raced) return raced;
       day = await dayRow(tx, t, attendeeId, input.date);
       if (!day) throw new Error(`${t.table} insert conflicted, and the day has no row`);
+    }
+
+    // This attendee's row for this day, read under its lock, already holds this
+    // very id: another copy of this check-in committed while this one waited
+    // for the lock, after both had passed the replay lookup above. Same id,
+    // same attendee, same day — a replay, not a second check-in.
+    if (day.checkin_ref === input.id) {
+      return { ok: true, status: 200, body: { checkin: checkinShape(day), replayed: true } };
     }
 
     if (day.status !== "waiting") {
