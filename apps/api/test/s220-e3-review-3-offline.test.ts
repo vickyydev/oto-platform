@@ -1007,15 +1007,17 @@ describe('E3 review round 3 — when the box checked the child in, against the O
   });
 
   /**
-   * OBSERVATION (LOW) — one alert per child-day (`event.checked_in_twice:<event>:<attendee>:<date>`),
-   * and `raiseAlert` overwrites an open alert's summary and detail. Elko's
+   * WAS AN OBSERVATION (LOW; R3-2, fixed in E5's closing audit, e) — one alert
+   * per child-day (`event.checked_in_twice:<event>:<attendee>:<date>`), and
+   * `raiseAlert` overwrites an open alert's summary and detail. Elko's
    * set-aside (box A, after the undo) raised the alert naming the till's
    * check-in it set aside and the two bands it revoked; box B's older fact,
    * arriving next, raised the same alert as a plain duplicate of box A's — and
-   * the set-aside, with the revoked band ids, is no longer on the alert a
-   * person opens (it is in the audit log). Pinned with `it.fails`.
+   * the set-aside, with the revoked band ids, was no longer on the alert a
+   * person opens. The box door now carries an open alert's set-asides forward
+   * onto every later raise of it (`setAsidesOnAlert`).
    */
-  it.fails(
+  it(
     "Elko's alert still names the till's check-in it set aside and the bands it revoked, after box B's older fact",
     async () => {
       const [told] = await twiceAlertsOf('elko');

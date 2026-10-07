@@ -74,6 +74,18 @@ export const EVENT_CHECKIN_REFUSALS = {
     title: 'Check-in not saved',
     message: 'That check-in id already belongs to another child or day — try again.',
   },
+  /**
+   * S2-20 E5 (closing audit, a) — a press answered again after the OTO App took
+   * its check-in back (its own "Undo check-in") and the child was checked in
+   * since: that check-in no longer stands and its bands were revoked, so the
+   * press is not answered "checked in" with codes the gate now refuses.
+   */
+  takenBack: {
+    code: 'EVENT_CHECKIN_TAKEN_BACK',
+    title: 'Check-in taken back',
+    message:
+      'This check-in was undone in the OTO App and its bands no longer work. Check the child in again if they are here.',
+  },
   /** The box lane: no copy of today's events on this counter's box. */
   notOnBox: {
     code: 'EVENTS_NOT_ON_BOX',
@@ -174,6 +186,12 @@ export const EventCheckinRecordViewSchema = z.object({
   /** Whether the OTO App has the check-in yet; `synced` for one the app made itself. */
   syncState: z.enum(EVENT_CHECKIN_SYNC_STATES),
   syncError: z.string().nullable(),
+  /**
+   * S2-20 E5 (closing audit, a) — when the OTO App took this check-in back and
+   * it was set aside; its bands are then never shown (they were revoked).
+   * Absent or null on a check-in that stands.
+   */
+  undoneAt: z.string().nullable().optional(),
 });
 export type EventCheckinRecordView = z.infer<typeof EventCheckinRecordViewSchema>;
 

@@ -192,8 +192,14 @@ export async function eventChildOf(
       attends: attendsOn(event, seam, date),
     };
   }
-  // A child the till added that the app does not hold yet (or no longer
-  // shows): from the body the till sent.
+  // S2-20 E5 (closing audit, g) — a child the app HAD (the till's link is
+  // `synced`) and no longer shows: the OTO App is the master of who is on the
+  // event (Q1), and its registration is gone. Named by the till's link id or by
+  // the app's own id, the answer is the same — not on this event — exactly as
+  // the roster, which no longer lists them, says it.
+  if (own?.syncState === 'synced') return null;
+  // A child the till added that the app does not hold yet: from the body the
+  // till sent.
   const sent = own?.writeback as DirectoryAttendeeBody | null | undefined;
   if (!own || !sent) return null;
   return {
@@ -384,7 +390,11 @@ async function bandsOf(db: Exec, row: CheckinRow): Promise<{ kid: BandRow | null
 
 export async function checkinViewOf(db: Exec, row: CheckinRow): Promise<EventCheckinRecordView> {
   const { kid, parent } = await bandsOf(db, row);
-  const bandView = (b: BandRow | null) => (b ? { id: b.id, kind: b.kind, shortCode: bandShortCode(b.code) } : null);
+  // S2-20 E5 (closing audit, a) — a check-in the OTO App took back is history:
+  // its bands were revoked when it was set aside, so their codes are never
+  // read back as if the child wore working paper.
+  const bandView = (b: BandRow | null) =>
+    b && !row.undoneAt ? { id: b.id, kind: b.kind, shortCode: bandShortCode(b.code) } : null;
   return {
     id: row.id,
     eventId: row.otoappEventId,
@@ -400,6 +410,7 @@ export async function checkinViewOf(db: Exec, row: CheckinRow): Promise<EventChe
     origin: row.origin,
     syncState: row.syncState,
     syncError: row.syncError,
+    undoneAt: row.undoneAt?.toISOString() ?? null,
   };
 }
 
@@ -458,14 +469,14 @@ async function stationAt(
  * other crosswise). Two presses for the same child share at least one id —
  * the app's, or the till's link — whichever id each named them by.
  */
-async function lockChildDay(tx: Tx, eventId: string, child: Pick<EventChild, 'aliases'>, date: string): Promise<void> {
+export async function lockChildDay(tx: Tx, eventId: string, child: Pick<EventChild, 'aliases'>, date: string): Promise<void> {
   for (const alias of [...new Set(child.aliases)].sort()) {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`event-checkin:${eventId}:${alias}:${date}`}, 0))`);
   }
 }
 
 /** A second check-in of one child-day that met the unique key (a racing box fact): "Already checked in". */
-function isDayTaken(err: unknown): boolean {
+export function isDayTaken(err: unknown): boolean {
   const pg = pgErrorOf(err);
   return pg?.code === '23505' && pg.constraint === 'event_checkin_attendee_day_unique';
 }
@@ -642,10 +653,11 @@ export async function checkInEventAttendee(
  * station with no box — each is a note, and the child is in (the prototype's
  * "Checked in — no printer … bracelet not printed").
  */
-async function issueBands(
+export async function issueBands(
   tx: Tx,
   input: {
-    actor: ActorContext;
+    /** Who checked the child in: a person at a till, or nobody (the kiosk, S2-20 E5). */
+    actor: { operatorId: string; accountId: string | null; requestId?: string };
     clock: BranchClock;
     checkinId: string;
     child: Pick<EventChild, 'parentAttending' | 'link'>;
@@ -653,6 +665,12 @@ async function issueBands(
     now: Date;
     actionId: string | null;
     detail: Record<string, unknown>;
+    /**
+     * S2-20 E5 — `caller`: the band jobs are written and no box command is
+     * queued for them; the kiosk prints them itself, inside its redemption,
+     * before anything commits (as it prints a booking's ticket bands).
+     */
+    dispatch?: 'box' | 'caller';
   },
 ): Promise<{ bands: BandRow[]; jobs: SalePrintJobView[]; notes: string[] }> {
   if (!input.where) {
@@ -701,6 +719,7 @@ async function issueBands(
     actionId: input.actionId ?? newId(),
     requestId: input.actor.requestId,
     now: input.now,
+    ...(input.dispatch ? { dispatch: input.dispatch } : {}),
   });
   return { bands, jobs: printed.jobs, notes: [...notes, ...printed.notes] };
 }
@@ -724,6 +743,17 @@ async function replayOf(
     if (links[0]?.otoappAttendeeId !== id) throw refuse(409, EVENT_CHECKIN_REFUSALS.checkinIdInUse, { checkinId: row.id });
   }
   await actor.assertBranchAllowed?.(row.branchId);
+  // S2-20 E5 (closing audit, a) — the press came back after the OTO App took
+  // its check-in back and the child was checked in since (`undoneAt`): that
+  // check-in no longer stands and its bands are revoked. Answering "checked
+  // in" with their codes would send the counter to hand over paper the gate
+  // refuses; the counter is told what happened instead.
+  if (row.undoneAt) {
+    throw refuse(409, EVENT_CHECKIN_REFUSALS.takenBack, {
+      checkinId: row.id,
+      undoneAt: row.undoneAt.toISOString(),
+    });
+  }
   // A retry after a lost answer is also the till's chance to finish a write
   // the OTO App never confirmed. The same id, so the app replays it.
   const current = row.syncState === 'synced' || !row.writeback ? row : await pushCheckin(deps, row.id, { requestId: actor.requestId ?? null });
@@ -758,7 +788,7 @@ export async function checkOutEventAttendee(
   // The answer is built after the commit, so nothing is returned from the
   // transaction: the idempotency store keeps the route's answer (onSend).
   const held: { row: CheckinRow | null } = { row: null };
-  await withTx(db, ctx, 'event.checkout', async (tx) => {
+  await onceMoreIfDayTaken(() => withTx(db, ctx, 'event.checkout', async (tx) => {
     await lockChildDay(tx, event.id, child, today);
     const { row: standing, appDay } = await standingDayOf(tx, clock.id, event.id, child, today);
     let row = standing;
@@ -807,8 +837,27 @@ export async function checkOutEventAttendee(
     });
     held.row = updated;
     return undefined;
-  });
+  }));
   return { answer: { checkin: await checkinViewOf(db, held.row!), replayed: false, printJobs: [], notes: [] } };
+}
+
+/**
+ * S2-20 E5 (closing audit, c) — THE MIRROR THAT MET A BOX'S ROW. A check-out or
+ * a reprint of a child checked in at the OTO App alone writes the app's
+ * check-in into the POS's mirror; a box's fact for the same child-day may be
+ * filed in the same instant. Both take the child-day's locks now
+ * (`lockChildDay`, the box door included), so the two are decided one after
+ * the other; should the unique key still meet a row first — an id the box
+ * named the child by that the till's press did not share — the press is
+ * decided once more, with that row standing, rather than ending in a 500.
+ */
+async function onceMoreIfDayTaken<T>(work: () => Promise<T>): Promise<T> {
+  try {
+    return await work();
+  } catch (err) {
+    if (!isDayTaken(err)) throw err;
+    return work();
+  }
 }
 
 /** A mirror of a check-in the OTO App made itself: nothing to tell the app, so it is `synced`. */
@@ -893,7 +942,7 @@ export async function reprintEventBands(
     row: null,
     printed: { jobs: [], notes: [] },
   };
-  await withTx(db, ctx, 'event.band_reprint', async (tx) => {
+  await onceMoreIfDayTaken(() => withTx(db, ctx, 'event.band_reprint', async (tx) => {
     await lockChildDay(tx, event.id, child, today);
     const { row: standing, appDay } = await standingDayOf(tx, clock.id, event.id, child, today);
     let row = standing;
@@ -968,7 +1017,7 @@ export async function reprintEventBands(
     result.row = now2 ?? row;
     result.printed = printed;
     return undefined;
-  });
+  }));
   return {
     answer: {
       checkin: await checkinViewOf(db, result.row!),

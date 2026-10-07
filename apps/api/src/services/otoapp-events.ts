@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import { isIsoDate } from '@oto/shared';
 import type { Exec } from './tx';
 
 /**
@@ -236,6 +237,20 @@ const EVENT_COLUMNS =
   parent_name, parent_phone, activities, decoration, total_value_satang, deposit_satang, deposit_date,
   updated_at`);
 
+/**
+ * S2-20 E5 (closing audit, f; the plan's robustness note) — A STRAY DATE DROPS
+ * ITS ROW, NEVER THE DAY. The views pass the OTO App's dates through as the
+ * free text the app stores; every production date conforms today, but one that
+ * does not — `7/10/2026`, `2026-10-7` — would reach an answer whose shape says
+ * `yyyy-mm-dd`, and the whole day's list, passes list or box copy would fail
+ * with it. Such an event is left out of every read here (and one asked for by
+ * id is not found), so the rest of the day still answers.
+ */
+const datedSoundly = (r: Pick<EventRow, 'start_date' | 'end_date'>): boolean =>
+  typeof r.start_date === 'string' &&
+  isIsoDate(r.start_date) &&
+  (r.end_date === null || (typeof r.end_date === 'string' && isIsoDate(r.end_date)));
+
 const toEvent = (r: EventRow): SeamEvent => ({
   id: r.id,
   branchId: r.branch_id,
@@ -288,7 +303,7 @@ export async function listBranchEvents(
        and start_date <= ${q.to}
        and (end_date is null or end_date >= ${q.from})
      order by start_date, start_time, title`);
-  return res.rows.map(toEvent);
+  return res.rows.filter(datedSoundly).map(toEvent);
 }
 
 /** One event of the branch, archived or not; null when it is not this branch's. */
@@ -303,7 +318,7 @@ export async function getBranchEvent(
       from otoapp_v.events
      where branch_id = ${q.branchId}::uuid and id = ${q.eventId}::uuid`);
   const row = res.rows[0];
-  return row ? toEvent(row) : null;
+  return row && datedSoundly(row) ? toEvent(row) : null;
 }
 
 /** The children registered on one of the branch's events. */
@@ -339,7 +354,7 @@ export async function getBranchEvents(
     select ${EVENT_COLUMNS}
       from otoapp_v.events
      where branch_id = ${q.branchId}::uuid and id in (${uuidList(eventIds)})`);
-  return res.rows.map(toEvent);
+  return res.rows.filter(datedSoundly).map(toEvent);
 }
 
 /**

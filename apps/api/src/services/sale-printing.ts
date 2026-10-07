@@ -595,6 +595,12 @@ export async function queueEventBandPrints(
     requestId?: string;
     now?: Date;
     reprint?: { reason: string; accountId: string };
+    /**
+     * S2-20 E5 — `caller`: the jobs are written and no box command is queued
+     * for them (`JobScope.dispatch`); the self-service kiosk prints a booked
+     * pass's bands itself, before its redemption commits.
+     */
+    dispatch?: JobScope['dispatch'];
   },
 ): Promise<{ jobs: SalePrintJobView[]; notes: string[] }> {
   const now = input.now ?? new Date();
@@ -623,6 +629,7 @@ export async function queueEventBandPrints(
       actionId: input.actionId,
       requestId: input.requestId,
       now,
+      ...(input.dispatch ? { dispatch: input.dispatch } : {}),
     };
     const jobs: SalePrintJobView[] = [];
     const notes: string[] = [];

@@ -1,5 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm';
-import { band, bandEvent, eventCheckin } from '@oto/db';
+import { alert, band, bandEvent, eventCheckin } from '@oto/db';
 import {
   EVENT_FACTS,
   OfflineEventCheckedInSchema,
@@ -18,6 +18,7 @@ import { currentBandKey } from './bands';
 import {
   appDayOf,
   eventChildOf,
+  isDayTaken,
   posCheckinsOf,
   takenBackBy,
   undoTakenBack,
@@ -156,6 +157,32 @@ type TwiceOutcome =
  * can see which. Raised on every box-door set-aside too — it revokes bands the
  * child may be wearing.
  */
+type SetAsideEntry = { checkinId: string; revokedBandIds: string[] };
+
+/**
+ * S2-20 E5 (closing audit, e; E3 R3-2) — the set-asides an OPEN "checked in
+ * twice" alert already names. There is one alert per child-day and a repeat
+ * overwrites its summary and detail (`raiseAlert`), so a later plain duplicate
+ * — another box's older fact arriving after the one that set the till's
+ * check-in aside — would otherwise wipe the check-in that was set aside and the
+ * bands it revoked off the alert a person opens. They are carried forward.
+ */
+async function setAsidesOnAlert(scope: BatchScope, key: string): Promise<SetAsideEntry[]> {
+  const [open] = await scope.db
+    .select({ detail: alert.detail })
+    .from(alert)
+    .where(and(eq(alert.key, key), isNull(alert.resolvedAt)))
+    .limit(1);
+  const held = (open?.detail as { setAside?: unknown } | null | undefined)?.setAside;
+  if (!Array.isArray(held)) return [];
+  return held.flatMap((entry) => {
+    const e = entry as Partial<SetAsideEntry> | null;
+    return e && typeof e.checkinId === 'string' && Array.isArray(e.revokedBandIds)
+      ? [{ checkinId: e.checkinId, revokedBandIds: e.revokedBandIds.filter((id): id is string => typeof id === 'string') }]
+      : [];
+  });
+}
+
 async function alertCheckedInTwice(
   scope: BatchScope,
   event: PreparedEvent,
@@ -163,22 +190,30 @@ async function alertCheckedInTwice(
   first: FirstCheckin,
   outcome: TwiceOutcome,
 ): Promise<void> {
+  const key = `event.checked_in_twice:${payload.eventId}:${payload.attendeeId}:${payload.date}`;
   const offline =
     `${payload.childName} was checked in to ${payload.eventTitle} offline on ${scope.auth.name} (${scope.auth.slot}) ` +
     `at ${payload.at}`;
-  const summary =
-    outcome.kind === 'set_aside'
-      ? `${offline}, after the OTO App had undone the check-in it held for ${payload.date}. That earlier check-in was ` +
-        "set aside and its bands revoked; the box's bands were recorded — check which band the child is wearing."
-      : `${offline}, but was already checked in for ${payload.date}` +
-        `${first.where === 'otoapp' ? ' in the OTO App' : ''}` +
-        `${first.takenBack ? "; the OTO App undid that check-in only later, so the box's does not check the child back in" : ''}. ` +
-        "The box's bands were not recorded — check which band the child is wearing.";
   try {
+    // Every set-aside this child-day has seen, the earlier ones first.
+    const earlier = await setAsidesOnAlert(scope, key);
+    const now = outcome.kind === 'set_aside' ? outcome.setAside : [];
+    const setAside = [...earlier.filter((e) => !now.some((n) => n.checkinId === e.checkinId)), ...now];
+    const summary =
+      outcome.kind === 'set_aside'
+        ? `${offline}, after the OTO App had undone the check-in it held for ${payload.date}. That earlier check-in was ` +
+          "set aside and its bands revoked; the box's bands were recorded — check which band the child is wearing."
+        : `${offline}, but was already checked in for ${payload.date}` +
+          `${first.where === 'otoapp' ? ' in the OTO App' : ''}` +
+          `${first.takenBack ? "; the OTO App undid that check-in only later, so the box's does not check the child back in" : ''}. ` +
+          "The box's bands were not recorded — check which band the child is wearing." +
+          (setAside.length > 0
+            ? ` Earlier today a check-in of this child was set aside and its bands revoked (${setAside.length}).`
+            : '');
     await raiseAlert(
       scope.db,
       {
-        key: `event.checked_in_twice:${payload.eventId}:${payload.attendeeId}:${payload.date}`,
+        key,
         category: 'event.checked_in_twice',
         severity: 'warning',
         subject: `Event check-in for ${payload.childName}`,
@@ -189,7 +224,7 @@ async function alertCheckedInTwice(
           date: payload.date,
           first,
           bandsRecorded: outcome.kind === 'set_aside',
-          ...(outcome.kind === 'set_aside' ? { setAside: outcome.setAside } : {}),
+          ...(setAside.length > 0 ? { setAside } : {}),
           second: {
             boxId: scope.auth.boxId,
             checkinId: payload.checkinId,
@@ -348,8 +383,14 @@ async function refuseOffDay(
   scope: BatchScope,
   event: PreparedEvent,
   payload: OfflineEventCheckedIn,
-  why: { code: string; message: string; reason: 'not_on_day' | 'not_registered' },
+  why: { code: string; message: string; reason: 'not_on_day' | 'not_registered' | 'archived' },
 ): Promise<never> {
+  const because =
+    why.reason === 'not_on_day'
+      ? 'the event is not on that day'
+      : why.reason === 'archived'
+        ? 'the event has been archived'
+        : 'is not registered for that day';
   try {
     await raiseAlert(
       scope.db,
@@ -360,7 +401,7 @@ async function refuseOffDay(
         subject: `Event check-in for ${payload.childName}`,
         summary:
           `${payload.childName} was checked in to ${payload.eventTitle} offline on ${scope.auth.name} (${scope.auth.slot}) ` +
-          `for ${payload.date}, but ${why.reason === 'not_on_day' ? 'the event is not on that day' : 'is not registered for that day'} ` +
+          `for ${payload.date}, but ${because} ` +
           'in the OTO App. The check-in was not filed and the OTO App was not told; the bands the box printed are not ' +
           'recorded, so the food counter will not read them — check the child and their allergy line.',
         detail: {
@@ -434,6 +475,17 @@ async function applyEventCheckedIn(tx: Tx, scope: BatchScope, event: PreparedEve
   const known = await eventChildOf(tx, scope.auth.branchId, ev, payload.attendeeId, payload.date);
   const child = known ?? unknownChild(payload);
 
+  // S2-20 E5 (closing audit, d) — AN ARCHIVED EVENT, as the till's own
+  // check-in refuses it (`EVENT_ARCHIVED`): filing the fact would owe the OTO
+  // App a check-in its directory then refuses (404) for ever. Refused into
+  // quarantine with the alert, as an off-day fact is, and the app not told.
+  if (ev.archived) {
+    return refuseOffDay(scope, event, payload, {
+      code: 'SYNC_EVENT_ARCHIVED',
+      message: `${ev.title} has been archived in the OTO App, so nobody can be checked in to it`,
+      reason: 'archived',
+    });
+  }
   // "NOT REGISTERED FOR TODAY" ON THE BOX DOOR TOO (H5): the online rules, on
   // the fact's own day, from what the OTO App says now — not the box's copy.
   if (!eventListedOn(ev, payload.date)) {
@@ -656,6 +708,29 @@ async function applyEventCheckedOut(tx: Tx, scope: BatchScope, event: PreparedEv
     row = mirror!;
   }
   if (row.otoappEventId !== ev.id) throw poison('SYNC_EVENT_CHECKOUT_MISMATCH', 'That check-out names another event');
+  /**
+   * S2-20 E5 (closing audit, b) — THE CHECK-IN THIS ENDS WAS SET ASIDE. The
+   * box checked the child out of the check-in it made, and since then the OTO
+   * App undid that check-in and the child was checked in again (`undone_at`).
+   * The check-out is the child leaving: when it came after the check-in that
+   * stands now, it ends THAT one — closing only the set-aside row would leave
+   * the child "in" on the roster and their working bands live after they left.
+   * A check-out from before the child's new check-in belongs to the visit that
+   * was set aside, and the standing check-in (the child came back) stays open.
+   */
+  let setAsideOf: CheckinRow | null = null;
+  if (row.undoneAt) {
+    const [standing] = await posCheckinsOf(
+      tx,
+      ev.id,
+      { aliases: [...new Set([...child.aliases, row.attendeeId])], link: child.link },
+      row.attendanceDate,
+    );
+    if (standing && standing.id !== row.id && standing.checkedInAt.getTime() <= at.getTime()) {
+      setAsideOf = row;
+      row = standing;
+    }
+  }
   if (row.checkedOutAt) return done(row.id);
   // Never before the check-in it ends: the two clocks may disagree.
   const outAt = at.getTime() < row.checkedInAt.getTime() ? row.checkedInAt : at;
@@ -675,19 +750,40 @@ async function applyEventCheckedOut(tx: Tx, scope: BatchScope, event: PreparedEv
       date: payload.date,
       checkedOutAt: outAt.toISOString(),
       writtenBack: false,
+      // The box's own check-in had been set aside; the check-out ended the one that stands.
+      ...(setAsideOf ? { boxCheckinId: setAsideOf.id, endedStanding: true } : {}),
       ...trail(scope, event, payload),
     },
   });
   return done(row.id);
 }
 
+/**
+ * S2-20 E5 (closing audit, c) — A ROW THE TILL FILED IN THE SAME INSTANT. The
+ * box door decides a fact from the rows it reads; a till's check-in (or its
+ * mirror of an OTO App check-in) committed between that read and this write
+ * meets the one-check-in-per-child-per-day key first. The fact is then decided
+ * once more, in a fresh savepoint, with that row standing — a duplicate filed
+ * against it, H4 — rather than quarantined as a failure to apply.
+ */
+async function decidedOnceMore<T>(tx: Tx, apply: (sp: Tx) => Promise<T>): Promise<T> {
+  try {
+    return await tx.transaction((sp) => apply(sp));
+  } catch (err) {
+    if (!isDayTaken(err)) throw err;
+    return tx.transaction((sp) => apply(sp));
+  }
+}
+
 export const EVENT_HANDLERS: Record<string, EventHandler> = {
   [EVENT_FACTS.checkedIn]: {
     schema: OfflineEventCheckedInSchema,
-    apply: (tx, scope, event, payload: OfflineEventCheckedIn) => applyEventCheckedIn(tx, scope, event, payload),
+    apply: (tx, scope, event, payload: OfflineEventCheckedIn) =>
+      decidedOnceMore(tx, (sp) => applyEventCheckedIn(sp, scope, event, payload)),
   },
   [EVENT_FACTS.checkedOut]: {
     schema: OfflineEventCheckedOutSchema,
-    apply: (tx, scope, event, payload: OfflineEventCheckedOut) => applyEventCheckedOut(tx, scope, event, payload),
+    apply: (tx, scope, event, payload: OfflineEventCheckedOut) =>
+      decidedOnceMore(tx, (sp) => applyEventCheckedOut(sp, scope, event, payload)),
   },
 };
