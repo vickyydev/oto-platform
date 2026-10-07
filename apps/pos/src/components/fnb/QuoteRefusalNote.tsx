@@ -35,6 +35,11 @@ import type { QuoteError } from '@/lib/cartQuote';
  * (`pages/MerchStation.tsx`) still hands over both, unchanged by that ticket and
  * with a fault still shown here as a refusal until it is given the same
  * treatment.
+ *
+ * SCRUM-503 — WHO SAID NO. On the box lane the counter's box priced the order
+ * and refused it, so the lead-in names the counter's box rather than the
+ * platform (`answeredBy` on the error, set where the box's answer arrived).
+ * The refusal's own words after it are unchanged either way.
  */
 export function QuoteRefusalNote({
   error,
@@ -45,11 +50,12 @@ export function QuoteRefusalNote({
 }) {
   if (!error) return null;
   const message = error.message;
+  const leadIn = error.answeredBy === 'box' ? 'This counter’s box refused this order:' : 'The platform refused this order:';
   return (
     <div className="flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-200">
       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0">
-        <span className="font-semibold">The platform refused this order:</span> {message}
+        <span className="font-semibold">{leadIn}</span> {message}
         {blocking && (
           <span className="mt-1 block text-rose-700/80 dark:text-rose-200/80">
             Fix this to charge — the sale would be refused for the same reason.

@@ -20,6 +20,7 @@ import {
   type OrderTotals,
 } from '@/api/sales';
 import { ApiError } from '@/api/client';
+import { answeredByBox } from '@/api/bridge';
 
 /**
  * THE PRICE ON THE SCREEN — S2-09a (SCRUM-203).
@@ -80,6 +81,11 @@ export interface QuoteError {
   code: string | null;
   /** The platform's own words, for the note at the counter. */
   message: string;
+  /**
+   * SCRUM-503 — set when the counter's box gave the answer (the box lane), so
+   * the note names the counter rather than the platform. Absent: the platform.
+   */
+  answeredBy?: 'box';
 }
 
 /**
@@ -96,7 +102,7 @@ export interface QuoteError {
  * arrives as a quote and not as an error at all. It is written down so that an
  * unexpected rejection cannot read as the platform refusing the cart.
  */
-function quoteErrorOf(err: unknown, fallbackMessage: string): QuoteError {
+export function quoteErrorOf(err: unknown, fallbackMessage: string): QuoteError {
   if (err instanceof ApiError) {
     const refused = err.status >= 400 && err.status < 500 && err.code !== 'UNKNOWN';
     return {
@@ -104,6 +110,7 @@ function quoteErrorOf(err: unknown, fallbackMessage: string): QuoteError {
       status: err.status,
       code: err.code,
       message: err.message,
+      ...(answeredByBox(err) ? { answeredBy: 'box' as const } : {}),
     };
   }
   return {

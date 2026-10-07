@@ -31,6 +31,19 @@ let origin: string | null = null;
 let boxSession: string | null = null;
 
 /**
+ * SCRUM-503 — the refusals the BOX answered, so a note can name who said no.
+ * Kept beside the errors rather than on them: an `ApiError` stays exactly the
+ * error every caller already reads, and only a caller that asks learns that
+ * this one came from the counter's box and not from the platform.
+ */
+const boxAnswers = new WeakSet<ApiError>();
+
+/** Whether the counter's box, not the platform, gave this refusal. */
+export function answeredByBox(err: unknown): boolean {
+  return err instanceof ApiError && boxAnswers.has(err);
+}
+
+/**
  * Where this till's box answers: null for this page's own origin (a virtual
  * box), or a Pi's LAN origin once the platform names one.
  */
@@ -96,12 +109,14 @@ async function request<T>(
   if (!res.ok) {
     const err = data?.error;
     if (res.status === 423) window.dispatchEvent(new CustomEvent('oto:session-locked'));
-    throw new ApiError(
+    const refusal = new ApiError(
       res.status,
       err?.code ?? 'UNKNOWN',
       err?.message ?? res.statusText,
       err?.details,
     );
+    boxAnswers.add(refusal);
+    throw refusal;
   }
   return data as T;
 }
