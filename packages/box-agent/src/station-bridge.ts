@@ -64,6 +64,7 @@ import {
   bandShortCode,
   bridgeCartOf,
   childPhotosEnabled,
+  BENEFIT_CREDENTIAL_REFUSALS,
   businessDate,
   catalogueState,
   normalizePhone,
@@ -147,6 +148,11 @@ import {
   type StockShortage,
 } from './stock-lane';
 import { uuidv7 } from './signing';
+import {
+  checkBenefitOnBox,
+  readBenefitScope,
+  type BenefitOnBox,
+} from './benefit-credential';
 import type { TerminalCommandOutcome, TerminalController, TerminalProtocol } from './terminal/index';
 import { boxBlobs, type BlobStore } from './blob-store';
 import { CheckinDesk, DeskRefusal, type BoxFoodOrder, type DeferredBand } from './checkin-desk';
@@ -1700,6 +1706,7 @@ export class StationBridge {
     if (cart.memberId && memberTier === null) {
       throw new BridgeError(404, 'NOT_FOUND', 'Member not found');
     }
+    const benefit = await this.benefitOnBox(cart, branch, now);
     try {
       const pricing = priceOfflineSale(catalogue, cart, {
         now,
@@ -1707,13 +1714,14 @@ export class StationBridge {
         businessDayStart: branch.businessDayStart,
         memberTier,
         prepaid: food.prepaid,
+        benefit,
       });
       assertFoodConsent(food, pricing.items);
       return { ...pricing.quote, catalogueState: state, catalogueAppliedAt: bundle?.appliedAt ?? null };
     } catch (err) {
       if (err instanceof OfflinePriceError) {
         throw new BridgeError(
-          err.code === 'SALE_LINE_PRICE_MISMATCH'
+          err.code === 'SALE_LINE_PRICE_MISMATCH' || err.code.startsWith('BENEFIT_')
             ? 409
             : err.code === 'VOUCHER_NEEDS_INTERNET'
               ? 409
@@ -1725,6 +1733,41 @@ export class StationBridge {
       }
       throw err;
     }
+  }
+
+  /**
+   * S2-21 round 3 — the staff benefit QR on a cart, checked on this box:
+   * against the `benefits` scope it last pulled, on the branch's trading day by
+   * this box's clock (`checkBenefitOnBox`). Refused in the words the till
+   * shows; a box with no scope refuses rather than admits a QR it cannot
+   * check. Null when the cart carries none.
+   */
+  private async benefitOnBox(
+    cart: BridgeCart,
+    branch: BridgeBranch,
+    now: Date,
+  ): Promise<BenefitOnBox | null> {
+    if (!cart.benefit) return null;
+    const held = await this.bundle('benefits');
+    let today: string | null = null;
+    try {
+      today = businessDate(now, branch.timezone, parseDayStart(branch.businessDayStart));
+    } catch {
+      today = null;
+    }
+    const verdict = checkBenefitOnBox(cart.benefit.code, {
+      scope: held ? readBenefitScope(held.payload) : null,
+      today,
+      now,
+    });
+    if (!verdict.ok) {
+      throw new BridgeError(
+        verdict.refusal === BENEFIT_CREDENTIAL_REFUSALS.REVOCATION_UNKNOWN ? 503 : 409,
+        verdict.refusal,
+        verdict.message,
+      );
+    }
+    return verdict.benefit;
   }
 
   /** SCRUM-498 — the band an F&B order names and its prepaid lines, checked on the box's copy (`CheckinDesk.foodOrder`). */
@@ -2284,10 +2327,13 @@ export class StationBridge {
       );
     }
     if (cart.manualDiscounts.length > 0) this.require(caller, 'pos:sale:discount');
+    // S2-21 round 3 — a staff benefit is applied by whoever may apply one.
+    if (cart.benefit) this.require(caller, 'pos:benefit:apply');
 
     const owner = cart.memberId ? await this.resolveMember(cart.memberId) : null;
     if (cart.memberId && !owner) throw new BridgeError(404, 'NOT_FOUND', 'Member not found');
     const memberTier = owner ? (s(owner.overlay?.record.tierCode) ?? owner.member.tierCode) : null;
+    const benefit = await this.benefitOnBox(cart, branch, now);
 
     let pricing: OfflineSalePricing;
     try {
@@ -2297,12 +2343,13 @@ export class StationBridge {
         businessDayStart: branch.businessDayStart,
         memberTier,
         prepaid: food.prepaid,
+        benefit,
       });
     } catch (err) {
       if (err instanceof OfflinePriceError) {
         if (err.code === 'VOUCHER_NEEDS_INTERNET') this.refuse('voucher');
         throw new BridgeError(
-          err.code === 'SALE_LINE_PRICE_MISMATCH' ? 409 : 400,
+          err.code === 'SALE_LINE_PRICE_MISMATCH' || err.code.startsWith('BENEFIT_') ? 409 : 400,
           err.code,
           err.message,
           err.details,
@@ -2392,7 +2439,9 @@ export class StationBridge {
     const header = rec((await this.catalogueItem())?.receiptHeader);
     const sent = body.cart as Record<string, unknown>;
     const inner = rec(sent.cart);
-    const sentCart: Record<string, unknown> = inner ?? sent;
+    // S2-21 round 3 — the staff benefit QR the till sent stops here: the fact
+    // carries what this box applied (`benefitRecord`), never the credential.
+    const { benefit: _scannedQr, ...sentCart }: Record<string, unknown> = inner ?? sent;
     return {
       cart,
       catalogue,
@@ -2430,6 +2479,7 @@ export class StationBridge {
       },
       factCart: {
         ...sentCart,
+        ...(pricing.benefitRecord ? { benefit: pricing.benefitRecord } : {}),
         // The survivor's id when the family was signed up twice (OD-7).
         ...(owner ? { memberId: owner.id } : {}),
         ...(body.visitId ? { visitId: body.visitId } : {}),

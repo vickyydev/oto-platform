@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { TaxConfigSchema } from './catalog-shapes';
 import { formatTHB } from './money';
 import { CartBandHolderSchema, CartPrepaidSchema } from './band-food';
+import { CartBenefitSchema } from './benefit-checkout';
 import { PAYMENT_METHOD_KINDS, type PaymentAttemptView } from './payments';
 import { SALE_REPRINT_KINDS } from './print';
 import { TIER_PROOF_TYPES } from './tier-proof';
@@ -586,6 +587,13 @@ const BridgeCartBodySchema = z.object({
   promoCodes: z.array(z.string().min(1).max(40)).max(10).default([]),
   channel: z.enum(['till', 'fnb', 'shop']).optional(),
   expectedTotalSatang: z.number().int().min(0).optional(),
+  /**
+   * S2-21 round 3 — a colleague's staff benefit QR on an F&B order, as the
+   * till sends it to the platform. The box checks the QR against its
+   * `benefits` scope and applies only the comp and the standing percent;
+   * free items and credit are online only. The QR never reaches the fact.
+   */
+  benefit: CartBenefitSchema.nullish(),
 });
 
 /** Flat, or nested under `cart` as the till nests it; the nested copy wins. */

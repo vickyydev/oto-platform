@@ -1,8 +1,14 @@
 import {
+  applyStaffBenefits,
+  BENEFIT_CHECKOUT_REFUSALS,
+  BENEFIT_CHECKOUT_WORDS,
+  benefitLineRelief,
+  benefitLinesOf,
   businessDate,
   cartUnits,
   computeTicketCartTotals,
   deriveSaleLineId,
+  emptyBenefitUsage,
   getRateModeForDate,
   isLegacyBoothCode,
   itemCartLine,
@@ -13,15 +19,20 @@ import {
   ledgerUnitComponentKey,
   ledgerUnitKindOf,
   ledgerUnitLabel,
+  isStaffBenefitReason,
   normaliseBoothCode,
+  offlineBenefitProfile,
   parseDayStart,
   priceCartLine,
   PRICING_ENGINE_VERSION,
   splitLedgerUnitMoney,
+  staffBenefitDiscount,
   TaxConfigSchema,
   TaxableCategorySchema,
   verifyBoothCode,
+  type BenefitBreakdown,
   type BridgeCart,
+  type OfflineBenefitRecord,
   type OfflinePriceBasis,
   type CartAddOn,
   type CartPromo,
@@ -34,6 +45,7 @@ import {
   type TicketCartLine,
   type TicketCartTotals,
 } from '@oto/shared';
+import type { BenefitOnBox } from './benefit-credential';
 
 /**
  * PRICING A CART ON THE BOX (offline plan §2.4 step 1, Round 3).
@@ -403,6 +415,13 @@ export interface OfflineQuoteContext {
    * priced at ฿0, as the platform prices it.
    */
   prepaid?: ReadonlyMap<string, { checkinId: string }>;
+  /**
+   * S2-21 round 3 — the staff benefit QR on the cart, already checked against
+   * this box's `benefits` scope (`checkBenefitOnBox`): whose it is, and the
+   * comp and standing percent this box may apply for them today. Free items
+   * and credit are online only (plan §4, R-48) and are never applied here.
+   */
+  benefit?: BenefitOnBox | null;
 }
 
 /** What the till reads back — the platform's `ApiSaleQuote`, from the box. */
@@ -452,6 +471,8 @@ export interface OfflineQuote {
   }[];
   rejectedPromoCodes: { code: string; reason: string }[];
   voucher: null;
+  /** S2-21 round 3 — the staff benefit as this box applied it: `source: 'box'`, with what is online only. */
+  benefit: BenefitBreakdown | null;
   taxBreakdown: TicketCartTotals['taxBreakdown'];
   disagreements: {
     pricingModeSentByTill: string | null;
@@ -506,6 +527,12 @@ export interface OfflineSalePricing {
   items: Map<string, OfflineItemLine>;
   /** The rows the price came from, for the fact (OD-8). */
   basis: OfflinePriceBasis;
+  /**
+   * S2-21 round 3 — what the sale's fact records of the staff benefit: who,
+   * which credential, what this box applied and with which engine — never the
+   * QR. Null when the cart carries none or it relieved nothing.
+   */
+  benefitRecord: OfflineBenefitRecord | null;
 }
 
 /**
@@ -842,16 +869,58 @@ export function priceOfflineSale(
       ...(line ? { line: { lineId: line.lineId } } : {}),
     };
   });
-  const manualDiscounts: ManualDiscount[] = cart.manualDiscounts.map((d) => ({
-    id: d.id,
-    scope: d.scope,
-    ...(d.targetLineId ? { targetLineId: d.targetLineId } : {}),
-    ...(d.targetComponent ? { targetComponent: d.targetComponent } : {}),
-    ...(d.targetLabel ? { targetLabel: d.targetLabel } : {}),
-    type: d.type,
-    value: d.value,
-    reason: d.reason,
-  })) as ManualDiscount[];
+  /**
+   * S2-21 round 3 — THE STAFF BENEFIT, the box's half (plan §4, H11): a till's
+   * own "Staff benefit" row is refused here as the platform refuses it, and a
+   * scanned QR the bridge checked applies what carries no quota — the comp
+   * and the standing percent — by the engine every surface prices with,
+   * landed as the same one row after the order's own manual discounts.
+   */
+  if (cart.manualDiscounts.some((d) => isStaffBenefitReason(d.reason))) {
+    throw new OfflinePriceError(
+      BENEFIT_CHECKOUT_REFUSALS.DISCOUNT_UNLINKED,
+      BENEFIT_CHECKOUT_WORDS.unlinked,
+    );
+  }
+  if (cart.benefit && cart.channel && cart.channel !== 'fnb') {
+    throw new OfflinePriceError(BENEFIT_CHECKOUT_REFUSALS.FNB_ONLY, BENEFIT_CHECKOUT_WORDS.fnbOnly);
+  }
+  const onBox = cart.benefit ? (context.benefit ?? null) : null;
+  if (cart.benefit && !onBox) {
+    throw new OfflinePriceError(
+      'VALIDATION',
+      'The staff benefit on this cart has not been checked on this box',
+    );
+  }
+  const benefitLines = onBox ? benefitLinesOf(cartLines) : null;
+  const benefitResult =
+    onBox && benefitLines
+      ? applyStaffBenefits(offlineBenefitProfile(onBox), emptyBenefitUsage(), benefitLines.lines)
+      : null;
+  const benefitDiscount =
+    onBox && benefitResult && benefitLines && cart.benefit
+      ? staffBenefitDiscount({
+          applicationId: cart.benefit.applicationId,
+          result: benefitResult,
+          cartLineIds: benefitLines.cartLineIds,
+          name: onBox.name,
+          benefitRole: onBox.benefitRole,
+        })
+      : null;
+
+  const manualDiscounts: ManualDiscount[] = [
+    ...(cart.manualDiscounts.map((d) => ({
+      id: d.id,
+      scope: d.scope,
+      ...(d.targetLineId ? { targetLineId: d.targetLineId } : {}),
+      ...(d.targetComponent ? { targetComponent: d.targetComponent } : {}),
+      ...(d.targetLabel ? { targetLabel: d.targetLabel } : {}),
+      type: d.type,
+      value: d.value,
+      reason: d.reason,
+    })) as ManualDiscount[]),
+    ...(benefitDiscount ? [benefitDiscount] : []),
+  ];
 
   const totals = computeTicketCartTotals(
     cartLines,
@@ -903,6 +972,47 @@ export function priceOfflineSale(
     })),
   };
 
+  const benefitApplied = benefitDiscount ? (totals.manualAmounts[benefitDiscount.id] ?? 0) : 0;
+  const benefit: BenefitBreakdown | null =
+    onBox && benefitResult && benefitLines && cart.benefit
+      ? {
+          applicationId: cart.benefit.applicationId,
+          employeeId: onBox.employeeId,
+          credentialId: onBox.credentialId,
+          name: onBox.name,
+          benefitRole: onBox.benefitRole,
+          isComp: benefitResult.compedSatang > 0,
+          compedSatang: benefitResult.compedSatang,
+          freeItemsSatang: benefitResult.freeItemsSatang,
+          creditSatang: benefitResult.creditSatang,
+          discountSatang: benefitResult.discountSatang,
+          totalReliefSatang: benefitResult.totalReliefSatang,
+          appliedSatang: benefitApplied,
+          onlineOnly: [...onBox.onlineOnly],
+          lines: benefitLineRelief(benefitResult, benefitLines.cartLineIds),
+          engineVersion: benefitResult.engineVersion,
+          source: 'box',
+        }
+      : null;
+  const benefitRecord: OfflineBenefitRecord | null =
+    benefit && benefitDiscount && onBox
+      ? {
+          applicationId: benefit.applicationId,
+          credentialId: onBox.credentialId,
+          employeeId: onBox.employeeId,
+          name: onBox.name,
+          benefitRole: onBox.benefitRole,
+          day: onBox.day,
+          isComp: benefit.isComp,
+          compedSatang: benefit.compedSatang,
+          discountSatang: benefit.discountSatang,
+          totalReliefSatang: benefit.totalReliefSatang,
+          onlineOnly: [...onBox.onlineOnly],
+          standingDiscount: onBox.standingDiscount,
+          engineVersion: benefit.engineVersion,
+        }
+      : null;
+
   const quote: OfflineQuote = {
     source: 'box',
     businessDate: date,
@@ -939,6 +1049,7 @@ export function priceOfflineSale(
     })),
     rejectedPromoCodes,
     voucher: null,
+    benefit,
     taxBreakdown: tb,
     disagreements: {
       pricingModeSentByTill: cart.pricingMode ?? null,
@@ -947,7 +1058,7 @@ export function priceOfflineSale(
       tierDiffers: cart.tier !== undefined && cart.tier !== tierCode,
     },
   };
-  return { quote, cartLines, ctx, totals, items, basis };
+  return { quote, cartLines, ctx, totals, items, basis, benefitRecord };
 }
 
 // --- The ledger's lines, on the box (plan §2.5, Round 4) ----------------------------
