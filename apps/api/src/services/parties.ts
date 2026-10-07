@@ -138,15 +138,17 @@ async function stationAt(db: Exec, operatorId: string, branchId: string, station
  * The party as the till sees it, with its bill — read inside a write's
  * transaction, after the party's lock, so what the cap is measured against is
  * what was committed before this write and nothing can land in between.
+ * `confirmed` is the party as the OTO App holds it, without the till's edits
+ * it has not taken: what a record that outlives a refused edit is keyed by.
  */
 async function liveBill(tx: Exec, branchId: string, partyId: string) {
-  const event = await partyOf(tx, branchId, partyId);
-  const ledgers = (await partyLedgersOf(tx, { branchId, eventIds: [event.id] })).get(event.id)!;
-  const party = overlayPartyEdits(event, ledgers.edits);
-  const walkUps = (await linksOfEvents(tx, { branchId, eventIds: [event.id] }))
+  const confirmed = await partyOf(tx, branchId, partyId);
+  const ledgers = (await partyLedgersOf(tx, { branchId, eventIds: [confirmed.id] })).get(confirmed.id)!;
+  const party = overlayPartyEdits(confirmed, ledgers.edits);
+  const walkUps = (await linksOfEvents(tx, { branchId, eventIds: [confirmed.id] }))
     .filter((l) => l.billing === 'party_tab')
     .reduce((sum, l) => sum + l.priceSnapshotSatang, 0);
-  return { party, ledgers, bill: billOfParty(party, walkUps, ledgers) };
+  return { party, confirmed, ledgers, bill: billOfParty(party, walkUps, ledgers) };
 }
 
 /** `GET /parties/:id` — the party with its bill, its ledgers and the till's edit stamp. */
@@ -287,7 +289,8 @@ export interface PartyPaymentResult {
  * tender always is, with no sale — so it is in the trading day's money, the
  * card terminal's batch reconciliation and the drawer, but in no sale, no
  * receipt and no VAT line (Q3). Its trading day is the branch's business day
- * when it is taken; the party's day is kept beside it for End of Day.
+ * when it is taken; the party's day — as the OTO App holds it, not as a till's
+ * edit it has not taken would move it — is kept beside it for End of Day.
  */
 export async function payParty(
   deps: PartyDeps,
@@ -335,7 +338,11 @@ export async function payParty(
       return undefined;
     }
 
-    const { party, bill } = await liveBill(tx, clock.id, event.id);
+    const { confirmed, bill } = await liveBill(tx, clock.id, event.id);
+    // The party's day this money is kept under for End of Day: the date the
+    // OTO App holds, never a till's edit it has not taken yet — an edit it
+    // refuses later would leave the payment on another day's party_prepay.
+    const partyDate = confirmed.startDate;
     if (body.expectedOutstandingSatang !== undefined && body.expectedOutstandingSatang !== bill.outstandingSatang) {
       throw errors.conflict(
         'PARTY_BALANCE_CHANGED',
@@ -399,7 +406,7 @@ export async function payParty(
       branchId: clock.id,
       otoappEventId: event.id,
       paymentAttemptId: opened.id,
-      partyDate: party.startDate,
+      partyDate,
       accountId: actor.accountId,
       stationId: counter.id,
       boxId: counter.boxId,
@@ -425,7 +432,7 @@ export async function payParty(
         kind: method,
         attemptId: opened.id,
         businessDate: tradingDay,
-        partyDate: party.startDate,
+        partyDate,
         outstandingSatang: bill.outstandingSatang - amount,
         ...(tender.tenderedSatang === undefined ? {} : { tenderedSatang: tender.tenderedSatang, changeSatang }),
         stationId: counter.id,

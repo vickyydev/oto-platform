@@ -91,6 +91,7 @@ const ev = {
   tomorrow: newId(),
   edited: newId(),
   camp: newId(),
+  moving: newId(),
 };
 
 // --- The OTO App's directory, from its own source ------------------------------
@@ -319,6 +320,7 @@ beforeAll(async () => {
   await appEvent({ id: ev.tomorrow, type: 'school_group', title: 'School trip', date: addDaysToIsoDate(T, 1), total: 4_000, deposit: 1_000 });
   await appEvent({ id: ev.edited, type: 'private_event', title: 'Company party', date: T, total: 8_000, deposit: 2_000 });
   await appEvent({ id: ev.camp, type: 'camp', title: 'Ocean camp', date: T, campEnd: addDaysToIsoDate(T, 2) });
+  await appEvent({ id: ev.moving, type: 'birthday', title: "Pim's 4th", date: T, total: 3_000, deposit: 0 });
 
   (ctx.app as unknown as { otoAppDirectory: OtoAppDirectory }).otoAppDirectory = directory;
 }, 300_000);
@@ -576,6 +578,45 @@ describe("Q3's default — a payment counts on the day it is taken, for that day
     expect(line(after, 'party_prepay')).toBe(line(today, 'party_prepay'));
     expect(line(after, 'cash')).toBe(line(today, 'cash'));
     expect(line(await endOfDay(addDaysToIsoDate(T, 1)), 'party_prepay')).toBe(0);
+  });
+
+  it("a till's date edit the OTO App has not taken does not move the payment's day; refused later, the money is still on the party's day", async () => {
+    const tomorrow = addDaysToIsoDate(T, 1);
+    editPlan.push('unreachable');
+    const moved = await patch(ev.moving, { date: tomorrow });
+    expect(moved.status, JSON.stringify(moved.body)).toBe(200);
+    expect(moved.body.edit).toMatchObject({ syncState: 'pending' });
+    // The till shows the party where it was moved to, marked as not yet taken.
+    expect(moved.body.party).toMatchObject({ startDate: tomorrow });
+    expect(moved.body.party.party!.editSync).toMatchObject({ state: 'pending' });
+
+    const before = await endOfDay(T);
+    const res = await pay(ev.moving, paymentBody({ amount: 100_000, method: 'card' }));
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    // Kept under the day the OTO App holds: today's party, taken today.
+    expect(res.body.payment).toMatchObject({ businessDate: T, partyDate: T });
+    const [entry] = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'party.payment'), eq(auditLog.entityId, res.body.payment!.id)));
+    expect(entry!.after).toMatchObject({ businessDate: T, partyDate: T });
+    expect(line(await endOfDay(T), 'party_prepay')).toBe(line(before, 'party_prepay') + 100_000);
+
+    // The OTO App then refuses the edit: the party is back on today, and so is its money.
+    const [run] = await ctx.db
+      .select()
+      .from(opsRun)
+      .where(and(eq(opsRun.name, PARTY_UPDATE_RUN), sql`${opsRun.detail}->>'editId' = ${moved.body.edit!.id}`))
+      .orderBy(desc(opsRun.startedAt));
+    editPlan.push('refused');
+    const retried = await call<{ syncState: string }>('POST', admin, `/ops/runs/${run!.id}/retry`, {});
+    expect(retried.status, JSON.stringify(retried.body)).toBe(200);
+    expect(retried.body).toMatchObject({ syncState: 'failed' });
+    const shown = (await getParty(ev.moving)).body.event;
+    expect(shown.startDate).toBe(T);
+    expect(shown.party!.payments).toEqual([expect.objectContaining({ id: res.body.payment!.id, partyDate: T })]);
+    expect(line(await endOfDay(T), 'party_prepay')).toBe(line(before, 'party_prepay') + 100_000);
+    expect(line(await endOfDay(tomorrow), 'party_prepay')).toBe(0);
   });
 
   it('refund-safe: a refund of the day’s sale leaves the party line alone, and party money is in no sale to refund', async () => {
