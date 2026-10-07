@@ -154,7 +154,9 @@ Flagged, not changed:
 
 All tables in the `analytics` schema, all with operator_id and branch_id,
 created_at / updated_at, indexes on every FK and lookup column. Writes only
-from the jobs process.
+from the jobs process — with one deliberate exception: `branch_source_switch`
+is configuration a person sets, so the api writes it (admin:branch:update at
+the branch, advisory-locked, audited with before and after).
 
 - `analytics.daily_summary`: unique (branch_id, business_date, source).
   formula_version, provisional bool, computed_at, the five buckets (satang),
