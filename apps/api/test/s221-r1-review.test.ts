@@ -207,7 +207,7 @@ describe('who may (plan "Permissions")', () => {
     expect(has('staff', 'pos:benefit:apply')).toBe(true);
   });
 
-  it('every /benefits route is guarded, and they are exactly round 1’s seven and round 2’s five', () => {
+  it('every /benefits route is guarded, and they are exactly round 1’s seven, round 2’s five and round 3’s one', () => {
     const routes = ctx.app.routeRegistry
       .filter((r) => r.url.startsWith('/benefits') && r.method !== 'HEAD')
       .map((r) => `${r.method} ${r.url} ${r.config.permission ?? 'UNGUARDED'}`)
@@ -228,6 +228,8 @@ describe('who may (plan "Permissions")', () => {
         'GET /benefits/credentials/:credentialId/qr admin:benefit:credential_issue',
         'POST /benefits/credentials/:credentialId/revoke admin:benefit:credential_issue',
         'POST /benefits/resolve pos:benefit:apply',
+        // Round 3 (checkout): the Audit log, read by whoever reads the screen.
+        'GET /benefits/applications admin:benefit:read',
       ].sort(),
     );
   });
