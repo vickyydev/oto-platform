@@ -24,7 +24,11 @@ import type { Exec } from './tx';
  *
  * A deployment without the OTO App has schema `otoapp` (platform migration
  * 0008) and no `otoapp_v`; every read here then answers empty rather than
- * failing, the way `otoAppBranchesInstalled` does for the branch seam.
+ * failing, the way `otoAppBranchesInstalled` does for the branch seam. A
+ * deployment that HAS the seam but has not granted this role USAGE on
+ * `otoapp_v` and SELECT on its views (the post-import step's grants) is not
+ * answered empty: that would tell a till "no events today" when there are. It
+ * gets an `OtoAppSeamNotGrantedError` naming the missing grant instead.
  *
  * Dates are the `yyyy-MM-dd` strings the app stores and the platform's
  * business dates are; money is satang; timestamps are real instants.
@@ -118,12 +122,69 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const money = (value: string | number | null): number | null =>
   value === null ? null : Number(value);
 
-/** Is the seam on this database at all? */
+/**
+ * The four views, always schema-qualified: a bare `event_attendees` is also
+ * the name of the app's table, which the H1 grep rightly refuses here.
+ */
+const SEAM_VIEWS = [
+  'otoapp_v.events',
+  'otoapp_v.event_attendees',
+  'otoapp_v.event_attendance',
+  'otoapp_v.children',
+] as const;
+
+/**
+ * The seam is on this database but this role may not read it: the deployment
+ * is missing the post-import grants (USAGE on `otoapp_v`, SELECT on its
+ * views). A fault to fix, never "no events".
+ */
+export class OtoAppSeamNotGrantedError extends Error {
+  readonly code = 'otoapp_seam_not_granted';
+  constructor(readonly missing: string[]) {
+    super(
+      `The OTO App events seam is installed but this database role lacks ${missing.join(', ')}; ` +
+        'apply the post-import grants for schema otoapp_v',
+    );
+    this.name = 'OtoAppSeamNotGrantedError';
+  }
+}
+
+/**
+ * Is the seam on this database, and may this role read it?
+ *
+ * - No schema `otoapp_v`, or the schema with no views in it yet: false, and
+ *   every read answers empty.
+ * - The seam is there but a grant is missing: `OtoAppSeamNotGrantedError`.
+ *
+ * Asked through catalog functions only, so the check itself never raises:
+ * `to_regclass` on a schema this role has no USAGE on raises "permission
+ * denied for schema" (42501) rather than answering null, which would turn the
+ * absent-or-not question into a failed read — and inside a transaction, a
+ * failed transaction.
+ */
 export async function otoAppEventsInstalled(exec: Exec): Promise<boolean> {
-  const res = await exec.execute<{ reg: string | null }>(
-    sql`select to_regclass('otoapp_v.events')::text as reg`,
+  const schema = await exec.execute<{ usage: boolean | null }>(
+    sql`select has_schema_privilege(to_regnamespace('otoapp_v')::oid, 'USAGE') as usage`,
   );
-  return Boolean(res.rows[0]?.reg);
+  const usage = schema.rows[0]?.usage ?? null;
+  if (usage === null) return false;
+  if (!usage) throw new OtoAppSeamNotGrantedError(['USAGE on schema otoapp_v']);
+  // USAGE is held, so naming a relation in the schema can no longer raise. A
+  // view that is missing answers null; one this role may not read, false.
+  const views = await exec.execute<{ readable: Array<boolean | null> }>(
+    sql`select array[${sql.join(
+      SEAM_VIEWS.map((view) => sql`has_table_privilege(to_regclass(${view})::oid, 'SELECT')`),
+      sql`, `,
+    )}] as readable`,
+  );
+  const readable = views.rows[0]?.readable ?? [];
+  // `otoapp_v.events` absent: a schema made ahead of the app's migrator, not a seam yet.
+  if (readable[0] === null || readable[0] === undefined) return false;
+  const missing = SEAM_VIEWS.filter((_, i) => readable[i] !== true);
+  if (missing.length > 0) {
+    throw new OtoAppSeamNotGrantedError(missing.map((view) => `SELECT on ${view}`));
+  }
+  return true;
 }
 
 type EventRow = {

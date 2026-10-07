@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
@@ -9,6 +9,7 @@ import { type Db } from '@oto/db';
 import { createTestDatabase } from '@oto/db/testing';
 import { newId } from '@oto/shared';
 import {
+  OtoAppSeamNotGrantedError,
   getBranchEvent,
   listBranchEvents,
   listEventAttendance,
@@ -16,6 +17,7 @@ import {
   listSeamChildren,
   otoAppEventsInstalled,
 } from '../src/services/otoapp-events';
+import type { Tx } from '../src/services/tx';
 import {
   CENTRAL_BRANCH_CODE,
   CHALONG_BRANCH_CODE,
@@ -43,6 +45,10 @@ import {
  *  2. THE GREP (hazard H1). No file in `src` names an OTO App event table, and
  *     the only file that names `otoapp_v` is the read-only repository, which
  *     reads those four views and writes nothing.
+ *  3. THE GRANTS. A role the post-import grants have not reached is told so,
+ *     never answered "no events".
+ *  4. THE WRITE-BACK's ids. A replay sent with the ids in capitals is the same
+ *     replay (the app's directory writes, loaded from its source).
  *
  * The app's rows are written with SQL, as the app's own screens would leave
  * them: the platform has no declaration of these tables, by design.
@@ -59,6 +65,8 @@ const appCentral = newId();
 const appChalong = newId();
 const appHeadOffice = newId();
 const appSecond = newId();
+/** Another tenant's app branch carrying OTO Central's id in capitals. */
+const appShadow = newId();
 
 const D1 = '2026-11-02';
 const D2 = '2026-11-03';
@@ -78,6 +86,7 @@ const ids = {
   headOffice: newId(),
   chalongEvent: newId(),
   secondOperatorEvent: newId(),
+  shadowEvent: newId(),
   ploy: newId(),
   win: newId(),
   oneTime: newId(),
@@ -139,6 +148,10 @@ beforeAll(async () => {
   await appBranch(appChalong, appTenant, 'Robinson Chalong', chalong);
   await appBranch(appHeadOffice, appTenant, 'Head Office', null);
   await appBranch(appSecond, otherAppTenant, 'Second park', secondOperatorBranch);
+  // The column's unique index is over the raw text, so this row is allowed
+  // beside appCentral; the views must not map it onto Central too.
+  expect(central.toUpperCase()).not.toBe(central);
+  await appBranch(appShadow, otherAppTenant, 'Shadow park', central.toUpperCase());
 
   await appEvent({
     id: ids.camp,
@@ -192,6 +205,13 @@ beforeAll(async () => {
     type: 'camp',
     title: 'Another park camp',
     campEnd: D5,
+  });
+  await appEvent({
+    id: ids.shadowEvent,
+    tenant: otherAppTenant,
+    branch: appShadow,
+    type: 'workshop',
+    title: 'Shadow workshop',
   });
 
   // A camp's children, as the app's registration form and its one-time add
@@ -272,6 +292,9 @@ describe('the read: a seeded camp, event and party through otoapp_v', () => {
     expect(byId.has(ids.headOffice)).toBe(false);
     expect(byId.has(ids.chalongEvent)).toBe(false);
     expect(byId.has(ids.secondOperatorEvent)).toBe(false);
+    // Another tenant's app branch holding Central's id in capitals maps onto
+    // nothing: only the lowercase form the platform writes is a mapping.
+    expect(byId.has(ids.shadowEvent)).toBe(false);
     expect(events).toHaveLength(7);
     expect(events.every((e) => e.branchId === central)).toBe(true);
   });
@@ -416,6 +439,9 @@ describe('the read: a seeded camp, event and party through otoapp_v', () => {
     expect(
       await listSeamChildren(ctx.db, { branchId: secondOperatorBranch, ids: [ids.ploy, ids.tee] }),
     ).toEqual([]);
+    expect(
+      await getBranchEvent(ctx.db, { branchId: central, eventId: ids.shadowEvent }),
+    ).toBeNull();
     // Archived is still this branch's to look up by id; it is only kept off the day list.
     expect(
       (await getBranchEvent(ctx.db, { branchId: central, eventId: ids.archived }))?.archived,
@@ -444,10 +470,191 @@ describe('a deployment without the OTO App', () => {
       expect(await listEventAttendees(db, { branchId: central, eventId: ids.camp })).toEqual([]);
       expect(await listEventAttendance(db, { branchId: central, eventId: ids.camp })).toEqual([]);
       expect(await listSeamChildren(db, { branchId: central, ids: [ids.ploy] })).toEqual([]);
+
+      // An administrator made the schema ahead of the app's migrator (0004
+      // allows it): still no seam, still empty.
+      await pool.query('create schema otoapp_v');
+      expect(await otoAppEventsInstalled(db)).toBe(false);
+      expect(await listBranchEvents(db, { branchId: central, from: D1, to: D1 })).toEqual([]);
     } finally {
       await pool.end();
       await drop();
     }
+  });
+});
+
+describe('a role the post-import grants have not reached', () => {
+  it('is told which grant is missing, never answered empty, and reads once granted', async () => {
+    // A role of its own, named per run: roles are server-wide, test databases are not.
+    const role = `seam_reader_${newId().replace(/-/g, '').slice(-12)}`;
+    await ctx.db.execute(sql.raw(`create role ${role} nologin`));
+    const asRole = <T>(work: (tx: Tx) => Promise<T>) =>
+      ctx.db.transaction(async (tx) => {
+        await tx.execute(sql.raw(`set local role ${role}`));
+        return work(tx);
+      });
+    try {
+      // No USAGE on the schema: the check answers, it does not raise 42501.
+      const noUsage = await asRole((tx) => otoAppEventsInstalled(tx)).catch((e: unknown) => e);
+      expect(noUsage).toBeInstanceOf(OtoAppSeamNotGrantedError);
+      expect((noUsage as OtoAppSeamNotGrantedError).missing).toEqual(['USAGE on schema otoapp_v']);
+      await expect(
+        asRole((tx) => listBranchEvents(tx, { branchId: central, from: D1, to: D1 })),
+      ).rejects.toThrow(/USAGE on schema otoapp_v/);
+
+      // USAGE but SELECT on one view only: the other three are named.
+      await ctx.db.execute(sql.raw(`grant usage on schema otoapp_v to ${role}`));
+      await ctx.db.execute(sql.raw(`grant select on otoapp_v.events to ${role}`));
+      const partial = await asRole((tx) => otoAppEventsInstalled(tx)).catch((e: unknown) => e);
+      expect((partial as OtoAppSeamNotGrantedError).missing).toEqual([
+        'SELECT on otoapp_v.event_attendees',
+        'SELECT on otoapp_v.event_attendance',
+        'SELECT on otoapp_v.children',
+      ]);
+
+      // The post-import grants, and nothing on the tables: the views read.
+      await ctx.db.execute(sql.raw(`grant select on all tables in schema otoapp_v to ${role}`));
+      expect(await asRole((tx) => otoAppEventsInstalled(tx))).toBe(true);
+      const events = await asRole((tx) =>
+        listBranchEvents(tx, { branchId: central, from: D1, to: D1 }),
+      );
+      expect(events).toHaveLength(7);
+      const checkins = await asRole((tx) =>
+        listEventAttendance(tx, { branchId: central, eventId: ids.workshop, date: D1 }),
+      );
+      expect(checkins.map((c) => c.checkinRef)).toEqual([ids.teeCheckin]);
+    } finally {
+      await ctx.db.execute(sql.raw(`drop owned by ${role}`));
+      await ctx.db.execute(sql.raw(`drop role ${role}`));
+    }
+  });
+});
+
+// --- The write-back's ids ---------------------------------------------------
+
+interface DirectoryEvent {
+  id: string;
+  tenantId: string;
+  isCamp: boolean;
+  branchTimezone: string;
+}
+interface WriteOutcome {
+  ok: boolean;
+  status: number;
+  error?: string;
+  body?: {
+    replayed?: boolean;
+    attendee?: { id: string };
+    checkin?: { checkinRef: string | null; attendeeId: string; status: string };
+  };
+}
+interface DirectoryWrites {
+  findTenantEvent(pool: pg.Pool, tenantId: string, eventId: string): Promise<DirectoryEvent | null>;
+  createEventAttendee(
+    pool: pg.Pool,
+    event: DirectoryEvent,
+    input: {
+      id: string;
+      childFullName: string;
+      parentAttending: boolean;
+      attendanceDays: string[];
+      source: 'pos';
+    },
+  ): Promise<WriteOutcome>;
+  recordAttendeeCheckin(
+    pool: pg.Pool,
+    event: DirectoryEvent,
+    attendeeId: string,
+    input: { id: string; date: string },
+  ): Promise<WriteOutcome>;
+}
+
+describe('the write-back: a replay is found by its ids, whatever their case', () => {
+  let appPool: pg.Pool;
+  let writes: DirectoryWrites;
+  const wb = { workshop: newId(), camp: newId() };
+
+  beforeAll(async () => {
+    // The app's writes import only types, so its source loads as is. They name
+    // the app's tables unqualified, as the app does: a pool of their own on the
+    // app's search path, so ctx.db's stays the platform's.
+    const { connectionString } = (ctx.db as unknown as { $client: pg.Pool }).$client.options;
+    appPool = new pg.Pool({ connectionString, options: '-c search_path=otoapp', max: 4 });
+    writes = (await import(
+      /* @vite-ignore */ pathToFileURL(
+        fileURLToPath(new URL('../../oto-app/server/directory/eventWrites.ts', import.meta.url)),
+      ).href
+    )) as DirectoryWrites;
+    // At Chalong, so nothing the read tests count at Central moves.
+    await appEvent({
+      id: wb.workshop,
+      branch: appChalong,
+      type: 'workshop',
+      title: 'Write-back workshop',
+    });
+    await appEvent({
+      id: wb.camp,
+      branch: appChalong,
+      type: 'camp',
+      title: 'Write-back camp',
+      campEnd: D5,
+    });
+  });
+
+  afterAll(async () => {
+    await appPool?.end();
+  });
+
+  const kid = (attendanceDays: string[]) => ({
+    id: newId(),
+    childFullName: 'Capital letters',
+    parentAttending: false,
+    attendanceDays,
+    source: 'pos' as const,
+  });
+
+  it('a one-off check-in replayed with the attendee and check-in ids in capitals is a replay', async () => {
+    const event = (await writes.findTenantEvent(appPool, appTenant, wb.workshop.toUpperCase()))!;
+    expect(event.id).toBe(wb.workshop);
+    const child = kid([]);
+    expect((await writes.createEventAttendee(appPool, event, child)).status).toBe(201);
+    const ref = newId();
+    const first = await writes.recordAttendeeCheckin(appPool, event, child.id, {
+      id: ref,
+      date: D1,
+    });
+    const again = await writes.recordAttendeeCheckin(appPool, event, child.id.toUpperCase(), {
+      id: ref.toUpperCase(),
+      date: D1,
+    });
+    expect([first.status, again.status]).toEqual([201, 200]);
+    expect(again.body).toMatchObject({
+      replayed: true,
+      checkin: { checkinRef: ref, attendeeId: child.id, status: 'checked_in' },
+    });
+  });
+
+  it('a camp check-in on its waiting row, sent first in capitals, then replayed in lowercase', async () => {
+    const event = (await writes.findTenantEvent(appPool, appTenant, wb.camp))!;
+    const child = kid([D2]);
+    expect((await writes.createEventAttendee(appPool, event, child)).status).toBe(201);
+    const ref = newId();
+    const first = await writes.recordAttendeeCheckin(appPool, event, child.id.toUpperCase(), {
+      id: ref.toUpperCase(),
+      date: D2,
+    });
+    const again = await writes.recordAttendeeCheckin(appPool, event, child.id, {
+      id: ref,
+      date: D2,
+    });
+    expect([first.status, again.status]).toEqual([201, 200]);
+    expect(first.body?.checkin?.checkinRef).toBe(ref);
+    expect(again.body).toMatchObject({ replayed: true, checkin: { checkinRef: ref } });
+    const rows = await appPool.query<{ n: string }>(
+      `select count(*) as n from camp_attendance where camp_registration_id = $1`,
+      [child.id],
+    );
+    expect(Number(rows.rows[0]!.n)).toBe(1);
   });
 });
 
@@ -458,22 +665,24 @@ const REPOSITORY = 'services/otoapp-events.ts';
 const VIEWS = ['events', 'event_attendees', 'event_attendance', 'children'];
 
 /**
- * The OTO App's event tables — everything behind the four views, and the
- * neighbouring tables of its events module that a shortcut would reach for.
+ * Every table of the OTO App's events module, read from the app's own
+ * migrations rather than kept by hand: a hand-kept list missed most of the
+ * module (its beo_* tables, studio_event_tasks, event_line_item_templates,
+ * birthday_package_templates, guest_invite_tokens, branch_events and more),
+ * and a table the app adds later is covered the day its migration lands.
  */
-const APP_EVENT_TABLES = [
-  'core_events',
-  'camp_registrations',
-  'camp_attendance',
-  'event_attendees',
-  'event_attendee_checkins',
-  'studio_event_bookings',
-  'studio_event_details',
-  'event_line_items',
-  'event_statuses',
-  'rsvp_entries',
-  'beo_event_billing',
-];
+const APP_MIGRATIONS = fileURLToPath(new URL('../../oto-app/migrations', import.meta.url));
+const APP_EVENT_TABLES = readdirSync(APP_MIGRATIONS)
+  .filter((name) => name.endsWith('.sql'))
+  .flatMap((name) => [
+    ...readFileSync(join(APP_MIGRATIONS, name), 'utf8').matchAll(/CREATE TABLE "([a-z_0-9]+)"/g),
+  ])
+  .map((m) => m[1]!)
+  .filter((table) =>
+    /^(core_events|camp_|beo_|studio_event|rsvp_|event_|birthday_|guest_invite|branch_events)/.test(
+      table,
+    ),
+  );
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -496,6 +705,27 @@ describe('H1 — the POS reads OTO App events through otoapp_v only', () => {
   it('is looking at the source and finds the repository', () => {
     expect(files.length).toBeGreaterThan(100);
     expect(files.map((f) => f.file)).toContain(REPOSITORY);
+  });
+
+  it("is checking every table of the app's events module, not a sample of it", () => {
+    expect(APP_EVENT_TABLES.length).toBeGreaterThan(30);
+    expect(APP_EVENT_TABLES).toEqual(
+      expect.arrayContaining([
+        'core_events',
+        'camp_registrations',
+        'camp_attendance',
+        'event_attendees',
+        'event_attendee_checkins',
+        'studio_event_bookings',
+        'studio_event_tasks',
+        'beo_event_billing',
+        'rsvp_entries',
+        'event_line_item_templates',
+        'birthday_package_templates',
+        'guest_invite_tokens',
+        'branch_events',
+      ]),
+    );
   });
 
   it('no file in src names an OTO App event table, by SQL name or schema-qualified', () => {
