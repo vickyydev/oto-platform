@@ -219,6 +219,34 @@ export interface PrintJobOutcome {
   elapsedMs: number | null;
 }
 
+/**
+ * S2-20 K1 — what `printNow` did with a set of jobs: every one out, or where
+ * it stopped and how much paper came out before it did.
+ */
+export interface PrintNowOutcome {
+  /** True only when every job that has a printer came out of it. */
+  complete: boolean;
+  /**
+   * How many jobs came out of a printer: all of them when `complete`; on a
+   * fault, the ones before it — paper a person has to take back, because the
+   * caller calls the whole set off.
+   */
+  printed: number;
+  /** One per job, in order, as far as the set got; the fault, when there is one, last. */
+  outcomes: PrintJobOutcome[];
+  /** The job the set stopped at, `failed`, or null. */
+  fault: PrintJobOutcome | null;
+}
+
+export interface PrintNowOptions {
+  /**
+   * Whether a job with no printer for its role stops the set. Default: every
+   * job must print. A caller that can do without one (a receipt at a station
+   * that has no receipt printer) says so, and that job is `skipped`.
+   */
+  mustPrint?: (request: PrintRequest) => boolean;
+}
+
 export interface PrintSubsystemOptions {
   /** The config bundle as it stands now — read fresh on every attempt. */
   bundle: () => BoxConfigBundle | null;
@@ -306,6 +334,37 @@ export interface PrintSubsystem {
    * arrive.
    */
   pulseDrawer(request: DrawerPulseRequest): Promise<DrawerPulseOutcome>;
+  /**
+   * S2-20 K1 — A SET OF JOBS ON PAPER NOW, OR CALLED OFF: the self-service
+   * kiosk's hand-over (events-kiosk plan §5 — "a printer fault, paper out or
+   * an offline box aborts the whole redemption", and hand-off is recorded only
+   * after the bands have printed).
+   *
+   * NOT QUEUED, which is the whole difference from `submit`, and the drawer
+   * pulse's rule for the same reason. A band that waits on an empty roll and
+   * comes out when somebody changes it is a band for a redemption the kiosk
+   * has already called off, in a tray nobody is standing at. So nothing here
+   * is written to the durable queue, nothing is retried by the tick, and no
+   * outcome goes up the print-result route: the caller holds the platform's
+   * rows for these jobs, in a transaction that commits only when this answers
+   * `complete`.
+   *
+   * Three steps, so that as little paper as possible comes out of a set that
+   * cannot finish:
+   *
+   *  1. every job is routed and rendered before any printer is touched — a job
+   *     that must print and has no printer, or cannot be rendered, stops the
+   *     set with nothing printed;
+   *  2. every printer the set uses is asked how it is — unreachable, out of
+   *     paper, its cover or head open, jammed or paused stops the set before a
+   *     byte is written;
+   *  3. the jobs print in order, and the first that does not come out stops
+   *     the set. What came out before it is counted in `printed`.
+   *
+   * Behind the same per-device lock as every job, so a till's receipt and a
+   * kiosk's band never share a socket.
+   */
+  printNow(requests: readonly PrintRequest[], options?: PrintNowOptions): Promise<PrintNowOutcome>;
   /**
    * Retry everything that is due. Called from the agent's poll tick — the
    * heartbeat, which awaits this before it is sent.
@@ -753,6 +812,63 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
     else busy.delete(deviceId);
   }
 
+  /** Anything a print threw, as the printer error it is — a bare throw mid-job is a write that died. */
+  function asPrinterError(err: unknown): PrinterError {
+    return err instanceof PrinterError
+      ? err
+      : new PrinterError('PRINTER_WRITE_FAILED', err instanceof Error ? err.message : String(err), {
+          partial: true,
+        });
+  }
+
+  /** What a job that did not come out says about its printer, kept for the heartbeat. */
+  function noteFailure(deviceId: string, error: PrinterError): void {
+    health[deviceId] = {
+      ...(health[deviceId] ?? unknownHealth(now().toISOString())),
+      reachability: error.code === 'PRINTER_UNREACHABLE' ? 'unreachable' : 'reachable',
+      paperStatus: error.code === 'PRINTER_PAPER_OUT' ? 'out' : (health[deviceId]?.paperStatus ?? 'unknown'),
+      lastError: error.code,
+      checkedAt: now().toISOString(),
+    };
+    if (error.code === 'PRINTER_SILENT_AFTER_JOB' || error.code === 'PRINTER_SILENT_BEFORE_JOB') {
+      /**
+       * Case 1's silent ending (SCRUM-429), and case 5 (SCRUM-431): the
+       * printer has answered, and now says nothing, so nothing it said
+       * before is known to hold any more. It is there — it took the
+       * connection, and in case 1 the job — and cannot be seen into.
+       */
+      health[deviceId] = unansweredHealth(now().toISOString(), error.code);
+    }
+  }
+
+  /**
+   * What stops a print-now set at a printer's answer to "how are you" (S2-20
+   * K1), in the words the printer's own job would have refused in — the
+   * adapters' (`escposBlocker`, the TSPL2 checks in `tsplAdapter.print`).
+   * A unit that answers no status at all is printed to, as case 2 says.
+   */
+  function preflightBlocker(read: PrinterHealth, language: 'escpos' | 'tspl2'): PrinterError | null {
+    if (read.reachability === 'unreachable') {
+      return new PrinterError(
+        (read.lastError as PrinterErrorCode | null) ?? 'PRINTER_UNREACHABLE',
+        'The printer did not answer',
+      );
+    }
+    if (read.paperStatus === 'out') return new PrinterError('PRINTER_PAPER_OUT', 'The printer is out of paper');
+    if (read.coverOpen) {
+      return language === 'tspl2'
+        ? new PrinterError('PRINTER_HEAD_OPEN', 'The printer has its head open')
+        : new PrinterError('PRINTER_COVER_OPEN', 'The printer cover is open');
+    }
+    if (read.cutterError) {
+      return language === 'tspl2'
+        ? new PrinterError('PRINTER_PAPER_JAM', 'The printer is jammed')
+        : new PrinterError('PRINTER_CUTTER_ERROR', 'The printer cutter has jammed');
+    }
+    if (read.offline) return new PrinterError('PRINTER_OFFLINE', 'The printer is off-line');
+    return null;
+  }
+
   /**
    * The printer a job would go to now: the walk `attempt` makes, made ahead
    * of it so the tick can tell which jobs wait on one printer (SCRUM-440).
@@ -868,35 +984,8 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
         elapsedMs: result.elapsedMs,
       };
     } catch (err) {
-      const error =
-        err instanceof PrinterError
-          ? err
-          : new PrinterError(
-              'PRINTER_WRITE_FAILED',
-              err instanceof Error ? err.message : String(err),
-              {
-                partial: true,
-              },
-            );
-      health[routed.device.id] = {
-        ...(health[routed.device.id] ?? unknownHealth(now().toISOString())),
-        reachability: error.code === 'PRINTER_UNREACHABLE' ? 'unreachable' : 'reachable',
-        paperStatus:
-          error.code === 'PRINTER_PAPER_OUT'
-            ? 'out'
-            : (health[routed.device.id]?.paperStatus ?? 'unknown'),
-        lastError: error.code,
-        checkedAt: now().toISOString(),
-      };
-      if (error.code === 'PRINTER_SILENT_AFTER_JOB' || error.code === 'PRINTER_SILENT_BEFORE_JOB') {
-        /**
-         * Case 1's silent ending (SCRUM-429), and case 5 (SCRUM-431): the
-         * printer has answered, and now says nothing, so nothing it said
-         * before is known to hold any more. It is there — it took the
-         * connection, and in case 1 the job — and cannot be seen into.
-         */
-        health[routed.device.id] = unansweredHealth(now().toISOString(), error.code);
-      }
+      const error = asPrinterError(err);
+      noteFailure(routed.device.id, error);
       pending.lastError = error.code;
       const giveUp = !error.retryable || error.partial || pending.attempts >= maxAttempts;
       return {
@@ -1195,6 +1284,139 @@ export function createPrintSubsystem(options: PrintSubsystemOptions): PrintSubsy
           errorMessage: error.message,
         };
       }
+    },
+    async printNow(requests, opts = {}) {
+      const mustPrint = opts.mustPrint ?? (() => true);
+      const bundle = options.bundle();
+      const templates = options.templates().map(toRenderTemplate);
+      const outcomes: PrintJobOutcome[] = [];
+      const stop = (fault: PrintJobOutcome, printed: number): PrintNowOutcome => {
+        log('warn', 'a print-now set was called off at this job; nothing after it was printed', {
+          jobId: fault.id,
+          deviceId: fault.deviceId,
+          errorCode: fault.errorCode,
+          printed,
+        });
+        return { complete: false, printed, outcomes: [...outcomes, fault], fault };
+      };
+      const baseOf = (request: PrintRequest, role: string) => ({
+        id: request.id,
+        attempts: 0,
+        role,
+        stationId: request.stationId ?? null,
+        overflow: [] as string[],
+        elapsedMs: null as number | null,
+      });
+
+      // 1. Every job routed and rendered before any printer is touched.
+      const planned: Array<{
+        request: PrintRequest;
+        role: string;
+        device: BoxConfigDevice;
+        adapter: PrinterAdapter;
+        bytes: Uint8Array;
+        overflow: string[];
+      }> = [];
+      for (const request of requests) {
+        const role = request.role ?? ROLE_FOR_KIND[request.kind];
+        const routed = routeTo(bundle, role, request.stationId);
+        const adapter = routed ? adapterFor(routed.device) : null;
+        if (!routed || !adapter || adapter instanceof PrinterError) {
+          const outcome: PrintJobOutcome = {
+            ...baseOf(request, role),
+            status: 'skipped',
+            deviceId: routed?.device.id ?? null,
+            errorCode: adapter instanceof PrinterError ? adapter.code : 'NO_DEVICE_FOR_ROLE',
+            errorMessage:
+              adapter instanceof PrinterError
+                ? adapter.message
+                : `No ${role} printer is assigned${request.stationId ? ' to this station' : ' on this box'}`,
+          };
+          if (mustPrint(request)) return stop({ ...outcome, status: 'failed' }, 0);
+          outcomes.push(outcome);
+          continue;
+        }
+        try {
+          const rendered = renderJob(request.job, {
+            device: profileFor(routed.device),
+            templates,
+            finish: request.finish,
+          });
+          planned.push({ request, role, device: routed.device, adapter, bytes: rendered.bytes, overflow: rendered.overflow });
+        } catch (err) {
+          return stop(
+            {
+              ...baseOf(request, role),
+              status: 'failed',
+              deviceId: routed.device.id,
+              errorCode: 'RENDER_FAILED',
+              errorMessage: err instanceof Error ? err.message : String(err),
+            },
+            0,
+          );
+        }
+      }
+
+      // 2. Every printer the set uses, asked how it is before a byte is written.
+      const asked = new Set<string>();
+      for (const job of planned) {
+        if (asked.has(job.device.id)) continue;
+        asked.add(job.device.id);
+        const read = await serialise(job.device.id, () => job.adapter.probe());
+        health[job.device.id] = read;
+        const blocked = preflightBlocker(read, job.adapter.language);
+        if (blocked) {
+          return stop(
+            {
+              ...baseOf(job.request, job.role),
+              status: 'failed',
+              deviceId: job.device.id,
+              errorCode: blocked.code,
+              errorMessage: blocked.message,
+            },
+            0,
+          );
+        }
+      }
+
+      // 3. In order; the first job that does not come out ends the set.
+      let printed = 0;
+      for (const job of planned) {
+        try {
+          const result = await serialise(job.device.id, () =>
+            job.adapter.print({ bytes: job.bytes, copies: job.request.copies ?? 1 }),
+          );
+          health[job.device.id] = result.health;
+          printed += 1;
+          outcomes.push({
+            ...baseOf(job.request, job.role),
+            attempts: 1,
+            status: 'printed',
+            deviceId: job.device.id,
+            errorCode: null,
+            errorMessage: null,
+            overflow: job.overflow,
+            elapsedMs: result.elapsedMs,
+          });
+        } catch (err) {
+          const error = asPrinterError(err);
+          noteFailure(job.device.id, error);
+          return stop(
+            {
+              ...baseOf(job.request, job.role),
+              attempts: 1,
+              status: 'failed',
+              deviceId: job.device.id,
+              errorCode: error.code,
+              errorMessage: error.message,
+              overflow: job.overflow,
+            },
+            printed,
+          );
+        }
+      }
+      log('info', 'a print-now set came out whole', { jobs: requests.length, printed });
+      return { complete: true, printed, outcomes, fault: null };
     },
     async tick() {
       await ensureResumed();

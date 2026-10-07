@@ -58,6 +58,8 @@ export interface PrintingController {
   hold(request: PrintRequest, until: Date): ReturnType<PrintSubsystem['hold']>;
   /** Open a station's cash drawer through its receipt printer (S2-10a). */
   pulseDrawer(request: DrawerPulseRequest): ReturnType<PrintSubsystem['pulseDrawer']>;
+  /** A set of jobs on paper now, or called off (S2-20 K1, the kiosk's hand-over). */
+  printNow(...args: Parameters<PrintSubsystem['printNow']>): ReturnType<PrintSubsystem['printNow']>;
   /** Every simulator this box currently stands up, keyed by device id. */
   simulators(): PrinterSimulator[];
   simulator(deviceId: string): PrinterSimulator | undefined;
@@ -167,6 +169,7 @@ export function createPrinting(options: PrintingOptions): PrintingController {
     submit: (request) => jobs.submit(request),
     hold: (request, until) => jobs.hold(request, until),
     pulseDrawer: (request) => jobs.pulseDrawer(request),
+    printNow: (requests, opts) => jobs.printNow(requests, opts),
     simulators() {
       reconcile();
       return [...sims.values()];
