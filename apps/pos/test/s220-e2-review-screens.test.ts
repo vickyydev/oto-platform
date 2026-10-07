@@ -246,11 +246,14 @@ describe('"Not on the platform yet" — gone exactly where E2 builds the write, 
     }
   });
 
-  it('standing: the mobile party screens only - E3 took the board and E4 the party money', () => {
+  it('gone from the mobile party screens too (S2-20 E5): their check-in, reprint and check-out are the platform’s', () => {
     const mobileParties = source('components/mobile/parties/MobileParties.tsx');
-    expect(mobileParties).toContain('toast(EVENT_WRITE_PENDING)');
-    // Check-in, reprint and check-out still wait for E3; the payment and the F&B do not.
-    expect(mobileParties.match(/if \(writePending\(eventId\)\) return;/g)?.length).toBe(3);
+    // The last gate the E1 round left standing was here; E5's closing sweep took it.
+    expect(mobileParties).not.toContain('EVENT_WRITE_PENDING');
+    expect(mobileParties).not.toContain('writePending');
+    expect(fnBody(mobileParties, 'handleEventCheckIn')).toContain('checkInOnPlatform(');
+    expect(fnBody(mobileParties, 'handleEventCheckOut')).toContain('checkOutOnPlatform(');
+    expect(fnBody(mobileParties, 'handleEventReprint')).toContain('reprintOnPlatform(');
     expect(fnBody(mobileParties, 'handleTakePayment')).not.toContain('writePending');
     expect(fnBody(mobileParties, 'handleChargeExtra')).not.toContain('writePending');
     const partyDetail = source('components/parties/PartyDetail.tsx');

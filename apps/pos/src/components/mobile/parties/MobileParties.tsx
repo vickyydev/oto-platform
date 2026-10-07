@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { newId } from '@oto/shared';
+import { EVENT_CHECKIN_REFUSALS, newId } from '@oto/shared';
 import { OtoEvent, PartyBooking, PartyPaymentMethod } from '@/types';
-import {
-  getEventById,
-  checkInEventAttendee,
-  checkOutEventAttendee,
-} from '@/mockApi';
 import { useOperator } from '@/auth/OperatorContext';
 import { useBranch } from '@/branch/BranchContext';
 import { useStation } from '@/station/StationContext';
-import { EVENT_WRITE_PENDING, eventsToday, useEventsForDate } from '@/api/events';
+import {
+  bandLineOf,
+  checkInOnPlatform,
+  checkOutOnPlatform,
+  eventsToday,
+  printJobsOf,
+  reprintOnPlatform,
+  useEventsForDate,
+  type EventCheckinIds,
+} from '@/api/events';
 import {
   PARTY_CHARGE_NOT_CONFIRMED,
   PARTY_PAYMENT_NOT_CONFIRMED,
@@ -26,7 +30,7 @@ import {
   type PartyWriteIds,
   type PartyWriteOutcome,
 } from '@/api/parties';
-import { eventBraceletPrintJobs, dispatchPrintJobs } from '@/lib/printRouting';
+import { dispatchPlatformPrinting } from '@/lib/printRouting';
 import { toast } from '@/hooks/use-toast';
 import { MobileEventsList } from './MobileEventsList';
 import { MobilePartyDetail } from './MobilePartyDetail';
@@ -42,17 +46,6 @@ function findEvent(id: string | null, events: readonly OtoEvent[]): OtoEvent | n
 }
 
 /**
- * S2-20 E1 — the events are the OTO App's now, which the prototype's in-memory
- * mutators cannot find: a check-in, a reprint, a payment and a charge are
- * written on the platform by E2 to E4, and until then say so.
- */
-function writePending(eventId: string): boolean {
-  if (getEventById(eventId)) return false;
-  toast(EVENT_WRITE_PENDING);
-  return true;
-}
-
-/**
  * Mobile Events surface (portrait).
  *
  * Step machine:
@@ -60,11 +53,11 @@ function writePending(eventId: string): boolean {
  *                           → fnb (menu grid + cart → charge)
  *        → detail (camp/event) — read-only attendee list, no billing actions
  *
- * The events are read from the platform (`GET /events`, S2-20 E1), and a
- * party's payment and F&B charge are written there (S2-20 E4,
- * `api/parties.ts`); the check-in writes still wait for E3. Version counter
- * triggers re-reads so the UI always reflects the latest state after a
- * mutation.
+ * The events are read from the platform (`GET /events`, S2-20 E1); a party's
+ * payment and F&B charge are written there (S2-20 E4, `api/parties.ts`), and
+ * so are a camp or event child's check-in, check-out and reprint (S2-20 E3's
+ * calls, wired here in E5). Version counter triggers re-reads so the UI always
+ * reflects the latest state after a mutation.
  */
 // The branch's trading day, not the UTC date (plan §4).
 const todayISO = () => eventsToday();
@@ -179,89 +172,82 @@ export function MobileParties() {
     return partyPaymentConfirmationOf(outcome, amount);
   };
 
-  const handleEventCheckIn = (eventId: string, attendeeId: string) => {
-    if (!operator) return;
-    if (writePending(eventId)) return;
-    const result = checkInEventAttendee(eventId, attendeeId, today, {
-      operatorName: operator.name,
-      operatorId: operator.id,
-    });
-    if (!result) {
-      toast({ title: 'Already checked in', description: 'This child is already checked in for today.' });
+  /**
+   * S2-20 E5 (closing sweep) — check-in, check-out and reprint on the platform,
+   * as the board and the mobile drop-off board do them (S2-20 E3): the bands
+   * minted, signed and printed there and the OTO App told — or, with the link
+   * down, on this counter's box (`api/events.ts`, `viaLane`). They read the
+   * prototype's in-memory event store until now, which holds none of the
+   * platform's events, so every press only said "pending". One check-in id per
+   * child's day, kept while a retry may replay it.
+   */
+  const checkinIdsRef = useRef(new Map<string, EventCheckinIds>());
+
+  const handleEventCheckIn = async (eventId: string, attendeeId: string) => {
+    const ev = findEvent(eventId, dayEvents);
+    if (!operator || !ev) return;
+    const key = `${eventId}|${attendeeId}|${today}`;
+    let checkinIds = checkinIdsRef.current.get(key);
+    if (!checkinIds) {
+      checkinIds = { checkinId: newId(), actionId: newId() };
+      checkinIdsRef.current.set(key, checkinIds);
+    }
+    const outcome = await checkInOnPlatform({ event: ev, attendeeId, branchSlug: branch.id, stationId: station?.stationId, ids: checkinIds });
+    if (outcome.ok || !outcome.retryable) checkinIdsRef.current.delete(key);
+    if (!outcome.ok) {
+      toast(
+        outcome.code === EVENT_CHECKIN_REFUSALS.alreadyIn.code
+          ? { title: 'Already checked in', description: 'This child is already checked in for today.' }
+          : { ...outcome.toast, variant: 'destructive' },
+      );
       bump();
       return;
     }
-    const ev = getEventById(eventId);
-    if (ev) {
-      if (station) {
-        const jobs = eventBraceletPrintJobs(station, {
-          eventTitle: ev.title,
-          eventDate: today,
-          startTime: ev.startTime,
-          endTime: ev.endTime,
-          kidName: result.attendee.name,
-          wristbandCode: result.wristbandCode,
-          dietaryDetail: result.attendee.dietaryFlag ? result.attendee.dietaryDetail : undefined,
-          allergyDetail: result.attendee.allergyFlag ? result.attendee.allergyDetail : undefined,
-          parentName: result.parentWristbandCode ? result.attendee.parentName : undefined,
-          parentWristbandCode: result.parentWristbandCode,
-        });
-        dispatchPrintJobs(jobs);
-      } else {
-        toast({
-          title: 'Checked in — no printer',
-          description: 'Check-in recorded. No station configured — bracelet not printed.',
-        });
-      }
+    const jobs = printJobsOf(outcome.answer);
+    if (jobs.length > 0 || (outcome.answer.notes.length > 0 && station)) {
+      dispatchPlatformPrinting(jobs, outcome.answer.notes);
+    } else if (!station) {
+      toast({
+        title: 'Checked in — no printer',
+        description: 'Check-in recorded. No station configured — bracelet not printed.',
+      });
     }
-    toast({
-      title: 'Checked in',
-      description: `${result.attendee.name} — band ${result.wristbandCode}${result.parentWristbandCode ? ` · parent ${result.parentWristbandCode}` : ''}`,
-    });
+    const name = ev.attendees?.find((a) => a.id === attendeeId)?.name ?? 'Child';
+    toast({ title: 'Checked in', description: `${name} — ${bandLineOf(outcome.answer)}` });
     bump();
   };
 
-  const handleEventReprint = (eventId: string, attendeeId: string) => {
-    if (writePending(eventId)) return;
-    const ev = getEventById(eventId);
+  const handleEventReprint = async (eventId: string, attendeeId: string) => {
+    const ev = findEvent(eventId, dayEvents);
     const attendee = ev?.attendees?.find((a) => a.id === attendeeId);
     const record = attendee?.checkinByDate?.[today];
     if (!ev || !attendee || !record) return;
-    if (!station) {
+    if (!station?.stationId) {
       toast({
         title: 'No printer configured',
         description: 'Set up this station before reprinting a band.',
       });
       return;
     }
-    const jobs = eventBraceletPrintJobs(station, {
-      eventTitle: ev.title,
-      eventDate: today,
-      startTime: ev.startTime,
-      endTime: ev.endTime,
-      kidName: attendee.name,
-      wristbandCode: record.wristbandCode,
-      dietaryDetail: attendee.dietaryFlag ? attendee.dietaryDetail : undefined,
-      allergyDetail: attendee.allergyFlag ? attendee.allergyDetail : undefined,
-      parentName: record.parentWristbandCode ? attendee.parentName : undefined,
-      parentWristbandCode: record.parentWristbandCode,
-    });
-    dispatchPrintJobs(jobs);
-    toast({
-      title: 'Reprinting band',
-      description: `${attendee.name} — band ${record.wristbandCode}${record.parentWristbandCode ? ` · parent ${record.parentWristbandCode}` : ''}`,
-    });
+    const outcome = await reprintOnPlatform({ event: ev, attendeeId, branchSlug: branch.id, stationId: station.stationId });
+    if (!outcome.ok) {
+      toast({ ...outcome.toast, variant: 'destructive' });
+      return;
+    }
+    dispatchPlatformPrinting(printJobsOf(outcome.answer), outcome.answer.notes);
+    toast({ title: 'Reprinting band', description: `${attendee.name} — ${bandLineOf(outcome.answer)}` });
+    bump();
   };
 
-  const handleEventCheckOut = (eventId: string, attendeeId: string) => {
-    if (!operator) return;
-    if (writePending(eventId)) return;
-    const att = checkOutEventAttendee(eventId, attendeeId, today, {
-      operatorName: operator.name,
-      operatorId: operator.id,
-    });
-    if (att) {
-      toast({ title: 'Checked out', description: `${att.name} has been checked out.` });
+  const handleEventCheckOut = async (eventId: string, attendeeId: string) => {
+    const ev = findEvent(eventId, dayEvents);
+    if (!operator || !ev) return;
+    const outcome = await checkOutOnPlatform({ event: ev, attendeeId, branchSlug: branch.id, stationId: station?.stationId });
+    if (outcome.ok) {
+      const name = ev.attendees?.find((a) => a.id === attendeeId)?.name ?? 'Child';
+      toast({ title: 'Checked out', description: `${name} has been checked out.` });
+    } else {
+      toast({ ...outcome.toast, variant: 'destructive' });
     }
     bump();
   };
