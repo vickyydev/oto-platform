@@ -297,7 +297,28 @@ export async function listEventAttendees(
   exec: Exec,
   q: { branchId: string; eventId: string },
 ): Promise<SeamAttendee[]> {
-  if (!UUID.test(q.branchId) || !UUID.test(q.eventId)) return [];
+  if (!UUID.test(q.eventId)) return [];
+  return listAttendeesOfEvents(exec, { branchId: q.branchId, eventIds: [q.eventId] });
+}
+
+/** `sql` for `(id, id, …)`, the ids already checked to be uuids. */
+const uuidList = (ids: readonly string[]) =>
+  sql.join(
+    ids.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
+
+/**
+ * The children registered on some of the branch's events, in one read — what
+ * a day's list needs (S2-20 E1), where one read per event would be a round of
+ * queries per camp. Ordered by event, then as `listEventAttendees` orders.
+ */
+export async function listAttendeesOfEvents(
+  exec: Exec,
+  q: { branchId: string; eventIds: readonly string[] },
+): Promise<SeamAttendee[]> {
+  const eventIds = q.eventIds.filter((id) => UUID.test(id));
+  if (!UUID.test(q.branchId) || eventIds.length === 0) return [];
   if (!(await otoAppEventsInstalled(exec))) return [];
   const res = await exec.execute<{
     id: string;
@@ -318,8 +339,8 @@ export async function listEventAttendees(
     select id, event_id, event_type, record_kind, child_id, child_name, parent_name, parent_phone,
            parent_attending, attendance_days, attends_all_days, notes, is_one_time, source
       from otoapp_v.event_attendees
-     where branch_id = ${q.branchId}::uuid and event_id = ${q.eventId}::uuid
-     order by child_name, id`);
+     where branch_id = ${q.branchId}::uuid and event_id in (${uuidList(eventIds)})
+     order by event_id, child_name, id`);
   return res.rows.map((r) => ({
     id: r.id,
     eventId: r.event_id,
@@ -343,7 +364,21 @@ export async function listEventAttendance(
   exec: Exec,
   q: { branchId: string; eventId: string; date?: string },
 ): Promise<SeamAttendance[]> {
-  if (!UUID.test(q.branchId) || !UUID.test(q.eventId)) return [];
+  if (!UUID.test(q.eventId)) return [];
+  return listAttendanceOfEvents(exec, { branchId: q.branchId, eventIds: [q.eventId], date: q.date });
+}
+
+/**
+ * The per-day check-in state of some of the branch's events, in one read, for
+ * one day or all of them. Ordered by event, then as `listEventAttendance`
+ * orders.
+ */
+export async function listAttendanceOfEvents(
+  exec: Exec,
+  q: { branchId: string; eventIds: readonly string[]; date?: string },
+): Promise<SeamAttendance[]> {
+  const eventIds = q.eventIds.filter((id) => UUID.test(id));
+  if (!UUID.test(q.branchId) || eventIds.length === 0) return [];
   if (q.date !== undefined && !DATE.test(q.date)) return [];
   if (!(await otoAppEventsInstalled(exec))) return [];
   const res = await exec.execute<{
@@ -362,9 +397,9 @@ export async function listEventAttendance(
     select id, checkin_ref, attendee_id, event_id, record_kind, attendance_date, status,
            checked_in_at, checked_in_by, checked_out_at, checked_out_by
       from otoapp_v.event_attendance
-     where branch_id = ${q.branchId}::uuid and event_id = ${q.eventId}::uuid
+     where branch_id = ${q.branchId}::uuid and event_id in (${uuidList(eventIds)})
        ${q.date === undefined ? sql`` : sql`and attendance_date = ${q.date}`}
-     order by attendance_date, attendee_id`);
+     order by event_id, attendance_date, attendee_id`);
   const instant = (v: Date | string | null) => (v === null ? null : new Date(v));
   return res.rows.map((r) => ({
     id: r.id,
@@ -407,10 +442,7 @@ export async function listSeamChildren(
            allergy_notes, food_restrictions, guardian_name, guardian_phone
       from otoapp_v.children
      where branch_id = ${q.branchId}::uuid
-       and id in (${sql.join(
-         ids.map((id) => sql`${id}::uuid`),
-         sql`, `,
-       )})
+       and id in (${uuidList(ids)})
      order by child_name, id`);
   return res.rows.map((r) => ({
     id: r.id,

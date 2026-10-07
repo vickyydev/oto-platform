@@ -191,6 +191,13 @@ export const PERMISSIONS = [
   'pos:checkin:update',
   'pos:checkin:release',
   'pos:checkin:guardian_manage',
+  // POS — events, camps and parties, read from the OTO App (S2-20)
+  /**
+   * The day's events and their rosters: the header Events tab, the Check-in
+   * board's Events tab and the till's pass cards. It carries the children's
+   * allergy notes and their parents' phones, as `pos:checkin:read` does.
+   */
+  'pos:event:read',
   // POS — wallets (S2-14a)
   'pos:wallet:read',
   'pos:wallet:grant',
@@ -307,6 +314,11 @@ const READ_COUNTER: Permission[] = [
   'pos:refund:read',
   'pos:print:read',
   'pos:checkin:read',
+  /**
+   * S2-20 — the Events tab and the Check-in board's Events tab, which the
+   * prototype lets any signed-in staff member open (events-kiosk PLAN §10).
+   */
+  'pos:event:read',
   'pos:wallet:read',
   'pos:stock:read',
   /**

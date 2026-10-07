@@ -304,6 +304,8 @@ describe('the receipt mark rides its own tick (SCRUM-322)', () => {
       '/box/v1/cache?schemaVersion=1&scopes=wallets',
       // S2-14b round 3: and its stock level snapshot, on the same terms.
       '/box/v1/cache?schemaVersion=1&scopes=stock',
+      // S2-20 E1: and today's events, written only when their version moved.
+      '/box/v1/cache?schemaVersion=1&scopes=events',
     ]);
 
     const staffAfter = await freshStore().readBundle(boxId, 'staff');

@@ -195,6 +195,8 @@ export const SYNC_CHANGE_SCOPES = [
   'wallets',
   /** S2-14b round 3 — stock level snapshots per size and place, and this box's filed offline sales. */
   'stock',
+  /** S2-20 E1 — the branch's events on its business day, with their children and the day's check-ins. */
+  'events',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

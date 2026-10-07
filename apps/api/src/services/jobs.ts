@@ -7,6 +7,7 @@ import { purgeExpiredIdempotencyKeys } from '../plugins/idempotency';
 import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB, runDailyRollupJob, runHourlyRollupJob } from './analytics-rollup';
 import { ROLLUP_BOOTH_JOB, runBoothRollupJob } from './analytics-booth';
 import { BOOTH_DUTY_JOB, runMorningBoothDutySync } from './booth-duty';
+import { EVENTS_CACHE_REFRESH_JOB, runEventsCacheRefresh } from './events';
 import {
   expireStaleCommands,
   markSilentBoxesOffline,
@@ -630,6 +631,26 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       description: "Rolls each branch's booth spins and vouchers into the booth fact: today, and every day a booth fact marked",
       intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
       run: async ({ db, now }) => ({ detail: await runBoothRollupJob(db, now) }),
+    },
+    /**
+     * `job:events.cache_refresh` — TODAY'S EVENTS FOR THE BOXES (S2-20 E1,
+     * events-kiosk PLAN §5, §10, hazard H19).
+     *
+     * On the rollup cadence: every live branch's `events` cache item — its
+     * events on its business day, a camp on every day of its range, each with
+     * its children and the day's check-ins — built from the OTO App's views
+     * exactly as a box is served it (`runEventsCacheRefresh` in
+     * `services/events.ts`). A box's pull leaves that scope out rather than
+     * failing over another app's fault, so this is where a broken seam is
+     * loud: the job fails and the watchdog raises it, and registering the job
+     * wrote the expectation that raises `ops.missing` when it stops.
+     */
+    {
+      name: EVENTS_CACHE_REFRESH_JOB,
+      description:
+        "Builds each branch's events for today — a camp on every day of its range — from the OTO App for its boxes' offline copy, and fails when the OTO App's events cannot be read",
+      intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
+      run: async ({ db, now }) => ({ detail: await runEventsCacheRefresh(db, now) }),
     },
   ];
 }

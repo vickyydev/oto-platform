@@ -45,6 +45,7 @@ import { fileRoutes } from './routes/files';
 import { checkinRoutes } from './routes/checkin';
 import { releaseRoutes } from './routes/release';
 import { walletRoutes } from './routes/wallets';
+import { eventRoutes } from './routes/events';
 import { publicRoutes } from './routes/public';
 import { opsRoutes } from './routes/ops';
 import { analyticsRoutes } from './routes/analytics';
@@ -454,6 +455,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<App> {
   await app.register(releaseRoutes, { prefix: '/checkin/pickups' });
   // S2-14a — reading a wallet by key or id (round 1; the Wallet view builds on it).
   await app.register(walletRoutes, { prefix: '/wallets' });
+  // S2-20 E1 — the OTO App's events, camps and parties, read through its views.
+  await app.register(eventRoutes, { prefix: '/events' });
   // S2-15a round 1 — the End of Day (one combined count per branch-day) and
   // the paid-outs and safe drops it expects less of. Paths declared in full.
   await app.register((await import('./routes/end-of-day')).endOfDayRoutes);

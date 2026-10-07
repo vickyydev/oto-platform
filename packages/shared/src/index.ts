@@ -53,3 +53,4 @@ export * from './analytics';
 export * from './analytics-reports';
 export * from './benefits';
 export * from './kiosk';
+export * from './events';

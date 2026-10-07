@@ -302,6 +302,15 @@ export const SYNC_CHANGE_SCOPES = [
    * out of the bundle's version, because every sale moves it.
    */
   'stock',
+  /**
+   * S2-20 E1 — the branch's events on its business day (a camp on every day
+   * of its range), each with its registered children and the day's check-in
+   * state, read from the OTO App: what a counter needs to check a child in
+   * and print the bands with the link down. A cache scope only, like
+   * `checkin`: served whole by `GET /box/v1/cache`, never written to
+   * `edge.sync_change`, and volatile — every check-in moves it.
+   */
+  'events',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

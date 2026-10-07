@@ -139,6 +139,8 @@ import { BOOTH_HANDLERS, boothCacheItems } from './sync-booth';
 import { CHECKIN_HANDLERS, checkinCacheItem } from './sync-checkin';
 import { WALLET_HANDLERS, walletCacheItem } from './sync-wallet';
 import { stockCacheItem, withStockOversold } from './sync-stock';
+/** S2-20 E1 — the branch's events on its business day, read from the OTO App. */
+import { eventsCacheItem } from './events';
 import { describeRegressedPaidFact, type RegressedPaidFact } from './sync-epoch-regressed';
 import { livePinsByAccount } from './booth-admin';
 import { atBranch } from '../lib/staff-scope';
@@ -4489,6 +4491,14 @@ export const CACHE_SCOPES = [
    * version (OD-8).
    */
   'stock',
+  /**
+   * S2-20 E1 — the branch's events on its business day (a camp on every day
+   * of its range), each with its children and the day's check-in state, read
+   * from the OTO App: what a counter checks a child in and prints bands from
+   * with the link down. One item, built by `eventsCacheItem` in `events.ts`.
+   * Volatile.
+   */
+  'events',
 ] as const;
 export type CacheScope = (typeof CACHE_SCOPES)[number];
 
@@ -4543,6 +4553,12 @@ export const CACHE_VOLATILE_SCOPES = [
    * (`?scopes=stock`, `pullStockScope` in `@oto/box-agent`).
    */
   'stock',
+  /**
+   * S2-20 E1 — every check-in at any counter, or in the OTO App, moves the
+   * day's events, so they may not move the etag; the agent reads them on its
+   * own tick (`?scopes=events`, `pullEventsScope` in `@oto/box-agent`).
+   */
+  'events',
 ] as const satisfies readonly CacheScope[];
 
 function isVolatileScope(name: string): boolean {
@@ -4937,6 +4953,24 @@ export async function cacheBundle(
     if (scope === 'stock') {
       // One item, applied whole: every counted size and place, this box's filed sales.
       put('stock', [await stockCacheItem(db, auth)]);
+      continue;
+    }
+
+    if (scope === 'events') {
+      /**
+       * One item, applied whole: half a day's events is a child the counter
+       * cannot find at the door.
+       *
+       * Read from ANOTHER APP's views, so a failure there must not cost the
+       * box the rest of its cache: a view an app release broke, or the
+       * post-import grants missing, leaves this scope out of the answer — the
+       * box keeps the copy it last pulled — and every other scope is served.
+       * The failure is not swallowed: `job:events.cache_refresh` builds the
+       * same item on its own clock, fails on the same fault, and the watchdog
+       * raises it.
+       */
+      const item = await eventsCacheItem(db, auth, new Date()).catch(() => null);
+      if (item) put('events', [item]);
       continue;
     }
 

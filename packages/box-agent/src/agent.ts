@@ -582,6 +582,8 @@ export interface BoxAgent {
   syncWallets(): Promise<boolean>;
   /** S2-14b round 3 — pull the `stock` scope (level snapshots + this box's filed sales) on its own. Also run on the cache tick. */
   syncStock(): Promise<boolean>;
+  /** S2-20 E1 — pull the `events` scope (today's events, their children, the day's check-ins) on its own. Also run on the cache tick. */
+  syncEvents(): Promise<boolean>;
   /**
    * Seals facts with this box's signing key, or null before registration.
    *
@@ -2626,6 +2628,11 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     await pullStockScope(boxId).catch((err: unknown) => {
       note('warn', 'the stock count copy could not be refreshed', { err: String(err) });
     });
+    // S2-20 E1: today's events move with every check-in, at a counter or in
+    // the OTO App, so they are read on their own every tick as the board is.
+    await pullEventsScope(boxId).catch((err: unknown) => {
+      note('warn', "today's events copy could not be refreshed", { err: String(err) });
+    });
     await photoUploader?.tick().catch((err: unknown) => {
       note('warn', 'the photo upload pass failed', { err: String(err) });
     });
@@ -2791,6 +2798,51 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
       appliedAt: new Date(now).toISOString(),
     });
     cacheScopesHeld.add('stock');
+    return true;
+  }
+
+  /**
+   * The `events` scope, read on its own (S2-20 E1, events-kiosk PLAN §5): the
+   * branch's events on its business day — a camp on every day of its range —
+   * with their children and the day's check-ins, which is what a counter
+   * checks a child in and prints the bands from with the link down. Volatile,
+   * as `checkin` is, and written only when its own version moved. A cloud
+   * that could not read the OTO App leaves the scope out of its answer, and
+   * the copy held is then kept as it was.
+   */
+  async function pullEventsScope(boxId: string): Promise<boolean> {
+    if (!store || !credential || state.offline) return false;
+    // Only a counter checks a child in at an event: a booth or a gate box is not asked.
+    if (!bundle?.stations.some((s) => s.kind === 'till')) return false;
+    const { status, body } = await request<{
+      schemaVersion: number;
+      cursorSeq: number;
+      scopes: Record<string, { items: unknown[]; nextCursor: string | null }>;
+      truncated: string[];
+    }>(`/box/v1/cache?schemaVersion=${CACHE_SCHEMA_VERSION}&scopes=events`, { method: 'GET' });
+    if (status === 401) {
+      await reregisterAfterRefusal('cache');
+      return false;
+    }
+    if (status !== 200 || !body) return false;
+    const plan = planCacheApply(Object.keys(body.scopes ?? {}), body.truncated ?? []);
+    const held = plan.apply.includes('events') ? body.scopes.events : undefined;
+    if (!held) return false;
+    const versionOf = (items: unknown): string | null => {
+      const first = Array.isArray(items) ? (items[0] as { version?: unknown } | undefined) : undefined;
+      return typeof first?.version === 'string' ? first.version : null;
+    };
+    const before = await store.readBundle(boxId, 'events').catch(() => null);
+    const incoming = versionOf(held.items);
+    if (before && incoming && versionOf((before.payload as { items?: unknown }).items) === incoming) return false;
+    await store.writeBundle(boxId, {
+      scope: 'events',
+      schemaVersion: body.schemaVersion,
+      cursorSeq: cacheCursorSeq,
+      payload: { items: held.items },
+      appliedAt: new Date(clock()).toISOString(),
+    });
+    cacheScopesHeld.add('events');
     return true;
   }
 
@@ -4466,6 +4518,7 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
     syncCheckin: async () => (state.boxId ? pullCheckinScope(state.boxId) : false),
     syncWallets: async () => (state.boxId ? pullWalletScope(state.boxId) : false),
     syncStock: async () => (state.boxId ? pullStockScope(state.boxId) : false),
+    syncEvents: async () => (state.boxId ? pullEventsScope(state.boxId) : false),
     sealer: () => {
       const key = syncPrivateKeyPem;
       const id = state.boxId;
