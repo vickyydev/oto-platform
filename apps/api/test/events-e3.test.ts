@@ -781,3 +781,25 @@ describe('pos:event:checkin', () => {
     expect(raised).toEqual([]);
   });
 });
+
+// =============================================================================
+// A replayed check-out answers what it answered
+// =============================================================================
+
+describe('the idempotency store keeps the route’s answer', () => {
+  it('a check-out sent twice under one Idempotency-Key answers the same check-in both times', async () => {
+    const send = () =>
+      ctx.app.inject({
+        method: 'POST',
+        url: checkoutUrl(ev.workshop, workshopKid),
+        payload: { branchId: central, stationId: till },
+        headers: { cookie: reception, 'idempotency-key': 'e3-checkout-replay' },
+      });
+    const first = await send();
+    expect(first.statusCode, first.body).toBe(200);
+    const again = await send();
+    expect(again.statusCode, again.body).toBe(200);
+    expect(EventCheckinAnswerSchema.safeParse(again.json()).success).toBe(true);
+    expect(again.json()).toEqual(first.json());
+  });
+});

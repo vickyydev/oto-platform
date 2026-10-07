@@ -599,7 +599,7 @@ export async function queueEventBandPrints(
 ): Promise<{ jobs: SalePrintJobView[]; notes: string[] }> {
   const now = input.now ?? new Date();
   if (input.bands.length === 0) return { jobs: [], notes: [] };
-  const run = async (sp: Tx) => {
+  const queueBands = async (sp: Tx) => {
     const [stationRow] = await sp
       .select()
       .from(station)
@@ -663,9 +663,9 @@ export async function queueEventBandPrints(
     }
     return { jobs, notes };
   };
-  if (input.reprint) return run(tx);
+  if (input.reprint) return queueBands(tx);
   try {
-    return await tx.transaction(run);
+    return await tx.transaction(queueBands);
   } catch {
     return { jobs: [], notes: ['Bands could not be queued for printing — reprint them from the roster'] };
   }
