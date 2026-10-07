@@ -835,6 +835,13 @@ const CUSTOMER_DENIED_KEYS = [
   'foodconsent',
   'dob',
   'dateofbirth',
+  /**
+   * S2-21 round 2 — a staff benefit QR read at the counter. It rides the scan
+   * to the staff screens because applying free items or credit is the
+   * cloud's and the till must present it; it is a credential that comps an
+   * order, so the screen facing the guest never receives it.
+   */
+  'benefitcode',
 ];
 
 /**

@@ -161,6 +161,7 @@ export function StaffSignIn({
         must_change_password: STAFF_COPY.mustChange,
         box_refused: STAFF_COPY.boxRefused,
         booth_not_on_box: STAFF_COPY.boothNotOnBox,
+        not_a_badge: STAFF_COPY.notABadge,
       };
       setMessage(
         result.reason ? (lines[result.reason] ?? STAFF_COPY.signInWrong) : STAFF_COPY.signInWrong,

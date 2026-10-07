@@ -793,6 +793,10 @@ export type BoothSignInMethod = (typeof BOOTH_SIGN_IN_METHODS)[number];
  *  - `booth_not_on_box` — the cloud answered that this booth station is not
  *    on this box any more: moved to another box, archived, or no longer a
  *    booth. This box's copy is out of date until its next pull.
+ *  - `not_a_badge` — what was scanned at the badge path is a staff benefit QR
+ *    (S2-21 round 2, plan H8): it applies a benefit at the F&B order station
+ *    and signs nobody in. Not counted as a wrong guess — it can never sign
+ *    anybody in, so there is nothing to slow down.
  */
 export const BOOTH_SIGN_IN_REFUSALS = [
   'pin_expired',
@@ -805,6 +809,7 @@ export const BOOTH_SIGN_IN_REFUSALS = [
   'unavailable',
   'box_refused',
   'booth_not_on_box',
+  'not_a_badge',
 ] as const;
 export type BoothSignInRefusal = (typeof BOOTH_SIGN_IN_REFUSALS)[number];
 

@@ -1505,6 +1505,30 @@ test('a badge is verified the same way, and finds nobody while no badge hash is 
   h.close();
 });
 
+test('a staff benefit QR at the badge path is refused as not a badge, signs nobody in and is never counted (S2-21 round 2, H8)', async () => {
+  const BENEFIT_QR =
+    'OTO-BEN:v1:018f1d2c-0000-7000-8000-00000000e001:018f1d2c-0000-7000-8000-00000000e002:1893456000:0123456789abcdef.' +
+    'A'.repeat(86);
+  // Even a badge hash that would match it signs nobody in: the header is
+  // refused before any hash is tried.
+  const h = openBooth({ staff: [staffRecord({ badgeHash: `argon2:${BENEFIT_QR}` })] });
+  await seed(h, [entry({ allowedStaff: [ACCOUNT_ID] })]);
+  for (let i = 0; i < 8; i += 1) {
+    assert.deepEqual(await h.booth.signIn({ badge: BENEFIT_QR }), { ok: false, reason: 'not_a_badge' });
+  }
+  // Lower case, as a scanner set to change case would type it, is the same QR.
+  assert.deepEqual(await h.booth.signIn({ badge: BENEFIT_QR.toLowerCase() }), {
+    ok: false,
+    reason: 'not_a_badge',
+  });
+  assert.equal(await h.booth.staffSession(), null);
+  // Nine refusals and no lock: nothing was counted against the booth.
+  const held = await h.store.readThrottle(BOX_ID, BOOTH_STAFF_THROTTLE_SCOPE, STATION_ID);
+  assert.equal(held?.failures ?? 0, 0);
+  assert.equal((await h.booth.signIn({ pin: '73910' })).ok, true);
+  h.close();
+});
+
 // --- Reporting --------------------------------------------------------------
 
 test('the heartbeat block is measured, not defaulted', async () => {

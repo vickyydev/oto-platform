@@ -669,7 +669,7 @@ describe('scanning reaches the box, and the code stops there (S2-06)', () => {
     // is digits — which is exactly the distinction `handlers` exists to make
     // visible: unhandled because nothing matched, not because nothing listened.
     expect(res.body.outcome).toBe('unhandled');
-    expect(res.body.handlers).toEqual(['voucher', 'booking', 'product-barcode']);
+    expect(res.body.handlers).toEqual(['voucher', 'booking', 'benefit', 'product-barcode']);
     expect(res.body.codeFingerprint).toMatch(/^[0-9a-f]{16}$/);
     expect(JSON.stringify(res.body)).not.toContain(code);
 

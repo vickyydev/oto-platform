@@ -197,6 +197,8 @@ export const SYNC_CHANGE_SCOPES = [
   'stock',
   /** S2-20 E1 — the branch's events on its business day, with their children and the day's check-ins. */
   'events',
+  /** S2-21 round 2 — benefit QR keys, the revocation list, and each person's comp and standing percent. */
+  'benefits',
 ] as const;
 export type SyncChangeScope = (typeof SYNC_CHANGE_SCOPES)[number];
 

@@ -52,6 +52,7 @@ import {
   isoDateInTz,
   mintBoothCode,
   businessDate as businessDateFor,
+  hasBenefitCredentialHeader,
   parseDayStart,
   type BoothConfigBundle,
   type BoothConfigPrize,
@@ -1493,6 +1494,22 @@ export function createBooth(options: BoothOptions): BoothModule {
     }
     const lockedForMs = lockRemaining(held, nowMs);
     if (lockedForMs > 0) return { ok: false, retryAfterMs: lockedForMs };
+
+    /**
+     * S2-21 round 2 (plan H8) — a staff benefit QR is not a staff badge.
+     *
+     * It is a credential for something else entirely — a benefit at the F&B
+     * order station — and it opens no session anywhere. Refused here by its
+     * header, before any hash is tried, with its own reason so the booth says
+     * what it is rather than "wrong", and NOT counted towards the lock: it can
+     * never sign anybody in, so there is nothing to slow down, and counting it
+     * would lock the booth against everybody else each time somebody held up
+     * the wrong card.
+     */
+    if (request.badge !== undefined && hasBenefitCredentialHeader(request.badge)) {
+      note('info', 'a staff benefit QR was presented at the booth badge path and refused', {});
+      return { ok: false, reason: 'not_a_badge' };
+    }
 
     if (request.account) {
       return signInWithAccount(station, request.account, { ...at, held });

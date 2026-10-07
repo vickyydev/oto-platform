@@ -38,6 +38,11 @@ export * from './terminal/index';
 export * from './scan';
 export * from './scan-input';
 export * from './staff-token';
+/**
+ * The staff benefit QR (S2-21 round 2): signed and checked by one codec, as
+ * the shift token is, and the box's check against its `benefits` scope.
+ */
+export * from './benefit-credential';
 export * from './cache-apply';
 /**
  * The Lucky Wheel (S2-07a).

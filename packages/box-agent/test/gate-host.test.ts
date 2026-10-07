@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import { createHash, createPublicKey, generateKeyPairSync } from 'node:crypto';
 import { test } from 'node:test';
 
 import { GateEventPayloadSchema, mintBandCode, ulidFromUuid } from '@oto/shared';
+
+import { encodeBenefitCredential } from '../src/benefit-credential';
 
 import { GATE_MESSAGES } from '../src/gate/decision';
 import { encodeBoardFrame } from '../src/gate/ge-x2';
@@ -332,6 +335,36 @@ test('kid, revoked, and non-band codes are refused; only the ones naming a band 
   );
   assert.ok(r.host.errorReports().some((e) => e.code === 'gate.denied.NOT_A_BAND'));
   assert.equal(r.pulses.length, 0);
+  await r.host.stop();
+});
+
+test('a staff benefit QR at the gate reader is not a band: "scan your wristband", nothing opens, nothing is journalled (S2-21 round 2, H8)', async () => {
+  const r = await rig();
+  // A real signed benefit QR, so the refusal is about what it IS, not about a
+  // signature that happens to fail.
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519');
+  const pub = publicKey.export({ type: 'spki', format: 'pem' }).toString();
+  const kid = createHash('sha256')
+    .update(createPublicKey(pub).export({ type: 'spki', format: 'der' }))
+    .digest('hex')
+    .slice(0, 16);
+  const qr = encodeBenefitCredential(
+    { employeeId: uuidv7(), credentialId: uuidv7(), exp: Math.floor(Date.now() / 1000) + 3600 },
+    { kid, privateKeyPem: privateKey.export({ type: 'pkcs8', format: 'pem' }).toString() },
+  );
+  for (const reader of ['0', '1'] as const) {
+    assert.deepEqual(await scan(r, qr, reader), { code: '0', message: GATE_MESSAGES.NOT_A_BAND });
+  }
+  // The card field raw rather than base64, as a reader might send it.
+  const raw = await r.host.reader().handle({
+    method: 'POST',
+    path: READER_CHECK_CARD_PATH,
+    body: { card: qr, type: '1', serial: SERIAL, reader: '0' },
+  });
+  assert.deepEqual(raw.body, { code: '0', message: GATE_MESSAGES.NOT_A_BAND });
+  assert.equal(r.pulses.length, 0);
+  assert.equal(r.journal.length, 0);
+  assert.equal(await r.host.occupancy(), 0);
   await r.host.stop();
 });
 

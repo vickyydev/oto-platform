@@ -15,6 +15,7 @@ import {
   verifyBoothCode,
 } from '@oto/shared';
 
+import { benefitCredentialHandler, type BenefitBoxContext } from './benefit-credential';
 import type { StationScanMessage } from './contract';
 import type { BoxStore, StationEventSource } from './store';
 import { silentLog, type AgentLog } from './transport';
@@ -173,6 +174,14 @@ export interface ScanRouterOptions {
    * cannot check.
    */
   bandKey?: () => string | Uint8Array | null;
+  /**
+   * S2-21 round 2 — what this box holds to check a staff benefit QR: its
+   * `benefits` scope and its trading day, asked per scan. Absent, the router
+   * still CLAIMS a benefit QR — it is never `unknown`, and never falls to a
+   * broad matcher — and answers `BENEFIT_REVOCATION_UNKNOWN`, because a box
+   * that cannot check revocation admits nothing.
+   */
+  benefits?: () => Promise<BenefitBoxContext | null> | BenefitBoxContext | null;
 }
 
 /** SHA-256 of the code, first `SCAN_FINGERPRINT_LENGTH` hex characters. */
@@ -721,12 +730,22 @@ export class ScanRouter {
    * `BOOKING_KEY_MISSING` rather than letting the code fall to a broad matcher.
    */
   private readonly booking: ScanHandler;
+  /**
+   * S2-21 round 2 — the staff benefit QR (`OTO-BEN:`), claimed by the router
+   * itself after the booking QR and for the same reason: its header is the
+   * platform's own (`@oto/shared`'s `benefit-credential.ts`). Always present,
+   * so a benefit QR is CLASSIFIED as one on any router; one holding no
+   * `benefits` scope answers `BENEFIT_REVOCATION_UNKNOWN` rather than letting
+   * the code fall to a broad matcher.
+   */
+  private readonly benefit: ScanHandler;
 
   constructor(options: ScanRouterOptions) {
     this.options = options;
     this.log = options.log ?? silentLog;
     this.band = options.bandKey ? bandCodeHandler(options.bandKey) : null;
     this.booking = bookingQrHandler(options.bandKey ?? (() => null));
+    this.benefit = benefitCredentialHandler(options.benefits ?? (() => null));
   }
 
   /**
@@ -756,6 +775,7 @@ export class ScanRouter {
       this.voucher.name,
       ...(this.band ? [this.band.name] : []),
       this.booking.name,
+      this.benefit.name,
       ...this.handlers.map((h) => h.name),
     ];
   }
@@ -778,6 +798,7 @@ export class ScanRouter {
     if (this.voucher.matches(code)) return { kind: this.voucher.kind, handler: this.voucher };
     if (this.band?.matches(code)) return { kind: this.band.kind, handler: this.band };
     if (this.booking.matches(code)) return { kind: this.booking.kind, handler: this.booking };
+    if (this.benefit.matches(code)) return { kind: this.benefit.kind, handler: this.benefit };
     for (const handler of this.handlers) {
       let claimed = false;
       try {

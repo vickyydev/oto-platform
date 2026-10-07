@@ -54,3 +54,4 @@ export * from './analytics-reports';
 export * from './benefits';
 export * from './kiosk';
 export * from './events';
+export * from './benefit-credential';

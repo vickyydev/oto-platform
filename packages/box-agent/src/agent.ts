@@ -102,8 +102,11 @@ import {
   BOOTH_STAFF_VERIFY_ERRORS,
   BOOTH_STAFF_VERIFY_PATH,
   PrintTemplateSchema,
+  businessDate,
   childPhotosEnabled,
+  parseDayStart,
 } from '@oto/shared';
+import { readBenefitScope, type BenefitBoxContext } from './benefit-credential';
 import type { PrintKind, PrintTemplate, PrinterFault, SimulatorAction } from '@oto/shared';
 
 /**
@@ -1732,6 +1735,28 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
   }
 
   /**
+   * What this box holds to check a staff benefit QR (S2-21 round 2): its
+   * `benefits` scope as last pulled, and the branch's trading day by this
+   * box's clock — the day the person's comp and standing percent are read
+   * for. A box with no scope, or no branch yet, answers with what it has; the
+   * check refuses rather than guesses.
+   */
+  async function benefitContextNow(boxId: string): Promise<BenefitBoxContext> {
+    const now = new Date(clock());
+    const held = store ? await store.readBundle(boxId, 'benefits').catch(() => null) : null;
+    const branch = bundle?.branch;
+    let today: string | null = null;
+    if (branch) {
+      try {
+        today = businessDate(now, branch.timezone, parseDayStart(branch.businessDayStart));
+      } catch {
+        today = null;
+      }
+    }
+    return { scope: held ? readBenefitScope(held.payload) : null, today, now };
+  }
+
+  /**
    * One of a sale's printouts, as the platform built it for this job id
    * (S2-11). Asked once, when the command runs; from then on the job is the
    * queue's, which holds it — on disk where the queue is durable — until paper
@@ -2046,6 +2071,13 @@ export function createBoxAgent(options: BoxAgentOptions): BoxAgent {
        * config bundle brought. Read per scan (`bandKeyNow`).
        */
       bandKey: bandKeyNow,
+      /**
+       * S2-21 round 2 — a staff benefit QR is checked here too, with no
+       * network: against the `benefits` scope this box last pulled, on the
+       * branch's trading day by this box's clock. Read per scan, so a
+       * revocation that arrives with a pull is honoured from the next scan.
+       */
+      benefits: () => benefitContextNow(boxId),
     });
 
     /**

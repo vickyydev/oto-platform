@@ -236,6 +236,11 @@ export const STAFF_COPY = {
   boxRefused: 'This box is no longer allowed here — ask a manager to check it in Console → Devices',
   /** The cloud answered that this booth has moved to another box, or was archived. */
   boothNotOnBox: 'This booth is not on this box any more — ask a manager to check Console → Devices',
+  /**
+   * S2-21 round 2 (plan H8): a staff benefit QR held up at the booth. It is a
+   * benefit at the F&B order station, never a way to sign in.
+   */
+  notABadge: 'That is a staff benefit QR, not a staff badge — it does not sign anyone in',
   signedInAs: (who: string) => `Signed in: ${who}`,
   until: (time: string) => `Until ${time}`,
   reprint: 'Reprint last voucher',
