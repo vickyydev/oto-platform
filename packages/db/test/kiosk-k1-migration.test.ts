@@ -6,9 +6,9 @@ import pg from 'pg';
 import { createTestDatabase, stopTestServer } from '../src/testing';
 
 /**
- * S2-20 K1 (SCRUM-217) — migration 0068 (provisional number; renumbered in
- * landing order), against a live database built from the committed
- * migrations (events-kiosk plan §8 and the K1 row of §9):
+ * S2-20 K1 (SCRUM-217) — the kiosk redemption migration (found by its tag,
+ * whatever number it landed under), against a live database built from the
+ * committed migrations (events-kiosk plan §8 and the K1 row of §9):
  *
  *   - `pos.kiosk_session` holds one row per kiosk session, one per press
  *     (`kiosk_session_action_unique`), and its CHECKs say in the database what
@@ -63,18 +63,18 @@ const columns = async (schema: string, table: string) =>
     )
   ).rows as Array<{ column_name: string; is_nullable: 'YES' | 'NO' }>;
 
-describe('migration 0068 — the self-service kiosk', () => {
-  it('follows 0065 in the journal, later than it, on 0065’s snapshot', () => {
+describe('the kiosk redemption migration — the self-service kiosk', () => {
+  it('follows its predecessor in the journal, later than it, on its snapshot', () => {
     const journal = JSON.parse(readFileSync(join(MIGRATIONS, 'meta', '_journal.json'), 'utf8')) as {
       entries: Array<{ idx: number; tag: string; when: number }>;
     };
-    const mine = journal.entries.find((e) => e.tag === '0068_kiosk_redemption')!;
+    const mine = journal.entries.find((e) => e.tag.endsWith('_kiosk_redemption'));
     expect(mine).toBeDefined();
-    const before = journal.entries[journal.entries.indexOf(mine) - 1]!;
-    expect(mine.when).toBeGreaterThan(before.when);
-    const snapshot = JSON.parse(readFileSync(join(MIGRATIONS, 'meta', '0068_snapshot.json'), 'utf8')) as {
-      prevId: string;
-    };
+    const before = journal.entries[journal.entries.indexOf(mine!) - 1]!;
+    expect(mine!.when).toBeGreaterThan(before.when);
+    const snapshot = JSON.parse(
+      readFileSync(join(MIGRATIONS, 'meta', `${mine!.tag.slice(0, 4)}_snapshot.json`), 'utf8'),
+    ) as { prevId: string };
     const previous = JSON.parse(
       readFileSync(join(MIGRATIONS, 'meta', `${before.tag.slice(0, 4)}_snapshot.json`), 'utf8'),
     ) as { id: string };
