@@ -2,7 +2,7 @@ import { ModelAdmin } from "../admin";
 import { settings } from "../../../shared/schema";
 import { storage } from "../../storage";
 import {
-  SETTINGS_SHARED_REFUSAL,
+  SETTINGS_NO_PARK_GROUP_REFUSAL,
   SettingsWriteRefusedError,
   settingsWritableBy,
 } from "../../lib/parkGroupSettings";
@@ -27,33 +27,31 @@ class SettingAdmin extends ModelAdmin {
   defaultOrderBy = "key";
 
   /**
-   * Held to the rule `upsertSetting` keeps (S2-17b round 4a, Q29): while the
-   * old unique on `settings.key` stands, only the default park group writes a
-   * settings row, because another park group's row would hold its key against
-   * the default park group until 4b. A row naming no park group is the
-   * default's. Anything else is refused in the words the other doors use.
+   * Round 4a held this model to the default park group while the old unique on
+   * `settings.key` stood, because another park group's row would have held its
+   * key against the default park group (Q29, the 4a review's finding 2).
+   * Migration 0007 (round 4b) dropped that unique, so the hold is lifted and
+   * the model is as every other Data Admin model is: it reaches every park
+   * group's rows, and its walkthrough is round 7's (Q31). What stays: a row
+   * belongs to a park group (`tenant_id` NOT NULL), so a create naming none is
+   * the default park group's, as in 4a, and is refused in words where the
+   * database has no default park group to give it.
    */
-  private async heldToDefault(parkGroup: string | null): Promise<string | null> {
-    const defaultParkGroup = await storage.getDefaultParkGroupId();
-    const owner = parkGroup ?? defaultParkGroup;
-    if (!settingsWritableBy(owner, defaultParkGroup)) {
-      throw new SettingsWriteRefusedError(SETTINGS_SHARED_REFUSAL);
-    }
-    return owner;
-  }
-
   async create(data: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const tenantId = await this.heldToDefault(namedParkGroup(data.tenantId));
+    const tenantId = namedParkGroup(data.tenantId) ?? (await storage.getDefaultParkGroupId());
+    if (!settingsWritableBy(tenantId)) {
+      throw new SettingsWriteRefusedError(SETTINGS_NO_PARK_GROUP_REFUSAL, 403);
+    }
     return super.create({ ...data, tenantId });
   }
 
-  /** Neither another park group's row, nor the default's row moved to another park group. */
+  /** A row cannot be moved to no park group: `tenant_id` is NOT NULL. */
   async update(id: string, data: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const existing = await this.getById(id);
-    if (!existing) return super.update(id, data);
-    await this.heldToDefault(namedParkGroup(existing.tenantId));
     if (!("tenantId" in data)) return super.update(id, data);
-    const tenantId = await this.heldToDefault(namedParkGroup(data.tenantId));
+    const tenantId = namedParkGroup(data.tenantId);
+    if (!settingsWritableBy(tenantId)) {
+      throw new SettingsWriteRefusedError(SETTINGS_NO_PARK_GROUP_REFUSAL, 403);
+    }
     return super.update(id, { ...data, tenantId });
   }
 }

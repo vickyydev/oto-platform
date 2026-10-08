@@ -343,11 +343,14 @@ import { pool } from "./db";
 import { getNextBirthdayBranchColor } from "@shared/event-colors";
 import {
         SETTINGS_KEY_HELD_REFUSAL,
-        SETTINGS_SHARED_REFUSAL,
+        SETTINGS_NO_PARK_GROUP_REFUSAL,
         SettingsWriteRefusedError,
         settingsReadRank,
         settingsWritableBy,
 } from "./lib/parkGroupSettings";
+
+/** A setting as a caller saves it: the park group is passed beside it, never in it. */
+export type SettingInput = { key: string; value: string };
 
 const PostgresSessionStore = connectPg(session);
 
@@ -573,12 +576,12 @@ export interface IStorage {
                 change: Partial<EmployeeChange>,
         ): Promise<EmployeeChange>;
 
-        // Per park group (S2-17b round 4a): see server/lib/parkGroupSettings.ts.
+        // Per park group (S2-17b rounds 4a and 4b): see server/lib/parkGroupSettings.ts.
         getDefaultParkGroupId(): Promise<string | null>;
         getSettings(tenantId: string | null): Promise<Setting[]>;
         getSetting(key: string, tenantId: string | null): Promise<Setting | undefined>;
-        canSaveSettings(tenantId: string | null): Promise<boolean>;
-        upsertSetting(setting: InsertSetting, tenantId: string | null): Promise<Setting>;
+        upsertSetting(setting: SettingInput, tenantId: string | null): Promise<Setting>;
+        upsertSettings(settings: SettingInput[], tenantId: string | null): Promise<Setting[]>;
 
         getActivityLogs(options?: {
                 branchId?: string;
@@ -3509,12 +3512,13 @@ export class DatabaseStorage implements IStorage {
         }
 
         // ============================================
-        // SETTINGS, PER PARK GROUP (S2-17b round 4a)
+        // SETTINGS, PER PARK GROUP (S2-17b rounds 4a and 4b)
         // ============================================
         // server/lib/parkGroupSettings.ts says why and what. `tenantId` is the
-        // park group the caller acts for; null means the app knows none, which
-        // reads (and, in a database with no default park group, writes) the
-        // default park group's set — what every caller read before 0006.
+        // park group the caller acts for. Reading, null means the app knows
+        // none, which reads the default park group's set — what every caller
+        // read before 0006. Saving, null is refused: a setting belongs to a
+        // park group (`tenant_id` NOT NULL from 0007).
 
         /**
          * The default park group, on the app's own rule for its default tenant
@@ -3576,60 +3580,99 @@ export class DatabaseStorage implements IStorage {
                 return setting;
         }
 
-        /** May this park group save settings in this release (the default one only)? */
-        async canSaveSettings(tenantId: string | null): Promise<boolean> {
-                const defaultParkGroup = await this.getDefaultParkGroupId();
-                return settingsWritableBy(tenantId ?? defaultParkGroup, defaultParkGroup);
+        /**
+         * Save one setting for a park group: its own row for the key, made or
+         * updated. Every park group saves its own (round 4b); the default park
+         * group's row for the same key is never touched by another park group's
+         * save. A caller with no park group gets a SettingsWriteRefusedError
+         * (403), which routes answer in words.
+         */
+        async upsertSetting(setting: SettingInput, tenantId: string | null): Promise<Setting> {
+                const [saved] = await this.upsertSettings([setting], tenantId);
+                return saved;
         }
 
         /**
-         * Save one setting for a park group. In this release only the default
-         * park group saves; anyone else gets a SettingsWriteRefusedError, which
-         * routes answer as a 409 in words. Works whichever uniques the table
-         * carries — the old one on `key` beside the new (tenant_id, key), or the
-         * new one alone (round 4b): the insert names no conflict target, so a
-         * row the old unique would refuse is found and answered, never a 500.
+         * Save several settings for a park group as ONE transaction (the round
+         * 4a review's note): either every key is saved or, when any one is
+         * refused or fails, none is — a save never leaves the earlier keys of a
+         * form written and the later ones not.
+         *
+         * Works whichever uniques the table carries: the (tenant_id, key) one
+         * alone (0007), or the old one on `key` beside it (a database 0007 has
+         * not reached). The insert names no conflict target, so a row either
+         * unique would refuse is found and answered, never a 500: the park
+         * group's own row is updated (someone saved the same key a moment
+         * earlier), and another park group's row under the old unique is the
+         * worded refusal `settings_key_held`.
          */
-        async upsertSetting(setting: InsertSetting, tenantId: string | null): Promise<Setting> {
-                const defaultParkGroup = await this.getDefaultParkGroupId();
-                const owner = tenantId ?? defaultParkGroup;
-                if (!settingsWritableBy(owner, defaultParkGroup)) {
-                        throw new SettingsWriteRefusedError(SETTINGS_SHARED_REFUSAL);
+        async upsertSettings(rows: SettingInput[], tenantId: string | null): Promise<Setting[]> {
+                if (!settingsWritableBy(tenantId)) {
+                        throw new SettingsWriteRefusedError(SETTINGS_NO_PARK_GROUP_REFUSAL, 403);
                 }
-                const own = async () => {
-                        const [row] = await db
-                                .select()
-                                .from(settings)
-                                .where(and(
-                                        eq(settings.key, setting.key),
-                                        owner ? or(eq(settings.tenantId, owner), isNull(settings.tenantId)) : isNull(settings.tenantId),
-                                ))
-                                .orderBy(sql`${settings.tenantId} nulls last`)
-                                .limit(1);
-                        return row;
-                };
-                const update = async (id: string) => {
-                        const [updated] = await db
-                                .update(settings)
-                                // A row the previous release left without a park group is the default's.
-                                .set({ value: setting.value, tenantId: owner, updatedAt: new Date() })
-                                .where(eq(settings.id, id))
-                                .returning();
-                        return updated;
-                };
-                const existing = await own();
-                if (existing) return update(existing.id);
-                const [inserted] = await db
-                        .insert(settings)
-                        .values({ key: setting.key, value: setting.value, tenantId: owner })
-                        .onConflictDoNothing()
-                        .returning();
-                if (inserted) return inserted;
-                // Someone saved the same key at the same moment, or another park
-                // group's row holds it under the old unique.
-                const raced = await own();
-                if (raced) return update(raced.id);
-                throw new SettingsWriteRefusedError(SETTINGS_KEY_HELD_REFUSAL);
+                const owner: string = tenantId;
+                // A row with no park group (only a release before 4a wrote one, and
+                // 0007 placed them all) is the default park group's to claim.
+                const claimsUnplaced = owner === (await this.getDefaultParkGroupId());
+                // Saved in key order, so two saves of overlapping keys at once take
+                // their row locks in the same order and never deadlock; answered in
+                // the order asked.
+                const order = rows.map((setting, i) => ({ setting, i }))
+                        .sort((a, b) => String(a.setting.key).localeCompare(String(b.setting.key)));
+                return db.transaction(async (tx) => {
+                        const saved: Setting[] = new Array(rows.length);
+                        for (const { setting, i } of order) {
+                                const keep = (row: Setting) => {
+                                        saved[i] = row;
+                                };
+                                const own = async () => {
+                                        const [row] = await tx
+                                                .select()
+                                                .from(settings)
+                                                .where(and(
+                                                        eq(settings.key, setting.key),
+                                                        claimsUnplaced
+                                                                ? or(eq(settings.tenantId, owner), isNull(settings.tenantId))
+                                                                : eq(settings.tenantId, owner),
+                                                ))
+                                                .orderBy(sql`${settings.tenantId} nulls last`)
+                                                .limit(1);
+                                        return row;
+                                };
+                                const update = async (id: string) => {
+                                        const [updated] = await tx
+                                                .update(settings)
+                                                .set({ value: setting.value, tenantId: owner, updatedAt: new Date() })
+                                                .where(eq(settings.id, id))
+                                                .returning();
+                                        return updated;
+                                };
+                                const existing = await own();
+                                if (existing) {
+                                        keep(await update(existing.id));
+                                        continue;
+                                }
+                                const [inserted] = await tx
+                                        .insert(settings)
+                                        .values({ key: setting.key, value: setting.value, tenantId: owner })
+                                        .onConflictDoNothing()
+                                        .returning();
+                                if (inserted) {
+                                        keep(inserted);
+                                        continue;
+                                }
+                                // Someone saved the same key for this park group at the same
+                                // moment, or another park group's row holds it under the old
+                                // unique (a database 0007 has not reached).
+                                const raced = await own();
+                                if (raced) {
+                                        keep(await update(raced.id));
+                                        continue;
+                                }
+                                throw new SettingsWriteRefusedError(SETTINGS_KEY_HELD_REFUSAL);
+                        }
+                        return saved;
+                });
         }
 
         async getActivityLogs(options?: {

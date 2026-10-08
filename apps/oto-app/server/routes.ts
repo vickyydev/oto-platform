@@ -115,7 +115,6 @@ import { devOnly, followsJobsSwitch, parkGroupOf, parkGroupOnly } from "./lib/ro
 import { hrDirectoryParkGroupOf, requireHrDirectoryCaller } from "./directory/hrReadAuth";
 import {
   SETTINGS_NO_PARK_GROUP_REFUSAL,
-  SETTINGS_SHARED_REFUSAL,
   SettingsWriteRefusedError,
 } from "./lib/parkGroupSettings";
 
@@ -6337,11 +6336,12 @@ export async function registerRoutes(
     }
   });
 
-  // Settings per park group (S2-17b round 4a, server/lib/parkGroupSettings.ts):
-  // each park group reads its own value for a key, or the default park
-  // group's where it has none — what every park group read before. Saving is
-  // the default park group's alone until round 4b; anyone else is answered
-  // in words, and nothing is written.
+  // Settings per park group (S2-17b rounds 4a and 4b,
+  // server/lib/parkGroupSettings.ts): each park group reads its own value for
+  // a key, or the default park group's where it has none — what every park
+  // group read before. Each park group saves its own rows (4b); a caller the
+  // app cannot place in a park group is answered in words, and nothing is
+  // written.
   app.get("/api/settings", requireAuth, async (req, res, next) => {
     try {
       const settings = await storage.getSettings(req.userWithAccess?.tenantId ?? null);
@@ -6354,20 +6354,13 @@ export async function registerRoutes(
   /**
    * The park group a settings save is for, or a refusal already answered.
    * The app's strict placement (`userManagementTenant`): a caller it cannot
-   * place by their own rows has no settings of their own to change. In a
-   * database with no park groups at all there is only the old single set.
+   * place by their own rows has no settings of their own to change. Any park
+   * group it places saves its own rows (round 4b).
    */
-  const settingsWriter = async (req: Request, res: Response): Promise<{ tenantId: string | null } | null> => {
-    const defaultParkGroup = await storage.getDefaultParkGroupId();
-    const tenantId = defaultParkGroup === null && !req.userWithAccess?.tenantId
-      ? null
-      : await userManagementTenant(req);
-    if (tenantId === undefined) {
+  const settingsWriter = async (req: Request, res: Response): Promise<{ tenantId: string } | null> => {
+    const tenantId = await userManagementTenant(req);
+    if (!tenantId) {
       res.status(403).json(SETTINGS_NO_PARK_GROUP_REFUSAL);
-      return null;
-    }
-    if (!await storage.canSaveSettings(tenantId)) {
-      res.status(409).json(SETTINGS_SHARED_REFUSAL);
       return null;
     }
     return { tenantId };
@@ -6389,14 +6382,11 @@ export async function registerRoutes(
       const writer = await settingsWriter(req, res);
       if (!writer) return;
 
-      const results = [];
-      for (const setting of settingsArray) {
-        const result = await storage.upsertSetting(
-          { key: setting?.key, value: setting?.value },
-          writer.tenantId,
-        );
-        results.push(result);
-      }
+      // One transaction for the whole form: every key saved, or none.
+      const results = await storage.upsertSettings(
+        settingsArray.map((setting) => ({ key: setting?.key, value: setting?.value })),
+        writer.tenantId,
+      );
 
       res.json(results);
     } catch (error) {
@@ -6507,8 +6497,10 @@ export async function registerRoutes(
         updatedBy: null,
       });
 
-      // The seed's two settings are the default park group's (S2-17b round 4a).
-      const seedParkGroup = await storage.getDefaultParkGroupId();
+      // The seed's two settings are the default park group's (S2-17b round 4a),
+      // made by the app's own rule where the database has none yet: a setting
+      // belongs to a park group (round 4b, NOT NULL).
+      const seedParkGroup = await getDefaultTenantId();
       await storage.upsertSetting({
         key: "email_subject",
         value: "Your Employment Contract - {{employee.full_name}}",
@@ -24484,8 +24476,7 @@ ${context}`;
       if (!user.hasAllBranchesAccess && user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
-      // Saved for the caller's park group; until round 4b only the default
-      // park group saves settings, and anyone else is answered in words.
+      // Saved for the caller's park group, its own row (round 4b).
       const writer = await settingsWriter(req, res);
       if (!writer) return;
       const { departmentId } = req.body;
@@ -24497,7 +24488,7 @@ ${context}`;
       const [dept] = await db.select({ id: departments.id, name: departments.name })
         .from(departments).where(and(
           eq(departments.id, departmentId),
-          writer.tenantId ? eq(departments.tenantId, writer.tenantId) : undefined,
+          eq(departments.tenantId, writer.tenantId),
         )).limit(1);
       if (!dept) {
         return res.status(404).json({ message: "Department not found" });
