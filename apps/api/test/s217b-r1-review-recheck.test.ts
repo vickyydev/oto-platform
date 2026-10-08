@@ -57,8 +57,9 @@ import {
  *        case variants, `__proto__`, a duplicate key, a form body, beside a
  *        real field): the join and the sync record never change.
  *
- * New findings are pinned with `it.fails` (the repo's review convention), none
- * blocking the round:
+ * New findings were pinned with `it.fails` (the repo's review convention), none
+ * blocking the round. All three were carried by S2-17b round 2 and are FIXED
+ * there; each pin is flipped where it stands:
  *
  *  6. (low, pre-existing; the builder's question 2) Link claims an OTO App
  *     user of a park group this operator is not anchored in, by typed id (A).
@@ -432,8 +433,12 @@ describe('A. a cross-group collision, upper and mixed case: never mapped, never 
    * on the list and its rows are the anchor's peers, which is what the census
    * says only a person may settle. A collision should still fence its park
    * group from the name match while counting as nobody's mapping.
+   *
+   * FIXED IN S2-17b ROUND 2: `foreignTenantsOf` fences a park group whose only
+   * tie is a colliding row, while the collision still anchors and maps
+   * nothing. Pin flipped.
    */
-  it.fails(
+  it(
     'a park group whose only claim is a collision is not open to the first-time name match',
     async () => {
       const lagoonB = await appBranch({ name: 'ZZ recheck Lagoon', tenantId: tenantB });
