@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
-import { Employee, Branch, insertEmployeeSchema, EmployeeChange, ContractInstance, employeeStatuses, EmployeeAsset, Department, Role } from "@shared/schema";
+import { Employee, Branch, insertEmployeeSchema, EmployeeChange, ContractInstance, employeeStatuses, EmployeeAsset, Department, Role, offboardingReasonLabel } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -4523,7 +4523,7 @@ export default function EmployeeEditorPage() {
               {employee.endReason && (
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Reason</p>
-                  <p className="font-medium" data-testid="text-end-reason">{employee.endReason}</p>
+                  <p className="font-medium" data-testid="text-end-reason">{offboardingReasonLabel(employee.endReason)}</p>
                 </div>
               )}
               {employee.lastWorkingDay && (

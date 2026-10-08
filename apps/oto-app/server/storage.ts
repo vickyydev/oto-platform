@@ -350,6 +350,14 @@ import {
         settingsWritableBy,
 } from "./lib/parkGroupSettings";
 
+/**
+ * The database, or a transaction on it: the storage methods an offboarding
+ * runs take one (S2-17b round 6, H16), so the whole offboarding is one
+ * transaction and a failure part way leaves nothing behind. Left out, they
+ * write as they always did.
+ */
+export type DbExecutor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 /** A setting as a caller saves it: the park group is passed beside it, never in it. */
 export type SettingInput = { key: string; value: string };
 
@@ -2147,8 +2155,8 @@ export class DatabaseStorage implements IStorage {
                 return user;
         }
 
-        async updateUser(id: string, userData: Partial<InsertUser>): Promise<User> {
-                const [user] = await db
+        async updateUser(id: string, userData: Partial<InsertUser>, executor: DbExecutor = db): Promise<User> {
+                const [user] = await executor
                         .update(users)
                         .set({ ...userData, updatedAt: new Date() })
                         .where(eq(users.id, id))
@@ -2576,8 +2584,8 @@ export class DatabaseStorage implements IStorage {
                         .where(eq(users.id, id));
         }
 
-        async logActivity(log: ActivityLogInput): Promise<ActivityLog> {
-                return this.createActivityLog(log);
+        async logActivity(log: ActivityLogInput, executor: DbExecutor = db): Promise<ActivityLog> {
+                return this.createActivityLog(log, executor);
         }
 
         // People management (identity anchor)
@@ -3295,8 +3303,9 @@ export class DatabaseStorage implements IStorage {
         async updateEmployee(
                 id: string,
                 employee: Partial<InsertEmployee>,
+                executor: DbExecutor = db,
         ): Promise<Employee> {
-                const [updatedEmployee] = await db
+                const [updatedEmployee] = await executor
                         .update(employees)
                         .set(employee)
                         .where(eq(employees.id, id))
@@ -3545,8 +3554,9 @@ export class DatabaseStorage implements IStorage {
 
         async createEmployeeChange(
                 change: InsertEmployeeChange,
+                executor: DbExecutor = db,
         ): Promise<EmployeeChange> {
-                const [newChange] = await db
+                const [newChange] = await executor
                         .insert(employeeChanges)
                         .values(change)
                         .returning();
@@ -3908,7 +3918,7 @@ export class DatabaseStorage implements IStorage {
          * group). So a row with no branch still shows in its own park group's
          * Activity Logbook.
          */
-        async createActivityLog(log: ActivityLogInput): Promise<ActivityLog> {
+        async createActivityLog(log: ActivityLogInput, executor: DbExecutor = db): Promise<ActivityLog> {
                 try {
                         const tenantId = sql`coalesce(
                                 (select tenant_id from branches where id = ${log.branchId ?? null}),
@@ -3931,7 +3941,7 @@ export class DatabaseStorage implements IStorage {
                                 (select id from tenants where slug = ${DEFAULT_TENANT_SLUG}),
                                 (select min(id::text)::uuid from tenants having count(*) = 1)
                         )`;
-                        const [newLog] = await db
+                        const [newLog] = await executor
                                 .insert(activityLog)
                                 .values({ ...log, tenantId })
                                 .returning();
@@ -4026,8 +4036,9 @@ export class DatabaseStorage implements IStorage {
 
         async createAttentionItem(
                 item: InsertAttentionItem,
+                executor: DbExecutor = db,
         ): Promise<AttentionItem> {
-                const [newItem] = await db
+                const [newItem] = await executor
                         .insert(attentionItems)
                         .values(item)
                         .returning();
@@ -4464,8 +4475,9 @@ export class DatabaseStorage implements IStorage {
         async updateEmployeeOffboarding(
                 id: string,
                 offboarding: Partial<InsertEmployeeOffboarding>,
+                executor: DbExecutor = db,
         ): Promise<EmployeeOffboarding> {
-                const [updated] = await db
+                const [updated] = await executor
                         .update(employeeOffboarding)
                         .set({ ...offboarding, updatedAt: new Date() })
                         .where(eq(employeeOffboarding.id, id))
@@ -4486,8 +4498,9 @@ export class DatabaseStorage implements IStorage {
 
         async createOffboardingChecklistItem(
                 item: InsertOffboardingChecklist,
+                executor: DbExecutor = db,
         ): Promise<OffboardingChecklist> {
-                const [created] = await db
+                const [created] = await executor
                         .insert(offboardingChecklist)
                         .values(item)
                         .returning();
@@ -4725,8 +4738,9 @@ export class DatabaseStorage implements IStorage {
         async updateAssetsExpectedReturnBy(
                 employeeId: string,
                 expectedReturnBy: Date,
+                executor: DbExecutor = db,
         ): Promise<void> {
-                await db
+                await executor
                         .update(employeeAssets)
                         .set({ expectedReturnBy, updatedAt: new Date() })
                         .where(
@@ -8384,9 +8398,10 @@ export class DatabaseStorage implements IStorage {
                 employeeId: string,
                 startDate: string,
                 endDate: string,
+                executor: DbExecutor = db,
         ): Promise<ScheduleAssignment[]> {
                 // First get the assignments that will be deleted (to return them for attention items)
-                const affected = await db
+                const affected = await executor
                         .select()
                         .from(scheduleAssignments)
                         .where(
@@ -8399,7 +8414,7 @@ export class DatabaseStorage implements IStorage {
 
                 // Delete them
                 if (affected.length > 0) {
-                        await db
+                        await executor
                                 .delete(scheduleAssignments)
                                 .where(
                                         and(

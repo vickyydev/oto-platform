@@ -7899,7 +7899,23 @@ OTO Company Limited`,
         return res.status(404).json({ message: "Employee not found" });
       }
 
-      // Serialize requests for the same employee before any offboarding side effects.
+      // Determine employment state based on last working day
+      // Compare dates in Bangkok timezone to avoid UTC boundary issues
+      const todayBangkok = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
+      const lastWorkingDayStr = validatedData.lastWorkingDay.split('T')[0];
+      const lastWorkingDayDate = new Date(validatedData.lastWorkingDay);
+      lastWorkingDayDate.setHours(0, 0, 0, 0);
+
+      const newEmploymentState = lastWorkingDayStr >= todayBangkok ? 'LEAVING' : 'LEFT';
+      const newStatus = validatedData.offboardingType === "resignation" ? "resigned" : "terminated";
+
+      // ONE transaction, end to end (S2-17b round 6, hazard H16). The app wrote
+      // the offboarding row and then each of its steps as separate statements,
+      // so a failure part way left a half-offboarded employee: resigned with no
+      // checklist, or a login switched off with no offboarding to show for it.
+      // Every step below is the app's, in the app's order, on one transaction:
+      // a failure anywhere leaves nothing behind. The per-employee lock and the
+      // 409 for an employee already offboarded are the lift's, as before.
       const offboarding = await db.transaction(async (tx) => {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext('employee_offboarding'), hashtext(${employeeId}))`);
         const [existing] = await tx.select({ id: employeeOffboarding.id })
@@ -7920,142 +7936,136 @@ OTO Company Limited`,
           notes: validatedData.notes,
           createdBy: userId,
         }).returning();
+
+        // Update employee status and employment state
+        await storage.updateEmployee(employeeId, {
+          status: newStatus,
+          employmentState: newEmploymentState,
+          endReason: validatedData.reasonText || validatedData.reasonCode,
+          lastWorkingDay: new Date(validatedData.lastWorkingDay),
+          noticeDate: validatedData.noticeDate ? new Date(validatedData.noticeDate) : undefined,
+        }, tx);
+
+        // Deactivate user account if departure date is already in the past —
+        // the app's rule exactly: only here, only when the last working day has
+        // passed, and only the login the employee record names (`user_id`).
+        // A later last working day is left to the 03:00 batch, as before.
+        if (newEmploymentState === 'LEFT' && employee.userId) {
+          await storage.updateUser(employee.userId, { isActive: false } as any, tx);
+        }
+
+        // Flag future shifts after departure date for reassignment
+        const lastDayStr = validatedData.lastWorkingDay.split('T')[0];
+        const conflictingAssignments = await tx.select({
+          id: scheduleAssignments.id,
+          shiftDate: scheduleAssignments.shiftDate,
+        })
+          .from(scheduleAssignments)
+          .where(and(
+            eq(scheduleAssignments.employeeId, employeeId),
+            sql`${scheduleAssignments.shiftDate} > ${lastDayStr}`,
+          ));
+        if (conflictingAssignments.length > 0) {
+          if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+            tenantId: employee.tenantId,
+            type: 'SHIFT_NEEDS_COVERAGE',
+            severity: 'high',
+            branchId: employee.branchId || undefined,
+            employeeId: employee.id,
+            title: `${conflictingAssignments.length} shift(s) after departure date`,
+            description: `${getEmployeeDisplayName(employee)} has ${conflictingAssignments.length} shift(s) scheduled after their last working day (${lastDayStr}). These need to be reassigned or removed.`,
+          }, tx);
+        }
+
+        // Update expected return date for unreturned assets
+        await storage.updateAssetsExpectedReturnBy(employeeId, lastWorkingDayDate, tx);
+
+        // Create employee change record for Staff Movements tracking
+        const changeType = validatedData.offboardingType === "resignation" ? "resigned" : "terminated";
+        await storage.createEmployeeChange({
+          employeeId,
+          changeType: changeType as any,
+          effectiveDate: new Date(validatedData.lastWorkingDay),
+          note: validatedData.reasonText || validatedData.reasonCode || undefined,
+          createdBy: userId,
+        }, tx);
+
+        // Log activity
+        await storage.logActivity({
+          branchId: employee.branchId || undefined,
+          employeeId,
+          activityType: "offboarding_started",
+          summaryText: `${getEmployeeDisplayName(employee)} ${newStatus} - ${validatedData.reasonText || validatedData.reasonCode}`,
+          createdBy: userId,
+        }, tx);
+
+        // Log employment state change
+        await storage.logActivity({
+          branchId: employee.branchId || undefined,
+          employeeId,
+          activityType: "employment_state_changed",
+          summaryText: `${getEmployeeDisplayName(employee)} employment state changed from ACTIVE to ${newEmploymentState}`,
+          createdBy: userId,
+        }, tx);
+
+        // Auto-generate offboarding checklist items
+        const checklistItems = [
+          {
+            checklistType: validatedData.offboardingType === "resignation" ? "resignation_letter" : "termination_letter",
+            title: validatedData.offboardingType === "resignation" ? "Collect signed resignation letter" : "Issue termination letter",
+            description: "Ensure the letter is signed and filed in employee records",
+            sortOrder: 1,
+          },
+          {
+            checklistType: "collect_company_assets",
+            title: "Collect company assets",
+            description: "Collect all company property including ID cards, keys, equipment, and uniforms",
+            sortOrder: 2,
+          },
+          {
+            checklistType: "remove_system_access",
+            title: "Remove system access",
+            description: "Disable login credentials and revoke access to all company systems",
+            sortOrder: 3,
+          },
+          {
+            checklistType: "conduct_exit_interview",
+            title: "Conduct exit interview",
+            description: "Schedule and complete exit interview with departing employee",
+            sortOrder: 4,
+          },
+          {
+            checklistType: "handover_documentation",
+            title: "Complete handover documentation",
+            description: "Ensure all work handover is documented and transferred to replacement",
+            sortOrder: 5,
+          },
+          {
+            checklistType: "final_payroll_calculation",
+            title: "Calculate final payroll",
+            description: "Calculate and process final salary, leave payout, and any outstanding payments",
+            sortOrder: 6,
+            dueDate: lastWorkingDayDate,
+          },
+        ] as const;
+
+        for (const item of checklistItems) {
+          await storage.createOffboardingChecklistItem({
+            offboardingId: created.id,
+            employeeId,
+            branchId: employee.branchId || undefined,
+            checklistType: item.checklistType as any,
+            title: item.title,
+            description: item.description,
+            sortOrder: item.sortOrder,
+            dueDate: 'dueDate' in item ? item.dueDate : undefined,
+            isCompleted: false,
+          }, tx);
+        }
+
         return created;
       });
       if (!offboarding) return res.status(409).json({ message: "Offboarding already exists for this employee" });
-
-      // Determine employment state based on last working day
-      // Compare dates in Bangkok timezone to avoid UTC boundary issues
-      const todayBangkok = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
-      const lastWorkingDayStr = validatedData.lastWorkingDay.split('T')[0];
-      const lastWorkingDayDate = new Date(validatedData.lastWorkingDay);
-      lastWorkingDayDate.setHours(0, 0, 0, 0);
-      
-      const newEmploymentState = lastWorkingDayStr >= todayBangkok ? 'LEAVING' : 'LEFT';
-      
-      // Update employee status and employment state
-      const newStatus = validatedData.offboardingType === "resignation" ? "resigned" : "terminated";
-      await storage.updateEmployee(employeeId, {
-        status: newStatus,
-        employmentState: newEmploymentState,
-        endReason: validatedData.reasonText || validatedData.reasonCode,
-        lastWorkingDay: new Date(validatedData.lastWorkingDay),
-        noticeDate: validatedData.noticeDate ? new Date(validatedData.noticeDate) : undefined,
-      });
-
-      // Deactivate user account if departure date is already in the past
-      if (newEmploymentState === 'LEFT' && employee.userId) {
-        await storage.updateUser(employee.userId, { isActive: false } as any);
-      }
-
-      // Flag future shifts after departure date for reassignment
-      const lastDayStr = validatedData.lastWorkingDay.split('T')[0];
-      const conflictingAssignments = await db.select({
-        id: scheduleAssignments.id,
-        shiftDate: scheduleAssignments.shiftDate,
-      })
-        .from(scheduleAssignments)
-        .where(and(
-          eq(scheduleAssignments.employeeId, employeeId),
-          sql`${scheduleAssignments.shiftDate} > ${lastDayStr}`,
-        ));
-      if (conflictingAssignments.length > 0) {
-        if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
-          tenantId: employee.tenantId,
-          type: 'SHIFT_NEEDS_COVERAGE',
-          severity: 'high',
-          branchId: employee.branchId || undefined,
-          employeeId: employee.id,
-          title: `${conflictingAssignments.length} shift(s) after departure date`,
-          description: `${getEmployeeDisplayName(employee)} has ${conflictingAssignments.length} shift(s) scheduled after their last working day (${lastDayStr}). These need to be reassigned or removed.`,
-        });
-      }
-
-      // Update expected return date for unreturned assets
-      await storage.updateAssetsExpectedReturnBy(employeeId, lastWorkingDayDate);
-
-      // Create employee change record for Staff Movements tracking
-      const changeType = validatedData.offboardingType === "resignation" ? "resigned" : "terminated";
-      await storage.createEmployeeChange({
-        employeeId,
-        changeType: changeType as any,
-        effectiveDate: new Date(validatedData.lastWorkingDay),
-        note: validatedData.reasonText || validatedData.reasonCode || undefined,
-        createdBy: userId,
-      });
-
-      // Log activity
-      await storage.logActivity({
-        branchId: employee.branchId || undefined,
-        employeeId,
-        activityType: "offboarding_started",
-        summaryText: `${getEmployeeDisplayName(employee)} ${newStatus} - ${validatedData.reasonText || validatedData.reasonCode}`,
-        createdBy: userId,
-      });
-
-      // Log employment state change
-      await storage.logActivity({
-        branchId: employee.branchId || undefined,
-        employeeId,
-        activityType: "employment_state_changed",
-        summaryText: `${getEmployeeDisplayName(employee)} employment state changed from ACTIVE to ${newEmploymentState}`,
-        createdBy: userId,
-      });
-
-      // Auto-generate offboarding checklist items
-      const checklistItems = [
-        {
-          checklistType: validatedData.offboardingType === "resignation" ? "resignation_letter" : "termination_letter",
-          title: validatedData.offboardingType === "resignation" ? "Collect signed resignation letter" : "Issue termination letter",
-          description: "Ensure the letter is signed and filed in employee records",
-          sortOrder: 1,
-        },
-        {
-          checklistType: "collect_company_assets",
-          title: "Collect company assets",
-          description: "Collect all company property including ID cards, keys, equipment, and uniforms",
-          sortOrder: 2,
-        },
-        {
-          checklistType: "remove_system_access",
-          title: "Remove system access",
-          description: "Disable login credentials and revoke access to all company systems",
-          sortOrder: 3,
-        },
-        {
-          checklistType: "conduct_exit_interview",
-          title: "Conduct exit interview",
-          description: "Schedule and complete exit interview with departing employee",
-          sortOrder: 4,
-        },
-        {
-          checklistType: "handover_documentation",
-          title: "Complete handover documentation",
-          description: "Ensure all work handover is documented and transferred to replacement",
-          sortOrder: 5,
-        },
-        {
-          checklistType: "final_payroll_calculation",
-          title: "Calculate final payroll",
-          description: "Calculate and process final salary, leave payout, and any outstanding payments",
-          sortOrder: 6,
-          dueDate: lastWorkingDayDate,
-        },
-      ] as const;
-
-      for (const item of checklistItems) {
-        await storage.createOffboardingChecklistItem({
-          offboardingId: offboarding.id,
-          employeeId,
-          branchId: employee.branchId || undefined,
-          checklistType: item.checklistType as any,
-          title: item.title,
-          description: item.description,
-          sortOrder: item.sortOrder,
-          dueDate: 'dueDate' in item ? item.dueDate : undefined,
-          isCompleted: false,
-        });
-      }
 
       res.status(201).json(offboarding);
     } catch (error) {
@@ -8095,50 +8105,55 @@ OTO Company Limited`,
       }
       if (validated.notes !== undefined) updates.notes = validated.notes;
 
-      const updatedOffboarding = await storage.updateEmployeeOffboarding(offboarding.id, updates);
+      // One transaction, as the create (S2-17b round 6, H16): the app's steps,
+      // in its order, so a failure part way changes nothing.
+      const updatedOffboarding = await db.transaction(async (tx) => {
+        const updated = await storage.updateEmployeeOffboarding(offboarding.id, updates, tx);
 
-      if (validated.lastWorkingDay) {
-        const newLastDay = new Date(validated.lastWorkingDay);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        newLastDay.setHours(0, 0, 0, 0);
+        if (validated.lastWorkingDay) {
+          const newLastDay = new Date(validated.lastWorkingDay);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          newLastDay.setHours(0, 0, 0, 0);
 
-        const newEmploymentState = newLastDay >= today ? 'LEAVING' : 'LEFT';
+          const newEmploymentState = newLastDay >= today ? 'LEAVING' : 'LEFT';
 
-        await storage.updateEmployee(employeeId, {
-          lastWorkingDay: new Date(validated.lastWorkingDay),
-          employmentState: newEmploymentState,
-        });
+          await storage.updateEmployee(employeeId, {
+            lastWorkingDay: new Date(validated.lastWorkingDay),
+            employmentState: newEmploymentState,
+          }, tx);
 
-        await storage.updateAssetsExpectedReturnBy(employeeId, newLastDay);
+          await storage.updateAssetsExpectedReturnBy(employeeId, newLastDay, tx);
 
-        const dayAfterLastDay = new Date(newLastDay);
-        dayAfterLastDay.setDate(dayAfterLastDay.getDate() + 1);
-        const farFuture = '2099-12-31';
-        const startDateStr = dayAfterLastDay.toISOString().split('T')[0];
+          const dayAfterLastDay = new Date(newLastDay);
+          dayAfterLastDay.setDate(dayAfterLastDay.getDate() + 1);
+          const farFuture = '2099-12-31';
+          const startDateStr = dayAfterLastDay.toISOString().split('T')[0];
 
-        const removedAssignments = await storage.deleteAssignmentsByEmployeeAndDateRange(
-          employeeId, startDateStr, farFuture
-        );
+          const removedAssignments = await storage.deleteAssignmentsByEmployeeAndDateRange(
+            employeeId, startDateStr, farFuture, tx
+          );
 
-        if (removedAssignments.length > 0) {
+          if (removedAssignments.length > 0) {
+            await storage.logActivity({
+              branchId: employee.branchId || undefined,
+              employeeId,
+              activityType: "schedule_assignment_removed",
+              summaryText: `${removedAssignments.length} schedule assignment(s) removed after last working day updated to ${validated.lastWorkingDay}`,
+              createdBy: userId,
+            }, tx);
+          }
+
           await storage.logActivity({
             branchId: employee.branchId || undefined,
             employeeId,
-            activityType: "schedule_assignment_removed",
-            summaryText: `${removedAssignments.length} schedule assignment(s) removed after last working day updated to ${validated.lastWorkingDay}`,
+            activityType: "offboarding_updated",
+            summaryText: `Last working day updated to ${validated.lastWorkingDay} for ${getEmployeeDisplayName(employee)}`,
             createdBy: userId,
-          });
+          }, tx);
         }
-
-        await storage.logActivity({
-          branchId: employee.branchId || undefined,
-          employeeId,
-          activityType: "offboarding_updated",
-          summaryText: `Last working day updated to ${validated.lastWorkingDay} for ${getEmployeeDisplayName(employee)}`,
-          createdBy: userId,
-        });
-      }
+        return updated;
+      });
 
       res.json({
         offboarding: updatedOffboarding,

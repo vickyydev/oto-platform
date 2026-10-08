@@ -1514,6 +1514,40 @@ export const offboardingReasons = [
 ] as const;
 export type OffboardingReason = typeof offboardingReasons[number];
 
+/**
+ * The words the app's Offboard form offers for each reason — moved here from
+ * client/src/components/offboarding-modal.tsx unchanged (S2-17b round 6), so
+ * the employee's Offboarding panel can show the same words instead of the raw
+ * code ("Personal reasons", not "personal_reasons"; the 1 October staging
+ * walkthrough's finding).
+ */
+export const offboardingReasonLabels: Record<OffboardingReason, string> = {
+  personal_reasons: "Personal reasons",
+  better_opportunity: "Better opportunity",
+  relocation: "Relocation",
+  health_issues: "Health reasons",
+  family_reasons: "Family reasons",
+  career_change: "Career change",
+  retirement: "Retirement",
+  performance: "Performance issues",
+  misconduct: "Misconduct",
+  redundancy: "Redundancy",
+  contract_end: "Contract end",
+  mutual_agreement: "Mutual agreement",
+  other: "Other",
+};
+
+/**
+ * An employee's stored end reason as the panel shows it: a reason code reads as
+ * the form's words; anything else — the free text a manager typed, which the
+ * app stores in its place — reads as it was written. Display only: what the
+ * app stores, records and merges into letters is unchanged (Q51).
+ */
+export function offboardingReasonLabel(reason: string | null | undefined): string | null {
+  if (!reason) return null;
+  return (offboardingReasonLabels as Record<string, string>)[reason] ?? reason;
+}
+
 // Employee offboarding table for tracking offboarding details
 //
 // One offboarding per employee. The route has refused a second one since the

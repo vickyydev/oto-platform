@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Employee, Branch, Template, templateTypeLabels, templateTypeColors, TemplateType, templateTypes, EmployeeAsset } from "@shared/schema";
+import { Employee, Branch, Template, templateTypeLabels, templateTypeColors, TemplateType, templateTypes, EmployeeAsset, offboardingReasons, offboardingReasonLabels } from "@shared/schema";
 
 const getSafeType = (type: string | null | undefined): TemplateType => {
   return (type && templateTypes.includes(type as TemplateType) ? type : "employment") as TemplateType;
@@ -43,21 +43,9 @@ import {
 import { Loader2, UserX, FileSignature, AlertTriangle, Copy, Check, ExternalLink, Calendar, Clock, Users, Package } from "lucide-react";
 import { formatDate } from "@/lib/format-utils";
 
-const offboardingReasonCodes = [
-  { value: "personal_reasons", label: "Personal reasons" },
-  { value: "better_opportunity", label: "Better opportunity" },
-  { value: "relocation", label: "Relocation" },
-  { value: "health_issues", label: "Health reasons" },
-  { value: "family_reasons", label: "Family reasons" },
-  { value: "career_change", label: "Career change" },
-  { value: "retirement", label: "Retirement" },
-  { value: "performance", label: "Performance issues" },
-  { value: "misconduct", label: "Misconduct" },
-  { value: "redundancy", label: "Redundancy" },
-  { value: "contract_end", label: "Contract end" },
-  { value: "mutual_agreement", label: "Mutual agreement" },
-  { value: "other", label: "Other" },
-] as const;
+// The form's words for each reason, now kept in shared/schema.ts so the
+// employee's Offboarding panel shows the same ones (S2-17b round 6).
+const offboardingReasonCodes = offboardingReasons.map((value) => ({ value, label: offboardingReasonLabels[value] }));
 
 const offboardingSchema = z.object({
   offboardingType: z.enum(["resignation", "termination"]),
