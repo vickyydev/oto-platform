@@ -360,21 +360,28 @@ export async function revokeKioskSession(sessionId: string, tenantId: string): P
   return deleted.length > 0;
 }
 
+// The device first, held to the park group; its sessions only when that
+// matched (S2-17b round 5 review, F3). The sessions used to go first, so
+// another park group's revoke signed the tablet out and was answered 200.
 export async function revokeKioskDevice(deviceId: string, tenantId: string): Promise<boolean> {
-  await db
-    .delete(kioskSessions)
-    .where(eq(kioskSessions.kioskDeviceId, deviceId));
-
-  const updated = await db
-    .update(kioskDevices)
-    .set({ isActive: false, updatedAt: new Date() })
-    .where(
-      and(
-        eq(kioskDevices.id, deviceId),
-        eq(kioskDevices.tenantId, tenantId)
+  return db.transaction(async (tx) => {
+    const updated = await tx
+      .update(kioskDevices)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(
+        and(
+          eq(kioskDevices.id, deviceId),
+          eq(kioskDevices.tenantId, tenantId)
+        )
       )
-    )
-    .returning();
+      .returning({ id: kioskDevices.id });
 
-  return updated.length > 0;
+    if (updated.length === 0) return false;
+
+    await tx
+      .delete(kioskSessions)
+      .where(eq(kioskSessions.kioskDeviceId, deviceId));
+
+    return true;
+  });
 }

@@ -1005,7 +1005,7 @@ export interface IStorage {
                 branchId: string,
                 withinHours: number,
         ): Promise<Shift[]>;
-        getShiftsNeedingCoverage(branchId?: string): Promise<Shift[]>;
+        getShiftsNeedingCoverage(branchId?: string, tenantId?: string): Promise<Shift[]>;
         createShift(shift: InsertShift, requiredRoleIds: string[]): Promise<Shift>;
         updateShift(
                 id: string,
@@ -1065,7 +1065,7 @@ export interface IStorage {
         getBranchEmployeeLeaveBalances(branchId: string): Promise<LeaveBalance[]>;
 
         // Sick leave policy and balance
-        getSickLeavePolicy(branchId?: string): Promise<SickLeavePolicy | undefined>;
+        getSickLeavePolicy(tenantId: string, branchId?: string): Promise<SickLeavePolicy | undefined>;
         getOrCreateSickLeavePolicy(
                 tenantId: string,
                 branchId?: string,
@@ -5992,9 +5992,12 @@ export class DatabaseStorage implements IStorage {
                         .orderBy(shifts.startAt);
         }
 
-        async getShiftsNeedingCoverage(branchId?: string): Promise<Shift[]> {
+        async getShiftsNeedingCoverage(branchId?: string, tenantId?: string): Promise<Shift[]> {
                 const conditions = [eq(shifts.needsCoverage, true)];
                 if (branchId) conditions.push(eq(shifts.branchId, branchId));
+                // The route holds the read to the caller's park group (S2-17b
+                // round 5 review, F1); the Attention engine names a branch.
+                if (tenantId !== undefined) conditions.push(eq(shifts.tenantId, tenantId));
                 return await db
                         .select()
                         .from(shifts)
@@ -6376,7 +6379,11 @@ export class DatabaseStorage implements IStorage {
         }
 
         // Sick leave policy and balance methods
+        // Both steps keep to the park group (S2-17b round 5 review, F2): the
+        // company-wide fallback ignored `tenant_id`, so one park group's
+        // company-wide save rewrote another's row and every park group read it.
         async getSickLeavePolicy(
+                tenantId: string,
                 branchId?: string,
         ): Promise<SickLeavePolicy | undefined> {
                 // First try to get branch-specific policy
@@ -6386,6 +6393,7 @@ export class DatabaseStorage implements IStorage {
                                 .from(sickLeavePolicies)
                                 .where(
                                         and(
+                                                eq(sickLeavePolicies.tenantId, tenantId),
                                                 eq(sickLeavePolicies.branchId, branchId),
                                                 eq(sickLeavePolicies.isActive, true),
                                         ),
@@ -6399,6 +6407,7 @@ export class DatabaseStorage implements IStorage {
                         .from(sickLeavePolicies)
                         .where(
                                 and(
+                                        eq(sickLeavePolicies.tenantId, tenantId),
                                         sql`${sickLeavePolicies.branchId} IS NULL`,
                                         eq(sickLeavePolicies.isActive, true),
                                 ),
@@ -6410,7 +6419,7 @@ export class DatabaseStorage implements IStorage {
                 tenantId: string,
                 branchId?: string,
         ): Promise<SickLeavePolicy> {
-                const existing = await this.getSickLeavePolicy(branchId);
+                const existing = await this.getSickLeavePolicy(tenantId, branchId);
                 if (existing) return existing;
 
                 // Create default policy
@@ -6461,8 +6470,9 @@ export class DatabaseStorage implements IStorage {
                         };
                 }
 
-                // Get sick leave policy for the employee's branch
+                // Get sick leave policy for the employee's branch, in the employee's park group
                 const policy = await this.getSickLeavePolicy(
+                        employee.tenantId,
                         employee.branchId || undefined,
                 );
                 const annualDays = policy?.annualSickLeaveDays || 30;

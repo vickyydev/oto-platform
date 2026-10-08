@@ -9410,7 +9410,12 @@ OTO Company Limited`,
       const tenantId = (req.user as any).tenantId;
 
       const { revokeKioskDevice } = await import("./kiosk-auth");
-      await revokeKioskDevice(deviceId, tenantId);
+      // Another park group's device is the app's 404, and its tablet keeps its
+      // session (S2-17b round 5 review, F3).
+      const revoked = await revokeKioskDevice(deviceId, tenantId);
+      if (!revoked) {
+        return res.status(404).json({ message: "Device not found" });
+      }
 
       res.json({ success: true });
     } catch (error) {
@@ -12726,7 +12731,12 @@ OTO Company Limited`,
         return res.status(403).json({ message: "Access denied to this branch" });
       }
 
-      const shifts = await storage.getShiftsNeedingCoverage(branchId as string | undefined);
+      // Held to the caller's park group (S2-17b round 5 review, F1): with no
+      // branch named, the app's read answered every park group's flagged
+      // shifts. Which of the park group's branches a branch-limited manager
+      // reads with none named stays the app's (no branch rule, Q39).
+      if (!user?.tenantId) return res.json([]);
+      const shifts = await storage.getShiftsNeedingCoverage(branchId as string | undefined, user.tenantId);
       res.json(shifts);
     } catch (error) {
       next(error);
@@ -13165,7 +13175,9 @@ OTO Company Limited`,
       const { employeeId } = req.params;
       const user = req.userWithAccess;
 
-      const employee = await storage.getEmployee(employeeId);
+      // The caller's park group's employee only (S2-17b round 5 review, F2):
+      // another park group's is the same 404 as one that does not exist.
+      const employee = await storage.getEmployeeInTenant(employeeId, user?.tenantId ?? "");
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -13361,7 +13373,10 @@ OTO Company Limited`,
   app.get("/api/sick-leave-policy", requireAuth, async (req, res, next) => {
     try {
       const branchId = req.query.branchId as string | undefined;
-      const policy = await storage.getSickLeavePolicy(branchId);
+      // The caller's park group's policy (S2-17b round 5 review, F2), resolved
+      // as the save below resolves it.
+      const tenantId = await resolveTenantId((req.user as UserWithBranchAccess | undefined)?.tenantId);
+      const policy = await storage.getSickLeavePolicy(tenantId, branchId);
       if (!policy) {
         // Return default values if no policy exists
         return res.json({
@@ -13395,9 +13410,19 @@ OTO Company Limited`,
       
       const { branchId, annualSickLeaveDays, proRateByStartDate, yearStartMonth } = parsed.data;
       const tenantId = await resolveTenantId(req.user?.tenantId);
-      
+
+      // Held to the caller's park group (S2-17b round 5 review, F2): another
+      // park group's branch is the app's 404, and the policy read below keeps
+      // to the park group, so a company-wide save no longer rewrites another's.
+      if (branchId) {
+        const branch = await storage.getBranch(branchId);
+        if (!branch || branch.tenantId !== tenantId) {
+          return res.status(404).json({ message: "Branch not found" });
+        }
+      }
+
       // Get or create the policy (tenant-wide if no branchId, or branch-specific)
-      let policy = await storage.getSickLeavePolicy(branchId ?? undefined);
+      let policy = await storage.getSickLeavePolicy(tenantId, branchId ?? undefined);
       
       if (policy) {
         // Update existing policy
