@@ -21,7 +21,10 @@
 //     platform has linked and for a user the app still references, changing
 //     nothing, and still deletes a user nothing points at — and so do the
 //     other doors that delete a user: DELETE /api/people/:id, DELETE
-//     /api/employees/:id and POST /api/employees/bulk-delete.
+//     /api/employees/:id and POST /api/employees/bulk-delete;
+//   - and those three doors answer another park group's admin 404, and an
+//     admin the app cannot place 403, as the users door does (S2-17b round 2,
+//     round 1's standing pin 3), writing nothing.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -487,6 +490,55 @@ try {
     assert.ok(await exists(linkedByEmployee));
     assert.ok(await personExists(linkedEmployeePerson.person));
     assert.ok(await employeeExists(linkedEmployee));
+  })();
+  // ── Across park groups (S2-17b round 2, round 1's standing pin 3) ─────────
+  // The employee, bulk and people doors place their caller as the users door
+  // does: another park group's employee or person is not found, and an admin
+  // the app cannot place is refused before anything is read.
+  const adminB = await signIn(local, B.admin.email);
+  const crossUser = await staffUser("cross-group");
+  const crossPerson = await personFor(crossUser);
+  const crossEmployee = randomUUID();
+  await q(
+    `insert into employees (id, tenant_id, branch_id, full_name, nickname, email, person_id)
+     values ($1, $2, $3, 'ZZ TEST cross-group employee', 'ZZ', $4, $5)`,
+    [crossEmployee, A.tenant, A.branch, crossPerson.email, crossPerson.person],
+  );
+  await check("another park group's admin is answered 404 at the employee, bulk and people doors, and nothing changes", async () => {
+    const one = await call(local, "DELETE", `/api/employees/${crossEmployee}`, adminB);
+    assert.equal(one.status, 404, JSON.stringify(one.body));
+    assert.deepEqual(one.body, { message: "Employee not found" });
+    const bulk = await call(local, "POST", "/api/employees/bulk-delete", adminB, { employeeIds: [crossEmployee] });
+    assert.equal(bulk.status, 200, JSON.stringify(bulk.body));
+    assert.equal(bulk.body.deletedCount, 0);
+    assert.deepEqual(bulk.body.results, [{ id: crossEmployee, status: "error", message: "Employee not found" }]);
+    const viaPeople = await call(local, "DELETE", `/api/people/${crossPerson.person}`, adminB);
+    assert.equal(viaPeople.status, 404, JSON.stringify(viaPeople.body));
+    assert.deepEqual(viaPeople.body, { message: "Person not found" });
+    assert.ok(await exists(crossUser));
+    assert.equal(await accessRows(crossUser), 1);
+    assert.ok(await personExists(crossPerson.person));
+    assert.ok(await employeeExists(crossEmployee));
+  })();
+  await check("an admin the app cannot place is refused at those doors, and nothing changes", async () => {
+    for (const [method, path, payload] of [
+      ["DELETE", `/api/employees/${crossEmployee}`, {}],
+      ["POST", "/api/employees/bulk-delete", { employeeIds: [crossEmployee] }],
+      ["DELETE", `/api/people/${crossPerson.person}`, {}],
+    ] as const) {
+      const res = await call(local, method, path, unplacedAdmin, payload);
+      assert.equal(res.status, 403, `${method} ${path}: ${JSON.stringify(res.body)}`);
+    }
+    assert.ok(await exists(crossUser));
+    assert.ok(await personExists(crossPerson.person));
+    assert.ok(await employeeExists(crossEmployee));
+  })();
+  await check("the park group's own admin still deletes that employee, their person and their user", async () => {
+    const res = await call(local, "DELETE", `/api/employees/${crossEmployee}`, adminA);
+    assert.equal(res.status, 204, JSON.stringify(res.body));
+    assert.ok(!(await employeeExists(crossEmployee)));
+    assert.ok(!(await personExists(crossPerson.person)));
+    assert.ok(!(await exists(crossUser)));
   })();
   await check("the people delete still removes a person and a user nothing points at", async () => {
     const res = await call(local, "DELETE", `/api/people/${plainPerson.person}`, adminA);
