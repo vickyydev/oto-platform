@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { db } from "../db";
 import { count } from "drizzle-orm";
 import { register, getAdmin, getAllAdmins, getAdminMap } from "./registry";
+import { SettingsWriteRefusedError } from "../lib/parkGroupSettings";
 import tenantAdmin from "./models/tenant";
 import operatorAdmin from "./models/operator";
 import branchAdmin from "./models/branch";
@@ -120,6 +121,13 @@ router.use("/attention-items", (_req: Request, res: Response) => {
   res.status(503).json({ error: "Attention data administration is unavailable until tenant ownership is recorded" });
 });
 
+/** A settings write the Setting model refused (round 4a): the same 409 in words as /api/settings. */
+function answerSettingsRefusal(res: Response, err: unknown): boolean {
+  if (!(err instanceof SettingsWriteRefusedError)) return false;
+  res.status(err.status).json(err.refusal);
+  return true;
+}
+
 function withoutUserPassword(admin: unknown, row: Record<string, unknown>): Record<string, unknown> {
   if (admin !== userAdmin) return row;
   const { password, ...safeRow } = row;
@@ -207,6 +215,7 @@ router.post("/:model", async (req: Request, res: Response) => {
     const row = await admin.create(req.body);
     res.status(201).json(withoutUserPassword(admin, row));
   } catch (err: any) {
+    if (answerSettingsRefusal(res, err)) return;
     res.status(400).json({ error: err.message });
   }
 });
@@ -247,6 +256,7 @@ router.put("/:model/:id", async (req: Request, res: Response) => {
     if (!row) return res.status(404).json({ error: "Record not found" });
     res.json(withoutUserPassword(admin, row));
   } catch (err: any) {
+    if (answerSettingsRefusal(res, err)) return;
     res.status(400).json({ error: err.message });
   }
 });

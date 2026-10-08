@@ -269,6 +269,11 @@ module map below is read from the routes and the schema, not from memory.
       the old unique. The insert names no conflict target, so the same code
       runs on both constraint shapes (H11, proven by dropping and restoring
       the old unique in `tests/tenant-ownership.check.ts`).
+    - Data Admin's Setting model (`server/data-admin/models/setting.ts`) is
+      held to the same rule: a create or update naming another park group,
+      or an update of another park group's row, is answered the same 409
+      (`settings_shared`), and a create naming none is the default park
+      group's. Every other Data Admin model is as it was (round 7).
     - The Fix department is a department id, so the fallback never crosses:
       another park group reading the default park group's Fix department
       gets none, its reports are never assigned to the default park group's
@@ -691,6 +696,8 @@ is committed.
     (`/api/data-admin`, `requireGlobalAdmin`, which is the `admin` or
     `global_admin` role of any park group, `server/routes.ts:811`) reaches
     every registered model across park groups. Its walkthrough is round 7's.
+    One exception in 4a: its settings writes are held to the default park
+    group while the old unique stands (section 4).
   - Found beside the census: `POST /api/employees/recalculate-probation`
     recomputes every park group's employees for any park group's admin. In
     4a each employee takes its own park group's default probation, but the

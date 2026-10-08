@@ -1000,18 +1000,31 @@ describe.skipIf(!HAS_APP_RUNTIME)('D. over HTTP against the app’s routes: H11,
     expect(uniques.map((u) => u.conname)).toContain('settings_key_unique');
   });
 
-  it('as built: Data Admin writes another park group’s settings row in 4a, and the default park group is then shut out of that key', async () => {
+  it('fixed: Data Admin writes the default park group’s settings still; another park group’s, or the default’s row moved to another, is refused in the same words', async () => {
     const key = K('dataadmin');
     try {
-      const write = await call(plain, 'POST', '/api/data-admin/settings', {
+      const refused = await call(plain, 'POST', '/api/data-admin/settings', {
         cookie: PB.cookie,
         body: { key, value: 'B via Data Admin', tenantId: PB.tenant },
       });
+      expect(refused.status, refused.text).toBe(409);
+      expect(refused.body.reason).toBe('settings_shared');
+      const write = await call(plain, 'POST', '/api/data-admin/settings', {
+        cookie: PB.cookie,
+        body: { key, value: 'D via Data Admin', tenantId: PD.tenant },
+      });
       expect(write.status, write.text).toBe(201);
-      expect(await rowsFor(key)).toEqual([{ tenant_id: PB.tenant, value: 'B via Data Admin' }]);
+      expect(await rowsFor(key)).toEqual([{ tenant_id: PD.tenant, value: 'D via Data Admin' }]);
+      const moved = await call(plain, 'PUT', `/api/data-admin/settings/${write.body.id}`, {
+        cookie: PB.cookie,
+        body: { tenantId: PB.tenant },
+      });
+      expect(moved.status, moved.text).toBe(409);
+      expect(moved.body.reason).toBe('settings_shared');
+      expect(await rowsFor(key)).toEqual([{ tenant_id: PD.tenant, value: 'D via Data Admin' }]);
       const d = await save(PD, [{ key, value: 'the running park' }]);
-      expect(d.status, d.text).toBe(409);
-      expect(d.body.reason).toBe('settings_key_held');
+      expect(d.status, d.text).toBe(200);
+      expect(await rowsFor(key)).toEqual([{ tenant_id: PD.tenant, value: 'the running park' }]);
     } finally {
       await q('delete from settings where key = $1', [key]);
     }
@@ -1035,7 +1048,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('D. over HTTP against the app’s routes: H11,
    * the Setting model read-only until 4b) — or record the bypass under Q29
    * and Q31 so the owner decides with it in view.
    */
-  it.fails('FINDING 2: no door in 4a writes a settings row for a park group other than the default', async () => {
+  it('FINDING 2: no door in 4a writes a settings row for a park group other than the default', async () => {
     const key = K('dataadmin_finding');
     try {
       const write = await call(plain, 'POST', '/api/data-admin/settings', {
