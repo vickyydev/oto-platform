@@ -46,8 +46,14 @@ jobs:
       # the whole job runs. The flags:
       #   workspace — any change outside apps/oto-app (that app sits outside
       #               the pnpm workspace, so typecheck/lint/test/build say
-      #               nothing about it; its own guard is the redaction-sync
-      #               step, which always runs)
+      #               nothing about most of it; its own guards are the
+      #               redaction-sync step, which always runs, and the oto-app
+      #               job below) — OR a change to the part of the app this
+      #               suite reads (APP_SEAM, S2-17b round 1): its migrations,
+      #               which the platform tests apply and whose otoapp_v views
+      #               the till reads, its directory routes, and the app
+      #               modules the platform tests load. An app-only commit
+      #               there used to skip every view test.
       #   db        — packages/db changed, so migrations and seed are re-proven
       #   e2e       — the Console browser set exercises the built Console AND
       #               the api behind it, so console, api, packages, the
@@ -67,7 +73,8 @@ jobs:
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running everything"; all; exit 0; }
           echo "$FILES"
           flag() { echo "$1=$2" >> "$GITHUB_OUTPUT"; }
-          if echo "$FILES" | grep -q -v -E '^apps/oto-app/'; then flag workspace true; else flag workspace false; fi
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences)\.ts$)'
+          if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then flag workspace true; else flag workspace false; fi
           if echo "$FILES" | grep -q -E '^packages/db/'; then flag db true; else flag db false; fi
           if echo "$FILES" | grep -q -E '^(apps/console/|apps/api/|packages/|pnpm-lock.yaml|.github/workflows/ci.yml)'; then flag e2e true; else flag e2e false; fi
           if echo "$FILES" | grep -q -E '^(packages/|apps/booth/|scripts/pi/)'; then flag pi true; else flag pi false; fi
@@ -232,6 +239,89 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # The OTO App on its own (S2-17b round 1). The app sits outside the pnpm
+  # workspace with its own npm lockfile, so nothing above builds it, runs its
+  # migrator or drives its routes. This job does, whenever the app, the
+  # platform migrations it is applied after, or this workflow changed:
+  #
+  #   - the app builds, client and server, as its image does (npm ci with
+  #     --ignore-scripts, then npm run build);
+  #   - its migrator runs twice from empty: once to build all of otoapp, and
+  #     once more to prove a second run applies nothing and fails on nothing;
+  #   - its route checks (tests/route-fences.check.ts) boot the app's real
+  #     routes twice against that database — once shaped like staging, once
+  #     as a developer's machine — and prove the development tools are
+  #     refused on a deployment, the maintenance routes stay inside the
+  #     caller's park group, and a linked or referenced user is never deleted.
+  #
+  # CONSERVATIVE BY CONSTRUCTION, like the ci job: an unreadable base runs it.
+  oto-app:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: oto
+          POSTGRES_PASSWORD: oto
+          POSTGRES_DB: otoapp_ci
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U oto"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://oto:oto@localhost:5433/otoapp_ci
+    defaults:
+      run:
+        working-directory: apps/oto-app
+    steps:
+      - uses: actions/checkout@v4
+      - name: What changed
+        id: changes
+        shell: bash
+        working-directory: .
+        run: |
+          set -u
+          BASE='${{ github.event.pull_request.base.sha || github.event.before }}'
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "no usable base — running the app job"; echo "app=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running the app job"; echo "app=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running the app job"; echo "app=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          if echo "$FILES" | grep -q -E '^(apps/oto-app/|packages/db/migrations/|.github/workflows/ci.yml)'; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "app=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.app == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/oto-app/package-lock.json
+      # --ignore-scripts as in the image (apps/oto-app/Dockerfile): Puppeteer's
+      # install script would fetch a browser nothing here uses.
+      - name: Install the OTO App
+        if: steps.changes.outputs.app == 'true'
+        run: npm ci --ignore-scripts
+      - name: Build the OTO App
+        if: steps.changes.outputs.app == 'true'
+        run: npm run build
+      # The platform's migration 0008 is what creates the otoapp schema on a
+      # real database; here there is no platform, so the schema is made by
+      # hand. The migrator refuses to run without it rather than fill public.
+      - name: The otoapp schema, as the platform makes it
+        if: steps.changes.outputs.app == 'true'
+        run: node -e "const pg=require('pg');const c=new pg.Client({connectionString:process.env.DATABASE_URL});c.connect().then(()=>c.query('create schema if not exists otoapp')).then(()=>c.end())"
+      - name: The app's migrations apply cleanly from empty (twice)
+        if: steps.changes.outputs.app == 'true'
+        run: |
+          npm run db:migrate
+          npm run db:migrate
+      - name: The app's route checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/route-fences.check.ts
 
 # Staging deploys are not a job here, and deliberately so.
 #
