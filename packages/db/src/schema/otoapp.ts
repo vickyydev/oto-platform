@@ -379,15 +379,33 @@ function anchorOf(appRows: AppBranchRow[], coreIds: Set<string>) {
 function foreignTenantsOf(appRows: AppBranchRow[], ourIds: Set<string>): Set<string> {
   // Compared in the canonical spelling: a row this operator wrote before the
   // round 1 fix, in upper case, is still this operator's row, and reading it
-  // as somebody else's would fence this operator out of its own tenant. A case
-  // collision is nobody's, and so makes no tenant anybody's (`caseCollisions`).
+  // as somebody else's would fence this operator out of its own tenant.
   const collisions = caseCollisions(appRows);
-  return new Set(
-    appRows.flatMap((r) => {
-      const joined = joinedCoreBranchId(r, collisions);
-      return joined !== null && !ourIds.has(joined) ? [r.tenantId] : [];
-    }),
-  );
+  const foreign = new Set<string>();
+  /** Tenants holding a properly joined row of this operator's: theirs, whatever else they hold. */
+  const ours = new Set<string>();
+  for (const r of appRows) {
+    const joined = joinedCoreBranchId(r, collisions);
+    if (joined === null) continue;
+    if (ourIds.has(joined)) ours.add(r.tenantId);
+    else foreign.add(r.tenantId);
+  }
+  /**
+   * S2-17b round 2 (round 1's standing pin 2): a case collision is nobody's
+   * MAPPING — it anchors nothing and maps no branch (`caseCollisions`) — but
+   * it is still a claim, and a claim a person has to settle. A park group
+   * whose only tie to anything is a colliding row is therefore fenced from the
+   * first-time name match: otherwise a new park named like one of its rows is
+   * mapped into it, and that park group becomes this operator's — its people
+   * on this operator's lists — on the strength of a row the census says only
+   * a person may decide about. A park group that also holds a row properly
+   * joined to one of this operator's branches is this operator's already, and
+   * a collision inside it fences nothing.
+   */
+  for (const r of appRows) {
+    if (collisions.has(r.id) && !ours.has(r.tenantId)) foreign.add(r.tenantId);
+  }
+  return foreign;
 }
 
 /** Why a platform branch has no app row. */
