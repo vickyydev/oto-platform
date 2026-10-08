@@ -17,29 +17,24 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-Current checkpoint: the sprint's two big stories are CLOSED - SCRUM-217 (events, parties, camps and the kiosk) and SCRUM-218 (staff benefits) are Deployed with ~90 checked staging frames, as are the small fixes SCRUM-443/484 and the earlier SCRUM-504. Staging runs c6194664 on all six services with migrations through 0075. The staging environment now carries the benefit QR key, the OTO App directory seam (key hash e16e3336..., scope events:write) and a claimed "Demo counter box" at Demo Branch 2 (offline while BOX_AGENT_BRANCH_CODE sits at hkt-central; flip it to demo-branch-2 for box captures). Next in order: S2-17b.
+Current checkpoint: the sprint's two big stories are CLOSED and Deployed with checked staging evidence (SCRUM-217 events/parties/camps/kiosk, SCRUM-218 staff benefits, plus 443/484/504 and the earlier small fixes). The sprint's remaining story is **S2-17b, the OTO App lifted whole onto the platform (SCRUM-191, In Progress)**, run as nine lane build-review rounds per docs/progress/plans/otoapp-lift/PLAN.md. Round 1 (sign-on, identity, the route fences) is live on staging with its 403 probes. Round 2 (the employee mirror: otoapp_v.employees, job:otoapp.employee_sync, adoption, card revocation on leaving, the benefits swap) landed on main as 43b214ee with the review's two prescribed fixes applied at the gate; CI was being watched at this refresh.
 
-_Updated: 7 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block carry exact deployments and checkpoints._
+_Updated: 8 October 2026. Live STATUS (docs/progress/STATUS.md) carries exact deployments and the newest block always wins._
 
 | Item | State |
 |---|---|
-| Main | Green through db2e89ff (run 37565255501), live on all five staging services. Migrations through 0065 (0064 analytics summaries, 0065 analytics reports). Next free: 0066 |
-| SCRUM-494 (till consistency, band details and services) | Deployed. Register entries 1-9 are on main and live |
-| SCRUM-215 (S2-15a End of Day) | Deployed. Follow-up work is on branch `lane/eod-followups` |
-| SCRUM-499 (Lucky Wheel fixed-code vouchers) and SCRUM-500 | Deployed |
-| SCRUM-495 (till behaviour consistency) | Deployed with staging cards |
-| SCRUM-496 (stock, booking and check-in consistency) | Deployed with staging cards |
-| SCRUM-497 | Details for the owner to confirm (register entries 44-65). Each keeps the approved design's behaviour until answered |
-| SCRUM-498 | Deployed with staging cards. SCRUM-493 waits only on SCRUM-497 answers |
-| SCRUM-216 and SCRUM-214 (S2-15 analytics) | Deployed with reviewed staging evidence. Six build rounds + a demo-seed fix round; the walkthrough's 25 frames and retakes live in docs/qa/jira-comments/attachments/SCRUM-216 with corrected NOTES.md. Owner questions 1-17 in docs/progress/plans/analytics/PLAN.md section 9; demo-day follow-ups on SCRUM-503 |
-| SCRUM-488 | Owner's End of Day ruling applied; four round-1 points to confirm |
+| Main | 43b214ee (round 2 of the lift). Platform migrations through 0075; next free 0076. The OTO App's own migrations through 0005 (otoapp_v.employees), applied by the app's migrator |
+| Staging | All six services at a726f18b (round 1). Round 2 deploys IN ORDER: oto-app first (runs 0005), then GRANT USAGE on otoapp_v + SELECT on otoapp_v.employees to the api role and run packages/db/scripts/otoapp-employee-seam-readback.ts (exit 0), then the api/rest - else booth sync answers 503 EMPLOYEES_SEAM_NOT_GRANTED |
+| SCRUM-191 (the lift) | In Progress. Rounds 3-8 remain: night jobs on the runner, tenant ownership + Attention (4a/4b), attendance/operations, documents, finance + walkthroughs, rehearsal |
+| Owner queues | SCRUM-497 and SCRUM-488 answers; benefits plan Q1-Q13; events plan Q1-Q14; lift plan Q1-Q20 (Q16-Q20 added at round 2: ties, standing-case repeats, delete doors, the never-copied leaver, the ADOPTION_CONFLICT settle tool) |
+| Open small tickets | SCRUM-502/503 ledgers, 505-508; SCRUM-480 waits on the USER (R2 CORS). Held-with-reasons list in STATUS |
 
 **Unlanded work** is saved, unreviewed, under `wip/saved-20261006/*`. Treat those branches as reference only until a lane picks one up.
 
 **Rules**
 
 - No feature pushes and no staging deploys while main is red.
-- The active lane is `lane/s216-r45` (analytics rounds 4-5, worktree C:/w/s216). Rebase on `origin/main` before every push and take the migration number reserved above.
+- The active lane is `lane/s217b-r2` (worktree C:/w/g17), about to be superseded by round 3's lane. Rebase on `origin/main` before every push; platform migration numbers are assigned at landing (next free 0076).
 
 ## 3. Order of work (owner priority, 2 October)
 
@@ -182,54 +177,14 @@ _Updated: 7 October 2026. Live STATUS and the newest SESSION_HANDOVER stop block
 
 ## 10. Work in flight at the hand-over
 
-### SCRUM-494 staging evidence (status Testing)
+### S2-17b round 2 staging acceptance (next action once CI is green on 43b214ee)
 
-Drive each item on staging, as a person would:
-- sign in with `scripts/agent/evidence.mjs` (`posSignIn` as RECEPTION or
-  MANAGER);
-- at "Pick your station", choose **Reception Till 1** (never FWBooth1);
-- prefix every record you create with "ZZ TEST" and pay with cash only.
+1. Deploy **oto-app-staging** at the green head (its migrator applies app migration 0005, publishing `otoapp_v.employees`; the migration grants nothing).
+2. Run the GRANT as a one-off job on the api image: USAGE on schema `otoapp_v` and SELECT on `otoapp_v.employees` to the api's database role, then `packages/db/scripts/otoapp-employee-seam-readback.ts` must exit 0 with counts.
+3. Deploy the five platform services ("deploy all") at the same head.
+4. Acceptance, IN THIS ORDER: provision the four demo people's OTO App users to their platform accounts BEFORE creating them as employees in the app (or within one 15-minute copy window) - otherwise their platform rows are never adopted and Nok's benefit override is left behind (plan Q20). Then: the four core.employee rows adopted, Nok's override intact on a fresh card, a second run changing nothing, job:otoapp.employee_sync on Health, the HR employees walkthrough page, and the SCRUM-218 comment updating check 1 (the mirror now feeds benefits).
+5. Then launch round 3 (the night jobs on the platform runner) per PLAN.md section 8.
 
-Then group the screenshots into at most five evidence cards, built with
-`card()`, in `docs/qa/jira-comments/attachments/SCRUM-494/`:
-- tier (items 1-2);
-- restock (item 3);
-- gate (item 4);
-- check-in (items 5-7);
-- food (items 8-9).
+### Standing small work
 
-Open every image before using it. Attach the cards, comment in plain
-words, then `walkTo('SCRUM-494', 'Deployed')`. The walk refuses without
-an image.
-
-| # | What to show | State at hand-over |
-|---|---|---|
-| 1 | A tier verified with no document expiry; an expired document keeps the tier with "Document expired - re-verify" | No-expiry half captured (ZZ TEST Tier Thai, +66894940001, verified Thai by Som with no expiry). Expired half is blocked on staging: nothing can record a past expiry there, by design. Show it as a test-run card from `apps/api/test/s494-money*.test.ts` and `apps/pos/test/s494-money-gate.test.ts` |
-| 2 | A verified member sold at Tourist when staff pick Tourist | WORKS: receipt T1-000055, ฿1,040 cash, the member keeps Thai |
-| 3 | A refund covering the rest of a sale restocks once | Being captured at hand-over; redo it |
-| 4 | Gate access off on a package: its adult bands carry `gate_access=false` | Staging has no gate screen. Show the package setting plus a read-back (`render.mjs job`) of the bands' flag |
-| 5 | Phone till (390x844) redeems a ZZ TEST booking once, with real band codes | To do |
-| 6 | Drop-Off switched to Nanny on the cart: the board shows Nanny | To do. A nanny must be on shift |
-| 7 | Phone-size check-in and release show on the desktop board | To do |
-| 8 | At F&B, a child's band shows the allergy banner; a no-food child shows "Parent did not authorize food orders for this child."; the kitchen ticket carries that child's allergy line | To do |
-| 9 | A prepaid meal is served once, a second attempt is refused, and release refunds only unserved meals | To do |
-
-ZZ TEST data created so far: member ZZ TEST Tier Thai; sale T1-000055
-(bands T1-N69MZ5, T1-ZA4CGQ); one paid-out of ฿60 on 2 Oct (SCRUM-215
-round 1 evidence).
-
-### End of Day round 2 (SCRUM-215)
-
-See `docs/progress/plans/cash/ROUND_2_BRIEF.md`, including its "State at
-hand-over".
-
-### Questions already raised (do not re-ask; wait for the answers)
-
-- SCRUM-497:
-  - the 22 register details, plus details added on 2 October: Leave as
-    booked; Mark Arrived; the gate reader's wording; a no-gate adult
-    counted under kids; refusal on exit; the re-verify wording; the
-    prepaid hold wording; refunded prepaid meals; prepaid lines on the
-    receipt.
-- SCRUM-488: the four End of Day round-1 points.
-- SCRUM-498: the counter-box items (1)-(5).
+SCRUM-502/503 hold the open small-ticket ledgers; 505-508 are filed defects not yet picked up; SCRUM-480 waits on the user for the Cloudflare R2 CORS rule. The tender-machine tickets 415/416 are unblocked (E4 landed) but queued behind the lift.
