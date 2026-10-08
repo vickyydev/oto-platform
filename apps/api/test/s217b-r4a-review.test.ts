@@ -1483,7 +1483,7 @@ describe('E. read off the code: threading, seams, fences and the census', () => 
    * round-7 list (the same parent check: the form's `tenant_id` against the
    * caller's park group).
    */
-  it.fails('FINDING 3: the census row for i18n_translations names the publish route too', () => {
+  it('FINDING 3: the census row for i18n_translations names the publish route too', () => {
     expect(censusRow('i18n_translations')).toContain('POST /api/dropoff-form/:formId/publish');
   });
 
