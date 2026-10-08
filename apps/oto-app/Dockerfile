@@ -79,6 +79,10 @@ COPY script/migrate.mjs ./script/migrate.mjs
 # Issues and revokes the directory API's tenant-bound keys; plain JavaScript
 # needing only pg, for the same reason as the migrator.
 COPY script/directory-client.mjs ./script/directory-client.mjs
+# The tenant ownership read-back (`npm run tenant:readback`, read only), so a
+# deployment can be read back from its own shell, as its own database role,
+# before and after migration 0007 (S2-17b round 4b).
+COPY script/tenant-ownership-readback.mjs ./script/tenant-ownership-readback.mjs
 
 ARG APP_VERSION
 ARG APP_CHANGE_ID

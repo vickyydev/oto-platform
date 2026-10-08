@@ -3664,6 +3664,7 @@ export async function registerRoutes(
           ));
         if (conflictingAssignments.length > 0) {
           if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+            tenantId: employee.tenantId,
             type: 'SHIFT_NEEDS_COVERAGE',
             severity: 'high',
             branchId: employee.branchId || undefined,
@@ -5111,6 +5112,7 @@ export async function registerRoutes(
       // Create attention item for change without contract
       try {
         if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+          tenantId: employee.tenantId,
           type: "CHANGE_NO_CONTRACT",
           severity: "medium",
           employeeId: employee.id,
@@ -5261,6 +5263,7 @@ export async function registerRoutes(
       // 7. Create attention item for contract update
       try {
         if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+          tenantId: employee.tenantId,
           type: "CHANGE_NO_CONTRACT",
           severity: "medium",
           employeeId: employee.id,
@@ -7717,6 +7720,7 @@ OTO Company Limited`,
         ));
       if (conflictingAssignments.length > 0) {
         if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+          tenantId: employee.tenantId,
           type: 'SHIFT_NEEDS_COVERAGE',
           severity: 'high',
           branchId: employee.branchId || undefined,
@@ -9593,6 +9597,7 @@ OTO Company Limited`,
         } catch (_) { /* non-fatal — use ID as fallback */ }
 
         if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+          tenantId: employee.tenantId,
           branchId: employee.branchId || undefined,
           employeeId: employee.id,
           type: "DUPLICATE_FACE_ENROLLMENT",
@@ -21748,6 +21753,7 @@ OTO Company Limited`,
           const checklistName = template[0]?.name || 'Unknown checklist';
 
           if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+            tenantId: currentRun.tenantId,
             type: 'CHECKLIST_AUDIT_FAIL',
             severity: 'high',
             branchId: currentRun.branchId || undefined,
@@ -21772,6 +21778,7 @@ OTO Company Limited`,
             const itemTitle2 = templateItem2[0]?.title || 'Unknown item';
 
             if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+              tenantId: currentRun2.tenantId,
               type: 'CHECKLIST_NOTE_FLAGGED',
               severity: 'medium',
               branchId: currentRun2.branchId || undefined,

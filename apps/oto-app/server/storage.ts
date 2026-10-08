@@ -400,7 +400,7 @@ export interface IStorage {
         // refuses a platform-linked or still-referenced user in one transaction.
 
         // Utility for activity logging
-        logActivity(log: InsertActivityLog): Promise<ActivityLog>;
+        logActivity(log: ActivityLogInput): Promise<ActivityLog>;
 
         // User branch access
         getUserBranchAccess(userId: string): Promise<UserBranchAccess[]>;
@@ -610,7 +610,7 @@ export interface IStorage {
                 parkGroup?: ActivityParkGroup;
                 sinceDays?: number;
         }): Promise<Record<string, number>>;
-        createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
+        createActivityLog(log: ActivityLogInput): Promise<ActivityLog>;
 
         getAttentionItems(options?: {
                 branchId?: string;
@@ -1981,6 +1981,13 @@ function activityParkGroupScope(scope: ActivityParkGroup) {
         )!;
 }
 
+/**
+ * An Activity row as a caller writes it (round 4b): `tenant_id` is NOT NULL
+ * now, and `createActivityLog` works the park group out, so a caller may name
+ * it or leave it to the row's own links.
+ */
+export type ActivityLogInput = Omit<InsertActivityLog, "tenantId"> & { tenantId?: string | null };
+
 type AttentionReadScope = { tenantId: string; branchIds: string[] };
 
 // Legacy attention rows have no tenant_id. Only a branch-owned row whose
@@ -2525,7 +2532,7 @@ export class DatabaseStorage implements IStorage {
                         .where(eq(users.id, id));
         }
 
-        async logActivity(log: InsertActivityLog): Promise<ActivityLog> {
+        async logActivity(log: ActivityLogInput): Promise<ActivityLog> {
                 return this.createActivityLog(log);
         }
 
@@ -3804,7 +3811,7 @@ export class DatabaseStorage implements IStorage {
          * group). So a row with no branch still shows in its own park group's
          * Activity Logbook.
          */
-        async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
+        async createActivityLog(log: ActivityLogInput): Promise<ActivityLog> {
                 try {
                         const tenantId = sql`coalesce(
                                 (select tenant_id from branches where id = ${log.branchId ?? null}),

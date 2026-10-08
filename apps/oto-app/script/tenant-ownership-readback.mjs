@@ -7,11 +7,12 @@
  *  1. Did migration 0006 place every row? For `settings`, `activity_log` and
  *     `attention_items`: how many rows each park group holds, and how many
  *     hold none. A row with no park group is one the previous release wrote
- *     during the hand-over; round 4b runs 0006's backfill again over them and
- *     sets NOT NULL only once this answers none. Also: which uniques `settings`
- *     carries (both in 4a; the new one alone after 4b), whether any key is
- *     held twice, and whether any activity row's park group disagrees with its
- *     branch's.
+ *     during the hand-over; round 4b's migration 0007 runs 0006's backfill
+ *     again over them, refuses to go on while any is left, and then sets NOT
+ *     NULL. Also: which uniques `settings` carries (both in 4a; the new one
+ *     alone after 0007), whether `tenant_id` is NOT NULL yet, whether any key
+ *     is held twice, and whether any activity row's park group disagrees with
+ *     its branch's.
  *  2. The root-table census: the six tables with no tenant column of their
  *     own, each counted through the parent that carries one (or, for `people`,
  *     the children that do), so the written dispositions in the plan can be
@@ -121,6 +122,15 @@ async function main() {
           ? "(tenant_id, key) alone (round 4b: every park group saves its own)"
           : `UNEXPECTED: ${uniques.join(", ") || "neither unique"}`;
     console.log(`\nsettings uniques: ${shape}.`);
+    const notNull = await q(
+      `select table_name, is_nullable from information_schema.columns
+        where table_schema = $1 and column_name = 'tenant_id'
+          and table_name in ('settings', 'activity_log', 'attention_items') order by 1`,
+      [SCHEMA],
+    );
+    console.log(
+      `tenant_id NOT NULL (round 4b, 0007): ${notNull.map((c) => `${c.table_name} ${c.is_nullable === "NO" ? "yes" : "no"}`).join(", ")}.`,
+    );
     const twice = n((await q(
       `select count(*) as n from (select tenant_id, key from settings group by 1, 2 having count(*) > 1) d`,
     ))[0].n);
@@ -188,7 +198,9 @@ async function main() {
 
     await client.query("rollback");
     if (unplaced > 0) {
-      console.log(`\n${unplaced} row${unplaced === 1 ? " has" : "s have"} no park group: run 0006's backfill again before NOT NULL (round 4b).`);
+      console.log(
+        `\n${unplaced} row${unplaced === 1 ? " has" : "s have"} no park group: migration 0007 (round 4b) runs 0006's backfill again over them before NOT NULL.`,
+      );
       return 1;
     }
     console.log("\nEvery settings, activity and attention row has its park group.");

@@ -79,6 +79,7 @@ export async function runPresenceReconciliation(opts: NightJobOptions = {}): Pro
 
     for (const presence of stuckPresences) {
       if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+        tenantId: presence.tenantId,
         type: 'TIMEKEEPING_STUCK_CLOCK_IN',
         severity: 'high',
         employeeId: presence.employeeId,
@@ -207,6 +208,7 @@ export async function runMidnightTimekeepingAutoClockOut(opts: NightJobOptions =
 
       // Create attention item for the missing clock-out
       if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+        tenantId: row.tenant_id,
         type: 'TIMEKEEPING_STUCK_CLOCK_IN',
         severity: 'medium',
         employeeId: row.employee_id,
