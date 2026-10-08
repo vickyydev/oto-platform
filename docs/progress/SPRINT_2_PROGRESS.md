@@ -1,5 +1,37 @@
 # Sprint 2 progress
 
+## Platform lane checkpoint - 8 October 2026 - S2-20 and S2-21 Deployed; S2-17b open, rounds 1-2 landed
+
+The two big stories closed with checked staging evidence. SCRUM-217
+(S2-20): events, parties, camps, the kiosk and online passes, built in
+rounds 0/E1-E5/K1-K2 with migrations 0067/0070/0072/0073/0075 - walk-ups
+and pass sales written back to the OTO App through the directory with a
+one-press Failures sweep, check-in/out and bands through the signed
+pipeline with the undo-vs-late-box-fact ordering settled, the party tab
+freezing each charge from the press, and the kiosk redeeming real
+bookings on the Demo counter box. SCRUM-218 (S2-21): staff benefits in
+rounds 1-4 with 0066/0068/0071/0074 - engine parity, the Ed25519
+credential, checkout refusing all five tender roads on a released
+benefit, reports and the period rollover. Both walked to Deployed with
+~90 independently image-checked frames; 443/484/493/501/504 Deployed
+alongside.
+
+S2-17b (SCRUM-191), the OTO App lifted whole, is the open story:
+docs/progress/plans/otoapp-lift/PLAN.md (nine rounds, hazards H1-H28,
+owner questions Q1-Q20). Round 1 (sign-on, identity, the route fences)
+is live on staging, its previously open seed/prod-sync/storage doors
+probed 403 from outside. Round 2 (the employee mirror - otoapp_v.employees
+via app migration 0005, job:otoapp.employee_sync with adoption, archive-
+revokes-cards, rehire; the benefits swap; PATCH /me refusing mirrored
+fields) landed on main as 43b214ee after an independent review (MERGE,
+66 tests) whose two prescribed fixes - the adoption race on PATCH /me and
+the double-filed unknown-card case - were applied and their pins flipped
+at the gate. Staging next, strictly ordered: oto-app deploy (0005), the
+otoapp_v grants + read-back, then the api; demo people provisioned before
+they exist as app employees. Then rounds 3-8. Platform migrations stand
+at 0075; next free 0076. The exact running state lives in
+docs/progress/STATUS.md (newest block first).
+
 ## Platform lane checkpoint - 7 October 2026 - S2-15b analytics complete; SCRUM-216 and SCRUM-214 Deployed
 
 Six build rounds and a demo-seed fix round, every landing reviewed
