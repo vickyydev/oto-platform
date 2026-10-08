@@ -21,7 +21,9 @@ import { JobFailedError } from './job-failure';
 import { buildOtoAppJobsClient } from './otoapp-directory';
 import { OTOAPP_EMPLOYEE_SYNC_JOB, runOtoAppEmployeeSync } from './otoapp-employee-sync';
 import {
+  OTOAPP_ATTENTION_JOB,
   OTOAPP_MIDNIGHT_JOB,
+  OTOAPP_NO_SHOW_JOB,
   OTOAPP_PRESENCE_JOB,
   OTOAPP_RECONCILE_JOB,
   runOtoAppNightJob,
@@ -793,7 +795,9 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
  * failed park group runs again at the next tick. Registering them wrote the
  * expectations the watchdog raises `ops.missing` from when they stop, and a
  * run that keeps failing raises `ops.failing`. A deployment with no OTO App
- * night work configured runs each as a no-op that says so.
+ * night work configured runs each as a no-op that says so. Round 4b adds the
+ * app's two Attention timers on the same terms: the engine every six hours
+ * and the no-show check every ten minutes within 07:00-22:00 Bangkok.
  *
  * Exported for the tests, which build these with a clock and an app of their
  * own.
@@ -828,6 +832,30 @@ export function buildOtoAppNightJobs(
       intervalSeconds: 6 * 3600,
       exclusive: true,
       run: async ({ db, now }) => ({ detail: await runOtoAppNightJob({ db, client }, 'presence', at(now)) }),
+    },
+    /**
+     * S2-17b round 4b — Attention, resumed. The engine's full reconciliation
+     * every six hours, and the no-show check every ten minutes from 07:00 to
+     * 22:00 Bangkok (outside those hours a tick runs nothing and says so, which
+     * keeps the expectation fed all night). Each per park group, under the
+     * same exclusive run lock and the app's per-park-group lock as the night
+     * batches; what each run raised is kept in its detail (`alerts`).
+     */
+    {
+      name: OTOAPP_ATTENTION_JOB,
+      description:
+        "Runs the OTO App's Attention engine for each park group every six hours: every rule over every employee, new alerts raised and alerts no rule raises any more resolved, each park group's alerts its own",
+      intervalSeconds: 6 * 3600,
+      exclusive: true,
+      run: async ({ db, now }) => ({ detail: await runOtoAppNightJob({ db, client }, 'attention', at(now)) }),
+    },
+    {
+      name: OTOAPP_NO_SHOW_JOB,
+      description:
+        "Runs the OTO App's no-show check for each park group every ten minutes from 07:00 to 22:00 Bangkok time: a No-show alert for each person scheduled today not clocked in 30 minutes after their shift began, resolved once they clock in",
+      intervalSeconds: 600,
+      exclusive: true,
+      run: async ({ db, now }) => ({ detail: await runOtoAppNightJob({ db, client }, 'no_show', at(now)) }),
     },
   ];
 }

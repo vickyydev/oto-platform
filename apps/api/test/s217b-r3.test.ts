@@ -165,6 +165,9 @@ const STEPS: Record<OtoAppNightJob, Array<{ step: string; onFailure: 'continue' 
   presence: [
     { step: 'presenceReconciliation', onFailure: 'continue', counts: { stuckClockIns: 0, presenceMismatches: 1, repairs: 1, anomalies: 0 } },
   ],
+  // Round 4b's two Attention batches, which the stand-in answers on the same terms.
+  attention: [{ step: 'attentionReconciliation', onFailure: 'continue', counts: { created: 0, updated: 0, resolved: 0, errors: 0 } }],
+  no_show: [{ step: 'noShowCheck', onFailure: 'continue', counts: { created: 0, resolved: 0, outsideHours: 0 } }],
 };
 
 /** The app's answer to one park group's batch, every step ok unless told otherwise. */
@@ -403,7 +406,8 @@ describe('A. the three jobs, registered as the registry registers every job', ()
   it('midnight and reconcile tick every five minutes, presence every six hours, all exclusive, each with its expectation', async () => {
     const env = envFor([]);
     const all = buildDefaultJobs({ db, env, log: ctx.app.log, channels: [] });
-    const ours = all.filter((j) => j.name.startsWith('job:otoapp.') && j.name !== 'job:otoapp.employee_sync');
+    // Round 3's three; round 4b's two Attention jobs are s217b-r4b.test.ts's.
+    const ours = all.filter((j) => [OTOAPP_MIDNIGHT_JOB, OTOAPP_RECONCILE_JOB, OTOAPP_PRESENCE_JOB].includes(j.name));
     expect(ours.map((j) => [j.name, j.intervalSeconds, j.exclusive])).toEqual([
       [OTOAPP_MIDNIGHT_JOB, 300, true],
       [OTOAPP_RECONCILE_JOB, 300, true],
@@ -1281,7 +1285,10 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app: its endpoint, the platform j
   it('under OTOAPP_JOBS=platform the scheduler registers no timer; under inprocess the app’s own three', () => {
     for (const [mode, expected] of [
       ['platform', 'TIMERS=0 STARTED=false'],
-      ['inprocess', 'TIMERS=3 STARTED=true'],
+      // The three night timers, and from round 4b Attention's four (the engine's
+      // start-up run and six-hourly timer, the no-show check's first run and
+      // ten-minute timer).
+      ['inprocess', 'TIMERS=7 STARTED=true'],
     ] as const) {
       const r = spawnSync(process.execPath, [join(APP_NODE_MODULES, 'tsx', 'dist', 'cli.mjs'), 'tests/harness/start-scheduler.ts'], {
         cwd: APP_DIR,

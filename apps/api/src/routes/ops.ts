@@ -707,12 +707,20 @@ export async function opsRoutes(app: App): Promise<void> {
 
   // --- Test controls ------------------------------------------------------
 
-  /** S2-17b round 3: which control runs which OTO App night job, and the one that fails it on purpose. */
+  /**
+   * S2-17b round 3: which control runs which OTO App night job, and the one
+   * that fails it on purpose. Round 4b adds the Attention engine and the
+   * no-show check, each with its own deliberate failure.
+   */
   const NIGHT_CONTROLS: Record<string, { job: OtoAppNightJob; fail?: true } | undefined> = {
     'otoapp.midnight': { job: 'midnight' },
     'otoapp.reconcile': { job: 'reconcile' },
     'otoapp.presence': { job: 'presence' },
     'otoapp.presence.fail': { job: 'presence', fail: true },
+    'otoapp.attention': { job: 'attention' },
+    'otoapp.attention.fail': { job: 'attention', fail: true },
+    'otoapp.no_show': { job: 'no_show' },
+    'otoapp.no_show.fail': { job: 'no_show', fail: true },
   };
 
   /**
@@ -792,6 +800,38 @@ export async function opsRoutes(app: App): Promise<void> {
       label: "Fail the OTO App's presence check once",
       description:
         "Runs the presence check with a deliberate failure before it reaches the OTO App, so a failed OTO App job can be watched on Failures — and its Retry seen to run the check for real.",
+      sticky: true,
+    },
+    /**
+     * S2-17b round 4b — Run now for Attention, resumed: the six-hourly engine
+     * and the ten-minute no-show check, and a deliberate failure of each.
+     */
+    {
+      key: 'otoapp.attention',
+      label: "Run the OTO App's Attention engine now",
+      description:
+        "Runs the Attention engine for each park group without waiting for the next six-hourly run: every rule over every employee, new alerts raised and stale ones resolved, each park group's alerts its own. The run says how many it raised.",
+      sticky: false,
+    },
+    {
+      key: 'otoapp.attention.fail',
+      label: "Fail the OTO App's Attention engine once",
+      description:
+        'Runs the Attention engine with a deliberate failure before it reaches the OTO App, so it can be watched on Failures — and its Retry seen to run the engine for real.',
+      sticky: true,
+    },
+    {
+      key: 'otoapp.no_show',
+      label: "Run the OTO App's no-show check now",
+      description:
+        'Runs the no-show check for each park group without waiting ten minutes. Outside 07:00-22:00 Bangkok time it runs nothing and says so, as the OTO App does.',
+      sticky: false,
+    },
+    {
+      key: 'otoapp.no_show.fail',
+      label: "Fail the OTO App's no-show check once",
+      description:
+        'Runs the no-show check with a deliberate failure before it reaches the OTO App, so it can be watched on Failures — and its Retry seen to run the check for real.',
       sticky: true,
     },
     {

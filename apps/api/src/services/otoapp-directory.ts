@@ -193,8 +193,12 @@ function refusalOf(status: number, payload: unknown): { code: string; message: s
 
 // --- S2-17b round 3: the app's night work, run by this platform -------------
 
-/** The app's three night batches (`NIGHT_JOB_NAMES`, the app's lib/nightJobs.ts). */
-export type OtoAppNightJob = 'midnight' | 'reconcile' | 'presence';
+/**
+ * The app's batches this platform runs (`NIGHT_JOB_NAMES`, the app's
+ * lib/nightJobs.ts): the three night batches (S2-17b round 3) and, from round
+ * 4b, the Attention engine and the no-show check.
+ */
+export type OtoAppNightJob = 'midnight' | 'reconcile' | 'presence' | 'attention' | 'no_show';
 
 /** One park group whose night work this platform runs, and the `jobs:run` key it holds for it. */
 export interface OtoAppJobGroup {

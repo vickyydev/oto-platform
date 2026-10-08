@@ -608,9 +608,10 @@ const EnvSchema = z.object({
    * detail.
    *
    * Empty (or `OTOAPP_DIRECTORY_URL` empty): `job:otoapp.midnight`,
-   * `.reconcile` and `.presence` run as no-ops that say so, which is what a
-   * deployment whose OTO App still runs its own timers (`OTOAPP_JOBS=inprocess`
-   * on the app) should do.
+   * `.reconcile`, `.presence` and, from S2-17b round 4b, `.attention` and
+   * `.no_show` run as no-ops that say so, which is what a deployment whose OTO
+   * App still runs its own timers (`OTOAPP_JOBS=inprocess` on the app) should
+   * do. The same key per park group runs all five.
    */
   OTOAPP_JOBS_KEYS: z
     .string()

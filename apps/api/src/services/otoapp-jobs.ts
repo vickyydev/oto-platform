@@ -33,6 +33,16 @@ import { withTx, type Exec } from './tx';
  *    records cleared; then the leavers whose PLATFORM account is still active
  *    are listed on Failures (below).
  *  - `job:otoapp.presence` — the presence check, every six hours.
+ *  - From round 4b, `job:otoapp.attention` — the Attention engine's full
+ *    reconciliation, every six hours (the app's own six-hourly timer) — and
+ *    `job:otoapp.no_show` — the no-show check, every ten minutes, from 07:00
+ *    to 22:00 Bangkok time only (outside those hours a tick runs nothing and
+ *    says so, as the app's own check does). Each is run per park group, as
+ *    the presence check is, and fails the same ways. Their runs add up what
+ *    they raised (`alerts`): the first run after Attention resumes applies
+ *    every rule to the rows that built up while it was paused, and that
+ *    burst is kept in the run, park group by park group and rule by rule,
+ *    never smoothed into one number.
  *
  * ONCE PER BANGKOK DATE. The runner only knows intervals
  * (`services/jobs.ts`), so the two daily batches tick every five minutes and
@@ -80,6 +90,8 @@ import { withTx, type Exec } from './tx';
 export const OTOAPP_MIDNIGHT_JOB = 'job:otoapp.midnight';
 export const OTOAPP_RECONCILE_JOB = 'job:otoapp.reconcile';
 export const OTOAPP_PRESENCE_JOB = 'job:otoapp.presence';
+export const OTOAPP_ATTENTION_JOB = 'job:otoapp.attention';
+export const OTOAPP_NO_SHOW_JOB = 'job:otoapp.no_show';
 
 /** The integration record a still-active leaver's platform account is filed under (Q4). */
 export const OTOAPP_DEPARTED_ACCOUNT_RUN = 'otoapp:account.departed';
@@ -99,13 +111,45 @@ export interface NightJobSpec {
   dueAfterMinute: number | null;
   /** The batch's hour, as the Health page and the run say it. */
   at: string | null;
+  /**
+   * Bangkok hours the batch runs in, as minutes past midnight: from `from`
+   * (included) to `to` (not included). Outside them a tick calls nothing and
+   * says so. The no-show check only (round 4b): the app's own check skips
+   * itself outside 07:00-22:00.
+   */
+  window?: { from: number; to: number; label: string; what: string };
+  /** The Attention jobs (round 4b): the run adds up the alerts each park group raised. */
+  countsAlerts?: true;
 }
 
 export const OTOAPP_NIGHT_JOBS: Record<OtoAppNightJob, NightJobSpec> = {
   midnight: { job: OTOAPP_MIDNIGHT_JOB, name: 'midnight', dueAfterMinute: 1, at: '00:01' },
   reconcile: { job: OTOAPP_RECONCILE_JOB, name: 'reconcile', dueAfterMinute: 3 * 60, at: '03:00' },
   presence: { job: OTOAPP_PRESENCE_JOB, name: 'presence', dueAfterMinute: null, at: null },
+  attention: { job: OTOAPP_ATTENTION_JOB, name: 'attention', dueAfterMinute: null, at: null, countsAlerts: true },
+  no_show: {
+    job: OTOAPP_NO_SHOW_JOB,
+    name: 'no_show',
+    dueAfterMinute: null,
+    at: null,
+    window: { from: 7 * 60, to: 22 * 60, label: '07:00-22:00', what: 'checks for no-shows' },
+    countsAlerts: true,
+  },
 };
+
+/**
+ * What one run of an Attention job raised (round 4b), summed over the park
+ * groups whose batch answered: new alerts, refreshed ones and resolved ones,
+ * and the new ones rule by rule where the app names the rule (the engine's
+ * `created.<RULE>` counts). Read from the app's own step counts, not capped
+ * or averaged: a burst shows as a burst.
+ */
+export interface AlertTotals extends Record<string, unknown> {
+  created: number;
+  updated: number;
+  resolved: number;
+  byRule: Record<string, number>;
+}
 
 /** What became of one park group in one run. */
 export interface NightGroupSummary {
@@ -159,6 +203,8 @@ export interface NightJobSummary extends Record<string, unknown> {
   failed: number;
   /** Still-active leavers' accounts filed on Failures by this run (the reconcile batch). */
   departedAccountsRaised: number;
+  /** The Attention jobs (round 4b): what the park groups' batches raised this run. */
+  alerts?: AlertTotals;
   /**
    * Review F1: the park groups the app holds staff in, held against the keys
    * this deployment holds — on a run that was due. Each `unkeyed` one is a
@@ -298,6 +344,14 @@ export async function runOtoAppNightJob(
     return summary;
   }
 
+  if (spec.window) {
+    const minute = wallClockMinutesInTz(now, BANGKOK);
+    if (minute < spec.window.from || minute >= spec.window.to) {
+      summary.reason = `Not due outside ${spec.window.label} Bangkok time: the OTO App ${spec.window.what} only in those hours.`;
+      return summary;
+    }
+  }
+
   let done = new Set<string>();
   if (spec.dueAfterMinute !== null) {
     const date = isoDateInTz(now, BANGKOK);
@@ -377,6 +431,8 @@ export async function runOtoAppNightJob(
     summary.groups.push(group);
   }
 
+  if (spec.countsAlerts) summary.alerts = alertTotals(summary.groups);
+
   // Review F1: after the keyed park groups, so a list that cannot be read
   // never costs them their night.
   summary.parkGroups = await checkParkGroups(db, client.tenantIds);
@@ -409,6 +465,29 @@ export async function runOtoAppNightJob(
     throw new JobFailedError(code, message.slice(0, 500), summary);
   }
   return summary;
+}
+
+/**
+ * Round 4b: what the park groups' Attention batches raised, from the counts
+ * each step answered (`created`, `updated`, `resolved`, and `created.<RULE>`
+ * for the engine's new items rule by rule). A park group whose batch failed
+ * still counts what its steps did before failing: those items exist.
+ */
+function alertTotals(groups: NightGroupSummary[]): AlertTotals {
+  const totals: AlertTotals = { created: 0, updated: 0, resolved: 0, byRule: {} };
+  for (const g of groups) {
+    for (const s of g.steps ?? []) {
+      for (const [k, n] of Object.entries(s.counts ?? {})) {
+        if (typeof n !== 'number' || !Number.isFinite(n)) continue;
+        if (k === 'created' || k === 'updated' || k === 'resolved') totals[k] += n;
+        else if (k.startsWith('created.')) {
+          const rule = k.slice('created.'.length);
+          totals.byRule[rule] = (totals.byRule[rule] ?? 0) + n;
+        }
+      }
+    }
+  }
+  return totals;
 }
 
 /**
@@ -582,7 +661,12 @@ export async function describeLatestNightRun(db: Exec, name: OtoAppNightJob): Pr
     count('locked') ? `${count('locked')} already running elsewhere` : null,
   ].filter(Boolean);
   const departed = detail.departedAccountsRaised ?? 0;
+  const alerts = detail.alerts;
   return `${parts.join(', ') || 'no park group to run'}${
     departed ? `; ${departed} leaver account${departed === 1 ? '' : 's'} still active, listed on Failures` : ''
+  }${
+    alerts
+      ? `; ${alerts.created} new alert${alerts.created === 1 ? '' : 's'} raised, ${alerts.updated} updated, ${alerts.resolved} resolved`
+      : ''
   }.`;
 }

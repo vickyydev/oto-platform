@@ -158,6 +158,9 @@ const STEPS: Record<OtoAppNightJob, Array<{ step: string; onFailure: 'continue' 
   presence: [
     { step: 'presenceReconciliation', onFailure: 'continue', counts: { stuckClockIns: 0, presenceMismatches: 0, repairs: 0, anomalies: 0 } },
   ],
+  // Round 4b's two Attention batches, which the stand-in answers on the same terms.
+  attention: [{ step: 'attentionReconciliation', onFailure: 'continue', counts: { created: 0, updated: 0, resolved: 0, errors: 0 } }],
+  no_show: [{ step: 'noShowCheck', onFailure: 'continue', counts: { created: 0, resolved: 0, outsideHours: 0 } }],
 };
 
 function answer(job: OtoAppNightJob, tenantId: string): NightJobAnswer {
