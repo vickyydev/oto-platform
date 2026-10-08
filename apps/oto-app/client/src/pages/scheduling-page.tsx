@@ -1003,8 +1003,8 @@ function SchedulingPageInner() {
       setShiftRowForm({ startTime: "09:00", endTime: "18:00", label: "", note: "", roleIds: [], staffRequired: 1, staffRequiredByDay: {}, colorIndex: null });
       toast({ title: "Shift created", description: "The shift row has been added." });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create shift row", variant: "destructive" });
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message || "Failed to create shift row", variant: "destructive" });
     },
   });
 
@@ -1049,8 +1049,8 @@ function SchedulingPageInner() {
       
       toast({ title: "Shift updated", description: "The shift row has been updated." });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update shift row", variant: "destructive" });
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message || "Failed to update shift row", variant: "destructive" });
     },
   });
 
