@@ -48,11 +48,14 @@ import { runDailyRollupJob } from '../src/services/analytics-rollup';
  * defaults:
  *
  *   check 1  Admin > Staff Benefits: the three templates and the four
- *            employees — READ FROM THE SEEDED `core.employee` ROWS, source
- *            `platform`: the OTO App mirror (S2-17b, "POS seams") is not
- *            built, so the check reads "seeded"; the panel cannot create or
- *            edit an employee; Nok's override reads 4 coffees beside the
- *            Staff template's 2.
+ *            employees — here, on a database with no OTO App, READ FROM THE
+ *            SEEDED `core.employee` ROWS, source `platform` (the dev seed's).
+ *            On the OTO App mirror (S2-17b round 2) the same four are read
+ *            from `otoapp_v.employees` through `otoapp:employee.sync`,
+ *            adopted with their ids, profiles and Nok's override intact —
+ *            driven by the closing audit (s221-r4-closing-audit.test.ts).
+ *            The panel cannot create or edit an employee; Nok's override
+ *            reads 4 coffees beside the Staff template's 2.
  *   check 2  the Manager credit edited to ฿600 (Q2's default; the ticket's
  *            ฿6,000) from tomorrow leaves today's Manager checkout at ฿500,
  *            keeps both versions, and is audited — `benefit.template_update`,
@@ -282,7 +285,7 @@ describe('check 1 — the templates and the four employees, read from the SEEDED
     effectiveProfile: { freeItems?: Array<{ quotaPerPeriod: number }> };
   }
 
-  it('lists the three templates and the four employees, every one a seeded platform row: the mirror is not built', async () => {
+  it('lists the three templates and the four employees, every one a seeded platform row where no OTO App copies them', async () => {
     const t = await call<{ templates: Array<{ role: string; name: string }> }>('GET', '/benefits/templates', admin);
     expect(t.body.templates.map((x) => [x.role, x.name])).toEqual([
       ['owner', 'Owner'],
@@ -300,8 +303,8 @@ describe('check 1 — the templates and the four employees, read from the SEEDED
         ['Som (Reception)', 'staff'],
       ].sort(),
     );
-    // "Seeded": every staff member is a platform row. The OTO App copy
-    // (S2-17b) would write source `otoapp`; nothing has.
+    // "Seeded": every staff member is a platform row. This database has no
+    // OTO App, so the copy (S2-17b round 2) has nobody to write as `otoapp`.
     expect(s.body.staff.every((p) => p.source === 'platform')).toBe(true);
     expect(await ctx.db.select().from(employee).where(eq(employee.source, 'otoapp'))).toEqual([]);
   });
