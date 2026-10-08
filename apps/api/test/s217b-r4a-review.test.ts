@@ -1317,15 +1317,15 @@ describe('E. read off the code: threading, seams, fences and the census', () => 
     expect(touching).toEqual(['server/data-admin/models/setting.ts', 'server/prod-sync.ts', 'server/storage.ts']);
   });
 
-  it('as built: the dev full seed writes settings, Activity and Attention rows with no park group (finding 5’s arrangement)', () => {
+  it('finding 5’s arrangement: the dev full seed’s settings, Activity and Attention blocks are found, and the seed holds the one park group it made', () => {
     const seed = readFileSync(join(APP_DIR, 'script', 'full', 'main.ts'), 'utf8');
     const settingsBlock = seed.slice(seed.indexOf('db.insert(settings).values(['), seed.indexOf('[seed-full] Created settings'));
     const activityBlock = seed.slice(seed.indexOf('activityRows.push({'), seed.indexOf('db.insert(activityLog)'));
     const attentionBlock = seed.slice(seed.indexOf('attentionRows.push({'), seed.indexOf('db.insert(attentionItems)'));
     for (const block of [settingsBlock, activityBlock, attentionBlock]) {
       expect(block.length).toBeGreaterThan(50);
-      expect(block).not.toMatch(/tenantId/);
     }
+    expect(seed.match(/\.insert\(tenants\)/g)).toHaveLength(1);
   });
 
   /**
@@ -1340,7 +1340,7 @@ describe('E. read off the code: threading, seams, fences and the census', () => 
    * Prescribed fix: give the seed's settings, activity and attention rows
    * `tenantId: tenant.id` (it already holds the tenant it made).
    */
-  it.fails('FINDING 5: the dev full seed writes every settings, Activity and Attention row with its park group', () => {
+  it('FINDING 5: the dev full seed writes every settings, Activity and Attention row with its park group', () => {
     const seed = readFileSync(join(APP_DIR, 'script', 'full', 'main.ts'), 'utf8');
     const settingsBlock = seed.slice(seed.indexOf('db.insert(settings).values(['), seed.indexOf('[seed-full] Created settings'));
     const activityBlock = seed.slice(seed.indexOf('activityRows.push({'), seed.indexOf('db.insert(activityLog)'));

@@ -738,6 +738,7 @@ async function seed() {
   console.log("[seed-full] Created", templateRecords.length, "templates");
 
   // ── 11. Settings ─────────────────────────────────────────────────────────
+  // Every row is the seed's park group's (S2-17b round 4a: settings per park group).
   await db.insert(settings).values([
     { key: "auth_kiosk_code_expiry_seconds",  value: "600" },
     { key: "annual_leave_total_days",    value: "8"   },
@@ -868,7 +869,7 @@ Return a JSON object with these keys:
 }
 
 Required fields are: event_date, start_time, child_name (for birthday), num_children` },
-  ]);
+  ].map((row) => ({ ...row, tenantId: tenant.id })));
   console.log("[seed-full] Created settings");
 
   // ── 12. Payroll Periods ────────────────────────────────────────────────────
@@ -1679,6 +1680,7 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
     const branch = branchRecords.find(b => b.id === emp.branchId) ?? pick(branchRecords);
     const type = pickActivityType();
     activityRows.push({
+      tenantId: tenant.id,
       branchId: branch.id,
       employeeId: emp.id,
       activityType: type as any,
@@ -1711,6 +1713,7 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
       const emp = pick(insertedEmployees);
       const branch = branchRecords.find(b => b.id === emp.branchId) ?? pick(branchRecords);
       attentionRows.push({
+        tenantId: tenant.id,
         branchId: branch.id,
         employeeId: emp.id,
         type: spec.type as any,
