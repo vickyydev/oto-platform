@@ -407,23 +407,35 @@ describe('A. the OTO App migration, from a seeded live state', () => {
       expect(runs[0]).toContain('applied 0004_otoapp_v_views');
       // S2-17b round 2's employee view rides the same upgrade.
       expect(runs[0]).toContain('applied 0005_otoapp_v_employees');
-      // And round 4a's tenant columns (s217b-r4a.test.ts proves their backfill).
+      // And round 4a's tenant columns (s217b-r4a.test.ts proves their backfill),
+      // and round 4b's contraction of them (s217b-r4b.test.ts).
       expect(runs[0]).toContain('applied 0006_tenant_ownership_expand');
-      expect(runs[1]).toMatch(/up to date .* 7 migration/);
+      expect(runs[0]).toContain('applied 0007_tenant_ownership_contract');
+      expect(runs[1]).toMatch(/up to date .* 8 migration/);
     }
     await withClient(url, async (c) => {
       const ledger = await c.query<{ n: string }>(
         'select count(*)::text as n from otoapp.__drizzle_migrations',
       );
-      expect(ledger.rows[0]!.n).toBe('7');
+      expect(ledger.rows[0]!.n).toBe('8');
     });
   });
 
   it('changes nothing that existed: columns, constraints, indexes, enums, and nothing in public', async () => {
     const after = await withClient(url, shapeOf);
     for (const [key, def] of before.columns) expect(after.columns.get(key), key).toBe(def);
-    for (const [key, def] of before.constraints) expect(after.constraints.get(key), key).toBe(def);
-    for (const [key, def] of before.indexes) expect(after.indexes.get(key), key).toBe(def);
+    // The one declared exception: round 4b's 0007 drops the baseline's one-row-
+    // per-key unique on settings, a release after 4a stopped relying on it
+    // (expand/contract; s217b-r4b.test.ts proves the contraction).
+    const contracted = new Set(['settings:settings_key_unique']);
+    for (const [key, def] of before.constraints) {
+      if (contracted.has(key)) expect(after.constraints.has(key), key).toBe(false);
+      else expect(after.constraints.get(key), key).toBe(def);
+    }
+    for (const [key, def] of before.indexes) {
+      if (contracted.has(key)) expect(after.indexes.has(key), key).toBe(false);
+      else expect(after.indexes.get(key), key).toBe(def);
+    }
     expect(after.enums).toEqual(before.enums);
     expect(after.publicObjects).toEqual(before.publicObjects);
 
@@ -445,8 +457,12 @@ describe('A. the OTO App migration, from a seeded live state', () => {
       'core_events.entry_price_weekend_thb',
       'settings.tenant_id',
     ]);
+    // Round 4b's 0007 makes the three tenant columns NOT NULL, once it has placed
+    // every row (they are backfilled, and the migration stops while one is left).
+    const contractedColumns = new Set(['activity_log.tenant_id', 'attention_items.tenant_id', 'settings.tenant_id']);
     for (const [key, def] of added) {
-      expect(def.includes('notnull=false') || !def.includes('default=<none>'), key).toBe(true);
+      if (contractedColumns.has(key)) expect(def.includes('notnull=true'), key).toBe(true);
+      else expect(def.includes('notnull=false') || !def.includes('default=<none>'), key).toBe(true);
     }
     // Nothing is added to an existing table but the one CHECK and the one
     // partial index — and, from S2-17b round 4a (0006), the three tenant

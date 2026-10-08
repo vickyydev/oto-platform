@@ -970,7 +970,9 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
         [employee, people.adminA.id],
       );
       await q(
-        `insert into activity_log (employee_id, activity_type, summary_text) values ($1, 'ZZ_RECHECK', 'ZZ recheck')`,
+        // Every activity row has its park group (round 4b, NOT NULL): the employee's.
+        `insert into activity_log (employee_id, activity_type, summary_text, tenant_id)
+           select $1::varchar, 'ZZ_RECHECK', 'ZZ recheck', tenant_id from employees where id = $1::varchar`,
         [employee],
       );
     }

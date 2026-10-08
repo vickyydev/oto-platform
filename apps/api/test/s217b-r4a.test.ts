@@ -43,6 +43,13 @@ import { newId } from '@oto/shared';
  *     H11 on both constraint shapes and the worded refusals, the settings reads
  *     per park group, the Activity Logbook's isolation, and H12's three
  *     answers.
+ *
+ * ROUND 4b (migration 0007) contracted what 4a expanded, so the parts of this
+ * file that pinned 4a's own shape now read it on a database stopped at 0006 —
+ * the shape the previous release ran on, and the one staging held until 4b —
+ * and the 4a fences 4b deliberately lifted (Attention paused, only the default
+ * park group saving settings, settings_key_unique standing) say so and point
+ * at s217b-r4b.test.ts, which proves what replaced them.
  */
 
 const APP_DIR = fileURLToPath(new URL('../../oto-app/', import.meta.url));
@@ -68,17 +75,23 @@ const journal = () =>
     entries: JournalEntry[];
   };
 
-/** A copy of the app's migrations holding only what was live before this round: 0000 to 0005. */
-function beforeThisRound(): string {
+/** A copy of the app's migrations holding only those up to and including `idx`. */
+function migrationsUpTo(idx: number, lastTag: string): string {
   const j = journal();
-  const live = j.entries.filter((e) => e.idx <= 5);
-  expect(live.map((e) => e.tag).at(-1)).toBe('0005_otoapp_v_employees');
+  const live = j.entries.filter((e) => e.idx <= idx);
+  expect(live.map((e) => e.tag).at(-1)).toBe(lastTag);
   const dir = mkdtempSync(join(tmpdir(), 'otoapp-r4a-'));
   mkdirSync(join(dir, 'meta'));
   writeFileSync(join(dir, 'meta', '_journal.json'), JSON.stringify({ ...j, entries: live }));
   for (const e of live) copyFileSync(join(APP_MIGRATIONS, `${e.tag}.sql`), join(dir, `${e.tag}.sql`));
   return dir;
 }
+
+/** A copy of the app's migrations holding only what was live before this round: 0000 to 0005. */
+const beforeThisRound = () => migrationsUpTo(5, '0005_otoapp_v_employees');
+
+/** The same, up to this round's own 0006: the shape 4a ran on, before round 4b's 0007. */
+const thisRoundOnly = () => migrationsUpTo(6, MIGRATION);
 
 async function withClient<T>(url: string, work: (c: pg.Client) => Promise<T>): Promise<T> {
   const c = new pg.Client({ connectionString: url });
@@ -254,7 +267,7 @@ describe('A. H10: the backfill places every row in its own park group', () => {
   it('applies 0006 once, then nothing', () => {
     if (HAS_APP_MODULES) {
       expect(runs[0]).toContain(`applied ${MIGRATION}`);
-      expect(runs[1]).toMatch(/up to date .* 7 migration/);
+      expect(runs[1]).toMatch(new RegExp(`up to date .* ${journal().entries.length} migration`));
     }
   });
 
@@ -335,9 +348,23 @@ describe('A. H10: the backfill places every row in its own park group', () => {
     expect(t.rows).toEqual([{ id: D }]);
   });
 
+  // On 0006's shape, as the previous release met it (the database above carries 4b's 0007 too).
+  let at0006: { url: string; drop: () => Promise<void>; dir: string } = { url: '', drop: async () => undefined, dir: '' };
+  afterAll(async () => {
+    if (at0006.dir) rmSync(at0006.dir, { recursive: true, force: true });
+    await at0006.drop();
+  });
+
   it("still takes the previous release's writes: no tenant named, the rows taken, the uniques as they were", async () => {
-    await withClient(url, async (c) => {
+    const { url: url06, drop: drop06 } = await createTestDatabase();
+    const dir06 = thisRoundOnly();
+    at0006 = { url: url06, drop: drop06, dir: dir06 };
+    await withClient(url06, async (c) => {
       await c.query('set search_path to otoapp');
+      await migrate(drizzle(c), { migrationsFolder: dir06, migrationsSchema: 'otoapp' });
+      await c.query(`insert into tenants (id, name, slug) values ($1, 'OTO Default', 'default'), ($2, 'Park A', 'park-a')`, [D, A]);
+      await c.query(`insert into branches (id, tenant_id, name, address) values ($1, $2, 'ZZ A', 'x')`, [ids.branchA, A]);
+      await c.query(`insert into settings (key, value, tenant_id) values ('md_signatory_name', 'ZZ MD', $1)`, [D]);
       await c.query(`insert into settings (key, value) values ('zz_old_release', 'x')`);
       await c.query(`update settings set value = 'ZZ MD 2' where key = 'md_signatory_name'`);
       await c.query(`insert into activity_log (activity_type, summary_text, branch_id) values ('employee_updated', 'ZZ old', $1)`, [ids.branchA]);
@@ -349,7 +376,7 @@ describe('A. H10: the backfill places every row in its own park group', () => {
 
   it.skipIf(!HAS_APP_MODULES)('the read-back counts it: a row the previous release wrote after 0006 is the one 4b must place', () => {
     const out = spawnSync(process.execPath, [join(APP_DIR, 'script', 'tenant-ownership-readback.mjs')], {
-      env: { ...process.env, DATABASE_URL: url },
+      env: { ...process.env, DATABASE_URL: at0006.url },
       encoding: 'utf8',
     });
     // The three writes just above left one settings, one activity and one attention row unplaced.
@@ -440,24 +467,31 @@ describe('C. the migration as committed: expand only, both uniques, from empty t
     expect(statements).toMatch(/CREATE INDEX "idx_attention_items_tenant" ON "attention_items"/);
   });
 
-  it('no app migration drops settings_key_unique: that is round 4b, a release later', () => {
+  it('no app migration before round 4b’s 0007 drops settings_key_unique: that waited a release', () => {
+    const droppers: string[] = [];
     for (const f of readdirSync(APP_MIGRATIONS).filter((n) => n.endsWith('.sql'))) {
       const text = readFileSync(join(APP_MIGRATIONS, f), 'utf8').replace(/--.*$/gm, '');
-      expect(text, f).not.toMatch(/DROP\s+CONSTRAINT\s+"?settings_key_unique/i);
-      expect(text, f).not.toMatch(/DROP\s+INDEX[^;]*settings_key_unique/i);
+      if (/DROP\s+CONSTRAINT\s+"?settings_key_unique/i.test(text) || /DROP\s+INDEX[^;]*settings_key_unique/i.test(text)) droppers.push(f);
     }
+    expect(droppers).toEqual(['0007_tenant_ownership_contract.sql']);
     const snapshot = readFileSync(join(APP_MIGRATIONS, 'meta', '0006_snapshot.json'), 'utf8');
     expect(snapshot).toContain('"settings_key_unique"');
     expect(snapshot).toContain('"settings_tenant_id_key_unique"');
   });
 
-  it('applies from empty, and a second run applies nothing and fails on nothing', async () => {
-    const { url, drop } = await createTestDatabase({ otoapp: true });
+  it('applies from empty, and a second run applies nothing and fails on nothing (0006’s chain; the whole chain from empty is s217b-r4b’s)', async () => {
+    const { url, drop } = await createTestDatabase();
+    const dir = thisRoundOnly();
     try {
-      await applyOtoAppMigrations(url);
+      for (let i = 0; i < 2; i += 1) {
+        await withClient(url, async (c) => {
+          await c.query('set search_path to otoapp');
+          await migrate(drizzle(c), { migrationsFolder: dir, migrationsSchema: 'otoapp' });
+        });
+      }
       await withClient(url, async (c) => {
         const ledger = await c.query<{ n: number }>('select count(*)::int as n from otoapp.__drizzle_migrations');
-        expect(ledger.rows[0]!.n).toBe(journal().entries.length);
+        expect(ledger.rows[0]!.n).toBe(7);
         const cols = await c.query<{ table_name: string; is_nullable: string }>(
           `select table_name, is_nullable from information_schema.columns
             where table_schema = 'otoapp' and column_name = 'tenant_id'
@@ -476,6 +510,7 @@ describe('C. the migration as committed: expand only, both uniques, from empty t
         expect(tenants.rows[0]!.n).toBe(0);
       });
     } finally {
+      rmSync(dir, { recursive: true, force: true });
       await drop();
     }
   });
@@ -503,11 +538,12 @@ describe('D. the fences of 4a', () => {
     text: code(readFileSync(path, 'utf8')),
   }));
 
-  it('Attention stays paused: ATTENTION_WRITES_READY is false, and the platform registers no Attention or no-show job', () => {
+  it('Attention stayed paused through 4a; round 4b resumes it, run by the platform as job:otoapp.attention and job:otoapp.no_show (s217b-r4b.test.ts)', () => {
     const flag = readFileSync(join(APP_SERVER, 'attention-availability.ts'), 'utf8');
-    expect(flag).toMatch(/export const ATTENTION_WRITES_READY = false;/);
+    expect(flag).toMatch(/export const ATTENTION_WRITES_READY = true;/);
     const platform = appSources(join(REPO, 'apps', 'api', 'src')).map((p) => readFileSync(p, 'utf8')).join('\n');
-    expect(platform).not.toMatch(/otoapp\.attention|otoapp\.no_show/);
+    expect(platform).toMatch(/'job:otoapp\.attention'/);
+    expect(platform).toMatch(/'job:otoapp\.no_show'/);
   });
 
   it('every settings read names a park group: no one-argument getSetting, no bare getSettings', () => {
@@ -576,9 +612,8 @@ describe('D. the fences of 4a', () => {
 // =============================================================================
 
 interface SettingsRules {
-  settingsWritableBy(owner: string | null, defaultParkGroup: string | null): boolean;
+  settingsWritableBy(owner: string | null): boolean;
   settingsReadRank(rowTenant: string | null, reader: string | null, defaultParkGroup: string | null): number | null;
-  SETTINGS_SHARED_REFUSAL: { reason: string; message: string };
   SETTINGS_KEY_HELD_REFUSAL: { reason: string; message: string };
   SETTINGS_NO_PARK_GROUP_REFUSAL: { reason: string; message: string };
 }
@@ -591,11 +626,10 @@ describe('E. the settings rules (server/lib/parkGroupSettings.ts)', () => {
     rules = (await import(/* @vite-ignore */ pathToFileURL(join(APP_SERVER, 'lib', 'parkGroupSettings.ts')).href)) as SettingsRules;
   });
 
-  it('only the default park group saves in this release; a database with none keeps its one old set', () => {
-    expect(rules.settingsWritableBy(D, D)).toBe(true);
-    expect(rules.settingsWritableBy(B, D)).toBe(false);
-    expect(rules.settingsWritableBy(null, null)).toBe(true);
-    expect(rules.settingsWritableBy(B, null)).toBe(false);
+  it('4a’s rule, that only the default park group saves, is round 4b’s to lift: every park group now saves its own', () => {
+    expect(rules.settingsWritableBy(D)).toBe(true);
+    expect(rules.settingsWritableBy(B)).toBe(true);
+    expect(rules.settingsWritableBy(null)).toBe(false);
   });
 
   it('a park group reads its own row, then the default’s, then a row with none; never another’s', () => {
@@ -610,12 +644,10 @@ describe('E. the settings rules (server/lib/parkGroupSettings.ts)', () => {
   });
 
   it('each refusal is words a person can act on, with a reason a program can read', () => {
-    for (const r of [rules.SETTINGS_SHARED_REFUSAL, rules.SETTINGS_KEY_HELD_REFUSAL, rules.SETTINGS_NO_PARK_GROUP_REFUSAL]) {
+    for (const r of [rules.SETTINGS_KEY_HELD_REFUSAL, rules.SETTINGS_NO_PARK_GROUP_REFUSAL]) {
       expect(r.reason).toMatch(/^settings_/);
       expect(r.message.length).toBeGreaterThan(40);
     }
-    expect(rules.SETTINGS_SHARED_REFUSAL.message).toMatch(/default park group/);
-    expect(rules.SETTINGS_SHARED_REFUSAL.message).toMatch(/next release/);
   });
 });
 

@@ -89,6 +89,15 @@ import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
  *
  * Sections A, B and E run everywhere; C's and D's HTTP parts need the app's
  * node_modules (present locally and in CI's OTO App job).
+ *
+ * ROUND 4b (migration 0007, NOT NULL and the old one-row-per-key unique
+ * dropped) changed what some of these attacks meet. A and B attack 0006 and
+ * its window, so they now upgrade a 0005 state to 0006 exactly, never past it.
+ * D drives the app as 4b leaves it: each park group saves its own settings
+ * (4a's refusal of them, Q29, lifted), Data Admin's 4a hold is lifted with the
+ * unique that made it necessary, and a row with no park group can no longer
+ * be written; the H12 attacks are unchanged and still hold. E's fences that 4b
+ * lifted say so. What 4b promised in their place is s217b-r4b.test.ts's.
  */
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -142,6 +151,20 @@ async function databaseAt0005(): Promise<{ url: string; drop: () => Promise<void
       await drop();
     },
   };
+}
+
+/**
+ * 0006 exactly, never past it: the committed SQL up to 0006 through the same
+ * Drizzle migrator the app's own uses. A and B attack 0006 and the window it
+ * opened; round 4b's 0007 closes that window (s217b-r4b.test.ts).
+ */
+async function upgradeTo0006(url: string): Promise<void> {
+  const dir = migrationsUpTo(6);
+  try {
+    await withClient(url, (c) => migrate(drizzle(c), { migrationsFolder: dir, migrationsSchema: 'otoapp' }));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 /** The app's own migrator where it can run here; else the same SQL through the same Drizzle migrator. */
@@ -223,7 +246,7 @@ const hashPassword = (password: string) => {
 // A. H10 — a harsher backfill fixture
 // =============================================================================
 
-describe('A. H10, harsher: the backfill on a seeded 0005 state, upgraded by the app’s migrator', () => {
+describe('A. H10, harsher: the backfill on a seeded 0005 state, upgraded to 0006 by the same migrator', () => {
   let url = '';
   let drop: () => Promise<void> = async () => undefined;
   const D = randomUUID(); // the default park group
@@ -350,7 +373,7 @@ describe('A. H10, harsher: the backfill on a seeded 0005 state, upgraded by the 
       totalsBefore = {};
       for (const t of TABLES) totalsBefore[t] = Number((await c.query(`select count(*)::int as n from ${t}`)).rows[0].n);
     });
-    await upgrade(url);
+    await upgradeTo0006(url);
     after = await withClient(url, (c) => catalogue(c));
   });
 
@@ -556,7 +579,10 @@ describe('B. the migration window: in flight is placed, queued behind 0006 lands
           `insert into activity_log (id, activity_type, summary_text, branch_id) values ($1, 'employee_updated', 'ZZ in flight', $2)`,
           [inFlight, bA],
         );
-        const migrating = migrate(drizzle(mig), { migrationsFolder: APP_MIGRATIONS, migrationsSchema: 'otoapp' });
+        const to0006 = migrationsUpTo(6);
+      const migrating = migrate(drizzle(mig), { migrationsFolder: to0006, migrationsSchema: 'otoapp' }).finally(() =>
+        rmSync(to0006, { recursive: true, force: true }),
+      );
         await waitForLockWait(watch, 'zz-r4a-migrate');
         // The previous release's next write queues behind 0006's lock.
         const writing = w2.query(
@@ -578,7 +604,7 @@ describe('B. the migration window: in flight is placed, queued behind 0006 lands
             [queued, null],
           ]),
         );
-        expect(Number((await c.query('select count(*)::int as n from __drizzle_migrations')).rows[0].n)).toBe(journal().entries.length);
+        expect(Number((await c.query('select count(*)::int as n from __drizzle_migrations')).rows[0].n)).toBe(7);
       });
       if (HAS_APP_MODULES) {
         const out = spawnSync(process.execPath, [READBACK], { env: { ...process.env, DATABASE_URL: url }, encoding: 'utf8' });
@@ -927,140 +953,78 @@ describe.skipIf(!HAS_APP_RUNTIME)('D. over HTTP against the app’s routes: H11,
     return new Map((res.body as { key: string; value: string }[]).map((s) => [s.key, s.value]));
   };
 
-  /** Every settings answer on one constraint shape (H11). */
-  async function settingsOnThisShape(shape: 'old' | 'new'): Promise<number[]> {
+  /**
+   * Round 4b: every park group saves its own row (Q29's 4a refusal lifted with
+   * the old unique, migration 0007). Every answer in words, never a 500.
+   */
+  it('H11 as 4b leaves it: each park group saves its own row beside the other’s, the default’s untouched; five racing saves make one row; never a 500', async () => {
     const statuses: number[] = [];
-    const k = (name: string) => K(`${shape}_${name}`);
-    // Another park group: refused in words, whatever the key, and nothing written.
-    for (const key of ['md_signatory_name', k('nobody')]) {
+    for (const key of ['md_signatory_name', K('nobody')]) {
       const res = await save(PB, [{ key, value: 'B wants it' }]);
       statuses.push(res.status);
-      expect(res.status, res.text).toBe(409);
-      expect(res.body.reason).toBe('settings_shared');
+      expect(res.status, res.text).toBe(200);
+      expect(res.body[0].tenantId).toBe(PB.tenant);
     }
-    expect(await rowsFor(k('nobody'))).toEqual([]);
-    expect(await rowsFor('md_signatory_name')).toEqual([{ tenant_id: PD.tenant, value: 'ZZ D MD' }]);
+    expect(await rowsFor('md_signatory_name')).toEqual([
+      { tenant_id: PB.tenant, value: 'B wants it' },
+      { tenant_id: PD.tenant, value: 'ZZ D MD' },
+    ]);
+    expect((await readAs(PD)).get('md_signatory_name')).toBe('ZZ D MD');
+    expect((await readAs(PB)).get('md_signatory_name')).toBe('B wants it');
+    expect((await readAs(PD)).has(K('nobody'))).toBe(false);
     const fix = await call(plain, 'POST', '/api/settings/fix-department', { cookie: PB.cookie, body: { departmentId: PB.department } });
     statuses.push(fix.status);
-    expect(fix.status, fix.text).toBe(409);
-    // The default park group: five saves of one new key at once — one row, every answer 200.
-    const race = await Promise.all(
-      Array.from({ length: 5 }, (_, i) => save(PD, [{ key: k('race'), value: `racer ${i}` }])),
-    );
+    expect(fix.status, fix.text).toBe(200);
+    const race = await Promise.all(Array.from({ length: 5 }, (_, i) => save(PB, [{ key: K('race'), value: `racer ${i}` }])));
     statuses.push(...race.map((r) => r.status));
     expect(race.map((r) => r.status)).toEqual([200, 200, 200, 200, 200]);
-    const raced = await rowsFor(k('race'));
+    const raced = await rowsFor(K('race'));
     expect(raced).toHaveLength(1);
-    expect(raced[0]!.tenant_id).toBe(PD.tenant);
-    // A row the previous release left with no park group: read by both, claimed by the default's save.
-    await q(`insert into settings (key, value) values ($1, 'hand-over')`, [k('handover')]);
-    expect((await readAs(PB)).get(k('handover'))).toBe('hand-over');
-    const claim = await save(PD, [{ key: k('handover'), value: 'claimed' }]);
-    statuses.push(claim.status);
-    expect(claim.status, claim.text).toBe(200);
-    expect(await rowsFor(k('handover'))).toEqual([{ tenant_id: PD.tenant, value: 'claimed' }]);
-    // A key another park group's row holds (only a hand insert or Data Admin can make one).
-    await q('insert into settings (key, value, tenant_id) values ($1, $2, $3)', [k('heldByB'), 'B row', PB.tenant]);
-    const held = await save(PD, [{ key: k('heldByB'), value: 'D row' }]);
-    statuses.push(held.status);
-    if (shape === 'old') {
-      expect(held.status, held.text).toBe(409);
-      expect(held.body.reason).toBe('settings_key_held');
-      expect(await rowsFor(k('heldByB'))).toEqual([{ tenant_id: PB.tenant, value: 'B row' }]);
-    } else {
-      expect(held.status, held.text).toBe(200);
-      expect(await rowsFor(k('heldByB'))).toEqual([
-        { tenant_id: PB.tenant, value: 'B row' },
-        { tenant_id: PD.tenant, value: 'D row' },
-      ]);
-      expect((await readAs(PB)).get(k('heldByB'))).toBe('B row');
-      expect((await readAs(PD)).get(k('heldByB'))).toBe('D row');
-    }
-    // The default park group reads its own; B, with no row of its own, reads the default's (Q28).
-    expect((await readAs(PD)).get('md_signatory_name')).toBe('ZZ D MD');
-    expect((await readAs(PB)).get('md_signatory_name')).toBe('ZZ D MD');
-    return statuses;
-  }
-
-  it('H11 with the old unique standing (this release’s shape): every answer in words, never a 500', async () => {
-    const statuses = await settingsOnThisShape('old');
+    expect(raced[0]!.tenant_id).toBe(PB.tenant);
     expect(statuses.filter((s) => s >= 500)).toEqual([]);
+    await q(`delete from settings where tenant_id = $1`, [PB.tenant]);
   });
 
-  it('H11 with the old unique dropped (4b’s shape): the same code, every answer right, never a 500 — then restored', async () => {
-    await q('alter table settings drop constraint settings_key_unique');
+  it('H11 with the old unique put back (a database 0007 has not reached): another park group’s save of a key the default holds is words, never a 500, and the keys before it are not saved', async () => {
+    await q('alter table settings add constraint settings_key_unique unique (key)');
     try {
-      const statuses = await settingsOnThisShape('new');
-      expect(statuses.filter((s) => s >= 500)).toEqual([]);
+      const res = await save(PB, [
+        { key: K('first'), value: 'first' },
+        { key: 'md_signatory_name', value: 'B wants it' },
+      ]);
+      expect(res.status, res.text).toBe(409);
+      expect(res.body.reason).toBe('settings_key_held');
+      expect(await rowsFor(K('first'))).toEqual([]);
+      expect(await rowsFor('md_signatory_name')).toEqual([{ tenant_id: PD.tenant, value: 'ZZ D MD' }]);
     } finally {
-      await q(`delete from settings where key like $1 and tenant_id is distinct from $2`, [`zz_r4a_review_${run}_%`, PD.tenant]);
-      await q('alter table settings add constraint settings_key_unique unique (key)');
+      await q('alter table settings drop constraint settings_key_unique');
     }
-    const uniques = await q<{ conname: string }>(
-      `select conname from pg_constraint where conrelid = 'otoapp.settings'::regclass and contype = 'u' order by 1`,
-    );
-    expect(uniques.map((u) => u.conname)).toContain('settings_key_unique');
   });
 
-  it('fixed: Data Admin writes the default park group’s settings still; another park group’s, or the default’s row moved to another, is refused in the same words', async () => {
+  it('Data Admin after 4b: the 4a hold is lifted with the unique that made it necessary — another park group’s row holds nothing against the default', async () => {
     const key = K('dataadmin');
     try {
-      const refused = await call(plain, 'POST', '/api/data-admin/settings', {
-        cookie: PB.cookie,
-        body: { key, value: 'B via Data Admin', tenantId: PB.tenant },
-      });
-      expect(refused.status, refused.text).toBe(409);
-      expect(refused.body.reason).toBe('settings_shared');
       const write = await call(plain, 'POST', '/api/data-admin/settings', {
         cookie: PB.cookie,
-        body: { key, value: 'D via Data Admin', tenantId: PD.tenant },
+        body: { key, value: 'B via Data Admin', tenantId: PB.tenant },
       });
       expect(write.status, write.text).toBe(201);
-      expect(await rowsFor(key)).toEqual([{ tenant_id: PD.tenant, value: 'D via Data Admin' }]);
-      const moved = await call(plain, 'PUT', `/api/data-admin/settings/${write.body.id}`, {
-        cookie: PB.cookie,
-        body: { tenantId: PB.tenant },
-      });
-      expect(moved.status, moved.text).toBe(409);
-      expect(moved.body.reason).toBe('settings_shared');
-      expect(await rowsFor(key)).toEqual([{ tenant_id: PD.tenant, value: 'D via Data Admin' }]);
       const d = await save(PD, [{ key, value: 'the running park' }]);
       expect(d.status, d.text).toBe(200);
-      expect(await rowsFor(key)).toEqual([{ tenant_id: PD.tenant, value: 'the running park' }]);
+      expect(await rowsFor(key)).toEqual([
+        { tenant_id: PB.tenant, value: 'B via Data Admin' },
+        { tenant_id: PD.tenant, value: 'the running park' },
+      ]);
+      // A create naming no park group is the default park group's, as in 4a.
+      const unnamed = await call(plain, 'POST', '/api/data-admin/settings', { cookie: PB.cookie, body: { key: K('unnamed'), value: 'x' } });
+      expect(unnamed.status, unnamed.text).toBe(201);
+      expect(await rowsFor(K('unnamed'))).toEqual([{ tenant_id: PD.tenant, value: 'x' }]);
+      // And no row can be moved to no park group: tenant_id is NOT NULL.
+      const toNone = await call(plain, 'PUT', `/api/data-admin/settings/${write.body.id}`, { cookie: PB.cookie, body: { tenantId: '' } });
+      expect(toNone.status, toNone.text).toBe(403);
+      expect(toNone.body.reason).toBe('settings_no_park_group');
     } finally {
-      await q('delete from settings where key = $1', [key]);
-    }
-  });
-
-  /**
-   * FINDING 2 (low). Q29's whole point is that in 4a no park group but the
-   * default writes a settings row, because under the old unique such a row
-   * holds its key against the default park group — the park the app runs —
-   * until 4b. `POST /api/data-admin/settings` (any park group's `admin`,
-   * `requireGlobalAdmin`) inserts a row for whatever `tenantId` the body names,
-   * and `PUT /api/data-admin/settings/:id` re-homes the default park group's
-   * own row (its MD signatory, say) to another park group, after which the
-   * default park group reads none and cannot save it back. The census names
-   * Data Admin's cross-park-group reach in general and leaves it to round 7;
-   * this is its effect on 4a's own constraint window.
-   *
-   * Prescribed fix (small, 4a or the first thing in 4b): hold `settings`
-   * writes through Data Admin to the rule `upsertSetting` keeps — refuse a
-   * create or update whose `tenantId` is not the default park group (or make
-   * the Setting model read-only until 4b) — or record the bypass under Q29
-   * and Q31 so the owner decides with it in view.
-   */
-  it('FINDING 2: no door in 4a writes a settings row for a park group other than the default', async () => {
-    const key = K('dataadmin_finding');
-    try {
-      const write = await call(plain, 'POST', '/api/data-admin/settings', {
-        cookie: PB.cookie,
-        body: { key, value: 'B via Data Admin', tenantId: PB.tenant },
-      });
-      expect(write.status).toBeGreaterThanOrEqual(400);
-      expect(await rowsFor(key)).toEqual([]);
-    } finally {
-      await q('delete from settings where key = $1', [key]);
+      await q('delete from settings where key = any($1)', [[key, K('unnamed')]]);
     }
   });
 
@@ -1177,26 +1141,13 @@ describe.skipIf(!HAS_APP_RUNTIME)('D. over HTTP against the app’s routes: H11,
 
   // ── The Activity Logbook's hand-over rows ───────────────────────────────────
 
-  it('a hand-over row with no park group shows by its branch, to that park group only; a branchless one waits for 4b, as before 4a', async () => {
-    const byBranch = randomUUID();
-    const branchless = randomUUID();
-    await q(
-      `insert into activity_log (id, branch_id, activity_type, summary_text) values ($1, $2, 'employee_updated', $3), ($4, null, 'employee_updated', $5)`,
-      [byBranch, PB.branch, `ZZ R4A ${run} hand-over by branch`, branchless, `ZZ R4A ${run} hand-over branchless`],
-    );
-    try {
-      const seen = async (who: ParkGroup) => {
-        const res = await call(plain, 'GET', `/api/activity-logs?search=${encodeURIComponent(`ZZ R4A ${run}`)}&limit=100`, {
-          cookie: who.cookie,
-        });
-        expect(res.status, res.text).toBe(200);
-        return (res.body.logs as { id: string }[]).map((l) => l.id);
-      };
-      expect(await seen(PB)).toEqual([byBranch]);
-      expect(await seen(PD)).toEqual([]);
-    } finally {
-      await q('delete from activity_log where id = any($1)', [[byBranch, branchless]]);
-    }
+  it('the logbook after 4b: a row with no park group can no longer be written (NOT NULL, 0007), so no hand-over row is left to show', async () => {
+    await expect(
+      q(`insert into activity_log (id, branch_id, activity_type, summary_text) values ($1, $2, 'employee_updated', 'ZZ R4A hand-over')`, [
+        randomUUID(),
+        PB.branch,
+      ]),
+    ).rejects.toMatchObject({ code: '23502' });
   });
 });
 
@@ -1376,24 +1327,25 @@ describe('E. read off the code: threading, seams, fences and the census', () => 
     expect(platformView).not.toMatch(/otoapp\.table\('(settings|activity_log|attention_items)'/);
   });
 
-  it('the fences: Attention paused, no Attention or no-show job, settings_key_unique kept, no NOT NULL on the new columns', () => {
-    expect(readFileSync(join(APP_SERVER, 'attention-availability.ts'), 'utf8')).toMatch(/export const ATTENTION_WRITES_READY = false;/);
+  it('the fences of 4a held until round 4b lifted them in its own migration, 0007, and nowhere else: Attention resumed, the two jobs, the old unique dropped, NOT NULL', () => {
+    expect(readFileSync(join(APP_SERVER, 'attention-availability.ts'), 'utf8')).toMatch(/export const ATTENTION_WRITES_READY = true;/);
     const platform = sourcesUnder(join(REPO, 'apps', 'api', 'src')).map((p) => readFileSync(p, 'utf8')).join('\n');
-    expect(platform).not.toMatch(/otoapp\.attention|otoapp\.no_show|otoapp\.noshow/);
-    for (const e of journal().entries) {
+    expect(platform).toMatch(/'job:otoapp\.attention'/);
+    expect(platform).toMatch(/'job:otoapp\.no_show'/);
+    for (const e of journal().entries.filter((x) => x.tag !== '0007_tenant_ownership_contract')) {
       const text = readFileSync(join(APP_MIGRATIONS, `${e.tag}.sql`), 'utf8').replace(/--.*$/gm, '');
       expect(text, e.tag).not.toMatch(/DROP\s+CONSTRAINT\s+"?settings_key_unique/i);
       expect(text, e.tag).not.toMatch(/DROP\s+INDEX[^;]*settings_key_unique/i);
       expect(text, e.tag).not.toMatch(/ALTER\s+TABLE\s+"?(settings|activity_log|attention_items)"?\s+ALTER\s+COLUMN\s+"?tenant_id"?\s+SET\s+NOT\s+NULL/i);
     }
     const schema = readFileSync(join(APP_DIR, 'shared', 'schema.ts'), 'utf8');
-    expect(schema).toMatch(/key: text\("key"\)\.notNull\(\)\.unique\(\),/);
+    expect(schema).toMatch(/key: text\("key"\)\.notNull\(\),/);
   });
 
-  it('nothing of rounds 5 to 7: the Attention 503s, the time-off approval 503s and the legacy-table guard all stand; no finance key migration', () => {
+  it('nothing of rounds 5 to 7: the time-off approval 503s and the legacy-table guard stand (the Attention 503s were 4b’s, and are gone); no finance key migration', () => {
     const routes = readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8');
-    expect(routes.match(/Attention rules are unavailable until tenant settings are isolated/g)?.length).toBe(2);
-    expect(routes).toMatch(/Attention updates are unavailable until tenant ownership is recorded/);
+    expect(routes).not.toMatch(/Attention rules are unavailable until tenant settings are isolated/);
+    expect(routes).not.toMatch(/Attention updates are unavailable until tenant ownership is recorded/);
     expect(routes.match(/Time-off approval is unavailable until approval tracking is enabled/g)?.length).toBe(2);
     expect(routes.match(/legacyHrUser\(/g)?.length).toBe(11);
     for (const e of journal().entries.filter((x) => x.idx > 0)) {
