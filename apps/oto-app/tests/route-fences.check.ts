@@ -15,6 +15,8 @@
 //     four maintenance routes refuse an admin the app cannot place in a park
 //     group (no branch access, two park groups), and run by one park group's
 //     admin they change that park group's rows and none of the other's;
+//   - the app's own branch edit cannot write the platform's join column
+//     (core_branch_id) or its core_sync_* record;
 //   - DELETE /api/users/:id answers the app's own 409 words for a user the
 //     platform has linked and for a user the app still references, changing
 //     nothing, and still deletes a user nothing points at — and so do the
@@ -384,6 +386,39 @@ try {
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal((await stateOf(A)).departedActive, false);
     assert.equal((await stateOf(B)).departedActive, true);
+  })();
+
+  // ── The app's own branch edit ──────────────────────────────────────────────
+  console.log("PATCH /api/branches/:id:");
+  const coreColumns = async (id: string) =>
+    (
+      await q(
+        "select core_branch_id, core_sync_status, core_synced_at, core_sync_error, address from branches where id = $1",
+        [id],
+      )
+    )[0];
+  await check("a branch edit cannot write the platform's join column or its sync record, and the rest still saves", async () => {
+    const res = await call(local, "PATCH", `/api/branches/${A.branch}`, adminA, {
+      coreBranchId: randomUUID().toUpperCase(),
+      coreSyncStatus: "SUCCESS",
+      coreSyncedAt: new Date().toISOString(),
+      coreSyncError: "zz",
+      address: "ZZ TEST edited",
+    });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.deepEqual(await coreColumns(A.branch), {
+      core_branch_id: null,
+      core_sync_status: null,
+      core_synced_at: null,
+      core_sync_error: null,
+      address: "ZZ TEST edited",
+    });
+  })();
+  await check("an edit carrying only the platform's columns changes nothing and answers the branch", async () => {
+    const res = await call(local, "PATCH", `/api/branches/${A.branch}`, adminA, { coreBranchId: randomUUID() });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.id, A.branch);
+    assert.equal((await coreColumns(A.branch))!.core_branch_id, null);
   })();
 
   // ── Deleting users ─────────────────────────────────────────────────────────

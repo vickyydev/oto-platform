@@ -1131,6 +1131,10 @@ describe.skipIf(!HAS_APP_RUNTIME)(
      * park that is already mapped. The seam then folds case and reads the row as
      * this operator's (section A's finding). The app's insert schema already
      * omits these columns; the edit should too.
+     *
+     * FIXED IN THE FIX ROUND: the edit strips `coreBranchId` and the three
+     * `core_sync_*` columns the way the insert schema omits them, and an edit
+     * left with nothing to write answers the branch unchanged. Pin flipped.
      */
     describe('5. the app’s own branch edit', () => {
       it('answers a branch edit for an admin of that park group', async () => {
@@ -1141,7 +1145,7 @@ describe.skipIf(!HAS_APP_RUNTIME)(
         expect(res.status, res.text).toBe(200);
       });
 
-      it.fails('cannot write the platform’s join column', async () => {
+      it('cannot write the platform’s join column', async () => {
         try {
           await call(origin.local, 'PATCH', `/api/branches/${appBranchB}`, {
             cookie: cookies.local.adminB,

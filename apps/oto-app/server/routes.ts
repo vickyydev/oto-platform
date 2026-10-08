@@ -1600,9 +1600,22 @@ export async function registerRoutes(
       if ("tenantId" in req.body && req.body.tenantId !== existing.tenantId) {
         return res.status(400).json({ message: "Branch tenant cannot be changed" });
       }
-      const { calendarColor: _ignoredCalendarColor, tenantId: _ignoredTenantId, ...branchUpdates } = req.body;
+      const {
+        calendarColor: _ignoredCalendarColor,
+        tenantId: _ignoredTenantId,
+        // The platform's join column and its sync record, left out the way
+        // insertBranchSchema leaves them out of a create (S2-17b round 1):
+        // only the platform's seam writes them, never this edit.
+        coreBranchId: _ignoredCoreBranchId,
+        coreSyncStatus: _ignoredCoreSyncStatus,
+        coreSyncedAt: _ignoredCoreSyncedAt,
+        coreSyncError: _ignoredCoreSyncError,
+        ...branchUpdates
+      } = req.body;
+      // Nothing left to write is an edit that changes nothing, not an error.
+      if (Object.keys(branchUpdates).length === 0) return res.json(existing);
       const branch = await storage.updateBranch(req.params.id, branchUpdates);
-      
+
       res.json(branch);
     } catch (error) {
       next(error);
