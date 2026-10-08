@@ -288,6 +288,60 @@ module map below is read from the routes and the schema, not from memory.
       hand-over row with no park group is shown by its branch, as before.
     - Templates, policies and the asset catalogue keep their 503 until round
       6; Attention stays paused until 4b.
+  - **As built in round 4b, the contract half** (migration 0007, section 7).
+    - Every park group saves its own settings rows. The old one-row-per-key
+      unique is gone, so another park group's save of a key the default park
+      group holds is its OWN row beside the default's, which stays as it was;
+      the other park groups with no row of their own go on reading the
+      default's (Q28 stands). 4a's `settings_shared` refusal is gone with the
+      constraint that made it necessary (Q29 lifted). The strict placement
+      (`userManagementTenant`) still decides which park group a caller saves
+      as; a caller it cannot place is refused (403, `settings_no_park_group`).
+    - A save of several keys is one transaction (`storage.upsertSettings`, the
+      round 4a review's note): a key that is refused or fails saves none of the
+      others. The app saved each key as it went, so a failure part way left
+      the form half saved (a data fault, fixed). Keys are written in key order,
+      so two saves of overlapping keys at once never deadlock.
+    - `settings_key_held` stays for one case only: the code meeting a database
+      0007 has not reached (the old unique back), where it is still words and
+      never a 500 (H11, proven with the unique put back for the length of the
+      check).
+    - Data Admin's Setting model loses its 4a hold to the default park group
+      with the unique that made it necessary, and is as every other Data Admin
+      model is until round 7 (Q36): a create naming no park group is the
+      default park group's, and a row cannot be moved to no park group.
+    - The Activity Logbook is as 4a built it. `tenant_id` is NOT NULL, so no
+      hand-over row is left to show by its branch.
+    - Attention resumes (`ATTENTION_WRITES_READY` true), per park group.
+      - Every writer passes the park group whose data raised the item: the
+        nine `createAttentionItem` callers the 4a review counted (seven routes,
+        two night-batch steps), and every engine upsert (the employee's park
+        group, the branch's for the scheduling rules, the assignment's for the
+        no-show check). The rules themselves are the app's, unchanged; the
+        engine stamps the park group on what they find.
+      - An item is found, updated, re-opened and auto-resolved within its own
+        park group only, and written under a transaction-level advisory lock
+        on (park group, rule, entity) (namespace `0x0713`), so the engine and a
+        route's trigger writing the same item at once make one row (H20).
+      - The engine's full reconciliation runs per park group: that park
+        group's employees, and only its open items looked at for auto-resolve.
+        The scheduling rules read that park group's `attention_rules_config`
+        (the default park group's where it has none, Q28).
+      - Reads: a reader's own park group's items; a reader with every branch
+        sees every item, the ones about no branch included, any other reader
+        the items of their branches only — the Activity Logbook's rule (Q34).
+        The lift's manager gate on the reads stays.
+      - Refresh, Snooze (24 hours) and Resolve are back, each on the caller's
+        park group only; another park group's item is the same 404 as one that
+        does not exist. Refresh runs the caller's park group's engine under the
+        lock its six-hourly run takes (`otoapp_night:attention:<park group>`),
+        and is refused in words while that run is going (Q35).
+      - The rules screen (`/api/attention-rules/config`) reads the caller's
+        park group's rules (the default park group's where it has none) and
+        saves its own row, through the same strict placement as every settings
+        save.
+      - Data Admin's Attention model stays closed (503) until round 7's
+        walkthrough of Data Admin.
 - **Directory HR reads trust one shared key.** The six `/api/directory/*`
   HR reads authenticate `HR_DIRECTORY_API_KEY`, which names no tenant, and
   can return any tenant's staff (`server/auth-middleware.ts:231-259`). Fix:
@@ -507,6 +561,42 @@ module map below is read from the routes and the schema, not from memory.
       or a lock cannot be read, the batch runs as it always did.
     - Task generation finds a date's instance by the date it was made for
       (review F2, section 4).
+  - **As built in round 4b: Attention's two timers on the same terms.**
+    - The app's endpoint takes two more batch names: `attention` (one step,
+      `attentionReconciliation`: the engine's full reconciliation, which the
+      app ran from `server/index.ts` five seconds after start-up and every
+      six hours) and `no_show` (one step, `noShowCheck`, the app's check every
+      ten minutes, which skips itself outside 07:00-22:00 Bangkok and says
+      so: `outsideHours: 1`). Each for the key's park group only, under the
+      same per-park-group lock (`0x0712`). Every error the engine catches —
+      a rule that throws for one employee — is a failed step, as round 3 made
+      every swallowed error one; the step carries on, as the app's run does.
+    - The engine's step counts its new items rule by rule
+      (`created.<RULE>`), and the platform's run adds them up park group by
+      park group into `alerts` (`created`, `updated`, `resolved`, `byRule`).
+      The first run after Attention resumes applies every rule to the rows
+      that built up while it was paused (section 10): that burst is in the
+      run's detail and in what Run now says, never capped or smoothed.
+    - The platform registers `job:otoapp.attention` (every six hours) and
+      `job:otoapp.no_show` (every ten minutes, outside 07:00-22:00 Bangkok a
+      tick runs nothing and records why, so the expectation stays fed all
+      night), both `exclusive`, each with its expectation, on Health, with
+      Run now and a deliberate failure each among the test controls
+      (`otoapp.attention`, `.attention.fail`, `.no_show`, `.no_show.fail`).
+      The unkeyed census (review F1) and "already running" twice (F3) apply
+      as to the presence check. The same `jobs:run` key per park group runs
+      all five; no new variable.
+    - Under `OTOAPP_JOBS=inprocess` the app's own timers run both again, as
+      the app did — the engine five seconds after start-up and every six
+      hours, the no-show check at once and every ten minutes — one park
+      group at a time under the endpoint's lock (seven timers in all). Under
+      `platform`, none.
+    - **Deploy order for 4b:** the app first (its pre-deploy runs 0007; its
+      endpoint learns the two names), then the api. An api that runs first
+      asks an app that does not know `attention` or `no_show` yet: those runs
+      fail in the app's own words (`OTOAPP_JOB_NOT_FOUND`), and the
+      six-hourly Attention run then waits six hours unless Retry is pressed on
+      Failures once the app is up.
 - **Tenant-bound Directory HR reads**, as in section 4. The shared key keeps
   working only where it is set, and only for the default tenant (Q13).
   - **As built in round 4a.** The six reads take one caller check
@@ -661,6 +751,7 @@ is committed.
       have no park group (they read as the default's, or by their branch).
       4b's migration runs 0006's backfill again over the nulls, sets NOT
       NULL once the read-back shows none, and drops `settings_key_unique`.
+      Paid by round 4b's 0007 (below).
 - Round 4 (contract, one release later, its own landing "4b"): drop the
   global unique on `settings.key`, and set the new tenant columns NOT NULL
   once a read-back shows no nulls. Until 4b lands, `settings_key_unique`
@@ -669,6 +760,35 @@ is committed.
   rows, the Attention rule settings). So in 4a the settings writes of other
   park groups stay refused in words, and round 4's acceptance is claimed
   after 4b.
+  - **As built in round 4b: `0007_tenant_ownership_contract`** (the next free
+    number; generated from the schema, then the lock, the backfill and the
+    gate written in front of the generated statements).
+    - It locks `settings`, `activity_log` and `attention_items` against
+      writes (SHARE ROW EXCLUSIVE: reads go on) for its length, so no row can
+      arrive between the backfill and NOT NULL. A write in flight when it
+      starts is waited for, then placed.
+    - It runs 0006's backfill again, statement for statement (a test holds
+      them equal), over whatever the previous release wrote with no park
+      group. A row already placed is never moved; the default park group is
+      made only where 0006 would have made it.
+    - The gate: if any row of the three still has no park group, it stops
+      with the counts in words (`tenant ownership (0007): …`) and changes
+      nothing — the transaction rolls back, so the columns stay nullable, the
+      old unique stands and 0007 is not recorded. Nothing in the backfill can
+      leave one; the gate stands for what nobody foresaw.
+    - Then `tenant_id` NOT NULL on the three, and `settings_key_unique`
+      dropped last (while the backfill ran, it still guaranteed a hand-over
+      row placed in the default park group could not meet a second row for
+      its key there).
+    - A write queued behind the lock lands after it: taken when it names its
+      park group (every write of 4a's release does), refused by NOT NULL when
+      it names none (no release since 4a writes one).
+    - The read-back now also says whether `tenant_id` is NOT NULL, and the
+      app's image carries it (`script/tenant-ownership-readback.mjs`), so a
+      deployment can be read back from its own shell (4a's staging note).
+    - Tests: `apps/api/test/s217b-r4b.test.ts` section A (the gap's rows
+      placed by their own links on a 0006 database, NOT NULL and the unique
+      after, the gate, the window with real concurrency, from empty twice).
 - Round 6: the same pattern for `templates`, `policy_documents` and
   `asset_catalog` (expand in round 6, NOT NULL in round 7's release). Also
   a unique open offboarding per employee, only if the census is clean.
@@ -830,6 +950,47 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
     (Q29), and read the default park group's values for every key, its
     employer signatory and signature image included (Q28). Their Fix
     department reads as none until they can save their own.
+  - Round 4b ends the wait: each park group saves its own rows, its Fix
+    department and its Attention rules included.
+- **Attention's first run raises a burst, and shows it.** The first
+  `job:otoapp.attention` run (or Refresh) after 4b applies every rule to
+  every employee at once: on staging, alerts for the rows that built up
+  while Attention was paused, and the 43 saved alerts it no longer raises
+  resolved. The run's detail and the Run now answer give the counts park
+  group by park group and rule by rule (`alerts.byRule`); nothing is capped.
+- **The six-hourly run resolves alerts it does not raise** (the app's rule,
+  Q32). The full reconciliation resolves every open item with a rule key its
+  employee rules did not raise this time. That includes the no-show alerts
+  (raised by the ten-minute check) and the open-shift and coverage alerts
+  (raised only by Refresh, Q33): a no-show alert closes at the six-hourly
+  run and re-opens at the next ten-minute check while the person is still
+  absent (pinned in `tests/attention.check.ts`).
+- **The stuck clock-in alert is raised again at every presence check** (the
+  app's `createAttentionItem`, not an upsert), now that Attention writes run.
+- **The api's boot pass waits for a due Attention run.** The runner's first
+  pass at boot runs every due job before the api listens, as it already does
+  for the presence check; the Attention engine is the heavier call (every
+  rule over every employee, synchronously in the app, up to
+  `OTOAPP_JOBS_TIMEOUT_MS`). On staging's few employees it is seconds; the
+  production restore (S2-22) should time one run before relying on it.
+- **A Refresh beside the engine's run is refused in words** (Q35): "Attention
+  is already being checked for this park group. Try Refresh again in a
+  minute."
+- **"Last updated" on the Attention page is per park group and per app
+  instance**, as the app kept it (in memory): after a restart it reads empty
+  until the next run.
+- **A database with several park groups and none slugged `default` has no
+  default park group** (Q37; staging and production carry the slug). Its park
+  groups each save their own settings, but one with no row for a key falls
+  back to the app's built-in value rather than another park group's; an
+  Activity row about nothing whose actor the strict placement cannot place
+  has no park group to take and is refused (NOT NULL); a Data Admin settings
+  create naming no park group is refused in words.
+- **The dev production copy cannot load tenantless rows.** `prod-sync`
+  (refused on every deployment) copies a production database's rows as they
+  are; until production carries 0006 and 0007 (S2-22) its settings, activity
+  and Attention rows have no park group, and a dev database at 0007 refuses
+  them.
 - **A branch-limited reader does not see branchless Activity rows** (round
   4a, the app's own rule): a user created or a policy published shows to the
   park group's readers with every branch only.
@@ -1140,6 +1301,52 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   `POST /api/employees/recalculate-probation` in round 6, held to the
   caller's park group. Data Admin's reach stays with its round 7
   walkthrough. Confirm, or move any of them earlier.
+- **Q32. The six-hourly run resolves alerts it does not raise (round 4b).**
+  The app's full reconciliation resolves every open alert that has a rule
+  key and that its employee rules did not raise this time. The no-show
+  alerts (raised by the ten-minute check) and the open-shift and coverage
+  alerts (raised only by Refresh) are among them, so a no-show alert closes
+  at the next six-hourly run and opens again ten minutes later while the
+  person is still absent, and an open-shift alert stays closed until someone
+  presses Refresh. Default: the app's behaviour, ported as it is. The
+  alternative is to resolve only alerts of the rules the run evaluates.
+- **Q33. Shift alerts only on Refresh (round 4b).** The app's six-hourly
+  timer runs the employee rules only; the open-shift and coverage rules run
+  when a manager presses Refresh. `job:otoapp.attention` runs what the timer
+  ran. Default: as the app. The alternative is a scheduled run that includes
+  the shift rules (which, with Q32 as it stands, would also stop them being
+  resolved by the next run).
+- **Q34. Whose Attention alerts a reader sees (round 4b).** The app showed
+  every alert to every signed-in user, whatever the park group or branch. The
+  lift limited the reads to managers and to alerts whose branch, employee and
+  contract agreed, and withheld the alerts about no branch from everyone.
+  As built, a manager sees their own park group's alerts: one with every
+  branch sees them all, the ones about no branch included; one limited to
+  some branches sees those branches' alerts only — the rule the Activity
+  Logbook follows (round 4a). Default: as built.
+- **Q35. Refresh while the engine runs (round 4b).** The app had no lock, so a
+  Refresh beside the six-hourly run could raise one alert twice. As built, a
+  Refresh pressed while its park group's engine is running is refused in
+  words ("try again in a minute") and nothing runs twice; each park group's
+  Refresh is its own. Default: as built.
+- **Q36. Data Admin's settings after 4b (round 4b).** 4a held Data Admin's
+  Setting model to the default park group while the old unique stood. With
+  the unique gone that hold is lifted, and the model reaches every park
+  group's settings rows as Data Admin reaches every other model (its round 7
+  walkthrough, Q31). A create naming no park group is the default park
+  group's; a row cannot be moved to no park group. Default: as built. The
+  alternative is to hold Data Admin's settings writes to the caller's park
+  group now, ahead of round 7.
+- **Q37. A database whose park groups include none slugged `default` (round
+  4b).** The app's rule makes the slug-`default` park group the default (or
+  the only park group, where there is one). Where several exist and none
+  carries the slug — not staging, not production — there is no default: a
+  park group with no row of its own for a setting reads the app's built-in
+  value, an Activity row about nothing whose actor cannot be placed is
+  refused (the column is NOT NULL), and a Data Admin settings create naming
+  no park group is refused in words. Default: as built, which never guesses
+  one park group's settings for another. The alternative is to slug one park
+  group `default` whenever a second is added.
 ## 12. Hazards, each with its test
 
 | # | Hazard | Test |
@@ -1154,7 +1361,7 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 | H8 | A night batch runs twice | Two concurrent invocations: one runs and one is `locked`. Two batches for one date: one success. The auto clock-out inserts one OUT per stale IN. Under `platform` the app starts no timers; under `inprocess` the endpoint refuses. Round 3 review: a second midnight batch of one date makes no second task instance, due at 06:30 or 18:00 (F2); an in-process timer stands down for a park group whose batch the endpoint holds, and runs the others (F4) |
 | H9 | A night is lost when the app is down | The first invocation fails, the next tick runs it, and the date is marked done once |
 | H10 | The backfill gives rows to the wrong tenant | A two-tenant fixture with branch-linked, employee-linked and branchless rows: each lands in its tenant, none is left null, and the counts per tenant are unchanged. Round 4a: `s217b-r4a.test.ts` A and B, rows linked by branch, employee, contract, the user who did them and nothing, on a seeded 0005 state upgraded by the app's migrator |
-| H11 | The settings change breaks the running release, or a park group's settings write fails on the old unique | Release N's code passes on both the old and the new constraint shape. The old unique is dropped only in release N+1 (4b). In 4a, another park group writing a key the default group holds is refused in words, never a 500. Round 4a: `tests/tenant-ownership.check.ts` runs every settings answer with the old unique standing, then dropped (4b's shape), then restored |
+| H11 | The settings change breaks the running release, or a park group's settings write fails on the old unique | Release N's code passes on both the old and the new constraint shape. The old unique is dropped only in release N+1 (4b). In 4a, another park group writing a key the default group holds is refused in words, never a 500. Round 4a: `tests/tenant-ownership.check.ts` runs every settings answer with the old unique standing, then dropped (4b's shape), then restored. Round 4b: each park group saves its own row; with the old unique put back (a database 0007 has not reached) another park group's save of a key the default holds is words, never a 500, and a save of several keys saves none when one is refused (`tests/tenant-ownership.check.ts`, `s217b-r4b.test.ts` E) |
 | H12 | Directory reads cross tenants | A's key reading B's employee answers 404. A key without `hr:read` answers 403. With `HR_DIRECTORY_API_KEY` unset, the shared-key path answers 403. Round 4a: `tests/tenant-ownership.check.ts` over the six reads, and with the shared key set, the default park group only (Q13) |
 | H13 | Face "off" clocks in the wrong person | With face off and an ENROLLED employee present, `identify-face` answers "no match, use PIN" without calling a matcher, enrolment is refused, and `/api/kiosk/clock` from a paired tablet naming that employee writes no time event |
 | H14 | Sick-leave approval does too much or too little | The rota's own request (the restored client body) creates the sick day as approved. Created as approved: exactly that person's assignments on those Bangkok days are freed, with one coverage alert per shift, each in that person's park group. Approved later: their legacy `shifts` in the range are unassigned. A repeat approve changes nothing more. Nothing is stored |
@@ -1163,7 +1370,7 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 | H17 | The rehearsal re-runs the baseline or misses the views | Restore, rename, mark 0000, apply 0001 onwards: the views exist, the counts equal the sample, and a second run is identical |
 | H18 | An app migration breaks a seam the platform reads directly | A test compares every column declared in `packages/db/src/schema/otoapp.ts` with the app's migrations and fails when one is dropped or retyped. Views are protected by Postgres itself |
 | H19 | The POS reads app tables outside the declared seams, or an app-only change goes untested | The section D grep extended to the HR and rota tables, with an allow-list naming the provisioning, branch and booth seams. A CI run on an app-only commit runs the view tests |
-| H20 | Attention floods or duplicates on resume | Two engine runs over the same rows give no duplicate items in a tenant. Fingerprint uniqueness is per tenant |
+| H20 | Attention floods or duplicates on resume | Two engine runs over the same rows give no duplicate items in a tenant. Fingerprint uniqueness is per tenant. Round 4b: `tests/attention.check.ts` (a second run raises nothing new; two runs at once, one refused; each park group's items its own) and `s217b-r4b.test.ts` E (the platform's job against the real app); the first run's burst is counted, not capped, in D |
 | H21 | The app's database role can write platform schemas | A grant check that the role behind the app's `DATABASE_URL` has no write on `core`, `crm`, `pos`, `promo`, `booth`, `analytics` or `edge`. It runs on staging as a read-back, because whether staging connects as its own `oto_app` role is set by hand in Render and is not in the repository |
 | H22 | Walkthrough fixtures left behind on staging | Every fixture is ZZ TEST, removed by exact id with a read-back recorded on its page. Restricted identities use a temporary password, never SMS |
 | H23 | One person is tied to the wrong account, or to another operator's | A two-operator fixture: an app employee whose email matches a user linked to operator B's account, in a tenant anchored to operator A, is copied with no account link and raised. A created copy sets its linked account's `employee_id` in the same transaction. An account already pointing at another employee row keeps it, and the case is raised |
