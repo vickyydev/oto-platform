@@ -128,6 +128,24 @@ export async function listAppEmployees(exec: Exec): Promise<AppEmployee[]> {
   return res.rows.map(toEmployee);
 }
 
+/**
+ * The park groups the app holds staff in: each distinct `tenant_id` of the
+ * view, lower case. Null where there is no seam (the app's view is not on this
+ * database), so a caller can tell "no park group" apart from "nothing to ask".
+ *
+ * Read by the platform's night jobs (S2-17b round 3 review, F1), which
+ * hold this list against the park groups they hold a key for: once
+ * the platform runs the app's night work the app runs none of its own — for
+ * any park group — and one with no key would lose every night in silence.
+ */
+export async function listAppParkGroups(exec: Exec): Promise<string[] | null> {
+  if (!(await otoAppEmployeesInstalled(exec))) return null;
+  const res = await exec.execute<{ tenant_id: string }>(
+    sql`select distinct tenant_id::text as tenant_id from otoapp_v.employees order by 1`,
+  );
+  return res.rows.map((r) => r.tenant_id.toLowerCase());
+}
+
 /** Some employees by the app's id; an id the app does not hold has no row. */
 export async function listAppEmployeesByIds(
   exec: Exec,

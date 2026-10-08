@@ -28,12 +28,14 @@ import { buildOtoAppNightJobs, createJobRunner, type JobDefinition } from '../sr
 import { recordRun } from '../src/services/ops';
 import {
   DIRECTORY_UNREACHABLE,
+  NIGHT_JOB_RUNNING,
   buildOtoAppJobsClient,
   type NightJobAnswer,
   type OtoAppNightJob,
 } from '../src/services/otoapp-directory';
 import {
   DEPARTED_ACCOUNT_CASE,
+  NIGHT_JOB_UNKEYED,
   NIGHT_STEP_FAILED,
   OTOAPP_DEPARTED_ACCOUNT_RUN,
   OTOAPP_MIDNIGHT_JOB,
@@ -56,15 +58,19 @@ import {
  *     two runners on the schedule plus a Run now at once.
  *  2. THE DUPLICATE-WORK HAZARD: a call that outlives the timeout is run again
  *     at the next tick, so the night's second batch is real — and, against the
- *     app itself, the second midnight batch of one date makes a SECOND
- *     instance of a recurring task due before 07:00 Bangkok (a new finding,
- *     pinned `it.fails`); a timer under `inprocess` on another instance takes
- *     none of the endpoint's batch lock (pinned `it.fails`, the last test).
+ *     app itself, the second midnight batch of one date made a SECOND
+ *     instance of a recurring task due before 07:00 Bangkok (finding F2,
+ *     pinned `it.fails` by the review, now held as fixed); a timer under
+ *     `inprocess` on another instance took none of the endpoint's batch lock
+ *     (finding F4, pinned the same way, now held as fixed — the last test).
  *  3. TENANT ISOLATION: a key bound to one park group never runs another's
  *     batch (named, configured against the wrong one, revoked, inactive), and
- *     — a new finding, pinned `it.fails` — a park group the app holds but
- *     OTOAPP_JOBS_KEYS does not name loses its whole night under `platform`
- *     with every run green.
+ *     — finding F1, pinned `it.fails` by the review, now held as fixed — a
+ *     park group the app holds but OTOAPP_JOBS_KEYS does not name lost its
+ *     whole night under `platform` with every run green; every run now fails
+ *     naming it (OTOAPP_NIGHT_JOB_UNKEYED). Its runs elsewhere in this file
+ *     are read with that in mind: a run whose key list leaves out a park
+ *     group the app holds fails for that park group, and only for it.
  *  4. THE SWALLOWED-ERROR PROMISE, step by step against the real app: each of
  *     the five catching steps the builder's own checks did not force
  *     (autoCheckout, taskGeneration, presenceReconciliation, statusTransitions,
@@ -81,7 +87,8 @@ import {
  *     audited once.
  *  7. THE MANUAL TRIGGERS under both switches, over HTTP.
  *  8. A park group the app answers "already running" at every tick of a date
- *     leaves the night undone with every run green (pinned `it.fails`).
+ *     left the night undone with every run green (finding F3, pinned
+ *     `it.fails` by the review, now held as fixed: the second tick fails).
  *
  * Sections 1-3 (stand-in parts), 5, 6 and 8 run against a stand-in app; the
  * rest against the real app when its node_modules are present.
@@ -249,6 +256,26 @@ const successesFor = async (job: string, date: string, tenantId: string) =>
   (await runsFor(job, date)).filter((r) =>
     detailOf(r).groups?.some((g) => g.tenantId === tenantId && g.outcome === 'ran' && g.ok),
   ).length;
+
+/** The newest run of a job for a date that names a park group, and that park group's part in it. */
+async function latestFor(job: string, date: string, tenantId: string) {
+  const run = (await runsFor(job, date)).find((r) => detailOf(r).groups?.some((g) => g.tenantId === tenantId));
+  if (!run) throw new Error(`no ${job} run for ${date} names ${tenantId}`);
+  return { run, group: detailOf(run).groups.find((g) => g.tenantId === tenantId)! };
+}
+
+/**
+ * F1, as every later run here meets it: a run whose key list leaves out a
+ * park group the app holds staff in fails for that park group alone — code
+ * OTOAPP_NIGHT_JOB_UNKEYED, every other park group's part as it would be.
+ */
+function failedOnlyUnkeyed(run: { outcome: string; errorCode: string | null; detail: unknown }): void {
+  expect(run.outcome).toBe('failed');
+  expect(run.errorCode).toBe(NIGHT_JOB_UNKEYED);
+  const failed = detailOf(run).groups.filter((g) => g.outcome === 'failed');
+  expect(failed.length).toBeGreaterThan(0);
+  for (const g of failed) expect(g.code, g.tenantId).toBe(NIGHT_JOB_UNKEYED);
+}
 
 // =============================================================================
 // The app's rows
@@ -568,11 +595,19 @@ describe('2. the duplicate-work hazard — what makes a second batch for one dat
 
 describe('3. tenant isolation — a park group the app holds but OTOAPP_JOBS_KEYS does not name', () => {
   const tenantU = newId();
+  let employeeU = '';
 
   beforeAll(async () => {
     await q(`insert into tenants (id, name, slug) values ($1, 'ZZ r3rev unkeyed', $2)`, [tenantU, `zz-r3rev-u-${tenantU.slice(-6)}`]);
     const branch = await appBranch(tenantU);
-    await appEmployee(tenantU, branch);
+    employeeU = await appEmployee(tenantU, branch);
+  });
+
+  // U is this section's fixture: removed by its id after it, so the sections
+  // below meet only the park groups they make themselves.
+  afterAll(async () => {
+    await q('delete from employees where id = $1', [employeeU]);
+    expect(Number((await q<{ n: string }>('select count(*) as n from employees where tenant_id = $1', [tenantU]))[0]!.n)).toBe(0);
   });
 
   it('the app holds park group U (it is in the employee view the platform already reads)', async () => {
@@ -581,7 +616,7 @@ describe('3. tenant isolation — a park group the app holds but OTOAPP_JOBS_KEY
   });
 
   /**
-   * FINDING (MEDIUM, apps/api/src/services/otoapp-jobs.ts:258 — the loop runs
+   * FINDING F1 (MEDIUM, apps/api/src/services/otoapp-jobs.ts:258 — the loop ran
    * `client.tenantIds`, the keyed park groups, and nothing else). Under
    * `OTOAPP_JOBS=platform` the app starts NO timer for ANY park group
    * (apps/oto-app/server/scheduled-jobs.ts:640), so a park group with no entry
@@ -596,16 +631,39 @@ describe('3. tenant isolation — a park group the app holds but OTOAPP_JOBS_KEY
    * fails, naming each one with no key (e.g. code
    * OTOAPP_NIGHT_JOB_UNKEYED) — or the app's endpoint answers the park groups
    * with no active `jobs:run` client and the platform fails on them.
+   * FIXED (the fix round): the first — every due run reads the park groups the
+   * employee view holds and fails naming each one with no key. Flipped from
+   * `it.fails` to the fixed behaviour.
    */
-  it.fails('FINDING: a run under keys for A alone names park group U, which nobody runs any more', async () => {
+  it('F1 fixed: a run under keys for A alone fails naming park group U, which nobody runs, while A runs and is done', async () => {
     stub.reset();
     const date = '2026-12-11';
     const env = envFor([[tenantA, keyA]]);
-    const job = nightJob('midnight', () => at(date, '00:30'), env);
-    const outcome = await runnerFor(job, env).runJob(job.name, { force: true });
+    let clock = at(date, '00:30');
+    const job = nightJob('midnight', () => clock, env);
+    const runner = runnerFor(job, env);
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
     const [run] = await runsFor(job.name, date);
     expect(stub.callsFor('midnight', tenantU)).toEqual([]);
-    expect(`${outcome} ${JSON.stringify(run!.detail)} ${run!.errorMessage ?? ''}`).toContain(tenantU);
+    expect(run!.errorCode).toBe(NIGHT_JOB_UNKEYED);
+    expect(run!.errorMessage).toContain(`park group ${tenantU}: ${NIGHT_JOB_UNKEYED}`);
+    expect(detailOf(run!).parkGroups).toMatchObject({ checked: true, unkeyed: [tenantU] });
+    expect(detailOf(run!).groups.map((g) => [g.tenantId, g.outcome, g.ok, g.code ?? null])).toEqual([
+      [tenantA, 'ran', true, null],
+      [tenantU, 'failed', false, NIGHT_JOB_UNKEYED],
+    ]);
+    // A's night is done; U's never is: the next tick runs nothing for A and fails again for U.
+    clock = at(date, '00:35');
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    expect(detailOf((await runsFor(job.name, date))[0]!).groups.map((g) => [g.tenantId, g.outcome])).toEqual([
+      [tenantA, 'done'],
+      [tenantU, 'failed'],
+    ]);
+    expect(stub.callsFor('midnight', tenantA)).toHaveLength(1);
+    expect(await successesFor(job.name, date, tenantA)).toBe(1);
+    // The watchdog's `ops.failing` counts it: the job's consecutive failures climb.
+    const [last] = await db.select().from(opsLast).where(eq(opsLast.name, OTOAPP_MIDNIGHT_JOB));
+    expect(last!.consecutiveFailures).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -790,20 +848,32 @@ describe('8. a park group the app answers "already running" at every tick of a d
    * FIX: a park group still `locked` at a second tick for the same date (or at
    * the date's last tick) fails the run with OTOAPP_JOB_RUNNING, so Failures
    * and `ops.failing` see it; the first, transient `locked` can stay green.
+   * FIXED (the fix round): the second tick fails. Flipped from `it.fails` to
+   * the fixed behaviour.
    */
-  it.fails('FINDING: locked at 00:06, 06:00, 12:00, 18:00 and 23:59 — some run of the date fails', async () => {
+  it('F3 fixed: locked at 00:06, 06:00, 12:00, 18:00 and 23:59 — the first is green, every later run of the date fails', async () => {
     stub.reset();
     const date = '2026-12-12';
     const env = envFor([[tenantA, keyA]]);
     stub.reply = () => ({ kind: 'answer', status: 409, body: { error: 'job_running', message: "This park group's batch is already running, so it was not started a second time." } });
+    const outcomes: string[] = [];
     for (const time of ['00:06', '06:00', '12:00', '18:00', '23:59']) {
       const job = nightJob('midnight', () => at(date, time), env);
-      await runnerFor(job, env).runJob(job.name, { force: true });
+      outcomes.push(await runnerFor(job, env).runJob(job.name, { force: true }));
     }
+    expect(outcomes).toEqual(['ok', 'failed', 'failed', 'failed', 'failed']);
     const runs = await runsFor(OTOAPP_MIDNIGHT_JOB, date);
     expect(runs).toHaveLength(5);
     expect([...(await nightGroupsDone(db, OTOAPP_MIDNIGHT_JOB, date))]).toEqual([]);
-    expect(runs.some((r) => r.outcome === 'failed')).toBe(true);
+    const oldestFirst = [...runs].reverse();
+    expect(detailOf(oldestFirst[0]!).groups).toEqual([expect.objectContaining({ tenantId: tenantA, outcome: 'locked', ok: false })]);
+    for (const r of oldestFirst.slice(1)) {
+      expect(r).toMatchObject({ outcome: 'failed', errorCode: NIGHT_JOB_RUNNING });
+      expect(r.errorMessage).toContain(`park group ${tenantA}: ${NIGHT_JOB_RUNNING}: the OTO App answered "already running"`);
+    }
+    // The watchdog's `ops.failing` counts it.
+    const [last] = await db.select().from(opsLast).where(eq(opsLast.name, OTOAPP_MIDNIGHT_JOB));
+    expect(last!.consecutiveFailures).toBeGreaterThanOrEqual(4);
   });
 });
 
@@ -1060,10 +1130,16 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
       expect(failed.errorMessage).toContain(`park group ${t}: departedLogins failed (the batch carried on): zz review: departedLogins refused`);
       expect((await q<{ a: boolean }>('select is_active as a from users where id = $1', [u.id]))[0]!.a).toBe(true);
 
+      // F1: this run's key list holds t alone, and the app holds staff in
+      // other park groups by now, so each later run fails for those alone.
       clock = at(today, '12:05');
-      expect(await runner.runJob(job.name, { force: true })).toBe('ok');
+      expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+      const second = await latestFor(job.name, today, t);
+      expect(second.group).toMatchObject({ outcome: 'ran', ok: true });
+      failedOnlyUnkeyed(second.run);
       clock = at(today, '12:10');
-      expect(await runner.runJob(job.name, { force: true })).toBe('ok');
+      expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+      expect((await latestFor(job.name, today, t)).group.outcome).toBe('done');
       expect((await q<{ a: boolean }>('select is_active as a from users where id = $1', [u.id]))[0]!.a).toBe(false);
       expect(await successesFor(job.name, today, t)).toBe(1);
     });
@@ -1092,7 +1168,9 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
 
       const env = envFor([[x, k]], { OTOAPP_DIRECTORY_URL: origin.platform });
       const job = nightJob('reconcile', () => at(today, '12:00'), env);
-      expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('ok');
+      // F1: the run fails for the other park groups the app holds by now, and only for them.
+      expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('failed');
+      failedOnlyUnkeyed((await latestFor(job.name, today, x)).run);
 
       const appActive = async (id: string) => (await q<{ a: boolean }>('select is_active as a from users where id = $1', [id]))[0]!.a;
       // The app's own rule, as its batch just applied it.

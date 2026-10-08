@@ -10,7 +10,7 @@ import {
   type OtoAppJobsClient,
   type OtoAppNightJob,
 } from './otoapp-directory';
-import { listAppEmployees, otoAppEmployeesInstalled } from './otoapp-employees';
+import { listAppEmployees, listAppParkGroups, otoAppEmployeesInstalled } from './otoapp-employees';
 import { withTx, type Exec } from './tx';
 
 /**
@@ -52,8 +52,29 @@ import { withTx, type Exec } from './tx';
  * Failures runs the job again — which, for a daily batch, runs only the park
  * groups not yet done.
  *
+ * A PARK GROUP NOBODY RUNS FAILS EVERY RUN (review F1). The switch is the
+ * app's, not a park group's: under `OTOAPP_JOBS=platform` the app starts no
+ * timer for ANY park group. So every run, once its keyed park groups are
+ * done, reads the park groups the app holds staff in (the employee
+ * repository, `otoapp-employees.ts`) and fails naming each one this
+ * deployment holds no key for (`OTOAPP_NIGHT_JOB_UNKEYED`) — at every tick,
+ * so Failures and the `ops.failing` alert see it until the key is added. The
+ * keyed park groups still run and are still recorded done.
+ *
+ * "ALREADY RUNNING" TWICE IS A FAILURE (review F3). The app answers 409
+ * `job_running` while it holds a park group's batch. Once, it is a call that
+ * timed out still finishing (`locked`, not done, not failed: the next tick
+ * asks again). Still so at a later tick of the same date — or, for the
+ * six-hourly check, at the run after — the batch it holds has not finished
+ * since, and the run fails with `OTOAPP_JOB_RUNNING` rather than stay green
+ * all night while nothing is done.
+ *
  * A deployment with no OTO App to run (no `OTOAPP_DIRECTORY_URL` or no
- * `OTOAPP_JOBS_KEYS`) runs each job as a no-op that says so.
+ * `OTOAPP_JOBS_KEYS`) runs each job as a no-op that says so: holding no key,
+ * it has not taken the night work over, and the app's own timers run it
+ * (`inprocess`, the app's default). One that holds keys but whose database
+ * has no employee view of the app runs its keyed park groups and says that
+ * no park group without a key could be looked for.
  */
 
 export const OTOAPP_MIDNIGHT_JOB = 'job:otoapp.midnight';
@@ -93,8 +114,13 @@ export interface NightGroupSummary {
    *  - `ran`: the app ran the batch and every step finished;
    *  - `done`: the batch already finished for this date, so it was not run again;
    *  - `locked`: the app is running this park group's batch for somebody else
-   *    right now, so it was not started twice (not done, not failed);
-   *  - `failed`: a step failed, the app refused, or nothing answered.
+   *    right now, so it was not started twice (not done, not failed) — the
+   *    first time; answered so again at a later tick, it is `failed`
+   *    (`OTOAPP_JOB_RUNNING`, review F3);
+   *  - `failed`: a step failed, the app refused, nothing answered, the batch
+   *    was still running at a second tick, or the app holds staff in this
+   *    park group and this deployment holds no key for it
+   *    (`OTOAPP_NIGHT_JOB_UNKEYED`, review F1).
    */
   outcome: 'ran' | 'done' | 'locked' | 'failed';
   /** The batch is done for this run's date. What the next tick reads. */
@@ -133,6 +159,24 @@ export interface NightJobSummary extends Record<string, unknown> {
   failed: number;
   /** Still-active leavers' accounts filed on Failures by this run (the reconcile batch). */
   departedAccountsRaised: number;
+  /**
+   * Review F1: the park groups the app holds staff in, held against the keys
+   * this deployment holds — on a run that was due. Each `unkeyed` one is a
+   * failed park group of the run too. `checked` false with a `reason` where
+   * the app publishes no employee view here, with an `error` where the list
+   * could not be read (which fails the run: nobody can say none is missed).
+   */
+  parkGroups?: ParkGroupCheck;
+}
+
+export interface ParkGroupCheck {
+  checked: boolean;
+  /** How many park groups the app holds staff in. */
+  held?: number;
+  /** Those this deployment holds no jobs key for: nothing runs their night. */
+  unkeyed: string[];
+  reason?: string;
+  error?: string;
 }
 
 // --- The forced failure (a staging test control) ----------------------------
@@ -159,6 +203,17 @@ export const FORCED_FAILURE_CODE = 'OTOAPP_JOB_FORCED_FAILURE';
 export const NIGHT_STEP_FAILED = 'OTOAPP_NIGHT_STEP_FAILED';
 /** The app's batch finished, but the platform's leaver listing did not. */
 export const DEPARTED_LISTING_FAILED = 'OTOAPP_DEPARTED_LISTING_FAILED';
+/** The app holds staff in a park group this deployment holds no jobs key for (review F1). */
+export const NIGHT_JOB_UNKEYED = 'OTOAPP_NIGHT_JOB_UNKEYED';
+
+const UNKEYED_WORDS =
+  "the OTO App holds staff in this park group, but this deployment holds no jobs:run key for it in OTOAPP_JOBS_KEYS. While the platform runs the app's night work (OTOAPP_JOBS=platform) the app runs none of its own, for any park group, so nothing runs this one's night: issue it a jobs:run key in the OTO App and add it to OTOAPP_JOBS_KEYS";
+
+/** The unkeyed park groups, as one clause of the run's error. */
+const unkeyedLine = (ids: string[]): string =>
+  ids.length === 1
+    ? `park group ${ids[0]}: ${NIGHT_JOB_UNKEYED}: the OTO App holds staff there, but this deployment holds no jobs:run key for it (OTOAPP_JOBS_KEYS), so nothing runs its night`
+    : `park groups ${ids.join(', ')}: ${NIGHT_JOB_UNKEYED}: the OTO App holds staff there, but this deployment holds no jobs:run key for them (OTOAPP_JOBS_KEYS), so nothing runs their nights`;
 
 // --- The run -----------------------------------------------------------------
 
@@ -263,7 +318,21 @@ export async function runOtoAppNightJob(
     const answer = await client.run(name, tenantId);
     if (!answer.ok) {
       if (answer.code === NIGHT_JOB_RUNNING) {
-        summary.groups.push({ tenantId, outcome: 'locked', ok: false });
+        // Review F3: once is a call still finishing; twice is a batch that
+        // has not finished since, and nothing else would ever say so.
+        if (await answeredRunningBefore(db, spec.job, tenantId, summary.date)) {
+          summary.groups.push({
+            tenantId,
+            outcome: 'failed',
+            ok: false,
+            code: NIGHT_JOB_RUNNING,
+            error: `${NIGHT_JOB_RUNNING}: the OTO App answered "already running" for this park group at an earlier tick${
+              summary.date ? ` of ${summary.date}` : ''
+            } too, so the batch it holds has not finished since and the ${spec.at ? 'night' : 'check'} is not done; a batch that never returns keeps holding it`,
+          });
+        } else {
+          summary.groups.push({ tenantId, outcome: 'locked', ok: false });
+        }
         continue;
       }
       summary.groups.push({
@@ -308,17 +377,98 @@ export async function runOtoAppNightJob(
     summary.groups.push(group);
   }
 
+  // Review F1: after the keyed park groups, so a list that cannot be read
+  // never costs them their night.
+  summary.parkGroups = await checkParkGroups(db, client.tenantIds);
+  for (const tenantId of summary.parkGroups.unkeyed) {
+    summary.groups.push({
+      tenantId,
+      outcome: 'failed',
+      ok: false,
+      code: NIGHT_JOB_UNKEYED,
+      error: `${NIGHT_JOB_UNKEYED}: ${UNKEYED_WORDS}`,
+    });
+  }
+
   const failed = summary.groups.filter((g) => g.outcome === 'failed');
   summary.failed = failed.length;
-  if (failed.length > 0) {
-    // The Failures page groups by code: the first failed park group's.
-    const code = failed[0]!.code ?? 'OTOAPP_NIGHT_JOB_FAILED';
-    const message = `OTO App ${spec.at ? `${spec.at} ` : ''}${name} batch${summary.date ? ` for ${summary.date}` : ''}: ${failed
-      .map((g) => `park group ${g.tenantId}: ${g.error ?? 'failed'}`)
-      .join('. ')}`;
+  const unreadable = summary.parkGroups.error;
+  if (failed.length > 0 || unreadable) {
+    // The Failures page groups by code: the first failed keyed park group's,
+    // or, when only the check failed, the check's.
+    const keyedFailed = failed.filter((g) => g.code !== NIGHT_JOB_UNKEYED);
+    const code = keyedFailed.length > 0 ? keyedFailed[0]!.code ?? 'OTOAPP_NIGHT_JOB_FAILED' : NIGHT_JOB_UNKEYED;
+    const parts = keyedFailed.map((g) => `park group ${g.tenantId}: ${g.error ?? 'failed'}`);
+    if (summary.parkGroups.unkeyed.length > 0) parts.push(unkeyedLine(summary.parkGroups.unkeyed));
+    if (unreadable) {
+      parts.push(
+        `${NIGHT_JOB_UNKEYED}: the park groups the OTO App holds staff in could not be read, so one this deployment holds no key for cannot be ruled out: ${unreadable}`,
+      );
+    }
+    const message = `OTO App ${spec.at ? `${spec.at} ` : ''}${name} batch${summary.date ? ` for ${summary.date}` : ''}: ${parts.join('. ')}`;
     throw new JobFailedError(code, message.slice(0, 500), summary);
   }
   return summary;
+}
+
+/**
+ * Review F1: the park groups the app holds staff in that this deployment holds
+ * no key for. Read through the employee repository, the platform's one window
+ * on the app's staff.
+ */
+async function checkParkGroups(db: Db, keyed: readonly string[]): Promise<ParkGroupCheck> {
+  let held: string[] | null;
+  try {
+    held = await listAppParkGroups(db);
+  } catch (err) {
+    return { checked: false, unkeyed: [], error: words(err instanceof Error ? err.message : String(err)) };
+  }
+  if (held === null) {
+    return {
+      checked: false,
+      unkeyed: [],
+      reason: 'The OTO App publishes no employee view here, so no park group without a key could be looked for.',
+    };
+  }
+  const ours = new Set(keyed.map((t) => t.toLowerCase()));
+  return { checked: true, held: held.length, unkeyed: held.filter((t) => !ours.has(t)) };
+}
+
+/**
+ * Review F3: did an earlier run find this park group's batch already running?
+ * A daily batch asks every run of the same date; the six-hourly check asks the
+ * last run that asked the app for this park group at all.
+ */
+async function answeredRunningBefore(db: Exec, job: string, tenantId: string, date: string | null): Promise<boolean> {
+  if (date !== null) {
+    const [hit] = await db
+      .select({ id: opsRun.id })
+      .from(opsRun)
+      .where(
+        and(
+          eq(opsRun.kind, 'job'),
+          eq(opsRun.name, job),
+          sql`${opsRun.detail} @> ${JSON.stringify({ date, groups: [{ tenantId, outcome: 'locked' }] })}::jsonb`,
+        ),
+      )
+      .limit(1);
+    return hit !== undefined;
+  }
+  const [last] = await db
+    .select({ detail: opsRun.detail })
+    .from(opsRun)
+    .where(
+      and(
+        eq(opsRun.kind, 'job'),
+        eq(opsRun.name, job),
+        sql`${opsRun.detail} @> ${JSON.stringify({ groups: [{ tenantId }] })}::jsonb`,
+      ),
+    )
+    .orderBy(desc(opsRun.startedAt))
+    .limit(1);
+  const groups = (last?.detail as { groups?: NightGroupSummary[] } | null | undefined)?.groups ?? [];
+  const before = groups.find((g) => g.tenantId === tenantId);
+  return before !== undefined && (before.outcome === 'locked' || before.code === NIGHT_JOB_RUNNING);
 }
 
 // --- Q4: a leaver's platform account ----------------------------------------

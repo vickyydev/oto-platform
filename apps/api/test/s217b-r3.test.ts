@@ -35,6 +35,7 @@ import {
 } from '../src/services/jobs';
 import {
   DIRECTORY_UNREACHABLE,
+  NIGHT_JOB_RUNNING,
   buildOtoAppJobsClient,
   parseOtoAppJobKeys,
   type NightJobAnswer,
@@ -43,11 +44,13 @@ import {
 import {
   DEPARTED_ACCOUNT_CASE,
   FORCED_FAILURE_CODE,
+  NIGHT_JOB_UNKEYED,
   NIGHT_STEP_FAILED,
   OTOAPP_DEPARTED_ACCOUNT_RUN,
   OTOAPP_MIDNIGHT_JOB,
   OTOAPP_PRESENCE_JOB,
   OTOAPP_RECONCILE_JOB,
+  nightGroupsDone,
   type NightJobSummary,
 } from '../src/services/otoapp-jobs';
 
@@ -85,12 +88,23 @@ import {
  *     stops raises the watchdog's missing-run alert (H7).
  *  I. OTOAPP_JOBS_KEYS: read, refused when malformed without the key ever in
  *     the message, and empty in a test unless a test passes one.
+ *  K. The review's F1 (the fix round): a park group the app holds staff in
+ *     with no key here fails every run naming it (OTOAPP_NIGHT_JOB_UNKEYED),
+ *     while the keyed park groups still run and are done once; with its key
+ *     it runs; a deployment holding no key at all is still the no-op.
  *  J. The real app (when its node_modules are present): its night-job
  *     endpoint over HTTP — the scope refusals, the inprocess refusal, the
  *     platform's midnight job against it writing ONE clock-out per stale
  *     clock-in across runs, the app down and back (H9), no timers under
- *     `platform`, the manual triggers' two answers — and the app's own check
+ *     `platform`, the manual triggers' two answers, the review's F2 (a second
+ *     batch of one date makes no second task instance, due at 06:30 or 18:00)
+ *     and F4 (the in-process batch stands down for a park group the
+ *     endpoint's lock holds) — and the app's own check
  *     (apps/oto-app/tests/night-jobs.check.ts) against a fresh database.
+ *
+ *  The review's F3 is in F: "already running" again at a later tick fails.
+ *  From K on, the app holds staff in park groups a run's key list leaves out,
+ *  so such a run fails for those park groups alone (F1) — read so in J.
  *
  * Sections A to I run against a stand-in app: a small HTTP server here that
  * answers the endpoint exactly as the app's lib/nightJobs.ts shapes it, and
@@ -275,6 +289,22 @@ const successesFor = async (job: string, date: string, tenantId: string) =>
   (await runsFor(job, date)).filter((r) =>
     detailOf(r).groups?.some((g) => g.tenantId === tenantId && g.outcome === 'ran' && g.ok),
   ).length;
+
+/** The newest run of a job for a date that names a park group, and that park group's part in it. */
+async function latestFor(job: string, date: string, tenantId: string) {
+  const run = (await runsFor(job, date)).find((r) => detailOf(r).groups?.some((g) => g.tenantId === tenantId));
+  if (!run) throw new Error(`no ${job} run for ${date} names ${tenantId}`);
+  return { run, group: detailOf(run).groups.find((g) => g.tenantId === tenantId)! };
+}
+
+/** Review F1, as J meets it: the run failed for park groups it holds no key for, and for nothing else. */
+function failedOnlyUnkeyed(run: { outcome: string; errorCode: string | null; detail: unknown }): void {
+  expect(run.outcome).toBe('failed');
+  expect(run.errorCode).toBe(NIGHT_JOB_UNKEYED);
+  const failed = detailOf(run).groups.filter((g) => g.outcome === 'failed');
+  expect(failed.length).toBeGreaterThan(0);
+  for (const g of failed) expect(g.code, g.tenantId).toBe(NIGHT_JOB_UNKEYED);
+}
 
 // =============================================================================
 // The app's rows (park group A, for Q4)
@@ -715,6 +745,50 @@ describe('F. every error the app swallowed is a failed step, and fails the run i
     expect(await successesFor(job.name, date, tenantA)).toBe(1);
   });
 
+  it('review F3: "already running" again at a later tick of the same date fails the run (OTOAPP_JOB_RUNNING); once is still green', async () => {
+    stub.reset();
+    const env = envFor([[tenantA, keyA]]);
+    const running = () => ({ kind: 'answer' as const, status: 409, body: { error: 'job_running', message: 'already running' } });
+    const tick = (date: string, time: string) => {
+      const job = nightJob('midnight', () => at(date, time), env);
+      return runnerFor(job, env).runJob(job.name, { force: true });
+    };
+    const date = '2026-11-16';
+    stub.reply = running;
+    expect(await tick(date, '00:05')).toBe('ok'); // once: a call still finishing
+    expect(await tick(date, '00:10')).toBe('failed'); // again: the batch has not finished since
+    const [run] = await runsFor(OTOAPP_MIDNIGHT_JOB, date);
+    expect(run).toMatchObject({ outcome: 'failed', errorCode: NIGHT_JOB_RUNNING });
+    expect(run!.errorMessage).toContain(`park group ${tenantA}: ${NIGHT_JOB_RUNNING}: the OTO App answered "already running" for this park group at an earlier tick of ${date} too`);
+    expect(detailOf(run!).groups).toEqual([
+      expect.objectContaining({ tenantId: tenantA, outcome: 'failed', ok: false, code: NIGHT_JOB_RUNNING }),
+    ]);
+    expect(await tick(date, '00:15')).toBe('failed'); // and every tick after, while it holds
+    // It lets go: the next tick runs the night, done once.
+    stub.reply = (call) => stub.ok(call);
+    expect(await tick(date, '00:20')).toBe('ok');
+    expect(await successesFor(OTOAPP_MIDNIGHT_JOB, date, tenantA)).toBe(1);
+    // Another date starts afresh: its first "already running" is green again.
+    stub.reply = running;
+    expect(await tick('2026-11-17', '00:05')).toBe('ok');
+    expect(detailOf((await runsFor(OTOAPP_MIDNIGHT_JOB, '2026-11-17'))[0]!).groups[0]).toMatchObject({ outcome: 'locked' });
+  });
+
+  it('review F3: the six-hourly check has no date — "already running" at the run after one fails it', async () => {
+    stub.reset();
+    const env = envFor([[tenantA, keyA]]);
+    const job = nightJob('presence', () => at('2026-11-18', '06:00'), env);
+    const runner = runnerFor(job, env);
+    stub.reply = () => ({ kind: 'answer', status: 409, body: { error: 'job_running', message: 'already running' } });
+    expect(await runner.runJob(job.name, { force: true })).toBe('ok');
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    expect((await runsFor(OTOAPP_PRESENCE_JOB))[0]).toMatchObject({ errorCode: NIGHT_JOB_RUNNING });
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    stub.reply = (call) => stub.ok(call);
+    expect(await runner.runJob(job.name, { force: true })).toBe('ok');
+    expect(detailOf((await runsFor(OTOAPP_PRESENCE_JOB))[0]!).groups[0]).toMatchObject({ tenantId: tenantA, outcome: 'ran' });
+  });
+
   it('an answer that is not the batch it asked for is unreadable, and fails the run', async () => {
     stub.reset();
     const date = '2026-11-20';
@@ -925,6 +999,112 @@ describe('I. OTOAPP_JOBS_KEYS — read, refused when malformed, empty in a test'
 });
 
 // =============================================================================
+// K. Review F1: a park group the app holds staff in, with no key here
+// =============================================================================
+
+describe('K. review F1 — a park group the app holds staff in, with no key here, fails every run naming it', () => {
+  const tenantU = newId();
+  const keyU = key();
+
+  beforeAll(async () => {
+    await q(`insert into tenants (id, name, slug) values ($1, 'ZZ r3 unkeyed', $2)`, [tenantU, `zz-r3-u-${tenantU.slice(-6)}`]);
+    const branch = newId();
+    await q(`insert into branches (id, tenant_id, name, address) values ($1, $2, 'ZZ r3 unkeyed park', 'ZZ r3')`, [branch, tenantU]);
+    await q(`insert into employees (id, tenant_id, branch_id, full_name, nickname, email) values ($1, $2, $3, 'ZZ r3 unkeyed', 'ZZ', $4)`, [
+      newId(),
+      tenantU,
+      branch,
+      `zz-r3-unkeyed-${tenantU.slice(-6)}@example.com`,
+    ]);
+  });
+
+  it('the keyed park group runs and is done; the run fails naming U in its code, its words and its detail; nothing is sent for U', async () => {
+    stub.reset();
+    const date = '2026-11-26';
+    const env = envFor([[tenantA, keyA]]);
+    let clock = at(date, '00:05');
+    const job = nightJob('midnight', () => clock, env);
+    const runner = runnerFor(job, env);
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    const [run] = await runsFor(job.name, date);
+    expect(run!.errorCode).toBe(NIGHT_JOB_UNKEYED);
+    expect(run!.errorMessage).toBe(
+      `OTO App 00:01 midnight batch for ${date}: park group ${tenantU}: ${NIGHT_JOB_UNKEYED}: the OTO App holds staff there, but this deployment holds no jobs:run key for it (OTOAPP_JOBS_KEYS), so nothing runs its night`,
+    );
+    expect(detailOf(run!)).toMatchObject({ configured: true, due: true, failed: 1, parkGroups: { checked: true, held: 2, unkeyed: [tenantU] } });
+    expect(detailOf(run!).groups.map((g) => [g.tenantId, g.outcome, g.ok, g.code ?? null])).toEqual([
+      [tenantA, 'ran', true, null],
+      [tenantU, 'failed', false, NIGHT_JOB_UNKEYED],
+    ]);
+    expect(detailOf(run!).groups[1]!.error).toMatch(/issue it a jobs:run key in the OTO App and add it to OTOAPP_JOBS_KEYS$/);
+    expect(stub.callsFor('midnight').map((c) => c.tenantId)).toEqual([tenantA]);
+    expect([...(await nightGroupsDone(db, job.name, date))]).toEqual([tenantA]);
+
+    // Every tick fails while U has no key — and A, done, is not run again.
+    clock = at(date, '00:10');
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    expect(detailOf((await runsFor(job.name, date))[0]!).groups.map((g) => [g.tenantId, g.outcome])).toEqual([
+      [tenantA, 'done'],
+      [tenantU, 'failed'],
+    ]);
+    expect(stub.callsFor('midnight')).toHaveLength(1);
+    // On Failures under the new code, retryable as every job is.
+    const failures = await ctx.app.inject({ method: 'GET', url: '/ops/failures', headers: { cookie: admin } });
+    const row = (failures.json() as { groups: Array<{ name: string; kind: string; retryable: boolean; lastError: string }> }).groups.find(
+      (g) => g.name === OTOAPP_MIDNIGHT_JOB,
+    );
+    expect(row).toMatchObject({ kind: 'job', retryable: true });
+    expect(row!.lastError).toMatch(new RegExp(`^${NIGHT_JOB_UNKEYED}: `));
+  });
+
+  it('the 03:00 batch and the six-hourly check fail for U the same way', async () => {
+    stub.reset();
+    const env = envFor([[tenantA, keyA]]);
+    for (const [name, clock] of [
+      ['reconcile', at('2026-11-26', '03:05')],
+      ['presence', at('2026-11-26', '06:00')],
+    ] as const) {
+      const job = nightJob(name, () => clock, env);
+      expect(await runnerFor(job, env).runJob(job.name, { force: true }), name).toBe('failed');
+      const [run] = await runsFor(job.name);
+      expect(run!.errorCode, name).toBe(NIGHT_JOB_UNKEYED);
+      expect(detailOf(run!).groups.map((g) => [g.tenantId, g.outcome]), name).toEqual([
+        [tenantA, 'ran'],
+        [tenantU, 'failed'],
+      ]);
+    }
+  });
+
+  it("given U's key, the next tick runs U, and the run is ok", async () => {
+    stub.reset();
+    KEYS[tenantU] = keyU;
+    const env = envFor([[tenantA, keyA], [tenantU, keyU]]);
+    const date = '2026-11-26';
+    const job = nightJob('midnight', () => at(date, '00:15'), env);
+    expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('ok');
+    const [run] = await runsFor(job.name, date);
+    expect(detailOf(run!).groups.map((g) => [g.tenantId, g.outcome])).toEqual([
+      [tenantA, 'done'],
+      [tenantU, 'ran'],
+    ]);
+    expect(detailOf(run!).parkGroups).toEqual({ checked: true, held: 2, unkeyed: [] });
+    expect(await successesFor(job.name, date, tenantU)).toBe(1);
+  });
+
+  it('a deployment holding no key at all is still the no-op, whatever park groups the app holds: the app runs its own nights', async () => {
+    stub.reset();
+    const env = envFor([]);
+    const job = nightJob('midnight', () => at('2026-11-27', '00:30'), env);
+    expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('ok');
+    // A no-op names no date: the newest run of the job is this one.
+    const [run] = await runsFor(job.name);
+    expect(detailOf(run!)).toMatchObject({ configured: false, due: false, groups: [], failed: 0 });
+    expect(detailOf(run!).parkGroups).toBeUndefined();
+    expect(stub.calls).toEqual([]);
+  });
+});
+
+// =============================================================================
 // J. The real app
 // =============================================================================
 
@@ -1065,14 +1245,17 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app: its endpoint, the platform j
     const env = envFor([[tenantR, keyR]], { OTOAPP_DIRECTORY_URL: origin.platform });
     const job = nightJob('midnight', clock, env);
     const runner = runnerFor(job, env);
-    expect(await runner.runJob(job.name, { force: true })).toBe('ok');
-    const ran = detailOf((await runsFor(job.name, today))[0]!).groups[0]!;
-    expect(ran).toMatchObject({ tenantId: tenantR, outcome: 'ran', ok: true });
-    expect(ran.steps!.find((s) => s.step === 'autoClockOut')!.counts.autoClockedOut).toBe(2);
+    // F1: the app holds staff in A and K's U too, which this key list leaves
+    // out, so the run fails for them alone; R's part is what this test reads.
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    const first = await latestFor(job.name, today, tenantR);
+    failedOnlyUnkeyed(first.run);
+    expect(first.group).toMatchObject({ tenantId: tenantR, outcome: 'ran', ok: true });
+    expect(first.group.steps!.find((s) => s.step === 'autoClockOut')!.counts.autoClockedOut).toBe(2);
     for (const s of stale) expect(await outsOf(s.employee)).toBe(1);
 
-    expect(await runner.runJob(job.name, { force: true })).toBe('ok');
-    expect(detailOf((await runsFor(job.name, today))[0]!).groups[0]!.outcome).toBe('done');
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    expect((await latestFor(job.name, today, tenantR)).group.outcome).toBe('done');
     expect(await successesFor(job.name, today, tenantR)).toBe(1);
 
     // Even the app asked again directly writes no second clock-out.
