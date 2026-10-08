@@ -1,6 +1,6 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { storage, resolveFixReportStatusFilter } from "./storage";
+import { storage, resolveFixReportStatusFilter, type ActivityParkGroup } from "./storage";
 import { setupAuth, requireAuth, hashPassword } from "./auth";
 import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches, canUserAccessBranch, requireDirectoryApiKey, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
@@ -1006,6 +1006,8 @@ export async function registerRoutes(
           : `${branchIds?.length || 0} selected branches`;
       
       await storage.createActivityLog({
+        // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+        tenantId: tenantId,
         activityType: "USER_CREATED",
         createdBy: req.user?.id || null,
         summaryText: `Created user ${email} with role ${role || 'staff'}, access: ${branchSummary}`,
@@ -1102,6 +1104,8 @@ export async function registerRoutes(
       // Log enable/disable events
       if (isActive !== undefined && isActive !== targetUser.isActive) {
         await storage.createActivityLog({
+          // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+          tenantId: tenantId,
           activityType: isActive ? "USER_ENABLED" : "USER_DISABLED",
           createdBy: req.user?.id || null,
           summaryText: `${isActive ? 'Enabled' : 'Disabled'} user ${user.email}`,
@@ -1144,6 +1148,8 @@ export async function registerRoutes(
       
       // Log activity
       await storage.createActivityLog({
+        // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+        tenantId: tenantId,
         activityType: "USER_PASSWORD_RESET_BY_ADMIN",
         createdBy: req.user?.id || null,
         summaryText: `Admin reset password for user ${targetUser.email}`,
@@ -6955,21 +6961,40 @@ OTO Company Limited`,
     }
   });
 
-  // Activity log routes
+  // Activity log routes.
+  //
+  // Whose rows (S2-17b round 4a): the caller's park group's — every row carries
+  // its park group from migration 0006, so a row about no branch (a user
+  // created, a policy published, a camp edited) shows in its own park group's
+  // logbook and nobody else's. Of those, the app's own branch rule: a reader
+  // with every branch sees every row, the branchless ones included; any other
+  // reader sees the rows of their branches only.
+  const activityParkGroupOf = async (user: UserWithBranchAccess & { tenantId: string }) => {
+    const tenantBranches = await db.select({ id: branches.id }).from(branches)
+      .where(eq(branches.tenantId, user.tenantId));
+    const parkGroupBranchIds = tenantBranches.map(branch => branch.id);
+    const accessibleBranchIds = parkGroupBranchIds.filter(id => canUserAccessBranch(user, id));
+    const parkGroup: ActivityParkGroup = {
+      tenantId: user.tenantId,
+      parkGroupBranchIds,
+      readerBranchIds: user.hasAllBranchesAccess ? null : accessibleBranchIds,
+    };
+    return { parkGroupBranchIds, accessibleBranchIds, parkGroup };
+  };
+
   app.get("/api/activity-logs", requireAuth, async (req, res, next) => {
     try {
       const user = req.userWithAccess;
       if (!user?.tenantId) return res.status(403).json({ message: "Tenant access required" });
       const { branchId, types, limit, offset, dateFrom, dateTo, search, employeeId, contractInstanceId, sinceDays } = req.query;
       
-      const tenantBranches = await db.select({ id: branches.id }).from(branches)
-        .where(eq(branches.tenantId, user.tenantId));
-      const accessibleBranchIds = tenantBranches.map(branch => branch.id)
-        .filter(id => canUserAccessBranch(user, id));
+      const { parkGroupBranchIds, accessibleBranchIds, parkGroup } =
+        await activityParkGroupOf(user as UserWithBranchAccess & { tenantId: string });
       
       const options: { 
         branchId?: string; 
         branchIds?: string[];
+        parkGroup?: ActivityParkGroup;
         employeeId?: string;
         contractInstanceId?: string;
         types?: ActivityType[]; 
@@ -6981,17 +7006,15 @@ OTO Company Limited`,
       } = {};
       
       // Apply branch filtering with RBAC scoping
+      options.parkGroup = parkGroup;
       if (branchId && typeof branchId === "string") {
-        if (!tenantBranches.some(branch => branch.id === branchId)) {
+        if (!parkGroupBranchIds.includes(branchId)) {
           return res.status(404).json({ message: "Branch not found" });
         }
         if (!accessibleBranchIds.includes(branchId)) {
           return res.status(403).json({ message: "Access denied to this branch" });
         }
         options.branchId = branchId;
-      } else {
-        // Branchless legacy rows cannot be assigned to a tenant safely.
-        options.branchIds = accessibleBranchIds;
       }
       
       if (employeeId && typeof employeeId === "string") {
@@ -7049,22 +7072,18 @@ OTO Company Limited`,
       if (!user?.tenantId) return res.status(403).json({ message: "Tenant access required" });
       const { branchId, sinceDays } = req.query;
       
-      const tenantBranches = await db.select({ id: branches.id }).from(branches)
-        .where(eq(branches.tenantId, user.tenantId));
-      const accessibleBranchIds = tenantBranches.map(branch => branch.id)
-        .filter(id => canUserAccessBranch(user, id));
-      const options: { branchId?: string; branchIds?: string[]; sinceDays?: number } = {};
+      const { parkGroupBranchIds, accessibleBranchIds, parkGroup } =
+        await activityParkGroupOf(user as UserWithBranchAccess & { tenantId: string });
+      const options: { branchId?: string; branchIds?: string[]; parkGroup?: ActivityParkGroup; sinceDays?: number } = { parkGroup };
       
       if (branchId && typeof branchId === "string") {
-        if (!tenantBranches.some(branch => branch.id === branchId)) {
+        if (!parkGroupBranchIds.includes(branchId)) {
           return res.status(404).json({ message: "Branch not found" });
         }
         if (!accessibleBranchIds.includes(branchId)) {
           return res.status(403).json({ message: "Access denied to this branch" });
         }
         options.branchId = branchId;
-      } else {
-        options.branchIds = accessibleBranchIds;
       }
       
       if (sinceDays && typeof sinceDays === "string") {
@@ -7387,6 +7406,8 @@ OTO Company Limited`,
         branchId: null,
         employeeId: null,
         contractInstanceId: null,
+        // The policy's park group: a company-wide policy is about no branch (S2-17b round 4a).
+        tenantId: user.tenantId,
         activityType: "policy_created",
         summaryText: `Policy document "${policy.title}" created (v${policy.versionInt})`,
         createdBy: userId,
@@ -7447,6 +7468,8 @@ OTO Company Limited`,
         branchId: null,
         employeeId: null,
         contractInstanceId: null,
+        // The policy's park group: a company-wide policy is about no branch (S2-17b round 4a).
+        tenantId: user.tenantId,
         activityType: "policy_published",
         summaryText: `Policy document "${policy.title}" published (v${policy.versionInt})`,
         createdBy: userId,
@@ -7477,6 +7500,8 @@ OTO Company Limited`,
         branchId: null,
         employeeId: null,
         contractInstanceId: null,
+        // The policy's park group: a company-wide policy is about no branch (S2-17b round 4a).
+        tenantId: user.tenantId,
         activityType: "policy_archived",
         summaryText: `Policy document "${policy.title}" archived (v${policy.versionInt})`,
         createdBy: userId,
@@ -13670,6 +13695,8 @@ OTO Company Limited`,
         
         // Log activity
         await storage.createActivityLog({
+          // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+          tenantId: resolvedTenantId,
           activityType: "USER_CREATED",
           createdBy: req.user?.id || null,
           summaryText: `Created person ${personData.fullName || 'Unknown'} with HR login (${accessLevel || 'STAFF'})`,
@@ -17663,6 +17690,8 @@ OTO Company Limited`,
       if (toAdd.length > 0) parts.push(`added ${toAdd.join(", ")}`);
       if (toRemove.length > 0) parts.push(`removed ${toRemove.join(", ")}`);
       await storage.createActivityLog({
+        // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+        tenantId: tenantId,
         activityType: "camp_attendance_days_updated",
         createdBy: userId || null,
         summaryText: `${staffName} updated attendance days for ${reg.childFullName}: ${parts.join("; ")}`,
@@ -17790,6 +17819,8 @@ OTO Company Limited`,
       const staffUser = req.user as any;
       const staffName = staffUser?.fullName || staffUser?.email || "Staff";
       await storage.createActivityLog({
+        // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+        tenantId: tenantId,
         activityType: "camp_registration_updated",
         createdBy: userId || null,
         summaryText: `${staffName} updated profile for ${updated.childFullName}`,
@@ -17828,6 +17859,8 @@ OTO Company Limited`,
       const staffUser = req.user as any;
       const staffName = staffUser?.fullName || staffUser?.email || "Staff";
       await storage.createActivityLog({
+        // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+        tenantId: tenantId,
         activityType: "camp_registration_removed",
         createdBy: userId || null,
         summaryText: `${staffName} removed ${existing.childFullName} from camp registration`,
@@ -18250,6 +18283,8 @@ OTO Company Limited`,
       const staffUser = req.user as any;
       const staffName = staffUser?.fullName || staffUser?.email || "Staff";
       await storage.createActivityLog({
+        // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+        tenantId: tenantId,
         activityType: "camp_registration_updated",
         createdBy: userId || null,
         summaryText: `${staffName} merged child profile "${secondary.childFullName}" into "${primary.childFullName}" (${rowCount ?? 0} registration(s) updated)`,
@@ -18360,6 +18395,8 @@ OTO Company Limited`,
       const staffUser = req.user as any;
       const staffName = staffUser?.fullName || staffUser?.email || "Staff";
       await storage.createActivityLog({
+        // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+        tenantId: tenantId,
         activityType: "camp_registration_updated",
         createdBy: userId || null,
         summaryText: `${staffName} updated profile for ${updated?.childFullName || rep.childFullName} (global sync)`,
@@ -18503,6 +18540,8 @@ OTO Company Limited`,
       }
 
       await storage.createActivityLog({
+        // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+        tenantId: tenantId,
         activityType: "camp_registration_created",
         createdBy: userId || null,
         summaryText: `${staffName} added ${registration.childFullName} to camp (${data.mode})`,
@@ -26720,6 +26759,8 @@ ${context}`;
 
       // Log activity
       await storage.createActivityLog({
+        // The caller's park group: this row is about no branch or employee (S2-17b round 4a).
+        tenantId: tenantId,
         activityType: "user_permissions_updated",
         createdBy: req.user!.id,
         summaryText: `Module permission overrides updated for user ${userId} (${overrides.length} override(s))`,

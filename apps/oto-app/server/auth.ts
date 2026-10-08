@@ -202,6 +202,9 @@ export function setupAuth(app: Express) {
 
       // Log password change activity
       await storage.logActivity({
+        // The caller's park group (S2-17b round 4a): the session's, as
+        // getUserWithBranchAccess resolved it when the session was read.
+        tenantId: (req.user as { tenantId?: string | null } | undefined)?.tenantId ?? null,
         activityType: "USER_PASSWORD_CHANGED",
         createdBy: user.id,
         summaryText: `User changed their password`,

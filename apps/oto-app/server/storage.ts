@@ -583,6 +583,7 @@ export interface IStorage {
         getActivityLogs(options?: {
                 branchId?: string;
                 branchIds?: string[];
+                parkGroup?: ActivityParkGroup;
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
@@ -595,6 +596,7 @@ export interface IStorage {
         getActivityLogCount(options?: {
                 branchId?: string;
                 branchIds?: string[];
+                parkGroup?: ActivityParkGroup;
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
@@ -605,6 +607,7 @@ export interface IStorage {
         getActivitySummary(options?: {
                 branchId?: string;
                 branchIds?: string[];
+                parkGroup?: ActivityParkGroup;
                 sinceDays?: number;
         }): Promise<Record<string, number>>;
         createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
@@ -1940,6 +1943,39 @@ const FIX_REPORT_STATUS_FILTER_MAP: Record<string, string[]> = {
 };
 export function resolveFixReportStatusFilter(status: string): string[] {
         return FIX_REPORT_STATUS_FILTER_MAP[status] || [status];
+}
+
+/**
+ * Whose Activity Logbook rows a read returns (S2-17b round 4a): the park
+ * group's own rows — every row carries one from migration 0006 — and, of
+ * those, the ones the reader may see by branch.
+ *
+ * The branch rule is the app's own (its `/api/activity-logs` before the lift):
+ * a reader with every branch sees every row, the rows about no branch
+ * included; any other reader sees only the rows of their branches. A row the
+ * previous release wrote without a park group during the hand-over is shown
+ * by its branch, as it was before 0006.
+ */
+export interface ActivityParkGroup {
+        tenantId: string;
+        /** Every branch of the park group, for the hand-over's rows with no park group. */
+        parkGroupBranchIds: string[];
+        /** The branches the reader may see; null for a reader with every branch. */
+        readerBranchIds: string[] | null;
+}
+
+function activityParkGroupScope(scope: ActivityParkGroup) {
+        const ofParkGroup = or(
+                eq(activityLog.tenantId, scope.tenantId),
+                scope.parkGroupBranchIds.length > 0
+                        ? and(isNull(activityLog.tenantId), inArray(activityLog.branchId, scope.parkGroupBranchIds))
+                        : undefined,
+        )!;
+        if (scope.readerBranchIds === null) return ofParkGroup;
+        return and(
+                ofParkGroup,
+                scope.readerBranchIds.length > 0 ? inArray(activityLog.branchId, scope.readerBranchIds) : sql`false`,
+        )!;
 }
 
 type AttentionReadScope = { tenantId: string; branchIds: string[] };
@@ -3578,6 +3614,7 @@ export class DatabaseStorage implements IStorage {
         async getActivityLogs(options?: {
                 branchId?: string;
                 branchIds?: string[];
+                parkGroup?: ActivityParkGroup;
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
@@ -3613,6 +3650,7 @@ export class DatabaseStorage implements IStorage {
         async getActivityLogCount(options?: {
                 branchId?: string;
                 branchIds?: string[];
+                parkGroup?: ActivityParkGroup;
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
@@ -3633,6 +3671,7 @@ export class DatabaseStorage implements IStorage {
         private buildActivityLogConditions(options?: {
                 branchId?: string;
                 branchIds?: string[];
+                parkGroup?: ActivityParkGroup;
                 employeeId?: string;
                 contractInstanceId?: string;
                 types?: ActivityType[];
@@ -3650,6 +3689,10 @@ export class DatabaseStorage implements IStorage {
                         conditions.push(options.branchIds.length > 0
                                 ? inArray(activityLog.branchId, options.branchIds)
                                 : sql`false`);
+                }
+
+                if (options?.parkGroup) {
+                        conditions.push(activityParkGroupScope(options.parkGroup));
                 }
 
                 if (options?.employeeId) {
@@ -3686,6 +3729,7 @@ export class DatabaseStorage implements IStorage {
         async getActivitySummary(options?: {
                 branchId?: string;
                 branchIds?: string[];
+                parkGroup?: ActivityParkGroup;
                 sinceDays?: number;
         }): Promise<Record<string, number>> {
                 const days = options?.sinceDays ?? 30;
@@ -3702,6 +3746,7 @@ export class DatabaseStorage implements IStorage {
                 const conditions = this.buildActivityLogConditions({
                         branchId: options?.branchId,
                         branchIds: options?.branchIds,
+                        parkGroup: options?.parkGroup,
                         dateFrom: sinceDate,
                         types: employeeChangeTypes,
                 });
@@ -3731,11 +3776,32 @@ export class DatabaseStorage implements IStorage {
                 return summary;
         }
 
+        /**
+         * Every row is written with its park group (S2-17b round 4a), on the
+         * order migration 0006 backfilled the old ones: the branch's, else the
+         * employee's, else the contract's employee's — what the row is about —
+         * else the park group of the caller (`log.tenantId`, the session's,
+         * which a route passes for a row about no branch, employee or
+         * contract), else the user who did it when their branch access names
+         * exactly one park group, else the default park group. So a row with no
+         * branch still shows in its own park group's Activity Logbook.
+         */
         async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
                 try {
+                        const tenantId = sql`coalesce(
+                                (select tenant_id from branches where id = ${log.branchId ?? null}),
+                                (select tenant_id from employees where id = ${log.employeeId ?? null}),
+                                (select e.tenant_id from contract_instances c join employees e on e.id = c.employee_id
+                                  where c.id = ${log.contractInstanceId ?? null}),
+                                ${log.tenantId ?? null}::uuid,
+                                (select min(tenant_id::text)::uuid from user_branch_access
+                                  where user_id = ${log.createdBy ?? null}
+                                 having count(distinct tenant_id) = 1),
+                                (select id from tenants where slug = ${DEFAULT_TENANT_SLUG})
+                        )`;
                         const [newLog] = await db
                                 .insert(activityLog)
-                                .values(log)
+                                .values({ ...log, tenantId })
                                 .returning();
                         return newLog;
                 } catch (error) {
