@@ -233,7 +233,12 @@ export type DirectoryCache = typeof directoryCache.$inferSelect;
 // to one caller for one tenant, kept here only as its sha256, so a request is
 // confined to that tenant by the key it presents rather than by anything it
 // writes in the body. `script/directory-client.mjs` issues and revokes them.
-export const DIRECTORY_CLIENT_SCOPES = ["events:write"] as const;
+//
+// `jobs:run` (S2-17b round 3): the platform's job runner runs this park
+// group's night batches through `POST /api/directory/jobs/:name/run`
+// (server/directory/jobRoutes.ts). `scopes` is free text[], so a new scope is
+// no migration.
+export const DIRECTORY_CLIENT_SCOPES = ["events:write", "jobs:run"] as const;
 export type DirectoryClientScope = (typeof DIRECTORY_CLIENT_SCOPES)[number];
 
 export const directoryClients = pgTable(

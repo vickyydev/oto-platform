@@ -5,6 +5,33 @@ import { serviceCheckins } from "./db/coreSchema";
 import { lt, eq, and, isNull, isNotNull, gte, lte, desc, sql } from "drizzle-orm";
 import { generateTaskInstances } from "./core/taskGeneration";
 import { ATTENTION_WRITES_READY } from "./attention-availability";
+import { JOBS_MODE } from "./config/env";
+import type { JobsMode } from "./lib/routeFences";
+import {
+  errorWords,
+  type NightBatchResult,
+  type NightJobName,
+  type NightStepResult,
+  type OnStepFailure,
+} from "./lib/nightJobs";
+
+/**
+ * Who a night job runs for, and who hears about an error it swallows (S2-17b
+ * round 3).
+ *
+ * The app's own timers pass nothing, and nothing changes for them: every park
+ * group, and an error is logged and swallowed exactly as it always was. The
+ * platform's job endpoint (`server/directory/jobRoutes.ts`) passes the park
+ * group its directory key is bound to, and a listener, so an error the step
+ * swallows is still named in the endpoint's answer as a failed step — the
+ * step itself carries on (or stops) just as it does in-process.
+ */
+export interface NightJobOptions {
+  /** Only this park group's rows. Unset: every park group, as the app's own timers run it. */
+  tenantId?: string;
+  /** Told about every error the step catches. The step still logs it and carries on. */
+  onError?: (error: unknown) => void;
+}
 
 const THAILAND_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -34,7 +61,7 @@ interface ReconciliationSummary {
   statusTransitions: number;
 }
 
-export async function runPresenceReconciliation(): Promise<ReconciliationSummary> {
+export async function runPresenceReconciliation(opts: NightJobOptions = {}): Promise<ReconciliationSummary> {
   console.log("[RECONCILIATION] Starting presence reconciliation job...");
   const summary: ReconciliationSummary = {
     stuckClockIns: 0,
@@ -46,7 +73,7 @@ export async function runPresenceReconciliation(): Promise<ReconciliationSummary
 
   try {
     const stuckHoursThreshold = 18;
-    const stuckPresences = await storage.getStuckClockIns(stuckHoursThreshold);
+    const stuckPresences = await storage.getStuckClockIns(stuckHoursThreshold, opts.tenantId);
     summary.stuckClockIns = stuckPresences.length;
 
     for (const presence of stuckPresences) {
@@ -61,7 +88,7 @@ export async function runPresenceReconciliation(): Promise<ReconciliationSummary
       summary.anomalies++;
     }
 
-    const repairResult = await storage.repairPresenceMismatches();
+    const repairResult = await storage.repairPresenceMismatches(opts.tenantId);
     summary.presenceMismatches = repairResult.mismatches;
     summary.repairs = repairResult.repairs;
     summary.anomalies += repairResult.anomalies;
@@ -69,21 +96,23 @@ export async function runPresenceReconciliation(): Promise<ReconciliationSummary
     console.log(`[RECONCILIATION] Complete - Stuck: ${summary.stuckClockIns}, Mismatches: ${summary.presenceMismatches}, Repairs: ${summary.repairs}, Anomalies: ${summary.anomalies}`);
   } catch (error) {
     console.error("[RECONCILIATION] Error during reconciliation:", error);
+    opts.onError?.(error);
   }
 
   return summary;
 }
 
-export async function runStatusTransitions(): Promise<number> {
+export async function runStatusTransitions(opts: NightJobOptions = {}): Promise<number> {
   console.log("[STATUS_TRANSITION] Starting LEAVING->LEFT status transition job...");
   let transitioned = 0;
 
   try {
     const today = getThailandMidnightUTC();
-    transitioned = await storage.transitionLeavingToLeft(today);
+    transitioned = await storage.transitionLeavingToLeft(today, opts.tenantId);
     console.log(`[STATUS_TRANSITION] Transitioned ${transitioned} employees from LEAVING to LEFT`);
   } catch (error) {
     console.error("[STATUS_TRANSITION] Error during status transition:", error);
+    opts.onError?.(error);
   }
 
   return transitioned;
@@ -95,9 +124,14 @@ export async function runStatusTransitions(): Promise<number> {
  * The 03:00 batch calls it with no tenant, across every park group, as it
  * always has. The manual trigger (`POST /api/admin/run-departed-deactivation`)
  * passes the caller's own park group, so one park group's admin never
- * switches off another's people (S2-17b round 1).
+ * switches off another's people (S2-17b round 1), and so does the platform's
+ * job endpoint, for the park group its key is bound to (round 3).
+ *
+ * Only the app's own login: a leaver's platform account (the launcher, the
+ * till) is not this app's to switch off. The platform's 03:00 run lists the
+ * ones still active on its Failures page instead (plan Q4).
  */
-export async function runDepartedAccountDeactivation(opts: { tenantId?: string } = {}): Promise<number> {
+export async function runDepartedAccountDeactivation(opts: NightJobOptions = {}): Promise<number> {
   console.log("[ACCOUNT_DEACTIVATION] Checking for departed employees with active accounts...");
   let deactivated = 0;
 
@@ -129,12 +163,13 @@ export async function runDepartedAccountDeactivation(opts: { tenantId?: string }
     console.log(`[ACCOUNT_DEACTIVATION] Deactivated ${deactivated} user account(s)`);
   } catch (error) {
     console.error("[ACCOUNT_DEACTIVATION] Error:", error);
+    opts.onError?.(error);
   }
 
   return deactivated;
 }
 
-export async function runMidnightTimekeepingAutoClockOut(): Promise<number> {
+export async function runMidnightTimekeepingAutoClockOut(opts: NightJobOptions = {}): Promise<number> {
   console.log("[AUTO_CLOCK_OUT] Checking for employees with missing clock-out...");
   let autoClocked = 0;
 
@@ -146,6 +181,7 @@ export async function runMidnightTimekeepingAutoClockOut(): Promise<number> {
       FROM time_events te
       WHERE te.event_type = 'IN'
         AND te.event_time < ${midnight}
+        ${opts.tenantId ? sql`AND te.tenant_id = ${opts.tenantId}` : sql``}
         AND NOT EXISTS (
           SELECT 1 FROM time_events te2
           WHERE te2.employee_id = te.employee_id
@@ -183,6 +219,7 @@ export async function runMidnightTimekeepingAutoClockOut(): Promise<number> {
     console.log(`[AUTO_CLOCK_OUT] Auto-clocked out ${autoClocked} employee(s)`);
   } catch (error) {
     console.error("[AUTO_CLOCK_OUT] Error:", error);
+    opts.onError?.(error);
   }
 
   return autoClocked;
@@ -216,28 +253,47 @@ function scheduleDaily(hour: number, minute: number, job: () => Promise<void>): 
   scheduleNextRun();
 }
 
-async function cleanupOldAvailabilityRecords(): Promise<number> {
+/**
+ * Delete availability records older than seven days.
+ *
+ * The one step of a batch that does NOT catch its own error: as the app wrote
+ * it, a failure here escapes the 03:00 batch (it is the batch's last step, so
+ * nothing after it is lost) and, because `scheduleDaily` re-arms its timer
+ * only after the batch returns, it also stops the in-process 03:00 schedule
+ * until the next restart. Kept so in-process. Under the platform's runner the
+ * schedule is the platform's, and the escaped error is a failed step of the
+ * run (`runNightBatchForTenant`).
+ *
+ * It answers how many records it deleted; the app's version answered 0 every
+ * time, and nothing read the answer until the platform's run detail did.
+ */
+export async function cleanupOldAvailabilityRecords(opts: NightJobOptions = {}): Promise<number> {
   // Delete availability records older than 7 days to keep the table clean
   // Since availability resets daily, old records are no longer needed
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const cutoffDate = sevenDaysAgo.toISOString().split("T")[0];
-  
+
   const result = await db.delete(employeeRoleAvailability)
-    .where(lt(employeeRoleAvailability.unavailableDate, cutoffDate));
-  
+    .where(
+      and(
+        lt(employeeRoleAvailability.unavailableDate, cutoffDate),
+        opts.tenantId ? eq(employeeRoleAvailability.tenantId, opts.tenantId) : undefined,
+      ),
+    );
+
   console.log(`[SCHEDULED_JOBS] Cleaned up old availability records before ${cutoffDate}`);
-  return 0;
+  return result.rowCount ?? 0;
 }
 
 // Auto-checkout any in_park check-ins from before midnight (forgotten checkouts)
-export async function runMidnightAutoCheckout(): Promise<number> {
+export async function runMidnightAutoCheckout(opts: NightJobOptions = {}): Promise<number> {
   console.log("[AUTO_CHECKOUT] Starting midnight auto-checkout for forgotten check-ins...");
-  
+
   try {
     // Get Thailand midnight (start of today)
     const thailandMidnight = getThailandMidnightUTC();
-    
+
     // Find all service check-ins that are still "in_park" but were created before midnight
     const staleCheckins = await db.select()
       .from(serviceCheckins)
@@ -245,7 +301,8 @@ export async function runMidnightAutoCheckout(): Promise<number> {
         and(
           eq(serviceCheckins.status, "in_park"),
           lt(serviceCheckins.checkedInAt, thailandMidnight),
-          isNull(serviceCheckins.checkedOutAt)
+          isNull(serviceCheckins.checkedOutAt),
+          opts.tenantId ? eq(serviceCheckins.tenantId, opts.tenantId) : undefined,
         )
       );
     
@@ -269,23 +326,28 @@ export async function runMidnightAutoCheckout(): Promise<number> {
     return staleCheckins.length;
   } catch (error) {
     console.error("[AUTO_CHECKOUT] Error during auto-checkout:", error);
+    opts.onError?.(error);
     return 0;
   }
 }
 
-// Generate scheduled tasks for all tenants at midnight
-export async function runMidnightTaskGeneration(): Promise<void> {
+// Generate scheduled tasks for all tenants at midnight (or, from the
+// platform's endpoint, for the one park group its key is bound to). It
+// answers how many it made; the app's version answered nothing.
+export async function runMidnightTaskGeneration(opts: NightJobOptions = {}): Promise<number> {
   console.log("[TASK_GENERATION] Starting midnight task generation job...");
-  
+  let totalGenerated = 0;
+
   try {
     // Get all tenants
-    const allTenants = await db.select({ id: tenants.id }).from(tenants);
-    
+    const allTenants = await db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(opts.tenantId ? eq(tenants.id, opts.tenantId) : undefined);
+
     // Use Thailand timezone for the target date (midnight just passed)
     const thailandNow = new Date(Date.now() + THAILAND_OFFSET_MS);
-    
-    let totalGenerated = 0;
-    
+
     for (const tenant of allTenants) {
       try {
         const generated = await generateTaskInstances(tenant.id, thailandNow);
@@ -295,13 +357,17 @@ export async function runMidnightTaskGeneration(): Promise<void> {
         }
       } catch (err) {
         console.error(`[TASK_GENERATION] Error for tenant ${tenant.id}:`, err);
+        opts.onError?.(err);
       }
     }
-    
+
     console.log(`[TASK_GENERATION] Complete - generated ${totalGenerated} total tasks`);
   } catch (error) {
     console.error("[TASK_GENERATION] Error during task generation:", error);
+    opts.onError?.(error);
   }
+
+  return totalGenerated;
 }
 
 export async function runNoShowAlertCheck(): Promise<number> {
@@ -435,24 +501,154 @@ export async function runNoShowAlertCheck(): Promise<number> {
   return alertsCreated;
 }
 
-export function startScheduledJobs(): void {
+// ─── The batches, defined once ────────────────────────────────────────────────
+
+/** One step of a batch: the app's own job function, and what it reports. */
+interface NightStep {
+  step: string;
+  onFailure: OnStepFailure;
+  run(opts: NightJobOptions): Promise<Record<string, number>>;
+}
+
+const presenceStep: NightStep = {
+  step: "presenceReconciliation",
+  onFailure: "continue",
+  run: async (opts) => {
+    const s = await runPresenceReconciliation(opts);
+    return {
+      stuckClockIns: s.stuckClockIns,
+      presenceMismatches: s.presenceMismatches,
+      repairs: s.repairs,
+      anomalies: s.anomalies,
+    };
+  },
+};
+
+/**
+ * The three batches, step by step, in the order the app has always run them.
+ * The app's own timers (below) and the platform's job endpoint
+ * (`runNightBatchForTenant`) both read this one list, so the two can never run
+ * different steps.
+ */
+export const NIGHT_BATCHES: Record<NightJobName, readonly NightStep[]> = {
+  /** 00:01 Bangkok: forgotten guest check-ins, missing clock-outs, the day's recurring tasks. */
+  midnight: [
+    {
+      step: "autoCheckout",
+      onFailure: "continue",
+      run: async (opts) => ({ checkedOut: await runMidnightAutoCheckout(opts) }),
+    },
+    {
+      step: "autoClockOut",
+      onFailure: "continue",
+      run: async (opts) => ({ autoClockedOut: await runMidnightTimekeepingAutoClockOut(opts) }),
+    },
+    {
+      step: "taskGeneration",
+      onFailure: "continue",
+      run: async (opts) => ({ generated: await runMidnightTaskGeneration(opts) }),
+    },
+  ],
+  /** 03:00 Bangkok: presence repaired, leavers moved to Left and their logins switched off, old availability cleared. */
+  reconcile: [
+    presenceStep,
+    {
+      step: "statusTransitions",
+      onFailure: "continue",
+      run: async (opts) => ({ transitioned: await runStatusTransitions(opts) }),
+    },
+    {
+      step: "departedLogins",
+      onFailure: "continue",
+      run: async (opts) => ({ deactivated: await runDepartedAccountDeactivation(opts) }),
+    },
+    {
+      step: "availabilityCleanup",
+      onFailure: "stop",
+      run: async (opts) => ({ deleted: await cleanupOldAvailabilityRecords(opts) }),
+    },
+  ],
+  /** Every six hours: the presence check alone. */
+  presence: [presenceStep],
+};
+
+/**
+ * A batch as the app's own timers run it: every park group, every step in
+ * order, each error the step catches logged and swallowed by the step itself.
+ * An error a step does not catch escapes, exactly as it did when these were
+ * written out inline.
+ */
+async function runNightBatchInProcess(name: NightJobName): Promise<void> {
+  for (const s of NIGHT_BATCHES[name]) await s.run({});
+}
+
+/**
+ * One park group's part of a batch, as the platform's job endpoint asks for
+ * it (S2-17b round 3). The same steps in the same order, each told the park
+ * group; every error a step swallows — and one that escapes it — makes that
+ * step a failed step, named in words, and the whole run not ok.
+ *
+ * The continue-or-stop shape is the app's own, per step (`onFailure`): a
+ * swallowed error never stopped the app's batch, so here it stops nothing
+ * either; an escaped error did stop it, so here the steps after it are
+ * reported as skipped rather than run.
+ */
+export async function runNightBatchForTenant(name: NightJobName, tenantId: string): Promise<NightBatchResult> {
+  const steps: NightStepResult[] = [];
+  let stopped = false;
+  for (const s of NIGHT_BATCHES[name]) {
+    if (stopped) {
+      steps.push({ step: s.step, ok: false, onFailure: s.onFailure, counts: {}, skipped: true });
+      continue;
+    }
+    const caught: unknown[] = [];
+    let counts: Record<string, number> = {};
+    let escaped = false;
+    try {
+      counts = await s.run({ tenantId, onError: (error) => caught.push(error) });
+    } catch (error) {
+      caught.push(error);
+      escaped = true;
+      console.error(`[SCHEDULED_JOBS] ${name}: step ${s.step} failed for park group ${tenantId}:`, error);
+    }
+    const ok = caught.length === 0;
+    steps.push({
+      step: s.step,
+      ok,
+      onFailure: s.onFailure,
+      counts,
+      ...(ok ? {} : { error: errorWords(caught[0]) }),
+    });
+    // In the app any error that escapes a step rejects the whole batch, so
+    // nothing after it runs. Only `availabilityCleanup` lets one escape by
+    // design; were another to, the app would stop there too.
+    if (escaped) stopped = true;
+  }
+  return { ok: steps.every((s) => s.ok), steps };
+}
+
+/**
+ * Start the app's own timers — unless the platform runs the night work.
+ *
+ * Under `OTOAPP_JOBS=platform` NOT ONE timer is registered: the platform's job
+ * runner owns the schedule (`job:otoapp.midnight`, `.reconcile`, `.presence`)
+ * and calls the directory job endpoint, so a timer here would run every batch
+ * twice. Under `inprocess`, the default, everything is as it always was.
+ * Answers whether it started anything.
+ */
+export function startScheduledJobs(mode: JobsMode = JOBS_MODE): boolean {
+  if (mode === "platform") {
+    console.log("[SCHEDULED_JOBS] OTOAPP_JOBS=platform: the platform's job runner runs the night work, so no timer is started here");
+    return false;
+  }
   console.log("[SCHEDULED_JOBS] Initializing scheduled jobs...");
-  
+
   // Run at midnight Bangkok time for task generation and auto-checkout
-  scheduleDaily(0, 1, async () => {
-    await runMidnightAutoCheckout();
-    await runMidnightTimekeepingAutoClockOut();
-    await runMidnightTaskGeneration();
-  });
-  
+  scheduleDaily(0, 1, () => runNightBatchInProcess("midnight"));
+
   // Run at 3:00 AM Bangkok time for daily reconciliation
-  scheduleDaily(3, 0, async () => {
-    await runPresenceReconciliation();
-    await runStatusTransitions();
-    await runDepartedAccountDeactivation();
-    await cleanupOldAvailabilityRecords();
-  });
-  
+  scheduleDaily(3, 0, () => runNightBatchInProcess("reconcile"));
+
   setInterval(runPresenceReconciliation, 6 * 60 * 60 * 1000);
   
   // No-show Attention writes resume with tenant ownership and a locked job.
@@ -462,4 +658,5 @@ export function startScheduledJobs(): void {
   }
   
   console.log("[SCHEDULED_JOBS] Jobs scheduled: Task generation at 00:01, daily reconciliation at 03:00 Bangkok time, every 6 hours presence check, availability cleanup, every 10 minutes no-show check");
+  return true;
 }

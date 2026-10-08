@@ -123,6 +123,7 @@ import { registerAuthOtpRoutes } from "./auth-otp-routes";
 
 import { db, pool } from "./db";
 import { directoryEventRouter } from "./directory/eventRoutes";
+import { directoryJobRouter } from "./directory/jobRoutes";
 import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
@@ -14043,6 +14044,19 @@ OTO Company Limited`,
   // A tenant-bound directory key, not the shared HR key above
   // (server/directory/eventRoutes.ts).
   app.use(directoryEventRouter(pool));
+
+  // The platform's job runner running this app's night batches for one park
+  // group at a time, under a `jobs:run` key; refused while OTOAPP_JOBS is
+  // inprocess (server/directory/jobRoutes.ts, S2-17b round 3).
+  app.use(
+    directoryJobRouter(pool, {
+      mode: JOBS_MODE,
+      jobs: {
+        run: async (name, tenantId) =>
+          (await import("./scheduled-jobs")).runNightBatchForTenant(name, tenantId),
+      },
+    }),
+  );
 
   // ============================================
   // WEEK-BASED SCHEDULING API (Planday-style)

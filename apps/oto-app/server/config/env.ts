@@ -66,10 +66,15 @@ const IS_DEPLOYMENT = DEPLOY_ENV !== "local";
 /**
  * Who runs the night work (plan section 5): this process's own timers
  * (`inprocess`, the default and what runs today) or the platform's job
- * runner (`platform`, round 3). In round 1 only the two manual job triggers
- * read it — under `platform` they point at the Console instead of racing the
- * scheduled run (`lib/routeFences.ts`). Unknown values are a boot problem
- * below, never a silent default.
+ * runner (`platform`, round 3). Three things read it:
+ *   - the scheduler (`startScheduledJobs`): under `platform` it starts no
+ *     timer at all;
+ *   - the directory job endpoint (`directory/jobRoutes.ts`): under
+ *     `inprocess` it refuses in words, so the platform never runs a batch
+ *     beside this process's own timers;
+ *   - the two manual job triggers (round 1): under `platform` they point at
+ *     the Console instead of racing the scheduled run (`lib/routeFences.ts`).
+ * Unknown values are a boot problem below, never a silent default.
  */
 const OTOAPP_JOBS_RAW = process.env.OTOAPP_JOBS;
 const JOBS_MODE: JobsMode = readJobsMode(OTOAPP_JOBS_RAW) ?? "inprocess";

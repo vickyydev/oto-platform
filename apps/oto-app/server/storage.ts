@@ -1127,14 +1127,16 @@ export interface IStorage {
                 }[]
         >;
 
-        // Reconciliation helpers
-        getStuckClockIns(hoursThreshold: number): Promise<EmployeePresence[]>;
-        repairPresenceMismatches(): Promise<{
+        // Reconciliation helpers. `tenantId` limits each to one park group
+        // (the platform's job endpoint, S2-17b round 3); unset, every park
+        // group, as the app's own timers run them.
+        getStuckClockIns(hoursThreshold: number, tenantId?: string): Promise<EmployeePresence[]>;
+        repairPresenceMismatches(tenantId?: string): Promise<{
                 mismatches: number;
                 repairs: number;
                 anomalies: number;
         }>;
-        transitionLeavingToLeft(today: Date): Promise<number>;
+        transitionLeavingToLeft(today: Date, tenantId?: string): Promise<number>;
 
         // ============================================
         // WEEK-BASED SCHEDULING (Planday-style)
@@ -6673,6 +6675,7 @@ export class DatabaseStorage implements IStorage {
 
         async getStuckClockIns(
                 hoursThreshold: number,
+                tenantId?: string,
         ): Promise<EmployeePresence[]> {
                 const cutoffTime = new Date(
                         Date.now() - hoursThreshold * 60 * 60 * 1000,
@@ -6685,11 +6688,12 @@ export class DatabaseStorage implements IStorage {
                                 and(
                                         eq(employeePresence.isClockedIn, true),
                                         lt(employeePresence.lastInAt, cutoffTime),
+                                        tenantId ? eq(employeePresence.tenantId, tenantId) : undefined,
                                 ),
                         );
         }
 
-        async repairPresenceMismatches(): Promise<{
+        async repairPresenceMismatches(tenantId?: string): Promise<{
                 mismatches: number;
                 repairs: number;
                 anomalies: number;
@@ -6698,7 +6702,10 @@ export class DatabaseStorage implements IStorage {
                 let repairs = 0;
                 let anomalies = 0;
 
-                const allPresence = await db.select().from(employeePresence);
+                const allPresence = await db
+                        .select()
+                        .from(employeePresence)
+                        .where(tenantId ? eq(employeePresence.tenantId, tenantId) : undefined);
 
                 for (const presence of allPresence) {
                         if (
@@ -6797,7 +6804,10 @@ export class DatabaseStorage implements IStorage {
                 return { mismatches, repairs, anomalies };
         }
 
-        async transitionLeavingToLeft(today: Date): Promise<number> {
+        async transitionLeavingToLeft(today: Date, tenantId?: string): Promise<number> {
+                // One park group's leavers when a tenant is given; every park group's otherwise.
+                const inParkGroup = tenantId ? eq(employees.tenantId, tenantId) : undefined;
+
                 // Delete future schedule assignments for employees transitioning to LEFT
                 await db.delete(scheduleAssignments).where(
                         and(
@@ -6810,6 +6820,7 @@ export class DatabaseStorage implements IStorage {
                                                         and(
                                                                 eq(employees.employmentState, "LEAVING"),
                                                                 lt(employees.lastWorkingDay, today),
+                                                                inParkGroup,
                                                         ),
                                                 ),
                                 ),
@@ -6831,6 +6842,7 @@ export class DatabaseStorage implements IStorage {
                                                         and(
                                                                 eq(employees.employmentState, "LEAVING"),
                                                                 lt(employees.lastWorkingDay, today),
+                                                                inParkGroup,
                                                         ),
                                                 ),
                                 ),
@@ -6845,6 +6857,7 @@ export class DatabaseStorage implements IStorage {
                                 and(
                                         eq(employees.employmentState, "LEAVING"),
                                         lt(employees.lastWorkingDay, today),
+                                        inParkGroup,
                                 ),
                         )
                         .returning();

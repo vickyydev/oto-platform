@@ -138,7 +138,10 @@ export function log(message: string, source = "express") {
       
       // Reconciliation remains paused until a tenant-owned, locked job can
       // record its outcome in the platform run ledger.
-      // Start presence reconciliation and status transition jobs
+      // Start presence reconciliation and status transition jobs — unless
+      // OTOAPP_JOBS=platform, under which the platform's job runner runs them
+      // through the directory job endpoint and no timer starts here
+      // (S2-17b round 3).
       startScheduledJobs();
     },
   );

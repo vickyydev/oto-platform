@@ -3,7 +3,7 @@
  * (`directory_clients`, migration 0003; checked by
  * server/directory/clientAuth.ts).
  *
- *   npm run directory:client -- create --tenant <tenant uuid> --name <who> [--scope events:write]
+ *   npm run directory:client -- create --tenant <tenant uuid> --name <who> [--scope events:write] [--scope jobs:run]
  *   npm run directory:client -- list [--tenant <tenant uuid>]
  *   npm run directory:client -- revoke --id <client uuid>
  *
@@ -15,13 +15,19 @@
  * no tsx, and this has to run there, against the deployment's own database.
  * The hashing is the same one-liner as `hashDirectoryKey` in clientAuth.ts.
  *
+ * Scopes (`DIRECTORY_CLIENT_SCOPES` in server/db/coreSchema.ts):
+ *   events:write  the POS's event write-backs (S2-20);
+ *   jobs:run      the platform's job runner running this park group's night
+ *                 batches (S2-17b round 3). The platform holds it as
+ *                 `<tenant uuid>:<key>` in OTOAPP_JOBS_KEYS.
+ *
  * DATABASE_URL in the environment.
  */
 import { createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 
 const SCHEMA = "otoapp";
-const SCOPES = ["events:write"];
+const SCOPES = ["events:write", "jobs:run"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function fail(message) {
