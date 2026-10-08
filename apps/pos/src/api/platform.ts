@@ -1193,7 +1193,36 @@ export const appIdentitiesApi = {
   /** `accessRevoked` is false when the permission also comes from another role. */
   unlink: (app: AppKey, accountId: string) =>
     api.delete<{ ok: true; accessRevoked: boolean }>(`/admin/apps/${app}/users/${accountId}`),
+  /**
+   * S2-17b round 1 — the OTO App's users with no suite sign-in: made in the
+   * app's own Users screen, so no platform account is stamped on them and the
+   * launcher cannot open the app as them. Each is linked with `link` above,
+   * `externalUserId` set to the row's `id`.
+   */
+  unlinkedOtoAppUsers: () => api.get<UnlinkedOtoAppUsers>('/admin/apps/oto_app/unlinked-users'),
 };
+
+/** One OTO App user nobody can reach from the launcher yet. */
+export interface UnlinkedOtoAppUser {
+  /** `otoapp.users.id` — what Link claims. */
+  id: string;
+  fullName: string;
+  email: string;
+  phoneE164: string | null;
+  role: OtoAppRole | 'advisor';
+  isActive: boolean;
+  createdAt: string;
+  /** Access to every branch of their park group. */
+  allBranches: boolean;
+  branches: Array<{ id: string; name: string; platformBranchId: string | null }>;
+}
+
+export interface UnlinkedOtoAppUsers {
+  installed: boolean;
+  /** False until one of this operator's branches is joined to the app. */
+  anchored: boolean;
+  users: UnlinkedOtoAppUser[];
+}
 
 // --- ops: staging-only controls (S2-01c) ------------------------------------
 export const opsApi = {

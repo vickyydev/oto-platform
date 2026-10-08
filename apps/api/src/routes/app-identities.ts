@@ -4,7 +4,12 @@ import { account, appIdentity, employee, HANDOFF_AUDIENCES, OTO_APP_USER_ROLES }
 import { newId, normalizePhone } from '@oto/shared';
 import type { App } from '../app';
 import { errors } from '../lib/errors';
-import { accessErrors, assertDominatesAccount, loadTargetAccount } from '../services/access-control';
+import {
+  accessErrors,
+  assertDominatesAccount,
+  branchReach,
+  loadTargetAccount,
+} from '../services/access-control';
 import { audit } from '../services/audit';
 import { deliverCode, mintCode, type PendingCode } from '../services/auth';
 import { ensureAppAccessRole, grantAppAccess, revokeAppAccess } from '../services/app-identity';
@@ -13,6 +18,7 @@ import {
   createOtoAppUser,
   findOtoAppUser,
   linkOtoAppUser,
+  listUnlinkedOtoAppUsers,
   unlinkOtoAppUser,
   type OtoAppBranchPlacement,
 } from '../services/oto-app-users';
@@ -348,6 +354,60 @@ export async function appIdentityRoutes(app: App): Promise<void> {
       // A replay of the same idempotency key answers with the stored link;
       // `codeSent` describes one attempt at delivery, not the record of it.
       return pending ? { ...linked, ...(await deliverCode(app.sms, pending, req.log)) } : linked;
+    },
+  );
+
+  /**
+   * S2-17b round 1 — the OTO App's users nobody can reach from the launcher.
+   *
+   * A user made in the app's own Users screen has a password nothing accepts
+   * while legacy sign-in is off, and no platform account stamped on them. This
+   * is the list an administrator links them from, with the existing claim by
+   * id above (`externalUserId`). Read only; which of them a caller sees is cut
+   * to their reach on `admin:account:read` (see `listUnlinkedOtoAppUsers`).
+   */
+  app.get(
+    '/oto_app/unlinked-users',
+    {
+      config: { permission: 'admin:account:read' },
+      schema: {
+        description:
+          "OTO App users with no suite sign-in yet: no platform account is stamped on them, so they cannot open the app from the launcher until they are linked (POST /admin/apps/oto_app/users with externalUserId).",
+        response: {
+          200: z.object({
+            installed: z.boolean(),
+            anchored: z.boolean(),
+            users: z.array(
+              z.object({
+                id: z.string(),
+                fullName: z.string(),
+                email: z.string(),
+                phoneE164: z.string().nullable(),
+                role: z.enum(OTO_APP_USER_ROLES),
+                isActive: z.boolean(),
+                createdAt: z.string(),
+                allBranches: z.boolean(),
+                branches: z.array(
+                  z.object({
+                    id: z.string(),
+                    name: z.string(),
+                    platformBranchId: z.string().nullable(),
+                  }),
+                ),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const auth = req.requireAuth();
+      const reach = branchReach(
+        await req.effectivePermissions(),
+        'admin:account:read',
+        auth.operatorId,
+      );
+      return listUnlinkedOtoAppUsers(app.db, { operatorId: auth.operatorId, reach });
     },
   );
 

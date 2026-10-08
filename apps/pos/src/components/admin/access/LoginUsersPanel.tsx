@@ -45,6 +45,7 @@ import { toast } from '@/hooks/use-toast';
 import { adminApi, authApi } from '@/api/platform';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
 import { AccountAppsDialog } from './AccountAppsDialog';
+import { UnlinkedOtoAppUsers } from './UnlinkedOtoAppUsers';
 
 /**
  * SCRUM-21 / SCRUM-22 / SCRUM-28 — manage login users: search, invite with a
@@ -482,6 +483,9 @@ export function LoginUsersPanel() {
           </TableBody>
         </Table>
       </div>
+
+      {/* OTO App users nobody can reach from the launcher (S2-17b round 1). */}
+      <UnlinkedOtoAppUsers />
 
       {/* Recent denials (S2-01a) — what the API refused, newest first. */}
       <div className="rounded-2xl border border-foreground/10">

@@ -1,17 +1,21 @@
 import { randomBytes } from 'node:crypto';
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import {
   account,
   branch,
+  canonicalCoreBranchId,
   employee,
   findAppBranchForCore,
   mappedAppBranches,
+  otoAppBranchesInstalled,
+  otoappBranches,
   otoappUserBranchAccess,
   otoappUsers,
   type OtoAppUserRole,
 } from '@oto/db';
 import { newId, type Permission } from '@oto/shared';
 import { AppError } from '../lib/errors';
+import type { BranchReach } from './access-control';
 import { hasPermission, resolveEffectivePermissions } from './permissions';
 import type { Exec } from './tx';
 
@@ -524,4 +528,202 @@ async function findClash(
  */
 function unusablePassword(): string {
   return `${randomBytes(64).toString('hex')}.${randomBytes(16).toString('hex')}`;
+}
+
+// ---------------------------------------------------------------------------
+// The app's users with no suite sign-in (S2-17b round 1)
+// ---------------------------------------------------------------------------
+
+/** An app branch an unlinked user is seated in, as the Console shows it. */
+export interface UnlinkedOtoAppUserBranch {
+  /** `otoapp.branches.id`. */
+  id: string;
+  name: string;
+  /** The platform branch it is joined to, when it is. */
+  platformBranchId: string | null;
+}
+
+/** One user of the OTO App that no platform account is stamped on. */
+export interface UnlinkedOtoAppUser {
+  /** `otoapp.users.id` — what the existing Link action claims. */
+  id: string;
+  fullName: string;
+  email: string;
+  phoneE164: string | null;
+  role: OtoAppUserRole;
+  isActive: boolean;
+  /** ISO 8601. */
+  createdAt: string;
+  /** Their `all_branches` access: every branch of their park group. */
+  allBranches: boolean;
+  branches: UnlinkedOtoAppUserBranch[];
+}
+
+export interface UnlinkedOtoAppUsers {
+  /** False on a database with no OTO App on it. */
+  installed: boolean;
+  /**
+   * False when not one of this operator's branches is joined to an app row
+   * yet: no app park group can then be said to be this operator's, so nobody
+   * is listed (`POST /branches/oto-app/reconcile` is what joins them).
+   */
+  anchored: boolean;
+  users: UnlinkedOtoAppUser[];
+}
+
+/**
+ * The OTO App's users that nobody can reach from the launcher — the list
+ * beside the existing Link action (S2-17b round 1, plan section 4 and Q6).
+ *
+ * With legacy password sign-in off, a user made in the app's own Users screen
+ * (`POST /api/users`, or "enable login" on an employee) carries a password
+ * nothing accepts and no `platform_user_id`, so they have no way in at all.
+ * The fix is not a second way to create people: it is showing an
+ * administrator who they are, so the existing claim-by-id link
+ * (`POST /admin/apps/oto_app/users` with `externalUserId`) can be pointed at
+ * them. The app's own screens are unchanged (Q5).
+ *
+ * **Whose users these are.** The app's park group (its tenant) is not a
+ * platform operator, and the two id spaces share nothing, so the answer is
+ * read the way the rest of the seam reads it: the park groups this operator is
+ * anchored in are the tenants of the app rows joined to its branches. A user
+ * belongs to a park group by the app's own rule (`managedUserTenant` in the
+ * app's routes): every branch-access row in one tenant and on that tenant's
+ * branches, an operator admin's operator in the same tenant, and a user with no
+ * access row only in a database that holds a single tenant. A user the app
+ * itself cannot place is not listed — showing them would be guessing whose
+ * person they are.
+ *
+ * **Who sees whom.** The caller's reach on `admin:account:read`. Reaching the
+ * whole operator, they see everybody in its park groups. Reaching some
+ * branches, they see the users seated in an app branch joined to one of those
+ * — never somebody whose access is the whole park group or nothing, because
+ * that person is not any one branch's to see.
+ *
+ * Read only: linking stays the existing route, with its own permission
+ * (`admin:role:assign`), dominance check and audit row.
+ */
+export async function listUnlinkedOtoAppUsers(
+  exec: Exec,
+  opts: { operatorId: string; reach: BranchReach },
+): Promise<UnlinkedOtoAppUsers> {
+  if (!(await otoAppBranchesInstalled(exec))) return { installed: false, anchored: false, users: [] };
+
+  const mapped = await mappedAppBranches(exec, opts.operatorId);
+  const ourTenants = new Set(mapped.map((m) => m.tenantId));
+  if (ourTenants.size === 0) return { installed: true, anchored: false, users: [] };
+
+  const users = await exec
+    .select({
+      id: otoappUsers.id,
+      fullName: otoappUsers.fullName,
+      email: otoappUsers.email,
+      phoneE164: otoappUsers.phoneE164,
+      role: otoappUsers.role,
+      isActive: otoappUsers.isActive,
+      operatorId: otoappUsers.operatorId,
+      createdAt: otoappUsers.createdAt,
+    })
+    .from(otoappUsers)
+    .where(isNull(otoappUsers.platformUserId))
+    .orderBy(asc(otoappUsers.fullName), asc(otoappUsers.id));
+  if (users.length === 0) return { installed: true, anchored: true, users: [] };
+
+  const access = await exec
+    .select({
+      userId: otoappUserBranchAccess.userId,
+      tenantId: otoappUserBranchAccess.tenantId,
+      branchId: otoappUserBranchAccess.branchId,
+      accessScope: otoappUserBranchAccess.accessScope,
+    })
+    .from(otoappUserBranchAccess)
+    .where(
+      inArray(
+        otoappUserBranchAccess.userId,
+        users.map((u) => u.id),
+      ),
+    );
+  const appBranches = new Map(
+    (
+      await exec
+        .select({
+          id: otoappBranches.id,
+          tenantId: otoappBranches.tenantId,
+          name: otoappBranches.name,
+          coreBranchId: otoappBranches.coreBranchId,
+        })
+        .from(otoappBranches)
+    ).map((b) => [b.id, b]),
+  );
+  // The app's own operator table — a different table from `core.operator`,
+  // which no platform id names. Read only to apply the app's rule that an
+  // operator admin's operator is in their own park group.
+  const appOperators = new Map(
+    (
+      await exec.execute<{ id: string; tenant_id: string }>(
+        sql`select id::text as id, tenant_id::text as tenant_id from otoapp.operators`,
+      )
+    ).rows.map((r) => [r.id, r.tenant_id]),
+  );
+  const tenants = (
+    await exec.execute<{ id: string }>(sql`select id::text as id from otoapp.tenants limit 2`)
+  ).rows;
+  const onlyTenant = tenants.length === 1 ? tenants[0]!.id : null;
+
+  const accessOf = new Map<string, typeof access>();
+  for (const row of access) accessOf.set(row.userId, [...(accessOf.get(row.userId) ?? []), row]);
+
+  /** The app's `managedUserTenant`, over rows already read. */
+  const tenantOf = (u: (typeof users)[number]): string | null => {
+    const rows = accessOf.get(u.id) ?? [];
+    if (rows.length === 0) return onlyTenant;
+    const tenantId = rows[0]!.tenantId;
+    if (!rows.every((r) => r.tenantId === tenantId)) return null;
+    for (const r of rows) {
+      if (r.branchId && appBranches.get(r.branchId)?.tenantId !== tenantId) return null;
+    }
+    if (u.role === 'operator_admin' && u.operatorId && appOperators.get(u.operatorId) !== tenantId) {
+      return null;
+    }
+    return tenantId;
+  };
+
+  const held = opts.reach.kind === 'operator' ? null : new Set(opts.reach.branchIds);
+  const listed: UnlinkedOtoAppUser[] = [];
+  for (const u of users) {
+    const tenantId = tenantOf(u);
+    if (!tenantId || !ourTenants.has(tenantId)) continue;
+    const rows = accessOf.get(u.id) ?? [];
+    const allBranches = rows.some((r) => r.accessScope === 'all_branches');
+    const seated: UnlinkedOtoAppUserBranch[] = rows.flatMap((r) => {
+      const b = r.branchId ? appBranches.get(r.branchId) : undefined;
+      return b
+        ? [
+            {
+              id: b.id,
+              name: b.name,
+              platformBranchId: b.coreBranchId ? canonicalCoreBranchId(b.coreBranchId) : null,
+            },
+          ]
+        : [];
+    });
+    if (held) {
+      const reachable =
+        !allBranches &&
+        seated.some((b) => b.platformBranchId !== null && held.has(b.platformBranchId));
+      if (!reachable) continue;
+    }
+    listed.push({
+      id: u.id,
+      fullName: u.fullName,
+      email: u.email,
+      phoneE164: u.phoneE164,
+      role: u.role,
+      isActive: u.isActive,
+      createdAt: u.createdAt.toISOString(),
+      allBranches,
+      branches: seated,
+    });
+  }
+  return { installed: true, anchored: true, users: listed };
 }
