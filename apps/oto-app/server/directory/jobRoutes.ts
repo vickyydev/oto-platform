@@ -12,6 +12,7 @@ import {
   type NightJobAnswer,
   type NightJobName,
 } from "../lib/nightJobs";
+import { holdNightBatch } from "../lib/nightBatchLock";
 import { directoryClientOf, requireDirectoryClient } from "./clientAuth";
 
 /**
@@ -40,14 +41,12 @@ import { directoryClientOf, requireDirectoryClient } from "./clientAuth";
  *     configured against the wrong one is refused rather than run;
  *   - the same park group's same batch already running 409: never twice at
  *     once, whoever asks (a session-level advisory lock on a connection of its
- *     own, held for the run and released after it).
+ *     own, held for the run and released after it — `lib/nightBatchLock.ts`,
+ *     the lock the app's own timers take too).
  *
  * The pool and the batch runner are passed in, as `directoryEventRouter` takes
  * its pool, so the routes can be mounted on a bare server in a test.
  */
-
-/** Ours, in the two-integer form, beside the platform's `0x070a`… `0x0711` on the same database. */
-const NIGHT_JOB_LOCK_NAMESPACE = 0x0712;
 
 export interface NightJobRunner {
   run(name: NightJobName, tenantId: string): Promise<NightBatchResult>;
@@ -59,39 +58,6 @@ const bodySchema = z
 
 const invalid = (res: Response, error: z.ZodError) =>
   res.status(400).json({ error: "Validation error", message: "The request body is not valid", details: error.flatten() });
-
-/**
- * Hold this park group's batch for the length of one run, or answer null when
- * another run holds it. A session-level lock on a connection of its own: the
- * batch's own statements run on other connections of the pool, and a lock
- * taken on a pooled connection would leave with it.
- */
-async function holdBatch(pool: Pool, name: NightJobName, tenantId: string): Promise<(() => Promise<void>) | null> {
-  const client = await pool.connect();
-  const key = `otoapp_night:${name}:${tenantId}`;
-  try {
-    const { rows } = await client.query<{ locked: boolean }>(
-      "select pg_try_advisory_lock($1::int4, hashtext($2)) as locked",
-      [NIGHT_JOB_LOCK_NAMESPACE, key],
-    );
-    if (!rows[0]?.locked) {
-      client.release();
-      return null;
-    }
-  } catch (error) {
-    client.release(error as Error);
-    throw error;
-  }
-  return async () => {
-    try {
-      await client.query("select pg_advisory_unlock($1::int4, hashtext($2))", [NIGHT_JOB_LOCK_NAMESPACE, key]);
-      client.release();
-    } catch (error) {
-      // Destroying the connection releases its locks with it.
-      client.release(error as Error);
-    }
-  };
-}
 
 export function directoryJobRouter(pool: Pool, opts: { mode: JobsMode; jobs: NightJobRunner }): Router {
   const router = Router();
@@ -109,7 +75,7 @@ export function directoryJobRouter(pool: Pool, opts: { mode: JobsMode; jobs: Nig
         return res.status(404).json(PARK_GROUP_NOT_FOUND_REFUSAL);
       }
 
-      const release = await holdBatch(pool, name, client.tenantId);
+      const release = await holdNightBatch(pool, name, client.tenantId);
       if (!release) return res.status(409).json(JOB_RUNNING_REFUSAL);
       const startedAt = new Date();
       let result: NightBatchResult;

@@ -1,5 +1,5 @@
 import { storage } from "./storage";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { employeeRoleAvailability, employees, users, tenants, timeEvents, scheduleAssignments, scheduleShiftRows, branches } from "@shared/schema";
 import { serviceCheckins } from "./db/coreSchema";
 import { lt, eq, and, isNull, isNotNull, gte, lte, desc, sql } from "drizzle-orm";
@@ -14,6 +14,7 @@ import {
   type NightStepResult,
   type OnStepFailure,
 } from "./lib/nightJobs";
+import { holdNightBatch } from "./lib/nightBatchLock";
 
 /**
  * Who a night job runs for, and who hears about an error it swallows (S2-17b
@@ -260,9 +261,12 @@ function scheduleDaily(hour: number, minute: number, job: () => Promise<void>): 
  * it, a failure here escapes the 03:00 batch (it is the batch's last step, so
  * nothing after it is lost) and, because `scheduleDaily` re-arms its timer
  * only after the batch returns, it also stops the in-process 03:00 schedule
- * until the next restart. Kept so in-process. Under the platform's runner the
- * schedule is the platform's, and the escaped error is a failed step of the
- * run (`runNightBatchForTenant`).
+ * until the next restart. Worse, the rejection of `scheduleDaily`'s timer
+ * callback is unhandled: with SENTRY_DSN set, Sentry's handler logs it and
+ * only the 03:00 timer stops; with no SENTRY_DSN nothing handles it, and Node
+ * ends the WHOLE app process (plan Q26). Kept so in-process. Under the
+ * platform's runner the schedule is the platform's, and the escaped error is
+ * a failed step of the run (`runNightBatchForTenant`).
  *
  * It answers how many records it deleted; the app's version answered 0 every
  * time, and nothing read the answer until the platform's run detail did.
@@ -575,11 +579,61 @@ export const NIGHT_BATCHES: Record<NightJobName, readonly NightStep[]> = {
 /**
  * A batch as the app's own timers run it: every park group, every step in
  * order, each error the step catches logged and swallowed by the step itself.
- * An error a step does not catch escapes, exactly as it did when these were
- * written out inline.
+ *
+ * ONE PARK GROUP AT A TIME, UNDER THE ENDPOINT'S LOCK (S2-17b round 3 review,
+ * F4). The switch (`OTOAPP_JOBS`) is read per process, so two instances that
+ * disagree about it — a rolling deploy across the flip, a second service on
+ * the same database — would run one night twice side by side: both read the
+ * same stale clock-ins before either writes, and each writes its own OUT. So
+ * each park group's part of the batch runs holding the same per-park-group
+ * lock the platform's job endpoint takes (`lib/nightBatchLock.ts`), and a park
+ * group whose batch is held elsewhere is skipped here, said in the log. Every
+ * table the batch touches carries a NOT NULL `tenant_id` referencing
+ * `tenants`, so the park groups one by one are every row the batch ever
+ * reached at once.
+ *
+ * The app's behaviour otherwise, as it was:
+ *  - an error a step does not catch (the availability clean-up) stops that
+ *    park group's batch there, as it stopped the batch; the other park groups
+ *    still run, and the first such error then escapes the batch, so the
+ *    timer behaves as it always has (plan Q26);
+ *  - when the park groups cannot be listed, or a lock cannot be asked for
+ *    (the database unreachable), the batch runs as it always ran — every
+ *    park group at once, or that park group without the lock — rather than
+ *    adding a new way for a night to be lost or for the timer to fail.
  */
 async function runNightBatchInProcess(name: NightJobName): Promise<void> {
-  for (const s of NIGHT_BATCHES[name]) await s.run({});
+  let parkGroups: string[];
+  try {
+    parkGroups = (await db.select({ id: tenants.id }).from(tenants)).map((t) => t.id);
+  } catch (error) {
+    console.error(`[SCHEDULED_JOBS] ${name}: the park groups could not be listed, so the batch runs for all of them at once, without the per-park-group lock:`, error);
+    for (const s of NIGHT_BATCHES[name]) await s.run({});
+    return;
+  }
+
+  let escaped: { error: unknown } | null = null;
+  for (const tenantId of parkGroups) {
+    let release: (() => Promise<void>) | null;
+    try {
+      release = await holdNightBatch(pool, name, tenantId);
+    } catch (error) {
+      console.error(`[SCHEDULED_JOBS] ${name}: the lock for park group ${tenantId} could not be asked for, so its batch runs without it:`, error);
+      release = async () => undefined;
+    }
+    if (!release) {
+      console.log(`[SCHEDULED_JOBS] ${name}: park group ${tenantId}'s batch is already running elsewhere (the platform's job endpoint), so it is not run here`);
+      continue;
+    }
+    try {
+      for (const s of NIGHT_BATCHES[name]) await s.run({ tenantId });
+    } catch (error) {
+      escaped ??= { error };
+    } finally {
+      await release();
+    }
+  }
+  if (escaped) throw escaped.error;
 }
 
 /**
@@ -649,7 +703,13 @@ export function startScheduledJobs(mode: JobsMode = JOBS_MODE): boolean {
   // Run at 3:00 AM Bangkok time for daily reconciliation
   scheduleDaily(3, 0, () => runNightBatchInProcess("reconcile"));
 
-  setInterval(runPresenceReconciliation, 6 * 60 * 60 * 1000);
+  // The presence check too, one park group at a time under the same lock
+  // (review F4). Its one step catches its own error and a lock that cannot
+  // be asked for runs it without one, so nothing escapes; the catch keeps it
+  // that way, as `setInterval(runPresenceReconciliation)` could never reject.
+  setInterval(() => {
+    runNightBatchInProcess("presence").catch((error) => console.error("[SCHEDULED_JOBS] presence:", error));
+  }, 6 * 60 * 60 * 1000);
   
   // No-show Attention writes resume with tenant ownership and a locked job.
   if (ATTENTION_WRITES_READY) {

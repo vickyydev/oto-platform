@@ -1219,6 +1219,86 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app: its endpoint, the platform j
     }
   });
 
+  it('review F4: the in-process batch takes the endpoint\'s lock — it stands down for a park group held elsewhere, runs the others, and lets go', async () => {
+    const group = async (label: string) => {
+      const tenant = newId();
+      await q(`insert into tenants (id, name, slug) values ($1, $2, $3)`, [tenant, `ZZ r3 ${label}`, `zz-r3-${label}-${tenant.slice(-6)}`]);
+      const branch = newId();
+      await q(`insert into branches (id, tenant_id, name, address) values ($1, $2, $3, 'ZZ r3')`, [branch, tenant, `ZZ r3 ${label} park`]);
+      const employee = newId();
+      await q(`insert into employees (id, tenant_id, branch_id, full_name, nickname, email) values ($1, $2, $3, $4, 'ZZ', $5)`, [
+        employee,
+        tenant,
+        branch,
+        `ZZ r3 ${label}`,
+        `zz-r3-${label}-${employee.slice(-6)}@example.com`,
+      ]);
+      await q(
+        `insert into time_events (tenant_id, employee_id, branch_id, event_type, event_time, auth_method)
+         values ($1, $2, $3, 'IN', (now() at time zone 'utc') - interval '30 hours', 'PIN')`,
+        [tenant, employee, branch],
+      );
+      return { tenant, employee };
+    };
+    const held = await group('held');
+    const free = await group('free');
+    const lockOf = (tenant: string) => [0x0712, `otoapp_night:midnight:${tenant}`];
+    const holder = await appPool.connect();
+    let output = '';
+    try {
+      await holder.query('select pg_advisory_lock($1::int4, hashtext($2))', lockOf(held.tenant));
+      // The app's own 00:01 timer, fired once, as an instance on OTOAPP_JOBS=inprocess fires it.
+      const child = spawnSync(
+        process.execPath,
+        [
+          join(APP_NODE_MODULES, 'tsx', 'dist', 'cli.mjs'),
+          '--input-type=module',
+          '-e',
+          `await import('./server/config/env.ts');
+           const realTimeout = globalThis.setTimeout;
+           const timers = [];
+           const capture = (fn) => { timers.push(fn); return realTimeout(() => undefined, 0).unref(); };
+           globalThis.setTimeout = capture;
+           globalThis.setInterval = capture;
+           const { startScheduledJobs } = await import('./server/scheduled-jobs.ts');
+           startScheduledJobs('inprocess');
+           await timers[0]();
+           console.log('ZZ_R3_INPROCESS_MIDNIGHT_FIRED');
+           process.exit(0);`,
+        ],
+        {
+          cwd: APP_DIR,
+          env: {
+            ...process.env,
+            ...HARNESS_ENV,
+            OTOAPP_JOBS: 'inprocess',
+            DATABASE_URL: (db as unknown as { $client: pg.Pool }).$client.options.connectionString!,
+          },
+          encoding: 'utf8',
+          timeout: 180_000,
+        },
+      );
+      output = `${child.stdout ?? ''}\n${child.stderr ?? ''}`;
+      expect(child.status, output).toBe(0);
+      expect(output).toContain('ZZ_R3_INPROCESS_MIDNIGHT_FIRED');
+      expect(output).toContain(`midnight: park group ${held.tenant}'s batch is already running elsewhere (the platform's job endpoint), so it is not run here`);
+      expect(await outsOf(held.employee)).toBe(0);
+      expect(await outsOf(free.employee)).toBe(1);
+    } finally {
+      await holder.query('select pg_advisory_unlock($1::int4, hashtext($2))', lockOf(held.tenant));
+      holder.release();
+    }
+    // It let go of every lock it took: the free park group's can be taken now.
+    const probe = await appPool.connect();
+    try {
+      const { rows } = await probe.query<{ locked: boolean }>('select pg_try_advisory_lock($1::int4, hashtext($2)) as locked', lockOf(free.tenant));
+      expect(rows[0]!.locked).toBe(true);
+      await probe.query('select pg_advisory_unlock($1::int4, hashtext($2))', lockOf(free.tenant));
+    } finally {
+      probe.release();
+    }
+  }, 240_000);
+
   it("apps/oto-app/tests/night-jobs.check.ts passes against a fresh database", async () => {
     const { url, drop } = await createTestDatabase({ otoapp: true });
     try {

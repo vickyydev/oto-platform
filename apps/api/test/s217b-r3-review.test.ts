@@ -1253,6 +1253,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
 
   describe('J6. an instance still on OTOAPP_JOBS=inprocess beside one serving the platform', () => {
     const m = { tenant: '', employee: '', key: '' };
+    /** A second park group nobody holds: the in-process batch must still run it. */
+    const n = { tenant: '', employee: '' };
     /** The endpoint's per-park-group batch lock (apps/oto-app/server/directory/jobRoutes.ts, namespace 0x0712). */
     const LOCK = (tenant: string): unknown[] => [0x0712, `otoapp_night:midnight:${tenant}`];
 
@@ -1262,6 +1264,10 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
       m.employee = await appEmployee(m.tenant, branch);
       await staleClockIn(m.tenant, branch, m.employee);
       m.key = await directoryKey(m.tenant, ['jobs:run']);
+      n.tenant = await appTenant('n');
+      const branchN = await appBranch(n.tenant);
+      n.employee = await appEmployee(n.tenant, branchN);
+      await staleClockIn(n.tenant, branchN, n.employee);
     });
 
     it("while the platform's call holds M's batch, the endpoint refuses a second one (409)", async () => {
@@ -1278,7 +1284,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
     });
 
     /**
-     * FINDING (LOW, apps/oto-app/server/scheduled-jobs.ts:581-583 —
+     * FINDING F4 (LOW, apps/oto-app/server/scheduled-jobs.ts:581-583 —
      * `runNightBatchInProcess` takes no lock). The only guard against the
      * in-process timers and the platform running one batch side by side is
      * the switch read per PROCESS (`JOBS_MODE`). Two instances that disagree —
@@ -1291,8 +1297,9 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
      * (`otoapp_night:<batch>:<tenant>`, namespace 0x0712) around each park
      * group's part and skips a park group whose lock it cannot take — the
      * same lock, so the two can never overlap whatever the switch says.
+     * FIXED (the fix round), as prescribed. Flipped from `it.fails`.
      */
-    it.fails("FINDING: the in-process 00:01 timer stands down for M while the platform's call holds M's batch", async () => {
+    it("F4 fixed: the in-process 00:01 timer stands down for M while the platform's call holds M's batch", async () => {
       const holder = await appPool.connect();
       try {
         await holder.query('select pg_advisory_lock($1::int4, hashtext($2))', LOCK(m.tenant));
@@ -1312,6 +1319,9 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
         );
         expect(out).toContain('ZZ_INPROCESS_MIDNIGHT_FIRED');
         expect(await outsOf(m.employee)).toBe(0);
+        expect(out).toContain(`park group ${m.tenant}'s batch is already running elsewhere`);
+        // Standing down for M is not standing down: N, which nobody holds, was run.
+        expect(await outsOf(n.employee)).toBe(1);
       } finally {
         await holder.query('select pg_advisory_unlock($1::int4, hashtext($2))', LOCK(m.tenant));
         holder.release();
