@@ -1,5 +1,5 @@
 import { and, eq, gt, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
-import { account, appTenantAnchors, benefitCredential, branch, employee, type Db } from '@oto/db';
+import { account, appTenantAnchors, benefitCredential, branch, employee, opsRun, type Db } from '@oto/db';
 import { newId } from '@oto/shared';
 import { AppError } from '../lib/errors';
 import { audit } from './audit';
@@ -670,6 +670,23 @@ export async function raiseUnknownBenefitEmployee(
   db: Exec,
   input: { operatorId: string; employeeId: string; credentialId: string },
 ): Promise<void> {
+  // One case per credential. The scan that finds it is the one write on a
+  // route whose answers stay out of the replay store (`secretResponse`), so a
+  // till retrying with the same Idempotency-Key reaches here again — and the
+  // same unknown card presented twice tells the Failures page nothing new
+  // either. The credential id in the run's detail is the key.
+  const [already] = await db
+    .select({ id: opsRun.id })
+    .from(opsRun)
+    .where(
+      and(
+        eq(opsRun.name, OTOAPP_EMPLOYEE_SYNC_RUN),
+        eq(opsRun.errorCode, EMPLOYEE_SYNC_CASES.UNKNOWN_EMPLOYEE),
+        sql`${opsRun.detail} ->> 'credentialId' = ${input.credentialId}`,
+      ),
+    )
+    .limit(1);
+  if (already) return;
   await raiseEmployeeSync(db, {
     case: EMPLOYEE_SYNC_CASES.UNKNOWN_EMPLOYEE,
     operatorId: input.operatorId,

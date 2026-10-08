@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, ne } from 'drizzle-orm';
 import { account, branch, employee, fileObject, session as sessionTable } from '@oto/db';
 import { normalizePhone } from '@oto/shared';
 import type { App } from '../app';
@@ -109,11 +109,23 @@ export async function meRoutes(app: App): Promise<void> {
       // edited with nothing in the trail saying who edited it.
       const employeeId = acc.employeeId;
       await withTx(app.db, opCtx(req), 'me.update', async (tx) => {
+        // The source check above ran on the pool: an adoption by the copy can
+        // commit between it and this write, and then the edit would land on a
+        // row that is now the OTO App's and be silently undone by the next
+        // copy (H5). Every field this route edits is a mirrored one, so the
+        // write itself refuses a row the copy has taken.
         const [after] = await tx
           .update(employee)
           .set(patch)
-          .where(eq(employee.id, employeeId))
+          .where(and(eq(employee.id, employeeId), ne(employee.source, 'otoapp')))
           .returning();
+        if (!after) {
+          throw errors.conflict(
+            'EMPLOYEE_KEPT_IN_OTO_APP',
+            'Your name, nickname, email and phone are kept in the OTO App. Change them there, and they reach here at the next copy.',
+            { fields: Object.keys(patch) },
+          );
+        }
         await audit.record(tx, {
           actorAccountId: auth.accountId,
           operatorId: auth.operatorId,

@@ -873,10 +873,10 @@ describe('4. the benefits swap on a mirrored row: Nok through adoption, an app r
    * the same Idempotency-Key files the case a second time. Only an
    * operational record is duplicated (no benefit, quota or card), but it is
    * the idempotency rule broken on a route this round moved off the no-write
-   * list. A fix keys the filing itself (e.g. one open case per credential id,
-   * or the idempotency key in the run's detail) rather than the answer.
+   * list. Fixed at landing: the filing is keyed by credential id in the
+   * run's detail (`raiseUnknownBenefitEmployee`), so the same card files once.
    */
-  it.fails(
+  it(
     'H17’s other half replayed: the same scan resent with the same Idempotency-Key files the case once',
     async () => {
       await publishBenefitQrKey(db, ctx.app.env);
@@ -1345,11 +1345,11 @@ describe('7. H5 and the seams', () => {
    * the copy committing between the two lands the person's own edit on a row
    * that is now the OTO App's — the edit H5 refuses, written anyway, and
    * silently undone by the next copy. Here the adoption is held at exactly
-   * that moment with a row lock. The fix is one condition: re-read the row
-   * `for update` inside the transaction (or update `where source <> 'otoapp'`)
-   * and refuse there.
+   * that moment with a row lock. Fixed at landing: the update carries
+   * `where source <> 'otoapp'` and refuses with the same 409 when no row
+   * comes back.
    */
-  it.fails(
+  it(
     'PATCH /me raced against an adoption never writes a mirrored field onto the adopted row',
     async () => {
       const platformRow = newId();
