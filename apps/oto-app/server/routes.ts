@@ -1464,6 +1464,44 @@ export async function registerRoutes(
     }
   });
 
+  /**
+   * Every other door that deletes a user — the people delete and the employee
+   * deletes, which take the user matched by email with them — goes through
+   * the same `deleteManagedUser` (S2-17b round 1, H28). A user the platform
+   * has linked, or one the app still references, is refused there in the
+   * same 409 words as above, so no door can leave a `core.app_identity` row
+   * pointing at nobody. Each door asks this FIRST, before anything of its own
+   * is written, so a refusal changes nothing.
+   *
+   * Answers the refusal to send, or null when the user is gone: deleted here,
+   * or already gone by the time this ran.
+   */
+  const deleteUserOrRefusal = async (
+    userId: string,
+  ): Promise<{ message: string; reason: "linked_to_platform" | "still_referenced" } | null> => {
+    const outcome = await deleteManagedUser(pool, userId);
+    return !outcome.deleted && outcome.status === 409
+      ? { message: outcome.message, reason: outcome.reason }
+      : null;
+  };
+
+  /**
+   * The user an employee delete takes with it, found the way that delete has
+   * always found it: by the email of the employee's person record, or — with
+   * no person record linked — by the employee's own email when a person
+   * carries it.
+   */
+  const userLeavingWithEmployee = async (employee: { personId: string | null; email: string | null }) => {
+    if (employee.personId) {
+      const person = await storage.getPerson(employee.personId);
+      return person?.email ? storage.getUserByEmail(person.email) : undefined;
+    }
+    if (employee.email && (await storage.getPersonByEmail(employee.email))) {
+      return storage.getUserByEmail(employee.email);
+    }
+    return undefined;
+  };
+
   const canAccessBranchRecord = async (
     user: UserWithBranchAccess | undefined,
     branch: { id: string; tenantId: string },
@@ -4041,7 +4079,17 @@ export async function registerRoutes(
           return res.status(403).json({ message: "Access denied to this employee" });
         }
       }
-      
+
+      // The user this delete takes with it goes first, through the one gate
+      // every user delete uses (S2-17b round 1): a user the platform has
+      // linked, or the app still references, is refused in the app's words
+      // before anything below is written.
+      const leavingUser = await userLeavingWithEmployee(employee);
+      if (leavingUser) {
+        const refusal = await deleteUserOrRefusal(leavingUser.id);
+        if (refusal) return res.status(409).json(refusal);
+      }
+
       // Archive all contracts for this employee
       const contracts = await storage.getContractsForEmployee(req.params.id);
       for (const contract of contracts) {
@@ -4049,30 +4097,21 @@ export async function registerRoutes(
           await storage.archiveContract(contract.id);
         }
       }
-      
+
       // Mark all unreturned assets as returned
       const unreturnedAssets = await storage.getUnreturnedAssetsForEmployee(req.params.id);
       for (const asset of unreturnedAssets) {
         await storage.updateEmployeeAsset(asset.id, { returnedAt: new Date() });
       }
-      
+
       // Clear activity log references to this employee (set to NULL to preserve history)
       await storage.clearActivityLogEmployeeReferences(req.params.id);
-      
-      // Clean up person record and user to free up email for reuse
+
+      // Clean up the person record (its user went first, above) to free up the email for reuse
       if (employee.personId) {
         // Delete access policy first
         await storage.deleteAccessPolicy(employee.personId);
-        
-        // Find and delete associated user by person's email
-        const person = await storage.getPerson(employee.personId);
-        if (person?.email) {
-          const user = await storage.getUserByEmail(person.email);
-          if (user) {
-            await storage.deleteUser(user.id);
-          }
-        }
-        
+
         // Delete the person record to free up the email
         await storage.deletePerson(employee.personId);
       } else if (employee.email) {
@@ -4080,14 +4119,10 @@ export async function registerRoutes(
         const person = await storage.getPersonByEmail(employee.email);
         if (person) {
           await storage.deleteAccessPolicy(person.id);
-          const user = await storage.getUserByEmail(employee.email);
-          if (user) {
-            await storage.deleteUser(user.id);
-          }
           await storage.deletePerson(person.id);
         }
       }
-      
+
       await storage.deleteEmployee(req.params.id);
       res.sendStatus(204);
     } catch (error) {
@@ -4105,7 +4140,7 @@ export async function registerRoutes(
       }
       
       const userWithAccess = req.userWithAccess;
-      const results: { id: string; status: string; message: string }[] = [];
+      const results: { id: string; status: string; message: string; reason?: string }[] = [];
       let deletedCount = 0;
       let errorCount = 0;
       
@@ -4126,7 +4161,19 @@ export async function registerRoutes(
               continue;
             }
           }
-          
+
+          // The user goes first, through the one gate every user delete uses
+          // (S2-17b round 1): a refused one leaves this employee untouched.
+          const leavingUser = await userLeavingWithEmployee(employee);
+          if (leavingUser) {
+            const refusal = await deleteUserOrRefusal(leavingUser.id);
+            if (refusal) {
+              results.push({ id: employeeId, status: "error", ...refusal });
+              errorCount++;
+              continue;
+            }
+          }
+
           // Archive all contracts for this employee
           const contracts = await storage.getContractsForEmployee(employeeId);
           for (const contract of contracts) {
@@ -4134,32 +4181,21 @@ export async function registerRoutes(
               await storage.archiveContract(contract.id);
             }
           }
-          
+
           // Mark all unreturned assets as returned
           const unreturnedAssets = await storage.getUnreturnedAssetsForEmployee(employeeId);
           for (const asset of unreturnedAssets) {
             await storage.updateEmployeeAsset(asset.id, { returnedAt: new Date() });
           }
-          
-          // Clean up person record and user to free up email for reuse
+
+          // Clean up the person record (its user went first, above) to free up the email for reuse
           if (employee.personId) {
             await storage.deleteAccessPolicy(employee.personId);
-            const person = await storage.getPerson(employee.personId);
-            if (person?.email) {
-              const user = await storage.getUserByEmail(person.email);
-              if (user) {
-                await storage.deleteUser(user.id);
-              }
-            }
             await storage.deletePerson(employee.personId);
           } else if (employee.email) {
             const person = await storage.getPersonByEmail(employee.email);
             if (person) {
               await storage.deleteAccessPolicy(person.id);
-              const user = await storage.getUserByEmail(employee.email);
-              if (user) {
-                await storage.deleteUser(user.id);
-              }
               await storage.deletePerson(person.id);
             }
           }
@@ -13604,12 +13640,16 @@ OTO Company Limited`,
         return res.status(403).json({ message: "This account is protected and cannot be deleted" });
       }
       
-      // Delete associated user if exists
+      // Delete associated user if exists, through the one gate every user
+      // delete uses (S2-17b round 1): a user the platform has linked, or the
+      // app still references, is refused in the app's words and nothing here
+      // is written.
       const user = await storage.getUserByEmail(person.email);
       if (user) {
-        await storage.deleteUser(user.id);
+        const refusal = await deleteUserOrRefusal(user.id);
+        if (refusal) return res.status(409).json(refusal);
       }
-      
+
       // Delete access policy if exists
       await storage.deleteAccessPolicy(id);
       

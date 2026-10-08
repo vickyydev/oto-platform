@@ -385,7 +385,9 @@ export interface IStorage {
                 passwordHash: string,
                 adminId: string,
         ): Promise<void>;
-        deleteUser(id: string): Promise<void>;
+        // No deleteUser here (S2-17b round 1): every door that deletes a user
+        // goes through deleteManagedUser in server/lib/userDeletion.ts, which
+        // refuses a platform-linked or still-referenced user in one transaction.
 
         // Utility for activity logging
         logActivity(log: InsertActivityLog): Promise<ActivityLog>;
@@ -2047,15 +2049,6 @@ export class DatabaseStorage implements IStorage {
                         .where(eq(users.id, id))
                         .returning();
                 return user;
-        }
-
-        async deleteUser(id: string): Promise<void> {
-                // First delete user's branch access records
-                await db
-                        .delete(userBranchAccess)
-                        .where(eq(userBranchAccess.userId, id));
-                // Then delete the user
-                await db.delete(users).where(eq(users.id, id));
         }
 
         async getUsers(): Promise<User[]> {

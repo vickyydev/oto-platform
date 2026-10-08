@@ -17,7 +17,9 @@
 //     admin they change that park group's rows and none of the other's;
 //   - DELETE /api/users/:id answers the app's own 409 words for a user the
 //     platform has linked and for a user the app still references, changing
-//     nothing, and still deletes a user nothing points at.
+//     nothing, and still deletes a user nothing points at — and so do the
+//     other doors that delete a user: DELETE /api/people/:id, DELETE
+//     /api/employees/:id and POST /api/employees/bulk-delete.
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -165,6 +167,30 @@ const referenced = await staffUser("referenced");
 await q("insert into user_module_overrides (tenant_id, user_id, module_key) values ($1, $2, 'ops')", [A.tenant, referenced]);
 const plain = await staffUser("plain");
 
+// The other doors that delete a user: the people delete and the employee
+// deletes take the user matched by email with them.
+async function personFor(userId: string) {
+  const [{ email }] = await q<{ email: string }>("select email from users where id = $1", [userId]);
+  const person = randomUUID();
+  await q("insert into people (id, full_name, email, person_type) values ($1, 'ZZ TEST person', $2, 'EMPLOYEE')", [person, email]);
+  return { person, email };
+}
+const linkedByPerson = await staffUser("linked-person", randomUUID());
+const linkedPerson = await personFor(linkedByPerson);
+const linkedByEmployee = await staffUser("linked-employee", randomUUID());
+const linkedEmployeePerson = await personFor(linkedByEmployee);
+const linkedEmployee = randomUUID();
+await q(
+  `insert into employees (id, tenant_id, branch_id, full_name, nickname, email, person_id)
+   values ($1, $2, $3, 'ZZ TEST linked employee', 'ZZ', $4, $5)`,
+  [linkedEmployee, A.tenant, A.branch, linkedEmployeePerson.email, linkedEmployeePerson.person],
+);
+const referencedByPerson = await staffUser("referenced-person");
+await q("insert into user_module_overrides (tenant_id, user_id, module_key) values ($1, $2, 'ops')", [A.tenant, referencedByPerson]);
+const referencedPerson = await personFor(referencedByPerson);
+const plainByPerson = await staffUser("plain-person");
+const plainPerson = await personFor(plainByPerson);
+
 // ─── The two servers ─────────────────────────────────────────────────────────
 
 const children: ChildProcess[] = [];
@@ -247,11 +273,11 @@ async function signIn(origin: string, email: string): Promise<string> {
   return cookie;
 }
 
-const call = async (origin: string, method: string, path: string, cookie?: string) => {
+const call = async (origin: string, method: string, path: string, cookie?: string, payload: unknown = {}) => {
   const res = await fetch(`${origin}${path}`, {
     method,
     headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) },
-    body: method === "GET" ? undefined : "{}",
+    body: method === "GET" ? undefined : JSON.stringify(payload),
   });
   const text = await res.text();
   let body: unknown = text;
@@ -386,6 +412,53 @@ try {
     assert.equal(res.status, 204, JSON.stringify(res.body));
     assert.ok(!(await exists(plain)));
     assert.equal(await accessRows(plain), 0);
+  })();
+
+  // ── The other doors that delete a user ─────────────────────────────────────
+  console.log("DELETE /api/people/:id and the employee deletes:");
+  const personExists = async (id: string) => (await q("select 1 from people where id = $1", [id])).length === 1;
+  const employeeExists = async (id: string) => (await q("select 1 from employees where id = $1", [id])).length === 1;
+  await check("the people delete refuses a platform-linked user in the app's words, and keeps the user and the person", async () => {
+    const res = await call(local, "DELETE", `/api/people/${linkedPerson.person}`, adminA);
+    assert.equal(res.status, 409, JSON.stringify(res.body));
+    assert.deepEqual(res.body, { message: DEACTIVATE_INSTEAD, reason: "linked_to_platform" });
+    assert.ok(await exists(linkedByPerson));
+    assert.equal(await accessRows(linkedByPerson), 1);
+    assert.ok(await personExists(linkedPerson.person));
+  })();
+  await check("the people delete refuses a user the app still references, not a bare 500, and keeps both", async () => {
+    const res = await call(local, "DELETE", `/api/people/${referencedPerson.person}`, adminA);
+    assert.equal(res.status, 409, JSON.stringify(res.body));
+    assert.deepEqual(res.body, { message: DEACTIVATE_INSTEAD, reason: "still_referenced" });
+    assert.ok(await exists(referencedByPerson));
+    assert.equal(await accessRows(referencedByPerson), 1);
+    assert.ok(await personExists(referencedPerson.person));
+  })();
+  await check("the employee delete refuses an employee whose user the platform has linked, writing nothing", async () => {
+    const res = await call(local, "DELETE", `/api/employees/${linkedEmployee}`, adminA);
+    assert.equal(res.status, 409, JSON.stringify(res.body));
+    assert.deepEqual(res.body, { message: DEACTIVATE_INSTEAD, reason: "linked_to_platform" });
+    assert.ok(await exists(linkedByEmployee));
+    assert.ok(await personExists(linkedEmployeePerson.person));
+    assert.ok(await employeeExists(linkedEmployee));
+  })();
+  await check("the bulk employee delete reports the same refusal for that employee, writing nothing", async () => {
+    const res = await call(local, "POST", "/api/employees/bulk-delete", adminA, { employeeIds: [linkedEmployee] });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.deletedCount, 0);
+    assert.deepEqual(res.body.results, [
+      { id: linkedEmployee, status: "error", message: DEACTIVATE_INSTEAD, reason: "linked_to_platform" },
+    ]);
+    assert.ok(await exists(linkedByEmployee));
+    assert.ok(await personExists(linkedEmployeePerson.person));
+    assert.ok(await employeeExists(linkedEmployee));
+  })();
+  await check("the people delete still removes a person and a user nothing points at", async () => {
+    const res = await call(local, "DELETE", `/api/people/${plainPerson.person}`, adminA);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.ok(!(await exists(plainByPerson)));
+    assert.equal(await accessRows(plainByPerson), 0);
+    assert.ok(!(await personExists(plainPerson.person)));
   })();
 
   console.log(`route-fences.check: ${checks} checks passed`);

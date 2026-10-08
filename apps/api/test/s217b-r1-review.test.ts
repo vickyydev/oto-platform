@@ -997,6 +997,11 @@ describe.skipIf(!HAS_APP_RUNTIME)(
        * `core.app_identity` pointing at nothing and the launcher tile opening onto
        * "not provisioned". `people` has no tenant column either, so any park
        * group's admin can do it.
+       *
+       * FIXED IN THE FIX ROUND: the people delete, the employee delete and
+       * the bulk employee delete take the user through `deleteManagedUser`
+       * first, before writing anything of their own, and answer its 409; the
+       * storage layer's unguarded user delete is gone. Pin flipped.
        */
       describe('the other doors that delete a user', () => {
         let victim: { user: string; identity: string; person: string };
@@ -1033,7 +1038,7 @@ describe.skipIf(!HAS_APP_RUNTIME)(
           expect(await q(`select 1 from users where id = $1`, [victim.user])).toHaveLength(1);
         });
 
-        it.fails(
+        it(
           'DELETE /api/people/:id leaves a platform-linked user (and so its core.app_identity) whole',
           async () => {
             await call(

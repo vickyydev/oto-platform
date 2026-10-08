@@ -3,7 +3,11 @@ import type { Pool } from "pg";
 /**
  * Deleting a user of the app — the last step of `DELETE /api/users/:id`, after
  * the route's own checks (tenant, self, managed role, HR record) have passed
- * (S2-17b round 1, plan section 4 and H28).
+ * (S2-17b round 1, plan section 4 and H28) — and the ONLY way the app deletes
+ * a user: `DELETE /api/people/:id`, `DELETE /api/employees/:id` and
+ * `POST /api/employees/bulk-delete` take the user matched by email through
+ * here too, first, before writing anything of their own, so a refusal leaves
+ * them untouched. The storage layer has no user delete of its own.
  *
  * TWO CASES THE ROUTE MET WITH A BARE 500, OR NOT AT ALL.
  *
