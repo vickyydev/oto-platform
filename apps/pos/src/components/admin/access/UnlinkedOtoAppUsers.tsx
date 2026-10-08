@@ -40,8 +40,9 @@ type AccountOption = {
   employee: { id: string; name: string } | null;
 };
 
+/** The app's six by name; any other word the app's database holds, as it is. */
 const roleLabel = (role: UnlinkedOtoAppUser['role']): string =>
-  OTO_APP_ROLES.find((r) => r.value === role)?.label ?? 'Advisor';
+  OTO_APP_ROLES.find((r) => r.value === role)?.label ?? (role === 'advisor' ? 'Advisor' : role);
 
 const branchLine = (u: UnlinkedOtoAppUser): string =>
   u.allBranches

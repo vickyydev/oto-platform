@@ -383,7 +383,12 @@ export async function appIdentityRoutes(app: App): Promise<void> {
                 fullName: z.string(),
                 email: z.string(),
                 phoneE164: z.string().nullable(),
-                role: z.enum(OTO_APP_USER_ROLES),
+                /**
+                 * The app's word, as stored: plain text there, so not held
+                 * to the six (`OTO_APP_USER_ROLES`). One odd row is shown as
+                 * it is rather than answering the whole list with a 500.
+                 */
+                role: z.string(),
                 isActive: z.boolean(),
                 createdAt: z.string(),
                 allBranches: z.boolean(),

@@ -423,6 +423,10 @@ describe('A. the seam: an upper-case id through the other doors, and a manufactu
    * response schema is `z.enum(OTO_APP_USER_ROLES)`. One row carrying any other
    * word — restored production data, a hand edit — fails the response
    * serialiser and the whole list answers 500 for everybody.
+   *
+   * FIXED IN THE FIX ROUND: the list's `role` is the app's word as stored
+   * (`z.string()`), and the Console shows an unknown one as it is. Pin
+   * flipped.
    */
   describe('one app user with a role outside the six', () => {
     let odd: string;
@@ -440,7 +444,7 @@ describe('A. the seam: an upper-case id through the other doors, and a manufactu
       ]);
     });
 
-    it.fails('does not take the whole list down', async () => {
+    it('does not take the whole list down', async () => {
       expect((await unlinked(admin)).status).toBe(200);
     });
   });

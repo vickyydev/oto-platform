@@ -550,7 +550,14 @@ export interface UnlinkedOtoAppUser {
   fullName: string;
   email: string;
   phoneE164: string | null;
-  role: OtoAppUserRole;
+  /**
+   * The app's word, as stored. Usually one of `OTO_APP_USER_ROLES`, but the
+   * column is plain text in the app's database (the six-value list is the
+   * app's TypeScript, not a check), so restored data or a hand edit can carry
+   * any other word — and one such row must show as it is, not take the whole
+   * list down.
+   */
+  role: string;
   isActive: boolean;
   /** ISO 8601. */
   createdAt: string;

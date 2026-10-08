@@ -505,6 +505,30 @@ describe('C. the app users with no suite sign-in, beside the existing Link', () 
     expect((res.json() as UnlinkedAnswer).users.map((u) => u.id)).toEqual([ids.seatedChalong]);
   });
 
+  it('shows a user whose role is a word outside the app’s six as it is, and the list still answers', async () => {
+    // `otoapp.users.role` is plain text: restored data or a hand edit can hold any word.
+    const odd = newId();
+    await ctx.db.execute(
+      sql`insert into otoapp.users (id, email, password, full_name, role, is_active, must_change_password)
+          values (${odd}, ${`zz-${odd}@example.com`}, 'x.y', 'ZZ Odd Role', 'hr_officer', true, false)`,
+    );
+    await ctx.db.execute(
+      sql`insert into otoapp.user_branch_access (id, tenant_id, user_id, branch_id, access_scope)
+          values (${newId()}, ${appTenant}, ${odd}, ${appCentral}, 'selected_branches')`,
+    );
+    try {
+      const res = await list(admin);
+      expect(res.statusCode, res.body).toBe(200);
+      const row = (res.json() as { users: Array<{ id: string; role: string }> }).users.find(
+        (u) => u.id === odd,
+      );
+      expect(row?.role).toBe('hr_officer');
+    } finally {
+      await ctx.db.execute(sql`delete from otoapp.user_branch_access where user_id = ${odd}`);
+      await ctx.db.execute(sql`delete from otoapp.users where id = ${odd}`);
+    }
+  });
+
   it('is refused to an account that cannot read accounts', async () => {
     const reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
     expect((await list(reception)).statusCode).toBe(403);

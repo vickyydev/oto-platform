@@ -1209,7 +1209,11 @@ export interface UnlinkedOtoAppUser {
   fullName: string;
   email: string;
   phoneE164: string | null;
-  role: OtoAppRole | 'advisor';
+  /**
+   * The app's word, as stored: usually an `OtoAppRole` or `advisor`, but plain
+   * text in the app's database, so any other word is shown as it is.
+   */
+  role: string;
   isActive: boolean;
   createdAt: string;
   /** Access to every branch of their park group. */
