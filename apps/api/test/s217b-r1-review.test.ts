@@ -1424,11 +1424,23 @@ describe.skipIf(!BASH)('C. CI: the path gates run by bash against simulated diff
     });
   }
 
-  it('a workspace run is the one that runs the view tests: Test is gated on it and runs the api suite that holds them', () => {
+  it('a workspace run is the one that runs the view tests: the api shards are gated on it and run the suite that holds them', () => {
+    // SCRUM-511 moved the api suite out of the ci job's Test step into the
+    // three `api-tests` shards; the guarantee this test holds is unchanged —
+    // an app-seam change must run the api suite, wherever it runs.
     const lines = ci.split(/\r?\n/);
-    const at = lines.findIndex((l) => l.trim() === '- name: Test');
+    const at = lines.findIndex((l) => l.trim().startsWith('- name: Api tests (shard'));
+    expect(at).toBeGreaterThan(-1);
     expect(lines[at + 1]!.trim()).toBe("if: steps.changes.outputs.workspace == 'true'");
-    expect(lines[at + 2]!.trim()).toBe('run: pnpm test --continue');
+    expect(lines[at + 2]!.trim()).toBe(
+      'run: pnpm --filter @oto/api exec vitest run --pool=forks --shard=${{ matrix.shard }}/3',
+    );
+    // The shard job's own gate reads the app seam exactly as the ci job's
+    // does: an app-only migration runs the shards, a screen-only change does
+    // not.
+    const shardGate = stepScript(ci, 'api-tests', 'What changed');
+    expect(runGate(shardGate, ['apps/oto-app/migrations/0005_next.sql'])).toEqual({ workspace: 'true' });
+    expect(runGate(shardGate, ['apps/oto-app/client/src/App.tsx'])).toEqual({ workspace: 'false' });
     for (const f of [
       'otoapp-events-seam.test.ts',
       'g17-round0-review.test.ts',
