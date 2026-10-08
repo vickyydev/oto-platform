@@ -89,7 +89,15 @@ export async function runStatusTransitions(): Promise<number> {
   return transitioned;
 }
 
-export async function runDepartedAccountDeactivation(): Promise<number> {
+/**
+ * Switch off the app login of everyone whose last working day has passed.
+ *
+ * The 03:00 batch calls it with no tenant, across every park group, as it
+ * always has. The manual trigger (`POST /api/admin/run-departed-deactivation`)
+ * passes the caller's own park group, so one park group's admin never
+ * switches off another's people (S2-17b round 1).
+ */
+export async function runDepartedAccountDeactivation(opts: { tenantId?: string } = {}): Promise<number> {
   console.log("[ACCOUNT_DEACTIVATION] Checking for departed employees with active accounts...");
   let deactivated = 0;
 
@@ -106,6 +114,7 @@ export async function runDepartedAccountDeactivation(): Promise<number> {
           lt(employees.lastWorkingDay, today),
           isNotNull(employees.userId),
           eq(users.isActive, true),
+          opts.tenantId ? eq(employees.tenantId, opts.tenantId) : undefined,
         ),
       );
 

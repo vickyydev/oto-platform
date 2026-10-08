@@ -110,7 +110,8 @@ import { advisorSessionCorrectionValues, advisorSessionMetrics, canAdvisorUseKio
 
 import { registerAIRoutes } from "./ai-routes";
 import { Sentry } from "./sentry";
-import { DB_SCHEMA, OBJECT_STORAGE, S3_ENDPOINT } from "./config/env";
+import { DB_SCHEMA, DEPLOY_ENV, JOBS_MODE, OBJECT_STORAGE, S3_ENDPOINT } from "./config/env";
+import { devOnly, followsJobsSwitch, parkGroupOf, parkGroupOnly } from "./lib/routeFences";
 
 
 // Helper to parse object storage path
@@ -746,8 +747,10 @@ export async function registerRoutes(
     });
   });
   
-  // Sentry test route (dev only)
-  app.get("/api/test-sentry", () => {
+  // Sentry test route (dev only). Refused on every deployment (S2-17b round 1):
+  // it is unauthenticated, and a route that throws on demand is a free way to
+  // fill an error tracker.
+  app.get("/api/test-sentry", devOnly(DEPLOY_ENV), () => {
     throw new Error("Sentry test error");
   });
 
@@ -1338,31 +1341,41 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/run-departed-deactivation", requireAuth, requireAdmin, async (req, res, next) => {
+  // A manual trigger of the 03:00 step, which no screen calls. It follows
+  // OTOAPP_JOBS (under `platform` the Console's Run now is the way, so a call
+  // never races the scheduled run), and it acts on the caller's own park group
+  // only, where it used to switch off logins across every one (S2-17b round 1).
+  app.post("/api/admin/run-departed-deactivation", requireAuth, requireAdmin, followsJobsSwitch(JOBS_MODE), parkGroupOnly, async (req, res, next) => {
     try {
       const { runDepartedAccountDeactivation } = await import("./scheduled-jobs");
-      const deactivated = await runDepartedAccountDeactivation();
+      const deactivated = await runDepartedAccountDeactivation({ tenantId: parkGroupOf(res) });
       res.json({ deactivated });
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/admin/backfill-employee-photos", requireAuth, requireAdmin, async (req, res, next) => {
+  // Held to the caller's own park group (S2-17b round 1): it used to read
+  // every park group's users and rewrite every park group's employees. Both
+  // sides are cut (this group's employees, matched only to this group's
+  // users), so no photo path crosses from one park group to another.
+  app.post("/api/admin/backfill-employee-photos", requireAuth, requireAdmin, parkGroupOnly, async (req, res, next) => {
     try {
+      const tenantId = parkGroupOf(res);
       const synced: { employee: string; photo: string; action: string }[] = [];
       const cleared: { employee: string; oldPath: string }[] = [];
-      
+
       const allUsers = await storage.getUsers();
       const usersByEmail = new Map<string, typeof allUsers[0]>();
       for (const user of allUsers) {
-        if (user.email && !user.email.includes('placeholder')) {
+        if (user.email && !user.email.includes('placeholder') && (await managedUserTenant(user.id)) === tenantId) {
           usersByEmail.set(user.email.toLowerCase(), user);
         }
       }
-      
+
       const allEmps = await db.select({ id: employees.id, email: employees.email, profilePhotoPath: employees.profilePhotoPath, fullName: employees.fullName })
-        .from(employees);
+        .from(employees)
+        .where(eq(employees.tenantId, tenantId));
       
       for (const emp of allEmps) {
         if (!emp.profilePhotoPath) continue;
@@ -1905,12 +1918,15 @@ export async function registerRoutes(
   
   // Fix employees who have signed contracts but still have PENDING status
   // This is a one-time fix for employees created before the contract-signing status update was implemented
-  app.post("/api/admin/fix-pending-with-signed-contracts", requireAuth, requireAdmin, async (req, res, next) => {
+  // Held to the caller's own park group (S2-17b round 1): it used to promote
+  // pending employees across every park group.
+  app.post("/api/admin/fix-pending-with-signed-contracts", requireAuth, requireAdmin, parkGroupOnly, async (req, res, next) => {
     try {
-      // Find all employees with PENDING status who have signed contracts
+      const tenantId = parkGroupOf(res);
+      // Find this park group's employees with PENDING status who have signed contracts
       const allEmployees = await storage.getEmployees();
-      const pendingEmployees = allEmployees.filter(e => 
-        e.status === "pending" || e.employmentState === "PENDING"
+      const pendingEmployees = allEmployees.filter(e =>
+        e.tenantId === tenantId && (e.status === "pending" || e.employmentState === "PENDING")
       );
       
       const fixed: { id: string; name: string }[] = [];
@@ -6207,7 +6223,9 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/seed", async (req, res, next) => {
+  // Refused on every deployment (S2-17b round 1). It has no sign-in at all,
+  // and on a deployment people come from the platform, not from a seed.
+  app.post("/api/seed", devOnly(DEPLOY_ENV), async (req, res, next) => {
     try {
       // Use environment variables for admin credentials (safer for production)
       const seedEmail = process.env.SEED_ADMIN_EMAIL || "admin@company.com";
@@ -8399,14 +8417,17 @@ OTO Company Limited`,
     }
   });
 
-  // Scheduler endpoint for daily LEAVING -> LEFT transitions
-  app.post("/api/scheduler/transition-left", requireAuth, requireAdmin, async (req, res, next) => {
+  // Scheduler endpoint for daily LEAVING -> LEFT transitions. A manual
+  // trigger no screen calls: it follows OTOAPP_JOBS, and moves the caller's
+  // own park group's leavers only (S2-17b round 1).
+  app.post("/api/scheduler/transition-left", requireAuth, requireAdmin, followsJobsSwitch(JOBS_MODE), parkGroupOnly, async (req, res, next) => {
     try {
       const userId = (req.user as any).id;
+      const tenantId = parkGroupOf(res);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const leavingEmployees = await storage.getEmployeesInLeavingState();
+      const leavingEmployees = (await storage.getEmployeesInLeavingState()).filter(e => e.tenantId === tenantId);
       const transitioned: string[] = [];
 
       for (const employee of leavingEmployees) {
@@ -23804,7 +23825,10 @@ ${context}`;
   // ============================================
   // OBJECT STORAGE DIAGNOSTIC TEST ENDPOINT
   // ============================================
-  app.get("/api/test-object-storage", requireAuth, async (req, res) => {
+  // Refused on every deployment (S2-17b round 1): it handed any signed-in
+  // person the bucket's name and region (what /api/status was scrubbed of)
+  // and wrote a file into the bucket.
+  app.get("/api/test-object-storage", devOnly(DEPLOY_ENV), requireAuth, async (req, res) => {
     const diagnostics: any = {
       envCheck: {
         objectStorage: process.env.OBJECT_STORAGE || null,
@@ -25902,7 +25926,9 @@ ${context}`;
 
   // Import legacy core uploads to object storage (DEV ONLY)
   // Auth: admin session OR x-dev-import-key header matching DEV_IMPORT_KEY
-  app.post("/api/dev/import-core-legacy-uploads", async (req, res) => {
+  // Refused on every deployment by DEPLOY_ENV (S2-17b round 1), before the
+  // APP_ENV check below, which says how the app was configured, not where.
+  app.post("/api/dev/import-core-legacy-uploads", devOnly(DEPLOY_ENV), async (req, res) => {
     try {
       // 1. DEV-only enforcement
       const { APP_ENV } = await import("./config/env");

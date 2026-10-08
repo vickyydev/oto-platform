@@ -1,6 +1,8 @@
 import pg from "pg";
 import { pool as devPool } from "./db";
 import type { Express, Request, Response } from "express";
+import { DEPLOY_ENV } from "./config/env";
+import { devOnly } from "./lib/routeFences";
 
 const { Pool } = pg;
 
@@ -572,8 +574,18 @@ async function runSync(prodDbUrl: string) {
   }
 }
 
+/**
+ * The production-to-development copy. It empties and reloads the 174 tables
+ * of `TABLE_ORDER` in the shared schema, `users.platform_user_id` and
+ * `branches.core_branch_id` among them, so on any deployment it would undo
+ * every link the platform has made. `NODE_ENV` used to be the only thing in
+ * front of it, and staging runs the production build with throwaway data, so
+ * the fence is `DEPLOY_ENV` (S2-17b round 1): it runs on a developer's machine
+ * and nowhere else. The status read is fenced the same way; it names the last
+ * sync's tables and counts.
+ */
 export function registerProdSyncRoutes(app: Express, requireAuth: any, requireGlobalAdmin: any) {
-  app.post("/api/admin/prod-sync", requireAuth, requireGlobalAdmin, async (req: Request, res: Response) => {
+  app.post("/api/admin/prod-sync", devOnly(DEPLOY_ENV), requireAuth, requireGlobalAdmin, async (req: Request, res: Response) => {
     if (process.env.NODE_ENV === "production") {
       return res.status(403).json({ error: "This action can only be performed in the development environment." });
     }
@@ -592,7 +604,7 @@ export function registerProdSyncRoutes(app: Express, requireAuth: any, requireGl
     res.json({ message: "Sync started", progress: syncProgress });
   });
 
-  app.get("/api/admin/prod-sync/status", async (_req: Request, res: Response) => {
+  app.get("/api/admin/prod-sync/status", devOnly(DEPLOY_ENV), async (_req: Request, res: Response) => {
     if (process.env.NODE_ENV === "production") {
       return res.status(403).json({ error: "Not available in production." });
     }

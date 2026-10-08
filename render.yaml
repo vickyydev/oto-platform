@@ -1070,6 +1070,14 @@ services:
         # compares it against its HANDOFF_APP_ORIGINS entry for oto_app, so a
         # mismatch here is refused rather than ignored.
         value: https://oto-app-staging.onrender.com
+      - key: OTOAPP_JOBS
+        # Who runs the night jobs (S2-17b plan section 5): `inprocess`, this
+        # app's own timers, or `platform`, the platform's job runner. Under
+        # `platform` the two manual job triggers answer with the Console's Run
+        # now instead of racing the scheduled run. Flip only after the
+        # platform has run the batch once successfully (round 3); any other
+        # value refuses to boot.
+        value: inprocess
       # OTOAPP_LEGACY_LOGIN is deliberately absent. The old Passport form is
       # off unless it is set to `true`, and it exists only for the cutover
       # rehearsal. Note for whoever runs the app's Playwright suite: its

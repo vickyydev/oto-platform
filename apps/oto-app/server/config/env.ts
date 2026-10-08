@@ -17,6 +17,8 @@
  * "is this a real deployment" cannot be read off NODE_ENV.
  */
 
+import { readJobsMode, type JobsMode } from "../lib/routeFences";
+
 const APP_ENV = process.env.APP_ENV;
 const STORAGE_ENV_PREFIX = process.env.STORAGE_ENV_PREFIX;
 const OBJECT_STORAGE = process.env.OBJECT_STORAGE as "local" | "s3";
@@ -60,6 +62,17 @@ const DEPLOY_ENV = ((): DeployEnv => {
 
 /** True on anything that is not a developer's machine. */
 const IS_DEPLOYMENT = DEPLOY_ENV !== "local";
+
+/**
+ * Who runs the night work (plan section 5): this process's own timers
+ * (`inprocess`, the default and what runs today) or the platform's job
+ * runner (`platform`, round 3). In round 1 only the two manual job triggers
+ * read it — under `platform` they point at the Console instead of racing the
+ * scheduled run (`lib/routeFences.ts`). Unknown values are a boot problem
+ * below, never a silent default.
+ */
+const OTOAPP_JOBS_RAW = process.env.OTOAPP_JOBS;
+const JOBS_MODE: JobsMode = readJobsMode(OTOAPP_JOBS_RAW) ?? "inprocess";
 
 /**
  * A number, or a refusal naming the variable. `parseInt` answers a typo with
@@ -140,6 +153,10 @@ function assertDevEnv(): void {
  */
 export function assertProductionSafe(): void {
   const problems: string[] = [];
+
+  if (readJobsMode(OTOAPP_JOBS_RAW) === null) {
+    problems.push(`OTOAPP_JOBS must be one of: inprocess, platform (or unset). Got: "${OTOAPP_JOBS_RAW}"`);
+  }
 
   const databaseUrl = process.env.DATABASE_URL ?? "";
   if (!databaseUrl) {
@@ -243,6 +260,7 @@ assertProductionSafe();
 export {
   APP_ENV,
   DEPLOY_ENV,
+  JOBS_MODE,
   STORAGE_ENV_PREFIX,
   OBJECT_STORAGE,
   DB_SCHEMA,
