@@ -418,6 +418,27 @@ module map below is read from the routes and the schema, not from memory.
   404 "Branch not found", and the two reception reads are held to the
   tablet's park group, so a device minted before the fix sees nothing there.
   Which branches a branch-limited manager may activate a tablet on is Q41.
+- **Three more park-group crossings** (found in round 5's review). Each is
+  fixed on our own authority, with no migration:
+  - `GET /api/shifts-needing-coverage` with no branch named answered every
+    park group's flagged older-list shifts, the ones round 5's restored
+    sick-day step flags. It now answers the caller's park group only. Which
+    of its branches a branch-limited manager reads is Q39.
+  - The sick-leave policy (`sick_leave_policies`, which has its own
+    `tenant_id`) fell back to the first company-wide row of any park group,
+    so an admin's company-wide save rewrote another park group's row and
+    every park group read it. The read, the save and each balance now keep
+    to the park group (the caller's, or the employee's for a balance), and a
+    save naming another park group's branch is the app's 404 "Branch not
+    found". `GET /api/employees/:id/leave-balance` read another park
+    group's employee; it is now the app's 404 "Employee not found" (Q40).
+  - Revoking a reception tablet (`DELETE /api/kiosk-devices/:id/revoke`)
+    deleted the device's sessions before it checked the park group, so
+    another park group's manager signed the tablet out and was answered
+    200. The device is now updated first, held to the park group; its
+    sessions are deleted only when that matched, and otherwise the answer is
+    the app's 404 "Device not found". Which branches' tablets a
+    branch-limited manager may revoke is Q46.
 - **Offboarding writes are not one transaction.** The offboarding row is
   written under an advisory lock in its own transaction. Then the
   employee's state, the login switch-off, the asset return dates, the
@@ -849,7 +870,9 @@ is committed.
       placed by their own links on a 0006 database, NOT NULL and the unique
       after, the gate, the window with real concurrency, from empty twice).
 - Round 6: the same pattern for `templates`, `policy_documents` and
-  `asset_catalog` (expand in round 6, NOT NULL in round 7's release). Also
+  `asset_catalog` (expand in round 6, NOT NULL in round 7's release), and,
+  by Q31's default, `leave_policies` (the census's branch-then-default
+  backfill). Also
   a unique open offboarding per employee, only if the census is clean.
 - Round 7: the four finance composite primary keys and a unique index on
   `pl_facts`.
@@ -868,7 +891,7 @@ is committed.
 | `invitation_designs` | `event_id` (NOT NULL, cascade) → `core_events.tenant_id` | The signed-in routes check the event's park group and branch first (`verifyEventAccess`, `server/parent-experience-routes.ts:67-74`); the public ones reach it through a parent-portal token's own event | Reached through a tenant-bearing parent. Nothing to do. |
 | `package_line_item_templates` | `package_template_id` (NOT NULL, cascade) → `birthday_package_templates.tenant_id` | Every route checks the package's park group first (`hasPackageAccess`, `server/birthday-package-routes.ts:17-24`) and confines item writes to that package | Reached through a tenant-bearing parent. Nothing to do. |
 | `i18n_translations` | `version_id` (NOT NULL) → `dropoff_form_versions.form_id` → `dropoff_forms.tenant_id` | Four manager routes take a form or version id and never check its park group: `GET /api/dropoff-form/:formId/versions`, `GET /api/dropoff-form/version/:versionId`, `PUT /api/dropoff-form/:formId/draft`, `PUT /api/dropoff-form/translation` (`server/dropoff-form-routes.ts:368-466`); and a fifth, for admins, does the same and more: `POST /api/dropoff-form/:formId/publish` reads the draft's English translations of any park group's form, writes the machine translations into it, and publishes that form (`server/dropoff-form-routes.ts:469-580`) | Reached through a tenant-bearing parent, but EXPOSED: a manager of any park group holding another park group's form or version id reads and writes its drafts and translations, and an admin publishes it. No column needed; the fix is the parent check (the form's `tenant_id` against the caller's park group) on those five routes (Q31). |
-| `leave_policies` | `branch_id` → `branches.tenant_id`; a row with no branch is company-wide and has no park group at all | `GET /api/leave-policies` with no branch lists every park group's policies to an admin or all-branch user, and with `branchId` takes another park group's branch; `POST` takes any `branchId`; `PATCH` and `DELETE /api/leave-policies/:id` take any park group's policy (`server/routes.ts`, "LEAVE POLICIES"). `getActiveLeavePolicy` falls back to the branchless rows, so a company-wide policy one park group writes sets every park group's days-off accrual | EXPOSED, reads and writes across park groups, and its branchless rows have no parent to place them. Needs its own `tenant_id` on the round 6 pattern (expand with a branch-then-default backfill, NOT NULL a release later) and the routes held to the caller's park group (Q31). |
+| `leave_policies` | `branch_id` → `branches.tenant_id`; a row with no branch is company-wide and has no park group at all | `GET /api/leave-policies` with no branch lists every park group's policies to an admin or all-branch user, and with `branchId` takes another park group's branch; `POST` takes any `branchId`; `PATCH` and `DELETE /api/leave-policies/:id` take any park group's policy (`server/routes.ts`, "LEAVE POLICIES"). `getActiveLeavePolicy` falls back to the branchless rows, so a company-wide policy one park group writes sets every park group's days-off accrual | EXPOSED, reads and writes across park groups, and its branchless rows have no parent to place them. Needs its own `tenant_id` on the round 6 pattern (expand with a branch-then-default backfill, NOT NULL a release later) and the routes held to the caller's park group, in round 6 (Q31; round 5 added no migration). Beside it, `sick_leave_policies` carries its own `tenant_id`, but its company-wide fallback ignored it, so one park group's admin saving the company-wide sick-leave entitlement rewrote another's row and every park group read it; and `GET /api/employees/:id/leave-balance` read any park group's employee. Both fenced in round 5's review (section 4, Q40). |
 | `people` | No tenant column and no tenant-bearing parent; placed through its children: `access_policies.person_id` (unique per person, carries `tenant_id`) and `employees.person_id` | `GET /api/people` lists every park group's people to any manager; `GET` and `PATCH /api/people/:id` and `GET /api/people/:id/access` take any park group's person for any park group's admin (`server/routes.ts`, "PEOPLE & ACCESS POLICIES"). Round 2 fenced the delete door. `email` is unique across every park group, so one person has one row | EXPOSED: identity rows read and edited across park groups. No column needed while each person has one place: scope the people routes by the park group of the person's access policy or employee rows; the read-back counts the people placed in one park group, in none and in several, which is the census that change needs first (Q31). |
 
   - Across all six, and the three 4a tables too: Data Admin
@@ -910,7 +933,7 @@ new jobs are registered by the jobs themselves.
 | 3 | **The night work on the platform runner.** The app's job endpoint, scope `jobs:run` and tenant-scoped job functions. Every swallowed error reported as a failed step. `OTOAPP_JOBS`. The platform registers `job:otoapp.midnight`, `.reconcile` and `.presence`, with expectations and the forced-failure test control. The departed-login step names still-active linked platform accounts (Q4). The two manual triggers follow `OTOAPP_JOBS` (section 5). Flip to `platform` on staging only after one platform-run success (the endpoint refuses before the flip, so see Q22 for the order as built); Attention stays paused. | Ticket check 3: two jobs on Health with last-success times, and a forced failure on Failures whose Retry succeeds. H8 and H9 green. Under `platform`, the app registers no timers (test). On staging, a midnight batch run by the platform produced the auto clock-out and the day's recurring tasks. Walkthrough pages: timekeeping, tasks (recurrence). |
 | 4 | **Tenant ownership, Attention and the Directory, in two landings.** 4a: the expand migrations. The settings helper and every caller take the tenant. Settings reads open to every park group; other park groups' settings writes stay refused in words while `settings_key_unique` stands (section 7). Branchless Activity rows show in their own tenant. Directory HR reads under `hr:read`. The root-table census. 4b, the next release (a short build-review cycle of its own): the contraction, then other park groups' settings writes open, and Attention resumes (`ATTENTION_WRITES_READY`) with rules per tenant (its rules are the settings key `attention_rules_config`), run as `job:otoapp.attention` and `job:otoapp.no_show`. | Claimed after 4b. H10 to H12 and H20 green. A second tenant's settings, activity and Attention are invisible to the first, on staging and in tests. Refresh, snooze and resolve work on staging. A directory read across tenants answers 404. Walkthrough pages: settings, activity log, Attention engine, Directory API. |
 | 5 | **Attendance and operations as the app does them.** Leave approval restored (Q1): the server's two 503s removed and the rota's `approved: true` put back, with each coverage alert written to its park group (round 4's column). The shift-row refusal (Q2). Face "off" refuses instead of matching, `/api/kiosk/clock` included. A configured-device reception action. Restricted-branch proof for scheduling, leave, checklists, announcements and notifications. Casual workers' ungrouped-row case. | H13 to H15 green. Walkthrough pages: kiosk devices and reception, face/PIN/phone, timekeeping (restricted branch), scheduling, leave and holidays, tasks and ops board, checklists and media, announcements, in-app notifications, casual workers. |
-| 6 | **The document modules.** Tenant columns for templates, policies and the asset catalogue (expand; NOT NULL in round 7's release); their 503 guards off. Contracts, letters, templates, policies, employee documents, assets, offboarding (one transaction, the readable reason label, linked-user deactivation as the app does it) and the org chart (count first, because its GET writes missing nodes). The PDF and storage gate. The offboarding duplicate census. | Ticket check 2: a contract and a letter signed, and a BEO generated, opening from signed URLs, with an unauthorised read refused (test and screenshots). H16 green for offboarding. Walkthrough pages: contracts, templates, policies, letters, employee documents, assets, offboarding, org chart. |
+| 6 | **The document modules.** Tenant columns for templates, policies and the asset catalogue (expand; NOT NULL in round 7's release); their 503 guards off. By Q31's default, `leave_policies`' tenant column too, its routes and the leave reads' remaining park-group crossings held to the caller's park group (Q40). Contracts, letters, templates, policies, employee documents, assets, offboarding (one transaction, the readable reason label, linked-user deactivation as the app does it) and the org chart (count first, because its GET writes missing nodes). The PDF and storage gate. The offboarding duplicate census. | Ticket check 2: a contract and a letter signed, and a BEO generated, opening from signed URLs, with an unauthorised read refused (test and screenshots). H16 green for offboarding. Walkthrough pages: contracts, templates, policies, letters, employee documents, assets, offboarding, org chart. |
 | 7 | **Park, knowledge, administration, finance.** The finance keys migration. Round 6's NOT NULL contraction. The app's voucher write routes answer with the Console notice (section 4). Walkthroughs for events, BEO, packages and menus, camps and children, the parent portal and RSVP, drop-off and nanny, the form builder (on an isolated tenant), staff vouchers (the Console contract), SOP, KB, training, Ask OTO, Fix and supplier portal, payroll, Xero (refusal only until the sandbox), vault, Data Admin, files. Decision 25 recorded in the ARCHITECTURE decisions log. The POS seam evidence card. | Ticket check 5: the POS reads `otoapp_v.events` for the seeded events, plus the grep test, as a test-run card. A finance upsert test. H27 green. Walkthrough pages for every module named. |
 | 8 | **Rehearsal and closure.** The restore rehearsal script in CI, plus the local run on the real structure. A typecheck ratchet for the app (its inherited error count may not rise). The final desktop and park-tablet pass. `docs/features/oto-app.md` statuses for every module. The acceptance index ticked. SCRUM-193 walked to Deployed. | Ticket check 4: the rehearsal completes in CI and the counts match, twice (H17). Ticket check 1: every module has its page, or is named as disabled on staging with the reason. All five checks ticked with named evidence. |
 
@@ -1140,6 +1163,15 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   branch, also for a shift at another branch (the app's shape), and its rule
   (`SICK_LEAVE_COVERAGE`) is one the six-hourly run does not raise, so that
   run resolves it (Q32).
+- **A rota shift assigned while a sick day saves can outlive it** (round 5's
+  review, beside Q44). The race the other way round: a rota assignment
+  whose eligibility read ran before the sick day was saved, and whose insert
+  lands after the sick-day route's freeing step, leaves the person on that
+  shift on an approved sick day with no coverage alert. Neither route holds
+  anything across its check and its write; that is the app's own race, kept.
+  The remedy, if you ask for it, is a per-person lock taken by the time-off
+  create and the assignment creates around their check and write. Pinned
+  standing in `apps/api/test/s217b-r5-review.test.ts` B.
 - **Approving a sick day unassigns older-list shifts over the app's range**
   (round 5, Q38): from the first day's 00:00 UTC to the last day's 00:00 UTC,
   so a one-day leave reaches only a shift starting at 07:00 Bangkok, and a
@@ -1156,8 +1188,11 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   5's proof, Q39): `/api/schedule/*` has no branch rule and no park-group
   rule, so a branch-limited manager reads and writes other branches' rota,
   and any manager reads another park group's by its ids. The rota view
-  (`/api/rota`) and the older shift list keep to the branch. Pinned in
-  `tests/attendance.check.ts` as FINDING Q39, unchanged in this round.
+  (`/api/rota`) keeps to the branch. The older shift list's coverage read
+  keeps to one only when it is named; with none it answers every branch of
+  the caller's park group (held to the park group since round 5's review,
+  section 4). Pinned in `tests/attendance.check.ts` as FINDING Q39,
+  unchanged in this round.
 - **Some leave reads have no branch rule, and two refuse every
   branch-limited reader** (round 5's proof, Q40): sick-leave balances answer
   any branch and employee; the leave-policy and per-employee balance reads
@@ -1166,6 +1201,12 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 - **A tablet minted into another park group's branch before round 5 keeps a
   session and sees nothing** there: its branch read answers 404 and its board
   is empty. Revoke it from Kiosk devices.
+- **The reception tablet's day starts at 07:00 Bangkok** (the app's rule,
+  kept). Its board (`/api/kiosk-reception/checkins`) lists the check-ins
+  registered since the server's midnight (`setHours(0)`), and the server
+  runs in UTC. So from midnight to 07:00 Bangkok the board still holds the
+  previous day's guests, and a guest registered in those hours leaves it at
+  07:00.
 
 ## 11. Questions for the owner (the app's behaviour is the default)
 
@@ -1391,8 +1432,11 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 - **Q31. Where the census's exposures are fixed (round 4a).** The root-table
   census (section 7) found four places that read or write across park
   groups, none of them in 4a's scope. Default placement: `leave_policies`
-  in round 5 (leave and holidays), a tenant column on the round 6 pattern
-  with its routes held to the caller's park group; `people` in round 6 (HR
+  in round 6, a tenant column on the round 6 pattern with its routes held
+  to the caller's park group (placed in round 5, leave and holidays, at
+  first; round 5 added no migration, so it carries no column, and its
+  review fenced only the sibling `sick_leave_policies`, which has its own,
+  Q40); `people` in round 6 (HR
   records), its routes scoped by the park group of each person's access
   policy or employee rows; the five form-builder routes over
   `i18n_translations` (the four that read and write drafts and
@@ -1459,20 +1503,30 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   last day's morning shift is not reached. No screen writes the older list
   today, and its create route names no park group (which the column
   requires), so neither choice changes anything the park can see now.
-  Default: as built — the code's evident rule, over the app's own range. The
-  alternatives are the live app's no-op on a later approve, or a range
-  widened to the leave's Bangkok days.
+  Default: as built — the code's evident rule, over the app's own range.
+  This departs from the live app, where a later approve was an accidental
+  no-op: H14 asked for the restored behaviour ("approved later: their legacy
+  `shifts` in the range are unassigned"), so here the default follows H14,
+  not the live app. The alternatives are the live app's no-op on a later
+  approve, or a range widened to the leave's Bangkok days.
 - **Q39. The rota answers across branches and park groups (round 5's
   proof).** The week plan, shift groups, rows, assignments and templates
   (`/api/schedule/*`) carry no branch rule and no park-group rule: a manager
   limited to one branch reads and changes every branch's rota, and any
   manager reads another park group's rota and adds rows to it by its ids
   (pinned as FINDING Q39 in `tests/attendance.check.ts`). The rota view
-  (`/api/rota`) and the older shift list do keep to the branch. Default: the
-  branch rule as the app (none), until you say otherwise; the park-group
-  crossing is a data fault and is fenced on our own authority in a slice of
-  its own (about 40 routes, not built in round 5). The alternative is the
-  rota view's branch rule on every scheduling route.
+  (`/api/rota`) keeps to the branch. The older shift list's coverage read
+  (`GET /api/shifts-needing-coverage`, the shifts the sick-day step flags)
+  keeps to a branch only when one is named: with none, the app answered
+  every branch of every park group. Since round 5's review it answers the
+  caller's park group only (section 4); within it, a manager limited to one
+  branch still reads every branch's flagged shifts, the app's rule (pinned
+  in `apps/api/test/s217b-r5-review.test.ts` E1). Default: the branch rule
+  as the app (none), for the rota and for that read, until you say
+  otherwise; the rota's park-group crossing is a data fault and is fenced on
+  our own authority in a slice of its own (about 40 routes, not built in
+  round 5). The alternative is the rota view's branch rule on every
+  scheduling route, and on the coverage read with no branch named.
 - **Q40. Leave reads with no branch rule, and two that refuse everyone
   limited (round 5's proof).** Sick-leave balances
   (`/api/sick-leave-balances`, `/api/employees/:id/sick-leave-balance`)
@@ -1481,11 +1535,20 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   `/api/leave-balances/employee/:id`) test `user.branchIds`, a field the
   session never carries, so they refuse a branch-limited reader even their
   own branch. Public holidays are park-group wide (the app's rule), but
-  their edit and delete take any park group's holiday by id. Default: the
-  branch rules as the app; the park-group crossings fenced with Q31's
-  `leave_policies` fix, whose round 5 placement was not in round 5's row and
-  is still owed. The alternative is the time-off rule (the reader's branches)
-  on every leave read.
+  their edit and delete take any park group's holiday by id. Two more
+  crossings, found in round 5's review, are fixed (section 4): the
+  sick-leave policy's company-wide fallback ignored the park group, so one
+  park group's admin saving the company-wide entitlement rewrote another's
+  row and every park group read the first such row (`sick_leave_policies`
+  has its own `tenant_id`; the policy read, its save and every balance now
+  take the park group, the caller's or the employee's); and
+  `GET /api/employees/:id/leave-balance` read another park group's employee
+  for any admin (now the app's 404). Default: the branch rules as the app;
+  the remaining park-group crossings (sick-leave balances by branch or
+  employee, and public holidays' edit and delete) fenced with Q31's
+  `leave_policies` fix, in round 6 with that table's tenant column (round 5
+  added no migration, so it could not carry the column). The alternative is
+  the time-off rule (the reader's branches) on every leave read.
 - **Q41. Which branches a manager may activate a reception tablet on
   (round 5).** A manager limited to one branch can make a reception kiosk
   code for any branch of their park group; the app has no branch rule there
@@ -1512,7 +1575,11 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   happens only when a shift is assigned in the same instant. In practice the
   manager removes the shift, and no coverage alert is raised. Should an
   approved sick day be allowed over a shift, freeing it with its coverage
-  alert (the step's evident purpose)? Default: the app's order, as is.
+  alert (the step's evident purpose)? Default: the app's order, as is. The
+  race the other way round (a rota assignment checked before the sick day
+  saves and written after its freeing step, leaving the person on the shift
+  with no alert) is recorded in section 10 as the app's own, open until you
+  ask for the lock.
 - **Q45. Deleting a shift group that still has shifts (round 5).** The
   screen's confirm says "Shifts in this group will be ungrouped", but the
   database requires a group (Q2), so it failed with a 500. As built it is
@@ -1520,6 +1587,18 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   none, so such a group cannot be deleted from the screen until its shifts
   are moved. Default: as built. The alternative is a target-group choice in
   the delete dialog (a UI addition) or Q2's "allow ungrouped".
+- **Q46. Two more doors with no branch rule (round 5's review).** Within
+  their own park group, a manager limited to one branch reads another
+  branch's checklist history (`GET /api/checklists/checker-history/:templateId`,
+  though that branch's template itself is refused them), and lists and
+  revokes another branch's reception tablets
+  (`GET /api/branches/:branchId/kiosk-devices`,
+  `DELETE /api/kiosk-devices/:id/revoke`). Another park group's tablets are
+  not listed, and since round 5's review not revoked either (section 4).
+  Pinned as FINDING Q46 in `tests/attendance.check.ts`. Default: as the app.
+  The alternative is the manager's own branches only, as the checklist
+  templates already have it and as Q41's alternative would for activation.
+
 ## 12. Hazards, each with its test
 
 | # | Hazard | Test |
