@@ -207,13 +207,13 @@ export const DEPARTED_LISTING_FAILED = 'OTOAPP_DEPARTED_LISTING_FAILED';
 export const NIGHT_JOB_UNKEYED = 'OTOAPP_NIGHT_JOB_UNKEYED';
 
 const UNKEYED_WORDS =
-  "the OTO App holds staff in this park group, but this deployment holds no jobs:run key for it in OTOAPP_JOBS_KEYS. While the platform runs the app's night work (OTOAPP_JOBS=platform) the app runs none of its own, for any park group, so nothing runs this one's night: issue it a jobs:run key in the OTO App and add it to OTOAPP_JOBS_KEYS";
+  "the OTO App holds staff in this park group, but this deployment holds no jobs:run key for it in OTOAPP_JOBS_KEYS. While the platform runs the app's night work (OTOAPP_JOBS=platform) the app runs none of its own, for any park group, so nothing runs this one's night: issue it a jobs:run key in the OTO App and add it to OTOAPP_JOBS_KEYS, then redeploy the api, which reads the keys only when it starts";
 
 /** The unkeyed park groups, as one clause of the run's error. */
 const unkeyedLine = (ids: string[]): string =>
   ids.length === 1
-    ? `park group ${ids[0]}: ${NIGHT_JOB_UNKEYED}: the OTO App holds staff there, but this deployment holds no jobs:run key for it (OTOAPP_JOBS_KEYS), so nothing runs its night`
-    : `park groups ${ids.join(', ')}: ${NIGHT_JOB_UNKEYED}: the OTO App holds staff there, but this deployment holds no jobs:run key for them (OTOAPP_JOBS_KEYS), so nothing runs their nights`;
+    ? `park group ${ids[0]}: ${NIGHT_JOB_UNKEYED}: the OTO App holds staff there, but this deployment holds no jobs:run key for it (OTOAPP_JOBS_KEYS), so nothing runs its night; add the key and redeploy the api, which reads the keys only when it starts`
+    : `park groups ${ids.join(', ')}: ${NIGHT_JOB_UNKEYED}: the OTO App holds staff there, but this deployment holds no jobs:run key for them (OTOAPP_JOBS_KEYS), so nothing runs their nights; add the keys and redeploy the api, which reads the keys only when it starts`;
 
 // --- The run -----------------------------------------------------------------
 

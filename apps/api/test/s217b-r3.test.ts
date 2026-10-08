@@ -1029,14 +1029,14 @@ describe('K. review F1 — a park group the app holds staff in, with no key here
     const [run] = await runsFor(job.name, date);
     expect(run!.errorCode).toBe(NIGHT_JOB_UNKEYED);
     expect(run!.errorMessage).toBe(
-      `OTO App 00:01 midnight batch for ${date}: park group ${tenantU}: ${NIGHT_JOB_UNKEYED}: the OTO App holds staff there, but this deployment holds no jobs:run key for it (OTOAPP_JOBS_KEYS), so nothing runs its night`,
+      `OTO App 00:01 midnight batch for ${date}: park group ${tenantU}: ${NIGHT_JOB_UNKEYED}: the OTO App holds staff there, but this deployment holds no jobs:run key for it (OTOAPP_JOBS_KEYS), so nothing runs its night; add the key and redeploy the api, which reads the keys only when it starts`,
     );
     expect(detailOf(run!)).toMatchObject({ configured: true, due: true, failed: 1, parkGroups: { checked: true, held: 2, unkeyed: [tenantU] } });
     expect(detailOf(run!).groups.map((g) => [g.tenantId, g.outcome, g.ok, g.code ?? null])).toEqual([
       [tenantA, 'ran', true, null],
       [tenantU, 'failed', false, NIGHT_JOB_UNKEYED],
     ]);
-    expect(detailOf(run!).groups[1]!.error).toMatch(/issue it a jobs:run key in the OTO App and add it to OTOAPP_JOBS_KEYS$/);
+    expect(detailOf(run!).groups[1]!.error).toMatch(/issue it a jobs:run key in the OTO App and add it to OTOAPP_JOBS_KEYS, then redeploy the api, which reads the keys only when it starts$/);
     expect(stub.callsFor('midnight').map((c) => c.tenantId)).toEqual([tenantA]);
     expect([...(await nightGroupsDone(db, job.name, date))]).toEqual([tenantA]);
 

@@ -240,7 +240,7 @@ module map below is read from the routes and the schema, not from memory.
   Fix: the instance is looked up by the date it was made for
   (`generated_for_date`, which both of the app's inserts fill), as the app's
   template generator already looks its own up
-  (`server/core/taskGeneration.ts`).
+  (`server/core/compat/studioTasksCompat.ts`).
 - **Shared tables answer across park groups.** `settings` (whose key is
   globally unique), `templates`, `policy_documents`, `asset_catalog`,
   `activity_log` and `attention_items` have no tenant column. The lift made
@@ -938,6 +938,15 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   app's behaviour; the platform owns the schedule from the switch, and there
   the failure is a failed step and the next tick runs again.
 
+- **Q27. Nobody notices if the keys are forgotten after the flip (round
+  3).** If the app is switched to OTOAPP_JOBS=platform but the api holds no
+  OTOAPP_JOBS_KEYS at all, every night is lost and nothing is raised: the
+  api treats "no keys" as "this deployment has not opted in" (failing it
+  would alarm every deployment that still runs in-process), and it cannot
+  see the app's own switch. Q22's hand-over order documents it, and only a
+  person reading Health catches it. Should the app's mode cross the seam
+  (say, a view column or a health answer) so the api can refuse the silent
+  state? Default: the documented hand-over order, no new seam.
 ## 12. Hazards, each with its test
 
 | # | Hazard | Test |

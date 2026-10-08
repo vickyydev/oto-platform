@@ -1001,10 +1001,9 @@ describe('9. the fix round, attacked — F1 and F3 at their edges', () => {
    * run failing, still naming the park group, with nothing saying why the
    * added key is not read. Not silent — the run keeps failing — so not a
    * blocker; Q22 step 3 already says "and redeploy it".
-   * FIX: end both texts with the restart, e.g. "…add it to OTOAPP_JOBS_KEYS,
-   * then redeploy the api, which reads the keys only when it starts".
+   * FIXED at landing: both texts end with the restart.
    */
-  it.fails('N1: the unkeyed failure says the api reads OTOAPP_JOBS_KEYS only when it starts', async () => {
+  it('N1: the unkeyed failure says the api reads OTOAPP_JOBS_KEYS only when it starts', async () => {
     stub.reset();
     const date = '2026-12-20';
     const env = envFor([[tenantA, keyA]]);
