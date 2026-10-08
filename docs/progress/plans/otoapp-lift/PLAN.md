@@ -85,6 +85,21 @@ silently stays on their shifts with no coverage alert. Under the owner's
 rule the default is to restore the app's behaviour, server and client
 both, not to build a new approval workflow (Q1).
 
+**As built in round 5, and one correction to the paragraph above.** Both
+503s are gone and the rota sends `approved: true` again, exactly as the app
+did; nothing new is stored. But reading the restored route end to end shows
+the "frees the shifts" step almost never runs, in the live app or here: the
+route refuses a day the person already has a rota shift on ("Cannot add
+time-off: employee has a shift on ... Please remove the shift first", 409)
+BEFORE it saves the day off, and the freeing step looks for exactly those
+shifts. So the park removes the shift first and no coverage alert is raised;
+the step finds something only when a shift is assigned in the instant
+between the check and the save (proved with a trigger standing in for that
+instant). Today, too, a sick day over a shift is refused, not saved. The
+legacy step (the older `shifts` list) does run, over the app's own range,
+but no screen writes that list. Q38 and Q44 put both to the owner; the
+app's order is kept.
+
 ## 1. What the park sees
 
 - **One staff list.** A person added as an employee in the OTO App appears
@@ -102,10 +117,13 @@ both, not to build a new approval workflow (Q1).
   six-hour presence check each show on the Console's Health page with their
   last run. A failed run shows on Failures with Retry.
 - **Leave and rota behave as the live app does.** A sick day added on the
-  rota frees the person's shifts and raises "Shift needs coverage" alerts
-  again; today it saves and leaves them on the shift (Q1). A shift
-  row added without a group is refused in words ("Choose a shift group
-  first") instead of failing with an error (Q2).
+  rota is sent as approved again, and the app's own steps run: the person's
+  older-list shifts are unassigned, and any rota shift assigned in the same
+  instant is freed with a "Shift needs coverage" alert in their park group.
+  A sick day over a shift the rota already shows is refused until the shift
+  is removed, as the app does (Q1, Q44). A shift row added without a group
+  is refused in words ("Choose a shift group first") instead of failing with
+  an error, and so is editing, dragging or deleting one into no group (Q2).
 - **Clock-in.** Face clock-in stays off. The kiosk offers PIN and phone, and
   a face scan is never matched to anybody while face is off.
 - **Signing in.** Nothing changes for staff: the launcher tile opens the
@@ -218,6 +236,24 @@ module map below is read from the routes and the schema, not from memory.
   employee id and a confidence score from the tablet and matches nothing on
   the server, so it is refused while face is off too (`render.yaml`'s note
   on `USE_AWS_REKOGNITION`: "the routes have to go, not just the flag").
+  - **As built in round 5** (`server/lib/faceOff.ts`; H13 in
+    `tests/attendance.check.ts`). "Off" is the app's own switch read as the
+    face service reads it: anything but `USE_AWS_REKOGNITION=true`.
+    - `identify-face` keeps its kiosk credential and throttles, then answers
+      the app's own "No matching face found. Please use PIN entry." without
+      calling liveness, the enrolled list or the matcher. The tablet's third
+      miss takes it to the phone screen, as the app's fallback does.
+    - `/api/kiosk/clock` is refused in words before it reads anything, and so
+      are the three doors only its answer leads to
+      (`/api/kiosk/missed-clock/auto-fix`, `/missed-clock/manual`,
+      `/unscheduled-clock-in`, each of which writes FACE time events for a
+      named person) and the advisor's `/api/kiosk/advisor-clock` (Q43).
+    - Enrolment is refused in words at its four doors: the two QR sessions a
+      manager makes, the tablet's token check and the capture. Resetting a
+      face (which removes one) is unchanged.
+    - The face service itself (`server/face-recognition.ts`) is unchanged, so
+      turning face on (Q9) gives the app's face road back as it was. PIN and
+      phone are unchanged; the midnight auto clock-out keeps FACE (Q10).
 - **The night jobs can run twice, lose a night, or fail silently.** They are
   in-process timers with no lock. Each catches its own error, logs it and
   carries on (`server/scheduled-jobs.ts`, every `catch`). If the process is
@@ -359,6 +395,29 @@ module map below is read from the routes and the schema, not from memory.
   in the schema and in production. Fix (no rule change): the route refuses
   with a 400 in words before the insert. Whether ungrouped rows should be
   allowed is Q2.
+  - **As built in round 5** (`server/lib/shiftGroupRequired.ts`; H15). The
+    same database error waited at three more doors, so the words are at
+    every door that would leave a row with no group, each before it writes:
+    create, edit (the form's "Ungrouped" choice), drag (`move-group`), and
+    deleting a group that still has rows without saying where they go
+    (the screen's confirm promises "will be ungrouped" and offers no target,
+    Q45). "Choose a shift group first" for the first three; the delete adds
+    "this group still has shifts, so pick the group to move them to".
+    Nothing else about grouping changed. A casual worker's first shift on a
+    branch with no group meets the same words, and once a group exists is
+    scheduled at their daily rate as before (the casual-worker walkthrough's
+    500 of 1 October).
+- **A reception kiosk code could be minted for another park group's
+  branch** (found in round 5). `POST /api/branches/:branchId/kiosk-code`
+  took any branch id and minted the code for the caller's park group, so the
+  device it made sat in a branch of another park group — the row
+  `resolveKioskDevice` already refuses as corrupted — and that tablet read
+  the other branch's name and today's guest check-ins
+  (`/api/kiosk-reception/branch`, `/checkins`). The check-in board's own
+  routes were already fenced. Fix: another park group's branch is the app's
+  404 "Branch not found", and the two reception reads are held to the
+  tablet's park group, so a device minted before the fix sees nothing there.
+  Which branches a branch-limited manager may activate a tablet on is Q41.
 - **Offboarding writes are not one transaction.** The offboarding row is
   written under an advisory lock in its own transaction. Then the
   employee's state, the login switch-off, the asset return dates, the
@@ -1073,6 +1132,40 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   then carries branch null, so the person drops out of branch-scoped
   platform lists until the app reseats them. Seen and corrected on staging
   8 October; the mapped branch there is "Oto Play Park, Central Floresta".
+- **A sick day over a rota shift is refused, as the app refuses it** (round
+  5, Q44). The restored approval frees a rota shift only when one is
+  assigned in the instant between the route's conflict check and its save;
+  otherwise the manager removes the shift first and no "Shift needs
+  coverage" alert is raised. A freed shift's alert is filed at the leave's
+  branch, also for a shift at another branch (the app's shape), and its rule
+  (`SICK_LEAVE_COVERAGE`) is one the six-hourly run does not raise, so that
+  run resolves it (Q32).
+- **Approving a sick day unassigns older-list shifts over the app's range**
+  (round 5, Q38): from the first day's 00:00 UTC to the last day's 00:00 UTC,
+  so a one-day leave reaches only a shift starting at 07:00 Bangkok, and a
+  last day's morning shift is not reached. No screen writes that list.
+- **Every face scan reads "not recognised"** (round 5, H13). After three the
+  tablet asks for the phone number, the app's own fallback; PIN works as
+  before. Attention still raises "face enrollment required" for every
+  unenrolled employee (staging's first 4b run raised four), while enrolment
+  is refused (Q42).
+- **A shift group with shifts cannot be deleted from the screen** (round 5,
+  Q45). The screen offers no target group, and the refusal asks for one; it
+  was a bare 500 before.
+- **The scheduling module answers across branches and park groups** (round
+  5's proof, Q39): `/api/schedule/*` has no branch rule and no park-group
+  rule, so a branch-limited manager reads and writes other branches' rota,
+  and any manager reads another park group's by its ids. The rota view
+  (`/api/rota`) and the older shift list keep to the branch. Pinned in
+  `tests/attendance.check.ts` as FINDING Q39, unchanged in this round.
+- **Some leave reads have no branch rule, and two refuse every
+  branch-limited reader** (round 5's proof, Q40): sick-leave balances answer
+  any branch and employee; the leave-policy and per-employee balance reads
+  test a field the session never carries (`user.branchIds`) and refuse even
+  the reader's own branch.
+- **A tablet minted into another park group's branch before round 5 keeps a
+  session and sees nothing** there: its branch read answers 404 and its board
+  is empty. Revoke it from Kiosk devices.
 
 ## 11. Questions for the owner (the app's behaviour is the default)
 
@@ -1355,6 +1448,78 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   no park group is refused in words. Default: as built, which never guesses
   one park group's settings for another. The alternative is to slug one park
   group `default` whenever a second is added.
+- **Q38. The later sick-day approve, and the older shift list's range
+  (round 5).** The app's update route means to unassign the person's
+  older-list shifts when a sick day is approved later, but compares
+  `record.timeOffType`, a name the row does not carry (its column is `type`,
+  the slip the lift already corrected for this route's update fields), so in
+  the live app it never ran. As built it runs (H14), and a second approve
+  finds nobody left and changes nothing. Both approval steps use the app's
+  range, from the first day's 00:00 UTC to the last day's 00:00 UTC, so a
+  last day's morning shift is not reached. No screen writes the older list
+  today, and its create route names no park group (which the column
+  requires), so neither choice changes anything the park can see now.
+  Default: as built — the code's evident rule, over the app's own range. The
+  alternatives are the live app's no-op on a later approve, or a range
+  widened to the leave's Bangkok days.
+- **Q39. The rota answers across branches and park groups (round 5's
+  proof).** The week plan, shift groups, rows, assignments and templates
+  (`/api/schedule/*`) carry no branch rule and no park-group rule: a manager
+  limited to one branch reads and changes every branch's rota, and any
+  manager reads another park group's rota and adds rows to it by its ids
+  (pinned as FINDING Q39 in `tests/attendance.check.ts`). The rota view
+  (`/api/rota`) and the older shift list do keep to the branch. Default: the
+  branch rule as the app (none), until you say otherwise; the park-group
+  crossing is a data fault and is fenced on our own authority in a slice of
+  its own (about 40 routes, not built in round 5). The alternative is the
+  rota view's branch rule on every scheduling route.
+- **Q40. Leave reads with no branch rule, and two that refuse everyone
+  limited (round 5's proof).** Sick-leave balances
+  (`/api/sick-leave-balances`, `/api/employees/:id/sick-leave-balance`)
+  answer any branch, and any park group's employee. The leave-policy read
+  and the per-employee balance read (`/api/leave-policies?branchId=`,
+  `/api/leave-balances/employee/:id`) test `user.branchIds`, a field the
+  session never carries, so they refuse a branch-limited reader even their
+  own branch. Public holidays are park-group wide (the app's rule), but
+  their edit and delete take any park group's holiday by id. Default: the
+  branch rules as the app; the park-group crossings fenced with Q31's
+  `leave_policies` fix, whose round 5 placement was not in round 5's row and
+  is still owed. The alternative is the time-off rule (the reader's branches)
+  on every leave read.
+- **Q41. Which branches a manager may activate a reception tablet on
+  (round 5).** A manager limited to one branch can make a reception kiosk
+  code for any branch of their park group; the app has no branch rule there
+  (pinned as FINDING Q41). Another park group's branch is refused since
+  round 5 (section 4). Default: as the app. The alternative is the
+  manager's own branches only.
+- **Q42. "Face enrollment required" while face is off (round 5).** The
+  Attention engine raises FACE_ENROLLMENT_REQUIRED for every employee with
+  no face enrolled, while enrolment is refused (staging's first 4b run raised
+  four). Default: as the app, the rule stands. The alternative is that the
+  rule stands down while face is off.
+- **Q43. The face road's follow-on doors (round 5).** H13 named
+  `/api/kiosk/clock`; three more doors are reached only from its answer —
+  the missed clock-in auto-fix and manual entry, and the unscheduled
+  clock-in — and the advisor's face clock. Each writes FACE time events or
+  sessions for a person the server matched by nothing but the tablet's
+  word. As built they are refused too while face is off. Default: as built.
+  The alternative is to leave them open (they cannot be reached from the
+  app's screens while identify-face matches nobody).
+- **Q44. A sick day over a rota shift (round 5).** The app refuses to save a
+  day off on any day the person has a rota shift ("Please remove the shift
+  first") before it saves, and its approved-sick step then looks for exactly
+  those shifts, so "approving frees the shifts and raises coverage alerts"
+  happens only when a shift is assigned in the same instant. In practice the
+  manager removes the shift, and no coverage alert is raised. Should an
+  approved sick day be allowed over a shift, freeing it with its coverage
+  alert (the step's evident purpose)? Default: the app's order, as is.
+- **Q45. Deleting a shift group that still has shifts (round 5).** The
+  screen's confirm says "Shifts in this group will be ungrouped", but the
+  database requires a group (Q2), so it failed with a 500. As built it is
+  refused in words asking for the group to move them to; the screen offers
+  none, so such a group cannot be deleted from the screen until its shifts
+  are moved. Default: as built. The alternative is a target-group choice in
+  the delete dialog (a UI addition) or Q2's "allow ungrouped".
 ## 12. Hazards, each with its test
 
 | # | Hazard | Test |
@@ -1371,9 +1536,9 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 | H10 | The backfill gives rows to the wrong tenant | A two-tenant fixture with branch-linked, employee-linked and branchless rows: each lands in its tenant, none is left null, and the counts per tenant are unchanged. Round 4a: `s217b-r4a.test.ts` A and B, rows linked by branch, employee, contract, the user who did them and nothing, on a seeded 0005 state upgraded by the app's migrator |
 | H11 | The settings change breaks the running release, or a park group's settings write fails on the old unique | Release N's code passes on both the old and the new constraint shape. The old unique is dropped only in release N+1 (4b). In 4a, another park group writing a key the default group holds is refused in words, never a 500. Round 4a: `tests/tenant-ownership.check.ts` runs every settings answer with the old unique standing, then dropped (4b's shape), then restored. Round 4b: each park group saves its own row; with the old unique put back (a database 0007 has not reached) another park group's save of a key the default holds is words, never a 500, and a save of several keys saves none when one is refused (`tests/tenant-ownership.check.ts`, `s217b-r4b.test.ts` E) |
 | H12 | Directory reads cross tenants | A's key reading B's employee answers 404. A key without `hr:read` answers 403. With `HR_DIRECTORY_API_KEY` unset, the shared-key path answers 403. Round 4a: `tests/tenant-ownership.check.ts` over the six reads, and with the shared key set, the default park group only (Q13) |
-| H13 | Face "off" clocks in the wrong person | With face off and an ENROLLED employee present, `identify-face` answers "no match, use PIN" without calling a matcher, enrolment is refused, and `/api/kiosk/clock` from a paired tablet naming that employee writes no time event |
-| H14 | Sick-leave approval does too much or too little | The rota's own request (the restored client body) creates the sick day as approved. Created as approved: exactly that person's assignments on those Bangkok days are freed, with one coverage alert per shift, each in that person's park group. Approved later: their legacy `shifts` in the range are unassigned. A repeat approve changes nothing more. Nothing is stored |
-| H15 | An ungrouped shift row errors | The route answers 400 in words and no row is written |
+| H13 | Face "off" clocks in the wrong person | With face off and an ENROLLED employee present, `identify-face` answers "no match, use PIN" without calling a matcher, enrolment is refused, and `/api/kiosk/clock` from a paired tablet naming that employee writes no time event. Round 5: `tests/attendance.check.ts` section 4 (with the matcher's silence read from the app's own output, the three follow-on doors and the advisor's clock, and PIN and phone still clocking) and `s217b-r5.test.ts` C |
+| H14 | Sick-leave approval does too much or too little | The rota's own request (the restored client body) creates the sick day as approved. Created as approved: exactly that person's assignments on those Bangkok days are freed, with one coverage alert per shift, each in that person's park group. Approved later: their legacy `shifts` in the range are unassigned. A repeat approve changes nothing more. Nothing is stored. Round 5: `tests/attendance.check.ts` section 1 (the freeing step reached through a trigger standing in for a shift assigned at the same instant, since the app's conflict check refuses an existing one first — Q44) and `s217b-r5.test.ts` A |
+| H15 | An ungrouped shift row errors | The route answers 400 in words and no row is written. Round 5: at all four doors (create, edit, drag, a group deleted with no target), `tests/attendance.check.ts` sections 2 and 3 and `s217b-r5.test.ts` B |
 | H16 | Partial writes: offboarding, finance | A failure injected mid-offboarding leaves nothing. The finance keys make `ON CONFLICT` upsert, and the migration stops loudly on duplicate rows |
 | H17 | The rehearsal re-runs the baseline or misses the views | Restore, rename, mark 0000, apply 0001 onwards: the views exist, the counts equal the sample, and a second run is identical |
 | H18 | An app migration breaks a seam the platform reads directly | A test compares every column declared in `packages/db/src/schema/otoapp.ts` with the app's migrations and fails when one is dropped or retyped. Views are protected by Postgres itself |
