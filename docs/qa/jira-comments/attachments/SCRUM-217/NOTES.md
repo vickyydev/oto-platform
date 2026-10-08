@@ -226,3 +226,33 @@ marked "text read-back".
 - **Readable and harmless, named here rather than left unmentioned:** the kiosk setup code `K 438 075` (spent at 06:10, expired 06:20), the booking reference `OTO-5SRY-MUGZ` (redeemed 06:19), band codes `ZK-JKAH6S`, `D2-HQYX8C` and `D2-ZY7CXA` (ZZ TEST children and a ZZ TEST parent at Demo Branch 2 with no credit, the same code class as the first pass's), the simulated printers' private LAN addresses (192.168.88.221 to .223:9100) and box command ids.
 - **The roster picture also shows seeded demo data**: Khun Daeng Prasert +66854567788 (the seeded parent of Noah Prasert in `packages/db/src/seed/demo-events.ts`), not a ZZ TEST record and not edited.
 - **The Failures groups did not clear**: 17 failed runs before the one Retry and 18 after (shot 6e). Nothing in this folder claims a cleared group.
+
+## Shot 6f - the write-back retake, after the directory key gained events:write (8 Oct, about 08:13 Bangkok time)
+
+Staging, Demo Branch 2, ZZ TEST records only, the seeded owner account (no secret
+printed). One press of Retry, on the top `otoapp:attendee.create` group
+(OTOAPP_SCOPE_REQUIRED x 5). Nothing else on the page was pressed; the
+`attendee.checkin` group was NOT pressed (the brief named attendee.create only).
+FWBooth1 and the protected payment run were not touched. No commits, no Jira.
+
+| File | What the viewer literally sees | What was done to produce it |
+|---|---|---|
+| `6f-writeback-failures-before-retry.png` | Console Failures, Last 24 hours: "5 problems - 18 failed runs in this window". Groups: `otoapp:attendee.create` x 5 "OTOAPP_SCOPE_REQUIRED: This directory key does not carry events:write" (first 8 Oct 06:15, Details and Retry); `otoapp:attendee.checkin` x 4 "OTOAPP_ATTENDEE_NOT_SYNCED" (Details, Retry); `device:kiosk.print` x 1 DEVICE_NO_ADDRESS; `http:POST /benefits/credentials` x 2; `otoapp:attendee.create` x 6 "OTOAPP_DIRECTORY_NOT_CONFIGURED" (Details, Retry). 5+4+1+2+6 = 18, the same counts as the end of shot 6e. Quarantine card x 1. | Opened Failures, photographed before touching anything. |
+| `6f-writeback-failures-retry-pressed-button-reads-retried.png` | The same page 3.5 s after the press: the top group's button now reads "Retried"; every count is unchanged (x 5, x 4, x 1, x 2, x 6; "18 failed runs"). | One click on that group's Retry (script clock 01:13:24 UTC). No toast is visible in the picture. |
+| `6f-writeback-failures-after-retry-reloaded.png` | Failures after a fresh sign-in, a load and a reload, about 45 s after the press: the identical five groups and counts, "18 failed runs", the top group still first 06:15 with its Retry button back. | Waited, signed in again, reloaded the page. |
+| `6f-writeback-roster-checked-in-rows-no-chip.png` | Check-in board > Events > Oto Summer Camp - Week 1, the "Checked in 2" filter: "ZZ TEST Board Camper 217R" (Parent attending, 7 yrs) and "ZZ TEST Kiosk Kid 217" (6 yrs), each with its Thu 08 Oct day, parent, note, and the In line (06:22 Band D2-HQYX8C Parent D2-ZY7CXA; 06:19 Band ZK-JKAH6S). Neither name carries a REFUSED or PENDING chip. Header "2 / 7 checked in". | Board opened after the press, Checked in filter clicked. Compare 6c and 6d, where the same two children carry a red REFUSED chip. |
+| `6f-writeback-roster-kiosk-kid-row-chip-gone.png` | The same roster on the All filter, framed as 6c was: the Kiosk Kid 217 card with no chip beside its name, In - 06:19 - Band ZK-JKAH6S, by ZZ TEST Kiosk 1. The Board Camper card sits above it, also with no chip on the part shown. | Same session, scrolled to the row. 6c is the before picture of this exact row. |
+| `6f-writeback-roster-7-oct-walkup-row-chip-gone.png` | The "Not in today's session" group: "ZZ TEST Walkup Camper 217" (Parent attending, 6 yrs, Allergy / Medical and Dietary tags) with no PENDING chip beside its name. Above it, the end of a seeded demo card (Dietary: Halal only, parent Mei Chen +66865678899; not ZZ TEST, not edited). | Same session, scrolled to the row. The 7 Oct walk-up was PENDING in the first pass (text read-back; no earlier picture of its chip is in this folder). |
+
+Text read-back, not a picture: `GET /events?branchId=<Demo Branch 2>&date=2026-10-08` as the signed-in owner, taken after the press, gives for the three ZZ TEST attendees `syncState` = `synced` for all three (Board Camper 217R, Kiosk Kid 217, Walkup Camper 217), no `syncError`. Before the press the same read gave `pending` for the 7 Oct walk-up and `failed` for the two checked in today (first pass, above).
+
+### What the pictures prove and do not prove
+
+- Proven by pixels: after one Retry the roster chips for the three ZZ TEST children are gone (6c and 6d before, 6f after), and the press produced no new failed run (the top group stayed x 5; in 6e the same kind of press raised it from x 4 to x 5).
+- NOT proven by pixels, and not so: the Failures counts did not drop and no group resolved. The page reads 18 failed runs in five groups before and after. By the code (`failureGroups` in `apps/api/src/services/ops.ts`) the page counts every failed run in the window and nothing marks a run resolved when a later send succeeds, so these groups age out of the 24-hour window rather than clearing on a good retry. That is an inference from reading the query, not from a picture.
+- Still waiting (text read-back only, the roster has no chip for it): the two check-ins, `ZZ TEST Board Camper 217R` and `ZZ TEST Kiosk Kid 217`, read `syncState: pending` on their `checkins` entry. Their group, `otoapp:attendee.checkin` x 4 "child is not in the OTO App yet, so their check-in waits for them", is still on the page with its own Retry button (visible in 6f after). It was not pressed. The children are in the OTO App now, so a press there is the next step, and it is a separate decision from this one.
+
+### Problems from this shot
+
+1. A successful Retry leaves the Failures page looking unchanged (same counts, same groups, button back to "Retry"), so a reader cannot tell from that page that anything drained. The proof is on the Check-in roster and in the read-back. A line such as "Retry sent N children, M now in the OTO App" on the page (the route already returns `sent`, `synced` and `waiting`) would show it; the toast, if any, was not caught in the picture.
+2. The board roster shows a sync chip for the child's own write-back only. A check-in that is still `pending` toward the OTO App shows nothing on the roster, so "REFUSED gone" there does not mean the check-in has reached the app.
