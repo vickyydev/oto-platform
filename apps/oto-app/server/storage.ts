@@ -337,6 +337,7 @@ import {
         isNull,
         isNotNull,
 } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -486,12 +487,14 @@ export interface IStorage {
                 userIds: string[],
         ): Promise<void>;
 
-        getTemplates(): Promise<Template[]>;
-        getTemplatesWithAssignments(): Promise<
+        // Templates are each park group's own (S2-17b round 6, migration 0008).
+        getTemplates(tenantId: string): Promise<Template[]>;
+        getTemplatesWithAssignments(tenantId: string): Promise<
                 { template: Template; assignments: TemplateAssignment[] }[]
         >;
-        getTemplatesForBranch(branchId?: string): Promise<Template[]>;
+        getTemplatesForBranch(tenantId: string, branchId?: string): Promise<Template[]>;
         getTemplate(id: string): Promise<Template | undefined>;
+        getTemplateInParkGroup(id: string, tenantId: string): Promise<Template | undefined>;
         createTemplate(template: InsertTemplate): Promise<Template>;
         updateTemplate(
                 id: string,
@@ -503,11 +506,12 @@ export interface IStorage {
                 userId: string,
         ): Promise<Template>;
         deleteTemplate(id: string): Promise<void>;
-        countActiveTemplates(): Promise<number>;
+        countActiveTemplates(tenantId: string): Promise<number>;
 
         getTemplateAssignments(
                 templateId?: string,
                 branchId?: string,
+                tenantId?: string,
         ): Promise<TemplateAssignment[]>;
         createTemplateAssignment(
                 assignment: InsertTemplateAssignment,
@@ -651,10 +655,11 @@ export interface IStorage {
         ): Promise<EmployeeDocument>;
         deleteEmployeeDocument(id: string): Promise<void>;
 
-        // Policy documents
-        getPolicyDocuments(): Promise<PolicyDocument[]>;
+        // Policy documents: each park group's own (S2-17b round 6, migration 0008)
+        getPolicyDocuments(tenantId: string): Promise<PolicyDocument[]>;
         getPolicyDocument(id: string): Promise<PolicyDocument | undefined>;
-        getLatestPublishedPolicy(): Promise<PolicyDocument | undefined>;
+        getPolicyDocumentInParkGroup(id: string, tenantId: string): Promise<PolicyDocument | undefined>;
+        getLatestPublishedPolicy(tenantId: string): Promise<PolicyDocument | undefined>;
         createPolicyDocument(policy: InsertPolicyDocument): Promise<PolicyDocument>;
         updatePolicyDocument(
                 id: string,
@@ -702,9 +707,10 @@ export interface IStorage {
                 letter: Partial<EmployeeLetter>,
         ): Promise<EmployeeLetter>;
 
-        // Asset catalog
-        getAssetCatalog(): Promise<AssetCatalog[]>;
+        // Asset catalog: each park group's own (S2-17b round 6, migration 0008)
+        getAssetCatalog(tenantId: string): Promise<AssetCatalog[]>;
         getAssetCatalogItem(id: string): Promise<AssetCatalog | undefined>;
+        getAssetCatalogItemInParkGroup(id: string, tenantId: string): Promise<AssetCatalog | undefined>;
         createAssetCatalogItem(item: InsertAssetCatalog): Promise<AssetCatalog>;
         updateAssetCatalogItem(
                 id: string,
@@ -1050,9 +1056,11 @@ export interface IStorage {
         createCoverageRule(rule: InsertCoverageRule): Promise<CoverageRule>;
         deleteCoverageRule(id: string): Promise<void>;
 
-        // Leave policies
-        getLeavePolicies(branchId?: string): Promise<LeavePolicy[]>;
-        getActiveLeavePolicy(branchId?: string): Promise<LeavePolicy | undefined>;
+        // Leave policies: each park group's own, its reads falling back to the
+        // default park group's company-wide one (S2-17b round 6, migration 0008)
+        getLeavePolicies(tenantId: string, branchId?: string): Promise<LeavePolicy[]>;
+        getLeavePolicyInParkGroup(id: string, tenantId: string): Promise<LeavePolicy | undefined>;
+        getActiveLeavePolicy(tenantId: string, branchId?: string): Promise<LeavePolicy | undefined>;
         createLeavePolicy(policy: InsertLeavePolicy): Promise<LeavePolicy>;
         updateLeavePolicy(
                 id: string,
@@ -1089,6 +1097,7 @@ export interface IStorage {
                 year?: number,
         ): Promise<PublicHoliday[]>;
         createPublicHoliday(data: InsertPublicHoliday): Promise<PublicHoliday>;
+        getPublicHolidayInParkGroup(id: string, tenantId: string): Promise<PublicHoliday | undefined>;
         updatePublicHoliday(
                 id: string,
                 data: Partial<InsertPublicHoliday>,
@@ -2032,6 +2041,26 @@ function attentionReadScope(scope: AttentionReadScope) {
         )!;
 }
 
+/** The default park group in SQL: slug `default`, else the only park group (0006's rule). */
+const DEFAULT_PARK_GROUP_SQL = sql`coalesce(
+        (select dpg.id from tenants dpg where dpg.slug = ${DEFAULT_TENANT_SLUG}),
+        (select min(opg.id::text)::uuid from tenants opg having count(*) = 1))`;
+
+/**
+ * Is a row of round 6's document tables (`templates`, `policy_documents`,
+ * `asset_catalog`, `leave_policies`) the park group's? Its own `tenant_id`
+ * says (migration 0008). A row with none is one the release before wrote
+ * during the hand-over: until round 7's backfill places it, it reads as its
+ * branch's park group's where it has a branch, else the default park group's
+ * — where it was read before (server/lib/documentParkGroups.ts).
+ */
+function documentOwnedBy(tenantColumn: AnyPgColumn, tenantId: string, branchColumn?: AnyPgColumn) {
+        const handOver = branchColumn
+                ? sql`coalesce((select hob.tenant_id from branches hob where hob.id = ${branchColumn}), ${DEFAULT_PARK_GROUP_SQL})`
+                : DEFAULT_PARK_GROUP_SQL;
+        return sql`(${tenantColumn} = ${tenantId}::uuid or (${tenantColumn} is null and ${handOver} = ${tenantId}::uuid))`;
+}
+
 export class DatabaseStorage implements IStorage {
         sessionStore: session.Store;
 
@@ -2855,22 +2884,29 @@ export class DatabaseStorage implements IStorage {
                         .where(inArray(users.id, userIds));
         }
 
-        async getTemplates(): Promise<Template[]> {
+        // Templates are each park group's own (S2-17b round 6, migration 0008;
+        // server/lib/documentParkGroups.ts). The reads below take the park group.
+        async getTemplates(tenantId: string): Promise<Template[]> {
                 return db
                         .select()
                         .from(templates)
-                        .where(eq(templates.status, "active"))
+                        .where(and(eq(templates.status, "active"), documentOwnedBy(templates.tenantId, tenantId)))
                         .orderBy(desc(templates.updatedAt));
         }
 
-        async getTemplatesWithAssignments(): Promise<
+        async getTemplatesWithAssignments(tenantId: string): Promise<
                 { template: Template; assignments: TemplateAssignment[] }[]
         > {
                 const allTemplates = await db
                         .select()
                         .from(templates)
+                        .where(documentOwnedBy(templates.tenantId, tenantId))
                         .orderBy(desc(templates.updatedAt));
-                const allAssignments = await db.select().from(templateAssignments);
+                const templateIds = allTemplates.map((t) => t.id);
+                const allAssignments = templateIds.length > 0
+                        ? await db.select().from(templateAssignments)
+                                .where(inArray(templateAssignments.templateId, templateIds))
+                        : [];
 
                 return allTemplates.map((template) => ({
                         template,
@@ -2880,14 +2916,15 @@ export class DatabaseStorage implements IStorage {
                 }));
         }
 
-        async getTemplatesForBranch(branchId?: string): Promise<Template[]> {
+        async getTemplatesForBranch(tenantId: string, branchId?: string): Promise<Template[]> {
                 if (!branchId) {
-                        return this.getTemplates();
+                        return this.getTemplates(tenantId);
                 }
 
                 const assignments = await this.getTemplateAssignments(
                         undefined,
                         branchId,
+                        tenantId,
                 );
                 if (assignments.length === 0) return [];
 
@@ -2899,16 +2936,27 @@ export class DatabaseStorage implements IStorage {
                                 and(
                                         inArray(templates.id, templateIds),
                                         eq(templates.status, "active"),
+                                        documentOwnedBy(templates.tenantId, tenantId),
                                 ),
                         )
                         .orderBy(desc(templates.updatedAt));
         }
 
+        /** Any park group's template, by id — for a contract reading the template it was made from. */
         async getTemplate(id: string): Promise<Template | undefined> {
                 const [template] = await db
                         .select()
                         .from(templates)
                         .where(eq(templates.id, id));
+                return template || undefined;
+        }
+
+        /** The park group's own template, or nothing — another park group's is the same as none. */
+        async getTemplateInParkGroup(id: string, tenantId: string): Promise<Template | undefined> {
+                const [template] = await db
+                        .select()
+                        .from(templates)
+                        .where(and(eq(templates.id, id), documentOwnedBy(templates.tenantId, tenantId)));
                 return template || undefined;
         }
 
@@ -2957,6 +3005,8 @@ export class DatabaseStorage implements IStorage {
                 const [forkedTemplate] = await db
                         .insert(templates)
                         .values({
+                                // A fork is its original's park group's (round 6).
+                                tenantId: existing.tenantId,
                                 name: `${existing.name} (Fork)`,
                                 htmlBody: existing.htmlBody,
                                 status: "active",
@@ -2986,42 +3036,34 @@ export class DatabaseStorage implements IStorage {
                 await db.delete(templates).where(eq(templates.id, id));
         }
 
-        async countActiveTemplates(): Promise<number> {
+        /** The park group's active templates: "the last active template" is the park group's last. */
+        async countActiveTemplates(tenantId: string): Promise<number> {
                 const result = await db
                         .select({ count: sql<number>`count(*)::int` })
                         .from(templates)
-                        .where(eq(templates.status, "active"));
+                        .where(and(eq(templates.status, "active"), documentOwnedBy(templates.tenantId, tenantId)));
                 return result[0]?.count ?? 0;
         }
 
+        /** With `tenantId`, only the assignments of that park group's own templates. */
         async getTemplateAssignments(
                 templateId?: string,
                 branchId?: string,
+                tenantId?: string,
         ): Promise<TemplateAssignment[]> {
-                if (templateId && branchId) {
-                        return db
-                                .select()
-                                .from(templateAssignments)
-                                .where(
-                                        and(
-                                                eq(templateAssignments.templateId, templateId),
-                                                eq(templateAssignments.branchId, branchId),
-                                        ),
-                                );
-                }
-                if (templateId) {
-                        return db
-                                .select()
-                                .from(templateAssignments)
-                                .where(eq(templateAssignments.templateId, templateId));
-                }
-                if (branchId) {
-                        return db
-                                .select()
-                                .from(templateAssignments)
-                                .where(eq(templateAssignments.branchId, branchId));
-                }
-                return db.select().from(templateAssignments);
+                const conditions = [
+                        templateId ? eq(templateAssignments.templateId, templateId) : undefined,
+                        branchId ? eq(templateAssignments.branchId, branchId) : undefined,
+                        tenantId
+                                ? exists(db.select({ one: sql`1` }).from(templates).where(and(
+                                        eq(templates.id, templateAssignments.templateId),
+                                        documentOwnedBy(templates.tenantId, tenantId),
+                                )))
+                                : undefined,
+                ].filter((c) => c !== undefined);
+                return conditions.length > 0
+                        ? db.select().from(templateAssignments).where(and(...conditions))
+                        : db.select().from(templateAssignments);
         }
 
         async createTemplateAssignment(
@@ -4244,14 +4286,17 @@ export class DatabaseStorage implements IStorage {
                 await db.delete(employeeDocuments).where(eq(employeeDocuments.id, id));
         }
 
-        // Policy document methods
-        async getPolicyDocuments(): Promise<PolicyDocument[]> {
+        // Policy document methods: each park group's own (S2-17b round 6,
+        // migration 0008; server/lib/documentParkGroups.ts).
+        async getPolicyDocuments(tenantId: string): Promise<PolicyDocument[]> {
                 return db
                         .select()
                         .from(policyDocuments)
+                        .where(documentOwnedBy(policyDocuments.tenantId, tenantId, policyDocuments.branchId))
                         .orderBy(desc(policyDocuments.versionInt));
         }
 
+        /** Any park group's policy, by id — for a contract reading the policy it acknowledged. */
         async getPolicyDocument(id: string): Promise<PolicyDocument | undefined> {
                 const [policy] = await db
                         .select()
@@ -4260,11 +4305,26 @@ export class DatabaseStorage implements IStorage {
                 return policy;
         }
 
-        async getLatestPublishedPolicy(): Promise<PolicyDocument | undefined> {
+        /** The park group's own policy, or nothing — another park group's is the same as none. */
+        async getPolicyDocumentInParkGroup(id: string, tenantId: string): Promise<PolicyDocument | undefined> {
                 const [policy] = await db
                         .select()
                         .from(policyDocuments)
-                        .where(eq(policyDocuments.status, "published"))
+                        .where(and(
+                                eq(policyDocuments.id, id),
+                                documentOwnedBy(policyDocuments.tenantId, tenantId, policyDocuments.branchId),
+                        ));
+                return policy;
+        }
+
+        async getLatestPublishedPolicy(tenantId: string): Promise<PolicyDocument | undefined> {
+                const [policy] = await db
+                        .select()
+                        .from(policyDocuments)
+                        .where(and(
+                                eq(policyDocuments.status, "published"),
+                                documentOwnedBy(policyDocuments.tenantId, tenantId, policyDocuments.branchId),
+                        ))
                         .orderBy(desc(policyDocuments.versionInt))
                         .limit(1);
                 return policy;
@@ -4273,14 +4333,21 @@ export class DatabaseStorage implements IStorage {
         async createPolicyDocument(
                 policy: InsertPolicyDocument,
         ): Promise<PolicyDocument> {
-                // Calculate next version number for this title
+                // Calculate next version number for this title — within the
+                // policy's own park group (round 6): a second park group's first
+                // "Rules & Regulations" is its version 1.
                 const existingPolicies = await db
                         .select()
                         .from(policyDocuments)
                         .where(
-                                eq(
-                                        policyDocuments.title,
-                                        policy.title || "Rules & Regulations",
+                                and(
+                                        eq(
+                                                policyDocuments.title,
+                                                policy.title || "Rules & Regulations",
+                                        ),
+                                        policy.tenantId
+                                                ? documentOwnedBy(policyDocuments.tenantId, policy.tenantId, policyDocuments.branchId)
+                                                : undefined,
                                 ),
                         )
                         .orderBy(desc(policyDocuments.versionInt))
@@ -4506,12 +4573,13 @@ export class DatabaseStorage implements IStorage {
                 return updated;
         }
 
-        // Asset catalog methods
-        async getAssetCatalog(): Promise<AssetCatalog[]> {
+        // Asset catalog methods: each park group's own (S2-17b round 6,
+        // migration 0008; server/lib/documentParkGroups.ts).
+        async getAssetCatalog(tenantId: string): Promise<AssetCatalog[]> {
                 return db
                         .select()
                         .from(assetCatalog)
-                        .where(eq(assetCatalog.isActive, true))
+                        .where(and(eq(assetCatalog.isActive, true), documentOwnedBy(assetCatalog.tenantId, tenantId)))
                         .orderBy(assetCatalog.name);
         }
 
@@ -4520,6 +4588,15 @@ export class DatabaseStorage implements IStorage {
                         .select()
                         .from(assetCatalog)
                         .where(eq(assetCatalog.id, id));
+                return item;
+        }
+
+        /** The park group's own catalogue item, or nothing — another park group's is the same as none. */
+        async getAssetCatalogItemInParkGroup(id: string, tenantId: string): Promise<AssetCatalog | undefined> {
+                const [item] = await db
+                        .select()
+                        .from(assetCatalog)
+                        .where(and(eq(assetCatalog.id, id), documentOwnedBy(assetCatalog.tenantId, tenantId)));
                 return item;
         }
 
@@ -6240,16 +6317,23 @@ export class DatabaseStorage implements IStorage {
                 await db.delete(coverageRules).where(eq(coverageRules.id, id));
         }
 
-        // Leave policies
-        async getLeavePolicies(branchId?: string): Promise<LeavePolicy[]> {
+        // Leave policies: each park group's own (S2-17b round 6, migration 0008;
+        // plan Q31). Before 0008 a company-wide policy (no branch) one park
+        // group wrote set every park group's days-off accrual, and the lists
+        // answered every park group's policies.
+        async getLeavePolicies(tenantId: string, branchId?: string): Promise<LeavePolicy[]> {
+                const own = documentOwnedBy(leavePolicies.tenantId, tenantId, leavePolicies.branchId);
                 if (branchId) {
                         return await db
                                 .select()
                                 .from(leavePolicies)
                                 .where(
-                                        or(
-                                                eq(leavePolicies.branchId, branchId),
-                                                sql`${leavePolicies.branchId} IS NULL`,
+                                        and(
+                                                own,
+                                                or(
+                                                        eq(leavePolicies.branchId, branchId),
+                                                        sql`${leavePolicies.branchId} IS NULL`,
+                                                ),
                                         ),
                                 )
                                 .orderBy(desc(leavePolicies.createdAt));
@@ -6257,13 +6341,37 @@ export class DatabaseStorage implements IStorage {
                 return await db
                         .select()
                         .from(leavePolicies)
+                        .where(own)
                         .orderBy(desc(leavePolicies.createdAt));
         }
 
+        /** The park group's own leave policy, or nothing — another park group's is the same as none. */
+        async getLeavePolicyInParkGroup(id: string, tenantId: string): Promise<LeavePolicy | undefined> {
+                const [policy] = await db
+                        .select()
+                        .from(leavePolicies)
+                        .where(and(
+                                eq(leavePolicies.id, id),
+                                documentOwnedBy(leavePolicies.tenantId, tenantId, leavePolicies.branchId),
+                        ));
+                return policy;
+        }
+
+        /**
+         * The policy a branch's balances are worked out by. The app's rule
+         * within the park group — the latest effective active policy of the
+         * branch's own and the company-wide ones — and, where the park group
+         * has neither, the default park group's company-wide one: what every
+         * park group read while there was one set (round 6, Q28's rule, Q49).
+         */
         async getActiveLeavePolicy(
+                tenantId: string,
                 branchId?: string,
         ): Promise<LeavePolicy | undefined> {
-                const conditions = [eq(leavePolicies.isActive, true)];
+                const conditions = [
+                        eq(leavePolicies.isActive, true),
+                        documentOwnedBy(leavePolicies.tenantId, tenantId, leavePolicies.branchId),
+                ];
                 if (branchId) {
                         conditions.push(
                                 or(
@@ -6278,7 +6386,20 @@ export class DatabaseStorage implements IStorage {
                         .where(and(...conditions))
                         .orderBy(desc(leavePolicies.effectiveFrom))
                         .limit(1);
-                return policy;
+                if (policy) return policy;
+                const defaultParkGroup = await this.getDefaultParkGroupId();
+                if (!defaultParkGroup || defaultParkGroup === tenantId) return undefined;
+                const [inherited] = await db
+                        .select()
+                        .from(leavePolicies)
+                        .where(and(
+                                eq(leavePolicies.isActive, true),
+                                sql`${leavePolicies.branchId} IS NULL`,
+                                documentOwnedBy(leavePolicies.tenantId, defaultParkGroup, leavePolicies.branchId),
+                        ))
+                        .orderBy(desc(leavePolicies.effectiveFrom))
+                        .limit(1);
+                return inherited;
         }
 
         async createLeavePolicy(policy: InsertLeavePolicy): Promise<LeavePolicy> {
@@ -6318,7 +6439,10 @@ export class DatabaseStorage implements IStorage {
                         };
                 }
 
+                // The employee's own park group's policy (round 6), as the app's
+                // rule picks it within that park group.
                 const policy = await this.getActiveLeavePolicy(
+                        employee.tenantId,
                         employee.branchId || undefined,
                 );
                 const daysWorkedRequired = policy?.daysWorkedRequired || 5;
@@ -6583,6 +6707,15 @@ export class DatabaseStorage implements IStorage {
                         .insert(publicHolidays)
                         .values(data)
                         .returning();
+                return holiday;
+        }
+
+        /** The park group's own public holiday, or nothing (round 6, Q40). */
+        async getPublicHolidayInParkGroup(id: string, tenantId: string): Promise<PublicHoliday | undefined> {
+                const [holiday] = await db
+                        .select()
+                        .from(publicHolidays)
+                        .where(and(eq(publicHolidays.id, id), eq(publicHolidays.tenantId, tenantId)));
                 return holiday;
         }
 

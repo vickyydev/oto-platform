@@ -136,6 +136,18 @@ import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
 import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup } from "./lib/shiftGroupRequired";
+import {
+  BRANCH_NOT_FOUND,
+  CATALOG_ITEM_NOT_FOUND,
+  CONTRACT_NOT_FOUND,
+  EMPLOYEE_NOT_FOUND,
+  LEAVE_POLICY_NOT_FOUND,
+  LETTER_NOT_FOUND,
+  PARK_GROUP_REQUIRED,
+  POLICY_NOT_FOUND,
+  PUBLIC_HOLIDAY_NOT_FOUND,
+  TEMPLATE_NOT_FOUND,
+} from "./lib/documentParkGroups";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
@@ -2762,15 +2774,36 @@ export async function registerRoutes(
     }
   });
 
-  // Get all templates (with optional branch filter)
+  // The document modules per park group (S2-17b round 6, migration 0008;
+  // server/lib/documentParkGroups.ts). Templates, policies, the asset
+  // catalogue and leave policies each carry their park group now; every read
+  // and write below takes the caller's. Another park group's row or branch is
+  // the same answer as one that does not exist.
+  const documentParkGroup = (req: Request, res: Response): string | null => {
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) {
+      res.status(403).json(PARK_GROUP_REQUIRED);
+      return null;
+    }
+    return tenantId;
+  };
+  const branchInParkGroup = async (branchId: string, tenantId: string): Promise<boolean> => {
+    const [branch] = await db.select({ id: branches.id }).from(branches)
+      .where(and(eq(branches.id, branchId), eq(branches.tenantId, tenantId))).limit(1);
+    return !!branch;
+  };
+
+  // Get all templates (with optional branch filter) — the park group's own (round 6)
   app.get("/api/templates", requireAuth, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const branchId = req.query.branchId as string | undefined;
       if (branchId) {
-        const templates = await storage.getTemplatesForBranch(branchId);
+        const templates = await storage.getTemplatesForBranch(tenantId, branchId);
         res.json(templates);
       } else {
-        const templates = await storage.getTemplates();
+        const templates = await storage.getTemplates(tenantId);
         res.json(templates);
       }
     } catch (error) {
@@ -2781,7 +2814,9 @@ export async function registerRoutes(
   // Get templates with their branch assignments (for contract wizard and admin library view)
   app.get("/api/templates/with-assignments", requireManager, async (req, res, next) => {
     try {
-      const templatesWithAssignments = await storage.getTemplatesWithAssignments();
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      const templatesWithAssignments = await storage.getTemplatesWithAssignments(tenantId);
       // Flatten the response so frontend can access template fields directly
       const flattened = templatesWithAssignments.map(({ template, assignments }) => ({
         ...template,
@@ -2795,9 +2830,11 @@ export async function registerRoutes(
 
   app.get("/api/templates/:id", requireAuth, async (req, res, next) => {
     try {
-      const template = await storage.getTemplate(req.params.id);
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      const template = await storage.getTemplateInParkGroup(req.params.id, tenantId);
       if (!template) {
-        return res.status(404).json({ message: "Template not found" });
+        return res.status(404).json(TEMPLATE_NOT_FOUND);
       }
       res.json(template);
     } catch (error) {
@@ -2805,22 +2842,33 @@ export async function registerRoutes(
     }
   });
 
-  // Get assignments for a template (to check if shared)
+  // Get assignments for a template (to check if shared): another park group's
+  // template has none here, as one that does not exist has none.
   app.get("/api/templates/:id/assignments", requireAuth, async (req, res, next) => {
     try {
-      const assignments = await storage.getTemplateAssignments(req.params.id);
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      const assignments = await storage.getTemplateAssignments(req.params.id, undefined, tenantId);
       res.json(assignments);
     } catch (error) {
       next(error);
     }
   });
 
-  // Add assignment for a template
+  // Add assignment for a template: the park group's own template, to one of its own branches.
   app.post("/api/templates/:id/assignments", requireAdmin, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const { branchId } = req.body;
       if (!branchId) {
         return res.status(400).json({ message: "branchId is required" });
+      }
+      if (!await storage.getTemplateInParkGroup(req.params.id, tenantId)) {
+        return res.status(404).json(TEMPLATE_NOT_FOUND);
+      }
+      if (typeof branchId !== "string" || !await branchInParkGroup(branchId, tenantId)) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
       }
       const assignment = await storage.createTemplateAssignment({
         templateId: req.params.id,
@@ -2833,10 +2881,15 @@ export async function registerRoutes(
     }
   });
 
-  // Remove assignment for a template
+  // Remove assignment for a template: another park group's template is left
+  // as it is, and the answer is the one a missing assignment gets.
   app.delete("/api/templates/:id/assignments/:branchId", requireAdmin, async (req, res, next) => {
     try {
-      await storage.deleteTemplateAssignment(req.params.id, req.params.branchId);
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      if (await storage.getTemplateInParkGroup(req.params.id, tenantId)) {
+        await storage.deleteTemplateAssignment(req.params.id, req.params.branchId);
+      }
       res.sendStatus(204);
     } catch (error) {
       next(error);
@@ -2845,7 +2898,9 @@ export async function registerRoutes(
 
   app.post("/api/templates", requireAdmin, async (req, res, next) => {
     try {
-      // Add tenantId from authenticated user with fallbacks
+      // Add tenantId from authenticated user with fallbacks. The app named the
+      // tenant here before the column existed (zod dropped it); from round 6
+      // (migration 0008) it is stored, and it is always the caller's own.
       const tenantId = await resolveTenantId(req.user?.tenantId);
       const bodyWithTenant = { ...req.body, tenantId };
       const parsed = insertTemplateSchema.safeParse(bodyWithTenant);
@@ -2855,6 +2910,7 @@ export async function registerRoutes(
       const userId = (req.user as any)?.id;
       const template = await storage.createTemplate({
         ...parsed.data,
+        tenantId,
         createdBy: userId,
         updatedBy: userId,
       });
@@ -2866,9 +2922,17 @@ export async function registerRoutes(
 
   app.patch("/api/templates/:id", requireAdmin, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      if (!await storage.getTemplateInParkGroup(req.params.id, tenantId)) {
+        return res.status(404).json(TEMPLATE_NOT_FOUND);
+      }
       const userId = (req.user as any)?.id;
+      // The app's update takes the body as it comes; a template never moves
+      // to another park group (round 6).
+      const { tenantId: _ignoredTenant, ...changes } = (req.body ?? {}) as Record<string, unknown>;
       const template = await storage.updateTemplate(req.params.id, {
-        ...req.body,
+        ...changes,
         updatedBy: userId,
       });
       res.json(template);
@@ -2879,14 +2943,17 @@ export async function registerRoutes(
 
   app.delete("/api/templates/:id", requireAdmin, async (req, res, next) => {
     try {
-      const template = await storage.getTemplate(req.params.id);
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      const template = await storage.getTemplateInParkGroup(req.params.id, tenantId);
       if (!template) {
-        return res.status(404).json({ message: "Template not found" });
+        return res.status(404).json(TEMPLATE_NOT_FOUND);
       }
 
-      // Check if this is an active template and if it's the last one
+      // Check if this is an active template and if it's the last one — the
+      // park group's last (round 6).
       if (template.status === "active") {
-        const activeCount = await storage.countActiveTemplates();
+        const activeCount = await storage.countActiveTemplates(tenantId);
         if (activeCount <= 1) {
           return res.status(400).json({ 
             message: "Cannot delete the last active template. There must be at least one active template." 
@@ -2909,16 +2976,25 @@ export async function registerRoutes(
     }
   });
 
-  // Fork template for a specific branch
+  // Fork template for a specific branch: the park group's own template, for
+  // one of its own branches; the fork is the park group's too.
   app.post("/api/templates/:id/fork", requireAdmin, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const { branchId } = req.body;
       const userId = (req.user as any)?.id;
-      
+
       if (!branchId) {
         return res.status(400).json({ message: "Branch is required for forking" });
       }
-      
+      if (!await storage.getTemplateInParkGroup(req.params.id, tenantId)) {
+        return res.status(404).json(TEMPLATE_NOT_FOUND);
+      }
+      if (typeof branchId !== "string" || !await branchInParkGroup(branchId, tenantId)) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
+      }
+
       const forkedTemplate = await storage.forkTemplate(req.params.id, branchId, userId);
       res.status(201).json(forkedTemplate);
     } catch (error) {
@@ -2926,22 +3002,29 @@ export async function registerRoutes(
     }
   });
 
-  // Get contract count for a template (for safe editing warning)
+  // Get contract count for a template (for safe editing warning): another
+  // park group's template counts none here, as one that does not exist.
   app.get("/api/templates/:id/contract-count", requireAuth, async (req, res, next) => {
     try {
-      const count = await storage.getTemplateContractCount(req.params.id);
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      const count = await storage.getTemplateInParkGroup(req.params.id, tenantId)
+        ? await storage.getTemplateContractCount(req.params.id)
+        : 0;
       res.json({ count });
     } catch (error) {
       next(error);
     }
   });
 
-  // Template assignments
+  // Template assignments: the park group's own templates' (round 6).
   app.get("/api/template-assignments", requireAuth, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const templateId = req.query.templateId as string | undefined;
       const branchId = req.query.branchId as string | undefined;
-      const assignments = await storage.getTemplateAssignments(templateId, branchId);
+      const assignments = await storage.getTemplateAssignments(templateId, branchId, tenantId);
       res.json(assignments);
     } catch (error) {
       next(error);
@@ -2950,9 +3033,17 @@ export async function registerRoutes(
 
   app.post("/api/template-assignments", requireAdmin, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const parsed = insertTemplateAssignmentSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.message });
+      }
+      if (!await storage.getTemplateInParkGroup(parsed.data.templateId, tenantId)) {
+        return res.status(404).json(TEMPLATE_NOT_FOUND);
+      }
+      if (!await branchInParkGroup(parsed.data.branchId, tenantId)) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
       }
       const userId = (req.user as any)?.id;
       const assignment = await storage.createTemplateAssignment({
@@ -2967,7 +3058,11 @@ export async function registerRoutes(
 
   app.delete("/api/template-assignments/:templateId/:branchId", requireAdmin, async (req, res, next) => {
     try {
-      await storage.deleteTemplateAssignment(req.params.templateId, req.params.branchId);
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      if (await storage.getTemplateInParkGroup(req.params.templateId, tenantId)) {
+        await storage.deleteTemplateAssignment(req.params.templateId, req.params.branchId);
+      }
       res.sendStatus(204);
     } catch (error) {
       next(error);
@@ -4580,9 +4675,13 @@ export async function registerRoutes(
   });
 
   // Recalculate probation end dates for all employees with a start date
-  app.post("/api/employees/recalculate-probation", requireAuth, requireAdmin, async (req, res, next) => {
+  // Held to the caller's own park group (S2-17b round 6, plan Q31): it
+  // recomputed every park group's employees for any park group's admin. The
+  // app's strict placement decides whose, as for the maintenance routes.
+  app.post("/api/employees/recalculate-probation", requireAuth, requireAdmin, parkGroupOnly(userManagementTenant), async (req, res, next) => {
     try {
-      const employees = await storage.getEmployees();
+      const tenantId = parkGroupOf(res);
+      const employees = (await storage.getEmployees()).filter(e => e.tenantId === tenantId);
       let updatedCount = 0;
       
       for (const employee of employees) {
@@ -6053,9 +6152,11 @@ export async function registerRoutes(
   app.post("/api/contracts/finalize", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { employeeId, templateId, mergeDataJson, createdBy, generateSigningLink, language } = req.body;
-      const user = await legacyHrUser(req, res);
+      // Every park group finalizes its own contracts from its own templates and
+      // policies (S2-17b round 6; the lift's 503 for other park groups is gone).
+      const user = parkGroupUser(req, res);
       if (!user) return;
-      const employee = await storage.getEmployeeInTenant(employeeId, user.tenantId!);
+      const employee = await storage.getEmployeeInTenant(employeeId, user.tenantId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -6063,7 +6164,7 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Employee access denied" });
       }
 
-      const template = await storage.getTemplate(templateId);
+      const template = await storage.getTemplateInParkGroup(templateId, user.tenantId);
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
       }
@@ -6165,8 +6266,9 @@ export async function registerRoutes(
         signingTokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
       }
 
-      // Get the latest published policy to attach to this contract
-      const latestPolicy = (await storage.getPolicyDocuments()).find(policy =>
+      // Get the latest published policy to attach to this contract — the
+      // employee's park group's (round 6), by the app's own rule within it.
+      const latestPolicy = (await storage.getPolicyDocuments(employee.tenantId)).find(policy =>
         policy.status === "published" && (
           (policy.isCompanyWide && !policy.branchId) ||
           (!!employee.branchId && policy.branchId === employee.branchId)
@@ -6426,7 +6528,12 @@ export async function registerRoutes(
         mustChangePassword: true,
       });
 
+      // The seed's template and two settings are the default park group's
+      // (S2-17b rounds 4a and 6), made by the app's own rule where the database
+      // has none yet.
+      const seedParkGroup = await getDefaultTenantId();
       await storage.createTemplate({
+        tenantId: seedParkGroup,
         name: "Standard Employment Contract",
         htmlBody: `<!DOCTYPE html>
 <html>
@@ -6501,10 +6608,8 @@ export async function registerRoutes(
         updatedBy: null,
       });
 
-      // The seed's two settings are the default park group's (S2-17b round 4a),
-      // made by the app's own rule where the database has none yet: a setting
-      // belongs to a park group (round 4b, NOT NULL).
-      const seedParkGroup = await getDefaultTenantId();
+      // The seed's two settings are the default park group's (S2-17b round 4a):
+      // a setting belongs to a park group (round 4b, NOT NULL).
       await storage.upsertSetting({
         key: "email_subject",
         value: "Your Employment Contract - {{employee.full_name}}",
@@ -7401,21 +7506,18 @@ OTO Company Limited`,
     }
   });
 
-  // These legacy tables have no tenant column. Until they do, only the default
-  // tenant can use their shared rows.
-  const legacyHrUser = async (req: Request, res: Response): Promise<UserWithBranchAccess | null> => {
+  // Policies, the asset catalogue and the contract flow that attaches a policy
+  // used to answer "This module is unavailable for this tenant" (503) to every
+  // park group but the default one, because their tables had no park group
+  // (the lift's guard). Migration 0008 gave each row its park group (S2-17b
+  // round 6): every caller with a park group now uses its own rows.
+  const parkGroupUser = (req: Request, res: Response): (UserWithBranchAccess & { tenantId: string }) | null => {
     const user = req.userWithAccess;
     if (!user?.tenantId) {
-      res.status(403).json({ message: "Tenant access required" });
+      res.status(403).json(PARK_GROUP_REQUIRED);
       return null;
     }
-    const [defaultTenant] = await db.select({ id: tenants.id }).from(tenants)
-      .where(eq(tenants.slug, DEFAULT_TENANT_SLUG)).limit(1);
-    if (user.tenantId !== defaultTenant?.id) {
-      res.status(503).json({ message: "This module is unavailable for this tenant" });
-      return null;
-    }
-    return user;
+    return user as UserWithBranchAccess & { tenantId: string };
   };
 
   const canAccessPolicy = async (
@@ -7437,12 +7539,13 @@ OTO Company Limited`,
     branchId: z.string().nullable().optional(),
   }).strict();
 
-  // Policy document routes
+  // Policy document routes: the caller's park group's policies (S2-17b round 6,
+  // migration 0008). "Company-wide" is the park group's company.
   app.get("/api/policies", requireAuth, async (req, res, next) => {
     try {
-      const user = await legacyHrUser(req, res);
+      const user = parkGroupUser(req, res);
       if (!user) return;
-      const policies = await storage.getPolicyDocuments();
+      const policies = await storage.getPolicyDocuments(user.tenantId);
       const visible = await Promise.all(policies.map(async policy =>
         await canAccessPolicy(user, policy) ? policy : null));
       res.json(visible.filter(policy => policy !== null));
@@ -7453,9 +7556,9 @@ OTO Company Limited`,
 
   app.get("/api/policies/latest-published", requireAuth, async (req, res, next) => {
     try {
-      const user = await legacyHrUser(req, res);
+      const user = parkGroupUser(req, res);
       if (!user) return;
-      const policies = await storage.getPolicyDocuments();
+      const policies = await storage.getPolicyDocuments(user.tenantId);
       let policy = null;
       for (const item of policies) {
         if (item.status === "published" && await canAccessPolicy(user, item)) {
@@ -7471,11 +7574,11 @@ OTO Company Limited`,
 
   app.get("/api/policies/:id", requireAuth, async (req, res, next) => {
     try {
-      const user = await legacyHrUser(req, res);
+      const user = parkGroupUser(req, res);
       if (!user) return;
-      const policy = await storage.getPolicyDocument(req.params.id);
+      const policy = await storage.getPolicyDocumentInParkGroup(req.params.id, user.tenantId);
       if (!policy || !await canAccessPolicy(user, policy)) {
-        return res.status(404).json({ message: "Policy not found" });
+        return res.status(404).json(POLICY_NOT_FOUND);
       }
       res.json(policy);
     } catch (error) {
@@ -7485,7 +7588,7 @@ OTO Company Limited`,
 
   app.post("/api/policies", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const user = await legacyHrUser(req, res);
+      const user = parkGroupUser(req, res);
       if (!user) return;
       const parsed = policyInput.safeParse(req.body);
       if (!parsed.success || !parsed.data.title) {
@@ -7500,6 +7603,7 @@ OTO Company Limited`,
       const userId = user.id;
       const policy = await storage.createPolicyDocument({
         ...parsed.data,
+        tenantId: user.tenantId,
         title: parsed.data.title,
         isCompanyWide,
         branchId,
@@ -7527,11 +7631,11 @@ OTO Company Limited`,
 
   app.patch("/api/policies/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const user = await legacyHrUser(req, res);
+      const user = parkGroupUser(req, res);
       if (!user) return;
-      const existing = await storage.getPolicyDocument(req.params.id);
+      const existing = await storage.getPolicyDocumentInParkGroup(req.params.id, user.tenantId);
       if (!existing || !await canAccessPolicy(user, existing)) {
-        return res.status(404).json({ message: "Policy not found" });
+        return res.status(404).json(POLICY_NOT_FOUND);
       }
       const parsed = policyInput.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "Invalid policy update" });
@@ -7557,11 +7661,11 @@ OTO Company Limited`,
 
   app.post("/api/policies/:id/publish", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const user = await legacyHrUser(req, res);
+      const user = parkGroupUser(req, res);
       if (!user) return;
-      const existing = await storage.getPolicyDocument(req.params.id);
+      const existing = await storage.getPolicyDocumentInParkGroup(req.params.id, user.tenantId);
       if (!existing || !await canAccessPolicy(user, existing)) {
-        return res.status(404).json({ message: "Policy not found" });
+        return res.status(404).json(POLICY_NOT_FOUND);
       }
       if (existing.isCompanyWide && !user.hasAllBranchesAccess) {
         return res.status(403).json({ message: "Policy branch access denied" });
@@ -7589,11 +7693,11 @@ OTO Company Limited`,
 
   app.post("/api/policies/:id/archive", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const user = await legacyHrUser(req, res);
+      const user = parkGroupUser(req, res);
       if (!user) return;
-      const existing = await storage.getPolicyDocument(req.params.id);
+      const existing = await storage.getPolicyDocumentInParkGroup(req.params.id, user.tenantId);
       if (!existing || !await canAccessPolicy(user, existing)) {
-        return res.status(404).json({ message: "Policy not found" });
+        return res.status(404).json(POLICY_NOT_FOUND);
       }
       if (existing.isCompanyWide && !user.hasAllBranchesAccess) {
         return res.status(403).json({ message: "Policy branch access denied" });
@@ -8502,11 +8606,13 @@ OTO Company Limited`,
     }
   });
 
-  // Asset catalog endpoints
+  // Asset catalog endpoints: the caller's park group's catalogue (S2-17b
+  // round 6, migration 0008).
   app.get("/api/assets/catalog", requireAuth, async (req, res, next) => {
     try {
-      if (!await legacyHrUser(req, res)) return;
-      const catalog = await storage.getAssetCatalog();
+      const user = parkGroupUser(req, res);
+      if (!user) return;
+      const catalog = await storage.getAssetCatalog(user.tenantId);
       res.json(catalog);
     } catch (error) {
       next(error);
@@ -8515,7 +8621,8 @@ OTO Company Limited`,
 
   app.post("/api/assets/catalog", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      if (!await legacyHrUser(req, res)) return;
+      const user = parkGroupUser(req, res);
+      if (!user) return;
       const catalogSchema = z.object({
         name: z.string().min(1),
         category: z.enum(["equipment", "uniform", "access", "technology", "vehicle", "other"]).optional(),
@@ -8530,7 +8637,7 @@ OTO Company Limited`,
         });
       }
 
-      const item = await storage.createAssetCatalogItem(validationResult.data);
+      const item = await storage.createAssetCatalogItem({ ...validationResult.data, tenantId: user.tenantId });
       res.status(201).json(item);
     } catch (error) {
       next(error);
@@ -8587,10 +8694,10 @@ OTO Company Limited`,
       const data = validationResult.data;
 
       if (data.catalogAssetId) {
-        if (!await legacyHrUser(req, res)) return;
-        const catalogItem = await storage.getAssetCatalogItem(data.catalogAssetId);
+        // The employee's — the caller's — park group's own catalogue item (round 6).
+        const catalogItem = await storage.getAssetCatalogItemInParkGroup(data.catalogAssetId, employee.tenantId);
         if (!catalogItem?.isActive) {
-          return res.status(404).json({ message: "Catalog item not found" });
+          return res.status(404).json(CATALOG_ITEM_NOT_FOUND);
         }
       }
 
@@ -13205,6 +13312,13 @@ OTO Company Limited`,
       if (!branchId || typeof branchId !== "string") {
         return res.status(400).json({ message: "branchId is required" });
       }
+      // The caller's park group's branch only (S2-17b round 6, Q40): another
+      // park group's is the same 404 as one that does not exist.
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      if (!await branchInParkGroup(branchId, tenantId)) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
+      }
 
       // Check branch access using the standard middleware pattern
       const userWithAccess = req.userWithAccess;
@@ -13235,9 +13349,12 @@ OTO Company Limited`,
     try {
       const user = req.user as UserWithBranchAccess;
       const { id } = req.params;
-      
-      // Get the employee to check branch access
-      const employee = await storage.getEmployee(id);
+
+      // Get the employee to check branch access — the caller's park group's
+      // only (S2-17b round 6, Q40): another park group's is the same 404.
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      const employee = await storage.getEmployeeInTenant(id, tenantId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -13263,15 +13380,25 @@ OTO Company Limited`,
   // ============================================
 
   // GET /api/leave-policies - Get all leave policies
+  //
+  // Each park group's own (S2-17b round 6, migration 0008; plan Q31): the
+  // lists answered every park group's policies, and a company-wide policy one
+  // park group wrote set every park group's accrual. The branch rule below is
+  // the app's, `user.branchIds` and all (plan Q40).
   app.get("/api/leave-policies", requireAuth, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const user = req.user as UserWithBranchAccess;
       const { branchId } = req.query;
-      
+
       // Check if global admin or admin
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
-      
+
       if (branchId && typeof branchId === "string") {
+        if (!await branchInParkGroup(branchId, tenantId)) {
+          return res.status(404).json(BRANCH_NOT_FOUND);
+        }
         // Check branch access
         if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
           const userBranchIds = user.branchIds || [];
@@ -13279,26 +13406,29 @@ OTO Company Limited`,
             return res.status(403).json({ message: "Access denied" });
           }
         }
-        const policies = await storage.getLeavePolicies(branchId);
+        const policies = await storage.getLeavePolicies(tenantId, branchId);
         return res.json(policies);
       }
-      
+
       // Return all policies (for admin or all branches access)
       if (!isGlobalAdmin && !user.hasAllBranchesAccess) {
         return res.status(403).json({ message: "Access denied - select a branch" });
       }
-      const policies = await storage.getLeavePolicies();
+      const policies = await storage.getLeavePolicies(tenantId);
       res.json(policies);
     } catch (error) {
       next(error);
     }
   });
 
-  // POST /api/leave-policies - Create a leave policy (admin only)
+  // POST /api/leave-policies - Create a leave policy (admin only), for the
+  // caller's park group, on one of its own branches or company-wide.
   app.post("/api/leave-policies", requireAuth, requireAdmin, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const { name, description, daysWorkedRequired, daysOffEarned, branchId, isActive } = req.body;
-      
+
       if (!name || typeof name !== "string") {
         return res.status(400).json({ message: "name is required" });
       }
@@ -13308,8 +13438,12 @@ OTO Company Limited`,
       if (daysOffEarned === undefined || typeof daysOffEarned !== "number" || daysOffEarned < 1) {
         return res.status(400).json({ message: "daysOffEarned must be a positive number" });
       }
-      
+      if (branchId && (typeof branchId !== "string" || !await branchInParkGroup(branchId, tenantId))) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
+      }
+
       const policy = await storage.createLeavePolicy({
+        tenantId,
         name,
         description: description || null,
         daysWorkedRequired,
@@ -13323,12 +13457,21 @@ OTO Company Limited`,
     }
   });
 
-  // PATCH /api/leave-policies/:id - Update a leave policy (admin only)
+  // PATCH /api/leave-policies/:id - Update a leave policy (admin only): the
+  // park group's own, kept on its own branches.
   app.patch("/api/leave-policies/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const { id } = req.params;
       const { name, description, daysWorkedRequired, daysOffEarned, branchId, isActive } = req.body;
-      
+      if (!await storage.getLeavePolicyInParkGroup(id, tenantId)) {
+        return res.status(404).json(LEAVE_POLICY_NOT_FOUND);
+      }
+      if (branchId && (typeof branchId !== "string" || !await branchInParkGroup(branchId, tenantId))) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
+      }
+
       const updates: Record<string, any> = {};
       if (name !== undefined) updates.name = name;
       if (description !== undefined) updates.description = description;
@@ -13354,10 +13497,15 @@ OTO Company Limited`,
     }
   });
 
-  // DELETE /api/leave-policies/:id - Delete a leave policy (admin only)
+  // DELETE /api/leave-policies/:id - Delete a leave policy (admin only): the park group's own.
   app.delete("/api/leave-policies/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const { id } = req.params;
+      if (!await storage.getLeavePolicyInParkGroup(id, tenantId)) {
+        return res.status(404).json(LEAVE_POLICY_NOT_FOUND);
+      }
       await storage.deleteLeavePolicy(id);
       res.status(204).send();
     } catch (error) {
@@ -13456,7 +13604,14 @@ OTO Company Limited`,
       if (!branchId) {
         return res.status(400).json({ message: "branchId is required" });
       }
-      
+      // The caller's park group's branch only (S2-17b round 6, Q40); the app
+      // has no branch rule here, and none is added.
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      if (!await branchInParkGroup(branchId, tenantId)) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
+      }
+
       const balances = await storage.getBranchEmployeeSickLeaveBalances(branchId, year);
       res.json(balances);
     } catch (error) {
@@ -13469,7 +13624,14 @@ OTO Company Limited`,
     try {
       const { employeeId } = req.params;
       const year = req.query.year ? parseInt(req.query.year as string) : undefined;
-      
+      // The caller's park group's employee only (S2-17b round 6, Q40); the app
+      // has no branch rule here, and none is added.
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
+      if (!await storage.getEmployeeInTenant(employeeId, tenantId)) {
+        return res.status(404).json(EMPLOYEE_NOT_FOUND);
+      }
+
       const balance = await storage.getEmployeeSickLeaveBalance(employeeId, year);
       res.json(balance);
     } catch (error) {
@@ -13783,7 +13945,13 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       const { name, date, isActive } = req.body;
-      
+      // The caller's park group's holiday only (S2-17b round 6, Q40), the park
+      // group the list and the create already use.
+      const tenantId = await resolveTenantId((req.user as UserWithBranchAccess).tenantId);
+      if (!await storage.getPublicHolidayInParkGroup(id, tenantId)) {
+        return res.status(404).json(PUBLIC_HOLIDAY_NOT_FOUND);
+      }
+
       const updates: Record<string, any> = {};
       if (name !== undefined) updates.name = name;
       if (date !== undefined) {
@@ -13803,6 +13971,11 @@ OTO Company Limited`,
   app.delete("/api/public-holidays/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
+      // The caller's park group's holiday only (S2-17b round 6, Q40).
+      const tenantId = await resolveTenantId((req.user as UserWithBranchAccess).tenantId);
+      if (!await storage.getPublicHolidayInParkGroup(id, tenantId)) {
+        return res.status(404).json(PUBLIC_HOLIDAY_NOT_FOUND);
+      }
       await storage.deletePublicHoliday(id);
       res.status(204).send();
     } catch (error) {
