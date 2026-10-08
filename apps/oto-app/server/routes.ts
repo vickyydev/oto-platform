@@ -2,7 +2,7 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import { createServer, type Server } from "http";
 import { storage, resolveFixReportStatusFilter, type ActivityParkGroup } from "./storage";
 import { setupAuth, requireAuth, hashPassword } from "./auth";
-import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches, canUserAccessBranch, requireDirectoryApiKey, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
+import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches, canUserAccessBranch, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
 import { uploadFinalizedPdf, uploadSignedPdf, uploadSignedLetterPdf, presignedPdfUrl, streamSignedPdf, isObjectStoragePath } from "./pdf-storage";
 import { fixMulterFilenames } from "./middleware/fixMulterFilenames";
@@ -112,6 +112,7 @@ import { registerAIRoutes } from "./ai-routes";
 import { Sentry } from "./sentry";
 import { DB_SCHEMA, DEPLOY_ENV, JOBS_MODE, OBJECT_STORAGE, S3_ENDPOINT } from "./config/env";
 import { devOnly, followsJobsSwitch, parkGroupOf, parkGroupOnly } from "./lib/routeFences";
+import { hrDirectoryParkGroupOf, requireHrDirectoryCaller } from "./directory/hrReadAuth";
 import {
   SETTINGS_NO_PARK_GROUP_REFUSAL,
   SETTINGS_SHARED_REFUSAL,
@@ -13953,9 +13954,22 @@ OTO Company Limited`,
   // DIRECTORY API - Service-to-Service Integration
   // ============================================
 
+  // The six HR reads answer for one park group (S2-17b round 4a, H12): a
+  // tenant-bound directory key with hr:read, or — only where
+  // HR_DIRECTORY_API_KEY is set — the old shared key, for the default park
+  // group alone (Q13). server/directory/hrReadAuth.ts.
+  const requireHrDirectory = requireHrDirectoryCaller(pool, {
+    sharedKey: () => process.env.HR_DIRECTORY_API_KEY,
+    defaultParkGroup: () => storage.getDefaultParkGroupId(),
+    sharedRateLimit: directoryApiRateLimit,
+  });
+
   // Helper to build presence response with branch object
   // Always returns a consistent structure per contract (never null at top level)
-  async function buildPresenceResponse(presence: { isClockedIn: boolean; currentWorkBranchId: string | null; updatedAt: Date } | null) {
+  async function buildPresenceResponse(
+    presence: { isClockedIn: boolean; currentWorkBranchId: string | null; updatedAt: Date } | null,
+    tenantId: string,
+  ) {
     // If no presence record exists, return default unclock state
     if (!presence) {
       return {
@@ -13969,7 +13983,8 @@ OTO Company Limited`,
     let currentWorkBranch = null;
     if (presence.isClockedIn && presence.currentWorkBranchId) {
       const workBranch = await storage.getBranch(presence.currentWorkBranchId);
-      if (workBranch) {
+      // Only a branch of the caller's park group is named.
+      if (workBranch && workBranch.tenantId === tenantId) {
         currentWorkBranch = { id: workBranch.id, name: workBranch.name };
       }
     }
@@ -13982,17 +13997,19 @@ OTO Company Limited`,
   }
 
   // Get single employee with presence data
-  app.get("/api/directory/employee/:id", requireDirectoryApiKey, directoryApiRateLimit, async (req, res, next) => {
+  app.get("/api/directory/employee/:id", requireHrDirectory, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const result = await storage.getDirectoryEmployee(id);
+      const tenantId = hrDirectoryParkGroupOf(res);
+      // Another park group's employee is the same 404 as one that does not exist.
+      const result = await storage.getDirectoryEmployee(id, tenantId);
 
       if (!result) {
         return res.status(404).json({ error: "Employee not found" });
       }
 
       const { employee, person, branch, department, roles, presence } = result;
-      const presenceResponse = await buildPresenceResponse(presence);
+      const presenceResponse = await buildPresenceResponse(presence, tenantId);
 
       res.json({
         employee_id: employee.id,
@@ -14011,7 +14028,7 @@ OTO Company Limited`,
   });
 
   // Search employees for linking
-  app.get("/api/directory/employees/search", requireDirectoryApiKey, directoryApiRateLimit, async (req, res, next) => {
+  app.get("/api/directory/employees/search", requireHrDirectory, async (req, res, next) => {
     try {
       const query = req.query.q as string;
       const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
@@ -14020,7 +14037,7 @@ OTO Company Limited`,
         return res.status(400).json({ error: "Search query must be at least 2 characters" });
       }
 
-      const results = await storage.searchDirectoryEmployees(query, limit);
+      const results = await storage.searchDirectoryEmployees(query, limit, hrDirectoryParkGroupOf(res));
 
       res.json({
         employees: results.map(({ employee, person, branch }) => ({
@@ -14038,17 +14055,19 @@ OTO Company Limited`,
   });
 
   // Get branch roster with presence
-  app.get("/api/directory/branches/:branchId/employees", requireDirectoryApiKey, directoryApiRateLimit, async (req, res, next) => {
+  app.get("/api/directory/branches/:branchId/employees", requireHrDirectory, async (req, res, next) => {
     try {
       const { branchId } = req.params;
       const status = req.query.status as string | undefined;
+      const tenantId = hrDirectoryParkGroupOf(res);
 
+      // Another park group's branch is the same 404 as one that does not exist.
       const branch = await storage.getBranch(branchId);
-      if (!branch) {
+      if (!branch || branch.tenantId !== tenantId) {
         return res.status(404).json({ error: "Branch not found" });
       }
 
-      const results = await storage.getDirectoryBranchRoster(branchId, status);
+      const results = await storage.getDirectoryBranchRoster(branchId, status, tenantId);
 
       const employeesWithPresence = await Promise.all(
         results.map(async ({ employee, person, department, roles, presence }) => ({
@@ -14059,7 +14078,7 @@ OTO Company Limited`,
           status: employee.employmentState,
           department: department ? { id: department.id, name: department.name } : null,
           roles: roles.map(r => ({ id: r.id, name: r.name })),
-          presence: await buildPresenceResponse(presence),
+          presence: await buildPresenceResponse(presence, tenantId),
         }))
       );
 
@@ -14073,11 +14092,12 @@ OTO Company Limited`,
   });
 
   // Get all roles (reference data)
-  app.get("/api/directory/roles", requireDirectoryApiKey, directoryApiRateLimit, async (req, res, next) => {
+  app.get("/api/directory/roles", requireHrDirectory, async (req, res, next) => {
     try {
+      const tenantId = hrDirectoryParkGroupOf(res);
       const roles = await storage.getRoles();
       res.json({
-        roles: roles.filter(r => r.isActive).map(r => ({
+        roles: roles.filter(r => r.isActive && r.tenantId === tenantId).map(r => ({
           id: r.id,
           name: r.name,
           description: r.description,
@@ -14089,12 +14109,13 @@ OTO Company Limited`,
   });
 
   // Get all departments (reference data)
-  app.get("/api/directory/departments", requireDirectoryApiKey, directoryApiRateLimit, async (req, res, next) => {
+  app.get("/api/directory/departments", requireHrDirectory, async (req, res, next) => {
     try {
+      const tenantId = hrDirectoryParkGroupOf(res);
       const branchId = req.query.branchId as string | undefined;
       const allDepartments = await storage.getDepartments(branchId);
       res.json({
-        departments: allDepartments.filter(d => d.isActive).map(d => ({
+        departments: allDepartments.filter(d => d.isActive && d.tenantId === tenantId).map(d => ({
           id: d.id,
           name: d.name,
           description: d.description,
@@ -14107,11 +14128,12 @@ OTO Company Limited`,
   });
 
   // Get all branches (reference data)
-  app.get("/api/directory/branches", requireDirectoryApiKey, directoryApiRateLimit, async (req, res, next) => {
+  app.get("/api/directory/branches", requireHrDirectory, async (req, res, next) => {
     try {
+      const tenantId = hrDirectoryParkGroupOf(res);
       const allBranches = await storage.getBranches();
       res.json({
-        branches: allBranches.map(b => ({
+        branches: allBranches.filter(b => b.tenantId === tenantId).map(b => ({
           id: b.id,
           name: b.name,
           address: b.address,

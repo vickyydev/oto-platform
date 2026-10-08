@@ -238,7 +238,12 @@ export type DirectoryCache = typeof directoryCache.$inferSelect;
 // group's night batches through `POST /api/directory/jobs/:name/run`
 // (server/directory/jobRoutes.ts). `scopes` is free text[], so a new scope is
 // no migration.
-export const DIRECTORY_CLIENT_SCOPES = ["events:write", "jobs:run"] as const;
+//
+// `hr:read` (S2-17b round 4a): the six HR reads under /api/directory/*
+// (server/directory/hrReadAuth.ts) answer for the key's park group only. The
+// shared HR_DIRECTORY_API_KEY still works where it is set, for the default
+// park group only (plan Q13).
+export const DIRECTORY_CLIENT_SCOPES = ["events:write", "jobs:run", "hr:read"] as const;
 export type DirectoryClientScope = (typeof DIRECTORY_CLIENT_SCOPES)[number];
 
 export const directoryClients = pgTable(

@@ -7,10 +7,12 @@ import type { DirectoryClientScope } from "@shared/schema";
  * A directory caller that names its tenant (events-kiosk PLAN s8, round 0).
  *
  * The directory API's HR reads (`/api/directory/employee/:id` and the rest)
- * authenticate one shared key, `HR_DIRECTORY_API_KEY`. A shared key proves the
+ * authenticated one shared key, `HR_DIRECTORY_API_KEY`. A shared key proves the
  * caller is a service; it says nothing about whose data that service may touch,
  * and on a database that holds more than one tenant that is the question that
- * matters. Those routes are left exactly as they are.
+ * matters. From S2-17b round 4a they take one of these keys too, with the
+ * scope `hr:read`, and answer for its tenant only; the shared key still works
+ * where it is set, for the default tenant only (`hrReadAuth.ts`).
  *
  * The write routes for the POS seam take one of these instead: a key issued to
  * one caller for one tenant (`directory_clients`, migration 0003). The tenant a

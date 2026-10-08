@@ -3,7 +3,7 @@
  * (`directory_clients`, migration 0003; checked by
  * server/directory/clientAuth.ts).
  *
- *   npm run directory:client -- create --tenant <tenant uuid> --name <who> [--scope events:write] [--scope jobs:run]
+ *   npm run directory:client -- create --tenant <tenant uuid> --name <who> [--scope events:write] [--scope jobs:run] [--scope hr:read]
  *   npm run directory:client -- list [--tenant <tenant uuid>]
  *   npm run directory:client -- revoke --id <client uuid>
  *
@@ -20,6 +20,10 @@
  *   jobs:run      the platform's job runner running this park group's night
  *                 batches (S2-17b round 3). The platform holds it as
  *                 `<tenant uuid>:<key>` in OTOAPP_JOBS_KEYS.
+ *   hr:read       the six HR reads under /api/directory/* (employee, search,
+ *                 branch roster, roles, departments, branches), answered for
+ *                 this park group only (S2-17b round 4a), sent as
+ *                 Authorization: Bearer <key>.
  *
  * DATABASE_URL in the environment.
  */
@@ -27,7 +31,7 @@ import { createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 
 const SCHEMA = "otoapp";
-const SCOPES = ["events:write", "jobs:run"];
+const SCOPES = ["events:write", "jobs:run", "hr:read"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function fail(message) {

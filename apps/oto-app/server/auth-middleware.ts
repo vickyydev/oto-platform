@@ -228,35 +228,11 @@ function cleanupRateLimitStore() {
 // Cleanup every 5 minutes
 setInterval(cleanupRateLimitStore, 5 * 60 * 1000);
 
-export function requireDirectoryApiKey(req: Request, res: Response, next: NextFunction) {
-  const apiKey = req.headers[HR_API_KEY_HEADER] as string | undefined;
-  
-  if (!apiKey) {
-    return res.status(401).json({ 
-      error: "Authentication required", 
-      message: "Missing X-HR-API-KEY header" 
-    });
-  }
-
-  const expectedApiKey = process.env.HR_DIRECTORY_API_KEY;
-  
-  if (!expectedApiKey) {
-    console.error("HR_DIRECTORY_API_KEY environment variable not set");
-    return res.status(500).json({ 
-      error: "Service configuration error", 
-      message: "API key not configured on server" 
-    });
-  }
-
-  if (apiKey !== expectedApiKey) {
-    return res.status(403).json({ 
-      error: "Invalid API key", 
-      message: "The provided API key is not valid" 
-    });
-  }
-
-  next();
-}
+// The shared-key check that stood here (`requireDirectoryApiKey`, which answered
+// 500 where HR_DIRECTORY_API_KEY was unset and let the key read every park
+// group) is replaced by `requireHrDirectoryCaller` in
+// server/directory/hrReadAuth.ts (S2-17b round 4a): a tenant-bound key with
+// hr:read, or the shared key for the default park group only where it is set.
 
 // ============================================
 // MODULE-LEVEL PERMISSION MIDDLEWARE

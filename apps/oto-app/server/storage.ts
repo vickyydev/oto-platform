@@ -1114,9 +1114,10 @@ export interface IStorage {
                 tenantId: string,
         ): Promise<EmployeePresence>;
 
-        // Directory API helpers
+        // Directory API helpers, each for one park group (S2-17b round 4a).
         getDirectoryEmployee(
                 employeeId: string,
+                tenantId: string,
         ): Promise<
                 | {
                                 employee: Employee;
@@ -1129,11 +1130,13 @@ export interface IStorage {
         >;
         searchDirectoryEmployees(
                 query: string,
-                limit?: number,
+                limit: number,
+                tenantId: string,
         ): Promise<{ employee: Employee; branch: Branch | null }[]>;
         getDirectoryBranchRoster(
                 branchId: string,
-                status?: string,
+                status: string | undefined,
+                tenantId: string,
         ): Promise<
                 {
                         employee: Employee;
@@ -6653,9 +6656,11 @@ export class DatabaseStorage implements IStorage {
                 return result;
         }
 
-        // Directory API helpers
+        // Directory API helpers. Each answers for one park group (S2-17b round
+        // 4a): the caller's key names it (server/directory/hrReadAuth.ts).
         async getDirectoryEmployee(
                 employeeId: string,
+                tenantId: string,
         ): Promise<
                 | {
                                 employee: Employee;
@@ -6670,7 +6675,7 @@ export class DatabaseStorage implements IStorage {
                 const [employee] = await db
                         .select()
                         .from(employees)
-                        .where(eq(employees.id, employeeId));
+                        .where(and(eq(employees.id, employeeId), eq(employees.tenantId, tenantId)));
                 if (!employee) return undefined;
 
                 const person = employee.personId
@@ -6687,7 +6692,7 @@ export class DatabaseStorage implements IStorage {
                                         await db
                                                 .select()
                                                 .from(branches)
-                                                .where(eq(branches.id, employee.branchId))
+                                                .where(and(eq(branches.id, employee.branchId), eq(branches.tenantId, tenantId)))
                                 )[0] || null
                         : null;
 
@@ -6696,7 +6701,10 @@ export class DatabaseStorage implements IStorage {
                                         await db
                                                 .select()
                                                 .from(departments)
-                                                .where(eq(departments.id, employee.primaryDepartmentId))
+                                                .where(and(
+                                                        eq(departments.id, employee.primaryDepartmentId),
+                                                        eq(departments.tenantId, tenantId),
+                                                ))
                                 )[0] || null
                         : null;
 
@@ -6704,7 +6712,7 @@ export class DatabaseStorage implements IStorage {
                         .select({ role: roles })
                         .from(employeeRoles)
                         .innerJoin(roles, eq(employeeRoles.roleId, roles.id))
-                        .where(eq(employeeRoles.employeeId, employeeId));
+                        .where(and(eq(employeeRoles.employeeId, employeeId), eq(roles.tenantId, tenantId)));
 
                 const presence = await this.getEmployeePresence(employeeId);
 
@@ -6720,7 +6728,8 @@ export class DatabaseStorage implements IStorage {
 
         async searchDirectoryEmployees(
                 query: string,
-                limit: number = 20,
+                limit: number,
+                tenantId: string,
         ): Promise<
                 { employee: Employee; person: Person | null; branch: Branch | null }[]
         > {
@@ -6728,12 +6737,13 @@ export class DatabaseStorage implements IStorage {
                 const employeeResults = await db
                         .select()
                         .from(employees)
-                        .where(
+                        .where(and(
+                                eq(employees.tenantId, tenantId),
                                 or(
                                         ilike(employees.fullName, searchPattern),
                                         ilike(employees.email, searchPattern),
                                 ),
-                        )
+                        ))
                         .limit(limit);
 
                 const results: {
@@ -6755,7 +6765,7 @@ export class DatabaseStorage implements IStorage {
                                                 await db
                                                         .select()
                                                         .from(branches)
-                                                        .where(eq(branches.id, emp.branchId))
+                                                        .where(and(eq(branches.id, emp.branchId), eq(branches.tenantId, tenantId)))
                                         )[0] || null
                                 : null;
                         results.push({ employee: emp, person, branch });
@@ -6766,7 +6776,8 @@ export class DatabaseStorage implements IStorage {
 
         async getDirectoryBranchRoster(
                 branchId: string,
-                status?: string,
+                status: string | undefined,
+                tenantId: string,
         ): Promise<
                 {
                         employee: Employee;
@@ -6776,7 +6787,7 @@ export class DatabaseStorage implements IStorage {
                         presence: EmployeePresence | null;
                 }[]
         > {
-                let conditions = [eq(employees.branchId, branchId)];
+                let conditions = [eq(employees.branchId, branchId), eq(employees.tenantId, tenantId)];
                 if (status) {
                         conditions.push(eq(employees.employmentState, status as any));
                 }
@@ -6808,7 +6819,10 @@ export class DatabaseStorage implements IStorage {
                                                 await db
                                                         .select()
                                                         .from(departments)
-                                                        .where(eq(departments.id, emp.primaryDepartmentId))
+                                                        .where(and(
+                                                                eq(departments.id, emp.primaryDepartmentId),
+                                                                eq(departments.tenantId, tenantId),
+                                                        ))
                                         )[0] || null
                                 : null;
 
@@ -6816,7 +6830,7 @@ export class DatabaseStorage implements IStorage {
                                 .select({ role: roles })
                                 .from(employeeRoles)
                                 .innerJoin(roles, eq(employeeRoles.roleId, roles.id))
-                                .where(eq(employeeRoles.employeeId, emp.id));
+                                .where(and(eq(employeeRoles.employeeId, emp.id), eq(roles.tenantId, tenantId)));
 
                         const presence = await this.getEmployeePresence(emp.id);
 
