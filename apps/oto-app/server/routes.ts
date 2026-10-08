@@ -134,6 +134,7 @@ import { directoryJobRouter } from "./directory/jobRoutes";
 import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
+import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup } from "./lib/shiftGroupRequired";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
@@ -14664,6 +14665,11 @@ OTO Company Limited`,
       if (!branchId || !startTime || !endTime) {
         return res.status(400).json({ message: "Missing required fields" });
       }
+      // A row needs a shift group: the column is NOT NULL, and this said so
+      // only as a bare 500 (S2-17b round 5, Q2 and H15). Nothing is written.
+      if (noShiftGroup(shiftGroupId)) {
+        return res.status(400).json(SHIFT_GROUP_REQUIRED);
+      }
 
       const branch = await storage.getBranch(branchId);
       if (!branch) {
@@ -14731,6 +14737,10 @@ OTO Company Limited`,
       const { id } = req.params;
       const { startTime, endTime, label, note, roleIds, rowOrder, staffRequired, staffRequiredByDay, colorIndex, shiftGroupId, sortOrderWithinGroup, breakEnabled, breakDurationMinutes, breakBaseOffsetMinutes, breakStaggerMinutes } = req.body;
 
+      // Editing a row to "Ungrouped" would leave it with no shift group (Q2, H15).
+      if (shiftGroupId !== undefined && noShiftGroup(shiftGroupId)) {
+        return res.status(400).json(SHIFT_GROUP_REQUIRED);
+      }
 
       const updates: any = {};
       if (startTime !== undefined) updates.startTime = startTime;
@@ -15284,8 +15294,13 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       const targetGroupId = req.query.targetGroupId as string;
-      
+
       const shiftsInGroup = await storage.getShiftRowsByGroup(id);
+      // Its rows would be left with no shift group, which the database refuses
+      // (Q2, H15): say so before anything is moved or deleted.
+      if (shiftsInGroup.length > 0 && noShiftGroup(targetGroupId)) {
+        return res.status(400).json(SHIFT_GROUP_DELETE_NEEDS_TARGET);
+      }
       if (shiftsInGroup.length > 0) {
         for (const shift of shiftsInGroup) {
           await storage.updateShiftRow(shift.id, { shiftGroupId: targetGroupId || null });
@@ -15303,6 +15318,10 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       const { shiftGroupId, sortOrderWithinGroup } = req.body;
+      // Dragging a row out of every group would leave it with none (Q2, H15).
+      if (shiftGroupId !== undefined && noShiftGroup(shiftGroupId)) {
+        return res.status(400).json(SHIFT_GROUP_REQUIRED);
+      }
       const updates: any = {};
       if (shiftGroupId !== undefined) updates.shiftGroupId = shiftGroupId;
       if (sortOrderWithinGroup !== undefined) updates.sortOrderWithinGroup = sortOrderWithinGroup;
