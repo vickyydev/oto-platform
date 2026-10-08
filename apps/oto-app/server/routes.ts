@@ -9023,7 +9023,12 @@ OTO Company Limited`,
       const tenantId = (req.user as any).tenantId;
 
       const branch = await storage.getBranch(branchId);
-      if (!branch) {
+      // Another park group's branch is the same 404 as one that does not exist
+      // (S2-17b round 5). The code is minted for the caller's park group, so
+      // another park group's branch made a device whose park group disagrees
+      // with its branch — the row `resolveKioskDevice` calls corrupted — and
+      // the tablet read that branch's guest check-ins.
+      if (!branch || !tenantId || branch.tenantId !== tenantId) {
         return res.status(404).json({ message: "Branch not found" });
       }
 
@@ -9306,7 +9311,10 @@ OTO Company Limited`,
       }
 
       const branch = await storage.getBranch(session.branchId);
-      if (!branch) {
+      // A device minted before the kiosk code was held to the caller's park
+      // group can sit in another park group's branch: it reads nothing of it
+      // (S2-17b round 5).
+      if (!branch || branch.tenantId !== session.tenantId) {
         return res.status(404).json({ error: "Branch not found" });
       }
 
@@ -9348,6 +9356,9 @@ OTO Company Limited`,
         .from(serviceCheckins)
         .where(
           and(
+            // The device's own park group too (S2-17b round 5): a device minted
+            // into another park group's branch reads none of its check-ins.
+            eq(serviceCheckins.tenantId, session.tenantId),
             eq(serviceCheckins.branchId, session.branchId),
             gte(serviceCheckins.registeredAt, todayStart)
           )
