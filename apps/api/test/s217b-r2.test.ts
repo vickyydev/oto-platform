@@ -584,7 +584,7 @@ describe('B. H24 — the view names the account the app’s own rule links to ea
       ];
       const view = await listAppEmployees(db);
       for (const u of users) {
-        const [{ email }] = await q<{ email: string }>(`select email from users where id = $1`, [u.user]);
+        const email = (await q<{ email: string }>(`select email from users where id = $1`, [u.user]))[0]!.email;
         const picked = await linkedEmployeeOf(origin, email);
         const named = view.filter((e) => e.platformUserId === u.platform).map((e) => e.id);
         expect(named, email).toEqual(picked ? [picked] : []);
@@ -596,7 +596,7 @@ describe('B. H24 — the view names the account the app’s own rule links to ea
         [f.twoCarriers.user, [f.twoCarriers.a, f.twoCarriers.b]],
         [f.phoneBoth.user, [f.phoneBoth.a, f.phoneBoth.b]],
       ] as const) {
-        const [{ email }] = await q<{ email: string }>(`select email from users where id = $1`, [user]);
+        const email = (await q<{ email: string }>(`select email from users where id = $1`, [user]))[0]!.email;
         expect(pair).toContain(await linkedEmployeeOf(origin, email));
       }
     });
