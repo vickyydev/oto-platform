@@ -331,11 +331,13 @@ try {
     assert.ok(!JSON.stringify(res.body).includes("zz-test-bucket"), "the bucket's name is not handed out");
   })();
   for (const path of ["/api/admin/run-departed-deactivation", "/api/scheduler/transition-left"]) {
-    await check(`POST ${path} points at the Console under OTOAPP_JOBS=platform`, async () => {
+    await check(`POST ${path} points at the platform's schedule and the Console under OTOAPP_JOBS=platform`, async () => {
       const res = await call(staging, "POST", path, stagingAdmin);
       assert.equal(res.status, 409, JSON.stringify(res.body));
       assert.equal(res.body.reason, JOBS_ON_PLATFORM_REFUSAL.reason);
-      assert.match(String(res.body.message), /Run now on the Console's Health page/);
+      // Never at Run now: a staging test control, which production refuses (round 3 review, F5).
+      assert.match(String(res.body.message), /Retry on the Console's Failures page/);
+      assert.doesNotMatch(String(res.body.message), /Run now/);
     })();
   }
   await check("not one row changed: users counted, both park groups as they were", async () => {

@@ -1075,11 +1075,13 @@ services:
         # app's own timers, or `platform`, the platform's job runner. Under
         # `platform` no timer starts here, the platform calls
         # POST /api/directory/jobs/:name/run per park group, and the two manual
-        # job triggers answer with the Console's Run now instead of racing the
-        # scheduled run. Under `inprocess` that endpoint refuses, so the
-        # platform cannot succeed BEFORE the flip (round 3): issue a jobs:run
-        # key, set it on oto-api-staging as OTOAPP_JOBS_KEYS (secret, by hand),
-        # flip this, then press Run now for each OTO App job on Health; flip
+        # job triggers point at the platform's 03:00 run and Retry on the
+        # Console instead of racing the scheduled run. Under `inprocess` that
+        # endpoint refuses, so the platform cannot succeed BEFORE the flip
+        # (round 3): issue a jobs:run key for every park group the app holds
+        # staff in, set them on oto-api-staging as OTOAPP_JOBS_KEYS (secret, by
+        # hand), flip this, then press Run now (a staging test control;
+        # production has none, plan Q22) for each OTO App job on Health; flip
         # back if one fails. Any other value refuses to boot.
         value: inprocess
       # OTOAPP_LEGACY_LOGIN is deliberately absent. The old Passport form is

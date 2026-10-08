@@ -547,7 +547,7 @@ try {
 
   const adminOnPlatform = await signIn(platform, A.admin.email);
   for (const path of ["/api/admin/run-departed-deactivation", "/api/scheduler/transition-left"]) {
-    await check(`POST ${path} under platform: the Console's Run now, in words, and nothing runs`, async () => {
+    await check(`POST ${path} under platform: the platform's 03:00 run and Retry, in words, and nothing runs`, async () => {
       const res = await post(platform, path, adminOnPlatform);
       assert.equal(res.status, 409, res.text);
       assert.deepEqual(res.body, JOBS_ON_PLATFORM_REFUSAL);

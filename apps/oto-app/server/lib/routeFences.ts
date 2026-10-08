@@ -66,11 +66,19 @@ export const DEV_ROUTE_REFUSAL = {
     "This is a development tool. It is switched off on every deployment and runs only on a developer's machine.",
 } as const;
 
-/** What a manual job trigger answers while the platform runs the jobs. */
+/**
+ * What a manual job trigger answers while the platform runs the jobs.
+ *
+ * Both triggers are steps of the 03:00 batch. It points at what every
+ * deployment has: the platform's schedule, the Console's Health page and
+ * Retry on its Failures page. Not at Run now, which exists only among a
+ * staging deployment's test controls — a production operator could not press
+ * it (S2-17b round 3 review, F5).
+ */
 export const JOBS_ON_PLATFORM_REFUSAL = {
   reason: "jobs_on_platform",
   message:
-    "The platform runs this job now. Use Run now on the Console's Health page, so it never runs twice at once.",
+    "The platform runs this job now, in the OTO App's 03:00 batch: once a night at its first tick past 03:00 Bangkok time, shown on the Console's Health page. A night that fails is run again at the next tick, or from Retry on the Console's Failures page. It is not run from here, so it never runs twice at once.",
 } as const;
 
 /** What a maintenance route answers when the caller belongs to no park group. */

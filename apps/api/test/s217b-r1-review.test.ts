@@ -864,7 +864,10 @@ describe.skipIf(!HAS_APP_RUNTIME)(
             expect(res.status, `${path} as ${who}: ${res.text}`).toBe(expected[who]);
             if (expected[who] === 409) {
               expect(res.body.reason).toBe('jobs_on_platform');
-              expect(String(res.body.message)).toMatch(/Run now on the Console's Health page/);
+              // Round 3 review F5: the platform's schedule and Retry, never the
+              // staging-only Run now a production operator cannot press.
+              expect(String(res.body.message)).toMatch(/Retry on the Console's Failures page/);
+              expect(String(res.body.message)).not.toMatch(/Run now/);
             }
           }
         }

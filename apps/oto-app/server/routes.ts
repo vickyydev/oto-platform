@@ -1343,8 +1343,9 @@ export async function registerRoutes(
   });
 
   // A manual trigger of the 03:00 step, which no screen calls. It follows
-  // OTOAPP_JOBS (under `platform` the Console's Run now is the way, so a call
-  // never races the scheduled run), and it acts on the caller's own park group
+  // OTOAPP_JOBS (under `platform` the platform's 03:00 run is the way, retried
+  // from the Console's Failures page, so a call never races the scheduled
+  // run), and it acts on the caller's own park group
   // only, where it used to switch off logins across every one (S2-17b round 1).
   app.post("/api/admin/run-departed-deactivation", requireAuth, requireAdmin, followsJobsSwitch(JOBS_MODE), parkGroupOnly(userManagementTenant), async (req, res, next) => {
     try {

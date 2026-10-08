@@ -1349,7 +1349,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app: its endpoint, the platform j
       const res = await trigger(origin.platform, onPlatform, path);
       expect(res.status, path).toBe(409);
       expect(res.body.reason).toBe('jobs_on_platform');
-      expect(String(res.body.message)).toMatch(/Run now on the Console's Health page/);
+      expect(String(res.body.message)).toMatch(/Retry on the Console's Failures page/);
+      expect(String(res.body.message)).not.toMatch(/Run now/);
     }
     expect(await active(leaverUser)).toBe(true);
 
