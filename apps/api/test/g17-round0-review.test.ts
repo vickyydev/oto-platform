@@ -407,13 +407,15 @@ describe('A. the OTO App migration, from a seeded live state', () => {
       expect(runs[0]).toContain('applied 0004_otoapp_v_views');
       // S2-17b round 2's employee view rides the same upgrade.
       expect(runs[0]).toContain('applied 0005_otoapp_v_employees');
-      expect(runs[1]).toMatch(/up to date .* 6 migration/);
+      // And round 4a's tenant columns (s217b-r4a.test.ts proves their backfill).
+      expect(runs[0]).toContain('applied 0006_tenant_ownership_expand');
+      expect(runs[1]).toMatch(/up to date .* 7 migration/);
     }
     await withClient(url, async (c) => {
       const ledger = await c.query<{ n: string }>(
         'select count(*)::text as n from otoapp.__drizzle_migrations',
       );
-      expect(ledger.rows[0]!.n).toBe('6');
+      expect(ledger.rows[0]!.n).toBe('7');
     });
   });
 
@@ -434,23 +436,40 @@ describe('A. the OTO App migration, from a seeded live state', () => {
       ([key]) => !before.columns.has(key) && before.tables.has(key.split('.')[0]!),
     );
     expect(added.map(([k]) => k).sort()).toEqual([
+      // S2-17b round 4a (0006): each nullable, backfilled, NOT NULL only in 4b.
+      'activity_log.tenant_id',
+      'attention_items.tenant_id',
       'camp_attendance.checkin_ref',
       'camp_registrations.parent_attending',
       'core_events.entry_price_weekday_thb',
       'core_events.entry_price_weekend_thb',
+      'settings.tenant_id',
     ]);
     for (const [key, def] of added) {
       expect(def.includes('notnull=false') || !def.includes('default=<none>'), key).toBe(true);
     }
-    // Nothing is added to an existing table but the one CHECK and the one partial index.
+    // Nothing is added to an existing table but the one CHECK and the one
+    // partial index — and, from S2-17b round 4a (0006), the three tenant
+    // columns' foreign keys and indexes, settings' (tenant_id, key) unique
+    // beside the baseline's settings_key_unique, which stays.
     const addedConstraints = [...after.constraints.keys()].filter(
       (k) => !before.constraints.has(k) && before.tables.has(k.split(':')[0]!),
     );
-    expect(addedConstraints).toEqual(['core_events:core_events_entry_price_check']);
+    expect(addedConstraints.sort()).toEqual([
+      'activity_log:activity_log_tenant_id_tenants_id_fk',
+      'attention_items:attention_items_tenant_id_tenants_id_fk',
+      'core_events:core_events_entry_price_check',
+      'settings:settings_tenant_id_tenants_id_fk',
+    ]);
     const addedIndexes = [...after.indexes.keys()].filter(
       (k) => !before.indexes.has(k) && before.tables.has(k.split(':')[0]!),
     );
-    expect(addedIndexes).toEqual(['camp_attendance:uq_camp_attendance_checkin_ref']);
+    expect(addedIndexes.sort()).toEqual([
+      'activity_log:idx_activity_log_tenant',
+      'attention_items:idx_attention_items_tenant',
+      'camp_attendance:uq_camp_attendance_checkin_ref',
+      'settings:settings_tenant_id_key_unique',
+    ]);
   });
 
   it('leaves every seeded row as it was, with the new columns null or their default', async () => {

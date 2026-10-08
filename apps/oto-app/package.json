@@ -13,6 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node script/migrate.mjs",
     "directory:client": "node script/directory-client.mjs",
+    "tenant:readback": "node script/tenant-ownership-readback.mjs",
     "import:core-uploads": "tsx script/importCoreLegacyUploads.ts"
   },
   "dependencies": {

@@ -43,6 +43,13 @@
       "when": 1791440485239,
       "tag": "0005_otoapp_v_employees",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791474702189,
+      "tag": "0006_tenant_ownership_expand",
+      "breakpoints": true
     }
   ]
 }

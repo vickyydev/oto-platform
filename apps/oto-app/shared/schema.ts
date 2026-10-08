@@ -1180,12 +1180,30 @@ export type InsertContractInstance = z.infer<typeof insertContractInstanceSchema
 export type ContractInstance = typeof contractInstances.$inferSelect;
 
 // Settings table for email templates and configuration
+// A setting belongs to a park group (S2-17b round 4a, migration 0006): the
+// row's `tenant_id`, backfilled to the default park group, which held every
+// setting before. Each park group reads its own row for a key and, where it has
+// none, the default park group's — what every park group read while there was
+// one global set (server/lib/parkGroupSettings.ts).
+//
+// TWO UNIQUES FOR ONE RELEASE. `settings_key_unique` (the `.unique()` below)
+// still stands beside the new (tenant_id, key) index, so the release before
+// this one keeps working against the migrated table. While it stands, a key
+// can be held by one park group only, so only the default park group saves
+// settings; the contraction (round 4b, a release later) drops it and opens
+// saving to every park group. `tenant_id` is nullable until then: a row the
+// previous release writes during the hand-over has none, and reads as the
+// default park group's.
 export const settings = pgTable("settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   key: text("key").notNull().unique(),
   value: text("value").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+}, (table) => [
+  // Also the tenant_id index: it leads with it.
+  uniqueIndex("settings_tenant_id_key_unique").on(table.tenantId, table.key),
+]);
 
 export const insertSettingSchema = createInsertSchema(settings).omit({
   id: true,
@@ -1254,6 +1272,14 @@ export const activityTypes = [
 export type ActivityType = typeof activityTypes[number];
 
 // Activity log table for dashboard feed
+// `tenant_id` (S2-17b round 4a, migration 0006): the park group a row belongs
+// to, so a row with no branch — a user created, a policy published, a camp
+// edited — shows in its own park group's Activity Logbook rather than in none.
+// Backfilled from the branch, then the employee, then the contract's employee,
+// then the user who did it, then the default park group; written on the same
+// order by `createActivityLog`. Nullable until the contraction (round 4b): a
+// row the previous release writes during the hand-over has none, and is shown
+// by its branch as before.
 export const activityLog = pgTable("activity_log", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   branchId: varchar("branch_id").references(() => branches.id),
@@ -1266,7 +1292,10 @@ export const activityLog = pgTable("activity_log", {
   metadataJson: text("metadata_json"),
   createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+}, (table) => [
+  index("idx_activity_log_tenant").on(table.tenantId),
+]);
 
 export const activityLogRelations = relations(activityLog, ({ one }) => ({
   branch: one(branches, {
@@ -1355,7 +1384,14 @@ export const attentionItems = pgTable("attention_items", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at"),
   resolvedBy: varchar("resolved_by").references(() => users.id),
-});
+  // S2-17b round 4a, migration 0006: the park group an item belongs to,
+  // backfilled from the branch, then the employee, then the contract's
+  // employee, then the default park group. Attention stays paused
+  // (ATTENTION_WRITES_READY) until round 4b writes it and reads by it.
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+}, (table) => [
+  index("idx_attention_items_tenant").on(table.tenantId),
+]);
 
 export const attentionItemsRelations = relations(attentionItems, ({ one }) => ({
   branch: one(branches, {
