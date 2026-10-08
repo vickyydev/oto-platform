@@ -12,8 +12,9 @@
 //     two manual job triggers point at the Console instead of running — and
 //     not one row changes;
 //   - on a developer's machine (DEPLOY_ENV=local, OTOAPP_JOBS=inprocess): the
-//     four maintenance routes, run by one park group's admin, change that park
-//     group's rows and none of the other's;
+//     four maintenance routes refuse an admin the app cannot place in a park
+//     group (no branch access, two park groups), and run by one park group's
+//     admin they change that park group's rows and none of the other's;
 //   - DELETE /api/users/:id answers the app's own 409 words for a user the
 //     platform has linked and for a user the app still references, changing
 //     nothing, and still deletes a user nothing points at.
@@ -30,7 +31,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { DEACTIVATE_INSTEAD } from "../server/lib/userDeletion";
-import { DEV_ROUTE_REFUSAL, JOBS_ON_PLATFORM_REFUSAL } from "../server/lib/routeFences";
+import { DEV_ROUTE_REFUSAL, JOBS_ON_PLATFORM_REFUSAL, NO_PARK_GROUP_REFUSAL } from "../server/lib/routeFences";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -149,6 +150,16 @@ async function staffUser(label: string, platformUserId: string | null = null) {
   );
   return id;
 }
+// An admin the app cannot place: no branch-access row, in a database of two
+// park groups. The session still names a park group (the first branch's, by
+// `getUserWithBranchAccess`'s fallback); the maintenance routes must not.
+const unplaced = { id: randomUUID(), email: `zz-unplaced-admin-${run}@example.com` };
+await q(
+  `insert into users (id, email, password, full_name, role, is_active, must_change_password)
+   values ($1, $2, $3, 'ZZ TEST unplaced admin', 'admin', true, false)`,
+  [unplaced.id, unplaced.email, hash(PASSWORD)],
+);
+
 const linked = await staffUser("linked", randomUUID());
 const referenced = await staffUser("referenced");
 await q("insert into user_module_overrides (tenant_id, user_id, module_key) values ($1, $2, 'ops')", [A.tenant, referenced]);
@@ -308,6 +319,21 @@ try {
     const res = await call(local, "GET", "/api/test-sentry");
     assert.equal(res.status, 500);
   })();
+  const unplacedAdmin = await signIn(local, unplaced.email);
+  for (const path of [
+    "/api/admin/fix-pending-with-signed-contracts",
+    "/api/admin/backfill-employee-photos",
+    "/api/scheduler/transition-left",
+    "/api/admin/run-departed-deactivation",
+  ]) {
+    await check(`POST ${path} refuses an admin the app cannot place in a park group, and changes nobody's rows`, async () => {
+      const res = await call(local, "POST", path, unplacedAdmin);
+      assert.equal(res.status, 403, JSON.stringify(res.body));
+      assert.equal(res.body.reason, NO_PARK_GROUP_REFUSAL.reason);
+      assert.deepEqual(await stateOf(A), untouched);
+      assert.deepEqual(await stateOf(B), untouched);
+    })();
+  }
   const adminA = await signIn(local, A.admin.email);
   await check("fix-pending promotes park group A's employee and not B's", async () => {
     const res = await call(local, "POST", "/api/admin/fix-pending-with-signed-contracts", adminA);

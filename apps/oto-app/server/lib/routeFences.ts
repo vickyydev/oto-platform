@@ -26,6 +26,13 @@ import type { NextFunction, Request, Response } from "express";
  *  - `parkGroupOnly`: the maintenance routes act on the caller's own park
  *    group (tenant) and nobody else's. The tenant goes on `res.locals` for
  *    the handler; a caller with none is refused rather than treated as all.
+ *    "Their own" is the app's strict rule, the one User Management already
+ *    applies (`userManagementTenant` in `server/routes.ts`): the session's
+ *    tenant counts only when the app can place the caller there by their own
+ *    rows. The session's tenant alone is not enough, because
+ *    `getUserWithBranchAccess` never leaves it empty while any branch exists:
+ *    with no branch-access row it falls back to whichever park group's branch
+ *    the table returns first.
  *
  * The last two sit after the route's own sign-in and role checks: they answer
  * "not now" and "whose rows", which are nobody else's business.
@@ -97,19 +104,33 @@ export function followsJobsSwitch(mode: JobsMode): Middleware {
 }
 
 /**
+ * The park group the app can place the caller in by its own strict rule, or
+ * undefined when it cannot. In the app this is `userManagementTenant`: the
+ * session's tenant, and only when `managedUserTenant` of the caller agrees.
+ */
+export type CallerParkGroup = (req: Request) => Promise<string | undefined>;
+
+/**
  * The caller's park group, put where the handler reads it. Placed after the
  * route's sign-in and role checks: it answers "whose rows", not "may they".
+ * A caller the app cannot place — no park group, or one only the session's
+ * fallback names — is refused, and nothing runs.
  */
-export const parkGroupOnly: Middleware = (req, res, next) => {
-  const tenantId = (req as Request & { userWithAccess?: { tenantId?: string | null } }).userWithAccess
-    ?.tenantId;
-  if (!tenantId) {
-    res.status(403).json(NO_PARK_GROUP_REFUSAL);
-    return;
-  }
-  res.locals.parkGroupId = tenantId;
-  next();
-};
+export function parkGroupOnly(callerParkGroup: CallerParkGroup): Middleware {
+  return (req, res, next) => {
+    callerParkGroup(req).then(
+      (tenantId) => {
+        if (!tenantId) {
+          res.status(403).json(NO_PARK_GROUP_REFUSAL);
+          return;
+        }
+        res.locals.parkGroupId = tenantId;
+        next();
+      },
+      (err: unknown) => next(err),
+    );
+  };
+}
 
 /** The tenant `parkGroupOnly` put on the response. Only valid behind it. */
 export function parkGroupOf(res: Response): string {

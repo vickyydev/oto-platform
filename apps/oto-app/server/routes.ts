@@ -1345,7 +1345,7 @@ export async function registerRoutes(
   // OTOAPP_JOBS (under `platform` the Console's Run now is the way, so a call
   // never races the scheduled run), and it acts on the caller's own park group
   // only, where it used to switch off logins across every one (S2-17b round 1).
-  app.post("/api/admin/run-departed-deactivation", requireAuth, requireAdmin, followsJobsSwitch(JOBS_MODE), parkGroupOnly, async (req, res, next) => {
+  app.post("/api/admin/run-departed-deactivation", requireAuth, requireAdmin, followsJobsSwitch(JOBS_MODE), parkGroupOnly(userManagementTenant), async (req, res, next) => {
     try {
       const { runDepartedAccountDeactivation } = await import("./scheduled-jobs");
       const deactivated = await runDepartedAccountDeactivation({ tenantId: parkGroupOf(res) });
@@ -1359,7 +1359,7 @@ export async function registerRoutes(
   // every park group's users and rewrite every park group's employees. Both
   // sides are cut (this group's employees, matched only to this group's
   // users), so no photo path crosses from one park group to another.
-  app.post("/api/admin/backfill-employee-photos", requireAuth, requireAdmin, parkGroupOnly, async (req, res, next) => {
+  app.post("/api/admin/backfill-employee-photos", requireAuth, requireAdmin, parkGroupOnly(userManagementTenant), async (req, res, next) => {
     try {
       const tenantId = parkGroupOf(res);
       const synced: { employee: string; photo: string; action: string }[] = [];
@@ -1920,7 +1920,7 @@ export async function registerRoutes(
   // This is a one-time fix for employees created before the contract-signing status update was implemented
   // Held to the caller's own park group (S2-17b round 1): it used to promote
   // pending employees across every park group.
-  app.post("/api/admin/fix-pending-with-signed-contracts", requireAuth, requireAdmin, parkGroupOnly, async (req, res, next) => {
+  app.post("/api/admin/fix-pending-with-signed-contracts", requireAuth, requireAdmin, parkGroupOnly(userManagementTenant), async (req, res, next) => {
     try {
       const tenantId = parkGroupOf(res);
       // Find this park group's employees with PENDING status who have signed contracts
@@ -8420,7 +8420,7 @@ OTO Company Limited`,
   // Scheduler endpoint for daily LEAVING -> LEFT transitions. A manual
   // trigger no screen calls: it follows OTOAPP_JOBS, and moves the caller's
   // own park group's leavers only (S2-17b round 1).
-  app.post("/api/scheduler/transition-left", requireAuth, requireAdmin, followsJobsSwitch(JOBS_MODE), parkGroupOnly, async (req, res, next) => {
+  app.post("/api/scheduler/transition-left", requireAuth, requireAdmin, followsJobsSwitch(JOBS_MODE), parkGroupOnly(userManagementTenant), async (req, res, next) => {
     try {
       const userId = (req.user as any).id;
       const tenantId = parkGroupOf(res);

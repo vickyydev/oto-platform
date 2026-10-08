@@ -1182,6 +1182,10 @@ describe.skipIf(!HAS_APP_RUNTIME)(
      * park group. The app's own User Management already uses the strict rule
      * (`userManagementTenant`: `managedUserTenant` must agree) and refuses the
      * same caller.
+     *
+     * FIXED IN THE FIX ROUND: `parkGroupOnly` takes the app's strict rule as
+     * its resolver (`parkGroupOnly(userManagementTenant)` on all four routes),
+     * so the caller User Management refuses is refused here too. Pin flipped.
      */
     describe('7. an admin with no branch access, in a database of two park groups', () => {
       let lost: string;
@@ -1215,7 +1219,7 @@ describe.skipIf(!HAS_APP_RUNTIME)(
         expect(users.status, users.text).toBe(403);
       });
 
-      it.fails(
+      it(
         'a repair called by them is refused as "no park group" and changes nobody’s rows',
         async () => {
           const res = await call(

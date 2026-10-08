@@ -624,9 +624,10 @@ interface FencesModule {
   readJobsMode(raw: string | undefined): 'inprocess' | 'platform' | null;
   devOnly(env: 'local' | 'staging' | 'production'): Mw;
   followsJobsSwitch(mode: 'inprocess' | 'platform'): Mw;
-  parkGroupOnly: Mw;
+  parkGroupOnly(callerParkGroup: (req: unknown) => Promise<string | undefined>): Mw;
   DEV_ROUTE_REFUSAL: { reason: string; message: string };
   JOBS_ON_PLATFORM_REFUSAL: { reason: string; message: string };
+  NO_PARK_GROUP_REFUSAL: { reason: string; message: string };
 }
 
 const fakeRes = (): FakeRes => {
@@ -688,15 +689,53 @@ describe("E. the route fences' logic", () => {
     expect(through(f.followsJobsSwitch('inprocess')).passed).toBe(true);
   });
 
-  it("a maintenance route takes the caller's park group, and refuses a caller with none", () => {
-    const ok = through(f.parkGroupOnly, { userWithAccess: { tenantId: appTenant } });
+  /** A middleware that may answer later: settled when it calls next or answers. */
+  const settle = (mw: Mw, req: unknown = {}) =>
+    new Promise<{ res: FakeRes; passed: boolean }>((resolve, reject) => {
+      const res = fakeRes();
+      const json = res.json;
+      res.json = (body) => {
+        json(body);
+        resolve({ res, passed: false });
+        return res;
+      };
+      mw(req, res, ((err?: unknown) =>
+        err ? reject(err) : resolve({ res, passed: true })) as () => void);
+    });
+
+  it("a maintenance route takes the park group the app places the caller in, and refuses a caller it cannot place", async () => {
+    // The resolver is the app's strict rule (`userManagementTenant`): what it
+    // answers is the park group, whatever the session's fallback says.
+    const seen: unknown[] = [];
+    const placedIn =
+      (tenantId: string | undefined) =>
+      async (req: unknown): Promise<string | undefined> => {
+        seen.push(req);
+        return tenantId;
+      };
+    const req = { user: { id: 'zz' }, userWithAccess: { tenantId: appTenant } };
+    const ok = await settle(f.parkGroupOnly(placedIn(appTenant)), req);
     expect(ok.passed).toBe(true);
     expect(ok.res.locals.parkGroupId).toBe(appTenant);
-    for (const req of [{}, { userWithAccess: {} }, { userWithAccess: { tenantId: null } }]) {
-      const refused = through(f.parkGroupOnly, req);
-      expect(refused.passed).toBe(false);
-      expect(refused.res.statusCode).toBe(403);
-    }
+    expect(seen).toEqual([req]);
+
+    // The session names a park group by its fallback, the app cannot place them.
+    const refused = await settle(f.parkGroupOnly(placedIn(undefined)), req);
+    expect(refused.passed).toBe(false);
+    expect(refused.res.statusCode).toBe(403);
+    expect(refused.res.body).toEqual(f.NO_PARK_GROUP_REFUSAL);
+    expect(refused.res.locals.parkGroupId).toBeUndefined();
+  });
+
+  it('a maintenance route whose park group cannot be read passes the error on, and runs nothing', async () => {
+    const boom = new Error('zz: the read failed');
+    await expect(
+      settle(
+        f.parkGroupOnly(async () => {
+          throw boom;
+        }),
+      ),
+    ).rejects.toBe(boom);
   });
 });
 
