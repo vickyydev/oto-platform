@@ -1177,6 +1177,48 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app: its endpoint, the platform j
     expect(await active(otherUser)).toBe(true);
   });
 
+  it('review F2: a second midnight batch of one date makes no second instance — a task due at 06:30 Bangkok, and one at 18:00', async () => {
+    const t = newId();
+    await q(`insert into tenants (id, name, slug) values ($1, 'ZZ r3 tasks', $2)`, [t, `zz-r3-tasks-${t.slice(-6)}`]);
+    const branch = newId();
+    await q(`insert into branches (id, tenant_id, name, address) values ($1, $2, 'ZZ r3 tasks park', 'ZZ r3')`, [branch, t]);
+    const k = await directoryKey(t, ['jobs:run']);
+    const definition = async (time: string) =>
+      (
+        await q<{ id: string }>(
+          `insert into tasks (tenant_id, branch_id, title, recurrence, is_recurring_definition, preferred_due_time)
+           values ($1, $2, $3, 'daily', true, $4) returning id`,
+          [t, branch, `ZZ r3 daily at ${time}`, time],
+        )
+      )[0]!.id;
+    // 06:30 Bangkok is the previous UTC day: the window the old lookup missed.
+    const early = await definition('06:30');
+    const late = await definition('18:00');
+    const generated: number[] = [];
+    for (let i = 0; i < 2; i += 1) {
+      const a = await post(origin.platform, 'midnight', k, { tenantId: t });
+      expect(a.status, JSON.stringify(a.body)).toBe(200);
+      expect(a.body.ok, JSON.stringify(a.body)).toBe(true);
+      const steps = a.body.steps as Array<{ step: string; counts: Record<string, number> }>;
+      generated.push(steps.find((s) => s.step === 'taskGeneration')!.counts.generated!);
+    }
+    expect(generated).toEqual([2, 0]);
+    const today = isoDateInTz(new Date(), BANGKOK);
+    for (const [def, time] of [
+      [early, '06:30'],
+      [late, '18:00'],
+    ] as const) {
+      // The app keeps naive UTC timestamps: read the wall time as stored.
+      const rows = await q<{ d: string; due: string }>(
+        `select generated_for_date as d, to_char(due_at, 'YYYY-MM-DD"T"HH24:MI') as due from tasks where parent_task_id = $1`,
+        [def],
+      );
+      expect(rows, time).toHaveLength(1);
+      expect(rows[0]!.d, time).toBe(today);
+      expect(rows[0]!.due, time).toBe(at(today, time).toISOString().slice(0, 16));
+    }
+  });
+
   it("apps/oto-app/tests/night-jobs.check.ts passes against a fresh database", async () => {
     const { url, drop } = await createTestDatabase({ otoapp: true });
     try {

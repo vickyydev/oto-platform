@@ -555,7 +555,8 @@ describe('2. the duplicate-work hazard — what makes a second batch for one dat
     expect(await runner.runJob(job.name, { force: true })).toBe('ok');
     // The app ran the batch twice for one date: every step's repeat-safety is
     // load-bearing (PLAN section 10, "every step ... is safe to repeat") —
-    // and, against the app itself (section J4), one step is not.
+    // and, against the app itself (section J4), one step was not (F2, now
+    // fixed: task generation finds a date's instance by the date it was made for).
     expect(stub.callsFor('midnight', tenantA)).toHaveLength(2);
     expect(await successesFor(job.name, date, tenantA)).toBe(1);
   });
@@ -1160,7 +1161,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
     });
 
     /**
-     * FINDING (MEDIUM, data reliability — apps/oto-app/server/core/taskGeneration.ts:72-82,
+     * FINDING F2 (MEDIUM, data reliability — apps/oto-app/server/core/taskGeneration.ts:72-82,
      * reached from scheduled-jobs.ts:353). The "already made today?" check
      * looks for an instance due inside `startOfDay(thailandNow)`..`endOfDay`,
      * computed on a Date shifted +7 h in a UTC process: 07:00 to 06:59 Bangkok.
@@ -1178,9 +1179,14 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
      * column the insert already fills), or compute the window as the Bangkok
      * day of `dateStr` (`${dateStr}T00:00:00+07:00` + 24 h); and correct the
      * PLAN section 10 / Q25 sentences until then.
+     * FIXED (the fix round): the first — the instance is looked up by
+     * `parent_task_id` + `generated_for_date`. Flipped from `it.fails`.
      */
-    it.fails('FINDING: a recurring task due at 06:30 is made by the first batch and not again by the second', () => {
+    it('F2 fixed: a recurring task due at 06:30 is made by the first batch and not again by the second', async () => {
       expect(after.early).toEqual([1, 1]);
+      // Made for today's Bangkok date, due 06:30 Bangkok on it.
+      const rows = await q<{ d: string }>('select generated_for_date as d from tasks where parent_task_id = $1', [t.early]);
+      expect(rows.map((r) => r.d)).toEqual([bangkokDays().today]);
     });
   });
 

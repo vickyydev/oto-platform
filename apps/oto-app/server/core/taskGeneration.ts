@@ -1,9 +1,39 @@
 import { db } from "../db";
 import { tasks, taskAssignments } from "../db/coreSchema";
-import { eq, and, gte, lt } from "drizzle-orm";
-import { format, startOfDay, endOfDay, getDay, getDate, getDaysInMonth, addMonths } from "date-fns";
+import { eq, and } from "drizzle-orm";
+import { format, startOfDay, getDay, getDate, getDaysInMonth, addMonths } from "date-fns";
 
 const DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+/**
+ * Is this definition's instance for this date made already?
+ *
+ * Looked up by the date the instance was made FOR (`generated_for_date`, which
+ * both inserts below fill with the same `dateStr`), the way the template
+ * generator looks up its own (`compat/studioTasksCompat.ts`).
+ *
+ * It used to look for an instance DUE inside `startOfDay(targetDate)` to
+ * `endOfDay(targetDate)`. The batch passes a date shifted +7 hours in a UTC
+ * process, so that window ran from 07:00 to 06:59 Bangkok: an instance due
+ * before 07:00 (`${dateStr}T06:30:00+07:00`, the previous UTC day) was never
+ * found, and every second batch of one date made it again. In-process the
+ * batch ran once a night and it never showed; the platform's runner runs a
+ * date's batch again after a failure or a timed-out call, and on the day of
+ * the switch (S2-17b round 3 review, F2 — a duplicate row, fixed as a
+ * data-reliability fault).
+ */
+async function instanceMadeFor(tenantId: string, definitionId: string, dateStr: string): Promise<boolean> {
+  const existing = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(
+      eq(tasks.tenantId, tenantId),
+      eq(tasks.parentTaskId, definitionId),
+      eq(tasks.generatedForDate, dateStr),
+    ))
+    .limit(1);
+  return existing.length > 0;
+}
 
 function shouldGenerateForDate(
   recurrence: string,
@@ -45,8 +75,6 @@ export async function generateTaskInstances(
   targetDate: Date,
 ): Promise<number> {
   const dateStr = format(targetDate, "yyyy-MM-dd");
-  const dayStart = startOfDay(targetDate);
-  const dayEnd = endOfDay(targetDate);
 
   const definitions = await db
     .select()
@@ -69,18 +97,7 @@ export async function generateTaskInstances(
     const earliestDate = defStartDate || defDueDate;
     if (earliestDate && startOfDay(targetDate) < earliestDate) continue;
 
-    const existing = await db
-      .select({ id: tasks.id })
-      .from(tasks)
-      .where(and(
-        eq(tasks.tenantId, tenantId),
-        eq(tasks.parentTaskId, def.id),
-        gte(tasks.dueAt, dayStart),
-        lt(tasks.dueAt, dayEnd),
-      ))
-      .limit(1);
-
-    if (existing.length > 0) continue;
+    if (await instanceMadeFor(tenantId, def.id, dateStr)) continue;
 
     const dueTime = def.preferredDueTime || "18:00";
     const dueAt = new Date(`${dateStr}T${dueTime}:00+07:00`);
@@ -142,8 +159,6 @@ export async function generateInstanceForDefinition(
   targetDate: Date,
 ): Promise<void> {
   const dateStr = format(targetDate, "yyyy-MM-dd");
-  const dayStart = startOfDay(targetDate);
-  const dayEnd = endOfDay(targetDate);
 
   const [def] = await db
     .select()
@@ -169,18 +184,7 @@ export async function generateInstanceForDefinition(
   const earliestDate = defStartDate || defDueDate;
   if (earliestDate && startOfDay(targetDate) < earliestDate) return;
 
-  const existing = await db
-    .select({ id: tasks.id })
-    .from(tasks)
-    .where(and(
-      eq(tasks.tenantId, tenantId),
-      eq(tasks.parentTaskId, def.id),
-      gte(tasks.dueAt, dayStart),
-      lt(tasks.dueAt, dayEnd),
-    ))
-    .limit(1);
-
-  if (existing.length > 0) return;
+  if (await instanceMadeFor(tenantId, def.id, dateStr)) return;
 
   const dueTime = def.preferredDueTime || "18:00";
   const dueAt = new Date(`${dateStr}T${dueTime}:00+07:00`);
