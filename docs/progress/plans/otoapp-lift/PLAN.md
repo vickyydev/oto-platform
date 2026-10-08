@@ -610,9 +610,12 @@ is committed.
       the tenant index on `settings` (it leads with it). The baseline's
       `settings_key_unique` stays.
     - The backfill, in order. `activity_log`: its branch; its employee; its
-      contract's employee; the user who did it, when that user's branch
-      access names exactly one park group (the app's strict placement,
-      `managedUserTenant`); then the default park group. `attention_items`:
+      contract's employee; the user who did it, where the app's strict
+      placement (`managedUserTenant`, `server/routes.ts`) places that user:
+      every access row names one park group, every branch those rows name
+      is that park group's, and an operator admin's operator is that park
+      group's too (a user it cannot place places nobody); then the default
+      park group. `attention_items`:
       its branch; its employee; its contract's employee; then the default
       (an item is raised by the engine, so who resolved it says nothing).
       `settings`: the default park group, whose one set it was. The two
@@ -1104,14 +1107,18 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 - **Q30. The backfill's order (round 4a).** The plan said branch, then
   employee, then the default park group. As built, an activity row with
   neither takes its contract's employee's park group, and then the park group
-  of the user who did it when that user's branch access names exactly one,
-  before falling to the default. Otherwise a user created or a policy
-  published by a second park group's admin lands in the default park group's
-  logbook, which H10 forbids. Attention items take the contract step but not
-  the user one: an item is raised by the engine, and who resolved it says
-  nothing about whose it is. New rows are written on the same order, the
-  caller's own park group standing before the user step. Default: as built.
-  The alternative is the plan's three steps.
+  of the user who did it where the app's strict placement
+  (`managedUserTenant`) places them — every access row naming one park group,
+  every branch those rows name that park group's, and an operator admin's
+  operator that park group's too — before falling to the default. Otherwise
+  a user created or a policy published by a second park group's admin lands
+  in the default park group's logbook, which H10 forbids. A user that rule
+  cannot place places nobody, so their row falls to the default, as the
+  app's own User Management would leave them unplaced. Attention items take
+  the contract step but not the user one: an item is raised by the engine,
+  and who resolved it says nothing about whose it is. New rows are written
+  on the same order, the caller's own park group standing before the user
+  step. Default: as built. The alternative is the plan's three steps.
 - **Q31. Where the census's exposures are fixed (round 4a).** The root-table
   census (section 7) found four places that read or write across park
   groups, none of them in 4a's scope. Default placement: `leave_policies`

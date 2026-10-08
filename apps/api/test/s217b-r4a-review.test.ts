@@ -262,7 +262,7 @@ describe('A. H10, harsher: the backfill on a seeded 0005 state, upgraded by the 
     // one park group, where every such row is the default's.
     actorMovedSince: { row: { created_by: id.uMoved }, expected: B },
   };
-  /** Rows the app's strict placement would not place: as built B, where managedUserTenant places nobody (finding 4). */
+  /** Rows the app's strict placement would not place: the lax rule put them in B, where managedUserTenant places nobody (finding 4). */
   const strict: Record<string, { row: Record<string, string>; asBuilt: string; strict: string }> = {
     actorAccessRowCrossesParkGroups: { row: { created_by: id.uMixed }, asBuilt: B, strict: D },
     operatorAdminOfAnotherParkGroup: { row: { created_by: id.uOpAdmin }, asBuilt: B, strict: D },
@@ -477,11 +477,15 @@ describe('A. H10, harsher: the backfill on a seeded 0005 state, upgraded by the 
     expect(await snapshot()).toEqual(first);
   });
 
-  it('as built, the actor step places users the app’s strict placement would not (finding 4’s arrangement)', async () => {
-    const got = await tenantOf('activity_log');
-    for (const [name, { asBuilt }] of Object.entries(strict)) {
-      expect(got.get(rowIds.get(`activity:${name}`)!), name).toBe(asBuilt);
-    }
+  it('finding 4’s arrangement: each of those users’ access rows names exactly one park group, so only managedUserTenant’s two checks keep them out', async () => {
+    await withClient(url, async (c) => {
+      for (const [name, { row, asBuilt }] of Object.entries(strict)) {
+        const named = await c.query<{ tenant_id: string }>('select distinct tenant_id from user_branch_access where user_id = $1', [
+          row.created_by,
+        ]);
+        expect(named.rows, name).toEqual([{ tenant_id: asBuilt }]);
+      }
+    });
   });
 
   /**
@@ -500,7 +504,7 @@ describe('A. H10, harsher: the backfill on a seeded 0005 state, upgraded by the 
    * migration's comment to say what the step is ("access rows naming exactly
    * one park group").
    */
-  it.fails('FINDING 4: the actor step places only users managedUserTenant places', async () => {
+  it('FINDING 4: the actor step places only users managedUserTenant places', async () => {
     const got = await tenantOf('activity_log');
     for (const [name, { strict: expected }] of Object.entries(strict)) {
       expect(got.get(rowIds.get(`activity:${name}`)!), name).toBe(expected);

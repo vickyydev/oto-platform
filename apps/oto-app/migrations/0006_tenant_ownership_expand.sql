@@ -27,10 +27,13 @@
 -- tenant). Each row takes its park group from what it is about, in order:
 --
 --   activity_log     its branch; else its employee; else its contract's
---                    employee; else the user who did it, when that user's
---                    branch access names exactly one park group (the app takes
---                    a user's park group from their branch access); else the
---                    default park group
+--                    employee; else the user who did it, where the app's
+--                    strict placement (managedUserTenant, server/routes.ts)
+--                    places that user: every access row names one park group,
+--                    every branch those rows name is that park group's, and an
+--                    operator admin's operator is that park group's too (a
+--                    user it cannot place places nobody); else the default
+--                    park group
 --   attention_items  its branch; else its employee; else its contract's
 --                    employee; else the default park group (an item is raised
 --                    by the engine, not by a user)
@@ -68,12 +71,18 @@ UPDATE "activity_log" AS a SET "tenant_id" = e."tenant_id"
  WHERE a."tenant_id" IS NULL AND c."id" = a."contract_instance_id";--> statement-breakpoint
 UPDATE "activity_log" AS a SET "tenant_id" = u."tenant_id"
   FROM (
-    SELECT "user_id", min("tenant_id"::text)::uuid AS "tenant_id"
-      FROM "user_branch_access"
-     GROUP BY "user_id"
-    HAVING count(DISTINCT "tenant_id") = 1
+    SELECT x."user_id", min(x."tenant_id"::text)::uuid AS "tenant_id"
+      FROM "user_branch_access" AS x
+      LEFT JOIN "branches" AS b ON b."id" = x."branch_id"
+     GROUP BY x."user_id"
+    HAVING count(DISTINCT x."tenant_id") = 1
+       AND bool_and(x."branch_id" IS NULL OR b."tenant_id" IS NOT DISTINCT FROM x."tenant_id")
   ) AS u
- WHERE a."tenant_id" IS NULL AND u."user_id" = a."created_by";--> statement-breakpoint
+  LEFT JOIN "users" AS usr ON usr."id" = u."user_id"
+ WHERE a."tenant_id" IS NULL AND u."user_id" = a."created_by"
+   AND (usr."role" IS DISTINCT FROM 'operator_admin' OR usr."operator_id" IS NULL
+        OR EXISTS (SELECT 1 FROM "operators" AS o
+                    WHERE o."id" = usr."operator_id" AND o."tenant_id" = u."tenant_id"));--> statement-breakpoint
 
 -- attention_items: its branch, its employee, its contract's employee.
 UPDATE "attention_items" AS i SET "tenant_id" = b."tenant_id"

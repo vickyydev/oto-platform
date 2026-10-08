@@ -3796,9 +3796,13 @@ export class DatabaseStorage implements IStorage {
          * employee's, else the contract's employee's — what the row is about —
          * else the park group of the caller (`log.tenantId`, the session's,
          * which a route passes for a row about no branch, employee or
-         * contract), else the user who did it when their branch access names
-         * exactly one park group, else the default park group. So a row with no
-         * branch still shows in its own park group's Activity Logbook.
+         * contract), else the user who did it where the app's strict placement
+         * (`managedUserTenant` in routes.ts) places them — every access row
+         * names one park group, every branch those rows name is that park
+         * group's, and an operator admin's operator is that park group's too —
+         * else the default park group (slug `default`, else the only park
+         * group). So a row with no branch still shows in its own park group's
+         * Activity Logbook.
          */
         async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
                 try {
@@ -3808,9 +3812,18 @@ export class DatabaseStorage implements IStorage {
                                 (select e.tenant_id from contract_instances c join employees e on e.id = c.employee_id
                                   where c.id = ${log.contractInstanceId ?? null}),
                                 ${log.tenantId ?? null}::uuid,
-                                (select min(tenant_id::text)::uuid from user_branch_access
-                                  where user_id = ${log.createdBy ?? null}
-                                 having count(distinct tenant_id) = 1),
+                                (select p.tenant_id from (
+                                        select min(x.tenant_id::text)::uuid as tenant_id
+                                          from user_branch_access x
+                                          left join branches b on b.id = x.branch_id
+                                         where x.user_id = ${log.createdBy ?? null}
+                                        having count(distinct x.tenant_id) = 1
+                                           and bool_and(x.branch_id is null or b.tenant_id is not distinct from x.tenant_id)
+                                 ) p
+                                 left join users u on u.id = ${log.createdBy ?? null}
+                                 where u.role is distinct from 'operator_admin' or u.operator_id is null
+                                    or exists (select 1 from operators o
+                                                where o.id = u.operator_id and o.tenant_id = p.tenant_id)),
                                 (select id from tenants where slug = ${DEFAULT_TENANT_SLUG}),
                                 (select min(id::text)::uuid from tenants having count(*) = 1)
                         )`;
