@@ -73,7 +73,7 @@ jobs:
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running everything"; all; exit 0; }
           echo "$FILES"
           flag() { echo "$1=$2" >> "$GITHUB_OUTPUT"; }
-          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences)\.ts$)'
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings)\.ts$)'
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then flag workspace true; else flag workspace false; fi
           if echo "$FILES" | grep -q -E '^packages/db/'; then flag db true; else flag db false; fi
           if echo "$FILES" | grep -q -E '^(apps/console/|apps/api/|packages/|pnpm-lock.yaml|.github/workflows/ci.yml)'; then flag e2e true; else flag e2e false; fi
@@ -288,7 +288,7 @@ jobs:
           fi
           git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
-          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences)\.ts$)'
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings)\.ts$)'
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then
             echo "workspace=true" >> "$GITHUB_OUTPUT"
           else
@@ -328,7 +328,7 @@ jobs:
           fi
           git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
-          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences)\.ts$)'
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings)\.ts$)'
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then
             echo "workspace=true" >> "$GITHUB_OUTPUT"
           else
@@ -368,6 +368,12 @@ jobs:
   #   - its night-job checks (tests/night-jobs.check.ts) drive the directory
   #     job endpoint the platform's runner calls, under both OTOAPP_JOBS
   #     values (S2-17b round 3).
+  #   - its tenant ownership checks (tests/tenant-ownership.check.ts, S2-17b
+  #     round 4a): settings per park group on both uniques, the Activity
+  #     Logbook per park group, the directory's HR reads under hr:read; then
+  #     the read-back (script/tenant-ownership-readback.mjs) proves every
+  #     settings, activity and attention row the migrations, the routes and
+  #     the night jobs above wrote carries its park group.
   #
   # CONSERVATIVE BY CONSTRUCTION, like the ci job: an unreadable base runs it.
   oto-app:
@@ -444,6 +450,19 @@ jobs:
       - name: The app's night-job checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/night-jobs.check.ts
+      # S2-17b round 4a: tenant ownership, the expand half — settings read per
+      # park group and saved by the default park group alone while the old
+      # unique stands (H11, proven on both constraint shapes), branchless
+      # Activity rows in their own park group, and the directory's HR reads
+      # under a tenant-bound hr:read key (H12).
+      - name: The app's tenant ownership checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/tenant-ownership.check.ts
+      # Last, over everything the steps above wrote: no settings, activity or
+      # attention row without its park group (round 4b's NOT NULL gate).
+      - name: The tenant ownership read-back
+        if: steps.changes.outputs.app == 'true'
+        run: npm run tenant:readback
 
 # Staging deploys are not a job here, and deliberately so.
 #
