@@ -552,8 +552,18 @@ export const headerAlignments = ["left", "center", "right"] as const;
 export type HeaderAlignment = typeof headerAlignments[number];
 
 // Templates table with versioning (company-level library)
+//
+// A template belongs to a park group (S2-17b round 6, migration 0008): the
+// row's `tenant_id`, which the app's own create already named
+// (`resolveTenantId` in POST /api/templates) for a column that did not exist
+// until 0008. Each park group reads and writes its own templates only: a
+// template reaches a park group's branches by its assignments, and a contract
+// or letter stores the id of the template it was made from, so another park
+// group's template is never offered (the Fix department rule of round 4a).
+// Nullable for one release (EXPAND); round 7 sets NOT NULL.
 export const templates = pgTable("templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   name: text("name").notNull(),
   htmlBody: text("html_body").notNull(),
   htmlBodyTh: text("html_body_th"),
@@ -570,7 +580,9 @@ export const templates = pgTable("templates", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedBy: varchar("updated_by").references(() => users.id),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_templates_tenant").on(table.tenantId),
+]);
 
 export const templatesRelations = relations(templates, ({ one, many }) => ({
   forkedFromTemplate: one(templates, {
@@ -1004,8 +1016,16 @@ export const policyStatuses = ["draft", "published", "archived"] as const;
 export type PolicyStatus = typeof policyStatuses[number];
 
 // Policy documents table (Rules & Regulations)
+//
+// A policy belongs to a park group (S2-17b round 6, migration 0008): its
+// `tenant_id`. "Company-wide" is the park group's whole company. Each park
+// group reads, versions and publishes its own policies only: a contract
+// stores the id of the policy its employee acknowledged, so another park
+// group's policy is never attached or shown. Nullable for one release
+// (EXPAND); round 7 sets NOT NULL.
 export const policyDocuments = pgTable("policy_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   title: text("title").notNull(),
   contentHtml: text("content_html"),
   pdfFileUrl: text("pdf_file_url"),
@@ -1019,7 +1039,9 @@ export const policyDocuments = pgTable("policy_documents", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedBy: varchar("updated_by").references(() => users.id),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_policy_documents_tenant").on(table.tenantId),
+]);
 
 export const policyDocumentsRelations = relations(policyDocuments, ({ one }) => ({
   branch: one(branches, {
@@ -1493,6 +1515,16 @@ export const offboardingReasons = [
 export type OffboardingReason = typeof offboardingReasons[number];
 
 // Employee offboarding table for tracking offboarding details
+//
+// One offboarding per employee. The route has refused a second one since the
+// lift (409, under a per-employee advisory lock), and migration 0008 adds the
+// database's backstop, `employee_offboarding_employee_unique` on employee_id —
+// but only on a database whose census finds no employee with two already
+// (S2-17b round 6, H16; `npm run offboarding:census`). It is not declared
+// here because Drizzle cannot say "only where the census is clean": declared,
+// a later `generate` would take it for granted on a database that skipped it.
+// The app has no "closed" state for an offboarding, so every row is open and
+// the index covers them all (plan Q47).
 export const employeeOffboarding = pgTable("employee_offboarding", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").references(() => employees.id).notNull(),
@@ -1622,14 +1654,23 @@ export const assetCategories = [
 export type AssetCategory = typeof assetCategories[number];
 
 // Asset catalog table for standard company property items
+//
+// A catalogue item belongs to a park group (S2-17b round 6, migration 0008):
+// its `tenant_id`. Each park group reads and adds to its own catalogue only:
+// an assigned asset stores the id of the catalogue item it came from, so
+// another park group's item is never offered. Nullable for one release
+// (EXPAND); round 7 sets NOT NULL.
 export const assetCatalog = pgTable("asset_catalog", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   name: text("name").notNull(),
   category: text("category", { enum: assetCategories }),
   description: text("description"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_asset_catalog_tenant").on(table.tenantId),
+]);
 
 export const insertAssetCatalogSchema = createInsertSchema(assetCatalog).omit({
   id: true,
@@ -2724,8 +2765,17 @@ export const timeOffTypeColors: Record<TimeOffType, string> = {
 // LEAVE POLICIES (Days Off Balance System)
 // ============================================
 
+// A leave policy belongs to a park group (S2-17b round 6, migration 0008; plan
+// Q31): its `tenant_id`. A row with no branch is company-wide, and before 0008
+// a company-wide row one park group wrote set every park group's days-off
+// accrual. Each park group now writes its own; reading, a branch takes its own
+// policy, else its park group's company-wide one, else the default park
+// group's company-wide one — what every park group read while there was one
+// set (Q28's rule; a policy's values are read, never stored by id). Nullable
+// for one release (EXPAND); round 7 sets NOT NULL.
 export const leavePolicies = pgTable("leave_policies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   branchId: varchar("branch_id").references(() => branches.id),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
@@ -2735,7 +2785,9 @@ export const leavePolicies = pgTable("leave_policies", {
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_leave_policies_tenant").on(table.tenantId),
+]);
 
 export const leavePoliciesRelations = relations(leavePolicies, ({ one }) => ({
   branch: one(branches, {

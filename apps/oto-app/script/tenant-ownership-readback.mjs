@@ -16,7 +16,17 @@
  *  2. The root-table census: the six tables with no tenant column of their
  *     own, each counted through the parent that carries one (or, for `people`,
  *     the children that do), so the written dispositions in the plan can be
- *     checked against live rows.
+ *     checked against live rows. (`leave_policies` left it in round 6, when
+ *     migration 0008 gave it a tenant column; it is counted in 3.)
+ *  3. Round 6's document tables (migration 0008): rows per park group and
+ *     rows with none for `templates`, `policy_documents`, `asset_catalog` and
+ *     `leave_policies`, whether their `tenant_id` is NOT NULL yet (round 7),
+ *     the links in existing rows that cross park groups (an assignment, a
+ *     contract, a letter or an assigned asset pointing at another park group's
+ *     template, policy or catalogue item; a leave policy whose branch is
+ *     another park group's), and the offboarding duplicate census with whether
+ *     0008 could make its one-offboarding-per-employee index (H16;
+ *     `npm run offboarding:census` names the employees).
  *
  * READ ONLY. It runs inside a `read only` transaction and writes nothing. It
  * prints counts and park group names, never a person's name, email or phone.
@@ -145,11 +155,6 @@ async function main() {
     console.log("\nThe root-table census (no tenant column of their own):");
     const census = [
       [
-        "leave_policies",
-        `select coalesce(b.tenant_id::text, '(no branch: shared by every park group)') as k, count(*)::int as n
-           from leave_policies p left join branches b on b.id = p.branch_id group by 1 order by 2 desc`,
-      ],
-      [
         "coverage_rules",
         `select b.tenant_id::text as k, count(*)::int as n
            from coverage_rules r join branches b on b.id = r.branch_id group by 1 order by 2 desc`,
@@ -196,6 +201,70 @@ async function main() {
         `${people.none} in none, ${people.several} in more than one.`,
     );
 
+    // 3. Round 6's document tables (0008).
+    const DOCUMENT_TABLES = ["templates", "policy_documents", "asset_catalog", "leave_policies"];
+    const documentColumns = await q(
+      `select table_name, is_nullable from information_schema.columns
+        where table_schema = $1 and column_name = 'tenant_id' and table_name = any($2::text[]) order by 1`,
+      [SCHEMA, DOCUMENT_TABLES],
+    );
+    let documentsUnplaced = 0;
+    if (documentColumns.length < DOCUMENT_TABLES.length) {
+      console.log(
+        `\nThe document tables (round 6): migration 0008 has not run here — ${documentColumns.length} of the ${DOCUMENT_TABLES.length} tenant_id columns exist.`,
+      );
+    } else {
+      console.log("\nThe document tables (round 6, migration 0008):");
+      for (const table of DOCUMENT_TABLES) {
+        const rows = await q(`select tenant_id, count(*)::int as n from ${table} group by tenant_id order by 2 desc`);
+        const total = rows.reduce((sum, r) => sum + r.n, 0);
+        const none = rows.find((r) => r.tenant_id === null)?.n ?? 0;
+        documentsUnplaced += none;
+        console.log(`  ${table}: ${total} row${total === 1 ? "" : "s"}, ${none} with no park group.`);
+        for (const r of rows) console.log(`    ${String(r.n).padStart(7)}  ${label(r.tenant_id)}`);
+      }
+      console.log(
+        `  tenant_id NOT NULL (round 7): ${documentColumns.map((c) => `${c.table_name} ${c.is_nullable === "NO" ? "yes" : "no"}`).join(", ")}.`,
+      );
+      const crossings = [
+        ["template assignments on another park group's branch",
+          `select count(*) as n from template_assignments a join templates t on t.id = a.template_id
+             join branches b on b.id = a.branch_id where t.tenant_id <> b.tenant_id`],
+        ["contracts made from another park group's template",
+          `select count(*) as n from contract_instances c join templates t on t.id = c.template_id
+             join employees e on e.id = c.employee_id where t.tenant_id <> e.tenant_id`],
+        ["letters made from another park group's template",
+          `select count(*) as n from employee_letters l join templates t on t.id = l.template_id
+             join employees e on e.id = l.employee_id where t.tenant_id <> e.tenant_id`],
+        ["contracts acknowledging another park group's policy",
+          `select count(*) as n from contract_instances c join policy_documents p on p.id = c.policy_document_id
+             join employees e on e.id = c.employee_id where p.tenant_id <> e.tenant_id`],
+        ["assigned assets from another park group's catalogue",
+          `select count(*) as n from employee_assets a join asset_catalog i on i.id = a.catalog_asset_id
+             join employees e on e.id = a.employee_id where i.tenant_id <> e.tenant_id`],
+        ["policies whose park group is not their branch's",
+          `select count(*) as n from policy_documents p join branches b on b.id = p.branch_id where p.tenant_id <> b.tenant_id`],
+        ["leave policies whose park group is not their branch's",
+          `select count(*) as n from leave_policies p join branches b on b.id = p.branch_id where p.tenant_id <> b.tenant_id`],
+      ];
+      for (const [what, sql] of crossings) console.log(`  ${what}: ${n((await q(sql))[0].n)}.`);
+    }
+    const offboarding = (await q(
+      `select count(*)::int as employees, coalesce(sum(n - 1), 0)::int as surplus
+         from (select count(*) as n from employee_offboarding group by employee_id having count(*) > 1) d`,
+    ))[0];
+    const oneOffboarding = n((await q(
+      `select count(*) as n from pg_indexes where schemaname = $1 and tablename = 'employee_offboarding'
+          and indexname = 'employee_offboarding_employee_unique'`,
+      [SCHEMA],
+    ))[0].n) === 1;
+    console.log(
+      `  offboarding census (H16): ${offboarding.employees} employee${offboarding.employees === 1 ? "" : "s"} with more than one offboarding ` +
+        `(${offboarding.surplus} surplus row${offboarding.surplus === 1 ? "" : "s"}); ` +
+        `employee_offboarding_employee_unique ${oneOffboarding ? "stands" : "NOT made"}` +
+        (offboarding.employees > 0 ? " — npm run offboarding:census names them (Q48)." : "."),
+    );
+
     await client.query("rollback");
     if (unplaced > 0) {
       console.log(
@@ -203,7 +272,17 @@ async function main() {
       );
       return 1;
     }
-    console.log("\nEvery settings, activity and attention row has its park group.");
+    if (documentsUnplaced > 0) {
+      console.log(
+        `\n${documentsUnplaced} document row${documentsUnplaced === 1 ? " has" : "s have"} no park group: round 7's contraction runs 0008's backfill again over them before NOT NULL.`,
+      );
+      return 1;
+    }
+    console.log(
+      documentColumns.length < DOCUMENT_TABLES.length
+        ? "\nEvery settings, activity and attention row has its park group."
+        : "\nEvery settings, activity and attention row has its park group, and so does every template, policy, catalogue item and leave policy.",
+    );
     return 0;
   } finally {
     await client.end();

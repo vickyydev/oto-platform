@@ -65,6 +65,13 @@ for (const tag of tags) {
 }
 
 const client = new pg.Client({ connectionString: url, application_name: "oto-app-migrate" });
+// A migration that decides something from the data says so with RAISE NOTICE in
+// a DO block — 0008's offboarding census when it leaves its unique index
+// unmade. Those go to the deploy log; Postgres's own chatter ("already exists,
+// skipping", identifier truncation) does not.
+client.on("notice", (notice) => {
+  if (/PL\/pgSQL function inline_code_block/.test(notice.where ?? "")) console.log(`migrate: ${notice.message}`);
+});
 await client.connect();
 
 try {

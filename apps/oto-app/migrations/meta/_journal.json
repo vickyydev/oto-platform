@@ -57,6 +57,13 @@
       "when": 1791482998619,
       "tag": "0007_tenant_ownership_contract",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791500483042,
+      "tag": "0008_document_tenant_ownership_expand",
+      "breakpoints": true
     }
   ]
 }

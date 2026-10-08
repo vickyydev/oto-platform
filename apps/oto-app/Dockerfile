@@ -83,6 +83,10 @@ COPY script/directory-client.mjs ./script/directory-client.mjs
 # deployment can be read back from its own shell, as its own database role,
 # before and after migration 0007 (S2-17b round 4b).
 COPY script/tenant-ownership-readback.mjs ./script/tenant-ownership-readback.mjs
+# The offboarding duplicate census (`npm run offboarding:census`, read only):
+# whether migration 0008 could make its one-offboarding-per-employee index on
+# this deployment, and if not, which employees stand in its way (S2-17b round 6).
+COPY script/offboarding-census.mjs ./script/offboarding-census.mjs
 
 ARG APP_VERSION
 ARG APP_CHANGE_ID
