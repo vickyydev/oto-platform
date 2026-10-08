@@ -63,7 +63,12 @@ export function PricingModeIndicator() {
       }`}
     >
       {overrideName ? <CalendarDays className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
-      <span className="hidden sm:inline">{reason}</span>
+      {/* The words from xl (SCRUM-505): below it the header's labels drop to
+          their icons so the tabs keep their room (see `StationHeader`). The
+          colour and the icon still tell weekend and holiday from weekday, and
+          the tooltip carries the words. This chip is drawn only in the station
+          header (768px and up), so the prototype's `sm:` never hid anything. */}
+      <span className="hidden xl:inline">{reason}</span>
     </span>
   );
 }

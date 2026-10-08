@@ -154,7 +154,11 @@ export function PrinterHealthIndicator() {
          person than a cut fault message, and the message is built so the cut
          falls in the right place: "Receipt Printer 1: cover open · 1 waiting"
          loses the count first and keeps the name of the fault. The whole
-         sentence stays in the tooltip and the aria-label either way. */
+         sentence stays in the tooltip and the aria-label either way.
+         Since SCRUM-505 the header's clusters keep their content width and
+         the tabs have a floor of their own: a fault too long for the row now
+         moves the actions onto a row of their own instead (`StationHeader`),
+         so this chip is drawn whole up to its 220px. */
       className={`min-w-0 inline-flex items-center gap-1.5 rounded-md px-2 h-9 text-sm font-semibold ${
         severity === 'bad'
           ? 'bg-destructive/15 text-destructive'

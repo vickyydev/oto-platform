@@ -40,7 +40,10 @@ export function CashMovementButton({ className }: { className?: string }) {
     <>
       <button type="button" className={className} title="Paid-out or safe drop" onClick={() => setOpen(true)}>
         <Banknote className="w-4 h-4" />
-        Cash
+        {/* SCRUM-505: below xl the header's labels drop to their icons (see
+            `StationHeader`), as its Settings button drops the station name;
+            the tooltip still says what the button does. */}
+        <span className="hidden xl:inline">Cash</span>
       </button>
       {open && (
         <CashMovementDialog

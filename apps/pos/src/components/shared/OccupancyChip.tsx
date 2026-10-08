@@ -70,8 +70,10 @@ export function OccupancyChip() {
         >
           <Users className="w-4 h-4 text-primary" />
           <span className="tabular-nums">{total.toLocaleString()}</span>
-          {/* Hide the word on the tightest widths; the icon + number stay legible. */}
-          <span className="hidden md:inline text-muted-foreground font-normal">in park</span>
+          {/* Hide the word on the tightest widths; the icon + number stay legible.
+              In the station header that is now below xl as well as the phone
+              bar (SCRUM-505; see `StationHeader`). */}
+          <span className="hidden xl:inline text-muted-foreground font-normal">in park</span>
           {/* S2-12 round 4: an honest mark on the chip itself when the count is
               not current — and, since SCRUM-477, the words beside it. */}
           {stale && (

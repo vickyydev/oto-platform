@@ -74,16 +74,52 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
   return (
     <>
     {/* Flex header: the logo/chip (left) and actions/badge (right) clusters take
-        their content width; the nav lives in a flex-1 band between them and is
+        their content width; the nav lives in a band between them and is
         centred within it. With six surfaces the nav is wider than that band on
         most screens, so the band scrolls horizontally rather than overlapping
         the side clusters or clipping a label — which needs `shrink-0` on the
         tabs themselves to work at all; see `baseBtn` above for what happened
-        without it. The band is `flex-1 min-w-0`, i.e. basis zero, so it takes
-        only what the two clusters leave: a printer-fault chip appearing costs
-        the nav its width, and the nav absorbs that by scrolling. */}
-    <div className="shrink-0 flex items-center gap-3 px-6 h-16 border-b bg-card/30">
-      <div className="flex items-center gap-3 min-w-0 shrink">
+        without it. On one row the band has basis zero, so it takes what the
+        two clusters leave, and scrolls.
+
+        SCRUM-505 — WHEN THE ROW RUNS OUT. The prototype's header is one row
+        with no rule for a narrow tablet (below 768px the phone shell takes
+        over; its only other breakpoint here is the station name at 2xl), and
+        its clusters were `min-w-0 shrink`. Where the row ran short they shrank
+        under their own content: the actions spilled leftwards over the park
+        chip (`justify-end` overflows towards the start), the logo, an image
+        the browser treats as compressible, was squeezed, and the band got 8px
+        and showed no tab. The prototype's own header did this at 768
+        (measured in Chromium with its own Khun Anan and HKT Central: an 8px
+        band, the logo at 50 of its 74px, the pricing chip 7px over the park
+        chip). The Cash action, the occupancy chip's "no gate" words and the
+        two-line park name have taken more of the row since: with staging's
+        content the Cash button sat 81px over the park chip from 768 to 820
+        and the band was 8px wide up to 1024.
+
+        So the clusters keep their content width (`shrink-0`) and the row
+        wraps instead (`flex-wrap`): nothing is drawn over anything. Three
+        rules, in the header's own vocabulary:
+          - below lg (an upright tablet) the tabs take a row of their own under
+            the bar, full width and centred, in the same pill with the same
+            scroll, as the phone shell gives its tabs a bar of their own;
+          - below xl the bar's labels drop to their icons the way the prototype
+            drops them at its tightest widths: "in park", the pricing words,
+            and Cash as the Settings button drops the station name. Each keeps
+            its words in its tooltip;
+          - the band is never narrower than two whole tabs (Tickets and F&B,
+            181px measured), so where the clusters would squeeze it under that
+            the actions wrap onto a row of their own, `ml-auto` keeping them at
+            the right, instead of the tabs vanishing. Only unusually wide
+            content does that: a printer fault, or a long name beside a stale
+            gate on the narrowest tablets.
+        Each cluster is the old row's height (`h-16` less its 1px border), so
+        a row of the bar is the 64px it was, and from xl up, with the till's
+        usual content, the header is the prototype's one row as it was.
+        Measured at nine widths from 360 to 1600px in
+        `test/scrum-505-header-widths.test.ts`. */}
+    <div className="shrink-0 flex flex-wrap items-center gap-x-3 px-6 border-b bg-card/30">
+      <div className="flex items-center gap-3 h-[calc(4rem-1px)] shrink-0">
         <Link href="/" aria-label="Oto home">
           <img src={logoUrl} alt="Oto" className="h-8 w-auto cursor-pointer" />
         </Link>
@@ -93,7 +129,7 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
       </div>
 
       {/* Permanent POS navigation — always available between surfaces. */}
-      <div className="flex-1 min-w-0 flex justify-center">
+      <div className="grow basis-full min-w-[184px] order-last pb-3 flex justify-center lg:basis-0 lg:order-none lg:pb-0">
       <nav className="max-w-full overflow-x-auto flex items-center gap-1 rounded-lg bg-muted p-1">
           {active === 'tickets' ? (
             <span className={activeBtn}>
@@ -215,7 +251,7 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
       </nav>
       </div>
 
-      <div className="flex items-center justify-end gap-3 min-w-0 shrink">
+      <div className="flex items-center justify-end gap-3 h-[calc(4rem-1px)] shrink-0 ml-auto">
         {/* Silent while every printer on this station is well; red the moment
             one is out of paper or stops answering (S2-06, PROJECT_CONTEXT
             §7.3) — before anybody notices a receipt that never came out. */}
