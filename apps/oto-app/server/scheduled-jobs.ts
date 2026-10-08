@@ -5,6 +5,7 @@ import { serviceCheckins } from "./db/coreSchema";
 import { lt, eq, and, isNull, isNotNull, gte, lte, desc, sql } from "drizzle-orm";
 import { generateTaskInstances } from "./core/taskGeneration";
 import { ATTENTION_WRITES_READY } from "./attention-availability";
+import { runFullReconciliation } from "./attention-engine";
 import { JOBS_MODE } from "./config/env";
 import type { JobsMode } from "./lib/routeFences";
 import {
@@ -376,8 +377,29 @@ export async function runMidnightTaskGeneration(opts: NightJobOptions = {}): Pro
   return totalGenerated;
 }
 
-export async function runNoShowAlertCheck(): Promise<number> {
-  if (!ATTENTION_WRITES_READY) return 0;
+/** What one no-show check did. `outsideHours` is 1 when it ran outside 07:00-22:00 Bangkok and so checked nothing. */
+export interface NoShowCheckResult {
+  created: number;
+  resolved: number;
+  outsideHours: number;
+}
+
+/**
+ * The app's no-show check: every ten minutes, from 07:00 to 22:00 Bangkok
+ * time, each person scheduled today who has not clocked in 30 minutes after
+ * their shift began gets a "No-show" alert, and the alert of one who has since
+ * clocked in is resolved.
+ *
+ * Per park group (S2-17b round 4b): with `tenantId`, only that park group's
+ * schedule is read and only its alerts are raised or resolved; with none,
+ * every park group's, each alert in the park group of its assignment, as the
+ * app's own timer ran it. The rule, its 30-minute grace and its hours are the
+ * app's. An error it catches is still logged and swallowed, and told to
+ * `onError` too, so the platform's run names it.
+ */
+export async function runNoShowAlertCheck(opts: NightJobOptions = {}): Promise<NoShowCheckResult> {
+  const result: NoShowCheckResult = { created: 0, resolved: 0, outsideHours: 0 };
+  if (!ATTENTION_WRITES_READY) return result;
   console.log("[NO_SHOW_CHECK] Checking for scheduled no-shows...");
   let alertsCreated = 0;
   let alertsResolved = 0;
@@ -390,7 +412,8 @@ export async function runNoShowAlertCheck(): Promise<number> {
     // Only run during operating hours (7am - 10pm Bangkok)
     if (bangkokHour < 7 || bangkokHour >= 22) {
       console.log(`[NO_SHOW_CHECK] Outside operating hours (Bangkok ${bangkokHour}:xx), skipping`);
-      return 0;
+      result.outsideHours = 1;
+      return result;
     }
 
     const todayBangkok = thailandNow.toISOString().split("T")[0]; // YYYY-MM-DD
@@ -412,6 +435,7 @@ export async function runNoShowAlertCheck(): Promise<number> {
         and(
           eq(scheduleAssignments.shiftDate, todayBangkok),
           isNotNull(scheduleAssignments.employeeId),
+          opts.tenantId ? eq(scheduleAssignments.tenantId, opts.tenantId) : undefined,
         )
       );
 
@@ -462,7 +486,7 @@ export async function runNoShowAlertCheck(): Promise<number> {
 
       if (clockInEvents.length > 0) {
         // Employee clocked in — auto-resolve any open no-show alert
-        const resolved = await storage.autoResolveAttentionItems(ruleKey, entityKey);
+        const resolved = await storage.autoResolveAttentionItems(ruleKey, entityKey, assignment.tenantId);
         if (resolved > 0) {
           alertsResolved += resolved;
           console.log(`[NO_SHOW_CHECK] Auto-resolved no-show alert for employee ${assignment.employeeId} (clocked in)`);
@@ -502,9 +526,43 @@ export async function runNoShowAlertCheck(): Promise<number> {
     console.log(`[NO_SHOW_CHECK] Done — alerts created: ${alertsCreated}, resolved: ${alertsResolved}`);
   } catch (error) {
     console.error("[NO_SHOW_CHECK] Error during no-show check:", error);
+    opts.onError?.(error);
   }
 
-  return alertsCreated;
+  result.created = alertsCreated;
+  result.resolved = alertsResolved;
+  return result;
+}
+
+/**
+ * The app's six-hourly Attention run: the engine's full reconciliation (the
+ * app ran it from server/index.ts, five seconds after start-up and every six
+ * hours). Per park group (round 4b) when one is named. An error that escapes
+ * the engine is caught, logged and swallowed here, as the app's timer caught
+ * it ("Attention engine scheduled error"), and told to `onError`; so are the
+ * rule errors the engine itself catches and counts.
+ *
+ * Its counts carry the new items rule by rule (`created.<RULE>`), so the
+ * first run after Attention resumes — which applies every rule to rows that
+ * built up while it was paused — shows its burst in the run, rule by rule,
+ * rather than as one number.
+ */
+export async function runAttentionReconciliation(opts: NightJobOptions = {}): Promise<Record<string, number>> {
+  const counts: Record<string, number> = { created: 0, updated: 0, resolved: 0, errors: 0 };
+  if (!ATTENTION_WRITES_READY) return counts;
+  try {
+    const result = await runFullReconciliation({ tenantId: opts.tenantId, onError: opts.onError });
+    counts.created = result.created;
+    counts.updated = result.updated;
+    counts.resolved = result.resolved;
+    counts.errors = result.errors;
+    for (const [rule, n] of Object.entries(result.createdByRule)) counts[`created.${rule}`] = n;
+    console.log(`[ATTENTION] ${result.created} created, ${result.updated} updated, ${result.resolved} resolved`);
+  } catch (error) {
+    console.error("[ATTENTION] Attention engine scheduled error:", error);
+    opts.onError?.(error);
+  }
+  return counts;
 }
 
 // ─── The batches, defined once ────────────────────────────────────────────────
@@ -531,8 +589,9 @@ const presenceStep: NightStep = {
 };
 
 /**
- * The three batches, step by step, in the order the app has always run them.
- * The app's own timers (below) and the platform's job endpoint
+ * The batches, step by step, in the order the app has always run them: the
+ * three night batches (round 3) and the two Attention timers (round 4b). The
+ * app's own timers (below) and the platform's job endpoint
  * (`runNightBatchForTenant`) both read this one list, so the two can never run
  * different steps.
  */
@@ -576,6 +635,22 @@ export const NIGHT_BATCHES: Record<NightJobName, readonly NightStep[]> = {
   ],
   /** Every six hours: the presence check alone. */
   presence: [presenceStep],
+  /** Every six hours: the Attention engine's full reconciliation (round 4b). */
+  attention: [
+    {
+      step: "attentionReconciliation",
+      onFailure: "continue",
+      run: (opts) => runAttentionReconciliation(opts),
+    },
+  ],
+  /** Every ten minutes, 07:00-22:00 Bangkok: the no-show check (round 4b). */
+  no_show: [
+    {
+      step: "noShowCheck",
+      onFailure: "continue",
+      run: async (opts) => ({ ...(await runNoShowAlertCheck(opts)) }),
+    },
+  ],
 };
 
 /**
@@ -687,10 +762,14 @@ export async function runNightBatchForTenant(name: NightJobName, tenantId: strin
  * Start the app's own timers — unless the platform runs the night work.
  *
  * Under `OTOAPP_JOBS=platform` NOT ONE timer is registered: the platform's job
- * runner owns the schedule (`job:otoapp.midnight`, `.reconcile`, `.presence`)
- * and calls the directory job endpoint, so a timer here would run every batch
- * twice. Under `inprocess`, the default, everything is as it always was.
- * Answers whether it started anything.
+ * runner owns the schedule (`job:otoapp.midnight`, `.reconcile`, `.presence`,
+ * and from round 4b `.attention` and `.no_show`) and calls the directory job
+ * endpoint, so a timer here would run every batch twice. Under `inprocess`,
+ * the default, everything is as it always was — the Attention engine at
+ * start-up and every six hours (the app started those in server/index.ts) and
+ * the no-show check at once and every ten minutes — each park group's run
+ * under the same per-park-group lock the endpoint and Refresh take. Answers
+ * whether it started anything.
  */
 export function startScheduledJobs(mode: JobsMode = JOBS_MODE): boolean {
   if (mode === "platform") {
@@ -713,12 +792,21 @@ export function startScheduledJobs(mode: JobsMode = JOBS_MODE): boolean {
     runNightBatchInProcess("presence").catch((error) => console.error("[SCHEDULED_JOBS] presence:", error));
   }, 6 * 60 * 60 * 1000);
   
-  // No-show Attention writes resume with tenant ownership and a locked job.
+  // Attention resumes (round 4b): the engine five seconds after start-up and
+  // every six hours, the no-show check at once and every ten minutes — the
+  // app's own timings — one park group at a time under the lock the endpoint
+  // and Refresh take, so none of them runs one park group's Attention twice.
   if (ATTENTION_WRITES_READY) {
-    setInterval(runNoShowAlertCheck, 10 * 60 * 1000);
-    runNoShowAlertCheck();
+    const attention = () =>
+      runNightBatchInProcess("attention").catch((error) => console.error("[SCHEDULED_JOBS] attention:", error));
+    const noShow = () =>
+      runNightBatchInProcess("no_show").catch((error) => console.error("[SCHEDULED_JOBS] no_show:", error));
+    setTimeout(attention, 5000);
+    setInterval(attention, 6 * 60 * 60 * 1000);
+    setInterval(noShow, 10 * 60 * 1000);
+    setTimeout(noShow, 0);
   }
-  
-  console.log("[SCHEDULED_JOBS] Jobs scheduled: Task generation at 00:01, daily reconciliation at 03:00 Bangkok time, every 6 hours presence check, availability cleanup, every 10 minutes no-show check");
+
+  console.log("[SCHEDULED_JOBS] Jobs scheduled: Task generation at 00:01, daily reconciliation at 03:00 Bangkok time, every 6 hours presence check, availability cleanup, every 6 hours Attention engine, every 10 minutes no-show check");
   return true;
 }

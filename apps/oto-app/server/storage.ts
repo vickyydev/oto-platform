@@ -617,21 +617,24 @@ export interface IStorage {
 
         getAttentionItems(options?: {
                 branchId?: string;
-                scope?: { tenantId: string; branchIds: string[] };
+                scope?: AttentionReadScope;
+                /** One park group's items only (the engine's own reads). */
+                tenantId?: string;
                 types?: AttentionType[];
                 resolved?: boolean;
                 limit?: number;
         }): Promise<AttentionItem[]>;
         getAttentionItemCounts(
                 branchId?: string,
-                scope?: { tenantId: string; branchIds: string[] },
+                scope?: AttentionReadScope,
         ): Promise<{ total: number; high: number; medium: number; low: number }>;
         createAttentionItem(item: InsertAttentionItem): Promise<AttentionItem>;
         resolveAttentionItem(
                 id: string,
                 userId: string,
                 permanent?: boolean,
-        ): Promise<AttentionItem>;
+                tenantId?: string,
+        ): Promise<AttentionItem | undefined>;
         deleteAttentionItemsByType(
                 type: AttentionType,
                 employeeId?: string,
@@ -1991,32 +1994,41 @@ function activityParkGroupScope(scope: ActivityParkGroup) {
  */
 export type ActivityLogInput = Omit<InsertActivityLog, "tenantId"> & { tenantId?: string | null };
 
-type AttentionReadScope = { tenantId: string; branchIds: string[] };
+/**
+ * Attention items are written under a transaction-level advisory lock on
+ * their park group, rule and entity (S2-17b round 4b, H20), so two writers of
+ * the same item — the engine's run and a route's trigger at once — make one
+ * row, never two. Ours, beside the night batches' 0x0712.
+ */
+export const ATTENTION_ITEM_LOCK_NAMESPACE = 0x0713;
 
-// Legacy attention rows have no tenant_id. Only a branch-owned row whose
-// linked employee and contract agree with that branch can be shown safely.
+/**
+ * Whose Attention items a reader sees (S2-17b round 4b).
+ *
+ * Every item carries its park group (`tenant_id`, NOT NULL from 0007): the
+ * park group whose data raised it. So a reader sees their own park group's
+ * items and never another's. Of those, the branch rule the Activity Logbook
+ * already follows (round 4a, the app's own logbook rule): a reader with every
+ * branch sees every item, the ones about no branch included (a checklist
+ * finding with no branch, a login not set up for someone not yet seated); any
+ * other reader sees the items of their branches only.
+ *
+ * Until 4b the items had no park group, so only a branch-owned item whose
+ * employee and contract agreed with its branch could be shown, and the
+ * branchless ones were withheld from everybody.
+ */
+export interface AttentionReadScope {
+        tenantId: string;
+        /** The branches the reader may see; null for a reader with every branch. */
+        branchIds: string[] | null;
+}
+
 function attentionReadScope(scope: AttentionReadScope) {
-        if (scope.branchIds.length === 0) return sql`false`;
+        const ofParkGroup = eq(attentionItems.tenantId, scope.tenantId);
+        if (scope.branchIds === null) return ofParkGroup;
         return and(
-                inArray(attentionItems.branchId, scope.branchIds),
-                exists(db.select({ id: branches.id }).from(branches).where(and(
-                        eq(branches.id, attentionItems.branchId),
-                        eq(branches.tenantId, scope.tenantId),
-                ))),
-                or(isNull(attentionItems.employeeId), exists(
-                        db.select({ id: employees.id }).from(employees).where(and(
-                                eq(employees.id, attentionItems.employeeId),
-                                eq(employees.tenantId, scope.tenantId),
-                                or(isNull(employees.branchId), eq(employees.branchId, attentionItems.branchId)),
-                        )),
-                )),
-                or(isNull(attentionItems.contractInstanceId), exists(
-                        db.select({ id: contractInstances.id }).from(contractInstances).where(and(
-                                eq(contractInstances.id, attentionItems.contractInstanceId),
-                                eq(contractInstances.employeeId, attentionItems.employeeId),
-                                or(isNull(contractInstances.branchId), eq(contractInstances.branchId, attentionItems.branchId)),
-                        )),
-                )),
+                ofParkGroup,
+                scope.branchIds.length > 0 ? inArray(attentionItems.branchId, scope.branchIds) : sql`false`,
         )!;
 }
 
@@ -3890,7 +3902,8 @@ export class DatabaseStorage implements IStorage {
 
         async getAttentionItems(options?: {
                 branchId?: string;
-                scope?: { tenantId: string; branchIds: string[] };
+                scope?: AttentionReadScope;
+                tenantId?: string;
                 types?: AttentionType[];
                 resolved?: boolean;
                 limit?: number;
@@ -3902,6 +3915,10 @@ export class DatabaseStorage implements IStorage {
 
                 if (options?.scope) {
                         conditions.push(attentionReadScope(options.scope));
+                }
+
+                if (options?.tenantId) {
+                        conditions.push(eq(attentionItems.tenantId, options.tenantId));
                 }
 
                 if (!showResolved) {
@@ -3935,7 +3952,7 @@ export class DatabaseStorage implements IStorage {
 
         async getAttentionItemCounts(
                 branchId?: string,
-                scope?: { tenantId: string; branchIds: string[] },
+                scope?: AttentionReadScope,
         ): Promise<{ total: number; high: number; medium: number; low: number }> {
                 const conditions = [eq(attentionItems.status, "open")];
 
@@ -3975,11 +3992,17 @@ export class DatabaseStorage implements IStorage {
                 return newItem;
         }
 
+        /**
+         * Resolve (`permanent`) or snooze (24 hours) one item. With `tenantId`,
+         * only that park group's item: another park group's is left as it is and
+         * nothing is answered (round 4b).
+         */
         async resolveAttentionItem(
                 id: string,
                 userId: string,
                 permanent = false,
-        ): Promise<AttentionItem> {
+                tenantId?: string,
+        ): Promise<AttentionItem | undefined> {
                 const now = new Date();
                 const suppressUntil = permanent
                         ? new Date("2050-01-01T00:00:00.000Z")
@@ -3993,7 +4016,10 @@ export class DatabaseStorage implements IStorage {
                                 suppressUntil,
                                 updatedAt: now,
                         })
-                        .where(eq(attentionItems.id, id))
+                        .where(and(
+                                eq(attentionItems.id, id),
+                                tenantId ? eq(attentionItems.tenantId, tenantId) : undefined,
+                        ))
                         .returning();
                 return resolved;
         }
@@ -4018,6 +4044,17 @@ export class DatabaseStorage implements IStorage {
                 }
         }
 
+        /**
+         * Raise or refresh one rule's item for one entity — the app's upsert by
+         * rule and entity, with the fingerprint deciding "unchanged".
+         *
+         * Per park group (S2-17b round 4b, H20): the item is looked for in the
+         * park group that raises it (`item.tenantId`) and nowhere else, so one
+         * park group's item is never updated, re-opened or counted for another.
+         * And under a transaction-level advisory lock on that park group, rule
+         * and entity, so two writers of the same item at once (the engine's run
+         * and a route's trigger) make one row, never two.
+         */
         async upsertAttentionItem(
                 item: InsertAttentionItem & {
                         ruleKey: string;
@@ -4028,82 +4065,90 @@ export class DatabaseStorage implements IStorage {
                 action: "created" | "updated" | "unchanged" | "suppressed";
                 item: AttentionItem;
         }> {
-                const now = new Date();
+                return db.transaction(async (tx) => {
+                        await tx.execute(
+                                sql`select pg_advisory_xact_lock(${ATTENTION_ITEM_LOCK_NAMESPACE}::int4, hashtext(${`${item.tenantId}|${item.ruleKey}|${item.entityKey}`}))`,
+                        );
+                        const now = new Date();
 
-                // Check for any existing item (open OR resolved) with the same rule+entity fingerprint
-                const [anyExisting] = await db
-                        .select()
-                        .from(attentionItems)
-                        .where(
-                                and(
-                                        eq(attentionItems.ruleKey, item.ruleKey),
-                                        eq(attentionItems.entityKey, item.entityKey),
-                                ),
-                        )
-                        .orderBy(attentionItems.updatedAt)
-                        .limit(1);
+                        // Check for any existing item (open OR resolved) with the same rule+entity fingerprint
+                        const [anyExisting] = await tx
+                                .select()
+                                .from(attentionItems)
+                                .where(
+                                        and(
+                                                eq(attentionItems.tenantId, item.tenantId),
+                                                eq(attentionItems.ruleKey, item.ruleKey),
+                                                eq(attentionItems.entityKey, item.entityKey),
+                                        ),
+                                )
+                                .orderBy(attentionItems.updatedAt)
+                                .limit(1);
 
-                if (anyExisting) {
-                        // If there's an open item, update it if fingerprint changed
-                        if (anyExisting.status === "open") {
-                                if (anyExisting.fingerprint === item.fingerprint) {
-                                        return { action: "unchanged", item: anyExisting };
+                        if (anyExisting) {
+                                // If there's an open item, update it if fingerprint changed
+                                if (anyExisting.status === "open") {
+                                        if (anyExisting.fingerprint === item.fingerprint) {
+                                                return { action: "unchanged" as const, item: anyExisting };
+                                        }
+                                        const [updated] = await tx
+                                                .update(attentionItems)
+                                                .set({
+                                                        severity: item.severity,
+                                                        title: item.title,
+                                                        description: item.description,
+                                                        dueDate: item.dueDate,
+                                                        fingerprint: item.fingerprint,
+                                                        updatedAt: now,
+                                                })
+                                                .where(eq(attentionItems.id, anyExisting.id))
+                                                .returning();
+                                        return { action: "updated" as const, item: updated };
                                 }
-                                const [updated] = await db
-                                        .update(attentionItems)
-                                        .set({
-                                                severity: item.severity,
-                                                title: item.title,
-                                                description: item.description,
-                                                dueDate: item.dueDate,
-                                                fingerprint: item.fingerprint,
-                                                updatedAt: now,
-                                        })
-                                        .where(eq(attentionItems.id, anyExisting.id))
-                                        .returning();
-                                return { action: "updated", item: updated };
+
+                                // If it was resolved, check suppress_until — skip creation if within suppression window
+                                if (anyExisting.status === "resolved") {
+                                        const suppressUntil = (anyExisting as any)
+                                                .suppressUntil as Date | null;
+                                        if (suppressUntil && suppressUntil > now) {
+                                                return { action: "suppressed" as const, item: anyExisting };
+                                        }
+                                        // Suppression window expired — re-open the item if the condition persists
+                                        const [reopened] = await tx
+                                                .update(attentionItems)
+                                                .set({
+                                                        status: "open",
+                                                        severity: item.severity,
+                                                        title: item.title,
+                                                        description: item.description,
+                                                        dueDate: item.dueDate,
+                                                        fingerprint: item.fingerprint,
+                                                        resolvedAt: null,
+                                                        resolvedBy: null,
+                                                        updatedAt: now,
+                                                })
+                                                .where(eq(attentionItems.id, anyExisting.id))
+                                                .returning();
+                                        return { action: "updated" as const, item: reopened };
+                                }
                         }
 
-                        // If it was resolved, check suppress_until — skip creation if within suppression window
-                        if (anyExisting.status === "resolved") {
-                                const suppressUntil = (anyExisting as any)
-                                        .suppressUntil as Date | null;
-                                if (suppressUntil && suppressUntil > now) {
-                                        return { action: "suppressed", item: anyExisting };
-                                }
-                                // Suppression window expired — re-open the item if the condition persists
-                                const [reopened] = await db
-                                        .update(attentionItems)
-                                        .set({
-                                                status: "open",
-                                                severity: item.severity,
-                                                title: item.title,
-                                                description: item.description,
-                                                dueDate: item.dueDate,
-                                                fingerprint: item.fingerprint,
-                                                resolvedAt: null,
-                                                resolvedBy: null,
-                                                updatedAt: now,
-                                        })
-                                        .where(eq(attentionItems.id, anyExisting.id))
-                                        .returning();
-                                return { action: "updated", item: reopened };
-                        }
-                }
-
-                const [newItem] = await db
-                        .insert(attentionItems)
-                        .values({
-                                ...item,
-                                status: "open",
-                        })
-                        .returning();
-                return { action: "created", item: newItem };
+                        const [newItem] = await tx
+                                .insert(attentionItems)
+                                .values({
+                                        ...item,
+                                        status: "open",
+                                })
+                                .returning();
+                        return { action: "created" as const, item: newItem };
+                });
         }
 
+        /** The app's auto-resolve of one rule's item for one entity, in one park group only (round 4b). */
         async autoResolveAttentionItems(
                 ruleKey: string,
                 entityKey: string,
+                tenantId: string,
         ): Promise<number> {
                 const result = await db
                         .update(attentionItems)
@@ -4114,6 +4159,7 @@ export class DatabaseStorage implements IStorage {
                         })
                         .where(
                                 and(
+                                        eq(attentionItems.tenantId, tenantId),
                                         eq(attentionItems.ruleKey, ruleKey),
                                         eq(attentionItems.entityKey, entityKey),
                                         eq(attentionItems.status, "open"),
@@ -4123,14 +4169,17 @@ export class DatabaseStorage implements IStorage {
                 return result.length;
         }
 
+        /** One entity's open items, in one park group only (round 4b). */
         async getOpenAttentionItemsForEntity(
                 entityKey: string,
+                tenantId: string,
         ): Promise<AttentionItem[]> {
                 return db
                         .select()
                         .from(attentionItems)
                         .where(
                                 and(
+                                        eq(attentionItems.tenantId, tenantId),
                                         eq(attentionItems.entityKey, entityKey),
                                         eq(attentionItems.status, "open"),
                                 ),

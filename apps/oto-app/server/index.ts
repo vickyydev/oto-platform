@@ -136,8 +136,10 @@ export function log(message: string, source = "express") {
         }
       }, 2000);
       
-      // Reconciliation remains paused until a tenant-owned, locked job can
-      // record its outcome in the platform run ledger.
+      // The Attention engine's start-up and six-hourly runs, which the app
+      // started here, are started with the other timers by startScheduledJobs
+      // (S2-17b round 4b), so OTOAPP_JOBS decides them too: under platform the
+      // platform's job:otoapp.attention runs them, one park group at a time.
       // Start presence reconciliation and status transition jobs — unless
       // OTOAPP_JOBS=platform, under which the platform's job runner runs them
       // through the directory job endpoint and no timer starts here

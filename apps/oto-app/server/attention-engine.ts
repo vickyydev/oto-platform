@@ -4,11 +4,17 @@ import type { Employee, ContractInstance, AttentionType, SeverityLevel, InsertAt
 import crypto from "crypto";
 import { getEmployeeDisplayName } from "./lib/employeeDisplayName";
 
+/**
+ * A rule's finding. The rules are the app's, unchanged: they name what the
+ * item is about, never its park group. The engine stamps the park group of the
+ * employee it evaluated onto the item as it writes it (S2-17b round 4b), so
+ * every item is raised in the park group whose data raised it.
+ */
 interface AttentionRuleResult {
   ruleKey: string;
   entityKey: string;
   fingerprint: string;
-  item: InsertAttentionItem & { ruleKey: string; entityKey: string; fingerprint: string };
+  item: Omit<InsertAttentionItem, "tenantId"> & { ruleKey: string; entityKey: string; fingerprint: string };
 }
 
 interface RuleContext {
@@ -946,9 +952,34 @@ const rules: AttentionRule[] = [
 ];
 
 let lastCalculatedAt: Date | null = null;
+/** When each park group's items were last reconciled, in this process (round 4b). */
+const lastCalculatedAtByParkGroup = new Map<string, Date>();
 
-export function getLastCalculatedAt(): Date | null {
+/**
+ * When the full reconciliation last finished, in this process: for one park
+ * group (round 4b, what the Attention page shows a reader), or for any.
+ */
+export function getLastCalculatedAt(tenantId?: string): Date | null {
+  if (tenantId) return lastCalculatedAtByParkGroup.get(tenantId) ?? null;
   return lastCalculatedAt;
+}
+
+/** Who a reconciliation runs for, and who hears about an error it swallows (round 4b). */
+export interface AttentionRunOptions {
+  /** One park group's employees and items only. Unset: every park group, each in its own. */
+  tenantId?: string;
+  /** Told about every error the run catches; the run still logs it and carries on. */
+  onError?: (error: unknown) => void;
+}
+
+/** What a full reconciliation did, with what it raised rule by rule (the first run's burst stays visible). */
+export interface ReconciliationResult {
+  created: number;
+  updated: number;
+  resolved: number;
+  errors: number;
+  /** New items per rule: the count behind `created`. */
+  createdByRule: Record<string, number>;
 }
 
 export async function evaluateForEmployee(employeeId: string): Promise<{ created: number; updated: number; resolved: number }> {
@@ -957,7 +988,9 @@ export async function evaluateForEmployee(employeeId: string): Promise<{ created
   if (!employee) {
     return { created: 0, updated: 0, resolved: 0 };
   }
-  
+  // Every item this raises or resolves is the employee's park group's (round 4b).
+  const tenantId = employee.tenantId;
+
   const contracts = await storage.getContracts();
   const employeeContracts = contracts.filter(c => c.employeeId === employeeId);
   
@@ -981,8 +1014,8 @@ export async function evaluateForEmployee(employeeId: string): Promise<{ created
       if (result) {
         triggeredRuleKeys.add(result.ruleKey);
         triggeredEntityKeys.add(result.entityKey);
-        
-        const upsertResult = await storage.upsertAttentionItem(result.item);
+
+        const upsertResult = await storage.upsertAttentionItem({ ...result.item, tenantId });
         if (upsertResult.action === 'created') created++;
         else if (upsertResult.action === 'updated') updated++;
       }
@@ -990,12 +1023,12 @@ export async function evaluateForEmployee(employeeId: string): Promise<{ created
       console.error(`Rule ${rule.ruleKey} failed for employee ${employeeId}:`, error);
     }
   }
-  
-  const existingItems = await storage.getOpenAttentionItemsForEntity(`employee:${employeeId}`);
+
+  const existingItems = await storage.getOpenAttentionItemsForEntity(`employee:${employeeId}`, tenantId);
   for (const existingItem of existingItems) {
     if (existingItem.ruleKey && !triggeredRuleKeys.has(existingItem.ruleKey)) {
       if (existingItem.entityKey && existingItem.entityKey.startsWith(`employee:${employeeId}`)) {
-        const resolvedCount = await storage.autoResolveAttentionItems(existingItem.ruleKey, existingItem.entityKey);
+        const resolvedCount = await storage.autoResolveAttentionItems(existingItem.ruleKey, existingItem.entityKey, tenantId);
         resolved += resolvedCount;
       }
     }
@@ -1015,7 +1048,9 @@ export async function evaluateForContract(contractId: string): Promise<{ created
   if (!employee) {
     return { created: 0, updated: 0, resolved: 0 };
   }
-  
+  // The contract's employee's park group (round 4b).
+  const tenantId = employee.tenantId;
+
   const contracts = await storage.getContracts();
   const employeeContracts = contracts.filter(c => c.employeeId === employee.id);
   
@@ -1034,11 +1069,11 @@ export async function evaluateForContract(contractId: string): Promise<{ created
       const result = rule.evaluate(employee, employeeContracts);
       
       if (result) {
-        const upsertResult = await storage.upsertAttentionItem(result.item);
+        const upsertResult = await storage.upsertAttentionItem({ ...result.item, tenantId });
         if (upsertResult.action === 'created') created++;
         else if (upsertResult.action === 'updated') updated++;
       } else {
-        const resolvedCount = await storage.autoResolveAttentionItems(rule.ruleKey, `contract:${contractId}`);
+        const resolvedCount = await storage.autoResolveAttentionItems(rule.ruleKey, `contract:${contractId}`, tenantId);
         resolved += resolvedCount;
       }
     } catch (error) {
@@ -1049,18 +1084,45 @@ export async function evaluateForContract(contractId: string): Promise<{ created
   return { created, updated, resolved };
 }
 
-export async function runFullReconciliation(): Promise<{ created: number; updated: number; resolved: number; errors: number }> {
+/** A triggered rule, keyed by the park group it was raised in: one park group's run never resolves another's. */
+const triggeredKey = (tenantId: string, ruleKey: string) => `${tenantId}\u0000${ruleKey}`;
+
+/**
+ * The app's full reconciliation: every rule over every employee, then every
+ * open item no rule raised this time is auto-resolved — the six-hourly run
+ * (and the first half of Refresh).
+ *
+ * Per park group (S2-17b round 4b): with `tenantId`, only that park group's
+ * employees are evaluated and only its open items are looked at for
+ * auto-resolve, so one park group's run never touches another's items. With
+ * none (only where the park groups cannot be listed), every park group's,
+ * each item raised and resolved in its own. Each item carries the park group
+ * of the employee it is about.
+ *
+ * The rules, their order, the auto-resolve and its 10,000-item read are the
+ * app's. Every error a rule throws is caught, logged and counted, as the app
+ * does, and told to `onError` too, so the platform's run names it.
+ */
+export async function runFullReconciliation(opts: AttentionRunOptions = {}): Promise<ReconciliationResult> {
   if (!ATTENTION_WRITES_READY) throw new Error("Tenant-owned Attention reconciliation is unavailable");
-  console.log("[AttentionEngine] Starting full reconciliation...");
-  
-  const employees = await storage.getEmployees();
+  console.log(`[AttentionEngine] Starting full reconciliation${opts.tenantId ? ` for park group ${opts.tenantId}` : ""}...`);
+
+  const everyEmployee = await storage.getEmployees();
+  const employees = opts.tenantId ? everyEmployee.filter(e => e.tenantId === opts.tenantId) : everyEmployee;
   const contracts = await storage.getContracts();
   
   let created = 0;
   let updated = 0;
   let resolved = 0;
   let errors = 0;
-  
+  const createdByRule: Record<string, number> = {};
+  const counted = (ruleKey: string, action: string) => {
+    if (action === 'created') {
+      created++;
+      createdByRule[ruleKey] = (createdByRule[ruleKey] ?? 0) + 1;
+    } else if (action === 'updated') updated++;
+  };
+
   const allTriggeredKeys = new Map<string, Set<string>>();
   
   for (const employee of employees) {
@@ -1077,18 +1139,19 @@ export async function runFullReconciliation(): Promise<{ created: number; update
         const result = rule.evaluate(employee, employeeContracts, documents, letters, assets, roles);
         
         if (result) {
-          if (!allTriggeredKeys.has(result.ruleKey)) {
-            allTriggeredKeys.set(result.ruleKey, new Set());
+          const key = triggeredKey(employee.tenantId, result.ruleKey);
+          if (!allTriggeredKeys.has(key)) {
+            allTriggeredKeys.set(key, new Set());
           }
-          allTriggeredKeys.get(result.ruleKey)!.add(result.entityKey);
-          
-          const upsertResult = await storage.upsertAttentionItem(result.item);
-          if (upsertResult.action === 'created') created++;
-          else if (upsertResult.action === 'updated') updated++;
+          allTriggeredKeys.get(key)!.add(result.entityKey);
+
+          const upsertResult = await storage.upsertAttentionItem({ ...result.item, tenantId: employee.tenantId });
+          counted(result.ruleKey, upsertResult.action);
         }
       } catch (error) {
         console.error(`Rule ${rule.ruleKey} failed for employee ${employee.id}:`, error);
         errors++;
+        opts.onError?.(error);
       }
     }
   }
@@ -1123,13 +1186,15 @@ export async function runFullReconciliation(): Promise<{ created: number; update
       }
       
       const fingerprint = generateFingerprint({ employeeId: employee.id, hasPersonId: !!employee.personId, severity });
-      
-      if (!allTriggeredKeys.has(ruleKey)) {
-        allTriggeredKeys.set(ruleKey, new Set());
+
+      const key = triggeredKey(employee.tenantId, ruleKey);
+      if (!allTriggeredKeys.has(key)) {
+        allTriggeredKeys.set(key, new Set());
       }
-      allTriggeredKeys.get(ruleKey)!.add(entityKey);
-      
+      allTriggeredKeys.get(key)!.add(entityKey);
+
       const upsertResult = await storage.upsertAttentionItem({
+        tenantId: employee.tenantId,
         branchId: employee.branchId,
         employeeId: employee.id,
         contractInstanceId: null,
@@ -1142,27 +1207,31 @@ export async function runFullReconciliation(): Promise<{ created: number; update
         entityKey,
         fingerprint,
       });
-      
-      if (upsertResult.action === 'created') created++;
-      else if (upsertResult.action === 'updated') updated++;
+
+      counted(ruleKey, upsertResult.action);
     }
   }
-  
-  const allOpenItems = await storage.getAttentionItems({ resolved: false, limit: 10000 });
+
+  // The open items of this run's park group only (every park group's, each in its own, where none is named).
+  const allOpenItems = await storage.getAttentionItems({ tenantId: opts.tenantId, resolved: false, limit: 10000 });
   for (const item of allOpenItems) {
     if (!item.ruleKey || !item.entityKey) continue;
-    
-    const triggeredEntities = allTriggeredKeys.get(item.ruleKey);
+
+    const triggeredEntities = allTriggeredKeys.get(triggeredKey(item.tenantId, item.ruleKey));
     if (!triggeredEntities || !triggeredEntities.has(item.entityKey)) {
-      const resolvedCount = await storage.autoResolveAttentionItems(item.ruleKey, item.entityKey);
+      const resolvedCount = await storage.autoResolveAttentionItems(item.ruleKey, item.entityKey, item.tenantId);
       resolved += resolvedCount;
     }
   }
-  
-  lastCalculatedAt = new Date();
+
+  const finishedAt = new Date();
+  lastCalculatedAt = finishedAt;
+  for (const tenantId of opts.tenantId ? [opts.tenantId] : new Set(employees.map(e => e.tenantId))) {
+    lastCalculatedAtByParkGroup.set(tenantId, finishedAt);
+  }
   console.log(`[AttentionEngine] Reconciliation complete: ${created} created, ${updated} updated, ${resolved} resolved, ${errors} errors`);
-  
-  return { created, updated, resolved, errors };
+
+  return { created, updated, resolved, errors, createdByRule };
 }
 
 export async function generateAttentionItems(): Promise<number> {
@@ -1172,9 +1241,9 @@ export async function generateAttentionItems(): Promise<number> {
 
 /**
  * The Attention rules for a park group: its `attention_rules_config` setting,
- * the default park group's where it has none (S2-17b round 4a). The only
- * caller is the paused scheduling evaluation, which still reads the default
- * park group's; round 4b runs the rules per park group.
+ * the default park group's where it has none (S2-17b round 4a; Q28). The
+ * scheduling evaluation reads it for the park group it runs for (round 4b),
+ * as the app read its one set: the open-shift switch and threshold.
  */
 async function getAttentionConfig(tenantId: string | null): Promise<Record<string, any>> {
   const DEFAULT_CONFIG = {
@@ -1192,17 +1261,38 @@ async function getAttentionConfig(tenantId: string | null): Promise<Record<strin
   return DEFAULT_CONFIG;
 }
 
-export async function evaluateSchedulingAlerts(): Promise<{ created: number; updated: number; resolved: number }> {
+/**
+ * The app's scheduling alerts (open shifts soon, shifts needing coverage), the
+ * second half of Refresh.
+ *
+ * Per park group (S2-17b round 4b): its own branches, its own rules
+ * (`attention_rules_config`, the default park group's where it has none), and
+ * only its own open scheduling items auto-resolved. With no park group named,
+ * each park group in turn.
+ */
+export async function evaluateSchedulingAlerts(opts: { tenantId?: string } = {}): Promise<{ created: number; updated: number; resolved: number }> {
   if (!ATTENTION_WRITES_READY) throw new Error("Tenant-owned Attention scheduling alerts are unavailable");
+  if (!opts.tenantId) {
+    const totals = { created: 0, updated: 0, resolved: 0 };
+    const parkGroups = [...new Set((await storage.getBranches()).map(b => b.tenantId))];
+    for (const tenantId of parkGroups) {
+      const one = await evaluateSchedulingAlerts({ tenantId });
+      totals.created += one.created;
+      totals.updated += one.updated;
+      totals.resolved += one.resolved;
+    }
+    return totals;
+  }
+  const tenantId = opts.tenantId;
   let created = 0;
   let updated = 0;
   let resolved = 0;
-  
-  const config = await getAttentionConfig(null);
+
+  const config = await getAttentionConfig(tenantId);
   const enabledRules: string[] = config.enabledRules || [];
   const openShiftHours = config.openShiftHoursThreshold || 72;
 
-  const branches = await storage.getBranches();
+  const branches = (await storage.getBranches()).filter(b => b.tenantId === tenantId);
   const allTriggeredKeys = new Map<string, Set<string>>();
   
   for (const branch of branches) {
@@ -1231,6 +1321,7 @@ export async function evaluateSchedulingAlerts(): Promise<{ created: number; upd
         const shiftTime = new Date(shift.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         
         const upsertResult = await storage.upsertAttentionItem({
+          tenantId,
           branchId: branch.id,
           employeeId: null,
           contractInstanceId: null,
@@ -1274,6 +1365,7 @@ export async function evaluateSchedulingAlerts(): Promise<{ created: number; upd
         const shiftTime = new Date(shift.startAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         
         const upsertResult = await storage.upsertAttentionItem({
+          tenantId,
           branchId: branch.id,
           employeeId: null,
           contractInstanceId: null,
@@ -1321,6 +1413,7 @@ export async function evaluateSchedulingAlerts(): Promise<{ created: number; upd
         const shiftDateFormatted = new Date(openShift.shiftDate).toLocaleDateString('en-GB');
         
         const upsertResult = await storage.upsertAttentionItem({
+          tenantId,
           branchId: branch.id,
           employeeId: null,
           contractInstanceId: null,
@@ -1342,11 +1435,12 @@ export async function evaluateSchedulingAlerts(): Promise<{ created: number; upd
     }
   }
   
-  // Auto-resolve scheduling alerts that are no longer triggered
-  const openSchedulingItems = await storage.getAttentionItems({ 
-    types: ["OPEN_SHIFT_SOON", "SHIFT_NEEDS_COVERAGE"], 
-    resolved: false, 
-    limit: 10000 
+  // Auto-resolve scheduling alerts that are no longer triggered — this park group's only
+  const openSchedulingItems = await storage.getAttentionItems({
+    tenantId,
+    types: ["OPEN_SHIFT_SOON", "SHIFT_NEEDS_COVERAGE"],
+    resolved: false,
+    limit: 10000
   });
   
   for (const item of openSchedulingItems) {
@@ -1354,7 +1448,7 @@ export async function evaluateSchedulingAlerts(): Promise<{ created: number; upd
     
     const triggeredEntities = allTriggeredKeys.get(item.ruleKey);
     if (!triggeredEntities || !triggeredEntities.has(item.entityKey)) {
-      const resolvedCount = await storage.autoResolveAttentionItems(item.ruleKey, item.entityKey);
+      const resolvedCount = await storage.autoResolveAttentionItems(item.ruleKey, item.entityKey, tenantId);
       resolved += resolvedCount;
     }
   }
@@ -1362,12 +1456,17 @@ export async function evaluateSchedulingAlerts(): Promise<{ created: number; upd
   return { created, updated, resolved };
 }
 
-export async function runAttentionEngine(): Promise<{ created: number; message: string }> {
+/**
+ * Refresh: the full reconciliation, then the scheduling alerts — for one park
+ * group (S2-17b round 4b: the caller's), or, with none named, every park group
+ * each in its own. The app's answer, its words and its swallowed error.
+ */
+export async function runAttentionEngine(tenantId?: string): Promise<{ created: number; message: string }> {
   try {
-    const result = await runFullReconciliation();
-    
+    const result = await runFullReconciliation({ tenantId });
+
     // Also run scheduling alerts
-    const schedulingResult = await evaluateSchedulingAlerts();
+    const schedulingResult = await evaluateSchedulingAlerts({ tenantId });
     
     const totalCreated = result.created + schedulingResult.created;
     const totalUpdated = result.updated + schedulingResult.updated;

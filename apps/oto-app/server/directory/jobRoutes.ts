@@ -20,6 +20,7 @@ import { directoryClientOf, requireDirectoryClient } from "./clientAuth";
  * plan section 5 "The app's jobs on the platform runner"):
  *
  *   POST /api/directory/jobs/:name/run      name: midnight | reconcile | presence
+ *                                           | attention | no_show (round 4b)
  *
  * Authenticated by a tenant-bound directory key carrying `jobs:run`
  * (`clientAuth.ts`), never the shared HR key. The batch runs for the key's
@@ -34,7 +35,7 @@ import { directoryClientOf, requireDirectoryClient } from "./clientAuth";
  *   - while this app runs its own timers (`OTOAPP_JOBS=inprocess`), 409 in
  *     words: the platform may not run the same batch beside them;
  *   - a body other than `{}` or `{ "tenantId": "<uuid>" }` 400;
- *   - a job name that is not one of the three 404;
+ *   - a job name that is not one of the five 404;
  *   - a body naming a park group other than the key's 404 — the same answer a
  *     key gets for another tenant's event: a key confines a caller to its own
  *     park group, and the platform names the park group it means so a key

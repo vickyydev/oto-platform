@@ -15,11 +15,17 @@ import { scrubText } from "./telemetry/redact";
  * shape of an answer, and the words a refusal is given in — and nothing that
  * reaches the database, so the platform's tests can load it without the app's
  * dependency tree.
+ *
+ * Round 4b adds the app's two Attention timers to the same endpoint, on the
+ * same terms: `attention`, the engine's full reconciliation every six hours
+ * (the app ran it from server/index.ts, at start-up and every six hours), and
+ * `no_show`, the scheduled no-show check every ten minutes, which runs only
+ * from 07:00 to 22:00 Bangkok time and says so when asked outside it.
  */
 
-export type NightJobName = "midnight" | "reconcile" | "presence";
+export type NightJobName = "midnight" | "reconcile" | "presence" | "attention" | "no_show";
 
-export const NIGHT_JOB_NAMES: readonly NightJobName[] = ["midnight", "reconcile", "presence"];
+export const NIGHT_JOB_NAMES: readonly NightJobName[] = ["midnight", "reconcile", "presence", "attention", "no_show"];
 
 export function isNightJobName(value: string): value is NightJobName {
   return (NIGHT_JOB_NAMES as readonly string[]).includes(value);
@@ -86,6 +92,17 @@ export const JOB_RUNNING_REFUSAL = {
 export const JOB_NOT_FOUND_REFUSAL = {
   error: "job_not_found",
   message: `There is no night job of that name. The night jobs are ${NIGHT_JOB_NAMES.join(", ")}.`,
+} as const;
+
+/**
+ * Refresh on the Attention page while the same park group's engine is already
+ * running (the six-hourly run, or another person's Refresh): it is never run
+ * twice at once (round 4b). The app's own `{ message }` shape, as its other
+ * page answers are.
+ */
+export const ATTENTION_REFRESH_RUNNING = {
+  reason: "attention_running",
+  message: "Attention is already being checked for this park group. Try Refresh again in a minute.",
 } as const;
 
 /** The park group the request names is not the key's: the same answer as another tenant's event. */

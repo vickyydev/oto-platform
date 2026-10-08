@@ -1,6 +1,6 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { storage, resolveFixReportStatusFilter, type ActivityParkGroup } from "./storage";
+import { storage, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
 import { setupAuth, requireAuth, hashPassword } from "./auth";
 import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches, canUserAccessBranch, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
@@ -101,7 +101,9 @@ import crypto from "crypto";
 import { aiComplete, aiConfigured, FAST_AI_MODEL } from "./lib/anthropic";
 import multer from "multer";
 import * as XLSX from "xlsx";
-import { evaluateForEmployee, evaluateForContract, evaluateRuleForEmployee, getRuleDefinitions } from "./attention-engine";
+import { evaluateForEmployee, evaluateForContract, evaluateRuleForEmployee, getRuleDefinitions, getLastCalculatedAt, runAttentionEngine } from "./attention-engine";
+import { holdNightBatch } from "./lib/nightBatchLock";
+import { ATTENTION_REFRESH_RUNNING } from "./lib/nightJobs";
 import { ATTENTION_WRITES_READY } from "./attention-availability";
 import { getEmployeeDisplayName } from "./lib/employeeDisplayName";
 import { isSealedAccessPassword, openAccessPassword, sealAccessPassword } from "./lib/accessVault";
@@ -7146,8 +7148,13 @@ OTO Company Limited`,
     }
   });
 
-  // Attention rows have no tenant column yet. Branchless or inconsistent rows
-  // are withheld until the platform migration can classify them.
+  // Attention, per park group (S2-17b round 4b). Every item carries the park
+  // group whose data raised it (migration 0007), so a reader sees their own
+  // park group's items and never another's: a reader with every branch sees
+  // every item, the ones about no branch included; any other reader sees the
+  // items of their branches only (the Activity Logbook's rule, round 4a). The
+  // reads keep the lift's manager gate; the writes the lift paused — refresh,
+  // snooze, resolve, the rules — resume, each held to the caller's park group.
   const attentionAccess = async (req: Request, res: Response, branchId?: string) => {
     const user = req.userWithAccess;
     if (!user?.tenantId) {
@@ -7165,10 +7172,13 @@ OTO Company Limited`,
       res.status(403).json({ message: "Branch access denied" });
       return null;
     }
-    return {
+    const scope: AttentionReadScope = {
       tenantId: user.tenantId,
-      branchIds: branchId ? [branchId] : tenantIds.filter(id => canUserAccessBranch(user, id)),
+      branchIds: branchId
+        ? [branchId]
+        : user.hasAllBranchesAccess ? null : tenantIds.filter(id => canUserAccessBranch(user, id)),
     };
+    return scope;
   };
 
   app.get("/api/attention-items", requireAuth, requireManager, async (req, res, next) => {
@@ -7203,7 +7213,7 @@ OTO Company Limited`,
       }
       
       const items = await storage.getAttentionItems(options);
-      res.json({ items, lastCalculatedAt: null, paused: !ATTENTION_WRITES_READY });
+      res.json({ items, lastCalculatedAt: getLastCalculatedAt(scope.tenantId), paused: !ATTENTION_WRITES_READY });
     } catch (error) {
       next(error);
     }
@@ -7226,17 +7236,71 @@ OTO Company Limited`,
     }
   });
 
-  app.post("/api/attention-items/:id/resolve", requireAuth, requireManager, (_req, res) => {
-    res.status(503).json({ message: "Attention updates are unavailable until tenant ownership is recorded" });
+  // Resolve (`permanent: true`) or snooze for 24 hours (`permanent: false`),
+  // as the app does — an item the caller cannot see is the same 404 as one
+  // that does not exist.
+  app.post("/api/attention-items/:id/resolve", requireAuth, requireManager, async (req, res, next) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      if (!ATTENTION_WRITES_READY) {
+        return res.status(503).json({ message: "Attention updates are paused" });
+      }
+      const scope = await attentionAccess(req, res);
+      if (!scope) return;
+      const item = await storage.getAttentionItem(req.params.id, scope);
+      if (!item) {
+        return res.status(404).json({ message: "Attention item not found" });
+      }
+      const permanent = req.body?.permanent === true;
+      const resolved = await storage.resolveAttentionItem(item.id, userId, permanent, scope.tenantId);
+      if (!resolved) {
+        return res.status(404).json({ message: "Attention item not found" });
+      }
+      res.json(resolved);
+    } catch (error) {
+      next(error);
+    }
   });
 
-  app.post("/api/attention-items/refresh", requireAuth, requireManager, (_req, res) => {
-    res.status(503).json({ message: "Attention refresh is unavailable until tenant jobs are isolated" });
+  // Refresh: the app's engine and its scheduling alerts, for the caller's park
+  // group only, under the lock the six-hourly run takes for that park group
+  // (`otoapp_night:attention:<park group>`), so a press beside the scheduled
+  // run — the platform's or the app's own — never runs the engine twice at once.
+  app.post("/api/attention-items/refresh", requireAuth, requireManager, async (req, res, next) => {
+    try {
+      if (!ATTENTION_WRITES_READY) {
+        return res.status(503).json({ message: "Attention refresh is paused" });
+      }
+      const scope = await attentionAccess(req, res);
+      if (!scope) return;
+      const release = await holdNightBatch(pool, "attention", scope.tenantId);
+      if (!release) {
+        return res.status(409).json(ATTENTION_REFRESH_RUNNING);
+      }
+      let result: { created: number; message: string };
+      try {
+        result = await runAttentionEngine(scope.tenantId);
+      } finally {
+        await release();
+      }
+      res.json({ ...result, lastCalculatedAt: getLastCalculatedAt(scope.tenantId) });
+    } catch (error) {
+      next(error);
+    }
   });
 
-  // Get last calculated timestamp
-  app.get("/api/attention-items/last-run", requireAuth, requireManager, (_req, res) => {
-    res.status(503).json({ message: "Tenant job history is unavailable" });
+  // Get last calculated timestamp — the caller's park group's, in this process
+  app.get("/api/attention-items/last-run", requireAuth, requireManager, async (req, res, next) => {
+    try {
+      const scope = await attentionAccess(req, res);
+      if (!scope) return;
+      res.json({ lastCalculatedAt: getLastCalculatedAt(scope.tenantId) });
+    } catch (error) {
+      next(error);
+    }
   });
 
   // Admin-only diagnostics endpoint
@@ -7244,8 +7308,12 @@ OTO Company Limited`,
     try {
       const scope = await attentionAccess(req, res);
       if (!scope) return;
-      const [employee] = scope.branchIds.length ? await db.select({ id: employees.id }).from(employees)
-        .where(and(eq(employees.id, req.params.employeeId), eq(employees.tenantId, scope.tenantId), inArray(employees.branchId, scope.branchIds)))
+      const [employee] = scope.branchIds === null || scope.branchIds.length > 0 ? await db.select({ id: employees.id }).from(employees)
+        .where(and(
+          eq(employees.id, req.params.employeeId),
+          eq(employees.tenantId, scope.tenantId),
+          scope.branchIds === null ? undefined : inArray(employees.branchId, scope.branchIds),
+        ))
         .limit(1) : [];
       if (!employee) return res.status(404).json({ message: "Employee not found" });
       const diagnostics = await evaluateRuleForEmployee(req.params.employeeId);
@@ -7283,12 +7351,52 @@ OTO Company Limited`,
     }
   });
 
-  app.get("/api/attention-rules/config", requireAuth, requireAdmin, (_req, res) => {
-    res.status(503).json({ message: "Attention rules are unavailable until tenant settings are isolated" });
+  // Attention rules configuration — each park group's own (the settings key
+  // `attention_rules_config`, round 4b), read with the default park group's
+  // where it has none (Q28), saved as its own row by the caller the app's
+  // strict placement puts in it, as every settings save is.
+  const ATTENTION_CONFIG_KEY = "attention_rules_config";
+  const DEFAULT_ATTENTION_CONFIG = {
+    openShiftHoursThreshold: 72,
+    contractNotSentDaysThreshold: 7,
+    documentExpiryDaysThreshold: 30,
+    clockInGraceMinutes: 5,
+    overtimeThresholdMinutes: 15,
+    lateThresholdMinutes: 5,
+    enabledRules: [
+      "CONTRACT_NOT_SENT", "DOCUMENT_EXPIRY_SOON", "MISSING_DOCUMENT",
+      "PROBATION_ENDING_SOON", "OPEN_SHIFT_SOON", "SHIFT_NEEDS_COVERAGE",
+      "MISSING_LOGIN_ACCESS", "CHECKLIST_AUDIT_FAIL", "CHECKLIST_NOTE_FLAGGED",
+    ],
+  };
+
+  app.get("/api/attention-rules/config", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const setting = await storage.getSetting(ATTENTION_CONFIG_KEY, req.userWithAccess?.tenantId ?? null);
+      if (setting) {
+        res.json(JSON.parse(setting.value));
+      } else {
+        res.json(DEFAULT_ATTENTION_CONFIG);
+      }
+    } catch (error) {
+      next(error);
+    }
   });
 
-  app.put("/api/attention-rules/config", requireAuth, requireAdmin, (_req, res) => {
-    res.status(503).json({ message: "Attention rules are unavailable until tenant settings are isolated" });
+  app.put("/api/attention-rules/config", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const writer = await settingsWriter(req, res);
+      if (!writer) return;
+      const config = { ...DEFAULT_ATTENTION_CONFIG, ...req.body };
+      await storage.upsertSetting({
+        key: ATTENTION_CONFIG_KEY,
+        value: JSON.stringify(config),
+      }, writer.tenantId);
+      res.json(config);
+    } catch (error) {
+      if (answerSettingsRefusal(res, error)) return;
+      next(error);
+    }
   });
 
   // These legacy tables have no tenant column. Until they do, only the default
