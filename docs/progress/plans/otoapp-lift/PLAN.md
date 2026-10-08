@@ -247,6 +247,42 @@ module map below is read from the routes and the schema, not from memory.
   their routes fail closed (`server/routes.ts:7012-7092`). Fix: additive
   tenant columns with a backfill, then each caller reads and writes its own
   tenant's rows, and the 503 guards come off.
+  - **As built in round 4a, the expand half** (migration 0006, section 7).
+    - Settings had no 503: every park group read and wrote the one global
+      set. Now one helper (`storage.getSettings`, `getSetting`,
+      `upsertSetting`; the rules in `server/lib/parkGroupSettings.ts`) takes
+      the park group, and so does every caller: the settings screen, the
+      employer counter-signature on a signed contract (the employee's park
+      group), the default probation (the employee's), the annual-leave and
+      business-day entitlements, the Fix department, the kiosk code lifetime,
+      the AI prompts, the Attention rule settings (read for the default park
+      group until 4b runs the rules per park group), the dev seed and the
+      production copy (both development only).
+    - Reading: a park group's own row for a key, else the default park
+      group's (Q28), else a row with no park group (the previous release's,
+      written during the hand-over). Another park group's row is never read.
+    - Saving: the default park group only, its callers placed by the app's
+      strict rule (`userManagementTenant`). Another park group is answered
+      409 in words (`settings_shared`) whatever the key (Q29); a caller the
+      app cannot place, 403 (`settings_no_park_group`); a key another park
+      group's row already holds, 409 (`settings_key_held`) — never a 500 off
+      the old unique. The insert names no conflict target, so the same code
+      runs on both constraint shapes (H11, proven by dropping and restoring
+      the old unique in `tests/tenant-ownership.check.ts`).
+    - The Fix department is a department id, so the fallback never crosses:
+      another park group reading the default park group's Fix department
+      gets none, its reports are never assigned to the default park group's
+      department nor its staff counted members of it, and a save checks the
+      department is the caller's own (fixed: a report of one park group
+      assigned to another's department is a data fault).
+    - The Activity Logbook: both reads filter by the caller's park group, so
+      a row about no branch shows in its own park group's logbook. Of those,
+      the app's own branch rule (its read before the lift): a reader with
+      every branch (`hasAllBranchesAccess`) sees the branchless rows; a
+      branch-limited reader sees the rows of their branches only. A
+      hand-over row with no park group is shown by its branch, as before.
+    - Templates, policies and the asset catalogue keep their 503 until round
+      6; Attention stays paused until 4b.
 - **Directory HR reads trust one shared key.** The six `/api/directory/*`
   HR reads authenticate `HR_DIRECTORY_API_KEY`, which names no tenant, and
   can return any tenant's staff (`server/auth-middleware.ts:231-259`). Fix:
@@ -468,6 +504,23 @@ module map below is read from the routes and the schema, not from memory.
       (review F2, section 4).
 - **Tenant-bound Directory HR reads**, as in section 4. The shared key keeps
   working only where it is set, and only for the default tenant (Q13).
+  - **As built in round 4a.** The six reads take one caller check
+    (`server/directory/hrReadAuth.ts`): `Authorization: Bearer <key>` with a
+    `directory_clients` key carrying the new scope `hr:read`, checked by the
+    same `requireDirectoryClient` that `events:write` and `jobs:run` use (no
+    key 401, a key it did not issue or one without the scope 403, the key's
+    own rate limit). Each read answers for the key's park group only: another
+    park group's employee or branch is the same 404 as one that does not
+    exist; search, the branch roster, roles, departments and branches list
+    that park group's rows; an employee's branch, department, roles and
+    presence branch are read inside it.
+  - The old `X-HR-API-KEY` path: where `HR_DIRECTORY_API_KEY` is unset (as on
+    staging) it is refused with a 403 in words, where the old check answered
+    500; where it is set, it reads the default park group only, under its old
+    per-key rate limit. Compared in constant time.
+  - `hr:read` joins `DIRECTORY_CLIENT_SCOPES` and the key script
+    (`npm run directory:client -- create ... --scope hr:read`). No migration:
+    `scopes` is free text. The platform calls none of these reads today.
 - **The restore rehearsal in CI** (ticket: cutover compatibility).
   - CI applies the app's baseline into `public` of a scratch database and
     loads the sample seed (`script/sample`).
@@ -549,6 +602,50 @@ is committed.
   - The backfill takes the tenant from the branch, then from the employee,
     then the default tenant.
   - It adds a unique (`tenant_id`, `key`) index on `settings`.
+  - **As built in round 4a: `0006_tenant_ownership_expand`** (the next free
+    number after round 2's view).
+    - `tenant_id uuid`, nullable, a foreign key to `tenants`, on the three
+      tables; `idx_activity_log_tenant` and `idx_attention_items_tenant`;
+      `settings_tenant_id_key_unique` on (`tenant_id`, `key`), which is also
+      the tenant index on `settings` (it leads with it). The baseline's
+      `settings_key_unique` stays.
+    - The backfill, in order. `activity_log`: its branch; its employee; its
+      contract's employee; the user who did it, when that user's branch
+      access names exactly one park group (the app's strict placement,
+      `managedUserTenant`); then the default park group. `attention_items`:
+      its branch; its employee; its contract's employee; then the default
+      (an item is raised by the engine, so who resolved it says nothing).
+      `settings`: the default park group, whose one set it was. The two
+      added steps keep a branchless row a second park group's user wrote out
+      of the default park group's logbook (H10; Q30).
+    - The default park group is the tenant with slug `default`. Where a row
+      is left for it and there is none, the migration makes it ('OTO
+      Default'), as the app's own `script/backfillTenant.ts` does; an empty
+      database gets none.
+    - The write path follows the same order: `createActivityLog` writes
+      every row's park group, the caller's session park group standing
+      before the user step (the routes pass it on every row about no branch,
+      employee or contract). Attention writes stay paused and its reads keep
+      their branch-consistency scope until 4b. The no-show check already
+      passes `tenantId` to `upsertAttentionItem`
+      (`server/scheduled-jobs.ts:481`), for a column that did not exist until
+      0006, so when 4b resumes it the item carries its park group.
+    - The read-back, `npm run tenant:readback` in the app
+      (`script/tenant-ownership-readback.mjs`, read only): rows per park
+      group and rows with none for the three tables, which settings uniques
+      stand, keys held twice, activity rows that disagree with their
+      branch, and the census counts below. CI's OTO App job runs it last,
+      over every row the migrations, the routes and the night jobs wrote.
+    - Tests: `apps/api/test/s217b-r4a.test.ts` (H10 on a seeded 0005 state,
+      the default park group made only where needed, the migration as
+      committed and from empty twice, the 4a fences) and
+      `apps/oto-app/tests/tenant-ownership.check.ts` (H11 on both constraint
+      shapes, the reads, the Activity Logbook, H12), wired into CI's OTO App
+      job.
+    - **Owed by 4b.** Rows the previous release writes during the hand-over
+      have no park group (they read as the default's, or by their branch).
+      4b's migration runs 0006's backfill again over the nulls, sets NOT
+      NULL once the read-back shows none, and drops `settings_key_unique`.
 - Round 4 (contract, one release later, its own landing "4b"): drop the
   global unique on `settings.key`, and set the new tenant columns NOT NULL
   once a read-back shows no nulls. Until 4b lands, `settings_key_unique`
@@ -567,6 +664,27 @@ is committed.
   `i18n_translations`, `package_line_item_templates` and `people`. Each is
   either reached through a tenant-bearing parent or listed with its
   exposure. Children of tenant-bearing parents need nothing.
+  - **The census as written in round 4a** (read from the schema and every
+    route that reads or writes each table; live counts per park group come
+    from `npm run tenant:readback`, run on staging when 4a deploys):
+
+| Table | Its park group, through | Who reads and writes it | Disposition |
+|---|---|---|---|
+| `coverage_rules` | `branch_id` (NOT NULL) → `branches.tenant_id` | No route calls its three storage functions (`getCoverageRules`, `createCoverageRule`, `deleteCoverageRule`); Data Admin only | Reached through a tenant-bearing parent. Nothing to do. |
+| `invitation_designs` | `event_id` (NOT NULL, cascade) → `core_events.tenant_id` | The signed-in routes check the event's park group and branch first (`verifyEventAccess`, `server/parent-experience-routes.ts:67-74`); the public ones reach it through a parent-portal token's own event | Reached through a tenant-bearing parent. Nothing to do. |
+| `package_line_item_templates` | `package_template_id` (NOT NULL, cascade) → `birthday_package_templates.tenant_id` | Every route checks the package's park group first (`hasPackageAccess`, `server/birthday-package-routes.ts:17-24`) and confines item writes to that package | Reached through a tenant-bearing parent. Nothing to do. |
+| `i18n_translations` | `version_id` (NOT NULL) → `dropoff_form_versions.form_id` → `dropoff_forms.tenant_id` | Four manager routes take a form or version id and never check its park group: `GET /api/dropoff-form/:formId/versions`, `GET /api/dropoff-form/version/:versionId`, `PUT /api/dropoff-form/:formId/draft`, `PUT /api/dropoff-form/translation` (`server/dropoff-form-routes.ts:368-466`) | Reached through a tenant-bearing parent, but EXPOSED: a manager of any park group holding another park group's form or version id reads and writes its drafts and translations. No column needed; the fix is the parent check on those four routes (Q31). |
+| `leave_policies` | `branch_id` → `branches.tenant_id`; a row with no branch is company-wide and has no park group at all | `GET /api/leave-policies` with no branch lists every park group's policies to an admin or all-branch user, and with `branchId` takes another park group's branch; `POST` takes any `branchId`; `PATCH` and `DELETE /api/leave-policies/:id` take any park group's policy (`server/routes.ts`, "LEAVE POLICIES"). `getActiveLeavePolicy` falls back to the branchless rows, so a company-wide policy one park group writes sets every park group's days-off accrual | EXPOSED, reads and writes across park groups, and its branchless rows have no parent to place them. Needs its own `tenant_id` on the round 6 pattern (expand with a branch-then-default backfill, NOT NULL a release later) and the routes held to the caller's park group (Q31). |
+| `people` | No tenant column and no tenant-bearing parent; placed through its children: `access_policies.person_id` (unique per person, carries `tenant_id`) and `employees.person_id` | `GET /api/people` lists every park group's people to any manager; `GET` and `PATCH /api/people/:id` and `GET /api/people/:id/access` take any park group's person for any park group's admin (`server/routes.ts`, "PEOPLE & ACCESS POLICIES"). Round 2 fenced the delete door. `email` is unique across every park group, so one person has one row | EXPOSED: identity rows read and edited across park groups. No column needed while each person has one place: scope the people routes by the park group of the person's access policy or employee rows; the read-back counts the people placed in one park group, in none and in several, which is the census that change needs first (Q31). |
+
+  - Across all six, and the three 4a tables too: Data Admin
+    (`/api/data-admin`, `requireGlobalAdmin`, which is the `admin` or
+    `global_admin` role of any park group, `server/routes.ts:811`) reaches
+    every registered model across park groups. Its walkthrough is round 7's.
+  - Found beside the census: `POST /api/employees/recalculate-probation`
+    recomputes every park group's employees for any park group's admin. In
+    4a each employee takes its own park group's default probation, but the
+    route still reaches across (Q31).
 - None for leave (Q1 default) or shift groups (Q2 default). If Q2 says
   "allow", the round adds a nullable `shift_group_id`, and the booth reader
   skips ungrouped rows.
@@ -691,6 +809,13 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 - **Other park groups wait one release for their own settings.** Between 4a
   and 4b they can read Settings but not save a key the default group
   already holds, and Attention stays paused for everyone until 4b.
+  - As built (round 4a): they save no setting at all, whatever the key
+    (Q29), and read the default park group's values for every key, its
+    employer signatory and signature image included (Q28). Their Fix
+    department reads as none until they can save their own.
+- **A branch-limited reader does not see branchless Activity rows** (round
+  4a, the app's own rule): a user created or a policy published shows to the
+  park group's readers with every branch only.
 - **The app's two manual job routes point at the Console** once the
   platform runs the jobs. No screen calls them.
 - **A standing employee-copy case re-files every run** — about 96 Failures
@@ -947,6 +1072,50 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   person reading Health catches it. Should the app's mode cross the seam
   (say, a view column or a health answer) so the api can refuse the silent
   state? Default: the documented hand-over order, no new seam.
+
+- **Q28. Settings a park group has not saved (round 4a).** The app has one
+  set of settings that every park group reads. So today a second park
+  group's contracts are counter-signed with the default park group's
+  signatory name, title and signature image, and its staff get the default
+  park group's probation and leave entitlements, kiosk code lifetime and AI
+  prompts. As built, a park group with no row of its own for a key reads the
+  default park group's, which is exactly that. The alternative is no
+  fallback: such a park group gets the app's built-in defaults (Tom Sauer,
+  Managing Director, no signature image, 120 days' probation, 8 days'
+  annual leave) until it saves its own (4b). The one exception is built
+  either way: the Fix department names one park group's department, so
+  another park group reads none. Default: read the default park group's, as
+  the app does.
+- **Q29. Which saves another park group is refused in 4a (round 4a).** The
+  plan said another park group may not save a key the default park group
+  holds. As built it may not save any setting: while the old unique on the
+  key stands, a key a second park group saves first can then never be saved
+  by the default park group — the park that runs on the app today — until
+  4b. Default: refuse every save by another park group until 4b, in words.
+  The alternative lets them save keys nobody holds yet, and the default park
+  group is then refused those keys until 4b.
+- **Q30. The backfill's order (round 4a).** The plan said branch, then
+  employee, then the default park group. As built, an activity row with
+  neither takes its contract's employee's park group, and then the park group
+  of the user who did it when that user's branch access names exactly one,
+  before falling to the default. Otherwise a user created or a policy
+  published by a second park group's admin lands in the default park group's
+  logbook, which H10 forbids. Attention items take the contract step but not
+  the user one: an item is raised by the engine, and who resolved it says
+  nothing about whose it is. New rows are written on the same order, the
+  caller's own park group standing before the user step. Default: as built.
+  The alternative is the plan's three steps.
+- **Q31. Where the census's exposures are fixed (round 4a).** The root-table
+  census (section 7) found four places that read or write across park
+  groups, none of them in 4a's scope. Default placement: `leave_policies`
+  in round 5 (leave and holidays), a tenant column on the round 6 pattern
+  with its routes held to the caller's park group; `people` in round 6 (HR
+  records), its routes scoped by the park group of each person's access
+  policy or employee rows; the four form-builder routes over
+  `i18n_translations` in round 7, with the form builder's walkthrough; and
+  `POST /api/employees/recalculate-probation` in round 6, held to the
+  caller's park group. Data Admin's reach stays with its round 7
+  walkthrough. Confirm, or move any of them earlier.
 ## 12. Hazards, each with its test
 
 | # | Hazard | Test |
@@ -960,9 +1129,9 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 | H7 | The copy stops and nobody notices | `ops_expectation` on Health. A forced failure appears on Failures, and a missed run raises the watchdog alert. For the night jobs (round 3 review): a park group the app holds with no key fails every run naming it (F1), and a batch still running at a second tick fails the run (F3) |
 | H8 | A night batch runs twice | Two concurrent invocations: one runs and one is `locked`. Two batches for one date: one success. The auto clock-out inserts one OUT per stale IN. Under `platform` the app starts no timers; under `inprocess` the endpoint refuses. Round 3 review: a second midnight batch of one date makes no second task instance, due at 06:30 or 18:00 (F2); an in-process timer stands down for a park group whose batch the endpoint holds, and runs the others (F4) |
 | H9 | A night is lost when the app is down | The first invocation fails, the next tick runs it, and the date is marked done once |
-| H10 | The backfill gives rows to the wrong tenant | A two-tenant fixture with branch-linked, employee-linked and branchless rows: each lands in its tenant, none is left null, and the counts per tenant are unchanged |
-| H11 | The settings change breaks the running release, or a park group's settings write fails on the old unique | Release N's code passes on both the old and the new constraint shape. The old unique is dropped only in release N+1 (4b). In 4a, another park group writing a key the default group holds is refused in words, never a 500 |
-| H12 | Directory reads cross tenants | A's key reading B's employee answers 404. A key without `hr:read` answers 403. With `HR_DIRECTORY_API_KEY` unset, the shared-key path answers 403 |
+| H10 | The backfill gives rows to the wrong tenant | A two-tenant fixture with branch-linked, employee-linked and branchless rows: each lands in its tenant, none is left null, and the counts per tenant are unchanged. Round 4a: `s217b-r4a.test.ts` A and B, rows linked by branch, employee, contract, the user who did them and nothing, on a seeded 0005 state upgraded by the app's migrator |
+| H11 | The settings change breaks the running release, or a park group's settings write fails on the old unique | Release N's code passes on both the old and the new constraint shape. The old unique is dropped only in release N+1 (4b). In 4a, another park group writing a key the default group holds is refused in words, never a 500. Round 4a: `tests/tenant-ownership.check.ts` runs every settings answer with the old unique standing, then dropped (4b's shape), then restored |
+| H12 | Directory reads cross tenants | A's key reading B's employee answers 404. A key without `hr:read` answers 403. With `HR_DIRECTORY_API_KEY` unset, the shared-key path answers 403. Round 4a: `tests/tenant-ownership.check.ts` over the six reads, and with the shared key set, the default park group only (Q13) |
 | H13 | Face "off" clocks in the wrong person | With face off and an ENROLLED employee present, `identify-face` answers "no match, use PIN" without calling a matcher, enrolment is refused, and `/api/kiosk/clock` from a paired tablet naming that employee writes no time event |
 | H14 | Sick-leave approval does too much or too little | The rota's own request (the restored client body) creates the sick day as approved. Created as approved: exactly that person's assignments on those Bangkok days are freed, with one coverage alert per shift, each in that person's park group. Approved later: their legacy `shifts` in the range are unassigned. A repeat approve changes nothing more. Nothing is stored |
 | H15 | An ungrouped shift row errors | The route answers 400 in words and no row is written |
