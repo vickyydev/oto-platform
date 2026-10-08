@@ -23,6 +23,13 @@ import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs'
 import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB } from '../services/analytics-rollup';
 import { ROLLUP_BOOTH_JOB } from '../services/analytics-booth';
 import { OTOAPP_EMPLOYEE_SYNC_JOB } from '../services/otoapp-employee-sync';
+import {
+  OTOAPP_NIGHT_JOBS,
+  armForcedNightJobFailure,
+  describeLatestNightRun,
+  disarmForcedNightJobFailure,
+} from '../services/otoapp-jobs';
+import type { OtoAppNightJob } from '../services/otoapp-directory';
 import { boxAuthFromRow, boxSettings, virtualBoxAgent } from '../services/box';
 import { loadBox, queueCommand } from '../services/fleet';
 import {
@@ -700,6 +707,14 @@ export async function opsRoutes(app: App): Promise<void> {
 
   // --- Test controls ------------------------------------------------------
 
+  /** S2-17b round 3: which control runs which OTO App night job, and the one that fails it on purpose. */
+  const NIGHT_CONTROLS: Record<string, { job: OtoAppNightJob; fail?: true } | undefined> = {
+    'otoapp.midnight': { job: 'midnight' },
+    'otoapp.reconcile': { job: 'reconcile' },
+    'otoapp.presence': { job: 'presence' },
+    'otoapp.presence.fail': { job: 'presence', fail: true },
+  };
+
   /**
    * The controls that make something go wrong on purpose, so the alerting can
    * be watched doing its job.
@@ -744,6 +759,40 @@ export async function opsRoutes(app: App): Promise<void> {
       description:
         "Runs the employee copy without waiting for the next quarter-hour: new people, changes and leavers in the OTO App reach the staff list, and anything it cannot settle lands on Failures.",
       sticky: false,
+    },
+    /**
+     * S2-17b round 3 — Health's "Run now" for the OTO App's night work, the
+     * place the app's two manual job triggers point to once the platform runs
+     * it. Each is the scheduled job itself, through the runner's claim and
+     * its run lock, so a press never runs a park group's night twice.
+     */
+    {
+      key: 'otoapp.midnight',
+      label: "Run the OTO App's midnight batch now",
+      description:
+        "Runs the 00:01 batch — guests still checked in checked out, missing clock-outs closed at midnight, the day's recurring tasks made — for each park group whose night is not done yet. A night already done is not run twice; anything that fails lands on Failures.",
+      sticky: false,
+    },
+    {
+      key: 'otoapp.reconcile',
+      label: "Run the OTO App's 03:00 batch now",
+      description:
+        "Runs the 03:00 batch — presence repaired, leavers moved to Left and their OTO App logins switched off, old availability records cleared — for each park group whose night is not done yet, and lists leavers whose platform account is still active on Failures.",
+      sticky: false,
+    },
+    {
+      key: 'otoapp.presence',
+      label: "Run the OTO App's presence check now",
+      description:
+        'Runs the six-hourly presence check for each park group without waiting: stuck clock-ins counted, and presence that disagrees with the clock-in record repaired.',
+      sticky: false,
+    },
+    {
+      key: 'otoapp.presence.fail',
+      label: "Fail the OTO App's presence check once",
+      description:
+        "Runs the presence check with a deliberate failure before it reaches the OTO App, so a failed OTO App job can be watched on Failures — and its Retry seen to run the check for real.",
+      sticky: true,
     },
     {
       key: 'alert.test',
@@ -928,6 +977,31 @@ export async function opsRoutes(app: App): Promise<void> {
         throw errors.conflict('JOB_RUNNING', 'The employee copy is already running');
       }
       return `The OTO App staff copy ran (${outcome}).`;
+    }
+
+    // S2-17b round 3 — the OTO App's night work, run now.
+    const night = NIGHT_CONTROLS[key];
+    if (night) {
+      const spec = OTOAPP_NIGHT_JOBS[night.job];
+      if (night.fail) armForcedNightJobFailure(night.job);
+      let outcome: Awaited<ReturnType<JobRunner['runJob']>>;
+      try {
+        outcome = await jobRunner().runJob(spec.job, { force: true });
+      } finally {
+        // One-shot: a press that ran nothing leaves nothing armed behind it.
+        if (night.fail) disarmForcedNightJobFailure(night.job);
+      }
+      if (outcome === 'disabled') {
+        throw errors.conflict('JOBS_ROLE_ABSENT', 'This api instance does not carry the jobs role, so nothing ran');
+      }
+      if (outcome === 'locked') {
+        throw errors.conflict('JOB_RUNNING', `${spec.job} is already running, so it was not started a second time`);
+      }
+      if (night.fail) {
+        return `Recorded a deliberately failed run of ${spec.job} (${outcome}). It is on the Failures page; its Retry runs the check for real.`;
+      }
+      const said = await describeLatestNightRun(app.db, night.job);
+      return `${spec.job} ran (${outcome})${said ? `: ${said}` : '.'}`;
     }
 
     if (key === 'alert.test') {
