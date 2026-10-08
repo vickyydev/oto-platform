@@ -351,7 +351,7 @@ import {
 
 const PostgresSessionStore = connectPg(session);
 
-/** The default park group's id once read (`getDefaultParkGroupId`). */
+/** The slug-`default` park group's id once read (`getDefaultParkGroupId`). */
 let defaultParkGroupCache: string | null = null;
 
 // Type for studio event tasks returned for Today view
@@ -3509,7 +3509,13 @@ export class DatabaseStorage implements IStorage {
         // reads (and, in a database with no default park group, writes) the
         // default park group's set — what every caller read before 0006.
 
-        /** The default park group (slug `default`), or null where there is none. */
+        /**
+         * The default park group, on the app's own rule for its default tenant
+         * (`getDefaultTenantId` in routes.ts) and migration 0006's: the tenant
+         * with slug `default`; else, where the database holds exactly one park
+         * group, that one; else null. Unlike `getDefaultTenantId` it never
+         * makes a tenant and never picks one of several.
+         */
         async getDefaultParkGroupId(): Promise<string | null> {
                 if (defaultParkGroupCache) return defaultParkGroupCache;
                 const [row] = await db
@@ -3517,9 +3523,14 @@ export class DatabaseStorage implements IStorage {
                         .from(tenants)
                         .where(eq(tenants.slug, DEFAULT_TENANT_SLUG))
                         .limit(1);
-                // Kept once found: the default park group is never renamed or removed.
-                if (row) defaultParkGroupCache = row.id;
-                return row?.id ?? null;
+                if (row) {
+                        // Kept once found: the slug-`default` park group is never renamed or removed.
+                        defaultParkGroupCache = row.id;
+                        return row.id;
+                }
+                // Not kept: a second park group can be added, and then there is no only one.
+                const only = await db.select({ id: tenants.id }).from(tenants).limit(2);
+                return only.length === 1 ? only[0].id : null;
         }
 
         /** The rows a park group may read for `key` (or for every key), best first per key. */
@@ -3800,7 +3811,8 @@ export class DatabaseStorage implements IStorage {
                                 (select min(tenant_id::text)::uuid from user_branch_access
                                   where user_id = ${log.createdBy ?? null}
                                  having count(distinct tenant_id) = 1),
-                                (select id from tenants where slug = ${DEFAULT_TENANT_SLUG})
+                                (select id from tenants where slug = ${DEFAULT_TENANT_SLUG}),
+                                (select min(id::text)::uuid from tenants having count(*) = 1)
                         )`;
                         const [newLog] = await db
                                 .insert(activityLog)

@@ -87,7 +87,10 @@ async function main() {
       const t = parkGroups.get(id);
       return t ? `${t.name} [${t.slug}]` : `${id} (not in tenants)`;
     };
-    const defaultParkGroup = [...parkGroups.values()].find((t) => t.slug === "default");
+    // The app's rule (getDefaultParkGroupId, 0006): slug `default`, else the only park group.
+    const defaultParkGroup =
+      [...parkGroups.values()].find((t) => t.slug === "default") ??
+      (parkGroups.size === 1 ? [...parkGroups.values()][0] : undefined);
     console.log(
       `Tenant ownership read-back — ${parkGroups.size} park group${parkGroups.size === 1 ? "" : "s"}; ` +
         `default park group: ${defaultParkGroup ? label(defaultParkGroup.id) : "NONE"}.`,

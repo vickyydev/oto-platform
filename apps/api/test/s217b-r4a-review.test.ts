@@ -738,13 +738,10 @@ describe('C. finding 1: a database whose ONE park group is not slug “default�
     await drop();
   });
 
-  it('as built: 0006 mints a second park group, “OTO Default”, and gives it the settings and the row it cannot place', async () => {
+  it('fixed: 0006 mints no “OTO Default” beside the only park group, and the row its branch places is that park group’s', async () => {
     await withClient(url, async (c) => {
       const tenants = await c.query<{ id: string; slug: string }>('select id, slug from tenants order by slug');
-      expect(tenants.rows.map((t) => t.slug)).toEqual(['default', 'zz-only']);
-      const minted = tenants.rows.find((t) => t.slug === 'default')!.id;
-      expect((await c.query(`select tenant_id from settings`)).rows).toEqual([{ tenant_id: minted }]);
-      expect((await c.query('select tenant_id from activity_log where id = $1', [unlinked])).rows).toEqual([{ tenant_id: minted }]);
+      expect(tenants.rows.map((t) => t.slug)).toEqual(['zz-only']);
       expect((await c.query('select tenant_id from activity_log where id = $1', [placedByBranch])).rows).toEqual([{ tenant_id: O }]);
     });
   });
@@ -773,7 +770,7 @@ describe('C. finding 1: a database whose ONE park group is not slug “default�
    * loudly naming the tenants rather than minting one; `getDefaultParkGroupId`
    * follows the same rule.
    */
-  it.fails('FINDING 1: a one-park-group database stays one park group, and its rows are that park group’s', async () => {
+  it('FINDING 1: a one-park-group database stays one park group, and its rows are that park group’s', async () => {
     await withClient(url, async (c) => {
       expect(Number((await c.query('select count(*)::int as n from tenants')).rows[0].n)).toBe(1);
       expect((await c.query(`select distinct tenant_id from settings`)).rows).toEqual([{ tenant_id: O }]);
@@ -781,15 +778,19 @@ describe('C. finding 1: a database whose ONE park group is not slug “default�
     });
   });
 
-  it.skipIf(!HAS_APP_RUNTIME)('as built, over HTTP: that database’s only real park group is refused its own settings save', async () => {
+  it.skipIf(!HAS_APP_RUNTIME)('fixed, over HTTP: that database’s only park group saves its own settings', async () => {
     const origin = await serve(url);
     const cookie = await appSignIn(origin, email);
     const read = await call(origin, 'GET', '/api/settings', { cookie });
     expect(read.status, read.text).toBe(200);
     expect((read.body as { key: string; value: string }[]).find((s) => s.key === 'md_signatory_name')?.value).toBe('ZZ Only MD');
     const save = await call(origin, 'POST', '/api/settings', { cookie, body: [{ key: 'md_signatory_name', value: 'ZZ new MD' }] });
-    expect(save.status, save.text).toBe(409);
-    expect(save.body.reason).toBe('settings_shared');
+    expect(save.status, save.text).toBe(200);
+    await withClient(url, async (c) => {
+      expect((await c.query(`select tenant_id, value from settings where key = 'md_signatory_name'`)).rows).toEqual([
+        { tenant_id: O, value: 'ZZ new MD' },
+      ]);
+    });
   }, 240_000);
 });
 

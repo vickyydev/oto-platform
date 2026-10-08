@@ -379,11 +379,12 @@ describe('B. the default park group is made only where a row is left for it', ()
     }
   });
 
-  it('a database whose settings have no default park group gets one, as the app’s own backfill makes it', async () => {
+  it('a database of several park groups, none the default, whose settings have nowhere to go gets one, as the app’s own backfill makes it', async () => {
     const { url, drop, dir } = await databaseAt0005();
     try {
       await withClient(url, async (c) => {
-        await c.query(`insert into otoapp.tenants (id, name, slug) values ($1, 'OTO', 'oto')`, [newId()]);
+        // Two, not one: a database's only park group is its default (the app's rule; the review's section C).
+        await c.query(`insert into otoapp.tenants (id, name, slug) values ($1, 'OTO', 'oto'), ($2, 'OTO 2', 'oto-2')`, [newId(), newId()]);
         await c.query(`insert into otoapp.settings (key, value) values ('email_subject', 'x')`);
       });
       await upgrade(url);

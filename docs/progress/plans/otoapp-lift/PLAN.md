@@ -618,10 +618,17 @@ is committed.
       `settings`: the default park group, whose one set it was. The two
       added steps keep a branchless row a second park group's user wrote out
       of the default park group's logbook (H10; Q30).
-    - The default park group is the tenant with slug `default`. Where a row
-      is left for it and there is none, the migration makes it ('OTO
-      Default'), as the app's own `script/backfillTenant.ts` does; an empty
-      database gets none.
+    - The default park group follows the app's own rule for its default
+      tenant (`getDefaultTenantId`, `server/routes.ts:159`): the tenant with
+      slug `default`; else, where the database holds exactly one park group,
+      that one, so a one-park-group database stays one park group and its
+      rows are its own. Only where neither answers (no tenant, or several
+      and none slugged `default`) and a row is left for it does the
+      migration make one ('OTO Default'), as the app's own
+      `script/backfillTenant.ts` does; an empty database gets none. The
+      runtime helper (`getDefaultParkGroupId`), `createActivityLog`'s last
+      step and the read-back's label take the same rule, and never make a
+      tenant.
     - The write path follows the same order: `createActivityLog` writes
       every row's park group, the caller's session park group standing
       before the user step (the routes pass it on every row about no branch,

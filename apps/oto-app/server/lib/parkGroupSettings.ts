@@ -6,7 +6,8 @@
  * it: the employer's counter-signature on contracts, the default probation,
  * the leave entitlements, the Fix department, the kiosk code lifetime, the AI
  * prompts. 0006 gives each row a park group, and every row that existed went
- * to the default park group (slug `default`), whose set it was.
+ * to the default park group (slug `default`, else the only park group the
+ * database holds — the app's own rule, `getDefaultTenantId`), whose set it was.
  *
  * READING. A park group reads its own row for a key; where it has none, the
  * default park group's — exactly what it read before 0006, when the one set

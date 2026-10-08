@@ -37,9 +37,13 @@
 --   settings         the default park group: before this there was one set of
 --                    settings, and it was the default park group's
 --
--- The default park group is the tenant with slug 'default' (DEFAULT_TENANT_SLUG).
--- Where a row needs it and there is none, it is made — 'OTO Default', as the
--- app's own tenant backfill makes it (script/backfillTenant.ts,
+-- The default park group follows the app's own rule for its default tenant
+-- (getDefaultTenantId, server/routes.ts): the tenant with slug 'default'
+-- (DEFAULT_TENANT_SLUG); else, where the database holds exactly one park group,
+-- that one — a one-park-group database stays one park group, and its rows are
+-- its own. Only where neither answers (no tenant at all, or several and none
+-- slugged 'default') and a row still needs it is one made — 'OTO Default', as
+-- the app's own tenant backfill makes it (script/backfillTenant.ts,
 -- ensureDefaultTenant). A database with nothing to place gets no new tenant.
 --
 -- Grants are not made here (0004's reason). The platform reads none of these
@@ -83,20 +87,28 @@ UPDATE "attention_items" AS i SET "tenant_id" = e."tenant_id"
   JOIN "employees" AS e ON e."id" = c."employee_id"
  WHERE i."tenant_id" IS NULL AND c."id" = i."contract_instance_id";--> statement-breakpoint
 
--- The default park group, made only where a row is still left for it.
+-- The default park group: slug 'default', else the only park group there is;
+-- made only where neither answers and a row is still left for it.
 INSERT INTO "tenants" ("name", "slug")
 SELECT 'OTO Default', 'default'
  WHERE NOT EXISTS (SELECT 1 FROM "tenants" WHERE "slug" = 'default')
+   AND (SELECT count(*) FROM "tenants") <> 1
    AND (EXISTS (SELECT 1 FROM "settings" WHERE "tenant_id" IS NULL)
         OR EXISTS (SELECT 1 FROM "activity_log" WHERE "tenant_id" IS NULL)
         OR EXISTS (SELECT 1 FROM "attention_items" WHERE "tenant_id" IS NULL));--> statement-breakpoint
 
 -- Everything left: the default park group's.
-UPDATE "activity_log" SET "tenant_id" = (SELECT "id" FROM "tenants" WHERE "slug" = 'default')
+UPDATE "activity_log" SET "tenant_id" = coalesce(
+    (SELECT "id" FROM "tenants" WHERE "slug" = 'default'),
+    (SELECT min("id"::text)::uuid FROM "tenants" HAVING count(*) = 1))
  WHERE "tenant_id" IS NULL;--> statement-breakpoint
-UPDATE "attention_items" SET "tenant_id" = (SELECT "id" FROM "tenants" WHERE "slug" = 'default')
+UPDATE "attention_items" SET "tenant_id" = coalesce(
+    (SELECT "id" FROM "tenants" WHERE "slug" = 'default'),
+    (SELECT min("id"::text)::uuid FROM "tenants" HAVING count(*) = 1))
  WHERE "tenant_id" IS NULL;--> statement-breakpoint
-UPDATE "settings" SET "tenant_id" = (SELECT "id" FROM "tenants" WHERE "slug" = 'default')
+UPDATE "settings" SET "tenant_id" = coalesce(
+    (SELECT "id" FROM "tenants" WHERE "slug" = 'default'),
+    (SELECT min("id"::text)::uuid FROM "tenants" HAVING count(*) = 1))
  WHERE "tenant_id" IS NULL;--> statement-breakpoint
 
 CREATE INDEX "idx_activity_log_tenant" ON "activity_log" USING btree ("tenant_id");--> statement-breakpoint
