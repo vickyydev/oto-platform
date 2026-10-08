@@ -434,10 +434,13 @@ export default function AttentionPage() {
       });
       invalidateAttentionQueries();
     },
-    onError: () => {
+    onError: (err: unknown) => {
+      // The server's refusal carries its own words (Q35: "already being
+      // checked for this park group"); show them rather than a blind failure.
       toast({
         title: "Refresh failed",
-        description: "Could not refresh attention items",
+        description:
+          err instanceof Error && err.message ? err.message : "Could not refresh attention items",
         variant: "destructive",
       });
     },

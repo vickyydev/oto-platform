@@ -9687,14 +9687,18 @@ OTO Company Limited`,
       if (enrollResult.duplicateMatch) {
         const { matchedEmployeeId, matchedFaceId, similarity } = enrollResult.duplicateMatch;
 
-        // Fetch the conflicting employee's name for a meaningful alert message.
-        let conflictingName = matchedEmployeeId;
+        // Fetch the conflicting employee's name for a meaningful alert
+        // message — but only within the enrolling employee's own park group.
+        // The face collection is shared across park groups, so the match can
+        // be another park group's person; naming them here would leak a name
+        // and id across the tenant fence (round 4b review, finding 1).
+        let conflictingLabel = "an employee of another park group";
         try {
           const conflictingEmployee = await storage.getEmployee(matchedEmployeeId);
-          if (conflictingEmployee) {
-            conflictingName = getEmployeeDisplayName(conflictingEmployee);
+          if (conflictingEmployee && conflictingEmployee.tenantId === employee.tenantId) {
+            conflictingLabel = `${getEmployeeDisplayName(conflictingEmployee)} (ID: ${matchedEmployeeId})`;
           }
-        } catch (_) { /* non-fatal — use ID as fallback */ }
+        } catch (_) { /* non-fatal — the anonymous words stand */ }
 
         if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
           tenantId: employee.tenantId,
@@ -9705,7 +9709,7 @@ OTO Company Limited`,
           title: `Possible duplicate face enrollment: ${getEmployeeDisplayName(employee)}`,
           description:
             `The face enrolled for ${getEmployeeDisplayName(employee)} (ID: ${session.employeeId}) is ${similarity.toFixed(1)}% similar ` +
-            `to the face already enrolled for ${conflictingName} (ID: ${matchedEmployeeId}). ` +
+            `to the face already enrolled for ${conflictingLabel}. ` +
             `This may indicate a mis-enrollment. Please verify both employees' face data.`,
         });
 
@@ -9714,7 +9718,7 @@ OTO Company Limited`,
           employeeId: employee.id,
           activityType: "face_duplicate_detected",
           summaryText:
-            `Suspected duplicate face enrollment: ${getEmployeeDisplayName(employee)} matches ${conflictingName} at ${similarity.toFixed(1)}% similarity`,
+            `Suspected duplicate face enrollment: ${getEmployeeDisplayName(employee)} matches ${conflictingLabel} at ${similarity.toFixed(1)}% similarity`,
           metadataJson: JSON.stringify({
             enrollingEmployeeId: session.employeeId,
             enrollingFaceId: faceId,

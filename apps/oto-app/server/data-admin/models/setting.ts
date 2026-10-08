@@ -2,6 +2,7 @@ import { ModelAdmin } from "../admin";
 import { settings } from "../../../shared/schema";
 import { storage } from "../../storage";
 import {
+  SETTINGS_MOVE_REFUSAL,
   SETTINGS_NO_PARK_GROUP_REFUSAL,
   SettingsWriteRefusedError,
   settingsWritableBy,
@@ -45,12 +46,23 @@ class SettingAdmin extends ModelAdmin {
     return super.create({ ...data, tenantId });
   }
 
-  /** A row cannot be moved to no park group: `tenant_id` is NOT NULL. */
+  /**
+   * A row cannot be moved to no park group (`tenant_id` is NOT NULL) — and
+   * not to another one either: a silent move takes a key out from under the
+   * park group reading it (the MD signatory, the Attention rules), which is
+   * exactly what ownership exists to stop (round 4b review, finding 3).
+   * Editing a row's value stays open to every park group like the other
+   * Data Admin models until round 7's walkthrough (Q36).
+   */
   async update(id: string, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     if (!("tenantId" in data)) return super.update(id, data);
     const tenantId = namedParkGroup(data.tenantId);
     if (!settingsWritableBy(tenantId)) {
       throw new SettingsWriteRefusedError(SETTINGS_NO_PARK_GROUP_REFUSAL, 403);
+    }
+    const current = await this.getById(id);
+    if (current && current.tenantId !== tenantId) {
+      throw new SettingsWriteRefusedError(SETTINGS_MOVE_REFUSAL, 409);
     }
     return super.update(id, { ...data, tenantId });
   }

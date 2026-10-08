@@ -41,7 +41,7 @@
 
 /** Why a save was refused; the body a route answers with. */
 export interface SettingsRefusal {
-  reason: "settings_key_held" | "settings_no_park_group";
+  reason: "settings_key_held" | "settings_no_park_group" | "settings_moved";
   message: string;
 }
 
@@ -54,6 +54,17 @@ export const SETTINGS_KEY_HELD_REFUSAL: SettingsRefusal = {
   reason: "settings_key_held",
   message:
     "Another park group already holds this setting, and this database still keeps one row per setting for every park group, so it was not saved here. It can be saved once the OTO App's migration 0007 has run.",
+};
+
+/**
+ * A Data Admin edit trying to move a settings row to a different park group.
+ * A move silently takes the key out from under the park group reading it
+ * (round 4b review, finding 3); the value may be edited, the owner may not.
+ */
+export const SETTINGS_MOVE_REFUSAL: SettingsRefusal = {
+  reason: "settings_moved",
+  message:
+    "A setting stays with the park group it belongs to. To give another park group its own value, save that key as that park group instead of moving this row.",
 };
 
 /** A caller the app cannot place in a park group by their own rows. */

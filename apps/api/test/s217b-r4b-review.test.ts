@@ -897,17 +897,13 @@ describe.skipIf(!HAS_APP_RUNTIME)('B and C. over HTTP against the app’s routes
     await q('delete from settings where key = any($1)', [keys]);
   });
 
-  it('B4. as built (Q36): any park group’s admin moves the DEFAULT park group’s MD signatory row to its own park group with a 200, and the default then reads none — as Data Admin’s DELETE could already remove it', async () => {
+  it('B4. fixed at landing: a Data Admin edit moving the DEFAULT park group’s MD signatory row to another park group is refused in words, and the default still reads it', async () => {
     const [row] = await q<{ id: string }>(`select id from settings where key = 'md_signatory_name' and tenant_id = $1`, [PD.tenant]);
     const moved = await call(origin, 'PUT', `/api/data-admin/settings/${row!.id}`, { cookie: PB.cookie, body: { tenantId: PB.tenant } });
-    try {
-      expect(moved.status, moved.text).toBe(200);
-      expect(await rowsFor('md_signatory_name')).toEqual([{ tenant_id: PB.tenant, value: 'ZZ D MD' }]);
-      expect((await readAs(PD)).has('md_signatory_name')).toBe(false);
-      expect((await readAs(PC)).has('md_signatory_name')).toBe(false);
-    } finally {
-      await q(`update settings set tenant_id = $1 where id = $2`, [PD.tenant, row!.id]);
-    }
+    expect(moved.status, moved.text).toBe(409);
+    expect(moved.text).toMatch(/stays with the park group it belongs to/);
+    expect(await rowsFor('md_signatory_name')).toEqual([{ tenant_id: PD.tenant, value: 'ZZ D MD' }]);
+    expect((await readAs(PD)).has('md_signatory_name')).toBe(true);
   });
 
   /**
@@ -916,7 +912,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('B and C. over HTTP against the app’s routes
    * settings update that changes the row's park group, in words, or name the
    * move in Q36. This pin passes on either.
    */
-  it.fails('FINDING 3: Data Admin does not move a settings row between park groups unnamed — refused, or named in Q36', async () => {
+  it('FINDING 3: Data Admin does not move a settings row between park groups unnamed — refused, or named in Q36', async () => {
     const [row] = await q<{ id: string }>(`select id from settings where key = 'md_signatory_name' and tenant_id = $1`, [PD.tenant]);
     const moved = await call(origin, 'PUT', `/api/data-admin/settings/${row!.id}`, { cookie: PB.cookie, body: { tenantId: PB.tenant } });
     await q(`update settings set tenant_id = $1 where id = $2`, [PD.tenant, row!.id]);
@@ -1201,11 +1197,11 @@ describe('C. Attention, read off the code', () => {
     return routes.slice(start, end);
   };
 
-  it('as built: the duplicate-face alert is raised in the enrolling employee’s park group, with the name and id of the matched employee looked up in every park group, from one face collection (finding 1’s arrangement)', () => {
+  it('fixed at landing: the duplicate-face alert is raised in the enrolling employee’s park group, from the still-shared face collection, naming a match only within that park group', () => {
     const block = duplicateFaceBlock();
     expect(block).toMatch(/tenantId: employee\.tenantId,/);
     expect(block).toMatch(/await storage\.getEmployee\(matchedEmployeeId\)/);
-    expect(block).toMatch(/to the face already enrolled for \$\{conflictingName\} \(ID: \$\{matchedEmployeeId\}\)/);
+    expect(block).toMatch(/an employee of another park group/);
     const face = readFileSync(join(APP_SERVER, 'face-recognition.ts'), 'utf8');
     expect(face).toMatch(/this\.collectionId = process\.env\.AWS_REKOGNITION_COLLECTION_ID \|\| "oto-hr-faces";/);
     expect(face).not.toMatch(/collectionId[^;\n]*tenant/i);
@@ -1217,7 +1213,7 @@ describe('C. Attention, read off the code', () => {
    * employee's lookup to the enrolling employee's park group, and say "an
    * employee of another park group" (no name, no id) otherwise.
    */
-  it.fails('FINDING 1: the duplicate-face alert names no employee of another park group', () => {
+  it('FINDING 1: the duplicate-face alert names no employee of another park group', () => {
     const block = duplicateFaceBlock();
     expect(block).toMatch(/conflictingEmployee\??\.tenantId\s*[!=]==?\s*employee\.tenantId|eq\(employees\.tenantId,\s*employee\.tenantId\)/);
   });
@@ -1229,21 +1225,22 @@ describe('C. Attention, read off the code', () => {
     return page.slice(start, page.indexOf('const resolveMutation', start));
   };
 
-  it('as built: the server answers a Refresh beside a run with Q35’s words, and the page’s Refresh shows its own fixed words whatever the answer (finding 2’s arrangement)', () => {
+  it('fixed at landing: the server answers a Refresh beside a run with Q35’s words, and the page shows the answer’s own words', () => {
     const words = readFileSync(join(APP_SERVER, 'lib', 'nightJobs.ts'), 'utf8');
     expect(words).toMatch(/message: "Attention is already being checked for this park group\. Try Refresh again in a minute\.",/);
     expect(plan().replace(/\s+/g, ' ')).toMatch(
       /A Refresh beside the engine's run is refused in words\*\* \(Q35\): "Attention is already being checked for this park group\. Try Refresh again in a minute\."/,
     );
     const block = refreshOnError();
-    expect(block).toMatch(/onError: \(\) => \{\s*toast\(\{\s*title: "Refresh failed",\s*description: "Could not refresh attention items",/);
+    expect(block).toMatch(/onError: \((error|err|e)[^)]*\)/);
+    expect(block.slice(block.indexOf('onError'))).toMatch(/err\.message/);
   });
 
   /**
    * FINDING 2 (low). See the header. Prescribed fix: the page shows the
    * answer's message when there is one, or the plan says what the page shows.
    */
-  it.fails('FINDING 2: the manager who presses Refresh during a run is told Q35’s words (or the plan says what they are told)', () => {
+  it('FINDING 2: the manager who presses Refresh during a run is told Q35’s words (or the plan says what they are told)', () => {
     const block = refreshOnError();
     const pageSaysIt = /onError: \((error|err|e)[^)]*\)/.test(block) && /message/.test(block.slice(block.indexOf('onError')));
     const planSaysWhatThePageShows = /Could not refresh attention items/.test(question(35));
