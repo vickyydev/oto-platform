@@ -134,6 +134,7 @@ import { directoryJobRouter } from "./directory/jobRoutes";
 import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
+import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
 import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup } from "./lib/shiftGroupRequired";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -8890,6 +8891,8 @@ OTO Company Limited`,
   // not employees. Their access policy is the source of tenant and branch scope.
   app.post("/api/people/:personId/advisor-enrollment-session", requireAuth, requireManager, async (req, res, next) => {
     try {
+      // Face clock-in is off (S2-17b round 5, H13): no enrolment QR is made.
+      if (!faceClockInOn()) return res.status(403).json(FACE_ENROLMENT_OFF_REFUSAL);
       const [advisor] = await db.select({ person: people, policy: accessPolicies })
         .from(people).innerJoin(accessPolicies, eq(accessPolicies.personId, people.id))
         .where(and(eq(people.id, req.params.personId), eq(people.personType, "ADVISOR"))).limit(1);
@@ -8916,6 +8919,8 @@ OTO Company Limited`,
 
   app.post("/api/employees/:employeeId/enrollment-session", requireAuth, requireManager, async (req, res, next) => {
     try {
+      // Face clock-in is off (S2-17b round 5, H13): no enrolment QR is made.
+      if (!faceClockInOn()) return res.status(403).json(FACE_ENROLMENT_OFF_REFUSAL);
       const { employeeId } = req.params;
       const userId = (req.user as any).id;
 
@@ -9444,6 +9449,8 @@ OTO Company Limited`,
   // Kiosk - Verify enrollment token (called by kiosk when scanning QR)
   app.post("/api/kiosk/verify-enrollment-token", async (req, res, next) => {
     try {
+      // Face clock-in is off (S2-17b round 5, H13): the tablet is told so before it asks for a face.
+      if (!faceClockInOn()) return res.status(403).json(FACE_ENROLMENT_OFF_REFUSAL);
       const tokenSchema = z.object({
         token: z.string(),
         deviceSecret: z.string().optional(),
@@ -9513,6 +9520,8 @@ OTO Company Limited`,
   // Kiosk - Complete face enrollment (after liveness check and face capture)
   app.post("/api/kiosk/complete-enrollment", async (req, res, next) => {
     try {
+      // Face clock-in is off (S2-17b round 5, H13): no face is enrolled, and no matcher is called.
+      if (!faceClockInOn()) return res.status(403).json(FACE_ENROLMENT_OFF_REFUSAL);
       const enrollSchema = z.object({
         sessionId: z.string(),
         enrollmentToken: z.string(), // Plain-text token; server re-hashes to verify against session.tokenHash
@@ -9790,6 +9799,15 @@ OTO Company Limited`,
         return res.status(429).json({ message: KIOSK_TOO_MANY_MESSAGE });
       }
 
+      // Face clock-in is off (S2-17b round 5, H13). The stand-in matcher behind
+      // "off" answers every face with the first enrolled person, so no matcher
+      // is called at all — not liveness, not the search — and nobody's
+      // enrolment is read: the tablet gets the app's own no-match reply and
+      // falls to its PIN and phone fallback.
+      if (!faceClockInOn()) {
+        return res.json(FACE_OFF_NO_MATCH);
+      }
+
       // SECURITY: Multi-frame liveness detection is MANDATORY to prevent photo spoofing attacks
       // Reject requests without sufficient frames - this must be enforced server-side
       const MIN_REQUIRED_FRAMES = 3;
@@ -9902,6 +9920,8 @@ OTO Company Limited`,
   // Kiosk - Clock in/out with face recognition
   app.post("/api/kiosk/advisor-clock", async (req, res, next) => {
     try {
+      // Face clock-in is off (S2-17b round 5, H13): the face road writes nothing.
+      if (!faceClockInOn()) return res.status(403).json(FACE_CLOCK_OFF_REFUSAL);
       const parsed = z.object({ identificationProof: z.string(), confidenceScore: z.number().optional(), livenessScore: z.number().optional(), deviceSecret: z.string().min(1) }).safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: "A configured kiosk is required" });
       const device = await resolveKioskDevice(parsed.data.deviceSecret);
@@ -9955,6 +9975,11 @@ OTO Company Limited`,
 
   app.post("/api/kiosk/clock", async (req, res, next) => {
     try {
+      // Face clock-in is off (S2-17b round 5, H13). This door takes an employee
+      // id and a confidence score from the tablet and matches nothing on the
+      // server, so while face is off it is refused before anything is read or
+      // written: no time event by the face road.
+      if (!faceClockInOn()) return res.status(403).json(FACE_CLOCK_OFF_REFUSAL);
       const clockSchema = z.object({
         employeeId: z.string(),
         confidenceScore: z.number().optional(),
@@ -10170,6 +10195,10 @@ OTO Company Limited`,
   // Kiosk - Missed Clock-In Auto-Fix (Option A: Use scheduled start time)
   app.post("/api/kiosk/missed-clock/auto-fix", async (req, res, next) => {
     try {
+      // Reached only from /api/kiosk/clock's answer — the face road — and it
+      // writes FACE time events for a named employee: off while face is off
+      // (S2-17b round 5, H13).
+      if (!faceClockInOn()) return res.status(403).json(FACE_CLOCK_OFF_REFUSAL);
       const autoFixSchema = z.object({
         employeeId: z.string(),
         // Still accepted so an older kiosk bundle does not fail validation, but
@@ -10305,6 +10334,8 @@ OTO Company Limited`,
   // Kiosk - Missed Clock-In Manual (Option B: Enter correct start time)
   app.post("/api/kiosk/missed-clock/manual", async (req, res, next) => {
     try {
+      // The face road's second step, as auto-fix above: off while face is off (S2-17b round 5, H13).
+      if (!faceClockInOn()) return res.status(403).json(FACE_CLOCK_OFF_REFUSAL);
       const manualSchema = z.object({
         employeeId: z.string(),
         // As above: accepted, but the branch and device come from the
@@ -10438,6 +10469,8 @@ OTO Company Limited`,
   // Kiosk - Handle unscheduled work clock-in (employee has no scheduled shift today)
   app.post("/api/kiosk/unscheduled-clock-in", async (req, res, next) => {
     try {
+      // The face road's second step, as auto-fix above: off while face is off (S2-17b round 5, H13).
+      if (!faceClockInOn()) return res.status(403).json(FACE_CLOCK_OFF_REFUSAL);
       const unscheduledSchema = z.object({
         employeeId: z.string(),
         // As above: accepted, but the branch and device come from the
