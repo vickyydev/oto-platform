@@ -1502,6 +1502,60 @@ export async function registerRoutes(
     return undefined;
   };
 
+  /**
+   * The park group a person record belongs to (S2-17b round 2, round 1's
+   * standing pin 3). `people` carries no tenant of its own, so it is read from
+   * what hangs off the person: the employee carrying it, its access policies,
+   * and the user that goes with it (by email, the way the deletes find it).
+   * One answer or none: two park groups, or a user the app cannot place
+   * itself, is nobody's to delete from here. A person with nothing hanging off
+   * it is classifiable only in a one-tenant database, as a user with no access
+   * row is (`managedUserTenant`).
+   */
+  const personParkGroup = async (person: { id: string; email: string }): Promise<string | undefined> => {
+    const found = new Set<string>();
+    const [carrier] = await db.select({ tenantId: employees.tenantId }).from(employees)
+      .where(eq(employees.personId, person.id)).limit(1);
+    if (carrier) found.add(carrier.tenantId);
+    const policies = await db.select({ tenantId: accessPolicies.tenantId }).from(accessPolicies)
+      .where(eq(accessPolicies.personId, person.id));
+    for (const policy of policies) found.add(policy.tenantId);
+    const user = await storage.getUserByEmail(person.email);
+    if (user) {
+      const userTenant = await managedUserTenant(user.id);
+      if (!userTenant) return undefined;
+      found.add(userTenant);
+    }
+    if (found.size === 0) {
+      const knownTenants = await db.select({ id: tenants.id }).from(tenants).limit(2);
+      return knownTenants.length === 1 ? knownTenants[0].id : undefined;
+    }
+    return found.size === 1 ? [...found][0] : undefined;
+  };
+
+  /**
+   * Whether everything an employee delete takes with it is the caller's park
+   * group's (S2-17b round 2, pin 3): the employee itself, the user matched by
+   * email, and, for an employee with no person record, the person carrying
+   * its email. The users door answers 404 for another park group's user; the
+   * employee doors answer the same, naming which, and nothing is written.
+   */
+  const employeeDeleteOutsideParkGroup = async (
+    employee: { tenantId: string; personId: string | null; email: string | null },
+    tenantId: string,
+  ): Promise<{ message: string } | null> => {
+    if (employee.tenantId !== tenantId) return { message: "Employee not found" };
+    if (!employee.personId && employee.email) {
+      const person = await storage.getPersonByEmail(employee.email);
+      if (person && (await personParkGroup(person)) !== tenantId) return { message: "Person not found" };
+    }
+    const leavingUser = await userLeavingWithEmployee(employee);
+    if (leavingUser && (await managedUserTenant(leavingUser.id)) !== tenantId) {
+      return { message: "User not found" };
+    }
+    return null;
+  };
+
   const canAccessBranchRecord = async (
     user: UserWithBranchAccess | undefined,
     branch: { id: string; tenantId: string },
@@ -4081,10 +4135,18 @@ export async function registerRoutes(
 
   app.delete("/api/employees/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
+      // The caller's own park group, by the app's strict rule, as the users
+      // door places its caller (S2-17b round 2, pin 3): another park group's
+      // employee, or the user or person that would go with them, is not
+      // found, and nothing is written.
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const employee = await storage.getEmployee(req.params.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
+      const outside = await employeeDeleteOutsideParkGroup(employee, tenantId);
+      if (outside) return res.status(404).json(outside);
       // Check branch access
       const userWithAccess = req.userWithAccess;
       if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
@@ -4152,6 +4214,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "No employee IDs provided" });
       }
       
+      // The caller's own park group, as the single delete places it (S2-17b
+      // round 2, pin 3): another park group's employee is not found.
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const userWithAccess = req.userWithAccess;
       const results: { id: string; status: string; message: string; reason?: string }[] = [];
       let deletedCount = 0;
@@ -4162,6 +4228,12 @@ export async function registerRoutes(
           const employee = await storage.getEmployee(employeeId);
           if (!employee) {
             results.push({ id: employeeId, status: "error", message: "Employee not found" });
+            errorCount++;
+            continue;
+          }
+          const outside = await employeeDeleteOutsideParkGroup(employee, tenantId);
+          if (outside) {
+            results.push({ id: employeeId, status: "error", ...outside });
             errorCount++;
             continue;
           }
@@ -13644,8 +13716,14 @@ OTO Company Limited`,
   app.delete("/api/people/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
+      // The caller's own park group, as the users door places its caller, and
+      // the person's, read from what hangs off it (S2-17b round 2, pin 3):
+      // another park group's person, or the user that would go with them, is
+      // not found, and nothing is written.
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
       const person = await storage.getPerson(id);
-      if (!person) {
+      if (!person || (await personParkGroup(person)) !== tenantId) {
         return res.status(404).json({ message: "Person not found" });
       }
 

@@ -1078,7 +1078,9 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
           expect(res.status, `users door, ${f.reason}, as ${who}: ${res.text}`).toBe(expected);
           if (who === 'adminA') expect(res.body.message).toBe(DEACTIVATE_INSTEAD);
         }
-        // The people door (no park group of its own) and the employee door.
+        // The people door and the employee door. From S2-17b round 2 (pin 3)
+        // they place the caller as the users door does: another park group's
+        // admin is answered 404, one the app cannot place 403.
         const doors: Array<{
           door: 'people' | 'employees';
           target: string;
@@ -1090,12 +1092,17 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
         ];
         for (const { door, target, reason } of doors) {
           const res = await send(origin.local, 'DELETE', `/api/${door}/${target}`, opts);
-          const expected = { none: 401, staffA: 403, adminB: 409, noRow: 409, adminA: 409 }[who];
+          const expected = { none: 401, staffA: 403, adminB: 404, noRow: 403, adminA: 409 }[who];
           expect(res.status, `${door} door, ${reason}, as ${who}: ${res.text}`).toBe(expected);
           if (expected === 409) {
             expect(res.body, `${door} door as ${who}`).toEqual({
               message: DEACTIVATE_INSTEAD,
               reason,
+            });
+          }
+          if (expected === 404) {
+            expect(res.body, `${door} door as ${who}`).toEqual({
+              message: door === 'people' ? 'Person not found' : 'Employee not found',
             });
           }
         }
@@ -1104,9 +1111,20 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
           ...opts,
           body: { employeeIds: all.map((f) => f.employee) },
         });
-        const expected = { none: 401, staffA: 403, adminB: 200, noRow: 200, adminA: 200 }[who];
+        const expected = { none: 401, staffA: 403, adminB: 200, noRow: 403, adminA: 200 }[who];
         expect(bulk.status, `bulk as ${who}: ${bulk.text}`).toBe(expected);
-        if (expected === 200) {
+        if (who === 'adminB') {
+          // Another park group's employees are not found, one by one.
+          expect(bulk.body).toEqual({
+            deletedCount: 0,
+            errorCount: all.length,
+            results: all.map((f) => ({
+              id: f.employee,
+              status: 'error',
+              message: 'Employee not found',
+            })),
+          });
+        } else if (expected === 200) {
           expect(bulk.body).toEqual({
             deletedCount: 0,
             errorCount: all.length,
@@ -1239,8 +1257,13 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
      * all. The fix holds the platform-linked user at both doors, so nothing
      * the platform names is lost — this is the app's own cross-park-group
      * delete, and it should answer 404 the way the users door does.
+     *
+     * FIXED IN S2-17b ROUND 2: the employee, bulk and people doors place their
+     * caller by the app's strict rule, as the users door does, and answer 404
+     * for another park group's employee or person — or the user or person that
+     * would leave with them — writing nothing. Pin flipped.
      */
-    it.fails(
+    it(
       'another park group’s admin cannot delete park group A’s employee, or the user with them',
       async () => {
         const victim = await appUser({ seats: [{ tenantId: tenantA, branchId: appCentral }] });
@@ -1260,6 +1283,29 @@ describe.skipIf(!HAS_APP_RUNTIME)('B. the app over HTTP: production, staging and
         expect(await exists('users', victim.id)).toBe(true);
         expect(await exists('employees', victimEmployee)).toBe(true);
         expect(res.status).toBe(404);
+        expect(res.body).toEqual({ message: 'Employee not found' });
+        // Nor through the people door, nor in bulk.
+        const viaPeople = await send(
+          origin.local,
+          'DELETE',
+          `/api/people/${victimPerson}`,
+          as('local', 'adminB'),
+        );
+        expect(viaPeople.status, viaPeople.text).toBe(404);
+        expect(viaPeople.body).toEqual({ message: 'Person not found' });
+        const viaBulk = await send(origin.local, 'POST', '/api/employees/bulk-delete', {
+          ...as('local', 'adminB'),
+          body: { employeeIds: [victimEmployee] },
+        });
+        expect(viaBulk.status, viaBulk.text).toBe(200);
+        expect(viaBulk.body).toEqual({
+          deletedCount: 0,
+          errorCount: 1,
+          results: [{ id: victimEmployee, status: 'error', message: 'Employee not found' }],
+        });
+        expect(await exists('users', victim.id)).toBe(true);
+        expect(await exists('people', victimPerson)).toBe(true);
+        expect(await exists('employees', victimEmployee)).toBe(true);
       },
     );
   });
