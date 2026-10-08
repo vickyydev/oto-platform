@@ -520,7 +520,7 @@ new jobs are registered by the jobs themselves.
 | Round | Scope | Acceptance |
 |---|---|---|
 | 1 | **Sign-on and identity.** The upper-case seam fix and its census. The Console list of OTO App users with no suite sign-in, with the existing Link. SCRUM-469's branch picker in the Apps dialog, only on the owner's go (Q7). CI: app migration and directory changes run the platform suite; an OTO App job builds the app and runs its migrator twice from empty. Check that deleting a referenced user answers in words (the bare 500 in the SCRUM-193 comment, against the 409 at `server/routes.ts:1434`), and refuse deleting a user that carries `platform_user_id` the same way - at EVERY door that deletes a user (the users route, the people route, the employee flows), so no door can orphan a `core.app_identity` row. The dev and maintenance routes: refused on every deployment, or held to the caller's park group (section 4). | H1, H19, H26 and H28 green. The staging census shows no non-lower-case `core_branch_id`. A user made in the app's Users screen appears on the list and opens the app from the launcher after Link. A CI run on an app-only commit shows the view tests ran. Walkthrough pages: launcher sign-on, users and permissions (a restricted role on a temporary-password identity), organisation (a department action and a lower-role refusal). |
-| 2 | **The employee mirror.** `otoapp_v.employees` with the column allow-list. The platform's read-only repository (the only file besides `otoapp-events.ts` that names `otoapp_v`). `job:otoapp.employee_sync` with its expectation: tenant-to-operator anchor, adoption, create, update, archive on LEFT or gone, un-archive on rehire, card revocation on archive. The account link: an account outside the anchored operator is no link, a created copy sets the account's `employee_id`, a clash is raised. The booth roster takes the person's account from the employee repository. Mirrored fields refused on `PATCH /me`. The benefits panel shows the source, and an unknown employee raises `otoapp:employee.sync`. The section D grep extended to the HR tables, apart from the declared seams. The benefits flips listed in section 5 ("The swap"). Can build in parallel with round 1; lands after it. Carries round 1's three standing pins: Link refuses a user the unlinked list would not show this operator; a case-collision row still fences the first-time name match while mapping as nobody's; and the employee and people delete doors answer 404 across park groups the way the users door does. | Benefits check 1 on mirrored rows: the two `it.todo`s of `s221-r4-closing-audit.test.ts` are tests, registered under check 1 and H17. H23 to H25 green. On staging: the four demo people created as employees in the OTO App, their accounts provisioned with the same emails, the four `core.employee` rows adopted, and Nok's override still in place. H2 to H7 green. A second run changes nothing. The job is on Health. A staging read-back shows the api role reads the view. SCRUM-218's comment updated. Walkthrough page: HR employees (create and edit, refused branch read). |
+| 2 | **The employee mirror.** `otoapp_v.employees` with the column allow-list. The platform's read-only repository (the only file besides `otoapp-events.ts` that names `otoapp_v`). `job:otoapp.employee_sync` with its expectation: tenant-to-operator anchor, adoption, create, update, archive on LEFT or gone, un-archive on rehire, card revocation on archive. The account link: an account outside the anchored operator is no link, a created copy sets the account's `employee_id`, a clash is raised. The booth roster takes the person's account from the employee repository. Mirrored fields refused on `PATCH /me`. The benefits panel shows the source, and an unknown employee raises `otoapp:employee.sync`. The section D grep extended to the HR tables, apart from the declared seams. The benefits flips listed in section 5 ("The swap"). Can build in parallel with round 1; lands after it. Carries round 1's three standing pins: Link refuses a user the unlinked list would not show this operator; a case-collision row still fences the first-time name match while mapping as nobody's; and the employee and people delete doors answer 404 across park groups the way the users door does. | Benefits check 1 on mirrored rows: the two `it.todo`s of `s221-r4-closing-audit.test.ts` are tests, registered under check 1 and H17. H23 to H25 green. On staging: the four demo people created as employees in the OTO App, their accounts provisioned with the same emails, the four `core.employee` rows adopted, and Nok's override still in place. H2 to H7 green. A second run changes nothing. The job is on Health. A staging read-back shows the api role reads the view. SCRUM-218's comment updated. Walkthrough page: HR employees (create and edit, refused branch read). **Deploy order:** the booth roster reads `otoapp_v.employees`, so on staging the app deploys first (its migrator publishes the view), then USAGE on `otoapp_v` and SELECT on `otoapp_v.employees` are granted to the api role and `packages/db/scripts/otoapp-employee-seam-readback.ts` answers 0 — before or with the api deploy, or every booth sync answers 503 EMPLOYEES_SEAM_NOT_GRANTED. **Acceptance order:** provision the four demo people's app users to their accounts before creating them as app employees (or within one copy window), or their platform rows are never adopted and Nok's override stays behind (Q20). |
 | 3 | **The night work on the platform runner.** The app's job endpoint, scope `jobs:run` and tenant-scoped job functions. Every swallowed error reported as a failed step. `OTOAPP_JOBS`. The platform registers `job:otoapp.midnight`, `.reconcile` and `.presence`, with expectations and the forced-failure test control. The departed-login step names still-active linked platform accounts (Q4). The two manual triggers follow `OTOAPP_JOBS` (section 5). Flip to `platform` on staging only after one platform-run success; Attention stays paused. | Ticket check 3: two jobs on Health with last-success times, and a forced failure on Failures whose Retry succeeds. H8 and H9 green. Under `platform`, the app registers no timers (test). On staging, a midnight batch run by the platform produced the auto clock-out and the day's recurring tasks. Walkthrough pages: timekeeping, tasks (recurrence). |
 | 4 | **Tenant ownership, Attention and the Directory, in two landings.** 4a: the expand migrations. The settings helper and every caller take the tenant. Settings reads open to every park group; other park groups' settings writes stay refused in words while `settings_key_unique` stands (section 7). Branchless Activity rows show in their own tenant. Directory HR reads under `hr:read`. The root-table census. 4b, the next release (a short build-review cycle of its own): the contraction, then other park groups' settings writes open, and Attention resumes (`ATTENTION_WRITES_READY`) with rules per tenant (its rules are the settings key `attention_rules_config`), run as `job:otoapp.attention` and `job:otoapp.no_show`. | Claimed after 4b. H10 to H12 and H20 green. A second tenant's settings, activity and Attention are invisible to the first, on staging and in tests. Refresh, snooze and resolve work on staging. A directory read across tenants answers 404. Walkthrough pages: settings, activity log, Attention engine, Directory API. |
 | 5 | **Attendance and operations as the app does them.** Leave approval restored (Q1): the server's two 503s removed and the rota's `approved: true` put back, with each coverage alert written to its park group (round 4's column). The shift-row refusal (Q2). Face "off" refuses instead of matching, `/api/kiosk/clock` included. A configured-device reception action. Restricted-branch proof for scheduling, leave, checklists, announcements and notifications. Casual workers' ungrouped-row case. | H13 to H15 green. Walkthrough pages: kiosk devices and reception, face/PIN/phone, timekeeping (restricted branch), scheduling, leave and holidays, tasks and ops board, checklists and media, announcements, in-app notifications, casual workers. |
@@ -621,6 +621,19 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   already holds, and Attention stays paused for everyone until 4b.
 - **The app's two manual job routes point at the Console** once the
   platform runs the jobs. No screen calls them.
+- **A standing employee-copy case re-files every run** — about 96 Failures
+  rows a day, grouped by code (Q17). There is no `ops_expectation` on
+  `otoapp:employee.sync`, so none of this raises alerts.
+- **A FOREIGN account link is raised even for leavers.** The copy raises
+  OTOAPP_FOREIGN_ACCOUNT_LINK before it checks LEFT, so a departed or
+  never-copied employee with a foreign link raises it on every run.
+- **Run now forced on two instances can both claim** — the run lock is
+  transaction-scoped and force skips the due check, so standing cases file
+  twice. Nobody is copied twice (the per-operator advisory lock holds),
+  and staging runs one instance; on the normal schedule two instances make
+  exactly one claim.
+- **The employee view reads the app's timestamps as UTC wall time**
+  (`AT TIME ZONE 'UTC'`). Nothing in the copy reads them today.
 
 ## 11. Questions for the owner (the app's behaviour is the default)
 
@@ -688,6 +701,43 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   a scheduled run would have to know which park group's Xero it serves.
   Default: manual, as the app does it, and disabled on staging until the
   sandbox is connected.
+- **Q16. The employee copy names nobody on a tie (round 2).** Where the
+  app's own answer depends on row order — two employees carrying one
+  login, two sharing an email where both also match the user's phone or
+  name, or two users reaching one employee by email alone — the copy links
+  no account, and the booth lists the person as unmatched. The app itself
+  picks one of the two by row order. Is "name nobody" the right rule, or
+  should the copy guess the way the app does? Default: name nobody; a
+  wrong link gives one person another's till sign-in.
+- **Q17. Standing cases repeat every quarter-hour (round 2).** A case that
+  stands — say an unanchored test park group — is filed on every run,
+  about 96 rows a day, grouped by code on Failures. Should a case be filed
+  only when it changes? Default: keep filing each run; the Failures page
+  groups them, and a run that filed nothing reads as a run that found
+  nothing.
+- **Q18. The delete doors are stricter than the app (round 2).** An
+  administrator the app cannot place is refused at the employee, bulk and
+  people delete doors, not only at the users door; and an employee whose
+  email-matched user or person belongs to another park group is refused
+  rather than deleted. The app has no rule for either case. One effect: a
+  person row orphaned across park groups can never be deleted from the
+  app's screens. Confirm the refusals? Default: keep them.
+- **Q19. A leaver who was never copied (round 2).** Someone the app
+  already marks LEFT whose login points at a live platform employee row:
+  the copy adopts that row and archives it at once, revoking their benefit
+  cards. Confirm? Default: keep — the app says they left, so their cards
+  should not scan.
+- **Q20. A settle tool for the double row (round 2).** The ordinary order
+  of work — HR adds the person in the app, the copy makes their row, and
+  later the Console's Login users panel creates their account with an
+  employee name, making a second, platform row — ends in a standing
+  ADOPTION_CONFLICT raised every quarter-hour, with the person listed
+  twice in Staff Benefits and no screen able to settle it, because nothing
+  re-points an account's employee link. Should the Console get a settle
+  tool (pick which row is the person's, move the account link, archive the
+  other)? Until then the avoidance is ordering: provision the app user to
+  the account before (or in the same copy window as) creating them as an
+  app employee.
 
 ## 12. Hazards, each with its test
 
