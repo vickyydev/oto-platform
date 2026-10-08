@@ -1059,6 +1059,14 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   where before it stayed green all night with nothing done.
 - **A leaver whose platform account stays on is filed every night** (Q4,
   Q23), grouped on Failures, as the employee copy's standing cases are (Q17).
+- **Ordered rollouts can be raced by the auto-deploy.** Render deploys
+  every service on a green commit (checksPass), so "app first, then the
+  api" can be overtaken: on 4b's staging rollout the auto-deployed api
+  ticked Attention eighteen seconds before the app finished, and the one
+  failed run said OTOAPP_JOB_NOT_FOUND. That noise is expected at a
+  switch-over; the remedy is the run's own words - Retry on Failures -
+  and it ran green. A production cut that cannot tolerate the one noisy
+  run pauses auto-deploy for the ordered pair.
 - **An app-only branch strands its staff branchless on the platform.** The
   app lets HR seat an employee on a branch no platform branch maps to
   (staging has such a branch, itself named "HKT Central"), and the copy
