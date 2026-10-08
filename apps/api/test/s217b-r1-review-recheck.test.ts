@@ -407,8 +407,11 @@ describe('A. a cross-group collision, upper and mixed case: never mapped, never 
    * then signs into that park group's data from the launcher. The review's
    * finding 4 named Link beside the list; only the list was in the fix. Link
    * should refuse a user the unlinked list would not show this operator.
+   *
+   * FIXED IN S2-17b ROUND 2: Link asks the list's own rule first
+   * (`otoAppUserIsOperators`) and answers 404 for anybody else's. Pin flipped.
    */
-  it.fails('Link refuses a user of a park group this operator is not anchored in', async () => {
+  it('Link refuses a user of a park group this operator is not anchored in', async () => {
     const res = await ctx.app.inject({
       method: 'POST',
       url: '/admin/apps/oto_app/users',
@@ -421,6 +424,7 @@ describe('A. a cross-group collision, upper and mixed case: never mapped, never 
       .where(eq(otoappUsers.id, linkTarget));
     expect(stamped?.p ?? null).toBeNull();
     expect(res.statusCode).not.toBe(200);
+    expect(res.statusCode).toBe(404);
   });
 
   /**

@@ -636,20 +636,69 @@ export async function listUnlinkedOtoAppUsers(
     .orderBy(asc(otoappUsers.fullName), asc(otoappUsers.id));
   if (users.length === 0) return { installed: true, anchored: true, users: [] };
 
-  const access = await exec
-    .select({
-      userId: otoappUserBranchAccess.userId,
-      tenantId: otoappUserBranchAccess.tenantId,
-      branchId: otoappUserBranchAccess.branchId,
-      accessScope: otoappUserBranchAccess.accessScope,
-    })
-    .from(otoappUserBranchAccess)
-    .where(
-      inArray(
-        otoappUserBranchAccess.userId,
-        users.map((u) => u.id),
-      ),
-    );
+  const placed = await placeAppUsers(exec, users);
+
+  const held = opts.reach.kind === 'operator' ? null : new Set(opts.reach.branchIds);
+  const listed: UnlinkedOtoAppUser[] = [];
+  for (const u of users) {
+    const place = placed.get(u.id)!;
+    if (!place.tenantId || !ourTenants.has(place.tenantId)) continue;
+    if (held) {
+      const reachable =
+        !place.allBranches &&
+        place.branches.some((b) => b.platformBranchId !== null && held.has(b.platformBranchId));
+      if (!reachable) continue;
+    }
+    listed.push({
+      id: u.id,
+      fullName: u.fullName,
+      email: u.email,
+      phoneE164: u.phoneE164,
+      role: u.role,
+      isActive: u.isActive,
+      createdAt: u.createdAt.toISOString(),
+      allBranches: place.allBranches,
+      branches: place.branches,
+    });
+  }
+  return { installed: true, anchored: true, users: listed };
+}
+
+/** Where one app user belongs, by the app's own rule. */
+interface AppUserPlace {
+  /** Their park group, or null when the app itself cannot place them. */
+  tenantId: string | null;
+  allBranches: boolean;
+  branches: UnlinkedOtoAppUserBranch[];
+}
+
+/**
+ * The app's `managedUserTenant`, over every user named at once: every
+ * branch-access row in one tenant and on that tenant's branches, an operator
+ * admin's operator in the same tenant, and a user with no access row only in a
+ * database that holds a single tenant. Shared by the unlinked list and by Link,
+ * so the two can never disagree about whose person somebody is.
+ */
+async function placeAppUsers(
+  exec: Exec,
+  users: ReadonlyArray<{ id: string; role: string; operatorId: string | null }>,
+): Promise<Map<string, AppUserPlace>> {
+  const access = users.length
+    ? await exec
+        .select({
+          userId: otoappUserBranchAccess.userId,
+          tenantId: otoappUserBranchAccess.tenantId,
+          branchId: otoappUserBranchAccess.branchId,
+          accessScope: otoappUserBranchAccess.accessScope,
+        })
+        .from(otoappUserBranchAccess)
+        .where(
+          inArray(
+            otoappUserBranchAccess.userId,
+            users.map((u) => u.id),
+          ),
+        )
+    : [];
   const appBranches = new Map(
     (
       await exec
@@ -680,7 +729,6 @@ export async function listUnlinkedOtoAppUsers(
   const accessOf = new Map<string, typeof access>();
   for (const row of access) accessOf.set(row.userId, [...(accessOf.get(row.userId) ?? []), row]);
 
-  /** The app's `managedUserTenant`, over rows already read. */
   const tenantOf = (u: (typeof users)[number]): string | null => {
     const rows = accessOf.get(u.id) ?? [];
     if (rows.length === 0) return onlyTenant;
@@ -695,42 +743,56 @@ export async function listUnlinkedOtoAppUsers(
     return tenantId;
   };
 
-  const held = opts.reach.kind === 'operator' ? null : new Set(opts.reach.branchIds);
-  const listed: UnlinkedOtoAppUser[] = [];
-  for (const u of users) {
-    const tenantId = tenantOf(u);
-    if (!tenantId || !ourTenants.has(tenantId)) continue;
-    const rows = accessOf.get(u.id) ?? [];
-    const allBranches = rows.some((r) => r.accessScope === 'all_branches');
-    const seated: UnlinkedOtoAppUserBranch[] = rows.flatMap((r) => {
-      const b = r.branchId ? appBranches.get(r.branchId) : undefined;
-      return b
-        ? [
-            {
-              id: b.id,
-              name: b.name,
-              platformBranchId: b.coreBranchId ? canonicalCoreBranchId(b.coreBranchId) : null,
-            },
-          ]
-        : [];
-    });
-    if (held) {
-      const reachable =
-        !allBranches &&
-        seated.some((b) => b.platformBranchId !== null && held.has(b.platformBranchId));
-      if (!reachable) continue;
-    }
-    listed.push({
-      id: u.id,
-      fullName: u.fullName,
-      email: u.email,
-      phoneE164: u.phoneE164,
-      role: u.role,
-      isActive: u.isActive,
-      createdAt: u.createdAt.toISOString(),
-      allBranches,
-      branches: seated,
-    });
-  }
-  return { installed: true, anchored: true, users: listed };
+  return new Map(
+    users.map((u) => {
+      const rows = accessOf.get(u.id) ?? [];
+      return [
+        u.id,
+        {
+          tenantId: tenantOf(u),
+          allBranches: rows.some((r) => r.accessScope === 'all_branches'),
+          branches: rows.flatMap((r) => {
+            const b = r.branchId ? appBranches.get(r.branchId) : undefined;
+            return b
+              ? [
+                  {
+                    id: b.id,
+                    name: b.name,
+                    platformBranchId: b.coreBranchId ? canonicalCoreBranchId(b.coreBranchId) : null,
+                  },
+                ]
+              : [];
+          }),
+        },
+      ];
+    }),
+  );
+}
+
+/**
+ * May this operator claim this app user? (S2-17b round 2, round 1's standing
+ * pin 1.) Only a user the unlinked list could show it: one the app places in a
+ * park group this operator is anchored in. Link used to stamp ANY unstamped
+ * user by typed id, whatever park group they were in, and the account then
+ * opened that park group's data from the launcher; the list was fenced and the
+ * claim was not.
+ *
+ * Asked whatever the user's stamp: whether they are already somebody's is the
+ * link's own question, answered after this one.
+ */
+export async function otoAppUserIsOperators(
+  exec: Exec,
+  opts: { operatorId: string; userId: string },
+): Promise<boolean> {
+  if (!(await otoAppBranchesInstalled(exec))) return false;
+  const ourTenants = new Set((await mappedAppBranches(exec, opts.operatorId)).map((m) => m.tenantId));
+  if (ourTenants.size === 0) return false;
+  const [user] = await exec
+    .select({ id: otoappUsers.id, role: otoappUsers.role, operatorId: otoappUsers.operatorId })
+    .from(otoappUsers)
+    .where(eq(otoappUsers.id, opts.userId))
+    .limit(1);
+  if (!user) return false;
+  const place = (await placeAppUsers(exec, [user])).get(user.id)!;
+  return place.tenantId !== null && ourTenants.has(place.tenantId);
 }
