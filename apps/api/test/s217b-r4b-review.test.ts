@@ -182,7 +182,16 @@ async function deploy(url: string): Promise<{ status: number; output: string }> 
     await applyOtoAppMigrations(url);
     return { status: 0, output: 'applyOtoAppMigrations' };
   } catch (err) {
-    return { status: 1, output: String((err as Error)?.message ?? err) };
+    // The whole cause chain: drizzle's migrator wraps a refused statement as
+    // "Failed query: <sql>" and keeps the database's own words (the 0007
+    // gate's RAISE) in `cause`. The app's migrate.mjs child prints the chain;
+    // this in-process path has to surface it too, or CI (which has no app
+    // node_modules and so takes this path) never sees the gate's words.
+    const parts: string[] = [];
+    for (let e: unknown = err; e; e = (e as { cause?: unknown }).cause) {
+      parts.push(String((e as Error)?.message ?? e));
+    }
+    return { status: 1, output: parts.join(String.fromCharCode(10)) };
   }
 }
 
