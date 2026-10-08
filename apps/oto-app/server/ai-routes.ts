@@ -1,7 +1,8 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { db } from "./db";
-import { settings, branches } from "../shared/schema";
+import { branches } from "../shared/schema";
 import { eq } from "drizzle-orm";
+import { storage } from "./storage";
 import {
   aiComplete,
   aiConfigured,
@@ -9,10 +10,9 @@ import {
   stripJsonFences,
 } from "./lib/anthropic";
 
-async function getSettingValue(key: string): Promise<string> {
-  const setting = await db.query.settings.findFirst({
-    where: eq(settings.key, key),
-  });
+/** The caller's park group's setting (S2-17b round 4a), the default park group's where it has none. */
+async function getSettingValue(key: string, req: Request): Promise<string> {
+  const setting = await storage.getSetting(key, req.userWithAccess?.tenantId ?? null);
   if (!setting) {
     throw new Error(`Setting not found: ${key}. Please add this setting in System Settings.`);
   }
@@ -76,7 +76,7 @@ export function registerAIRoutes(app: Express, requireAuth: any) {
 
       let advice: string;
       try {
-        advice = await getSettingValue("ai_event_extraction_advice");
+        advice = await getSettingValue("ai_event_extraction_advice", req);
       } catch (error: any) {
         console.error("[AI Extract Event] Missing setting:", error.message);
         return res.status(500).json({ message: error.message });
@@ -84,7 +84,7 @@ export function registerAIRoutes(app: Express, requireAuth: any) {
 
       let outputFormat: string;
       try {
-        outputFormat = await getSettingValue("ai_event_extraction_output_format");
+        outputFormat = await getSettingValue("ai_event_extraction_output_format", req);
       } catch (error: any) {
         console.error("[AI Extract Event] Missing setting:", error.message);
         return res.status(500).json({ message: error.message });
@@ -94,7 +94,7 @@ export function registerAIRoutes(app: Express, requireAuth: any) {
 
       let model: string;
       try {
-        model = await getSettingValue("ai_event_extraction_model");
+        model = await getSettingValue("ai_event_extraction_model", req);
       } catch (error: any) {
         console.error("[AI Extract Event] Missing model setting:", error.message);
         return res.status(500).json({ message: error.message });
@@ -187,7 +187,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
 
       let advice: string;
       try {
-        advice = await getSettingValue("ai_beo_parsing_advice");
+        advice = await getSettingValue("ai_beo_parsing_advice", req);
       } catch (error: any) {
         console.error("[AI Parse BEO] Missing setting:", error.message);
         return res.status(500).json({ message: error.message });
@@ -195,7 +195,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
 
       let outputFormat: string;
       try {
-        outputFormat = await getSettingValue("ai_beo_parsing_output_format");
+        outputFormat = await getSettingValue("ai_beo_parsing_output_format", req);
       } catch (error: any) {
         console.error("[AI Parse BEO] Missing setting:", error.message);
         return res.status(500).json({ message: error.message });
@@ -203,7 +203,7 @@ ${existing_form_data ? `\nExisting form data (use these as the baseline — carr
 
       let model: string;
       try {
-        model = await getSettingValue("ai_event_extraction_model");
+        model = await getSettingValue("ai_event_extraction_model", req);
       } catch (error: any) {
         console.error("[AI Parse BEO] Missing model setting:", error.message);
         return res.status(500).json({ message: error.message });

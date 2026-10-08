@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { eq, and, gt, isNull } from "drizzle-orm";
 import { db } from "./db";
-import { kioskSessions, kioskDevices, kioskCodes, tenants, settings } from "@shared/schema";
+import { kioskSessions, kioskDevices, kioskCodes, tenants } from "@shared/schema";
+import { storage } from "./storage";
 
 const KIOSK_CODE_PEPPER = process.env.KIOSK_CODE_PEPPER || "default-kiosk-pepper-change-in-production";
 const SESSION_PEPPER = process.env.SESSION_PEPPER || "default-session-pepper-change-in-production";
@@ -151,12 +152,9 @@ export function requireKioskPermission(...permissions: KioskPermission[]) {
 
 const KIOSK_CODE_EXPIRY_SECONDS_DEFAULT = 600; // 10 minutes
 
-async function getKioskCodeExpirySeconds(): Promise<number> {
-  const [row] = await db
-    .select({ value: settings.value })
-    .from(settings)
-    .where(eq(settings.key, "auth_kiosk_code_expiry_seconds"))
-    .limit(1);
+/** The park group's kiosk code lifetime (S2-17b round 4a), the default park group's where it has none. */
+async function getKioskCodeExpirySeconds(tenantId: string): Promise<number> {
+  const row = await storage.getSetting("auth_kiosk_code_expiry_seconds", tenantId);
   if (!row) return KIOSK_CODE_EXPIRY_SECONDS_DEFAULT;
   const parsed = parseInt(row.value, 10);
   return isNaN(parsed) || parsed <= 0 ? KIOSK_CODE_EXPIRY_SECONDS_DEFAULT : parsed;
@@ -166,7 +164,7 @@ export async function createKioskCode(
   tenantId: string,
   branchId: string,
 ): Promise<{ code: string; expiresAt: Date }> {
-  const expirySeconds = await getKioskCodeExpirySeconds();
+  const expirySeconds = await getKioskCodeExpirySeconds(tenantId);
   const code = generateKioskCode();
   const codeHash = hashKioskCode(code);
   const expiresAt = new Date(Date.now() + expirySeconds * 1000);

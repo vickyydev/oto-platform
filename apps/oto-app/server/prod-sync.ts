@@ -552,9 +552,18 @@ async function runSync(prodDbUrl: string) {
     syncProgress.completedAt = new Date().toISOString();
 
     try {
+      // The default park group's row (S2-17b round 4a): no conflict target, so
+      // it reads the same with the old unique on key or without it (round 4b).
       await devPool.query(
-        `INSERT INTO settings (key, value, updated_at) VALUES ('last_prod_sync', $1, NOW())
-         ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`,
+        `WITH d AS (SELECT id FROM tenants WHERE slug = 'default' LIMIT 1),
+              u AS (UPDATE settings SET value = $1, updated_at = NOW(), tenant_id = (SELECT id FROM d)
+                     WHERE key = 'last_prod_sync'
+                       AND (tenant_id IS NULL OR tenant_id IS NOT DISTINCT FROM (SELECT id FROM d))
+                    RETURNING 1)
+         INSERT INTO settings (key, value, updated_at, tenant_id)
+         SELECT 'last_prod_sync', $1, NOW(), (SELECT id FROM d)
+          WHERE NOT EXISTS (SELECT 1 FROM u)
+         ON CONFLICT DO NOTHING`,
         [JSON.stringify({
           completedAt: syncProgress.completedAt,
           tablesCompleted: syncProgress.tablesCompleted,
@@ -611,7 +620,12 @@ export function registerProdSyncRoutes(app: Express, requireAuth: any, requireGl
     let lastSyncInfo = null;
     if (syncProgress.status === "idle") {
       try {
-        const result = await devPool.query(`SELECT value FROM settings WHERE key = 'last_prod_sync'`);
+        const result = await devPool.query(
+          `SELECT value FROM settings
+            WHERE key = 'last_prod_sync'
+              AND (tenant_id IS NULL OR tenant_id = (SELECT id FROM tenants WHERE slug = 'default'))
+            ORDER BY tenant_id NULLS LAST LIMIT 1`,
+        );
         if (result.rows.length > 0) {
           lastSyncInfo = JSON.parse(result.rows[0].value);
         }

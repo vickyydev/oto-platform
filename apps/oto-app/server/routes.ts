@@ -112,6 +112,11 @@ import { registerAIRoutes } from "./ai-routes";
 import { Sentry } from "./sentry";
 import { DB_SCHEMA, DEPLOY_ENV, JOBS_MODE, OBJECT_STORAGE, S3_ENDPOINT } from "./config/env";
 import { devOnly, followsJobsSwitch, parkGroupOf, parkGroupOnly } from "./lib/routeFences";
+import {
+  SETTINGS_NO_PARK_GROUP_REFUSAL,
+  SETTINGS_SHARED_REFUSAL,
+  SettingsWriteRefusedError,
+} from "./lib/parkGroupSettings";
 
 
 // Helper to parse object storage path
@@ -321,17 +326,19 @@ async function getChecklistResponsibleStaff(
   }));
 }
 
-// Helper function to compute probation end date
+// Helper function to compute probation end date. The default probation is the
+// employee's park group's setting (S2-17b round 4a).
 async function computeProbationEndDate(
   startDate: Date | null | undefined,
-  probationDays: number | null | undefined
+  probationDays: number | null | undefined,
+  tenantId: string | null,
 ): Promise<Date | null> {
   if (!startDate) return null;
   
   // Get company default if probationDays is null
   let daysToUse = probationDays;
   if (daysToUse === null || daysToUse === undefined) {
-    const setting = await storage.getSetting("probation_days_default");
+    const setting = await storage.getSetting("probation_days_default", tenantId);
     daysToUse = setting?.value ? parseInt(setting.value, 10) : 120; // Default 120 days
   }
   
@@ -3496,7 +3503,8 @@ export async function registerRoutes(
       if (employeeData.startDate) {
         employeeData.probationEndDate = await computeProbationEndDate(
           new Date(employeeData.startDate),
-          employeeData.probationDays ?? null
+          employeeData.probationDays ?? null,
+          actorTenantId,
         );
       }
 
@@ -3623,7 +3631,7 @@ export async function registerRoutes(
           ? updateData.probationDays 
           : oldEmployee.probationDays;
         
-        updateData.probationEndDate = await computeProbationEndDate(startDate, probationDays);
+        updateData.probationEndDate = await computeProbationEndDate(startDate, probationDays, oldEmployee.tenantId);
       }
 
       const employee = await storage.updateEmployee(req.params.id, updateData);
@@ -4580,7 +4588,8 @@ export async function registerRoutes(
         if (startDate && !employee.probationEndDate) {
           const probationEndDate = await computeProbationEndDate(
             new Date(startDate),
-            employee.probationDays ?? null
+            employee.probationDays ?? null,
+            employee.tenantId,
           );
           
           if (probationEndDate) {
@@ -4831,7 +4840,7 @@ export async function registerRoutes(
             // Calculate probation end date if start date is provided
             let probationEndDate: Date | undefined;
             if (parsedStartDate) {
-              probationEndDate = await computeProbationEndDate(parsedStartDate, 119) || undefined;
+              probationEndDate = await computeProbationEndDate(parsedStartDate, 119, tenantId) || undefined;
             }
             
             // Auto-generate nickname from first name if not provided
@@ -6318,14 +6327,47 @@ export async function registerRoutes(
     }
   });
 
+  // Settings per park group (S2-17b round 4a, server/lib/parkGroupSettings.ts):
+  // each park group reads its own value for a key, or the default park
+  // group's where it has none — what every park group read before. Saving is
+  // the default park group's alone until round 4b; anyone else is answered
+  // in words, and nothing is written.
   app.get("/api/settings", requireAuth, async (req, res, next) => {
     try {
-      const settings = await storage.getSettings();
+      const settings = await storage.getSettings(req.userWithAccess?.tenantId ?? null);
       res.json(settings);
     } catch (error) {
       next(error);
     }
   });
+
+  /**
+   * The park group a settings save is for, or a refusal already answered.
+   * The app's strict placement (`userManagementTenant`): a caller it cannot
+   * place by their own rows has no settings of their own to change. In a
+   * database with no park groups at all there is only the old single set.
+   */
+  const settingsWriter = async (req: Request, res: Response): Promise<{ tenantId: string | null } | null> => {
+    const defaultParkGroup = await storage.getDefaultParkGroupId();
+    const tenantId = defaultParkGroup === null && !req.userWithAccess?.tenantId
+      ? null
+      : await userManagementTenant(req);
+    if (tenantId === undefined) {
+      res.status(403).json(SETTINGS_NO_PARK_GROUP_REFUSAL);
+      return null;
+    }
+    if (!await storage.canSaveSettings(tenantId)) {
+      res.status(409).json(SETTINGS_SHARED_REFUSAL);
+      return null;
+    }
+    return { tenantId };
+  };
+
+  const answerSettingsRefusal = (res: Response, error: unknown): boolean => {
+    if (!(error instanceof SettingsWriteRefusedError)) return false;
+    res.status(error.status).json(error.refusal);
+    return true;
+  };
 
   app.post("/api/settings", requireAuth, requireModule("settings"), async (req, res, next) => {
     try {
@@ -6334,14 +6376,21 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Expected an array of settings" });
       }
 
+      const writer = await settingsWriter(req, res);
+      if (!writer) return;
+
       const results = [];
       for (const setting of settingsArray) {
-        const result = await storage.upsertSetting(setting);
+        const result = await storage.upsertSetting(
+          { key: setting?.key, value: setting?.value },
+          writer.tenantId,
+        );
         results.push(result);
       }
 
       res.json(results);
     } catch (error) {
+      if (answerSettingsRefusal(res, error)) return;
       next(error);
     }
   });
@@ -6448,10 +6497,12 @@ export async function registerRoutes(
         updatedBy: null,
       });
 
+      // The seed's two settings are the default park group's (S2-17b round 4a).
+      const seedParkGroup = await storage.getDefaultParkGroupId();
       await storage.upsertSetting({
         key: "email_subject",
         value: "Your Employment Contract - {{employee.full_name}}",
-      });
+      }, seedParkGroup);
 
       await storage.upsertSetting({
         key: "email_body",
@@ -6466,7 +6517,7 @@ Please review the contract carefully. If you have any questions, don't hesitate 
 Best regards,
 HR Department
 OTO Company Limited`,
-      });
+      }, seedParkGroup);
 
       res.json({ message: "Seed data created successfully" });
     } catch (error) {
@@ -6647,8 +6698,9 @@ OTO Company Limited`,
       
       const signedDateStr = formatParkSignedDate(signedAt);
       
-      // Get employer (MD) signature from settings
-      const settings = await storage.getSettings();
+      // Get employer (MD) signature from settings: the employee's park group's
+      // (S2-17b round 4a), the default park group's where it has none of its own.
+      const settings = await storage.getSettings(employee?.tenantId ?? null);
       const mdSignatureName = settings.find(s => s.key === "md_signatory_name")?.value || "Tom Sauer";
       const mdSignatureTitle = settings.find(s => s.key === "md_signatory_title")?.value || "Managing Director";
       const mdSignatureImage = settings.find(s => s.key === "md_signature_image")?.value;
@@ -13170,8 +13222,9 @@ OTO Company Limited`,
         return res.status(403).json({ message: "Access denied - branch not allowed" });
       }
       
-      // Get settings for annual leave and business days
-      const settings = await storage.getSettings();
+      // Get settings for annual leave and business days: the park group's own
+      // (S2-17b round 4a), the default park group's where it has none.
+      const settings = await storage.getSettings(tenantId);
       const annualLeaveTotalSetting = settings.find(s => s.key === "annual_leave_total_days");
       const annualLeaveWaitingSetting = settings.find(s => s.key === "annual_leave_waiting_months");
       const businessDaysTotalSetting = settings.find(s => s.key === "business_days_total");
@@ -13298,8 +13351,9 @@ OTO Company Limited`,
       // Get all employees in the branch
       const employees = await storage.getEmployees(branchId);
       
-      // Get settings for annual leave and business days
-      const settings = await storage.getSettings();
+      // Get settings for annual leave and business days: the park group's own
+      // (S2-17b round 4a), the default park group's where it has none.
+      const settings = await storage.getSettings(tenantId);
       const annualLeaveTotalSetting = settings.find(s => s.key === "annual_leave_total_days");
       const annualLeaveWaitingSetting = settings.find(s => s.key === "annual_leave_waiting_months");
       const businessDaysTotalSetting = settings.find(s => s.key === "business_days_total");
@@ -23283,10 +23337,25 @@ ${context}`;
   // FIX REPORTS (Camera-first quick reporting)
   // ============================================
 
-  // Helper: check if a user is a member of the configured Fix Department
-  const isUserFixDeptMember = async (userId: string): Promise<boolean> => {
-    const fixDeptSetting = await storage.getSetting("fix_department_id");
+  /**
+   * The park group's Fix Department (S2-17b round 4a): its own setting, or the
+   * default park group's where it has none — and only ever a department of
+   * this park group. The default park group's department, read through that
+   * fallback, is no department here: a Fix report is never assigned to, and a
+   * person never counted a member of, another park group's department.
+   */
+  const fixDepartmentOf = async (tenantId: string | null): Promise<string | null> => {
+    const fixDeptSetting = await storage.getSetting("fix_department_id", tenantId);
     const fixDeptId = fixDeptSetting?.value || null;
+    if (!fixDeptId || !tenantId) return fixDeptId;
+    const [dept] = await db.select({ id: departments.id }).from(departments)
+      .where(and(eq(departments.id, fixDeptId), eq(departments.tenantId, tenantId))).limit(1);
+    return dept ? fixDeptId : null;
+  };
+
+  // Helper: check if a user is a member of the configured Fix Department
+  const isUserFixDeptMember = async (userId: string, tenantId: string | null): Promise<boolean> => {
+    const fixDeptId = await fixDepartmentOf(tenantId);
     if (!fixDeptId) return false;
     // Check employee record
     const [empRow] = await db.select({ deptId: employees.primaryDepartmentId })
@@ -23318,7 +23387,7 @@ ${context}`;
       return { status: 403 as const, message: "Access denied to this Fix report branch" };
     }
     const isManagerOrAdmin = user.hasAllBranchesAccess || ['manager', 'admin', 'operator_admin', 'global_admin'].includes(user.role || '');
-    if (report.reportedBy !== user.id && !isManagerOrAdmin && !(await isUserFixDeptMember(user.id))) {
+    if (report.reportedBy !== user.id && !isManagerOrAdmin && !(await isUserFixDeptMember(user.id, tenantId))) {
       return { status: 403 as const, message: "Access denied to this Fix report" };
     }
     return { report };
@@ -23368,7 +23437,7 @@ ${context}`;
       if (!myQueue && !myReports) {
         const isManagerOrAdmin = user.hasAllBranchesAccess || ['manager', 'admin', 'operator_admin', 'global_admin'].includes(user.role || '');
         if (!isManagerOrAdmin) {
-          const deptMember = await isUserFixDeptMember(user.id);
+          const deptMember = await isUserFixDeptMember(user.id, tenantId);
           if (!deptMember) {
             return res.status(403).json({ message: "Access denied: manager/admin or Fix Department membership required" });
           }
@@ -23569,9 +23638,8 @@ ${context}`;
         }
       }
 
-      // Check if any of user's departments is the fix department
-      const fixDeptSetting = await storage.getSetting("fix_department_id");
-      const fixDeptId = fixDeptSetting?.value || null;
+      // Check if any of user's departments is the fix department (the park group's)
+      const fixDeptId = await fixDepartmentOf(await resolveTenantId(user.tenantId));
       const isFixDeptMember = fixDeptId ? userDeptIds.includes(fixDeptId) : false;
 
       res.json({ isFixDeptMember, fixDeptId, userDeptIds });
@@ -23729,12 +23797,8 @@ ${context}`;
         if (loc) locationName = loc.name;
       }
 
-      // Auto-assign to fix department if configured
-      let assignedDepartmentId: string | null = null;
-      const fixDeptSetting = await storage.getSetting("fix_department_id");
-      if (fixDeptSetting?.value) {
-        assignedDepartmentId = fixDeptSetting.value;
-      }
+      // Auto-assign to fix department if configured (the park group's)
+      const assignedDepartmentId: string | null = await fixDepartmentOf(tenantId);
 
       const report = await storage.createFixReport({
         tenantId,
@@ -24278,7 +24342,7 @@ ${context}`;
       // (dept members are the responders — they need to move reports through the workflow)
       const { status, priority, scheduledAt, note, appendMedia } = req.body;
       if (!isManagerOrAdmin) {
-        const deptMember = await isUserFixDeptMember(user.id);
+        const deptMember = await isUserFixDeptMember(user.id, report.tenantId);
         if (!deptMember) {
           return res.status(403).json({ message: "Access denied: manager/admin or Fix Department membership required" });
         }
@@ -24330,14 +24394,16 @@ ${context}`;
       if (!user.hasAllBranchesAccess && user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
-      const setting = await storage.getSetting("fix_department_id");
+      // The park group's own (S2-17b round 4a): another park group's department is none.
+      const tenantId = req.userWithAccess?.tenantId ?? null;
+      const departmentId = await fixDepartmentOf(tenantId);
       let department: { id: string; name: string } | null = null;
-      if (setting?.value) {
+      if (departmentId) {
         const [dept] = await db.select({ id: departments.id, name: departments.name })
-          .from(departments).where(eq(departments.id, setting.value)).limit(1);
+          .from(departments).where(eq(departments.id, departmentId)).limit(1);
         if (dept) department = dept;
       }
-      res.json({ departmentId: setting?.value || null, department });
+      res.json({ departmentId, department });
     } catch (error) {
       next(error);
     }
@@ -24350,20 +24416,28 @@ ${context}`;
       if (!user.hasAllBranchesAccess && user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
+      // Saved for the caller's park group; until round 4b only the default
+      // park group saves settings, and anyone else is answered in words.
+      const writer = await settingsWriter(req, res);
+      if (!writer) return;
       const { departmentId } = req.body;
       if (departmentId === null || departmentId === undefined || departmentId === '') {
-        await storage.upsertSetting({ key: "fix_department_id", value: "" });
+        await storage.upsertSetting({ key: "fix_department_id", value: "" }, writer.tenantId);
         return res.json({ departmentId: null, department: null });
       }
-      // Verify department exists
+      // Verify department exists, in the caller's park group
       const [dept] = await db.select({ id: departments.id, name: departments.name })
-        .from(departments).where(eq(departments.id, departmentId)).limit(1);
+        .from(departments).where(and(
+          eq(departments.id, departmentId),
+          writer.tenantId ? eq(departments.tenantId, writer.tenantId) : undefined,
+        )).limit(1);
       if (!dept) {
         return res.status(404).json({ message: "Department not found" });
       }
-      await storage.upsertSetting({ key: "fix_department_id", value: departmentId });
+      await storage.upsertSetting({ key: "fix_department_id", value: departmentId }, writer.tenantId);
       res.json({ departmentId, department: dept });
     } catch (error) {
+      if (answerSettingsRefusal(res, error)) return;
       next(error);
     }
   });

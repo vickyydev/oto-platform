@@ -1170,7 +1170,13 @@ export async function generateAttentionItems(): Promise<number> {
   return result.created;
 }
 
-async function getAttentionConfig(): Promise<Record<string, any>> {
+/**
+ * The Attention rules for a park group: its `attention_rules_config` setting,
+ * the default park group's where it has none (S2-17b round 4a). The only
+ * caller is the paused scheduling evaluation, which still reads the default
+ * park group's; round 4b runs the rules per park group.
+ */
+async function getAttentionConfig(tenantId: string | null): Promise<Record<string, any>> {
   const DEFAULT_CONFIG = {
     openShiftHoursThreshold: 72,
     enabledRules: [
@@ -1180,7 +1186,7 @@ async function getAttentionConfig(): Promise<Record<string, any>> {
     ],
   };
   try {
-    const setting = await storage.getSetting("attention_rules_config");
+    const setting = await storage.getSetting("attention_rules_config", tenantId);
     if (setting) return { ...DEFAULT_CONFIG, ...JSON.parse(setting.value) };
   } catch { /* use defaults */ }
   return DEFAULT_CONFIG;
@@ -1192,7 +1198,7 @@ export async function evaluateSchedulingAlerts(): Promise<{ created: number; upd
   let updated = 0;
   let resolved = 0;
   
-  const config = await getAttentionConfig();
+  const config = await getAttentionConfig(null);
   const enabledRules: string[] = config.enabledRules || [];
   const openShiftHours = config.openShiftHoursThreshold || 72;
 
