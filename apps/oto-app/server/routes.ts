@@ -5397,9 +5397,26 @@ export async function registerRoutes(
     }
   });
 
-  // Get contracts for a specific employee
+  // Contracts and letters per park group (S2-17b round 6). A contract or a
+  // letter is its employee's park group's: another park group's — or its
+  // employee — is the same answer as one that does not exist. The app's own
+  // branch rules are kept as they are, including where it has none (plan Q50).
+  const employeeOfParkGroup = async (req: Request, employeeId: string) => {
+    const tenantId = req.userWithAccess?.tenantId;
+    return tenantId ? storage.getEmployeeInTenant(employeeId, tenantId) : undefined;
+  };
+  const contractOfParkGroup = async (req: Request, contractId: string) => {
+    const contract = await storage.getContract(contractId);
+    if (!contract) return null;
+    const employee = await employeeOfParkGroup(req, contract.employeeId);
+    return employee ? { contract, employee } : null;
+  };
+
+  // Get contracts for a specific employee: another park group's employee has
+  // none here, as one that does not exist has none.
   app.get("/api/employees/:employeeId/contracts", requireAuth, async (req, res, next) => {
     try {
+      if (!await employeeOfParkGroup(req, req.params.employeeId)) return res.json([]);
       const contracts = await storage.getContractsForEmployee(req.params.employeeId);
       res.json(contracts);
     } catch (error) {
@@ -5410,6 +5427,7 @@ export async function registerRoutes(
   // Get active contract for employee
   app.get("/api/employees/:employeeId/active-contract", requireAuth, async (req, res, next) => {
     try {
+      if (!await employeeOfParkGroup(req, req.params.employeeId)) return res.json(null);
       const contract = await storage.getActiveContractForEmployee(req.params.employeeId);
       res.json(contract || null);
     } catch (error) {
@@ -5555,12 +5573,15 @@ export async function registerRoutes(
 
   app.get("/api/contracts", requireAuth, async (req, res, next) => {
     try {
-      const contracts = await storage.getContracts();
+      // The caller's park group's contracts (round 6): a contract is its employee's.
+      const tenantId = req.userWithAccess?.tenantId;
+      const employees = await storage.getEmployees();
+      const ownEmployees = new Map(employees.filter(e => e.tenantId === tenantId).map(e => [e.id, e.branchId]));
+      const contracts = (await storage.getContracts()).filter(c => ownEmployees.has(c.employeeId));
       // Filter by user's branch access - need to fetch employees to know their branches
       const userWithAccess = req.userWithAccess;
       if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
-        const employees = await storage.getEmployees();
-        const employeeBranchMap = new Map(employees.map(e => [e.id, e.branchId]));
+        const employeeBranchMap = ownEmployees;
         const filteredContracts = contracts.filter(c => {
           const empBranchId = employeeBranchMap.get(c.employeeId);
           return empBranchId && userWithAccess.allowedBranchIds.includes(empBranchId);
@@ -5575,7 +5596,7 @@ export async function registerRoutes(
 
   app.get("/api/contracts/:id", requireAuth, async (req, res, next) => {
     try {
-      const contract = await storage.getContract(req.params.id);
+      const contract = (await contractOfParkGroup(req, req.params.id))?.contract;
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
@@ -5596,7 +5617,7 @@ export async function registerRoutes(
   // Delete a contract (admin only, with safety checks)
   app.delete("/api/contracts/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const contract = await storage.getContract(req.params.id);
+      const contract = (await contractOfParkGroup(req, req.params.id))?.contract;
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
@@ -5633,7 +5654,7 @@ export async function registerRoutes(
   // Archive a signed contract (admin only) - moves to archived state instead of deleting
   app.patch("/api/contracts/:id/archive", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const contract = await storage.getContract(req.params.id);
+      const contract = (await contractOfParkGroup(req, req.params.id))?.contract;
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
@@ -5683,12 +5704,13 @@ export async function registerRoutes(
     try {
       const { employeeId, templateId, positionTitle, salaryThb, startDate, incentiveClause, customClauses, language } = req.body;
 
-      const employee = await storage.getEmployee(employeeId);
+      // The caller's park group's employee and template (round 6).
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
 
-      const template = await storage.getTemplate(templateId);
+      const template = await storage.getTemplateInParkGroup(templateId, employee.tenantId);
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
       }
@@ -5783,11 +5805,12 @@ export async function registerRoutes(
     try {
       const { employeeId, templateId, mergeDataJson, createdBy, status, language } = req.body;
 
-      const employee = await storage.getEmployee(employeeId);
+      // The caller's park group's employee and template (round 6).
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      
+
       // Check branch access
       const userWithAccess = req.userWithAccess;
       if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
@@ -5796,7 +5819,7 @@ export async function registerRoutes(
         }
       }
 
-      const template = await storage.getTemplate(templateId);
+      const template = await storage.getTemplateInParkGroup(templateId, employee.tenantId);
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
       }
@@ -5912,7 +5935,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "employeeId and templateId are required" });
       }
 
-      const employee = await storage.getEmployee(employeeId);
+      // The caller's park group's employee and template (round 6).
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -5935,7 +5959,7 @@ export async function registerRoutes(
         });
       }
 
-      const template = await storage.getTemplate(templateId);
+      const template = await storage.getTemplateInParkGroup(templateId, employee.tenantId);
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
       }
@@ -5943,6 +5967,17 @@ export async function registerRoutes(
       let branch = null;
       if (employee.branchId) {
         branch = await storage.getBranch(employee.branchId);
+      }
+
+      // The employee edits the wizard sends never move the employee out of the
+      // park group (round 6): no park group of their own, and a branch only of
+      // this park group's. The wizard sends neither.
+      if (employeeUpdates && typeof employeeUpdates === "object") {
+        delete (employeeUpdates as Record<string, unknown>).tenantId;
+        const movedTo = (employeeUpdates as Record<string, unknown>).branchId;
+        if (movedTo && (typeof movedTo !== "string" || !await branchInParkGroup(movedTo, employee.tenantId))) {
+          return res.status(404).json(BRANCH_NOT_FOUND);
+        }
       }
 
       // Perform atomic transaction: update employee + create contract
@@ -6324,7 +6359,7 @@ export async function registerRoutes(
 
   app.post("/api/contracts/:id/finalize", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const contract = await storage.getContract(req.params.id);
+      const contract = (await contractOfParkGroup(req, req.params.id))?.contract;
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
@@ -6352,7 +6387,7 @@ export async function registerRoutes(
     try {
       const { to, subject, body } = req.body;
 
-      const contract = await storage.getContract(req.params.id);
+      const contract = (await contractOfParkGroup(req, req.params.id))?.contract;
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
@@ -6639,7 +6674,7 @@ OTO Company Limited`,
   // Generate signing link for a contract
   app.post("/api/contracts/:id/generate-signing-link", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const contract = await storage.getContract(req.params.id);
+      const contract = (await contractOfParkGroup(req, req.params.id))?.contract;
       if (!contract) {
         return res.status(404).json({ message: "Contract not found" });
       }
@@ -8200,9 +8235,10 @@ OTO Company Limited`,
     }
   });
 
-  // Get employee letters
+  // Get employee letters: another park group's employee has none here (round 6).
   app.get("/api/employees/:employeeId/letters", requireAuth, async (req, res, next) => {
     try {
+      if (!await employeeOfParkGroup(req, req.params.employeeId)) return res.json([]);
       const letters = await storage.getEmployeeLetters(req.params.employeeId);
       res.json(letters);
     } catch (error) {
@@ -8236,7 +8272,8 @@ OTO Company Limited`,
       }
       const validatedData = validationResult.data;
       
-      const employee = await storage.getEmployee(employeeId);
+      // The caller's park group's employee (round 6).
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -8278,7 +8315,8 @@ OTO Company Limited`,
       }
       const validatedData = validationResult.data;
       
-      const employee = await storage.getEmployee(employeeId);
+      // The caller's park group's employee (round 6).
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -8294,7 +8332,14 @@ OTO Company Limited`,
       let templateSnapshotHtml = "";
       
       if (templateId) {
-        const template = await storage.getTemplate(templateId);
+        // The park group's own template (round 6). The app went on with an
+        // empty letter for a template it could not find, and the insert then
+        // failed on the template's foreign key; another park group's template
+        // would have been stored on the letter. Both are now the app's 404.
+        const template = await storage.getTemplateInParkGroup(templateId, employee.tenantId);
+        if (!template) {
+          return res.status(404).json(TEMPLATE_NOT_FOUND);
+        }
         if (template) {
           // Verify template type matches letter type and is active
           if (template.templateType !== validatedData.letterType) {
@@ -8385,8 +8430,9 @@ OTO Company Limited`,
   app.get("/api/letters/:id", requireAuth, async (req, res, next) => {
     try {
       const letter = await storage.getEmployeeLetter(req.params.id);
-      if (!letter) {
-        return res.status(404).json({ message: "Letter not found" });
+      // A letter is its employee's park group's (round 6).
+      if (!letter || !await employeeOfParkGroup(req, letter.employeeId)) {
+        return res.status(404).json(LETTER_NOT_FOUND);
       }
       res.json(letter);
     } catch (error) {
@@ -8394,11 +8440,13 @@ OTO Company Limited`,
     }
   });
 
-  // Get unsigned letters count
+  // Get unsigned letters count: the caller's park group's letters (round 6).
   app.get("/api/letters/unsigned/count", requireAuth, async (req, res, next) => {
     try {
+      const tenantId = documentParkGroup(req, res);
+      if (!tenantId) return;
       const branchId = req.query.branchId as string | undefined;
-      const count = await storage.getUnsignedLettersCount(branchId);
+      const count = await storage.getUnsignedLettersCount(tenantId, branchId);
       res.json({ count });
     } catch (error) {
       next(error);

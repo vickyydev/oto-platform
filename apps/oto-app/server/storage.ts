@@ -700,7 +700,7 @@ export interface IStorage {
         getEmployeeLetterByToken(
                 token: string,
         ): Promise<EmployeeLetter | undefined>;
-        getUnsignedLettersCount(branchId?: string): Promise<number>;
+        getUnsignedLettersCount(tenantId: string, branchId?: string): Promise<number>;
         createEmployeeLetter(letter: InsertEmployeeLetter): Promise<EmployeeLetter>;
         updateEmployeeLetter(
                 id: string,
@@ -4539,14 +4539,19 @@ export class DatabaseStorage implements IStorage {
                 return letter;
         }
 
-        async getUnsignedLettersCount(branchId?: string): Promise<number> {
-                const conditions = [eq(employeeLetters.status, "signing_link_created")];
+        /** The park group's unsigned letters: a letter is its employee's (round 6). */
+        async getUnsignedLettersCount(tenantId: string, branchId?: string): Promise<number> {
+                const conditions = [
+                        eq(employeeLetters.status, "signing_link_created"),
+                        eq(employees.tenantId, tenantId),
+                ];
                 if (branchId) {
                         conditions.push(eq(employeeLetters.branchId, branchId));
                 }
                 const [result] = await db
                         .select({ count: sql<number>`count(*)::int` })
                         .from(employeeLetters)
+                        .innerJoin(employees, eq(employees.id, employeeLetters.employeeId))
                         .where(and(...conditions));
                 return result?.count || 0;
         }
