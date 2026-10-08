@@ -634,6 +634,20 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   exactly one claim.
 - **The employee view reads the app's timestamps as UTC wall time**
   (`AT TIME ZONE 'UTC'`). Nothing in the copy reads them today.
+- **A copied employee usually has no phone on the platform.** The view
+  deliberately carries the app's VERIFIED number (`employees.phone_e164`),
+  and the app's HR form writes only the free-text `phone` box - the
+  normalized column fills when the person verifies a phone (kiosk
+  clock-in), or syncs to their USER only once a login is linked. Seen on
+  staging 8 October: all four adopted demo rows carry phone null while the
+  HR form showed their numbers. Sign-in is untouched (the account keeps
+  its own phone). Q21.
+- **An app-only branch strands its staff branchless on the platform.** The
+  app lets HR seat an employee on a branch no platform branch maps to
+  (staging has such a branch, itself named "HKT Central"), and the copy
+  then carries branch null, so the person drops out of branch-scoped
+  platform lists until the app reseats them. Seen and corrected on staging
+  8 October; the mapped branch there is "Oto Play Park, Central Floresta".
 
 ## 11. Questions for the owner (the app's behaviour is the default)
 
@@ -738,6 +752,13 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   other)? Until then the avoidance is ordering: provision the app user to
   the account before (or in the same copy window as) creating them as an
   app employee.
+- **Q21. The phone the copy carries (round 2, staging).** The employee
+  view reads the app's verified number (`phone_e164`), which the HR form
+  never fills - so a copied employee's platform phone is empty until they
+  verify one at the kiosk. Should the view fall back to a normalisation of
+  the HR form's free-text phone box? Default: as built - only a number the
+  app verified crosses, and an unverified free-text box is not a number to
+  trust for anything that reaches a person.
 
 ## 12. Hazards, each with its test
 
