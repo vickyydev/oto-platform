@@ -27,3 +27,43 @@ phone bar simply shows one line.
 ## Not touched
 
 The upright-tablet header overlap (768 to 820 px, SCRUM-505) was not looked at.
+
+---
+
+# Closing retake, 8 Oct 2026, about 07:15 to 07:30 Bangkok time
+
+Staging on `c6194664` (all six services read back as live from `render.mjs status`
+at the start of the run). This is the picture the first pass could not take.
+
+## What was done, and how far it went
+
+Signed in as the seeded platform admin on a fresh browser at 1600 wide. A fresh
+sign-in lands the account on its default park, "Oto Play Park, Central Floresta".
+The till header only exists once a station is taken, so the one station that
+belongs to neither the payment run nor the booth was taken ("Counter 2", on
+Virtual box 2, which reads "not registered yet" in the picker). Nothing was
+sold, scanned, opened or edited there; the header was photographed and the
+session was ended with "Sign out and hand over the till" on the lock screen. A
+read of `GET /api/me` afterwards answered 401 (text read-back, not pictured).
+
+CORRECTION from the independent check: taking a station is NOT read-only. By the
+code (`PUT /me/session/station` into `pickStation` in `apps/api/src/services/fleet.ts`)
+it sets the session's station, mints a shift token for that station when the
+deployment has a staff-token key, and writes an audit row `session.station_pick`
+against Counter 2 with Central Floresta as its branch. So this run did write at
+Central Floresta (a session row, possibly a token, an audit row), which is exactly
+the thing the first pass called "out of bounds" for a Central till; sign-in and
+sign-out rows come on top. Nothing else was written there (no sale, scan, open or
+edit). The picture itself shows only the header and nothing being driven.
+An earlier throwaway session of the same run, made while finding the sign-out
+control, was not signed out by hand and expires on its own.
+
+## Shot (file name starts `SCRUM-443-staging-`)
+
+| File | What the viewer sees | What was done |
+|---|---|---|
+| `till-header-1600-wide-central-floresta-park-name-two-lines.png` | The top strip of the till at 1600 pixels wide: the test-harness banner, the Oto logo, "0 in park / no gate", the park chip reading "Oto Play Park," on its first line and "Central Floresta" on its second, with its chevron, then Tickets, F&B, Shop, Events, Check-in, a clipped icon, Cash, "Weekday pricing", "Counter 2" and "Khun Anan". The park name is whole on its two lines, sits tight against the chip's top and bottom edges, and the chip overlaps no neighbour. NOT "nothing is cut", though: the nav pill's last item, a small receipt icon, sits on the pill's right edge and is cut by it (the first pass's Demo Branch 2 header has no such icon and its pill ends cleanly after Check-in). The picture does not show whether the two-line chip causes that. TEXT READ-BACK (not pictured): the chip is 174 by 32 pixels and its text occupies two line boxes. | Station "Counter 2" taken at Central Floresta, header cropped to its top 112 pixels. |
+
+Not claimed: the upright-tablet width (SCRUM-505) and the phone bar at Central
+Floresta were not looked at. The first pass's three Demo Branch 2 pictures stay
+in this folder (a one-line chip), they are not replaced.

@@ -117,3 +117,112 @@ Wording: every image below is a real screen. Facts that are NOT in an image
 - **The booking QR in `7-book-confirmation.png` is machine-readable** (a QR decoder reads it at 1x: a `BK1:` payload of 47 characters, beside the printed reference OTO-H3CE-ZS90). It is a booking QR (not a benefit QR) for a ZZ TEST booking that was redeemed at 04:11, so it is spent.
 - Roster, party and phone figures that are not ZZ TEST (Arjun Mehta, Emma Wattanasin, Lily Chen, Mia Tanaka, "Khun Ploy" +66812345678, Sophia's party) are the seeded demo events the Health control adds; nothing in them was edited, and the party was only charged and paid as listed in "Records written".
 - Console pictures carry the header "OTO Console / Central Floresta" and a Quarantine card (Evidence box 361). Those are the Console's own scope label and an existing item; neither was opened or acted on.
+
+---
+
+# Closing retake, 8 Oct 2026 (second pass), about 06:00 to 07:45 Bangkok time
+
+Staging on `c6194664` (all six services read back as live from `render.mjs
+status` at the start). Demo Branch 2 only. The Demo counter box ("virtual-1",
+registered and online) was already there; the first pass's missing box is the
+thing this pass set up. Signed in as the seeded platform admin (Khun Anan,
+Owner). No secret is printed or stored here. Nothing was committed and Jira was
+not touched. FWBooth1, payment run `0d008153` and the protected package were not
+opened, selected or written. The first pass's pictures stay in the folder; the
+two `6-` pictures that show "No box at this branch yet" are the state before
+this pass.
+
+One disclosure first: the Console's Devices page was opened once while its list
+still showed Central Floresta's boxes (the park picker already said Demo Branch
+2 but the list had not reloaded). One box drawer (FortuneWheelBox) and one
+station drawer were opened there and closed; nothing was pressed or saved, and
+the three pictures taken in that state were deleted and retaken once the page
+had Demo Branch 2's own box on it. The helper now waits for "Demo counter box"
+to be on the page before it does anything.
+
+## Records written (all at Demo Branch 2, all "ZZ TEST")
+
+| What | Name / reference | State left |
+|---|---|---|
+| Four simulated devices on the Demo counter box | ZZ TEST Sim Receipt Printer, ZZ TEST Sim Kids Band Printer, ZZ TEST Sim Adult Band Printer, ZZ TEST Sim Scanner | Declared with the Simulated transport; first with no address (see problem 3), then given an address (192.168.88.221 to .223, port 9100), model and protocol (escpos, tspl2, hid) |
+| Reception Till 1 attached to the box | the station edit | on "Demo counter box", the three printers and the scanner assigned, config v2 |
+| New kiosk station | ZZ TEST Kiosk 1 (kind Kiosk, code prefix ZK, the same three printers) | on the box, config v1 |
+| Paired kiosk screen | ZZ TEST Kiosk screen 1, paired with a K code at 06:10 | paired, last seen minutes before each look |
+| Event-pass booking, camp, paid on the simulated page | OTO-5SRY-MUGZ, ฿600; child ZZ TEST Kiosk Kid 217, parent ZZ TEST Kiosk Parent 217, guest ZZ TEST Kiosk Guest 217 (+66999217004) | redeemed at the kiosk at 06:19, child checked in (band ZK-JKAH6S), sale ZK-000001 |
+| Board walk-up, camp, ฿600 cash | child ZZ TEST Board Camper 217R, parent ZZ TEST Board Parent 217R (+66999217005, attending) | checked in at the board 06:22 (D2-HQYX8C, parent D2-ZY7CXA), band reprinted 06:24; still checked in |
+| Console Failures | one press of Retry, on the old `otoapp:attendee.create` group | it reached the directory and was refused (problem 1) |
+
+Not claimed: whether the online booking's guest name made a member record.
+
+## Shots (file names start `SCRUM-217-staging-`)
+
+Wording: every image is a real screen. Facts that are not in an image are
+marked "text read-back".
+
+| File | What the viewer literally sees | What was done to produce it |
+|---|---|---|
+| `6a-kiosk-paired.png` | Console Devices, branch picker "Demo Branch 2", "1 box - 1 online - 3 stations". Box card "Demo counter box" (VIRTUAL, virtual-1, 4 devices - 2 stations, Online). Stations: Demo Booth 1; Reception Till 1 "4 devices assigned - config v2 - on Demo counter box"; ZZ TEST Kiosk 1 (ZK, KIOSK) "3 devices assigned - config v1 - on Demo counter box". Paired screens: "ZZ TEST Kiosk screen 1" (Kiosk) "on ZZ TEST Kiosk 1 - Paired 8 Oct, 06:10", a Revoke button. | Opened Devices, picked Demo Branch 2, after the pairing below. The page's own scope label in the sidebar reads "Central Floresta" (the Console's own label, not this park's). |
+| `6a-pair-dialog-paired-message.png` | The "Pair a kiosk" dialog over a dimmed Devices page: "ZZ TEST Kiosk screen 1 is paired to ZZ TEST Kiosk 1. The kiosk shows its attract screen within a few seconds." and a Done button. | New station made, the kiosk page opened, its K code typed in the dialog (the code is cleared when sent). |
+| `6a-kiosk-setup-code-screen.png` | The kiosk's own first screen: "Set up this kiosk - In the Console, open Devices, choose Pair a kiosk, and enter this code for the kiosk station.", the code "K 438 075" (readable in the picture), "This code expires at 06:20 AM." and "Expire code now". The code is single-use, was consumed by the pairing at 06:10 and had expired by 06:20, so nothing in it can be used again. | `/kiosk#debug` opened on a browser with no staff session. |
+| `6a-kiosk-attract-after-pairing.png` | The kiosk after pairing: "SELF CHECK-IN - Collect your wristbands - Booked online? Scan the QR code from your booking confirmation and your wristbands print right here.", a Tap to start button, "Demo Branch 2 - ZZ TEST Kiosk 1" at the foot, and the rehearsal field "Simulated scan" with a Scan button bottom left (what `#debug` adds). | A few seconds after pairing. |
+| `6a-reception-till-1-on-box-with-devices.png` | The station drawer "Reception Till 1 - Till - config v2 - at Demo Branch 2": box "Demo counter box - virtual-1", prefix D2, Tickets and F&B ticked, receipt printer "ZZ TEST Sim Receipt Printer", kids' band "ZZ TEST Sim Kids Band Printer", adult band "ZZ TEST Sim Adult Band Printer", scanner "ZZ TEST Sim Scanner", the other jobs "Nothing on this box fits" or "Not set". | Station edit, devices picked, Save the station; reopened to photograph. |
+| `6a-box-drawer-four-simulated-devices-first-declared-no-address-error.png` | The Demo counter box drawer at 06:12: the four devices (Adult Band Printer, Kids Band Printer, Receipt Printer, Scanner), each Simulated, the three printers with a red `DEVICE_NO_ADDRESS` under them. | Taken right after the devices were declared with no address (last heartbeat 06:12:02 in the picture). The kiosk's first press failed with DEVICE_NO_ADDRESS at 06:16 (the Failures picture below shows `device:kiosk.print`, first 06:16), four minutes after this picture. The press itself is not pictured, so the link between this drawer and that failure is the error name and the times, not anything in this picture (problem 3). |
+| `6a-box-drawer-four-simulated-devices-with-addresses-printing.png` | The same drawer later (heartbeat 43 s old, "applied 5m ago (14 copies)"): the printers with model, protocol and address (4B-2082A tspl2 192.168.88.223:9100 and .222:9100, Xprinter XP-80 escpos 192.168.88.221:9100), "paper ok", the scanner Zebra DS2278 hid; Controls with "Go offline queued. The box takes it on its next poll." (a later round's press, see the SCRUM-503 folder). | Devices edited with an address, model and protocol each, then Apply config. WHEN, from the picture: last heartbeat 07:15:02 and uptime 1h 17m, so it was taken at about 07:15, an hour after the devices were given addresses (the print queue shows them printing from 06:19). The top row of Command history reads "succeeded Go offline - just now - queued 8 Oct, 07:15", so the Go offline switch was ON when this was taken (it was put back with Go online at 07:18, see the SCRUM-503 folder). The picture shows no print activity; the file name says "printing", what it shows is "paper ok". |
+| `6b-kiosk-scan-your-booking-qr-screen.png` | The kiosk: "Scan your booking QR - Hold the QR code from your confirmation - on your phone or printed - under the scanner." and a Start over button. | Tap to start. |
+| `6b-kiosk-done-screen-youre-all-set-bands-listed.png` | "You're all set!", "OTO-5SRY-MUGZ", "Take your wristbands from the tray below and enjoy your play!", "1 Child bracelet", "0 Adult bracelets", "Your wristband codes: ZK-JKAH6S child", a Done button. | The booking's signed QR was fetched by script (`GET /public/bookings/:id/status`, field `qr`, text read-back) and pasted into the "Simulated scan" field with Scan: the same call a scanner burst makes, but no camera or scanner was used. The pass has no parent ticked, so no adult band. The Simulated scan field in the picture shows only its grey placeholder "BK1:...", not a pasted QR. IT IS THE REAL SCREEN: the English strings "You're all set!", "Take your wristbands from the tray below and enjoy your play!" and "Your wristband codes" are the app's own `kiosk.done.title`, `kiosk.done.subtitle` and `kiosk.done.codes` entries in `apps/pos/src/i18n/dictionary.ts` (as are `kiosk.attract.title` and `kiosk.scan.title` for the two screens before it), and the band code ZK-JKAH6S on it is the one the board roster (6c) and the print queue (kids wristband at 6:19:26) show for the same child. |
+| `6c-board-kiosk-pass-child-checked-in-after-kiosk-redeem.png` | Check-in board > Events > Oto Summer Camp - Week 1: "8 registered - 1 in", "1 / 6 checked in", a "Checked in 1" group: "ZZ TEST Kiosk Kid 217" with a red REFUSED chip, 6 yrs, attendance day Thu 08 Oct, parent ZZ TEST Kiosk Parent 217 +66999217004, the note "ZZ TEST kiosk pass for the SCRUM-217 closing retake - Walk-up added by Online booking (today only)", and "In - 06:19 - Band ZK-JKAH6S - by ZZ TEST Kiosk 1" with Reprint band and Check out. | Opened the board after the kiosk press. The word REFUSED is the sync chip (problem 1). |
+| `6d-board-check-in-toast-band-codes-printing-box-attached.png` | The camp roster "2 / 7 checked in" with a toast "Checked in - ZZ TEST Board Camper 217R - band D2-HQYX8C - parent D2-ZY7CXA". The toast does not say whether anything printed. | Walk-up paid in cash and left as booked, then Check in pressed on its row. |
+| `6d-board-reprint-band-succeeded-toast.png` | The same roster with the row "ZZ TEST Board Camper 217R" (Parent attending, REFUSED chips, "In - 06:22 - Band D2-HQYX8C - Parent D2-ZY7CXA - by Khun Anan (Owner)") and a toast "Band reprinted - ZZ TEST Board Camper 217R - band D2-HQYX8C - parent D2-ZY7CXA". | Reprint band pressed. The first pass's same press was refused ("not attached to a box"); this one succeeded. |
+| `6d-console-box-printing-queue-bands-printed-and-reprinted.png` | The Demo counter box drawer, Printing panel: eight jobs, every one marked "printed": adult wristband and kids wristband at 6:24:12 AM (the reprint), adult and kids wristbands at 6:22:38 AM (the board check-in), a receipt at 6:22:26, a receipt and a kids wristband at 6:19:26 (the kiosk), a test page at 6:19:01. Below, the simulated adult band as the printer rendered it twice (#2 and #1, 400 by 283 dots): "ZZ TEST Board Parent 217R", "09:00 - 17:00 - 2026-10-08", "Oto Summer Camp - Week" (that line is cut off at the label's edge), a QR whose bottom row the barcode overlaps, a barcode and "D2-ZY7CXA". The jobs carry no station label: which job belongs to which press is read from the times (kiosk 06:19, board check-in 06:22, reprint 06:24), not from the list. | Console > Devices > the box > scrolled to Printing. The QR on the rendered band is a band code for a ZZ TEST parent, not a credit code. |
+| `6e-console-failures-attendee-groups-before-retry.png` | Console Failures, Last 24 hours, "5 problems - 17 failed runs": `otoapp:attendee.create` x 4 "OTOAPP_SCOPE_REQUIRED: This directory key does not carry events:write"; `otoapp:attendee.checkin` x 4 "OTOAPP_ATTENDEE_NOT_SYNCED"; `device:kiosk.print` x 1 "DEVICE_NO_ADDRESS"; `http:POST /benefits/credentials` x 2 (an old benefit-key refusal); `otoapp:attendee.create` x 6 "OTOAPP_DIRECTORY_NOT_CONFIGURED" (first 03:40, last 2h 5m ago). Retry buttons sit on three groups (the SCOPE_REQUIRED attendee.create, attendee.checkin and the old attendee.create); the kiosk.print and benefits groups have Details only. Counts: 4 + 4 + 1 + 2 + 6 = 17 failed runs, as the header says. The right column holds the Quarantine card (Evidence box 361, not mine) and, under it, "Refused events - waiting: 1 event the cloud would not file". | Opened Failures. The Console's header reads Central Floresta (its own label); the groups are not filtered to a park, so which are this walkthrough's is inferred from their ids and times, not pictured. |
+| `6e-console-failures-retry-pressed-write-back-reaches-directory-scope-refused.png` | The same page after one press of Retry on the old `attendee.create` x 6 group: its button now reads "Retried" and the group still reads x 6 "DIRECTORY_NOT_CONFIGURED", while the `OTOAPP_SCOPE_REQUIRED` group above it rose from x 4 to x 5 (last just now, action `booking.pay:01a11833-...`, the old group's action) and the run count from 17 to 18. | One press of Retry. NOTHING CLEARED: before, 17 failed runs in 5 groups (4 + 4 + 1 + 2 + 6); after, 18 failed runs in 5 groups (5 + 4 + 1 + 2 + 6). The old group stayed at 6 and only changed its button to "Retried". |
+
+## What was NOT achieved
+
+- **The write-back proof (step 3).** The directory is configured now (the
+  refusal changed from "not configured" to "This directory key does not carry
+  events:write"), so the call reaches the OTO App and its key authenticates, but
+  the OTO App refuses every write for want of that scope. By the code, the OTO App
+  side defines one directory scope, `events:write`
+  (`apps/oto-app/server/db/coreSchema.ts`), and its directory-client script grants
+  it by default, so the staging key's client row was made without it or has it
+  switched off (an inference from the error text and the code; the OTO App's
+  database was not read). No roster chip left PENDING: text read-back of
+  `GET /events` for 8 Oct gives ZZ TEST Walkup Camper 217 (7 Oct) `pending`, and
+  both of today's attendees `failed` (the REFUSED chip). The fix is one setting on
+  the directory client; nothing in this run was allowed to change it.
+
+## Problems
+
+1. The write-back refusal above. The chips read PENDING for the three 7 Oct
+   attendees and REFUSED for the two made today; a staff reader sees a red
+   REFUSED chip on a child who was checked in without trouble.
+2. **The kiosk's first press ended at "Please see our team at the desk"** (the
+   booking reference, "We couldn't finish this here. Our team will help you right
+   away.", a Done button). The audit row `kiosk.abort` (text read-back) says stage
+   `print`, reason `DEVICE_NO_ADDRESS`, 0 bands printed, outcome `failed`. That
+   picture was overwritten by the next capture and is NOT in the folder; the
+   Failures picture above shows its trace (`device:kiosk.print`). After the
+   devices got addresses the same booking redeemed.
+3. A device declared with the Simulated transport and no address cannot print
+   (the printer answers "has no address, so there is nothing to open"), though
+   "Simulated" suggests it needs none. The Add device form's address field says
+   "192.168.88.204:9100, or /dev/ttyACM0." and does not say it is required for a
+   simulated printer.
+4. The board's check-in toast is silent about printing (it names the band codes
+   only); the proof it printed is the Console print queue. The till's redemption
+   toast saying "bracelets printed" (first pass, problem 5) was not retaken.
+5. The public booking page still cannot choose a park (first pass, problem 3):
+   the booking was made inside the signed-in Demo Branch 2 session. Today's page
+   offered only the camp pass (Story Time and the workshop were 7 Oct events).
+6. Also left on staging: sale `ZK-000001` (the kiosk's), sale D2-000016 (the board
+   walk-up), the unfinished `tendering` sales other tickets of this run left (see
+   the SCRUM-218 and SCRUM-502 folders), and the ZZ TEST stations, devices, kiosk
+   screen and bookings above. The Demo counter box was not archived.
+
+## What is readable in the closing-retake pictures (independent check, 8 Oct, every new PNG opened)
+
+- **No password, session token, benefit QR or credit code** is readable in any of the fifteen closing-retake pictures. A QR decoder was run over all 111 PNGs in the SCRUM-217, -218, -443, -502 and -503 folders: the only picture that decodes is the first pass's `7-book-confirmation.png` (already disclosed above, a spent booking QR). The small adult band image in the print-queue picture does not decode at its size.
+- **Readable and harmless, named here rather than left unmentioned:** the kiosk setup code `K 438 075` (spent at 06:10, expired 06:20), the booking reference `OTO-5SRY-MUGZ` (redeemed 06:19), band codes `ZK-JKAH6S`, `D2-HQYX8C` and `D2-ZY7CXA` (ZZ TEST children and a ZZ TEST parent at Demo Branch 2 with no credit, the same code class as the first pass's), the simulated printers' private LAN addresses (192.168.88.221 to .223:9100) and box command ids.
+- **The roster picture also shows seeded demo data**: Khun Daeng Prasert +66854567788 (the seeded parent of Noah Prasert in `packages/db/src/seed/demo-events.ts`), not a ZZ TEST record and not edited.
+- **The Failures groups did not clear**: 17 failed runs before the one Retry and 18 after (shot 6e). Nothing in this folder claims a cleared group.

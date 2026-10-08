@@ -125,3 +125,89 @@ application, no sale was written for benefits.
 - No real password appears: the lock-screen picture shows masked dots, and the read-back card shows the dummy value `x`. No session token or key is shown (the dialog names the variable `BENEFIT_QR_PRIVATE_KEY`, not a value).
 - Captions and this file agree on revocation: nothing was revoked because nothing was issued; the two refusal pictures (counter: `No staff benefit found for "ZZ TEST NOT A CARD".`; sign-in read-back: `BENEFIT_NOT_A_SIGN_IN`) are refusals of a made-up string, not of a revoked card, and say so.
 - The staff written to (Khun Anan, Khun Lek, Nok (Reception)) are the seeded staging staff, shared by every park of the operator; the Staff list also shows unrelated probe and ZZ staff, which were not touched.
+
+---
+
+# Closing retake, steps 2 to 6, 8 Oct 2026, about 06:25 to 06:50 Bangkok time
+
+Staging on `c6194664`; the api now carries the benefit QR key, so the first
+pass's blocker is gone. Demo Branch 2 only, signed in as the seeded platform
+admin (Khun Anan, Owner). One card was issued (Khun Lek, Manager) and it was
+REVOKED at 06:38; `revokedAfter` is true (text read-back, API:
+`GET /benefits/credentials?employeeId=<Khun Lek>` answered one credential,
+`status: "revoked"`, with `revokedAt` set). No other card was issued. The card
+string is never drawn readable in any picture: in the two QR-dialog pictures the QR
+and the code printed under it were blurred by me (CSS filter on the page before
+the screenshot) and the typed field in the refusal picture was blurred the same
+way. A QR decoder was run over every picture of this folder before it was listed.
+The first pass's pictures stay; the ones it could not take are the ones below.
+
+## Shots (file names start `SCRUM-218-staging-`)
+
+Wording: a picture is a real screen unless the line says READ-BACK CARD (text
+read from the API and drawn on a card, not a screen).
+
+| File | What the viewer sees | What was done |
+|---|---|---|
+| `2-qr-dialog-before-issue-key-now-set.png` | Khun Lek (Manager)'s dialog: "No benefit QR has been issued." and an Issue QR button. | Admin > Staff Benefits > QR on Khun Lek's row (the Admin pages name no park; staff roles are operator-wide). |
+| `2-qr-dialog-after-issue-qr-and-code-blurred.png` | The same dialog at normal zoom after Issue QR: a blurred QR square, a blurred band of text where the code is printed, "Valid until 10/8/2027" and a Revoke QR button. The blur is mine; nothing under it is readable. | Pressed Issue QR once. The audit row for it is `benefit.credential_issue` at 06:27. |
+| `3-fnb-order-before-scan-three-items-290.png` | F&B guest order at Demo Branch 2: ZZ TEST Toastie 1 (฿90), ZZ TEST Espresso 2 (฿120), ZZ TEST Latte 1 (฿80), VAT included ฿18.97, "Charge ฿290", the customer display mirroring the order, a "Scan staff benefit" button. | Guest order, items tapped. |
+| `3-fnb-first-scan-preview-free-items-120-plus-staff-credit-170.png` | The same order after the card was typed into "Scan staff benefit" and Apply was pressed: a green "Staff benefit -฿290" card, "Scanned: Khun Lek (Manager)", "Free item(s) -฿120", "Staff credit -฿170", the button now "Charge ฿0", the display "Discount - ฿290 off, Total ฿0". | First scan, from a run that made no sale (see problem 1 for the unfinished sale a later run left). The file time is 06:37, after the 06:31 and 06:32 runs; by this file's own problem 1 a scan made after 06:31 would price credit only (as the second charging run's did), so this picture, which still shows a free-item line, was captured before 06:31 and the file written or copied later. The picture carries no clock, so the capture time itself is not shown. The card was typed as a scanner burst would type it; no camera was used. |
+| `3-fnb-first-sale-no-payment-needed-screen-before-complete-order.png` | "Amount due ฿0, Pick-up code 57, No payment needed - This order is fully covered - nothing to collect. Tap below to send it to the kitchen.", a Complete Order button and Back. | Said to be the screen the first charging run stopped on (Complete Order was NOT pressed in that run, problem 1). CORRECTION from the independent check: this file is BYTE-IDENTICAL to `3-fnb-no-payment-needed-covered-by-benefit.png` (same md5, file times 06:37 and 06:32). The screen has no clock and shows pick-up code 57 in both runs, so two runs could draw the same pixels, but the folder holds ONE picture twice and it cannot show which run it came from. Do not read it as a separate capture of the first run. |
+| `3-fnb-second-sale-scan-preview-staff-credit-only-free-coffees-used-up.png` | The second charging run's order after the scan: "Staff benefit -฿290", "Scanned: Khun Lek (Manager)", one line "Staff credit -฿290" (no free-item line this time), "Charge ฿0". | Same three items, scan again. The two free coffees of the day were already counted by the first charging run's application, so the preview is credit only. |
+| `3-fnb-pickup-code-step-total-0.png` | The Pick-up Code dialog over the order, "Continue to Payment - ฿0" greyed until a code is keyed. | Charge pressed. |
+| `3-fnb-no-payment-needed-covered-by-benefit.png` | The "No payment needed" screen, Pick-up code 57, said to be from the second charging run. | Pick-up code keyed, Continue to Payment. BYTE-IDENTICAL to `3-fnb-first-sale-no-payment-needed-screen-before-complete-order.png` (see that row): one picture, filed twice. The order panel behind the pick-up-code dialog in `3-fnb-pickup-code-step-total-0.png` does show a credit-only staff benefit card, which is what ties the second run to the closed sale D2-000017, not this screen. |
+| `3-fnb-sale-closed-success-screen.png` | "Order Confirmed - Nothing for the kitchen or bar - Order #0001 - Guest - Receipt D2-000017", Pick-up code 57, the three items, a green "Staff benefit -฿290 / Scanned: Khun Lek (Manager) / Staff credit -฿290" card, Total ฿0, New Order; the customer side "Thank you!" with the same items and Total ฿0. | Complete Order pressed. This is the closed sale (receipt D2-000017, finalised 06:32:21). |
+| `5-discounts-comps-demo-branch-2-staff-benefit-row-tiles-zero-before-rollup.png` | Admin > Reporting > Discounts & Comps, 10/08/2026 to 10/08/2026, Demo Branch 2, taken between 06:33 and 06:35 (file time 06:35, before the 06:36:57 rollup): every tile ฿0.00, yet "Transactions (1)" lists `fnb/D2-000017`, 10/8/2026 6:32:21 AM, Fixed, "Staff benefit - Scanned: Khun Lek (Manager) (manager)", applied by Khun Anan (Owner), ฿290.00. | Filters set by hand. |
+| `5-discounts-comps-demo-branch-2-staff-benefit-row-8-oct.png` | The same screen at about 06:41 (file time 06:41; the read-back card made right after says captured 06:41:06): Manual discounts ฿290.00, Total impact ฿290.00, "By operator" Khun Anan (Owner) 0 comps, 1 discount, ฿290.00, and the same Transactions row. Total comps and the free-item tile still ฿0.00. | Same filters, re-read after the 23:36 UTC rollup (see the card below). |
+| `5-read-back-card-benefits-report-non-zero-one-application-credit-290.png` | READ-BACK CARD: `GET /analytics/reports/benefits` for Demo Branch 2, 8 Oct: applications 1, creditCount 1, creditSatang 29000, totalReliefSatang 29000, byRole manager 1, byBeneficiary Khun Lek (Manager) 1, one day row for 2026-10-08 marked provisional, lastRolledUpAt 2026-10-07T23:36:57Z; and `GET /analytics/reports/benefits/transactions`: D2-000017, finalised, credit 29000. | The report has no screen (first pass, problem 4). |
+| `6-audit-log-benefit-credential-issue-row.png` | Console > Activity with Action `benefit.credential_issue`: one row, 8 Oct 06:27, entity `benefit_credential`, by Khun Anan (Owner). | Typed the exact action name. |
+| `6-audit-log-benefit-apply-row.png` | Action `benefit.apply`: two rows, 06:32 and 06:31, entity `benefit_application`, by Khun Anan (Owner), Demo Branch 2. | Same. |
+| `6-audit-log-benefit-apply-row-opened.png` | The 06:32 row opened (Changes tab, top of the drawer only): allocations of 9000, 12000 and 8000 satang to the three cart lines, the application id, "applied satang 29000", benefit role manager and the box id. TEXT READ-BACK (below the fold, not pictured): credit 29000, comp 0, free items 0, discount 0 and a usage entry for credit, monthly, 2026-10, limit 50000. | Clicked the row. Reading it is recorded as `audit.read_sensitive` (the page says so). |
+| `4-qr-dialog-revoke-confirm-qr-and-code-blurred.png` | The dialog with the text "It stops working on the platform at once, and on each box from its next update." and Keep and Revoke buttons; QR and code blurred by me. | Pressed Revoke QR. |
+| `4-qr-dialog-after-revoke-no-qr-in-use.png` | The dialog reading "No benefit QR has been issued." with an Issue QR button again. | Pressed Revoke. Audit row `benefit.credential_revoke` at 06:38. Word for word, the same dialog as `2-qr-dialog-before-issue-key-now-set.png` (only a focus ring on the close button differs there), so this picture alone cannot tell "revoked" from "never issued"; the difference is the `benefit.credential_revoke` row at 06:38 and the counter's refusal wording below (and the text read-back of the credential's status, which is not pictured). |
+| `6-audit-log-benefit-credential-revoke-row.png` | Action `benefit.credential_revoke`: one row, 8 Oct 06:38, entity `benefit_credential`, by Khun Anan (Owner). | Typed the action name. |
+| `4-fnb-revoked-card-refused-at-counter-typed-code-blurred.png` | The "Scan staff benefit" dialog over an order of one ZZ TEST Toastie: the typed field blurred by me, and in red "Benefit revoked: Khun Lek (Manager)'s QR no longer applies a staff benefit." with the grey line "Look up the staff member's QR in Admin -> Staff Benefits." | The revoked card typed and Apply pressed. Nothing was charged. |
+| `4-read-back-card-signin-api-answer-for-revoked-benefit-qr.png` | READ-BACK CARD, not a screen: `POST /api/auth/sign-in` with the revoked card string as the phone answered 400 `BENEFIT_NOT_A_SIGN_IN` "That is a staff benefit QR. It applies a benefit at the F&B order station and signs nobody in." The string itself is not shown on the card. | Sent from the lock-screen page. The lock screen cannot carry a card (first pass, problem 2), so this is a read-back; it does not say "revoked". It is the same answer the made-up string got in the first pass (`BENEFIT_NOT_A_SIGN_IN`), so it is no evidence of revocation: the card's title says REVOKED, which is the capturing script's label, not the API's answer. The revoked state rests on the audit row, the credential read-back and the counter's refusal. |
+| `6-staff-benefits-panel-audit-log-one-application-khun-lek.png` | The bottom of Staff Benefits: "Audit log (1) - Khun Lek (Manager) (Manager) - 290 relief - processed by Khun Anan (Owner) - 10/8/2026, 6:32:21 AM - order #D2-000017". | Scrolled to the bottom. |
+
+## Gate and booth refusal: not reachable
+
+Demo Branch 2 has no gate station, and its booth station has no device and no
+box online. The Console's scanner simulator on the Demo counter box takes a band-style
+code (its field's placeholder reads T1-0000-0000-0000); the revoked string was
+sent through it once and no command appeared in the box's command history
+(text read-back), so nothing reached a scanner. No picture of a gate or booth
+refusal is claimed.
+
+## Problems and observations
+
+1. **The first charging run left an unfinished sale.** Pressing "Continue to
+   Payment - ฿0" put the order into `tendering` (sale `01a118b5-07c6`, no
+   receipt) and wrote a `benefit.apply` row at 06:31 that used the day's two free
+   coffees (usage `free:coffee 2 of 2`); that run's browser was closed before
+   Complete Order. The order the shots show closed (D2-000017) therefore priced
+   credit only. The unfinished sale was left as it is and is not in the benefits
+   report (1 application, not 2).
+2. **The Discounts & Comps tiles lag the rows.** At about 06:33 to 06:35 the tiles read ฿0.00
+   while the Transactions row existed; after the next rollup (23:36 UTC, five
+   minutes after the previous one at 23:31) Manual discounts and Total impact read
+   ฿290.00. The benefits report reads the same rollup: all zero at 06:33
+   (applications 0) and one application afterwards (text read-back).
+3. Staff credit is counted under "Manual discounts" on that screen, and the
+   free-item tile stays ฿0.00 (a prototype rule's side effect, noted, not
+   changed).
+4. The gate/booth and the lock-screen sign-in paths cannot carry a card (above).
+5. Left on staging: the revoked card, the unfinished `tendering` sale above, and
+   the three ZZ TEST menu items from the first pass. The audit usage of D2-000017's
+   application records 29000 satang of credit against the 50000 satang monthly
+   limit; the unfinished sale's application row records 17000 satang of credit
+   (audit text read-back, not pictured).
+
+## What is readable in the closing-retake pictures (independent check, 8 Oct, every new PNG opened)
+
+- **The benefit card is never readable.** The QR and the code line under it are blurred in `2-qr-dialog-after-issue-qr-and-code-blurred.png` and `4-qr-dialog-revoke-confirm-qr-and-code-blurred.png`; enlarged 2x and contrast-stretched they are still shapeless smudges with no module structure and no legible character. The typed field in `4-fnb-revoked-card-refused-at-counter-typed-code-blurred.png` is enlarged 3x to five blobs of colour, no characters. The read-back card says "199 characters, not shown". The scan dialog is closed in every other picture. A QR decoder over all 111 PNGs in the five folders found nothing in this folder.
+- **Even a perfect recovery would be a dead card**: it was revoked at 06:38 (audit row `benefit.credential_revoke`, 06:38), and both blurred QR pictures were taken before the revoke completed (06:27, and the 06:38 confirm dialog just ahead of the press).
+- **Revocation and the refusal agree**: revoke row 06:38, then the counter's refusal "Benefit revoked: Khun Lek (Manager)'s QR no longer applies a staff benefit." (file time 06:39). The dialog after revoke reads "No benefit QR has been issued." (see its row for why that alone proves nothing).
+- No password, token or key value is drawn: the read-back card shows the dummy password `x`. The variable NAME `BENEFIT_QR_PRIVATE_KEY` (never a value) appears in the first pass's refusal dialog and in a SCRUM-217 Failures picture. Box ids and application ids appear in the opened audit row; they are identifiers, not credentials.
+- The figures agree across pictures: 90 + 120 + 80 = 290; allocations 9000 + 12000 + 8000 = 29000 satang; the report card, the Discounts & Comps row, the audit row and the panel's "290 relief ... order #D2-000017" all say 290 and the same receipt.
