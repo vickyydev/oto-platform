@@ -89,9 +89,17 @@ import {
  *  8. A park group the app answers "already running" at every tick of a date
  *     left the night undone with every run green (finding F3, pinned
  *     `it.fails` by the review, now held as fixed: the second tick fails).
+ *  9. THE FIX ROUND, ATTACKED (the re-review): F1 for a park group that gains
+ *     staff mid-day, with no employee view, and with the view unreadable; F3
+ *     at the first tick only and across the date boundary. Against the real
+ *     app, J4b holds F2 for tasks due at 00:00, 06:59, 07:00 and 23:59 and for
+ *     a task made by hand before the batches; the end of J6 holds F4's lock
+ *     for the 03:00 batch and the six-hourly check, the 03:00 timer standing
+ *     down, and the Q26 wording (no SENTRY_DSN: the process ends; with it,
+ *     it stays up).
  *
- * Sections 1-3 (stand-in parts), 5, 6 and 8 run against a stand-in app; the
- * rest against the real app when its node_modules are present.
+ * Sections 1-3 (stand-in parts), 5, 6, 8 and 9 run against a stand-in app;
+ * the rest against the real app when its node_modules are present.
  */
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
@@ -878,6 +886,179 @@ describe('8. a park group the app answers "already running" at every tick of a d
 });
 
 // =============================================================================
+// 9. The fix round, attacked (the re-review of F1 and F3, stand-in app)
+// =============================================================================
+
+/**
+ * The re-review's attempts to break the fix round's F1 and F3 (F2 and F4 are
+ * attacked against the real app, J4b and J6). Each holds the fixed behaviour
+ * at an edge the fix round's own tests did not reach. Every park group made
+ * here with staff is removed after the section, so J meets only its own.
+ */
+describe('9. the fix round, attacked — F1 and F3 at their edges', () => {
+  const tenantV = newId();
+  const made: string[] = [];
+  const running = (): StubReply => ({ kind: 'answer', status: 409, body: { error: 'job_running', message: 'already running' } });
+
+  beforeAll(async () => {
+    await q(`insert into tenants (id, name, slug) values ($1, 'ZZ r3rev mid-day', $2)`, [tenantV, `zz-r3rev-v-${tenantV.slice(-6)}`]);
+  });
+
+  afterAll(async () => {
+    for (const id of made) await q('delete from employees where id = $1', [id]);
+  });
+
+  it('F1: a park group that gains staff mid-day fails the next tick, and only from then; with none again, the run is green', async () => {
+    stub.reset();
+    const date = '2026-12-14';
+    const env = envFor([[tenantA, keyA]]);
+    let clock = at(date, '00:05');
+    const job = nightJob('midnight', () => clock, env);
+    const runner = runnerFor(job, env);
+    expect(await runner.runJob(job.name, { force: true })).toBe('ok');
+    expect(detailOf((await runsFor(job.name, date))[0]!).parkGroups).toMatchObject({ checked: true, unkeyed: [] });
+
+    const employee = await appEmployee(tenantV, await appBranch(tenantV));
+    made.push(employee);
+    clock = at(date, '13:00');
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    const [run] = await runsFor(job.name, date);
+    expect(run!.errorCode).toBe(NIGHT_JOB_UNKEYED);
+    expect(detailOf(run!).groups.map((g) => [g.tenantId, g.outcome])).toEqual([
+      [tenantA, 'done'],
+      [tenantV, 'failed'],
+    ]);
+    // A's night ran once; nothing is ever sent for V.
+    expect(stub.callsFor('midnight', tenantA)).toHaveLength(1);
+    expect(stub.callsFor('midnight', tenantV)).toEqual([]);
+
+    await q('delete from employees where id = $1', [employee]);
+    made.splice(made.indexOf(employee), 1);
+    clock = at(date, '13:05');
+    expect(await runner.runJob(job.name, { force: true })).toBe('ok');
+  });
+
+  it('F1: keys held but no employee view on this database — the keyed park groups run, the run stays green, and its detail says nothing could be checked', async () => {
+    stub.reset();
+    const date = '2026-12-15';
+    const env = envFor([[tenantA, keyA]]);
+    const job = nightJob('midnight', () => at(date, '00:30'), env);
+    await q('alter view otoapp_v.employees rename to employees_zz_rereview');
+    try {
+      expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('ok');
+    } finally {
+      await q('alter view otoapp_v.employees_zz_rereview rename to employees');
+    }
+    const [run] = await runsFor(job.name, date);
+    expect(detailOf(run!).groups.map((g) => [g.tenantId, g.outcome])).toEqual([[tenantA, 'ran']]);
+    expect(detailOf(run!).parkGroups).toEqual({
+      checked: false,
+      unkeyed: [],
+      reason: 'The OTO App publishes no employee view here, so no park group without a key could be looked for.',
+    });
+  });
+
+  it('F1: the park groups cannot be read (the seam not granted) — the keyed park groups still run and are done once; the run fails, saying so', async () => {
+    stub.reset();
+    const date = '2026-12-16';
+    const env = envFor([[tenantA, keyA]]);
+    let clock = at(date, '00:30');
+    const base = nightJob('midnight', () => clock, env);
+    // The job's own reads only: the runner records with the real handle. The
+    // seam answers "no USAGE on otoapp_v", as a deployment missing its grants.
+    const notGranted = (real: Db): Db =>
+      new Proxy(real, {
+        get(target, prop) {
+          if (prop === 'execute') return async () => ({ rows: [{ usage: false }] });
+          const value = Reflect.get(target, prop, target) as unknown;
+          return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(target) : value;
+        },
+      });
+    const job: JobDefinition = { ...base, run: (deps) => base.run({ ...deps, db: notGranted(deps.db) }) };
+    const runner = runnerFor(job, env);
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    const [run] = await runsFor(job.name, date);
+    expect(run!.errorCode).toBe(NIGHT_JOB_UNKEYED);
+    expect(run!.errorMessage).toContain(
+      `${NIGHT_JOB_UNKEYED}: the park groups the OTO App holds staff in could not be read, so one this deployment holds no key for cannot be ruled out`,
+    );
+    expect(run!.errorMessage).toContain('USAGE on schema otoapp_v');
+    expect(detailOf(run!).groups.map((g) => [g.tenantId, g.outcome, g.ok])).toEqual([[tenantA, 'ran', true]]);
+    expect(detailOf(run!).parkGroups).toMatchObject({ checked: false, unkeyed: [] });
+    // A is done: the next tick sends nothing for it, and fails the same way.
+    clock = at(date, '00:35');
+    expect(await runner.runJob(job.name, { force: true })).toBe('failed');
+    expect(detailOf((await runsFor(job.name, date))[0]!).groups.map((g) => [g.tenantId, g.outcome])).toEqual([[tenantA, 'done']]);
+    expect(stub.callsFor('midnight', tenantA)).toHaveLength(1);
+  });
+
+  /**
+   * NOTE N1 (LOW, words only — apps/api/src/services/otoapp-jobs.ts,
+   * `UNKEYED_WORDS` and `unkeyedLine`). The api reads OTOAPP_JOBS_KEYS once,
+   * when it starts (`loadEnv`, then `buildOtoAppNightJobs` at boot). The
+   * failure tells the operator to "add it to OTOAPP_JOBS_KEYS" and stops
+   * there: a key saved without a restart (Render's "Save only") keeps every
+   * run failing, still naming the park group, with nothing saying why the
+   * added key is not read. Not silent — the run keeps failing — so not a
+   * blocker; Q22 step 3 already says "and redeploy it".
+   * FIX: end both texts with the restart, e.g. "…add it to OTOAPP_JOBS_KEYS,
+   * then redeploy the api, which reads the keys only when it starts".
+   */
+  it.fails('N1: the unkeyed failure says the api reads OTOAPP_JOBS_KEYS only when it starts', async () => {
+    stub.reset();
+    const date = '2026-12-20';
+    const env = envFor([[tenantA, keyA]]);
+    const employee = await appEmployee(tenantV, await appBranch(tenantV));
+    try {
+      const job = nightJob('midnight', () => at(date, '00:30'), env);
+      expect(await runnerFor(job, env).runJob(job.name, { force: true })).toBe('failed');
+      const [run] = await runsFor(job.name, date);
+      expect(run!.errorCode).toBe(NIGHT_JOB_UNKEYED);
+      const unkeyed = detailOf(run!).groups.find((g) => g.tenantId === tenantV)!;
+      for (const text of [run!.errorMessage ?? '', unkeyed.error ?? '']) expect(text).toMatch(/redeploy|restart/i);
+    } finally {
+      // V's staff go with the check, so the tests below meet A alone.
+      await q('delete from employees where id = $1', [employee]);
+    }
+  });
+
+  it('F3: "already running" at the first tick only, then the batch runs — every run green, the night done once', async () => {
+    stub.reset();
+    const date = '2026-12-17';
+    const env = envFor([[tenantA, keyA]]);
+    const tick = (time: string) => {
+      const job = nightJob('midnight', () => at(date, time), env);
+      return runnerFor(job, env).runJob(job.name, { force: true });
+    };
+    stub.reply = running;
+    expect(await tick('00:05')).toBe('ok');
+    stub.reply = (call) => stub.ok(call);
+    expect(await tick('00:10')).toBe('ok');
+    expect(await tick('00:15')).toBe('ok');
+    const runs = await runsFor(OTOAPP_MIDNIGHT_JOB, date);
+    expect(runs.map((r) => r.outcome)).toEqual(['ok', 'ok', 'ok']);
+    expect([...runs].reverse().map((r) => detailOf(r).groups[0]!.outcome)).toEqual(['locked', 'ran', 'done']);
+    expect(await successesFor(OTOAPP_MIDNIGHT_JOB, date, tenantA)).toBe(1);
+  });
+
+  it('F3: across the date boundary — the last tick of one date and the first of the next are each a first "already running" (green); the second of the new date fails', async () => {
+    stub.reset();
+    const env = envFor([[tenantA, keyA]]);
+    const tick = (date: string, time: string) => {
+      const job = nightJob('midnight', () => at(date, time), env);
+      return runnerFor(job, env).runJob(job.name, { force: true });
+    };
+    stub.reply = running;
+    expect(await tick('2026-12-18', '23:58')).toBe('ok');
+    expect(await tick('2026-12-19', '00:03')).toBe('ok');
+    expect(await tick('2026-12-19', '00:08')).toBe('failed');
+    const [run] = await runsFor(OTOAPP_MIDNIGHT_JOB, '2026-12-19');
+    expect(run).toMatchObject({ outcome: 'failed', errorCode: NIGHT_JOB_RUNNING });
+    expect(run!.errorMessage).toContain('at an earlier tick of 2026-12-19 too');
+  });
+});
+
+// =============================================================================
 // J. The real app
 // =============================================================================
 
@@ -1269,6 +1450,74 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // J4b. The fix round's F2, attacked (the re-review)
+  // ---------------------------------------------------------------------------
+
+  describe("J4b. F2 at its edges — due exactly at Bangkok midnight, 06:59, 07:00 and 23:59; made by hand first, then the night's batches", () => {
+    const TIMES = ['00:00', '06:59', '07:00', '23:59'] as const;
+    const t = { tenant: '', manual: '', byTime: {} as Record<string, string> };
+    const generated: number[] = [];
+
+    beforeAll(async () => {
+      t.tenant = await appTenant('t2');
+      const branch = await appBranch(t.tenant);
+      const k = await directoryKey(t.tenant, ['jobs:run']);
+      const def = async (time: string, title: string) =>
+        (
+          await q<{ id: string }>(
+            `insert into tasks (tenant_id, branch_id, title, recurrence, is_recurring_definition, preferred_due_time)
+             values ($1, $2, $3, 'daily', true, $4) returning id`,
+            [t.tenant, branch, title, time],
+          )
+        )[0]!.id;
+      for (const time of TIMES) t.byTime[time] = await def(time, `ZZ r3rev daily at ${time}`);
+      // Made by hand first: a recurring task created in the app makes today's
+      // instance at once (routes.ts, "Bangkok now" as the target date).
+      t.manual = await def('06:30', 'ZZ r3rev made by hand at 06:30');
+      await inApp(
+        `await import('./server/config/env.ts');
+         const { generateInstanceForDefinition } = await import('./server/core/taskGeneration.ts');
+         await generateInstanceForDefinition(${JSON.stringify(t.tenant)}, ${JSON.stringify(t.manual)}, new Date(Date.now() + 7 * 60 * 60 * 1000));
+         process.exit(0);`,
+        { DATABASE_URL: dbUrl },
+      );
+      for (let i = 0; i < 2; i += 1) {
+        const a = await post(origin.platform, 'midnight', k);
+        expect(a.status, JSON.stringify(a.body)).toBe(200);
+        expect(a.body.ok, JSON.stringify(a.body)).toBe(true);
+        generated.push(stepOf(a, 'taskGeneration').counts.generated!);
+      }
+    }, 180_000);
+
+    const rowsOf = (definition: string) =>
+      q<{ d: string; due: string }>(
+        `select generated_for_date as d, to_char(due_at, 'YYYY-MM-DD"T"HH24:MI') as due from tasks where parent_task_id = $1`,
+        [definition],
+      );
+
+    it('the first batch makes one instance of each timed task, the second none', () => {
+      expect(generated).toEqual([TIMES.length, 0]);
+    });
+
+    it('each timed task has ONE instance, made for today and due at its Bangkok time today', async () => {
+      const { today } = bangkokDays();
+      for (const time of TIMES) {
+        const rows = await rowsOf(t.byTime[time]!);
+        expect(rows, time).toHaveLength(1);
+        expect(rows[0]!.d, time).toBe(today);
+        // The app keeps naive UTC timestamps: the wall time as stored.
+        expect(rows[0]!.due, time).toBe(at(today, time).toISOString().slice(0, 16));
+      }
+    });
+
+    it('the task made by hand first is not made again by either batch', async () => {
+      const rows = await rowsOf(t.manual);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.d).toBe(bangkokDays().today);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // J5. The manual triggers, under both switches
   // ---------------------------------------------------------------------------
 
@@ -1405,5 +1654,128 @@ describe.skipIf(!HAS_APP_RUNTIME)('J. the real app', () => {
         holder.release();
       }
     }, 180_000);
+
+    // -------------------------------------------------------------------------
+    // The fix round's F4 and the Q26 wording, attacked (the re-review). These
+    // run the in-process 03:00 batch for every park group here, so they stay
+    // at the end of J6, the last section.
+    // -------------------------------------------------------------------------
+
+    /** The lock any of the three batches takes, by its name and park group. */
+    const lockOf = (job: OtoAppNightJob, tenant: string): unknown[] => [0x0712, `otoapp_night:${job}:${tenant}`];
+
+    /** The app's own timers, captured; one fired as Node fires it. The exit code and every line, never a throw. */
+    async function fireTimer(index: number, opts: { await: boolean; env?: Record<string, string>; sentry?: boolean }) {
+      const child = spawn(
+        process.execPath,
+        [
+          tsxCli(),
+          '--input-type=module',
+          '-e',
+          `await import('./server/config/env.ts');
+           ${opts.sentry ? "await import('./server/sentry.ts');" : ''}
+           const realTimeout = globalThis.setTimeout;
+           const timers = [];
+           const capture = (fn) => { timers.push(fn); return realTimeout(() => undefined, 0).unref(); };
+           globalThis.setTimeout = capture;
+           globalThis.setInterval = capture;
+           const { startScheduledJobs } = await import('./server/scheduled-jobs.ts');
+           startScheduledJobs('inprocess');
+           ${opts.await ? `await timers[${index}]();` : `timers[${index}](); await new Promise((resolve) => realTimeout(resolve, 20000));`}
+           console.log('ZZ_APP_STILL_UP');
+           process.exit(0);`,
+        ],
+        {
+          cwd: APP_DIR,
+          env: { ...process.env, ...HARNESS_ENV, OTOAPP_JOBS: 'inprocess', DATABASE_URL: dbUrl, SENTRY_DSN: '', ...opts.env },
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
+      );
+      children.push(child);
+      let output = '';
+      child.stdout!.on('data', (c: Buffer) => (output += c.toString('utf8')));
+      child.stderr!.on('data', (c: Buffer) => (output += c.toString('utf8')));
+      const code = await new Promise<number | null>((resolve) => child.on('exit', resolve));
+      return { code, output };
+    }
+
+    it("F4: the endpoint's lock is the same name for the 03:00 batch and the six-hourly check — held, each answers 409 and runs nothing; let go, each runs", async () => {
+      for (const job of ['reconcile', 'presence'] as const) {
+        const holder = await appPool.connect();
+        try {
+          await holder.query('select pg_advisory_lock($1::int4, hashtext($2))', lockOf(job, m.tenant));
+          expect(await post(origin.platform, job, m.key), job).toMatchObject({ status: 409, body: { error: 'job_running' } });
+        } finally {
+          await holder.query('select pg_advisory_unlock($1::int4, hashtext($2))', lockOf(job, m.tenant));
+          holder.release();
+        }
+        const ran = await post(origin.platform, job, m.key);
+        expect(ran.status, `${job}: ${JSON.stringify(ran.body)}`).toBe(200);
+        expect(ran.body.ok, job).toBe(true);
+      }
+    });
+
+    it("F4: the in-process 03:00 timer stands down for M while M's 03:00 batch is held — M's leaver stays LEAVING, N's moves to LEFT — and says so", async () => {
+      const leaving = async (tenant: string) =>
+        appEmployee(tenant, await appBranch(tenant), { employment_state: 'LEAVING', last_working_day: '2020-01-01 00:00:00' });
+      const leaverM = await leaving(m.tenant);
+      const leaverN = await leaving(n.tenant);
+      const stateOf = async (id: string) => (await q<{ s: string }>('select employment_state as s from employees where id = $1', [id]))[0]!.s;
+      const holder = await appPool.connect();
+      try {
+        await holder.query('select pg_advisory_lock($1::int4, hashtext($2))', lockOf('reconcile', m.tenant));
+        // timers[1] is the 03:00 timer (scheduleDaily(3, 0)); its callback awaits the batch.
+        const { code, output } = await fireTimer(1, { await: true });
+        expect(code, output).toBe(0);
+        expect(output).toContain('ZZ_APP_STILL_UP');
+        expect(output).toContain(`reconcile: park group ${m.tenant}'s batch is already running elsewhere (the platform's job endpoint), so it is not run here`);
+        expect({ m: await stateOf(leaverM), n: await stateOf(leaverN) }).toEqual({ m: 'LEAVING', n: 'LEFT' });
+      } finally {
+        await holder.query('select pg_advisory_unlock($1::int4, hashtext($2))', lockOf('reconcile', m.tenant));
+        holder.release();
+      }
+    }, 180_000);
+
+    it("Q26 as the plan now words it: one park group's failed clean-up — the others' clean-up still runs, the error still escapes the 03:00 timer, and with no SENTRY_DSN the whole app process ends; with SENTRY_DSN set it stays up", async () => {
+      const old = async (tenant: string) => {
+        const employee = await appEmployee(tenant, await appBranch(tenant));
+        await q(
+          `insert into employee_role_availability (tenant_id, employee_id, role_id, role_name, unavailable_date) values ($1, $2, 'zz-role', 'ZZ role', '2020-01-01')`,
+          [tenant, employee],
+        );
+        return employee;
+      };
+      const e = await appTenant('q26e');
+      const f = await appTenant('q26f');
+      const employeeE = await old(e);
+      const employeeF = await old(f);
+      const left = async (employee: string) =>
+        Number((await q<{ n: string }>('select count(*) as n from employee_role_availability where employee_id = $1', [employee]))[0]!.n);
+
+      await refusing(
+        'availabilityCleanup',
+        'employee_role_availability',
+        `old.tenant_id = '${e}'`,
+        async () => {
+          // The 03:00 timer's callback, unawaited, as Node's timer calls it.
+          const bare = await fireTimer(1, { await: false });
+          expect(bare.code, bare.output).not.toBe(0);
+          expect(bare.output).not.toContain('ZZ_APP_STILL_UP');
+          expect(bare.output).toContain('zz review: availabilityCleanup refused');
+          // Every other park group's clean-up ran before the error escaped.
+          expect({ e: await left(employeeE), f: await left(employeeF) }).toEqual({ e: 1, f: 0 });
+
+          const withSentry = await fireTimer(1, {
+            await: false,
+            sentry: true,
+            env: { SENTRY_DSN: 'http://zzkey@127.0.0.1:9/1', APP_ENV: 'dev' },
+          });
+          expect(withSentry.code, withSentry.output).toBe(0);
+          expect(withSentry.output).toContain('ZZ_APP_STILL_UP');
+          expect(await left(employeeE)).toBe(1);
+        },
+        'before delete',
+      );
+    }, 240_000);
   });
 });
