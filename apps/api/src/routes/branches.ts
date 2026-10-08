@@ -93,8 +93,8 @@ export async function branchRoutes(app: App): Promise<void> {
        * 1). `core.branch.id` reads back in lower case whatever was sent, but
        * the OTO App's `core_branch_id` is text and matches case-sensitively:
        * an upper-case id carried through would put the park outside the seam
-       * and outside the `otoapp_v` views. The answer then names the branch the
-       * way every later read of it will.
+       * and outside the views the till reads the app's events through. The
+       * answer then names the branch the way every later read of it will.
        */
       const sentId = sentRaw?.toLowerCase();
       const claim = await claimClientId(
