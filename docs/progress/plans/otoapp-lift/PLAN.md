@@ -225,7 +225,22 @@ module map below is read from the routes and the schema, not from memory.
   instance. Fix: the platform's job runner owns the schedule. The advisory
   lock and `ops_last` make each batch run once per Bangkok date. A caught
   error becomes a failed step, a failed step becomes a failed run on
-  Failures, and Retry re-runs it.
+  Failures, and Retry re-runs it. The app's own timers, where they still
+  run (`inprocess`), take the same per-park-group lock as the platform's
+  calls, so two instances that disagree about the switch cannot run one
+  night side by side (round 3 review, F4).
+- **A second batch of one date makes a recurring task twice (round 3
+  review, F2).** The midnight task generation looked for the day's instance
+  by its due time, between `startOfDay` and `endOfDay` of a date shifted +7
+  hours in a UTC process: 07:00 to 06:59 Bangkok. An instance due before
+  07:00 Bangkok (stored as the previous UTC day) was never found, so a second
+  batch of the same date made it again. In-process the batch ran once a
+  night and it never showed; the platform's runner runs a date's batch again
+  after a failure, after a call that timed out, and on the day of the switch.
+  Fix: the instance is looked up by the date it was made for
+  (`generated_for_date`, which both of the app's inserts fill), as the app's
+  template generator already looks its own up
+  (`server/core/taskGeneration.ts`).
 - **Shared tables answer across park groups.** `settings` (whose key is
   globally unique), `templates`, `policy_documents`, `asset_catalog`,
   `activity_log` and `attention_items` have no tenant column. The lift made
@@ -389,8 +404,10 @@ module map below is read from the routes and the schema, not from memory.
     no timers under `platform`, and the endpoint refuses under `inprocess`.
   - The app's two manual triggers (`/api/admin/run-departed-deactivation`,
     `/api/scheduler/transition-left`) are called by no screen. Under
-    `platform` they answer in words pointing at Run now on the Console's
-    Health page, so a call never races the scheduled run. Under
+    `platform` they answer in words pointing at the platform's 03:00 run on
+    the Console's Health page and Retry on its Failures page, so a call
+    never races the scheduled run. (Not at Run now: that is a staging test
+    control, which production refuses — round 3 review, F5, and Q22.) Under
     `inprocess` they run as today, for the caller's park group only.
   - Finance Sync is not here: the app has no timer for it, only manual
     routes (section 6, Q15).
@@ -416,8 +433,39 @@ module map below is read from the routes and the schema, not from memory.
       `OTOAPP_DEPARTED_ACCOUNT_ACTIVE`) on Failures (Q4, Q23).
     - The Console's Health test controls gain Run now for each of the three
       and "Fail the OTO App's presence check once", the forced failure whose
-      Retry runs the check for real (ticket QA step 3).
+      Retry runs the check for real (ticket QA step 3). Test controls exist
+      only where `OPS_TEST_CONTROLS` is on (staging); production has no Run
+      now (Q22).
     - No migration: `scopes` is free text, and the run records exist.
+  - **The round 3 review's fix round.**
+    - A park group the app holds staff in, with no key here, fails every
+      run (review F1). The switch is the app's, not a park group's: under
+      `platform` the app runs no timer for any park group. So every due run,
+      after its keyed park groups, reads the park groups the app holds staff
+      in through the employee repository (`otoapp_v.employees`, distinct
+      `tenant_id`) and fails naming each one this deployment holds no key
+      for (`OTOAPP_NIGHT_JOB_UNKEYED`), at every tick until the key is
+      added. The keyed park groups still run and are recorded done. A
+      deployment holding no key at all is still the no-op: it has taken
+      nothing over, and the app's own timers run the night. One whose
+      database has no employee view runs its keyed park groups and says
+      that nothing could be checked.
+    - "Already running" twice fails the run (review F3). The first 409
+      `job_running` of a date stays `locked` and green (a call that timed
+      out, still finishing). Answered so again at a later tick of the same
+      date — for the six-hourly check, at the run after — the batch the app
+      holds has not finished since, and the run fails with
+      `OTOAPP_JOB_RUNNING`, so Failures and the `ops.failing` alert see it.
+    - The app's own timers take the endpoint's lock (review F4): under
+      `inprocess` each batch runs one park group at a time holding
+      `otoapp_night:<batch>:<park group>` (namespace `0x0712`,
+      `server/lib/nightBatchLock.ts`, the endpoint's own), and skips, in the
+      log, a park group held elsewhere. Every table the batches touch has a
+      NOT NULL `tenant_id` referencing `tenants`, so the park groups one by
+      one reach every row the batch reached at once. Where the park groups
+      or a lock cannot be read, the batch runs as it always did.
+    - Task generation finds a date's instance by the date it was made for
+      (review F2, section 4).
 - **Tenant-bound Directory HR reads**, as in section 4. The shared key keeps
   working only where it is set, and only for the default tenant (Q13).
 - **The restore rehearsal in CI** (ticket: cutover compatibility).
@@ -671,20 +719,41 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   five-minute day-end jobs record theirs.
 - **A night the app is down for the whole Bangkok day is not caught up**
   after the date turns (Q24). The app's batch works on "today" whenever it
-  runs, so the next night still closes every stale clock-in and moves every
-  leaver; only the lost day's recurring task instances are never made.
+  runs, so the next night still moves every leaver and closes every stale
+  clock-in — but a day late: its midnight step writes the lost night's
+  automatic clock-outs at the NEXT midnight, so a forgotten clock-in from
+  the day before the lost night is recorded as a shift a day too long. A
+  guest left checked in that day is checked out at that later midnight too,
+  a stay a day too long. The lost day's recurring task instances are never
+  made.
 - **A failed park group's batch runs again at the next tick**, steps that
-  already finished included. Every step of the app's batches is safe to
-  repeat: a second run finds nothing left to change.
+  already finished included. Each step of the app's batches is safe to run
+  again after itself: a second run finds nothing left to change. That was
+  not true of task generation until the round 3 review: a task due before
+  07:00 Bangkok was made a second time (F2, fixed — section 4). Two runs at
+  once are kept apart by the per-park-group lock, which the app's own timers
+  now take too (F4). While Attention writes are paused nothing else repeats;
+  when they resume, the presence step raises its stuck clock-in items again
+  on each run, as the six-hourly check already does.
 - **On the day of the switch the batches may run a second time.** The app's
   own timers ran that night's 00:01 and 03:00 batches in-process; the
   platform's first tick after the flip finds no record of them and runs
-  them again, which changes nothing.
-- **Under `inprocess` the 03:00 timer still stops when the clean-up fails.**
-  The availability clean-up is the one step whose error the app lets escape,
-  and its timer is re-armed only after the batch returns, so one failure
-  ends the in-process 03:00 schedule until the next restart (Q26). Under
-  `platform` the escaped error is a failed step and the next tick runs again.
+  them again, which changes nothing now that task generation finds a date's
+  instance by its date (F2).
+- **Under `inprocess` the 03:00 timer still stops when the clean-up fails —
+  and without Sentry, the whole app does.** The availability clean-up is the
+  one step whose error the app lets escape, and its timer is re-armed only
+  after the batch returns, so one failure ends the in-process 03:00 schedule
+  until the next restart. The escaped error is also an unhandled rejection:
+  with `SENTRY_DSN` set, Sentry's handler logs it and only the 03:00 timer
+  stops; with no `SENTRY_DSN`, nothing handles it and Node ends the WHOLE app
+  process, every screen down until it is restarted (Q26). Under `platform`
+  the escaped error is a failed step and the next tick runs again.
+- **A park group the app holds with no jobs key fails every night-job run**
+  (review F1): every five minutes for the daily batches, at each six-hourly
+  check, until it has a key. The keyed park groups are run all the same.
+- **A batch still running at a second tick fails the run** (review F3),
+  where before it stayed green all night with nothing done.
 - **A leaver whose platform account stays on is filed every night** (Q4,
   Q23), grouped on Failures, as the employee copy's standing cases are (Q17).
 - **An app-only branch strands its staff branchless on the platform.** The
@@ -808,10 +877,25 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   to `OTOAPP_JOBS=platform` only after one platform-run success. But the
   app's job endpoint refuses while the app runs its own timers (that refusal
   is what stops a batch running twice), so no platform run can succeed
-  before the flip. Default as built: issue the `jobs:run` key, set it on the
-  api, flip the app, then press Run now for each OTO App job on Health and
-  see it succeed; flip back to `inprocess` if one fails. Is that order
-  acceptable?
+  before the flip. And Run now, which round 3 put on Health, is a staging
+  test control (`OPS_TEST_CONTROLS`): production refuses it. Default as
+  built, for production, done between 03:00 and 23:00 Bangkok (the day's two
+  batches already run in-process, the next not yet due):
+  1. issue a `jobs:run` key in the app for EVERY park group it holds staff
+     in — one left out fails every run, naming it (F1);
+  2. flip the app to `OTOAPP_JOBS=platform` and redeploy it: its timers
+     stop, and the platform's jobs are still no-ops;
+  3. set `OTOAPP_JOBS_KEYS` on the api and redeploy it, the same day:
+     between steps 2 and 3 no night work runs anywhere, and a platform
+     holding no key at all is a no-op that raises nothing.
+  Within five minutes the platform's first ticks run the day's 00:01 and
+  03:00 batches a second time, which changes nothing (section 10), and Health
+  shows each job's run — or Failures shows why, where Retry runs it again
+  once the cause is fixed. The presence check runs at its next six-hourly
+  interval. If a batch keeps failing, flip the app back to `inprocess` and
+  remove the keys. On staging Run now shows the same at once. Is that order
+  acceptable? The alternative is a production Run now: a guarded, audited
+  Console action outside the test controls (not built).
 - **Q23. Which leavers' platform accounts are listed (round 3, extends Q4).**
   The app switches off a leaver's OTO App login by last working day alone,
   and only the login an employee record carries in `user_id`. The platform's
@@ -826,21 +910,30 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 - **Q24. A night the app is down all day (round 3).** If the app answers
   nobody from 00:01 until the Bangkok date turns, that night is not run
   later. The app's batch works on "today" whenever it runs, so the next
-  night's batch still closes every stale clock-in and moves every leaver;
-  only the lost day's recurring task instances are never made. The app's own
-  timers lose the same night whenever the process is down at 00:01. Default:
-  as the app. The alternative is a catch-up that makes a missed day's tasks
-  (a new rule).
+  night's batch still moves every leaver and closes every stale clock-in,
+  but a day late: the lost night's automatic clock-outs are written at the
+  next midnight, so a forgotten clock-in is recorded as a shift a day too
+  long (and a guest left checked in is checked out at that midnight, a stay
+  a day too long). The lost day's recurring task instances are never made.
+  The app's own timers lose the same night, the same way, whenever the
+  process is down at 00:01. Default: as the app. The alternative is a
+  catch-up that runs a missed date's batch for that date (a new rule).
 - **Q25. Run now for a daily batch (round 3).** Run now does not run a
   park group's night again once it is done for the date, and runs nothing
   before the batch's hour; the app's manual triggers, which it replaces
   under `platform`, ran at any time. Default: as built, which is H8's "once
   per date". An administrator who needs a leaver's login off at once
   deactivates the user in the app. The alternative is a forced Run now that
-  re-runs a done night (every step is safe to repeat).
+  re-runs a done night (each step is safe to run again after itself, now
+  that task generation finds a date's instance by its date — section 4, F2;
+  and Run now itself is staging-only — Q22).
 - **Q26. The in-process 03:00 timer after a failed clean-up (round 3).** Under
   `inprocess` the app keeps its own behaviour: a failed availability
-  clean-up ends the 03:00 schedule until the next restart (section 10).
+  clean-up ends the 03:00 schedule until the next restart (section 10). It
+  does more where `SENTRY_DSN` is not set: the escaped error is an unhandled
+  rejection, nothing handles it, and Node ends the WHOLE app process — every
+  screen down until the app is restarted — not just the 03:00 timer. With
+  `SENTRY_DSN` set, Sentry's handler logs it and only the timer stops.
   Should the in-process timer be made to carry on as well? Default: keep the
   app's behaviour; the platform owns the schedule from the switch, and there
   the failure is a failed step and the next tick runs again.
@@ -855,8 +948,8 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 | H4 | One park group's staff land in another operator | A two-tenant fixture: tenant B's employees never reach operator A. An unanchored tenant is skipped and named in the run |
 | H5 | A platform edit to a copied employee is silently undone | `PATCH /me` on an `otoapp` row refuses name, nickname, email and phone. No other platform route writes those fields on such a row |
 | H6 | A leaver keeps a benefit | Mark the employee LEFT in the app: the row is archived, live cards are revoked, a scan is refused, and a rehire gets a new card |
-| H7 | The copy stops and nobody notices | `ops_expectation` on Health. A forced failure appears on Failures, and a missed run raises the watchdog alert |
-| H8 | A night batch runs twice | Two concurrent invocations: one runs and one is `locked`. Two batches for one date: one success. The auto clock-out inserts one OUT per stale IN. Under `platform` the app starts no timers; under `inprocess` the endpoint refuses |
+| H7 | The copy stops and nobody notices | `ops_expectation` on Health. A forced failure appears on Failures, and a missed run raises the watchdog alert. For the night jobs (round 3 review): a park group the app holds with no key fails every run naming it (F1), and a batch still running at a second tick fails the run (F3) |
+| H8 | A night batch runs twice | Two concurrent invocations: one runs and one is `locked`. Two batches for one date: one success. The auto clock-out inserts one OUT per stale IN. Under `platform` the app starts no timers; under `inprocess` the endpoint refuses. Round 3 review: a second midnight batch of one date makes no second task instance, due at 06:30 or 18:00 (F2); an in-process timer stands down for a park group whose batch the endpoint holds, and runs the others (F4) |
 | H9 | A night is lost when the app is down | The first invocation fails, the next tick runs it, and the date is marked done once |
 | H10 | The backfill gives rows to the wrong tenant | A two-tenant fixture with branch-linked, employee-linked and branchless rows: each lands in its tenant, none is left null, and the counts per tenant are unchanged |
 | H11 | The settings change breaks the running release, or a park group's settings write fails on the old unique | Release N's code passes on both the old and the new constraint shape. The old unique is dropped only in release N+1 (4b). In 4a, another park group writing a key the default group holds is refused in words, never a 500 |
