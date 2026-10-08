@@ -1342,11 +1342,11 @@ describe('E. read off the code: threading, seams, fences and the census', () => 
     expect(schema).toMatch(/key: text\("key"\)\.notNull\(\),/);
   });
 
-  it('nothing of rounds 5 to 7: the time-off approval 503s and the legacy-table guard stand (the Attention 503s were 4b’s, and are gone); no finance key migration', () => {
+  it('nothing of rounds 6 and 7: the legacy-table guard stands (the Attention 503s were 4b’s and the time-off approval 503s round 5’s, and both are gone); no finance key migration', () => {
     const routes = readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8');
     expect(routes).not.toMatch(/Attention rules are unavailable until tenant settings are isolated/);
     expect(routes).not.toMatch(/Attention updates are unavailable until tenant ownership is recorded/);
-    expect(routes.match(/Time-off approval is unavailable until approval tracking is enabled/g)?.length).toBe(2);
+    expect(routes).not.toMatch(/Time-off approval is unavailable until approval tracking is enabled/);
     expect(routes.match(/legacyHrUser\(/g)?.length).toBe(11);
     for (const e of journal().entries.filter((x) => x.idx > 0)) {
       const text = readFileSync(join(APP_MIGRATIONS, `${e.tag}.sql`), 'utf8');

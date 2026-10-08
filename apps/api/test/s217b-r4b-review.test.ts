@@ -1147,7 +1147,7 @@ function argumentsAt(text: string, open: number): string {
 }
 
 describe('C. Attention, read off the code', () => {
-  it('every Attention writer in the app’s whole tree names the park group of the row it is about: nine creates, eight upserts, seventeen in all', () => {
+  it('every Attention writer in the app’s whole tree names the park group of the row it is about: ten creates (round 5 restored the sick-day coverage alert), eight upserts, eighteen in all', () => {
     const found: string[] = [];
     for (const { rel, text } of appSources()) {
       for (const m of text.matchAll(/\bstorage\.(createAttentionItem|upsertAttentionItem)\(/g)) {
@@ -1167,6 +1167,8 @@ describe('C. Attention, read off the code', () => {
         'server/routes.ts createAttentionItem employee.tenantId',
         'server/routes.ts createAttentionItem currentRun.tenantId',
         'server/routes.ts createAttentionItem currentRun2.tenantId',
+        // Round 5 (Q1, H14): the sick-day coverage alert, in the sick person's park group.
+        'server/routes.ts createAttentionItem employee.tenantId',
         // The night batches: the presence row, the time event, the assignment.
         'server/scheduled-jobs.ts createAttentionItem presence.tenantId',
         'server/scheduled-jobs.ts createAttentionItem row.tenant_id',
@@ -1442,9 +1444,9 @@ describe('E. seams, fences and the plan', () => {
     expect(text).not.toMatch(/templates|policy_documents|asset_catalog|i18n_translations|leave_policies|people|xero_|cash_|pl_facts|GRANT|REVOKE/i);
   });
 
-  it('nothing of rounds 5 to 7 in the app: the time-off approval 503s, the legacy-table guard, Data Admin’s Attention 503, and face still the app’s', () => {
+  it('nothing of rounds 6 and 7 in the app: the legacy-table guard, Data Admin’s Attention 503, and the face matcher still the app’s (round 5 lifted the time-off approval 503s and stood the face road down in the routes, not in the matcher)', () => {
     const routes = readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8');
-    expect(routes.match(/Time-off approval is unavailable until approval tracking is enabled/g)?.length).toBe(2);
+    expect(routes).not.toMatch(/Time-off approval is unavailable until approval tracking is enabled/);
     expect(routes.match(/legacyHrUser\(/g)?.length).toBe(11);
     expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toMatch(
       /router\.use\("\/attention-items", \(_req: Request, res: Response\) => \{\s*res\.status\(503\)/,

@@ -658,7 +658,8 @@ describe('C. read off the code', () => {
       }
     }
     // The round 4a review counted nine gated creators: seven in routes.ts, two in the night batches.
-    expect(counted).toEqual({ createAttentionItem: 9, upsertAttentionItem: 8 });
+    // Round 5 restored the app's tenth, the sick-day coverage alert (Q1, H14), in the person's park group.
+    expect(counted).toEqual({ createAttentionItem: 10, upsertAttentionItem: 8 });
     expect(offenders).toEqual([]);
   });
 
@@ -693,8 +694,9 @@ describe('C. read off the code', () => {
     expect(routes).not.toMatch(/Attention refresh is unavailable until tenant jobs are isolated/);
     expect(routes).toMatch(/holdNightBatch\(pool, "attention", scope\.tenantId\)/);
     expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toMatch(/router\.use\("\/attention-items"[\s\S]{0,120}res\.status\(503\)/);
-    // Rounds 5 to 7 untouched: the time-off approval 503s and the legacy-table guard stand.
-    expect(routes.match(/Time-off approval is unavailable until approval tracking is enabled/g)?.length).toBe(2);
+    // Rounds 6 and 7 untouched: the legacy-table guard stands. The time-off
+    // approval 503s were round 5's to lift (Q1, apps/api/test/s217b-r5.test.ts).
+    expect(routes).not.toMatch(/Time-off approval is unavailable until approval tracking is enabled/);
     expect(routes.match(/legacyHrUser\(/g)?.length).toBe(11);
   });
 
