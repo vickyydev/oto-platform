@@ -119,6 +119,15 @@ import { createTestDatabase } from '@oto/db/testing';
  *     `/api/kiosk-reception/checkins`) is in the hand-off report only, not in
  *     section 10 or a question. Prescribed fix: the three plan edits.
  *
+ * Disposition (round 5's review fixes): 1, 2, 3, 5 and 7 are fixed, and their
+ * pins are plain `it`s; each arrangement `it` beside them now proves what the
+ * fix kept (the app's rule, the happy path). 4 and 6 stand as `it.fails`
+ * records: 4 is recorded in the plan's section 10 beside Q44 as the app's own
+ * race, standing until the owner asks for the lock; 6 is put to the owner as
+ * Q46 (the plan half done, pinned as FINDING Q46 in tests/attendance.check.ts),
+ * and its pin here asserts Q46's alternative, standing while the app's default
+ * does.
+ *
  * The walkthrough debt (item 6 of the review brief): the round's acceptance
  * names ten walkthrough pages; the builder claims none and lists them as owed
  * in the hand-off, and docs/qa/SPRINT_2_ACCEPTANCE.md still reads "Testing"
@@ -229,47 +238,45 @@ describe('A. the screen and the plan, read off the code', () => {
     return text.slice(start, text.indexOf('\n  });', start));
   };
 
-  it('the drag and the group delete show the server’s words; the create and edit row mutations show a fixed sentence (the arrangement of finding 5)', () => {
+  it('the drag and the group delete show the server’s words; the create and edit row mutations keep their own sentences only where the server gives none (the arrangement of finding 5)', () => {
     expect(mutation('moveShiftRowGroupMutation')).toMatch(/onError: \(err: Error\) => \{\s*toast\(\{ title: "Failed to move shift", description: err\.message,/);
     expect(mutation('deleteShiftGroupMutation')).toMatch(/onError: \(err: Error\) => \{\s*toast\(\{ title: "Failed to delete shift group", description: err\.message,/);
-    expect(mutation('createShiftRowMutation')).toMatch(/onError: \(\) => \{\s*toast\(\{ title: "Error", description: "Failed to create shift row",/);
-    expect(mutation('updateShiftRowMutation')).toMatch(/onError: \(\) => \{\s*toast\(\{ title: "Error", description: "Failed to update shift row",/);
+    expect(mutation('createShiftRowMutation')).toMatch(/onError: \(err: Error\) => \{\s*toast\(\{ title: "Error", description: err\.message \|\| "Failed to create shift row",/);
+    expect(mutation('updateShiftRowMutation')).toMatch(/onError: \(err: Error\) => \{\s*toast\(\{ title: "Error", description: err\.message \|\| "Failed to update shift row",/);
     // The create sends no group when none is chosen, and the edit form's "Ungrouped" sends null: both reach the 400.
     expect(page()).toMatch(/shiftGroupId: selectedShiftGroupId \|\| undefined,/);
     expect(page()).toMatch(/shiftGroupId: val === "__none__" \? null : val/);
   });
 
-  it.fails('FINDING 5 (low): "Choose a shift group first" reaches the manager on the create and edit dialogs, the doors Q2 and section 1 name', () => {
+  it('FINDING 5 (low, fixed): "Choose a shift group first" reaches the manager on the create and edit dialogs, the doors Q2 and section 1 name', () => {
     for (const name of ['createShiftRowMutation', 'updateShiftRowMutation']) {
       expect(mutation(name), name).toMatch(/onError: \((err|error)(: Error)?\) => \{[\s\S]{0,200}\.message/);
     }
   });
 
-  it('Q39 and section 10 say the older shift list keeps to the branch; Q41 names only activation; the checklist history door is named nowhere (the arrangement of findings 1 and 6)', () => {
-    expect(question(39)).toMatch(/The rota view\s+\(`\/api\/rota`\) and the older shift list do keep to the branch\./);
+  it('Q39 keeps the branch half of the coverage read with the app as default; Q41 still names only activation; Q46 names the checklist history, the tablet list and the revoke, the app as default (the arrangement of findings 1 and 6, recorded)', () => {
+    expect(question(39)).toMatch(/a manager limited to one\s+branch still reads every branch's flagged shifts, the app's rule/);
+    expect(question(39)).toMatch(/Default: the branch rule\s+as the app \(none\), for the rota and for that read/);
     expect(question(41)).toMatch(/can make a reception kiosk\s+code for any branch of their park group/);
-    expect(plan()).not.toMatch(/checker-history/);
-    expect(plan()).not.toMatch(/shifts-needing-coverage/);
+    expect(question(41)).not.toMatch(/revoke/);
+    const q46 = question(46);
+    for (const door of ['checker-history', '/kiosk-devices`', '/revoke`']) expect(q46, door).toContain(door);
+    expect(q46).toMatch(/Default: as the app\./);
   });
 
-  it.fails('FINDING 6 (low): the plan names the doors the restricted-branch proof did not hold — the checklist history, and the tablet list and revoke — with the app as default', () => {
-    expect(plan()).toMatch(/checker-history/);
-    expect(question(41)).toMatch(/revoke/);
-  });
-
-  it.fails('FINDING 1, the plan half (medium): Q39 no longer says the older shift list keeps to the branch, and names the coverage read', () => {
+  it('FINDING 1, the plan half (medium, fixed): Q39 no longer says the older shift list keeps to the branch, and names the coverage read', () => {
     expect(question(39)).not.toMatch(/the older shift list do keep to the branch/);
     expect(plan()).toMatch(/shifts-needing-coverage/);
   });
 
-  it('Q38 defaults to "as built", which runs the later approve the live app never ran; Q31’s round 5 placement of leave_policies is "still owed" with no round named; the 07:00 board start is nowhere in the plan (the arrangement of finding 7)', () => {
+  it('Q38 still defaults to "as built", which runs the later approve the live app never ran; Q40 no longer calls the leave fix "still owed"; the reception board’s day start is in section 10 (the arrangement of finding 7)', () => {
     expect(question(38)).toMatch(/so\s+in\s+the\s+live\s+app\s+it\s+never\s+ran\.\s+As\s+built\s+it\s+runs/);
     expect(question(38)).toMatch(/Default: as built/);
-    expect(question(40)).toMatch(/whose round 5 placement was not in round 5's row and\s+is still owed\./);
-    expect(section('10. Known effects')).not.toMatch(/kiosk-reception|reception board|reception tablet's board/);
+    expect(question(40)).not.toMatch(/is still owed/);
+    expect(section('10. Known effects')).toMatch(/\*\*The reception tablet's day starts at 07:00 Bangkok\*\*[\s\S]{0,120}`\/api\/kiosk-reception\/checkins`/);
   });
 
-  it.fails('FINDING 7 (low): Q38 defaults to the live app or says it departs from it; leave_policies has a named round; the reception board’s 07:00 day start is a known effect or a question', () => {
+  it('FINDING 7 (low, fixed): Q38 defaults to the live app or says it departs from it; leave_policies has a named round; the reception board’s 07:00 day start is a known effect or a question', () => {
     expect(question(38)).toMatch(/Default: (the live app|as the live app)|departs from the live app/);
     expect(question(40)).toMatch(/leave_policies[^.]*\b(in|to|with) round [6-8]\b|leave_policies[^.]*its own slice/);
     expect(section('10. Known effects')).toMatch(/07:00/);
@@ -712,7 +719,12 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     expect(r.assignment.status, r.assignment.text).toBe(201);
   }, 60_000);
 
-  it.fails('FINDING 4 (low): an approved sick day never leaves the person on a rota shift that day without a coverage alert, whichever route wrote last', async () => {
+  // FINDING 4 stands. The effect is recorded in the plan's section 10 beside
+  // Q44 as the app's own race (neither route holds anything across its check
+  // and its write), and this pin stays `it.fails` until the owner asks for the
+  // lock: a per-person transaction-scoped advisory lock taken by the time-off
+  // create and the assignment creates (single and batch). It flips then.
+  it.fails('FINDING 4 (low, standing — section 10 beside Q44): an approved sick day never leaves the person on a rota shift that day without a coverage alert, whichever route wrote last', async () => {
     const r = await race();
     const left = await count('select count(*) as n from schedule_assignments where employee_id = $1 and shift_date = $2', [r.person, r.date]);
     const alerts = (await coverage(r.person)).length;
@@ -876,16 +888,15 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     return (res.body as { id: string }[]).map((s) => s.id);
   };
 
-  it('E1. the arrangement of finding 1: with a branch named the coverage read keeps a limited manager to it; with none it answers branch Y and park group B too, and B’s admin reads A’s', async () => {
+  it('E1. the arrangement of finding 1: with a branch named the coverage read keeps a limited manager to it; with none it still answers their park group’s branch Y (Q39’s branch half, the app’s rule), and B’s admin reads B’s own', async () => {
     const rows = await coverageFixture();
     const denied = await call('GET', `/api/shifts-needing-coverage?branchId=${A.y}`, { cookie: A.limited.cookie });
     expect(denied.status).toBe(403);
-    const limited = await coverageList(A.limited.cookie);
-    expect(limited).toEqual(expect.arrayContaining([rows.ax, rows.ay, rows.bx]));
-    expect(await coverageList(B.admin.cookie)).toEqual(expect.arrayContaining([rows.ax, rows.ay]));
+    expect(await coverageList(A.limited.cookie)).toEqual(expect.arrayContaining([rows.ax, rows.ay]));
+    expect(await coverageList(B.admin.cookie)).toContain(rows.bx);
   });
 
-  it.fails('FINDING 1 (medium): the coverage read with no branch answers only the caller’s own park group', async () => {
+  it('FINDING 1 (medium, fixed): the coverage read with no branch answers only the caller’s own park group', async () => {
     const rows = await coverageFixture();
     expect(await coverageList(A.limited.cookie)).not.toContain(rows.bx);
     expect(await coverageList(B.admin.cookie)).not.toContain(rows.ax);
@@ -906,19 +917,23 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     return policies;
   }
 
-  it('E2. the arrangement of finding 2: each admin’s company-wide sick-leave save answers 200, but B’s lands on A’s row; and B’s admin reads an A employee’s leave balance', async () => {
+  it('E2. the arrangement of finding 2: each admin’s company-wide sick-leave save answers 200 and each reads back its own; a save naming another park group’s branch is the app’s 404 and writes nothing; an A employee’s leave balance answers A’s admin', async () => {
     const p = await sickLeavePolicies();
     expect(p.aSaved.status, p.aSaved.text).toBe(200);
     expect(p.bSaved.status, p.bSaved.text).toBe(200);
-    expect(p.rows).toEqual([{ tenant_id: A.tenant, annual_sick_leave_days: 3 }]);
     expect(p.bRead.body.annualSickLeaveDays).toBe(3);
+    expect((await call('GET', '/api/sick-leave-policy', { cookie: A.admin.cookie })).body.annualSickLeaveDays).toBe(12);
+    const foreignBranch = await call('POST', '/api/sick-leave-policy', { cookie: B.admin.cookie, body: { branchId: A.x, annualSickLeaveDays: 1 } });
+    expect(foreignBranch.status, foreignBranch.text).toBe(404);
+    expect(foreignBranch.body).toEqual({ message: 'Branch not found' });
+    expect(await count('select count(*) as n from sick_leave_policies where tenant_id = any($1) and (branch_id is not null or annual_sick_leave_days = 1)', [[A.tenant, B.tenant]])).toBe(0);
     const empA = await employee(A, A.x, 'balance');
-    const balance = await call('GET', `/api/employees/${empA}/leave-balance`, { cookie: B.admin.cookie });
+    const balance = await call('GET', `/api/employees/${empA}/leave-balance`, { cookie: A.admin.cookie });
     expect(balance.status, balance.text).toBe(200);
     expect(balance.body.employeeId).toBe(empA);
   });
 
-  it.fails('FINDING 2 (medium): each park group keeps its own company-wide sick-leave policy, and another park group’s employee’s leave balance is a 404', async () => {
+  it('FINDING 2 (medium, fixed): each park group keeps its own company-wide sick-leave policy, and another park group’s employee’s leave balance is a 404', async () => {
     const p = await sickLeavePolicies();
     expect(p.rows).toEqual(
       [
@@ -951,15 +966,18 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     return foreignRevoke;
   }
 
-  it('E3. the arrangement of finding 3: another park group’s revoke answers 200 and A’s tablet is signed out, while A’s device stays active', async () => {
+  it('E3. the arrangement of finding 3: another park group’s revoke is the app’s words and leaves A’s device active; A’s own revoke still deactivates the device and signs the tablet out', async () => {
     const r = await revokedFromElsewhere();
-    expect(r.revoke.status, r.revoke.text).toBe(200);
-    expect(r.revoke.body).toEqual({ success: true });
-    expect(r.after.status).toBe(401);
+    expect(r.revoke.body).toEqual({ message: 'Device not found' });
     expect(await q('select is_active from kiosk_devices where id = $1', [r.tablet.device])).toEqual([{ is_active: true }]);
+    const own = await call('DELETE', `/api/kiosk-devices/${r.tablet.device}/revoke`, { cookie: A.admin.cookie });
+    expect(own.status, own.text).toBe(200);
+    expect(own.body).toEqual({ success: true });
+    expect((await sessionOf(r.tablet.token)).status).toBe(401);
+    expect(await q('select is_active from kiosk_devices where id = $1', [r.tablet.device])).toEqual([{ is_active: false }]);
   });
 
-  it.fails('FINDING 3 (low): another park group’s revoke is the app’s 404 and A’s tablet keeps its session', async () => {
+  it('FINDING 3 (low, fixed): another park group’s revoke is the app’s 404 and A’s tablet keeps its session', async () => {
     const r = await revokedFromElsewhere();
     expect(r.revoke.status).toBe(404);
     expect(r.after.status).toBe(200);
@@ -986,6 +1004,22 @@ describe.skipIf(!HAS_APP_RUNTIME)('B to E. over HTTP against the app’s routes'
     const revoked = await call('DELETE', `/api/kiosk-devices/${tablet.device}/revoke`, { cookie: A.limited.cookie });
     expect(revoked.status, revoked.text).toBe(200);
     expect(await q('select is_active from kiosk_devices where id = $1', [tablet.device])).toEqual([{ is_active: false }]);
+  });
+
+  // FINDING 6 stands as Q46's record (PLAN.md section 11). The plan half is
+  // done (Q46 names the three doors, the app as default; the arrangement in
+  // section A reads it), so this pin now asserts Q46's ALTERNATIVE, the
+  // manager's own branches only: it stays `it.fails` while the app's default
+  // stands, and flips only if the owner answers Q46 with that rule and the app
+  // is changed. The current reach is E4 here and FINDING Q46 in
+  // tests/attendance.check.ts.
+  it.fails('FINDING 6 (low, standing — Q46): a manager limited to X is refused Y’s checklist history and Y’s reception tablets, to list or to revoke', async () => {
+    const template = randomUUID();
+    await q('insert into checklist_templates (id, tenant_id, branch_id, name) values ($1, $2, $3, $4)', [template, A.tenant, A.y, `ZZ R5RV y2 ${run}`]);
+    expect([403, 404]).toContain((await call('GET', `/api/checklists/checker-history/${template}`, { cookie: A.limited.cookie })).status);
+    expect((await call('GET', `/api/branches/${A.y}/kiosk-devices`, { cookie: A.limited.cookie })).status).toBe(403);
+    const tablet = await receptionTablet();
+    expect((await call('DELETE', `/api/kiosk-devices/${tablet.device}/revoke`, { cookie: A.limited.cookie })).status).toBe(403);
   });
 
   it('E5. the builder’s "no rule" claims, re-driven with writes: a manager limited to X assigns onto Y’s rota and retires Y’s row (Q39), and the leave-policy read refuses even X (Q40)', async () => {
