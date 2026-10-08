@@ -26,6 +26,7 @@ import {
   revokeBenefitCredential,
 } from '../services/benefit-credentials';
 import { listBenefitApplications } from '../services/benefit-checkout';
+import { raiseUnknownBenefitEmployee } from '../services/otoapp-employee-sync';
 import { branchReach } from '../services/access-control';
 import { opCtx } from '../services/tx';
 
@@ -179,7 +180,7 @@ export async function benefitRoutes(app: App): Promise<void> {
       config: { permission: 'admin:benefit:read' },
       schema: {
         description:
-          'Every current staff member of the operator (`core.employee`, read only: the OTO App is the employee master) with their benefit role and override today, any change saved for a later day, and the profile a scan would apply today.',
+          'Every current staff member of the operator (`core.employee`, read only: the OTO App is the employee master) with their benefit role and override today, any change saved for a later day, and the profile a scan would apply today. `source` says where each record is kept: `otoapp` for a person copied from the OTO App (`job:otoapp.employee_sync`), `platform` for one written here.',
         response: { 200: z.object({ today: IsoDay, staff: z.array(Staff) }) },
       },
     },
@@ -491,6 +492,21 @@ export async function benefitRoutes(app: App): Promise<void> {
         operatorId: auth.operatorId,
         code: req.body.code,
         today: await todayOf(req),
+        /**
+         * S2-17b round 2 (benefits H17): a QR this deployment signed for
+         * somebody the platform does not have is filed on Failures under
+         * `otoapp:employee.sync` — on the pool, so the refusal that follows
+         * cannot take the record with it. Filing never turns the refusal into
+         * a fault.
+         */
+        onUnknownEmployee: async (found) => {
+          await raiseUnknownBenefitEmployee(app.db, {
+            operatorId: auth.operatorId,
+            ...found,
+          }).catch((err: unknown) =>
+            req.log.error({ err }, 'an unknown benefit employee could not be filed'),
+          );
+        },
       });
     },
   );

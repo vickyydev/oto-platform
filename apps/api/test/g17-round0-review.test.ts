@@ -405,13 +405,15 @@ describe('A. the OTO App migration, from a seeded live state', () => {
     if (HAS_APP_MODULES) {
       expect(runs[0]).toContain('applied 0003_events_seam');
       expect(runs[0]).toContain('applied 0004_otoapp_v_views');
-      expect(runs[1]).toMatch(/up to date .* 5 migration/);
+      // S2-17b round 2's employee view rides the same upgrade.
+      expect(runs[0]).toContain('applied 0005_otoapp_v_employees');
+      expect(runs[1]).toMatch(/up to date .* 6 migration/);
     }
     await withClient(url, async (c) => {
       const ledger = await c.query<{ n: string }>(
         'select count(*)::text as n from otoapp.__drizzle_migrations',
       );
-      expect(ledger.rows[0]!.n).toBe('5');
+      expect(ledger.rows[0]!.n).toBe('6');
     });
   });
 
@@ -1260,6 +1262,69 @@ describe('C. the directory writes: identity, replay, tenant fence, bad input', (
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const REPOSITORY = 'services/otoapp-events.ts';
+/** S2-17b round 2: the read-only window on the app's staff, `otoapp_v.employees` only. */
+const EMPLOYEE_REPOSITORY = 'services/otoapp-employees.ts';
+
+/**
+ * S2-17b round 2 (H19) — THE DECLARED SEAMS, the only app tables the
+ * platform may name, each with its reason:
+ *
+ *  - provisioning and the sign-on: `users`, `user_branch_access`;
+ *  - the branch seam (SCRUM-268): `branches`;
+ *  - the booth's day roster (SCRUM-473, Q11): the rota tables it walks, and
+ *    `employees` for one column only (`user_id`, the unmatched reason) — who
+ *    a person is comes from `otoapp_v.employees`.
+ *
+ * Everything else of the HR record and the rota is the app's: read through a
+ * view or not at all.
+ */
+const DECLARED_SEAMS = [
+  'users',
+  'user_branch_access',
+  'branches',
+  'schedule_assignments',
+  'schedule_shift_rows',
+  'shift_groups',
+  'departments',
+  'roles',
+  'schedule_shift_row_roles',
+  'duty_blocks',
+  'duty_types',
+  'employees',
+  'casual_workers',
+].sort();
+/** The booth seam's tables: imported by the roster reader and nothing else. */
+const BOOTH_SEAM = [
+  'schedule_assignments',
+  'schedule_shift_rows',
+  'shift_groups',
+  'departments',
+  'roles',
+  'schedule_shift_row_roles',
+  'duty_blocks',
+  'duty_types',
+  'employees',
+  'casual_workers',
+];
+const BOOTH_READER = 'services/booth-duty.ts';
+
+/** The app's HR and rota tables, read from its own migrations rather than a hand-kept list. */
+function appHrAndRotaTables(): string[] {
+  const sqlText = readdirSync(APP_MIGRATIONS)
+    .filter((f) => f.endsWith('.sql'))
+    .map((f) => readFileSync(join(APP_MIGRATIONS, f), 'utf8'))
+    .join('\n');
+  const tables = [...sqlText.matchAll(/CREATE TABLE "([a-z_0-9]+)"/g)].map((m) => m[1]!);
+  return [
+    ...new Set(
+      tables.filter((t) =>
+        /^(employees|employee_[a-z_]+|people|access_policies|payroll_[a-z_]+|payslips|salary_advance[a-z_]*|statutory_[a-z_]+|contract_instances|employee_letters|schedule_[a-z_]+|shift_groups|shifts|duty_[a-z_]+|casual_workers|time_events|time_entries|time_adjustments|timekeeping_issues|employee_time_off|leave_policies|sick_leave_policies)$/.test(
+          t,
+        ),
+      ),
+    ),
+  ].sort();
+}
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -1322,10 +1387,14 @@ describe('D. H1: the POS reads OTO App events through otoapp_v only', () => {
     expect([...named].filter((t) => events.has(t))).toEqual([]);
   });
 
-  it('only the repository names otoapp_v, and no packages/db schema declares an app event table', () => {
-    expect(files.filter(({ text }) => /\botoapp_v\b/.test(text)).map((f) => f.file)).toEqual([
-      REPOSITORY,
-    ]);
+  it('only the repositories name otoapp_v, and no packages/db schema declares an app event table', () => {
+    // S2-17b round 2: the employee repository beside the events one.
+    expect(
+      files
+        .filter(({ text }) => /\botoapp_v\b/.test(text))
+        .map((f) => f.file)
+        .sort(),
+    ).toEqual([EMPLOYEE_REPOSITORY, REPOSITORY].sort());
     const schemaDir = fileURLToPath(new URL('../../../packages/db/src/schema', import.meta.url));
     const events = appEventTables();
     for (const f of readdirSync(schemaDir).filter((n) => n.endsWith('.ts'))) {
@@ -1336,6 +1405,83 @@ describe('D. H1: the POS reads OTO App events through otoapp_v only', () => {
         f,
       ).toEqual([]);
     }
+  });
+
+  // --- S2-17b round 2 (H19): the HR and rota tables, apart from the declared seams ---
+
+  it('no file in apps/api/src names an app HR or rota table in SQL, qualified or not', () => {
+    const tables = appHrAndRotaTables();
+    expect(tables).toEqual(
+      expect.arrayContaining([
+        'employees',
+        'employee_payroll_profiles',
+        'employee_changes',
+        'people',
+        'access_policies',
+        'contract_instances',
+        'payslips',
+        'schedule_assignments',
+        'duty_blocks',
+        'casual_workers',
+        'employee_time_off',
+      ]),
+    );
+    const qualified = new RegExp(`\\botoapp\\.(${tables.join('|')})\\b`, 'g');
+    const unqualified = new RegExp(
+      `\\b(?:from|join|into|update)\\s+"?(?:otoapp\\.)?"?(${tables.join('|')})"?\\b`,
+      'gi',
+    );
+    const hits = files.flatMap(({ file, text }) => [
+      ...[...text.matchAll(qualified)].map((m) => `${file}: ${m[0]}`),
+      ...[...text.matchAll(unqualified)].map((m) => `${file}: ${m[0]}`),
+    ]);
+    expect(hits, 'an app HR or rota table named in SQL outside a view').toEqual([]);
+  });
+
+  it('packages/db declares exactly the declared seams of the app, and nothing more of its HR record', () => {
+    const declarations = readFileSync(
+      fileURLToPath(new URL('../../../packages/db/src/schema/otoapp.ts', import.meta.url)),
+      'utf8',
+    );
+    const declared = [...declarations.matchAll(/otoapp\.table\(\s*'([a-z_]+)'/g)].map((m) => m[1]!);
+    expect([...declared].sort()).toEqual(DECLARED_SEAMS);
+    // The roster's `employees` carries one column: who a person is is the view's.
+    const employees = /otoapp\.table\(\s*'employees',\s*\{([\s\S]*?)\n\}\);/.exec(declarations);
+    expect(employees, 'the employees declaration').not.toBeNull();
+    const columns = [...employees![1]!.matchAll(/\b(?:varchar|text|uuid|boolean|timestamp)\('([a-z_]+)'/g)].map(
+      (m) => m[1],
+    );
+    expect(columns.sort()).toEqual(['id', 'user_id']);
+  });
+
+  it('the booth seam’s declarations are imported by the roster reader alone', () => {
+    const declarations = readFileSync(
+      fileURLToPath(new URL('../../../packages/db/src/schema/otoapp.ts', import.meta.url)),
+      'utf8',
+    );
+    const symbols = [
+      ...declarations.matchAll(/export const (\w+) = otoapp\.table\(\s*'([a-z_]+)'/g),
+    ].flatMap((m) => (BOOTH_SEAM.includes(m[2]!) ? [m[1]!] : []));
+    expect(symbols).toHaveLength(BOOTH_SEAM.length);
+    for (const symbol of symbols) {
+      const users = files
+        .filter(({ text }) => new RegExp(`\\b${symbol}\\b`).test(text))
+        .map((f) => f.file);
+      expect(users, symbol).toEqual([BOOTH_READER]);
+    }
+  });
+
+  it('the employee repository reads otoapp_v.employees and nothing else, and writes nothing', () => {
+    const repo = files.find((f) => f.file === EMPLOYEE_REPOSITORY)!.text;
+    const relations = [...repo.matchAll(/\b(?:from|join)\s+([a-z_][a-z0-9_.]*)/gi)]
+      .map((m) => m[1]!)
+      .filter((name) => !/^['"]/.test(name));
+    expect(relations.length).toBeGreaterThanOrEqual(2);
+    for (const relation of relations) expect(relation).toBe('otoapp_v.employees');
+    expect(repo).not.toMatch(
+      /\b(insert\s+into|update\s+\w|delete\s+from|truncate|merge\s+into|alter\s+|create\s+|drop\s+)/i,
+    );
+    expect(repo).not.toMatch(/from '@oto\/db'/);
   });
 
   it('the repository runs entirely inside a READ ONLY transaction', async () => {

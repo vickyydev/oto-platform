@@ -53,8 +53,12 @@ import { withTx, type Exec, type OpContext } from './tx';
  * starts counting from.
  *
  * The employees are `core.employee` rows, read only: the OTO App is the
- * employee master (C13) and the copy job that fills this table is S2-17b.
- * Until it lands they are the seeded ones.
+ * employee master (C13), and `job:otoapp.employee_sync` (S2-17b round 2,
+ * `otoapp-employee-sync.ts`) copies its staff in with `source = 'otoapp'` —
+ * adopting a person's existing platform row, so their profile and cards stay,
+ * and archiving a leaver with their cards revoked. A deployment without the
+ * OTO App lists the platform's own rows (the dev seed's four, `source =
+ * 'platform'`); every row says which it is, and the panel shows it.
  */
 
 type TemplateRow = typeof benefitRoleTemplate.$inferSelect;

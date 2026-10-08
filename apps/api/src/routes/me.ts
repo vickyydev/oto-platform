@@ -76,6 +76,25 @@ export async function meRoutes(app: App): Promise<void> {
       const [acc] = await app.db.select().from(account).where(eq(account.id, auth.accountId)).limit(1);
       if (!acc?.employeeId) throw errors.badRequest('No employee profile linked to this account');
       const [before] = await app.db.select().from(employee).where(eq(employee.id, acc.employeeId)).limit(1);
+      /**
+       * S2-17b round 2 (H5, conflict C13) — a copied employee's name,
+       * nickname, email and phone are the OTO App's. An edit here would be
+       * silently undone by the next copy, so it is refused in words instead,
+       * before anything is written. Nothing else on the platform writes these
+       * fields on a copied row.
+       */
+      if (before?.source === 'otoapp') {
+        const mirrored = (['name', 'nickname', 'email', 'phone'] as const).filter(
+          (field) => req.body[field] !== undefined,
+        );
+        if (mirrored.length > 0) {
+          throw errors.conflict(
+            'EMPLOYEE_KEPT_IN_OTO_APP',
+            'Your name, nickname, email and phone are kept in the OTO App. Change them there, and they reach here at the next copy.',
+            { fields: mirrored },
+          );
+        }
+      }
       const patch: Partial<typeof employee.$inferInsert> = {};
       if (req.body.name !== undefined) patch.name = req.body.name;
       if (req.body.nickname !== undefined) patch.nickname = req.body.nickname;

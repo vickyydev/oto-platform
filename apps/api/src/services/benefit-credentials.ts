@@ -539,7 +539,20 @@ export interface ResolvedBenefit {
  */
 export async function resolveBenefitCredential(
   db: Exec,
-  input: { operatorId: string; code: string; today: string; now?: Date },
+  input: {
+    operatorId: string;
+    code: string;
+    today: string;
+    now?: Date;
+    /**
+     * S2-17b round 2 (benefits H17's other half): told when a QR signed with
+     * this deployment's key names an employee the platform does not have —
+     * most likely a person the OTO App copy has not reached yet. The scan is
+     * refused either way; the caller files the case where it outlives this
+     * read (the route, on the pool — never inside a sale's transaction).
+     */
+    onUnknownEmployee?: (found: { employeeId: string; credentialId: string }) => Promise<void>;
+  },
 ): Promise<ResolvedBenefit> {
   const now = input.now ?? new Date();
   const code = input.code.trim();
@@ -579,6 +592,19 @@ export async function resolveBenefitCredential(
     row.employeeId !== claims.employeeId ||
     row.codeHash !== benefitCredentialHash(code)
   ) {
+    if (!row && input.onUnknownEmployee) {
+      const [known] = await db
+        .select({ id: employee.id })
+        .from(employee)
+        .where(and(eq(employee.id, claims.employeeId), eq(employee.operatorId, input.operatorId)))
+        .limit(1);
+      if (!known) {
+        await input.onUnknownEmployee({
+          employeeId: claims.employeeId,
+          credentialId: claims.credentialId,
+        });
+      }
+    }
     throw notFound(BENEFIT_CREDENTIAL_REFUSALS.NOT_FOUND);
   }
   const person = await loadEmployee(db, input.operatorId, row.employeeId);

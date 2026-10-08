@@ -17,6 +17,7 @@ import {
 } from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
 import { OCCUPANCY_JOB, runOccupancyJob } from './occupancy';
+import { OTOAPP_EMPLOYEE_SYNC_JOB, runOtoAppEmployeeSync } from './otoapp-employee-sync';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import {
@@ -677,6 +678,26 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
         "Builds each branch's events for today — a camp on every day of its range — from the OTO App for its boxes' offline copy, and fails when the OTO App's events cannot be read",
       intervalSeconds: deps.env.ROLLUP_INTERVAL_S,
       run: async ({ db, now }) => ({ detail: await runEventsCacheRefresh(db, now) }),
+    },
+    /**
+     * `job:otoapp.employee_sync` — THE OTO APP'S STAFF, COPIED (S2-17b round
+     * 2, PLAN section 5; conflict C13).
+     *
+     * Every fifteen minutes, and at once from Health's "Copy the OTO App's
+     * staff now": `otoapp_v.employees` into `core.employee` per park group's
+     * operator — created, adopted, updated, archived on LEFT or gone with the
+     * person's benefit cards revoked, restored on a rehire
+     * (`runOtoAppEmployeeSync` in `services/otoapp-employee-sync.ts`). A second
+     * run with nothing changed in the app writes nothing. Registering it wrote
+     * the expectation the watchdog raises `ops.missing` from when it stops
+     * (H7); a deployment without the OTO App runs it as a no-op that says so.
+     */
+    {
+      name: OTOAPP_EMPLOYEE_SYNC_JOB,
+      description:
+        "Copies the OTO App's staff into the platform's employee list per park group's operator: new people, changes, leavers archived with their benefit cards revoked, and rehires restored",
+      intervalSeconds: 900,
+      run: async ({ db, now }) => ({ detail: await runOtoAppEmployeeSync(db, now) }),
     },
   ];
 }
