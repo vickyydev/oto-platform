@@ -5,7 +5,9 @@
 // `setTimeout` and `setInterval` are counted, not scheduled, for the length of
 // the one call, then put back. tests/night-jobs.check.ts runs it once under
 // each switch: `platform` must register none (the platform's job runner owns
-// the schedule), `inprocess` the app's own three (00:01, 03:00, six-hourly).
+// the schedule), `inprocess` the app's own (00:01, 03:00, six-hourly presence,
+// and from round 4b the Attention engine's and the no-show check's first runs
+// and intervals: seven).
 //
 // Run from apps/oto-app with the environment the boot guard asks for:
 //   OTOAPP_JOBS=platform npx tsx tests/harness/start-scheduler.ts

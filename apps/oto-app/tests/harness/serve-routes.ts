@@ -10,6 +10,10 @@
 // Run from apps/oto-app with the environment the boot guard asks for:
 //   npx tsx tests/harness/serve-routes.ts
 // It prints `HARNESS_PORT=<port>` on stdout once it is listening.
+//
+// With HARNESS_FAKE_NOW set, the process's clock starts at that instant
+// (./fake-clock.ts, imported first so it is in place before the app loads).
+import "./fake-clock";
 import "../../server/config/env";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { createServer, type Server } from "http";

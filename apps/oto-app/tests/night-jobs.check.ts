@@ -25,7 +25,9 @@
 //     app lets escape (the availability clean-up, the batch's last step) is a
 //     failed step too;
 //   - under `platform` the scheduler registers no timer; under `inprocess`
-//     the app's own three;
+//     the app's own: the three night timers and, from round 4b, the
+//     Attention engine's start-up run and six-hourly timer and the no-show
+//     check's first run and ten-minute timer (seven);
 //   - the two manual job triggers point at the Console under `platform`, and
 //     under `inprocess` act on the caller's park group only.
 //
@@ -365,8 +367,15 @@ try {
     assert.deepEqual(res.body, JOBS_INPROCESS_REFUSAL);
     assert.deepEqual(await stateOf(A), { ...untouched, mismatchBranch: A.branch });
   })();
-  await check("a job that is not one of the three: 404", async () => {
-    const res = await job(platform, "attention", keyA);
+  await check("round 4b's two Attention batches follow the same switch: refused in words under inprocess", async () => {
+    for (const name of ["attention", "no_show"]) {
+      const res = await job(inprocess, name, keyA, { tenantId: A.tenant });
+      assert.equal(res.status, 409, `${name}: ${JSON.stringify(res.body)}`);
+      assert.deepEqual(res.body, JOBS_INPROCESS_REFUSAL);
+    }
+  })();
+  await check("a job that is not one of the five: 404", async () => {
+    const res = await job(platform, "payroll", keyA);
     assert.equal(res.status, 404, JSON.stringify(res.body));
     assert.deepEqual(res.body, JOB_NOT_FOUND_REFUSAL);
   })();
@@ -530,8 +539,8 @@ try {
   await check("under OTOAPP_JOBS=platform it registers no timer at all", () => {
     assert.deepEqual(timersUnder("platform"), { timers: 0, started: false });
   })();
-  await check("under OTOAPP_JOBS=inprocess it registers the app's own three (00:01, 03:00, six-hourly)", () => {
-    assert.deepEqual(timersUnder("inprocess"), { timers: 3, started: true });
+  await check("under OTOAPP_JOBS=inprocess it registers the app's own: 00:01, 03:00, six-hourly presence, and Attention's four (round 4b)", () => {
+    assert.deepEqual(timersUnder("inprocess"), { timers: 7, started: true });
   })();
 
   // ── The two manual triggers ────────────────────────────────────────────────

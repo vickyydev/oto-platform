@@ -3,21 +3,24 @@
 // suite collects *.spec.ts and *.test.ts; this is neither): it boots the app's
 // real routes twice and needs a database with the otoapp schema migrated.
 //
-// S2-17b round 4a — tenant ownership, the expand half, over HTTP against the
-// routes as registered (plan section 7, section 8 round 4a; hazards H11, H12):
+// S2-17b round 4 — tenant ownership over HTTP against the routes as registered
+// (plan section 7, section 8 round 4; hazards H11, H12). Written for round 4a
+// (the expand half) and brought to round 4b (the contract half, migration
+// 0007), which this database carries:
 //
 //   - SETTINGS (H11): each park group reads its own value for a key and the
-//     default park group's where it has none; the default park group saves;
-//     another park group saving — a key the default holds, a new key, the Fix
-//     department — is refused in words (409) and writes nothing; a caller the
-//     app cannot place is refused (403); a key another park group's row holds
-//     under the old unique is answered in words, never a 500; and all of it
-//     holds again once `settings_key_unique` is dropped (the shape round 4b
-//     leaves), which this check restores before it ends;
+//     default park group's where it has none (Q28); each park group saves its
+//     OWN row — beside the default park group's for the same key, which stays
+//     as it was — the Fix department included; a caller the app cannot place
+//     is refused (403); a save of several keys is one transaction, so a key
+//     that fails saves none of the others (the round 4a review's note); a row
+//     with no park group can no longer be written (NOT NULL); and on a
+//     database 0007 has not reached (the old one-row-per-key unique put back
+//     for the length of the check) another park group's save of a key the
+//     default holds is refused in words, never a 500, and saves nothing else;
 //   - THE ACTIVITY LOGBOOK: rows about no branch show in their own park
 //     group's logbook and nobody else's; a reader with every branch sees them,
-//     a reader limited to a branch does not (the app's own rule); a row the
-//     previous release wrote with no park group is shown by its branch; a row
+//     a reader limited to a branch does not (the app's own rule); a row
 //     written now through a route carries the caller's park group; the
 //     summary counts one park group's rows;
 //   - THE DIRECTORY'S HR READS (H12): a tenant-bound key with hr:read answers
@@ -30,18 +33,15 @@
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
 //   npx tsx tests/tenant-ownership.check.ts
 // The platform's suite runs it the same way against a fresh test database
-// when the app's node_modules are present (apps/api/test/s217b-r4a.test.ts).
+// when the app's node_modules are present (apps/api/test/s217b-r4a.test.ts and
+// s217b-r4b.test.ts).
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createHash, randomBytes, randomUUID, scryptSync } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
-import {
-  SETTINGS_KEY_HELD_REFUSAL,
-  SETTINGS_NO_PARK_GROUP_REFUSAL,
-  SETTINGS_SHARED_REFUSAL,
-} from "../server/lib/parkGroupSettings";
+import { SETTINGS_KEY_HELD_REFUSAL, SETTINGS_NO_PARK_GROUP_REFUSAL } from "../server/lib/parkGroupSettings";
 import {
   HR_DIRECTORY_NO_KEY,
   HR_DIRECTORY_SHARED_KEY_INVALID,
@@ -260,7 +260,7 @@ const check = (name: string, fn: () => void | Promise<void>) => async () => {
 };
 
 const K = (name: string) => `zz_test_${run}_${name}`;
-let droppedOldUnique = false;
+let oldUniqueRestored = false;
 
 try {
   const [plain, shared] = await Promise.all([serve({}), serve({ HR_DIRECTORY_API_KEY: SHARED_KEY })]);
@@ -269,8 +269,18 @@ try {
   const cookieLimited = await signIn(plain, limitedEmail);
   const cookieUnplaced = await signIn(plain, unplacedEmail);
 
-  // ── Settings, with the old unique standing (this release's shape) ──────────
-  console.log("settings, per park group, with settings_key_unique standing (H11):");
+  // ── Settings, each park group its own (round 4b) ───────────────────────────
+  console.log("settings, per park group, after 0007 — each park group saves its own (H11):");
+  await check("0007's shape: tenant_id NOT NULL, and the (tenant_id, key) unique alone", async () => {
+    const uniques = await q<{ conname: string }>(
+      "select conname from pg_constraint where conrelid = 'otoapp.settings'::regclass and contype = 'u'",
+    );
+    assert.deepEqual(uniques, []);
+    const indexes = await q<{ indexname: string }>(
+      "select indexname from pg_indexes where schemaname = 'otoapp' and tablename = 'settings' and indexdef like 'CREATE UNIQUE%' order by 1",
+    );
+    assert.deepEqual(indexes.map((i) => i.indexname), ["settings_pkey", "settings_tenant_id_key_unique"]);
+  })();
   await check("the default park group saves a key: one row, the default park group's", async () => {
     const res = await call(plain, "POST", "/api/settings", { cookie: cookieA, body: [{ key: K("held"), value: "A's value" }] });
     assert.equal(res.status, 200, JSON.stringify(res.body));
@@ -281,41 +291,83 @@ try {
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.deepEqual(await rowsFor(K("held")), [{ tenant_id: DEFAULT, value: "A's newer value" }]);
   })();
-  await check("another park group with no row of its own reads the default park group's value", async () => {
+  await check("another park group with no row of its own reads the default park group's value (Q28)", async () => {
     const b = await settingsOf(plain, cookieB);
     assert.equal(b.get(K("held"))?.value, "A's newer value");
   })();
-  await check("another park group saving a key the default holds: 409 in words, nothing written", async () => {
+  await check("another park group saves the same key: its OWN row beside the default's, which is untouched", async () => {
     const res = await call(plain, "POST", "/api/settings", { cookie: cookieB, body: [{ key: K("held"), value: "B's value" }] });
-    assert.equal(res.status, 409, JSON.stringify(res.body));
-    assert.deepEqual(res.body, SETTINGS_SHARED_REFUSAL);
-    assert.deepEqual(await rowsFor(K("held")), [{ tenant_id: DEFAULT, value: "A's newer value" }]);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body[0].tenantId, B.tenant);
+    assert.deepEqual(
+      (await rowsFor(K("held"))).sort((x, y) => String(x.tenant_id).localeCompare(String(y.tenant_id))),
+      [
+        { tenant_id: DEFAULT, value: "A's newer value" },
+        { tenant_id: B.tenant, value: "B's value" },
+      ].sort((x, y) => x.tenant_id.localeCompare(y.tenant_id)),
+    );
   })();
-  await check("another park group saving a key nobody holds: 409 too, nothing written (it would block the default)", async () => {
-    const res = await call(plain, "POST", "/api/settings", { cookie: cookieB, body: [{ key: K("new"), value: "B's value" }] });
-    assert.equal(res.status, 409, JSON.stringify(res.body));
-    assert.deepEqual(res.body, SETTINGS_SHARED_REFUSAL);
-    assert.deepEqual(await rowsFor(K("new")), []);
+  await check("each park group reads its own row for the key; neither reads the other's", async () => {
+    assert.equal((await settingsOf(plain, cookieB)).get(K("held"))?.value, "B's value");
+    assert.equal((await settingsOf(plain, cookieA)).get(K("held"))?.value, "A's newer value");
   })();
-  await check("another park group setting its Fix department: 409 in words, nothing written", async () => {
-    const before = await q("select id, tenant_id, value from settings where key = 'fix_department_id'");
+  await check("another park group saves a key nobody holds: its own row; the default park group does not read it", async () => {
+    const res = await call(plain, "POST", "/api/settings", { cookie: cookieB, body: [{ key: K("b-only"), value: "B only" }] });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.deepEqual(await rowsFor(K("b-only")), [{ tenant_id: B.tenant, value: "B only" }]);
+    assert.equal((await settingsOf(plain, cookieA)).has(K("b-only")), false);
+    // ...and the default park group can still save the same key for itself.
+    const a = await call(plain, "POST", "/api/settings", { cookie: cookieA, body: [{ key: K("b-only"), value: "A too" }] });
+    assert.equal(a.status, 200, JSON.stringify(a.body));
+    assert.equal((await settingsOf(plain, cookieB)).get(K("b-only"))?.value, "B only");
+    assert.equal((await settingsOf(plain, cookieA)).get(K("b-only"))?.value, "A too");
+  })();
+  await check("five saves of one new key at once by one park group: one row, every answer 200", async () => {
+    const race = await Promise.all(
+      Array.from({ length: 5 }, (_, i) => call(plain, "POST", "/api/settings", { cookie: cookieB, body: [{ key: K("race"), value: `racer ${i}` }] })),
+    );
+    assert.deepEqual(race.map((r) => r.status), [200, 200, 200, 200, 200]);
+    const rows = await rowsFor(K("race"));
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]!.tenant_id, B.tenant);
+  })();
+  await check("a save of several keys is one transaction: a later key that fails saves none of the earlier ones", async () => {
+    const res = await call(plain, "POST", "/api/settings", {
+      cookie: cookieB,
+      body: [{ key: K("atomic-first"), value: "first" }, { key: null, value: "a key that cannot be" }],
+    });
+    assert.ok(res.status >= 400, `refused: ${res.status} ${JSON.stringify(res.body)}`);
+    assert.deepEqual(await rowsFor(K("atomic-first")), []);
+    // The same pair, whole, saves both — the transaction, not the first key, was the problem.
+    const ok = await call(plain, "POST", "/api/settings", {
+      cookie: cookieB,
+      body: [{ key: K("atomic-first"), value: "first" }, { key: K("atomic-second"), value: "second" }],
+    });
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    assert.deepEqual(ok.body.map((s: { key: string }) => s.key), [K("atomic-first"), K("atomic-second")]);
+    assert.deepEqual(await rowsFor(K("atomic-second")), [{ tenant_id: B.tenant, value: "second" }]);
+  })();
+  await check("another park group sets its own Fix department: its own row; the default park group's is untouched", async () => {
+    const before = await q("select id, tenant_id, value from settings where key = 'fix_department_id' and tenant_id = $1", [DEFAULT]);
     const res = await call(plain, "POST", "/api/settings/fix-department", { cookie: cookieB, body: { departmentId: B.department } });
-    assert.equal(res.status, 409, JSON.stringify(res.body));
-    assert.deepEqual(res.body, SETTINGS_SHARED_REFUSAL);
-    assert.deepEqual(await q("select id, tenant_id, value from settings where key = 'fix_department_id'"), before);
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.deepEqual(await q("select id, tenant_id, value from settings where key = 'fix_department_id' and tenant_id = $1", [DEFAULT]), before);
+    const b = await call(plain, "GET", "/api/settings/fix-department", { cookie: cookieB });
+    assert.equal(b.body.departmentId, B.department);
   })();
-  await check("the default park group cannot set another park group's department as its Fix department: 404", async () => {
-    const res = await call(plain, "POST", "/api/settings/fix-department", { cookie: cookieA, body: { departmentId: B.department } });
-    assert.equal(res.status, 404, JSON.stringify(res.body));
+  await check("no park group can set another park group's department as its Fix department: 404", async () => {
+    const a = await call(plain, "POST", "/api/settings/fix-department", { cookie: cookieA, body: { departmentId: B.department } });
+    assert.equal(a.status, 404, JSON.stringify(a.body));
+    const b = await call(plain, "POST", "/api/settings/fix-department", { cookie: cookieB, body: { departmentId: A.department } });
+    assert.equal(b.status, 404, JSON.stringify(b.body));
   })();
-  await check("the default park group's Fix department is no department of another park group's", async () => {
+  await check("the default park group's Fix department is its own, and never another park group's", async () => {
     const set = await call(plain, "POST", "/api/settings/fix-department", { cookie: cookieA, body: { departmentId: A.department } });
     assert.equal(set.status, 200, JSON.stringify(set.body));
     const a = await call(plain, "GET", "/api/settings/fix-department", { cookie: cookieA });
     assert.equal(a.body.departmentId, A.department);
     const b = await call(plain, "GET", "/api/settings/fix-department", { cookie: cookieB });
-    assert.equal(b.status, 200, JSON.stringify(b.body));
-    assert.deepEqual(b.body, { departmentId: null, department: null });
+    assert.equal(b.body.departmentId, B.department);
   })();
   await check("an admin the app cannot place in one park group: 403 in words, nothing written", async () => {
     const res = await call(plain, "POST", "/api/settings", { cookie: cookieUnplaced, body: [{ key: K("unplaced"), value: "x" }] });
@@ -323,77 +375,52 @@ try {
     assert.deepEqual(res.body, SETTINGS_NO_PARK_GROUP_REFUSAL);
     assert.deepEqual(await rowsFor(K("unplaced")), []);
   })();
-  // What round 4b's saves will leave: a park group's own row. Written here by
-  // hand (no route writes one in this release), on a key the default does not
-  // hold, which the old unique allows.
-  await q("insert into settings (key, value, tenant_id) values ($1, $2, $3)", [K("b-own"), "B's own value", B.tenant]);
-  await check("each park group reads its own row: B its own, the default never B's", async () => {
-    const b = await settingsOf(plain, cookieB);
-    assert.equal(b.get(K("b-own"))?.value, "B's own value");
-    const a = await settingsOf(plain, cookieA);
-    assert.equal(a.has(K("b-own")), false);
-  })();
-  await check("the default park group saving a key another park group's row holds: 409 in words, never a 500 off the unique", async () => {
-    const res = await call(plain, "POST", "/api/settings", { cookie: cookieA, body: [{ key: K("b-own"), value: "A's value" }] });
-    assert.equal(res.status, 409, JSON.stringify(res.body));
-    assert.deepEqual(res.body, SETTINGS_KEY_HELD_REFUSAL);
-    assert.deepEqual(await rowsFor(K("b-own")), [{ tenant_id: B.tenant, value: "B's own value" }]);
-  })();
-  await check("a row the previous release wrote with no park group reads as the default park group's", async () => {
-    await q("insert into settings (key, value) values ($1, 'hand-over')", [K("handover")]);
-    assert.equal((await settingsOf(plain, cookieA)).get(K("handover"))?.value, "hand-over");
-    assert.equal((await settingsOf(plain, cookieB)).get(K("handover"))?.value, "hand-over");
-    // And the default park group's next save claims it rather than adding a second row.
-    const res = await call(plain, "POST", "/api/settings", { cookie: cookieA, body: [{ key: K("handover"), value: "claimed" }] });
-    assert.equal(res.status, 200, JSON.stringify(res.body));
-    assert.deepEqual(await rowsFor(K("handover")), [{ tenant_id: DEFAULT, value: "claimed" }]);
+  await check("a row with no park group can no longer be written (NOT NULL, 0007)", async () => {
+    await assert.rejects(q("insert into settings (key, value) values ($1, 'hand-over')", [K("handover")]), /null value in column "tenant_id"/);
+    await assert.rejects(
+      q("insert into activity_log (activity_type, summary_text) values ('employee_updated', $1)", [`ZZ TEST ${run} no park group`]),
+      /null value in column "tenant_id"/,
+    );
   })();
 
-  // ── The same with the old unique dropped (the shape round 4b leaves) ───────
-  console.log("settings, with settings_key_unique dropped (round 4b's shape) — this release still passes:");
-  await q("alter table settings drop constraint settings_key_unique");
-  droppedOldUnique = true;
-  await check("the default park group now saves the key another park group holds: its own row beside it", async () => {
-    const res = await call(plain, "POST", "/api/settings", { cookie: cookieA, body: [{ key: K("b-own"), value: "A's value" }] });
-    assert.equal(res.status, 200, JSON.stringify(res.body));
-    assert.deepEqual(
-      (await rowsFor(K("b-own"))).sort((x, y) => String(x.value).localeCompare(String(y.value))),
-      [
-        { tenant_id: DEFAULT, value: "A's value" },
-        { tenant_id: B.tenant, value: "B's own value" },
-      ],
-    );
-    assert.equal((await settingsOf(plain, cookieA)).get(K("b-own"))?.value, "A's value");
-    assert.equal((await settingsOf(plain, cookieB)).get(K("b-own"))?.value, "B's own value");
-  })();
-  await check("a park group's own row wins over the default park group's for the same key", async () => {
-    await q("insert into settings (key, value, tenant_id) values ($1, 'B overrides', $2)", [K("held"), B.tenant]);
-    assert.equal((await settingsOf(plain, cookieB)).get(K("held"))?.value, "B overrides");
-    assert.equal((await settingsOf(plain, cookieA)).get(K("held"))?.value, "A's newer value");
-  })();
-  await check("another park group's saves are still refused in words in this release, never a 500", async () => {
-    const res = await call(plain, "POST", "/api/settings", { cookie: cookieB, body: [{ key: K("held"), value: "B again" }] });
+  // ── A database 0007 has not reached: the old one-row-per-key unique back ──
+  console.log("settings, on a database 0007 has not reached (settings_key_unique put back for the length of these checks):");
+  // The old unique cannot stand while a key is held twice: the second park
+  // group's rows (all of them this check's own) go first.
+  await q("delete from settings where tenant_id = $1", [B.tenant]);
+  await q("alter table settings add constraint settings_key_unique unique (key)");
+  oldUniqueRestored = true;
+  await check("another park group saving a key the default holds: 409 in words (settings_key_held), never a 500, nothing written", async () => {
+    const res = await call(plain, "POST", "/api/settings", { cookie: cookieB, body: [{ key: K("held"), value: "B on the old shape" }] });
     assert.equal(res.status, 409, JSON.stringify(res.body));
-    assert.deepEqual(res.body, SETTINGS_SHARED_REFUSAL);
-    assert.equal((await rowsFor(K("held"))).find((r) => r.tenant_id === B.tenant)?.value, "B overrides");
+    assert.deepEqual(res.body, SETTINGS_KEY_HELD_REFUSAL);
+    assert.deepEqual(await rowsFor(K("held")), [{ tenant_id: DEFAULT, value: "A's newer value" }]);
   })();
-  await check("the default park group's update and new key work on this shape too", async () => {
+  await check("the round 4a review's note: a new key before a refused one is not saved either", async () => {
+    const res = await call(plain, "POST", "/api/settings", {
+      cookie: cookieB,
+      body: [{ key: K("before-the-refusal"), value: "would be orphaned" }, { key: K("held"), value: "refused" }],
+    });
+    assert.equal(res.status, 409, JSON.stringify(res.body));
+    assert.deepEqual(res.body, SETTINGS_KEY_HELD_REFUSAL);
+    assert.deepEqual(await rowsFor(K("before-the-refusal")), []);
+  })();
+  await check("the default park group's own saves still work on that shape", async () => {
     const res = await call(plain, "POST", "/api/settings", {
       cookie: cookieA,
-      body: [{ key: K("held"), value: "A on 4b" }, { key: K("fresh"), value: "fresh" }],
+      body: [{ key: K("held"), value: "A on the old shape" }, { key: K("fresh"), value: "fresh" }],
     });
     assert.equal(res.status, 200, JSON.stringify(res.body));
-    assert.equal((await rowsFor(K("held"))).find((r) => r.tenant_id === DEFAULT)?.value, "A on 4b");
+    assert.deepEqual(await rowsFor(K("held")), [{ tenant_id: DEFAULT, value: "A on the old shape" }]);
     assert.deepEqual(await rowsFor(K("fresh")), [{ tenant_id: DEFAULT, value: "fresh" }]);
   })();
-  // Back to this release's shape, for whatever runs after this check.
-  await q("delete from settings where key like $1 and tenant_id = $2", [`zz_test_${run}_%`, B.tenant]);
-  await q("alter table settings add constraint settings_key_unique unique (key)");
-  droppedOldUnique = false;
+  // Back to 0007's shape, for whatever runs after this check.
+  await q("alter table settings drop constraint settings_key_unique");
+  oldUniqueRestored = false;
 
   // ── The Activity Logbook ───────────────────────────────────────────────────
   console.log("the Activity Logbook, per park group:");
-  const activity = async (fields: { tenant: string | null; branch: string | null; label: string; type?: string }) => {
+  const activity = async (fields: { tenant: string; branch: string | null; label: string; type?: string }) => {
     const id = randomUUID();
     await q(
       `insert into activity_log (id, tenant_id, branch_id, activity_type, summary_text)
@@ -406,7 +433,6 @@ try {
     aBranch: await activity({ tenant: A.tenant, branch: A.branch, label: "a-branch" }),
     aOther: await activity({ tenant: A.tenant, branch: A.otherBranch, label: "a-other" }),
     aNone: await activity({ tenant: A.tenant, branch: null, label: "a-none" }),
-    aHandover: await activity({ tenant: null, branch: A.branch, label: "a-handover" }),
     bBranch: await activity({ tenant: B.tenant, branch: B.branch, label: "b-branch" }),
     bNone: await activity({ tenant: B.tenant, branch: null, label: "b-none" }),
     aPromotion: await activity({ tenant: A.tenant, branch: null, label: "a-promotion", type: "promotion" }),
@@ -418,14 +444,14 @@ try {
     const ids = new Set((res.body.logs as { id: string }[]).map((l) => l.id));
     return new Set(Object.entries(rows).filter(([, id]) => ids.has(id)).map(([k]) => k));
   };
-  await check("the default park group's admin: its own rows, the branchless ones and the hand-over's included, none of B's", async () => {
-    assert.deepEqual(await seen(cookieA), new Set(["aBranch", "aOther", "aNone", "aHandover", "aPromotion"]));
+  await check("the default park group's admin: its own rows, the branchless ones included, none of B's", async () => {
+    assert.deepEqual(await seen(cookieA), new Set(["aBranch", "aOther", "aNone", "aPromotion"]));
   })();
   await check("B's admin: B's rows, its branchless one included, none of the default park group's", async () => {
     assert.deepEqual(await seen(cookieB), new Set(["bBranch", "bNone", "bPromotion"]));
   })();
   await check("a reader limited to one branch: that branch's rows only, no branchless row (the app's own rule)", async () => {
-    assert.deepEqual(await seen(cookieLimited), new Set(["aBranch", "aHandover"]));
+    assert.deepEqual(await seen(cookieLimited), new Set(["aBranch"]));
   })();
   await check("another park group's branch named in the filter: 404", async () => {
     const res = await call(plain, "GET", `/api/activity-logs?branchId=${B.branch}`, { cookie: cookieA });
@@ -543,18 +569,13 @@ try {
 
   console.log(`tenant-ownership.check: ${checks} checks passed`);
 } finally {
-  if (droppedOldUnique) {
-    await q("delete from settings where key like $1 and tenant_id <> $2", [`zz_test_${run}_%`, DEFAULT]).catch(() => undefined);
-    await q("alter table settings add constraint settings_key_unique unique (key)").catch((e: unknown) =>
-      console.error("could not restore settings_key_unique:", e),
+  // The old one-row-per-key unique, put back for the checks of a database 0007
+  // has not reached, goes again whatever happened: this database is 0007's.
+  if (oldUniqueRestored) {
+    await q("alter table settings drop constraint settings_key_unique").catch((e: unknown) =>
+      console.error("could not drop settings_key_unique again:", e),
     );
   }
-  // The one row made here with no park group stands for the previous release's
-  // hand-over; it goes, so the read-back that runs after this check (CI) sees
-  // only rows the routes and the night jobs wrote.
-  await q("delete from activity_log where tenant_id is null and summary_text like $1", [`ZZ TEST ${run} %`]).catch(
-    (e: unknown) => console.error("could not remove the hand-over fixture:", e),
-  );
   for (const child of children) child.kill();
   await pool.end();
 }
