@@ -381,6 +381,11 @@ describe('A. the seam: an upper-case id through the other doors, and a manufactu
    * the park group) will claim them. The app's own branch edit can write such a
    * row (section B, finding 4), so it does not need legacy data to exist. A
    * colliding row should count as nobody's until a person settles it.
+   *
+   * FIXED IN THE FIX ROUND: `mappedAppBranches`, `anchorOf` and
+   * `foreignTenantsOf` read a case collision (`caseCollisions` in
+   * `packages/db/src/schema/otoapp.ts`) as carrying no platform id, so it
+   * makes no park group this operator's. Pin flipped.
    */
   describe('a colliding row in ANOTHER park group', () => {
     let foreignRow: string;
@@ -407,7 +412,7 @@ describe('A. the seam: an upper-case id through the other doors, and a manufactu
       expect((await unlinked(admin)).status).toBe(200);
     });
 
-    it.fails('does not put that park group’s users on this operator’s list', async () => {
+    it('does not put that park group’s users on this operator’s list', async () => {
       expect((await unlinked(admin)).ids()).not.toContain(foreignUser);
     });
   });

@@ -14,6 +14,7 @@ import {
   censusAppBranchIdCase,
   findAppBranchForCore,
   mapCoreBranchIntoApp,
+  mappedAppBranches,
   otoappBranches,
   otoappUsers,
 } from '@oto/db';
@@ -372,6 +373,47 @@ describe('B. the case census: listed read-only, lowered in place, a collision ne
     expect(census.found.map((f) => f.appBranchId).sort()).toEqual(
       [collision.upper, foreign.appRow].sort(),
     );
+  });
+
+  it("a collision is nobody's: no mapped branch, no anchor, and no park group made this operator's by it", async () => {
+    // Another park group carrying this operator's Chalong in upper case,
+    // beside the lower-case row that is Chalong's.
+    const elsewhere = await appBranch({
+      name: 'ZZ Census Collision Elsewhere',
+      tenantId: foreignTenant,
+      coreBranchId: chalong.toUpperCase(),
+    });
+    try {
+      const census = await censusAppBranchIdCase(ctx.db);
+      expect(census.collisions.map((c) => c.appBranchId)).toEqual(
+        expect.arrayContaining([collision.upper, elsewhere]),
+      );
+
+      const mapped = await mappedAppBranches(ctx.db, operatorId);
+      const mappedIds = mapped.map((m) => m.id);
+      expect(mappedIds).toEqual(expect.arrayContaining([collision.held, appChalong]));
+      expect(mappedIds).not.toContain(collision.upper);
+      expect(mappedIds).not.toContain(elsewhere);
+      expect(mapped.map((m) => m.tenantId)).not.toContain(foreignTenant);
+
+      // A new park is created in the anchor's park group, never the colliding row's.
+      const fresh = await bareBranch('ZZ Census Fresh Park');
+      const made = await mapCoreBranchIntoApp(ctx.db, {
+        operatorId,
+        branchId: fresh,
+        name: 'ZZ Census Fresh Park',
+        address: null,
+        timezone: 'Asia/Bangkok',
+      });
+      expect(made.mappedBy).toBe('created');
+      const [row] = await ctx.db
+        .select({ tenantId: otoappBranches.tenantId })
+        .from(otoappBranches)
+        .where(eq(otoappBranches.id, made.appBranchId!));
+      expect(row?.tenantId).toBe(appTenant);
+    } finally {
+      await ctx.db.execute(sql`delete from otoapp.branches where id = ${elsewhere}`);
+    }
   });
 });
 

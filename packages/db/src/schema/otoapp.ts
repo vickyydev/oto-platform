@@ -297,6 +297,52 @@ async function loadCoreBranches(exec: OtoAppExec, operatorId: string): Promise<C
 }
 
 /**
+ * The rows the case census calls a collision — and which therefore belong to
+ * NOBODY until a person settles them (S2-17b round 1).
+ *
+ * A row whose `core_branch_id` is not lower case, while another row carries
+ * the same platform id (in lower case, or in yet another spelling): two app
+ * rows claiming one park. `branches_core_branch_id_unique` is over the raw
+ * text, so both can exist, and which of them is the park's is the question the
+ * census leaves for a person (whose events, whose staff). Until then the
+ * misspelled one answers no "whose is this" question: it is no anchor, it
+ * makes no park group foreign, and it is no mapped branch — read as though it
+ * carried no platform id at all. Without that, a row in ANOTHER park group
+ * spelling this operator's id in upper case would make that park group this
+ * operator's, and put its people on this operator's lists.
+ *
+ * The row that already holds the lower-case form is untouched by this: it is
+ * the park's row, and the lookups land on it first.
+ */
+function caseCollisions(appRows: AppBranchRow[]): Set<string> {
+  const spellings = new Map<string, number>();
+  for (const r of appRows) {
+    if (r.coreBranchId === null) continue;
+    const canonical = canonicalCoreBranchId(r.coreBranchId);
+    spellings.set(canonical, (spellings.get(canonical) ?? 0) + 1);
+  }
+  return new Set(
+    appRows.flatMap((r) =>
+      r.coreBranchId !== null &&
+      r.coreBranchId !== canonicalCoreBranchId(r.coreBranchId) &&
+      (spellings.get(canonicalCoreBranchId(r.coreBranchId)) ?? 0) > 1
+        ? [r.id]
+        : [],
+    ),
+  );
+}
+
+/**
+ * The platform branch a row is joined to, in the canonical spelling — or null
+ * when it carries none, or is a case collision (`caseCollisions`) and so is
+ * nobody's.
+ */
+function joinedCoreBranchId(r: AppBranchRow, collisions: Set<string>): string | null {
+  if (r.coreBranchId === null || collisions.has(r.id)) return null;
+  return canonicalCoreBranchId(r.coreBranchId);
+}
+
+/**
  * The tenant a row the platform creates must belong to — and the reason this
  * cannot simply be "the app's only tenant".
  *
@@ -309,10 +355,13 @@ async function loadCoreBranches(exec: OtoAppExec, operatorId: string): Promise<C
  * the first park's tenant, which is a leak that would look like a feature.
  */
 function anchorOf(appRows: AppBranchRow[], coreIds: Set<string>) {
+  // A case collision is nobody's, so it anchors nobody (see `caseCollisions`).
+  const collisions = caseCollisions(appRows);
   return (
-    appRows.find(
-      (r) => r.coreBranchId !== null && coreIds.has(canonicalCoreBranchId(r.coreBranchId)),
-    ) ?? null
+    appRows.find((r) => {
+      const joined = joinedCoreBranchId(r, collisions);
+      return joined !== null && coreIds.has(joined);
+    }) ?? null
   );
 }
 
@@ -330,11 +379,14 @@ function anchorOf(appRows: AppBranchRow[], coreIds: Set<string>) {
 function foreignTenantsOf(appRows: AppBranchRow[], ourIds: Set<string>): Set<string> {
   // Compared in the canonical spelling: a row this operator wrote before the
   // round 1 fix, in upper case, is still this operator's row, and reading it
-  // as somebody else's would fence this operator out of its own tenant.
+  // as somebody else's would fence this operator out of its own tenant. A case
+  // collision is nobody's, and so makes no tenant anybody's (`caseCollisions`).
+  const collisions = caseCollisions(appRows);
   return new Set(
-    appRows.flatMap((r) =>
-      r.coreBranchId && !ourIds.has(canonicalCoreBranchId(r.coreBranchId)) ? [r.tenantId] : [],
-    ),
+    appRows.flatMap((r) => {
+      const joined = joinedCoreBranchId(r, collisions);
+      return joined !== null && !ourIds.has(joined) ? [r.tenantId] : [];
+    }),
   );
 }
 
@@ -581,14 +633,16 @@ export async function mappedAppBranches(
 ): Promise<Array<{ id: string; name: string; tenantId: string; coreBranchId: string }>> {
   if (!(await otoAppBranchesInstalled(exec))) return [];
   const ours = new Set((await loadCoreBranches(exec, operatorId)).map((b) => b.id));
-  return (await loadAppBranches(exec))
-    .filter((r) => r.coreBranchId !== null && ours.has(canonicalCoreBranchId(r.coreBranchId)))
-    .map((r) => ({
-      id: r.id,
-      name: r.name,
-      tenantId: r.tenantId,
-      coreBranchId: canonicalCoreBranchId(r.coreBranchId!),
-    }));
+  const rows = await loadAppBranches(exec);
+  // A case collision is nobody's: it is no branch of this operator's, and its
+  // park group is not made this operator's by it (`caseCollisions`).
+  const collisions = caseCollisions(rows);
+  return rows.flatMap((r) => {
+    const joined = joinedCoreBranchId(r, collisions);
+    return joined !== null && ours.has(joined)
+      ? [{ id: r.id, name: r.name, tenantId: r.tenantId, coreBranchId: joined }]
+      : [];
+  });
 }
 
 export interface AppBranchMappingRow {
