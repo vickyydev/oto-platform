@@ -1470,6 +1470,7 @@ function SchedulingPageInner() {
       timeOffType,
       startDate: date,
       endDate: date,
+      approved: true,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/time-off"] });

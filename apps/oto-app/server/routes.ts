@@ -12841,9 +12841,6 @@ OTO Company Limited`,
       }
 
       const { branchId, employeeId, timeOffType, startDate, endDate, notes, approved } = validationResult.data;
-      if (approved) {
-        return res.status(503).json({ message: "Time-off approval is unavailable until approval tracking is enabled" });
-      }
 
       // Check branch access - global_admin and admin have all access
       const isGlobalAdmin = user.role === "global_admin" || user.role === "admin";
@@ -12924,6 +12921,63 @@ OTO Company Limited`,
         createdBy: user.id,
       });
 
+      // If this is SICK leave and approved, unassign affected schedule assignments.
+      //
+      // The app's behaviour, restored as the owner's default for Q1 (S2-17b
+      // round 5, H14): there is no approval state, nothing records who
+      // approved, and "approved" is an action taken once, here. The rota sends
+      // every day off it adds as approved. The lift had turned this into a 503
+      // and taken `approved: true` out of the rota (b20ed05b); both are back.
+      // The one change is the park group: each coverage alert is written to the
+      // park group of the person it is about (round 4's tenant column, NOT NULL
+      // since 0007).
+      if (timeOffType === "SICK" && approved) {
+        // Remove schedule assignments for the new Planday-style scheduling
+        const removedAssignments = await storage.deleteAssignmentsByEmployeeAndDateRange(
+          employeeId,
+          startDateStr,
+          endDateStr
+        );
+
+        // Create SHIFT_NEEDS_COVERAGE attention items for each removed assignment
+        for (const assignment of removedAssignments) {
+          const shiftRow = await storage.getShiftRow(assignment.shiftRowId);
+          if (shiftRow) {
+            const shiftDate = new Date(assignment.shiftDate);
+            const hoursUntilShift = (shiftDate.getTime() - Date.now()) / (1000 * 60 * 60);
+            const severity = hoursUntilShift < 24 ? "high" : hoursUntilShift < 72 ? "medium" : "low";
+
+            if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
+              tenantId: employee.tenantId,
+              branchId,
+              employeeId,
+              type: "SHIFT_NEEDS_COVERAGE",
+              severity,
+              title: `Shift needs coverage: ${shiftRow.startTime.slice(0,5)}-${shiftRow.endTime.slice(0,5)} on ${format(shiftDate, "MMM d")}`,
+              description: `${employee.fullName} called in sick. Shift at ${shiftRow.department?.name || "Unknown dept"} needs coverage.`,
+              dueDate: shiftDate,
+              ruleKey: "SICK_LEAVE_COVERAGE",
+              entityKey: `${assignment.shiftRowId}_${assignment.shiftDate}`,
+            });
+          }
+        }
+
+        // Also handle old shift model if it still exists
+        try {
+          const affectedShifts = await storage.getShifts({
+            branchId,
+            dateFrom: dateOnlyUtc(startDateStr),
+            dateTo: dateOnlyUtc(endDateStr),
+            employeeId,
+          });
+          for (const shift of affectedShifts) {
+            await storage.unassignShiftEmployee(shift.id, true);
+          }
+        } catch {
+          // Old shift model may not exist, ignore errors
+        }
+      }
+
       res.status(201).json(record);
     } catch (error) {
       next(error);
@@ -12961,9 +13015,6 @@ OTO Company Limited`,
       const validationResult = timeOffSchema.safeParse(req.body);
       if (!validationResult.success) {
         return res.status(400).json({ message: "Validation failed", errors: validationResult.error.errors });
-      }
-      if (validationResult.data.approved !== undefined) {
-        return res.status(503).json({ message: "Time-off approval is unavailable until approval tracking is enabled" });
       }
 
       const updateData: { type?: typeof validationResult.data.timeOffType; note?: string | null; startDate?: Date; endDate?: Date } = {};
@@ -13006,7 +13057,33 @@ OTO Company Limited`,
         if (newEndDate) updateData.endDate = dateOnlyUtc(endDateStr);
       }
 
+      // Track approval change for sick leave logic — the app's behaviour,
+      // restored as the owner's default for Q1 (S2-17b round 5, H14). The app
+      // read `existing.approved` and stamped `approvedBy`/`approvedAt`, none of
+      // which the table has ever had: every approve counts as newly approved,
+      // and nothing about it is stored, then or now.
+      const isNowApproved = validationResult.data.approved === true;
+
       const record = await storage.updateEmployeeTimeOff(id, updateData);
+
+      // If SICK leave just got approved, unassign affected shifts. The app
+      // compared `record.timeOffType`, a name the row does not carry (its column
+      // is `type`, the slip this route's update fields were already corrected
+      // for), so the step never ran; it runs here as the code means it (Q38).
+      // Repeating the approve finds nobody left on those shifts and changes
+      // nothing more.
+      if (record.type === "SICK" && isNowApproved) {
+        const affectedShifts = await storage.getShifts({
+          branchId: record.branchId,
+          dateFrom: record.startDate,
+          dateTo: record.endDate,
+          employeeId: record.employeeId,
+        });
+
+        for (const shift of affectedShifts) {
+          await storage.unassignShiftEmployee(shift.id, true);
+        }
+      }
 
       res.json(record);
     } catch (error) {
