@@ -111,8 +111,9 @@ export function StationHeader({ active, leftExtra, rightExtra }: StationHeaderPr
             181px measured), so where the clusters would squeeze it under that
             the actions wrap onto a row of their own, `ml-auto` keeping them at
             the right, instead of the tabs vanishing. Only unusually wide
-            content does that: a printer fault, or a long name beside a stale
-            gate on the narrowest tablets.
+            content does that: a printer chip, or a long name beside a stale
+            gate, on the narrowest tablets and just above xl, where the
+            labels come back.
         Each cluster is the old row's height (`h-16` less its 1px border), so
         a row of the bar is the 64px it was, and from xl up, with the till's
         usual content, the header is the prototype's one row as it was.

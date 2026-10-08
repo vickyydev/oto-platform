@@ -68,7 +68,7 @@ export function PricingModeIndicator() {
           colour and the icon still tell weekend and holiday from weekday, and
           the tooltip carries the words. This chip is drawn only in the station
           header (768px and up), so the prototype's `sm:` never hid anything. */}
-      <span className="hidden xl:inline">{reason}</span>
+      <span className="sr-only xl:not-sr-only">{reason}</span>
     </span>
   );
 }
