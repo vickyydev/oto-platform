@@ -109,6 +109,14 @@ export interface BranchAppReconcileReport {
   appOnly: Array<{ appBranchName: string; marked: boolean }>;
   ambiguous: Array<{ appBranchName: string; why: string }>;
   unmapped: Array<{ branchName: string; reason: string }>;
+  /**
+   * S2-17b round 1, the case census: app rows that carried their platform id
+   * in upper case. Lowered in place, or — when another row already holds the
+   * lower-case id — left alone and listed here, never merged. Optional so a
+   * Console ahead of its api still renders.
+   */
+  caseLowered?: Array<{ appBranchName: string; coreBranchId: string }>;
+  caseCollisions?: Array<{ appBranchName: string; coreBranchId: string; heldBy: string | null }>;
   writes: number;
 }
 

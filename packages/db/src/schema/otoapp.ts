@@ -195,6 +195,27 @@ export const otoappUserBranchAccess = otoapp.table('user_branch_access', {
 /** The pool, or a transaction on it. Same surface for everything below. */
 export type OtoAppExec = Db | Parameters<Parameters<Db['transaction']>[0]>[0];
 
+/**
+ * The one spelling of a platform branch id that the seam stores and compares
+ * (S2-17b round 1).
+ *
+ * `core_branch_id` is `text` on the app's side, so it is compared as text,
+ * and text is case-sensitive. The platform's side is a `uuid`: it takes an
+ * upper-case id from a client (`ClientIdSchema` is `z.string().uuid()`) and
+ * always reads it back in lower case. A row written with the id exactly as the
+ * client sent it would therefore never match the branch it belongs to — not
+ * here, not in the `otoapp_v` views (0004 matches the lower-case pattern
+ * only), and not in a later lookup by the platform's id. The park's events
+ * would silently stop reaching the till.
+ *
+ * Every door into the seam goes through this: create, rename, the
+ * first-time claim by name, the lookups, and the case census below. Lower
+ * case and nothing else: a uuid has no other spelling worth folding.
+ */
+export function canonicalCoreBranchId(id: string): string {
+  return id.toLowerCase();
+}
+
 /** A platform branch, as the mapping needs it. */
 interface CoreBranchSeed {
   id: string;
@@ -288,7 +309,11 @@ async function loadCoreBranches(exec: OtoAppExec, operatorId: string): Promise<C
  * the first park's tenant, which is a leak that would look like a feature.
  */
 function anchorOf(appRows: AppBranchRow[], coreIds: Set<string>) {
-  return appRows.find((r) => r.coreBranchId !== null && coreIds.has(r.coreBranchId)) ?? null;
+  return (
+    appRows.find(
+      (r) => r.coreBranchId !== null && coreIds.has(canonicalCoreBranchId(r.coreBranchId)),
+    ) ?? null
+  );
 }
 
 /**
@@ -303,8 +328,13 @@ function anchorOf(appRows: AppBranchRow[], coreIds: Set<string>) {
  * every real deployment starts from.
  */
 function foreignTenantsOf(appRows: AppBranchRow[], ourIds: Set<string>): Set<string> {
+  // Compared in the canonical spelling: a row this operator wrote before the
+  // round 1 fix, in upper case, is still this operator's row, and reading it
+  // as somebody else's would fence this operator out of its own tenant.
   return new Set(
-    appRows.flatMap((r) => (r.coreBranchId && !ourIds.has(r.coreBranchId) ? [r.tenantId] : [])),
+    appRows.flatMap((r) =>
+      r.coreBranchId && !ourIds.has(canonicalCoreBranchId(r.coreBranchId)) ? [r.tenantId] : [],
+    ),
   );
 }
 
@@ -343,8 +373,11 @@ export async function mapCoreBranchIntoApp(
 ): Promise<AppBranchMapResult> {
   if (!(await otoAppBranchesInstalled(exec))) return unmappedResult('app_not_installed');
 
+  // Lower case from here on, whatever the client sent (see
+  // `canonicalCoreBranchId`): this is the value every write below stores.
+  const branchId = canonicalCoreBranchId(input.branchId);
   const appRows = await loadAppBranches(exec);
-  const already = appRows.find((r) => r.coreBranchId === input.branchId);
+  const already = appRows.find((r) => r.coreBranchId === branchId);
   if (already) {
     // A replay, or a branch created twice against the same id. Nothing to do,
     // and saying "created" for a row that was already there would be a lie in
@@ -357,9 +390,28 @@ export async function mapCoreBranchIntoApp(
       reason: null,
     };
   }
+  /**
+   * This branch's row, stored in another case before round 1 lower-cased the
+   * doors. No row holds the lower-case form (that was asked just above), so
+   * lowering it in place cannot collide with anything: it is the same row,
+   * finally spelled the way the views and the lookups read it.
+   */
+  const stale = appRows.find(
+    (r) => r.coreBranchId !== null && canonicalCoreBranchId(r.coreBranchId) === branchId,
+  );
+  if (stale) {
+    await markMapped(exec, stale.id, branchId);
+    return {
+      appBranchId: stale.id,
+      appBranchName: stale.name,
+      status: 'SUCCESS',
+      mappedBy: 'core_branch_id',
+      reason: null,
+    };
+  }
 
   const coreIds = new Set((await loadCoreBranches(exec, input.operatorId)).map((b) => b.id));
-  coreIds.add(input.branchId);
+  coreIds.add(branchId);
   const foreign = foreignTenantsOf(appRows, coreIds);
 
   // The first-time name join, applied to one branch: an app row that is
@@ -372,7 +424,7 @@ export async function mapCoreBranchIntoApp(
   );
   if (peers.length > 1) return unmappedResult('ambiguous_name');
   if (peers.length === 1) {
-    await markMapped(exec, peers[0]!.id, input.branchId);
+    await markMapped(exec, peers[0]!.id, branchId);
     return {
       appBranchId: peers[0]!.id,
       appBranchName: peers[0]!.name,
@@ -385,7 +437,7 @@ export async function mapCoreBranchIntoApp(
   const anchor = anchorOf(appRows, coreIds);
   if (!anchor) return unmappedResult('no_app_anchor');
 
-  const created = await createAppBranch(exec, anchor, input);
+  const created = await createAppBranch(exec, anchor, { ...input, branchId });
   return {
     appBranchId: created.id,
     appBranchName: created.name,
@@ -414,7 +466,7 @@ async function createAppBranch(
     // a placeholder sentence would be printed on something one day.
     address: input.address ?? '',
     timezone: input.timezone,
-    coreBranchId: input.branchId,
+    coreBranchId: canonicalCoreBranchId(input.branchId),
     coreSyncStatus: 'SUCCESS',
     coreSyncedAt: new Date(),
     coreSyncError: null,
@@ -426,7 +478,7 @@ const markMapped = (exec: OtoAppExec, appBranchId: string, coreBranchId: string)
   exec
     .update(otoappBranches)
     .set({
-      coreBranchId,
+      coreBranchId: canonicalCoreBranchId(coreBranchId),
       coreSyncStatus: 'SUCCESS',
       coreSyncedAt: new Date(),
       coreSyncError: null,
@@ -454,7 +506,9 @@ export async function renameAppBranchForCore(
       coreSyncedAt: new Date(),
       coreSyncError: null,
     })
-    .where(eq(otoappBranches.coreBranchId, input.branchId))
+    // The canonical spelling: a PATCH's id comes from its URL, and a uuid
+    // there may be written in either case.
+    .where(eq(otoappBranches.coreBranchId, canonicalCoreBranchId(input.branchId)))
     .returning({ id: otoappBranches.id, name: otoappBranches.name });
   return row ? { appBranchId: row.id, appBranchName: row.name } : null;
 }
@@ -491,7 +545,13 @@ export async function findAppBranchForCore(
 ): Promise<AppBranchLookup | 'ambiguous' | null> {
   if (!(await otoAppBranchesInstalled(exec))) return null;
   const rows = await loadAppBranches(exec);
-  const byId = rows.find((r) => r.coreBranchId === input.coreBranchId);
+  const coreBranchId = canonicalCoreBranchId(input.coreBranchId);
+  // The exact spelling first; then a row written in another case before the
+  // doors were lower-cased, which is still this branch's row (the case census
+  // in the reconciliation lowers it in place).
+  const byId =
+    rows.find((r) => r.coreBranchId === coreBranchId) ??
+    rows.find((r) => r.coreBranchId !== null && canonicalCoreBranchId(r.coreBranchId) === coreBranchId);
   if (byId) return { id: byId.id, name: byId.name, tenantId: byId.tenantId, matchedBy: 'core_branch_id' };
   // Same fence as the reconciliation's name step: a tenant another operator has
   // already claimed is not somewhere this one's staff may be seated by name.
@@ -522,8 +582,13 @@ export async function mappedAppBranches(
   if (!(await otoAppBranchesInstalled(exec))) return [];
   const ours = new Set((await loadCoreBranches(exec, operatorId)).map((b) => b.id));
   return (await loadAppBranches(exec))
-    .filter((r) => r.coreBranchId !== null && ours.has(r.coreBranchId))
-    .map((r) => ({ id: r.id, name: r.name, tenantId: r.tenantId, coreBranchId: r.coreBranchId! }));
+    .filter((r) => r.coreBranchId !== null && ours.has(canonicalCoreBranchId(r.coreBranchId)))
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      tenantId: r.tenantId,
+      coreBranchId: canonicalCoreBranchId(r.coreBranchId!),
+    }));
 }
 
 export interface AppBranchMappingRow {
@@ -605,6 +670,163 @@ export async function readAppBranchMapping(
   };
 }
 
+// --- The case census (S2-17b round 1) ---------------------------------------
+
+/** One app row whose `core_branch_id` is not spelled in lower case. */
+export interface AppBranchIdCaseFinding {
+  appBranchId: string;
+  appBranchName: string;
+  /** As stored. */
+  coreBranchId: string;
+  /** What it ought to read: `canonicalCoreBranchId(coreBranchId)`. */
+  canonical: string;
+  /** The app row that already holds the lower-case form, when one does. */
+  heldBy: string | null;
+}
+
+export interface AppBranchIdCaseCensus {
+  installed: boolean;
+  /** Every non-lower-case `core_branch_id` in scope, as it stood before this run. */
+  found: AppBranchIdCaseFinding[];
+  /** Lowered in place by this run. Only ever filled when asked to fix. */
+  lowered: AppBranchIdCaseFinding[];
+  /** Another row already holds the lower-case form: listed, never merged. */
+  collisions: AppBranchIdCaseFinding[];
+  /** Rows this run wrote. Zero is what a second run answers. */
+  writes: number;
+}
+
+/** The words a colliding row carries, so the Console can show why it is left alone. */
+export const CASE_COLLISION_ERROR =
+  'Carries its platform branch id in upper case, and another app row already holds that id in lower case — joined by hand, never merged';
+
+/**
+ * Which `otoapp.branches` rows carry a platform branch id that is not lower
+ * case — the rows written before round 1 lower-cased the doors, which the
+ * views and every lookup by the platform's id miss (see
+ * `canonicalCoreBranchId`).
+ *
+ * Two uses, and the second is why `fix` exists:
+ *
+ *  - **The read-back.** No operator and no fix: every such row in the
+ *    database, listed, nothing written. This is the census run on staging; a
+ *    clean database answers `found: []`.
+ *  - **Inside the reconciliation** (`reconcileAppBranches`, phase 0), for one
+ *    operator: a row whose lower-case form is one of that operator's branches
+ *    is lowered in place — but only when no other row already holds the
+ *    lower-case form. `branches_core_branch_id_unique` is over the raw text, so
+ *    both spellings can exist side by side, and two app rows claiming one park
+ *    is a question for a person (whose events, whose staff), not something to
+ *    settle by deleting one. A collision is listed and marked FAILED with the
+ *    reason, and never merged.
+ *
+ * Writing is fenced to one operator for the same reason the rest of the seam
+ * is: a row whose id is not one of this operator's branches is somebody
+ * else's, and this operator's administrator does not write on it.
+ */
+export async function censusAppBranchIdCase(
+  exec: OtoAppExec,
+  opts: { operatorId?: string; fix?: boolean } = {},
+): Promise<AppBranchIdCaseCensus> {
+  const census: AppBranchIdCaseCensus = {
+    installed: false,
+    found: [],
+    lowered: [],
+    collisions: [],
+    writes: 0,
+  };
+  if (opts.fix && !opts.operatorId) {
+    throw new Error('censusAppBranchIdCase: fixing is done for one operator; name it');
+  }
+  if (!(await otoAppBranchesInstalled(exec))) return census;
+  census.installed = true;
+
+  const rows = await loadAppBranches(exec);
+  let inScope: (canonical: string) => boolean = () => true;
+  if (opts.operatorId) {
+    // Archived branches included: an archived park keeps its app row, and that
+    // row should still be spelled so the history under it can be found.
+    const ours = new Set(
+      (
+        await exec
+          .select({ id: branch.id })
+          .from(branch)
+          .where(eq(branch.operatorId, opts.operatorId))
+      ).map((b) => b.id),
+    );
+    inScope = (canonical) => ours.has(canonical);
+  }
+
+  /** Raw value → the app row holding it, across EVERY row: the index is global. */
+  const holders = new Map<string, string>();
+  for (const r of rows) if (r.coreBranchId !== null) holders.set(r.coreBranchId, r.id);
+
+  const misspelled = rows
+    .filter(
+      (r): r is AppBranchRow & { coreBranchId: string } =>
+        r.coreBranchId !== null && r.coreBranchId !== canonicalCoreBranchId(r.coreBranchId),
+    )
+    .filter((r) => inScope(canonicalCoreBranchId(r.coreBranchId)))
+    // A stable order, so two rows lowering to one id resolve the same way on
+    // every run: the first is lowered, the second meets it and is listed.
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+
+  for (const r of misspelled) {
+    const canonical = canonicalCoreBranchId(r.coreBranchId);
+    const finding: AppBranchIdCaseFinding = {
+      appBranchId: r.id,
+      appBranchName: r.name,
+      coreBranchId: r.coreBranchId,
+      canonical,
+      heldBy: holders.get(canonical) ?? null,
+    };
+    census.found.push(finding);
+
+    if (finding.heldBy) {
+      census.collisions.push(finding);
+      if (opts.fix && (r.coreSyncStatus !== 'FAILED' || r.coreSyncError !== CASE_COLLISION_ERROR)) {
+        await exec
+          .update(otoappBranches)
+          .set({ coreSyncStatus: 'FAILED', coreSyncedAt: new Date(), coreSyncError: CASE_COLLISION_ERROR })
+          .where(eq(otoappBranches.id, r.id));
+        census.writes += 1;
+      }
+      continue;
+    }
+    if (!opts.fix) continue;
+
+    /**
+     * Guarded twice: on the value this run read (a row changed under it is
+     * left for the next run), and on nobody holding the lower-case form by the
+     * time the statement runs — so a concurrent create that just wrote it is
+     * met as a collision on the next run rather than as a unique violation
+     * that rolls back the whole reconciliation.
+     */
+    const updated = await exec
+      .update(otoappBranches)
+      .set({
+        coreBranchId: canonical,
+        coreSyncStatus: 'SUCCESS',
+        coreSyncedAt: new Date(),
+        coreSyncError: null,
+      })
+      .where(
+        and(
+          eq(otoappBranches.id, r.id),
+          eq(otoappBranches.coreBranchId, r.coreBranchId),
+          sql`not exists (select 1 from otoapp.branches o where o.core_branch_id = ${canonical})`,
+        ),
+      )
+      .returning({ id: otoappBranches.id });
+    if (updated.length === 0) continue;
+    holders.delete(r.coreBranchId);
+    holders.set(canonical, r.id);
+    census.lowered.push(finding);
+    census.writes += 1;
+  }
+  return census;
+}
+
 // --- Reconciling what already exists ----------------------------------------
 
 export type AppBranchUnmappedReason = 'no_app_anchor' | 'ambiguous_name';
@@ -625,6 +847,13 @@ export interface AppBranchReconcileReport {
   appOnly: Array<{ appBranchId: string; appBranchName: string; marked: boolean }>;
   ambiguous: Array<{ appBranchId: string; appBranchName: string; why: AppBranchAmbiguity }>;
   unmapped: Array<{ branchId: string; branchName: string; reason: AppBranchUnmappedReason }>;
+  /**
+   * Phase 0, the case census (S2-17b round 1): this operator's app rows that
+   * carried their platform id in another case and were lowered in place.
+   */
+  caseLowered: AppBranchIdCaseFinding[];
+  /** Ones that could not be, because another row already holds the lower-case id. Listed, never merged. */
+  caseCollisions: AppBranchIdCaseFinding[];
   /** Rows this run actually wrote. Zero is what a second run answers. */
   writes: number;
 }
@@ -637,6 +866,8 @@ const emptyReport = (installed: boolean): AppBranchReconcileReport => ({
   appOnly: [],
   ambiguous: [],
   unmapped: [],
+  caseLowered: [],
+  caseCollisions: [],
   writes: 0,
 });
 
@@ -644,7 +875,10 @@ const emptyReport = (installed: boolean): AppBranchReconcileReport => ({
  * Join the two lists as they stand today — the one-off, run by the seed and by
  * `POST /branches/oto-app/reconcile`.
  *
- * Four phases, in this order and for these reasons:
+ * Phase 0 is the case census (`censusAppBranchIdCase`, S2-17b round 1): this
+ * operator's rows that carry their platform id in another case are lowered in
+ * place first, or listed when another row already holds the lower-case id.
+ * Then four phases, in this order and for these reasons:
  *
  *  1. **By id.** Anything already carrying `core_branch_id` is mapped and is
  *     not looked at again. A name may drift on either side afterwards and this
@@ -670,9 +904,17 @@ export async function reconcileAppBranches(
 ): Promise<AppBranchReconcileReport> {
   if (!(await otoAppBranchesInstalled(exec))) return emptyReport(false);
 
+  const report = emptyReport(true);
+  // 0 — the case census: this operator's rows spelled in another case are
+  // lowered first, so that every phase below meets them as the mapped rows
+  // they are. Read the app's rows only after it.
+  const census = await censusAppBranchIdCase(exec, { operatorId: opts.operatorId, fix: true });
+  report.caseLowered = census.lowered;
+  report.caseCollisions = census.collisions;
+  report.writes += census.writes;
+
   const coreBranches = await loadCoreBranches(exec, opts.operatorId);
   const appRows = await loadAppBranches(exec);
-  const report = emptyReport(true);
 
   // 1 — already joined by id.
   const ourIds = new Set(coreBranches.map((b) => b.id));

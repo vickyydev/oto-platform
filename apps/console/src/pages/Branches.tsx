@@ -314,12 +314,24 @@ function ReconcileReport({ report }: { report: BranchAppReconcileReport }) {
       (a) => `Left “${a.appBranchName}” alone: more than one branch it could be.`,
     ),
     ...report.unmapped.map((u) => `${u.branchName} has no row in the app (${u.reason}).`),
+    ...(report.caseLowered ?? []).map(
+      (c) => `Lower-cased the platform id on the app's “${c.appBranchName}”, so its events reach the till.`,
+    ),
   ];
+  /**
+   * Said whether or not this run wrote anything: a collision is left exactly
+   * as it was, so a second run writes nothing — and "nothing to change" would
+   * then hide the one thing a person has to settle.
+   */
+  const collisions = (report.caseCollisions ?? []).map(
+    (c) =>
+      `Left “${c.appBranchName}” alone: it carries its platform id in upper case and another app row already holds that id. Settle which row is the park's by hand — nothing was merged.`,
+  );
 
   return (
     <div className="rounded-[14px] bg-foreground/[0.025] px-4 py-3 @lg:ml-[34px]">
       <h3 className="text-[13px] font-bold">The last reconciliation</h3>
-      {report.writes === 0 ? (
+      {report.writes === 0 && collisions.length === 0 ? (
         <RailNote className="mt-1 text-[12.5px]">
           Nothing to change — {report.alreadyMapped} branch
           {report.alreadyMapped === 1 ? '' : 'es'} already joined by id. Running it again is always
@@ -327,8 +339,8 @@ function ReconcileReport({ report }: { report: BranchAppReconcileReport }) {
         </RailNote>
       ) : (
         <ul className="mt-1 flex flex-col gap-1 text-[13px]">
-          {lines.map((line) => (
-            <li key={line} className="flex gap-2">
+          {[...(report.writes === 0 ? [] : lines), ...collisions].map((line, i) => (
+            <li key={`${i}:${line}`} className="flex gap-2">
               <span className="text-muted-foreground">·</span>
               <span className="min-w-0 break-words">{line}</span>
             </li>

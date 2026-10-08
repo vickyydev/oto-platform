@@ -87,7 +87,16 @@ export async function branchRoutes(app: App): Promise<void> {
     },
     async (req, reply) => {
       const auth = req.requireAuth();
-      const { id: sentId, ...fields } = req.body;
+      const { id: sentRaw, ...fields } = req.body;
+      /**
+       * Lower case at the claim, before the id names anything (S2-17b round
+       * 1). `core.branch.id` reads back in lower case whatever was sent, but
+       * the OTO App's `core_branch_id` is text and matches case-sensitively:
+       * an upper-case id carried through would put the park outside the seam
+       * and outside the `otoapp_v` views. The answer then names the branch the
+       * way every later read of it will.
+       */
+      const sentId = sentRaw?.toLowerCase();
       const claim = await claimClientId(
         sentId,
         async (id) => (await app.db.select().from(branch).where(eq(branch.id, id)).limit(1))[0],
@@ -241,7 +250,8 @@ export async function branchRoutes(app: App): Promise<void> {
             ? await syncBranchRenameToApp(
                 tx,
                 { actorAccountId: auth.accountId, operatorId: auth.operatorId, requestId: req.id },
-                { branchId: req.params.id, name: rest.name },
+                // The id as the database spells it, not as the URL did.
+                { branchId: before.id, name: rest.name },
               )
             : null;
         await audit.record(tx, {

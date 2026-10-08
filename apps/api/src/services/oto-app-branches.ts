@@ -126,6 +126,23 @@ export async function reconcileBranchesWithApp(
   ctx: AppBranchAuditContext,
 ): Promise<AppBranchReconcileReport> {
   const report = await reconcileAppBranches(tx, { operatorId: ctx.operatorId });
+  // Phase 0, the case census (S2-17b round 1): a lowered id is a write into
+  // the app's table like any other, so it gets its own line. A collision is
+  // not lowered and not merged; the summary row below carries it, and the
+  // answer lists it for whoever ran this.
+  for (const row of report.caseLowered) {
+    await audit.record(tx, {
+      actorAccountId: ctx.actorAccountId,
+      operatorId: ctx.operatorId,
+      branchId: row.canonical,
+      action: 'branch.oto_app_map',
+      entityType: 'otoapp_branch',
+      entityId: row.appBranchId,
+      before: { coreBranchId: row.coreBranchId },
+      after: { coreBranchId: row.canonical, appBranchName: row.appBranchName, mappedBy: 'case_census' },
+      requestId: ctx.requestId,
+    });
+  }
   for (const row of report.matchedByName) {
     await audit.record(tx, {
       actorAccountId: ctx.actorAccountId,
