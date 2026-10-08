@@ -19,6 +19,7 @@ import {
   findOtoAppUser,
   linkOtoAppUser,
   listUnlinkedOtoAppUsers,
+  otoAppUserIsOperators,
   unlinkOtoAppUser,
   type OtoAppBranchPlacement,
 } from '../services/oto-app-users';
@@ -264,6 +265,22 @@ export async function appIdentityRoutes(app: App): Promise<void> {
         let appBranch: OtoAppBranchPlacement | null = null;
         if (externalUserIdGiven) {
           if (isOtoApp) {
+            /**
+             * S2-17b round 2 (round 1's standing pin 1) — only somebody the
+             * unlinked list could show this operator: a user the app places in
+             * a park group this operator is anchored in. Another park group's
+             * user is answered as not there, and nothing is stamped.
+             */
+            if (
+              !(await otoAppUserIsOperators(tx, {
+                operatorId: auth.operatorId,
+                userId: externalUserIdGiven,
+              }))
+            ) {
+              throw errors.notFound(
+                'The OTO App has no user with that id in a park group of this operator',
+              );
+            }
             const stamped = await linkOtoAppUser(tx, {
               userId: externalUserIdGiven,
               platformAccountId: accountId,

@@ -1,5 +1,5 @@
 import { hash } from '@node-rs/argon2';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   account,
@@ -52,6 +52,25 @@ beforeAll(async () => {
   adminCookie = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
   const [op] = await ctx.db.select().from(operator).limit(1);
   operatorId = op!.id;
+  /**
+   * S2-17b round 2 — Link claims only a user the unlinked list could show this
+   * operator: one the app places in a park group this operator is anchored in
+   * (round 1's standing pin 1). One park group here, holding one of this
+   * operator's parks; the users these tests link carry no branch-access row,
+   * and in a one-park-group database the app places them in it.
+   */
+  const [park] = await ctx.db
+    .select({ id: branch.id })
+    .from(branch)
+    .where(eq(branch.operatorId, operatorId))
+    .limit(1);
+  const tenantId = newId();
+  await ctx.db.execute(
+    sql`insert into otoapp.tenants (id, name, slug) values (${tenantId}, 'ZZ app identities', 'zz-app-identities')`,
+  );
+  await ctx.db.execute(
+    sql`insert into otoapp.branches (id, tenant_id, name, address, core_branch_id) values (${newId()}, ${tenantId}, 'ZZ app identities park', '', ${park!.id})`,
+  );
 });
 afterAll(async () => {
   await ctx.close();
