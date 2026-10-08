@@ -124,6 +124,7 @@ import { db, pool } from "./db";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
+import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
@@ -1431,11 +1432,19 @@ export async function registerRoutes(
         const linkedEmployee = await storage.getEmployeeByUserId(userToDelete.id);
         const person = await storage.getPersonByEmail(userToDelete.email);
         if (linkedEmployee || person) {
-          return res.status(409).json({ message: "Deactivate this account to preserve its HR record" });
+          return res.status(409).json({ message: DEACTIVATE_INSTEAD });
         }
       }
-      
-      await storage.deleteUser(req.params.id);
+
+      // One transaction, and the same words for the two cases that used to
+      // end in a bare 500 or a broken platform link: a user the app still
+      // references, and a user the platform has linked (S2-17b round 1).
+      const outcome = await deleteManagedUser(pool, req.params.id);
+      if (!outcome.deleted) {
+        return res.status(outcome.status).json(
+          outcome.status === 409 ? { message: outcome.message, reason: outcome.reason } : { message: outcome.message },
+        );
+      }
       res.sendStatus(204);
     } catch (error) {
       next(error);
