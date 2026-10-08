@@ -803,6 +803,22 @@ try {
     const res = await call("POST", `/api/branches/${A.y}/kiosk-code`, { cookie: cookie.aLimited });
     assert.equal(res.status, 200, show(res));
   });
+  // Q46's record (round 5's review): the reach as it stands, the app's
+  // default until the owner answers. Another park group's tablets are fenced
+  // (section 4 of the plan); this is the same park group's other branch.
+  await check("FINDING Q46 (reception tablets): a manager limited to one branch lists and revokes another branch's reception tablet in their park group (the app has no branch rule there)", async () => {
+    const code = await call("POST", `/api/branches/${A.y}/kiosk-code`, { cookie: cookie.a });
+    assert.equal(code.status, 200, show(code));
+    const exchanged = await call("POST", "/api/kiosk/exchange", { body: { code: code.body.code } });
+    assert.equal(exchanged.status, 200, show(exchanged));
+    const yDevice = exchanged.body.device.id as string;
+    const listed = await call("GET", `/api/branches/${A.y}/kiosk-devices`, { cookie: cookie.aLimited });
+    assert.equal(listed.status, 200, show(listed));
+    assert.ok((listed.body as { id: string }[]).some((d) => d.id === yDevice), JSON.stringify(listed.body));
+    const revoked = await call("DELETE", `/api/kiosk-devices/${yDevice}/revoke`, { cookie: cookie.aLimited });
+    assert.equal(revoked.status, 200, show(revoked));
+    assert.deepEqual(await q("select is_active from kiosk_devices where id = $1", [yDevice]), [{ is_active: false }]);
+  });
 
   // ── 6. Restricted-branch proof ──────────────────────────────────────────────
   console.log("6. a manager limited to branch X (the app's own branch rules; FINDINGs pinned as they stand):");
@@ -847,7 +863,7 @@ try {
 
   const yRota = await rota(A, A.y);
   const bRota = await rota(B, B.x);
-  await check("scheduling: the rota and the legacy shift list keep a limited manager to their branch", async () => {
+  await check("scheduling: the rota keeps a limited manager to their branch, and the legacy shift list's coverage read does when a branch is named (with none, the app has no branch rule: Q39)", async () => {
     const window = `from=${day(0)}&to=${day(6)}`;
     assert.equal((await call("GET", `/api/rota?scope=branch&branchId=${A.y}&${window}`, { cookie: cookie.aLimited })).status, 403);
     assert.equal((await call("GET", `/api/rota?scope=branch&branchId=${A.x}&${window}`, { cookie: cookie.aLimited })).status, 200);
@@ -903,6 +919,21 @@ try {
     assert.equal((await call("GET", `/api/checklists/templates/${tplX}`, { cookie: cookie.aLimited })).status, 200);
     const started = await call("POST", "/api/checklist-runs/start", { cookie: cookie.aLimited, body: { templateId: tplX } });
     assert.ok([200, 201].includes(started.status), show(started));
+  });
+  // Q46's record (round 5's review): the reach as it stands, the app's
+  // default until the owner answers.
+  await check("FINDING Q46 (checklists): a manager limited to X reads Y's checklist history, though Y's template itself is refused them (the app has no branch rule on the history)", async () => {
+    const runY = randomUUID();
+    await q("insert into checklist_runs (id, tenant_id, template_id, branch_id, status, completed_at) values ($1, $2, $3, $4, 'completed', now())", [
+      runY,
+      A.tenant,
+      tplY,
+      A.y,
+    ]);
+    assert.equal((await call("GET", `/api/checklists/templates/${tplY}`, { cookie: cookie.aLimited })).status, 403);
+    const history = await call("GET", `/api/checklists/checker-history/${tplY}`, { cookie: cookie.aLimited });
+    assert.equal(history.status, 200, show(history));
+    assert.deepEqual((history.body.runs as { id: string; branchId: string }[]).map((r) => [r.id, r.branchId]), [[runY, A.y]]);
   });
 
   await check("announcements: an audience outside X is refused in words; Y's announcement is not listed and is a 404 to change or remove; X's work", async () => {
