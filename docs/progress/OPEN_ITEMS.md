@@ -48,7 +48,7 @@ evidence (the sweep's full evidence lives in the tickets' comments).
 | # | Ticket | Prio | The truth in one line |
 |---|---|---|---|
 | 11 | SCRUM-272 + SCRUM-293 | Medium | **Together, early.** Generate client types from the api description, then the seam walker over them. The hand-typed surface has doubled (~300 shapes); this class of break has bitten five times. Do before more screens are written. |
-| 12 | SCRUM-371 | Medium | Phone till loses the sale when the inactivity lock fires during hand-to-customer. Needs the owner's keep-across-lock ruling (see section 3). |
+| 12 | SCRUM-371 | Medium | Phone till loses the sale when the lock fires during hand-to-customer. NO ruling needed: the counter already keeps its stations through a lock — give the phone shell the same retention. |
 | 13 | SCRUM-381 | Low | Station Setup test print records no print job, so the box's outcome is invisible in the Printing panel. |
 | 14 | SCRUM-372 + the 352 scraps | Low | **Together.** Show the refusal where the button is (phone Pay button; the phone-F&B half noted on 352's Deployed ledger). |
 | 15 | SCRUM-378 | Medium | A Console box can be created but never retired (updateBox exists, nothing calls it). |
@@ -64,7 +64,7 @@ evidence (the sweep's full evidence lives in the tickets' comments).
 | 25 | SCRUM-515 | Low | New: hide the demo wristbands grid on production tills. |
 | 26 | SCRUM-514 | Low | New: two sales finalising together can overshoot a promo code's limit. |
 | 27 | SCRUM-509 | Low | Phone bar overflow (the lock button is what gets cut off). Needs the collapse-order design choice first. |
-| 28 | SCRUM-326 | Low | Booth result card overruns a 16:9 stage by 36px. |
+| 28 | — | — | (SCRUM-326 closed by the late batch: fixed 24 Sep, re-measured at 777px on the stage.) |
 
 ### Third: hygiene and platform debt
 
@@ -78,9 +78,9 @@ evidence (the sweep's full evidence lives in the tickets' comments).
 | 34 | SCRUM-274 | Medium | The OTO App's naive timestamps (210 columns, 44 with timezone). Needs the which-zone-were-legacy-rows-written-in decision first; one migration per table after. |
 | 35 | SCRUM-277 | Medium | The delete-or-build list for uncalled endpoints (the security half became SCRUM-512; the tax-override tier is an owner call). |
 | 36 | SCRUM-419 | Low | Pi operations smalls; pull "keep the running booth when a second is added" and "stranded facts on re-claim" forward if a second booth or Pi swap is imminent. |
-| 37 | SCRUM-369 | Medium | Verify closed by the 8 Oct CI reshape (pos browser suites now run in CI); close with the run as evidence if so. |
-| 38 | SCRUM-339 / SCRUM-340 | Low | Check-in smalls (duplicate family confirmation; drop-off lookup's prototype read) — judged in the late batch; see tickets. |
-| 39 | SCRUM-368 | Medium | Free-item promo at the station takes nothing off — judged in the late batch; see ticket. |
+| 37 | SCRUM-369 | Medium | Half-stale but open: the till's unit and browser-measurement suites run in CI since 8 Oct, but the Playwright journeys (sign-in, sale ledger, voucher, offline) run nowhere — copy the Console's e2e harness. |
+| 38 | SCRUM-339 | Low | The till opens TWO visits for one family (membership check + supervision gate) and bands/slips now read them — merge the opens. 340 closed (the board reads the platform). |
+| 39 | SCRUM-368 | Low | The silent no-op is closed and platform support exists; what remains is lifting the stations' blanket refusal of free-item codes so that support is reached. A small feature now, not a defect. |
 
 ### Blocked or waiting (not workable now)
 
@@ -102,8 +102,6 @@ evidence (the sweep's full evidence lives in the tickets' comments).
   report shows.
 - **SCRUM-485** — only the per-place-vs-branch-wide stock opening matters
   (costly to reverse later); the build already follows the other answers.
-- **SCRUM-371** — may the phone till keep its sale across the inactivity
-  lock? (Recommended: yes; it is a daily loss for a family that hesitates.)
 - **SCRUM-428** — typed or issued booth PINs.
 - **SCRUM-434** — how money reaches a new booth station.
 - **SCRUM-277's remainder** — per uncalled endpoint group: build the
