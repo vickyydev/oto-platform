@@ -36,8 +36,8 @@ import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
  *     - H11 on BOTH constraint shapes: another park group's saves refused in
  *       words; the default park group's updates, new keys, five concurrent
  *       saves of one key and a hand-over row's claim; never a 500;
- *     - Data Admin, a door that writes another park group's settings row in
- *       4a around the 409 (finding 2);
+ *     - Data Admin, a door that wrote another park group's settings row in
+ *       4a around the 409, now held to the default park group (finding 2);
  *     - H12 over all six reads: A's key against B's rows (404, the same words
  *       as a row that does not exist), lists that never name the other park
  *       group, an employee whose own links cross park groups, a scopeless,
@@ -51,10 +51,12 @@ import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
  *     fences (Attention paused, `settings_key_unique` kept, no NOT NULL,
  *     nothing of rounds 5-7), and the census with its evidence (finding 3).
  *
- * Findings are pinned with `it.fails` (the repo's review convention): each
- * states the behaviour that should hold, fails today, and turns red the day it
- * is fixed so the fix round flips it. A normal `it` beside each proves the
- * failure is the defect and not the arrangement. Five, none blocking 4a:
+ * Findings were pinned with `it.fails` (the repo's review convention): each
+ * stated the behaviour that should hold and failed until fixed. The fix round
+ * fixed all five and flipped each pin to an `it`; the `it` beside each, which
+ * proved the failure was the defect and not the arrangement, now proves the
+ * fix or that its pin is not passing on its arrangement alone. Five, none
+ * blocking 4a, all fixed:
  *
  *  1. (low) The default park group is slug `default` and nothing else. On a
  *     database whose only park group carries another slug, 0006 MINTS a
