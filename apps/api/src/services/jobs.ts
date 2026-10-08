@@ -17,7 +17,15 @@ import {
 } from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
 import { OCCUPANCY_JOB, runOccupancyJob } from './occupancy';
+import { JobFailedError } from './job-failure';
+import { buildOtoAppJobsClient } from './otoapp-directory';
 import { OTOAPP_EMPLOYEE_SYNC_JOB, runOtoAppEmployeeSync } from './otoapp-employee-sync';
+import {
+  OTOAPP_MIDNIGHT_JOB,
+  OTOAPP_PRESENCE_JOB,
+  OTOAPP_RECONCILE_JOB,
+  runOtoAppNightJob,
+} from './otoapp-jobs';
 import { flagPendingPayments, gatewayFor, pollPendingAttempts } from './payments/gateway';
 import { PRINT_RETENTION_DAYS, purgeOldPrintJobs } from './print';
 import {
@@ -98,6 +106,62 @@ export function scheduleLockId(name: string): [namespace: number, key: number] {
   return [LOCK_NAMESPACE, createHash('sha256').update(name).digest().readInt32BE(0)];
 }
 
+/**
+ * An exclusive job's run lock (S2-17b round 3). Ours, beside the others in
+ * this api (`0x070a` the schedule claim … `0x0710` an operator's employee
+ * copy), and deliberately not the schedule claim's: that one is
+ * transaction-scoped and released the moment the tick is claimed, this one is
+ * held for the run. Exported so a test can hold it and watch a run stand down.
+ */
+const EXCLUSIVE_LOCK_NAMESPACE = 0x0711;
+
+export function exclusiveRunLockId(name: string): [namespace: number, key: number] {
+  return [EXCLUSIVE_LOCK_NAMESPACE, createHash('sha256').update(name).digest().readInt32BE(0)];
+}
+
+/** node-postgres under Drizzle, narrowed to what holding a lock needs. */
+interface LockPool {
+  connect(): Promise<{
+    query(text: string, values?: unknown[]): Promise<{ rows: Array<Record<string, unknown>> }>;
+    release(err?: Error | boolean): void;
+  }>;
+}
+
+/**
+ * Take an exclusive job's run lock on a connection of its own, or answer null
+ * when another run holds it. Session-level, not transaction-level: it has to
+ * outlive the statements of the run and of the record, and a long run must
+ * not sit idle inside a transaction (`idle_in_transaction_session_timeout`
+ * would end it). The returned release unlocks and hands the connection back;
+ * a connection that cannot unlock is destroyed, which releases it anyway.
+ */
+async function holdExclusiveRun(db: Db, name: string): Promise<(() => Promise<void>) | null> {
+  const pool = (db as { $client?: unknown }).$client as LockPool | undefined;
+  if (!pool || typeof pool.connect !== 'function') {
+    throw new Error(`${name} is exclusive and needs a node-postgres pool to hold its run lock`);
+  }
+  const client = await pool.connect();
+  const [namespace, key] = exclusiveRunLockId(name);
+  try {
+    const { rows } = await client.query('select pg_try_advisory_lock($1::int4, $2::int4) as locked', [namespace, key]);
+    if (!rows[0]?.locked) {
+      client.release();
+      return null;
+    }
+  } catch (err) {
+    client.release(err as Error);
+    throw err;
+  }
+  return async () => {
+    try {
+      await client.query('select pg_advisory_unlock($1::int4, $2::int4)', [namespace, key]);
+      client.release();
+    } catch (err) {
+      client.release(err as Error);
+    }
+  };
+}
+
 export interface JobContext {
   db: Db;
   env: Env;
@@ -121,6 +185,21 @@ export interface JobDefinition {
   graceSeconds?: number;
   /** How loudly the watchdog complains when this one stops running. */
   severity?: AlertSeverity;
+  /**
+   * Never two runs at once, anywhere — not even when forced (S2-17b round 3,
+   * H8).
+   *
+   * The tick claim below keeps the SCHEDULE single: two instances make one
+   * claim per interval. But "Run now" and Retry force past the due check, so
+   * a press beside a running tick, or on two instances, starts a second run.
+   * For a sweep that is harmless. For a job that reads "already done today?"
+   * from its own runs and then does the day's work, it is the race between
+   * the read and the record that lets one night run twice. An exclusive job
+   * holds a session-level advisory lock on a connection of its own from
+   * before it starts until after its run is recorded, so the next run always
+   * reads the last one's record; one that cannot take it answers `locked`.
+   */
+  exclusive?: boolean;
   run(ctx: JobContext): Promise<JobResult | void>;
 }
 
@@ -699,6 +778,57 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
       intervalSeconds: 900,
       run: async ({ db, now }) => ({ detail: await runOtoAppEmployeeSync(db, now) }),
     },
+    ...buildOtoAppNightJobs(deps),
+  ];
+}
+
+/**
+ * THE OTO APP'S NIGHT WORK (S2-17b round 3, PLAN section 5 "The app's jobs on
+ * the platform runner"; `services/otoapp-jobs.ts`).
+ *
+ * The app's three in-process batches, run here once the app is switched to
+ * `OTOAPP_JOBS=platform`, one park group at a time through its directory job
+ * endpoint. The two daily batches tick every five minutes and run each park
+ * group's batch once per Bangkok date, at the first tick past its hour; a
+ * failed park group runs again at the next tick. Registering them wrote the
+ * expectations the watchdog raises `ops.missing` from when they stop, and a
+ * run that keeps failing raises `ops.failing`. A deployment with no OTO App
+ * night work configured runs each as a no-op that says so.
+ *
+ * Exported for the tests, which build these with a clock and an app of their
+ * own.
+ */
+export function buildOtoAppNightJobs(
+  deps: Pick<JobDeps, 'env' | 'log'>,
+  opts: { client?: ReturnType<typeof buildOtoAppJobsClient>; clock?: () => Date } = {},
+): JobDefinition[] {
+  const client = opts.client ?? buildOtoAppJobsClient(deps.env, deps.log);
+  const at = (now: Date) => (opts.clock ? opts.clock() : now);
+  return [
+    {
+      name: OTOAPP_MIDNIGHT_JOB,
+      description:
+        "Runs the OTO App's 00:01 batch for each park group that handed it to the platform — guests still checked in are checked out, missing clock-outs are closed at midnight, the day's recurring tasks are made — once per Bangkok date, and again at the next tick when it fails",
+      intervalSeconds: 300,
+      exclusive: true,
+      run: async ({ db, now }) => ({ detail: await runOtoAppNightJob({ db, client }, 'midnight', at(now)) }),
+    },
+    {
+      name: OTOAPP_RECONCILE_JOB,
+      description:
+        "Runs the OTO App's 03:00 batch for each park group — presence repaired, leavers moved to Left and their OTO App logins switched off, old availability records cleared — once per Bangkok date, and lists on Failures each leaver whose platform account is still active",
+      intervalSeconds: 300,
+      exclusive: true,
+      run: async ({ db, now }) => ({ detail: await runOtoAppNightJob({ db, client }, 'reconcile', at(now)) }),
+    },
+    {
+      name: OTOAPP_PRESENCE_JOB,
+      description:
+        "Runs the OTO App's presence check for each park group every six hours: stuck clock-ins counted, and presence that disagrees with the clock-in record repaired",
+      intervalSeconds: 6 * 3600,
+      exclusive: true,
+      run: async ({ db, now }) => ({ detail: await runOtoAppNightJob({ db, client }, 'presence', at(now)) }),
+    },
   ];
 }
 
@@ -866,8 +996,15 @@ export function createJobRunner(opts: JobRunnerOptions): JobRunner {
     if (claim === 'locked' || claim === 'not_due') return claim;
 
     running.add(job.name);
+    let release: (() => Promise<void>) | null = null;
     const startedAt = claim;
     try {
+      if (job.exclusive) {
+        release = await holdExclusiveRun(db, job.name);
+        // Another run — forced, or on another instance — is still going, and
+        // it records its own outcome.
+        if (!release) return 'locked';
+      }
       const result = await job.run({ db, env, log, now: startedAt });
       await recordRun(db, {
         kind: 'job',
@@ -882,9 +1019,19 @@ export function createJobRunner(opts: JobRunnerOptions): JobRunner {
        * On the pool, after whatever the job did has rolled back — the same
        * rule as the failure audit row in `services/tx.ts`. A record of an
        * attempt that dies with the transaction that failed is no record.
+       *
+       * A job that failed having finished part of its work says what it
+       * finished (`JobFailedError`), and that goes on the failed run too.
        */
       try {
-        await recordRun(db, { kind: 'job', name: job.name, outcome: 'failed', startedAt, error: err });
+        await recordRun(db, {
+          kind: 'job',
+          name: job.name,
+          outcome: 'failed',
+          startedAt,
+          error: err,
+          ...(err instanceof JobFailedError ? { detail: err.detail } : {}),
+        });
       } catch (recordErr) {
         // Never let the record of a failure replace the failure itself.
         log.error({ err: recordErr, job: job.name }, 'job failure could not be recorded');
@@ -892,6 +1039,8 @@ export function createJobRunner(opts: JobRunnerOptions): JobRunner {
       log.error({ err, job: job.name }, 'job failed');
       return 'failed';
     } finally {
+      // After the record, so the next run of an exclusive job reads it.
+      if (release) await release();
       running.delete(job.name);
     }
   }

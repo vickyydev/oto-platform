@@ -4,6 +4,7 @@ import { isIP } from 'node:net';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { parseAppOrigins, parseHandoffKeys } from './services/handoff';
+import { parseOtoAppJobKeys } from './services/otoapp-directory';
 import { parseStaffTokenKey } from './lib/staff-token-key';
 
 // .env lives at the repository root; entrypoints may run from any package cwd.
@@ -591,6 +592,43 @@ const EnvSchema = z.object({
   OTOAPP_DIRECTORY_KEY: z.string().default(''),
   /** How long one directory call may take before it counts as no answer. */
   OTOAPP_DIRECTORY_TIMEOUT_MS: z.coerce.number().int().min(500).max(60_000).default(8000),
+
+  /**
+   * THE OTO APP'S NIGHT WORK ON THIS PLATFORM'S RUNNER (S2-17b round 3, PLAN
+   * section 5 "The app's jobs on the platform runner").
+   *
+   * One entry per park group whose night batches this platform runs:
+   * `<app tenant uuid>:<directory key>`, comma-separated. Each key is issued
+   * by the app for that park group with the `jobs:run` scope
+   * (`npm run directory:client -- create --tenant <uuid> --name platform-jobs
+   * --scope jobs:run`). The tenant is named here as well as bound to the key
+   * so the app can refuse a key pasted against the wrong park group (404)
+   * rather than run its own park group's batch under another's name.
+   * **Secret** — the keys are never logged, never on a page, never in a run's
+   * detail.
+   *
+   * Empty (or `OTOAPP_DIRECTORY_URL` empty): `job:otoapp.midnight`,
+   * `.reconcile` and `.presence` run as no-ops that say so, which is what a
+   * deployment whose OTO App still runs its own timers (`OTOAPP_JOBS=inprocess`
+   * on the app) should do.
+   */
+  OTOAPP_JOBS_KEYS: z
+    .string()
+    .default('')
+    .superRefine((value, ctx) => {
+      if (!value) return;
+      try {
+        parseOtoAppJobKeys(value);
+      } catch (err) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `OTOAPP_JOBS_KEYS: ${(err as Error).message}` });
+      }
+    }),
+  /**
+   * How long one park group's batch may take before the call counts as no
+   * answer. A batch runs synchronously in the app, so this is far longer than
+   * a directory write's limit.
+   */
+  OTOAPP_JOBS_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).default(120_000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -854,6 +892,10 @@ export function loadEnv(overrides: Partial<Record<keyof Env, string>> = {}): Env
     // The suite supplies its own where it needs one.
     if (overrides.HANDOFF_SIGNING_KEY === undefined) raw.HANDOFF_SIGNING_KEY = '';
     if (overrides.HANDOFF_APP_ORIGINS === undefined) raw.HANDOFF_APP_ORIGINS = '';
+    // And for the OTO App's night jobs (S2-17b round 3): a jobs key in a
+    // developer's `.env` would have a test's job runner run a real park
+    // group's night batch. The suite passes its own where it needs one.
+    if (overrides.OTOAPP_JOBS_KEYS === undefined) raw.OTOAPP_JOBS_KEYS = '';
   }
   const env = EnvSchema.parse(raw);
   assertProductionSafe(env);

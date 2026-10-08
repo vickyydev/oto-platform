@@ -191,6 +191,166 @@ function refusalOf(status: number, payload: unknown): { code: string; message: s
   return { code, message };
 }
 
+// --- S2-17b round 3: the app's night work, run by this platform -------------
+
+/** The app's three night batches (`NIGHT_JOB_NAMES`, the app's lib/nightJobs.ts). */
+export type OtoAppNightJob = 'midnight' | 'reconcile' | 'presence';
+
+/** One park group whose night work this platform runs, and the `jobs:run` key it holds for it. */
+export interface OtoAppJobGroup {
+  /** The app's tenant (park group) id, lower case. */
+  tenantId: string;
+  /** The tenant-bound directory key. Secret: never logged, never in a run's detail. */
+  key: string;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DIRECTORY_KEY_RE = /^odk_[A-Za-z0-9_-]{20,}$/;
+
+/**
+ * `OTOAPP_JOBS_KEYS`: `<tenant uuid>:<key>`, comma-separated, one per park
+ * group. Throws on a malformed entry, naming its position and never its key.
+ */
+export function parseOtoAppJobKeys(raw: string): OtoAppJobGroup[] {
+  const groups: OtoAppJobGroup[] = [];
+  const entries = raw
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
+  entries.forEach((entry, i) => {
+    const at = entry.indexOf(':');
+    const tenantId = at > 0 ? entry.slice(0, at).trim().toLowerCase() : '';
+    const key = at > 0 ? entry.slice(at + 1).trim() : '';
+    if (!UUID_RE.test(tenantId)) {
+      throw new Error(`entry ${i + 1} does not start with a park group (tenant) uuid and a colon`);
+    }
+    if (!DIRECTORY_KEY_RE.test(key)) {
+      throw new Error(`entry ${i + 1} (park group ${tenantId}) does not carry an odk_ directory key`);
+    }
+    if (groups.some((g) => g.tenantId === tenantId)) {
+      throw new Error(`park group ${tenantId} is named twice`);
+    }
+    groups.push({ tenantId, key });
+  });
+  return groups;
+}
+
+/** One step of a batch, as the app answers it (`NightStepResult`, the app's lib/nightJobs.ts). */
+export interface NightStepAnswer {
+  step: string;
+  ok: boolean;
+  /** What the app's own batch does after this step fails. */
+  onFailure: 'continue' | 'stop';
+  counts: Record<string, number>;
+  error?: string;
+  skipped?: boolean;
+}
+
+/** The app's answer to one park group's batch (`NightJobAnswer`, the app's lib/nightJobs.ts). */
+export interface NightJobAnswer {
+  job: OtoAppNightJob;
+  tenantId: string;
+  ok: boolean;
+  startedAt: string;
+  finishedAt: string;
+  steps: NightStepAnswer[];
+}
+
+/** The code a 409 from the app carries when that park group's batch is already running. */
+export const NIGHT_JOB_RUNNING = 'OTOAPP_JOB_RUNNING';
+
+export interface OtoAppJobsClient {
+  /** Whether this deployment runs any park group's night work at all. */
+  readonly configured: boolean;
+  /** The park groups it runs it for, in the order configured. Never the keys. */
+  readonly tenantIds: readonly string[];
+  /** Run one park group's batch: `POST /api/directory/jobs/:name/run`, synchronously. */
+  run(name: OtoAppNightJob, tenantId: string): Promise<DirectoryOutcome<NightJobAnswer>>;
+}
+
+const isNightJobAnswer = (answer: unknown, name: OtoAppNightJob, tenantId: string): answer is NightJobAnswer => {
+  const a = answer as Partial<NightJobAnswer> | null;
+  return (
+    !!a &&
+    a.job === name &&
+    typeof a.tenantId === 'string' &&
+    a.tenantId.toLowerCase() === tenantId &&
+    typeof a.ok === 'boolean' &&
+    Array.isArray(a.steps) &&
+    a.steps.every((s) => !!s && typeof s.step === 'string' && typeof s.ok === 'boolean')
+  );
+};
+
+/**
+ * The night-job client over HTTP (S2-17b round 3). The same directory origin
+ * as the write-backs (`OTOAPP_DIRECTORY_URL`), one `jobs:run` key per park
+ * group (`OTOAPP_JOBS_KEYS`), and the same reading of an answer: a 2xx the
+ * caller can use, a refusal the app chose (its own code), or no answer.
+ */
+export function buildOtoAppJobsClient(
+  env: Pick<Env, 'OTOAPP_DIRECTORY_URL' | 'OTOAPP_JOBS_KEYS' | 'OTOAPP_JOBS_TIMEOUT_MS'>,
+  log?: FastifyBaseLogger,
+  fetchImpl: typeof fetch = fetch,
+): OtoAppJobsClient {
+  const origin = env.OTOAPP_DIRECTORY_URL.replace(/\/+$/, '');
+  const groups = env.OTOAPP_JOBS_KEYS ? parseOtoAppJobKeys(env.OTOAPP_JOBS_KEYS) : [];
+  const configured = Boolean(origin) && groups.length > 0;
+  return {
+    configured,
+    tenantIds: configured ? groups.map((g) => g.tenantId) : [],
+    async run(name, tenantId) {
+      const group = groups.find((g) => g.tenantId === tenantId.toLowerCase());
+      if (!configured || !group) {
+        return {
+          ok: false,
+          status: null,
+          code: DIRECTORY_NOT_CONFIGURED,
+          message: 'This deployment holds no OTO App jobs key for that park group',
+          retryable: true,
+        };
+      }
+      let res: Response;
+      try {
+        res = await fetchImpl(`${origin}/api/directory/jobs/${encodeURIComponent(name)}/run`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${group.key}` },
+          body: JSON.stringify({ tenantId: group.tenantId }),
+          signal: AbortSignal.timeout(env.OTOAPP_JOBS_TIMEOUT_MS),
+        });
+      } catch (err) {
+        // The key never reaches a log line; the error's name and the host do.
+        log?.warn({ err: (err as Error)?.name, host: new URL(origin).host, job: name }, 'otoapp night job unreachable');
+        return { ok: false, status: null, code: DIRECTORY_UNREACHABLE, message: 'The OTO App did not answer', retryable: true };
+      }
+      let payload: unknown = null;
+      try {
+        payload = await res.json();
+      } catch {
+        payload = null;
+      }
+      if (res.ok) {
+        if (!isNightJobAnswer(payload, name, group.tenantId)) {
+          return {
+            ok: false,
+            status: res.status,
+            code: 'OTOAPP_UNREADABLE_ANSWER',
+            message: "The OTO App answered without the batch's steps",
+            retryable: true,
+          };
+        }
+        return { ok: true, status: res.status, body: payload };
+      }
+      const refusal = refusalOf(res.status, payload);
+      return {
+        ok: false,
+        status: res.status,
+        ...refusal,
+        retryable: res.status >= 500 || res.status === 429 || res.status === 408,
+      };
+    },
+  };
+}
+
 /**
  * The directory, over HTTP. A deployment with no URL or no key answers every
  * call `unavailable` without making one — the caller records the child as
