@@ -19,7 +19,6 @@ import {
   otoappScheduleShiftRowRoles,
   otoappScheduleShiftRows,
   otoappShiftGroups,
-  otoappUsers,
   station,
   type BoothDutySource,
   type Db,
@@ -35,6 +34,8 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import type { BoothStationRow } from './booth';
 import { isBranchStaff } from './booth-admin';
+import { listAppEmployeesByIds, otoAppEmployeesInstalled } from './otoapp-employees';
+import { OtoAppSeamNotGrantedError } from './otoapp-events';
 import { withTx, type Exec, type OpContext } from './tx';
 
 /**
@@ -60,8 +61,11 @@ import { withTx, type Exec, type OpContext } from './tx';
  *
  * **Who ends up on the roster, and who does not:**
  *
- *   - an employee whose app user is linked to a platform account of this
- *     operator — named, and may sign in that day;
+ *   - an employee the app's own rule links to a platform account of this
+ *     operator — named, and may sign in that day. The account is read from
+ *     `otoapp_v.employees` through the employee repository, the column the
+ *     employee copy reads too (S2-17b round 2): `user_id` first, else the
+ *     app's email match;
  *   - a casual worker — named on the slip, never signs in (no account ever);
  *   - an employee with no app user, or a user with no linked account — NOT on
  *     the roster, and listed by name as unmatched in the sync's own record and
@@ -143,7 +147,11 @@ export interface AppEmployeeRow {
   nickname: string;
   /** `otoapp.users.id`, or null for somebody never given a login. */
   userId: string | null;
-  /** `otoapp.users.platform_user_id` — the platform account, when linked. */
+  /**
+   * The platform account the app's own rule links to this employee —
+   * `otoapp_v.employees.platform_user_id`, the column the employee copy reads
+   * too (S2-17b round 2, H24): its `user_id` first, else its email match.
+   */
   platformUserId: string | null;
 }
 
@@ -278,6 +286,10 @@ async function readAppDuty(
   input: { operatorId: string; branchId: string; branchName: string; date: string },
 ): Promise<AppRead> {
   if (!(await otoAppScheduleInstalled(exec))) return emptyRead('app_not_installed');
+  // Without the employee view nobody on the rota can be told apart from
+  // anybody else: an app whose migrator has not reached 0005 is not read at
+  // all, and an unreadable rota removes nobody (see the note at the top).
+  if (!(await employeeSeamReadable(exec))) return emptyRead('app_not_installed');
   const appBranch = await findAppBranchForCore(exec, {
     operatorId: input.operatorId,
     coreBranchId: input.branchId,
@@ -339,19 +351,32 @@ async function readAppDuty(
   ];
   const casualIds = [...new Set(assignmentRows.flatMap((r) => (r.casualWorkerId ? [r.casualWorkerId] : [])))];
 
-  const employees = employeeIds.length
-    ? await exec
-        .select({
-          id: otoappEmployees.id,
-          fullName: otoappEmployees.fullName,
-          nickname: otoappEmployees.nickname,
-          userId: otoappEmployees.userId,
-          platformUserId: otoappUsers.platformUserId,
-        })
-        .from(otoappEmployees)
-        .leftJoin(otoappUsers, eq(otoappUsers.id, otoappEmployees.userId))
-        .where(inArray(otoappEmployees.id, employeeIds))
-    : [];
+  /**
+   * WHO each person is — their names and the platform account they sign in as
+   * — through the employee repository (S2-17b round 2, H24): the same column,
+   * the same rule, the employee copy reads, so the roster and the copy can
+   * never name two accounts for one person. Only whether the app ever gave the
+   * person a login of their own (`user_id`) is still read from the table, for
+   * the reason an unmatched name is listed under.
+   */
+  const seen = employeeIds.length ? await listAppEmployeesByIds(exec, employeeIds) : [];
+  const logins = employeeIds.length
+    ? new Map(
+        (
+          await exec
+            .select({ id: otoappEmployees.id, userId: otoappEmployees.userId })
+            .from(otoappEmployees)
+            .where(inArray(otoappEmployees.id, employeeIds))
+        ).map((e) => [e.id, e.userId]),
+      )
+    : new Map<string, string | null>();
+  const employees: AppEmployeeRow[] = seen.map((e) => ({
+    id: e.id,
+    fullName: e.fullName,
+    nickname: e.nickname,
+    userId: logins.get(e.id) ?? null,
+    platformUserId: e.platformUserId,
+  }));
   const casuals = casualIds.length
     ? await exec
         .select({
@@ -377,6 +402,22 @@ async function readAppDuty(
     employees: new Map(employees.map((e) => [e.id, e])),
     casuals: new Map(casuals.map((c) => [c.id, c])),
   };
+}
+
+/**
+ * Is the employee view there to read? A deployment that has it but has not
+ * granted this role SELECT on it is a fault to fix, never "nobody is on the
+ * booth": answered as a 503 that names the missing grant.
+ */
+async function employeeSeamReadable(exec: Exec): Promise<boolean> {
+  try {
+    return await otoAppEmployeesInstalled(exec);
+  } catch (err) {
+    if (err instanceof OtoAppSeamNotGrantedError) {
+      throw new AppError(503, 'EMPLOYEES_SEAM_NOT_GRANTED', err.message, { missing: err.missing });
+    }
+    throw err;
+  }
 }
 
 // --- The booth's side -----------------------------------------------------------

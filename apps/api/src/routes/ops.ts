@@ -22,6 +22,7 @@ import { DEMO_RESET_CONFIRMATION, resetDemoData } from '../services/demo-reset';
 import { createJobRunner, WATCHDOG_JOB, type JobRunner } from '../services/jobs';
 import { ROLLUP_DAILY_JOB, ROLLUP_HOURLY_JOB } from '../services/analytics-rollup';
 import { ROLLUP_BOOTH_JOB } from '../services/analytics-booth';
+import { OTOAPP_EMPLOYEE_SYNC_JOB } from '../services/otoapp-employee-sync';
 import { boxAuthFromRow, boxSettings, virtualBoxAgent } from '../services/box';
 import { loadBox, queueCommand } from '../services/fleet';
 import {
@@ -732,6 +733,19 @@ export async function opsRoutes(app: App): Promise<void> {
       sticky: false,
     },
     {
+      /**
+       * S2-17b round 2 — Health's "Run now" for the employee copy: a person
+       * just added in the OTO App reaches Staff Benefits now rather than at
+       * the next quarter-hour. The scheduled job itself, through the runner's
+       * claim, so a press beside the schedule never copies anybody twice.
+       */
+      key: 'otoapp.employee_sync',
+      label: "Copy the OTO App's staff now",
+      description:
+        "Runs the employee copy without waiting for the next quarter-hour: new people, changes and leavers in the OTO App reach the staff list, and anything it cannot settle lands on Failures.",
+      sticky: false,
+    },
+    {
       key: 'alert.test',
       label: 'Send a test alert',
       description: 'Raises an info alert and delivers it through every configured channel. It stays open until acknowledged.',
@@ -900,6 +914,20 @@ export async function opsRoutes(app: App): Promise<void> {
       const hourly = await jobRunner().runJob(ROLLUP_HOURLY_JOB, { force: true });
       const booth = await jobRunner().runJob(ROLLUP_BOOTH_JOB, { force: true });
       return `The analytics rollup ran (daily ${daily}, hourly ${hourly}, booth ${booth}).`;
+    }
+
+    if (key === 'otoapp.employee_sync') {
+      const outcome = await jobRunner().runJob(OTOAPP_EMPLOYEE_SYNC_JOB, { force: true });
+      if (outcome === 'disabled') {
+        throw errors.conflict(
+          'JOBS_ROLE_ABSENT',
+          'This api instance does not carry the jobs role, so nothing ran',
+        );
+      }
+      if (outcome === 'locked') {
+        throw errors.conflict('JOB_RUNNING', 'The employee copy is already running');
+      }
+      return `The OTO App staff copy ran (${outcome}).`;
     }
 
     if (key === 'alert.test') {

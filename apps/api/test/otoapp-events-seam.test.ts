@@ -662,6 +662,12 @@ describe('the write-back: a replay is found by its ids, whatever their case', ()
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const REPOSITORY = 'services/otoapp-events.ts';
+/**
+ * S2-17b round 2: the employee repository is the one other file in `src` that
+ * may name `otoapp_v` — it reads `otoapp_v.employees` and nothing else
+ * (`test/g17-round0-review.test.ts` section D holds it to that).
+ */
+const EMPLOYEE_REPOSITORY = 'services/otoapp-employees.ts';
 const VIEWS = ['events', 'event_attendees', 'event_attendance', 'children'];
 
 /**
@@ -749,9 +755,9 @@ describe('H1 — the POS reads OTO App events through otoapp_v only', () => {
     expect(declared.filter((t) => APP_EVENT_TABLES.includes(t!))).toEqual([]);
   });
 
-  it('only the repository names otoapp_v', () => {
+  it('only the repositories name otoapp_v: the events one and, from S2-17b round 2, the employee one', () => {
     const naming = files.filter(({ text }) => /\botoapp_v\b/.test(code(text))).map((f) => f.file);
-    expect(naming).toEqual([REPOSITORY]);
+    expect(naming.sort()).toEqual([EMPLOYEE_REPOSITORY, REPOSITORY].sort());
   });
 
   it('the repository reads the four views and nothing else, and writes nothing', () => {

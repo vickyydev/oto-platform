@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { boolean, pgSchema, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { newId } from '@oto/shared';
 import type { Db } from '../index';
@@ -645,6 +645,51 @@ export async function mappedAppBranches(
   });
 }
 
+/**
+ * Which platform operator each of the app's park groups (tenants) belongs to —
+ * the anchor rule of `mapCoreBranchIntoApp`, read for every tenant at once
+ * (S2-17b round 2, the employee copy).
+ *
+ * A park group is an operator's when one of its branch rows is joined to one
+ * of that operator's branches. Case collisions anchor nobody (`caseCollisions`),
+ * as everywhere else in the seam. Archived platform branches count: a park
+ * that closed is still its operator's, and so is the park group that held it.
+ *
+ * A tenant absent from the answer has no anchor at all; one whose list names
+ * two operators is anchored to both, which the caller treats as no answer
+ * rather than picking one.
+ */
+export async function appTenantAnchors(exec: OtoAppExec): Promise<Map<string, string[]>> {
+  if (!(await otoAppBranchesInstalled(exec))) return new Map();
+  const rows = await loadAppBranches(exec);
+  const collisions = caseCollisions(rows);
+  const joined = rows.flatMap((r) => {
+    const id = joinedCoreBranchId(r, collisions);
+    return id === null ? [] : [{ tenantId: r.tenantId, coreBranchId: id }];
+  });
+  if (joined.length === 0) return new Map();
+  // Only ids shaped like a uuid are asked about: `core_branch_id` is the app's
+  // free text, and a cast of anything else would fail the whole read.
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  const ids = [...new Set(joined.map((j) => j.coreBranchId).filter((id) => UUID.test(id)))];
+  if (ids.length === 0) return new Map();
+  const owners = new Map(
+    (
+      await exec
+        .select({ id: branch.id, operatorId: branch.operatorId })
+        .from(branch)
+        .where(inArray(branch.id, ids))
+    ).map((b) => [b.id, b.operatorId]),
+  );
+  const anchors = new Map<string, Set<string>>();
+  for (const j of joined) {
+    const operatorId = owners.get(j.coreBranchId);
+    if (!operatorId) continue;
+    anchors.set(j.tenantId, (anchors.get(j.tenantId) ?? new Set()).add(operatorId));
+  }
+  return new Map([...anchors].map(([tenantId, ops]) => [tenantId, [...ops].sort()]));
+}
+
 export interface AppBranchMappingRow {
   branchId: string;
   branchName: string;
@@ -1095,8 +1140,13 @@ export async function reconcileAppBranches(
  *       → departments, and roles via schedule_shift_row_roles
  *   duty_blocks (a person given a named duty on a date — "Sales booth ")
  *     → duty_types (the name, when the block names none of its own)
- *   employees → users.platform_user_id → core.account — who can sign in;
- *   casual_workers — who never can, and is named on the slip anyway.
+ *   employees — only whether the person was ever given a login
+ *     (`user_id`), for the reason an unmatched name is listed under. Who
+ *     they ARE — their names and the platform account they sign in as — is
+ *     read from `otoapp_v.employees` through the employee repository
+ *     (S2-17b round 2), so the roster and the employee copy apply the app's
+ *     one rule and can never name two accounts for one person;
+ *   casual_workers — who never can sign in, and is named on the slip anyway.
  */
 export const otoappScheduleAssignments = otoapp.table('schedule_assignments', {
   id: varchar('id').primaryKey(),
@@ -1155,11 +1205,13 @@ export const otoappDutyTypes = otoapp.table('duty_types', {
   name: text('name').notNull(),
 });
 
+/**
+ * Narrowed in S2-17b round 2 to the one column the roster still reads here:
+ * the names and the account now come from the employee view, the app's rule
+ * applied once (`apps/api/src/services/otoapp-employees.ts`).
+ */
 export const otoappEmployees = otoapp.table('employees', {
   id: varchar('id').primaryKey(),
-  fullName: text('full_name').notNull(),
-  /** NOT NULL there: the name the slip prints. */
-  nickname: text('nickname').notNull(),
   /** `otoapp.users.id`, or null for somebody who has never been given a login. */
   userId: varchar('user_id'),
 });
