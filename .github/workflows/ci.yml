@@ -132,9 +132,15 @@ jobs:
         if: steps.changes.outputs.workspace == 'true'
         run: pnpm test --filter=@oto/print
       # --continue: every package reports, so one red suite cannot hide another.
+      # The two big suites are NOT here: @oto/api runs as the three `api-tests`
+      # shards and @oto/pos as `pos-tests`, each on a runner of its own. All of
+      # them ran concurrently on this one runner before, starving each other —
+      # the step took 22 to 33 minutes and was the whole cost of a run. Render's
+      # deploy gate waits for every check on the commit, so the split jobs gate
+      # deploys exactly as this step did.
       - name: Test
         if: steps.changes.outputs.workspace == 'true'
-        run: pnpm test --continue
+        run: pnpm test --continue --filter='!@oto/api' --filter='!@oto/pos'
       - name: Build
         if: steps.changes.outputs.workspace == 'true'
         run: pnpm build
@@ -238,6 +244,112 @@ jobs:
             apps/console/test-results
           if-no-files-found: ignore
           retention-days: 7
+
+  # The api's suite (261 files), split into three shards that run beside the
+  # `ci` job rather than inside it. Together the shards run every file — vitest
+  # distributes them deterministically — so a push is proven exactly as before,
+  # in about a third of the wall time, and a flake's re-run costs one shard,
+  # not the whole battery. Each shard brings its own Postgres service and
+  # builds only the api's dependency packages; vitest is called directly so no
+  # turbo cache can ever replay one shard's result for another.
+  api-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: oto
+          POSTGRES_PASSWORD: oto
+          POSTGRES_DB: oto
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U oto"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://oto:oto@localhost:5433/oto
+      TEST_DATABASE_URL: postgres://oto:oto@localhost:5433/postgres
+    steps:
+      - uses: actions/checkout@v4
+      # The same conservative gate as the ci job: an unreadable base runs it.
+      - name: What changed
+        id: changes
+        shell: bash
+        run: |
+          set -u
+          BASE='${{ github.event.pull_request.base.sha || github.event.before }}'
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "no usable base — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences)\.ts$)'
+          if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then
+            echo "workspace=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "workspace=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: pnpm/action-setup@v4
+        if: steps.changes.outputs.workspace == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.workspace == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        if: steps.changes.outputs.workspace == 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Build the api's dependencies
+        if: steps.changes.outputs.workspace == 'true'
+        run: pnpm build --filter='@oto/api^...'
+      - name: Api tests (shard ${{ matrix.shard }} of 3)
+        if: steps.changes.outputs.workspace == 'true'
+        run: pnpm --filter @oto/api exec vitest run --pool=forks --shard=${{ matrix.shard }}/3
+
+  # The POS suite (95 files, among them the real-browser header measurements)
+  # on a runner of its own, for the same reason as the api shards.
+  pos-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: What changed
+        id: changes
+        shell: bash
+        run: |
+          set -u
+          BASE='${{ github.event.pull_request.base.sha || github.event.before }}'
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "no usable base — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences)\.ts$)'
+          if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then
+            echo "workspace=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "workspace=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: pnpm/action-setup@v4
+        if: steps.changes.outputs.workspace == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.workspace == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        if: steps.changes.outputs.workspace == 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Build the POS's dependencies
+        if: steps.changes.outputs.workspace == 'true'
+        run: pnpm build --filter='@oto/pos^...'
+      - name: POS tests
+        if: steps.changes.outputs.workspace == 'true'
+        run: pnpm --filter @oto/pos exec vitest run
 
   # The OTO App on its own (S2-17b round 1). The app sits outside the pnpm
   # workspace with its own npm lockfile, so nothing above builds it, runs its
