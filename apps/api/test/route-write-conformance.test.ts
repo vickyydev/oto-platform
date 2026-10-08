@@ -262,12 +262,14 @@ const NO_DIRECT_WRITE = [
   'POST /box/v1/station/:stationId/lock',
   'POST /sales/quote',
   /**
-   * S2-21 round 2 — a scanned staff benefit QR, resolved to the person and
-   * their profile for today. It reads and keeps nothing: what a benefit uses
-   * up is claimed inside the sale's own transaction (round 3), and a refused
-   * QR must change nothing at all (the acceptance's revoked case).
+   * (`POST /benefits/resolve` was here: a scanned staff benefit QR, resolved,
+   * keeping nothing. From S2-17b round 2 a refused QR naming an employee the
+   * platform does not have files an `otoapp:employee.sync` case on Failures —
+   * an operational record, written in a transaction of its own
+   * (`raiseEmployeeSync`). The person's benefit, quota and cards are still
+   * untouched by any scan: what a benefit uses up is claimed inside the
+   * sale's own transaction.)
    */
-  'POST /benefits/resolve',
   /**
    * S2-21 round 3 — a staff benefit previewed on a cart: the four amounts the
    * platform would give it today. It claims nothing — the quota is claimed by

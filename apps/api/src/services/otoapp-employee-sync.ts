@@ -5,7 +5,7 @@ import { AppError } from '../lib/errors';
 import { audit } from './audit';
 import { recordRun } from './ops';
 import { listAppEmployees, otoAppEmployeesInstalled, type AppEmployee } from './otoapp-employees';
-import type { Exec, Tx } from './tx';
+import { withTx, type Exec, type Tx } from './tx';
 
 /**
  * THE EMPLOYEE COPY — the OTO App's staff into `core.employee` (S2-17b round 2;
@@ -121,16 +121,23 @@ export interface EmployeeSyncRaise {
  */
 export async function raiseEmployeeSync(db: Exec, raise: EmployeeSyncRaise): Promise<void> {
   const now = new Date();
-  await recordRun(db, {
-    kind: 'integration',
-    name: OTOAPP_EMPLOYEE_SYNC_RUN,
-    outcome: 'failed',
-    startedAt: now,
-    finishedAt: now,
-    operatorId: raise.operatorId,
-    detail: { case: raise.case, ...raise.detail },
-    error: new AppError(409, raise.case, CASE_WORDS[raise.case]),
-  });
+  // The run and its `ops_last` line together or not at all.
+  await withTx(
+    db,
+    { actorAccountId: null, operatorId: raise.operatorId },
+    'otoapp.employee_sync_raise',
+    (tx) =>
+      recordRun(tx, {
+        kind: 'integration',
+        name: OTOAPP_EMPLOYEE_SYNC_RUN,
+        outcome: 'failed',
+        startedAt: now,
+        finishedAt: now,
+        operatorId: raise.operatorId,
+        detail: { case: raise.case, ...raise.detail },
+        error: new AppError(409, raise.case, CASE_WORDS[raise.case]),
+      }),
+  );
 }
 
 export interface EmployeeSyncSummary extends Record<string, unknown> {
