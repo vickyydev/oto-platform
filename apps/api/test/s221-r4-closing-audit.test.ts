@@ -2,12 +2,31 @@ import { generateKeyPairSync } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { encodeBenefitCredential } from '@oto/box-agent';
+import { account, employee, opsRun } from '@oto/db';
 import { benefitQrKeyOf } from '@oto/db/seed';
 import { newId } from '@oto/shared';
-import { RECEPTION, createTestContext, signInAs, teardownAll, type TestContext } from './helpers';
+import {
+  ADMIN,
+  CENTRAL_BRANCH_CODE,
+  OTO_OPERATOR_NAME,
+  RECEPTION,
+  branchIdByCode,
+  createTestContext,
+  operatorIdByName,
+  signInAs,
+  teardownAll,
+  type TestContext,
+} from './helpers';
+import { loadEnv } from '../src/env';
 import { publishBenefitQrKey } from '../src/services/benefit-credentials';
+import { buildDefaultJobs, createJobRunner } from '../src/services/jobs';
+import {
+  OTOAPP_EMPLOYEE_SYNC_JOB,
+  OTOAPP_EMPLOYEE_SYNC_RUN,
+} from '../src/services/otoapp-employee-sync';
 
 /**
  * S2-21 (SCRUM-218) round 4 — THE CLOSING AUDIT (docs/progress/plans/
@@ -120,6 +139,8 @@ const HAZARDS: Record<string, Named[]> = {
   H17: [
     ['r2', 'a person who has left is refused, and their QR joins the box’s list'],
     ['closing', 'a QR signed with this deployment’s key for somebody the platform does not have is refused, and nothing is written'],
+    // S2-17b round 2: the other half, once the mirror exists.
+    ['closing', 'H17’s other half: a scan for an employee not yet copied raises ops_run kind integration under otoapp:employee.sync'],
   ],
   H18: [
     ['r1', 'never has two versions in force on one day (H18)'],
@@ -127,10 +148,15 @@ const HAZARDS: Record<string, Named[]> = {
   ],
 };
 
-/** The ticket's seven acceptance checks, each to the tests that drive it (Q defaults; check 1 "seeded"). */
+/**
+ * The ticket's seven acceptance checks, each to the tests that drive it (Q
+ * defaults). Check 1 on the OTO App mirror from S2-17b round 2, beside the
+ * seeded-row test, which stays for the dev seed.
+ */
 const CHECKS: Record<string, Named[]> = {
   'check 1': [
-    ['acceptance', 'lists the three templates and the four employees, every one a seeded platform row: the mirror is not built'],
+    ['closing', 'check 1 on the OTO App mirror: the four employees read from otoapp_v.employees through otoapp:employee.sync'],
+    ['acceptance', 'lists the three templates and the four employees, every one a seeded platform row where no OTO App copies them'],
     ['acceptance', 'Nok’s card reads 4 coffees from her override while the Staff template still reads 2'],
     ['acceptance', 'the panel cannot create or edit an employee: no route writes one, and a name sent with a benefit is not a rename'],
   ],
@@ -234,7 +260,9 @@ const PRIVATE_KEY = keys.privateKey.export({ type: 'pkcs8', format: 'pem' }).toS
 let ctx: TestContext;
 
 beforeAll(async () => {
-  ctx = await createTestContext({ env: { BENEFIT_QR_PRIVATE_KEY: PRIVATE_KEY } });
+  // With the OTO App's schema (S2-17b round 2): check 1 is driven on the
+  // mirror here, from the app's own tables through `otoapp_v.employees`.
+  ctx = await createTestContext({ otoapp: true, env: { BENEFIT_QR_PRIVATE_KEY: PRIVATE_KEY } });
 }, 240_000);
 
 afterAll(async () => {
@@ -306,16 +334,174 @@ describe('H17 (the cloud’s half) — somebody the platform does not have', () 
   });
 });
 
+/**
+ * S2-17b round 2 — THE MIRROR, the two todos this audit carried until it
+ * existed (benefits plan §0, §5; lift PLAN section 5 "The swap"). No benefits
+ * query changed: the panel lists the operator's `core.employee` rows with
+ * their `source`, and the copy fills them.
+ */
+describe('check 1 and H17 on the OTO App mirror (S2-17b round 2)', () => {
+  const run = async () => {
+    const env = loadEnv({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgres://oto:oto@localhost:1/unused',
+      PROCESS_ROLES: 'api,jobs',
+    });
+    const job = buildDefaultJobs({ db: ctx.db, env, log: ctx.app.log, channels: [] }).find(
+      (j) => j.name === OTOAPP_EMPLOYEE_SYNC_JOB,
+    )!;
+    const runner = createJobRunner({ db: ctx.db, env, log: ctx.app.log, channels: [], jobs: [job] });
+    expect(await runner.runJob(OTOAPP_EMPLOYEE_SYNC_JOB, { force: true })).toBe('ok');
+    const [last] = await ctx.db
+      .select()
+      .from(opsRun)
+      .where(and(eq(opsRun.name, OTOAPP_EMPLOYEE_SYNC_JOB), eq(opsRun.outcome, 'ok')))
+      .orderBy(desc(opsRun.startedAt))
+      .limit(1);
+    return last!.detail as Record<string, number>;
+  };
+
+  it('check 1 on the OTO App mirror: the four employees read from otoapp_v.employees through otoapp:employee.sync', async () => {
+    const operatorId = await operatorIdByName(ctx.db, OTO_OPERATOR_NAME);
+    const central = await branchIdByCode(ctx.db, CENTRAL_BRANCH_CODE);
+    const byName = async (name: string) =>
+      (
+        await ctx.db
+          .select({ id: employee.id })
+          .from(employee)
+          .where(and(eq(employee.operatorId, operatorId), eq(employee.name, name)))
+      )[0]!.id;
+    const seeded = {
+      anan: await byName('Khun Anan (Owner)'),
+      som: await byName('Som (Reception)'),
+      nok: await byName('Nok (Reception)'),
+      lek: await byName('Khun Lek (Manager)'),
+    };
+    const accountOf = async (phone: string) =>
+      (await ctx.db.select({ id: account.id }).from(account).where(eq(account.phone, phone)))[0]!.id;
+    // Nok has no account in the dev seed; on staging hers is provisioned like
+    // the others'. Made here pointing at her seeded row.
+    const nokAccount = newId();
+    await ctx.db.insert(account).values({
+      id: nokAccount,
+      operatorId,
+      employeeId: seeded.nok,
+      phone: '+66900000003',
+      status: 'active',
+    });
+    const accounts = {
+      anan: await accountOf('+66900000001'),
+      som: await accountOf('+66900000002'),
+      nok: nokAccount,
+      lek: await accountOf('+66900000004'),
+    };
+
+    // The park group in the OTO App, holding Central Floresta.
+    const tenantId = newId();
+    const appCentral = newId();
+    await ctx.db.execute(
+      sql`insert into otoapp.tenants (id, name, slug) values (${tenantId}, 'ZZ closing audit park group', 'zz-closing-audit')`,
+    );
+    await ctx.db.execute(
+      sql`insert into otoapp.branches (id, tenant_id, name, address, core_branch_id) values (${appCentral}, ${tenantId}, 'Central Floresta', '', ${central})`,
+    );
+    // The four, created as employees in the OTO App, their logins provisioned
+    // with the same emails: three linked by the employee's own login, Nok by
+    // the app's email match alone.
+    const appIds: Record<keyof typeof seeded, string> = { anan: '', som: '', nok: '', lek: '' };
+    const names = { anan: 'Khun Anan', som: 'Som', nok: 'Nok', lek: 'Khun Lek' };
+    for (const who of ['anan', 'som', 'nok', 'lek'] as const) {
+      const userId = newId();
+      const email = `zz-closing-${who}@otopark.test`;
+      await ctx.db.execute(
+        sql`insert into otoapp.users (id, email, password, full_name, role, is_active, must_change_password, platform_user_id)
+            values (${userId}, ${email}, 'x', ${names[who]}, 'staff', true, false, ${accounts[who]})`,
+      );
+      appIds[who] = newId();
+      await ctx.db.execute(
+        sql`insert into otoapp.employees (id, tenant_id, branch_id, full_name, nickname, email, user_id)
+            values (${appIds[who]}, ${tenantId}, ${appCentral}, ${names[who]}, ${names[who]}, ${email}, ${who === 'nok' ? null : userId})`,
+      );
+    }
+
+    const first = await run();
+    expect(first).toMatchObject({ installed: true, adopted: 4, created: 0, archived: 0 });
+
+    // The four rows were adopted: the same ids, now the OTO App's.
+    const rows = await ctx.db
+      .select()
+      .from(employee)
+      .where(inArray(employee.id, Object.values(seeded)));
+    expect(rows).toHaveLength(4);
+    for (const who of ['anan', 'som', 'nok', 'lek'] as const) {
+      const row = rows.find((r) => r.id === seeded[who])!;
+      expect(row, who).toMatchObject({ source: 'otoapp', externalId: appIds[who], archivedAt: null });
+    }
+    expect(
+      await ctx.db.select({ id: employee.id }).from(employee).where(eq(employee.source, 'otoapp')),
+    ).toHaveLength(4);
+
+    // The panel reads them, with their source, and Nok's override is still hers.
+    const admin = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const res = await ctx.app.inject({ method: 'GET', url: '/benefits/profiles', headers: { cookie: admin } });
+    expect(res.statusCode, res.body).toBe(200);
+    const staff = (res.json() as {
+      staff: Array<{
+        employeeId: string;
+        name: string;
+        source: string;
+        current: { benefitRole: string | null; override: { freeItems?: Array<{ quotaPerPeriod: number }> } | null } | null;
+      }>;
+    }).staff;
+    const four = staff.filter((p) => Object.values(seeded).includes(p.employeeId));
+    expect(four.map((p) => [p.name, p.source, p.current?.benefitRole]).sort()).toEqual(
+      [
+        ['Khun Anan', 'otoapp', 'owner'],
+        ['Khun Lek', 'otoapp', 'manager'],
+        ['Nok', 'otoapp', 'staff'],
+        ['Som', 'otoapp', 'staff'],
+      ].sort(),
+    );
+    const nok = four.find((p) => p.employeeId === seeded.nok)!;
+    expect(nok.current!.override!.freeItems![0]!.quotaPerPeriod).toBe(4);
+
+    // A second run with nothing changed in the app changes nothing.
+    const second = await run();
+    expect(second).toMatchObject({ adopted: 0, created: 0, updated: 0, archived: 0, restored: 0, accountsLinked: 0 });
+  });
+
+  it('H17’s other half: a scan for an employee not yet copied raises ops_run kind integration under otoapp:employee.sync', async () => {
+    await publishBenefitQrKey(ctx.db, ctx.app.env);
+    const key = benefitQrKeyOf(PRIVATE_KEY);
+    const nobody = newId();
+    const code = encodeBenefitCredential(
+      { employeeId: nobody, credentialId: newId(), exp: Math.floor(Date.now() / 1000) + 3_600 },
+      { kid: key.kid, privateKeyPem: key.privateKeyPem },
+    );
+    const reception = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/benefits/resolve',
+      headers: { cookie: reception, 'idempotency-key': `closing-${newId()}` },
+      payload: { code },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.message).toMatch(/^No staff benefit found for "/);
+    const raised = await ctx.db
+      .select()
+      .from(opsRun)
+      .where(and(eq(opsRun.kind, 'integration'), eq(opsRun.name, OTOAPP_EMPLOYEE_SYNC_RUN)));
+    const mine = raised.filter((r) => (r.detail as { employeeId?: string } | null)?.employeeId === nobody);
+    expect(mine).toHaveLength(1);
+    expect(mine[0]).toMatchObject({
+      outcome: 'failed',
+      errorCode: 'OTOAPP_EMPLOYEE_UNKNOWN',
+      operatorId: await operatorIdByName(ctx.db, OTO_OPERATOR_NAME),
+    });
+  });
+});
+
 describe('what remains open, named', () => {
-  /**
-   * The employee mirror (plan §0, §5): `otoapp_v.employees` and the copy job
-   * `otoapp:employee.sync` are S2-17b's "POS seams" slice and not built. Until
-   * they are, check 1 reads the SEEDED `core.employee` rows (source
-   * `platform`), and a scan for somebody not yet copied cannot raise the
-   * integration run the plan names — there is no copy to be behind.
-   */
-  it.todo('check 1 on the OTO App mirror: the four employees read from otoapp_v.employees through otoapp:employee.sync (waits for S2-17b)');
-  it.todo('H17’s other half: a scan for an employee not yet copied raises ops_run kind integration under otoapp:employee.sync (waits for S2-17b)');
   /**
    * H13's box half as the plan words it — a skewed box clock refused under
    * low clock trust — is not driven: a box claims no quota offline, so it keys
