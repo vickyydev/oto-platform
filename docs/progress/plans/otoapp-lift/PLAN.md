@@ -394,6 +394,30 @@ module map below is read from the routes and the schema, not from memory.
     `inprocess` they run as today, for the caller's park group only.
   - Finance Sync is not here: the app has no timer for it, only manual
     routes (section 6, Q15).
+  - **As built in round 3.**
+    - The platform holds one `jobs:run` key per park group in
+      `OTOAPP_JOBS_KEYS` (`<app tenant uuid>:<key>`, comma-separated, a
+      secret) beside `OTOAPP_DIRECTORY_URL`; empty, the three jobs run as
+      no-ops that say so. Each call names its park group in the body, and
+      the app answers 404 when that is not the key's.
+    - "Done for the date" is read from the job's own runs: each run's
+      detail names the Bangkok date and, per park group, whether its batch
+      finished. The three jobs are `exclusive` in the runner (a session
+      advisory lock held from before the run until after its record), so a
+      Run now beside the schedule, or a second instance, answers `locked`
+      instead of running a night twice. The app holds its own lock per park
+      group and batch too, and answers 409 `job_running`.
+    - Each step answers its counts and, for an error the app caught, the
+      error in scrubbed words, with the app's own continue-or-stop shape:
+      every step carries on after its own error except the availability
+      clean-up, whose error the app lets escape the 03:00 batch.
+    - The 03:00 run then files, per park group, each leaver whose platform
+      account is still active (`otoapp:account.departed`,
+      `OTOAPP_DEPARTED_ACCOUNT_ACTIVE`) on Failures (Q4, Q23).
+    - The Console's Health test controls gain Run now for each of the three
+      and "Fail the OTO App's presence check once", the forced failure whose
+      Retry runs the check for real (ticket QA step 3).
+    - No migration: `scopes` is free text, and the run records exist.
 - **Tenant-bound Directory HR reads**, as in section 4. The shared key keeps
   working only where it is set, and only for the default tenant (Q13).
 - **The restore rehearsal in CI** (ticket: cutover compatibility).
@@ -521,7 +545,7 @@ new jobs are registered by the jobs themselves.
 |---|---|---|
 | 1 | **Sign-on and identity.** The upper-case seam fix and its census. The Console list of OTO App users with no suite sign-in, with the existing Link. SCRUM-469's branch picker in the Apps dialog, only on the owner's go (Q7). CI: app migration and directory changes run the platform suite; an OTO App job builds the app and runs its migrator twice from empty. Check that deleting a referenced user answers in words (the bare 500 in the SCRUM-193 comment, against the 409 at `server/routes.ts:1434`), and refuse deleting a user that carries `platform_user_id` the same way - at EVERY door that deletes a user (the users route, the people route, the employee flows), so no door can orphan a `core.app_identity` row. The dev and maintenance routes: refused on every deployment, or held to the caller's park group (section 4). | H1, H19, H26 and H28 green. The staging census shows no non-lower-case `core_branch_id`. A user made in the app's Users screen appears on the list and opens the app from the launcher after Link. A CI run on an app-only commit shows the view tests ran. Walkthrough pages: launcher sign-on, users and permissions (a restricted role on a temporary-password identity), organisation (a department action and a lower-role refusal). |
 | 2 | **The employee mirror.** `otoapp_v.employees` with the column allow-list. The platform's read-only repository (the only file besides `otoapp-events.ts` that names `otoapp_v`). `job:otoapp.employee_sync` with its expectation: tenant-to-operator anchor, adoption, create, update, archive on LEFT or gone, un-archive on rehire, card revocation on archive. The account link: an account outside the anchored operator is no link, a created copy sets the account's `employee_id`, a clash is raised. The booth roster takes the person's account from the employee repository. Mirrored fields refused on `PATCH /me`. The benefits panel shows the source, and an unknown employee raises `otoapp:employee.sync`. The section D grep extended to the HR tables, apart from the declared seams. The benefits flips listed in section 5 ("The swap"). Can build in parallel with round 1; lands after it. Carries round 1's three standing pins: Link refuses a user the unlinked list would not show this operator; a case-collision row still fences the first-time name match while mapping as nobody's; and the employee and people delete doors answer 404 across park groups the way the users door does. | Benefits check 1 on mirrored rows: the two `it.todo`s of `s221-r4-closing-audit.test.ts` are tests, registered under check 1 and H17. H23 to H25 green. On staging: the four demo people created as employees in the OTO App, their accounts provisioned with the same emails, the four `core.employee` rows adopted, and Nok's override still in place. H2 to H7 green. A second run changes nothing. The job is on Health. A staging read-back shows the api role reads the view. SCRUM-218's comment updated. Walkthrough page: HR employees (create and edit, refused branch read). **Deploy order:** the booth roster reads `otoapp_v.employees`, so on staging the app deploys first (its migrator publishes the view), then USAGE on `otoapp_v` and SELECT on `otoapp_v.employees` are granted to the api role and `packages/db/scripts/otoapp-employee-seam-readback.ts` answers 0 — before or with the api deploy, or every booth sync answers 503 EMPLOYEES_SEAM_NOT_GRANTED. **Acceptance order:** provision the four demo people's app users to their accounts before creating them as app employees (or within one copy window), or their platform rows are never adopted and Nok's override stays behind (Q20). |
-| 3 | **The night work on the platform runner.** The app's job endpoint, scope `jobs:run` and tenant-scoped job functions. Every swallowed error reported as a failed step. `OTOAPP_JOBS`. The platform registers `job:otoapp.midnight`, `.reconcile` and `.presence`, with expectations and the forced-failure test control. The departed-login step names still-active linked platform accounts (Q4). The two manual triggers follow `OTOAPP_JOBS` (section 5). Flip to `platform` on staging only after one platform-run success; Attention stays paused. | Ticket check 3: two jobs on Health with last-success times, and a forced failure on Failures whose Retry succeeds. H8 and H9 green. Under `platform`, the app registers no timers (test). On staging, a midnight batch run by the platform produced the auto clock-out and the day's recurring tasks. Walkthrough pages: timekeeping, tasks (recurrence). |
+| 3 | **The night work on the platform runner.** The app's job endpoint, scope `jobs:run` and tenant-scoped job functions. Every swallowed error reported as a failed step. `OTOAPP_JOBS`. The platform registers `job:otoapp.midnight`, `.reconcile` and `.presence`, with expectations and the forced-failure test control. The departed-login step names still-active linked platform accounts (Q4). The two manual triggers follow `OTOAPP_JOBS` (section 5). Flip to `platform` on staging only after one platform-run success (the endpoint refuses before the flip, so see Q22 for the order as built); Attention stays paused. | Ticket check 3: two jobs on Health with last-success times, and a forced failure on Failures whose Retry succeeds. H8 and H9 green. Under `platform`, the app registers no timers (test). On staging, a midnight batch run by the platform produced the auto clock-out and the day's recurring tasks. Walkthrough pages: timekeeping, tasks (recurrence). |
 | 4 | **Tenant ownership, Attention and the Directory, in two landings.** 4a: the expand migrations. The settings helper and every caller take the tenant. Settings reads open to every park group; other park groups' settings writes stay refused in words while `settings_key_unique` stands (section 7). Branchless Activity rows show in their own tenant. Directory HR reads under `hr:read`. The root-table census. 4b, the next release (a short build-review cycle of its own): the contraction, then other park groups' settings writes open, and Attention resumes (`ATTENTION_WRITES_READY`) with rules per tenant (its rules are the settings key `attention_rules_config`), run as `job:otoapp.attention` and `job:otoapp.no_show`. | Claimed after 4b. H10 to H12 and H20 green. A second tenant's settings, activity and Attention are invisible to the first, on staging and in tests. Refresh, snooze and resolve work on staging. A directory read across tenants answers 404. Walkthrough pages: settings, activity log, Attention engine, Directory API. |
 | 5 | **Attendance and operations as the app does them.** Leave approval restored (Q1): the server's two 503s removed and the rota's `approved: true` put back, with each coverage alert written to its park group (round 4's column). The shift-row refusal (Q2). Face "off" refuses instead of matching, `/api/kiosk/clock` included. A configured-device reception action. Restricted-branch proof for scheduling, leave, checklists, announcements and notifications. Casual workers' ungrouped-row case. | H13 to H15 green. Walkthrough pages: kiosk devices and reception, face/PIN/phone, timekeeping (restricted branch), scheduling, leave and holidays, tasks and ops board, checklists and media, announcements, in-app notifications, casual workers. |
 | 6 | **The document modules.** Tenant columns for templates, policies and the asset catalogue (expand; NOT NULL in round 7's release); their 503 guards off. Contracts, letters, templates, policies, employee documents, assets, offboarding (one transaction, the readable reason label, linked-user deactivation as the app does it) and the org chart (count first, because its GET writes missing nodes). The PDF and storage gate. The offboarding duplicate census. | Ticket check 2: a contract and a letter signed, and a BEO generated, opening from signed URLs, with an unauthorised read refused (test and screenshots). H16 green for offboarding. Walkthrough pages: contracts, templates, policies, letters, employee documents, assets, offboarding, org chart. |
@@ -642,6 +666,27 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   staging 8 October: all four adopted demo rows carry phone null while the
   HR form showed their numbers. Sign-in is untouched (the account keeps
   its own phone). Q21.
+- **The daily night jobs record a run every five minutes** (round 3): most
+  say "not due before 00:01" or "already done for the date", as the other
+  five-minute day-end jobs record theirs.
+- **A night the app is down for the whole Bangkok day is not caught up**
+  after the date turns (Q24). The app's batch works on "today" whenever it
+  runs, so the next night still closes every stale clock-in and moves every
+  leaver; only the lost day's recurring task instances are never made.
+- **A failed park group's batch runs again at the next tick**, steps that
+  already finished included. Every step of the app's batches is safe to
+  repeat: a second run finds nothing left to change.
+- **On the day of the switch the batches may run a second time.** The app's
+  own timers ran that night's 00:01 and 03:00 batches in-process; the
+  platform's first tick after the flip finds no record of them and runs
+  them again, which changes nothing.
+- **Under `inprocess` the 03:00 timer still stops when the clean-up fails.**
+  The availability clean-up is the one step whose error the app lets escape,
+  and its timer is re-armed only after the batch returns, so one failure
+  ends the in-process 03:00 schedule until the next restart (Q26). Under
+  `platform` the escaped error is a failed step and the next tick runs again.
+- **A leaver whose platform account stays on is filed every night** (Q4,
+  Q23), grouped on Failures, as the employee copy's standing cases are (Q17).
 - **An app-only branch strands its staff branchless on the platform.** The
   app lets HR seat an employee on a branch no platform branch maps to
   (staging has such a branch, itself named "HKT Central"), and the copy
@@ -759,6 +804,46 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   the HR form's free-text phone box? Default: as built - only a number the
   app verified crosses, and an unverified free-text box is not a number to
   trust for anything that reaches a person.
+- **Q22. The order of the switch (round 3).** This plan said to flip the app
+  to `OTOAPP_JOBS=platform` only after one platform-run success. But the
+  app's job endpoint refuses while the app runs its own timers (that refusal
+  is what stops a batch running twice), so no platform run can succeed
+  before the flip. Default as built: issue the `jobs:run` key, set it on the
+  api, flip the app, then press Run now for each OTO App job on Health and
+  see it succeed; flip back to `inprocess` if one fails. Is that order
+  acceptable?
+- **Q23. Which leavers' platform accounts are listed (round 3, extends Q4).**
+  The app switches off a leaver's OTO App login by last working day alone,
+  and only the login an employee record carries in `user_id`. The platform's
+  list reads the same last-working-day rule, but takes the person's account
+  from the employee view (the `user_id` link, then the app's email
+  fallback, inside the park group's operator only - the one rule the copy
+  and the booth roster use, H24), and lists only accounts that are `active`
+  (an `invited` account is not listed). So a leaver linked to their account
+  only by email is listed although the app leaves their OTO App login on.
+  Default: as built. The alternative is the `user_id` link alone, exactly
+  the logins the app's step reaches.
+- **Q24. A night the app is down all day (round 3).** If the app answers
+  nobody from 00:01 until the Bangkok date turns, that night is not run
+  later. The app's batch works on "today" whenever it runs, so the next
+  night's batch still closes every stale clock-in and moves every leaver;
+  only the lost day's recurring task instances are never made. The app's own
+  timers lose the same night whenever the process is down at 00:01. Default:
+  as the app. The alternative is a catch-up that makes a missed day's tasks
+  (a new rule).
+- **Q25. Run now for a daily batch (round 3).** Run now does not run a
+  park group's night again once it is done for the date, and runs nothing
+  before the batch's hour; the app's manual triggers, which it replaces
+  under `platform`, ran at any time. Default: as built, which is H8's "once
+  per date". An administrator who needs a leaver's login off at once
+  deactivates the user in the app. The alternative is a forced Run now that
+  re-runs a done night (every step is safe to repeat).
+- **Q26. The in-process 03:00 timer after a failed clean-up (round 3).** Under
+  `inprocess` the app keeps its own behaviour: a failed availability
+  clean-up ends the 03:00 schedule until the next restart (section 10).
+  Should the in-process timer be made to carry on as well? Default: keep the
+  app's behaviour; the platform owns the schedule from the switch, and there
+  the failure is a failed step and the next tick runs again.
 
 ## 12. Hazards, each with its test
 
