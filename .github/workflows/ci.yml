@@ -252,7 +252,10 @@ jobs:
   #     routes twice against that database — once shaped like staging, once
   #     as a developer's machine — and prove the development tools are
   #     refused on a deployment, the maintenance routes stay inside the
-  #     caller's park group, and a linked or referenced user is never deleted.
+  #     caller's park group, and a linked or referenced user is never deleted;
+  #   - its night-job checks (tests/night-jobs.check.ts) drive the directory
+  #     job endpoint the platform's runner calls, under both OTOAPP_JOBS
+  #     values (S2-17b round 3).
   #
   # CONSERVATIVE BY CONSTRUCTION, like the ci job: an unreadable base runs it.
   oto-app:
@@ -322,6 +325,13 @@ jobs:
       - name: The app's route checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/route-fences.check.ts
+      # S2-17b round 3: the night batches as the platform's runner asks for
+      # them — the jobs:run key, the OTOAPP_JOBS switch both ways, each batch
+      # for one park group, one clock-out per stale clock-in, swallowed errors
+      # as failed steps, no timers under `platform`.
+      - name: The app's night-job checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/night-jobs.check.ts
 
 # Staging deploys are not a job here, and deliberately so.
 #
