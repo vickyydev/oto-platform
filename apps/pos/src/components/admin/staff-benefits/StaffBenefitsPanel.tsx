@@ -31,6 +31,7 @@ import { BenefitProfileFields } from './BenefitProfileFields';
 import { OperatorOverrideDialog } from './OperatorOverrideDialog';
 import { BenefitQrDialog } from './BenefitQrDialog';
 import { BenefitHistoryList, type BenefitHistoryEntry } from './BenefitHistoryList';
+import { StaffSourceChip } from './StaffSourceChip';
 import { summarizeProfile } from './summary';
 
 const ROLE_ORDER: BenefitRole[] = ['owner', 'manager', 'staff'];
@@ -90,6 +91,10 @@ const templateEntry = (v: BenefitTemplateVersion): BenefitHistoryEntry => ({
  * S2-21 round 2: the QR button opens the prototype's QR dialog on the
  * platform's signed benefit QR — issued, printed and revoked there by whoever
  * holds `admin:benefit:credential_issue` (`BenefitQrDialog`).
+ *
+ * S2-17b round 2: the staff list is fed by the OTO App's copy
+ * (`job:otoapp.employee_sync`), and each row says where its record is kept —
+ * "OTO App" or "Platform" (`StaffSourceChip`, a UI addition).
  */
 export function StaffBenefitsPanel() {
   const { menuCategories } = useCatalogStore();
@@ -344,6 +349,7 @@ export function StaffBenefitsPanel() {
                         Override
                       </span>
                     )}
+                    <StaffSourceChip source={op.source} />
                   </div>
                   <div className="text-sm text-foreground/50">
                     {summarizeProfile(profileFromApi(op.effectiveProfile))}
