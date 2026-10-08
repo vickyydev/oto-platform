@@ -249,7 +249,9 @@ describe('H1, read again from the source', () => {
     const naming = sourceFiles(SRC)
       .filter((f) => readFileSync(f, 'utf8').includes('otoapp_v'))
       .map((f) => relative(SRC, f).split('\\').join('/'));
-    expect(naming).toEqual(['services/otoapp-events.ts']);
+    // S2-17b round 2: the employee repository is the one other file that may
+    // name the views — even in a comment — reading `otoapp_v.employees` only.
+    expect(naming.sort()).toEqual(['services/otoapp-employees.ts', 'services/otoapp-events.ts']);
     for (const rel of ['services/events.ts', 'routes/events.ts']) {
       const src = readFileSync(join(SRC, rel), 'utf8');
       expect(src, rel).not.toMatch(/otoapp_v|otoapp\./);

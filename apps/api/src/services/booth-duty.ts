@@ -63,7 +63,7 @@ import { withTx, type Exec, type OpContext } from './tx';
  *
  *   - an employee the app's own rule links to a platform account of this
  *     operator — named, and may sign in that day. The account is read from
- *     `otoapp_v.employees` through the employee repository, the column the
+ *     the app's employee view through the employee repository, the column the
  *     employee copy reads too (S2-17b round 2): `user_id` first, else the
  *     app's email match;
  *   - a casual worker — named on the slip, never signs in (no account ever);
@@ -149,7 +149,7 @@ export interface AppEmployeeRow {
   userId: string | null;
   /**
    * The platform account the app's own rule links to this employee —
-   * `otoapp_v.employees.platform_user_id`, the column the employee copy reads
+   * the employee view's `platform_user_id`, the column the employee copy reads
    * too (S2-17b round 2, H24): its `user_id` first, else its email match.
    */
   platformUserId: string | null;

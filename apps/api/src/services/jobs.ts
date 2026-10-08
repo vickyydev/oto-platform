@@ -684,7 +684,7 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
      * 2, PLAN section 5; conflict C13).
      *
      * Every fifteen minutes, and at once from Health's "Copy the OTO App's
-     * staff now": `otoapp_v.employees` into `core.employee` per park group's
+     * staff now": the app's employee view into `core.employee` per park group's
      * operator — created, adopted, updated, archived on LEFT or gone with the
      * person's benefit cards revoked, restored on a rehire
      * (`runOtoAppEmployeeSync` in `services/otoapp-employee-sync.ts`). A second

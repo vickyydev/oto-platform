@@ -12,7 +12,7 @@ import type { Exec, Tx } from './tx';
  * PLAN section 5, hazards H2-H7 and H23-H25; conflict C13).
  *
  * The OTO App is the employee master. Every fifteen minutes, and at once from
- * Health's "Copy the OTO App's staff now", this reads `otoapp_v.employees`
+ * Health's "Copy the OTO App's staff now", this reads the app's employee view
  * through the read-only repository and keeps the platform's copy in step:
  * `source = 'otoapp'`, `external_id` = the app's id, read-only everywhere else
  * on the platform (`PATCH /me` refuses the four mirrored fields). What it
