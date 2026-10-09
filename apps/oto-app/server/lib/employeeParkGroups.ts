@@ -57,10 +57,12 @@ export type ForeignEmployeeAnswer =
 /**
  * Who fenced the door:
  *  - `review`: round 6's review (finding 1) — the employee resolved in the caller's park group here;
+ *  - `re-review`: round 6's re-review (findings 6 and 8) — the doors without an id;
  *  - `lift`: an earlier round of the lift, unchanged;
- *  - `app`: the app's own park-group check, kept as it is.
+ *  - `app`: the app's own park-group check, kept as it is;
+ *  - `none`: nothing to fence — the handler never runs.
  */
-export type EmployeeDoorFence = "review" | "lift" | "app";
+export type EmployeeDoorFence = "review" | "re-review" | "lift" | "app" | "none";
 
 export interface EmployeeDoor {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -116,6 +118,62 @@ export const EMPLOYEE_DOORS: readonly EmployeeDoor[] = [
   { method: "GET", path: "/api/employees/:employeeId/leave-balance", fence: "lift", foreign: "employee-not-found" },
   { method: "GET", path: "/api/employees/:employeeId/sick-leave-balance", fence: "lift", foreign: "employee-not-found" },
   { method: "GET", path: "/api/employees/:employeeId/all-leave-balances", fence: "app", foreign: "access-denied" },
+];
+
+/**
+ * What a door without an id does about park groups (round 6's re-review, F6
+ * and F8). Within the park group each is the app's door as it was.
+ *  - `list`: the caller's park group's employees, then the app's branch
+ *    filters; another park group's branch lists nobody, the app's answer for
+ *    a branch with no one in it.
+ *  - `sample`: the import template's sample branch name is the park group's.
+ *  - `create`: made in the caller's park group (the app's strict placement,
+ *    an earlier round), and the ids its body names weighed as the edit's are,
+ *    in the same words (F8).
+ *  - `delete`: each id resolved in the park group, another's "Employee not
+ *    found" in the row (round 2).
+ *  - `reorder`: the park group's ids are written; another's is skipped as a
+ *    missing id is, its place in the list kept.
+ *  - `dead`: registered after `GET /api/employees/:id`, which answers it
+ *    ("Employee not found" for the id `upcoming-reviews`); its own handler
+ *    never runs, and nothing is changed.
+ *  - `recalculate`: the park group's employees only (round 6, Q31).
+ *  - `import-preview`: rows matched (by email, then full name) and branch
+ *    names placed only within the park group; another's branch name is the
+ *    app's own row error `Branch "<name>" not found`.
+ *  - `import-apply`: a row's employee is resolved in the park group (the
+ *    app's row error "Employee not found") and its branch taken only from the
+ *    park group (the app's row error "No access to branch"), new rows too.
+ */
+export type EmployeeListRule =
+  | "list"
+  | "sample"
+  | "create"
+  | "delete"
+  | "reorder"
+  | "dead"
+  | "recalculate"
+  | "import-preview"
+  | "import-apply";
+
+export interface EmployeeListDoor {
+  method: "GET" | "POST";
+  path: string;
+  fence: EmployeeDoorFence;
+  rule: EmployeeListRule;
+}
+
+/** Every `/api/employees*` route without an id, in the order `server/routes.ts` registers them (9; with the 45 above, all 54). */
+export const EMPLOYEE_LIST_DOORS: readonly EmployeeListDoor[] = [
+  { method: "GET", path: "/api/employees", fence: "re-review", rule: "list" },
+  { method: "GET", path: "/api/employees/bulk-template", fence: "re-review", rule: "sample" },
+  { method: "POST", path: "/api/employees", fence: "re-review", rule: "create" },
+  { method: "POST", path: "/api/employees/bulk-delete", fence: "lift", rule: "delete" },
+  { method: "POST", path: "/api/employees/reorder", fence: "re-review", rule: "reorder" },
+  { method: "GET", path: "/api/employees/upcoming-reviews", fence: "none", rule: "dead" },
+  { method: "POST", path: "/api/employees/recalculate-probation", fence: "lift", rule: "recalculate" },
+  { method: "POST", path: "/api/employees/bulk-upload-preview", fence: "re-review", rule: "import-preview" },
+  { method: "POST", path: "/api/employees/bulk-update", fence: "re-review", rule: "import-apply" },
 ];
 
 /** The ids an employee record ties to a park group's other records, weighed by the edit and the create. */

@@ -3158,8 +3158,12 @@ export async function registerRoutes(
       const schedulingWeekStart = req.query.schedulingWeekStart as string | undefined;
       const employees = await storage.getEmployeesWithAccess();
       const userWithAccess = req.userWithAccess;
-      
-      let filteredEmployees = employees;
+
+      // The caller's park group's employees only, before the app's branch
+      // filters (round 6's re-review, F6): another park group's branch then
+      // lists nobody, the app's answer for a branch with no one in it.
+      const parkGroup = userWithAccess?.tenantId;
+      let filteredEmployees = employees.filter(e => !!parkGroup && e.tenantId === parkGroup);
       
       // Filter by user's branch access
       if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
@@ -3264,7 +3268,9 @@ export async function registerRoutes(
   // Download bulk upload template - MUST be before :id routes
   app.get("/api/employees/bulk-template", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const branches = await storage.getBranches();
+      // The sample branch is the caller's park group's (round 6's re-review, F6).
+      const parkGroup = req.userWithAccess?.tenantId;
+      const branches = (await storage.getBranches()).filter(b => !!parkGroup && b.tenantId === parkGroup);
       const branchNames = branches.map(b => b.name);
       
       // Create template with specific headers matching user's preferred format
@@ -4523,8 +4529,11 @@ export async function registerRoutes(
       if (!Array.isArray(orderedIds)) {
         return res.status(400).json({ message: "orderedIds must be an array" });
       }
-      
-      await storage.reorderEmployees(orderedIds);
+
+      // The caller's park group's employees only (round 6's re-review, F6):
+      // another park group's id is skipped as a missing id is, its place kept.
+      const parkGroup = req.userWithAccess?.tenantId;
+      if (parkGroup) await storage.reorderEmployees(orderedIds, parkGroup);
       res.json({ success: true });
     } catch (error) {
       next(error);
@@ -4833,9 +4842,16 @@ export async function registerRoutes(
       const userBranches = await storage.getUserBranchAccess(userId);
       const hasAllBranches = userRole === "admin" || userBranches.some(b => b.branchId === null);
       const accessibleBranchIds = userBranches.filter(b => b.branchId !== null).map(b => b.branchId!);
-      
+
+      // The caller's park group's branches and employees only (round 6's
+      // re-review, F6): another park group's branch name is the app's own row
+      // error `Branch "<name>" not found`, and nobody of another park group
+      // is matched, shown or offered to the apply.
+      const parkGroup = req.userWithAccess?.tenantId;
+      const ofParkGroup = (tenantId: string | null) => !!parkGroup && tenantId === parkGroup;
+
       // Get all branches for name-to-id mapping
-      const allBranches = await storage.getBranches();
+      const allBranches = (await storage.getBranches()).filter(b => ofParkGroup(b.tenantId));
       const branchNameToId = new Map(allBranches.map(b => [b.name.toLowerCase(), b.id]));
       
       // Parse Excel file
@@ -4869,7 +4885,7 @@ export async function registerRoutes(
       });
       
       // Get all existing employees for matching
-      const allEmployees = await storage.getEmployees();
+      const allEmployees = (await storage.getEmployees()).filter(e => ofParkGroup(e.tenantId));
       
       const previewRows: any[] = [];
       
@@ -5025,9 +5041,12 @@ export async function registerRoutes(
       for (const row of rows) {
         try {
           const { data, branchId, matchedEmployeeId, isNew } = row;
-          
-          // RBAC check - verify access to branch
-          if (branchId && !hasAllBranches && !accessibleBranchIds.includes(branchId)) {
+
+          // RBAC check - verify access to branch. A branch of another park
+          // group is no branch of the caller's, new rows included (round 6's
+          // re-review, F6): the app's own row error.
+          if (branchId && ((!hasAllBranches && !accessibleBranchIds.includes(branchId)) ||
+              typeof branchId !== "string" || !await branchInParkGroup(branchId, tenantId))) {
             results.push({ rowNumber: row.rowNumber, status: "error", message: "No access to branch" });
             continue;
           }
@@ -5098,8 +5117,9 @@ export async function registerRoutes(
             
             results.push({ rowNumber: row.rowNumber, status: "created", message: "Employee created", employeeId: newEmployee.id });
           } else if (matchedEmployeeId) {
-            // Update existing employee
-            const employee = await storage.getEmployee(matchedEmployeeId);
+            // Update existing employee — the caller's park group's only
+            // (round 6's re-review, F6): another's is the app's row error.
+            const employee = await storage.getEmployeeInTenant(matchedEmployeeId, tenantId);
             if (!employee) {
               results.push({ rowNumber: row.rowNumber, status: "error", message: "Employee not found" });
               continue;

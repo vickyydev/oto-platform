@@ -558,7 +558,10 @@ export interface IStorage {
                 employee: Partial<InsertEmployee>,
         ): Promise<Employee>;
         deleteEmployee(id: string): Promise<void>;
-        reorderEmployees(orderedIds: string[]): Promise<void>;
+        // The order written to one park group's employees only (round 6's
+        // re-review, F6): another park group's id is skipped as a missing id
+        // is, its place in the list kept.
+        reorderEmployees(orderedIds: string[], tenantId: string): Promise<void>;
 
         getContracts(): Promise<ContractInstance[]>;
         getContractsForEmployee(employeeId: string): Promise<ContractInstance[]>;
@@ -3413,12 +3416,12 @@ export class DatabaseStorage implements IStorage {
                 await db.delete(employees).where(eq(employees.id, id));
         }
 
-        async reorderEmployees(orderedIds: string[]): Promise<void> {
+        async reorderEmployees(orderedIds: string[], tenantId: string): Promise<void> {
                 for (let i = 0; i < orderedIds.length; i++) {
                         await db
                                 .update(employees)
                                 .set({ displayOrder: i })
-                                .where(eq(employees.id, orderedIds[i]));
+                                .where(and(eq(employees.id, orderedIds[i]), eq(employees.tenantId, tenantId)));
                 }
         }
 
