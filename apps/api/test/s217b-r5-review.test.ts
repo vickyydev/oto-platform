@@ -186,10 +186,14 @@ describe('A. fences and seams', () => {
       '0006_tenant_ownership_expand.sql': 'e2f9c20269d7a508c636e8bc2b84e11ac5f82418df98890fc70b894e5d1e1225',
       '0007_tenant_ownership_contract.sql': '7c0408d7329f4d19ff26914f0eeaa0d8e855dc20f98f7eba6412279ba40b1a18',
       'meta/0007_snapshot.json': '919c1fe4851d4d3dbcf814cdd4b6b12e100e5d4ae83634b16021c36cc59ce19b',
-      'meta/_journal.json': 'cf81449f7cb406b497ea245629c898e09ed1a37cb201cb5936bdc7c3a7617f19',
     };
     for (const [file, hash] of Object.entries(applied)) expect(sha256(committed(join(APP_MIGRATIONS, file))), file).toBe(hash);
-    expect(readdirSync(APP_MIGRATIONS).filter((f) => f.endsWith('.sql')).sort().at(-1)).toBe('0007_tenant_ownership_contract.sql');
+    // The journal as round 5 left it, entry for entry; round 6's 0008 is the
+    // only migration after it (apps/api/test/s217b-r6.test.ts).
+    const entries = (JSON.parse(committed(join(APP_MIGRATIONS, 'meta', '_journal.json'))) as { entries: { idx: number; when: number; tag: string }[] }).entries;
+    expect(entries.find((e) => e.idx === 7)).toMatchObject({ when: 1791482998619, tag: '0007_tenant_ownership_contract' });
+    expect(entries.filter((e) => e.idx > 7).map((e) => e.tag)).toEqual(['0008_document_tenant_ownership_expand']);
+    expect(readdirSync(APP_MIGRATIONS).filter((f) => f.endsWith('.sql')).sort().slice(-2)).toEqual(['0007_tenant_ownership_contract.sql', '0008_document_tenant_ownership_expand.sql']);
     const platform = JSON.parse(committed(join(REPO, 'packages', 'db', 'migrations', 'meta', '_journal.json'))) as { entries: { tag: string }[] };
     expect(platform.entries.at(-1)?.tag).toBe('0075_event_booking_pass');
   });
@@ -215,9 +219,9 @@ describe('A. fences and seams', () => {
     expect(hits).toEqual([]);
   });
 
-  it('nothing of rounds 6 and 7 in the app: the legacy-table guard stands at eleven, the face matcher is the app’s, and no 503 guard of the document modules moved', () => {
+  it('nothing of round 7 in the app: the face matcher is the app’s and Data Admin’s Attention 503 stands (round 6 took the document modules’ 503 guard down)', () => {
     const raw = readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8');
-    expect(raw.match(/legacyHrUser\(/g)?.length).toBe(11);
+    expect(raw).not.toMatch(/legacyHrUser\(|This module is unavailable for this tenant/);
     expect(readFileSync(join(APP_SERVER, 'face-recognition.ts'), 'utf8')).toMatch(
       /const useAWS = process\.env\.USE_AWS_REKOGNITION === "true";\s*if \(useAWS\) \{\s*return new AWSRekognitionService\(\);\s*\}\s*return new MockFaceRecognitionService\(\);/,
     );

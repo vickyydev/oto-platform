@@ -123,8 +123,11 @@ describe('A. leave approval, restored as the app does it (Q1, H14)', () => {
 
   it('nothing is stored: no app migration in round 5, and the time-off table has no approval column', () => {
     const journal = JSON.parse(readFileSync(join(APP_MIGRATIONS, 'meta', '_journal.json'), 'utf8')) as { entries: { idx: number; tag: string }[] };
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 7, tag: '0007_tenant_ownership_contract' });
-    expect(readdirSync(APP_MIGRATIONS).filter((f) => /^\d{4}_.*\.sql$/.test(f))).toHaveLength(8);
+    // Round 5 added none: 0007 is round 4b's, and the one after it round 6's 0008.
+    expect(journal.entries.find((e) => e.idx === 7)).toMatchObject({ tag: '0007_tenant_ownership_contract' });
+    expect(journal.entries.filter((e) => e.idx > 7).map((e) => e.tag)).toEqual(['0008_document_tenant_ownership_expand']);
+    expect(readdirSync(APP_MIGRATIONS).filter((f) => /^\d{4}_.*\.sql$/.test(f))).toHaveLength(9);
+    expect(readFileSync(join(APP_MIGRATIONS, '0008_document_tenant_ownership_expand.sql'), 'utf8')).not.toMatch(/employee_time_off|approv/i);
     const schema = readFileSync(join(APP_DIR, 'shared', 'schema.ts'), 'utf8');
     const table = schema.slice(schema.indexOf('export const employeeTimeOff = pgTable('), schema.indexOf('export const employeeTimeOffRelations'));
     expect(table).not.toMatch(/approv/i);

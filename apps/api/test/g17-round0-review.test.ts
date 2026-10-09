@@ -411,13 +411,15 @@ describe('A. the OTO App migration, from a seeded live state', () => {
       // and round 4b's contraction of them (s217b-r4b.test.ts).
       expect(runs[0]).toContain('applied 0006_tenant_ownership_expand');
       expect(runs[0]).toContain('applied 0007_tenant_ownership_contract');
-      expect(runs[1]).toMatch(/up to date .* 8 migration/);
+      // And round 6's document tables (s217b-r6.test.ts).
+      expect(runs[0]).toContain('applied 0008_document_tenant_ownership_expand');
+      expect(runs[1]).toMatch(/up to date .* 9 migration/);
     }
     await withClient(url, async (c) => {
       const ledger = await c.query<{ n: string }>(
         'select count(*)::text as n from otoapp.__drizzle_migrations',
       );
-      expect(ledger.rows[0]!.n).toBe('8');
+      expect(ledger.rows[0]!.n).toBe('9');
     });
   });
 
@@ -450,12 +452,17 @@ describe('A. the OTO App migration, from a seeded live state', () => {
     expect(added.map(([k]) => k).sort()).toEqual([
       // S2-17b round 4a (0006): each nullable, backfilled, NOT NULL only in 4b.
       'activity_log.tenant_id',
+      // S2-17b round 6 (0008): nullable, backfilled, NOT NULL only in round 7.
+      'asset_catalog.tenant_id',
       'attention_items.tenant_id',
       'camp_attendance.checkin_ref',
       'camp_registrations.parent_attending',
       'core_events.entry_price_weekday_thb',
       'core_events.entry_price_weekend_thb',
+      'leave_policies.tenant_id',
+      'policy_documents.tenant_id',
       'settings.tenant_id',
+      'templates.tenant_id',
     ]);
     // Round 4b's 0007 makes the three tenant columns NOT NULL, once it has placed
     // every row (they are backfilled, and the migration stops while one is left).
@@ -473,18 +480,28 @@ describe('A. the OTO App migration, from a seeded live state', () => {
     );
     expect(addedConstraints.sort()).toEqual([
       'activity_log:activity_log_tenant_id_tenants_id_fk',
+      'asset_catalog:asset_catalog_tenant_id_tenants_id_fk',
       'attention_items:attention_items_tenant_id_tenants_id_fk',
       'core_events:core_events_entry_price_check',
+      'leave_policies:leave_policies_tenant_id_tenants_id_fk',
+      'policy_documents:policy_documents_tenant_id_tenants_id_fk',
       'settings:settings_tenant_id_tenants_id_fk',
+      'templates:templates_tenant_id_tenants_id_fk',
     ]);
     const addedIndexes = [...after.indexes.keys()].filter(
       (k) => !before.indexes.has(k) && before.tables.has(k.split(':')[0]!),
     );
     expect(addedIndexes.sort()).toEqual([
       'activity_log:idx_activity_log_tenant',
+      'asset_catalog:idx_asset_catalog_tenant',
       'attention_items:idx_attention_items_tenant',
       'camp_attendance:uq_camp_attendance_checkin_ref',
+      // Round 6 (0008): the census found nobody with two offboardings here.
+      'employee_offboarding:employee_offboarding_employee_unique',
+      'leave_policies:idx_leave_policies_tenant',
+      'policy_documents:idx_policy_documents_tenant',
       'settings:settings_tenant_id_key_unique',
+      'templates:idx_templates_tenant',
     ]);
   });
 

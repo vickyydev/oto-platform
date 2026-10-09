@@ -226,6 +226,12 @@ async function contracted(c: pg.Client): Promise<{ nullable: string[]; uniques: 
 }
 
 const NOT_NULL = ['activity_log NO', 'attention_items NO', 'settings NO'];
+/**
+ * The migrations later rounds put after 0007, each expand only: round 6's 0008
+ * (the document tables' park group). A full deploy records 0007 and these.
+ */
+const LATER_ROUNDS = ['0008_document_tenant_ownership_expand'];
+const LEDGER_THROUGH_LATER = 8 + LATER_ROUNDS.length;
 const NULLABLE = ['activity_log YES', 'attention_items YES', 'settings YES'];
 
 const PASSWORD = 'zz-r4b-review-password';
@@ -275,15 +281,20 @@ describe('A. the contraction (0007), attacked', () => {
     [6, 1791474702189, '0006_tenant_ownership_expand'],
   ];
 
-  it('0006 and the migrations before it are byte for byte what staging applied; 0007 is the one addition', () => {
+  it('0006 and the migrations before it are byte for byte what staging applied; 0007 is 4b’s one addition, and only the later rounds’ follow it', () => {
     for (const [file, hash] of Object.entries(APPLIED)) expect(sha256(committed(join(APP_MIGRATIONS, file))), file).toBe(hash);
     const entries = journal().entries;
     expect(entries.slice(0, 7).map((e) => [e.idx, e.when, e.tag])).toEqual(JOURNAL_AS_APPLIED);
-    expect(entries.slice(7).map((e) => e.tag)).toEqual(['0007_tenant_ownership_contract']);
+    expect(entries.slice(7).map((e) => e.tag)).toEqual(['0007_tenant_ownership_contract', ...LATER_ROUNDS]);
     const sql = readdirSync(APP_MIGRATIONS).filter((f) => f.endsWith('.sql')).sort();
-    expect(sql).toEqual([...JOURNAL_AS_APPLIED.map(([, , tag]) => `${tag}.sql`), '0007_tenant_ownership_contract.sql']);
+    expect(sql).toEqual([
+      ...JOURNAL_AS_APPLIED.map(([, , tag]) => `${tag}.sql`),
+      '0007_tenant_ownership_contract.sql',
+      ...LATER_ROUNDS.map((tag) => `${tag}.sql`),
+    ]);
     const snapshots = readdirSync(join(APP_MIGRATIONS, 'meta')).filter((f) => f.endsWith('_snapshot.json')).sort();
-    expect(snapshots.at(-1)).toBe('0007_snapshot.json');
+    expect(snapshots).toContain('0007_snapshot.json');
+    expect(snapshots.at(-1)).toBe(`${String(entries.at(-1)!.idx).padStart(4, '0')}_snapshot.json`);
   });
 
   describe('one migrator run from a seeded 0005 state to 0007 (the production restore’s path): 0006’s backfill and 0007’s in one transaction', () => {
@@ -422,9 +433,9 @@ describe('A. the contraction (0007), attacked', () => {
       expect(wrong).toEqual([]);
     });
 
-    it('and the shape is 0007’s: NOT NULL on the three, the (tenant_id, key) unique alone, eight migrations recorded', async () => {
+    it('and the shape is 0007’s: NOT NULL on the three, the (tenant_id, key) unique alone, 0007 and the later rounds recorded', async () => {
       const shape = await withClient(url, contracted);
-      expect(shape).toEqual({ nullable: NOT_NULL, uniques: ['settings_pkey', 'settings_tenant_id_key_unique'], ledger: 8 });
+      expect(shape).toEqual({ nullable: NOT_NULL, uniques: ['settings_pkey', 'settings_tenant_id_key_unique'], ledger: LEDGER_THROUGH_LATER });
     });
 
     it.skipIf(!HAS_APP_MODULES)('the read-back answers clean', () => {
@@ -501,7 +512,7 @@ describe('A. the contraction (0007), attacked', () => {
       const again = await deploy(url);
       expect(again.status, again.output).toBe(0);
       await withClient(url, async (c) => {
-        expect(await contracted(c)).toEqual({ nullable: NOT_NULL, uniques: ['settings_pkey', 'settings_tenant_id_key_unique'], ledger: 8 });
+        expect(await contracted(c)).toEqual({ nullable: NOT_NULL, uniques: ['settings_pkey', 'settings_tenant_id_key_unique'], ledger: LEDGER_THROUGH_LATER });
         expect((await c.query('select tenant_id from attention_items where id = $1', [stuckItem])).rows).toEqual([{ tenant_id: D }]);
         expect((await c.query(`select distinct tenant_id from settings`)).rows).toEqual([{ tenant_id: D }]);
       });
@@ -564,7 +575,7 @@ describe('A. the contraction (0007), attacked', () => {
       const again = await deploy(url);
       expect(again.status, again.output).toBe(0);
       await withClient(url, async (c) => {
-        expect(await contracted(c)).toEqual({ nullable: NOT_NULL, uniques: ['settings_pkey', 'settings_tenant_id_key_unique'], ledger: 8 });
+        expect(await contracted(c)).toEqual({ nullable: NOT_NULL, uniques: ['settings_pkey', 'settings_tenant_id_key_unique'], ledger: LEDGER_THROUGH_LATER });
         expect((await c.query(`select tenant_id from settings where key = 'zz_rv_reader'`)).rows).toEqual(lost.reader ? [] : [{ tenant_id: D }]);
       });
     } finally {
@@ -1444,10 +1455,10 @@ describe('E. seams, fences and the plan', () => {
     expect(text).not.toMatch(/templates|policy_documents|asset_catalog|i18n_translations|leave_policies|people|xero_|cash_|pl_facts|GRANT|REVOKE/i);
   });
 
-  it('nothing of rounds 6 and 7 in the app: the legacy-table guard, Data Admin’s Attention 503, and the face matcher still the app’s (round 5 lifted the time-off approval 503s and stood the face road down in the routes, not in the matcher)', () => {
+  it('nothing of round 7 in the app: Data Admin’s Attention 503 and the face matcher still the app’s (round 5 lifted the time-off approval 503s and stood the face road down in the routes, not in the matcher; round 6 took the legacy-table guard down)', () => {
     const routes = readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8');
     expect(routes).not.toMatch(/Time-off approval is unavailable until approval tracking is enabled/);
-    expect(routes.match(/legacyHrUser\(/g)?.length).toBe(11);
+    expect(routes).not.toMatch(/legacyHrUser\(|This module is unavailable for this tenant/);
     expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toMatch(
       /router\.use\("\/attention-items", \(_req: Request, res: Response\) => \{\s*res\.status\(503\)/,
     );

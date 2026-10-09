@@ -182,7 +182,8 @@ describe('A. the contraction, app migration 0007', () => {
     const e = entries.find((x) => x.tag === MIGRATION);
     expect(e?.idx).toBe(7);
     expect(e!.when).toBeGreaterThan(entries.find((x) => x.idx === 6)!.when);
-    expect(entries.at(-1)!.tag).toBe(MIGRATION);
+    // Only the later rounds' migrations follow it, each expand only (round 6: 0008).
+    expect(entries.slice(e!.idx + 1).map((x) => x.tag)).toEqual(['0008_document_tenant_ownership_expand']);
     expect(existsSync(join(APP_MIGRATIONS, 'meta', '0007_snapshot.json'))).toBe(true);
     expect(readFileSync(join(APP_MIGRATIONS, `${MIGRATION}.sql`), 'utf8').includes('"public".')).toBe(false);
   });
@@ -694,10 +695,11 @@ describe('C. read off the code', () => {
     expect(routes).not.toMatch(/Attention refresh is unavailable until tenant jobs are isolated/);
     expect(routes).toMatch(/holdNightBatch\(pool, "attention", scope\.tenantId\)/);
     expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toMatch(/router\.use\("\/attention-items"[\s\S]{0,120}res\.status\(503\)/);
-    // Rounds 6 and 7 untouched: the legacy-table guard stands. The time-off
-    // approval 503s were round 5's to lift (Q1, apps/api/test/s217b-r5.test.ts).
+    // The time-off approval 503s were round 5's to lift (Q1,
+    // apps/api/test/s217b-r5.test.ts), the legacy-table guard round 6's
+    // (apps/api/test/s217b-r6.test.ts); Data Admin's Attention 503 is round 7's.
     expect(routes).not.toMatch(/Time-off approval is unavailable until approval tracking is enabled/);
-    expect(routes.match(/legacyHrUser\(/g)?.length).toBe(11);
+    expect(routes).not.toMatch(/legacyHrUser\(|This module is unavailable for this tenant/);
   });
 
   it('a settings save is one transaction, the route saves through it, and Data Admin’s 4a hold to the default is lifted', () => {
