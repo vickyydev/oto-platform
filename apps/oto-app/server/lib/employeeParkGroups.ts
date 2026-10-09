@@ -37,6 +37,23 @@
  * one of the six although the table has no such column; the app sent it and
  * the update ignores it, and both stay so.
  *
+ * THE RE-REVIEW (round 6's fix round re-reviewed, findings 6 to 8). The
+ * census above stopped at `:id*`; the module has 54 routes. The nine without
+ * an id are `EMPLOYEE_LIST_DOORS` below, each with its rule: the list keeps to
+ * the caller's park group before the app's branch filters, the Excel import
+ * matches, shows and places only within it, the reorder writes only its ids,
+ * the template samples its branches, and the create weighs the ids its body
+ * names as the edit does (F8). The same defect outside `/api/employees*` is
+ * censused call site by call site: `EMPLOYEE_LOOKUPS` is every
+ * `storage.getEmployee(` in `server/routes.ts` as the re-review found them
+ * (32), each with what now stands between it and another park group's
+ * employee, and `EMPLOYEE_ROLE_WRITERS` every writer of `employee_roles` (F7).
+ *
+ * Not in these censuses, placed elsewhere: the voucher doors
+ * (`server/voucher-routes.ts`, round 7 under H27) and the permission reads
+ * (`/api/permissions/*`, `GET /api/roles`), as the builder's round 6 report
+ * left them.
+ *
  * No Express or database import: the platform's tests read the census and
  * the words from here.
  */
@@ -174,6 +191,91 @@ export const EMPLOYEE_LIST_DOORS: readonly EmployeeListDoor[] = [
   { method: "POST", path: "/api/employees/recalculate-probation", fence: "lift", rule: "recalculate" },
   { method: "POST", path: "/api/employees/bulk-upload-preview", fence: "re-review", rule: "import-preview" },
   { method: "POST", path: "/api/employees/bulk-update", fence: "re-review", rule: "import-apply" },
+];
+
+/**
+ * What stands between an employee lookup by id and another park group's
+ * employee (round 6's re-review, F7):
+ *  - `fenced`: this round — the lookup is now in the caller's park group
+ *    (`employeeOfParkGroup` or `getEmployeeInTenant`), another's the door's
+ *    own answer for one that does not exist;
+ *  - `held`: the lookup stays by id, and the employee's park group is checked
+ *    right after it, before anything is answered or written (earlier rounds);
+ *  - `record`: the id is read off a record the door has already held to the
+ *    caller's park group;
+ *  - `token`: a public door whose authority is a signer's, download or
+ *    enrolment token; the id is read off that token's own record;
+ *  - `own`: the caller's own linked employee;
+ *  - `app`: the app's own park-group check after the lookup, kept.
+ */
+export type EmployeeLookupDisposition = "fenced" | "held" | "record" | "token" | "own" | "app";
+
+export interface EmployeeLookup {
+  /** The route whose handler holds the call site, as registered. */
+  route: string;
+  /** Whose id is looked up. */
+  reads: string;
+  disposition: EmployeeLookupDisposition;
+  note: string;
+}
+
+/**
+ * Every `storage.getEmployee(` call site in `server/routes.ts` as round 6's
+ * re-review counted them (32), in the file's order. A `fenced` one no longer
+ * calls it; every other one still does, for the reason given.
+ */
+export const EMPLOYEE_LOOKUPS: readonly EmployeeLookup[] = [
+  { route: "POST /api/my-account/profile-photo", reads: "the caller's linked employee", disposition: "own", note: "refused unless the link is the caller's and in the caller's park group (403 \"Linked employee access denied\")" },
+  { route: "GET /api/employees/:id/profile-photo", reads: "params.id", disposition: "held", note: "another park group's employee is 404 \"Employee not found\" before the branch check (census above)" },
+  { route: "POST /api/employees/:id/profile-photo", reads: "params.id", disposition: "held", note: "as the read, before the upload" },
+  { route: "POST /api/employees/:id/enable-login", reads: "params.id", disposition: "held", note: "the actor's strict park group, 404 \"Employee not found\" (round 1)" },
+  { route: "POST /api/employees/:id/generate-login", reads: "params.id", disposition: "held", note: "the actor's strict park group, 404 \"Employee not found\" (round 1)" },
+  { route: "DELETE /api/employees/:id", reads: "params.id", disposition: "held", note: "employeeDeleteOutsideParkGroup, before anything is deleted (round 2)" },
+  { route: "POST /api/employees/bulk-delete", reads: "body.employeeIds[]", disposition: "held", note: "each id weighed as the single delete weighs it; another's is the row's \"Employee not found\" (round 2)" },
+  { route: "POST /api/employees/bulk-update", reads: "rows[].matchedEmployeeId", disposition: "fenced", note: "the Excel import's apply: getEmployeeInTenant, the app's row error \"Employee not found\" (F6)" },
+  { route: "POST /api/employees/:employeeId/transfer", reads: "params.employeeId", disposition: "held", note: "the session's park group, 404 \"Employee not found\" (an earlier round)" },
+  { route: "GET /api/contracts/:id", reads: "the contract's employee", disposition: "record", note: "the contract is held to the park group first (contractOfParkGroup, round 6); this is the branch check of a limited reader" },
+  { route: "DELETE /api/contracts/:id", reads: "the contract's employee", disposition: "record", note: "as the read" },
+  { route: "PATCH /api/contracts/:id/archive", reads: "the contract's employee (the branch check)", disposition: "record", note: "as the read" },
+  { route: "PATCH /api/contracts/:id/archive", reads: "the contract's employee (the activity row)", disposition: "record", note: "the same contract, after its archive" },
+  { route: "POST /api/contracts/:id/send", reads: "the contract's employee", disposition: "record", note: "the contract held first; the name for the activity row" },
+  { route: "GET /api/signing/:token", reads: "the contract's employee", disposition: "token", note: "the signer's own link" },
+  { route: "POST /api/signing/:token/sign", reads: "the contract's employee", disposition: "token", note: "the signer's own link" },
+  { route: "GET /api/contracts/:id/download-signed-pdf", reads: "the contract's employee", disposition: "token", note: "the signed download token (HMAC, expiring), checked first" },
+  { route: "GET /api/letter-sign/:token", reads: "the letter's employee", disposition: "token", note: "the signer's own link" },
+  { route: "POST /api/letter-sign/:token", reads: "the letter's employee", disposition: "token", note: "the signer's own link" },
+  { route: "POST /api/kiosk/verify-enrollment-token", reads: "the enrolment session's employee", disposition: "token", note: "the enrolment token's own session" },
+  { route: "POST /api/kiosk/complete-enrollment", reads: "a duplicate face's employee", disposition: "held", note: "named only when the enrolling employee's park group's, else \"an employee of another park group\" (round 4b's review)" },
+  { route: "GET /api/timekeeping/pending-issues", reads: "each issue's employee", disposition: "record", note: "the issues listed are the caller's park group's (getTimekeepingIssues by tenant)" },
+  { route: "POST /api/timekeeping/issues/:issueId/resolve", reads: "the issue's employee", disposition: "fenced", note: "driven: the branch-only check passed another park group's issue, which answered the app's \"Time entry not found\" where a missing one is \"Issue not found\" (nothing written: the app reads a time entry the issue does not name). The issue is now the park group's first, \"Issue not found\", and its employee looked up in the park group (F7)" },
+  { route: "GET /api/timekeeping/employee/:employeeId", reads: "params.employeeId", disposition: "fenced", note: "the app's 404 \"Employee not found\" (F7)" },
+  { route: "GET /api/employees/:employeeId/time-events", reads: "params.employeeId", disposition: "held", note: "the session's park group, 404 \"Employee not found\" (an earlier round; census above)" },
+  { route: "POST /api/time-events/override", reads: "body.employeeId", disposition: "fenced", note: "the app's 404 \"Employee not found\"; the event's branch the employee's park group's too, \"Branch not found\" as this door answers an advisor's (F7)" },
+  { route: "POST /api/timekeeping/live/ping", reads: "body.employeeId", disposition: "fenced", note: "driven: another park group's employee reached the app's own failure (500) where a missing one is 404; now the app's 404 \"Employee not found\"" },
+  { route: "POST /api/shifts", reads: "body.employeeId", disposition: "fenced", note: "the app's 400 \"Employee not found or not in this branch\" (the older shift list; its create fails before any write for every caller, the app's)" },
+  { route: "PATCH /api/shifts/:id", reads: "body.employeeId", disposition: "fenced", note: "the app's 400 \"Employee not found or not in this branch\"" },
+  { route: "GET /api/leave-balances", reads: "the caller's linked employee", disposition: "own", note: "a limited reader's own branch, after the branch is held to the park group (round 6)" },
+  { route: "GET /api/employees/:employeeId/all-leave-balances", reads: "params.employeeId", disposition: "app", note: "the app's own check: 403 \"Access denied\" (census above)" },
+  { route: "PATCH /api/schedule/assignments/:id/reassign", reads: "body.employeeId", disposition: "fenced", note: "driven: another park group's assignment was reassigned (200). The assignment is now the park group's first (\"Assignment not found\") and the employee too (the app's 400 \"New employee not found\")" },
+];
+
+/** What stands between a writer of `employee_roles` and another park group's holders. */
+export type EmployeeRoleWriterDisposition = "fenced" | "held" | "later" | "dev-only";
+
+export interface EmployeeRoleWriter {
+  writer: string;
+  via: string;
+  disposition: EmployeeRoleWriterDisposition;
+  note: string;
+}
+
+/** Every writer of `employee_roles` (round 6's re-review, F7). */
+export const EMPLOYEE_ROLE_WRITERS: readonly EmployeeRoleWriter[] = [
+  { writer: "storage.setEmployeeRoles", via: "PATCH /api/employees/:id/roles", disposition: "held", note: "the employee resolved in the park group first; roles the park group's own or the default's (round 6's review, Q54)" },
+  { writer: "storage.setRoleEmployees", via: "PATCH /api/roles/:id/employees", disposition: "fenced", note: "deletes and inserts the caller's park group's holders only; another's employee is the app's 404 \"Employee not found\", a role the park group may not assign \"Role not found\" (Q54 from the role side); its GET lists the park group's holders" },
+  { writer: "storage.deleteEmployee", via: "DELETE /api/employees/:id, POST /api/employees/bulk-delete", disposition: "held", note: "the employee's own roles, after the delete's park-group check (round 2)" },
+  { writer: "Data Admin's Employee Role and Role models", via: "/api/data-admin/* (global admins only)", disposition: "later", note: "round 7's Data Admin walkthrough; a role's delete there cascades to its holders" },
+  { writer: "server/prod-sync.ts", via: "POST /api/admin/prod-sync", disposition: "dev-only", note: "refused on every deployment (round 1's devOnly)" },
 ];
 
 /** The ids an employee record ties to a park group's other records, weighed by the edit and the create. */

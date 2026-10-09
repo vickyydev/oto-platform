@@ -2657,36 +2657,51 @@ export async function registerRoutes(
     }
   });
 
-  // Get employees assigned to a role
+  // Get employees assigned to a role: the role is the one set every park
+  // group shares (Q54), its holders are the caller's park group's only
+  // (round 6's re-review, F7).
   app.get("/api/roles/:id/employees", requireAuth, async (req, res, next) => {
     try {
       const role = await storage.getRole(req.params.id);
       if (!role) {
         return res.status(404).json({ message: "Role not found" });
       }
-      
-      const roleEmployees = await storage.getEmployeesByRole(req.params.id);
+
+      const tenantId = req.userWithAccess?.tenantId;
+      const roleEmployees = tenantId ? await storage.getEmployeesByRole(req.params.id, tenantId) : [];
       res.json(roleEmployees);
     } catch (error) {
       next(error);
     }
   });
 
-  // Set employees for a role (admin/manager)
+  // Set employees for a role (admin/manager). The holders written and
+  // replaced are the caller's park group's only: another park group's holders
+  // stand, another park group's employee is the app's 404 "Employee not
+  // found", and a role the park group may not assign is "Role not found" —
+  // Q54's rule, the same as the employee's own roles door (round 6's
+  // re-review, F7).
   app.patch("/api/roles/:id/employees", requireAuth, requireManager, async (req, res, next) => {
     try {
       const role = await storage.getRole(req.params.id);
       if (!role) {
         return res.status(404).json({ message: "Role not found" });
       }
-      
+
       const { employeeIds } = req.body;
       if (!Array.isArray(employeeIds)) {
         return res.status(400).json({ message: "employeeIds must be an array" });
       }
-      
-      await storage.setRoleEmployees(req.params.id, employeeIds);
-      const updatedEmployees = await storage.getEmployeesByRole(req.params.id);
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!tenantId || await rolesOutsideParkGroup([req.params.id], tenantId)) {
+        return res.status(404).json(ROLE_NOT_FOUND);
+      }
+      if (await employeesOutsideParkGroup(employeeIds, tenantId)) {
+        return res.status(404).json(EMPLOYEE_NOT_FOUND);
+      }
+
+      await storage.setRoleEmployees(req.params.id, employeeIds, tenantId);
+      const updatedEmployees = await storage.getEmployeesByRole(req.params.id, tenantId);
       
       // Invalidate employee queries to sync changes
       res.json(updatedEmployees);
@@ -2700,9 +2715,11 @@ export async function registerRoutes(
   // ============================================
   // Every `/api/employees/:id*` door resolves the employee in the caller's
   // park group first — the census of all 45 is in
-  // server/lib/employeeParkGroups.ts. Another park group's employee is the
-  // same answer as one that does not exist, the app's own answer at that door;
-  // within the park group each door is the app's, its branch rules included.
+  // server/lib/employeeParkGroups.ts, beside the nine doors without an id
+  // (all 54 routes) and every other employee lookup by id in this file
+  // (round 6's re-review). Another park group's employee is the same answer
+  // as one that does not exist, the app's own answer at that door; within
+  // the park group each door is the app's, its branch rules included.
   // The contracts and letters doors below use the same lookup (round 6).
   const employeeOfParkGroup = async (req: Request, employeeId: string) => {
     const tenantId = req.userWithAccess?.tenantId;
@@ -2760,6 +2777,20 @@ export async function registerRoutes(
     const usable = [...new Set([tenantId, defaultParkGroup].filter((id): id is string => !!id))];
     const found = await db.select({ id: roles.id }).from(roles)
       .where(and(inArray(roles.id, ids), inArray(roles.tenantId, usable)));
+    return found.length !== ids.length;
+  };
+
+  /**
+   * Whether an employee list names anyone outside the park group — another
+   * park group's employee, or one that does not exist, which is the same
+   * answer (round 6's re-review, F7: the role-holder write).
+   */
+  const employeesOutsideParkGroup = async (employeeIds: unknown[], tenantId: string): Promise<boolean> => {
+    if (employeeIds.some((id) => typeof id !== "string")) return true;
+    const ids = [...new Set(employeeIds as string[])];
+    if (ids.length === 0) return false;
+    const found = await db.select({ id: employees.id }).from(employees)
+      .where(and(inArray(employees.id, ids), eq(employees.tenantId, tenantId)));
     return found.length !== ids.length;
   };
 
@@ -11881,9 +11912,10 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Invalid action. Must be 'approve' or 'reject'" });
       }
 
-      // Get the issue
+      // Get the issue — the caller's park group's only (round 6's re-review,
+      // F7): another park group's is the app's answer for a missing one.
       const issue = await storage.getTimekeepingIssue(issueId);
-      if (!issue) {
+      if (!issue || !req.userWithAccess?.tenantId || issue.tenantId !== req.userWithAccess.tenantId) {
         return res.status(404).json({ message: "Issue not found" });
       }
 
@@ -11926,7 +11958,7 @@ OTO Company Limited`,
         // No changes needed - it was created during the manual entry submission
       }
 
-      const employee = await storage.getEmployee(issue.employeeId);
+      const employee = await employeeOfParkGroup(req, issue.employeeId);
 
       res.json({
         success: true,
@@ -11951,8 +11983,9 @@ OTO Company Limited`,
       const { employeeId } = req.params;
       const user = req.user as any;
       
-      // Verify employee exists and user has access
-      const employee = await storage.getEmployee(employeeId);
+      // Verify employee exists and user has access — in the caller's park
+      // group (round 6's re-review, F7): another's is the app's 404.
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -12425,9 +12458,15 @@ OTO Company Limited`,
       }
 
       if (!employeeId) return res.status(400).json({ message: "Employee is required" });
-      const employee = await storage.getEmployee(employeeId);
+      // The employee and the branch are the caller's park group's (round 6's
+      // re-review, F7): another's employee is the app's 404, another's branch
+      // the words this door gives an advisor's.
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
+      }
+      if (!await branchInParkGroup(branchId, employee.tenantId)) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
       }
 
       const timeEvent = await storage.createTimeEvent({
@@ -12813,8 +12852,9 @@ OTO Company Limited`,
         return res.status(400).json({ message: "employeeId is required" });
       }
 
-      // Create an attention item for the missing clock-in
-      const employee = await storage.getEmployee(employeeId);
+      // Create an attention item for the missing clock-in — for the caller's
+      // park group's employee only (round 6's re-review, F7).
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -12920,9 +12960,10 @@ OTO Company Limited`,
         return res.status(403).json({ message: "Access denied to this branch" });
       }
 
-      // Validate employee belongs to branch if assigned
+      // Validate employee belongs to branch if assigned — and to the caller's
+      // park group (round 6's re-review, F7), in the app's words.
       if (employeeId) {
-        const employee = await storage.getEmployee(employeeId);
+        const employee = await employeeOfParkGroup(req, employeeId);
         if (!employee || employee.branchId !== branchId) {
           return res.status(400).json({ message: "Employee not found or not in this branch" });
         }
@@ -12977,9 +13018,10 @@ OTO Company Limited`,
 
       const { requiredRoleIds, ...updateData } = validationResult.data;
 
-      // Validate employee belongs to branch if being assigned
+      // Validate employee belongs to branch if being assigned — and to the
+      // caller's park group (round 6's re-review, F7), in the app's words.
       if (updateData.employeeId) {
-        const employee = await storage.getEmployee(updateData.employeeId);
+        const employee = await employeeOfParkGroup(req, updateData.employeeId);
         if (!employee || employee.branchId !== existing.branchId) {
           return res.status(400).json({ message: "Employee not found or not in this branch" });
         }
@@ -16067,8 +16109,11 @@ OTO Company Limited`,
         return res.status(400).json({ message: "employeeId is required" });
       }
 
+      // The assignment and the employee it goes to are the caller's park
+      // group's (round 6's re-review, F7): another's is the app's answer for
+      // a missing one at each step.
       const assignment = await storage.getAssignment(id);
-      if (!assignment) {
+      if (!assignment || !req.userWithAccess?.tenantId || assignment.tenantId !== req.userWithAccess.tenantId) {
         return res.status(404).json({ message: "Assignment not found" });
       }
 
@@ -16080,7 +16125,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Cannot modify schedules for past dates" });
       }
 
-      const newEmployee = await storage.getEmployee(newEmployeeId);
+      const newEmployee = await employeeOfParkGroup(req, newEmployeeId);
       if (!newEmployee) {
         return res.status(400).json({ message: "New employee not found" });
       }

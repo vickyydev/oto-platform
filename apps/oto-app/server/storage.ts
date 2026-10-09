@@ -970,10 +970,13 @@ export interface IStorage {
         updateRole(id: string, role: Partial<InsertRole>): Promise<Role>;
         deactivateRole(id: string): Promise<Role>;
         getEmployeeCountByRole(roleId: string): Promise<number>;
+        // A role's holders in one park group (round 6's re-review, F7): the
+        // role is one set across park groups (Q54), its holders are not.
         getEmployeesByRole(
                 roleId: string,
+                tenantId: string,
         ): Promise<{ employeeId: string; roleId: string }[]>;
-        setRoleEmployees(roleId: string, employeeIds: string[]): Promise<void>;
+        setRoleEmployees(roleId: string, employeeIds: string[], tenantId: string): Promise<void>;
         getRoleWithBranches(roleId: string): Promise<RoleWithBranches | undefined>;
         setRoleBranchAssignments(
                 roleId: string,
@@ -5820,6 +5823,7 @@ export class DatabaseStorage implements IStorage {
 
         async getEmployeesByRole(
                 roleId: string,
+                tenantId: string,
         ): Promise<{ employeeId: string; roleId: string }[]> {
                 const results = await db
                         .select({
@@ -5827,16 +5831,25 @@ export class DatabaseStorage implements IStorage {
                                 roleId: employeeRoles.roleId,
                         })
                         .from(employeeRoles)
-                        .where(eq(employeeRoles.roleId, roleId));
+                        .innerJoin(employees, eq(employees.id, employeeRoles.employeeId))
+                        .where(and(eq(employeeRoles.roleId, roleId), eq(employees.tenantId, tenantId)));
                 return results;
         }
 
         async setRoleEmployees(
                 roleId: string,
                 employeeIds: string[],
+                tenantId: string,
         ): Promise<void> {
-                // Delete existing role-employee mappings for this role
-                await db.delete(employeeRoles).where(eq(employeeRoles.roleId, roleId));
+                // Delete existing role-employee mappings for this role — the
+                // park group's own only; another park group's holders stand.
+                await db.delete(employeeRoles).where(and(
+                        eq(employeeRoles.roleId, roleId),
+                        inArray(
+                                employeeRoles.employeeId,
+                                db.select({ id: employees.id }).from(employees).where(eq(employees.tenantId, tenantId)),
+                        ),
+                ));
 
                 // Insert new mappings
                 if (employeeIds.length > 0) {
