@@ -118,6 +118,20 @@ export const EMPLOYEE_DOORS: readonly EmployeeDoor[] = [
   { method: "GET", path: "/api/employees/:employeeId/all-leave-balances", fence: "app", foreign: "access-denied" },
 ];
 
+/** The ids an employee record ties to a park group's other records, weighed by the edit and the create. */
+export const EMPLOYEE_PARK_GROUP_ID_FIELDS = ["branchId", "userId", "updatedBy", "profilePhotoUpdatedBy", "personId", "primaryDepartmentId"] as const;
+export type EmployeeParkGroupIdField = (typeof EMPLOYEE_PARK_GROUP_ID_FIELDS)[number];
+
+/** A record that holds none of those ids yet: what the create weighs its body against (F8). */
+export const NO_PARK_GROUP_IDS: Readonly<Record<EmployeeParkGroupIdField, null>> = {
+  branchId: null,
+  userId: null,
+  updatedBy: null,
+  profilePhotoUpdatedBy: null,
+  personId: null,
+  primaryDepartmentId: null,
+};
+
 /** The six personal fields the app's contract wizard sends as its employee edits — and the only ones taken. */
 export const WIZARD_EMPLOYEE_FIELDS = ["fullName", "nickname", "email", "phone", "address", "nationalId"] as const;
 

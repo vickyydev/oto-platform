@@ -151,10 +151,12 @@ import {
 import {
   CHANGE_NOT_FOUND,
   DEPARTMENT_NOT_FOUND,
+  NO_PARK_GROUP_IDS,
   PERSON_NOT_FOUND,
   ROLE_NOT_FOUND,
   USER_NOT_FOUND,
   wizardEmployeeEdits,
+  type EmployeeParkGroupIdField,
 } from "./lib/employeeParkGroups";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -2714,13 +2716,15 @@ export async function registerRoutes(
    * already holds stands as it is. A login is the park group's by the app's
    * strict placement (`managedUserTenant`), as User Management decides it; a
    * person by the same rule the employee delete uses (`personParkGroup`).
+   * The create weighs its body the same way against a record that holds none
+   * of these ids yet (round 6's re-review, F8).
    */
   const employeeEditOutsideParkGroup = async (
     body: Record<string, unknown>,
-    employee: typeof employees.$inferSelect,
+    employee: Pick<typeof employees.$inferSelect, "tenantId" | EmployeeParkGroupIdField>,
   ): Promise<{ message: string } | undefined> => {
     const tenantId = employee.tenantId;
-    const changed = (field: "branchId" | "userId" | "updatedBy" | "profilePhotoUpdatedBy" | "personId" | "primaryDepartmentId") => {
+    const changed = (field: EmployeeParkGroupIdField) => {
       const value = body[field];
       return typeof value === "string" && value !== "" && value !== employee[field] ? value : undefined;
     };
@@ -3676,6 +3680,10 @@ export async function registerRoutes(
           return res.status(403).json({ message: "Selected branch is not available" });
         }
       }
+      // The ids the body names are weighed as the edit weighs them, in the
+      // same words: none may be another park group's (round 6's re-review, F8).
+      const outside = await employeeEditOutsideParkGroup(parsed.data, { ...NO_PARK_GROUP_IDS, tenantId: actorTenantId });
+      if (outside) return res.status(404).json(outside);
 
       // Validate login setup if requested
       if (setupLogin && (!loginPassword || loginPassword.length < 6)) {
