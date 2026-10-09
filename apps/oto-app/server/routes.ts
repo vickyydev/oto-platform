@@ -154,6 +154,7 @@ import {
   PERSON_NOT_FOUND,
   ROLE_NOT_FOUND,
   USER_NOT_FOUND,
+  wizardEmployeeEdits,
 } from "./lib/employeeParkGroups";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
@@ -6037,16 +6038,20 @@ export async function registerRoutes(
   // Atomic endpoint: Update employee + create contract in single transaction
   app.post("/api/contracts/generate", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const { 
-        employeeId, 
-        templateId, 
-        mergeDataJson, 
-        employeeUpdates,
+      const {
+        employeeId,
+        templateId,
+        mergeDataJson,
         expectedVersion,
         generateSigningLink,
         createdBy,
         language
       } = req.body;
+      // The wizard's employee edits are the six personal fields the app's own
+      // wizard sends, and nothing else (round 6's review, F2;
+      // server/lib/employeeParkGroups.ts): no park group, branch, login,
+      // person, department or status rides in with a contract.
+      const employeeUpdates = wizardEmployeeEdits(req.body.employeeUpdates);
 
       if (!employeeId || !templateId) {
         return res.status(400).json({ message: "employeeId and templateId are required" });
@@ -6084,17 +6089,6 @@ export async function registerRoutes(
       let branch = null;
       if (employee.branchId) {
         branch = await storage.getBranch(employee.branchId);
-      }
-
-      // The employee edits the wizard sends never move the employee out of the
-      // park group (round 6): no park group of their own, and a branch only of
-      // this park group's. The wizard sends neither.
-      if (employeeUpdates && typeof employeeUpdates === "object") {
-        delete (employeeUpdates as Record<string, unknown>).tenantId;
-        const movedTo = (employeeUpdates as Record<string, unknown>).branchId;
-        if (movedTo && (typeof movedTo !== "string" || !await branchInParkGroup(movedTo, employee.tenantId))) {
-          return res.status(404).json(BRANCH_NOT_FOUND);
-        }
       }
 
       // Perform atomic transaction: update employee + create contract
@@ -8025,6 +8019,12 @@ OTO Company Limited`,
 
       const newEmploymentState = lastWorkingDayStr >= todayBangkok ? 'LEAVING' : 'LEFT';
       const newStatus = validatedData.offboardingType === "resignation" ? "resigned" : "terminated";
+      // The backstop (round 6's review, F2): the login switched off here is
+      // only one the app's strict placement puts in the employee's park group.
+      // A login another park group holds (a link made before the wizard and
+      // the employee edit were held to the park group) is left on, as a
+      // leaving date still to come leaves it, for the 03:00 batch's own step.
+      const loginInParkGroup = !!employee.userId && (await managedUserTenant(employee.userId)) === employee.tenantId;
 
       // ONE transaction, end to end (S2-17b round 6, hazard H16). The app wrote
       // the offboarding row and then each of its steps as separate statements,
@@ -8065,9 +8065,10 @@ OTO Company Limited`,
 
         // Deactivate user account if departure date is already in the past —
         // the app's rule exactly: only here, only when the last working day has
-        // passed, and only the login the employee record names (`user_id`).
+        // passed, and only the login the employee record names (`user_id`),
+        // when that login is the employee's park group's (the backstop above).
         // A later last working day is left to the 03:00 batch, as before.
-        if (newEmploymentState === 'LEFT' && employee.userId) {
+        if (newEmploymentState === 'LEFT' && employee.userId && loginInParkGroup) {
           await storage.updateUser(employee.userId, { isActive: false } as any, tx);
         }
 

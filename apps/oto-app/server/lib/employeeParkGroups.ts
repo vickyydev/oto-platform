@@ -30,6 +30,13 @@
  * park group may assign its own roles and the default park group's; another
  * park group's role is refused (Q54).
  *
+ * THE WIZARD. The contract wizard's employee edits are the six personal fields
+ * the app's own client sends (client/src/pages/contract-wizard-page.tsx,
+ * `employeeUpdates`), and nothing else: no login, person, branch, department,
+ * status or park group rides in with a contract (finding 2). `nationalId` is
+ * one of the six although the table has no such column; the app sent it and
+ * the update ignores it, and both stay so.
+ *
  * No Express or database import: the platform's tests read the census and
  * the words from here.
  */
@@ -110,6 +117,19 @@ export const EMPLOYEE_DOORS: readonly EmployeeDoor[] = [
   { method: "GET", path: "/api/employees/:employeeId/sick-leave-balance", fence: "lift", foreign: "employee-not-found" },
   { method: "GET", path: "/api/employees/:employeeId/all-leave-balances", fence: "app", foreign: "access-denied" },
 ];
+
+/** The six personal fields the app's contract wizard sends as its employee edits — and the only ones taken. */
+export const WIZARD_EMPLOYEE_FIELDS = ["fullName", "nickname", "email", "phone", "address", "nationalId"] as const;
+
+/** The wizard's employee edits, kept to the six personal fields; anything else in the body is dropped. */
+export function wizardEmployeeEdits(raw: unknown): Record<string, unknown> | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const edits: Record<string, unknown> = {};
+  for (const field of WIZARD_EMPLOYEE_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(raw, field)) edits[field] = (raw as Record<string, unknown>)[field];
+  }
+  return edits;
+}
 
 /** The app's own words for a record of another park group, per kind (404). */
 export const USER_NOT_FOUND = { message: "User not found" } as const;
