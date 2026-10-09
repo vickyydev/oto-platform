@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createHash, createHmac, randomBytes, randomUUID, scryptSync } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -150,6 +151,90 @@ import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
  * company-wide ones, or the default park group's where it has none (Q49).
  * 5: Q31 carries `people` in round 7 with the owner free to pull it earlier,
  * and section 8's round 7 row names the slice.
+ *
+ * RE-REVIEW of the fix round (57e1d6ad..37a59117, section G). VERDICT: REJECT.
+ * What the fix round did holds under attack, re-driven independently: the
+ * census is exactly the 45 registered `/api/employees/:id*` doors, and as B's
+ * all-branch manager none of them answers A's employee or writes a byte of
+ * theirs (their row, their login, every row naming them); the wizard's six
+ * fields are the app client's six, and every other column sent in its edits
+ * drops; the offboarding backstop leaves another park group's login on; the
+ * branch-wide balances answer 404 across and list only the park group's own;
+ * the leave policy pick and arithmetic equal the app's pre-lift query on three
+ * fixtures, with and without a branch; Q31, section 8's round 7 row and Q54
+ * (the next free number) are in the plan. 0006/0007/0008, the journal and
+ * the snapshot are byte for byte the review commit's; no migration was added;
+ * the API typecheck is clean and the app's 467 are identical per file and per
+ * error code; seven subjects of 53 to 68 characters, `Refs: SCRUM-191`, no
+ * attribution lines. But the census stops at `:id*`, and the module it is the
+ * census of has 54 routes:
+ *
+ *  6. (high) Four of the other nine `/api/employees*` doors still cross park
+ *     groups, through the app's own screens. `GET /api/employees` lists every
+ *     park group's employees in full — pay (`defaultMergeData`), tax and social
+ *     security numbers, phone, face id — to any all-branch user, and
+ *     `?branchId=` of another park group's branch lists that branch's people
+ *     (`storage.getEmployeesWithAccess`, no park group). The Excel import's
+ *     preview (`POST /api/employees/bulk-upload-preview`) matches each row
+ *     against every park group's employees by email, then by full name,
+ *     answers the match's current pay, tax and SSO numbers, and resolves branch
+ *     names across every park group; its apply (`POST /api/employees/bulk-update`)
+ *     writes into `matchedEmployeeId` looked up by id alone — name, pay, tax
+ *     ids and `branchId`, so A's employee moves onto B's branch — and its new
+ *     rows land B's employees on A's branch. `POST /api/employees/reorder`
+ *     rewrites any park group's display order. (`/upcoming-reviews` is shadowed
+ *     by `/:id` and answers 404: dead, no crossing. `/bulk-template` samples the
+ *     first branch name of any park group: a name only.) Prescription, on our
+ *     own authority: the census covers all 54 routes (a second list in
+ *     `employeeParkGroups.ts` for the nine without an id, each with its rule);
+ *     the list keeps to `req.userWithAccess.tenantId` before the app's branch
+ *     filters (another park group's branch then lists nobody, the app's answer
+ *     for an empty branch); the preview matches and names branches only within
+ *     the park group (another's branch name is the app's own row error
+ *     `Branch "<name>" not found`); the apply resolves `matchedEmployeeId` with
+ *     `getEmployeeInTenant` (the app's row error "Employee not found") and
+ *     takes a row's `branchId` only of the park group (the app's row error "No
+ *     access to branch"), for new rows too; the reorder writes only the park
+ *     group's ids (another's is skipped as a missing id is); the template
+ *     samples the park group's branches.
+ *  7. (medium) The same defect outside `/api/employees*`, in modules whose
+ *     rounds closed: `POST /api/time-events/override` writes a clock event onto
+ *     another park group's employee, on any branch, its own included (201);
+ *     `GET /api/timekeeping/employee/:employeeId` answers their timekeeping;
+ *     `PATCH /api/roles/:id/employees` replaces a role's holders in every park
+ *     group — it strips A's employees of a shared role and can assign it to
+ *     them — and its GET lists every park group's holders: Q54's rule, which
+ *     the fix round set on the employee's side, is open on the role's side.
+ *     Read, not driven: `POST /api/timekeeping/issues/:issueId/resolve` checks
+ *     only the issue's branch, which an all-branch manager passes.
+ *     Prescription: a census of every route that resolves an employee by id
+ *     with `storage.getEmployee` (32 call sites in `server/routes.ts`) or
+ *     writes `employee_roles`, each held to the caller's park group with the
+ *     app's 404 "Employee not found"; the role-holder write deletes and inserts
+ *     only the caller's park group's mappings (another's employee id is the
+ *     app's 404), and its list answers only the caller's park group's holders.
+ *  8. (low) `POST /api/employees` writes another park group's
+ *     `primaryDepartmentId`, `updatedBy` and `profilePhotoUpdatedBy` into the
+ *     new employee — the ids the edit now refuses. Prescription: the edit's
+ *     check (`employeeEditOutsideParkGroup`) on the create's body, in the same
+ *     words.
+ *
+ * Noted, not findings of this round: the voucher doors
+ * (`/api/hr/employees/:employeeId/vouchers`) reach any park group's employee,
+ * placed in round 7 under H27; the builder's own "found, not fixed" (the five
+ * `/api/permissions/*` reads, `GET /api/roles`, an existing cross-park-group
+ * login link reached by `toggle-login` and `reset-password`) stand as
+ * reported; the doors resolve the park group from the session, as round 6's
+ * do, not by the strict placement (round 1's finding on an admin the app
+ * cannot place applies to them as to every session-scoped door).
+ *
+ * Re-review commands (each was run):
+ *   cd apps/api && npx vitest run --pool=forks test/s217b-r6-review.test.ts
+ *   cd apps/api && npx vitest run --pool=forks $(ls test | grep -E '^(s217b|g17|otoapp|booth-duty)' | sed 's#^#test/#')
+ *   cd apps/api && npx tsc -p tsconfig.json --noEmit            (no output)
+ *   cd apps/oto-app && npx tsc -p tsconfig.json --noEmit         (467, per file and code as 57e1d6ad)
+ *   npx eslint apps/api/test/s217b-r6-review.test.ts
+ *   git diff --stat 57e1d6ad..HEAD -- apps/oto-app/migrations packages/db   (empty)
  *
  * Section A runs everywhere; B needs only the platform's own migrator; C to F
  * need the app's node_modules (present locally and in CI's OTO App job). No
@@ -1586,5 +1671,356 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     // B's chart lists none of A's nodes.
     const bChart = JSON.stringify((await call('GET', '/api/org-chart/nodes?mode=live&scopeType=company', { cookie: B.admin.cookie })).body);
     expect(bChart).not.toContain(eAc);
+  });
+
+  // ── G. The re-review: the fix round attacked ────────────────────────────────
+  // (the header's RE-REVIEW block). What held is proven first, independently of
+  // the builder's own drive; then the doors the census did not count.
+
+  /** Everything of one employee a door could write: their row, their login's, and every row naming them by `employee_id`. */
+  const footprint45 = async (employeeId: string, login: string) => {
+    const tables = (
+      await q<{ table_name: string }>(
+        `select c.table_name from information_schema.columns c join information_schema.tables t using (table_schema, table_name)
+          where c.table_schema = 'otoapp' and c.column_name = 'employee_id' and t.table_type = 'BASE TABLE' order by 1`,
+      )
+    ).map((r) => r.table_name);
+    const rows: Record<string, string> = {};
+    for (const t of tables) {
+      rows[t] = (
+        await q<{ h: string }>(`select md5(coalesce(string_agg(row_to_json(x)::text, '|' order by row_to_json(x)::text), '')) as h from ${t} x where employee_id::text = $1`, [employeeId])
+      )[0]!.h;
+    }
+    return {
+      employee: (await q<{ r: string }>('select row_to_json(e)::text as r from employees e where id = $1', [employeeId]))[0]!.r,
+      login: (await q<{ r: string }>('select row_to_json(u)::text as r from users u where id = $1', [login]))[0]!.r,
+      users: await count('select count(*) as n from users'),
+      people: await count('select count(*) as n from people'),
+      rows,
+    };
+  };
+
+  it('G. F1 held, re-driven: the census is exactly the registered `/api/employees/:id*` doors, and as B’s all-branch MANAGER (the builder drove the admin) none of the 45 answers A’s employee or writes anything of theirs', async () => {
+    const lib = readFileSync(join(APP_SERVER, 'lib', 'employeeParkGroups.ts'), 'utf8');
+    const census = [...lib.matchAll(/\{ method: "(\w+)", path: "([^"]+)", fence: "\w+", foreign: "[\w-]+" \}/g)].map((m) => `${m[1]} ${m[2]}`);
+    const registered = [...readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8').matchAll(/app\.(get|post|put|patch|delete)\(\s*"(\/api\/employees\/:[^"]+)"/g)].map(
+      (m) => `${m[1]!.toUpperCase()} ${m[2]}`,
+    );
+    expect(census).toHaveLength(45);
+    expect([...census].sort()).toEqual([...registered].sort());
+    const mgrEmail = `zz-r6rr-b-allmgr-${run}@example.com`;
+    await user(B.tenant, 'manager', mgrEmail, null);
+    const bManager = await signIn(mgrEmail);
+    const login = await user(A.tenant, 'staff', `zz-r6rr-door-login-${run}@example.com`, A.x);
+    const victim = await employee(A, A.x, 'rr-doors', { user_id: login, start_date: new Date(Date.now() - 30 * 86_400_000), timeclock_pin_hash: 'zz' });
+    const role = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [DEFAULT, `ZZ R6RR role ${run}`]))[0]!.id;
+    await q('insert into employee_roles (employee_id, role_id) values ($1, $2)', [victim, role]);
+    const change = (await q<{ id: string }>("insert into employee_changes (employee_id, change_type, effective_date, note, created_by) values ($1, 'title_change', now(), 'ZZ', $2) returning id", [victim, A.admin.id]))[0]!.id;
+    const doc = randomUUID();
+    await q(
+      `insert into employee_documents (id, employee_id, branch_id, document_type, file_name, file_path, mime_type, uploaded_by)
+       values ($1, $2, $3, 'other', 'zz.pdf', '/api/files/employee-documents/zz-r6rr.pdf', 'application/pdf', $4)`,
+      [doc, victim, A.x, A.admin.id],
+    );
+    const letter = randomUUID();
+    await q("insert into employee_letters (id, employee_id, branch_id, letter_type, status, created_by) values ($1, $2, $3, 'warning', 'draft', $4)", [letter, victim, A.x, A.admin.id]);
+    await q('insert into staff_cost_allocations (tenant_id, employee_id, branch_id, allocation_percent) values ($1, $2, $3, 100)', [A.tenant, victim, A.x]);
+    const bodies: Record<string, unknown> = {
+      'PATCH /api/employees/:id/roles': { roleIds: [] },
+      'PATCH /api/employees/:id/department': { departmentId: null },
+      'PATCH /api/employees/:id': { nickname: 'ZZ hijack', tenantId: B.tenant, branchId: B.x, userId: B.admin.id },
+      'POST /api/employees/:id/enable-login': { password: 'zz-hijack-password', email: `zz-r6rr-hijack-${run}@example.com` },
+      'PUT /api/employees/:id/cost-allocations': { allocations: [{ branchId: B.x, allocationPercent: 100 }] },
+      'POST /api/employees/:employeeId/changes': { changeType: 'title_change', effectiveDate: day(0), newTitle: 'ZZ hijack' },
+      'PATCH /api/employees/:employeeId/changes/:changeId': { note: 'ZZ hijack', employeeId: victim },
+      'POST /api/employees/:employeeId/transfer': { effectiveDate: day(1), newBranchId: B.x },
+      'POST /api/employees/:employeeId/offboarding': { offboardingType: 'termination', reasonCode: 'misconduct', lastWorkingDay: day(-2) },
+      'PATCH /api/employees/:employeeId/offboarding': { lastWorkingDay: day(5) },
+      'POST /api/employees/:employeeId/warnings': { reasonCode: 'x', severity: 'x', incidentDate: day(0), description: 'x' },
+      'POST /api/employees/:employeeId/letters': { letterType: 'warning' },
+      'POST /api/employees/:employeeId/assets': { assetNameSnapshot: 'ZZ hijack' },
+      'POST /api/employees/:employeeId/pin': { pin: '1234' },
+    };
+    const at = (path: string) => path.replace(/:id\b|:employeeId\b/, victim).replace(':changeId', change).replace(':docId', doc).replace(':letterId', letter);
+    const before = await footprint45(victim, login);
+    const wrong: string[] = [];
+    for (const door of census) {
+      const [method, path] = door.split(' ') as [string, string];
+      let answer: { status: number; text: string };
+      if (door === 'POST /api/employees/:employeeId/documents') {
+        const form = new FormData();
+        form.append('documentType', 'other');
+        form.append('file', new Blob(['%PDF-1.4 zz'], { type: 'application/pdf' }), 'zz.pdf');
+        const res = await fetch(`${ORIGIN}${at(path)}`, { method, headers: { cookie: bManager }, body: form });
+        answer = { status: res.status, text: await res.text() };
+      } else {
+        answer = await call(method, at(path), { cookie: bManager, ...(bodies[door] !== undefined ? { body: bodies[door] } : {}) });
+      }
+      const refused =
+        (answer.status === 404 && answer.text === '{"message":"Employee not found"}') ||
+        (answer.status === 200 && (answer.text === '[]' || answer.text === 'null')) ||
+        answer.status === 403;
+      if (!refused || answer.text.includes(victim) || answer.text.includes('rr-doors')) wrong.push(`${door}: ${answer.status} ${answer.text.slice(0, 160)}`);
+    }
+    expect(wrong).toEqual([]);
+    expect(await footprint45(victim, login)).toEqual(before);
+  }, 120_000);
+
+  it('G. F2 held, re-driven: the wizard takes the six personal fields of the app’s own client and no other column — status, state, person, department, login, authors, face and PIN sent in its edits all drop', async () => {
+    const client = readFileSync(join(APP_DIR, 'client', 'src', 'pages', 'contract-wizard-page.tsx'), 'utf8');
+    const sent = /const employeeUpdates = checkEmployeeEdits\(\) \? \{([\s\S]*?)\} : undefined;/.exec(client)?.[1];
+    expect(sent, 'the wizard client builds employeeUpdates').toBeTruthy();
+    const clientFields = [...sent!.matchAll(/^\s*(\w+):/gm)].map((m) => m[1]);
+    const lib = readFileSync(join(APP_SERVER, 'lib', 'employeeParkGroups.ts'), 'utf8');
+    const serverFields = /WIZARD_EMPLOYEE_FIELDS = \[([^\]]*)\]/.exec(lib)![1]!.match(/"(\w+)"/g)!.map((f) => f.slice(1, -1));
+    expect(serverFields).toEqual(clientFields);
+    expect(serverFields).toEqual(['fullName', 'nickname', 'email', 'phone', 'address', 'nationalId']);
+    const bTemplate = await call('POST', '/api/templates', { cookie: B.admin.cookie, body: { name: `ZZ R6RR wizard ${run}`, htmlBody: '<p>b</p>' } });
+    const eB = await employee(B, B.x, 'rr-wizard', { employment_state: 'ACTIVE' });
+    const before = (await q('select status, employment_state, person_id, primary_department_id, user_id, updated_by, profile_photo_updated_by, face_id, timeclock_pin_hash, branch_id, tenant_id from employees where id = $1', [eB]))[0];
+    const deptA = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [A.tenant, `ZZ R6RR dept ${run}`]))[0]!.id;
+    await call('POST', '/api/contracts/generate', {
+      cookie: B.admin.cookie,
+      body: {
+        employeeId: eB,
+        templateId: bTemplate.body.id,
+        mergeDataJson: { positionTitle: 'ZZ' },
+        employeeUpdates: {
+          nickname: 'ZZ RR',
+          status: 'terminated',
+          employmentState: 'LEFT',
+          personId: randomUUID(),
+          primaryDepartmentId: deptA,
+          userId: A.admin.id,
+          updatedBy: A.admin.id,
+          profilePhotoUpdatedBy: A.admin.id,
+          faceId: 'zz-face',
+          timeclockPinHash: 'zz-pin',
+          branchId: A.x,
+          tenantId: A.tenant,
+        },
+      },
+    });
+    await forgetWizardPdfs(eB);
+    const after = (await q('select status, employment_state, person_id, primary_department_id, user_id, updated_by, profile_photo_updated_by, face_id, timeclock_pin_hash, branch_id, tenant_id from employees where id = $1', [eB]))[0] as Record<string, unknown>;
+    // The wizard stamps its own author, as the app does; everything else sent is dropped.
+    expect({ ...after, updated_by: null }).toEqual({ ...(before as Record<string, unknown>), updated_by: null });
+    expect(after.updated_by).toBe(B.admin.id);
+    expect((await q('select nickname from employees where id = $1', [eB]))[0]).toEqual({ nickname: 'ZZ RR' });
+  });
+
+  it('G. F4 held, against the app’s pre-lift code: on three fixtures (the branch policy newer; the company-wide newer; no policy of its own, falling to the default’s) the lifted balance is the pre-lift query’s pick and arithmetic, with and without a branch', async () => {
+    const P = await parkGroup('p');
+    P.admin.cookie = await signIn(P.admin.email);
+    const withBranch = await employee(P, P.x, 'rr-leave-x');
+    const noBranch = await employee(P, null, 'rr-leave-none');
+    const plan = randomUUID();
+    await q('insert into schedule_week_plans (id, tenant_id, branch_id, week_start_date) values ($1, $2, $3, $4)', [plan, P.tenant, P.x, day(-20)]);
+    const group = randomUUID();
+    await q('insert into shift_groups (id, tenant_id, branch_id, name) values ($1, $2, $3, $4)', [group, P.tenant, P.x, `ZZ R6RR ${run}`]);
+    const row = randomUUID();
+    await q(`insert into schedule_shift_rows (id, tenant_id, branch_id, shift_group_id, week_plan_id, start_time, end_time, label) values ($1, $2, $3, $4, $5, '09:00', '17:00', 'ZZ')`, [
+      row,
+      P.tenant,
+      P.x,
+      group,
+      plan,
+    ]);
+    for (const e of [withBranch, noBranch]) {
+      for (let i = 1; i <= 13; i++) {
+        await q('insert into schedule_assignments (id, tenant_id, week_plan_id, shift_row_id, shift_date, employee_id) values ($1, $2, $3, $4, $5, $6)', [randomUUID(), P.tenant, plan, row, day(-i), e]);
+      }
+    }
+    // Only the fixture's policies are live while it runs: the pre-lift query read ONE set, so nothing else may stand in it.
+    const live = (await q<{ id: string }>('select id from leave_policies where is_active')).map((r) => r.id);
+    await q('update leave_policies set is_active = false where id = any($1)', [live]);
+    const made: string[] = [];
+    const policy = async (tenant: string, branch: string | null, name: string, worked: number, earned: number, hours: number) => {
+      const id = (
+        await q<{ id: string }>(
+          `insert into leave_policies (tenant_id, branch_id, name, days_worked_required, days_off_earned, effective_from, is_active)
+           values ($1, $2, $3, $4, $5, now() + ($6 || ' hours')::interval, true) returning id`,
+          [tenant, branch, `${name} ${run}`, worked, earned, String(hours)],
+        )
+      )[0]!.id;
+      made.push(id);
+    };
+    /** imports/oto-app server/storage.ts:5805-5824 and :5849-5890, verbatim as SQL and arithmetic, over the one set. */
+    const preLift = async (branchId: string | null) => {
+      const [p] = await q<{ name: string; w: number; e: number }>(
+        `select name, days_worked_required as w, days_off_earned as e from leave_policies where is_active ${branchId ? 'and (branch_id = $1 or branch_id is null)' : ''}
+          order by effective_from desc limit 1`,
+        branchId ? [branchId] : [],
+      );
+      return { policyName: p?.name ?? null, daysEarned: Math.floor(13 / (p?.w || 5)) * (p?.e || 2) };
+    };
+    const lifted = async (employeeId: string) => {
+      const b = (await call('GET', `/api/employees/${employeeId}/leave-balance`, { cookie: P.admin.cookie })).body as { policyName: string | null; daysEarned: number };
+      return { policyName: b.policyName, daysEarned: b.daysEarned };
+    };
+    const results: Record<string, unknown> = {};
+    try {
+      const fixtures: Array<[string, () => Promise<void>]> = [
+        ['branch policy newer', async () => {
+          await policy(DEFAULT, null, 'ZZ R6RR F1 default company-wide', 4, 1, -48);
+          await policy(P.tenant, P.x, 'ZZ R6RR F1 P branch', 3, 1, -24);
+        }],
+        ['company-wide newer', async () => {
+          await policy(P.tenant, P.x, 'ZZ R6RR F2 P branch', 3, 1, -48);
+          await policy(DEFAULT, null, 'ZZ R6RR F2 default company-wide', 6, 2, -24);
+        }],
+        ['none of its own: the default’s', async () => {
+          await policy(DEFAULT, null, 'ZZ R6RR F3 default older', 2, 1, -72);
+          await policy(DEFAULT, null, 'ZZ R6RR F3 default newest', 5, 3, -24);
+        }],
+      ];
+      for (const [label, arrange] of fixtures) {
+        await arrange();
+        for (const [where, e, branch] of [['branch', withBranch, P.x], ['no branch', noBranch, null]] as const) {
+          const expected = await preLift(branch);
+          expect(expected.policyName, `${label}, ${where}: the fixture is live`).not.toBeNull();
+          results[`${label}, ${where}`] = { expected, got: await lifted(e) };
+        }
+        await q('update leave_policies set is_active = false where id = any($1)', [made]);
+      }
+    } finally {
+      await q('update leave_policies set is_active = false where id = any($1)', [made]);
+      await q('update leave_policies set is_active = true where id = any($1)', [live]);
+    }
+    for (const [k, v] of Object.entries(results)) {
+      const { expected, got } = v as { expected: unknown; got: unknown };
+      expect(got, k).toEqual(expected);
+    }
+    expect(Object.keys(results)).toHaveLength(6);
+  });
+
+  // ── The doors the census did not count ──────────────────────────────────────
+
+  interface Xlsx {
+    utils: { aoa_to_sheet(rows: unknown[][]): unknown; book_new(): unknown; book_append_sheet(book: unknown, sheet: unknown, name: string): void };
+    write(book: unknown, opts: { type: 'buffer'; bookType: 'xlsx' }): Uint8Array;
+  }
+  interface PreviewRow {
+    rowNumber: number;
+    matchedEmployeeId: string | null;
+    branchId: string | null;
+    error: string | null;
+    currentData: Record<string, unknown>;
+  }
+  /** The app's Excel import screen's upload: a sheet with the template's headers, as its client posts it. */
+  const importPreview = async (cookie: string, rows: unknown[][]) => {
+    const XLSX = createRequire(join(APP_DIR, 'package.json'))('xlsx') as Xlsx;
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), 'Employees');
+    const form = new FormData();
+    form.append('file', new Blob([new Uint8Array(XLSX.write(book, { type: 'buffer', bookType: 'xlsx' }))]), 'zz-r6rr.xlsx');
+    const res = await fetch(`${ORIGIN}/api/employees/bulk-upload-preview`, { method: 'POST', headers: { cookie }, body: form });
+    const text = await res.text();
+    return { status: res.status, text, rows: (JSON.parse(text) as { previewRows: PreviewRow[] }).previewRows };
+  };
+  const branchName = async (id: string) => (await q<{ name: string }>('select name from branches where id = $1', [id]))[0]!.name;
+  const HEADERS = ['Full Name', 'Email Address', 'Branch', 'Monthly Salary (THB)'];
+
+  it('G. the employee list, the Excel import and the reorder as the app has them within the park group: A lists A’s employee; A’s import matches them by email with their current pay, places by A’s branch name and applies; A’s reorder writes A’s order (the arrangement of finding 6)', async () => {
+    const eA = await employee(A, A.x, 'rr-own', { default_merge_data: JSON.stringify({ positionTitle: 'ZZ', salaryThb: 40000 }), tax_id_number: 'ZZ-RR-A-TAX' });
+    const own = (await q<{ email: string; full_name: string }>('select email, full_name from employees where id = $1', [eA]))[0]!;
+    const list = await call('GET', '/api/employees', { cookie: A.admin.cookie });
+    expect(list.status, show(list)).toBe(200);
+    expect((list.body as { id: string }[]).map((e) => e.id)).toContain(eA);
+    const preview = await importPreview(A.admin.cookie, [HEADERS, [own.full_name, own.email, await branchName(A.y), 41000]]);
+    expect(preview.status, preview.text).toBe(200);
+    expect(preview.rows[0]).toMatchObject({ matchedEmployeeId: eA, branchId: A.y, error: null });
+    expect(preview.rows[0]!.currentData).toMatchObject({ salary: 40000, taxIdNumber: 'ZZ-RR-A-TAX' });
+    const applied = await call('POST', '/api/employees/bulk-update', { cookie: A.admin.cookie, body: { rows: preview.rows } });
+    expect(applied.status, show(applied)).toBe(200);
+    expect((await q('select branch_id, default_merge_data from employees where id = $1', [eA]))[0]).toEqual({ branch_id: A.y, default_merge_data: { positionTitle: 'ZZ', salaryThb: 41000 } });
+    await q('update employees set display_order = 7 where id = $1', [eA]);
+    expect((await call('POST', '/api/employees/reorder', { cookie: A.admin.cookie, body: { orderedIds: [eA] } })).status).toBe(200);
+    expect((await q<{ display_order: number }>('select display_order from employees where id = $1', [eA]))[0]!.display_order).toBe(0);
+    // B's own list answers B its own people.
+    const eB = await employee(B, B.x, 'rr-b-own');
+    expect(((await call('GET', '/api/employees', { cookie: B.admin.cookie })).body as { id: string }[]).map((e) => e.id)).toContain(eB);
+  });
+
+  it.fails('G. FINDING 6 (high): the list, the Excel import and the reorder keep to the caller’s park group — B lists none of A’s people, its import neither matches, shows nor writes A’s employee nor places anyone on A’s branch, and its reorder writes none of A’s', async () => {
+    const eA = await employee(A, A.x, 'rr-victim', { default_merge_data: JSON.stringify({ positionTitle: 'ZZ', salaryThb: 50000 }), tax_id_number: 'ZZ-RR-A-TAX-2', display_order: 9 });
+    const victim = (await q<{ email: string; full_name: string }>('select email, full_name from employees where id = $1', [eA]))[0]!;
+    const before = (await q<{ r: string }>('select row_to_json(e)::text as r from employees e where id = $1', [eA]))[0]!.r;
+    const listed = [
+      (await call('GET', '/api/employees', { cookie: B.admin.cookie })).text,
+      (await call('GET', `/api/employees?branchId=${A.x}`, { cookie: B.admin.cookie })).text,
+      (await call('GET', '/api/employees', { cookie: B.limited.cookie })).text,
+    ];
+    // B's import screen, as B's manager uses it: a row with A's employee's email, and a new row naming A's branch.
+    const preview = await importPreview(B.admin.cookie, [HEADERS, [victim.full_name, victim.email, await branchName(B.x), 1], [`ZZ R6RR new ${run}`, `zz-r6rr-new-${run}@example.com`, await branchName(A.y), 2]]);
+    await call('POST', '/api/employees/bulk-update', {
+      cookie: B.admin.cookie,
+      body: {
+        rows: [
+          ...preview.rows,
+          { rowNumber: 9, matchedEmployeeId: eA, branchId: B.x, data: { fullName: 'ZZ renamed by B', salary: 1 } },
+          { rowNumber: 10, isNew: true, branchId: A.y, data: { fullName: 'ZZ R6RR B on A', email: `zz-r6rr-b-on-a-${run}@example.com` } },
+        ],
+      },
+    });
+    await call('POST', '/api/employees/reorder', { cookie: B.admin.cookie, body: { orderedIds: [eA] } });
+    const after = (await q<{ r: string }>('select row_to_json(e)::text as r from employees e where id = $1', [eA]))[0]!.r;
+    const strangersOnA = await count('select count(*) as n from employees where branch_id = any($1) and tenant_id <> $2', [[A.x, A.y], A.tenant]);
+    expect(listed.filter((text) => text.includes(eA))).toEqual([]);
+    expect(preview.text).not.toContain(eA);
+    expect(preview.text).not.toContain('ZZ-RR-A-TAX-2');
+    expect(preview.text).not.toContain(A.y);
+    expect(after).toBe(before);
+    expect(strangersOnA).toBe(0);
+  });
+
+  it('G. timekeeping and the role holders as the app has them within the park group: A’s admin overrides A’s employee’s clock, reads their timekeeping, and sets a shared role’s holders (the arrangement of finding 7)', async () => {
+    const eA = await employee(A, A.x, 'rr-tk-own');
+    const override = await call('POST', '/api/time-events/override', { cookie: A.admin.cookie, body: { employeeId: eA, branchId: A.x, eventType: 'IN', eventTime: new Date().toISOString(), notes: 'ZZ R6RR' } });
+    expect(override.status, show(override)).toBe(201);
+    expect(await count('select count(*) as n from time_events where employee_id = $1', [eA])).toBe(1);
+    const read = await call('GET', `/api/timekeeping/employee/${eA}`, { cookie: A.admin.cookie });
+    expect(read.status, show(read)).toBe(200);
+    const role = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [DEFAULT, `ZZ R6RR shared own ${run}`]))[0]!.id;
+    const set = await call('PATCH', `/api/roles/${role}/employees`, { cookie: A.admin.cookie, body: { employeeIds: [eA] } });
+    expect(set.status, show(set)).toBe(200);
+    expect(((await call('GET', `/api/roles/${role}/employees`, { cookie: A.admin.cookie })).body as { employeeId: string }[]).map((r) => r.employeeId)).toEqual([eA]);
+  });
+
+  it.fails('G. FINDING 7 (medium): the employee-id doors outside `/api/employees*` keep to the caller’s park group — B’s admin writes no clock event on A’s employee and reads none of their timekeeping, and B’s role-holder write neither strips nor lists A’s holders', async () => {
+    const eA = await employee(A, A.x, 'rr-tk-victim');
+    const eB = await employee(B, B.x, 'rr-tk-b');
+    const role = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [DEFAULT, `ZZ R6RR shared ${run}`]))[0]!.id;
+    await q('insert into employee_roles (employee_id, role_id) values ($1, $2)', [eA, role]);
+    const override = await call('POST', '/api/time-events/override', { cookie: B.admin.cookie, body: { employeeId: eA, branchId: B.x, eventType: 'IN', eventTime: new Date().toISOString(), notes: 'ZZ by B' } });
+    const read = await call('GET', `/api/timekeeping/employee/${eA}`, { cookie: B.admin.cookie });
+    const holders = await call('GET', `/api/roles/${role}/employees`, { cookie: B.admin.cookie });
+    await call('PATCH', `/api/roles/${role}/employees`, { cookie: B.admin.cookie, body: { employeeIds: [eB] } });
+    const clockEvents = await count('select count(*) as n from time_events where employee_id = $1', [eA]);
+    const stillHolds = await count('select count(*) as n from employee_roles where employee_id = $1 and role_id = $2', [eA, role]);
+    expect([override.status, clockEvents]).toEqual([404, 0]);
+    expect([read.status, read.text]).toEqual([404, '{"message":"Employee not found"}']);
+    expect(holders.text).not.toContain(eA);
+    expect(stillHolds).toBe(1);
+  });
+
+  it('G. the employee create as the app has it: B creates its employee with B’s own department (the arrangement of finding 8)', async () => {
+    const deptB = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [B.tenant, `ZZ R6RR B dept ${run}`]))[0]!.id;
+    const email = `zz-r6rr-create-own-${run}@example.com`;
+    const created = await call('POST', '/api/employees', { cookie: B.admin.cookie, body: { fullName: 'ZZ R6RR create', nickname: 'ZZ', email, branchId: B.x, primaryDepartmentId: deptB } });
+    expect(created.status, show(created)).toBe(201);
+    expect((await q('select tenant_id, primary_department_id from employees where email = $1', [email]))[0]).toEqual({ tenant_id: B.tenant, primary_department_id: deptB });
+  });
+
+  it.fails('G. FINDING 8 (low): the employee create, like the edit, takes no other park group’s department or user ids', async () => {
+    const deptA = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [A.tenant, `ZZ R6RR A dept ${run}`]))[0]!.id;
+    const email = `zz-r6rr-create-${run}@example.com`;
+    await call('POST', '/api/employees', {
+      cookie: B.admin.cookie,
+      body: { fullName: 'ZZ R6RR create cross', nickname: 'ZZ', email, branchId: B.x, primaryDepartmentId: deptA, updatedBy: A.admin.id, profilePhotoUpdatedBy: A.admin.id },
+    });
+    expect(
+      await count('select count(*) as n from employees where email = $1 and (primary_department_id = $2 or updated_by = $3 or profile_photo_updated_by = $3)', [email, deptA, A.admin.id]),
+    ).toBe(0);
   });
 });
