@@ -610,6 +610,19 @@ module map below is read from the routes and the schema, not from memory.
     Prescription, on our own authority: a census of the scheduling module's
     doors by id, each held to the caller's park group with the app's answer
     for a missing record, as round 4a's census was.
+  - The final re-review drove the same by-id gap in two more closed
+    modules (its findings 9 and 10, pinned in the round 6 review file):
+    the face kiosks' admin doors (`/api/kiosk-devices` list, read, rename,
+    switch-off, delete, and a create that places a kiosk on any branch and
+    writes no park group) and `DELETE /api/time-events/:id`; and a shared
+    role's branch list (`PATCH /api/roles/:id` with `branchIds` replaces
+    `role_branch_assignments` across park groups; the list returns every
+    group's rows - named under Q54). Same prescription: the by-record-id
+    census across the closed modules (timekeeping, kiosks, scheduling),
+    worked in the fix block.
+  - The permission reads (`/api/permissions/*`, `GET /api/roles`) read
+    every park group's employees and roles; they are placed with round 7's
+    administration walkthrough.
 - **Offboarding writes are not one transaction.** The offboarding row is
   written under an advisory lock in its own transaction. Then the
   employee's state, the login switch-off, the asset return dates, the
@@ -1529,7 +1542,8 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   group and the link alone, so that night it switches the login off all the
   same. No door can make such a link since the review's fix (the employee
   edit and the wizard both refuse it); whether one stands on staging has not
-  been read.
+  been read; `toggle-login` and `reset-password` can also still reach such
+  a standing link (they fence the employee, not the link).
 - **Every park group assigns roles from the one set the app keeps in the
   default park group** (Q54): the role list answers every park group's roles,
   and an employee may hold their own park group's or the default's. A role's

@@ -2492,7 +2492,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
   it('H. arrangement of finding 11: the baseline keeps `employee_roles.role_id` as a plain key — ON DELETE no action — and Data Admin deletes a row by its id alone; the census places the permission reads “as the builder’s round 6 report left them”; the plan names the standing link', () => {
     const { lib, row, link } = records();
     expect(row).toContain('disposition: "later"');
-    expect(lib).toContain("the permission reads\n * (`/api/permissions/*`, `GET /api/roles`), as the builder's round 6 report\n * left them.");
+    expect(lib).toContain('placed with round 7');
     expect(link).toContain('the 03:00 batch');
     expect(link.length).toBeGreaterThan(200);
     const baseline = committed(join(APP_MIGRATIONS, '0000_otoapp_baseline.sql'));
@@ -2504,7 +2504,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect(readFileSync(join(APP_SERVER, 'data-admin', 'admin.ts'), 'utf8')).toMatch(/async delete\(id: string\): Promise<void> \{\s*await db\.delete\(this\.table\)\.where\(eq\(this\.table\.id, id\)\);\s*\}/);
   });
 
-  it.fails('H. FINDING 11 (low): the records say what the code does — Data Admin’s role delete is refused while the role has holders (it does not cascade to them); the `/api/permissions/*` reads the census places “elsewhere” are placed in the plan; and the plan’s standing cross-park-group login link names the two doors that still reach it', () => {
+  it('H. FINDING 11 (low, fixed at landing): the records say what the code does — Data Admin’s role delete is refused while the role has holders (it does not cascade to them); the `/api/permissions/*` reads the census places “elsewhere” are placed in the plan; and the plan’s standing cross-park-group login link names the two doors that still reach it', () => {
     const { row, text, link } = records();
     expect({
       cascadeClaimed: /cascades to its holders/.test(row),

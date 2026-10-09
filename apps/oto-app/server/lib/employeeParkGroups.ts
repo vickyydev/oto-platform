@@ -51,8 +51,8 @@
  *
  * Not in these censuses, placed elsewhere: the voucher doors
  * (`server/voucher-routes.ts`, round 7 under H27) and the permission reads
- * (`/api/permissions/*`, `GET /api/roles`), as the builder's round 6 report
- * left them.
+ * (`/api/permissions/*`, `GET /api/roles`), placed with round 7's
+ * administration walkthrough in the plan's section 4.
  *
  * No Express or database import: the platform's tests read the census and
  * the words from here.
@@ -274,7 +274,7 @@ export const EMPLOYEE_ROLE_WRITERS: readonly EmployeeRoleWriter[] = [
   { writer: "storage.setEmployeeRoles", via: "PATCH /api/employees/:id/roles", disposition: "held", note: "the employee resolved in the park group first; roles the park group's own or the default's (round 6's review, Q54)" },
   { writer: "storage.setRoleEmployees", via: "PATCH /api/roles/:id/employees", disposition: "fenced", note: "deletes and inserts the caller's park group's holders only; another's employee is the app's 404 \"Employee not found\", a role the park group may not assign \"Role not found\" (Q54 from the role side); its GET lists the park group's holders" },
   { writer: "storage.deleteEmployee", via: "DELETE /api/employees/:id, POST /api/employees/bulk-delete", disposition: "held", note: "the employee's own roles, after the delete's park-group check (round 2)" },
-  { writer: "Data Admin's Employee Role and Role models", via: "/api/data-admin/* (global admins only)", disposition: "later", note: "round 7's Data Admin walkthrough; a role's delete there cascades to its holders" },
+  { writer: "Data Admin's Employee Role and Role models", via: "/api/data-admin/* (global admins only)", disposition: "later", note: "round 7's Data Admin walkthrough; a role's delete there is refused while the role has holders (the baseline keeps employee_roles.role_id ON DELETE no action)" },
   { writer: "server/prod-sync.ts", via: "POST /api/admin/prod-sync", disposition: "dev-only", note: "refused on every deployment (round 1's devOnly)" },
 ];
 
