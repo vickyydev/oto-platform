@@ -17,41 +17,57 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-Current checkpoint: the sprint's two big stories are CLOSED and Deployed with checked staging evidence (SCRUM-217 events/parties/camps/kiosk, SCRUM-218 staff benefits, plus 443/484/504 and the earlier small fixes). The sprint's remaining story is **S2-17b, the OTO App lifted whole onto the platform (SCRUM-191, In Progress)**, run as nine lane build-review rounds per docs/progress/plans/otoapp-lift/PLAN.md. Round 1 (sign-on, identity, the route fences) is live on staging with its 403 probes. Round 2 (the employee mirror: otoapp_v.employees, job:otoapp.employee_sync, adoption, card revocation on leaving, the benefits swap) landed on main as 43b214ee with the review's two prescribed fixes applied at the gate; CI was being watched at this refresh.
+Current checkpoint (9 October 2026, the hand-over to the cloud session): the
+sprint's two big stories are Deployed with checked evidence (SCRUM-217
+events/parties/camps/kiosk, SCRUM-218 staff benefits). The open story is
+**S2-17b, the OTO App lifted whole (SCRUM-191, In Progress)**, run as lane
+build-review rounds per docs/progress/plans/otoapp-lift/PLAN.md. Rounds 1-5
+are LANDED, DEPLOYED and PROVEN on staging (sign-on fences; the employee
+mirror with adoption proven on the demo cast; the night jobs under the
+platform runner with the Q22 switch THROWN on staging; tenant ownership 4a+4b
+with the contraction applied and Attention awake per park group; attendance
+and operations with the sick-day approval restored and the face road standing
+down). **Round 6 (the document modules) is mid-gate**: built with migration
+0008 (expand; the offboarding census decides its unique index), one-transaction
+offboarding proven by failure injection, and the signed-URL document gate -
+its review found the HR employee doors crossing park groups (HIGH), the first
+fix round closed the /:id census and was RIGHTLY rejected for missing the
+id-less doors (the employee list leaking pay/tax/SSN; the Excel import able to
+edit another park group's people), and the second fix round + final recheck
+were running at the hand-over. **Land round 6 only on that recheck's MERGE.**
 
-_Updated: 8 October 2026. Live STATUS (docs/progress/STATUS.md) carries exact deployments and the newest block always wins._
+_The newest block of docs/progress/STATUS.md is always the exact state; it
+supersedes this paragraph if they ever disagree._
 
 | Item | State |
 |---|---|
-| Main | 43b214ee (round 2 of the lift). Platform migrations through 0075; next free 0076. The OTO App's own migrations through 0005 (otoapp_v.employees), applied by the app's migrator |
-| Staging | All six services at a726f18b (round 1). Round 2 deploys IN ORDER: oto-app first (runs 0005), then GRANT USAGE on otoapp_v + SELECT on otoapp_v.employees to the api role and run packages/db/scripts/otoapp-employee-seam-readback.ts (exit 0), then the api/rest - else booth sync answers 503 EMPLOYEES_SEAM_NOT_GRANTED |
-| SCRUM-191 (the lift) | In Progress. Rounds 3-8 remain: night jobs on the runner, tenant ownership + Attention (4a/4b), attendance/operations, documents, finance + walkthroughs, rehearsal |
-| Owner queues | SCRUM-497 and SCRUM-488 answers; benefits plan Q1-Q13; events plan Q1-Q14; lift plan Q1-Q20 (Q16-Q20 added at round 2: ties, standing-case repeats, delete doors, the never-copied leaver, the ADOPTION_CONFLICT settle tool) |
-| Open small tickets | SCRUM-502/503 ledgers, 505-508; SCRUM-480 waits on the USER (R2 CORS). Held-with-reasons list in STATUS |
+| Main | Green through the round-5 era (a1b909e5 + docs commits; run 37853989319). Platform migrations end at 0075 (next free 0076); the app's own at 0007 applied on staging, 0008 ON THE LANE (not landed) |
+| Staging | All six services at a1b909e5. OTOAPP_JOBS=platform (the night work runs under the platform's watch). Known deliberate records: Som's evidence sick day 2026-10-14 (id c1e7e9ae-...); the four demo app employees; the jobs:run directory key (sha256 cd2ec7c8...) |
+| The lane in flight | lane/s217b-r6 in C:/w/k1 - round 6 + fix round 1 + the re-review's pins + fix round 2 (running at hand-over). If the final recheck says MERGE: verify (review suite 57+ tests zero it.fails, battery ~21 files, api typecheck zero lines, app ratchet 467), rebase onto origin/main, push HEAD:main, watch CI BY FULL SHA (scripts/agent/watch-ci.sh <sha> 110), then the ordered staging deploy below. If REJECT: push the lane as-is to origin (wip), record the findings in STATUS, stop |
+| Round 6's staging deploy order | 1) run the offboarding census on staging (one-off job on the APP service: npm run offboarding:census; read-only; its result only decides the unique index - 0008 deploys either way); 2) deploy oto-app-staging at the green head (migrator applies 0008 with NOTICEs printed); 3) deploy all five platform services; 4) re-read the tenant read-back; 5) SCRUM-191 comment |
+| After round 6 | Round 7 (park/knowledge/administration/finance: the finance keys migration, round 6's NOT NULL contraction, the people routes slice, voucher notices, the big walkthrough sweep), round 8 (restore rehearsal in CI, typecheck ratchet, acceptance index). THEN THE FIX BLOCK (docs/progress/OPEN_ITEMS.md) before ANY new story - the owner's standing ruling of 9 October |
+| Owner queues | Lift plan Q1-Q54 (newest: Q38-Q46 attendance, Q47-Q54 documents/roles); benefits Q1-Q13; events Q1-Q14; analytics 1-17 (Q3 blocks SCRUM-508); SCRUM-497; the OPEN_ITEMS section-3 ruling list |
+| Walkthrough debt (SCRUM-191) | Round 5's ten module pages; round 6's pages at its deploy; the SPRINT_2_ACCEPTANCE rows tick as modules prove |
+| CI | Sharded 8 Oct (SCRUM-511 Deployed with the measured card): api 3 shards + pos on its own runner; ~13 min wall. The 0007-gate suites know the no-app-modules fallback path (cause chain surfaced) |
 
-**Unlanded work** is saved, unreviewed, under `wip/saved-20261006/*`. Treat those branches as reference only until a lane picks one up.
+**Standing security/data rules** (unchanged): ZZ TEST prefixes for new test
+records; FWBooth1 read-only; never touch payment run 0d008153; secrets never
+printed (keys live only in Render env; known by sha256 in STATUS); no
+attribution lines in commits; never commit imports/; benefit QR codes blurred.
 
-**Rules**
+## 3. Order of work (owner priority, 9 October - supersedes 2 October)
 
-- No feature pushes and no staging deploys while main is red.
-- The active lane is `lane/s217b-r2` (worktree C:/w/g17), about to be superseded by round 3's lane. Rebase on `origin/main` before every push; platform migration numbers are assigned at landing (next free 0076).
-
-## 3. Order of work (owner priority, 2 October)
-
-1. SCRUM-494 staging evidence for all nine items (section 10), then
-   SCRUM-494 to Deployed. If anything turns out BROKEN on staging, fix it
-   first. Then SCRUM-493's first part is done.
-2. S2-15a End of Day:
-   - round 2: finish from `wip/eod-round-2-inflight` against
-     `ROUND_2_BRIEF.md`, review, land, then deploy and screenshot;
-   - round 3: settlement, as in plan section 4;
-   - round 4: demo-day scenarios and the closing walkthrough.
-
-   Then SCRUM-215 goes to Deployed after its proof. SCRUM-214 remains open: its analytics child SCRUM-216 is still To Do, confirmed from Jira on 6 October.
-3. SCRUM-495, then SCRUM-496 (the register entries in their sections),
-   then SCRUM-498, applying SCRUM-497 answers as each runs.
-4. Only then S2-15b (SCRUM-216) and the rest of
-   `docs/progress/SPRINT_2_PLAN.md`'s execution order.
+1. **Finish S2-17b**: land round 6 on its final recheck's MERGE (the lane
+   state and deploy order are in section 2), then rounds 7 and 8 per
+   PLAN.md section 8, each as a lane build-review cycle with the same gate.
+2. **Then the FIX BLOCK**: every verified-open defect and small task, in
+   the worked order of docs/progress/OPEN_ITEMS.md section 2 (money and
+   safety first; pairings as marked). The owner ruled this comes BEFORE
+   any new story.
+3. Only then the next story (S2-18 Radar, S2-19 Inbox, S2-22 data,
+   S2-23 Console, S2-16 acceptance; S2-24 bench when hardware time is
+   scheduled - it is paused at the bench freeze, brief in AGENTS.md +
+   docs/handover/CODEX_HANDOVER.md).
 
 ## 4. How behaviour is decided
 
@@ -142,12 +158,13 @@ _Updated: 8 October 2026. Live STATUS (docs/progress/STATUS.md) carries exact de
 
 ## 7. Open points waiting on the owner
 
-- SCRUM-497: details to confirm (each keeps the design's behaviour).
-- SCRUM-488: four End of Day points from round 1 (named approver/witness
-  without PIN; staff may close; nothing added to a closed day; a card refund
-  handed back in cash comes off the cash line).
-- SCRUM-480, SCRUM-481, SCRUM-482, SCRUM-485: earlier rulings.
+- The consolidated ruling list: docs/progress/OPEN_ITEMS.md section 3
+  (ticket rulings 481/482/485/428/434, SCRUM-497, the 277 remainder) and
+  every plan's question list (lift Q1-Q54; benefits; events; analytics -
+  Q3 blocks SCRUM-508's fix).
 - Waiting on outside parties: Xero connection, 2C2P sandbox credentials.
+- SCRUM-510 (flake cause-naming) is queued for the first hygiene lane of
+  the fix block, not on the owner.
 
 ## 8. The hosted environment
 
@@ -177,14 +194,30 @@ _Updated: 8 October 2026. Live STATUS (docs/progress/STATUS.md) carries exact de
 
 ## 10. Work in flight at the hand-over
 
-### S2-17b round 2 staging acceptance (next action once CI is green on 43b214ee)
+### The one open thread: round 6's final gate
 
-1. Deploy **oto-app-staging** at the green head (its migrator applies app migration 0005, publishing `otoapp_v.employees`; the migration grants nothing).
-2. Run the GRANT as a one-off job on the api image: USAGE on schema `otoapp_v` and SELECT on `otoapp_v.employees` to the api's database role, then `packages/db/scripts/otoapp-employee-seam-readback.ts` must exit 0 with counts.
-3. Deploy the five platform services ("deploy all") at the same head.
-4. Acceptance, IN THIS ORDER: provision the four demo people's OTO App users to their platform accounts BEFORE creating them as employees in the app (or within one 15-minute copy window) - otherwise their platform rows are never adopted and Nok's benefit override is left behind (plan Q20). Then: the four core.employee rows adopted, Nok's override intact on a fresh card, a second run changing nothing, job:otoapp.employee_sync on Health, the HR employees walkthrough page, and the SCRUM-218 comment updating check 1 (the mirror now feeds benefits).
-5. Then launch round 3 (the night jobs on the platform runner) per PLAN.md section 8.
+The second fix round + final recheck workflow was running when this
+hand-over was written (lane lane/s217b-r6, worktree C:/w/k1). What it is
+closing: the id-less /api/employees* doors (the list, the Excel import
+preview/apply, reorder), the storage.getEmployee call-site family (time
+override, timekeeping read, role-holder writes), and the create body -
+each either fenced to the caller's park group or dispositioned to its
+named round in the census (server/lib/employeeParkGroups.ts). The final
+recheck recounts both censuses itself and drives every door as another
+park group before it may say MERGE.
 
-### Standing small work
+**If this session is resumed locally:** read the workflow result, then
+follow section 2's land-or-wip instruction. **If the cloud session takes
+over:** git fetch; if lane/s217b-r6 exists on origin as wip, read
+STATUS's newest block for where the gate stopped; the lane's review file
+(apps/api/test/s217b-r6-review.test.ts) states every finding as a test.
 
-SCRUM-502/503 hold the open small-ticket ledgers; 505-508 are filed defects not yet picked up; SCRUM-480 waits on the user for the Cloudflare R2 CORS rule. The tender-machine tickets 415/416 are unblocked (E4 landed) but queued behind the lift.
+### Standing debts that ride along (no action until their moment)
+
+- Round 5+6 walkthrough pages (capture-agent passes at the next staging
+  window; the SPRINT_2_ACCEPTANCE rows).
+- The staging offboarding census before 0008 deploys (section 2's order).
+- The 03:00 departed-login door and pre-existing cross-park login links
+  (recorded in PLAN section 10; check staging for such links before
+  round 7 closes).
+- SCRUM-509's phone-bar design rule; SCRUM-503's scroll-hint choices.
