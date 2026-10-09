@@ -378,6 +378,62 @@ module map below is read from the routes and the schema, not from memory.
         save.
       - Data Admin's Attention model stays closed (503) until round 7's
         walkthrough of Data Admin.
+  - **As built in round 6, the document tables** (migration 0008, section 7;
+    `server/lib/documentParkGroups.ts`). The lift's guard ("This module is
+    unavailable for this tenant", 503) is gone from policies, the asset
+    catalogue and the contract finalize that attaches a policy; the template
+    library had no guard at all and answered every park group's templates.
+    Each module now reads and writes the caller's park group. Which reads fall
+    back to the default park group was decided per module from the app's code,
+    by the line round 4a drew for the Fix department (a value read may fall
+    back; an id the park group's own records keep may not):
+    - Templates: own only. The app's own create already named the tenant
+      (`resolveTenantId`, `POST /api/templates`) for a column that did not
+      exist; a template reaches branches by its assignments; a contract and a
+      letter store its id. Another park group's template is the app's 404
+      "Template not found" at every door (read, edit, delete, fork, assign,
+      and preview, create, generate and finalize a contract, create a letter);
+      assigning or forking onto another park group's branch is "Branch not
+      found"; the "last active template" rule and the contract count are the
+      park group's own. A template cannot be moved to another park group by
+      its edit.
+    - Policies: own only — a contract stores the policy its employee
+      acknowledged. Versions count per park group (a second park group's first
+      "Rules & Regulations" is its version 1), and finalize attaches the
+      employee's park group's latest published policy.
+    - Asset catalogue: own only — an assigned asset stores the item's id;
+      another park group's item is "Catalog item not found".
+    - Leave policies (Q31): writes own (a branch of another park group is
+      "Branch not found", another park group's policy "Leave policy not
+      found"); the lists keep to the park group. A balance is worked out by the
+      branch's own policy, else its park group's company-wide one, else the
+      default park group's company-wide one — a policy's numbers are read and
+      never stored by id, Q28's rule (Q49).
+    - The leave reads' remaining crossings (Q40): `GET /api/leave-balances`
+      and `/api/sick-leave-balances` by another park group's branch, and
+      `/api/leave-balances/employee/:id` and
+      `/api/employees/:id/sick-leave-balance` for another park group's
+      employee, are the app's 404; a public holiday's edit and delete keep to
+      the park group ("Public holiday not found"). The branch rules are the
+      app's, the `user.branchIds` slip included (Q40).
+    - `POST /api/employees/recalculate-probation` acts on the caller's own
+      park group (the strict placement, as the maintenance routes; Q31).
+    - Contracts and letters (section 8 round 6): a contract or letter is its
+      employee's park group's, and every contract and letter door resolves the
+      employee in the caller's park group first — another's is the app's 404
+      ("Contract not found", "Letter not found", "Employee not found"); the
+      contract list, an employee's contracts, letters and active contract and
+      the unsigned-letter count keep to the park group; the wizard's employee
+      edits cannot move the employee to another park group's branch. The PDF
+      doors keep the lift's 403 for another park group. Where the app has no
+      branch rule (a letter's creation, among others) none is added (Q50).
+    - A row the previous release writes during the hand-over has no park
+      group; until round 7 runs 0008's backfill again and sets NOT NULL, it
+      reads as its branch's park group's (policies, leave policies), else the
+      default park group's.
+    - Not in this round: the `people` routes, which Q31 placed here. They need
+      the people census first (the read-back counts it) and are carried to
+      their own slice beside round 7's Data Admin walkthrough.
 - **Directory HR reads trust one shared key.** The six `/api/directory/*`
   HR reads authenticate `HR_DIRECTORY_API_KEY`, which names no tenant, and
   can return any tenant's staff (`server/auth-middleware.ts:231-259`). Fix:
@@ -448,6 +504,35 @@ module map below is read from the routes and the schema, not from memory.
   `docs/qa/oto-app-lift/org-hr-verification.md`). Fix: one transaction for
   the whole sequence. A unique open offboarding per employee is added as a
   backstop only if the census of existing rows is clean.
+  - **As built in round 6** (H16; `tests/documents.check.ts` section 6).
+    - The create is ONE transaction, end to end: the offboarding row, the
+      employee's status, state, end reason and dates, the linked login, the
+      "shift(s) after departure date" alert, the asset return dates, the change
+      record, both activity rows and the six checklist items — the app's
+      steps, in the app's order, each through the storage method it always
+      used (they take an optional transaction now). The lift's per-employee
+      lock and its 409 "Offboarding already exists for this employee" are
+      unchanged. A failure injected in the middle (the change record, after
+      the login, the alert and the asset dates were written) and at the very
+      end (the sixth checklist item) leaves nothing behind; the same request
+      with nothing failing then does all of it. On the code before this round
+      the same injection leaves the alert, the asset date, the login switched
+      off and the offboarding row behind (the check fails there).
+    - An update of the last working day is one transaction the same way (the
+      offboarding row, the employee, the asset dates, the removed shifts, the
+      activity rows).
+    - Linked-user deactivation exactly as the app does it: at the create only,
+      only when the last working day has already passed (state LEFT), and only
+      the login the employee record names (`user_id`). A leaving date still to
+      come leaves the login on for the 03:00 batch, as before; an update that
+      moves the date into the past does not switch it off either (the app's
+      rule, kept).
+    - The readable reason: the Offboarding panel shows the form's own words
+      for a reason code ("Personal reasons", not `personal_reasons`), from one
+      list in `shared/schema.ts` that the form now uses too. Display only:
+      the stored end reason, the change note, the activity line and a letter's
+      `termination.reason` keep what the app writes (Q51).
+    - The census and the backstop: section 7 (0008), Q47 and Q48.
 - **The lift left some users with no way in.** With legacy login off, a user
   made in the app's own Users screen (`POST /api/users`,
   `/api/employees/:id/enable-login`) has a password nothing accepts, and no
@@ -720,6 +805,35 @@ module map below is read from the routes and the schema, not from memory.
 - **The PDF and storage gate.** Contract, letter, BEO, payslip and export
   PDFs are opened only through signed short-lived links, and an
   unauthorised session is refused. Ticket acceptance check 2.
+  - **As built in round 6, for contracts, letters and BEOs** (ticket check
+    2's three; payslips and payroll exports are round 7's payroll
+    walkthrough). The app already stores these on the platform bucket
+    (`server/pdf-storage.ts`, `beo-pdfs/` through `server/file-storage.ts`)
+    and every door already answers with a presigned GET after a check on the
+    owner; nothing in the storage changed, and this round proves the gate
+    rather than adding one.
+    - The doors: `GET /api/contracts/:id/pdf`, `/signed-pdf`,
+      `/download-signed-pdf-auth` (the employee in the caller's park group and
+      branch, else 403); `GET /api/contracts/:id/download-signed-pdf?token=`
+      (the signer's own link, an HMAC of the contract and an expiry under
+      `SESSION_SECRET`, valid 24 hours — the app's; a forged token is 401);
+      `GET /api/employees/:id/letters/:letterId/download` (the employee in the
+      park group and branch); `GET /api/events/:id/beo/pdf` (the event in the
+      park group and branch, `verifyEventAccess`). Each redirects (302) to a
+      URL signed for 300 seconds, with the object's private key; nothing else
+      hands one out (`presignedPdfUrl`, `s3PresignedGet`).
+    - The bucket answers no unsigned read, and the app's catch-all file route
+      serves only the three public folders (branch logos, drop-off photos,
+      invitations): no contract, letter, BEO or employee document is reachable
+      without the owner's check.
+    - Proved in `tests/documents.check.ts` section 7 against a private
+      stand-in bucket served from the check (the same S3 calls, signed by the
+      same SDK): a contract signed through the public signing link, a warning
+      letter signed through its link and a BEO generated, each opening from a
+      signed URL that lives at most 300 seconds and serves the PDF; signed out
+      401, another park group refused with no URL, a manager of another branch
+      403, a forged signer's token 401, and the object itself 403 without the
+      signature. Staging screenshots are the walkthrough's (section 8).
 - **A walkthrough page per module** in `docs/qa/SPRINT_2_ACCEPTANCE.md`
   (with its linked notes under `docs/qa/oto-app-lift/`). Each page records
   one real action and its result, one refused role, branch or tenant case,
@@ -874,6 +988,72 @@ is committed.
   by Q31's default, `leave_policies` (the census's branch-then-default
   backfill). Also
   a unique open offboarding per employee, only if the census is clean.
+  - **As built in round 6: `0008_document_tenant_ownership_expand`** (the
+    next free number; generated from the schema, `"public".` stripped, then
+    the backfill and the census written between the generated statements).
+    EXPAND ONLY: `tenant_id uuid`, nullable, a foreign key to `tenants`, on
+    the four tables; `idx_templates_tenant`, `idx_policy_documents_tenant`,
+    `idx_asset_catalog_tenant`, `idx_leave_policies_tenant`; and, where the
+    census allows, `employee_offboarding_employee_unique`. Nothing renamed,
+    retyped or dropped; 0006 and 0007 untouched.
+    - The backfill is 0006's order (branch, employee, contract, the strict
+      actor, the default park group) taken as far as each table's rows reach.
+      Where a step reaches several rows, it places the row only when they all
+      name ONE park group; split, the row goes on to the next step.
+      - `templates`: its branches (its `template_assignments`); else the
+        employees of the contracts and letters made from it (a template has no
+        branch or employee of its own, so its contracts are both the employee
+        and the contract step); else its maker, where the strict placement
+        (`managedUserTenant`, 0006's statement) places them; else the default.
+      - `policy_documents`: its branch; else the employees of the contracts
+        that acknowledged it; else its maker (strict); else the default.
+      - `asset_catalog`: the branches of the assets assigned from it; else
+        those assets' employees; else the default (it records no maker).
+      - `leave_policies`: its branch; else the default (no employee,
+        contract or maker to follow — the census's branch-then-default).
+      - The default park group: 0006's rule and 0006's statement, extended to
+        these four tables — slug `default`, else the only park group; made
+        ('OTO Default') only where neither answers and a row is left for it.
+    - THE CENSUS (H16, Q47, Q48). The table is locked against writes (SHARE
+      ROW EXCLUSIVE) and a `DO` block counts the employees with more than one
+      offboarding. None: `employee_offboarding_employee_unique` on
+      `employee_id` is made — every row, because the app has no "closed"
+      state and every row is open (Q47). Some: the index is NOT made, the
+      migration carries on, and its `RAISE NOTICE` names the counts in the
+      deploy log (`script/migrate.mjs` now prints a notice raised from a `DO`
+      block); `npm run offboarding:census` (read only, in the image) names the
+      employees and rows, and the read-back says the index is missing (Q48).
+      Drizzle cannot declare "only where the census is clean", so the index is
+      in the SQL only, named in `shared/schema.ts`'s comment.
+    - The census, as run: the production dump of 19 September
+      (`imports/_db`, read locally, counts only) — 7 offboardings for 7
+      employees, none with two, 42 checklist items (six each); every fresh and
+      CI database — none. Staging: owed, `npm run offboarding:census` from the
+      app service's shell before the 0008 deploy (the route has refused a
+      second offboarding since 1 October, and the one positive staging fixture
+      was removed with its read-back, `docs/qa/oto-app-lift/org-hr-verification.md`).
+      Whatever it finds, 0008 deploys: the census only decides the index.
+    - The read-back (`npm run tenant:readback`) counts the four tables per
+      park group, says whether `tenant_id` is NOT NULL yet (round 7), counts
+      the links in existing rows that cross park groups (an assignment,
+      contract, letter or assigned asset naming another park group's
+      template, policy or catalogue item; a policy or leave policy whose
+      branch is another park group's), and prints the census and the index.
+      It exits 1 while a row of the four has no park group, as it did for
+      0006's three.
+    - Tests: `apps/api/test/s217b-r6.test.ts` (the migration as committed,
+      from empty twice, onto a seeded 0007 database with every placement path
+      and a split of each kind, a one-park-group database, the census both
+      ways) and `apps/oto-app/tests/documents.check.ts`, wired into CI's OTO
+      App job with the census after it.
+    - **Owed by round 7** (the contraction, a release later): 0008's backfill
+      again over the hand-over's nulls, a gate as 0007's, `tenant_id` NOT NULL
+      on the four; and, where a database's census found duplicates and a
+      person has settled them, the offboarding index (Q48). Before NOT NULL,
+      the writers this round left naming no park group take one: the dev
+      seeds (`script/full`, `script/minimal`) and Data Admin's models of the
+      four tables (its round 7 walkthrough). Until then their rows read as the
+      default park group's.
 - Round 7: the four finance composite primary keys and a unique index on
   `pl_facts`.
 - A census in round 4 gives a disposition for the other root tables with no
@@ -1016,6 +1196,14 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   on the first run.
 - **The org chart's node read writes.** It inserts missing nodes. The
   walkthrough counts first.
+  - As proved in round 6 (`tests/documents.check.ts` section 8, counted
+    first each time): only an admin with every branch writes — one person
+    node per active employee of their park group with no node in that mode
+    and scope, then nothing on the next read; a branch-limited manager's
+    read writes nothing; another park group's read writes nothing in this
+    one. Two reads at once both write the same missing nodes (no lock, no
+    unique), proved with the insert held open half a second: every missing
+    employee ends up on the chart twice (Q52, the app's own race, kept).
 - **Kiosk throttles may count the network edge.** They are counted per
   address, and behind Cloudflare that is probably an edge, not a device
   (`render.yaml` TRUST_PROXY note, SCRUM-367).
@@ -1207,6 +1395,28 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   runs in UTC. So from midnight to 07:00 Bangkok the board still holds the
   previous day's guests, and a guest registered in those hours leaves it at
   07:00.
+- **A second park group starts with no templates, policies or catalogue**
+  (round 6, Q53). Each park group reads only its own, so a park group the
+  default one did not set up offers no contract template, attaches no
+  policy and lists no catalogue item until its admin makes them; the
+  default park group's are never offered to it. Before round 6 the policies
+  and catalogue answered it 503 and the template library answered it the
+  default's templates.
+- **Leave balances follow the default park group's company-wide policy**
+  where a park group has none of its own (round 6, Q49) — what every park
+  group read before — and its Leave Policies list stays empty until it saves
+  one, which then takes over.
+- **An offboarding cannot be made twice for one person** (round 6, Q47). A
+  person set back to active and leaving again is refused ("Offboarding
+  already exists for this employee"); where 0008's census was clean the
+  database refuses it too.
+- **Assigning or removing a template assignment through another park group
+  answers as the app answers a missing one** (204 to remove, nothing
+  changed); its template lists for another park group's branch are empty.
+- **A contract PDF read across park groups answers 403, every other contract
+  door 404** (round 6): the PDF doors keep the lift's answer.
+- **The signer's download link lasts 24 hours** (the app's): the token
+  issued at signing; the bucket URL it leads to lasts five minutes.
 
 ## 11. Questions for the owner (the app's behaviour is the default)
 
@@ -1598,6 +1808,78 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   Pinned as FINDING Q46 in `tests/attendance.check.ts`. Default: as the app.
   The alternative is the manager's own branches only, as the checklist
   templates already have it and as Q41's alternative would for activation.
+- **Q47. One offboarding per person, ever (round 6).** The app has no
+  "closed" state for an offboarding: the row stays the person's offboarding
+  and the screen reads the newest. Before the lift, offboarding someone a
+  second time (say a person set back to active, who then leaves again) made
+  a second row with its own checklist; since 1 October the route refuses it
+  ("Offboarding already exists for this employee"), and migration 0008 adds
+  the database's backstop, a unique index on the employee (where the census
+  is clean). So a re-hired person cannot be offboarded again. Default: as
+  built — one offboarding per person, the lift's rule, now backed by the
+  database. The alternative is a "closed" mark on an offboarding (a new
+  column, set when the person is made active again), with the unique index
+  over open offboardings only.
+- **Q48. A database whose census finds two offboardings for one person
+  (round 6).** 0008 then leaves the unique index unmade and says so in the
+  deploy log, and `npm run offboarding:census` names each person and their
+  rows. Who settles them, and how? Default: an administrator keeps the
+  newest (the one the screen shows) and removes the older row and its
+  checklist items, by exact id with a read-back; round 7's migration then
+  makes the index where nothing stands in its way. The production dump of 19
+  September has none (7 offboardings, 7 people); staging is to be read before
+  the 0008 deploy. The alternative is a migration that keeps the newest and
+  deletes the rest by itself (not built: it would delete records unseen).
+- **Q49. Leave policies a park group has not saved (round 6).** Before 0008 a
+  company-wide leave policy was every park group's. As built, a park group's
+  balances follow its branch's policy, else its own company-wide one, else
+  the default park group's company-wide one — Q28's rule, because a policy's
+  numbers are read, never kept by id. The sick-leave policy (round 5) has no
+  fallback: each park group gets its own, made with the app's 30 days the
+  first time it is read. The alternative here is the same: own only, so a
+  park group with no policy is worked out on the app's built-in numbers (5
+  days worked for 2 days off) until it saves one. Default: as built.
+- **Q50. Contract and letter doors with no branch rule (round 6).** Within
+  its own park group, a manager limited to one branch can create, list and
+  read another branch's employee's letters and warnings
+  (`POST/GET /api/employees/:id/letters`, `GET /api/letters/:id`,
+  `POST /api/employees/:id/warnings`), count every branch's unsigned letters,
+  list another branch's employee's contracts, preview one, and finalize, send
+  or make a signing link for another branch's contract by id
+  (`/api/contracts/:id/finalize`, `/send`, `/generate-signing-link`). The
+  app's other contract doors (the list, read, create, generate, delete,
+  archive and the PDFs) do keep to the manager's branches. Another park
+  group's is refused at every one of them since round 6. Pinned as FINDING
+  Q50 in `tests/documents.check.ts`. Default: as the app. The alternative is
+  the contract routes' own branch rule on every contract and letter door.
+- **Q51. The reason's words beyond the panel (round 6).** The Offboarding
+  panel now shows the form's words for a reason code ("Personal reasons").
+  When the manager types no reason of their own, the app stores the code
+  itself as the person's end reason and in the change record and activity
+  line, and merges it into a termination letter's `{{termination.reason}}`
+  (a letter can read "misconduct" or "personal_reasons"). Should those carry
+  the form's words too? Default: as the app — display only; the letter's
+  `{{termination.reason_code}}` field keeps the code for templates that want
+  it either way.
+- **Q52. The org chart's read writing twice (round 6).** The chart's GET
+  inserts a person node for each active employee missing from it, with no
+  lock and no unique, so two administrators opening the chart at the same
+  moment can each insert the same people: they appear on the chart twice
+  (proved with the insert held open, `tests/documents.check.ts` FINDING Q52).
+  Default: the app's own race, kept and recorded. The remedy, if you ask for
+  it, is a per-park-group lock around the read's insert (or a unique on the
+  person's node per chart), and a one-off removal of any doubled nodes.
+- **Q53. A new park group's templates, policies and catalogue (round 6).**
+  Each park group now reads only its own, so a park group the default one did
+  not set up starts with none: no contract template, no policy to attach, no
+  catalogue items, until its admin writes them. Settings fall back to the
+  default park group's (Q28), but these are kept by id in the park group's
+  own records — a contract stores its template and the policy it
+  acknowledged, an asset its catalogue item — so offering the default park
+  group's would put another park group's documents into this one's contracts
+  (the Fix department's fault in round 4a). Default: own only. The
+  alternative is to read the default park group's where a park group has
+  none, and copy what is used into the park group at first use (not built).
 
 ## 12. Hazards, each with its test
 
@@ -1618,7 +1900,7 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 | H13 | Face "off" clocks in the wrong person | With face off and an ENROLLED employee present, `identify-face` answers "no match, use PIN" without calling a matcher, enrolment is refused, and `/api/kiosk/clock` from a paired tablet naming that employee writes no time event. Round 5: `tests/attendance.check.ts` section 4 (with the matcher's silence read from the app's own output, the three follow-on doors and the advisor's clock, and PIN and phone still clocking) and `s217b-r5.test.ts` C |
 | H14 | Sick-leave approval does too much or too little | The rota's own request (the restored client body) creates the sick day as approved. Created as approved: exactly that person's assignments on those Bangkok days are freed, with one coverage alert per shift, each in that person's park group. Approved later: their legacy `shifts` in the range are unassigned. A repeat approve changes nothing more. Nothing is stored. Round 5: `tests/attendance.check.ts` section 1 (the freeing step reached through a trigger standing in for a shift assigned at the same instant, since the app's conflict check refuses an existing one first — Q44) and `s217b-r5.test.ts` A |
 | H15 | An ungrouped shift row errors | The route answers 400 in words and no row is written. Round 5: at all four doors (create, edit, drag, a group deleted with no target), `tests/attendance.check.ts` sections 2 and 3 and `s217b-r5.test.ts` B |
-| H16 | Partial writes: offboarding, finance | A failure injected mid-offboarding leaves nothing. The finance keys make `ON CONFLICT` upsert, and the migration stops loudly on duplicate rows |
+| H16 | Partial writes: offboarding, finance | A failure injected mid-offboarding leaves nothing. The finance keys make `ON CONFLICT` upsert, and the migration stops loudly on duplicate rows. Round 6 (offboarding): `tests/documents.check.ts` section 6 — a failure injected in the middle (the change record) and at the end (the sixth checklist item) of a create, and in an update, leaves nothing; the same request then does all of it; the code before round 6 fails the same check. The census-conditional unique index refuses a second row (`s217b-r6.test.ts` A and C, both ways). Finance is round 7's |
 | H17 | The rehearsal re-runs the baseline or misses the views | Restore, rename, mark 0000, apply 0001 onwards: the views exist, the counts equal the sample, and a second run is identical |
 | H18 | An app migration breaks a seam the platform reads directly | A test compares every column declared in `packages/db/src/schema/otoapp.ts` with the app's migrations and fails when one is dropped or retyped. Views are protected by Postgres itself |
 | H19 | The POS reads app tables outside the declared seams, or an app-only change goes untested | The section D grep extended to the HR and rota tables, with an allow-list naming the provisioning, branch and booth seams. A CI run on an app-only commit runs the view tests |
