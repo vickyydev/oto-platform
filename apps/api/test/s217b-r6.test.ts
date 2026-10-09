@@ -37,6 +37,12 @@ import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
  *     group; the offboarding create and update each one transaction with every
  *     write on it (H16); the PDF gate's doors each checking the owner before
  *     a five-minute signed URL; the readable reason shared, display only.
+ *     And round 6's review fixes (findings 1 to 4): the census of the 45
+ *     `/api/employees/:id*` doors (server/lib/employeeParkGroups.ts) matching
+ *     the routes, each looking the employee up in a park group before it
+ *     writes; the edit's ids weighed; the wizard's six fields; the
+ *     offboarding's login backstop; the branch-wide leave read; the
+ *     leave-policy candidate set.
  *  E. CI, the image and the plan.
  *  F. The real app (when its node_modules and a Chromium are present):
  *     apps/oto-app/tests/documents.check.ts over HTTP against a fresh
@@ -562,10 +568,19 @@ interface DocumentRules {
   PARK_GROUP_REQUIRED: { message: string };
 }
 
+/** server/lib/employeeParkGroups.ts, round 6's review (findings 1 and 2). */
+interface EmployeeRules {
+  EMPLOYEE_DOORS: readonly { method: string; path: string; fence: 'review' | 'lift' | 'app'; foreign: string }[];
+  WIZARD_EMPLOYEE_FIELDS: readonly string[];
+  wizardEmployeeEdits: (raw: unknown) => Record<string, unknown> | undefined;
+}
+
 describe('D. read off the code', () => {
   let rules: DocumentRules;
+  let hr: EmployeeRules;
   beforeAll(async () => {
     rules = (await import(/* @vite-ignore */ pathToFileURL(join(APP_SERVER, 'lib', 'documentParkGroups.ts')).href)) as DocumentRules;
+    hr = (await import(/* @vite-ignore */ pathToFileURL(join(APP_SERVER, 'lib', 'employeeParkGroups.ts')).href)) as EmployeeRules;
   });
 
   it('the lift’s 503 guard is gone: no legacyHrUser, no "unavailable for this tenant"', () => {
@@ -608,8 +623,11 @@ describe('D. read off the code', () => {
       expect(storage, signature).toContain(signature);
     }
     const active = storage.slice(storage.indexOf('async getActiveLeavePolicy('), storage.indexOf('async createLeavePolicy('));
-    expect(active).toMatch(/const defaultParkGroup = await this\.getDefaultParkGroupId\(\);/);
-    expect(active).toMatch(/sql`\$\{leavePolicies\.branchId\} IS NULL`,\s*documentOwnedBy\(leavePolicies\.tenantId, defaultParkGroup, leavePolicies\.branchId\),/);
+    // The app's candidate set per park group (round 6's review, F4): the branch's own and the company-wide slot,
+    // the slot the park group's own company-wide policies or, where it has none, the default park group's.
+    expect(active).toMatch(/const defaultParkGroup = ownCompanyWide \? null : await this\.getDefaultParkGroupId\(\);/);
+    expect(active).toMatch(/and\(companyWide, documentOwnedBy\(leavePolicies\.tenantId, defaultParkGroup, leavePolicies\.branchId\)\)/);
+    expect(active).toMatch(/\.where\(and\(eq\(leavePolicies\.isActive, true\), or\(branchOwn, slot\)\)\)\s*\.orderBy\(desc\(leavePolicies\.effectiveFrom\)\)\s*\.limit\(1\);/);
     for (const own of ['getTemplates', 'getPolicyDocuments', 'getAssetCatalog']) {
       const body = storage.slice(storage.indexOf(`async ${own}(tenantId: string)`), storage.indexOf('}', storage.indexOf(`async ${own}(tenantId: string)`) + 400));
       expect(body, own).not.toMatch(/getDefaultParkGroupId/);
@@ -650,8 +668,10 @@ describe('D. read off the code', () => {
     // Nothing written outside it: every storage call in the route is a read before it, or on tx.
     const outside = post.slice(0, start) + post.slice(end);
     expect(outside).not.toMatch(/storage\.(update|create|logActivity|delete)/);
-    // The app's linked-login rule, exactly.
-    expect(inside).toMatch(/if \(newEmploymentState === 'LEFT' && employee\.userId\) \{\s*await storage\.updateUser/);
+    // The app's linked-login rule, with round 6's review backstop (F2): only a login the strict placement puts
+    // in the employee's park group, decided before the transaction (a read, so the writes keep the app's order).
+    expect(inside).toMatch(/if \(newEmploymentState === 'LEFT' && employee\.userId && loginInParkGroup\) \{\s*await storage\.updateUser/);
+    expect(post.slice(0, start)).toMatch(/const loginInParkGroup = !!employee\.userId && \(await managedUserTenant\(employee\.userId\)\) === employee\.tenantId;/);
   });
 
   it('H16: an update of the last working day is one transaction too', () => {
@@ -706,6 +726,70 @@ describe('D. read off the code', () => {
     // What the app stores is unchanged.
     expect(route(routesText(), 'post', '/api/employees/:employeeId/offboarding')).toMatch(/endReason: validatedData\.reasonText \|\| validatedData\.reasonCode,/);
   });
+
+  // ── Round 6's review fixes (findings 1 to 4), read off the code ──────────────
+
+  it('F1, the census: every `/api/employees/:id*` door the routes register is in it, in order (45), and each resolves the employee in a park group before it writes anything', () => {
+    const routes = routesText();
+    const registered = [...routes.matchAll(/\n {2}app\.(get|post|put|patch|delete)\("(\/api\/employees\/:[^"]+)"/g)].map((m) => `${m[1]!.toUpperCase()} ${m[2]}`);
+    expect(registered).toHaveLength(45);
+    expect(registered).toEqual(hr.EMPLOYEE_DOORS.map((d) => `${d.method} ${d.path}`));
+    const counts = { review: 0, lift: 0, app: 0 };
+    for (const door of hr.EMPLOYEE_DOORS) {
+      counts[door.fence] += 1;
+      const handler = route(routes, door.method.toLowerCase(), door.path);
+      const fence = handler.search(/employeeOfParkGroup\(req, |getEmployeeInTenant\(|employee\.tenantId !== |employeeDeleteOutsideParkGroup\(|authorizedOffboardingEmployee\(/);
+      expect(fence, `${door.method} ${door.path} looks the employee up in a park group`).toBeGreaterThan(-1);
+      const write = handler.search(/storage\.(update|create|set|delete|logActivity|archive)\w*\(|db\.(insert|update|delete)\(|db\.transaction\(|uploadToObjectStorage\(/);
+      if (write > -1) expect(fence, `${door.method} ${door.path}: the lookup comes before the first write`).toBeLessThan(write);
+      if (door.fence === 'review') {
+        expect(handler, `${door.method} ${door.path}`).toMatch(/employeeOfParkGroup\(req, /);
+        expect(handler, `${door.method} ${door.path}`).not.toMatch(/storage\.getEmployee\(/);
+      }
+    }
+    expect(counts).toEqual({ review: 18, lift: 26, app: 1 });
+  });
+
+  it('F1, the edit: PATCH /api/employees/:id drops `tenantId` and weighs every id it changes before it writes; the roles, department, transfer, change and allocation doors weigh theirs', () => {
+    const routes = routesText();
+    const patch = route(routes, 'patch', '/api/employees/:id');
+    const drop = patch.indexOf('delete updateData.tenantId;');
+    const weigh = patch.indexOf('const outside = await employeeEditOutsideParkGroup(updateData, oldEmployee);');
+    expect(drop).toBeGreaterThan(-1);
+    expect(weigh).toBeGreaterThan(drop);
+    expect(weigh).toBeLessThan(patch.indexOf('storage.updateEmployee('));
+    const weighing = routes.slice(routes.indexOf('const employeeEditOutsideParkGroup = async'), routes.indexOf('const rolesOutsideParkGroup = async'));
+    for (const words of ['BRANCH_NOT_FOUND', 'USER_NOT_FOUND', 'PERSON_NOT_FOUND', 'DEPARTMENT_NOT_FOUND']) expect(weighing, words).toContain(`return ${words};`);
+    expect(weighing).toMatch(/\(await managedUserTenant\(userId\)\) !== tenantId/);
+    expect(route(routes, 'patch', '/api/employees/:id/roles')).toMatch(/if \(await rolesOutsideParkGroup\(roleIds, employee\.tenantId\)\) \{\s*return res\.status\(404\)\.json\(ROLE_NOT_FOUND\);/);
+    expect(route(routes, 'patch', '/api/employees/:id/department')).toMatch(/if \(!dept \|\| dept\.tenantId !== employee\.tenantId\) \{/);
+    expect(route(routes, 'post', '/api/employees/:employeeId/changes')).toMatch(/!await branchInParkGroup\(newBranchId, employee\.tenantId\)/);
+    expect(route(routes, 'patch', '/api/employees/:employeeId/changes/:changeId')).toMatch(/delete updates\.employeeId;/);
+    expect(route(routes, 'put', '/api/employees/:id/cost-allocations')).toMatch(/eq\(branches\.tenantId, employee\.tenantId\)/);
+  });
+
+  it('F2: the wizard takes the six personal fields its own client sends, and nothing else', () => {
+    expect(hr.WIZARD_EMPLOYEE_FIELDS).toEqual(['fullName', 'nickname', 'email', 'phone', 'address', 'nationalId']);
+    const wizard = readFileSync(join(APP_DIR, 'client', 'src', 'pages', 'contract-wizard-page.tsx'), 'utf8');
+    const sent = wizard.slice(wizard.indexOf('const employeeUpdates = checkEmployeeEdits() ? {'), wizard.indexOf('} : undefined;', wizard.indexOf('const employeeUpdates = checkEmployeeEdits()')));
+    expect([...sent.matchAll(/^\s+(\w+): data\./gm)].map((m) => m[1])).toEqual([...hr.WIZARD_EMPLOYEE_FIELDS]);
+    expect(hr.wizardEmployeeEdits({ fullName: 'ZZ', nationalId: null, userId: 'x', tenantId: 'y', branchId: 'z', status: 'terminated' })).toEqual({ fullName: 'ZZ', nationalId: null });
+    expect(hr.wizardEmployeeEdits(undefined)).toBeUndefined();
+    const generate = route(routesText(), 'post', '/api/contracts/generate');
+    expect(generate).toMatch(/const employeeUpdates = wizardEmployeeEdits\(req\.body\.employeeUpdates\);/);
+    expect(generate).not.toMatch(/\n\s+employeeUpdates,\n/);
+  });
+
+  it('F3: `/api/all-leave-balances` takes the caller’s park group’s branch first, as `/api/leave-balances` does', () => {
+    const all = route(routesText(), 'get', '/api/all-leave-balances');
+    const check = all.indexOf('!await branchInParkGroup(branchId, parkGroup)');
+    expect(check).toBeGreaterThan(-1);
+    expect(all.slice(check)).toMatch(/^!await branchInParkGroup\(branchId, parkGroup\)\) \{\s*return res\.status\(404\)\.json\(BRANCH_NOT_FOUND\);/);
+    expect(check).toBeLessThan(all.indexOf('storage.getEmployees(branchId)'));
+    // `getEmployees` takes no branch (the app lists every employee whatever branch is named, kept); the list keeps to the park group.
+    expect(all).toMatch(/const employees = \(await storage\.getEmployees\(branchId\)\)\.filter\(\(e\) => e\.tenantId === parkGroup\);/);
+    expect(storageText()).toMatch(/async getEmployees\(\): Promise<Employee\[\]> \{/);
+  });
 });
 
 // =============================================================================
@@ -725,6 +809,8 @@ describe('E. CI, the image and the plan', () => {
     expect(seams).toHaveLength(3);
     expect(new Set(seams).size).toBe(1);
     expect(new RegExp(seams[0]!).test('apps/oto-app/server/lib/documentParkGroups.ts')).toBe(true);
+    // Round 6's review: the employee doors' census is read by section D here, so it counts as the seam too.
+    expect(new RegExp(seams[0]!).test('apps/oto-app/server/lib/employeeParkGroups.ts')).toBe(true);
   });
 
   it('the image carries the census beside the read-back, and the app names it', () => {
@@ -748,7 +834,7 @@ describe('E. CI, the image and the plan', () => {
 // =============================================================================
 
 describe.skipIf(!HAS_APP_RUNTIME || !CHROMIUM)('F. the real app: the document check over HTTP', () => {
-  it('apps/oto-app/tests/documents.check.ts passes against a fresh database (H16, the PDF gate, FINDINGs Q50 and Q52), and the read-back and the census answer clean', async () => {
+  it('apps/oto-app/tests/documents.check.ts passes against a fresh database (H16, the PDF gate, FINDINGs Q50 and Q52, and round 6’s review: the 45-door census, the six wizard fields, the login backstop, the branch-wide leave read and the leave-policy candidates), and the read-back and the census answer clean', async () => {
     const { url, drop } = await createTestDatabase({ otoapp: true });
     try {
       const result = spawnSync(process.execPath, [join(APP_NODE_MODULES, 'tsx', 'dist', 'cli.mjs'), 'tests/documents.check.ts'], {
@@ -759,8 +845,11 @@ describe.skipIf(!HAS_APP_RUNTIME || !CHROMIUM)('F. the real app: the document ch
       });
       const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
       expect(result.status, output).toBe(0);
-      expect(output).toMatch(/documents\.check: 32 checks passed/);
-      for (const named of ['(H16)', 'ticket check 2', 'FINDING Q50', 'FINDING Q52']) expect(output, named).toContain(named);
+      expect(output).toMatch(/documents\.check: 38 checks passed/);
+      for (const named of ['(H16)', 'ticket check 2', 'FINDING Q50', 'FINDING Q52', "round 6's review, F3", "round 6's review, F4", "F2's backstop", 'six personal fields']) {
+        expect(output, named).toContain(named);
+      }
+      expect(output).toMatch(/the census: 45 doors — 18 fenced by round 6's review, 26 before it, 1 by the app itself/);
       expect(output).toMatch(/FINDING Q52: two GETs at once wrote 6 node\(s\) for 3 missing employee\(s\); 3 of them are now on the chart twice/);
       const back = script(READBACK, url);
       expect(back.status, back.output).toBe(0);

@@ -134,6 +134,23 @@ import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
  *     Prescribed fix: Q31 names the new placement (or the owner's go for it),
  *     and section 8's round 7 row carries the slice.
  *
+ * Disposition (round 6's review fixes): all five are fixed, and their pins are
+ * plain `it`s, word for word as the review wrote them; each arrangement `it`
+ * beside them now proves what the fix kept. 1: every one of the 45
+ * `/api/employees/:id*` doors resolves the employee in the caller's park group
+ * (the census is `server/lib/employeeParkGroups.ts`, driven door by door in
+ * `tests/documents.check.ts` section 9), PATCH drops `tenantId` and refuses
+ * another park group's branch, login, person or department, and a role only
+ * the default park group's or the employee's own may be assigned (Q54);
+ * within the park group the doors are the app's. 2: the wizard takes the six
+ * personal fields only, and the offboarding switches off only a login the
+ * strict placement puts in the employee's park group. 3: the branch is the
+ * caller's park group's first, "Branch not found". 4: the app's candidate set
+ * per park group — the branch's own policies and the park group's
+ * company-wide ones, or the default park group's where it has none (Q49).
+ * 5: Q31 carries `people` in round 7 with the owner free to pull it earlier,
+ * and section 8's round 7 row names the slice.
+ *
  * Section A runs everywhere; B needs only the platform's own migrator; C to F
  * need the app's node_modules (present locally and in CI's OTO App job). No
  * Chromium is needed: the PDFs here are ones the test lays down itself (under
@@ -305,14 +322,19 @@ describe('A. fences and seams', () => {
     }
   });
 
-  it.fails('FINDING 5 (low): Q31 names where the `people` routes went, matching section 4 (they left round 6)', () => {
+  it('FINDING 5 (low, fixed): Q31 names where the `people` routes went, matching section 4 (they left round 6)', () => {
     expect(plan()).toMatch(/Not in this round: the `people` routes, which Q31 placed here\./);
     expect(question(31)).not.toMatch(/`people` in round 6/);
   });
 
-  it('the arrangement of finding 5: Q31 still places `people` in round 6 while section 4 carries them to round 7', () => {
-    expect(question(31)).toMatch(/`people` in round 6 \(HR\s+records\)/);
+  it('the arrangement of finding 5, as fixed: Q31 carries `people` in round 7, the owner free to pull it earlier; section 4 and section 8’s round 7 row say the same', () => {
+    const q31 = question(31);
+    expect(q31).toMatch(/`people` in round 7 \(HR\s+records\)/);
+    expect(q31).toMatch(/your word pulls it into an\s+earlier/);
     expect(plan()).toMatch(/carried to\s+their own slice beside round 7's Data Admin walkthrough/);
+    const round7 = plan().split('\n').find((line) => line.startsWith('| 7 | '));
+    expect(round7).toMatch(/The `people` routes/);
+    expect(round7).toMatch(/Q31/);
   });
 });
 
@@ -1385,44 +1407,49 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     for (const own of [cA, letter.body.id as string]) expect(lists).not.toContain(own);
   });
 
-  it('E. the leave reads round 6 fenced keep to the park group (the arrangement of finding 3)', async () => {
+  it('E. the leave reads round 6 fenced keep to the park group, and the branch-wide balances still answer the branch’s own park group (the arrangement of finding 3, as fixed)', async () => {
     for (const path of [`/api/leave-balances?branchId=${A.x}`, `/api/leave-balances/employee/${eAc}`, `/api/sick-leave-balances?branchId=${A.x}`, `/api/employees/${eAc}/sick-leave-balance`, `/api/employees/${eAc}/all-leave-balances`]) {
       const a = await call('GET', path, { cookie: B.admin.cookie });
       expect([403, 404], `${path}: ${show(a)}`).toContain(a.status);
     }
-    // And the one it did not: another park group's branch answers, with A's people in it.
-    const crossed = await call('GET', `/api/all-leave-balances?branchId=${A.x}`, { cookie: B.admin.cookie });
-    expect(crossed.status, show(crossed)).toBe(200);
-    expect((crossed.body as { employeeId: string }[]).map((r) => r.employeeId)).toContain(eAc);
+    // The one it did not fence, as the app answers its own park group: A's branch, with A's people in it.
+    const own = await call('GET', `/api/all-leave-balances?branchId=${A.x}`, { cookie: A.admin.cookie });
+    expect(own.status, show(own)).toBe(200);
+    expect((own.body as { employeeId: string }[]).map((r) => r.employeeId)).toContain(eAc);
+    // And B's own branch answers B, with none of A's people.
+    const bOwn = await call('GET', `/api/all-leave-balances?branchId=${B.x}`, { cookie: B.admin.cookie });
+    expect(bOwn.status, show(bOwn)).toBe(200);
+    expect((bOwn.body as { employeeId: string }[]).map((r) => r.employeeId)).not.toContain(eAc);
   });
 
-  it.fails('E. FINDING 3 (medium): `/api/all-leave-balances` keeps to the caller’s park group — another park group’s branch is the app’s 404, and none of its people are listed', async () => {
+  it('E. FINDING 3 (medium, fixed): `/api/all-leave-balances` keeps to the caller’s park group — another park group’s branch is the app’s 404, and none of its people are listed', async () => {
     const crossed = await call('GET', `/api/all-leave-balances?branchId=${A.x}`, { cookie: B.admin.cookie });
     expect(crossed.status, show(crossed)).toBe(404);
   });
 
-  it('E. the HR employee doors answer and edit another park group’s employee, and can move them into the caller’s park group (the arrangement of finding 1)', async () => {
-    const victim = await employee(A, A.x, 'hr-cross');
-    expect((await call('GET', `/api/employees/${victim}/documents`, { cookie: B.admin.cookie })).status).toBe(404);
-    const read = await call('GET', `/api/employees/${victim}`, { cookie: B.admin.cookie });
+  it('E. the HR employee doors as the app has them within the park group: A’s admin reads A’s employee, edits them, and switches their login off and on; a park group named in the edit is dropped (the arrangement of finding 1, as fixed)', async () => {
+    const own = await employee(A, A.x, 'hr-own');
+    expect((await call('GET', `/api/employees/${own}/documents`, { cookie: B.admin.cookie })).status).toBe(404);
+    const read = await call('GET', `/api/employees/${own}`, { cookie: A.admin.cookie });
     expect(read.status, show(read)).toBe(200);
-    expect(read.body.id).toBe(victim);
-    const edited = await call('PATCH', `/api/employees/${victim}`, { cookie: B.admin.cookie, body: { nickname: 'ZZ renamed by B', tenantId: B.tenant } });
+    expect(read.body.id).toBe(own);
+    const edited = await call('PATCH', `/api/employees/${own}`, { cookie: A.admin.cookie, body: { nickname: 'ZZ renamed by A', tenantId: B.tenant } });
     expect(edited.status, show(edited)).toBe(200);
-    const row = (await q<{ tenant_id: string; nickname: string }>('select tenant_id, nickname from employees where id = $1', [victim]))[0]!;
-    expect(row).toEqual({ tenant_id: B.tenant, nickname: 'ZZ renamed by B' });
-    // Now a round 6 door that refused B a moment ago hands B that person's file.
-    expect((await call('GET', `/api/employees/${victim}/documents`, { cookie: B.admin.cookie })).status).toBe(200);
-    await q('update employees set tenant_id = $1, nickname = $2 where id = $3', [A.tenant, 'ZZ', victim]);
-    // The same doors reach the person's login: B switches it off (and could reset its password).
+    const row = (await q<{ tenant_id: string; nickname: string }>('select tenant_id, nickname from employees where id = $1', [own]))[0]!;
+    expect(row).toEqual({ tenant_id: A.tenant, nickname: 'ZZ renamed by A' });
+    // The round 6 door that refuses B still refuses B: the person never left A.
+    expect((await call('GET', `/api/employees/${own}/documents`, { cookie: B.admin.cookie })).status).toBe(404);
+    // The login doors reach A's own person's login, as the app does.
     const login = await user(A.tenant, 'staff', `zz-r6rv-hr-login-${run}@example.com`, A.x);
-    const withLogin = await employee(A, A.x, 'hr-cross-login', { user_id: login });
-    const toggled = await call('POST', `/api/employees/${withLogin}/toggle-login`, { cookie: B.admin.cookie });
-    expect(toggled.status, show(toggled)).toBe(200);
+    const withLogin = await employee(A, A.x, 'hr-own-login', { user_id: login });
+    const off = await call('POST', `/api/employees/${withLogin}/toggle-login`, { cookie: A.admin.cookie });
+    expect(off.status, show(off)).toBe(200);
     expect((await q<{ is_active: boolean }>('select is_active from users where id = $1', [login]))[0]!.is_active).toBe(false);
+    const on = await call('POST', `/api/employees/${withLogin}/toggle-login`, { cookie: A.admin.cookie });
+    expect(on.body).toMatchObject({ success: true, isActive: true });
   });
 
-  it.fails('E. FINDING 1 (high): the HR employee doors keep to the caller’s park group — another park group’s employee is the app’s 404 to read, edit, move or switch off', async () => {
+  it('E. FINDING 1 (high, fixed): the HR employee doors keep to the caller’s park group — another park group’s employee is the app’s 404 to read, edit, move or switch off', async () => {
     const victim = await employee(A, A.x, 'hr-cross-2');
     const read = await call('GET', `/api/employees/${victim}`, { cookie: B.admin.cookie });
     const edited = await call('PATCH', `/api/employees/${victim}`, { cookie: B.admin.cookie, body: { nickname: 'ZZ renamed by B', tenantId: B.tenant } });
@@ -1444,25 +1471,30 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     }
   };
 
-  it('E. the wizard links B’s employee to A’s login, and B’s offboarding then switches A’s person’s login off (the arrangement of finding 2)', async () => {
+  it('E. the wizard’s six personal fields still land for B’s own employee, a login, branch or park group in its edits is dropped; and a link made before the fix is never switched off by B’s offboarding (the arrangement of finding 2, as fixed)', async () => {
     const bTemplate = await call('POST', '/api/templates', { cookie: B.admin.cookie, body: { name: `ZZ R6RV B wizard ${run}`, htmlBody: '<p>b</p>' } });
     const aLogin = await user(A.tenant, 'staff', `zz-r6rv-a-login-${run}@example.com`, A.x);
     const eB = await employee(B, B.x, 'wizard-link');
-    const linked = await call('POST', '/api/contracts/generate', {
+    const personal = { fullName: `ZZ R6RV wizard ${run}`, nickname: 'ZZ W', email: `zz-r6rv-wizard-${run}@example.com`, phone: '0812345678', address: 'ZZ road', nationalId: '1234' };
+    const generated = await call('POST', '/api/contracts/generate', {
       cookie: B.admin.cookie,
-      body: { employeeId: eB, templateId: bTemplate.body.id, mergeDataJson: { positionTitle: 'ZZ' }, employeeUpdates: { userId: aLogin } },
+      body: { employeeId: eB, templateId: bTemplate.body.id, mergeDataJson: { positionTitle: 'ZZ' }, employeeUpdates: { ...personal, userId: aLogin, branchId: A.x, tenantId: A.tenant } },
     });
     await forgetWizardPdfs(eB);
-    // 201 with a Chromium to render the contract; without one the PDF step (after the commit) answers 500 — the link is written either way.
-    if (CHROMIUM) expect(linked.status, show(linked)).toBe(201);
-    else expect(linked.text).toMatch(/Browser was not found|Chrom/i);
-    expect((await q<{ user_id: string }>('select user_id from employees where id = $1', [eB]))[0]!.user_id).toBe(aLogin);
-    const off = await call('POST', `/api/employees/${eB}/offboarding`, { cookie: B.admin.cookie, body: { offboardingType: 'termination', reasonCode: 'other', lastWorkingDay: day(-2) } });
+    // 201 with a Chromium to render the contract; without one the PDF step (after the commit) answers 500 — the edits are written either way.
+    if (CHROMIUM) expect(generated.status, show(generated)).toBe(201);
+    else expect(generated.text).toMatch(/Browser was not found|Chrom/i);
+    const row = (await q('select full_name, nickname, email, phone, address, user_id, branch_id, tenant_id from employees where id = $1', [eB]))[0];
+    expect(row).toEqual({ full_name: personal.fullName, nickname: 'ZZ W', email: personal.email, phone: '0812345678', address: 'ZZ road', user_id: null, branch_id: B.x, tenant_id: B.tenant });
+    // A link made before the fix (written here in the database): B's offboarding with a past last day leaves A's login on.
+    const linked = await employee(B, B.x, 'wizard-linked-before', { user_id: aLogin });
+    const off = await call('POST', `/api/employees/${linked}/offboarding`, { cookie: B.admin.cookie, body: { offboardingType: 'termination', reasonCode: 'other', lastWorkingDay: day(-2) } });
     expect(off.status, show(off)).toBe(201);
-    expect((await q<{ is_active: boolean }>('select is_active from users where id = $1', [aLogin]))[0]!.is_active).toBe(false);
+    expect((await q('select employment_state from employees where id = $1', [linked]))[0]).toEqual({ employment_state: 'LEFT' });
+    expect((await q<{ is_active: boolean }>('select is_active from users where id = $1', [aLogin]))[0]!.is_active).toBe(true);
   });
 
-  it.fails('E. FINDING 2 (medium): the wizard’s employee edits cannot link another park group’s login, and B’s offboarding never switches off A’s person’s login', async () => {
+  it('E. FINDING 2 (medium, fixed): the wizard’s employee edits cannot link another park group’s login, and B’s offboarding never switches off A’s person’s login', async () => {
     const bTemplate = await call('POST', '/api/templates', { cookie: B.admin.cookie, body: { name: `ZZ R6RV B wizard2 ${run}`, htmlBody: '<p>b</p>' } });
     const aLogin = await user(A.tenant, 'staff', `zz-r6rv-a-login2-${run}@example.com`, A.x);
     const eB = await employee(B, B.x, 'wizard-link-2');
@@ -1491,7 +1523,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect(await policyFor(C.admin.cookie, eC)).toBe(inherited);
   });
 
-  it('E. a park group with a branch policy of its own no longer weighs the default park group’s newer company-wide one (the arrangement of finding 4)', async () => {
+  it('E. a park group with a company-wide policy of its own weighs its own and never the default park group’s newer one; its branch’s own, the newest of its own, wins (the arrangement of finding 4, as fixed: Q28’s rule on the company-wide slot)', async () => {
     const D = await parkGroup('d');
     D.admin.cookie = await signIn(D.admin.email);
     const eD = await employee(D, D.x, 'leave-d');
@@ -1500,16 +1532,19 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       `insert into leave_policies (tenant_id, branch_id, name, days_worked_required, days_off_earned, effective_from, is_active) values ($1, $2, $3, 6, 1, now() - interval '30 days', true)`,
       [D.tenant, D.x, own],
     );
+    await q(
+      `insert into leave_policies (tenant_id, branch_id, name, days_worked_required, days_off_earned, effective_from, is_active) values ($1, null, $2, 4, 1, now() - interval '60 days', true)`,
+      [D.tenant, `ZZ R6RV D company-wide ${run}`],
+    );
     const newer = `ZZ R6RV default newer ${run}`;
     await q(`insert into leave_policies (tenant_id, branch_id, name, days_worked_required, days_off_earned, effective_from, is_active) values ($1, null, $2, 3, 1, now() + interval '1 hour', true)`, [
       DEFAULT,
       newer,
     ]);
-    // Before 0008 the one rule (`getActiveLeavePolicy`: the branch's own or the company-wide, latest effective) took the newer company-wide one.
     expect(await policyFor(D.admin.cookie, eD)).toBe(own);
   });
 
-  it.fails('E. FINDING 4 (low): with a branch policy of its own and no company-wide one, a park group still weighs the default park group’s company-wide policy by the app’s latest-effective rule', async () => {
+  it('E. FINDING 4 (low, fixed): with a branch policy of its own and no company-wide one, a park group still weighs the default park group’s company-wide policy by the app’s latest-effective rule', async () => {
     const E = await parkGroup('e');
     E.admin.cookie = await signIn(E.admin.email);
     const eE = await employee(E, E.x, 'leave-e');
