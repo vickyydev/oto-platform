@@ -73,7 +73,7 @@ jobs:
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running everything"; all; exit 0; }
           echo "$FILES"
           flag() { echo "$1=$2" >> "$GITHUB_OUTPUT"; }
-          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired|documentParkGroups)\.ts$)'
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired|documentParkGroups|employeeParkGroups)\.ts$)'
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then flag workspace true; else flag workspace false; fi
           if echo "$FILES" | grep -q -E '^packages/db/'; then flag db true; else flag db false; fi
           if echo "$FILES" | grep -q -E '^(apps/console/|apps/api/|packages/|pnpm-lock.yaml|.github/workflows/ci.yml)'; then flag e2e true; else flag e2e false; fi
@@ -288,7 +288,7 @@ jobs:
           fi
           git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
-          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired|documentParkGroups)\.ts$)'
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired|documentParkGroups|employeeParkGroups)\.ts$)'
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then
             echo "workspace=true" >> "$GITHUB_OUTPUT"
           else
@@ -328,7 +328,7 @@ jobs:
           fi
           git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
-          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired|documentParkGroups)\.ts$)'
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired|documentParkGroups|employeeParkGroups)\.ts$)'
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then
             echo "workspace=true" >> "$GITHUB_OUTPUT"
           else

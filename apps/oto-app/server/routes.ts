@@ -131,7 +131,7 @@ import { registerAuthOtpRoutes } from "./auth-otp-routes";
 import { db, pool } from "./db";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
@@ -148,6 +148,13 @@ import {
   PUBLIC_HOLIDAY_NOT_FOUND,
   TEMPLATE_NOT_FOUND,
 } from "./lib/documentParkGroups";
+import {
+  CHANGE_NOT_FOUND,
+  DEPARTMENT_NOT_FOUND,
+  PERSON_NOT_FOUND,
+  ROLE_NOT_FOUND,
+  USER_NOT_FOUND,
+} from "./lib/employeeParkGroups";
 import { tasks, taskQuestions, taskAssignments, taskAttachments, checklistRuns, checklistRunItems, checklistTemplateItems, checklistTemplates, locations, locationBranchAccess, beoPartyHostAssignments, beoEventBilling, beoSetupPlans, beoKitchenPlans, beoTimelineItems, beoPackageSnapshots, beoEntertainmentSelections, eventLineItems, coreEvents as coreEventsTable, studioEventBookings, campRegistrations, campAttendance, fixReports, fixComments } from "./db/coreSchema";
 import { eq, desc, and, asc, or, ne, isNull, isNotNull, inArray, gte, lte, sql } from "drizzle-orm";
 import { generateInstanceForDefinition } from "./core/taskGeneration";
@@ -2686,13 +2693,79 @@ export async function registerRoutes(
   });
 
   // ============================================
+  // THE HR EMPLOYEE DOORS PER PARK GROUP (S2-17b round 6's review, F1 and F2)
+  // ============================================
+  // Every `/api/employees/:id*` door resolves the employee in the caller's
+  // park group first — the census of all 45 is in
+  // server/lib/employeeParkGroups.ts. Another park group's employee is the
+  // same answer as one that does not exist, the app's own answer at that door;
+  // within the park group each door is the app's, its branch rules included.
+  // The contracts and letters doors below use the same lookup (round 6).
+  const employeeOfParkGroup = async (req: Request, employeeId: string) => {
+    const tenantId = req.userWithAccess?.tenantId;
+    return tenantId ? storage.getEmployeeInTenant(employeeId, tenantId) : undefined;
+  };
+
+  /**
+   * The words for the first id in an employee edit that would tie the
+   * employee to a record outside their park group, or undefined when none
+   * does. Only an id that changes is weighed: what the employee's record
+   * already holds stands as it is. A login is the park group's by the app's
+   * strict placement (`managedUserTenant`), as User Management decides it; a
+   * person by the same rule the employee delete uses (`personParkGroup`).
+   */
+  const employeeEditOutsideParkGroup = async (
+    body: Record<string, unknown>,
+    employee: typeof employees.$inferSelect,
+  ): Promise<{ message: string } | undefined> => {
+    const tenantId = employee.tenantId;
+    const changed = (field: "branchId" | "userId" | "updatedBy" | "profilePhotoUpdatedBy" | "personId" | "primaryDepartmentId") => {
+      const value = body[field];
+      return typeof value === "string" && value !== "" && value !== employee[field] ? value : undefined;
+    };
+    const branchId = changed("branchId");
+    if (branchId && !await branchInParkGroup(branchId, tenantId)) return BRANCH_NOT_FOUND;
+    for (const field of ["userId", "updatedBy", "profilePhotoUpdatedBy"] as const) {
+      const userId = changed(field);
+      if (userId && (await managedUserTenant(userId)) !== tenantId) return USER_NOT_FOUND;
+    }
+    const personId = changed("personId");
+    if (personId) {
+      const person = await storage.getPerson(personId);
+      if (!person || (await personParkGroup(person)) !== tenantId) return PERSON_NOT_FOUND;
+    }
+    const departmentId = changed("primaryDepartmentId");
+    if (departmentId) {
+      const department = await storage.getDepartment(departmentId);
+      if (!department || department.tenantId !== tenantId) return DEPARTMENT_NOT_FOUND;
+    }
+    return undefined;
+  };
+
+  /**
+   * Whether a role list names a role the employee's park group may not
+   * assign. The app keeps its roles as one set in the default park group (its
+   * role create names the default), so a park group assigns its own roles and
+   * the default park group's; another park group's is refused (plan Q54).
+   */
+  const rolesOutsideParkGroup = async (roleIds: unknown[], tenantId: string): Promise<boolean> => {
+    const ids = [...new Set(roleIds.filter((id): id is string => typeof id === "string"))];
+    if (ids.length === 0) return false;
+    const defaultParkGroup = await storage.getDefaultParkGroupId();
+    const usable = [...new Set([tenantId, defaultParkGroup].filter((id): id is string => !!id))];
+    const found = await db.select({ id: roles.id }).from(roles)
+      .where(and(inArray(roles.id, ids), inArray(roles.tenantId, usable)));
+    return found.length !== ids.length;
+  };
+
+  // ============================================
   // EMPLOYEE DEPARTMENT & ROLES ASSIGNMENT
   // ============================================
 
   // Get employee's roles
   app.get("/api/employees/:id/roles", requireAuth, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.id);
+      const employee = await employeeOfParkGroup(req, req.params.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -2712,21 +2785,24 @@ export async function registerRoutes(
   // Set employee's roles (admin/manager)
   app.patch("/api/employees/:id/roles", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.id);
+      const employee = await employeeOfParkGroup(req, req.params.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      
+
       // Check branch access
       if (employee.branchId && !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const { roleIds } = req.body;
       if (!Array.isArray(roleIds)) {
         return res.status(400).json({ message: "roleIds must be an array" });
       }
-      
+      if (await rolesOutsideParkGroup(roleIds, employee.tenantId)) {
+        return res.status(404).json(ROLE_NOT_FOUND);
+      }
+
       await storage.setEmployeeRoles(req.params.id, roleIds);
       
       // Flag user for permission review if they have a login
@@ -2744,22 +2820,24 @@ export async function registerRoutes(
   // Set employee's department (admin/manager)
   app.patch("/api/employees/:id/department", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.id);
+      const employee = await employeeOfParkGroup(req, req.params.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      
+
       // Check branch access
       if (employee.branchId && !canUserAccessBranch(req.userWithAccess, employee.branchId)) {
         return res.status(403).json({ message: "Access denied" });
       }
-      
+
       const { departmentId } = req.body;
-      
-      // If setting a department, verify it belongs to the employee's branch
+
+      // If setting a department, verify it belongs to the employee's branch —
+      // and to their park group: another park group's is the same 404 as one
+      // that does not exist (round 6's review, F1).
       if (departmentId) {
         const dept = await storage.getDepartment(departmentId);
-        if (!dept) {
+        if (!dept || dept.tenantId !== employee.tenantId) {
           return res.status(404).json({ message: "Department not found" });
         }
         if (dept.branchId !== employee.branchId) {
@@ -3246,7 +3324,7 @@ export async function registerRoutes(
 
   app.get("/api/employees/:id", requireAuth, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.id);
+      const employee = await employeeOfParkGroup(req, req.params.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -3702,11 +3780,11 @@ export async function registerRoutes(
 
   app.patch("/api/employees/:id", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const oldEmployee = await storage.getEmployee(req.params.id);
+      const oldEmployee = await employeeOfParkGroup(req, req.params.id);
       if (!oldEmployee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      
+
       // Check branch access
       const userWithAccess = req.userWithAccess;
       if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {
@@ -3717,6 +3795,12 @@ export async function registerRoutes(
 
       // Convert date strings to Date objects or null for optional date fields
       const updateData = { ...req.body };
+      // The employee stays in their park group (round 6's review, F1): the
+      // edit never names a park group (the app's form sends none), and an id
+      // it changes is refused when it is another park group's record.
+      delete updateData.tenantId;
+      const outside = await employeeEditOutsideParkGroup(updateData, oldEmployee);
+      if (outside) return res.status(404).json(outside);
       const dateFields = ["startDate", "visaExpiryDate", "workPermitExpiryDate", "probationEndDate", "probationReviewCompletedAt", "lastWorkingDay"];
       for (const field of dateFields) {
         if (updateData[field] === "" || updateData[field] === null) {
@@ -4141,12 +4225,12 @@ export async function registerRoutes(
   app.post("/api/employees/:id/reset-password", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { generateTempPassword } = await import("./utils/username-generator");
-      
-      const employee = await storage.getEmployee(req.params.id);
+
+      const employee = await employeeOfParkGroup(req, req.params.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
-      
+
       // Check for either new userId or legacy personId
       let targetUserId = employee.userId;
       if (!targetUserId && employee.personId) {
@@ -4211,7 +4295,7 @@ export async function registerRoutes(
   // Toggle login status for employee's user account
   app.post("/api/employees/:id/toggle-login", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.id);
+      const employee = await employeeOfParkGroup(req, req.params.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -4446,7 +4530,7 @@ export async function registerRoutes(
   app.get("/api/employees/:id/cost-allocations", requireAuth, async (req, res, next) => {
     try {
       const employeeId = req.params.id;
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -4486,7 +4570,7 @@ export async function registerRoutes(
   app.put("/api/employees/:id/cost-allocations", requireAuth, requireManager, async (req, res, next) => {
     try {
       const employeeId = req.params.id;
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -4524,8 +4608,11 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Duplicate branch allocations not allowed" });
       }
 
-      // Validate all branches exist
-      const validBranches = await db.select({ id: branches.id }).from(branches).where(inArray(branches.id, branchIds));
+      // Validate all branches exist — in the employee's park group: another
+      // park group's branch is the same answer as one that does not exist
+      // (round 6's review, F1).
+      const validBranches = await db.select({ id: branches.id }).from(branches)
+        .where(and(inArray(branches.id, branchIds), eq(branches.tenantId, employee.tenantId)));
       if (validBranches.length !== branchIds.length) {
         return res.status(400).json({ message: "One or more invalid branch IDs" });
       }
@@ -4612,7 +4699,7 @@ export async function registerRoutes(
   // Mark probation review as completed (requires Manager role)
   app.post("/api/employees/:id/complete-probation-review", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.id);
+      const employee = await employeeOfParkGroup(req, req.params.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -5079,8 +5166,11 @@ export async function registerRoutes(
   });
 
   // Employee changes routes (term updates history)
+  // Another park group's employee has no history here, as one that does not
+  // exist has none (round 6's review, F1).
   app.get("/api/employees/:employeeId/changes", requireAuth, async (req, res, next) => {
     try {
+      if (!await employeeOfParkGroup(req, req.params.employeeId)) return res.json([]);
       const changes = await storage.getEmployeeChanges(req.params.employeeId);
       res.json(changes);
     } catch (error) {
@@ -5090,7 +5180,7 @@ export async function registerRoutes(
 
   app.post("/api/employees/:employeeId/changes", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const employee = await storage.getEmployee(req.params.employeeId);
+      const employee = await employeeOfParkGroup(req, req.params.employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -5116,6 +5206,11 @@ export async function registerRoutes(
       }
       if (changeType === "branch_transfer" && (!newBranchId || typeof newBranchId !== "string")) {
         return res.status(400).json({ message: "New branch is required for branch transfers" });
+      }
+      // A branch of the employee's own park group only: a transfer here moves
+      // the employee (round 6's review, F1).
+      if (typeof newBranchId === "string" && newBranchId !== "" && !await branchInParkGroup(newBranchId, employee.tenantId)) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
       }
 
       // Get old values from current employee data
@@ -5233,9 +5328,33 @@ export async function registerRoutes(
   });
 
   // Mark change as having generated a contract
+  // The employee and the change are the caller's park group's (round 6's
+  // review, F1): another park group's employee is the app's 404, a change that
+  // is not this employee's is "Change not found" (the app answered a missing
+  // one with an empty 200), and the change stays this employee's.
   app.patch("/api/employees/:employeeId/changes/:changeId", requireAuth, requireManager, async (req, res, next) => {
     try {
-      const change = await storage.updateEmployeeChange(req.params.changeId, req.body);
+      const employee = await employeeOfParkGroup(req, req.params.employeeId);
+      if (!employee) return res.status(404).json(EMPLOYEE_NOT_FOUND);
+      const [existing] = await db.select({ employeeId: employeeChanges.employeeId }).from(employeeChanges)
+        .where(eq(employeeChanges.id, req.params.changeId)).limit(1);
+      if (!existing || existing.employeeId !== employee.id) return res.status(404).json(CHANGE_NOT_FOUND);
+      const updates = { ...req.body };
+      delete updates.employeeId;
+      for (const field of ["oldBranchId", "newBranchId"] as const) {
+        const branchId = updates[field];
+        if (typeof branchId === "string" && branchId !== "" && !await branchInParkGroup(branchId, employee.tenantId)) {
+          return res.status(404).json(BRANCH_NOT_FOUND);
+        }
+      }
+      for (const field of ["oldDepartmentId", "newDepartmentId"] as const) {
+        const departmentId = updates[field];
+        if (typeof departmentId === "string" && departmentId !== "") {
+          const department = await storage.getDepartment(departmentId);
+          if (!department || department.tenantId !== employee.tenantId) return res.status(404).json(DEPARTMENT_NOT_FOUND);
+        }
+      }
+      const change = await storage.updateEmployeeChange(req.params.changeId, updates);
       res.json(change);
     } catch (error) {
       next(error);
@@ -5401,10 +5520,8 @@ export async function registerRoutes(
   // letter is its employee's park group's: another park group's — or its
   // employee — is the same answer as one that does not exist. The app's own
   // branch rules are kept as they are, including where it has none (plan Q50).
-  const employeeOfParkGroup = async (req: Request, employeeId: string) => {
-    const tenantId = req.userWithAccess?.tenantId;
-    return tenantId ? storage.getEmployeeInTenant(employeeId, tenantId) : undefined;
-  };
+  // The employee is looked up as at every HR employee door
+  // (`employeeOfParkGroup`, above the roles routes).
   const contractOfParkGroup = async (req: Request, contractId: string) => {
     const contract = await storage.getContract(contractId);
     if (!contract) return null;
@@ -9094,7 +9211,7 @@ OTO Company Limited`,
       const { employeeId } = req.params;
       const userId = (req.user as any).id;
 
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -9139,7 +9256,7 @@ OTO Company Limited`,
       const { employeeId } = req.params;
       const userId = (req.user as any).id;
 
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -12344,7 +12461,7 @@ OTO Company Limited`,
 
       const { pin } = validationResult.data;
 
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -12374,7 +12491,7 @@ OTO Company Limited`,
       const { employeeId } = req.params;
       const userId = (req.user as any).id;
 
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -12401,7 +12518,7 @@ OTO Company Limited`,
     try {
       const { employeeId } = req.params;
 
-      const employee = await storage.getEmployee(employeeId);
+      const employee = await employeeOfParkGroup(req, employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
