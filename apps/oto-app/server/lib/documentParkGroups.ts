@@ -34,15 +34,18 @@
  *                    is the park group's company.
  *   asset catalogue  OWN ONLY. An assigned asset stores the id of the
  *                    catalogue item it came from (`employee_assets.catalog_asset_id`).
- *   leave policies   OWN, THEN THE DEFAULT PARK GROUP'S COMPANY-WIDE ONE. A
- *                    leave policy's numbers (days worked per days off earned)
- *                    are read when a balance is worked out and stored nowhere
- *                    by id — a setting, in all but name — and before 0008 a
- *                    company-wide policy was every park group's. So a branch
- *                    takes its own policy, else its park group's company-wide
- *                    one, else the default park group's company-wide one (Q28's
- *                    rule; Q49 offers own-only, as the sick-leave policy has it
- *                    since round 5). Writing is always the park group's own.
+ *   leave policies   OWN, THE COMPANY-WIDE SLOT FALLING BACK TO THE DEFAULT
+ *                    PARK GROUP'S. A leave policy's numbers (days worked per
+ *                    days off earned) are read when a balance is worked out and
+ *                    stored nowhere by id — a setting, in all but name — and
+ *                    before 0008 a company-wide policy was every park group's.
+ *                    So the app's rule stands per park group (round 6's
+ *                    review, F4): the latest effective of the branch's own
+ *                    policies and the company-wide ones, the company-wide ones
+ *                    being the park group's own, or the default park group's
+ *                    where it has none (Q28's rule on that slot; Q49 offers
+ *                    own-only, as the sick-leave policy has it since round 5).
+ *                    Writing is always the park group's own.
  *
  * Another park group's template, policy, catalogue item, leave policy or
  * branch is the same answer as one that does not exist, in the app's own words

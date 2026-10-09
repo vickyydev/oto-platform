@@ -6377,48 +6377,44 @@ export class DatabaseStorage implements IStorage {
         }
 
         /**
-         * The policy a branch's balances are worked out by. The app's rule
-         * within the park group — the latest effective active policy of the
-         * branch's own and the company-wide ones — and, where the park group
-         * has neither, the default park group's company-wide one: what every
-         * park group read while there was one set (round 6, Q28's rule, Q49).
+         * The policy a branch's balances are worked out by: the app's rule,
+         * ported per park group (round 6's review, F4; Q49). The app took the
+         * latest effective of the active policies of the branch's own and the
+         * company-wide ones (with no branch, of every active policy). Per park
+         * group the candidates are the branch's own policies (with no branch,
+         * every branch's of the park group) and the company-wide slot: the
+         * park group's own active company-wide policies, or, where it has
+         * none, the default park group's — Q28's rule on the slot, since a
+         * policy's numbers are read and never kept by id. Then the app's pick,
+         * newest effective first, in one query as the app made it. So a park
+         * group that has saved no company-wide policy of its own balances
+         * exactly as it did before 0008.
          */
         async getActiveLeavePolicy(
                 tenantId: string,
                 branchId?: string,
         ): Promise<LeavePolicy | undefined> {
-                const conditions = [
-                        eq(leavePolicies.isActive, true),
-                        documentOwnedBy(leavePolicies.tenantId, tenantId, leavePolicies.branchId),
-                ];
-                if (branchId) {
-                        conditions.push(
-                                or(
-                                        eq(leavePolicies.branchId, branchId),
-                                        sql`${leavePolicies.branchId} IS NULL`,
-                                )!,
-                        );
-                }
+                const own = documentOwnedBy(leavePolicies.tenantId, tenantId, leavePolicies.branchId);
+                const companyWide = sql`${leavePolicies.branchId} IS NULL`;
+                const [ownCompanyWide] = await db
+                        .select({ id: leavePolicies.id })
+                        .from(leavePolicies)
+                        .where(and(eq(leavePolicies.isActive, true), companyWide, own))
+                        .limit(1);
+                const defaultParkGroup = ownCompanyWide ? null : await this.getDefaultParkGroupId();
+                const slot = defaultParkGroup && defaultParkGroup !== tenantId
+                        ? and(companyWide, documentOwnedBy(leavePolicies.tenantId, defaultParkGroup, leavePolicies.branchId))
+                        : and(companyWide, own);
+                const branchOwn = branchId
+                        ? and(eq(leavePolicies.branchId, branchId), own)
+                        : and(sql`${leavePolicies.branchId} IS NOT NULL`, own);
                 const [policy] = await db
                         .select()
                         .from(leavePolicies)
-                        .where(and(...conditions))
+                        .where(and(eq(leavePolicies.isActive, true), or(branchOwn, slot)))
                         .orderBy(desc(leavePolicies.effectiveFrom))
                         .limit(1);
-                if (policy) return policy;
-                const defaultParkGroup = await this.getDefaultParkGroupId();
-                if (!defaultParkGroup || defaultParkGroup === tenantId) return undefined;
-                const [inherited] = await db
-                        .select()
-                        .from(leavePolicies)
-                        .where(and(
-                                eq(leavePolicies.isActive, true),
-                                sql`${leavePolicies.branchId} IS NULL`,
-                                documentOwnedBy(leavePolicies.tenantId, defaultParkGroup, leavePolicies.branchId),
-                        ))
-                        .orderBy(desc(leavePolicies.effectiveFrom))
-                        .limit(1);
-                return inherited;
+                return policy;
         }
 
         async createLeavePolicy(policy: InsertLeavePolicy): Promise<LeavePolicy> {
