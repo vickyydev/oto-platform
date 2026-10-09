@@ -36,7 +36,13 @@
 //      (server/lib/employeeParkGroups.ts), driven as another park group's
 //      admin against this park group's employee — each the answer the census
 //      declares, nothing written — then the doors as the app has them within
-//      the park group, and the ids an edit may not name.
+//      the park group, and the ids an edit may not name. And round 6's
+//      re-review (findings 6 to 8): the nine doors without an id (all 54
+//      routes) — the list, the Excel import's preview and apply, the reorder,
+//      the template and the create's body — each by its rule as another park
+//      group's admin; the employee lookups by id outside `/api/employees*`
+//      the census fenced, each the door's answer for a missing employee; and
+//      the role holders, each park group's own.
 //   Round 6's review also adds, in place: the branch-wide leave balances by
 //   another park group's branch, and the app's leave-policy candidate set per
 //   park group (section 4, findings 3 and 4); the wizard's six personal fields
@@ -68,10 +74,14 @@ import {
   PUBLIC_HOLIDAY_NOT_FOUND,
   TEMPLATE_NOT_FOUND,
 } from "../server/lib/documentParkGroups";
+import * as XLSX from "xlsx";
 import {
   CHANGE_NOT_FOUND,
   DEPARTMENT_NOT_FOUND,
   EMPLOYEE_DOORS,
+  EMPLOYEE_LIST_DOORS,
+  EMPLOYEE_LOOKUPS,
+  EMPLOYEE_ROLE_WRITERS,
   PERSON_NOT_FOUND,
   ROLE_NOT_FOUND,
   USER_NOT_FOUND,
@@ -1152,7 +1162,7 @@ try {
   });
 
   /** A multipart request, as the app's upload doors take one. */
-  const callForm = async (method: string, path: string, who: string, fields: Record<string, string>, file: { field: string; name: string; type: string; body: string }): Promise<Answer> => {
+  const callForm = async (method: string, path: string, who: string, fields: Record<string, string>, file: { field: string; name: string; type: string; body: string | Uint8Array }): Promise<Answer> => {
     const form = new FormData();
     for (const [k, v] of Object.entries(fields)) form.append(k, v);
     form.append(file.field, new Blob([file.body], { type: file.type }), file.name);
@@ -1291,6 +1301,325 @@ try {
     }
     assert.deepEqual(await hrSnapshot(), before);
     assert.equal((await q<{ note: string }>("select note from employee_changes where id = $1", [changeOther]))[0]!.note, "ZZ");
+  });
+
+  // ── Round 6's re-review: the doors without an id, the lookups by id ───────
+  //    elsewhere, and the role holders (findings 6 to 8)
+  const branchName = async (id: string) => (await q<{ name: string }>("select name from branches where id = $1", [id]))[0]!.name;
+  const ids = (a: Answer) => (Array.isArray(a.body) ? (a.body as { id: string }[]).map((e) => e.id) : []);
+  const eHrB = await employee(B.tenant, B.x, "hr-b");
+  const eHrB2 = await employee(B.tenant, B.x, "hr-b2");
+  const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  /** The app's Excel import screen's upload: a sheet with the template's headers, as its client posts it. */
+  const importPreview = (who: string, rows: unknown[][]) => {
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), "Employees");
+    const body = new Uint8Array(XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer);
+    return callForm("POST", "/api/employees/bulk-upload-preview", who, {}, { field: "file", name: "zz-r6.xlsx", type: XLSX_TYPE, body });
+  };
+  const IMPORT_HEADERS = ["Full Name", "Email Address", "Branch", "Monthly Salary (THB)", "Tax ID Number"];
+  interface PreviewRow {
+    rowNumber: number;
+    matchedEmployeeId: string | null;
+    branchId: string | null;
+    error: string | null;
+    currentData: Record<string, unknown>;
+  }
+
+  await check("the census covers all 54 `/api/employees*` routes: as another park group's admin the nine without an id each keep to their rule — the list, the template, the create, the bulk delete, the reorder, the dead review list, the recalculation and the Excel import's preview and apply — and nothing of this park group's changes (round 6's re-review, F6)", async () => {
+    assert.equal(EMPLOYEE_LIST_DOORS.length, 9);
+    assert.equal(EMPLOYEE_DOORS.length + EMPLOYEE_LIST_DOORS.length, 54);
+    const hr = (await q<{ email: string; full_name: string; display_order: number | null }>("select email, full_name, display_order from employees where id = $1", [eHR]))[0]!;
+    const before = await hrSnapshot();
+    const wrong: string[] = [];
+    const want = (door: string, ok: boolean, answer: Answer) => {
+      if (!ok) wrong.push(`${door}: ${show(answer)}`);
+    };
+    for (const door of EMPLOYEE_LIST_DOORS) {
+      const key = `${door.method} ${door.path}`;
+      switch (door.rule) {
+        case "list": {
+          const all = await call("GET", "/api/employees", { cookie: cookie.b });
+          want(`${key} (all)`, all.status === 200 && !ids(all).includes(eHR) && ids(all).includes(eHrB), all);
+          for (const query of [`branchId=${A.x}`, `branchId=${A.x}&schedulingWeekStart=${day(0)}`]) {
+            const branch = await call("GET", `/api/employees?${query}`, { cookie: cookie.b });
+            want(`${key}?${query}`, branch.status === 200 && JSON.stringify(branch.body) === "[]", branch);
+          }
+          break;
+        }
+        case "sample": {
+          const res = await fetch(`${ORIGIN}/api/employees/bulk-template`, { headers: { cookie: cookie.b } });
+          const book = XLSX.read(Buffer.from(await res.arrayBuffer()), { type: "buffer" });
+          const rows = XLSX.utils.sheet_to_json<unknown[]>(book.Sheets[book.SheetNames[0]!]!, { header: 1 });
+          const sample = String(rows[1]![(rows[0] as string[]).indexOf("Branch")]);
+          if (res.status !== 200 || ![await branchName(B.x), await branchName(B.y)].includes(sample)) wrong.push(`${key}: ${res.status} samples "${sample}"`);
+          break;
+        }
+        case "create": {
+          const email = `zz-r6-create-census-${run}@example.com`;
+          const made = await call("POST", "/api/employees", { cookie: cookie.b, body: { fullName: "ZZ hijack", nickname: "ZZ", email, branchId: B.x, primaryDepartmentId: deptA } });
+          want(key, made.status === 404 && JSON.stringify(made.body) === JSON.stringify(DEPARTMENT_NOT_FOUND), made);
+          if ((await count("select count(*) as n from employees where email = $1", [email])) !== 0) wrong.push(`${key}: wrote the employee`);
+          break;
+        }
+        case "delete": {
+          const gone = await call("POST", "/api/employees/bulk-delete", { cookie: cookie.b, body: { employeeIds: [eHR] } });
+          want(key, gone.status === 200 && gone.body.deletedCount === 0 && gone.body.results?.[0]?.message === "Employee not found", gone);
+          break;
+        }
+        case "reorder": {
+          const reordered = await call("POST", "/api/employees/reorder", { cookie: cookie.b, body: { orderedIds: [eHrB2, eHR, eHrB] } });
+          want(key, reordered.status === 200 && reordered.body.success === true, reordered);
+          // B's own ids are written at their places; A's is skipped, its place kept.
+          const order = await q<{ id: string; display_order: number | null }>("select id, display_order from employees where id = any($1)", [[eHrB2, eHR, eHrB]]);
+          const at = Object.fromEntries(order.map((r) => [r.id, r.display_order]));
+          if (at[eHrB2] !== 0 || at[eHrB] !== 2 || at[eHR] !== hr.display_order) wrong.push(`${key}: wrote ${JSON.stringify(at)}`);
+          break;
+        }
+        case "dead": {
+          for (const who of [cookie.b, cookie.a]) {
+            const dead = await call("GET", door.path, { cookie: who });
+            want(key, dead.status === 404 && JSON.stringify(dead.body) === JSON.stringify({ message: "Employee not found" }), dead);
+          }
+          break;
+        }
+        case "recalculate": {
+          const recalc = await call("POST", door.path, { cookie: cookie.b });
+          want(key, recalc.status === 200, recalc);
+          break;
+        }
+        case "import-preview": {
+          const preview = await importPreview(cookie.b, [IMPORT_HEADERS, [hr.full_name, hr.email, await branchName(A.x), 1, "ZZ"]]);
+          const row = (preview.body?.previewRows as PreviewRow[] | undefined)?.[0];
+          const text = JSON.stringify(preview.body);
+          want(
+            key,
+            preview.status === 200 && row?.matchedEmployeeId === null && row?.branchId === null &&
+              row?.error === `Branch "${await branchName(A.x)}" not found` && !text.includes(eHR) && !text.includes(A.x),
+            preview,
+          );
+          break;
+        }
+        case "import-apply": {
+          const applied = await call("POST", "/api/employees/bulk-update", {
+            cookie: cookie.b,
+            body: {
+              rows: [
+                { rowNumber: 2, matchedEmployeeId: eHR, branchId: B.x, data: { fullName: "ZZ hijack", salary: 1 } },
+                { rowNumber: 3, isNew: true, branchId: A.x, data: { fullName: `ZZ TEST r6 B on A ${run}`, email: `zz-r6-b-on-a-${run}@example.com` } },
+              ],
+            },
+          });
+          const messages = (applied.body?.results as { message: string }[] | undefined)?.map((r) => r.message);
+          want(key, applied.status === 200 && JSON.stringify(messages) === JSON.stringify(["Employee not found", "No access to branch"]), applied);
+          break;
+        }
+      }
+    }
+    assert.deepEqual(wrong, []);
+    assert.deepEqual(await hrSnapshot(), before, "nothing of the employee, their login or their records changed");
+    assert.equal(await count("select count(*) as n from employees where branch_id = any($1) and tenant_id <> $2", [[A.x, A.y], A.tenant]), 0, "nobody of another park group on this park group's branches");
+    const fences = (f: string) => EMPLOYEE_LIST_DOORS.filter((d) => d.fence === f).length;
+    console.log(`      the census: 54 routes — the 45 with an id and 9 without: ${fences("re-review")} fenced by round 6's re-review, ${fences("lift")} before it, ${fences("none")} dead`);
+  });
+
+  await check("the doors without an id as the app has them within the park group: the list, the Excel import's match by email with the current pay and tax id, its placing by branch name and its apply, the reorder and the template (round 6's re-review, F6)", async () => {
+    const own = await employee(A.tenant, A.x, "hr-import", { default_merge_data: JSON.stringify({ positionTitle: "ZZ", salaryThb: 40000 }), tax_id_number: "ZZ-R6-TAX" });
+    const row = (await q<{ email: string; full_name: string }>("select email, full_name from employees where id = $1", [own]))[0]!;
+    assert.ok(ids(await call("GET", "/api/employees", { cookie: cookie.a })).includes(own));
+    assert.ok(ids(await call("GET", `/api/employees?branchId=${A.x}`, { cookie: cookie.a })).includes(own));
+    assert.ok(!ids(await call("GET", `/api/employees?branchId=${A.y}`, { cookie: cookie.a })).includes(own));
+    const preview = await importPreview(cookie.a, [IMPORT_HEADERS, [row.full_name, row.email, await branchName(A.y), 41000, "ZZ-R6-TAX"]]);
+    assert.equal(preview.status, 200, show(preview));
+    const [matched] = preview.body.previewRows as PreviewRow[];
+    assert.deepEqual([matched!.matchedEmployeeId, matched!.branchId, matched!.error], [own, A.y, null]);
+    assert.equal(matched!.currentData.salary, 40000);
+    assert.equal(matched!.currentData.taxIdNumber, "ZZ-R6-TAX");
+    const applied = await call("POST", "/api/employees/bulk-update", { cookie: cookie.a, body: { rows: preview.body.previewRows } });
+    assert.equal(applied.status, 200, show(applied));
+    assert.deepEqual((await q("select branch_id, default_merge_data from employees where id = $1", [own]))[0], { branch_id: A.y, default_merge_data: { positionTitle: "ZZ", salaryThb: 41000 } });
+    const added = await call("POST", "/api/employees/bulk-update", {
+      cookie: cookie.a,
+      body: { rows: [{ rowNumber: 2, isNew: true, branchId: A.y, data: { fullName: `ZZ TEST r6 import new ${run}`, email: `zz-r6-import-new-${run}@example.com` } }] },
+    });
+    assert.equal(added.body.results[0].status, "created", show(added));
+    assert.deepEqual((await q("select tenant_id, branch_id from employees where email = $1", [`zz-r6-import-new-${run}@example.com`]))[0], { tenant_id: A.tenant, branch_id: A.y });
+    assert.equal((await call("POST", "/api/employees/reorder", { cookie: cookie.a, body: { orderedIds: [own, eHR] } })).status, 200);
+    assert.deepEqual(
+      (await q<{ id: string; display_order: number }>("select id, display_order from employees where id = any($1) order by display_order", [[own, eHR]])).map((r) => r.id),
+      [own, eHR],
+    );
+    const res = await fetch(`${ORIGIN}/api/employees/bulk-template`, { headers: { cookie: cookie.a } });
+    const book = XLSX.read(Buffer.from(await res.arrayBuffer()), { type: "buffer" });
+    const sheet = XLSX.utils.sheet_to_json<unknown[]>(book.Sheets[book.SheetNames[0]!]!, { header: 1 });
+    assert.ok([await branchName(A.x), await branchName(A.y)].includes(String(sheet[1]![(sheet[0] as string[]).indexOf("Branch")])));
+  });
+
+  await check("the create weighs the ids its body names as the edit does, in the same words: another park group's department, author or photo author is refused (404) and nothing is written; its own department is taken (round 6's re-review, F8)", async () => {
+    const before = await count("select count(*) as n from employees where tenant_id = $1", [B.tenant]);
+    const refusals: Array<[Record<string, unknown>, unknown]> = [
+      [{ primaryDepartmentId: deptA }, DEPARTMENT_NOT_FOUND],
+      [{ updatedBy: A.admin.id }, USER_NOT_FOUND],
+      [{ profilePhotoUpdatedBy: A.admin.id }, USER_NOT_FOUND],
+      [{ primaryDepartmentId: deptB, updatedBy: A.admin.id }, USER_NOT_FOUND],
+    ];
+    for (const [ids, words] of refusals) {
+      const made = await call("POST", "/api/employees", {
+        cookie: cookie.b,
+        body: { fullName: "ZZ TEST r6 create cross", nickname: "ZZ", email: `zz-r6-create-cross-${randomUUID().slice(0, 8)}@example.com`, branchId: B.x, ...ids },
+      });
+      assert.deepEqual([made.status, made.body], [404, words], `${JSON.stringify(ids)}: ${show(made)}`);
+    }
+    assert.equal(await count("select count(*) as n from employees where tenant_id = $1", [B.tenant]), before);
+    const email = `zz-r6-create-own-${run}@example.com`;
+    const own = await call("POST", "/api/employees", { cookie: cookie.b, body: { fullName: "ZZ TEST r6 create own", nickname: "ZZ", email, branchId: B.x, primaryDepartmentId: deptB, updatedBy: B.admin.id } });
+    assert.equal(own.status, 201, show(own));
+    assert.deepEqual((await q("select tenant_id, primary_department_id, updated_by from employees where email = $1", [email]))[0], { tenant_id: B.tenant, primary_department_id: deptB, updated_by: B.admin.id });
+  });
+
+  await check("the employee lookups by id outside `/api/employees*`: the census holds the 32 call sites the re-review counted, and the eight fenced each answer another park group's employee as a missing one with nothing written — the clock override, the timekeeping read, the issue resolve, the ping, the two older shift doors and the reassignment — while within the park group each is the app's (round 6's re-review, F7)", async () => {
+    assert.equal(EMPLOYEE_LOOKUPS.length, 32);
+    assert.equal(EMPLOYEE_LOOKUPS.filter((l) => l.disposition === "fenced").length, 8);
+    const eA = await employee(A.tenant, A.x, "hr-lookup");
+    const eA2 = await employee(A.tenant, A.x, "hr-lookup-2");
+    const notFound = { message: "Employee not found" };
+    // The clock override: another's employee 404, another's branch "Branch not found"; its own writes.
+    const events = () => count("select count(*) as n from time_events where employee_id = any($1)", [[eA, eHrB]]);
+    const at = new Date().toISOString();
+    const crossed = await call("POST", "/api/time-events/override", { cookie: cookie.b, body: { employeeId: eA, branchId: B.x, eventType: "IN", eventTime: at } });
+    assert.deepEqual([crossed.status, crossed.body], [404, notFound], show(crossed));
+    const onA = await call("POST", "/api/time-events/override", { cookie: cookie.b, body: { employeeId: eHrB, branchId: A.x, eventType: "IN", eventTime: at } });
+    assert.deepEqual([onA.status, onA.body], [404, BRANCH_NOT_FOUND], show(onA));
+    assert.equal(await events(), 0);
+    const ownEvent = await call("POST", "/api/time-events/override", { cookie: cookie.a, body: { employeeId: eA, branchId: A.y, eventType: "IN", eventTime: at } });
+    assert.equal(ownEvent.status, 201, show(ownEvent));
+    assert.equal(await events(), 1);
+    // The timekeeping read.
+    const read = await call("GET", `/api/timekeeping/employee/${eA}`, { cookie: cookie.b });
+    assert.deepEqual([read.status, read.body], [404, notFound]);
+    assert.equal((await call("GET", `/api/timekeeping/employee/${eA}`, { cookie: cookie.a })).status, 200);
+    // The issue resolve: another park group's issue is "Issue not found", as a missing one, and nothing is written.
+    const entry = randomUUID();
+    await q("insert into time_entries (id, tenant_id, employee_id, branch_id, shift_date, status) values ($1, $2, $3, $4, $5, 'PENDING_APPROVAL')", [entry, A.tenant, eA, A.x, day(0)]);
+    const issue = randomUUID();
+    await q(
+      `insert into timekeeping_issues (id, tenant_id, employee_id, branch_id, issue_date, issue_type, status, linked_time_entry_id)
+       values ($1, $2, $3, $4, $5, 'MISSING_CLOCK_OUT', 'PENDING_APPROVAL', $6)`,
+      [issue, A.tenant, eA, A.x, day(0), entry],
+    );
+    const issueRow = () => q("select status, resolved_by, resolved_at from timekeeping_issues where id = $1", [issue]);
+    const issueBefore = await issueRow();
+    for (const id of [issue, randomUUID()]) {
+      const resolved = await call("POST", `/api/timekeeping/issues/${id}/resolve`, { cookie: cookie.b, body: { action: "approve", managerNote: "ZZ hijack" } });
+      assert.deepEqual([resolved.status, resolved.body], [404, { message: "Issue not found" }], show(resolved));
+    }
+    assert.deepEqual(await issueRow(), issueBefore);
+    // Within the park group the door is the app's: it reads a time entry the issue does not name, so it answers this (the app's own; nothing written).
+    const ownResolve = await call("POST", `/api/timekeeping/issues/${issue}/resolve`, { cookie: cookie.a, body: { action: "approve" } });
+    assert.deepEqual([ownResolve.status, ownResolve.body], [404, { message: "Time entry not found" }], show(ownResolve));
+    // The ping: another's employee is the app's 404; its own passes the lookup (and meets the app's own failure after it).
+    const ping = await call("POST", "/api/timekeeping/live/ping", { cookie: cookie.b, body: { employeeId: eA, reason: "ZZ" } });
+    assert.deepEqual([ping.status, ping.body], [404, notFound], show(ping));
+    assert.notEqual((await call("POST", "/api/timekeeping/live/ping", { cookie: cookie.a, body: { employeeId: eA, reason: "ZZ" } })).status, 404);
+    // The older shift doors: another's employee is the app's 400, before anything is written.
+    const shiftWords = { message: "Employee not found or not in this branch" };
+    const window = { startAt: new Date(Date.now() + 86_400_000).toISOString(), endAt: new Date(Date.now() + 90_000_000).toISOString() };
+    const shiftsBefore = await count("select count(*) as n from shifts");
+    const created = await call("POST", "/api/shifts", { cookie: cookie.b, body: { branchId: A.x, departmentId: deptA, employeeId: eA, ...window } });
+    assert.deepEqual([created.status, created.body], [400, shiftWords], show(created));
+    assert.equal(await count("select count(*) as n from shifts"), shiftsBefore);
+    const shift = randomUUID();
+    await q("insert into shifts (id, tenant_id, branch_id, department_id, start_at, end_at, created_by) values ($1, $2, $3, $4, $5, $6, $7)", [
+      shift,
+      A.tenant,
+      A.x,
+      deptA,
+      window.startAt,
+      window.endAt,
+      A.admin.id,
+    ]);
+    const patched = await call("PATCH", `/api/shifts/${shift}`, { cookie: cookie.b, body: { employeeId: eA } });
+    assert.deepEqual([patched.status, patched.body], [400, shiftWords], show(patched));
+    assert.equal((await q<{ employee_id: string | null }>("select employee_id from shifts where id = $1", [shift]))[0]!.employee_id, null);
+    const ownPatch = await call("PATCH", `/api/shifts/${shift}`, { cookie: cookie.a, body: { employeeId: eA } });
+    assert.equal(ownPatch.status, 200, show(ownPatch));
+    assert.equal((await q<{ employee_id: string | null }>("select employee_id from shifts where id = $1", [shift]))[0]!.employee_id, eA);
+    // The reassignment: another's assignment is "Assignment not found", another's employee "New employee not found".
+    const rota = async (g: ParkGroup, employeeId: string) => {
+      const plan = randomUUID();
+      await q("insert into schedule_week_plans (id, tenant_id, branch_id, week_start_date) values ($1, $2, $3, $4)", [plan, g.tenant, g.x, day(1)]);
+      const group = randomUUID();
+      await q("insert into shift_groups (id, tenant_id, branch_id, name) values ($1, $2, $3, $4)", [group, g.tenant, g.x, `ZZ TEST r6 ${run}`]);
+      const row = randomUUID();
+      await q(
+        `insert into schedule_shift_rows (id, tenant_id, branch_id, shift_group_id, week_plan_id, start_time, end_time, label)
+         values ($1, $2, $3, $4, $5, '09:00', '17:00', 'ZZ TEST')`,
+        [row, g.tenant, g.x, group, plan],
+      );
+      const assignment = randomUUID();
+      await q("insert into schedule_assignments (id, tenant_id, week_plan_id, shift_row_id, shift_date, employee_id) values ($1, $2, $3, $4, $5, $6)", [
+        assignment,
+        g.tenant,
+        plan,
+        row,
+        day(3),
+        employeeId,
+      ]);
+      return assignment;
+    };
+    const assignedTo = async (id: string) => (await q<{ employee_id: string }>("select employee_id from schedule_assignments where id = $1", [id]))[0]!.employee_id;
+    const aAssignment = await rota(A, eA);
+    const bAssignment = await rota(B, eHrB);
+    const intoA = await call("PATCH", `/api/schedule/assignments/${aAssignment}/reassign`, { cookie: cookie.b, body: { employeeId: eHrB2 } });
+    assert.deepEqual([intoA.status, intoA.body], [404, { message: "Assignment not found" }], show(intoA));
+    const fromA = await call("PATCH", `/api/schedule/assignments/${bAssignment}/reassign`, { cookie: cookie.b, body: { employeeId: eA2 } });
+    assert.deepEqual([fromA.status, fromA.body], [400, { message: "New employee not found" }], show(fromA));
+    assert.deepEqual([await assignedTo(aAssignment), await assignedTo(bAssignment)], [eA, eHrB]);
+    assert.equal((await call("PATCH", `/api/schedule/assignments/${bAssignment}/reassign`, { cookie: cookie.b, body: { employeeId: eHrB2 } })).status, 200);
+    assert.equal((await call("PATCH", `/api/schedule/assignments/${aAssignment}/reassign`, { cookie: cookie.a, body: { employeeId: eA2 } })).status, 200);
+    assert.deepEqual([await assignedTo(aAssignment), await assignedTo(bAssignment)], [eA2, eHrB2]);
+    const by = (d: string) => EMPLOYEE_LOOKUPS.filter((l) => l.disposition === d).length;
+    console.log(`      the lookups: ${EMPLOYEE_LOOKUPS.length} call sites — ${by("fenced")} fenced by round 6's re-review, ${by("held")} held after the lookup, ${by("record")} read off a held record, ${by("token")} behind a token, ${by("own")} the caller's own, ${by("app")} by the app itself`);
+  });
+
+  await check("the role holders, each park group's own: another park group's holders are never listed, stripped or written; another's employee is the app's 404 and a role the park group may not assign \"Role not found\" (round 6's re-review, F7; Q54 from the role side)", async () => {
+    assert.deepEqual(EMPLOYEE_ROLE_WRITERS.map((w) => [w.writer, w.disposition]), [
+      ["storage.setEmployeeRoles", "held"],
+      ["storage.setRoleEmployees", "fenced"],
+      ["storage.deleteEmployee", "held"],
+      ["Data Admin's Employee Role and Role models", "later"],
+      ["server/prod-sync.ts", "dev-only"],
+    ]);
+    const shared = await roleOf(DEFAULT, "shared-holders");
+    const holderA = await employee(A.tenant, A.x, "hr-holder");
+    await q("insert into employee_roles (employee_id, role_id) values ($1, $2), ($3, $2)", [holderA, shared, eHrB]);
+    const holders = async (who: string, role = shared) =>
+      ((await call("GET", `/api/roles/${role}/employees`, { cookie: who })).body as { employeeId: string }[]).map((r) => r.employeeId).sort();
+    const stored = async (role = shared) => (await q<{ employee_id: string }>("select employee_id from employee_roles where role_id = $1 order by employee_id", [role])).map((r) => r.employee_id);
+    assert.deepEqual(await holders(cookie.b), [eHrB]);
+    assert.deepEqual(await holders(cookie.a), [holderA]);
+    // B replaces its own holders: A's stands.
+    const replaced = await call("PATCH", `/api/roles/${shared}/employees`, { cookie: cookie.b, body: { employeeIds: [eHrB2] } });
+    assert.equal(replaced.status, 200, show(replaced));
+    assert.deepEqual((replaced.body as { employeeId: string }[]).map((r) => r.employeeId), [eHrB2]);
+    assert.deepEqual(await stored(), [holderA, eHrB2].sort());
+    // B naming A's employee, or A's own role, writes nothing.
+    const before = await stored();
+    const naming = await call("PATCH", `/api/roles/${shared}/employees`, { cookie: cookie.b, body: { employeeIds: [eHrB2, holderA] } });
+    assert.deepEqual([naming.status, naming.body], [404, { message: "Employee not found" }], show(naming));
+    const missing = await call("PATCH", `/api/roles/${shared}/employees`, { cookie: cookie.b, body: { employeeIds: [randomUUID()] } });
+    assert.deepEqual([missing.status, missing.body], [404, { message: "Employee not found" }], show(missing));
+    const aRoleBefore = await stored(roleA);
+    const theirs = await call("PATCH", `/api/roles/${roleA}/employees`, { cookie: cookie.b, body: { employeeIds: [eHrB2] } });
+    assert.deepEqual([theirs.status, theirs.body], [404, ROLE_NOT_FOUND], show(theirs));
+    assert.deepEqual(await stored(), before);
+    assert.deepEqual(await stored(roleA), aRoleBefore);
+    // B's own role takes B's employee; A clearing the shared role clears A's holders only.
+    assert.equal((await call("PATCH", `/api/roles/${roleB}/employees`, { cookie: cookie.b, body: { employeeIds: [eHrB2] } })).status, 200);
+    assert.deepEqual(await stored(roleB), [eHrB2]);
+    const cleared = await call("PATCH", `/api/roles/${shared}/employees`, { cookie: cookie.a, body: { employeeIds: [] } });
+    assert.deepEqual([cleared.status, cleared.body], [200, []], show(cleared));
+    assert.deepEqual(await stored(), [eHrB2]);
   });
 
   console.log(`documents.check: ${checks} checks passed`);
