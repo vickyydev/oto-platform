@@ -554,6 +554,62 @@ module map below is read from the routes and the schema, not from memory.
     employee whatever branch is named — its rule, kept), and so it listed
     every park group's people under any branch; it now lists the caller's
     park group's only.
+- **The employee module's doors without an id, and employee lookups by id
+  elsewhere, crossed park groups** (found in round 6's re-review). Each is
+  fixed on our own authority, with no migration:
+  - The census covers all 54 `/api/employees*` routes: the 45 doors above
+    and the nine without an id (`EMPLOYEE_LIST_DOORS`, each with its rule).
+    The employee list listed every park group's people in full (pay, tax and
+    social security numbers, phone, face id) to any all-branch user, and
+    `?branchId=` of another park group's branch listed that branch's people;
+    it now keeps to the caller's park group before the app's branch filters,
+    so another's branch lists nobody, as a branch with no one in it does. The
+    Excel import's preview matched rows against every park group's employees
+    and showed the match's pay and tax ids; it now matches and names branches
+    only within the park group (another's branch name is the app's own row
+    error `Branch "<name>" not found`). Its apply wrote into any park group's
+    employee and placed rows on any park group's branch; it now resolves the
+    employee in the park group (the app's row error "Employee not found") and
+    takes a branch only of it (the app's row error "No access to branch"),
+    new rows too. The reorder writes the park group's ids only (another's is
+    skipped as a missing id is, its place kept), and the import template's
+    sample branch is the park group's. `GET /api/employees/upcoming-reviews`
+    is registered after `GET /api/employees/:id`, which answers it: dead,
+    recorded, unchanged. The create now weighs the ids its body names as the
+    edit does, in the same words (it took another park group's department and
+    user ids).
+  - Every `storage.getEmployee(` call in `server/routes.ts` (32) is censused
+    with what stands between it and another park group's employee
+    (`EMPLOYEE_LOOKUPS`): 24 stay, each checked right after the lookup, read
+    off a record already held, behind a signer's or enrolment token, the
+    caller's own link, or the app's own check. Eight crossed and are fenced,
+    each answering another park group's employee as a missing one: the clock
+    override (it wrote a clock event onto another park group's employee, and
+    now also refuses another park group's branch, "Branch not found" as the
+    same door answers for an advisor), the timekeeping read, the timekeeping
+    issue resolve (driven: its branch-only check let another park group's
+    issue through, which then met the app's own failure below, so nothing was
+    written; the issue is now the park group's first, "Issue not found"), the
+    live ping, the older shift list's create and edit, the import's apply, and
+    the rota reassignment (driven: another park group's manager reassigned an
+    assignment; the assignment is now the park group's first, "Assignment not
+    found", and the employee too, "New employee not found").
+  - Every writer of `employee_roles` is censused (`EMPLOYEE_ROLE_WRITERS`).
+    The role screen's holder save (`PATCH /api/roles/:id/employees`) replaced
+    a role's holders in every park group, stripping another park group's
+    people of a shared role, and its list showed every park group's holders.
+    It now deletes and inserts only the caller's park group's holders and
+    lists only theirs; another park group's employee is the app's 404
+    "Employee not found", and a role the park group may not assign is "Role
+    not found" (Q54, from the role's side).
+  - Found while fixing, not yet fixed: the scheduling module's other doors by
+    id carry no park-group check. Driven: another park group's manager
+    deleted a rota assignment (`DELETE /api/schedule/assignments/:id`, 204);
+    `PATCH .../move`, `DELETE /api/schedule/shift-rows/:id` and the older
+    shift list's `GET/PATCH/DELETE /api/shifts/:id` read by id alone too.
+    Prescription, on our own authority: a census of the scheduling module's
+    doors by id, each held to the caller's park group with the app's answer
+    for a missing record, as round 4a's census was.
 - **Offboarding writes are not one transaction.** The offboarding row is
   written under an advisory lock in its own transaction. Then the
   employee's state, the login switch-off, the asset return dates, the
@@ -1476,7 +1532,19 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   been read.
 - **Every park group assigns roles from the one set the app keeps in the
   default park group** (Q54): the role list answers every park group's roles,
-  and an employee may hold their own park group's or the default's.
+  and an employee may hold their own park group's or the default's. A role's
+  holders are each park group's own (round 6's re-review): the role screen
+  lists and replaces only the caller's park group's holders. A role's
+  deactivation still counts every park group's holders before it refuses
+  (the one set's guard, kept).
+- **A timekeeping issue cannot be approved or rejected** (the app's own,
+  met while fixing round 6's re-review). The resolve door reads the issue's
+  time entry from a field the issue does not have (`issue.timeEntryId`; the
+  column is `linked_time_entry_id`), so it answers "Time entry not found" for
+  every issue and writes nothing, in the app before the lift and here. The
+  live screen's ping answers 500 the same way (it calls a storage function
+  that does not exist). Kept as the app has them; whether to fix either is
+  for the owner.
 - **An offboarding cannot be made twice for one person** (round 6, Q47). A
   person set back to active and leaving again is refused ("Offboarding
   already exists for this employee"); where 0008's census was clean the
@@ -1965,7 +2033,13 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   signed-in user. Since round 6's review an employee's roles
   (`PATCH /api/employees/:id/roles`) may be their own park group's or the
   default park group's, and another park group's is "Role not found", so
-  every park group goes on assigning from the one set, as the app does.
+  every park group goes on assigning from the one set, as the app does. Since
+  round 6's re-review the rule holds from the role's side too: the role
+  screen's holders (`GET` and `PATCH /api/roles/:id/employees`) are the
+  caller's park group's only — a save replaces those and leaves another park
+  group's holders standing, another park group's employee is "Employee not
+  found", and a role the park group may not assign is "Role not found". The
+  role itself, its list and its deactivation stay the one set's.
   Default: as built. The alternative is roles per park group: the create
   naming the caller's park group, the list and every role door held to it,
   and a park group's roles made before they can be assigned (not built; a
