@@ -406,9 +406,11 @@ module map below is read from the routes and the schema, not from memory.
     - Leave policies (Q31): writes own (a branch of another park group is
       "Branch not found", another park group's policy "Leave policy not
       found"); the lists keep to the park group. A balance is worked out by the
-      branch's own policy, else its park group's company-wide one, else the
-      default park group's company-wide one — a policy's numbers are read and
-      never stored by id, Q28's rule (Q49).
+      app's rule per park group (round 6's review, F4): the latest effective
+      of the branch's own policies and the company-wide ones, the company-wide
+      ones being the park group's own, or the default park group's where it
+      has none — a policy's numbers are read and never stored by id, Q28's
+      rule on that slot (Q49). So no balance changes on deploy.
     - The leave reads' remaining crossings (Q40): `GET /api/leave-balances`
       and `/api/sick-leave-balances` by another park group's branch, and
       `/api/leave-balances/employee/:id` and
@@ -424,7 +426,9 @@ module map below is read from the routes and the schema, not from memory.
       ("Contract not found", "Letter not found", "Employee not found"); the
       contract list, an employee's contracts, letters and active contract and
       the unsigned-letter count keep to the park group; the wizard's employee
-      edits cannot move the employee to another park group's branch. The PDF
+      edits are the six personal fields the app's wizard sends, and nothing
+      else (round 6's review, F2: no park group, branch or login rides in with
+      a contract). The PDF
       doors keep the lift's 403 for another park group. Where the app has no
       branch rule (a letter's creation, among others) none is added (Q50).
     - A row the previous release writes during the hand-over has no park
@@ -433,7 +437,8 @@ module map below is read from the routes and the schema, not from memory.
       default park group's.
     - Not in this round: the `people` routes, which Q31 placed here. They need
       the people census first (the read-back counts it) and are carried to
-      their own slice beside round 7's Data Admin walkthrough.
+      their own slice beside round 7's Data Admin walkthrough (section 8's
+      round 7 row; Q31 names it, and the owner may pull it earlier).
 - **Directory HR reads trust one shared key.** The six `/api/directory/*`
   HR reads authenticate `HR_DIRECTORY_API_KEY`, which names no tenant, and
   can return any tenant's staff (`server/auth-middleware.ts:231-259`). Fix:
@@ -495,6 +500,60 @@ module map below is read from the routes and the schema, not from memory.
     sessions are deleted only when that matched, and otherwise the answer is
     the app's 404 "Device not found". Which branches' tablets a
     branch-limited manager may revoke is Q46.
+- **The HR employee doors, the wizard's employee edits and one leave read
+  crossed park groups** (found in round 6's review). Each is fixed on our own
+  authority, with no migration:
+  - Every `/api/employees/:id*` door resolves the employee in the caller's
+    park group first. The census is `server/lib/employeeParkGroups.ts`: 45
+    doors, each with the answer it gives for another park group's employee,
+    driven door by door in `tests/documents.check.ts` section 9. Eighteen
+    looked the employee up by id alone and checked only the branch (which an
+    all-branch admin passes) or nothing at all: the employee's read and edit,
+    roles (read and set), department, password reset, login switch, cost
+    allocations (read and set), probation review, change history (read,
+    record, update), face enrolment and its reset, the PIN set and reset, and
+    the timekeeping status. So one park group's admin read another's
+    employee, switched their login off or reset its password, and moved them
+    into their own park group with `tenantId` in the edit — after which every
+    round 6 door that trusts the employee's park group handed over their
+    file. Another park group's employee is now the answer the door gives for
+    one that does not exist (the app's 404 "Employee not found", or the empty
+    history list); within the park group every door is the app's, its branch
+    rules included. The other 27 were fenced before: 26 by earlier work of
+    the lift, unchanged, and one by the app itself
+    (`/api/employees/:id/all-leave-balances`, its 403 "Access denied", kept).
+  - The employee edit never takes `tenantId` (the app's form sends none), and
+    an id it changes is refused when it is another park group's record, in
+    the app's words for that kind: a branch ("Branch not found"), a login
+    ("User not found"; whose a login is, the strict placement decides, as
+    User Management does), a person ("Person not found"; placed as the
+    employee delete places them, by their employee row, access policy and
+    login) and a department ("Department not found"). The
+    same holds for the department door, a recorded transfer's branch, a
+    change record's branches and departments, and the cost allocations'
+    branches (the app's own "One or more invalid branch IDs"). A role list
+    takes the employee's own park group's roles and the default park group's,
+    where the app keeps its one set ("Role not found" for another's, Q54). A
+    change that is not the employee's is "Change not found" (the app answered
+    a missing one with an empty 200), and an update cannot move it to another
+    employee.
+  - The contract wizard's employee edits are the six personal fields the
+    app's own wizard sends (name, nickname, email, phone, address and the
+    national id the table has no column for) and nothing else, so nothing
+    changes for the app's screen. Before, a manager could link their own
+    employee to another park group's login through the wizard and then
+    offboard them, switching that login off. As the backstop, the offboarding
+    create switches off only a login the strict placement puts in the
+    employee's park group; any other is left on, as a leaving date still to
+    come leaves it (section 10 on what the 03:00 batch then does).
+  - `GET /api/all-leave-balances?branchId=` took another park group's branch
+    and listed people's annual and business leave, earned, used and left. The
+    branch is the caller's park group's first, "Branch not found", as
+    `/api/leave-balances` already had it. Its list never kept to the branch at
+    all (`storage.getEmployees` takes no branch, so the app lists every
+    employee whatever branch is named — its rule, kept), and so it listed
+    every park group's people under any branch; it now lists the caller's
+    park group's only.
 - **Offboarding writes are not one transaction.** The offboarding row is
   written under an advisory lock in its own transaction. Then the
   employee's state, the login switch-off, the asset return dates, the
@@ -1114,7 +1173,7 @@ new jobs are registered by the jobs themselves.
 | 4 | **Tenant ownership, Attention and the Directory, in two landings.** 4a: the expand migrations. The settings helper and every caller take the tenant. Settings reads open to every park group; other park groups' settings writes stay refused in words while `settings_key_unique` stands (section 7). Branchless Activity rows show in their own tenant. Directory HR reads under `hr:read`. The root-table census. 4b, the next release (a short build-review cycle of its own): the contraction, then other park groups' settings writes open, and Attention resumes (`ATTENTION_WRITES_READY`) with rules per tenant (its rules are the settings key `attention_rules_config`), run as `job:otoapp.attention` and `job:otoapp.no_show`. | Claimed after 4b. H10 to H12 and H20 green. A second tenant's settings, activity and Attention are invisible to the first, on staging and in tests. Refresh, snooze and resolve work on staging. A directory read across tenants answers 404. Walkthrough pages: settings, activity log, Attention engine, Directory API. |
 | 5 | **Attendance and operations as the app does them.** Leave approval restored (Q1): the server's two 503s removed and the rota's `approved: true` put back, with each coverage alert written to its park group (round 4's column). The shift-row refusal (Q2). Face "off" refuses instead of matching, `/api/kiosk/clock` included. A configured-device reception action. Restricted-branch proof for scheduling, leave, checklists, announcements and notifications. Casual workers' ungrouped-row case. | H13 to H15 green. Walkthrough pages: kiosk devices and reception, face/PIN/phone, timekeeping (restricted branch), scheduling, leave and holidays, tasks and ops board, checklists and media, announcements, in-app notifications, casual workers. |
 | 6 | **The document modules.** Tenant columns for templates, policies and the asset catalogue (expand; NOT NULL in round 7's release); their 503 guards off. By Q31's default, `leave_policies`' tenant column too, its routes and the leave reads' remaining park-group crossings held to the caller's park group (Q40). Contracts, letters, templates, policies, employee documents, assets, offboarding (one transaction, the readable reason label, linked-user deactivation as the app does it) and the org chart (count first, because its GET writes missing nodes). The PDF and storage gate. The offboarding duplicate census. | Ticket check 2: a contract and a letter signed, and a BEO generated, opening from signed URLs, with an unauthorised read refused (test and screenshots). H16 green for offboarding. Walkthrough pages: contracts, templates, policies, letters, employee documents, assets, offboarding, org chart. |
-| 7 | **Park, knowledge, administration, finance.** The finance keys migration. Round 6's NOT NULL contraction. The app's voucher write routes answer with the Console notice (section 4). Walkthroughs for events, BEO, packages and menus, camps and children, the parent portal and RSVP, drop-off and nanny, the form builder (on an isolated tenant), staff vouchers (the Console contract), SOP, KB, training, Ask OTO, Fix and supplier portal, payroll, Xero (refusal only until the sandbox), vault, Data Admin, files. Decision 25 recorded in the ARCHITECTURE decisions log. The POS seam evidence card. | Ticket check 5: the POS reads `otoapp_v.events` for the seeded events, plus the grep test, as a test-run card. A finance upsert test. H27 green. Walkthrough pages for every module named. |
+| 7 | **Park, knowledge, administration, finance.** The finance keys migration. Round 6's NOT NULL contraction. The `people` routes, scoped by the park group of each person's access policy or employee rows once the read-back's people census is read, in their own slice beside the Data Admin walkthrough (Q31; carried from round 6, and pulled earlier on the owner's word). The app's voucher write routes answer with the Console notice (section 4). Walkthroughs for events, BEO, packages and menus, camps and children, the parent portal and RSVP, drop-off and nanny, the form builder (on an isolated tenant), staff vouchers (the Console contract), SOP, KB, training, Ask OTO, Fix and supplier portal, payroll, Xero (refusal only until the sandbox), vault, Data Admin, files. Decision 25 recorded in the ARCHITECTURE decisions log. The POS seam evidence card. | Ticket check 5: the POS reads `otoapp_v.events` for the seeded events, plus the grep test, as a test-run card. A finance upsert test. H27 green. Walkthrough pages for every module named. |
 | 8 | **Rehearsal and closure.** The restore rehearsal script in CI, plus the local run on the real structure. A typecheck ratchet for the app (its inherited error count may not rise). The final desktop and park-tablet pass. `docs/features/oto-app.md` statuses for every module. The acceptance index ticked. SCRUM-193 walked to Deployed. | Ticket check 4: the rehearsal completes in CI and the counts match, twice (H17). Ticket check 1: every module has its page, or is named as disabled on staging with the reason. All five checks ticked with named evidence. |
 
 Size: XL, in nine lane build-review cycles (round 4 lands as 4a and 4b).
@@ -1402,10 +1461,22 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   default park group's are never offered to it. Before round 6 the policies
   and catalogue answered it 503 and the template library answered it the
   default's templates.
-- **Leave balances follow the default park group's company-wide policy**
-  where a park group has none of its own (round 6, Q49) — what every park
-  group read before — and its Leave Policies list stays empty until it saves
-  one, which then takes over.
+- **Leave balances weigh the default park group's company-wide policy**
+  where a park group has no company-wide policy of its own (round 6, Q49):
+  beside the branch's own policies, newest effective first, exactly what
+  every park group weighed before. Its Leave Policies list stays empty until
+  it saves one; a company-wide policy of its own then takes the default's
+  place in the weighing.
+- **A login linked to another park group's employee before round 6's review
+  is not switched off by that employee's offboarding** (the backstop, section
+  4), but the 03:00 batch's departed-login step goes by the employee's park
+  group and the link alone, so that night it switches the login off all the
+  same. No door can make such a link since the review's fix (the employee
+  edit and the wizard both refuse it); whether one stands on staging has not
+  been read.
+- **Every park group assigns roles from the one set the app keeps in the
+  default park group** (Q54): the role list answers every park group's roles,
+  and an employee may hold their own park group's or the default's.
 - **An offboarding cannot be made twice for one person** (round 6, Q47). A
   person set back to active and leaving again is refused ("Offboarding
   already exists for this employee"); where 0008's census was clean the
@@ -1646,9 +1717,12 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   to the caller's park group (placed in round 5, leave and holidays, at
   first; round 5 added no migration, so it carries no column, and its
   review fenced only the sibling `sick_leave_policies`, which has its own,
-  Q40); `people` in round 6 (HR
+  Q40); `people` in round 7 (HR
   records), its routes scoped by the park group of each person's access
-  policy or employee rows; the five form-builder routes over
+  policy or employee rows, in a slice of its own beside the Data Admin
+  walkthrough once the read-back's people census is read (placed in round 6
+  at first; round 6 carried it, section 4 and section 8's round 7 row) —
+  your word pulls it into an earlier release; the five form-builder routes over
   `i18n_translations` (the four that read and write drafts and
   translations, and `POST /api/dropoff-form/:formId/publish`) in round 7,
   with the form builder's walkthrough, each held to the form's park group;
@@ -1831,10 +1905,15 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   the 0008 deploy. The alternative is a migration that keeps the newest and
   deletes the rest by itself (not built: it would delete records unseen).
 - **Q49. Leave policies a park group has not saved (round 6).** Before 0008 a
-  company-wide leave policy was every park group's. As built, a park group's
-  balances follow its branch's policy, else its own company-wide one, else
-  the default park group's company-wide one — Q28's rule, because a policy's
-  numbers are read, never kept by id. The sick-leave policy (round 5) has no
+  company-wide leave policy was every park group's, and a branch's balance
+  took the latest effective of the branch's own policies and the company-wide
+  ones. As built (round 6's review), that rule per park group: the branch's
+  own policies and the park group's own company-wide ones, or the default
+  park group's company-wide ones where it has none of its own — Q28's rule on
+  the company-wide slot, because a policy's numbers are read, never kept by
+  id — then the latest effective. So no balance changes on deploy: until a
+  park group saves a company-wide policy of its own, it weighs exactly what it
+  weighed before. The sick-leave policy (round 5) has no
   fallback: each park group gets its own, made with the app's 30 days the
   first time it is read. The alternative here is the same: own only, so a
   park group with no policy is worked out on the app's built-in numbers (5
@@ -1880,6 +1959,17 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   (the Fix department's fault in round 4a). Default: own only. The
   alternative is to read the default park group's where a park group has
   none, and copy what is used into the park group at first use (not built).
+- **Q54. Roles across park groups (round 6's review).** The app keeps its
+  roles as one set: its role create names the default park group, and its
+  role list (`GET /api/roles`) answers every park group's roles to every
+  signed-in user. Since round 6's review an employee's roles
+  (`PATCH /api/employees/:id/roles`) may be their own park group's or the
+  default park group's, and another park group's is "Role not found", so
+  every park group goes on assigning from the one set, as the app does.
+  Default: as built. The alternative is roles per park group: the create
+  naming the caller's park group, the list and every role door held to it,
+  and a park group's roles made before they can be assigned (not built; a
+  new park group would start with none, as Q53 has it for templates).
 
 ## 12. Hazards, each with its test
 
