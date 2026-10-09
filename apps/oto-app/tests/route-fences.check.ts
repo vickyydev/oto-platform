@@ -105,7 +105,9 @@ async function parkGroup(label: string): Promise<ParkGroup> {
   // Pending, with a signed contract: what fix-pending promotes.
   const pending = await employee({ status: "pending" });
   const template = randomUUID();
-  await q("insert into templates (id, name, html_body) values ($1, $2, '<p>ZZ</p>')", [template, `ZZ TEST ${label} ${run}`]);
+  // A template belongs to its park group (S2-17b round 6, migration 0008), as
+  // every template the app writes now does.
+  await q("insert into templates (id, tenant_id, name, html_body) values ($1, $2, $3, '<p>ZZ</p>')", [template, tenant, `ZZ TEST ${label} ${run}`]);
   await q(
     `insert into contract_instances (employee_id, template_id, template_snapshot_html, template_snapshot_version,
        merge_data_json, created_by, signing_status)

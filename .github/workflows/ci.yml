@@ -73,7 +73,7 @@ jobs:
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running everything"; all; exit 0; }
           echo "$FILES"
           flag() { echo "$1=$2" >> "$GITHUB_OUTPUT"; }
-          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired)\.ts$)'
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired|documentParkGroups)\.ts$)'
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then flag workspace true; else flag workspace false; fi
           if echo "$FILES" | grep -q -E '^packages/db/'; then flag db true; else flag db false; fi
           if echo "$FILES" | grep -q -E '^(apps/console/|apps/api/|packages/|pnpm-lock.yaml|.github/workflows/ci.yml)'; then flag e2e true; else flag e2e false; fi
@@ -288,7 +288,7 @@ jobs:
           fi
           git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
-          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired)\.ts$)'
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired|documentParkGroups)\.ts$)'
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then
             echo "workspace=true" >> "$GITHUB_OUTPUT"
           else
@@ -328,7 +328,7 @@ jobs:
           fi
           git fetch --quiet --depth=1 origin "$BASE" || { echo "base unfetchable — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
           FILES=$(git diff --name-only "$BASE" "$GITHUB_SHA") || { echo "diff failed — running"; echo "workspace=true" >> "$GITHUB_OUTPUT"; exit 0; }
-          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired)\.ts$)'
+          APP_SEAM='^apps/oto-app/(migrations/|server/directory/|server/lib/(userDeletion|routeFences|parkGroupSettings|faceOff|shiftGroupRequired|documentParkGroups)\.ts$)'
           if echo "$FILES" | grep -q -v -E '^apps/oto-app/' || echo "$FILES" | grep -q -E "$APP_SEAM"; then
             echo "workspace=true" >> "$GITHUB_OUTPUT"
           else
@@ -374,6 +374,10 @@ jobs:
   #     the read-back (script/tenant-ownership-readback.mjs) proves every
   #     settings, activity and attention row the migrations, the routes and
   #     the night jobs above wrote carries its park group.
+  #   - its document checks (tests/documents.check.ts, S2-17b round 6): the
+  #     document modules per park group, offboarding in one transaction
+  #     (H16), the PDF and storage gate (ticket check 2) and the org chart
+  #     counted first; then the offboarding census (script/offboarding-census.mjs).
   #
   # CONSERVATIVE BY CONSTRUCTION, like the ci job: an unreadable base runs it.
   oto-app:
@@ -472,8 +476,26 @@ jobs:
       - name: The app's attendance checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/attendance.check.ts
+      # S2-17b round 6: the document modules as the app does them — templates,
+      # policies, the asset catalogue and leave policies per park group
+      # (migration 0008), contracts and letters fenced, offboarding in one
+      # transaction with a failure injected mid-way (H16), the PDF and storage
+      # gate against a private stand-in bucket (ticket check 2; PDFs rendered
+      # by the runner's Chrome, as the image renders them with Chromium), and
+      # the org chart counted first.
+      - name: The app's document checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+        run: npx tsx tests/documents.check.ts
+      # The offboarding duplicate census (read only): on this database, which
+      # every check above wrote into, nobody has two, so 0008's index stands.
+      - name: The offboarding census
+        if: steps.changes.outputs.app == 'true'
+        run: npm run offboarding:census
       # Last, over everything the steps above wrote: no settings, activity or
-      # attention row without its park group (round 4b's NOT NULL gate).
+      # attention row without its park group (round 4b's NOT NULL gate), and
+      # no template, policy, catalogue item or leave policy without one (0008).
       - name: The tenant ownership read-back
         if: steps.changes.outputs.app == 'true'
         run: npm run tenant:readback

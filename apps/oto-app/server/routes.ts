@@ -7542,10 +7542,10 @@ OTO Company Limited`,
   });
 
   // Policies, the asset catalogue and the contract flow that attaches a policy
-  // used to answer "This module is unavailable for this tenant" (503) to every
-  // park group but the default one, because their tables had no park group
-  // (the lift's guard). Migration 0008 gave each row its park group (S2-17b
-  // round 6): every caller with a park group now uses its own rows.
+  // used to refuse every park group but the default one with a 503, because
+  // their tables had no park group (the lift's guard). Migration 0008 gave
+  // each row its park group (S2-17b round 6): every caller with a park group
+  // now uses its own rows.
   const parkGroupUser = (req: Request, res: Response): (UserWithBranchAccess & { tenantId: string }) | null => {
     const user = req.userWithAccess;
     if (!user?.tenantId) {
