@@ -260,6 +260,104 @@ import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
  *   npx eslint apps/api/test/s217b-r6-review.test.ts
  *   git diff --stat 57e1d6ad..HEAD -- apps/oto-app/migrations packages/db   (empty)
  *
+ * FINAL RE-REVIEW of the second fix round (2eaea724..c82d91ad, section H).
+ * VERDICT: MERGE. The round's claims hold, recounted and re-driven
+ * independently:
+ *  - The censuses, recounted from the code. Every `/api/employees*`
+ *    registration in `server/` (routes.ts is the only file that registers
+ *    any; no router is mounted on the path) is one of the 54 — the 45 with an
+ *    id and `EMPLOYEE_LIST_DOORS`, method and path, no more and no fewer.
+ *    `storage.getEmployee(` was called at 32 sites at 2eaea724, which are
+ *    `EMPLOYEE_LOOKUPS` route by route in order; 24 remain and each
+ *    disposition was read off its handler (held right after the lookup, a
+ *    record already held, a token's own record, the caller's own link, the
+ *    app's own 403). Every writer of `employee_roles` in `server/` (the
+ *    three storage functions, Data Admin's model, prod-sync) is
+ *    `EMPLOYEE_ROLE_WRITERS`.
+ *  - Every door the round touched, as B's admin AND as B's all-branch
+ *    manager, with every app table hashed before and after: the list under
+ *    every filter its screens send, the template, the import preview (by
+ *    email, by name alone, a new row naming A's branch) and its apply aimed
+ *    at A six ways (A's employee onto B's branch, with no branch, onto A's
+ *    branch; a new row on A's branch, in an array too; B's employee onto A's
+ *    branch), the reorder, the clock override, the timekeeping read, the role
+ *    holders' read and five saves, the issue resolve, the create naming A's
+ *    branch, department, logins and person, the ping, the older shift
+ *    list's create and edit, both reassignments, the bulk delete and the
+ *    dead review list: none answers an id, email, tax id or branch of A's,
+ *    and the database is byte for byte as it was.
+ *  - Within the park group, as both: the import matches by email with the
+ *    current pay and tax id, places by branch name and applies (an update and
+ *    a create, both B's), the reorder writes B's order, a shared role takes
+ *    B's holders beside A's and clears only B's, the override (admins) and
+ *    the create write B's rows.
+ *  - The fences: 0006, 0007, 0008, the journal and the three snapshots are
+ *    byte for byte 2eaea724's (sha256); no migration added; packages/db
+ *    untouched; the app's 467 errors identical per file, code and message on
+ *    a fresh (non-incremental) build at 2eaea724 and at c82d91ad; the API
+ *    typecheck empty; six subjects of 62 to 71 characters, `Refs:
+ *    SCRUM-191`, no attribution lines; the 21-file battery 603/603 at
+ *    c82d91ad. The builder's two pre-lift bugs (the issue resolve's
+ *    `issue.timeEntryId`, the ping's missing `createActivityLogEntry`) are
+ *    read in imports/oto-app as described.
+ * Three findings, none in the round's doors, none blocking; the first is a
+ * crossing in a closed module, for the fix block beside the scheduling
+ * census the builder recorded:
+ *
+ *  9. (high) The face kiosks' admin doors and the clock-event delete cross
+ *     park groups (rounds 3 and 5's modules; the reception tablets' rename
+ *     and revoke were fenced in round 5's review, these were not).
+ *     `GET /api/kiosk-devices` lists every park group's kiosks to any admin;
+ *     `GET`, `PATCH` and `DELETE /api/kiosk-devices/:id` read, rename, switch
+ *     off and delete any of them; `POST /api/kiosk-devices` places a kiosk
+ *     (and hands out its secret) on another park group's branch, with no
+ *     `tenant_id`; `DELETE /api/time-events/:id` deletes any park group's
+ *     clock event. Driven: B's admin listed, switched off and deleted A's
+ *     kiosk, placed one on A's branch and deleted A's clock event (all 2xx).
+ *     Prescription, on our own authority: the list and the four doors by id
+ *     held to the caller's park group (the kiosk's `tenant_id`, or its
+ *     branch's), another's the app's 404 "Kiosk device not found" / "Time
+ *     event not found"; the create takes only the park group's branch (the
+ *     app's 404 "Branch not found") and writes its `tenant_id`; and a census
+ *     of every door that takes a record id in the closed modules
+ *     (timekeeping, kiosks, scheduling — the builder's), as round 4a's.
+ * 10. (low) A shared role's branch list crosses park groups.
+ *     `PATCH /api/roles/:id` with `branchIds` replaces the role's
+ *     `role_branch_assignments` in every park group and takes another park
+ *     group's branch; `GET /api/roles` answers every park group's branch rows
+ *     under each role. The app's employee editor offers a role at a branch
+ *     only when its list names that branch or is empty
+ *     (client/src/pages/employee-editor-page.tsx:2719-2727), so B's manager
+ *     saving a shared, branch-less role to B's branch takes it off A's role
+ *     pickers (read off the client; the strip of A's own row is driven). Q54 keeps "the role itself" as the one set's, but these rows
+ *     each name a park group's branch. Prescription, on our own authority (a
+ *     crossing): the save replaces and the list answers only the caller's
+ *     park group's branch rows, another park group's branch the app's 404
+ *     "Branch not found"; Q54's text names the branch list.
+ * 11. (low) Three records say more or less than the code. The census's
+ *     `EMPLOYEE_ROLE_WRITERS` row for Data Admin says a role's delete
+ *     "cascades to its holders"; `employee_roles.role_id` is ON DELETE no
+ *     action (0000, never changed) and Data Admin deletes by id alone, so it
+ *     is refused (400) while the role has holders. The census header places
+ *     the `/api/permissions/*` reads "elsewhere ... as the builder's round 6
+ *     report left them", but no document in the repository places them (the
+ *     plan never names them). The plan's standing cross-park-group login link
+ *     names the offboarding and the 03:00 batch but not `toggle-login` and
+ *     `reset-password`, which still reach such a link (this header's earlier
+ *     note). Prescription: correct the row ("refused while the role has
+ *     holders"), name the permission reads in the plan's section 4 with their
+ *     round, and add the two doors to the plan's link bullet; then flip the
+ *     pin.
+ *
+ * Final re-review commands (each was run):
+ *   cd apps/api && npx vitest run --pool=forks test/s217b-r6-review.test.ts
+ *   cd apps/api && npx vitest run --pool=forks $(ls test | grep -E '^(s217b|g17|otoapp|booth-duty)' | sed 's#^#test/#')
+ *   cd apps/api && npx tsc -p tsconfig.json --noEmit            (no output)
+ *   cd apps/oto-app && npx tsc -p tsconfig.json --noEmit --incremental false
+ *                       (467; at 2eaea724 the same per file, code and message)
+ *   npx eslint apps/api/test/s217b-r6-review.test.ts apps/api/test/s217b-r6.test.ts
+ *   git diff --stat 2eaea724..HEAD -- apps/oto-app/migrations packages/db   (empty)
+ *
  * Section A runs everywhere; B needs only the platform's own migrator; C to F
  * need the app's node_modules (present locally and in CI's OTO App job). No
  * Chromium is needed: the PDFs here are ones the test lays down itself (under
@@ -2046,5 +2144,372 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect(
       await count('select count(*) as n from employees where email = $1 and (primary_department_id = $2 or updated_by = $3 or profile_photo_updated_by = $3)', [email, deptA, A.admin.id]),
     ).toBe(0);
+  });
+
+  // ── H. The final re-review: the second fix round attacked ───────────────────
+  // (the header's FINAL RE-REVIEW block). Every door the round touched, driven
+  // as B's admin AND B's all-branch manager, with the whole database weighed
+  // before and after; then the same doors within the park group; then what
+  // the drive found beside them.
+
+  /** Every row of every app table, one hash per table: what a refusal must leave as it was (the session store aside — every request touches it — and this suite's own logs). */
+  const everything = async () => {
+    const tables = (
+      await q<{ table_name: string }>(
+        `select table_name from information_schema.tables
+          where table_schema = 'otoapp' and table_type = 'BASE TABLE' and table_name <> 'session' and table_name not like 'zz\\_%' order by 1`,
+      )
+    ).map((r) => r.table_name);
+    const out: Record<string, string> = {};
+    for (const t of tables) out[t] = (await q<{ h: string }>(`select md5(coalesce(string_agg(x::text, '|' order by x::text), '')) as h from "${t}" x`))[0]!.h;
+    return out;
+  };
+  interface XlsxRead {
+    read(data: Uint8Array, opts: { type: 'buffer' }): { SheetNames: string[]; Sheets: Record<string, unknown> };
+    utils: { sheet_to_json(sheet: unknown, opts: { header: 1 }): unknown[][] };
+  }
+  /** The sample row's branch name in the import template, as the app's screen downloads it. */
+  const templateBranch = async (cookie: string) => {
+    const res = await fetch(`${ORIGIN}/api/employees/bulk-template`, { headers: { cookie } });
+    const XLSX = createRequire(join(APP_DIR, 'package.json'))('xlsx') as XlsxRead;
+    const book = XLSX.read(new Uint8Array(await res.arrayBuffer()), { type: 'buffer' });
+    const rows = XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]!], { header: 1 });
+    return { status: res.status, branch: String(rows[1]![(rows[0] as string[]).indexOf('Branch')]) };
+  };
+  /** A rota slot of `g`'s, three days out, for `employeeId`. */
+  const rotaSlot = async (g: ParkGroup, employeeId: string) => {
+    const plan = randomUUID();
+    await q('insert into schedule_week_plans (id, tenant_id, branch_id, week_start_date) values ($1, $2, $3, $4)', [plan, g.tenant, g.x, day(1)]);
+    const group = randomUUID();
+    await q('insert into shift_groups (id, tenant_id, branch_id, name) values ($1, $2, $3, $4)', [group, g.tenant, g.x, `ZZ R6FR ${run}`]);
+    const row = randomUUID();
+    await q(
+      `insert into schedule_shift_rows (id, tenant_id, branch_id, shift_group_id, week_plan_id, start_time, end_time, label)
+       values ($1, $2, $3, $4, $5, '09:00', '17:00', 'ZZ R6FR')`,
+      [row, g.tenant, g.x, group, plan],
+    );
+    const slot = randomUUID();
+    await q('insert into schedule_assignments (id, tenant_id, week_plan_id, shift_row_id, shift_date, employee_id) values ($1, $2, $3, $4, $5, $6)', [slot, g.tenant, plan, row, day(3), employeeId]);
+    return slot;
+  };
+  let bAllManager = '';
+  const bManagerCookie = async () => {
+    if (bAllManager) return bAllManager;
+    const email = `zz-r6fr-b-allmgr-${run}@example.com`;
+    await user(B.tenant, 'manager', email, null);
+    bAllManager = await signIn(email);
+    return bAllManager;
+  };
+
+  it('H. every door the second fix round touched, as B’s admin AND as B’s all-branch manager, against A’s rows: none answers anything of A’s, and on every refusal nothing is written anywhere in the database', async () => {
+    const bManager = await bManagerCookie();
+    // A's rows: an employee with a login, pay and tax ids and a place in A's order, on a shared role and on A's own; a second on A's other branch carrying a person; A's department, issue, rota slot and clock event.
+    const loginA = await user(A.tenant, 'staff', `zz-r6fr-a-login-${run}@example.com`, A.x);
+    const eA = await employee(A, A.x, 'fr-victim', {
+      user_id: loginA,
+      default_merge_data: JSON.stringify({ positionTitle: 'ZZ', salaryThb: 70000 }),
+      tax_id_number: 'ZZ-FR-A-TAX',
+      display_order: 5,
+    });
+    const personA = randomUUID();
+    await q(`insert into people (id, full_name, email, person_type) values ($1, 'ZZ R6FR', $2, 'EMPLOYEE')`, [personA, `zz-r6fr-person-${run}@example.com`]);
+    const eA2 = await employee(A, A.y, 'fr-victim-2', { person_id: personA, display_order: 6 });
+    const victim = (await q<{ email: string; full_name: string }>('select email, full_name from employees where id = $1', [eA]))[0]!;
+    const shared = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [DEFAULT, `ZZ R6FR shared ${run}`]))[0]!.id;
+    const roleA = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [A.tenant, `ZZ R6FR A own ${run}`]))[0]!.id;
+    await q('insert into employee_roles (employee_id, role_id) values ($1, $2), ($1, $3)', [eA, shared, roleA]);
+    const deptA = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [A.tenant, `ZZ R6FR A dept ${run}`]))[0]!.id;
+    const entry = randomUUID();
+    await q("insert into time_entries (id, tenant_id, employee_id, branch_id, shift_date, status) values ($1, $2, $3, $4, $5, 'PENDING_APPROVAL')", [entry, A.tenant, eA, A.x, day(0)]);
+    const issue = randomUUID();
+    await q(
+      `insert into timekeeping_issues (id, tenant_id, employee_id, branch_id, issue_date, issue_type, status, linked_time_entry_id)
+       values ($1, $2, $3, $4, $5, 'MISSING_CLOCK_OUT', 'PENDING_APPROVAL', $6)`,
+      [issue, A.tenant, eA, A.x, day(0), entry],
+    );
+    const aSlot = await rotaSlot(A, eA);
+    // B's own: two employees, B's department, a rota slot and an older-list shift.
+    const eB = await employee(B, B.x, 'fr-b');
+    const eB2 = await employee(B, B.x, 'fr-b2');
+    const deptB = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [B.tenant, `ZZ R6FR B dept ${run}`]))[0]!.id;
+    const bSlot = await rotaSlot(B, eB);
+    const bShift = randomUUID();
+    const window = { startAt: new Date(Date.now() + 86_400_000).toISOString(), endAt: new Date(Date.now() + 90_000_000).toISOString() };
+    await q('insert into shifts (id, tenant_id, branch_id, department_id, start_at, end_at, created_by) values ($1, $2, $3, $4, $5, $6, $7)', [bShift, B.tenant, B.x, deptB, window.startAt, window.endAt, B.admin.id]);
+    const [aX, aY, bX, bY] = [await branchName(A.x), await branchName(A.y), await branchName(B.x), await branchName(B.y)];
+
+    const before = await everything();
+    expect(Object.keys(before).length, 'every app table is weighed').toBeGreaterThan(150);
+    expect(before).toHaveProperty('employees');
+    expect(before).toHaveProperty('employee_roles');
+    const wrong: string[] = [];
+    const A_MARKS = [eA, eA2, loginA, victim.email, victim.full_name, 'ZZ-FR-A-TAX', A.x, A.y, aX, aY, personA];
+    const answered = (label: string, a: { status: number; text: string }, status: number, body?: unknown, watch = A_MARKS) => {
+      if (a.status !== status || (body !== undefined && a.text !== JSON.stringify(body))) wrong.push(`${label}: ${a.status} ${a.text.slice(0, 200)}`);
+      const marks = watch.filter((m) => a.text.includes(m));
+      if (marks.length) wrong.push(`${label}: answers A's ${marks.join(', ')}`);
+    };
+    const notFound = { message: 'Employee not found' };
+    for (const [who, cookie, admin] of [
+      ['B admin', B.admin.cookie, true],
+      ['B all-branch manager', bManager, false],
+    ] as const) {
+      // The list, by every filter the app's screens send.
+      for (const query of ['', `?branchId=${A.x}`, `?branchId=${A.y}`, `?branchId=${A.x}&schedulingWeekStart=${day(0)}`]) {
+        const list = await call('GET', `/api/employees${query}`, { cookie });
+        answered(`${who} GET /api/employees${query}`, list, 200);
+        if (query && list.text !== '[]') wrong.push(`${who} GET /api/employees${query}: lists ${list.text.slice(0, 120)}`);
+      }
+      // The template samples B's branch.
+      const sample = await templateBranch(cookie);
+      if (sample.status !== 200 || ![bX, bY].includes(sample.branch)) wrong.push(`${who} template: ${sample.status} samples "${sample.branch}"`);
+      // The import preview: A's employee by email, by full name alone, and a new row naming A's branch.
+      const preview = await importPreview(cookie, [HEADERS, [victim.full_name, victim.email, bX, 1], [victim.full_name, '', '', 2], [`ZZ R6FR new ${run}`, `zz-r6fr-new-${run}@example.com`, aY, 3]]);
+      // The sheet's own cells come back as sent (A's name and email were typed into it); nothing of A's record may.
+      answered(`${who} import preview`, preview, 200, undefined, A_MARKS.filter((m) => m !== victim.email && m !== victim.full_name && m !== aY));
+      const got = preview.rows.map((r) => [r.matchedEmployeeId, r.branchId, r.error]);
+      const want = [
+        [null, B.x, null],
+        [null, null, null],
+        [null, null, `Branch "${aY}" not found`],
+      ];
+      if (JSON.stringify(got) !== JSON.stringify(want)) wrong.push(`${who} import preview rows: ${JSON.stringify(got)}`);
+      // The import apply, aimed at A every way: A's employee onto B's branch, with no branch, onto A's branch; a new row on A's branch (and one smuggling it in an array); B's own employee onto A's branch.
+      const applied = await call('POST', '/api/employees/bulk-update', {
+        cookie,
+        body: {
+          rows: [
+            { rowNumber: 2, matchedEmployeeId: eA, branchId: B.x, data: { fullName: 'ZZ hijack', salary: 1, taxIdNumber: 'ZZ-HIJACK' } },
+            { rowNumber: 3, matchedEmployeeId: eA, branchId: null, data: { fullName: 'ZZ hijack', email: 'zz-hijack@example.com' } },
+            { rowNumber: 4, matchedEmployeeId: eA, branchId: A.x, data: { fullName: 'ZZ hijack' } },
+            { rowNumber: 5, isNew: true, branchId: A.y, data: { fullName: `ZZ R6FR B on A ${run}`, email: `zz-r6fr-b-on-a-${run}@example.com` } },
+            { rowNumber: 6, isNew: true, branchId: [A.y], data: { fullName: `ZZ R6FR B on A array ${run}`, email: `zz-r6fr-b-on-a2-${run}@example.com` } },
+            { rowNumber: 7, matchedEmployeeId: eB, branchId: A.x, data: { fullName: 'ZZ R6FR B moved onto A' } },
+          ],
+        },
+      });
+      answered(`${who} import apply`, applied, 200);
+      const results = (applied.body?.results as { status: string; message: string }[] | undefined)?.map((r) => `${r.status}: ${r.message}`);
+      const refused = ['Employee not found', 'Employee not found', 'No access to branch', 'No access to branch', 'No access to branch', 'No access to branch'].map((m) => `error: ${m}`);
+      if (JSON.stringify(results) !== JSON.stringify(refused)) wrong.push(`${who} import apply results: ${JSON.stringify(results)}`);
+      // The reorder: A's ids are skipped.
+      answered(`${who} reorder`, await call('POST', '/api/employees/reorder', { cookie, body: { orderedIds: [eA2, eA] } }), 200, { success: true });
+      // The clock override (the app's admins only): A's employee, A's branch.
+      for (const [label, body, words] of [
+        ['A’s employee on B’s branch', { employeeId: eA, branchId: B.x }, notFound],
+        ['A’s employee on A’s branch', { employeeId: eA, branchId: A.x }, notFound],
+        ['B’s employee on A’s branch', { employeeId: eB, branchId: A.x }, { message: 'Branch not found' }],
+      ] as const) {
+        const override = await call('POST', '/api/time-events/override', { cookie, body: { ...body, eventType: 'IN', eventTime: new Date().toISOString(), notes: 'ZZ R6FR' } });
+        if (admin) answered(`${who} override, ${label}`, override, 404, words);
+        else answered(`${who} override, ${label}`, override, 403);
+      }
+      // The timekeeping read.
+      answered(`${who} timekeeping read`, await call('GET', `/api/timekeeping/employee/${eA}`, { cookie }), 404, notFound);
+      // The role holders: neither role lists A's holder; no save names A's employee or replaces A's own role's holders.
+      for (const role of [shared, roleA]) answered(`${who} GET role holders`, await call('GET', `/api/roles/${role}/employees`, { cookie }), 200);
+      for (const [label, role, employeeIds, words] of [
+        ['A’s employee', shared, [eA], notFound],
+        ['B’s and A’s', shared, [eB, eA], notFound],
+        ['not an id', shared, [42], notFound],
+        ['A’s own role, B’s employee', roleA, [eB], { message: 'Role not found' }],
+        ['A’s own role, cleared', roleA, [], { message: 'Role not found' }],
+      ] as const) {
+        answered(`${who} PATCH role holders, ${label}`, await call('PATCH', `/api/roles/${role}/employees`, { cookie, body: { employeeIds } }), 404, words);
+      }
+      // The issue resolve.
+      for (const action of ['approve', 'reject']) {
+        answered(`${who} resolve A’s issue (${action})`, await call('POST', `/api/timekeeping/issues/${issue}/resolve`, { cookie, body: { action, managerNote: 'ZZ hijack' } }), 404, { message: 'Issue not found' });
+      }
+      // The create's body, naming A's branch, department, logins and person.
+      for (const [label, ids, status, words] of [
+        ['A’s branch', { branchId: A.x }, 403, { message: 'Selected branch is not available' }],
+        ['A’s department', { primaryDepartmentId: deptA }, 404, { message: 'Department not found' }],
+        ['A’s admin as author', { updatedBy: A.admin.id }, 404, { message: 'User not found' }],
+        ['A’s login as photo author', { profilePhotoUpdatedBy: loginA }, 404, { message: 'User not found' }],
+        ['A’s login', { userId: loginA }, 404, { message: 'User not found' }],
+        ['A’s person', { personId: personA }, 404, { message: 'Person not found' }],
+      ] as const) {
+        const made = await call('POST', '/api/employees', {
+          cookie,
+          body: Object.assign({ fullName: `ZZ R6FR create ${run}`, nickname: 'ZZ', email: `zz-r6fr-create-${randomUUID().slice(0, 8)}@example.com`, branchId: B.x }, ids),
+        });
+        answered(`${who} create naming ${label}`, made, status, words);
+      }
+      // The ping, the older shift list's create and edit, the reassignment.
+      answered(`${who} ping`, await call('POST', '/api/timekeeping/live/ping', { cookie, body: { employeeId: eA, reason: 'ZZ' } }), 404, notFound);
+      const shiftWords = { message: 'Employee not found or not in this branch' };
+      answered(`${who} older shift create`, await call('POST', '/api/shifts', { cookie, body: { branchId: B.x, departmentId: deptB, employeeId: eA, ...window } }), 400, shiftWords);
+      answered(`${who} older shift edit`, await call('PATCH', `/api/shifts/${bShift}`, { cookie, body: { employeeId: eA } }), 400, shiftWords);
+      answered(`${who} reassign A’s slot`, await call('PATCH', `/api/schedule/assignments/${aSlot}/reassign`, { cookie, body: { employeeId: eB2 } }), 404, { message: 'Assignment not found' });
+      answered(`${who} reassign B’s slot to A’s`, await call('PATCH', `/api/schedule/assignments/${bSlot}/reassign`, { cookie, body: { employeeId: eA } }), 400, { message: 'New employee not found' });
+      // The two doors without an id fenced before the round: the bulk delete (the app's admins only) and the dead review list.
+      const gone = await call('POST', '/api/employees/bulk-delete', { cookie, body: { employeeIds: [eA, eA2] } });
+      if (admin) {
+        answered(`${who} bulk delete`, { status: gone.status, text: gone.status === 200 ? '' : gone.text }, 200);
+        if (gone.body?.deletedCount !== 0) wrong.push(`${who} bulk delete: ${gone.text.slice(0, 200)}`);
+      } else answered(`${who} bulk delete`, gone, 403);
+      answered(`${who} upcoming reviews`, await call('GET', '/api/employees/upcoming-reviews', { cookie }), 404, notFound);
+    }
+    expect(wrong).toEqual([]);
+    expect(await everything()).toEqual(before);
+  }, 240_000);
+
+  it('H. the same doors within the park group, as B’s admin and B’s all-branch manager: the import matches, places and applies B’s own people, the reorder writes B’s order, a shared role takes B’s holders beside A’s, the override and the create write B’s rows', async () => {
+    const bManager = await bManagerCookie();
+    const holderA = await employee(A, A.x, 'fr-holder-a');
+    const shared = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [DEFAULT, `ZZ R6FR shared own ${run}`]))[0]!.id;
+    await q('insert into employee_roles (employee_id, role_id) values ($1, $2)', [holderA, shared]);
+    const deptB = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [B.tenant, `ZZ R6FR B own dept ${run}`]))[0]!.id;
+    for (const [who, cookie, admin] of [
+      ['admin', B.admin.cookie, true],
+      ['manager', bManager, false],
+    ] as const) {
+      const eB = await employee(B, B.x, `fr-own-${who}`, { default_merge_data: JSON.stringify({ positionTitle: 'ZZ', salaryThb: 30000 }), tax_id_number: `ZZ-FR-B-${who}` });
+      const eB2 = await employee(B, B.x, `fr-own2-${who}`);
+      const own = (await q<{ email: string; full_name: string }>('select email, full_name from employees where id = $1', [eB]))[0]!;
+      expect(((await call('GET', `/api/employees?branchId=${B.x}`, { cookie })).body as { id: string }[]).map((e) => e.id)).toEqual(expect.arrayContaining([eB, eB2]));
+      const newEmail = `zz-r6fr-own-new-${who}-${run}@example.com`;
+      const preview = await importPreview(cookie, [HEADERS, [own.full_name, own.email, await branchName(B.y), 31000], [`ZZ R6FR own new ${who} ${run}`, newEmail, await branchName(B.x), 25000]]);
+      expect(preview.status, preview.text).toBe(200);
+      expect(preview.rows.map((r) => [r.matchedEmployeeId, r.branchId, r.error])).toEqual([
+        [eB, B.y, null],
+        [null, B.x, null],
+      ]);
+      expect(preview.rows[0]!.currentData).toMatchObject({ salary: 30000, taxIdNumber: `ZZ-FR-B-${who}` });
+      const applied = await call('POST', '/api/employees/bulk-update', { cookie, body: { rows: preview.rows } });
+      expect((applied.body.results as { status: string }[]).map((r) => r.status), show(applied)).toEqual(['updated', 'created']);
+      expect((await q('select tenant_id, branch_id, default_merge_data from employees where id = $1', [eB]))[0]).toEqual({
+        tenant_id: B.tenant,
+        branch_id: B.y,
+        default_merge_data: { positionTitle: 'ZZ', salaryThb: 31000 },
+      });
+      expect((await q('select tenant_id, branch_id from employees where email = $1', [newEmail]))[0]).toEqual({ tenant_id: B.tenant, branch_id: B.x });
+      expect((await call('POST', '/api/employees/reorder', { cookie, body: { orderedIds: [eB2, eB] } })).status).toBe(200);
+      expect((await q<{ id: string }>('select id from employees where id = any($1) order by display_order', [[eB, eB2]])).map((r) => r.id)).toEqual([eB2, eB]);
+      const set = await call('PATCH', `/api/roles/${shared}/employees`, { cookie, body: { employeeIds: [eB] } });
+      expect(set.status, show(set)).toBe(200);
+      expect(((await call('GET', `/api/roles/${shared}/employees`, { cookie })).body as { employeeId: string }[]).map((r) => r.employeeId)).toEqual([eB]);
+      expect((await q<{ employee_id: string }>('select employee_id from employee_roles where role_id = $1 order by employee_id', [shared])).map((r) => r.employee_id)).toEqual([holderA, eB].sort());
+      const override = await call('POST', '/api/time-events/override', { cookie, body: { employeeId: eB, branchId: B.x, eventType: 'IN', eventTime: new Date().toISOString(), notes: 'ZZ R6FR' } });
+      if (admin) {
+        expect(override.status, show(override)).toBe(201);
+        expect(await count('select count(*) as n from time_events where employee_id = $1', [eB])).toBe(1);
+      } else expect(override.status).toBe(403);
+      const email = `zz-r6fr-create-own-${who}-${run}@example.com`;
+      const made = await call('POST', '/api/employees', { cookie, body: { fullName: 'ZZ R6FR create own', nickname: 'ZZ', email, branchId: B.x, primaryDepartmentId: deptB } });
+      expect(made.status, show(made)).toBe(201);
+      expect((await q('select tenant_id, primary_department_id from employees where email = $1', [email]))[0]).toEqual({ tenant_id: B.tenant, primary_department_id: deptB });
+      // Clear B's holders for the next pass; A's stands.
+      expect((await call('PATCH', `/api/roles/${shared}/employees`, { cookie, body: { employeeIds: [] } })).status).toBe(200);
+      expect((await q<{ employee_id: string }>('select employee_id from employee_roles where role_id = $1', [shared])).map((r) => r.employee_id)).toEqual([holderA]);
+    }
+  });
+
+  // ── Found beside the round's doors ──────────────────────────────────────────
+
+  it('H. arrangement of finding 9: A’s admin lists and reads A’s own face kiosk and deletes A’s own clock event, as the app does; the reception tablets’ doors (round 5’s review) already keep to the park group', async () => {
+    const eA = await employee(A, A.x, 'fr-clock-own');
+    const event = (await q<{ id: string }>("insert into time_events (tenant_id, employee_id, branch_id, event_type, event_time, auth_method) values ($1, $2, $3, 'IN', now(), 'ADMIN_OVERRIDE') returning id", [A.tenant, eA, A.x]))[0]!.id;
+    const device = (await q<{ id: string }>("insert into kiosk_devices (tenant_id, branch_id, name) values ($1, $2, 'ZZ R6FR own') returning id", [A.tenant, A.x]))[0]!.id;
+    expect((await call('GET', '/api/kiosk-devices', { cookie: A.admin.cookie })).text).toContain(device);
+    expect((await call('GET', `/api/kiosk-devices/${device}`, { cookie: A.admin.cookie })).status).toBe(200);
+    expect((await call('DELETE', `/api/time-events/${event}`, { cookie: A.admin.cookie })).status).toBe(204);
+    expect(await count('select count(*) as n from time_events where id = $1', [event])).toBe(0);
+    const tablet = (await q<{ id: string }>("insert into kiosk_devices (tenant_id, branch_id, name, kiosk_type) values ($1, $2, 'ZZ R6FR A reception', 'reception') returning id", [A.tenant, A.x]))[0]!.id;
+    expect((await call('PATCH', `/api/kiosk-devices/${tablet}/name`, { cookie: B.admin.cookie, body: { name: 'ZZ hijack' } })).status).toBe(404);
+    expect((await call('DELETE', `/api/kiosk-devices/${tablet}/revoke`, { cookie: B.admin.cookie })).status).toBe(404);
+    expect((await q('select name from kiosk_devices where id = $1', [tablet]))[0]).toEqual({ name: 'ZZ R6FR A reception' });
+  });
+
+  it.fails('H. FINDING 9 (high): the face kiosks’ admin doors and the clock event delete keep to the caller’s park group — B’s admin neither lists, reads, places on A’s branch, renames, switches off or deletes A’s kiosks, nor deletes A’s clock event', async () => {
+    const eA = await employee(A, A.x, 'fr-clock-victim');
+    const event = (await q<{ id: string }>("insert into time_events (tenant_id, employee_id, branch_id, event_type, event_time, auth_method) values ($1, $2, $3, 'IN', now(), 'ADMIN_OVERRIDE') returning id", [A.tenant, eA, A.x]))[0]!.id;
+    const device = (await q<{ id: string }>("insert into kiosk_devices (tenant_id, branch_id, name, is_active) values ($1, $2, 'ZZ R6FR A tablet', true) returning id", [A.tenant, A.x]))[0]!.id;
+    const listed = await call('GET', '/api/kiosk-devices', { cookie: B.admin.cookie });
+    const devicesOnA = () => count('select count(*) as n from kiosk_devices where branch_id = $1', [A.y]);
+    const onABefore = await devicesOnA();
+    const placed = await call('POST', '/api/kiosk-devices', { cookie: B.admin.cookie, body: { branchId: A.y, name: 'ZZ R6FR B on A' } });
+    const onAAfter = await devicesOnA();
+    const read = await call('GET', `/api/kiosk-devices/${device}`, { cookie: B.admin.cookie });
+    const renamed = await call('PATCH', `/api/kiosk-devices/${device}`, { cookie: B.admin.cookie, body: { name: 'ZZ hijack', isActive: false } });
+    const deviceAfter = (await q('select name, is_active from kiosk_devices where id = $1', [device]))[0];
+    const deletedEvent = await call('DELETE', `/api/time-events/${event}`, { cookie: B.admin.cookie });
+    const deletedDevice = await call('DELETE', `/api/kiosk-devices/${device}`, { cookie: B.admin.cookie });
+    expect({
+      listsA: listed.text.includes(device),
+      placedOnA: [placed.status === 201, onAAfter - onABefore],
+      read: [read.status, read.text.includes(A.x)],
+      renamed: renamed.status,
+      deviceAfter,
+      deletedEvent: deletedEvent.status,
+      eventStands: await count('select count(*) as n from time_events where id = $1', [event]),
+      deletedDevice: deletedDevice.status,
+      deviceStands: await count('select count(*) as n from kiosk_devices where id = $1', [device]),
+    }).toEqual({
+      listsA: false,
+      placedOnA: [false, 0],
+      read: [404, false],
+      renamed: 404,
+      deviceAfter: { name: 'ZZ R6FR A tablet', is_active: true },
+      deletedEvent: 404,
+      eventStands: 1,
+      deletedDevice: 404,
+      deviceStands: 1,
+    });
+  });
+
+  it('H. arrangement of finding 10: a shared role’s branches as the app keeps them — A’s roles screen saves it to A’s branch and lists it there, and the app’s employee editor offers a role at a branch only when its list names that branch or is empty', async () => {
+    const shared = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [DEFAULT, `ZZ R6FR branches own ${run}`]))[0]!.id;
+    const saved = await call('PATCH', `/api/roles/${shared}`, { cookie: A.admin.cookie, body: { branchIds: [A.x] } });
+    expect(saved.status, show(saved)).toBe(200);
+    expect((await q<{ branch_id: string }>('select branch_id from role_branch_assignments where role_id = $1', [shared])).map((r) => r.branch_id)).toEqual([A.x]);
+    const editor = readFileSync(join(APP_DIR, 'client', 'src', 'pages', 'employee-editor-page.tsx'), 'utf8');
+    expect(editor).toContain('if (!role.branches || role.branches.length === 0) return true;');
+    expect(editor).toContain('return role.branches.some((b: any) => b.id === selectedBranchId || b.branchId === selectedBranchId);');
+  });
+
+  it.fails('H. FINDING 10 (low): a shared role’s branch list is each park group’s own — B’s save neither strips A’s branch from it nor names A’s branch, and B’s role list shows none of A’s branches', async () => {
+    const shared = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [DEFAULT, `ZZ R6FR branches ${run}`]))[0]!.id;
+    await q('insert into role_branch_assignments (role_id, branch_id, assigned_by) values ($1, $2, $3)', [shared, A.x, A.admin.id]);
+    const bManager = await bManagerCookie();
+    const listed = await call('GET', '/api/roles', { cookie: bManager });
+    await call('PATCH', `/api/roles/${shared}`, { cookie: bManager, body: { branchIds: [B.x] } });
+    const naming = await call('PATCH', `/api/roles/${shared}`, { cookie: bManager, body: { branchIds: [B.x, A.y] } });
+    const stored = (await q<{ branch_id: string }>('select branch_id from role_branch_assignments where role_id = $1 order by branch_id', [shared])).map((r) => r.branch_id);
+    expect({ listsA: listed.text.includes(A.x), naming: naming.status, stored }).toEqual({ listsA: false, naming: 404, stored: [A.x, B.x].sort() });
+  });
+
+  /** The census's Data Admin row, the plan, and the plan's standing cross-park-group login link (finding 11). */
+  const records = () => {
+    const lib = committed(join(APP_SERVER, 'lib', 'employeeParkGroups.ts'));
+    const row = /\{ writer: "Data Admin's Employee Role and Role models"[^\n]*\}/.exec(lib)?.[0] ?? '';
+    const text = plan();
+    const link = text.slice(text.indexOf("- **A login linked to another park group's employee before round 6's review"), text.indexOf('- **Every park group assigns roles from the one set'));
+    return { lib, row, text, link };
+  };
+
+  it('H. arrangement of finding 11: the baseline keeps `employee_roles.role_id` as a plain key — ON DELETE no action — and Data Admin deletes a row by its id alone; the census places the permission reads “as the builder’s round 6 report left them”; the plan names the standing link', () => {
+    const { lib, row, link } = records();
+    expect(row).toContain('disposition: "later"');
+    expect(lib).toContain("the permission reads\n * (`/api/permissions/*`, `GET /api/roles`), as the builder's round 6 report\n * left them.");
+    expect(link).toContain('the 03:00 batch');
+    expect(link.length).toBeGreaterThan(200);
+    const baseline = committed(join(APP_MIGRATIONS, '0000_otoapp_baseline.sql'));
+    expect(baseline).toContain('ALTER TABLE "employee_roles" ADD CONSTRAINT "employee_roles_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE no action');
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const tag = readdirSync(APP_MIGRATIONS).find((f) => f.startsWith(`000${n}_`));
+      if (tag) expect(committed(join(APP_MIGRATIONS, tag)), tag).not.toMatch(/employee_roles_role_id/);
+    }
+    expect(readFileSync(join(APP_SERVER, 'data-admin', 'admin.ts'), 'utf8')).toMatch(/async delete\(id: string\): Promise<void> \{\s*await db\.delete\(this\.table\)\.where\(eq\(this\.table\.id, id\)\);\s*\}/);
+  });
+
+  it.fails('H. FINDING 11 (low): the records say what the code does — Data Admin’s role delete is refused while the role has holders (it does not cascade to them); the `/api/permissions/*` reads the census places “elsewhere” are placed in the plan; and the plan’s standing cross-park-group login link names the two doors that still reach it', () => {
+    const { row, text, link } = records();
+    expect({
+      cascadeClaimed: /cascades to its holders/.test(row),
+      permissionReadsPlaced: text.includes('/api/permissions/'),
+      linkNamesItsDoors: link.includes('toggle-login') && link.includes('reset-password'),
+    }).toEqual({ cascadeClaimed: false, permissionReadsPlaced: true, linkNamesItsDoors: true });
   });
 });
