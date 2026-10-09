@@ -219,6 +219,30 @@ import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
  *     check (`employeeEditOutsideParkGroup`) on the create's body, in the same
  *     words.
  *
+ * Disposition (the re-review's fixes): all three are fixed, and their pins
+ * are plain `it`s, word for word as the re-review wrote them; each
+ * arrangement `it` beside them now proves what the fix kept. 6: the census in
+ * `server/lib/employeeParkGroups.ts` covers all 54 routes — the 45 doors with
+ * an id and `EMPLOYEE_LIST_DOORS`, the nine without, each with its rule; the
+ * list keeps to the session's park group before the app's branch filters,
+ * the import's preview matches and names branches only within it (another's
+ * branch name is the app's `Branch "<name>" not found`), its apply resolves
+ * `matchedEmployeeId` in the park group ("Employee not found") and takes a
+ * branch only of it ("No access to branch", new rows too), the reorder skips
+ * another's id as a missing one, the template samples the park group's
+ * branches, and `upcoming-reviews` is recorded as dead. 7: every
+ * `storage.getEmployee(` call site the re-review counted (32) is in
+ * `EMPLOYEE_LOOKUPS` with its disposition, eight of them fenced here (the
+ * override, the timekeeping read, the issue resolve — driven: it crossed at
+ * the issue and wrote nothing, so the issue is now the park group's first —
+ * the import's apply, the ping, the two older shift doors and the
+ * reassignment, whose assignment is now the park group's too); every
+ * `employee_roles` writer is in `EMPLOYEE_ROLE_WRITERS`; the role-holder
+ * write deletes and inserts only the park group's holders and its read lists
+ * only theirs (Q54 from the role side). 8: the create weighs its body with
+ * the edit's check, in its words. Driven in `tests/documents.check.ts`
+ * section 9 over HTTP.
+ *
  * Noted, not findings of this round: the voucher doors
  * (`/api/hr/employees/:employeeId/vouchers`) reach any park group's employee,
  * placed in round 7 under H27; the builder's own "found, not fixed" (the five
@@ -1921,7 +1945,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
   const branchName = async (id: string) => (await q<{ name: string }>('select name from branches where id = $1', [id]))[0]!.name;
   const HEADERS = ['Full Name', 'Email Address', 'Branch', 'Monthly Salary (THB)'];
 
-  it('G. the employee list, the Excel import and the reorder as the app has them within the park group: A lists A’s employee; A’s import matches them by email with their current pay, places by A’s branch name and applies; A’s reorder writes A’s order (the arrangement of finding 6)', async () => {
+  it('G. the employee list, the Excel import and the reorder as the app has them within the park group: A lists A’s employee; A’s import matches them by email with their current pay, places by A’s branch name and applies; A’s reorder writes A’s order (the arrangement of finding 6, as fixed)', async () => {
     const eA = await employee(A, A.x, 'rr-own', { default_merge_data: JSON.stringify({ positionTitle: 'ZZ', salaryThb: 40000 }), tax_id_number: 'ZZ-RR-A-TAX' });
     const own = (await q<{ email: string; full_name: string }>('select email, full_name from employees where id = $1', [eA]))[0]!;
     const list = await call('GET', '/api/employees', { cookie: A.admin.cookie });
@@ -1942,7 +1966,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect(((await call('GET', '/api/employees', { cookie: B.admin.cookie })).body as { id: string }[]).map((e) => e.id)).toContain(eB);
   });
 
-  it.fails('G. FINDING 6 (high): the list, the Excel import and the reorder keep to the caller’s park group — B lists none of A’s people, its import neither matches, shows nor writes A’s employee nor places anyone on A’s branch, and its reorder writes none of A’s', async () => {
+  it('G. FINDING 6 (high, fixed): the list, the Excel import and the reorder keep to the caller’s park group — B lists none of A’s people, its import neither matches, shows nor writes A’s employee nor places anyone on A’s branch, and its reorder writes none of A’s', async () => {
     const eA = await employee(A, A.x, 'rr-victim', { default_merge_data: JSON.stringify({ positionTitle: 'ZZ', salaryThb: 50000 }), tax_id_number: 'ZZ-RR-A-TAX-2', display_order: 9 });
     const victim = (await q<{ email: string; full_name: string }>('select email, full_name from employees where id = $1', [eA]))[0]!;
     const before = (await q<{ r: string }>('select row_to_json(e)::text as r from employees e where id = $1', [eA]))[0]!.r;
@@ -1974,7 +1998,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect(strangersOnA).toBe(0);
   });
 
-  it('G. timekeeping and the role holders as the app has them within the park group: A’s admin overrides A’s employee’s clock, reads their timekeeping, and sets a shared role’s holders (the arrangement of finding 7)', async () => {
+  it('G. timekeeping and the role holders as the app has them within the park group: A’s admin overrides A’s employee’s clock, reads their timekeeping, and sets a shared role’s holders (the arrangement of finding 7, as fixed)', async () => {
     const eA = await employee(A, A.x, 'rr-tk-own');
     const override = await call('POST', '/api/time-events/override', { cookie: A.admin.cookie, body: { employeeId: eA, branchId: A.x, eventType: 'IN', eventTime: new Date().toISOString(), notes: 'ZZ R6RR' } });
     expect(override.status, show(override)).toBe(201);
@@ -1987,7 +2011,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect(((await call('GET', `/api/roles/${role}/employees`, { cookie: A.admin.cookie })).body as { employeeId: string }[]).map((r) => r.employeeId)).toEqual([eA]);
   });
 
-  it.fails('G. FINDING 7 (medium): the employee-id doors outside `/api/employees*` keep to the caller’s park group — B’s admin writes no clock event on A’s employee and reads none of their timekeeping, and B’s role-holder write neither strips nor lists A’s holders', async () => {
+  it('G. FINDING 7 (medium, fixed): the employee-id doors outside `/api/employees*` keep to the caller’s park group — B’s admin writes no clock event on A’s employee and reads none of their timekeeping, and B’s role-holder write neither strips nor lists A’s holders', async () => {
     const eA = await employee(A, A.x, 'rr-tk-victim');
     const eB = await employee(B, B.x, 'rr-tk-b');
     const role = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [DEFAULT, `ZZ R6RR shared ${run}`]))[0]!.id;
@@ -2004,7 +2028,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect(stillHolds).toBe(1);
   });
 
-  it('G. the employee create as the app has it: B creates its employee with B’s own department (the arrangement of finding 8)', async () => {
+  it('G. the employee create as the app has it: B creates its employee with B’s own department (the arrangement of finding 8, as fixed)', async () => {
     const deptB = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [B.tenant, `ZZ R6RR B dept ${run}`]))[0]!.id;
     const email = `zz-r6rr-create-own-${run}@example.com`;
     const created = await call('POST', '/api/employees', { cookie: B.admin.cookie, body: { fullName: 'ZZ R6RR create', nickname: 'ZZ', email, branchId: B.x, primaryDepartmentId: deptB } });
@@ -2012,7 +2036,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect((await q('select tenant_id, primary_department_id from employees where email = $1', [email]))[0]).toEqual({ tenant_id: B.tenant, primary_department_id: deptB });
   });
 
-  it.fails('G. FINDING 8 (low): the employee create, like the edit, takes no other park group’s department or user ids', async () => {
+  it('G. FINDING 8 (low, fixed): the employee create, like the edit, takes no other park group’s department or user ids', async () => {
     const deptA = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [A.tenant, `ZZ R6RR A dept ${run}`]))[0]!.id;
     const email = `zz-r6rr-create-${run}@example.com`;
     await call('POST', '/api/employees', {

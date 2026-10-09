@@ -42,7 +42,13 @@ import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
  *     the routes, each looking the employee up in a park group before it
  *     writes; the edit's ids weighed; the wizard's six fields; the
  *     offboarding's login backstop; the branch-wide leave read; the
- *     leave-policy candidate set.
+ *     leave-policy candidate set. And the re-review's fixes (findings 6 to
+ *     8): the census at all 54 `/api/employees*` routes, the nine without an
+ *     id each held by its rule; every `storage.getEmployee(` call site the
+ *     re-review counted (32) with its disposition, the fenced ones no longer
+ *     looking up by id alone; every `employee_roles` writer, the role-holder
+ *     write and read held to the park group; the create's body weighed as the
+ *     edit's.
  *  E. CI, the image and the plan.
  *  F. The real app (when its node_modules and a Chromium are present):
  *     apps/oto-app/tests/documents.check.ts over HTTP against a fresh
@@ -568,9 +574,14 @@ interface DocumentRules {
   PARK_GROUP_REQUIRED: { message: string };
 }
 
-/** server/lib/employeeParkGroups.ts, round 6's review (findings 1 and 2). */
+/** server/lib/employeeParkGroups.ts, round 6's review (findings 1 and 2) and its re-review (findings 6 to 8). */
 interface EmployeeRules {
   EMPLOYEE_DOORS: readonly { method: string; path: string; fence: 'review' | 'lift' | 'app'; foreign: string }[];
+  EMPLOYEE_LIST_DOORS: readonly { method: string; path: string; fence: 're-review' | 'lift' | 'none'; rule: string }[];
+  EMPLOYEE_LOOKUPS: readonly { route: string; reads: string; disposition: 'fenced' | 'held' | 'record' | 'token' | 'own' | 'app'; note: string }[];
+  EMPLOYEE_ROLE_WRITERS: readonly { writer: string; via: string; disposition: string; note: string }[];
+  EMPLOYEE_PARK_GROUP_ID_FIELDS: readonly string[];
+  NO_PARK_GROUP_IDS: Record<string, null>;
   WIZARD_EMPLOYEE_FIELDS: readonly string[];
   wizardEmployeeEdits: (raw: unknown) => Record<string, unknown> | undefined;
 }
@@ -790,6 +801,132 @@ describe('D. read off the code', () => {
     expect(all).toMatch(/const employees = \(await storage\.getEmployees\(branchId\)\)\.filter\(\(e\) => e\.tenantId === parkGroup\);/);
     expect(storageText()).toMatch(/async getEmployees\(\): Promise<Employee\[\]> \{/);
   });
+
+  // ── The re-review's fixes (findings 6 to 8), read off the code ──────────────
+
+  it('F6, the census at all 54 routes: every `/api/employees*` route the app registers is one of the 45 doors with an id or the nine without, each list in the order the routes register them', () => {
+    const routes = routesText();
+    const all = [...routes.matchAll(/\n {2}app\.(get|post|put|patch|delete)\("(\/api\/employees(?:\/[^"]*)?)"/g)].map((m) => `${m[1]!.toUpperCase()} ${m[2]}`);
+    expect(all).toHaveLength(54);
+    const withoutId = all.filter((r) => !r.includes('/:'));
+    expect(withoutId).toEqual(hr.EMPLOYEE_LIST_DOORS.map((d) => `${d.method} ${d.path}`));
+    expect(all.filter((r) => r.includes('/:'))).toEqual(hr.EMPLOYEE_DOORS.map((d) => `${d.method} ${d.path}`));
+    const fences = hr.EMPLOYEE_LIST_DOORS.reduce<Record<string, number>>((n, d) => ({ ...n, [d.fence]: (n[d.fence] ?? 0) + 1 }), {});
+    expect(fences).toEqual({ 're-review': 6, lift: 2, none: 1 });
+    // The dead one is dead because `GET /api/employees/:id` is registered first and answers it.
+    expect(routes.indexOf('app.get("/api/employees/:id"')).toBeLessThan(routes.indexOf('app.get("/api/employees/upcoming-reviews"'));
+  });
+
+  it('F6, each door without an id keeps to its rule, read off its handler: the park group taken before the app’s filters, matches and writes', () => {
+    const routes = routesText();
+    const handler = (key: string) => {
+      const [method, path] = key.split(' ') as [string, string];
+      return route(routes, method.toLowerCase(), path);
+    };
+    const rules = Object.fromEntries(hr.EMPLOYEE_LIST_DOORS.map((d) => [d.rule, `${d.method} ${d.path}`]));
+    const list = handler(rules.list!);
+    const held = list.indexOf('let filteredEmployees = employees.filter(e => !!parkGroup && e.tenantId === parkGroup);');
+    expect(held).toBeGreaterThan(-1);
+    expect(held).toBeLessThan(list.indexOf('if (userWithAccess && !userWithAccess.hasAllBranchesAccess) {'));
+    expect(held).toBeLessThan(list.indexOf('if (branchIdFilter) {'));
+    expect(list).toMatch(/const parkGroup = userWithAccess\?\.tenantId;/);
+    expect(handler(rules.sample!)).toMatch(/const branches = \(await storage\.getBranches\(\)\)\.filter\(b => !!parkGroup && b\.tenantId === parkGroup\);/);
+    expect(handler(rules.delete!)).toMatch(/employeeDeleteOutsideParkGroup\(employee, tenantId\)/);
+    expect(handler(rules.reorder!)).toMatch(/if \(parkGroup\) await storage\.reorderEmployees\(orderedIds, parkGroup\);/);
+    const reorder = storageText().slice(storageText().indexOf('async reorderEmployees('));
+    expect(reorder.slice(0, 400)).toMatch(/\.where\(and\(eq\(employees\.id, orderedIds\[i\]\), eq\(employees\.tenantId, tenantId\)\)\);/);
+    expect(handler(rules.recalculate!)).toMatch(/parkGroupOnly\(userManagementTenant\)/);
+    const preview = handler(rules['import-preview']!);
+    expect(preview).toMatch(/const allBranches = \(await storage\.getBranches\(\)\)\.filter\(b => ofParkGroup\(b\.tenantId\)\);/);
+    expect(preview).toMatch(/const allEmployees = \(await storage\.getEmployees\(\)\)\.filter\(e => ofParkGroup\(e\.tenantId\)\);/);
+    expect(preview).toMatch(/branchError = `Branch "\$\{rowData\.branchName\}" not found`;/);
+    const apply = handler(rules['import-apply']!);
+    const branchCheck = apply.indexOf('!await branchInParkGroup(branchId, tenantId)');
+    expect(branchCheck).toBeGreaterThan(-1);
+    expect(branchCheck).toBeLessThan(apply.indexOf('if (isNew) {'));
+    expect(apply).toMatch(/const employee = await storage\.getEmployeeInTenant\(matchedEmployeeId, tenantId\);/);
+    expect(apply).not.toMatch(/storage\.getEmployee\(/);
+  });
+
+  it('F7, the call-site census: the 32 `storage.getEmployee(` sites the re-review counted, each with its disposition — the eight fenced now look up in the park group, the 24 others still by id, per handler exactly as the census says', () => {
+    const routes = routesText();
+    expect(hr.EMPLOYEE_LOOKUPS).toHaveLength(32);
+    const fenced = hr.EMPLOYEE_LOOKUPS.filter((l) => l.disposition === 'fenced');
+    expect(fenced.map((l) => l.route)).toEqual([
+      'POST /api/employees/bulk-update',
+      'POST /api/timekeeping/issues/:issueId/resolve',
+      'GET /api/timekeeping/employee/:employeeId',
+      'POST /api/time-events/override',
+      'POST /api/timekeeping/live/ping',
+      'POST /api/shifts',
+      'PATCH /api/shifts/:id',
+      'PATCH /api/schedule/assignments/:id/reassign',
+    ]);
+    // Every remaining by-id lookup is one the census keeps, handler by handler.
+    const sites = (h: string) => (h.match(/storage\.getEmployee\(/g) ?? []).length;
+    expect(sites(routes)).toBe(24);
+    const kept = new Map<string, number>();
+    for (const l of hr.EMPLOYEE_LOOKUPS) if (l.disposition !== 'fenced') kept.set(l.route, (kept.get(l.route) ?? 0) + 1);
+    for (const r of new Set(hr.EMPLOYEE_LOOKUPS.map((l) => l.route))) {
+      const [method, path] = r.split(' ') as [string, string];
+      const h = route(routes, method.toLowerCase(), path);
+      expect(sites(h), r).toBe(kept.get(r) ?? 0);
+      if (fenced.some((l) => l.route === r)) expect(h, r).toMatch(/employeeOfParkGroup\(req, |getEmployeeInTenant\(/);
+    }
+    // The doors driven: each holds its record to the park group before it writes.
+    const resolve = route(routes, 'post', '/api/timekeeping/issues/:issueId/resolve');
+    expect(resolve).toMatch(/if \(!issue \|\| !req\.userWithAccess\?\.tenantId \|\| issue\.tenantId !== req\.userWithAccess\.tenantId\) \{\s*return res\.status\(404\)\.json\(\{ message: "Issue not found" \}\);/);
+    expect(resolve.indexOf('issue.tenantId !== req.userWithAccess.tenantId')).toBeLessThan(resolve.indexOf('storage.updateTimeEntry('));
+    const override = route(routes, 'post', '/api/time-events/override');
+    const employeeAt = override.indexOf('const employee = await employeeOfParkGroup(req, employeeId);');
+    expect(employeeAt).toBeGreaterThan(-1);
+    expect(override.slice(employeeAt)).toMatch(/if \(!await branchInParkGroup\(branchId, employee\.tenantId\)\) \{\s*return res\.status\(404\)\.json\(BRANCH_NOT_FOUND\);/);
+    expect(employeeAt).toBeLessThan(override.indexOf('storage.createTimeEvent('));
+    const reassign = route(routes, 'patch', '/api/schedule/assignments/:id/reassign');
+    expect(reassign).toMatch(/if \(!assignment \|\| !req\.userWithAccess\?\.tenantId \|\| assignment\.tenantId !== req\.userWithAccess\.tenantId\) \{\s*return res\.status\(404\)\.json\(\{ message: "Assignment not found" \}\);/);
+    expect(reassign).toMatch(/const newEmployee = await employeeOfParkGroup\(req, newEmployeeId\);\s*if \(!newEmployee\) \{\s*return res\.status\(400\)\.json\(\{ message: "New employee not found" \}\);/);
+  });
+
+  it('F7, the `employee_roles` writers: each in the census; the role-holder write deletes and inserts only the caller’s park group’s holders after weighing the role and the employees, and its read lists only theirs', () => {
+    expect(hr.EMPLOYEE_ROLE_WRITERS.map((w) => `${w.writer} -> ${w.disposition}`)).toEqual([
+      'storage.setEmployeeRoles -> held',
+      'storage.setRoleEmployees -> fenced',
+      'storage.deleteEmployee -> held',
+      "Data Admin's Employee Role and Role models -> later",
+      'server/prod-sync.ts -> dev-only',
+    ]);
+    // Every storage writer of the table is one of them.
+    const storage = storageText();
+    const writers = [...storage.matchAll(/db\s*\.(insert|delete)\(employeeRoles\)/g)].map((m) => {
+      const fn = storage.lastIndexOf('\n        async ', m.index);
+      return storage.slice(fn + 15, storage.indexOf('(', fn + 15));
+    });
+    expect([...new Set(writers)].sort()).toEqual(['deleteEmployee', 'setEmployeeRoles', 'setRoleEmployees']);
+    const set = storage.slice(storage.indexOf('async setRoleEmployees('), storage.indexOf('async getRoleWithBranches('));
+    expect(set).toMatch(/await db\.delete\(employeeRoles\)\.where\(and\(\s*eq\(employeeRoles\.roleId, roleId\),\s*inArray\(\s*employeeRoles\.employeeId,\s*db\.select\(\{ id: employees\.id \}\)\.from\(employees\)\.where\(eq\(employees\.tenantId, tenantId\)\),/);
+    const byRole = storage.slice(storage.indexOf('async getEmployeesByRole('), storage.indexOf('async setRoleEmployees('));
+    expect(byRole).toMatch(/\.where\(and\(eq\(employeeRoles\.roleId, roleId\), eq\(employees\.tenantId, tenantId\)\)\);/);
+    const routes = routesText();
+    const patch = route(routes, 'patch', '/api/roles/:id/employees');
+    const weighRole = patch.indexOf('await rolesOutsideParkGroup([req.params.id], tenantId)');
+    const weighEmployees = patch.indexOf('await employeesOutsideParkGroup(employeeIds, tenantId)');
+    const write = patch.indexOf('await storage.setRoleEmployees(req.params.id, employeeIds, tenantId);');
+    expect(weighRole).toBeGreaterThan(-1);
+    expect(weighEmployees).toBeGreaterThan(weighRole);
+    expect(write).toBeGreaterThan(weighEmployees);
+    expect(patch).toMatch(/return res\.status\(404\)\.json\(EMPLOYEE_NOT_FOUND\);/);
+    expect(route(routes, 'get', '/api/roles/:id/employees')).toMatch(/const roleEmployees = tenantId \? await storage\.getEmployeesByRole\(req\.params\.id, tenantId\) : \[\];/);
+  });
+
+  it('F8: the create weighs the ids its body names with the edit’s check, in its words, before it writes anything', () => {
+    expect([...hr.EMPLOYEE_PARK_GROUP_ID_FIELDS]).toEqual(['branchId', 'userId', 'updatedBy', 'profilePhotoUpdatedBy', 'personId', 'primaryDepartmentId']);
+    expect(hr.NO_PARK_GROUP_IDS).toEqual(Object.fromEntries(hr.EMPLOYEE_PARK_GROUP_ID_FIELDS.map((f) => [f, null])));
+    const create = route(routesText(), 'post', '/api/employees');
+    const weigh = create.indexOf('const outside = await employeeEditOutsideParkGroup(parsed.data, { ...NO_PARK_GROUP_IDS, tenantId: actorTenantId });');
+    expect(weigh).toBeGreaterThan(-1);
+    expect(create.slice(weigh)).toMatch(/^const outside = [^\n]*\n\s*if \(outside\) return res\.status\(404\)\.json\(outside\);/);
+    for (const write of ['storage.createPerson(', 'storage.createUser(', 'storage.createEmployee(']) expect(weigh, write).toBeLessThan(create.indexOf(write));
+  });
 });
 
 // =============================================================================
@@ -834,7 +971,7 @@ describe('E. CI, the image and the plan', () => {
 // =============================================================================
 
 describe.skipIf(!HAS_APP_RUNTIME || !CHROMIUM)('F. the real app: the document check over HTTP', () => {
-  it('apps/oto-app/tests/documents.check.ts passes against a fresh database (H16, the PDF gate, FINDINGs Q50 and Q52, and round 6’s review: the 45-door census, the six wizard fields, the login backstop, the branch-wide leave read and the leave-policy candidates), and the read-back and the census answer clean', async () => {
+  it('apps/oto-app/tests/documents.check.ts passes against a fresh database (H16, the PDF gate, FINDINGs Q50 and Q52, and round 6’s review: the 45-door census, the six wizard fields, the login backstop, the branch-wide leave read and the leave-policy candidates; and its re-review: the 54-route census, the lookups by id and the role holders), and the read-back and the census answer clean', async () => {
     const { url, drop } = await createTestDatabase({ otoapp: true });
     try {
       const result = spawnSync(process.execPath, [join(APP_NODE_MODULES, 'tsx', 'dist', 'cli.mjs'), 'tests/documents.check.ts'], {
@@ -845,11 +982,25 @@ describe.skipIf(!HAS_APP_RUNTIME || !CHROMIUM)('F. the real app: the document ch
       });
       const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
       expect(result.status, output).toBe(0);
-      expect(output).toMatch(/documents\.check: 38 checks passed/);
-      for (const named of ['(H16)', 'ticket check 2', 'FINDING Q50', 'FINDING Q52', "round 6's review, F3", "round 6's review, F4", "F2's backstop", 'six personal fields']) {
+      expect(output).toMatch(/documents\.check: 43 checks passed/);
+      for (const named of [
+        '(H16)',
+        'ticket check 2',
+        'FINDING Q50',
+        'FINDING Q52',
+        "round 6's review, F3",
+        "round 6's review, F4",
+        "F2's backstop",
+        'six personal fields',
+        "round 6's re-review, F6",
+        "round 6's re-review, F7",
+        "round 6's re-review, F8",
+      ]) {
         expect(output, named).toContain(named);
       }
       expect(output).toMatch(/the census: 45 doors — 18 fenced by round 6's review, 26 before it, 1 by the app itself/);
+      expect(output).toMatch(/the census: 54 routes — the 45 with an id and 9 without: 6 fenced by round 6's re-review, 2 before it, 1 dead/);
+      expect(output).toMatch(/the lookups: 32 call sites — 8 fenced by round 6's re-review, 9 held after the lookup, 6 read off a held record, 6 behind a token, 2 the caller's own, 1 by the app itself/);
       expect(output).toMatch(/FINDING Q52: two GETs at once wrote 6 node\(s\) for 3 missing employee\(s\); 3 of them are now on the chart twice/);
       const back = script(READBACK, url);
       expect(back.status, back.output).toBe(0);
