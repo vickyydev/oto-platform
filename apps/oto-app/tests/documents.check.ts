@@ -31,6 +31,16 @@
 //   8. The org chart counted first: its GET writes the missing person nodes —
 //      exactly those, once — and nothing for a reader the app does not let
 //      write (FINDING Q52 for two GETs at once).
+//   9. The HR employee doors (round 6's review, finding 1): every one of the
+//      45 `/api/employees/:id*` doors in the census
+//      (server/lib/employeeParkGroups.ts), driven as another park group's
+//      admin against this park group's employee — each the answer the census
+//      declares, nothing written — then the doors as the app has them within
+//      the park group, and the ids an edit may not name.
+//   Round 6's review also adds, in place: the branch-wide leave balances by
+//   another park group's branch, and the app's leave-policy candidate set per
+//   park group (section 4, findings 3 and 4); the wizard's six personal fields
+//   (section 5, finding 2); and the offboarding's login backstop (section 6).
 //
 // Usage, from apps/oto-app, with DATABASE_URL naming a database whose otoapp
 // schema the app's migrator has built (CI's OTO App job runs exactly this):
@@ -58,6 +68,16 @@ import {
   PUBLIC_HOLIDAY_NOT_FOUND,
   TEMPLATE_NOT_FOUND,
 } from "../server/lib/documentParkGroups";
+import {
+  CHANGE_NOT_FOUND,
+  DEPARTMENT_NOT_FOUND,
+  EMPLOYEE_DOORS,
+  PERSON_NOT_FOUND,
+  ROLE_NOT_FOUND,
+  USER_NOT_FOUND,
+  WIZARD_EMPLOYEE_FIELDS,
+} from "../server/lib/employeeParkGroups";
+import { FACE_ENROLMENT_OFF_REFUSAL } from "../server/lib/faceOff";
 import { offboardingReasonLabel } from "../shared/schema";
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -569,6 +589,57 @@ try {
     assert.equal((await call("PATCH", `/api/public-holidays/${holiday.body.id}`, { cookie: cookie.a, body: { name: `ZZ r6 b ${run}` } })).status, 200);
   });
 
+  await check("round 6's review, F3: the branch-wide leave balances take another park group's branch as the app's 404, and answer the park group's own", async () => {
+    const eAll = await employee(A.tenant, A.x, "a-all-leave");
+    const foreign = await call("GET", `/api/all-leave-balances?branchId=${A.x}`, { cookie: cookie.b });
+    assert.equal(foreign.status, 404, show(foreign));
+    assert.deepEqual(foreign.body, BRANCH_NOT_FOUND);
+    const own = await call("GET", `/api/all-leave-balances?branchId=${A.x}`, { cookie: cookie.a });
+    assert.equal(own.status, 200, show(own));
+    assert.ok((own.body as { employeeId: string }[]).some((r) => r.employeeId === eAll));
+    // The app's list never kept to the branch it names (its rule, kept: A's branch Y lists X's people too),
+    // but it keeps to the park group: B's own branch lists none of A's people.
+    const ownY = await call("GET", `/api/all-leave-balances?branchId=${A.y}`, { cookie: cookie.a });
+    assert.ok((ownY.body as { employeeId: string }[]).some((r) => r.employeeId === eAll));
+    const bOwn = await call("GET", `/api/all-leave-balances?branchId=${B.x}`, { cookie: cookie.b });
+    assert.equal(bOwn.status, 200, show(bOwn));
+    const bIds = (bOwn.body as { employeeId: string }[]).map((r) => r.employeeId);
+    assert.ok(!bIds.includes(eAll));
+    assert.deepEqual(
+      new Set(bIds),
+      new Set((await q<{ id: string }>("select id from employees where tenant_id = $1", [B.tenant])).map((r) => r.id)),
+      "B's list is exactly B's people",
+    );
+  });
+
+  await check("round 6's review, F4: a balance weighs the branch's own policies and the company-wide slot — the default park group's while the park group has none of its own — newest effective first", async () => {
+    // A has a policy on branch X (made above, effective now) and no company-wide policy of its
+    // own: the default park group's (effective tomorrow) is weighed beside it, and is the newer.
+    const onX = await employee(A.tenant, A.x, "a-leave-x");
+    const onY = await employee(A.tenant, A.y, "a-leave-y");
+    const policyOf = async (id: string) => (await call("GET", `/api/employees/${id}/leave-balance`, { cookie: cookie.a })).body.policyName as string;
+    assert.equal(await policyOf(onX), inheritedName, "before 0008 the newer company-wide policy won over the branch's own");
+    assert.equal(await policyOf(onY), inheritedName);
+    // A branch policy newer than the default's wins, as before 0008.
+    const newest = `ZZ r6 A newest ${run}`;
+    await q(
+      `insert into leave_policies (tenant_id, branch_id, name, days_worked_required, days_off_earned, effective_from, is_active)
+       values ($1, $2, $3, 4, 1, now() + interval '2 days', true)`,
+      [A.tenant, A.x, newest],
+    );
+    assert.equal(await policyOf(onX), newest);
+    assert.equal(await policyOf(onY), inheritedName);
+    // A company-wide policy of its own takes the default's place in the weighing, though it is older.
+    const ownWide = `ZZ r6 A company-wide ${run}`;
+    await q(
+      `insert into leave_policies (tenant_id, branch_id, name, days_worked_required, days_off_earned, effective_from, is_active)
+       values ($1, null, $2, 5, 2, now() - interval '10 days', true)`,
+      [A.tenant, ownWide],
+    );
+    assert.equal(await policyOf(onY), ownWide);
+    assert.equal(await policyOf(onX), newest);
+  });
+
   await check("recalculate-probation reaches only the caller's own park group (Q31)", async () => {
     const start = new Date(Date.now() - 10 * 86_400_000).toISOString();
     const eAProb = await employee(A.tenant, A.x, "a-prob", { start_date: start });
@@ -632,21 +703,47 @@ try {
     assert.equal(await count("select count(*) as n from contract_instances where employee_id = any($1)", [[eAc, eBc]]), before);
   });
 
-  await check("the wizard's employee edits never move the employee to another park group", async () => {
+  await check("the wizard's employee edits are the six personal fields its own client sends (round 6's review, F2): no park group, branch, login, person, department or status rides in", async () => {
+    assert.deepEqual([...WIZARD_EMPLOYEE_FIELDS], ["fullName", "nickname", "email", "phone", "address", "nationalId"]);
     const eBw = await employee(B.tenant, B.x, "b-wizard");
-    const moved = await call("POST", "/api/contracts/generate", {
+    const aLogin = await user(A.tenant, "staff", `zz-r6-wizard-a-login-${run}@example.com`, A.x);
+    const department = (await q<{ id: string }>("insert into departments (tenant_id, name) values ($1, $2) returning id", [A.tenant, `ZZ r6 wizard ${run}`]))[0]!.id;
+    const personal = {
+      fullName: `ZZ TEST ${run} wizard`,
+      nickname: "ZZ moved",
+      email: `zz-r6-wizard-${run}@example.com`,
+      phone: "0812345678",
+      address: "ZZ TEST road",
+      nationalId: "1234567890123",
+    };
+    const generated = await call("POST", "/api/contracts/generate", {
       cookie: cookie.b,
-      body: { employeeId: eBw, templateId: tB.id, mergeDataJson: merge, employeeUpdates: { branchId: A.x } },
+      body: {
+        employeeId: eBw,
+        templateId: tB.id,
+        mergeDataJson: merge,
+        employeeUpdates: { ...personal, tenantId: A.tenant, branchId: A.x, userId: aLogin, primaryDepartmentId: department, status: "terminated", employmentState: "LEFT" },
+      },
     });
-    assert.equal(moved.status, 404, show(moved));
-    assert.deepEqual(moved.body, BRANCH_NOT_FOUND);
-    const renamed = await call("POST", "/api/contracts/generate", {
-      cookie: cookie.b,
-      body: { employeeId: eBw, templateId: tB.id, mergeDataJson: merge, employeeUpdates: { tenantId: A.tenant, nickname: "ZZ moved" } },
+    assert.equal(generated.status, 201, show(generated));
+    const row = (await q("select tenant_id, branch_id, user_id, primary_department_id, status, employment_state, full_name, nickname, email, phone, address from employees where id = $1", [eBw]))[0];
+    assert.deepEqual(row, {
+      tenant_id: B.tenant,
+      branch_id: B.x,
+      user_id: null,
+      primary_department_id: null,
+      status: "active",
+      employment_state: "ACTIVE",
+      full_name: personal.fullName,
+      nickname: personal.nickname,
+      email: personal.email,
+      phone: personal.phone,
+      address: personal.address,
     });
-    assert.equal(renamed.status, 201, show(renamed));
-    const row = (await q<{ tenant_id: string; nickname: string }>("select tenant_id, nickname from employees where id = $1", [eBw]))[0]!;
-    assert.deepEqual(row, { tenant_id: B.tenant, nickname: "ZZ moved" });
+    // Even a branch of its own park group is not the wizard's to change: the app's wizard sends none.
+    const ownBranch = await call("POST", "/api/contracts/generate", { cookie: cookie.b, body: { employeeId: eBw, templateId: tB.id, mergeDataJson: merge, employeeUpdates: { branchId: B.y } } });
+    assert.equal(ownBranch.status, 201, show(ownBranch));
+    assert.equal((await q<{ branch_id: string }>("select branch_id from employees where id = $1", [eBw]))[0]!.branch_id, B.x);
   });
 
   const warningA = await newTemplate(cookie.a, `ZZ r6 warning A ${run}`, "warning");
@@ -795,6 +892,23 @@ try {
     const again = await offboard(p.id, day(11));
     assert.equal(again.status, 409, show(again));
     assert.equal((await footprint(p)).offboardings, 1);
+  });
+
+  await check("round 6's review, F2's backstop: the offboarding switches off only a login the strict placement puts in the employee's park group", async () => {
+    // A link standing from before the fix (written here in the database): B's employee, A's person's login.
+    const aLogin = await user(A.tenant, "staff", `zz-r6-backstop-a-${run}@example.com`, A.x);
+    const crossed = await employee(B.tenant, B.x, "b-backstop", { user_id: aLogin });
+    const offB = await call("POST", `/api/employees/${crossed}/offboarding`, {
+      cookie: cookie.b,
+      body: { offboardingType: "termination", reasonCode: "misconduct", lastWorkingDay: day(-2) },
+    });
+    assert.equal(offB.status, 201, show(offB));
+    assert.equal((await q<{ employment_state: string }>("select employment_state from employees where id = $1", [crossed]))[0]!.employment_state, "LEFT");
+    assert.equal((await q<{ is_active: boolean }>("select is_active from users where id = $1", [aLogin]))[0]!.is_active, true, "A's person's login stays on");
+    // The park group's own login is switched off, as the app does (the H16 checks above too).
+    const own = await leaver("backstop-own");
+    assert.equal((await offboard(own.id, day(-2))).status, 201);
+    assert.equal((await footprint(own)).loginActive, false);
   });
 
   await check("the database's backstop (0008, the census clean): a second offboarding row for one employee is refused", async () => {
@@ -981,6 +1095,202 @@ try {
     console.log(`      FINDING Q52: two GETs at once wrote ${written} node(s) for ${toWrite} missing employee(s); ${doubled} of them are now on the chart twice`);
     assert.equal(written, 2 * toWrite, "each GET wrote every missing node");
     assert.equal(doubled, toWrite, "every one of them twice — the app's own race (Q52)");
+  });
+
+  // ── 9. The HR employee doors (round 6's review, F1) ────────────────────────
+  console.log("9. the HR employee doors, each park group's own (round 6's review):");
+  const hrLogin = await user(A.tenant, "staff", `zz-r6-hr-login-${run}@example.com`, A.x);
+  const eHR = await employee(A.tenant, A.x, "hr-census", {
+    user_id: hrLogin,
+    start_date: new Date(Date.now() - 30 * 86_400_000).toISOString(),
+    timeclock_pin_hash: "zz",
+  });
+  const roleOf = async (tenant: string, label: string) =>
+    (await q<{ id: string }>("insert into roles (tenant_id, name) values ($1, $2) returning id", [tenant, `ZZ r6 role ${label} ${run}`]))[0]!.id;
+  const roleDefault = await roleOf(DEFAULT, "default");
+  const roleA = await roleOf(A.tenant, "a");
+  const roleB = await roleOf(B.tenant, "b");
+  await q("insert into employee_roles (employee_id, role_id) values ($1, $2)", [eHR, roleDefault]);
+  const deptOf = async (tenant: string, label: string) =>
+    (await q<{ id: string }>("insert into departments (tenant_id, name) values ($1, $2) returning id", [tenant, `ZZ r6 dept ${label} ${run}`]))[0]!.id;
+  const deptA = await deptOf(A.tenant, "a");
+  const deptB = await deptOf(B.tenant, "b");
+  const changeOf = async (employeeId: string) =>
+    (await q<{ id: string }>(
+      "insert into employee_changes (employee_id, change_type, effective_date, note, created_by) values ($1, 'title_change', now(), 'ZZ', $2) returning id",
+      [employeeId, A.admin.id],
+    ))[0]!.id;
+  const changeHR = await changeOf(eHR);
+  const docHR = randomUUID();
+  await q(
+    `insert into employee_documents (id, employee_id, branch_id, document_type, file_name, file_path, mime_type, uploaded_by)
+     values ($1, $2, $3, 'other', 'zz.pdf', '/api/files/employee-documents/zz-r6-hr.pdf', 'application/pdf', $4)`,
+    [docHR, eHR, A.x, A.admin.id],
+  );
+  const letterHR = randomUUID();
+  await q("insert into employee_letters (id, employee_id, branch_id, letter_type, status, created_by) values ($1, $2, $3, 'warning', 'draft', $4)", [
+    letterHR,
+    eHR,
+    A.x,
+    A.admin.id,
+  ]);
+  await q("insert into staff_cost_allocations (tenant_id, employee_id, branch_id, allocation_percent) values ($1, $2, $3, 100)", [A.tenant, eHR, A.x]);
+
+  /** Everything of A's employee a door could write, read whole. */
+  const hrSnapshot = async () => ({
+    employee: (await q<{ row: string }>("select row_to_json(e)::text as row from employees e where id = $1", [eHR]))[0]!.row,
+    login: (await q("select is_active, password, must_change_password, permission_review_required from users where id = $1", [hrLogin]))[0],
+    roles: await q("select role_id from employee_roles where employee_id = $1 order by role_id", [eHR]),
+    allocations: await q("select branch_id, allocation_percent from staff_cost_allocations where employee_id = $1 order by branch_id", [eHR]),
+    changes: await q("select id, employee_id, note, new_branch_id from employee_changes where employee_id = $1 or id = $2 order by id", [eHR, changeHR]),
+    counts: await Promise.all(
+      ["employee_documents", "employee_letters", "employee_offboarding", "employee_assets", "enrollment_sessions", "activity_log", "contract_instances", "employee_time_off"].map(
+        (table) => count(`select count(*) as n from ${table} where employee_id = $1`, [eHR]),
+      ),
+    ),
+    users: await count("select count(*) as n from users where email ilike $1", [`%hr-census%`]),
+  });
+
+  /** A multipart request, as the app's upload doors take one. */
+  const callForm = async (method: string, path: string, who: string, fields: Record<string, string>, file: { field: string; name: string; type: string; body: string }): Promise<Answer> => {
+    const form = new FormData();
+    for (const [k, v] of Object.entries(fields)) form.append(k, v);
+    form.append(file.field, new Blob([file.body], { type: file.type }), file.name);
+    const res = await fetch(`${ORIGIN}${path}`, { method, redirect: "manual", headers: { cookie: who }, body: form });
+    const text = await res.text();
+    let body: unknown = text;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      // Not JSON — kept as text for the message.
+    }
+    return { status: res.status, body, location: res.headers.get("location") };
+  };
+
+  /** What each door answers for another park group's employee, by the census's word. */
+  const foreignAnswer: Record<(typeof EMPLOYEE_DOORS)[number]["foreign"], { status: number; body: unknown }> = {
+    "employee-not-found": { status: 404, body: { message: "Employee not found" } },
+    "empty-list": { status: 200, body: [] },
+    null: { status: 200, body: null },
+    "access-denied": { status: 403, body: { message: "Access denied" } },
+    "face-off": { status: 403, body: FACE_ENROLMENT_OFF_REFUSAL },
+  };
+  /** A body that passes each door's own checks, so its answer is the park group's. */
+  const doorBodies: Record<string, unknown> = {
+    "PATCH /api/employees/:id/roles": { roleIds: [] },
+    "PATCH /api/employees/:id/department": { departmentId: null },
+    "POST /api/employees/:id/profile-photo": {},
+    "PATCH /api/employees/:id": { nickname: "ZZ hijack", tenantId: B.tenant },
+    "POST /api/employees/:id/enable-login": { password: "zz-hijack-password" },
+    "POST /api/employees/:id/generate-login": {},
+    "POST /api/employees/:id/reset-password": {},
+    "POST /api/employees/:id/toggle-login": {},
+    "PUT /api/employees/:id/cost-allocations": { allocations: [{ branchId: B.x, allocationPercent: 100 }] },
+    "POST /api/employees/:id/complete-probation-review": {},
+    "POST /api/employees/:employeeId/changes": { changeType: "title_change", effectiveDate: day(0), newTitle: "ZZ hijack" },
+    "PATCH /api/employees/:employeeId/changes/:changeId": { note: "ZZ hijack" },
+    "POST /api/employees/:employeeId/transfer": { effectiveDate: day(1), newBranchId: B.x },
+    "POST /api/employees/:employeeId/offboarding": { offboardingType: "termination", reasonCode: "misconduct", lastWorkingDay: day(-2) },
+    "PATCH /api/employees/:employeeId/offboarding": { lastWorkingDay: day(5) },
+    "POST /api/employees/:employeeId/warnings": { reasonCode: "x", severity: "x", incidentDate: day(0), description: "x" },
+    "POST /api/employees/:employeeId/letters": { letterType: "warning" },
+    "POST /api/employees/:employeeId/assets": { assetNameSnapshot: "ZZ hijack" },
+    "POST /api/employees/:employeeId/enrollment-session": {},
+    "POST /api/employees/:employeeId/reset-face-enrollment": {},
+    "POST /api/employees/:employeeId/pin": { pin: "1234" },
+  };
+  const doorPath = (path: string) =>
+    path.replace(/:id\b|:employeeId\b/, eHR).replace(":changeId", changeHR).replace(":docId", docHR).replace(":letterId", letterHR);
+
+  await check("the census: all 45 doors, as another park group's admin against this park group's employee, answer as the census says, and nothing is written", async () => {
+    assert.equal(EMPLOYEE_DOORS.length, 45);
+    const before = await hrSnapshot();
+    const wrong: string[] = [];
+    for (const door of EMPLOYEE_DOORS) {
+      const key = `${door.method} ${door.path}`;
+      const path = doorPath(door.path);
+      const answer =
+        key === "POST /api/employees/:employeeId/documents"
+          ? await callForm("POST", path, cookie.b, { documentType: "other" }, { field: "file", name: "zz.pdf", type: "application/pdf", body: "%PDF-1.4 zz" })
+          : await call(door.method, path, { cookie: cookie.b, ...(doorBodies[key] !== undefined ? { body: doorBodies[key] } : {}) });
+      const want = foreignAnswer[door.foreign];
+      if (answer.status !== want.status || JSON.stringify(answer.body) !== JSON.stringify(want.body)) {
+        wrong.push(`${key}: ${show(answer)} — the census says ${want.status} ${JSON.stringify(want.body)}`);
+      }
+    }
+    assert.deepEqual(wrong, []);
+    assert.deepEqual(await hrSnapshot(), before, "nothing of the employee, their login or their records changed");
+    console.log(`      the census: ${EMPLOYEE_DOORS.length} doors — ${EMPLOYEE_DOORS.filter((d) => d.fence === "review").length} fenced by round 6's review, ${EMPLOYEE_DOORS.filter((d) => d.fence === "lift").length} before it, ${EMPLOYEE_DOORS.filter((d) => d.fence === "app").length} by the app itself`);
+  });
+
+  await check("within the park group the doors are the app's: the employee read, edited and moved, roles, department, allocations, history, PIN, probation and the login", async () => {
+    const read = await call("GET", `/api/employees/${eHR}`, { cookie: cookie.a });
+    assert.equal(read.status, 200, show(read));
+    assert.equal(read.body.id, eHR);
+    // The editor re-sends what the employee already holds: unchanged ids are not weighed; a park group named is dropped.
+    const edited = await call("PATCH", `/api/employees/${eHR}`, { cookie: cookie.a, body: { nickname: "ZZ edited", userId: hrLogin, branchId: A.x, tenantId: B.tenant } });
+    assert.equal(edited.status, 200, show(edited));
+    assert.deepEqual((await q("select tenant_id, nickname, user_id from employees where id = $1", [eHR]))[0], { tenant_id: A.tenant, nickname: "ZZ edited", user_id: hrLogin });
+    const moved = await call("PATCH", `/api/employees/${eHR}`, { cookie: cookie.a, body: { branchId: A.y, primaryDepartmentId: deptA } });
+    assert.equal(moved.status, 200, show(moved));
+    assert.deepEqual((await q("select branch_id, primary_department_id from employees where id = $1", [eHR]))[0], { branch_id: A.y, primary_department_id: deptA });
+    assert.equal((await call("PATCH", `/api/employees/${eHR}`, { cookie: cookie.a, body: { branchId: A.x } })).status, 200);
+    const roles = await call("PATCH", `/api/employees/${eHR}/roles`, { cookie: cookie.a, body: { roleIds: [roleDefault, roleA] } });
+    assert.equal(roles.status, 200, show(roles));
+    assert.equal((await call("GET", `/api/employees/${eHR}/roles`, { cookie: cookie.a })).body.length, 2);
+    assert.equal((await call("PATCH", `/api/employees/${eHR}/department`, { cookie: cookie.a, body: { departmentId: null } })).status, 200);
+    const allocations = await call("PUT", `/api/employees/${eHR}/cost-allocations`, {
+      cookie: cookie.a,
+      body: { allocations: [{ branchId: A.x, allocationPercent: 60 }, { branchId: A.y, allocationPercent: 40 }] },
+    });
+    assert.equal(allocations.status, 200, show(allocations));
+    assert.equal((await call("GET", `/api/employees/${eHR}/cost-allocations`, { cookie: cookie.a })).body.length, 2);
+    assert.ok(((await call("GET", `/api/employees/${eHR}/changes`, { cookie: cookie.a })).body as { id: string }[]).some((c) => c.id === changeHR));
+    assert.equal((await call("POST", `/api/employees/${eHR}/changes`, { cookie: cookie.a, body: { changeType: "title_change", effectiveDate: day(0), newTitle: "ZZ Host" } })).status, 201);
+    // An update cannot move the change to another employee: it stays this one's.
+    const otherA = await employee(A.tenant, A.x, "hr-other");
+    const noted = await call("PATCH", `/api/employees/${eHR}/changes/${changeHR}`, { cookie: cookie.a, body: { note: "ZZ noted", employeeId: otherA } });
+    assert.equal(noted.status, 200, show(noted));
+    assert.deepEqual((await q("select employee_id, note from employee_changes where id = $1", [changeHR]))[0], { employee_id: eHR, note: "ZZ noted" });
+    assert.equal((await call("GET", `/api/employees/${eHR}/timekeeping-status`, { cookie: cookie.a })).body.hasPinSet, true);
+    assert.equal((await call("DELETE", `/api/employees/${eHR}/pin`, { cookie: cookie.a })).status, 200);
+    assert.equal((await call("POST", `/api/employees/${eHR}/pin`, { cookie: cookie.a, body: { pin: "4321" } })).status, 200);
+    assert.equal((await call("POST", `/api/employees/${eHR}/complete-probation-review`, { cookie: cookie.a })).status, 200);
+    const off = await call("POST", `/api/employees/${eHR}/toggle-login`, { cookie: cookie.a });
+    assert.deepEqual([off.status, off.body.isActive], [200, false]);
+    const on = await call("POST", `/api/employees/${eHR}/toggle-login`, { cookie: cookie.a });
+    assert.deepEqual([on.status, on.body.isActive], [200, true]);
+    const reset = await call("POST", `/api/employees/${eHR}/reset-password`, { cookie: cookie.a });
+    assert.equal(reset.status, 200, show(reset));
+    assert.ok(reset.body.tempPassword);
+  });
+
+  await check("an edit naming another park group's branch, login, person, department or role is refused in the app's words for it (404), and writes nothing", async () => {
+    const personB = randomUUID();
+    await q("insert into people (id, full_name, email, person_type) values ($1, $2, $3, 'EMPLOYEE')", [personB, `ZZ TEST r6 person ${run}`, `zz-r6-person-b-${run}@example.com`]);
+    await q("insert into access_policies (tenant_id, person_id, access_level, modules, branch_scope) values ($1, $2, 'STAFF', '{}'::jsonb, 'SELECTED')", [B.tenant, personB]);
+    const changeOther = await changeOf(await employee(A.tenant, A.x, "hr-other-change"));
+    const before = await hrSnapshot();
+    const refusals: Array<[string, string, unknown, number, unknown]> = [
+      ["PATCH", `/api/employees/${eHR}`, { branchId: B.x }, 404, BRANCH_NOT_FOUND],
+      ["PATCH", `/api/employees/${eHR}`, { nickname: "ZZ hijack", userId: B.limited.id }, 404, USER_NOT_FOUND],
+      ["PATCH", `/api/employees/${eHR}`, { updatedBy: B.admin.id }, 404, USER_NOT_FOUND],
+      ["PATCH", `/api/employees/${eHR}`, { personId: personB }, 404, PERSON_NOT_FOUND],
+      ["PATCH", `/api/employees/${eHR}`, { primaryDepartmentId: deptB }, 404, DEPARTMENT_NOT_FOUND],
+      ["PATCH", `/api/employees/${eHR}/roles`, { roleIds: [roleDefault, roleB] }, 404, ROLE_NOT_FOUND],
+      ["PATCH", `/api/employees/${eHR}/department`, { departmentId: deptB }, 404, DEPARTMENT_NOT_FOUND],
+      ["PUT", `/api/employees/${eHR}/cost-allocations`, { allocations: [{ branchId: B.x, allocationPercent: 100 }] }, 400, { message: "One or more invalid branch IDs" }],
+      ["POST", `/api/employees/${eHR}/changes`, { changeType: "branch_transfer", effectiveDate: day(1), newBranchId: B.x }, 404, BRANCH_NOT_FOUND],
+      ["PATCH", `/api/employees/${eHR}/changes/${changeHR}`, { newBranchId: B.x }, 404, BRANCH_NOT_FOUND],
+      ["PATCH", `/api/employees/${eHR}/changes/${changeOther}`, { note: "ZZ hijack" }, 404, CHANGE_NOT_FOUND],
+    ];
+    for (const [method, path, body, status, words] of refusals) {
+      const answer = await call(method, path, { cookie: cookie.a, body });
+      assert.equal(answer.status, status, `${method} ${path} ${JSON.stringify(body)}: ${show(answer)}`);
+      assert.deepEqual(answer.body, words, `${method} ${path} ${JSON.stringify(body)}`);
+    }
+    assert.deepEqual(await hrSnapshot(), before);
+    assert.equal((await q<{ note: string }>("select note from employee_changes where id = $1", [changeOther]))[0]!.note, "ZZ");
   });
 
   console.log(`documents.check: ${checks} checks passed`);
