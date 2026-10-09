@@ -13959,11 +13959,19 @@ OTO Company Limited`,
       const branchId = req.query.branchId as string;
       const user = req.user as UserWithBranchAccess;
       const tenantId = await resolveTenantId(user.tenantId);
-      
+
       if (!branchId) {
         return res.status(400).json({ message: "branchId is required" });
       }
-      
+      // The caller's park group's branch only (round 6's review, F3), as
+      // /api/leave-balances: another park group's is the same 404 as one that
+      // does not exist.
+      const parkGroup = documentParkGroup(req, res);
+      if (!parkGroup) return;
+      if (typeof branchId !== "string" || !await branchInParkGroup(branchId, parkGroup)) {
+        return res.status(404).json(BRANCH_NOT_FOUND);
+      }
+
       // Authorization: verify user can access this branch
       const { branchIds: allowedBranchIds, isGlobalAdmin } = await getAllowedOperatorAndBranchIds(user);
       // Global admins (allowedBranchIds === null) have access to all branches
@@ -13973,20 +13981,23 @@ OTO Company Limited`,
       
       const currentYear = new Date().getFullYear();
       
-      // Get all employees in the branch
-      const employees = await storage.getEmployees(branchId);
-      
+      // Get all employees in the branch. `getEmployees` takes no branch: the
+      // app lists every employee whatever branch is named (its rule, kept),
+      // and listed every park group's too, so the list keeps to the caller's
+      // park group (round 6's review, F3).
+      const employees = (await storage.getEmployees(branchId)).filter((e) => e.tenantId === parkGroup);
+
       // Get settings for annual leave and business days: the park group's own
       // (S2-17b round 4a), the default park group's where it has none.
       const settings = await storage.getSettings(tenantId);
       const annualLeaveTotalSetting = settings.find(s => s.key === "annual_leave_total_days");
       const annualLeaveWaitingSetting = settings.find(s => s.key === "annual_leave_waiting_months");
       const businessDaysTotalSetting = settings.find(s => s.key === "business_days_total");
-      
+
       const annualLeaveTotal = annualLeaveTotalSetting?.value ? parseInt(annualLeaveTotalSetting.value, 10) : 8;
       const annualLeaveWaitingMonths = annualLeaveWaitingSetting?.value ? parseInt(annualLeaveWaitingSetting.value, 10) : 6;
       const businessDaysTotal = businessDaysTotalSetting?.value ? parseInt(businessDaysTotalSetting.value, 10) : 3;
-      
+
       // Get public holidays count
       const publicHolidays = await storage.getPublicHolidays(tenantId, currentYear);
       const now = new Date();
