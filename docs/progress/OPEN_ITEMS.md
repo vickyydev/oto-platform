@@ -11,9 +11,9 @@ four new tickets SCRUM-512..515 spun off).*
 
 ## 1. The priority order (the owner's ruling, 9 October)
 
-1. **Finish S2-17b** (SCRUM-191): rounds 1–4b are landed (4b awaiting its
-   staging deploy); rounds 5–8 remain (attendance/operations, documents,
-   finance + module walkthroughs, the restore rehearsal).
+1. **Finish S2-17b** (SCRUM-191): rounds 1–6 are landed and live. Round 5+6
+   walkthrough evidence remains; rounds 7–8 follow (finance and module
+   walkthroughs, then the restore rehearsal).
 2. **Then the fix block**: every verified-open defect and small task below
    is worked BEFORE any new story starts. Section 2 is the worked order.
 3. Only then the next story (S2-18 Radar, S2-19 Inbox, S2-22 data,
@@ -130,9 +130,14 @@ as-built behaviour wins until answered):
   in the app the park already uses; treat app-side money/HR fixes with
   production care even on "staging" (oto_staging has been the live one).
 - **Census exposures** (lift Q31, fixed rounds assigned): `leave_policies`
-  (round 5), `people` and recalculate-probation (round 6), the
+  and recalculate-probation are fenced in round 6; `people`, the
   form-builder translations routes incl. the publish door, and Data
-  Admin's full reach (round 7). Until then these reach across park groups.
+  Admin's full reach remain assigned to round 7. The scheduling by-id
+  routes, kiosk administration, time-event deletion and shared-role branch
+  assignments are standing round-6 review records on SCRUM-191, queued in
+  the fix block unless round 7 reaches their modules. Their exact doors and
+  prescribed boundaries are in lift plan section 4 and the round-6 review
+  file (findings 9 and 10 for the kiosk, time-event and role-branch doors).
 - **Q27 silent-keys state**: if the app is flipped to platform-run nights
   and the api holds no keys, every night is lost silently; only the
   written hand-over order and Health reading catch it today.

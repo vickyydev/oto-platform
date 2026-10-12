@@ -1541,8 +1541,13 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   4), but the 03:00 batch's departed-login step goes by the employee's park
   group and the link alone, so that night it switches the login off all the
   same. No door can make such a link since the review's fix (the employee
-  edit and the wizard both refuse it); whether one stands on staging has not
-  been read; `toggle-login` and `reset-password` can also still reach such
+  edit and the wizard both refuse it). The 12 October staging read-only
+  check (job `job-db69i3tckfvc73cl6e8g`, `BEGIN READ ONLY`) found five users
+  with `platform_user_id`, zero direct employee `user_id` links, zero
+  cross-park direct links and zero unplaced direct links, using User
+  Management's strict placement and sole-park-group fallback. No existing
+  direct link needs settlement on that staging snapshot; email fallback is
+  outside this check. `toggle-login` and `reset-password` can still reach such
   a standing link (they fence the employee, not the link).
 - **Every park group assigns roles from the one set the app keeps in the
   default park group** (Q54): the role list answers every park group's roles,

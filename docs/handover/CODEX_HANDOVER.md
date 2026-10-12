@@ -32,23 +32,20 @@ owner; fold each into `OPEN_ITEMS.md` and the matching ticket rather than
 fixing ad hoc. A deliberate test record exists: Som's sick day on 14 October.
 
 **First actions, in order:**
-1. Post the round-6 comment on SCRUM-191 (it landed and auto-deployed after
-   the last comment): plain words - the document modules are live, the
-   offboarding census was clean, the signed links work. No new evidence
-   needed beyond what the comment says; the walkthrough debt below carries
-   the pictures.
-2. One read-only staging query (one-off job via `node scripts/agent/render.mjs
-   job ...`): whether any otoapp.users row carries a platform link whose
-   employee sits in a DIFFERENT park group (a stale cross-park login link
-   from before round 6's fix - the 03:00 leaver step would act on it).
-   Record the answer in STATUS and the plan's section 10 bullet.
+1. Completed 12 October: SCRUM-191 status checked (In Progress) and the
+   round-6 delivery comment posted (11727). The walkthrough pictures remain
+   the next acceptance step.
+2. Completed 12 October: read-only staging job job-db69i3tckfvc73cl6e8g
+   found five platform-linked app users, zero direct employee/login links,
+   zero cross-park direct links and zero unplaced direct links. Recorded in
+   STATUS and section 10 of the plan; email fallback is outside this check.
 3. The walkthrough debt: rounds 5 and 6 owe their module evidence pages
    (rota/leave, kiosk clock roads, checklists, announcements; contracts,
    letters, templates, policies, assets, offboarding, org chart) - staged
    captures with `evidence.mjs`, frames committed under
    `docs/qa/jira-comments/attachments/SCRUM-191/`, attached with plain-words
-   comments. Coordinate with Maria's testing (read-only where she is
-   working; ZZ TEST records elsewhere).
+   comments. The owner has confirmed that necessary walkthrough actions
+   should proceed; use disposable ZZ TEST records and exact cleanup.
 4. Round 7 of the lift, as its own gated lane per the plan's round 7 row:
    the finance keys migration, round 6's NOT NULL contraction (a release
    AFTER 0008 is live everywhere - it is), the people-routes slice, the

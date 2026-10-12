@@ -17,37 +17,36 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-Current checkpoint (9 October 2026, the hand-over to the cloud session): the
+Current checkpoint (12 October 2026, platform lane resumed): the
 sprint's two big stories are Deployed with checked evidence (SCRUM-217
 events/parties/camps/kiosk, SCRUM-218 staff benefits). The open story is
 **S2-17b, the OTO App lifted whole (SCRUM-191, In Progress)**, run as lane
-build-review rounds per docs/progress/plans/otoapp-lift/PLAN.md. Rounds 1-5
+build-review rounds per docs/progress/plans/otoapp-lift/PLAN.md. Rounds 1-6
 are LANDED, DEPLOYED and PROVEN on staging (sign-on fences; the employee
 mirror with adoption proven on the demo cast; the night jobs under the
 platform runner with the Q22 switch THROWN on staging; tenant ownership 4a+4b
 with the contraction applied and Attention awake per park group; attendance
 and operations with the sick-day approval restored and the face road standing
-down). **Round 6 (the document modules) is mid-gate**: built with migration
+down). **Round 6 (the document modules) is landed and live**: migration
 0008 (expand; the offboarding census decides its unique index), one-transaction
 offboarding proven by failure injection, and the signed-URL document gate -
-its review found the HR employee doors crossing park groups (HIGH), the first
-fix round closed the /:id census and was RIGHTLY rejected for missing the
-id-less doors (the employee list leaking pay/tax/SSN; the Excel import able to
-edit another park group's people), and the second fix round + final recheck
-were running at the hand-over. **Land round 6 only on that recheck's MERGE.**
+the final review gate covered all 54 employee routes, 32 employee lookup
+sites and five role-holder writers. Staging verified nine app migrations,
+the offboarding unique index and zero unowned document rows. Delivery comment
+11727 is posted on SCRUM-191; the round 5+6 walkthrough pictures are next.
 
 _The newest block of docs/progress/STATUS.md is always the exact state; it
 supersedes this paragraph if they ever disagree._
 
 | Item | State |
 |---|---|
-| Main | Green through round 6 (633cae41; run 37883987428). Platform migrations end at 0075 (next free 0076); the app's own at 0008 LANDED ON MAIN, applied nowhere yet (staging holds 0007) |
-| Staging | All six services at a1b909e5. OTOAPP_JOBS=platform (the night work runs under the platform's watch). Known deliberate records: Som's evidence sick day 2026-10-14 (id c1e7e9ae-...); the four demo app employees; the jobs:run directory key (sha256 cd2ec7c8...) |
-| Round 6 | LANDED AND GREEN: main 633cae41 (CI run 37883987428). Twenty-four commits through the full gate (review -> reject -> fix -> reject -> deeper fix -> final recheck MERGE). NOT yet deployed to staging - that is the NEXT SESSION'S FIRST ACTION, in the order below. Three standing pins ride in the review file (the approve race Q44; the kiosk-door and role-branch by-id gaps, queued in the fix block) |
-| Round 6's staging deploy order | 1) run the offboarding census on staging (one-off job on the APP service: npm run offboarding:census; read-only; its result only decides the unique index - 0008 deploys either way); 2) deploy oto-app-staging at the green head (migrator applies 0008 with NOTICEs printed); 3) deploy all five platform services; 4) re-read the tenant read-back; 5) SCRUM-191 comment |
+| Main | Origin/main 2027136c67104dd5c47df9237e3eb922c24be013, documentation after round 6. Latest CI green: 38213403753 on 13e0709e287d03b968285dfc8ae995e48592aa60. Platform migrations end at 0075 (next free 0076); app migration 0008 is live (next free 0009) |
+| Staging | Read live 12 October: app 633cae416ff7e4a1c253ec4904cdc22351cf7df1; five platform services 13e0709e287d03b968285dfc8ae995e48592aa60, the same round-6 runtime code. OTOAPP_JOBS=platform. Preserve Som's evidence sick day 2026-10-14 (id c1e7e9ae-...), the four demo app employees and the jobs:run directory key |
+| Round 6 | LANDED AND LIVE; no deployment repeat needed. SCRUM-191 delivery comment 11727 posted, status remains In Progress. Standing review pins remain named in the plan; walkthrough evidence is owed |
+| Cross-park direct login links | Read-only job job-db69i3tckfvc73cl6e8g succeeded: five platform-linked app users, zero direct employee/login links, zero cross-park direct links and zero unplaced direct links. Strict User Management placement; email fallback outside this check. Recorded in STATUS and plan section 10 |
 | After round 6 | Round 7 (park/knowledge/administration/finance: the finance keys migration, round 6's NOT NULL contraction, the people routes slice, voucher notices, the big walkthrough sweep), round 8 (restore rehearsal in CI, typecheck ratchet, acceptance index). THEN THE FIX BLOCK (docs/progress/OPEN_ITEMS.md) before ANY new story - the owner's standing ruling of 9 October |
 | Owner queues | Lift plan Q1-Q54 (newest: Q38-Q46 attendance, Q47-Q54 documents/roles); benefits Q1-Q13; events Q1-Q14; analytics 1-17 (Q3 blocks SCRUM-508); SCRUM-497; the OPEN_ITEMS section-3 ruling list |
-| Walkthrough debt (SCRUM-191) | Round 5's ten module pages; round 6's pages at its deploy; the SPRINT_2_ACCEPTANCE rows tick as modules prove |
+| Walkthrough debt (SCRUM-191) | Next on lane/s217b-walkthroughs from origin/main: round 5's ten module pages and round 6's eight. The owner confirmed necessary actions should proceed with disposable ZZ TEST records and exact cleanup; the acceptance rows tick only as modules prove |
 | CI | Sharded 8 Oct (SCRUM-511 Deployed with the measured card): api 3 shards + pos on its own runner; ~13 min wall. The 0007-gate suites know the no-app-modules fallback path (cause chain surfaced) |
 
 **Standing security/data rules** (unchanged): ZZ TEST prefixes for new test
