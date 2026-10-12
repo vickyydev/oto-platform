@@ -67,8 +67,8 @@ async function eventually(check: () => Promise<boolean>): Promise<void> {
 }
 
 describe('S2-17b round 7 finance independent concurrency review', () => {
-  it.fails(
-    'FINDING 1 (medium): migration and the app’s offboarding both finish; prescribed fix: take employee_offboarding before employees at final lock strength',
+  it(
+    'FINDING 1 (medium, fixed): migration and the app’s offboarding both finish; prescribed fix: take employee_offboarding before employees at final lock strength',
     async () => {
       const database = await createTestDatabase();
       const writer = await client(database.url, 'zz-test-offboarding-writer');
@@ -152,8 +152,8 @@ describe('S2-17b round 7 finance independent concurrency review', () => {
     expect([null, '40P01']).toContain(overlapProof?.code);
   });
 
-  it.skipIf(!HAS_APP).fails(
-    'FINDING 2 (medium): concurrent disjoint cash imports retain the combined day; prescribed fix: a transaction-held lock per Xero organisation before any upsert or rebuild',
+  it.skipIf(!HAS_APP)(
+    'FINDING 2 (medium, fixed): concurrent disjoint cash imports retain the combined day; prescribed fix: a transaction-held lock per Xero organisation before any upsert or rebuild',
     async () => {
       const database = await createTestDatabase();
       const setup = await client(database.url, 'zz-test-finance-setup');
