@@ -1,5 +1,9 @@
 # OTO App delivery board - SCRUM-191
 
+**13 October 2026, feature screen entry checkpoint:** SOP history now has an active Studio route, navigation entry and landing card. The existing manager/administrator Studio access remains, with editing limited to administrators. Three focused route/access review controls pass; touched-file lint has zero errors and one inherited warning. This closes the source navigation finding; the screen still needs its staged journey after release.
+
+The preceding combined candidate 142cc3dd passed its app build, restore/replay and all 89 feature runtime controls. Its whole app compiler output is 446 diagnostics across 59 files and 118 buckets, with no increased bucket against the 457 baseline. The workspace compiler, lint, tests and 30 Console browser checks passed; three API shards are still running, so a full candidate pass is not yet claimed. Main 4dcc6664 is separately completing its last API shard. The SOP entry is a later source change and will receive its own hosted gate. R7 exact cleanup preview passed for 60 tables, 261 rows and ten objects without mutation; cleanup remains pending while feature acceptance reuses the isolated practice park. Local databases remain off.
+
 Updated 13 October 2026. Development and release are recorded separately.
 R7a is landed at 7402a8da with all main CI jobs passing. Source on other
 published lanes is available for review; it is not a staging delivery. The newest STATUS block remains the live release record.
