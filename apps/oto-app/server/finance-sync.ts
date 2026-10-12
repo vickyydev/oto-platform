@@ -381,6 +381,8 @@ export async function syncCash(tenantId: string, fromDate: string, toDate: strin
     let skipped = 0;
 
     await db.transaction(async (tx) => {
+      // A replay may contain distinct bank IDs; rebuild after the prior import commits.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`otoapp:finance:cash:${tenantId}`}, 0))`);
       for (const txn of allTxns) {
         const txnId = txn.BankTransactionID || txn.bankTransactionID;
 

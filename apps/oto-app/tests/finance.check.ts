@@ -1,6 +1,7 @@
 // S2-17b round 7, H16: real finance writers on a migrated disposable database.
 // Xero responses are generated fixtures; no external accounting connection is used.
 import assert from "node:assert/strict";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 
@@ -23,6 +24,7 @@ const count = async (table: string, org: string) => Number((await q(
 const run = randomUUID();
 const organisations = [`ZZ TEST Xero A ${run}`, `ZZ TEST Xero B ${run}`];
 const originalFetch = globalThis.fetch;
+const disjointImport = new AsyncLocalStorage<"first" | "second">();
 let mode: "normal" | "tracking-fail" | "pl-fail" | "cash-fail" | "daily-fail" = "normal";
 let revision = 1;
 
@@ -53,6 +55,10 @@ globalThis.fetch = async (input, init) => {
     ] }] });
   }
   if (url.pathname.endsWith("/BankTransactions")) {
+    const disjoint = disjointImport.getStore();
+    if (disjoint) return Response.json({ BankTransactions: [{
+      BankTransactionID: `ZZ TEST disjoint ${disjoint}`, Date: "2026-10-13", Total: disjoint === "first" ? 11 : 23,
+    }] });
     return Response.json({ BankTransactions: [
       { BankTransactionID: "ZZ TEST receipt", Date: "2026-10-12", Total: revision * 10 },
       { BankTransactionID: "ZZ TEST payment", Date: "2026-10-12", Total: -revision },
@@ -130,6 +136,35 @@ try {
   assert.equal(await count("cash_txns", organisations[0]), 2);
   assert.equal((await q("select net::text from cash_daily where tenant_id = $1", [organisations[0]]))[0].net, "36");
   assert.equal((await q("select net::text from cash_daily where tenant_id = $1", [organisations[1]]))[0].net, "9");
+  // Hold each aggregate at INSERT while a second import tries to start.
+  // Before the organisation lock, both aggregate snapshots omit the other row.
+  await q(`create function zz_test_disjoint_barrier() returns trigger language plpgsql as $$
+    begin if NEW.date = '2026-10-13'::date then perform pg_advisory_xact_lock(884412); end if; return NEW; end $$`);
+  await q(`create trigger zz_test_disjoint_barrier before insert on cash_daily
+    for each row execute function zz_test_disjoint_barrier()`);
+  await q("select pg_advisory_lock(884412)");
+  try {
+    const imports = [
+      disjointImport.run("first", () => syncCash(organisations[0], "2026-10-13", "2026-10-13")),
+      disjointImport.run("second", () => syncCash(organisations[0], "2026-10-13", "2026-10-13")),
+    ];
+    let reached = false;
+    for (let i = 0; i < 250; i++) {
+      const waiting = Number((await q(`select count(*) as n from pg_locks where locktype='advisory'
+        and not granted and database=(select oid from pg_database where datname=current_database())`))[0].n);
+      if (waiting === 2) { reached = true; break; }
+      await new Promise((done) => setTimeout(done, 20));
+    }
+    await q("select pg_advisory_unlock(884412)");
+    await Promise.all(imports);
+    assert.equal(reached, true);
+    assert.equal((await q("select net::text from cash_daily where tenant_id=$1 and date='2026-10-13'", [organisations[0]]))[0].net, "34");
+    assert.equal((await q("select sum(total)::text as total from cash_txns where tenant_id=$1 and date='2026-10-13'", [organisations[0]]))[0].total, "34");
+  } finally {
+    await q("select pg_advisory_unlock_all()");
+    await q("drop trigger zz_test_disjoint_barrier on cash_daily");
+    await q("drop function zz_test_disjoint_barrier()");
+  }
   console.log("finance.check: four upsert keys, two organisations, replay, four failure points and P&L snapshots passed");
 } finally {
   globalThis.fetch = originalFetch;

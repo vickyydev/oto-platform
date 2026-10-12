@@ -1,3 +1,6 @@
+-- Take the same table order as offboarding: its row before the employee.
+LOCK TABLE "employee_offboarding" IN SHARE ROW EXCLUSIVE MODE;--> statement-breakpoint
+
 -- A person's ownership anchor is additive; existing access rules stay in place.
 ALTER TABLE "people" ADD COLUMN "tenant_id" uuid;--> statement-breakpoint
 ALTER TABLE "people" ADD CONSTRAINT "people_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -181,7 +184,6 @@ END $$;--> statement-breakpoint
 
 -- A database whose 0008 census deferred this index may now be settled (Q48).
 -- The same locked census decides; existing rows are never deleted or merged.
-LOCK TABLE "employee_offboarding" IN SHARE ROW EXCLUSIVE MODE;--> statement-breakpoint
 DO $$
 DECLARE
   employees_with_two bigint;
