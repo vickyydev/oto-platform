@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, index, uniqueIndex, time, date, real, uuid, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, index, uniqueIndex, time, date, real, uuid, numeric, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -236,6 +236,7 @@ export type PersonType = typeof personTypes[number];
 // People table (identity anchor for employees and advisors)
 export const people = pgTable("people", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
   fullName: text("full_name").notNull(),
   preferredName: text("preferred_name"),
   email: text("email").notNull().unique(),
@@ -563,7 +564,7 @@ export type HeaderAlignment = typeof headerAlignments[number];
 // Nullable for one release (EXPAND); round 7 sets NOT NULL.
 export const templates = pgTable("templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   htmlBody: text("html_body").notNull(),
   htmlBodyTh: text("html_body_th"),
@@ -1025,7 +1026,7 @@ export type PolicyStatus = typeof policyStatuses[number];
 // (EXPAND); round 7 sets NOT NULL.
 export const policyDocuments = pgTable("policy_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   title: text("title").notNull(),
   contentHtml: text("content_html"),
   pdfFileUrl: text("pdf_file_url"),
@@ -1696,7 +1697,7 @@ export type AssetCategory = typeof assetCategories[number];
 // (EXPAND); round 7 sets NOT NULL.
 export const assetCatalog = pgTable("asset_catalog", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   category: text("category", { enum: assetCategories }),
   description: text("description"),
@@ -2809,7 +2810,7 @@ export const timeOffTypeColors: Record<TimeOffType, string> = {
 // for one release (EXPAND); round 7 sets NOT NULL.
 export const leavePolicies = pgTable("leave_policies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   branchId: varchar("branch_id").references(() => branches.id),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
@@ -4439,7 +4440,7 @@ export const xeroTrackingCategories = pgTable("xero_tracking_categories", {
   status: text("status"),
   rawJson: jsonb("raw_json").notNull(),
 }, (t) => [
-  { primaryKey: [t.tenantId, t.trackingCategoryId] },
+  primaryKey({ columns: [t.tenantId, t.trackingCategoryId] }),
 ]);
 
 export type XeroTrackingCategory = typeof xeroTrackingCategories.$inferSelect;
@@ -4451,7 +4452,7 @@ export const xeroTrackingOptions = pgTable("xero_tracking_options", {
   name: text("name").notNull(),
   status: text("status"),
 }, (t) => [
-  { primaryKey: [t.tenantId, t.trackingOptionId] },
+  primaryKey({ columns: [t.tenantId, t.trackingOptionId] }),
 ]);
 
 export type XeroTrackingOption = typeof xeroTrackingOptions.$inferSelect;
@@ -4492,7 +4493,7 @@ export const cashTxns = pgTable("cash_txns", {
   direction: text("direction").notNull(),
   rawJson: jsonb("raw_json").notNull(),
 }, (t) => [
-  { primaryKey: [t.tenantId, t.xeroBankTransactionId] },
+  primaryKey({ columns: [t.tenantId, t.xeroBankTransactionId] }),
 ]);
 
 export type CashTxn = typeof cashTxns.$inferSelect;
@@ -4504,7 +4505,7 @@ export const cashDaily = pgTable("cash_daily", {
   cashOut: numeric("cash_out").notNull().default("0"),
   net: numeric("net").notNull().default("0"),
 }, (t) => [
-  { primaryKey: [t.tenantId, t.date] },
+  primaryKey({ columns: [t.tenantId, t.date] }),
 ]);
 
 export type CashDailyRow = typeof cashDaily.$inferSelect;

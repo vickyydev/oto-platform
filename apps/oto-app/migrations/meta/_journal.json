@@ -64,6 +64,13 @@
       "when": 1791500483042,
       "tag": "0008_document_tenant_ownership_expand",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791802858677,
+      "tag": "0009_document_finance_constraints",
+      "breakpoints": true
     }
   ]
 }
