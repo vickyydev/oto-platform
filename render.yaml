@@ -1134,7 +1134,16 @@ services:
       #    https://oto-app-staging.onrender.com/api/auth/xero/callback,
       #    registered on the Xero app as well. Sandbox only (S2-17b excludes
       #    live Xero credentials).
-      #  - TWILIO_* — this app has its own SMS path, separate from the api's.
+      # This app uses Twilio Verify for SMS codes. Set these on this service;
+      # settings on oto-api-staging are not shared with the lifted app.
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_VERIFY_SERVICE_SID
+        # Configure six-digit codes in the selected Verify service.
+        sync: false
+      # TWILIO_TEST_RECIPIENT is local test-runner input, not a service setting.
 
       # -- NOT SET, and deliberately ------------------------------------------
       # SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD — the app creates an admin at

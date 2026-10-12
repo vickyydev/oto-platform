@@ -1,8 +1,8 @@
 # OTO App delivery board - SCRUM-191
 
 Updated 13 October 2026. Development and release are recorded separately.
-Source on a published lane is available for review; it is not a staging
-delivery. The newest STATUS block remains the live release record.
+R7a is landed at 7402a8da with all main CI jobs passing. Source on other
+published lanes is available for review; it is not a staging delivery. The newest STATUS block remains the live release record.
 
 ## Development batches
 
@@ -16,10 +16,12 @@ delivery. The newest STATUS block remains the live release record.
 | SCRUM-193, round 8 | Restore rehearsal, input protections, CI integration and compiler ratchet tooling are built in [PR2](https://github.com/vickyydev/oto-platform/pull/2). Source: `0f017a3d`, `9deab023`, `0e8d9072`, `5670d497`, `7a01be11`; the ceiling is now 457. | Integrate after R7b; run the final eleven-migration restore in CI; reconcile acceptance and Decision 25. |
 | SCRUM-194, original seven items | Original scope and current implementation are mapped in the [feature plan](../otoapp-features/PLAN.md). Import preview/results and direct manager history already have code; other requested workflows are incomplete. | Complete concrete feature batches using the original requirements and existing defaults. Resolve only behavior/provider choices that the documents do not answer. Keep each item's implementation and staging result separate. |
 | SCRUM-518, employee import | [PR3](https://github.com/vickyydev/oto-platform/pull/3), `db51ee5c`: requested labels and every existing match are visible. Five focused controls and a real-page mocked-HTTP browser check passed. | Testing; consolidated release checks and staging proof. Matching, selection and row application remain unchanged. |
-| SCRUM-517, Fix recipient preview | [PR4](https://github.com/vickyydev/oto-platform/pull/4), `6551f0e9`: staff names/count/empty state before Save; six focused handler/database controls passed. | R7 canonical `people.tenantId` integration and foreign-person control, final checks and staging proof. |
-| SCRUM-519, SOP revisions | Locally built: prior-content history, versioned edit/restore and editor history/status controls. | Focused review, source checkpoint, final migration number, release gate and staging proof. |
-| SCRUM-520, attendance evidence | Locally built: optional photo/document preview and issue-bound private storage in the existing request paths. | Focused review, source checkpoint, final migration number and release gate. Face-clock-disabled paths and existing manager-review limitations remain explicit. |
-| SCRUM-521, presence delivery | In development for the staff in-app inbox, following the owner's Q3 answer. | Pending/Delivered/Failed state, reliable retry and replay, scoped reader, then focused review and release gate. |
+| SCRUM-517, Fix recipient preview | [PR4](https://github.com/vickyydev/oto-platform/pull/4), `3af75edd`: staff names/count/empty state before Save; seven focused handler/database controls passed, including R7 canonical person ownership. | Testing; final release checks and staging proof. |
+| SCRUM-519, SOP revisions | [PR5](https://github.com/vickyydev/oto-platform/pull/5), `5924faac`: history, versioned edit/restore and status controls; 16 focused controls and all touched-file lint passed after R7 integration. | Testing; final migration number, release gate and staging proof. |
+| SCRUM-520, attendance evidence | [PR6](https://github.com/vickyydev/oto-platform/pull/6), `9e79dacc`: optional preview and issue-bound private storage; nine controls, multipart and browser checks passed. | Testing; integration, final migration number and release gate. Face-clock-disabled paths and existing manager-review limitations remain explicit. |
+| SCRUM-521, presence delivery | [PR7](https://github.com/vickyydev/oto-platform/pull/7), `7c911c02`: inbox delivery state and reliable retry; eight real-route/database controls passed. | Testing; integration, final migration number, release gate and staging proof. |
+| SCRUM-522, returning-family SMS | Development underway; Twilio account/service validated read-only with six-digit codes and settings saved on staging. | Complete record-bound verification, focused controls and release. Runtime activation and one authorized controlled SMS proof remain; recipient comes from local environment. |
+| SCRUM-194, review/movement history | Existing explicit manager actions and actor/time history meet normal original scope by source inspection. | Staged journey; bounded consistency controls under SCRUM-516, recorded in the feature plan. |
 
 ## Development and verification sequence
 
@@ -37,7 +39,8 @@ or skipped checks as passing. The main/staging landing gate remains in force.
 
 The current R7 candidate has a successful production build, a zero-diagnostic
 API compiler, 457 inherited app diagnostics with no per-file/code increase,
-and touched-file lint without errors. Its full API battery is not yet green.
+and touched-file lint without errors. The full Linux gate passed on equivalent
+source 67eadb26; landing 7402a8da also passed every job in CI38294258814.
 Existing round-7 screenshots show the currently deployed source, not the new
 ownership release. Exact test-record/object cleanup remains outstanding.
 

@@ -2,13 +2,28 @@
 
 ## 13 October development checkpoint
 
-**Latest:** SCRUM-518 is built in PR3 (`db51ee5c`) and Testing; SCRUM-517 is
-built in PR4 (`6551f0e9`) with an explicit R7 person-ownership integration
-dependency. SCRUM-519 SOP history and SCRUM-520 attendance attachments are
-locally built and in focused review. SCRUM-521 implements presence delivery
-after the owner answered Q3 below. These are source checkpoints; none is
-claimed live by this note. Individual commits are retained at main landing,
-with frequent PRs and clean tracked working trees.
+**Latest:** import PR3/db51ee5c, Fix preview PR4/3af75edd, SOP history
+PR5/5924faac, attendance evidence PR6/9e79dacc and presence inbox PR7/7c911c02
+are published source batches, with their tickets Testing. Fix's R7 integration
+is complete, as is SOP integration with 16 controls and all touched-file lint
+passing. Final combined migration numbering and release checks remain.
+These batches have focused checks; staged release acceptance remains owed.
+
+**SMS provider checkpoint:** SCRUM-522 is building against the current contact
+matching behavior. The owner supplied the three existing Twilio variables;
+read-only provider validation returned200 with matching account/service and
+six-digit codes. Settings are saved on staging; the current runtime remains
+unconfigured until deployment. No SMS has been sent. One controlled test is
+authorized once the owner supplies local TWILIO_TEST_RECIPIENT; that number
+is not a service setting or repository record. Actual receipt and verified
+saved-family access remain required before delivery is claimed.
+
+**Item7 source reconciliation:** the original requirement explicitly asks to
+verify existing coverage. Current manager Complete, Save Changes and Transfer
+Employee actions provide the approval action; existing history stores actor
+and time. Q8's direct-action default applies; a second approval stage is not
+required. Staged action/history/refusal evidence remains owed. The consistency
+register below records failure and replay boundaries separately.
 
 **Q3 answered, 13 October:** use the staff's in-app inbox. Delivered means
 the notification is saved and available in that inbox; the existing read/unread
@@ -34,7 +49,7 @@ details, rather than imposing a blanket stop on the seven items.
 - SOP history can preserve immutable revisions and restore content through
   existing edit permissions while retaining publication status. Recovery of
   deleted articles is additional scope, not implied by revision restore.
-- The meaning/channel of presence notification delivery remains unresolved.
+- Presence delivery follows the answered Q3 in-app inbox definition.
   SMS implementation can reuse the current adapter and matching eligibility;
   actual delivery proof depends on configured service and a controlled number.
 - Verify existing manager confirmation and history before adding an approval
@@ -82,7 +97,11 @@ the [feature list section 6.2](../../../briefs/AGENCY_PROPOSAL.md), and
 Record each working-scope item in its own Jira subtask with acceptance and
 staging evidence. No ticket status is changed by this document.
 
-## 2. Coverage matrix
+## 2. Initial coverage matrix
+
+This is the 12 October source baseline. The 13 October checkpoint above and
+the delivery board record the subsequently implemented source; this table
+does not override those newer results.
 
 | Item | Current code coverage | Requested feature coverage | Question | Main dependency |
 | --- | --- | --- | --- | --- |
@@ -281,15 +300,17 @@ documents. It is not an unanswered request for another blanket approval.
 The earlier Open decision 30 wording is retained as history; this note does
 not invent an explicit decision closure.
 
-The concrete questions Q2-Q8 remain unanswered. Every default below is the
-existing behavior; a proposed alternative is never an instruction to build it.
+Q3 is answered above. The remaining questions record alternatives to the
+working scope; existing behavior remains the default unless explicitly
+answered. They do not impose a blanket implementation stop.
 
 1. **Q2 - Which missed or unscheduled request screens need an attachment,
    and should it be optional?** Default: current reason/note submission,
    with the existing face switch and pending manager review; no new required file.
 2. **Q3 - What does delivered mean for a presence notification, and through
    which channel?** Default: current in-app unread/read notifications, without
-   a delivery-state claim or new external sending channel.
+   a delivery-state claim or new external sending channel. Answered 13 October:
+   use the staff inbox; Delivered means saved there, with read/unread separate.
 3. **Q4 - Does the existing four-state import preview plus matched employee
    details satisfy the list, or is Matched a separate state?** Default: retain
    email-then-name matching, the four current states and per-row results.
@@ -301,10 +322,13 @@ existing behavior; a proposed alternative is never an instruction to build it.
    Fix department and its existing assignment behavior; no additional rules.
 6. **Q7 - Which saved family contacts may verify by SMS, and what resend
    and expiry behavior should apply?** Default: record the current phone-match
-   flow; add no contact-priority or verification policy before confirmation.
+   flow and current adapter limits/expiry; add no new contact-priority rule.
+   Provider configuration and controlled-test authorization are recorded above.
 7. **Q8 - Does the manager's existing review completion or recorded movement
    count as approval, or is a separate approval step needed?** Default: current
    direct manager actions and recorded history; no second approver or delay.
+   Source reconciliation confirms the original normal workflow is present;
+   its staged acceptance and consistency controls remain.
 
 ## 5. Delivery from the working scope
 
@@ -321,3 +345,36 @@ migrations remain immutable and numbers are checked at landing. A failed
 or incomplete verification remains recorded; it is not covered by another
 module's screenshot. Update this plan's coverage and acceptance from the
 actual confirmed implementation and staged result before closure.
+
+## 6. Remaining consistency controls - SCRUM-516
+
+13 October source assessment at 7402a8da; staging reproduction remains owed.
+These controls preserve existing manager actions and approval intent.
+
+- Medium: review completion and actor history are separate writes
+  (`routes.ts:4782-4808`). Persist them together. Same-request retries should
+  retain the original result rather than overwrite its timestamp; distinguish
+  a retried decision from an intended new action before selecting its key.
+- Medium: term/transfer history, employee changes, cleanup and activity are
+  separate writes (`routes.ts:5309-5391,5513-5568`). Persist the intended
+  effects atomically without changing effective dates or cleanup ranges.
+- High for a foreign contract link, Medium for history metadata: history PATCH
+  accepts broad fields (`routes.ts:5428-5443`, `storage.ts:3583`). Allow only
+  intended contract status/link fields, verify employee/park ownership, and
+  retain the original actor/time and before/after history.
+- High for missing tenant/empty-branch restrictions, Medium for pending-state
+  selection: attendance produces OPEN issues linked to pending time entries,
+  but the pending reader requests PENDING_APPROVAL as issue status and its
+  storage reader ignores tenantId (`routes.ts:10798-10811,10926-10938,
+  11908-11911`, `storage.ts:5216`). Read the actual issue/entry relationship,
+  constrain park and allowed branches, and return none for an empty branch
+  list. The existing resolution record in lift PLAN section10 also names
+  linkedTimeEntryId; related mappings are resolutionNote, RESOLVED/REJECTED,
+  userProposedClockInAt and note. Apply these as one scoped consistency unit,
+  preserving the face switch and existing approve/reject intent. SCRUM-520
+  attachment controls alone do not establish that reviewer journey works.
+
+Keep explicit passing/refusal/replay/rollback review controls and staged
+proof for each delivered unit. The unreachable upcoming-reviews handler is
+already recorded in lift PLAN; the current Reviews screen uses the scoped
+employee reader and no active cross-park finding is inferred from dead code.
