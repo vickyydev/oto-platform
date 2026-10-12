@@ -1402,13 +1402,39 @@ export const sopArticles = pgTable(
     branchIds: jsonb("branch_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     // Status for security filtering (draft SOPs should not appear in ASK OTO)
     status: sopStatusEnum("status").notNull().default("published"),
+    editVersion: integer("edit_version").notNull().default(0),
   },
   (t) => [index("idx_sop_articles_tenant").on(t.tenantId)]
 );
 
-export const insertSopArticleSchema = createInsertSchema(sopArticles).omit({ id: true });
+export const insertSopArticleSchema = createInsertSchema(sopArticles).omit({ id: true, editVersion: true, lastUpdated: true });
 export type InsertSopArticle = z.infer<typeof insertSopArticleSchema>;
 export type SopArticle = typeof sopArticles.$inferSelect;
+
+export type SopContent = Pick<SopArticle, "title" | "body" | "departments" | "readingTime" |
+  "coverImageUrl" | "summary" | "structuredSteps" | "steps" | "rules" | "commonMistakes" | "unsureTips">;
+
+// A saved previous version belongs to its article; deleting the article is permanent.
+export const sopArticleRevisions = pgTable("sop_article_revisions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  articleId: uuid("article_id").notNull().references(() => sopArticles.id, { onDelete: "cascade" }),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  version: integer("version").notNull(),
+  content: jsonb("content").$type<SopContent>().notNull(),
+  previousStatus: sopStatusEnum("previous_status").notNull(),
+  savedById: varchar("saved_by_id").notNull(),
+  savedByName: text("saved_by_name").notNull(),
+  savedAt: timestamp("saved_at", { withTimezone: true }).defaultNow().notNull(),
+  mutationId: uuid("mutation_id").notNull(),
+  requestHash: text("request_hash").notNull(),
+  result: jsonb("result").$type<SopArticle>().notNull(),
+}, (t) => [
+  uniqueIndex("sop_revision_article_version_unique").on(t.articleId, t.version),
+  uniqueIndex("sop_revision_article_mutation_unique").on(t.articleId, t.mutationId),
+  index("sop_revision_tenant_article_idx").on(t.tenantId, t.articleId),
+]);
+export type SopArticleRevision = typeof sopArticleRevisions.$inferSelect;
+export type SopRevisionSummary = Pick<SopArticleRevision, "id" | "version" | "previousStatus" | "savedById" | "savedByName" | "savedAt"> & { title: string };
 
 // ============================================
 // ASK OTO KNOWLEDGE BASE (Files + RAG)

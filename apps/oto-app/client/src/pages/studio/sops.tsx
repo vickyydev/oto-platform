@@ -44,6 +44,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { SopArticle, SopStep } from "@shared/schema";
+import { SopHistory } from "@/components/sop/sop-history";
 
 interface LocalStep {
   id: string;
@@ -443,6 +444,9 @@ export default function StudioSopsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSop, setEditingSop] = useState<SopArticle | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [status, setStatus] = useState<SopArticle["status"]>("published");
+  const heldSave = useRef<{ key: string; mutationId: string } | null>(null);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -480,7 +484,10 @@ export default function StudioSopsPage() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<SopArticle> }) => {
-      const res = await apiRequest("PATCH", `/api/sops/${id}`, data);
+      const key = JSON.stringify([id, editingSop?.editVersion, data]);
+      if (heldSave.current?.key !== key) heldSave.current = { key, mutationId: crypto.randomUUID() };
+      const res = await apiRequest("PATCH", `/api/sops/${id}`, { ...data,
+        expectedVersion: editingSop?.editVersion, mutationId: heldSave.current.mutationId });
       return res.json();
     },
     onSuccess: () => {
@@ -509,6 +516,7 @@ export default function StudioSopsPage() {
   const openDialog = (sop?: SopArticle) => {
     if (sop) {
       setEditingSop(sop);
+      setStatus(sop.status);
       setTitle(sop.title);
       setContent(sop.body || "");
       setScope(sop.scope as "GLOBAL" | "BRANCHES" || "GLOBAL");
@@ -538,6 +546,7 @@ export default function StudioSopsPage() {
       }
     } else {
       setEditingSop(null);
+      setStatus("published");
       setTitle("");
       setContent("");
       setScope("GLOBAL");
@@ -545,6 +554,8 @@ export default function StudioSopsPage() {
       setSteps([]);
     }
     setIsPreviewMode(false);
+    setShowHistory(false);
+    heldSave.current = null;
     setIsDialogOpen(true);
   };
 
@@ -578,6 +589,7 @@ export default function StudioSopsPage() {
       departments: [],
       structuredSteps,
       steps: legacySteps,
+      status,
     };
 
     if (editingSop) {
@@ -665,6 +677,7 @@ export default function StudioSopsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold">{sop.title}</h3>
+                      {isAdmin && <Badge variant="secondary">{sop.status}</Badge>}
                       {isAdmin && sop.scope === 'GLOBAL' && (
                         <Badge variant="outline" className="text-xs">
                           <Globe className="h-3 w-3 mr-1" />
@@ -703,6 +716,7 @@ export default function StudioSopsPage() {
           <DialogHeader className="flex flex-row items-center justify-between gap-4">
             <DialogTitle>{editingSop ? "Edit SOP" : "Create SOP"}</DialogTitle>
             <div className="flex items-center gap-2">
+              {editingSop && <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} data-testid="button-sop-history">{showHistory ? "Edit" : "History"}</Button>}
               <Button
                 type="button"
                 variant={isPreviewMode ? "default" : "outline"}
@@ -717,10 +731,18 @@ export default function StudioSopsPage() {
           </DialogHeader>
           
           <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
-            {isPreviewMode ? (
+            {showHistory && editingSop ? <SopHistory article={editingSop} onRestored={saved => openDialog(saved)} /> : isPreviewMode ? (
               <StaffPreview title={title} steps={steps} content={content} />
             ) : (
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Publication status</Label>
+                  <Select value={status} onValueChange={value => setStatus(value as SopArticle["status"])}>
+                    <SelectTrigger data-testid="select-sop-status"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="draft">Draft</SelectItem><SelectItem value="published">Published</SelectItem><SelectItem value="archived">Archived</SelectItem></SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Choose Archived to set an article aside. Choose Draft or Published to reopen it.</p>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="title">Title</Label>
                   <Input
