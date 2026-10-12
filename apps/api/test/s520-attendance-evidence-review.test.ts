@@ -106,8 +106,11 @@ describe('SCRUM-520 attendance evidence review', () => {
     expect(block).toContain('`attachment; filename=');
     expect(routes).toContain('const publicFileFolders = ["branch-logos", "dropoff-photos", "invitations"];');
     expect(routes).toContain('const publicFolders = new Set(["branch-logos", "dropoff-photos", "invitations"]);');
-    expect(routes).toContain('attachment: canReadAttendanceEvidence(issue, req.userWithAccess?.tenantId, userBranches) && issue.attachment');
-    expect(routes).toContain('? { fileName: issue.attachment.fileName, mimeType: issue.attachment.mimeType, size: issue.attachment.size }');
+    const review = read('server/timekeeping-review-routes.ts');
+    expect(review).toContain('eq(timekeepingIssues.tenantId, tenantId)');
+    expect(review).toContain('!allBranches ? inArray(timekeepingIssues.branchId, branchIds) : undefined');
+    expect(review).toContain('attachment: attachment ? { fileName: attachment.fileName, mimeType: attachment.mimeType, size: attachment.size } : null');
+    expect(review).not.toContain('objectName');
     expect(read('server/attendance-evidence-upload.ts')).toContain('files: 1, fields: 1, fieldSize: 16 * 1024, parts: 3');
   });
 

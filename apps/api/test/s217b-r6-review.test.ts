@@ -2229,6 +2229,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     const eB2 = await employee(B, B.x, 'fr-b2');
     const deptB = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [B.tenant, `ZZ R6FR B dept ${run}`]))[0]!.id;
     const bSlot = await rotaSlot(B, eB);
+    const [bPing] = await q('select shift_row_id, shift_date::text as shift_date from schedule_assignments where id=$1', [bSlot]);
     const bShift = randomUUID();
     const window = { startAt: new Date(Date.now() + 86_400_000).toISOString(), endAt: new Date(Date.now() + 90_000_000).toISOString() };
     await q('insert into shifts (id, tenant_id, branch_id, department_id, start_at, end_at, created_by) values ($1, $2, $3, $4, $5, $6, $7)', [bShift, B.tenant, B.x, deptB, window.startAt, window.endAt, B.admin.id]);
@@ -2335,7 +2336,10 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
         answered(`${who} create naming ${label}`, made, status, words);
       }
       // The ping, the older shift list's create and edit, the reassignment.
-      answered(`${who} ping`, await call('POST', '/api/timekeeping/live/ping', { cookie, body: { employeeId: eA, reason: 'ZZ' } }), 404, notFound);
+      answered(`${who} ping`, await call('POST', '/api/timekeeping/live/ping', { cookie, body: {
+        requestKey: randomUUID(), employeeId: eA, shiftRowId: bPing.shift_row_id,
+        shiftDate: bPing.shift_date, reason: 'missing_clock_in',
+      } }), 404, { message: 'Staff member or shift not found' });
       const shiftWords = { message: 'Employee not found or not in this branch' };
       answered(`${who} older shift create`, await call('POST', '/api/shifts', { cookie, body: { branchId: B.x, departmentId: deptB, employeeId: eA, ...window } }), 400, shiftWords);
       answered(`${who} older shift edit`, await call('PATCH', `/api/shifts/${bShift}`, { cookie, body: { employeeId: eA } }), 400, shiftWords);

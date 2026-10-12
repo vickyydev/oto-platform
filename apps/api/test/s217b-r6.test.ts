@@ -867,6 +867,7 @@ describe('D. read off the code', () => {
   it('F7, the historical 32-site census: eight original fences hold; attendance review now uses scoped joins and 23 by-id readers remain', () => {
     const routes = routesText();
     const attendance = code(readFileSync(join(APP_SERVER, 'timekeeping-review-routes.ts'), 'utf8'));
+    const presence = code(readFileSync(join(APP_SERVER, 'presence-notification-delivery.ts'), 'utf8'));
     const joinedAttendance = new Set(['GET /api/timekeeping/pending-issues', 'POST /api/timekeeping/issues/:issueId/resolve']);
     expect(hr.EMPLOYEE_LOOKUPS).toHaveLength(32);
     const fenced = hr.EMPLOYEE_LOOKUPS.filter((l) => l.disposition === 'fenced');
@@ -887,8 +888,9 @@ describe('D. read off the code', () => {
     for (const l of hr.EMPLOYEE_LOOKUPS) if (l.disposition !== 'fenced') kept.set(l.route, (kept.get(l.route) ?? 0) + 1);
     for (const r of new Set(hr.EMPLOYEE_LOOKUPS.map((l) => l.route))) {
       const [method, path] = r.split(' ') as [string, string];
-      const h = route(joinedAttendance.has(r) ? attendance : routes, method.toLowerCase(), path);
-      if (joinedAttendance.has(r)) {
+      const isPresence = r === 'POST /api/timekeeping/live/ping';
+      const h = route(isPresence ? presence : joinedAttendance.has(r) ? attendance : routes, method.toLowerCase(), path);
+      if (joinedAttendance.has(r) || isPresence) {
         expect(sites(h), r).toBe(0);
         expect(h, r).toContain('eq(employees.tenantId, tenantId)');
         continue;
