@@ -537,7 +537,7 @@ jobs:
         env:
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: npx tsx tests/administration.check.ts
-      # These four feature suites drive the app's handlers through its own
+      # These five feature suites drive the app's handlers through its own
       # dependency tree. Run them here, where npm ci has installed that tree,
       # and keep the API workspace's ordinary full battery unchanged.
       - uses: pnpm/action-setup@v4
@@ -554,8 +554,8 @@ jobs:
         run: |
           node -e "require('node:fs').accessSync('apps/oto-app/node_modules/tsx/dist/cli.mjs')"
           mkdir -p test-results
-          pnpm --filter @oto/api exec vitest run --pool=forks test/s217c-fix-preview-review.test.ts test/s217c-sop-history-review.test.ts test/s217c-presence-delivery-review.test.ts test/s217c-camp-sms-review.test.ts --reporter=default --reporter=json --outputFile.json=../../test-results/feature-runtime.json
-          node -e "const r=JSON.parse(require('node:fs').readFileSync('test-results/feature-runtime.json','utf8'));if(r.numPendingTests!==0||r.numTotalTests===0||r.testResults.length!==4)throw new Error('All four feature runtime suites must run without skipped tests')"
+          pnpm --filter @oto/api exec vitest run --pool=forks test/s217c-fix-preview-review.test.ts test/s217c-sop-history-review.test.ts test/s217c-presence-delivery-review.test.ts test/s217c-camp-sms-review.test.ts test/s217c-employee-history-review.test.ts --reporter=default --reporter=json --outputFile.json=../../test-results/feature-runtime.json
+          node -e "const r=JSON.parse(require('node:fs').readFileSync('test-results/feature-runtime.json','utf8'));if(r.numPendingTests!==0||r.numTotalTests===0||r.testResults.length!==5)throw new Error('All five feature runtime suites must run without skipped tests')"
       # The offboarding duplicate census (read only): on this database, which
       # every check above wrote into, nobody has two, so 0008's index stands.
       - name: The offboarding census
