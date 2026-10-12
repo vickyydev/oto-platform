@@ -131,7 +131,7 @@ import { registerAuthOtpRoutes } from "./auth-otp-routes";
 import { db, pool } from "./db";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
@@ -25884,6 +25884,14 @@ ${context}`;
     const [operator] = await db.select({ id: operators.id }).from(operators).where(and(eq(operators.id, operatorId), eq(operators.tenantId, tenantId))).limit(1);
     return !!operator;
   };
+  const payrollRuleSetAccess = async (rule: { tenantId: string; operatorId?: string | null; branchId?: string | null }, tenantId: string) => {
+    if (rule.tenantId !== tenantId) return false;
+    if (rule.operatorId) {
+      const [operator] = await db.select({ id: operators.id }).from(operators).where(and(eq(operators.id, rule.operatorId), eq(operators.tenantId, tenantId))).limit(1);
+      if (!operator) return false;
+    }
+    return !rule.branchId || await managedBranchIds([rule.branchId], tenantId);
+  };
 
   // Helper: Check if user has payroll admin access (global_admin or operator_admin)
   const isPayrollAdmin = (user: any) =>
@@ -25909,12 +25917,22 @@ ${context}`;
     const tenantId = await managedUserTenant(user.id);
     if (!tenantId) return false;
     // A run is refused as a whole when a historical child names another park's person or payroll profile.
-    for (const table of [payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults]) {
+    for (const table of [payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, payslips]) {
       const [foreign] = await db.select({ employeeId: table.employeeId }).from(table)
         .leftJoin(employees, eq(table.employeeId, employees.id))
         .leftJoin(employeePayrollProfiles, eq(employeePayrollProfiles.employeeId, table.employeeId))
-        .where(and(eq(table.payrollRunId, runId), or(isNull(employees.id), ne(employees.tenantId, tenantId), and(isNotNull(employeePayrollProfiles.id), ne(employeePayrollProfiles.tenantId, tenantId))))).limit(1);
+        .leftJoin(operators, eq(employeePayrollProfiles.operatorId, operators.id))
+        .where(and(eq(table.payrollRunId, runId), or(isNull(employees.id), ne(employees.tenantId, tenantId), and(isNotNull(employeePayrollProfiles.id), or(ne(employeePayrollProfiles.tenantId, tenantId), isNull(operators.id), ne(operators.tenantId, tenantId)))))).limit(1);
       if (foreign) return false;
+    }
+    const [misplacedPayslip] = await db.select({ id: payslips.id }).from(payslips)
+      .where(and(eq(payslips.payrollRunId, runId), ne(payslips.payrollPeriodId, run.payrollPeriodId))).limit(1);
+    if (misplacedPayslip) return false;
+    for (const table of [payrollDayReconciliations, payrollExceptions]) {
+      const [foreignBranch] = await db.select({ branchId: table.branchId }).from(table)
+        .leftJoin(branches, eq(table.branchId, branches.id))
+        .where(and(eq(table.payrollRunId, runId), isNotNull(table.branchId), or(isNull(branches.id), ne(branches.tenantId, tenantId)))).limit(1);
+      if (foreignBranch) return false;
     }
     return true;
   };
@@ -26290,6 +26308,12 @@ ${context}`;
       if (!(await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess!.tenantId!))) return res.status(404).json({ message: "Employee not found" });
 
       const advances = await storage.getSalaryAdvances(req.params.employeeId);
+      const consistent = await Promise.all(advances.map(async advance =>
+        advance.tenantId === req.userWithAccess!.tenantId &&
+        await payrollOperatorAccess(advance.operatorId, user) &&
+        (!advance.repaymentStartPeriodId || await verifyPeriodAccess(advance.repaymentStartPeriodId, user, true))
+      ));
+      if (consistent.some(value => !value)) return res.status(403).json({ message: "Payroll records need consistent park-group ownership" });
       res.json(advances);
     } catch (error) {
       next(error);
@@ -26336,6 +26360,7 @@ ${context}`;
       }
       if (!(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
       const policy = await storage.getPayrollPolicySettings(operatorId);
+      if (policy && policy.tenantId !== req.userWithAccess?.tenantId) return res.status(403).json({ message: "Access denied" });
       res.json(policy || null);
     } catch (error) {
       next(error);
@@ -26355,6 +26380,7 @@ ${context}`;
       }
       if (!(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
       const existing = await storage.getPayrollPolicySettings(operatorId);
+      if (existing && existing.tenantId !== req.userWithAccess?.tenantId) return res.status(403).json({ message: "Access denied" });
       const { overtimeThresholdMinutes, lateThresholdMinutes, defaultAdvanceMaxPct, countryCode } = req.body;
       if (existing) {
         const updated = await storage.updatePayrollPolicySettings(existing.id, {
@@ -26388,6 +26414,7 @@ ${context}`;
       }
       const countryCode = (req.query.country as string) || 'TH';
       const rules = await storage.getStatutoryRuleSets(countryCode, req.userWithAccess!.tenantId);
+      if ((await Promise.all(rules.map(rule => payrollRuleSetAccess(rule, req.userWithAccess!.tenantId!)))).some(value => !value)) return res.status(403).json({ message: "Payroll records need consistent park-group ownership" });
       res.json(rules);
     } catch (error) {
       next(error);
@@ -26404,7 +26431,7 @@ ${context}`;
       if (!(await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess!.tenantId!))) return res.status(404).json({ message: "Employee not found" });
 
       const profile = await storage.getEmployeePayrollProfile(req.params.employeeId);
-      if (profile && profile.tenantId !== req.userWithAccess?.tenantId) return res.status(403).json({ message: "Access denied" });
+      if (profile && (profile.tenantId !== req.userWithAccess?.tenantId || !(await payrollOperatorAccess(profile.operatorId, user)))) return res.status(403).json({ message: "Access denied" });
       res.json(profile || null);
     } catch (error) {
       next(error);
@@ -26426,15 +26453,17 @@ ${context}`;
       }
       if (!(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
       const existing = await storage.getEmployeePayrollProfile(req.params.employeeId);
-      if (existing && existing.tenantId !== req.userWithAccess?.tenantId) return res.status(403).json({ message: "Access denied" });
+      if (existing && (existing.tenantId !== req.userWithAccess?.tenantId || !(await payrollOperatorAccess(existing.operatorId, user)))) return res.status(403).json({ message: "Access denied" });
       if (existing) {
         const updated = await storage.updateEmployeePayrollProfile(existing.id, { ...req.body, tenantId: existing.tenantId, employeeId: existing.employeeId, operatorId });
         res.json(updated);
       } else {
+        if (req.body.tenantId != null && req.body.tenantId !== req.userWithAccess?.tenantId) return res.status(403).json({ message: "Access denied" });
         const created = await storage.createEmployeePayrollProfile({
           ...req.body,
+          tenantId: req.userWithAccess!.tenantId!,
           employeeId: req.params.employeeId,
-          operatorId: user.operatorId,
+          operatorId,
         });
         res.status(201).json(created);
       }
@@ -26650,7 +26679,7 @@ ${context}`;
       }
       const asOfDate = (req.query.asOfDate as string) || new Date().toISOString().split("T")[0];
       const { getStatutoryRules } = await import("./payroll-statutory");
-      const rules = await getStatutoryRules(req.params.countryCode, asOfDate);
+      const rules = await getStatutoryRules(req.params.countryCode, asOfDate, req.userWithAccess!.tenantId!);
       if (!rules) {
         return res.status(404).json({ message: "No rules found for this country" });
       }
@@ -26670,6 +26699,7 @@ ${context}`;
       const operatorId = user.role === 'operator_admin' ? user.operatorId : (req.query.operatorId as string);
       if (operatorId && !(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
       const ruleSets = await storage.getAllStatutoryRuleSets(user.tenantId, operatorId);
+      if ((await Promise.all(ruleSets.map(rule => payrollRuleSetAccess(rule, req.userWithAccess!.tenantId!)))).some(value => !value)) return res.status(403).json({ message: "Payroll records need consistent park-group ownership" });
       res.json(ruleSets);
     } catch (error) {
       next(error);
@@ -26687,7 +26717,7 @@ ${context}`;
       if (!ruleSet) {
         return res.status(404).json({ message: "Rule set not found" });
       }
-      if (ruleSet.tenantId !== user.tenantId) {
+      if (!(await payrollRuleSetAccess(ruleSet, req.userWithAccess!.tenantId!))) {
         return res.status(403).json({ message: "Access denied" });
       }
       if (user.role === 'operator_admin' && ruleSet.operatorId && ruleSet.operatorId !== user.operatorId) {
@@ -26725,6 +26755,7 @@ ${context}`;
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid rule set data", errors: parsed.error.errors });
       }
+      if (!(await payrollRuleSetAccess(parsed.data, req.userWithAccess!.tenantId!))) return res.status(403).json({ message: "Access denied" });
       const ruleSet = await storage.createStatutoryRuleSet(parsed.data);
       res.status(201).json(ruleSet);
     } catch (error) {
@@ -26743,7 +26774,7 @@ ${context}`;
       if (!existing) {
         return res.status(404).json({ message: "Rule set not found" });
       }
-      if (existing.tenantId !== user.tenantId) {
+      if (!(await payrollRuleSetAccess(existing, req.userWithAccess!.tenantId!))) {
         return res.status(403).json({ message: "Access denied" });
       }
       if (user.role === 'operator_admin' && existing.operatorId !== user.operatorId) {
@@ -26764,6 +26795,7 @@ ${context}`;
           }
         }
       }
+      if (!(await payrollRuleSetAccess({ ...existing, ...updates }, req.userWithAccess!.tenantId!))) return res.status(403).json({ message: "Access denied" });
       const ruleSet = await storage.updateStatutoryRuleSet(req.params.id, updates);
       res.json(ruleSet);
     } catch (error) {
@@ -26782,7 +26814,7 @@ ${context}`;
       if (!existing) {
         return res.status(404).json({ message: "Rule set not found" });
       }
-      if (existing.tenantId !== user.tenantId) {
+      if (!(await payrollRuleSetAccess(existing, req.userWithAccess!.tenantId!))) {
         return res.status(403).json({ message: "Access denied" });
       }
       await storage.deleteStatutoryRuleSet(req.params.id);

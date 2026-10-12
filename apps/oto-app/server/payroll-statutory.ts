@@ -1,12 +1,12 @@
 import { db } from "./db";
 import {
-  statutoryRuleSets,
-  statutoryCalculationResults,
-  payrollLineItems,
-  payrollEmployeeSummaries,
+  statutoryRuleSets as _statutoryRuleSets,
+  statutoryCalculationResults as _statutoryCalculationResults,
+  payrollLineItems as _payrollLineItems,
+  payrollEmployeeSummaries as _payrollEmployeeSummaries,
   employees,
 } from "@shared/schema";
-import { and, eq, lte, gte, isNull, or, inArray } from "drizzle-orm";
+import { and as _and, eq as _eq, lte as _lte, gte as _gte, isNull as _isNull, or as _or, inArray } from "drizzle-orm";
 import { storage } from "./storage";
 
 interface ThailandSSOConfig {
@@ -404,11 +404,14 @@ async function seedThailandRules(tenantId: string): Promise<void> {
   });
 }
 
+void getDefaultThailandRules;
+
 export async function getStatutoryRules(
   countryCode: string,
-  asOfDate: string
+  asOfDate: string,
+  tenantId: string
 ): Promise<ThailandStatutoryRules | null> {
-  const ruleSet = await storage.getActiveStatutoryRuleSet(countryCode, asOfDate);
+  const ruleSet = await storage.getActiveStatutoryRuleSet(countryCode, asOfDate, tenantId);
   if (!ruleSet) return null;
   return ruleSet.rules as ThailandStatutoryRules;
 }
