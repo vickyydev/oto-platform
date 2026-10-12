@@ -1,12 +1,15 @@
 # OTO App feature coverage and scope - SCRUM-194
 
-Prepared 12 October 2026 for S2-17c. This is documentation preparation only;
-no feature implementation or product rule has been authorized by this plan.
-The owner is being asked to confirm or trim the seven candidates under
-Open decision 30. The answer remains pending.
+Prepared 12 October 2026 for S2-17c. The owner's instruction to complete all
+subtasks uses the original section 6.2 seven items as the working scope
+baseline. This preparation checks that original list against existing code;
+it does not request a new blanket scope approval. Open decision 30 remains
+part of the recorded scope history, without a claim that it was explicitly
+closed. Concrete unanswered behavior and provider details remain below,
+with existing behavior as every default. No feature code changed here.
 
-Implementation depends on completing S2-17b/SCRUM-193, recording the owner's
-scope answer, and following the standing fix block in
+Implementation depends on completing S2-17b/SCRUM-193 and following the
+standing fix block in
 [OPEN_ITEMS section 2](../../OPEN_ITEMS.md) before any new story starts.
 SCRUM-191 therefore stays separate from the completion of its lift work.
 Benefit profiles belong to S2-21; POS features remain on their own tickets.
@@ -29,25 +32,25 @@ coverage label; it must retain the observation and its source.
 Scope sources: [S2-17c and Open decision 30](../../SPRINT_2_PLAN.md),
 the [feature list section 6.2](../../../briefs/AGENCY_PROPOSAL.md), and
 [the development plan](../../../architecture/DEVELOPMENT_PLAN.md).
-Each confirmed candidate becomes its own Jira subtask with acceptance and
+Record each working-scope item in its own Jira subtask with acceptance and
 staging evidence. No ticket status is changed by this document.
 
 ## 2. Coverage matrix
 
-| Candidate | Current code coverage | Requested feature coverage | Question | Main dependency |
+| Item | Current code coverage | Requested feature coverage | Question | Main dependency |
 | --- | --- | --- | --- | --- |
 | 1. Missed/unscheduled attendance attachments visible before submission | Existing kiosk flows accept reason/note and create pending timekeeping records; their face switch remains in force | NOT BUILT for attached photo/document selection, preview and saved issue attachment | Q2 | Attendance request identity, private file ownership and current manager review |
 | 2. Presence notification pending/delivered/failed | Presence stores clock state and event times; in-app notifications store unread/read state | NOT BUILT for delivery-state rows linked to live presence | Q3 | Agreed meaning of delivery, chosen channel and failure reporting |
-| 3. Employee spreadsheet preview and row outcomes | WORKS for the current four-state preview, match metadata, selected-row application and per-row results, by code inspection only | NOT BUILT for a distinct fifth Matched status; whether one is required awaits the scope answer | Q4 | Existing matching/validation behavior and tenant/branch access |
+| 3. Employee spreadsheet preview and row outcomes | WORKS for the current four-state preview, match metadata, selected-row application and per-row results, by code inspection only | NOT BUILT for a distinct fifth Matched status; whether one is required awaits the concrete label/behavior answer | Q4 | Existing matching/validation behavior and tenant/branch access |
 | 4. SOP revision history, archive and restore | Current article supports draft/published/archived status and admin edits; article deletion removes the row | NOT BUILT for saved SOP revisions and a revision restore journey | Q5 | Agreed restore meaning, current staff visibility and knowledge indexing |
 | 5. Fix recipient preview | Reports use the park's configured Fix department; queue membership is available for the current reader | NOT BUILT for a preview listing the staff who would receive a matching report | Q6 | Agreed recipient meaning and the current department assignment |
 | 6. Returning-family six-digit SMS verification | The public camp form looks up saved registrations by event and phone in that event's park | NOT BUILT for the SMS verification step before saved details are returned or changed | Q7 | SMS service, verified contact policy and record-bound verification |
 | 7. Review/movement approval and approved history | Managers mark probation reviews complete; movement/term actions record history and apply changes directly | NOT BUILT for a separate submit/approve lifecycle; whether existing manager action meets the request awaits Q8 | Q8 | Agreed approval meaning, reviewer roles and existing movement effects |
 
-## 3. Candidate records and proposed acceptance
+## 3. Item records and proposed acceptance
 
-These are proposed checks for confirmed scope. They do not choose new rules
-while the answer is pending. Every candidate needs its own staged positive
+These are proposed checks for the working scope. They do not choose an
+unanswered behavior or provider rule. Every item needs its own staged positive
 path, refusal path and inspected screenshot or labelled test-run card.
 
 ### 1. Attendance attachment selection and preview
@@ -122,7 +125,7 @@ Proposed acceptance, after Q4:
 
 Dependencies: the existing spreadsheet parser, employee identity and
 tenant/branch ownership. No new matching precedence or automatic merge is
-chosen by this plan. Existing coverage may satisfy confirmed scope through
+chosen by this plan. Existing coverage may satisfy the working list through
 verification rather than a new implementation.
 
 ### 4. SOP revisions, archive and restore
@@ -148,7 +151,7 @@ Proposed acceptance, after Q5:
 
 Dependencies: restore definition, retention and authoring roles, existing
 article visibility, and knowledge indexing. The current direct edit/status
-behavior remains until scope is confirmed.
+behavior remains while the restore details are unresolved.
 
 ### 5. Fix routing recipient preview
 
@@ -223,40 +226,44 @@ Dependencies: approval definition, reviewer roles and the existing movement
 effects. This plan does not introduce a second approver or delay current
 manager actions while the answer is pending.
 
-## 4. Numbered scope questions
+## 4. Scope record and numbered behavior questions
 
-All answers are pending. Every default below is the existing behavior; a
-proposed alternative is never an instruction to implement it.
+**Q1 scope record:** the original seven-item list is the working baseline
+under the owner's instruction to complete all subtasks and check the original
+documents. It is not an unanswered request for another blanket approval.
+The earlier Open decision 30 wording is retained as history; this note does
+not invent an explicit decision closure.
 
-1. **Q1 - Which of the seven candidates should S2-17c include?** This is
-   Open decision 30. Default: keep current behavior and do not start feature
-   implementation; record each confirmed item as its own subtask.
-2. **Q2 - Which missed or unscheduled request screens need an attachment,
+The concrete questions Q2-Q8 remain unanswered. Every default below is the
+existing behavior; a proposed alternative is never an instruction to build it.
+
+1. **Q2 - Which missed or unscheduled request screens need an attachment,
    and should it be optional?** Default: current reason/note submission,
    with the existing face switch and pending manager review; no new required file.
-3. **Q3 - What does delivered mean for a presence notification, and through
+2. **Q3 - What does delivered mean for a presence notification, and through
    which channel?** Default: current in-app unread/read notifications, without
    a delivery-state claim or new external sending channel.
-4. **Q4 - Does the existing four-state import preview plus matched employee
+3. **Q4 - Does the existing four-state import preview plus matched employee
    details satisfy the list, or is Matched a separate state?** Default: retain
    email-then-name matching, the four current states and per-row results.
-5. **Q5 - Does SOP restore mean reopening an archived article, restoring
+4. **Q5 - Does SOP restore mean reopening an archived article, restoring
    an earlier revision, or recovering a deleted article?** Default: current
    article edits/status changes and deletion, without saved SOP revisions.
-6. **Q6 - Should Fix preview show the configured department's staff, or
+5. **Q6 - Should Fix preview show the configured department's staff, or
    recipients selected by additional routing rules?** Default: one configured
    Fix department and its existing assignment behavior; no additional rules.
-7. **Q7 - Which saved family contacts may verify by SMS, and what resend
+6. **Q7 - Which saved family contacts may verify by SMS, and what resend
    and expiry behavior should apply?** Default: record the current phone-match
    flow; add no contact-priority or verification policy before confirmation.
-8. **Q8 - Does the manager's existing review completion or recorded movement
+7. **Q8 - Does the manager's existing review completion or recorded movement
    count as approval, or is a separate approval step needed?** Default: current
    direct manager actions and recorded history; no second approver or delay.
 
-## 5. Delivery after confirmation
+## 5. Delivery from the working scope
 
-First record Q1 and the item-specific answers, then verify existing coverage
-against the agreed acceptance. Build only confirmed missing scope. Deliver
+Retain the Q1 scope record and record concrete answers where an item's
+behavior or provider choice needs one. Verify existing coverage against the
+working list and its acceptance, then build the missing scope. Deliver
 each unit through the repository landing gate with passing controls and
 severity/prescribed-fix review findings, full checks, complete compiler
 output, touched-file lint, rebase and full-SHA CI. Keep ticket states tied
