@@ -41,8 +41,23 @@ export function isTwilioConfigured(): boolean {
   return !!(accountSid && authToken && verifyServiceSid);
 }
 
+/** Camp verification shares the provider, never the account-verification writer. */
+export const campSmsProvider = {
+  configured: () => isTwilioConfigured() && !!process.env.SESSION_SECRET,
+  send: async (phone: string) => {
+    const verification = await getTwilioClient().verify.v2.services(verifyServiceSid!)
+      .verifications.create({ to: phone, channel: "sms" });
+    return verification.sid;
+  },
+  verify: async (providerId: string, code: string) => {
+    const verification = await getTwilioClient().verify.v2.services(verifyServiceSid!)
+      .verificationChecks.create({ verificationSid: providerId, code });
+    return verification.status === "approved";
+  },
+};
+
 export function normalizePhoneToE164(phone: string, defaultCountryCode: string = "+66"): string {
-  let cleaned = phone.replace(/[\s\-\(\)\.]/g, "");
+  let cleaned = phone.replace(/[\s().-]/g, "");
   
   if (cleaned.startsWith("+")) {
     return cleaned;
@@ -146,7 +161,6 @@ async function validateResetTokenInternal(token: string): Promise<{ valid: boole
 
 async function checkRateLimit(key: string, maxRequests: number): Promise<{ allowed: boolean; remaining: number }> {
   const now = new Date();
-  const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MS);
   
   const existing = await db.select()
     .from(authRateLimits)
