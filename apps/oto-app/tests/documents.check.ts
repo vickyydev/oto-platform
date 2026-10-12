@@ -1198,7 +1198,7 @@ try {
     "PUT /api/employees/:id/cost-allocations": { allocations: [{ branchId: B.x, allocationPercent: 100 }] },
     "POST /api/employees/:id/complete-probation-review": {},
     "POST /api/employees/:employeeId/changes": { changeType: "title_change", effectiveDate: day(0), newTitle: "ZZ hijack" },
-    "PATCH /api/employees/:employeeId/changes/:changeId": { note: "ZZ hijack" },
+    "PATCH /api/employees/:employeeId/changes/:changeId": { contractGenerated: true },
     "POST /api/employees/:employeeId/transfer": { effectiveDate: day(1), newBranchId: B.x },
     "POST /api/employees/:employeeId/offboarding": { offboardingType: "termination", reasonCode: "misconduct", lastWorkingDay: day(-2) },
     "PATCH /api/employees/:employeeId/offboarding": { lastWorkingDay: day(5) },
@@ -1257,11 +1257,14 @@ try {
     assert.equal((await call("GET", `/api/employees/${eHR}/cost-allocations`, { cookie: cookie.a })).body.length, 2);
     assert.ok(((await call("GET", `/api/employees/${eHR}/changes`, { cookie: cookie.a })).body as { id: string }[]).some((c) => c.id === changeHR));
     assert.equal((await call("POST", `/api/employees/${eHR}/changes`, { cookie: cookie.a, body: { changeType: "title_change", effectiveDate: day(0), newTitle: "ZZ Host" } })).status, 201);
-    // An update cannot move the change to another employee: it stays this one's.
+    // Saved history cannot move to another employee or replace its original note.
     const otherA = await employee(A.tenant, A.x, "hr-other");
+    const historyBefore = await q("select employee_id, note from employee_changes where id = $1", [changeHR]);
     const noted = await call("PATCH", `/api/employees/${eHR}/changes/${changeHR}`, { cookie: cookie.a, body: { note: "ZZ noted", employeeId: otherA } });
-    assert.equal(noted.status, 200, show(noted));
-    assert.deepEqual((await q("select employee_id, note from employee_changes where id = $1", [changeHR]))[0], { employee_id: eHR, note: "ZZ noted" });
+    assert.equal(noted.status, 400, show(noted));
+    assert.deepEqual(await q("select employee_id, note from employee_changes where id = $1", [changeHR]), historyBefore);
+    const marked = await call("PATCH", `/api/employees/${eHR}/changes/${changeHR}`, { cookie: cookie.a, body: { contractGenerated: true } });
+    assert.equal(marked.status, 200, show(marked));
     assert.equal((await call("GET", `/api/employees/${eHR}/timekeeping-status`, { cookie: cookie.a })).body.hasPinSet, true);
     assert.equal((await call("DELETE", `/api/employees/${eHR}/pin`, { cookie: cookie.a })).status, 200);
     assert.equal((await call("POST", `/api/employees/${eHR}/pin`, { cookie: cookie.a, body: { pin: "4321" } })).status, 200);
@@ -1291,8 +1294,8 @@ try {
       ["PATCH", `/api/employees/${eHR}/department`, { departmentId: deptB }, 404, DEPARTMENT_NOT_FOUND],
       ["PUT", `/api/employees/${eHR}/cost-allocations`, { allocations: [{ branchId: B.x, allocationPercent: 100 }] }, 400, { message: "One or more invalid branch IDs" }],
       ["POST", `/api/employees/${eHR}/changes`, { changeType: "branch_transfer", effectiveDate: day(1), newBranchId: B.x }, 404, BRANCH_NOT_FOUND],
-      ["PATCH", `/api/employees/${eHR}/changes/${changeHR}`, { newBranchId: B.x }, 404, BRANCH_NOT_FOUND],
-      ["PATCH", `/api/employees/${eHR}/changes/${changeOther}`, { note: "ZZ hijack" }, 404, CHANGE_NOT_FOUND],
+      ["PATCH", `/api/employees/${eHR}/changes/${changeHR}`, { newBranchId: B.x }, 400, { message: "Only contract status and contract link can be updated" }],
+      ["PATCH", `/api/employees/${eHR}/changes/${changeOther}`, { contractGenerated: true }, 404, CHANGE_NOT_FOUND],
     ];
     for (const [method, path, body, status, words] of refusals) {
       const answer = await call(method, path, { cookie: cookie.a, body });

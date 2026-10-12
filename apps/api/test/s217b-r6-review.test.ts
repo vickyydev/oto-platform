@@ -1821,7 +1821,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
   it('G. F1 held, re-driven: the census is exactly the registered `/api/employees/:id*` doors, and as B’s all-branch MANAGER (the builder drove the admin) none of the 45 answers A’s employee or writes anything of theirs', async () => {
     const lib = readFileSync(join(APP_SERVER, 'lib', 'employeeParkGroups.ts'), 'utf8');
     const census = [...lib.matchAll(/\{ method: "(\w+)", path: "([^"]+)", fence: "\w+", foreign: "[\w-]+" \}/g)].map((m) => `${m[1]} ${m[2]}`);
-    const registered = [...readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8').matchAll(/app\.(get|post|put|patch|delete)\(\s*"(\/api\/employees\/:[^"]+)"/g)].map(
+    const registrations = ['routes.ts', 'employee-action-routes.ts'].map(file => readFileSync(join(APP_SERVER, file), 'utf8')).join('\n');
+    const registered = [...registrations.matchAll(/app\.(get|post|put|patch|delete)\(\s*"(\/api\/employees\/:[^"]+)"/g)].map(
       (m) => `${m[1]!.toUpperCase()} ${m[2]}`,
     );
     expect(census).toHaveLength(45);
@@ -1850,7 +1851,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       'POST /api/employees/:id/enable-login': { password: 'zz-hijack-password', email: `zz-r6rr-hijack-${run}@example.com` },
       'PUT /api/employees/:id/cost-allocations': { allocations: [{ branchId: B.x, allocationPercent: 100 }] },
       'POST /api/employees/:employeeId/changes': { changeType: 'title_change', effectiveDate: day(0), newTitle: 'ZZ hijack' },
-      'PATCH /api/employees/:employeeId/changes/:changeId': { note: 'ZZ hijack', employeeId: victim },
+      'PATCH /api/employees/:employeeId/changes/:changeId': { contractGenerated: true },
       'POST /api/employees/:employeeId/transfer': { effectiveDate: day(1), newBranchId: B.x },
       'POST /api/employees/:employeeId/offboarding': { offboardingType: 'termination', reasonCode: 'misconduct', lastWorkingDay: day(-2) },
       'PATCH /api/employees/:employeeId/offboarding': { lastWorkingDay: day(5) },

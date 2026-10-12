@@ -85,6 +85,7 @@ const committed = (path: string) => readFileSync(path, 'utf8').replace(/\r\n/g, 
 /** Comments out, so a sentence in a comment never stands in for code. */
 const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const routesText = () => code(readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8'));
+const employeeActionsText = () => code(readFileSync(join(APP_SERVER, 'employee-action-routes.ts'), 'utf8'));
 const storageText = () => code(readFileSync(join(APP_SERVER, 'storage.ts'), 'utf8'));
 
 /** One route's handler, from its registration to the next registration. */
@@ -756,15 +757,31 @@ describe('D. read off the code', () => {
 
   // ── Round 6's review fixes (findings 1 to 4), read off the code ──────────────
 
-  it('F1, the census: every `/api/employees/:id*` door the routes register is in it, in order (45), and each resolves the employee in a park group before it writes anything', () => {
-    const routes = routesText();
+  it('F1, the census: all 45 employee doors remain registered across the route modules and resolve their park group before writes', () => {
+    const actions = employeeActionsText();
+    const routes = `${routesText()}\n${actions}`;
     const registered = [...routes.matchAll(/\n {2}app\.(get|post|put|patch|delete)\("(\/api\/employees\/:[^"]+)"/g)].map((m) => `${m[1]!.toUpperCase()} ${m[2]}`);
     expect(registered).toHaveLength(45);
-    expect(registered).toEqual(hr.EMPLOYEE_DOORS.map((d) => `${d.method} ${d.path}`));
+    expect([...registered].sort()).toEqual(hr.EMPLOYEE_DOORS.map((d) => `${d.method} ${d.path}`).sort());
     const counts = { review: 0, lift: 0, app: 0 };
     for (const door of hr.EMPLOYEE_DOORS) {
       counts[door.fence] += 1;
       const handler = route(routes, door.method.toLowerCase(), door.path);
+      if (actions.includes(`app.${door.method.toLowerCase()}("${door.path}"`)) {
+        expect(handler).toContain('requireAuth, requireManager');
+        expect(handler).not.toMatch(/storage\.getEmployee\(/);
+        if (door.method === 'PATCH') {
+          const owned = handler.indexOf('eq(employees.tenantId, tenantId)');
+          expect(owned).toBeGreaterThan(-1);
+          expect(owned).toBeLessThan(handler.indexOf('tx.update(employeeChanges)'));
+        } else {
+          expect(handler).toContain('managerAction(');
+          const owned = actions.indexOf('eq(employees.tenantId, actor.tenantId!)');
+          expect(owned).toBeGreaterThan(-1);
+          expect(owned).toBeLessThan(actions.indexOf('await action(req, employee, tx)'));
+        }
+        continue;
+      }
       const fence = handler.search(/employeeOfParkGroup\(req, |getEmployeeInTenant\(|employee\.tenantId !== |employeeDeleteOutsideParkGroup\(|authorizedOffboardingEmployee\(/);
       expect(fence, `${door.method} ${door.path} looks the employee up in a park group`).toBeGreaterThan(-1);
       const write = handler.search(/storage\.(update|create|set|delete|logActivity|archive)\w*\(|db\.(insert|update|delete)\(|db\.transaction\(|uploadToObjectStorage\(/);
@@ -790,8 +807,12 @@ describe('D. read off the code', () => {
     expect(weighing).toMatch(/\(await managedUserTenant\(userId\)\) !== tenantId/);
     expect(route(routes, 'patch', '/api/employees/:id/roles')).toMatch(/if \(await rolesOutsideParkGroup\(roleIds, employee\.tenantId\)\) \{\s*return res\.status\(404\)\.json\(ROLE_NOT_FOUND\);/);
     expect(route(routes, 'patch', '/api/employees/:id/department')).toMatch(/if \(!dept \|\| dept\.tenantId !== employee\.tenantId\) \{/);
-    expect(route(routes, 'post', '/api/employees/:employeeId/changes')).toMatch(/!await branchInParkGroup\(newBranchId, employee\.tenantId\)/);
-    expect(route(routes, 'patch', '/api/employees/:employeeId/changes/:changeId')).toMatch(/delete updates\.employeeId;/);
+    const actions = employeeActionsText();
+    expect(route(actions, 'post', '/api/employees/:employeeId/changes')).toContain('eq(branches.tenantId, employee.tenantId)');
+    const history = route(actions, 'patch', '/api/employees/:employeeId/changes/:changeId');
+    expect(history).toContain('}).strict().safeParse(req.body)');
+    expect(history).toContain('eq(employeeChanges.employeeId, employee.id)');
+    expect(history).toContain('tx.update(employeeChanges).set(parsed.data)');
     expect(route(routes, 'put', '/api/employees/:id/cost-allocations')).toMatch(/eq\(branches\.tenantId, employee\.tenantId\)/);
   });
 
@@ -820,13 +841,13 @@ describe('D. read off the code', () => {
 
   // ── The re-review's fixes (findings 6 to 8), read off the code ──────────────
 
-  it('F6, the census at all 54 routes: every `/api/employees*` route the app registers is one of the 45 doors with an id or the nine without, each list in the order the routes register them', () => {
-    const routes = routesText();
+  it('F6, all 54 employee routes remain across the modules, with the nine list doors in their original order', () => {
+    const routes = `${routesText()}\n${employeeActionsText()}`;
     const all = [...routes.matchAll(/\n {2}app\.(get|post|put|patch|delete)\("(\/api\/employees(?:\/[^"]*)?)"/g)].map((m) => `${m[1]!.toUpperCase()} ${m[2]}`);
     expect(all).toHaveLength(54);
     const withoutId = all.filter((r) => !r.includes('/:'));
     expect(withoutId).toEqual(hr.EMPLOYEE_LIST_DOORS.map((d) => `${d.method} ${d.path}`));
-    expect(all.filter((r) => r.includes('/:'))).toEqual(hr.EMPLOYEE_DOORS.map((d) => `${d.method} ${d.path}`));
+    expect(all.filter((r) => r.includes('/:')).sort()).toEqual(hr.EMPLOYEE_DOORS.map((d) => `${d.method} ${d.path}`).sort());
     const fences = hr.EMPLOYEE_LIST_DOORS.reduce<Record<string, number>>((n, d) => ({ ...n, [d.fence]: (n[d.fence] ?? 0) + 1 }), {});
     expect(fences).toEqual({ 're-review': 6, lift: 2, none: 1 });
     // The dead one is dead because `GET /api/employees/:id` is registered first and answers it.
@@ -864,7 +885,7 @@ describe('D. read off the code', () => {
     expect(apply).not.toMatch(/storage\.getEmployee\(/);
   });
 
-  it('F7, the historical 32-site census: eight original fences hold; attendance review now uses scoped joins and 23 by-id readers remain', () => {
+  it('F7, the historical 32-site census: original fences hold across scoped handlers and 22 by-id readers remain', () => {
     const routes = routesText();
     const attendance = code(readFileSync(join(APP_SERVER, 'timekeeping-review-routes.ts'), 'utf8'));
     const presence = code(readFileSync(join(APP_SERVER, 'presence-notification-delivery.ts'), 'utf8'));
@@ -883,11 +904,19 @@ describe('D. read off the code', () => {
     ]);
     // Every remaining by-id lookup is one the census keeps, handler by handler.
     const sites = (h: string) => (h.match(/storage\.getEmployee\(/g) ?? []).length;
-    expect(sites(routes)).toBe(23);
+    expect(sites(routes)).toBe(22);
     const kept = new Map<string, number>();
     for (const l of hr.EMPLOYEE_LOOKUPS) if (l.disposition !== 'fenced') kept.set(l.route, (kept.get(l.route) ?? 0) + 1);
     for (const r of new Set(hr.EMPLOYEE_LOOKUPS.map((l) => l.route))) {
       const [method, path] = r.split(' ') as [string, string];
+      if (r === 'POST /api/employees/:employeeId/transfer') {
+        const actions = employeeActionsText();
+        const transfer = route(actions, method.toLowerCase(), path);
+        expect(sites(transfer)).toBe(0);
+        expect(transfer).toContain('managerAction("transfer"');
+        expect(actions).toContain('eq(employees.tenantId, actor.tenantId!)');
+        continue;
+      }
       const isPresence = r === 'POST /api/timekeeping/live/ping';
       const h = route(isPresence ? presence : joinedAttendance.has(r) ? attendance : routes, method.toLowerCase(), path);
       if (joinedAttendance.has(r) || isPresence) {
