@@ -13,7 +13,7 @@ process.env.DEPLOY_ENV = "local";
 process.env.DB_SCHEMA = "otoapp";
 
 const { pool } = await import("../server/db");
-const { syncTracking, syncPL, syncCash } = await import("../server/finance-sync");
+const { syncTracking, syncPL, syncCash, ensureFreshToken } = await import("../server/finance-sync");
 const control = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await control.connect();
 await control.query("set search_path to otoapp");
@@ -164,6 +164,39 @@ try {
     await q("select pg_advisory_unlock_all()");
     await q("drop trigger zz_test_disjoint_barrier on cash_daily");
     await q("drop function zz_test_disjoint_barrier()");
+  }
+  // A failed old refresh cannot switch off the credentials another request renewed.
+  await q("update xero_tokens set expires_at=now()-interval '1 minute' where xero_tenant_id=$1", [organisations[0]]);
+  const mockedFetch = globalThis.fetch;
+  let refreshCalls = 0;
+  let bothStarted!: () => void;
+  let releaseFailure!: () => void;
+  const both = new Promise<void>((resolve) => { bothStarted = resolve; });
+  const failureMayReturn = new Promise<void>((resolve) => { releaseFailure = resolve; });
+  globalThis.fetch = async (input, init) => {
+    if (new URL(String(input)).origin !== "https://identity.xero.com") return mockedFetch(input, init);
+    refreshCalls++;
+    if (refreshCalls === 1) {
+      await both;
+      return Response.json({ access_token: randomBytes(24).toString("hex"), refresh_token: randomBytes(24).toString("hex"), expires_in: 3600 });
+    }
+    bothStarted();
+    await failureMayReturn;
+    return new Response("ZZ TEST refresh refused", { status: 400 });
+  };
+  try {
+    const renewed = ensureFreshToken(organisations[0]);
+    const late = ensureFreshToken(organisations[0]);
+    assert.equal(typeof await renewed, "string");
+    releaseFailure();
+    await assert.rejects(late, /Please reconnect/);
+    const state = (await q("select is_active,expires_at from xero_tokens where xero_tenant_id=$1", [organisations[0]]))[0];
+    assert.equal(state.is_active, true);
+    assert.equal(new Date(state.expires_at).getTime() > Date.now(), true);
+    assert.equal(refreshCalls, 2);
+  } finally {
+    releaseFailure();
+    globalThis.fetch = mockedFetch;
   }
   console.log("finance.check: four upsert keys, two organisations, replay, four failure points and P&L snapshots passed");
 } finally {

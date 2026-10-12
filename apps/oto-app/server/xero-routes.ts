@@ -123,7 +123,11 @@ async function refreshTokenIfNeeded(token: typeof xeroTokens.$inferSelect, creat
     await db
       .update(xeroTokens)
       .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(xeroTokens.id, token.id));
+      .where(and(
+        eq(xeroTokens.id, token.id),
+        eq(xeroTokens.refreshToken, token.refreshToken),
+        eq(xeroTokens.accessToken, token.accessToken),
+      ));
     throw new Error("Xero connection expired. Please reconnect.");
   }
 }
