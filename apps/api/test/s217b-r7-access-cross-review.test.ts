@@ -41,6 +41,15 @@ type Result = {
   overrideRaceReached: boolean;
   overrideRaceWholeSet: boolean;
   overrideClearWorks: boolean;
+  privatePhotoControl: boolean;
+  externalPhotoControl: boolean;
+  privatePhotoVariantsRefused: boolean;
+  privatePhotoBytesRefused: boolean;
+  privatePhotoWriteStatuses: number[];
+  privatePhotoBorrowedBytes: boolean[];
+  overrideReaderControl: boolean;
+  overrideOwnChoicePreserved: boolean;
+  overrideForeignChoiceIgnored: boolean;
 };
 let result: Result;
 
@@ -99,12 +108,15 @@ describe.skipIf(!available)('round 7 independent model and role review over HTTP
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {randomBytes,randomUUID,scryptSync} from 'node:crypto';
+import {createServer} from 'node:http';
+import {unlinkSync} from 'node:fs';
+import {basename,resolve} from 'node:path';
 import {createRequire} from 'node:module';
 const app=${JSON.stringify(APP)};
 const require=createRequire(app+'package.json');const pg=require('pg');
 const c=new pg.Client({connectionString:process.env.DATABASE_URL});await c.connect();await c.query('set search_path to otoapp');
 const password=randomBytes(24).toString('hex'),salt=randomBytes(16).toString('hex');const hash=scryptSync(password,salt,64).toString('hex')+'.'+salt;
-const groups=[];const rows={};let server;let origin;
+const groups=[];const rows={};let server;let origin;let publicServer;let uploadedFile;
 async function call(method,path,cookie,body){const response=await fetch(origin+path,{method,headers:{cookie,...(body===undefined?{}:{'content-type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body)});const text=await response.text();return {status:response.status,data:text?JSON.parse(text):null};}
 try {
  for(const tag of ['default','A','B']){
@@ -170,9 +182,63 @@ try {
  const finalChoices=(await call('GET','/api/module-overrides/'+a.id,a.cookie)).data;
  rows.overrideRaceWholeSet=finalChoices.length===1&&['tasks','events'].includes(finalChoices[0].moduleKey)&&finalChoices[0].enabled===true;
  await c.query('drop trigger zz_test_override_barrier on user_module_overrides');await c.query('drop function zz_test_override_barrier()');
+ // Exercise a real owned object through its writer and every read gate.
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WlZtSAAAAAASUVORK5CYII=','base64');
+ const upload=new FormData();upload.append('photo',new Blob([png],{type:'image/png'}),'ZZ TEST private photo.png');
+ const uploadResponse=await fetch(origin+'/api/employees/'+employee+'/profile-photo',{method:'POST',headers:{cookie:a.cookie},body:upload});
+ assert.equal(uploadResponse.status,200);const photoPath=(await uploadResponse.json()).profilePhotoPath;
+ const filename=basename(photoPath);assert.match(filename,/^profile_[a-zA-Z0-9-]+_[0-9]+\\.jpg$/);
+ uploadedFile=resolve(app,'uploads','profile-photos',filename);
+ assert.ok(uploadedFile.startsWith(resolve(app,'uploads','profile-photos')+'/')||uploadedFile.startsWith(resolve(app,'uploads','profile-photos')+'\\\\'));
+ const ownPhoto=await fetch(origin+'/api/employees/'+employee+'/profile-photo',{headers:{cookie:a.cookie}});
+ const foreignPhoto=await fetch(origin+photoPath,{headers:{cookie:b.cookie}});
+ rows.privatePhotoControl=ownPhoto.status===200&&Buffer.from(await ownPhoto.arrayBuffer()).equals(png)&&foreignPhoto.status===404;
+ const bEmployee=(await c.query("insert into employees(tenant_id,branch_id,full_name,nickname,email) values($1,$2,'ZZ TEST Media Employee B','ZZ TEST Media B',$3) returning id",[b.tenant,b.branch,'zz-media-'+randomUUID()+'@example.invalid'])).rows[0].id;
+ const publicImage=Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
+ publicServer=createServer((_request,response)=>{response.writeHead(200,{'content-type':'image/gif'});response.end(publicImage);});
+ await new Promise(resolve=>publicServer.listen(0,'127.0.0.1',resolve));
+ const external='http://127.0.0.1:'+publicServer.address().port+'/public/ZZ-TEST-profile.png';
+ const externalWrite=await call('PUT','/api/data-admin/employees/'+bEmployee,b.cookie,{profilePhotoPath:external});
+ const externalRow=await call('GET','/api/data-admin/employees/'+bEmployee,b.cookie);const externalRead=await fetch(external);
+ rows.externalPhotoControl=externalWrite.status===200&&externalRow.data.profilePhotoPath===external&&externalRead.status===200&&Buffer.from(await externalRead.arrayBuffer()).equals(publicImage);
+ const variants=[origin+photoPath,origin+'/%61pi/files/profile-photos/'+filename,origin+'/%2561pi/files/profile-photos/'+filename,origin+'/%61pi/files/employee-documents/'+filename];
+ const mediaResults=[];
+ for(const variant of variants){
+  await c.query('update employees set profile_photo_path=$1 where id=$2',[external,bEmployee]);
+  const writer=await call('PUT','/api/data-admin/employees/'+bEmployee,b.cookie,{profilePhotoPath:variant});
+  const stored=(await call('GET','/api/data-admin/employees/'+bEmployee,b.cookie)).data.profilePhotoPath;
+  const reader=await fetch(origin+'/api/employees/'+bEmployee+'/profile-photo',{headers:{cookie:b.cookie}});
+  const bytes=Buffer.from(await reader.arrayBuffer());
+  mediaResults.push({status:writer.status,refused:writer.status===409&&stored===external,privateBytes:reader.status===200&&bytes.equals(png)});
+ }
+ rows.privatePhotoWriteStatuses=mediaResults.map(row=>row.status);rows.privatePhotoBorrowedBytes=mediaResults.map(row=>row.privateBytes);
+ rows.privatePhotoVariantsRefused=mediaResults.every(row=>row.refused);
+ // A genuine public link with the same basename must still resolve publicly.
+ const matchingPublic='http://127.0.0.1:'+publicServer.address().port+'/public/'+filename;
+ const matchingWrite=await call('PUT','/api/data-admin/employees/'+bEmployee,b.cookie,{profilePhotoPath:matchingPublic});
+ const matchingPublicRead=await fetch(matchingPublic);
+ rows.externalPhotoControl=rows.externalPhotoControl&&matchingWrite.status===200&&matchingPublicRead.status===200&&Buffer.from(await matchingPublicRead.arrayBuffer()).equals(publicImage);
+ const matchingPrivateRead=await fetch(origin+'/api/employees/'+bEmployee+'/profile-photo',{headers:{cookie:b.cookie}});
+ const matchingPrivateBytes=matchingPrivateRead.status===200&&Buffer.from(await matchingPrivateRead.arrayBuffer()).equals(png);
+ rows.privatePhotoBorrowedBytes.push(matchingPrivateBytes);
+ rows.privatePhotoBytesRefused=mediaResults.every(row=>!row.privateBytes)&&!matchingPrivateBytes;
+ // Historical foreign tenant rows must not govern either active reader.
+ // operator_admin preserves full defaults while honoring explicit overrides.
+ await c.query("update users set role='operator_admin' where id=$1",[a.id]);
+ await c.query('delete from user_module_overrides where user_id=$1',[a.id]);
+ const defaultPermissions=await call('GET','/api/permissions/me',a.cookie);
+ const defaultGate=await call('POST','/api/settings',a.cookie,[]);
+ rows.overrideReaderControl=defaultPermissions.status===200&&defaultPermissions.data.modules.find(module=>module.moduleKey==='settings').allowed===true&&defaultGate.status===200;
+ await c.query("insert into user_module_overrides(tenant_id,user_id,module_key,enabled,branch_scope_type) values($1,$2,'settings',false,'ALL')",[a.tenant,a.id]);
+ const ownPermissions=await call('GET','/api/permissions/me',a.cookie);const ownGate=await call('POST','/api/settings',a.cookie,[]);
+ rows.overrideOwnChoicePreserved=ownPermissions.data.modules.find(module=>module.moduleKey==='settings').allowed===false&&ownGate.status===403;
+ await c.query('delete from user_module_overrides where user_id=$1',[a.id]);
+ await c.query("insert into user_module_overrides(tenant_id,user_id,module_key,enabled,branch_scope_type) values($1,$2,'settings',false,'ALL')",[b.tenant,a.id]);
+ const foreignPermissions=await call('GET','/api/permissions/me',a.cookie);const foreignGate=await call('POST','/api/settings',a.cookie,[]);
+ rows.overrideForeignChoiceIgnored=foreignPermissions.data.modules.find(module=>module.moduleKey==='settings').allowed===true&&foreignGate.status===200;
  const privateAfter=(await c.query('select name,is_active from roles where id=$1',[privateRole])).rows[0];rows.privateUnchanged=privateAfter.name==='ZZ TEST Private Role A'&&privateAfter.is_active;
  console.log('ACCESS_CROSS_RESULTS='+JSON.stringify(rows));
-} finally {if(server&&server.exitCode===null&&server.signalCode===null){await new Promise(resolve=>{server.once('exit',resolve);server.kill();});}await c.end();}
+} finally {if(publicServer){await new Promise(resolve=>publicServer.close(resolve));}if(server&&server.exitCode===null&&server.signalCode===null){await new Promise(resolve=>{server.once('exit',resolve);server.kill();});}if(uploadedFile){unlinkSync(uploadedFile);}await c.end();}
 `,
       );
       const response = await run(
@@ -193,6 +259,10 @@ try {
       const payload = /ACCESS_CROSS_RESULTS=(.+)/.exec(response.stdout);
       expect(payload, response.stdout).toBeTruthy();
       result = JSON.parse(payload![1]!);
+      console.info('ZZ TEST private-media controls', JSON.stringify({
+        writeStatuses: result.privatePhotoWriteStatuses,
+        borrowedBytes: result.privatePhotoBorrowedBytes,
+      }));
     } finally {
       await database.drop();
       rmSync(directory, { recursive: true, force: true });
@@ -255,4 +325,19 @@ try {
       expect(result.overrideRaceWholeSet).toBe(true);
     },
   );
+  it('a real owned photo is readable, its direct foreign alias is refused, and a public external image remains usable', () => {
+    expect(result.privatePhotoControl).toBe(true);
+    expect(result.externalPhotoControl).toBe(true);
+  });
+  it.fails('FINDING 6 (high): encoded app-private photo URLs cannot copy another park\u2019s object into an owned record; prescribed fix: decode private path segments before allowing external links and hold profile reads to approved object references', () => {
+    expect(result.privatePhotoVariantsRefused).toBe(true);
+    expect(result.privatePhotoBytesRefused).toBe(true);
+  });
+  it('module readers preserve role defaults and an owned explicit choice', () => {
+    expect(result.overrideReaderControl).toBe(true);
+    expect(result.overrideOwnChoicePreserved).toBe(true);
+  });
+  it.fails('FINDING 7 (high): historical overrides from another park cannot govern either module reader; prescribed fix: require the resolved park group in the getter and all four consumers', () => {
+    expect(result.overrideForeignChoiceIgnored).toBe(true);
+  });
 });
