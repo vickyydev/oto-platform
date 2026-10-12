@@ -24,6 +24,19 @@ const source = (name: string) => readFileSync(`${appDir}script/${name}`, 'utf8')
 const baseline = { version: 1, errors: 2, counts: { 'server/a.ts|TS2322': 2 } };
 
 describe('S2-17b round 8 — restore and compiler review', () => {
+  it('main pushes, every pull request and manual dispatch retain the release gate without duplicate lane pushes', () => {
+    const workflow = readFileSync(new URL('../../../.github/workflows/ci.yml', import.meta.url), 'utf8');
+    const triggers = workflow.slice(workflow.indexOf('on:'), workflow.indexOf('concurrency:'));
+    const push = triggers.slice(triggers.indexOf('  push:'), triggers.indexOf('  pull_request:'));
+    const pullRequest = triggers.slice(triggers.indexOf('  pull_request:'), triggers.indexOf('  workflow_dispatch:'));
+    expect(push).toMatch(/branches: \[main\]/);
+    expect(push).not.toContain('branches-ignore:');
+    expect(pullRequest).toContain('paths-ignore:');
+    expect(pullRequest).not.toMatch(/branches(?:-ignore)?:/);
+    expect(triggers).toContain('  workflow_dispatch:');
+    expect(workflow).toContain('cancel-in-progress: false');
+  });
+
   it('counts every diagnostic in complete multiline compiler output', () => {
     expect(
       parseDiagnostics(
