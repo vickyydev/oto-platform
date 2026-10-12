@@ -251,7 +251,8 @@ export function requireModule(...moduleKeys: ModuleKey[]) {
     }
 
     try {
-      const tenantId = req.userWithAccess?.tenantId || user.tenantId || await storage.getDefaultTenantId();
+      const tenantId = req.userWithAccess?.tenantId || user.tenantId;
+      if (!tenantId) return res.status(403).json({ error: "Park group context required" });
       const overrides = await storage.getModuleOverrides(user.id, tenantId);
       const employees = await storage.getEmployees(tenantId);
       const linkedEmployee = employees.find(e => e.userId === user.id);
