@@ -13,8 +13,9 @@ AGENTS.md wins.
 
 **Where the work stands.** The open story is S2-17b (SCRUM-191): the OTO App
 lifted whole onto the platform, run as gated lane rounds per the plan's
-section 8. Rounds 1-6 are LANDED AND LIVE on staging (all six services at
-633cae41): sign-on and the route fences; the employee mirror (the app is the
+section 8. Rounds 1-6 are LANDED AND LIVE on staging (app 633cae41; five
+platform services 6617f3b2, the same runtime code after documentation):
+sign-on and the route fences; the employee mirror (the app is the
 staff master; `job:otoapp.employee_sync` copies every 15 minutes, adoption
 proven); the night jobs under the platform runner (OTOAPP_JOBS=platform is
 LIVE on staging - the app starts no timers there); tenant ownership complete
@@ -33,15 +34,17 @@ fixing ad hoc. A deliberate test record exists: Som's sick day on 14 October.
 
 **First actions, in order:**
 1. Completed 12 October: SCRUM-191 status checked (In Progress) and the
-   round-6 delivery comment posted (11727). The walkthrough pictures remain
-   the next acceptance step.
+   round-6 delivery comment posted (11727). Its eight module walkthroughs
+   are now recorded under docs/qa/oto-app-lift/round-6/.
 2. Completed 12 October: read-only staging job job-db69i3tckfvc73cl6e8g
    found five platform-linked app users, zero direct employee/login links,
    zero cross-park direct links and zero unplaced direct links. Recorded in
    STATUS and section 10 of the plan; email fallback is outside this check.
-3. The walkthrough debt: rounds 5 and 6 owe their module evidence pages
-   (rota/leave, kiosk clock roads, checklists, announcements; contracts,
-   letters, templates, policies, assets, offboarding, org chart) - staged
+3. The remaining walkthrough debt: round 5's ten pages (rota/leave, kiosk
+   clock roads, checklists, announcements and the other named modules).
+   Round 6's eight pages now record their actions/refusals and exact document
+   cleanup; the shared ZZ TEST practice park and app user remain for round 5,
+   with their IDs and final-cleanup duties in STATUS. Use staged
    captures with `evidence.mjs`, frames committed under
    `docs/qa/jira-comments/attachments/SCRUM-191/`, attached with plain-words
    comments. The owner has confirmed that necessary walkthrough actions

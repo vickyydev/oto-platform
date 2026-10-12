@@ -33,20 +33,24 @@ offboarding proven by failure injection, and the signed-URL document gate -
 the final review gate covered all 54 employee routes, 32 employee lookup
 sites and five role-holder writers. Staging verified nine app migrations,
 the offboarding unique index and zero unowned document rows. Delivery comment
-11727 is posted on SCRUM-191; the round 5+6 walkthrough pictures are next.
+11727 is posted on SCRUM-191. Round 6's eight module walkthroughs now record
+real tablet actions, other-park/role refusals and exact document cleanup at
+docs/qa/oto-app-lift/round-6/. Round 5's ten pages are next; the shared ZZ TEST
+practice park and app user remain in use, with their IDs and cleanup duties
+in the newest STATUS block.
 
 _The newest block of docs/progress/STATUS.md is always the exact state; it
 supersedes this paragraph if they ever disagree._
 
 | Item | State |
 |---|---|
-| Main | Origin/main 2027136c67104dd5c47df9237e3eb922c24be013, documentation after round 6. Latest CI green: 38213403753 on 13e0709e287d03b968285dfc8ae995e48592aa60. Platform migrations end at 0075 (next free 0076); app migration 0008 is live (next free 0009) |
-| Staging | Read live 12 October: app 633cae416ff7e4a1c253ec4904cdc22351cf7df1; five platform services 13e0709e287d03b968285dfc8ae995e48592aa60, the same round-6 runtime code. OTOAPP_JOBS=platform. Preserve Som's evidence sick day 2026-10-14 (id c1e7e9ae-...), the four demo app employees and the jobs:run directory key |
+| Main | Documentation checkpoint 6617f3b2e94ae9f0077c0cde3fc5cbe8beac3642 passed full CI 38224228948. Platform migrations end at 0075 (next free 0076); app migration 0008 is live (next free 0009). API typecheck zero lines; app 467 errors across 62 files, read whole and retained per file/code |
+| Staging | Read live 12 October: app 633cae416ff7e4a1c253ec4904cdc22351cf7df1; five platform services 6617f3b2e94ae9f0077c0cde3fc5cbe8beac3642, the same round-6 runtime code. OTOAPP_JOBS=platform. Preserve Som's evidence sick day 2026-10-14 (id c1e7e9ae-...), the four demo app employees and the jobs:run directory key |
 | Round 6 | LANDED AND LIVE; no deployment repeat needed. SCRUM-191 delivery comment 11727 posted, status remains In Progress. Standing review pins remain named in the plan; walkthrough evidence is owed |
 | Cross-park direct login links | Read-only job job-db69i3tckfvc73cl6e8g succeeded: five platform-linked app users, zero direct employee/login links, zero cross-park direct links and zero unplaced direct links. Strict User Management placement; email fallback outside this check. Recorded in STATUS and plan section 10 |
 | After round 6 | Round 7 (park/knowledge/administration/finance: the finance keys migration, round 6's NOT NULL contraction, the people routes slice, voucher notices, the big walkthrough sweep), round 8 (restore rehearsal in CI, typecheck ratchet, acceptance index). THEN THE FIX BLOCK (docs/progress/OPEN_ITEMS.md) before ANY new story - the owner's standing ruling of 9 October |
 | Owner queues | Lift plan Q1-Q54 (newest: Q38-Q46 attendance, Q47-Q54 documents/roles); benefits Q1-Q13; events Q1-Q14; analytics 1-17 (Q3 blocks SCRUM-508); SCRUM-497; the OPEN_ITEMS section-3 ruling list |
-| Walkthrough debt (SCRUM-191) | Next on lane/s217b-walkthroughs from origin/main: round 5's ten module pages and round 6's eight. The owner confirmed necessary actions should proceed with disposable ZZ TEST records and exact cleanup; the acceptance rows tick only as modules prove |
+| Walkthrough debt (SCRUM-191) | This checkpoint records round 6's eight pages, inspected frames and guarded cleanup; Jira attachments follow the documentation push. Next on lane/s217b-walkthroughs: round 5's ten pages and shared-fixture cleanup, then rounds 7 and 8. The acceptance rows describe only the actions actually shown |
 | CI | Sharded 8 Oct (SCRUM-511 Deployed with the measured card): api 3 shards + pos on its own runner; ~13 min wall. The 0007-gate suites know the no-app-modules fallback path (cause chain surfaced) |
 
 **Standing security/data rules** (unchanged): ZZ TEST prefixes for new test
