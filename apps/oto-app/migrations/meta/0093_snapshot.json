@@ -1,6 +1,6 @@
 {
-  "id": "37b99f27-a122-49fd-9e71-0f079159fb9e",
-  "prevId": "f17a56a5-c7e4-4b7b-b39b-f6843aa6a3ed",
+  "id": "fc222bc0-9fa1-4f72-b676-544ab21e0351",
+  "prevId": "9ff2fb43-c2b4-4b8f-a7b6-3bc54f7d9b4d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2454,7 +2454,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "cash_daily_tenant_id_date_pk": {
+          "name": "cash_daily_tenant_id_date_pk",
+          "columns": [
+            "tenant_id",
+            "date"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -2515,7 +2523,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "cash_txns_tenant_id_xero_bank_transaction_id_pk": {
+          "name": "cash_txns_tenant_id_xero_bank_transaction_id_pk",
+          "columns": [
+            "tenant_id",
+            "xero_bank_transaction_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -8263,6 +8279,12 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "full_name": {
           "name": "full_name",
           "type": "text",
@@ -8408,7 +8430,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "people_tenant_id_tenants_id_fk": {
+          "name": "people_tenant_id_tenants_id_fk",
+          "tableFrom": "people",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "people_email_unique": {
@@ -14892,7 +14928,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "xero_tracking_categories_tenant_id_tracking_category_id_pk": {
+          "name": "xero_tracking_categories_tenant_id_tracking_category_id_pk",
+          "columns": [
+            "tenant_id",
+            "tracking_category_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -14935,7 +14979,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "xero_tracking_options_tenant_id_tracking_option_id_pk": {
+          "name": "xero_tracking_options_tenant_id_tracking_option_id_pk",
+          "columns": [
+            "tenant_id",
+            "tracking_option_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
