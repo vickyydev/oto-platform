@@ -59,6 +59,18 @@ describe('S2-17b round 8 — restore and compiler review', () => {
     expect(baseline).toEqual(copy);
   });
 
+  it('FINDING 4 (low, fixed): retired permission diagnostics cannot return; prescribed fix: tighten each measured bucket so returning diagnostics cannot borrow the remaining total', () => {
+    const committed = JSON.parse(source('typecheck-baseline.json'));
+    for (const [key, count] of [
+      ['server/auth-middleware.ts|TS2339', 1],
+      ['server/auth-middleware.ts|TS2554', 1],
+      ['server/routes.ts|TS2339', 49],
+      ['server/routes.ts|TS2554', 7],
+    ] as const) {
+      expect(compareDiagnostics({ errors: count, counts: { [key]: count } }, committed).ok).toBe(false);
+    }
+  });
+
   it('compiler boot errors and a malformed baseline never pass as zero diagnostics', () => {
     expect(() => parseDiagnostics('error TS6053: File was not found.')).toThrow('unclassified');
     expect(() => parseDiagnostics('/other/park/a.ts(1,2): error TS2322: Outside.')).toThrow(
