@@ -62,7 +62,7 @@ export function runTypecheck() {
   if (result.error || result.signal || ![0, 2].includes(result.status)) {
     throw new Error('TypeScript did not finish normally; the ratchet did not pass.');
   }
-  const actual = parseDiagnostics(result.stdout ?? '');
+  const actual = parseDiagnostics(`${result.stdout ?? ''}\n${result.stderr ?? ''}`);
   if ((result.status === 0) !== (actual.errors === 0)) {
     throw new Error('Compiler exit and diagnostic count disagree; the ratchet did not pass.');
   }

@@ -1,4 +1,6 @@
 export function quoteIdentifier(value: string): string;
+export function prepareStructureSql(input: string): string;
+export function assertTableInventory(baselineSql: string, actual: Record<string, string>): string[];
 export function runCommand(
   executable: string,
   args: string[],

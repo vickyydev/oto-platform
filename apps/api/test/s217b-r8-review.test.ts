@@ -8,6 +8,8 @@ import {
   databaseUrl,
   quoteIdentifier,
   runCommand,
+  prepareStructureSql,
+  assertTableInventory,
 } from '../../oto-app/script/restore-rehearsal-lib.mjs';
 
 /**
@@ -77,6 +79,44 @@ describe('S2-17b round 8 — restore and compiler review', () => {
       { table: 'templates', before: '0', after: null },
     ]);
     expect(compareCounts(before, before)).toEqual([]);
+  });
+
+  it('the source inventory preserves every exact baseline name, including empty tables', () => {
+    const sql = readFileSync(`${appDir}migrations/0000_otoapp_baseline.sql`, 'utf8');
+    const names = [...sql.matchAll(/^CREATE TABLE "([^"]+)"/gm)].map((match) => match[1]!);
+    const counts = Object.fromEntries(names.map((name) => [name, '0']));
+    expect(assertTableInventory(sql, counts)).toHaveLength(184);
+    const substituted = { ...counts };
+    delete substituted.quiz_attempts;
+    substituted.zz_test_inventory_substitute = '0';
+    expect(Object.keys(substituted)).toHaveLength(184);
+    expect(() => assertTableInventory(sql, substituted)).toThrow('inventory differs');
+    expect(() => assertTableInventory(sql, { ...counts, zz_test_extra: '0' })).toThrow(
+      'inventory differs',
+    );
+    const unusual = Object.assign(Object.create(null), counts);
+    unusual.__proto__ = '0';
+    expect(() => assertTableInventory(sql, unusual)).toThrow('inventory differs');
+  });
+
+  it('ordinary SQL and matched dump wrappers remain usable without client commands', () => {
+    const sql = 'CREATE TABLE "zz_test" ("value" text DEFAULT \'C:\\local\');';
+    expect(prepareStructureSql(sql)).toBe(sql);
+    expect(
+      prepareStructureSql(`\\restrict ZZ_TEST_marker\n${sql}\n\\unrestrict ZZ_TEST_marker`),
+    ).toBe(sql);
+    expect(() => prepareStructureSql('\\restrict ZZ_TEST_marker\nCREATE TABLE x(id int);')).toThrow(
+      'unmatched',
+    );
+  });
+
+  it('client escapes and NUL input are refused before a fixed SQL load', () => {
+    for (const command of ['connect', 'c', 'include', 'i', 'ir', '!', 'copy', 'gexec', 'setenv']) {
+      expect(() => prepareStructureSql(`  \\${command} ZZ_TEST_NEVER_EXECUTE`)).toThrow(
+        'client command',
+      );
+    }
+    expect(() => prepareStructureSql('CREATE TABLE x(id int);\0')).toThrow('NUL');
   });
 
   it('a scratch destination never keeps the caller’s database name', () => {
