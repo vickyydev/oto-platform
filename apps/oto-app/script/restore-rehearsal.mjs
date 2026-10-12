@@ -1,7 +1,7 @@
 /**
  * Rehearse the public-schema import on disposable databases only.
  * REHEARSAL_DATABASE_URL names a scratch server with CREATE DATABASE rights.
- * pg_dump, pg_restore and psql must be on PATH (or under REHEARSAL_PG_BIN).
+ * pg_dump and pg_restore must be on PATH (or under REHEARSAL_PG_BIN).
  * Optional --structure <file> reads the local production structure without
  * copying it into the repository. Only counts and fingerprints are reported.
  */
@@ -18,6 +18,8 @@ import {
   compareCounts,
   databaseUrl,
   runCommand,
+  prepareStructureSql,
+  assertTableInventory,
 } from './restore-rehearsal-lib.mjs';
 
 const APP_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -69,7 +71,7 @@ async function tableCounts(url, schema) {
       "SELECT tablename FROM pg_tables WHERE schemaname = $1 AND tablename <> '__drizzle_migrations' ORDER BY tablename",
       [schema],
     );
-    const counts = {};
+    const counts = Object.create(null);
     for (const { tablename } of tables.rows) {
       counts[tablename] = (
         await client.query(
@@ -142,7 +144,11 @@ export async function rehearseRestore({
       'REHEARSAL_DATABASE_URL is required; DATABASE_URL is never used as a fallback.',
     );
   // Check all tools before creating a database, so missing clients leave nothing.
-  for (const name of ['pg_dump', 'pg_restore', 'psql'])
+  const sourceFile = resolve(structureFile ?? BASELINE);
+  const sourceInput = readFileSync(sourceFile);
+  const sourceSql = prepareStructureSql(sourceInput.toString('utf8'));
+  const baselineSql = readFileSync(BASELINE, 'utf8');
+  for (const name of ['pg_dump', 'pg_restore'])
     command(tool(name, pgBin), ['--version'], process.env, `${name} availability`);
   const journal = JSON.parse(readFileSync(join(APP_MIGRATIONS, 'meta/_journal.json'), 'utf8'));
   if (journal.entries[0]?.tag !== '0000_otoapp_baseline')
@@ -167,16 +173,23 @@ export async function rehearseRestore({
         created.push(names[i]);
       }
     });
-    const sourceFile = resolve(structureFile ?? BASELINE);
-    command(
-      tool('psql', pgBin),
-      ['--no-psqlrc', '--set', 'ON_ERROR_STOP=1', '--single-transaction', '--file', sourceFile],
-      pgEnvironment(urls[0]),
-      'source structure',
-    );
+    // One fixed connection and transaction: input cannot switch database,
+    // include another file, invoke a shell or use a psql startup script.
+    await connection(urls[0], async (client) => {
+      await client.query('BEGIN');
+      try {
+        await client.query('SET search_path TO public');
+        await client.query(sourceSql);
+        await client.query('COMMIT');
+      } catch {
+        await client.query('ROLLBACK');
+        throw new Error(
+          'Restore rehearsal stopped at source structure; no SQL details were published.',
+        );
+      }
+    });
     const sourceTables = await tableCounts(urls[0], 'public');
-    if (Object.keys(sourceTables).length !== 184)
-      throw new Error('The input does not contain the 184 baseline app tables.');
+    assertTableInventory(baselineSql, sourceTables);
     command(
       process.execPath,
       [join(APP_DIR, 'node_modules/tsx/dist/cli.mjs'), 'script/sample/main.ts'],
@@ -267,7 +280,7 @@ export async function rehearseRestore({
       throw new Error('A second migration run changed the restored app.');
     result = {
       input: structureFile ? 'local structure' : 'committed baseline',
-      inputSha256: createHash('sha256').update(readFileSync(sourceFile)).digest('hex'),
+      inputSha256: createHash('sha256').update(sourceInput).digest('hex'),
       sourceTables: Object.keys(before).length,
       sourceRows: Object.values(before).reduce((sum, n) => sum + Number(n), 0),
       platformMigrations: JSON.parse(

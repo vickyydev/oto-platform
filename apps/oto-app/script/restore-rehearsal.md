@@ -11,7 +11,9 @@ node script/restore-rehearsal.mjs --structure ../../imports/_db/data-structure-o
 ```
 
 The first command uses the committed baseline; the second reads the local
-structure file. Both load the same sample seed into `public`, dump it with
+structure file. Input is loaded on one fixed SQL connection; client commands
+are refused and the table names must match every committed baseline table.
+Both load the same sample seed into `public`, dump it with
 `pg_dump`, restore it into another fresh database, rename `public` to
 `otoapp`, and import that schema after the platform's committed migrations.
 The baseline is recorded as already applied before the app's migrator runs
