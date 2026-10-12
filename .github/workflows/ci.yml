@@ -2,11 +2,14 @@ name: CI
 
 on:
   push:
+    branches: [main]
     paths-ignore: ['imports/**', 'docs/**']
   pull_request:
     paths-ignore: ['imports/**', 'docs/**']
   workflow_dispatch:
 
+# Lane release checks run on pull requests or manual dispatch; main pushes
+# retain their full-SHA release gate without duplicate branch-push runs.
 # Two agent lanes push several times an hour, and a run superseded by a newer
 # push proves nothing anyone waits for: Render deploys the newest green
 # commit, and the Pi release is fetched for tips, not intermediates. One
