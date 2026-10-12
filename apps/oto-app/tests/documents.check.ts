@@ -1504,7 +1504,7 @@ try {
     const issue = randomUUID();
     await q(
       `insert into timekeeping_issues (id, tenant_id, employee_id, branch_id, issue_date, issue_type, status, linked_time_entry_id)
-       values ($1, $2, $3, $4, $5, 'MISSING_CLOCK_OUT', 'PENDING_APPROVAL', $6)`,
+       values ($1, $2, $3, $4, $5, 'MISSING_CLOCK_OUT', 'OPEN', $6)`,
       [issue, A.tenant, eA, A.x, day(0), entry],
     );
     const issueRow = () => q("select status, resolved_by, resolved_at from timekeeping_issues where id = $1", [issue]);
@@ -1514,13 +1514,11 @@ try {
       assert.deepEqual([resolved.status, resolved.body], [404, { message: "Issue not found" }], show(resolved));
     }
     assert.deepEqual(await issueRow(), issueBefore);
-    // Within the park group the door is the app's: it reads a time entry the issue does not name, so it answers this (the app's own; nothing written).
+    // The owned linked request completes both existing review states together.
     const ownResolve = await call("POST", `/api/timekeeping/issues/${issue}/resolve`, { cookie: cookie.a, body: { action: "approve" } });
-    assert.deepEqual([ownResolve.status, ownResolve.body], [404, { message: "Time entry not found" }], show(ownResolve));
-    // The ping: another's employee is the app's 404; its own passes the lookup (and meets the app's own failure after it).
-    const ping = await call("POST", "/api/timekeeping/live/ping", { cookie: cookie.b, body: { employeeId: eA, reason: "ZZ" } });
-    assert.deepEqual([ping.status, ping.body], [404, notFound], show(ping));
-    assert.notEqual((await call("POST", "/api/timekeeping/live/ping", { cookie: cookie.a, body: { employeeId: eA, reason: "ZZ" } })).status, 404);
+    assert.equal(ownResolve.status, 200, show(ownResolve));
+    assert.equal(ownResolve.body.issue.status, "RESOLVED");
+    assert.deepEqual((await q("select i.status as issue_status, e.status as entry_status from timekeeping_issues i join time_entries e on e.id=i.linked_time_entry_id where i.id=$1", [issue]))[0], { issue_status: "RESOLVED", entry_status: "APPROVED" });
     // The older shift doors: another's employee is the app's 400, before anything is written.
     const shiftWords = { message: "Employee not found or not in this branch" };
     const window = { startAt: new Date(Date.now() + 86_400_000).toISOString(), endAt: new Date(Date.now() + 90_000_000).toISOString() };
@@ -1570,6 +1568,16 @@ try {
     const assignedTo = async (id: string) => (await q<{ employee_id: string }>("select employee_id from schedule_assignments where id = $1", [id]))[0]!.employee_id;
     const aAssignment = await rota(A, eA);
     const bAssignment = await rota(B, eHrB);
+    // Use valid owned shifts so the foreign employee reaches the ownership check.
+    const pingBody = async (assignment: string) => ({
+      ...(await q("select shift_row_id as \"shiftRowId\", shift_date::text as \"shiftDate\" from schedule_assignments where id=$1", [assignment]))[0],
+      requestKey: randomUUID(), employeeId: eA, reason: "missing_clock_in",
+    });
+    const ping = await call("POST", "/api/timekeeping/live/ping", { cookie: cookie.b, body: await pingBody(bAssignment) });
+    assert.deepEqual([ping.status, ping.body], [404, { message: "Staff member or shift not found" }], show(ping));
+    const ownPing = await call("POST", "/api/timekeeping/live/ping", { cookie: cookie.a, body: await pingBody(aAssignment) });
+    assert.equal(ownPing.status, 200, show(ownPing));
+    assert.equal(ownPing.body.delivery.status, "Failed"); // This fixture has no staff login.
     const intoA = await call("PATCH", `/api/schedule/assignments/${aAssignment}/reassign`, { cookie: cookie.b, body: { employeeId: eHrB2 } });
     assert.deepEqual([intoA.status, intoA.body], [404, { message: "Assignment not found" }], show(intoA));
     const fromA = await call("PATCH", `/api/schedule/assignments/${bAssignment}/reassign`, { cookie: cookie.b, body: { employeeId: eA2 } });
