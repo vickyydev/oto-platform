@@ -15,7 +15,9 @@
     "directory:client": "node script/directory-client.mjs",
     "tenant:readback": "node script/tenant-ownership-readback.mjs",
     "offboarding:census": "node script/offboarding-census.mjs",
-    "import:core-uploads": "tsx script/importCoreLegacyUploads.ts"
+    "import:core-uploads": "tsx script/importCoreLegacyUploads.ts",
+    "check:ratchet": "node script/typecheck-ratchet.mjs",
+    "restore:rehearse": "node script/restore-rehearsal.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",

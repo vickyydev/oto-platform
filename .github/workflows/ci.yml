@@ -433,6 +433,32 @@ jobs:
       - name: Build the OTO App
         if: steps.changes.outputs.app == 'true'
         run: npm run build
+      - name: The OTO App's inherited typecheck ceiling
+        if: steps.changes.outputs.app == 'true'
+        run: npm run check:ratchet
+      # The rehearsal uses disposable databases on this job's scratch server.
+      # It dumps the baseline sample from public, restores and renames it,
+      # imports after every platform migration, then runs the app migrator
+      # twice with 0000 already recorded. Its output contains counts only.
+      - name: Install PostgreSQL 16 client tools
+        if: steps.changes.outputs.app == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client-16
+      - name: Rehearse the app restore and replay
+        if: steps.changes.outputs.app == 'true'
+        env:
+          REHEARSAL_DATABASE_URL: postgres://oto:oto@localhost:5433/otoapp_ci
+          REHEARSAL_PG_BIN: /usr/lib/postgresql/16/bin
+        run: node script/restore-rehearsal.mjs > restore-rehearsal-counts.json
+      - name: Keep the restore counts
+        if: steps.changes.outputs.app == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oto-app-restore-${{ github.sha }}
+          path: apps/oto-app/restore-rehearsal-counts.json
+          if-no-files-found: ignore
+          retention-days: 14
       # The platform's migration 0008 is what creates the otoapp schema on a
       # real database; here there is no platform, so the schema is made by
       # hand. The migrator refuses to run without it rather than fill public.
