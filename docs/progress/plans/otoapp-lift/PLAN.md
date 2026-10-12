@@ -18,6 +18,10 @@ section 11, and the app's behaviour is the default until the owner answers.
 
 ## 0. Where it stands: read this first
 
+**13 October 2026, R7b landing gate complete:** Full hosted run38303168097 passed all six jobs on2b84a5afdc3fd2ced31e2df05f1d7b153ab6b1ab. Whole workspace typecheck is clean, API has zero diagnostic lines, touched review lint passes and the current-chain replay proof passes with required document ownership. Rebase on origin/main d18d3fd8 was a no-op and all six candidate commits remain. Subsequent changes are staging evidence and checkpoint documents only; application, migration and test source are identical to the green candidate.
+
+This landing carries app0010 after the new owning document writer was observed on staging. Main's landing run must be watched by full SHA; staged0010 verification is still owed. The last observed app remainsd18d3fd8 through0009. R8b4fa425d also passed all six jobs in38303242637, including the genuine eleven-migration restore and457/61/120 compiler baseline; land it after the R7b main gate. Combined feature PR10 is separately checking142cc3dd. Feature acceptance, one authorized SMS test and exact broader cleanup remain. Local databases stay off; SCRUM-223 stays paused.
+
 **Newest checkpoint, 13 October:** main d18d3fd8 is green and observed live. Camp attendance, payroll access and actual form save/reload rechecks pass with two inspected frames. R7b3c8 and R8 973 each have one historical complete-chain nullable assertion corrected at84829a82; five other jobs passed, including R8's final eleven-migration restore. Combined candidate da21a661 has cumulative0011..0015 migrations and employee-history/current-access delivery controls; hosted runtime checks and two presence display/retry follow-ups remain. Read newest STATUS. Keep local databases/heavy checks off. One coordinator publishes; isolated agents work in parallel. Land R7b then R8, finish staged checks/cleanup and feature acceptance, then the fix block. No feature/SMS delivery is claimed.
 
 **13 October live release checkpoint:** R7a7402a8da passed full CI and is
