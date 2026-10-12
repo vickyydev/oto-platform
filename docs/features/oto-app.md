@@ -1,5 +1,7 @@
 # OTO App ("OTO Suite")
 
+**13 October staging follow-through:** All six services are now observed live at4dcc6664. The read-only census confirms app0010 and all four required document owners. Settings, Activity and Attention named actions pass; all twelve Directory reads/refusals pass with both temporary credentials removed; the seeded POS event list/detail and two branch/park refusal cases pass. Four inspected cards are indexed in [13 October platform controls](../qa/oto-app-lift/round-7/platform-controls.md). Historical job success and Retry records are recovered. Current job completeness reports only the retained practice park without a job credential; final practice cleanup, empty employee-view census and Retry remain before the jobs gate can close. R8 main and the final feature candidate are still completing their full hosted checks.
+
 ## What it is for
 The park's day-to-day management system, used by all staff every day since about
 May 2026: HR records, contracts and letters with e-signature, timekeeping kiosks,
