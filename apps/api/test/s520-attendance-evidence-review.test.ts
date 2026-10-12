@@ -115,7 +115,7 @@ describe('SCRUM-520 attendance evidence review', () => {
   });
 
   it('adds only a nullable issue field and retains the existing selected-file removal control', () => {
-    expect(read('migrations/0092_attendance_evidence.sql').trim()).toBe('ALTER TABLE "timekeeping_issues" ADD COLUMN "attachment" jsonb;');
+    expect(read('migrations/0012_attendance_evidence.sql').trim()).toBe('ALTER TABLE "timekeeping_issues" ADD COLUMN "attachment" jsonb;');
     expect(read('client/src/components/attendance-evidence-input.tsx')).toContain('URL.revokeObjectURL(url)');
     expect(read('client/src/components/attendance-evidence-input.tsx')).toContain('onChange(null)');
     expect(read('client/src/pages/kiosk-page.tsx').match(/<AttendanceEvidenceInput /g)).toHaveLength(2);
