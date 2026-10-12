@@ -6,7 +6,7 @@ May 2026: HR records, contracts and letters with e-signature, timekeeping kiosks
 scheduling and leave, payroll, tasks / checklists / ops board, announcements,
 SOPs and the "Ask OTO" assistant, fault reports with a supplier portal, events
 and birthdays (event orders, packages, parent portal, RSVP), camps, drop-off and
-nanny check-in, staff vouchers. 72 login users, 69 employees, 3 branches.
+nanny check-in, staff vouchers. The 19 September intake counted 72 login users, 69 employees and 3 branches; those are historical source counts.
 
 ## Intake
 - **Source:** `imports/oto-app/` — Replit export of 2026-09-19 (last commit
@@ -102,92 +102,74 @@ artifacts. The deployed repairs and remaining checks are recorded per module
 in the [S2-17b acceptance index](../qa/SPRINT_2_ACCEPTANCE.md). This intake
 list alone is not proof that every path has passed the staging access checks.
 
-## Status
+## Status - 13 October 2026
 
-SCRUM-193 (S2-17b) is **In Progress** on Render staging. The central
-`otoapp` schema, launcher sign-on and administrator entry work; many individual
-actions have real staging proof, but the five parent acceptance criteria remain
-open. The [acceptance index](../qa/SPRINT_2_ACCEPTANCE.md) and
-[closure plan](../qa/oto-app-lift/closure-plan.md) carry the detailed checks.
-Here **WORKS** means a specific module action and relevant access case have
-direct staging proof; it does not certify the whole story. **WORKING WITH
-CAVEATS** means a real action works but a named workflow, role or tenant check
-remains. **DISABLED ON STAGING** means intentionally switched off or failing
-closed pending a safe contract. **NOT YET VERIFIED** means a page, local check
-or source change lacks the required staging action proof.
+As of 13 October 2026, SCRUM-193 remains In Progress. R7b is on main at `4dcc6664fc2892a0becaaa0fe179f80f40646bde`; its landing CI is still being watched. The last observed staging app is `d18d3fd8` through migration 0009, with the R7a application and the named release rechecks below. Staged 0010 confirmation and exact R7 fixture/object cleanup remain. R8 candidate `b4fa425d` passed all six jobs in [run 38303242637](https://github.com/vickyydev/oto-platform/actions/runs/38303242637); the rebased R8 source is identical, with newer checkpoint documents only. This is candidate evidence, not a claim that R8 is on main or deployed.
 
-| Identity and people | State | Current staging evidence and limit |
+**WORKS** describes only the named observed action and access case. **BROKEN** identifies the specifically recorded Q39 case. **Pending staging proof** identifies built behavior whose named staged action is still missing; it does not mean the implementation is absent. Face clock is intentionally off, and positive Xero exchange remains unavailable until the sandbox is connected. Broader variants and final desktop/tablet coverage remain explicit. Original app behavior is the default for the numbered owner questions.
+
+The [acceptance index](../qa/SPRINT_2_ACCEPTANCE.md) owns the final checklist and [closure plan](../qa/oto-app-lift/closure-plan.md) owns the remaining steps.
+
+| Module / contract | Evidence-backed outcome | Named proof and remaining limit |
 | --- | --- | --- |
-| Launcher sign-on | WORKS | One suite sign-on opens the OTO App as an administrator; [screen register](../qa/oto-app-lift/staging-screenshots-2026-09-30.md). Additional roles are checked with their modules. |
-| Users and permissions | WORKING WITH CAVEATS | A synthetic user was created and edited through staging User Management, unknown branch access was refused, and its user/access/activity rows were removed. Local two-tenant checks passed; restricted-role and real second-tenant staging proof remain in [HR notes](../qa/oto-app-lift/org-hr-verification.md). |
-| Branches, departments and operators | WORKING WITH CAVEATS | Second-tenant branch isolation passed; a synthetic operator was created and fully removed on staging, with tenant-move and anonymous refusals. Department action and lower-role/foreign-tenant operator denial remain; user assignment needs explicit tenant identity. [HR notes](../qa/oto-app-lift/org-hr-verification.md). |
-| HR employees | WORKS | Round 2 (8 Oct): the four demo people created and edited through the staging HR screens (create form, nickname edit, branch reseat), frames r2-hr-01..14 in [SCRUM-191 attachments](../qa/jira-comments/attachments/SCRUM-191/). The copy job adopted all four onto their existing platform rows (run detail adopted=4, then updated=4 on the branch reseat), Nok's benefit override intact. Restricted-branch read proof remains with round 5's attendance pass. |
-| Employee copy to the platform (`job:otoapp.employee_sync`) | WORKS | First staging copy 8 Oct: created 8 (the app's active staff), adopted 4 (demo cast, same ids), LEFT rows never copied, no cases raised; the job on Health every 15 minutes with its test control, Failures quiet (r2-con-05/07). Known effects recorded in the [lift plan](../progress/plans/otoapp-lift/PLAN.md): verified-phone-only crosses (Q21) and an app-only branch strands its staff branchless. |
-| Contracts and e-sign | WORKING WITH CAVEATS | Fresh signature and signed PDF matched the park date; unauthorized signed access was refused. Template and role scope remain in [PDF notes](../qa/oto-app-lift/contracts-pdfs.md). |
-| Contract templates | WORKING WITH CAVEATS | Non-default-tenant finalisation fails closed with 503 pending the tenant-column cutover; default-tenant template save/generate still lacks a full staging walkthrough in [PDF notes](../qa/oto-app-lift/contracts-pdfs.md). |
-| Policies | WORKING WITH CAVEATS | Draft, publish and latest read worked for a default-tenant policy; other-tenant reads fail closed with 503 pending the platform cutover, and restricted-role proof remains in [policy notes](../qa/oto-app-lift/policies-assets.md). |
-| Letters and e-sign | WORKING WITH CAVEATS | Fresh signature, signed PDF and private object read worked; wider role and branch cases remain in [PDF notes](../qa/oto-app-lift/contracts-pdfs.md). |
-| Employee documents | WORKING WITH CAVEATS | Private image upload/read/delete round-tripped exact bytes and anonymous access was refused; restricted and self-service reads need a safe test identity in [document notes](../qa/oto-app-lift/employee-documents.md). |
-| Assets | WORKING WITH CAVEATS | Asset assignment and return persisted, repeat return failed; non-default catalogue reads fail closed with 503 pending tenant cutover in [asset notes](../qa/oto-app-lift/policies-assets.md). |
-| Offboarding | WORKING WITH CAVEATS | A synthetic employee was offboarded through the staging UI, six checklist items saved, duplicate submission returned 409 and exact cleanup removed every row. Linked-user deactivation, the raw reason-label follow-up and full write atomicity remain in [HR notes](../qa/oto-app-lift/org-hr-verification.md). |
-| Org chart | WORKING WITH CAVEATS | Salary budget returned finite totals for company and own branch; node GET can insert missing rows, so chart viewing and relationship edits remain unstaged in [Org notes](../qa/oto-app-lift/attention-org-staging-dfe7153.md). |
-| Activity log | WORKING WITH CAVEATS | A new employee generated one branch-scoped entry; branchless legacy history stays hidden and foreign-tenant staging refusal remains in [HR notes](../qa/oto-app-lift/org-hr-verification.md). |
+| Launcher sign-on | WORKS | All round 5/6/7 staff sessions entered through the launcher; [round 6 sessions](../qa/oto-app-lift/round-6/README.md). The old password form remains disabled on staging. |
+| Users, people and permissions | WORKS for the named ownership and access-policy controls | [13 October administration recheck](../qa/oto-app-lift/round-7/administration.md): own person create/read, selected-branch policy and bulk update; foreign reads/writes/deletion refused, foreign branch replacement 403, foreign bulk update skipped. Exact person/policy cleanup completed. Shared-role choices Q54/Q56/Q57 remain explicit. |
+| Branches, departments, operators | WORKS for recorded branch and operator cases | [Organization evidence](../qa/oto-app-lift/org-hr-verification.md). Department action and specific lower-role/operator cases still need named proof; do not imply every organization write is covered. |
+| HR employees | WORKS for demo create/edit/reseat and owned detail refusal | [Round 2 HR frames](../qa/jira-comments/attachments/SCRUM-191/r2-hr-01.png), [round 2 status](../progress/STATUS.md), [round 5 employee-detail refusal](../qa/oto-app-lift/round-5/timekeeping.md). This does not cover every import/login toggle. |
+| Employee copy and benefits link | WORKS | [Round 2 Health](../qa/jira-comments/attachments/SCRUM-191/r2-con-05.png), [round 2 status](../progress/STATUS.md): created 8/adopted 4, subsequent updated 4, then no changes; Nok's existing override preserved. Q21 verified-phone and app-only-branch effects stay explicit. |
+| Contracts and e-sign | WORKS | [Signing/private PDF](../qa/oto-app-lift/round-6/contracts.md): signing 200, private object 200, other-park/signed-out/changed-signature refusals. Q50 in-park branch behavior remains; do not expand this to every contract action. |
+| Contract templates | WORKS | [Save/use/refusals](../qa/oto-app-lift/round-6/templates.md): staff create 403, other-park read 404.  |
+| Policies | WORKS | [Separate-park publication](../qa/oto-app-lift/round-6/policies.md): publish/read 200, foreign 404. Contract acknowledgment is not established. |
+| Letters | WORKS | [Resignation signing/private PDF](../qa/oto-app-lift/round-6/letters.md). Other letter types remain outside the case. |
+| Employee documents | WORKS | [PNG upload/read/delete](../qa/oto-app-lift/round-6/employee-documents.md): exactly 12,219 bytes, foreign list 404, final file 404. Self-download and other types remain unverified. |
+| Assets | WORKS | [Assign/return/repeat](../qa/oto-app-lift/round-6/assets.md):201/200/400, staff 403 and foreign 404. Own-employee asset view is not established. |
+| Offboarding | WORKS | [No-login resignation](../qa/oto-app-lift/round-6/offboarding.md): one record/six checklist items, repeat 409, foreign 404. This case does not prove linked-login deactivation. Q47 and the separate platform-login item remain. |
+| Org chart | WORKS | [Isolated vacancy](../qa/oto-app-lift/round-6/org-chart.md): create/read, foreign edit 404 with title unchanged. Reporting-line changes and Q52 concurrency are not established. |
+| Activity Log | WORKS for the earlier created-employee entry; current per-park action proof pending | [Recorded entry](../qa/oto-app-lift/org-hr-verification.md), [round 4 ownership status](../progress/STATUS.md). A named current own/foreign Activity case remains; migration read-backs cover ownership only. |
+| Kiosk devices/reception | WORKS | [Activate/exchange/rename](../qa/oto-app-lift/round-5/kiosk-reception.md), signed-out 401 and foreign activation 404. The reception board was empty; no guest check-in was changed by this case. |
+| PIN/phone and face-off policy | WORKS | [Clock policy](../qa/oto-app-lift/round-5/clock-policy.md): PIN IN/PHONE OUT 200, no device 401, forged photo 400, face 403; no FACE event. Face remains off by direction; physical camera capture is not established. |
+| Timekeeping | WORKS | [Two raw events and selected-branch reads](../qa/oto-app-lift/round-5/timekeeping.md), foreign 404/unselected branch 403. Full scheduled-shift calculation and the separately recorded issue-review path are outside this case. |
+| Scheduling | WORKS for grouped saves; BROKEN for recorded Q39 | [Grouped saves and other-park read](../qa/oto-app-lift/round-5/scheduling.md): group/row/assignment 201 and missing group 400. The observed other-park list 200 remains in OPEN_ITEMS/Q39; this index does not infer its resolution from a different administration check. |
+| Leave/holidays | WORKS | [Sick day/duplicate/holiday](../qa/oto-app-lift/round-5/leave-holidays.md). Existing approval action remains; no stored approver history is claimed. |
+| Tasks/Ops | WORKS | [Create/complete/refusals](../qa/oto-app-lift/round-5/tasks-ops.md). Round 3 status records one real scheduled recurring task; its exact Health/Failures card remains to be indexed. |
+| Checklists/media | WORKS | [Completed 1/1 and private bytes](../qa/oto-app-lift/round-5/checklists-media.md), foreign 404/unselected branch 403. |
+| Announcements | WORKS | [Selected-branch publication](../qa/oto-app-lift/round-5/announcements.md), foreign list omission/unselected branch 403. Scheduled-delivery variants are outside this case. |
+| In-app notifications | WORKS | [Actual Mark read](../qa/oto-app-lift/round-5/notifications.md), foreign omission/direct 404. Delivery-state features belong to SCRUM-194; unread/read proof does not establish delivery tracking. |
+| Attention | WORKS for the recorded platform-run/Retry | [Round 4 settled status](../progress/STATUS.md), [job implementation](../../apps/api/src/services/otoapp-jobs.ts). Refresh/Snooze/Resolve and separate-park screen actions need named staged proof; existing policy questions remain. |
+| Fix/private image | WORKS | [Actual Gallery upload/create](../qa/oto-app-lift/round-7/fix.md), own 200/foreign 404/signed-out 401. Recipient preview belongs to the separate SCRUM-194 feature release. |
+| Supplier portal | WORKS | [Capability lifecycle card](../qa/oto-app-lift/round-7/supplier-portal.md): comment 201, close 200, repeat 409, revoke 204/former-link 401. No outgoing delivery is claimed. |
+| Events | WORKS | [Create and foreign 404](../qa/oto-app-lift/round-7/events.md). Wider editing and final POS seam proof remain separate. |
+| BEO | WORKS for the named private PDF | [BEO walkthrough](../qa/oto-app-lift/round-7/beo.md) and [13 October private-file card](../qa/oto-app-lift/round-7/private-files.md): own 302/download 200, 49,106-byte PDF; foreign 404/anonymous 401. Exact object cleanup remains. |
+| Packages | WORKS | [Create/line/apply and foreign 404](../qa/oto-app-lift/round-7/packages.md). Current event image is contextual, not a package-editor capture; the older actual editor evidence remains dated. |
+| Menus | WORKS | [Actual public submission](../qa/oto-app-lift/round-7/menus.md), owned 200/foreign 404. Repeat/edit variants remain outside the case. |
+| Camps/children | WORKS for the named attendance journey | [13 October camp recheck](../qa/oto-app-lift/round-7/camps.md): second-park check-in/out 200, foreign checkout 404, attendance owned by that park. [Children history](../qa/oto-app-lift/round-7/children.md) retains its separate evidence. Saved-family/SMS is separate feature scope; exact fixture cleanup remains. |
+| Parent portal/RSVP | WORKS | [Portal opening](../qa/oto-app-lift/round-7/parent-portal.md), [actual response](../qa/oto-app-lift/round-7/rsvp.md) and foreign 403. Outbound delivery and language/edit variants remain outside the cases. |
+| Drop-off/staff check-ins/nanny service | WORKS | [Public submission, assignment, entry, checkout and private media](../qa/oto-app-lift/round-7/dropoff-nanny.md). Synthetic presence establishes service flow, not physical clock-in. |
+| Nanny reservations | WORKS for the earlier reservation lifecycle | [Reservation/overlap/completion](../qa/oto-app-lift/nanny-booking.md). New R7 nanny service proof is a service check-in journey; do not treat it as proof of every reservation variant. |
+| Public form builder | WORKS for isolated publication and editor save/reload | [13 October editor recheck](../qa/oto-app-lift/round-7/form-builder.md): displayed version saved 200, title persisted after reload, own JSON 200/foreign 404. Existing published-version editing behavior retained. Exact form/version/translation cleanup remains. |
+| Staff vouchers | WORKS for Console entry and legacy write refusal | [Entry and 13 October mutation recheck](../qa/oto-app-lift/round-7/staff-vouchers.md): four old addresses show the Console handoff; all seven old mutation routes return 409/vouchers_moved. No voucher was issued or redeemed in this case; the Console/till remains the active contract. |
+| SOP/Find | WORKS for publication/read scope | [Draft refusal and published staff read](../qa/oto-app-lift/round-7/sops.md); [earlier Find screen](../qa/oto-app-lift/sops.md). Stored revision history and restore belong to the separate feature release. |
+| Knowledge Base/files | WORKS for publication/read scope | [Round 7 KB requests](../qa/oto-app-lift/round-7/knowledge-base.md); [earlier exact file/PDF indexing](../qa/oto-app-lift/knowledge-ask-oto.md). Round 7 has no KB-specific frame; SOP frame is contextual. File-type/lower-role cases remain explicit. |
+| Training/quizzes | WORKS | [Real failed/passed attempts](../qa/oto-app-lift/round-7/training.md), staff edit 403/foreign 404 and answer omitted from staff detail. |
+| Ask OTO | WORKS for recorded conversation/source scope | [Thread/message/answer/citations](../qa/oto-app-lift/round-7/ask-oto.md), foreign thread 404 and no foreign fixture citations. No current Ask-specific frame; add a labelled request card or actual answer image. Other AI helpers remain unverified. |
+| Casual workers | WORKS | [Create/grouped assignment/deactivate](../qa/oto-app-lift/round-5/casual-workers.md), foreign 404.  |
+| Payroll | WORKS for the named private files and park boundary | [Synthetic exports/self-read](../qa/oto-app-lift/round-7/payroll.md) and [13 October complete file recheck](../qa/oto-app-lift/round-7/private-files.md): four CSVs and payslip own 200/foreign 403/anonymous 401. Other-park generation 403 is recorded. Zero-value 2099 fixtures do not establish normal calculation; SCRUM-276 remains in the fix block. Exact cleanup remains. |
+| Xero | WORKS for unconnected state/refusal | [Status 200 connected=false/report 400/staff 403](../qa/oto-app-lift/round-7/xero.md). Positive OAuth/sync waits for the sandbox; local ownership/replay tests are not that exchange. |
+| Vault | WORKS | [Metadata/reveal/refusals](../qa/oto-app-lift/round-7/vault.md). No secret shown; no additional manager behavior inferred. |
+| Directory HR API | Pending staging proof | [Tenant-bound HR reader](../../apps/oto-app/server/directory/hrReadAuth.ts) and [H12 checks](../progress/plans/otoapp-lift/PLAN.md) are implemented. Named own read, foreign 404, missing-scope 403 and disabled-shared-key refusal card remains; source checks do not establish staged HTTP results. |
+| Data Admin | WORKS for the named writer and access refusals | [R7a owned asset writer](../qa/oto-app-lift/round-7/r7a-release.md) and [13 October administration controls](../qa/oto-app-lift/round-7/administration.md): owned create/read, foreign read/update/delete refused; exact new writer/person/policy cleanup completed. [Credential exclusions](../qa/oto-app-lift/data-admin.md) retain their earlier proof. Wider registry editor cases are outside these checks. |
+| General files/private media | WORKS for the named private readers | [13 October private-file recheck](../qa/oto-app-lift/round-7/private-files.md): Fix image and drop-off signature own 200/foreign 404/anonymous 401; payroll CSV/PDF own 200/foreign 403/anonymous 401; BEO 302/download 200, foreign 404, anonymous 401. [Checklist](../qa/oto-app-lift/round-5/checklists-media.md) and [employee document](../qa/oto-app-lift/round-6/employee-documents.md) proof remains. R7 object/record cleanup remains; issued public photo sharing keeps its existing contract. |
+| Settings | Pending staging proof | [0007 ownership contraction](../../apps/oto-app/migrations/0007_tenant_ownership_contract.sql) and [9 October read-back](../progress/STATUS.md) are complete. Separate-park save/read-back and foreign omission card remain. Q28 default fallback is unchanged. |
 
-| Attendance and operations | State | Current staging evidence and limit |
+## Cross-module delivery
+
+| Cross-module gate | Verified evidence | Still required |
 | --- | --- | --- |
-| Kiosk devices and reception | NOT YET VERIFIED | Kiosk upload and failed-attempt guards have narrow staged/local proof; a complete configured-device reception action remains in [kiosk notes](../qa/oto-app-lift/README.md). |
-| Face clock-in | DISABLED ON STAGING | The owner chose to keep the module behind an off flag; enrolment is deferred until enabled in the [closure plan](../qa/oto-app-lift/closure-plan.md). |
-| PIN and phone clock, timekeeping | WORKING WITH CAVEATS | Synthetic device PIN IN and phone OUT reached staging Timekeeping Review and Detail with correct labels and a visible tablet action; no-device, forged-photo and anonymous requests were denied. Camera evidence, scheduled-shift calculation and restricted-branch proof remain in [timekeeping notes](../qa/oto-app-lift/timekeeping.md). |
-| Scheduling | WORKING WITH CAVEATS | Week and My Shifts actions work, and short shifts now omit invalid generated breaks; restricted-branch proof and the no-group shift-row 500 remain in [schedule notes](../qa/oto-app-lift/scheduling.md). |
-| Leave and holidays | WORKING WITH CAVEATS | Annual leave and a holiday saved; Bangkok date/conflict checks pass. Explicit approval fails closed with 503 until approval state is persisted; [leave notes](../qa/oto-app-lift/leave-holidays.md). |
-| Tasks and ops board | WORKING WITH CAVEATS | A task was created and completed, with second-tenant/branch refusals; recurrence and wider board states remain in [task notes](../qa/oto-app-lift/tasks-checklists.md). |
-| Checklists and media | WORKING WITH CAVEATS | A run completed and its private image matched uploaded bytes; same-tenant restricted-branch proof needs a safe identity in [checklist notes](../qa/oto-app-lift/tasks-checklists.md). |
-| Announcements | WORKING WITH CAVEATS | Targeted publication/read and tenant/branch refusals passed; scheduled delivery and broader notification states remain in [announcement notes](../qa/oto-app-lift/announcements.md). |
-| In-app notifications | WORKING WITH CAVEATS | A task notification changed from unread to read for its recipient; cross-tenant isolation remains in [notification notes](../qa/oto-app-lift/notifications.md). |
-| Attention engine | DISABLED ON STAGING | Existing alerts can be read with a visible pause; Refresh, Snooze, Resolve and automatic writes are off until tenant backfill and durable job ownership exist. [Pause proof](../qa/oto-app-lift/attention-org-staging-dfe7153.md). |
-| Fix reports | WORKING WITH CAVEATS | The normal staff screen uploaded and submitted a labelled image, showed My Reports and private detail, and the tablet preview now fits the full image. Exact cleanup passed; restricted-staff and wrong-branch staging reads remain in [Fix notes](../qa/oto-app-lift/supplier-portal.md). |
-| Supplier portal | WORKS | Staging proved branch-limited report view, supplier comment/close, staff reply, private image with cross-branch refusal, natural expiry and revocation. Ten real tablet screens and exact row/object cleanup are in [supplier notes](../qa/oto-app-lift/supplier-portal.md). The normal staff upload-and-create sequence belongs to the Fix report path and remains separately open. |
+| Signed PDFs and private files | [Round 6 contracts](../qa/oto-app-lift/round-6/contracts.md) and [letters](../qa/oto-app-lift/round-6/letters.md) include signatures and signed objects; [round 7 private files](../qa/oto-app-lift/round-7/private-files.md) include BEO and four CSV/payslip reads with foreign/anonymous refusals. | Exact R7 object cleanup; preserve the limits of each linked reader case. |
+| Platform jobs | [STATUS for 8-9 October](../progress/STATUS.md) records successes and forced failure/Retry. | Named Health/Failures evidence as listed below. |
+| POS reads and ownership | Read-only views/reader and source controls; [Decision 25](../architecture/ARCHITECTURE.md) records app master, Directory check-in write-back and existing POS checkout mirror. | Named seeded-event read/grep card. Future Stage B offline ownership remains undecided. |
+| Structure-only restore | R8 [run 38303242637](https://github.com/vickyydev/oto-platform/actions/runs/38303242637): 184 baseline tables/1108 sample rows, 76 platform migrations, 11 app migrations, 187 resulting tables and five views. Both runs have identical counts/views/journals; cleanup complete. Artifact `oto-app-restore-748c0aa518f99fb0ded5d33a4a4a756b5b36b8da` uses the PR merge SHA. | R8 landing/full-SHA watch. This is genuine hosted candidate evidence, not the old empty-database check. |
+| Compiler and CI | R7b [run 38303168097](https://github.com/vickyydev/oto-platform/actions/runs/38303168097) and R8 [run 38303242637](https://github.com/vickyydev/oto-platform/actions/runs/38303242637) each passed all six jobs. Whole workspace outputs have zero diagnostics; R8 app output is 457 diagnostics/61 files/120 file-code groups with no increase. | Main's exact landing gate and staged 0010 read-back. |
+| Desktop/tablet and cleanup | Named rounds 5-7 actions, refusals, inspected tablet frames and release cards; rounds 5/6 exact cleanup complete. | Remaining six proof cases below, contextual-image limits, final desktop state checks and guarded R7 record/object/shared-practice identity cleanup. Preserve seeded cast, Som's 14 October sick day and the protected payment run. |
 
-| Park, events and check-in | State | Current staging evidence and limit |
-| --- | --- | --- |
-| Events core | WORKING WITH CAVEATS | Restricted manager routes read own event and refused another branch; broader event action and POS seam remain in [event notes](../qa/oto-app-lift/events-camps.md). |
-| BEO | WORKING WITH CAVEATS | A private BEO PDF and saved/read timeline step were staged; a new event read back its package snapshot and submitted menu choice. The birthday editor applied a saved package and the actual Day-of view showed it at tablet width; named restricted-refusal proof remains in [event notes](../qa/oto-app-lift/events-camps.md). |
-| Packages and menus | WORKING WITH CAVEATS | Package, line and menu saved/read, then applied as a BEO snapshot and submitted menu selection on staging with real tablet captures and exact cleanup. The package editor action and Day-of readback now work; signed-in foreign-tenant proof remains in [event notes](../qa/oto-app-lift/events-camps.md). |
-| Camps and children | WORKING WITH CAVEATS | A second-tenant camp registration, attendance edit and removal worked with foreign-tenant refusal; wider flows remain in [event notes](../qa/oto-app-lift/events-camps.md). |
-| Parent portal and RSVP | WORKING WITH CAVEATS | An anonymous RSVP saved and matched the event summary; public delivery and edit/language variants remain in [RSVP notes](../qa/oto-app-lift/parent-rsvp.md). |
-| Drop-off and staff check-ins | WORKING WITH CAVEATS | Staff board showed a check-in and another branch was refused; full checkout/form action remains in [check-in notes](../qa/oto-app-lift/checkins.md). |
-| Nanny booking | WORKING WITH CAVEATS | Reservation, overlap refusal, completion and invalid reopen passed; assignment and branch refusal remain in [booking notes](../qa/oto-app-lift/nanny-booking.md). |
-| Public drop-off form builder | NOT YET VERIFIED | Local publish check exists; shared staging publish was paused because it changes a tenant-wide form and leaves translation/jobs without rollback. [Check-in notes](../qa/oto-app-lift/checkins.md). |
-| Staff vouchers | NOT YET VERIFIED | OTO App directs staff to the central Console; Console ledger and till redemption are the active contract to verify end to end. [Module scan](../qa/oto-app-lift/module-entry-smoke.md). |
-
-| Knowledge, administration and finance | State | Current staging evidence and limit |
-| --- | --- | --- |
-| SOP and Find | WORKS | A published SOP was revised and opened from Find; branch refusal and staff published-only behavior have separate proof. [SOP notes](../qa/oto-app-lift/sops.md). |
-| Knowledge Base and files | WORKING WITH CAVEATS | FAQ publish/read, private image byte round-trip, PDF indexing to one chunk and a file-sourced Ask answer passed; lower-role file access and other file types remain in [knowledge notes](../qa/oto-app-lift/knowledge-ask-oto.md). |
-| Training and quizzes | WORKING WITH CAVEATS | Module save, wrong/right attempts and 100% completion passed; restricted role/branch proof remains in [training notes](../qa/oto-app-lift/training-quiz.md). |
-| Ask OTO and AI helpers | WORKING WITH CAVEATS | Synthetic questions returned KB/SOP and uploaded-PDF citations plus a refusal to show another branch's source; other helpers and thread behavior remain in [Ask notes](../qa/oto-app-lift/knowledge-ask-oto.md). Display-only titles satisfy the owner's decision; persistence is not required. |
-| Casual workers | WORKING WITH CAVEATS | Create, assign/rate, deactivate and picker removal passed; an ungrouped shift row still returns 500 in [worker notes](../qa/oto-app-lift/casual-workers.md). |
-| Payroll | WORKING WITH CAVEATS | Private CSV and payslip PDF matched stored bytes and anonymous reads were refused; staff/self-service and other exports remain in [payroll notes](../qa/oto-app-lift/payroll-files.md). |
-| Xero sandbox | DISABLED ON STAGING | The park's sandbox is not connected yet. Staff denial from finance/Xero routes was verified; a positive exchange must wait for the sandbox connection. Production Xero is outside this staging check. [Finance notes](../qa/oto-app-lift/finance-access.md). |
-| Vault | WORKING WITH CAVEATS | A credential was saved, admin reveal audited, and staff reveal refused without exposing its value; branch-manager behavior remains in [vault notes](../qa/oto-app-lift/vault.md). |
-| Directory API | DISABLED ON STAGING | Current service identity carries no tenant, so a safe multi-tenant contract is needed before use; [dependency review](../qa/oto-app-lift/directory-settings.md). |
-| Data Admin | WORKING WITH CAVEATS | Credential-model exclusion has staged API/UI proof; operator denial and wider registry review remain in [admin notes](../qa/oto-app-lift/data-admin.md). |
-| General files and private media | WORKING WITH CAVEATS | Scoped object, Fix and check-in photo slices have staged proof; other owner/media variants remain in [file notes](../qa/oto-app-lift/files.md). Existing and new shared photo links remain permanent. |
-| Settings | DISABLED ON STAGING | Globally keyed legacy settings are not tenant-safe; an additive cutover and separate-tenant read/write proof are required. [Dependency review](../qa/oto-app-lift/directory-settings.md). |
-
-| Cross-module gate | State | Required proof |
-| --- | --- | --- |
-| Object storage and PDFs | WORKING WITH CAVEATS | Signed contract, letter and BEO PDFs plus private employee/payroll files have staged round-trips; remaining reader and module paths are in [PDF notes](../qa/oto-app-lift/contracts-pdfs.md). |
-| POS read seams | NOT YET VERIFIED | Platform `otoapp_v` views and a POS read test are still required by the [closure plan](../qa/oto-app-lift/closure-plan.md). |
-| Scheduled jobs and Health/Failures | NOT YET VERIFIED | Durable job ownership, two successful runs and one forced failure need staging evidence; [closure plan](../qa/oto-app-lift/closure-plan.md). |
-| Structure-only restore and full CI | NOT YET VERIFIED | Scratch restore rehearsal and actual workspace CI jobs are required. Recent wrapper success skipped Typecheck, Lint, Test and Build; [acceptance index](../qa/SPRINT_2_ACCEPTANCE.md). |
-| Desktop and park-tablet pass | NOT YET VERIFIED | Complete module actions, access refusals and blocking UI states must be checked at both widths; [acceptance index](../qa/SPRINT_2_ACCEPTANCE.md). |
-
-S2-17c contract features remain a separate follow-on scope; they do not turn an
-unfinished S2-17b module into a completed one.
-
-## Decisions still needed
-- The park's Xero sandbox connection before positive exchange proof. The owner
-  accepted display-only Ask OTO titles and keeps face clock off on staging.
-- Safe restricted-role staging identity without sending setup messages, plus
-  the platform contracts and restore proof listed in the [closure plan](../qa/oto-app-lift/closure-plan.md).
+The six specific remaining platform proof cases are in the [acceptance index](../qa/SPRINT_2_ACCEPTANCE.md#remaining-round-1-4-evidence). S2-17c features do not close an unfinished lift case; their own release and staging checks remain separate.
