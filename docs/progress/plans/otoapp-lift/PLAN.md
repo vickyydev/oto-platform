@@ -18,6 +18,14 @@ section 11, and the app's behaviour is the default until the owner answers.
 
 ## 0. Where it stands: read this first
 
+**13 October development checkpoint:** the [delivery board](DELIVERY.md)
+records completed source by ticket and feature. The owner requested focused
+checks during development, with the full battery consolidated at each release
+gate. Continue independent approved implementation while existing checks
+finish; preserve their results and repeat only checks invalidated by a change
+or needed to resolve a failure. Source completion and staged acceptance remain
+separate. R7a must still precede observation of new document writers and R7b.
+
 S2-17b is not a fresh start. The app already runs on Render
 (`oto-app-staging`) against schema `otoapp` of the platform database, opened
 from the launcher with no second password. What has landed:

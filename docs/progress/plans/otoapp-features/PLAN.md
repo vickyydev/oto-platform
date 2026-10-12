@@ -1,5 +1,38 @@
 # OTO App feature coverage and scope - SCRUM-194
 
+## 13 October development checkpoint
+
+SCRUM-194 is now In Progress. The original scope provides enough detail to
+start independent implementation; Q2-Q8 record alternatives or unresolved
+details, rather than imposing a blanket stop on the seven items.
+
+- **SCRUM-517:** Fix recipient preview, using the configured department's
+  existing staff selection and permissions. No extra routing or delivery
+  channel is introduced. Development is starting in an isolated lane.
+- **SCRUM-518:** employee import presentation, keeping the existing four
+  classifications and matching order. Show New, Changed, Unchanged and Invalid,
+  with Matched beside the existing matched employee; it is not a fifth
+  mutually exclusive classification. Development is starting separately.
+- Optional photo/document attachments can use the existing upload limits and
+  request paths without changing pending review or the face-clock switch.
+  Those existing kiosk paths remain refused while face clock is disabled;
+  attachment support must not reopen them to obtain staging evidence.
+- SOP history can preserve immutable revisions and restore content through
+  existing edit permissions while retaining publication status. Recovery of
+  deleted articles is additional scope, not implied by revision restore.
+- The meaning/channel of presence notification delivery remains unresolved.
+  SMS implementation can reuse the current adapter and matching eligibility;
+  actual delivery proof depends on configured service and a controlled number.
+- Verify existing manager confirmation and history before adding an approval
+  stage. No second approver or delayed effect is inferred.
+
+The owner requested development-first batches with focused checks, followed
+by consolidated release verification. These existing-story lanes may progress
+alongside the lift's final checks. They land after their dependencies through
+the normal gate; no new feature is claimed live by this checkpoint. Each
+feature ticket is a sibling under SCRUM-191, because SCRUM-194 is itself a
+subtask. The worked fix block remains ahead of any new story.
+
 Prepared 12 October 2026 for S2-17c. The owner's instruction to complete all
 subtasks uses the original section 6.2 seven items as the working scope
 baseline. This preparation checks that original list against existing code;

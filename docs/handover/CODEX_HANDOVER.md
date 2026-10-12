@@ -2,6 +2,8 @@
 
 ## Resume note - 13 October 2026 - round-7 release checks
 
+**Newest steering, 13 October:** prioritize completing development in visible feature batches. Read the [delivery board](../progress/plans/otoapp-lift/DELIVERY.md). Use focused checks while building; consolidate the broad checks at each final release gate. Preserve the checks already running and their results rather than restarting them. Work on independent approved development while those checks complete. R7 source is built, R8 tooling and its measured 457 ceiling are being finalized, and SCRUM-194's original seven requirements are being reconciled for implementation. This changes the work sequence below: completing existing checks is not a reason to leave independent development idle. The R7a/new-writer/R7b release dependency and full landing gate still apply.
+
 This note supersedes the history below. Read AGENTS.md, then the newest STATUS block, OPEN_ITEMS and the lift PLAN. The owner approved three isolated preparation/review lanes; one coordinator alone integrates, publishes, handles staging/Jira and assigns final migration numbers.
 
 Rounds 1-6 are landed and live. Round-6 eight-page and round-5 ten-page evidence is committed and attached to SCRUM-191; exact fixture/object cleanup completed. Main a81fcb899e8376dd84bbe0bdf1320d3ce2d52368 has green CI 38240328400. The lifted app still runs 633cae416ff7e4a1c253ec4904cdc22351cf7df1 with migration 0008. The shared ZZ TEST park/user remains for round 7 and final cleanup. Preserve Som's 14 October sick day, the seeded cast and protected payment run 0d008153.
