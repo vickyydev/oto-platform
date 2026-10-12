@@ -243,14 +243,14 @@ try {
     expect(result.overrideRaceReached).toBe(true);
     expect(result.overrideClearWorks).toBe(true);
   });
-  it.fails(
-    'FINDING 4 (medium): a refused replacement retains the prior choices; prescribed fix: delete and insert overrides on one transaction connection',
+  it(
+    'FINDING 4 (medium, fixed): a refused replacement retains the prior choices; prescribed fix: delete and insert overrides on one transaction connection',
     () => {
       expect(result.overrideFailureRetained).toBe(true);
     },
   );
-  it.fails(
-    'FINDING 5 (medium): concurrent empty-set replacements remain one whole selection; prescribed fix: serialize per user and park before deleting and inserting',
+  it(
+    'FINDING 5 (medium, fixed): concurrent empty-set replacements remain one whole selection; prescribed fix: serialize per user and park before deleting and inserting',
     () => {
       expect(result.overrideRaceWholeSet).toBe(true);
     },
