@@ -1,91 +1,111 @@
 # Agent instructions for this repository
 
 You are the coding agent for the OTO Park platform (a pnpm + Turborepo monorepo: Fastify 5
-API, PostgreSQL 16 with Drizzle, React + Vite front ends, a Raspberry Pi "box" agent). The
-owner reads every commit, every Jira comment and every document. Work as a careful
-colleague, not a generator.
+API, PostgreSQL 16 with Drizzle, React + Vite front ends, a Raspberry Pi "box" agent, and
+the lifted OTO App under `apps/oto-app` with its own npm lockfile and migrator). The owner
+reads every commit, every Jira comment and every document. Work as a careful colleague,
+not a generator.
 
 ## Read in this order, every session
 
-1. `docs/handover/CODEX_HANDOVER.md` — the hand-over written for this session: where the
-   work stands, the exact next steps, the rules, the environment, how to test and deploy.
-2. `docs/progress/STATUS.md` → `docs/progress/SESSION_HANDOVER.md` (its newest STOP POINT
-   block) — the live state of the work; older blocks are historical.
-3. `CLAUDE.md` — the original brief and the standing engineering standards (sections 3, 7
-   and 8 stay in force; the rest is superseded by `docs/progress/SPRINT_2_PLAN.md` and
-   `docs/architecture/DEVELOPMENT_PLAN.md`).
-4. `CONTRIBUTING.md` — commit format.
+1. `docs/handover/CODEX_HANDOVER.md` — the newest resume note at the top is the hand-over
+   for this session: where the work stands, the exact next steps, the gate process, the
+   environment.
+2. `docs/progress/STATUS.md` — the newest block at the top is the live state and always
+   wins over anything else, this file included.
+3. `docs/progress/OPEN_ITEMS.md` — the verified open-defect register, the owner's ruling
+   queue, and the fix block (the owner has ruled it comes before any new story).
+4. `docs/progress/plans/otoapp-lift/PLAN.md` — the open story's plan: rounds, hazards,
+   owner questions Q1–Q54 (the app's or as-built behaviour is every default).
+5. `CLAUDE.md` — the original brief; its header says which sections still rule.
+   `CONTRIBUTING.md` — commit format.
 
 ## Rules that are absolute
 
-- **No attribution lines of any kind** in commits, pull requests or files: no co-author, no
-  "generated with", no assistant trailer, whatever your tooling adds by default.
+- **No attribution lines of any kind** in commits, pull requests or files: no co-author,
+  no "generated with", no assistant trailer, whatever your tooling adds by default.
 - **Write about the system, never about the commercial arrangement.** History is read by
   people outside the team: never name the commissioning party or the contracting company
-  in code, comments, commits or documents, and never call the park's people customers of
-  ours; say "the owner", "the park", "the booth", "the till". (`CONTRIBUTING.md` has the
-  same rule; the landing scripts grep for the usual phrasings and refuse the commit.)
-- **Never commit** `imports/` (except its READMEs), `.env`, `render.yaml` (it carries
-  another session's uncommitted block), `services/`, or
-  `apps/pos/src/components/merch/MerchCustomerDisplay.tsx` while it shows as modified with
-  no real change. Commit by explicit file list.
+  in code, comments, commits or documents; say "the owner", "the park", "the booth",
+  "the till".
+- **Never commit** `imports/` (except its READMEs), `.env`, or `services/`. Commit by
+  explicit file list.
 - **Never print or record secret values** (tokens, PINs, claim codes, passwords, database
-  URLs, box secrets). Variable names and file locations only. `.env` stays ignored.
-- **Migrations are forward-only**, numbered after the last one in `packages/db/migrations`;
-  never edit an applied migration.
+  URLs, box secrets). Variable names, file locations and sha256 fingerprints only.
+- **Migrations are forward-only and immutable once applied.** Platform migrations live in
+  `packages/db/migrations` (applied through 0075; next free 0076). The OTO App has its own
+  under `apps/oto-app/migrations` (applied through 0008 on staging; next free 0009).
+  A lane builds under a provisional number and renumbers at landing, regenerating the
+  snapshot and diffing the SQL identical. Never edit an applied migration.
+- **The behaviour law (the SCRUM-488 ruling):** the OTO App's and the prototype's existing
+  behaviour is the approved behaviour — port it as-is. Only data-reliability faults and
+  park-group crossings are fixed on your own authority. Every other rule choice becomes a
+  numbered question in the matching plan document (lift plan next free: Q55), with the
+  existing behaviour as the default; it is never built on your own preference.
 - **Checkpoint constantly:** after every substantial step update `docs/progress/STATUS.md`
-  and the STOP POINT block of `docs/progress/SESSION_HANDOVER.md`, commit, push.
-- **Jira protocol:** a status change and a comment on the ticket in the same turn as every
-  push; **"Deployed" requires a screenshot from staging attached to the ticket and named
-  in the comment** (a test-run card when a screen cannot show it); comments are written
-  for a non-engineer. **Tickets:** a piece of work that is significant on its own — a
-  feature, a story-sized or task-sized change, a defect that needs its own tracking —
-  gets its own ticket, created in the current sprint. Small fixes, residual findings and
-  follow-ups are handled under the bigger ticket they belong to, as progress comments
-  that say what changed and where, so the ticket carries the tracking. Do not file every
-  observation as a ticket; do not bury a real feature in a comment.
+  (prepend a dated block — the newest block is the single source of truth) and, at every
+  landing, section 2 of `docs/handover/CLOUD_HANDOVER.md` and the resume note of
+  `docs/handover/CODEX_HANDOVER.md`; commit, push.
+- **Jira protocol:** a status check and a comment on the ticket in the same turn as every
+  push; comments are written for a non-engineer — what a person at the park can now do.
+  **"Deployed" requires a screenshot from staging attached to the ticket and named in the
+  comment** (a labelled test-run card when a screen cannot show it). Evidence PNGs are
+  committed under `docs/qa/jira-comments/attachments/<KEY>/` and looked at before
+  attaching. Work significant on its own gets its own ticket in the current sprint; small
+  follow-ups are progress comments under the ticket they belong to.
+- **CI is watched by FULL commit SHA** — `bash scripts/agent/watch-ci.sh <full-sha> 110` —
+  never by grepping run titles. No feature pushes and no staging deploys while main is
+  red; report a red run before anything else; reproduce locally on the exact SHA and
+  re-run once if local is green (the known setup-flake class is SCRUM-510).
+- **Typecheck output is read whole:** the api must print zero lines; the OTO App inherits
+  exactly 467 errors and that count may never rise (compared per file). Eslint every
+  touched file. Never use `vitest -t` on serial suites.
 - **Be honest about lost or partial work.** Never claim something is built, tested or
   deployed that you did not see built, tested or deployed. Three answers only to "is X
   built?": WORKS / BROKEN / NOT BUILT, read from the code and from staging.
+- **Staging data rules:** prefix records you create with "ZZ TEST" (the seeded demo cast
+  is exempt); FWBooth1 is read-only; never touch payment run 0d008153 or the package named
+  for it; blur any benefit QR before attaching it anywhere.
 
-## Two parallel lanes (30 September 2026, evening)
+## The landing gate (how every unit ships)
 
-Two agent sessions work this repository at once, on disjoint areas:
+A unit of work is a lane branch (`lane/<topic>`) cut from `origin/main`. Build it; then
+write the adversarial review for it in the house style — a review test file
+(`apps/api/test/<unit>-review.test.ts`) of passing pins plus `it.fails` FINDINGs, each
+stating severity and a prescribed fix — and attack your own work with it before landing.
+Prescribed fixes are applied and their pins flipped; a finding that correctly stands (an
+owner question, a later round's item) stays `it.fails` with its record named in the plan.
+Then: full battery green, typechecks whole, rebase onto `origin/main` (ground-truth the
+commit list after every rebase — never chain `--continue` with `--skip`), push
+`HEAD:main`, watch CI by full SHA. Render auto-deploys every service on a green build
+(trigger: checks pass) — an ordered rollout can be raced by it; the known remedy for a
+raced cross-service call is Retry on the Failures page.
 
-- **Lane 1 (Claude session): SCRUM-208 (S2-11)** — owns `packages/db`,
-  `packages/shared`, `apps/api`, `packages/box-agent`, `packages/print`,
-  `apps/pos` while its story runs.
-- **Lane 2 (Codex session): SCRUM-193 (S2-17b, the OTO App full lift)** — owns
-  `apps/oto-app/**`; folds in SCRUM-261 and SCRUM-262 where the lift touches
-  those paths, closing their tickets properly.
+## Environment and tools (this PC)
 
-Rules while both run: **only lane 1 creates `packages/db/migrations`** — if the
-lift needs a platform-side change (a central migration, an API route, a shared
-package change), lane 2 records the need as a comment on its Jira ticket and a
-"Needs from the platform lane" line in its STATUS stop block, and lane 1 builds
-it; lane 2 works on a feature branch and lands to `main` in verified slices,
-pulling latest `main` before every land; both lanes pull before landing and
-never edit the other's area; `apps/launcher` changes only by a recorded
-coordination note. Each lane updates its own Jira tickets and its own stop
-block, never the other's.
+- Node 22, pnpm, Docker; test database on port 5433. `pnpm typecheck`, `pnpm test`,
+  per-package via each package's own script. The repo is
+  `https://github.com/vickyydev/oto-platform`, branch `main`; `gh` is signed in.
+- **Helpers in `scripts/agent/`** (they read `.env` at the repo root; never print values):
+  `jira.mjs` (comment, attach, commentWithImages, walkTo, statusOf, createInSprint —
+  project SCRUM, sprint 3), `render.mjs` (status, deploy name|all <sha>, job "<cmd>" —
+  one-off jobs run on the api image from the repo root), `watch-ci.sh <full-sha> <min>`,
+  `evidence.mjs` (staging sign-in + screenshot cards; Playwright from `apps/pos`).
+  The older `scripts/session/` helpers still work but the `scripts/agent/` set is current.
+- **Staging (Render): six services** — api, pos, console, launcher, booth, and
+  `oto-app-staging` (the lifted app; its pre-deploy runs its own migrator). The dashboard
+  settings are what runs; `render.yaml` documents them. Seeded staging sign-ins live in
+  `packages/db/src/seed` (dev-only credentials); the app is entered through the launcher —
+  its old password form is off on staging (`OTOAPP_LEGACY_LOGIN` absent).
+- **Jira browsing** can also use the Atlassian MCP configured in
+  `C:\Users\waqar\.codex\config.toml`; writes go through `scripts/agent/jira.mjs`.
 
-## Current direction (30 September 2026, evening — the owner approved the next phase)
+## Current direction (12 October 2026)
 
-SCRUM-201 is closed. The main story now under way is **SCRUM-208 (S2-11): sale
-printing and signed bands, the History tab with refunds, voids and reprints** —
-the sprint plan's section S2-11 is the brief, and CP3 (the park's play-test)
-follows it. After S2-11: the offline-selling cluster (SCRUM-269 with 270, 271,
-295), which is also what lets SCRUM-206/205 close; then S2-12 → S2-15 per the
-plan's order. Work SCRUM-208 under the one ticket with a progress comment per
-part; its two deliberate scope notes are recorded on the ticket (bands are
-minted on the platform at finalise for now, box-verifiable by format, and move
-to the box with SCRUM-269; box-side offline minting is not this ticket).
-
-Use existing affected tests, package typecheck and lint; follow the repo's
-existing test patterns for new endpoints and services, no new frameworks.
-Manual Render deployment is authorised while Actions cannot start because of
-billing. Deploy the verified API before matching frontends; keep normal automatic
-deployment settings. After migration 0033, never roll API back before 85d35e0.
-Do not call CI green or deliver a release as CI-packed without actual CI evidence.
-Every temporary Playwright configuration must use its own absolute output directory.
-Keep unresolved simulated payment records identified in the QA notes untouched.
+The open story is **S2-17b (SCRUM-191)** — the OTO App lifted whole. Rounds 1–6 are landed
+and live on staging. The order of work is: round 7, round 8, then the fix block of
+`docs/progress/OPEN_ITEMS.md` before any new story (the owner's standing ruling). The
+newest resume note in `docs/handover/CODEX_HANDOVER.md` carries the exact next steps.
+SCRUM-223 (the bench/Pi story) stays paused at its freeze — its brief is further down in
+that same handover file; do not touch it unless the owner schedules bench time. Only one
+agent session works this repository at a time.

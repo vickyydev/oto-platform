@@ -1,5 +1,90 @@
 # Hand-over to the next agent session — 28 September 2026, evening
 
+## Resume note - 12 October 2026 - the platform lane hands to this session
+
+This note supersedes everything below it; the sections underneath are history
+(the bench/Pi brief for SCRUM-223 stays valid for whenever bench time is
+scheduled, and nothing else). Read next, in order: `docs/progress/STATUS.md`
+(newest block), `docs/progress/OPEN_ITEMS.md`, and
+`docs/progress/plans/otoapp-lift/PLAN.md`. `AGENTS.md` (refreshed today)
+carries the absolute rules, the landing gate and the environment - it is
+current; where anything in the older sections below disagrees with it,
+AGENTS.md wins.
+
+**Where the work stands.** The open story is S2-17b (SCRUM-191): the OTO App
+lifted whole onto the platform, run as gated lane rounds per the plan's
+section 8. Rounds 1-6 are LANDED AND LIVE on staging (all six services at
+633cae41): sign-on and the route fences; the employee mirror (the app is the
+staff master; `job:otoapp.employee_sync` copies every 15 minutes, adoption
+proven); the night jobs under the platform runner (OTOAPP_JOBS=platform is
+LIVE on staging - the app starts no timers there); tenant ownership complete
+(contraction applied, Attention awake per park group); attendance and
+operations (sick days save, the shift-group refusal speaks, face stands
+down); and the document modules (app migration 0008 applied - verified: nine
+migrations in the journal, the offboarding census clean so its unique index
+was minted, zero unowned document rows; offboarding is one transaction; every
+document download is a short-lived signed link). Round 6 reached staging by
+Render's auto-deploy on green - already verified clean, nothing to redo.
+
+**In flight beside you:** the owner's HR tester (Maria) is smoke-testing the
+app on staging with the practice accounts. Her findings arrive through the
+owner; fold each into `OPEN_ITEMS.md` and the matching ticket rather than
+fixing ad hoc. A deliberate test record exists: Som's sick day on 14 October.
+
+**First actions, in order:**
+1. Post the round-6 comment on SCRUM-191 (it landed and auto-deployed after
+   the last comment): plain words - the document modules are live, the
+   offboarding census was clean, the signed links work. No new evidence
+   needed beyond what the comment says; the walkthrough debt below carries
+   the pictures.
+2. One read-only staging query (one-off job via `node scripts/agent/render.mjs
+   job ...`): whether any otoapp.users row carries a platform link whose
+   employee sits in a DIFFERENT park group (a stale cross-park login link
+   from before round 6's fix - the 03:00 leaver step would act on it).
+   Record the answer in STATUS and the plan's section 10 bullet.
+3. The walkthrough debt: rounds 5 and 6 owe their module evidence pages
+   (rota/leave, kiosk clock roads, checklists, announcements; contracts,
+   letters, templates, policies, assets, offboarding, org chart) - staged
+   captures with `evidence.mjs`, frames committed under
+   `docs/qa/jira-comments/attachments/SCRUM-191/`, attached with plain-words
+   comments. Coordinate with Maria's testing (read-only where she is
+   working; ZZ TEST records elsewhere).
+4. Round 7 of the lift, as its own gated lane per the plan's round 7 row:
+   the finance keys migration, round 6's NOT NULL contraction (a release
+   AFTER 0008 is live everywhere - it is), the people-routes slice, the
+   permission/role reads, the app's voucher write notices, Data Admin's
+   walkthrough, and the module walkthrough sweep. Hazards H16 (finance
+   upsert) and H27; the standing pins from round 6's re-review (the
+   scheduling/kiosk/time-event/role-branch by-id doors) may be folded in
+   here if the round touches those modules anyway - otherwise they wait for
+   the fix block as OPEN_ITEMS records.
+5. Round 8: the restore rehearsal in CI, the app typecheck ratchet as a CI
+   check, the acceptance index, SCRUM-193 walked per its checks.
+6. THEN THE FIX BLOCK: `OPEN_ITEMS.md` section 2 in its worked order (money
+   and safety first - the wages double-deduction SCRUM-276 leads; the
+   marked pairings as single lanes). The owner has ruled this comes before
+   any new story.
+
+**The gate, adapted for a single agent:** you do not have a second reviewer,
+so you are both. Build the lane; then switch hats and attack it - write the
+review test file in the house style (passing pins + `it.fails` FINDINGs with
+severity and a prescribed fix) BEFORE landing, driving the doors as another
+park group / another branch / a replayed request, the way the round 1-6
+review files in `apps/api/test/s217b-*-review.test.ts` do (read two of them
+first; they are the standard). Apply the prescribed fixes, flip the pins,
+land only when the whole battery is green. Honesty rule: a finding you
+choose not to fix stays a standing `it.fails` with its record named in the
+plan - never silently dropped.
+
+**Numbers to hold:** platform migrations next free 0076; app migrations next
+free 0009; the app typecheck ratchet is exactly 467 errors (per file); the
+api typecheck prints zero lines; CI wall is ~13 minutes (sharded - api three
+shards, pos its own runner).
+
+**Open questions for the owner** are consolidated in `OPEN_ITEMS.md`
+section 3 and the plans' lists (lift Q1-Q54). Ask in plain words, existing
+behaviour as default, and never build a preference.
+
 Written for: the coding agent (OpenAI Codex, or any other) that resumes this repository
 in the same working folder, and for the owner setting it up. Everything below was true
 when it was written; verify the live state from `docs/progress/STATUS.md` and the newest
