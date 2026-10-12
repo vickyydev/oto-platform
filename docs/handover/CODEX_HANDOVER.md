@@ -1,93 +1,21 @@
 # Hand-over to the next agent session — 28 September 2026, evening
 
-## Resume note - 12 October 2026 - the platform lane hands to this session
+## Resume note - 12 October 2026 - round-7 review checkpoint
 
-This note supersedes everything below it; the sections underneath are history
-(the bench/Pi brief for SCRUM-223 stays valid for whenever bench time is
-scheduled, and nothing else). Read next, in order: `docs/progress/STATUS.md`
-(newest block), `docs/progress/OPEN_ITEMS.md`, and
-`docs/progress/plans/otoapp-lift/PLAN.md`. `AGENTS.md` (refreshed today)
-carries the absolute rules, the landing gate and the environment - it is
-current; where anything in the older sections below disagrees with it,
-AGENTS.md wins.
+This note supersedes the history below. Read AGENTS.md, then the newest STATUS block, OPEN_ITEMS and the lift PLAN. The owner approved three isolated preparation/review lanes; one coordinator alone integrates, publishes, handles staging/Jira and assigns final migration numbers.
 
-**Where the work stands.** The open story is S2-17b (SCRUM-191): the OTO App
-lifted whole onto the platform, run as gated lane rounds per the plan's
-section 8. Rounds 1-6 are LANDED AND LIVE on staging (app 633cae41; five
-platform services 6617f3b2, the same runtime code after documentation):
-sign-on and the route fences; the employee mirror (the app is the
-staff master; `job:otoapp.employee_sync` copies every 15 minutes, adoption
-proven); the night jobs under the platform runner (OTOAPP_JOBS=platform is
-LIVE on staging - the app starts no timers there); tenant ownership complete
-(contraction applied, Attention awake per park group); attendance and
-operations (sick days save, the shift-group refusal speaks, face stands
-down); and the document modules (app migration 0008 applied - verified: nine
-migrations in the journal, the offboarding census clean so its unique index
-was minted, zero unowned document rows; offboarding is one transaction; every
-document download is a short-lived signed link). Round 6 reached staging by
-Render's auto-deploy on green - already verified clean, nothing to redo.
+Rounds 1-6 are landed and live. Round-6 eight-page and round-5 ten-page evidence is committed and attached to SCRUM-191; exact fixture/object cleanup completed. Main a81fcb899e8376dd84bbe0bdf1320d3ce2d52368 has green CI 38240328400. The lifted app still runs 633cae416ff7e4a1c253ec4904cdc22351cf7df1 with migration 0008. The shared ZZ TEST park/user remains for round 7 and final cleanup. Preserve Som's 14 October sick day, the seeded cast and protected payment run 0d008153.
 
-**In flight beside you:** the owner's HR tester (Maria) is smoke-testing the
-app on staging with the practice accounts. Her findings arrive through the
-owner; fold each into `OPEN_ITEMS.md` and the matching ticket rather than
-fixing ad hoc. A deliberate test record exists: Som's sick day on 14 October.
+Round 7 is built locally on lane/s217b-r7 and published for review, not landed or deployed. Ten inspected staged frames and the round-7 index record current actions; camp attendance and another park's payroll export still need the staged release recheck. SCRUM-516 groups finance, administration, camp, permission and payroll ownership delivery. Independent permission/private-photo review has 15 green bounded pins on cf6c21a4. The payroll reviewer records seven parent/context findings across all 45 registered routes; the builder applies them as one batch. R8 tooling has 17 green pins and the genuine 11-migration rehearsal is running separately.
 
-12 October cleanup checkpoint: main a81fcb89 passed CI38240328400; round5 frames11370-11380 and comments11731/11732 are saved. Jobs job-db6c0g4s728c73fv2860 and job-db6c1u3rjlhs73fm2ik0 completed exact object/record cleanup with final404s and thirteen zero counts. The shared practice park/user remain for round7 and final cleanup before closure. Round7 is local at independent review, no runtime landing yet.
+Next, in order:
+1. Finish the recorded payroll guards, flip/recheck the independent pins, integrate, and run the full battery, whole API/app typechecks, actual touched-file lint and build. API output must be zero lines. The inherited app ceiling is 467 per file/code; the access lane now measures 463 after four old permission-context diagnostics disappear. Confirm the whole integrated delta before tightening R8's baseline.
+2. Land R7a with app 0009, keeping document ownership nullable while new writers ship. Watch CI by full SHA, check/comment Jira in the push turn, and observe the new writer on staging. Then cut R7b from origin/main and apply 0010's document contraction, with its own full gate. Independent four-pin R7b verification already passed against 2c706198; final release/staged verification remains owed.
+3. Finish every round-7 module page/action/refusal, attach the inspected proofs, and remove exact ZZ TEST records/objects including the shared practice park/user. No secret capabilities belong in ledgers or screenshots.
+4. Land R8: genuine restore against the final 0..10 chain in CI, measured app typecheck ratchet, acceptance index and Decision 25. Walk SCRUM-193 only when its five checks are actually evidenced. SCRUM-191 remains open for its separate SCRUM-194 scope, which depends on the existing owner decision; do not claim the whole umbrella complete.
+5. Follow OPEN_ITEMS section 2 in its worked order before any new story, beginning with SCRUM-276. SCRUM-223 stays paused.
 
-**Current continuation (12 October):** Round-6 evidence checkpoint9009be62 passed CI38230330522 and its ten images are attached to SCRUM-191 (11360-11369); comments11729/11730 preserve both tickets In Progress. Round5’s ten action/refusal pages are recorded; exact attendance/operations/object cleanup is next. The shared ZZ TEST park/user now remains for round7’s isolated checks and must be cleaned before closure. The owner approved three isolated preparation lanes with one coordinator responsible for main/staging/Jira/migration numbering: R7 finance/contraction, R7 access/Data Admin and R8 tooling. Preserve complete gates and ordered landings. Q55-Q57 are in the plan; people census job-db6bq3ad0e5s73a5cndg found0 people and7 app users (strict placed6, unplaced/inconsistent1).
-
-**First actions, in order:**
-1. Completed 12 October: SCRUM-191 status checked (In Progress) and the
-   round-6 delivery comment posted (11727). Its eight module walkthroughs
-   are now recorded under docs/qa/oto-app-lift/round-6/.
-2. Completed 12 October: read-only staging job job-db69i3tckfvc73cl6e8g
-   found five platform-linked app users, zero direct employee/login links,
-   zero cross-park direct links and zero unplaced direct links. Recorded in
-   STATUS and section 10 of the plan; email fallback is outside this check.
-3. The remaining walkthrough debt: round 5's ten pages (rota/leave, kiosk
-   clock roads, checklists, announcements and the other named modules).
-   Round 6's eight pages now record their actions/refusals and exact document
-   cleanup; the shared ZZ TEST practice park and app user remain for round 5,
-   with their IDs and final-cleanup duties in STATUS. Use staged
-   captures with `evidence.mjs`, frames committed under
-   `docs/qa/jira-comments/attachments/SCRUM-191/`, attached with plain-words
-   comments. The owner has confirmed that necessary walkthrough actions
-   should proceed; use disposable ZZ TEST records and exact cleanup.
-4. Round 7 of the lift, as its own gated lane per the plan's round 7 row:
-   the finance keys migration, round 6's NOT NULL contraction (a release
-   AFTER 0008 is live everywhere - it is), the people-routes slice, the
-   permission/role reads, the app's voucher write notices, Data Admin's
-   walkthrough, and the module walkthrough sweep. Hazards H16 (finance
-   upsert) and H27; the standing pins from round 6's re-review (the
-   scheduling/kiosk/time-event/role-branch by-id doors) may be folded in
-   here if the round touches those modules anyway - otherwise they wait for
-   the fix block as OPEN_ITEMS records.
-5. Round 8: the restore rehearsal in CI, the app typecheck ratchet as a CI
-   check, the acceptance index, SCRUM-193 walked per its checks.
-6. THEN THE FIX BLOCK: `OPEN_ITEMS.md` section 2 in its worked order (money
-   and safety first - the wages double-deduction SCRUM-276 leads; the
-   marked pairings as single lanes). The owner has ruled this comes before
-   any new story.
-
-**The gate, adapted for a single agent:** you do not have a second reviewer,
-so you are both. Build the lane; then switch hats and attack it - write the
-review test file in the house style (passing pins + `it.fails` FINDINGs with
-severity and a prescribed fix) BEFORE landing, driving the doors as another
-park group / another branch / a replayed request, the way the round 1-6
-review files in `apps/api/test/s217b-*-review.test.ts` do (read two of them
-first; they are the standard). Apply the prescribed fixes, flip the pins,
-land only when the whole battery is green. Honesty rule: a finding you
-choose not to fix stays a standing `it.fails` with its record named in the
-plan - never silently dropped.
-
-**Numbers to hold:** platform migrations next free 0076; app migrations next
-free 0009; the app typecheck ratchet is exactly 467 errors (per file); the
-api typecheck prints zero lines; CI wall is ~13 minutes (sharded - api three
-shards, pos its own runner).
-
-**Open questions for the owner** are consolidated in `OPEN_ITEMS.md`
-section 3 and the plans' lists (lift Q1-Q54). Ask in plain words, existing
-behaviour as default, and never build a preference.
+Platform next migration is 0076. App staging is applied through 0008; reserved release sequence is 0009 then 0010. Shared-role Q54, historical-person Q56 and global rate-limit Q57 defaults remain recorded expected-failure pins; Q55 preserves repeated finance report labels. Scheduling Q39 remains BROKEN in its existing fix-block lane. The newest STATUS block always wins.
 
 Written for: the coding agent (OpenAI Codex, or any other) that resumes this repository
 in the same working folder, and for the owner setting it up. Everything below was true

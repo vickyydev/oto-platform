@@ -17,51 +17,13 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
-12 October cleanup checkpoint: main a81fcb89 passed CI38240328400; round5 frames11370-11380 and comments11731/11732 are saved. Jobs job-db6c0g4s728c73fv2860 and job-db6c1u3rjlhs73fm2ik0 completed exact object/record cleanup with final404s and thirteen zero counts. The shared practice park/user remain for round7 and final cleanup before closure. Round7 is local at independent review, no runtime landing yet.
+**12 October 2026, round-7 review checkpoint published on the lane:** Main remains a81fcb899e8376dd84bbe0bdf1320d3ce2d52368, with CI 38240328400 green. This checkpoint is on lane/s217b-r7 for review; it is not a main landing or a deployment. Rounds 5 and 6 evidence and cleanup are complete. Ten inspected round-7 staging frames now record events, menus, parent/RSVP, camps, SOP, training, Vault, payroll exports and Fix on app 633cae416ff7e4a1c253ec4904cdc22351cf7df1. The walkthrough index records the exact actions and limitations. Camp attendance and payroll foreign-export cases remain BROKEN on staging until release and recheck.
 
-12 October continuation: round6 evidence9009be62 passed CI38230330522; ten inspected images11360-11369 are attached to SCRUM-191, delivery comments11729/11730 posted. Both191/193 remain In Progress. Round5’s ten action/refusal pages now exist; exact fixture/object cleanup is next, with the shared ZZ TEST park/user retained for isolated round7 checks and final cleanup before closure. The owner approved three isolated preparation lanes (R7 finance/contraction, R7 access/Data Admin, R8 tooling) with one coordinator owning main/staging/Jira/numbering. No new runtime code is landed. PlanQ55-Q57 and the newest STATUS block carry scope and census counts.
+Three approved isolated lanes continue: access/payroll delivery, independent payroll review, and restore/typecheck tooling. Finance imports, Xero placement, administration, people, camp, permission replacement and payroll file guards are built locally. The independent permission/private-photo recheck passed all 15 bounded pins against cf6c21a4884de26822fdc4a7bf03b34b99e569b7; shared-role question Q54 alone stands. Payroll review covers all 45 registrations and records seven ownership findings; prescribed parent/context guards are being applied together under SCRUM-516. No payroll calculation or existing salary advance was changed. R8 has 17 green tooling pins; its genuine final 11-migration restore rehearsal is running separately. The last access compiler measured 463 diagnostics, four fewer than the inherited 467; the coordinator still owes the whole integrated output and per-file comparison before tightening the ratchet.
 
+Release order is R7a (0009, nullable document columns and new owning writers), then R7b (0010, document placement replay and NOT NULL) only after those writers are observed live, then R8. This protects the still-serving round-6 Data Admin writer during pre-deploy. Independent R7b rerun passed four migration pins, including nullable gate failure and successful retry/replay. Platform next migration remains 0076; staging app remains applied through 0008. Final integrated battery, typechecks, touched-file lint, rebase, main push, full-SHA CI and staged rechecks remain owed. Exact ZZ TEST record/object cleanup, including the shared practice park/user, remains owed before closure. SCRUM-191, SCRUM-193 and SCRUM-516 remain In Progress; SCRUM-194 remains To Do pending its existing scope decision, and SCRUM-223 stays paused. No owner answer is required for the current release work. After the lift, follow OPEN_ITEMS section 2 in its worked order.
 
-Current checkpoint (12 October 2026, platform lane resumed): the
-sprint's two big stories are Deployed with checked evidence (SCRUM-217
-events/parties/camps/kiosk, SCRUM-218 staff benefits). The open story is
-**S2-17b, the OTO App lifted whole (SCRUM-191, In Progress)**, run as lane
-build-review rounds per docs/progress/plans/otoapp-lift/PLAN.md. Rounds 1-6
-are LANDED, DEPLOYED and PROVEN on staging (sign-on fences; the employee
-mirror with adoption proven on the demo cast; the night jobs under the
-platform runner with the Q22 switch THROWN on staging; tenant ownership 4a+4b
-with the contraction applied and Attention awake per park group; attendance
-and operations with the sick-day approval restored and the face road standing
-down). **Round 6 (the document modules) is landed and live**: migration
-0008 (expand; the offboarding census decides its unique index), one-transaction
-offboarding proven by failure injection, and the signed-URL document gate -
-the final review gate covered all 54 employee routes, 32 employee lookup
-sites and five role-holder writers. Staging verified nine app migrations,
-the offboarding unique index and zero unowned document rows. Delivery comment
-11727 is posted on SCRUM-191. Round 6's eight module walkthroughs now record
-real tablet actions, other-park/role refusals and exact document cleanup at
-docs/qa/oto-app-lift/round-6/. Round 5's ten pages are next; the shared ZZ TEST
-practice park and app user remain in use, with their IDs and cleanup duties
-in the newest STATUS block.
-
-_The newest block of docs/progress/STATUS.md is always the exact state; it
-supersedes this paragraph if they ever disagree._
-
-| Item | State |
-|---|---|
-| Main | Documentation checkpoint 6617f3b2e94ae9f0077c0cde3fc5cbe8beac3642 passed full CI 38224228948. Platform migrations end at 0075 (next free 0076); app migration 0008 is live (next free 0009). API typecheck zero lines; app 467 errors across 62 files, read whole and retained per file/code |
-| Staging | Read live 12 October: app 633cae416ff7e4a1c253ec4904cdc22351cf7df1; five platform services 6617f3b2e94ae9f0077c0cde3fc5cbe8beac3642, the same round-6 runtime code. OTOAPP_JOBS=platform. Preserve Som's evidence sick day 2026-10-14 (id c1e7e9ae-...), the four demo app employees and the jobs:run directory key |
-| Round 6 | LANDED AND LIVE; no deployment repeat needed. SCRUM-191 delivery comment 11727 posted, status remains In Progress. Standing review pins remain named in the plan; walkthrough evidence is owed |
-| Cross-park direct login links | Read-only job job-db69i3tckfvc73cl6e8g succeeded: five platform-linked app users, zero direct employee/login links, zero cross-park direct links and zero unplaced direct links. Strict User Management placement; email fallback outside this check. Recorded in STATUS and plan section 10 |
-| After round 6 | Round 7 (park/knowledge/administration/finance: the finance keys migration, round 6's NOT NULL contraction, the people routes slice, voucher notices, the big walkthrough sweep), round 8 (restore rehearsal in CI, typecheck ratchet, acceptance index). THEN THE FIX BLOCK (docs/progress/OPEN_ITEMS.md) before ANY new story - the owner's standing ruling of 9 October |
-| Owner queues | Lift plan Q1-Q54 (newest: Q38-Q46 attendance, Q47-Q54 documents/roles); benefits Q1-Q13; events Q1-Q14; analytics 1-17 (Q3 blocks SCRUM-508); SCRUM-497; the OPEN_ITEMS section-3 ruling list |
-| Walkthrough debt (SCRUM-191) | This checkpoint records round 6's eight pages, inspected frames and guarded cleanup; Jira attachments follow the documentation push. Next on lane/s217b-walkthroughs: round 5's ten pages and shared-fixture cleanup, then rounds 7 and 8. The acceptance rows describe only the actions actually shown |
-| CI | Sharded 8 Oct (SCRUM-511 Deployed with the measured card): api 3 shards + pos on its own runner; ~13 min wall. The 0007-gate suites know the no-app-modules fallback path (cause chain surfaced) |
-
-**Standing security/data rules** (unchanged): ZZ TEST prefixes for new test
-records; FWBooth1 read-only; never touch payment run 0d008153; secrets never
-printed (keys live only in Render env; known by sha256 in STATUS); no
-attribution lines in commits; never commit imports/; benefit QR codes blurred.
+Read the newest CODEX_HANDOVER resume note for exact continuation. The shared practice park/user and round-7 fixtures require guarded cleanup before closure. Preserve seeded accounts and Som's 14 October sick day.
 
 ## 3. Order of work (owner priority, 9 October - supersedes 2 October)
 
