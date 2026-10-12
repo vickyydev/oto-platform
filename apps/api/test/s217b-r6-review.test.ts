@@ -610,7 +610,7 @@ const indexExists = (c: pg.Client, name: string) =>
     .then((r) => Number(r.rows[0].n) === 1);
 
 describe('B. the migration attacked', () => {
-  it('from empty, twice: the second run applies nothing, the four columns nullable with their keys and indexes, the census index made, no park group made', async () => {
+  it('current chain from empty, twice: the second run applies nothing, the four owners required with their keys and indexes, the census index made, no park group made', async () => {
     const { url, drop } = await createTestDatabase({ otoapp: true });
     try {
       const again = await deploy(url);
@@ -624,7 +624,7 @@ describe('B. the migration attacked', () => {
               [t],
             )
           ).rows;
-          expect(col, t).toEqual([{ is_nullable: 'YES', data_type: 'uuid' }]);
+          expect(col, t).toEqual([{ is_nullable: 'NO', data_type: 'uuid' }]);
           expect(await indexExists(c, `idx_${t}_tenant`), t).toBe(true);
           const fk = (await c.query(`select count(*)::int as n from pg_constraint where conname = $1 and contype = 'f'`, [`${t}_tenant_id_tenants_id_fk`])).rows[0].n;
           expect(Number(fk), t).toBe(1);
