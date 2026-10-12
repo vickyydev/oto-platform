@@ -139,6 +139,6 @@ process.exit(0);
     expect(result.ownVersionWrite && result.foreignVersionWrite).toBe(true);
   });
   it('an owned employee supplies a working module home branch', () => expect(result.ownHomeControl).toBe(true));
-  it.fails('FINDING 1 medium: the editor reads its owned draft translation array; prescribed fix: checked form/version reader', () => expect(result.ownArray && result.foreignArray && result.versionSelection).toBe(true));
-  it.fails('FINDING 2 medium: historical foreign links and missing context never choose the module home branch; prescribed fix: request park and owned employees', () => expect(result.historicalHome && result.missingContext).toBe(true));
+  it('FINDING 1 medium, fixed: the editor reads its owned draft translation array; prescribed fix: checked form/version reader', () => expect(result.ownArray && result.foreignArray && result.versionSelection).toBe(true));
+  it('FINDING 2 medium, fixed: historical foreign links and missing context never choose the module home branch; prescribed fix: request park and owned employees', () => expect(result.historicalHome && result.missingContext).toBe(true));
 });
