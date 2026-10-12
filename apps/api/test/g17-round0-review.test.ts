@@ -12,10 +12,11 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -24,7 +25,7 @@ import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { schema, type Db } from '@oto/db';
 import { seed } from '@oto/db/seed';
-import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
+import { createTestDatabase } from '@oto/db/testing';
 import { newId } from '@oto/shared';
 import {
   getBranchEvent,
@@ -357,18 +358,39 @@ describe('A. the OTO App migration, from a seeded live state', () => {
   let seeded: Awaited<ReturnType<typeof oldReleaseWrites>>;
   const runs: string[] = [];
 
-  /** The app's own migrator when it can run here; else the same SQL through the same Drizzle migrator. */
+  /** The historical shape through 0008; round 7 reviews its following migrations separately. */
   async function upgrade(): Promise<void> {
-    if (HAS_APP_MODULES) {
-      const out = spawnSync(process.execPath, [join(APP_DIR, 'script', 'migrate.mjs')], {
-        env: { ...process.env, DATABASE_URL: url },
-        encoding: 'utf8',
-      });
-      expect(out.status, out.stderr).toBe(0);
-      runs.push(out.stdout.trim());
-    } else {
-      await applyOtoAppMigrations(url);
-      runs.push('applyOtoAppMigrations');
+    const prefix = join(resolve(tmpdir()), 'otoapp-g17-through-0008-');
+    const release = resolve(mkdtempSync(prefix));
+    if (!release.startsWith(prefix)) throw new Error('Unexpected historical release directory');
+    try {
+      const journal = JSON.parse(readFileSync(join(APP_MIGRATIONS, 'meta', '_journal.json'), 'utf8')) as { entries: JournalEntry[] };
+      const entries = journal.entries.filter((entry) => entry.idx <= 8);
+      expect(entries.map((entry) => entry.idx)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+      expect(entries.at(-1)?.tag).toBe('0008_document_tenant_ownership_expand');
+      const migrations = join(release, 'migrations');
+      mkdirSync(join(migrations, 'meta'), { recursive: true });
+      writeFileSync(join(migrations, 'meta', '_journal.json'), JSON.stringify({ ...journal, entries }));
+      for (const entry of entries) copyFileSync(join(APP_MIGRATIONS, `${entry.tag}.sql`), join(migrations, `${entry.tag}.sql`));
+      if (HAS_APP_MODULES) {
+        mkdirSync(join(release, 'script'));
+        copyFileSync(join(APP_DIR, 'script', 'migrate.mjs'), join(release, 'script', 'migrate.mjs'));
+        symlinkSync(join(APP_DIR, 'node_modules'), join(release, 'node_modules'), 'junction');
+        const out = spawnSync(process.execPath, [join(release, 'script', 'migrate.mjs')], {
+          env: { ...process.env, DATABASE_URL: url },
+          encoding: 'utf8',
+        });
+        expect(out.status, out.stderr).toBe(0);
+        runs.push(out.stdout.trim());
+      } else {
+        await withClient(url, async (client) => {
+          await client.query('set search_path to otoapp');
+          await migrate(drizzle(client), { migrationsFolder: migrations, migrationsSchema: 'otoapp' });
+        });
+        runs.push('historical migration prefix through 0008');
+      }
+    } finally {
+      rmSync(release, { recursive: true, force: true });
     }
   }
 
