@@ -1,5 +1,9 @@
 # OTO App feature coverage and scope - SCRUM-194
 
+**13 October 2026, integrated feature release checkpoint:** All 27 feature commits are rebased onto round-8 main 8aef1822641102548b20afa7684c0e0511c4e17b. Application, migration, tooling and workflow source is byte-identical to the pre-rebase 47085180 tree; only newer main documents differ. The SOP editor is reachable through Studio, with three focused controls passing. The final Attention writer inventory now follows the two extracted employee-action writers while preserving all eighteen ownership expectations; its isolated static pin passed seven assertions and touched lint has zero warnings/errors.
+
+The preceding 142cc3dd candidate passed five of six jobs, including app build, restore/replay, 89 feature runtime checks, workspace compiler/lint/tests, 30 Console browser checks and two API shards. The remaining shard's sole failure was that file-location expectation, now corrected; no flake rerun or full-pass claim is made. The rebased final candidate needs its full hosted gate. R8 main is being watched separately; feature staging acceptance and one authorized SMS delivery remain. Local databases stay off.
+
 ## 13 October development checkpoint
 
 **13 October 2026, combined feature runtime gate:** PR10's b4265ee1 app job passed all five feature runtime files (87 tests), build, migrations and restore. Its full compiler measured446 diagnostics in59 files, with no baseline bucket increase; the measured457 ceiling is retained until the final source is checked. The two historical API fixture diagnostics are addressed by e030d971 with touched lint clean. Presence recovery outside both live tabs is now integrated at07a99a9f; its five pure checks passed, while the final hosted runtime recheck remains. The new read-only recovery path retains the original request details and checks current park/branch access. No source finding is silently dropped.
