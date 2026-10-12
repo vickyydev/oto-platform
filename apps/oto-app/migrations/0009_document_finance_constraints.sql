@@ -1,3 +1,6 @@
+-- R7a: ownership writers, people expansion and finance keys.
+-- Document columns stay nullable while the preceding release still serves.
+-- R7b contracts them only after this writer release is live everywhere.
 -- Take the same table order as offboarding: its row before the employee.
 LOCK TABLE "employee_offboarding" IN SHARE ROW EXCLUSIVE MODE;--> statement-breakpoint
 
@@ -199,10 +202,6 @@ BEGIN
   END IF;
 END $$;--> statement-breakpoint
 
-ALTER TABLE "asset_catalog" ALTER COLUMN "tenant_id" SET NOT NULL;--> statement-breakpoint
-ALTER TABLE "leave_policies" ALTER COLUMN "tenant_id" SET NOT NULL;--> statement-breakpoint
-ALTER TABLE "policy_documents" ALTER COLUMN "tenant_id" SET NOT NULL;--> statement-breakpoint
-ALTER TABLE "templates" ALTER COLUMN "tenant_id" SET NOT NULL;--> statement-breakpoint
 ALTER TABLE "cash_daily" ADD CONSTRAINT "cash_daily_tenant_id_date_pk" PRIMARY KEY("tenant_id","date");--> statement-breakpoint
 ALTER TABLE "cash_txns" ADD CONSTRAINT "cash_txns_tenant_id_xero_bank_transaction_id_pk" PRIMARY KEY("tenant_id","xero_bank_transaction_id");--> statement-breakpoint
 ALTER TABLE "xero_tracking_categories" ADD CONSTRAINT "xero_tracking_categories_tenant_id_tracking_category_id_pk" PRIMARY KEY("tenant_id","tracking_category_id");--> statement-breakpoint

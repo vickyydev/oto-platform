@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { createTestDatabase } from '@oto/db/testing';
 
 /**
- * S2-17b round 7 (SCRUM-191), the adversarial review: a failed gate across
+ * S2-17b round 7 (SCRUM-191), the adversarial review: R7a compatible ownership expansion with a failed gate across
  * two document tables; contradictory people links; a settled/deferred census;
  * and the real writer failure/replay check in s217b-r7-finance.test.ts.
  *

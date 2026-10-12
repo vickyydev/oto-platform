@@ -1,5 +1,5 @@
 {
-  "id": "9421f63c-eb1b-446b-b096-7d282a8043fd",
+  "id": "9ff2fb43-c2b4-4b8f-a7b6-3bc54f7d9b4d",
   "prevId": "f17a56a5-c7e4-4b7b-b39b-f6843aa6a3ed",
   "version": "7",
   "dialect": "postgresql",
@@ -1185,7 +1185,7 @@
           "name": "tenant_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "name": {
           "name": "name",
@@ -6489,7 +6489,7 @@
           "name": "tenant_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "branch_id": {
           "name": "branch_id",
@@ -8556,7 +8556,7 @@
           "name": "tenant_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "title": {
           "name": "title",
@@ -12930,7 +12930,7 @@
           "name": "tenant_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "name": {
           "name": "name",

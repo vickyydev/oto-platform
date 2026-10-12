@@ -64,12 +64,13 @@ async function fixture<T>(idx: number, work: (url: string) => Promise<T>): Promi
 }
 
 describe('S2-17b round 7 finance and document keys', () => {
-  it('journals the one forward migration after the deployed expand', () => {
+  it('journals the R7a forward expand without contracting the serving writer', () => {
     const entries = journal().entries;
     expect(entries[9]?.tag).toBe('0009_document_finance_constraints');
     expect(entries[9]?.when).toBeGreaterThan(entries[8]!.when);
     const sql = readFileSync(join(MIGRATIONS, `${entries[9]!.tag}.sql`), 'utf8');
     expect(sql).not.toContain('"public".');
+    expect(sql.replace(/--.*$/gm, '')).not.toMatch(/SET NOT NULL/i);
     expect(sql).not.toMatch(/\b(?:DROP TABLE|DROP COLUMN|RENAME COLUMN|DELETE FROM)\b/i);
   }, 120_000);
 
@@ -82,7 +83,7 @@ describe('S2-17b round 7 finance and document keys', () => {
         const columns = (await c.query(`select table_name, is_nullable from information_schema.columns
           where table_schema='otoapp' and column_name='tenant_id' and table_name=any($1)`, [DOC_TABLES])).rows;
         expect(columns).toHaveLength(4);
-        expect(columns.every((r) => r.is_nullable === 'NO')).toBe(true);
+        expect(columns.every((r) => r.is_nullable === 'YES')).toBe(true);
         expect((await c.query(`select count(*)::int as n from pg_constraint c
           join pg_class t on t.oid=c.conrelid join pg_namespace s on s.oid=t.relnamespace
           where s.nspname='otoapp' and c.contype='p' and t.relname=any($1)`, [FINANCE_TABLES])).rows[0].n).toBe(4);
@@ -109,7 +110,20 @@ describe('S2-17b round 7 finance and document keys', () => {
         expect((await c.query("select tenant_id from policy_documents where id='zz-test-policy'")).rows[0].tenant_id).toBe(b);
         expect((await c.query("select tenant_id from asset_catalog where id='zz-test-asset'")).rows[0].tenant_id).toBe(a);
         expect((await c.query("select tenant_id from leave_policies where id='zz-test-leave'")).rows[0].tenant_id).toBe(b);
-        await expect(c.query("insert into templates(name,html_body) values ('ZZ TEST Refused','<p>ZZ TEST</p>')")).rejects.toMatchObject({ code: '23502' });
+        const legacy = (await c.query("insert into templates(name,html_body) values ('ZZ TEST R6 Writer','<p>ZZ TEST</p>') returning tenant_id")).rows[0];
+        expect(legacy.tenant_id).toBeNull();
+        const owned = (await c.query("insert into templates(tenant_id,name,html_body) values ($1,'ZZ TEST R7 Writer','<p>ZZ TEST</p>') returning tenant_id", [b])).rows[0];
+        expect(owned.tenant_id).toBe(b);
+        for (const [table, fields, values] of [
+          ['policy_documents', 'title', "'ZZ TEST R6 Policy'"],
+          ['asset_catalog', 'name', "'ZZ TEST R6 Asset'"],
+          ['leave_policies', 'name,days_worked_required,days_off_earned', "'ZZ TEST R6 Leave',5,2"],
+        ]) {
+          const late = (await c.query(`insert into ${table}(${fields}) values (${values}) returning tenant_id`)).rows[0];
+          expect(late.tenant_id).toBeNull();
+          const current = (await c.query(`insert into ${table}(tenant_id,${fields}) values ($1,${values}) returning tenant_id`, [b])).rows[0];
+          expect(current.tenant_id).toBe(b);
+        }
       });
     });
   }, 120_000);
