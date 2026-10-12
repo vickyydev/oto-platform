@@ -2231,6 +2231,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     const deptB = (await q<{ id: string }>('insert into departments (tenant_id, name) values ($1, $2) returning id', [B.tenant, `ZZ R6FR B dept ${run}`]))[0]!.id;
     const bSlot = await rotaSlot(B, eB);
     const [bPing] = await q('select shift_row_id, shift_date::text as shift_date from schedule_assignments where id=$1', [bSlot]);
+    if (!bPing) throw new Error("The owned ping assignment fixture is required");
     const bShift = randomUUID();
     const window = { startAt: new Date(Date.now() + 86_400_000).toISOString(), endAt: new Date(Date.now() + 90_000_000).toISOString() };
     await q('insert into shifts (id, tenant_id, branch_id, department_id, start_at, end_at, created_by) values ($1, $2, $3, $4, $5, $6, $7)', [bShift, B.tenant, B.x, deptB, window.startAt, window.endAt, B.admin.id]);
