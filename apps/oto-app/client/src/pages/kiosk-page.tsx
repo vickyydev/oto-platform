@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { normalizeEnrollmentIdentity, type KioskEnrollmentIdentity } from "@/lib/kiosk-enrollment";
-import { Camera, QrCode, Clock, CheckCircle, XCircle, User, ArrowLeft, Fingerprint, AlertTriangle, Keyboard, RefreshCw, Loader2 } from "lucide-react";
+import { Camera, QrCode, Clock, CheckCircle, XCircle, User, ArrowLeft, AlertTriangle, Keyboard, RefreshCw, Loader2 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 
 type KioskScreen = "home" | "clock" | "enroll-scan" | "enroll-consent" | "enroll-capture" | "phone-photo" | "phone-entry" | "success" | "error" | "missed-clock-in" | "missed-clock-manual" | "unscheduled-work" | "unscheduled-work-confirm";
@@ -113,7 +113,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
       try {
         await qrScannerRef.current.stop();
         qrScannerRef.current.clear();
-      } catch (e) {
+      } catch {
         // Scanner may not be running
       }
       qrScannerRef.current = null;
@@ -634,7 +634,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
       try {
         await qrScannerRef.current.stop();
         qrScannerRef.current.clear();
-      } catch (e) {
+      } catch {
         // Scanner may not be running
       }
       qrScannerRef.current = null;
