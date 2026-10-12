@@ -15,6 +15,8 @@ import { describe, expect, it } from 'vitest';
  * FINDING 2 (high): psql --file accepts connection/include/shell commands.
  * Prescribed fix: refuse escaping metacommands before handing input to psql,
  * or use fixed-client SQL loading that cannot execute psql commands.
+ * FINDING 3 (low): classify a diagnostic returned on either compiler stream;
+ * prescribed fix: compare the combined complete stdout/stderr output.
  */
 const APP = fileURLToPath(new URL('../../oto-app/', import.meta.url));
 
@@ -29,6 +31,9 @@ type Proof = {
   dropped: number;
   existingTargetTouched: boolean;
   unsafeMarkers: boolean;
+  reachedInventory: boolean;
+  inventoryRefusal: boolean;
+  unsafeRefusal: boolean;
 };
 
 function probe(mode: 'inventory' | 'unsafe'): Proof {
@@ -50,7 +55,7 @@ const names=[...baseline.matchAll(/^CREATE TABLE "([^"]+)"/gm)].map(m=>m[1]);
 const inventory=mode==='inventory'?names.filter(n=>n!=='quiz_attempts').concat('zz_test_inventory_substitute'):names;
 const proof={sourceCount:inventory.length,baselineCount:names.length,hasQuizTable:names.includes('quiz_attempts'),
  substituted:mode==='inventory'&&!inventory.includes('quiz_attempts')&&inventory.includes('zz_test_inventory_substitute'),
- acceptedInventory:false,acceptedUnsafe:false,created:0,dropped:0,existingTargetTouched:false,unsafeMarkers:false};
+ acceptedInventory:false,acceptedUnsafe:false,created:0,dropped:0,existingTargetTouched:false,unsafeMarkers:false,reachedInventory:false,inventoryRefusal:false,unsafeRefusal:false};
 const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'oto-r8-cross-fixture-'));
 const source=path.join(fixture,'structure.sql');
 // These are marker names, not existing destinations, and the runner never executes them.
@@ -62,7 +67,9 @@ class FakeClient {
  async query(sql) {
   if (/^CREATE DATABASE /.test(sql)) {if(!/^CREATE DATABASE "oto_rehearsal_[a-f0-9_]+"$/.test(sql))proof.existingTargetTouched=true;proof.created++;return{rows:[]};}
   if (/^DROP DATABASE /.test(sql)) {if(!/^DROP DATABASE "oto_rehearsal_[a-f0-9_]+" WITH \\(FORCE\\)$/.test(sql))proof.existingTargetTouched=true;proof.dropped++;return{rows:[]};}
-  if (sql.includes('SELECT tablename FROM pg_tables')) return {rows:inventory.slice().sort().map(tablename=>({tablename}))};
+  if (/^(BEGIN|COMMIT|ROLLBACK|SET search_path TO public)$/i.test(sql)) return {rows:[]};
+  if (sql.replaceAll(String.fromCharCode(13),'').trim()===baseline.replaceAll(String.fromCharCode(13),'').trim()) return {rows:[]};
+  if (sql.includes('SELECT tablename FROM pg_tables')) {proof.reachedInventory=true;return {rows:inventory.slice().sort().map(tablename=>({tablename}))};}
   if (sql.includes('SELECT count(*)::text AS n FROM')) return {rows:[{n:'0'}]};
   // Fixed-client input cannot execute psql commands. Refuse a marker as SQL syntax.
   if (sql.includes('ZZ_TEST_NEVER_')) throw new Error('ZZ TEST SQL-only client refused command markers');
@@ -100,7 +107,7 @@ await actual.link(specifier=>{
 });
 try {
  await actual.evaluate();
- try {await actual.namespace.rehearseRestore({serverUrl:'postgresql://localhost/zz_test_admin',structureFile:mode==='unsafe'?source:undefined});} catch {}
+ try {await actual.namespace.rehearseRestore({serverUrl:'postgresql://localhost/zz_test_admin',structureFile:mode==='unsafe'?source:undefined});} catch(error) {proof.inventoryRefusal=String(error.message).includes('source table inventory differs');proof.unsafeRefusal=String(error.message).includes('contains a client command')||String(error.message).includes('stopped at source structure');}
  console.log('proof:'+JSON.stringify(proof));
 } finally {
  const absolute=path.resolve(fixture),relative=path.relative(path.resolve(os.tmpdir()),absolute);
@@ -117,15 +124,46 @@ try {
   return JSON.parse(line!.slice('proof:'.length)) as Proof;
 }
 
+function compilerProbe(): { accepted: boolean; stdoutRead: boolean; stderrRead: boolean } {
+  const moduleUrl = new URL('../../oto-app/script/typecheck-ratchet.mjs', import.meta.url).href;
+  const code = `
++import vm from 'node:vm';
++import * as fs from 'node:fs';
++import * as path from 'node:path';
++import * as url from 'node:url';
++const moduleUrl=${JSON.stringify(moduleUrl)};
++let stdout='',stderr='';
++const output={status:2,stdout:'server/a.ts(1,1): error TS2322: ZZ TEST inherited.\\n',stderr:'server/b.ts(1,1): error TS9999: ZZ TEST new diagnostic.\\n'};
++const processStub={execPath:process.execPath,argv:[process.execPath],stdout:{write:text=>{stdout+=text;}},stderr:{write:text=>{stderr+=text;}}};
++const context=vm.createContext({process:processStub,console:{log(){},error(){}},URL,Buffer});
++const namespaces={'node:path':path,'node:url':url,
++ 'node:child_process':{spawnSync:()=>output},
++ 'node:fs':{readFileSync:()=>JSON.stringify({version:1,errors:1,counts:{'server/a.ts|TS2322':1}})}};
++const actual=new vm.SourceTextModule(fs.readFileSync(url.fileURLToPath(moduleUrl),'utf8'),{context,identifier:moduleUrl,initializeImportMeta(meta){meta.url=moduleUrl;}});
++await actual.link(specifier=>{const values=namespaces[specifier];if(!values)throw new Error('ZZ TEST unexpected compiler import');return new vm.SyntheticModule(Object.keys(values),function(){for(const[name,value]of Object.entries(values))this.setExport(name,value);},{context});});
++await actual.evaluate();let accepted=false;try{actual.namespace.runTypecheck();accepted=true;}catch{}
++console.log('proof:'+JSON.stringify({accepted,stdoutRead:stdout.includes('ZZ TEST inherited'),stderrRead:stderr.includes('ZZ TEST new diagnostic')}));
++`.replace(/^\+/gm, '');
+  const child = spawnSync(process.execPath, ['--experimental-vm-modules', '--input-type=module', '-e', code], { encoding: 'utf8', timeout: 20_000 });
+  expect(child.status, child.stderr).toBe(0);
+  const line = child.stdout.split('\n').find((entry) => entry.startsWith('proof:'));
+  expect(!!line).toBe(true);
+  return JSON.parse(line!.slice('proof:'.length)) as { accepted: boolean; stdoutRead: boolean; stderrRead: boolean };
+}
+
 describe('S2-17b round 8 independent input review', () => {
   const inventory = probe('inventory');
   const unsafe = probe('unsafe');
+  const compiler = compilerProbe();
 
   it('both controlled probes use a real 184-name baseline and only fake generated databases', () => {
     expect(inventory.baselineCount).toBe(184);
     expect(inventory.sourceCount).toBe(184);
     expect(inventory.hasQuizTable).toBe(true);
     expect(inventory.substituted).toBe(true);
+    expect(inventory.reachedInventory).toBe(true);
+    expect(inventory.inventoryRefusal || inventory.acceptedInventory).toBe(true);
+    expect(unsafe.unsafeRefusal || unsafe.acceptedUnsafe).toBe(true);
     expect(unsafe.unsafeMarkers).toBe(true);
     for (const proof of [inventory, unsafe]) {
       expect(proof.existingTargetTouched).toBe(false);
@@ -135,11 +173,20 @@ describe('S2-17b round 8 independent input review', () => {
     expect(baseline.includes('CREATE TABLE "quiz_attempts"')).toBe(true);
   });
 
-  it.fails('FINDING 1 (medium): substituted source tables are refused; prescribed fix: compare every baseline table name before sample seed or baseline adoption', () => {
+  it('FINDING 1 (medium, fixed): substituted source tables are refused; prescribed fix: compare every baseline table name before sample seed or baseline adoption', () => {
     expect(inventory.acceptedInventory).toBe(false);
   });
 
-  it.fails('FINDING 2 (high): connection/include/shell markers never reach psql; prescribed fix: validate structure input or load through a fixed SQL client', () => {
+  it('FINDING 2 (high, fixed): connection/include/shell markers never reach psql; prescribed fix: validate structure input or load through a fixed SQL client', () => {
     expect(unsafe.acceptedUnsafe).toBe(false);
   });
+  it('the compiler stand-in returns and prints both complete streams without running TypeScript', () => {
+    expect(compiler.stdoutRead).toBe(true);
+    expect(compiler.stderrRead).toBe(true);
+  });
+
+  it('FINDING 3 (low, fixed): a new stderr diagnostic cannot borrow stdout allowance; prescribed fix: classify diagnostics from both complete streams', () => {
+    expect(compiler.accepted).toBe(false);
+  });
+
 });
