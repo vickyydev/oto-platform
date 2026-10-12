@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { useForm } from "react-hook-form";
-import { format, parseISO, differenceInDays, differenceInYears, addMonths, subMonths, getYear, getMonth, eachDayOfInterval, isAfter, endOfDay } from "date-fns";
+import { format, parseISO, differenceInDays, addMonths, subMonths, getYear, getMonth, eachDayOfInterval, isAfter, endOfDay } from "date-fns";
 import { DayPicker } from "react-day-picker";
 import { SignatureCanvas } from "@/components/ui/signature-canvas";
 import { Button } from "@/components/ui/button";
@@ -371,6 +371,16 @@ export default function CampRegisterPage() {
   const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string | null>(null);
   const [pickupPhotoPreviewUrl, setPickupPhotoPreviewUrl] = useState<string | null>(null);
   const [prefillBanner, setPrefillBanner] = useState(false);
+  const [verificationNeeded, setVerificationNeeded] = useState(false);
+  const [verificationPhone, setVerificationPhone] = useState("");
+  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationBusy, setVerificationBusy] = useState(false);
+  const [verifiedUntil, setVerifiedUntil] = useState<number | null>(null);
+  const familyGrant = useRef<string | null>(null);
+  const lookupEpoch = useRef(0);
+  const savedFamilyVisible = useRef(false);
+  const displayedEvent = useRef(eventId);
   const [agreedCampRulesDate, setAgreedCampRulesDate] = useState<string | null>(null);
   const [rulesConfirmedCollapsed, setRulesConfirmedCollapsed] = useState(false);
   // Guards against a delayed lookup response overwriting children the user has already edited
@@ -407,7 +417,6 @@ export default function CampRegisterPage() {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
   } = useForm<FormValues>({
     defaultValues: { authorizedPickupPersons: "" },
   });
@@ -421,7 +430,8 @@ export default function CampRegisterPage() {
     try {
       const saved = sessionStorage.getItem(storageKey);
       if (saved) {
-        const { fields, children: ch, parentContacts: pc } = JSON.parse(saved);
+        const { version, fields, children: ch, parentContacts: pc } = JSON.parse(saved);
+        if (version !== 2) { sessionStorage.removeItem(storageKey); return; }
         if (fields) Object.entries(fields).forEach(([k, v]) => setValue(k as keyof FormValues, v as any));
         if (ch && Array.isArray(ch) && ch.length > 0)
           setChildren(ch.map((c: Partial<ChildEntry>) => ({ ...newChild(), ...c })));
@@ -429,33 +439,77 @@ export default function CampRegisterPage() {
           setParentContacts(pc);
       }
     } catch { /* ignore */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
 
   useEffect(() => {
-    if (submitted) return;
+    if (submitted || savedFamilyVisible.current || familyGrant.current) return;
     try {
-      sessionStorage.setItem(storageKey, JSON.stringify({ fields: allValues, children, parentContacts }));
+      sessionStorage.setItem(storageKey, JSON.stringify({ version: 2, fields: allValues, children, parentContacts }));
     } catch { /* ignore */ }
   }, [allValues, children, parentContacts, storageKey, submitted]);
 
   // Reset all lookup-derived state (called on phone change or !found response)
-  const resetLookupState = useCallback(() => {
+  const resetLookupState = useCallback((phone?: string) => {
+    lookupEpoch.current += 1;
+    familyGrant.current = null;
+    setVerifiedUntil(null);
+    setVerificationNeeded(false);
+    setChallengeId(null);
+    setVerificationCode("");
+    if (savedFamilyVisible.current) {
+      savedFamilyVisible.current = false;
+      setChildren([newChild()]);
+      setPickupPhotoUrl(null);
+      setPickupPhotoPreviewUrl(null);
+      setValue("authorizedPickupPersons", "");
+      setParentContacts(previous => [{ id: "pc-0", name: "", phone: phone ?? previous[0]?.phone ?? "" }]);
+      try { sessionStorage.removeItem(storageKey); } catch { /* storage may be unavailable */ }
+    }
     setAgreedCampRulesDate(null);
     setRulesConfirmedCollapsed(false);
     setAgreedRules(false);
     setAgreedHealthy(false);
     setPrefillBanner(false);
     pickerActedRef.current = false;
-  }, []);
+  }, [setValue, storageKey]);
 
-  const handlePhoneLookup = useCallback(async (phoneVal: string) => {
+  useEffect(() => {
+    if (!verifiedUntil) return;
+    const timer = setTimeout(() => resetLookupState(), Math.max(0, verifiedUntil - Date.now()));
+    return () => clearTimeout(timer);
+  }, [verifiedUntil, resetLookupState]);
+  useEffect(() => {
+    if (displayedEvent.current === eventId) return;
+    displayedEvent.current = eventId;
+    resetLookupState("");
+  }, [eventId, resetLookupState]);
+
+  const handlePhoneLookup = useCallback(async (phoneVal: string, lookupGrant?: string) => {
     const trimmed = phoneVal?.trim();
-    if (!trimmed || trimmed.length < 5 || !eventId) return;
+    if (!trimmed || trimmed.length < 8 || !eventId || (!lookupGrant && familyGrant.current)) return;
+    const epoch = lookupEpoch.current;
     try {
-      const res = await fetch(`/api/public/camp-registrations/lookup?eventId=${eventId}&phone=${encodeURIComponent(trimmed)}`);
-      if (!res.ok) return;
+      const res = await fetch("/api/public/camp-registrations/lookup", {
+        method: "POST", headers: { "Content-Type": "application/json", ...(lookupGrant ? { "X-Camp-Family-Grant": lookupGrant } : {}) },
+        body: JSON.stringify({ eventId, phone: trimmed }),
+      });
       const data = await res.json();
+      if (epoch !== lookupEpoch.current) return;
+      if (!res.ok) throw new Error(data.message || "Family details could not be loaded.");
+      if (data.verificationRequired) {
+        setVerificationPhone(trimmed);
+        setVerificationNeeded(true);
+        return;
+      }
+      if (data.found && typeof data.familyGrant !== "string") throw new Error("Verify this number before loading saved details.");
+      if (data.found) {
+        familyGrant.current = data.familyGrant;
+        savedFamilyVisible.current = true;
+        setVerifiedUntil(new Date(data.expiresAt).getTime());
+        setVerificationNeeded(false);
+        setVerificationCode("");
+        try { sessionStorage.removeItem(storageKey); } catch { /* storage may be unavailable */ }
+      }
       if (!data.found) {
         resetLookupState();
         return;
@@ -501,8 +555,46 @@ export default function CampRegisterPage() {
           childFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 80);
       }
-    } catch { /* silently ignore */ }
-  }, [eventId, setValue, resetLookupState]);
+    } catch (error) {
+      toast({ title: error instanceof Error ? error.message : "Family details could not be loaded.", variant: "destructive" });
+    }
+  }, [eventId, setValue, resetLookupState, toast]);
+
+  const requestVerification = async () => {
+    const epoch = lookupEpoch.current;
+    setVerificationBusy(true);
+    try {
+      const response = await fetch("/api/public/camp-registrations/sms/request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purpose: "camp-family", eventId, phone: verificationPhone }),
+      });
+      const data = await response.json();
+      if (epoch !== lookupEpoch.current) return;
+      if (!response.ok) throw new Error(data.message || "Verification is not available.");
+      if (!data.found) { resetLookupState(); return; }
+      setChallengeId(data.challengeId);
+      setVerificationCode("");
+      toast({ title: "Verification message sent" });
+    } catch (error) {
+      toast({ title: error instanceof Error ? error.message : "Verification is not available.", variant: "destructive" });
+    } finally { setVerificationBusy(false); }
+  };
+  const verifyContact = async () => {
+    const epoch = lookupEpoch.current;
+    setVerificationBusy(true);
+    try {
+      const response = await fetch("/api/public/camp-registrations/sms/verify", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purpose: "camp-family", eventId, phone: verificationPhone, challengeId, code: verificationCode }),
+      });
+      const data = await response.json();
+      if (epoch !== lookupEpoch.current) return;
+      if (!response.ok) throw new Error(data.message || "Verification could not be completed.");
+      await handlePhoneLookup(verificationPhone, data.grant);
+    } catch (error) {
+      toast({ title: error instanceof Error ? error.message : "Verification could not be completed.", variant: "destructive" });
+    } finally { setVerificationBusy(false); }
+  };
 
   const submitMutation = useMutation({
     mutationFn: async (payload: {
@@ -517,11 +609,7 @@ export default function CampRegisterPage() {
     }) => {
       const today = format(new Date(), "yyyy-MM-dd");
       const contactsPayload = payload.parentContacts.map(({ name, phone }) => ({ name, phone }));
-      for (const child of payload.childrenData) {
-        const res = await fetch("/api/public/camp-registrations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+      const registrations = payload.childrenData.map(child => ({
             eventId,
             childFullName: child.childFullName,
             dateOfBirth: child.dateOfBirth,
@@ -541,13 +629,17 @@ export default function CampRegisterPage() {
             signatureDate: today,
             existingRegistrationId: child.existingRegistrationId || null,
             usePriorAgreement: payload.usingPriorAgreement,
-          }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.message || "Submission failed");
-        }
+          }));
+      const response = await fetch("/api/public/camp-registrations/batch", {
+        method: "POST", headers: { "Content-Type": "application/json", ...(familyGrant.current ? { "X-Camp-Family-Grant": familyGrant.current } : {}) },
+        body: JSON.stringify({ registrations }),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        if (response.status === 403) resetLookupState();
+        throw new Error(error.message || "Submission failed");
       }
+      familyGrant.current = response.headers.get("X-Camp-Family-Grant");
     },
     onSuccess: () => {
       setSubmitted(true);
@@ -774,6 +866,17 @@ export default function CampRegisterPage() {
             <CardTitle className="text-base font-semibold text-foreground">Parent / Guardian</CardTitle>
           </CardHeader>
           <CardContent className="px-5 pb-5 space-y-4">
+            {verificationNeeded && <div className="rounded-xl border border-teal-200 bg-teal-50 p-4 space-y-3" data-testid="camp-family-verification">
+              <p className="text-sm">Verify this contact number by SMS to use saved family details.</p>
+              <button type="button" onClick={requestVerification} disabled={verificationBusy} className="text-sm font-semibold text-teal-800 disabled:opacity-50">
+                {challengeId ? "Send a new code" : "Send verification code"}
+              </button>
+              {challengeId && <div className="flex gap-2">
+                <Input aria-label="Six-digit verification code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={verificationCode}
+                  onChange={event => setVerificationCode(event.target.value.replace(/[^0-9]/g, ""))} />
+                <button type="button" disabled={verificationBusy || !/^\d{6}$/.test(verificationCode)} onClick={verifyContact} className="text-sm font-semibold text-teal-800 disabled:opacity-50">Verify</button>
+              </div>}
+            </div>}
             {parentContacts.map((contact, idx) => (
               <div key={contact.id} className="space-y-3">
                 {parentContacts.length > 1 && (
@@ -783,7 +886,10 @@ export default function CampRegisterPage() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => setParentContacts(prev => prev.filter(c => c.id !== contact.id))}
+                      onClick={() => {
+                        if (idx === 0 && savedFamilyVisible.current) resetLookupState(parentContacts[1]?.phone || "");
+                        else setParentContacts(previous => previous.filter(item => item.id !== contact.id));
+                      }}
                       className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -804,7 +910,7 @@ export default function CampRegisterPage() {
                     onChange={e => {
                       const val = e.target.value;
                       setParentContacts(prev => prev.map(c => c.id === contact.id ? { ...c, phone: val } : c));
-                      if (idx === 0) { pickerActedRef.current = false; resetLookupState(); }
+                      if (idx === 0) { pickerActedRef.current = false; resetLookupState(val); }
                     }}
                     onBlur={idx === 0 ? e => handlePhoneLookup(e.target.value) : undefined}
                   />

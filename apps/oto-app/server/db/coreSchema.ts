@@ -3655,6 +3655,25 @@ export type BeoSetMenuSelection = typeof beoSetMenuSelections.$inferSelect;
 // CAMP REGISTRATIONS
 // ============================================
 
+export const campFamilyChallenges = pgTable("camp_family_challenges", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull(),
+  eventId: uuid("event_id").notNull().references(() => coreEvents.id, { onDelete: "cascade" }),
+  phone: text("phone").notNull(),
+  phoneE164: text("phone_e164").notNull(),
+  providerId: text("provider_id").notNull(),
+  state: text("state").notNull().default("pending"),
+  registrationIds: jsonb("registration_ids").$type<string[]>().notNull(),
+  grantHash: text("grant_hash"),
+  grantPurpose: text("grant_purpose"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, t => [
+  index("camp_family_event_phone_idx").on(t.eventId, t.phone),
+  uniqueIndex("camp_family_grant_hash_unique").on(t.grantHash),
+  index("camp_family_expiry_idx").on(t.expiresAt),
+]);
+
 export const campRegistrations = pgTable(
   "camp_registrations",
   {
