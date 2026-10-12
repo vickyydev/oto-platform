@@ -27,7 +27,6 @@ import {
   ArrowRight, 
   Timer, 
   KeyRound,
-  UserX,
   User,
   Users,
   RefreshCw,
@@ -309,7 +308,7 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
 }
 
 export default function TimekeepingReviewPage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { selectedBranchId, isAllBranches } = useBranchContext();
   const { toast } = useToast();
   
@@ -354,7 +353,7 @@ export default function TimekeepingReviewPage() {
   const pendingQueryUrl = branchParam 
     ? `/api/timekeeping/pending-issues?branchId=${branchParam}` 
     : "/api/timekeeping/pending-issues";
-  const { data: pendingIssuesData, isLoading: pendingLoading, refetch: refetchPending } = useQuery<PendingIssuesResponse>({
+  const { data: pendingIssuesData, isLoading: _pendingLoading, refetch: refetchPending } = useQuery<PendingIssuesResponse>({
     queryKey: ["/api/timekeeping/pending-issues", branchParam],
     queryFn: async () => {
       const response = await fetch(pendingQueryUrl, { credentials: "include" });
