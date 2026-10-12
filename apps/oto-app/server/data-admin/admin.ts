@@ -285,9 +285,21 @@ export abstract class ModelAdmin {
       if (key === 'profilePhotoPath' && typeof mutable[key] === 'string') {
         try {
           const url = new URL(mutable[key] as string);
+          let pathname = url.pathname;
+          // Bound repeated decoding while resolving encoded private route aliases.
+          for (let attempt = 0; attempt < 8; attempt++) {
+            let decoded: string;
+            try {
+              decoded = decodeURIComponent(pathname);
+            } catch {
+              break;
+            }
+            if (decoded === pathname) break;
+            pathname = decoded;
+          }
           if (
             ['http:', 'https:'].includes(url.protocol) &&
-            !/\/(?:api|uploads|objects|contracts|letters)(?:\/|$)/i.test(url.pathname)
+            !/\/(?:api|uploads|objects|contracts|letters)(?:\/|$)/i.test(pathname)
           )
             continue;
         } catch {

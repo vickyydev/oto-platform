@@ -3584,7 +3584,11 @@ export async function registerRoutes(
         return res.status(404).json({ message: "No profile photo available" });
       }
       
-      const photoFilename = path.basename(employee.profilePhotoPath);
+      const photoReference = /^\/(?:api\/files\/|api\/|uploads\/)?profile-photos\/([a-zA-Z0-9._-]+)$/.exec(employee.profilePhotoPath);
+      if (!photoReference || photoReference[1] === "." || photoReference[1] === "..") {
+        return res.status(404).json({ message: "Profile photo file not found" });
+      }
+      const photoFilename = photoReference[1];
 
       const photoFile = await getFileFromObjectStorage("profile-photos", photoFilename);
       if (!photoFile) {
@@ -27583,7 +27587,7 @@ ${context}`;
       const parkGroup = await userManagementTenant(req);
       if (!parkGroup) return res.status(403).json({ message: "Access denied" });
       if ((await managedUserTenant(userId)) !== parkGroup) return res.status(404).json({ message: "User not found" });
-      const overrides = (await storage.getModuleOverrides(userId)).filter(override => override.tenantId === parkGroup);
+      const overrides = await storage.getModuleOverrides(userId, parkGroup);
       res.json(overrides);
     } catch (error) {
       next(error);
@@ -27837,7 +27841,7 @@ ${context}`;
         return res.status(404).json({ message: "User not found" });
       }
 
-      const overrides = (await storage.getModuleOverrides(userId)).filter(override => override.tenantId === req.userWithAccess?.tenantId);
+      const overrides = await storage.getModuleOverrides(userId, tenantId);
 
       // Find linked employee to get home branch
       let homeBranchId: string | null = null;
@@ -27891,10 +27895,11 @@ ${context}`;
         return res.status(404).json({ message: "User not found" });
       }
 
-      const overrides = await storage.getModuleOverrides(userId);
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const overrides = await storage.getModuleOverrides(userId, tenantId);
 
       let homeBranchId: string | null = null;
-      const tenantId = await resolveTenantId(req.user?.tenantId);
       const allEmployees = await storage.getEmployees(tenantId);
       const linkedEmployee = allEmployees.find(e => e.userId === userId);
       if (linkedEmployee) {

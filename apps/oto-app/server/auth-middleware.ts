@@ -69,6 +69,7 @@ export function filterBranchesByScope(branches: Branch[], scope: AllowedScope): 
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- Express request types use declaration merging.
   namespace Express {
     interface Request {
       userWithAccess?: UserWithBranchAccess;
@@ -250,8 +251,8 @@ export function requireModule(...moduleKeys: ModuleKey[]) {
     }
 
     try {
-      const tenantId = user.tenantId || "default";
-      const overrides = await storage.getModuleOverrides(user.id);
+      const tenantId = req.userWithAccess?.tenantId || user.tenantId || await storage.getDefaultTenantId();
+      const overrides = await storage.getModuleOverrides(user.id, tenantId);
       const employees = await storage.getEmployees(tenantId);
       const linkedEmployee = employees.find(e => e.userId === user.id);
 

@@ -451,7 +451,7 @@ export interface IStorage {
         deleteAccessPolicy(personId: string): Promise<void>;
 
         // Module overrides
-        getModuleOverrides(userId: string): Promise<UserModuleOverride[]>;
+        getModuleOverrides(userId: string, tenantId: string): Promise<UserModuleOverride[]>;
         getModuleOverridesByTenant(tenantId: string): Promise<UserModuleOverride[]>;
         setModuleOverrides(
                 userId: string,
@@ -2728,11 +2728,11 @@ export class DatabaseStorage implements IStorage {
         }
 
         // Module overrides
-        async getModuleOverrides(userId: string): Promise<UserModuleOverride[]> {
+        async getModuleOverrides(userId: string, tenantId: string): Promise<UserModuleOverride[]> {
                 return db
                         .select()
                         .from(userModuleOverrides)
-                        .where(eq(userModuleOverrides.userId, userId));
+                        .where(and(eq(userModuleOverrides.userId, userId), eq(userModuleOverrides.tenantId, tenantId)));
         }
 
         async getModuleOverridesByTenant(
@@ -2774,6 +2774,7 @@ export class DatabaseStorage implements IStorage {
                         await this.setModuleOverrides(userId, tenantId, [], userId);
                         return;
                 }
+                // Whole-user removal is a legacy internal path; API clearing supplies a park group above.
                 await db
                         .delete(userModuleOverrides)
                         .where(and(eq(userModuleOverrides.userId, userId), tenantId ? eq(userModuleOverrides.tenantId, tenantId) : undefined));
