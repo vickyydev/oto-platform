@@ -1,5 +1,11 @@
 # The OTO App lifted whole: the build plan for S2-17b (SCRUM-193)
 
+**13 October 2026, seven features on green main:** Main 5b2f049fba750403fe60284bf2b8b4855eb934b4 passed all six jobs in run38309414401. API4033 tests passed; API compiler zero diagnostics; app446 diagnostics across59 files/118 buckets exactly match the green candidate. The89 feature runtime controls, restore/replay and30 Console browser checks passed. All seven original feature items are committed to main; PR10 is merged and earlier integrated feature PRs are closed. SCRUM-194 and516..522 remain Testing; SCRUM-191 remains In Progress until staging acceptance and cleanup finish.
+
+Feature app deployment dep-db6l2ts9v7es73fudqj0 is building from that exact green SHA. The last observed app remains4dcc6664 through0010; no feature staging or SMS delivery is claimed. Isolated preparation is complete: an unlinked ZZ TEST employee for import/history, a four-outcome workbook (preview200, one each changed/new/unchanged/invalid, no Apply), and one manager-added ZZ TEST family with the authorized receiving number held privately. Exact IDs/fingerprints are retained in the ignored s194 fixture ledger. No SMS has been sent. A separate read-only combined cleanup census preserves the original R7 guards; cleanup is still pending.
+
+Continue the seven staged journeys after the release is live, attach inspected evidence, finish exact practice-record cleanup and capture successful job Retry/read-back. Attendance face mode remains off; its unavailable positive staging attachment path must stay explicit. Local databases remain stopped. Complete this story before the OPEN_ITEMS fix block beginningSCRUM-276; SCRUM-223 stays paused.
+
 _DRAFT, 8 October 2026. Not committed. Written from a read-only study of
 `main` at a75d5891: the ticket (`docs/progress/SPRINT_2_PLAN.md`, S2-17b),
 the app's own code under `apps/oto-app` (routes, schema, migrations, jobs),
