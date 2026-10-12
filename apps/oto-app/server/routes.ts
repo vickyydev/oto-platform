@@ -5,6 +5,7 @@ import { setupAuth, requireAuth, hashPassword } from "./auth";
 import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches as _filterByUserBranches, canUserAccessBranch, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
 import { uploadFinalizedPdf, uploadSignedPdf, uploadSignedLetterPdf, presignedPdfUrl, streamSignedPdf, isObjectStoragePath } from "./pdf-storage";
+import { readFixDepartmentMembers, registerFixRecipientPreview } from "./fix-recipient-preview";
 import { fixMulterFilenames } from "./middleware/fixMulterFilenames";
 import { uploadToObjectStorage, getFileFromObjectStorage, fileExistsInObjectStorage, deleteFromObjectStorage, getFileRangeFromObjectStorage } from "./file-storage";
 import { getOrCreateFixMediaThumbnail } from "./fix-media-thumbnails";
@@ -24304,36 +24305,7 @@ ${context}`;
           .from(departments).where(inArray(departments.id, deptIds as string[]));
         const deptMap = new Map(deptRows.map(d => [d.id, d]));
 
-        // Fetch employees in those departments (with user accounts)
-        const empMembers = await db
-          .select({ deptId: employees.primaryDepartmentId, fullName: employees.fullName, userId: employees.userId })
-          .from(employees)
-          .where(and(inArray(employees.primaryDepartmentId as any, deptIds as string[]), isNotNull(employees.userId)));
-
-        // Fetch advisor/people members in those departments (with access policies = has login)
-        const advisorMembers = await db
-          .select({ deptId: people.departmentId, fullName: people.fullName })
-          .from(people)
-          .innerJoin(accessPolicies, eq(accessPolicies.personId, people.id))
-          .where(inArray(people.departmentId as any, deptIds as string[]));
-
-        // Build dept → members map
-        const deptMembersMap = new Map<string, { id: string; name: string; initials: string }[]>();
-        for (const m of empMembers) {
-          if (!m.deptId) continue;
-          const name = m.fullName || 'Staff';
-          const initials = name.split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase();
-          if (!deptMembersMap.has(m.deptId)) deptMembersMap.set(m.deptId, []);
-          deptMembersMap.get(m.deptId)!.push({ id: m.userId || name, name, initials });
-        }
-        for (const m of advisorMembers) {
-          if (!m.deptId) continue;
-          const name = m.fullName || 'Advisor';
-          const initials = name.split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase();
-          if (!deptMembersMap.has(m.deptId)) deptMembersMap.set(m.deptId, []);
-          const list = deptMembersMap.get(m.deptId)!;
-          if (!list.some(x => x.name === name)) list.push({ id: name, name, initials });
-        }
+        const deptMembersMap = await readFixDepartmentMembers(db, tenantId, deptIds as string[]);
 
         return rawReports.map(r => {
           const deptId = (r as any).assignedDepartmentId as string | null;
@@ -25232,6 +25204,8 @@ ${context}`;
   // ============================================
   // FIX DEPARTMENT SETTING (Admin only)
   // ============================================
+
+  registerFixRecipientPreview(app, db, requireAuth);
 
   // Get the current fix department setting
   app.get("/api/settings/fix-department", requireAuth, async (req, res, next) => {
