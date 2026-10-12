@@ -161,7 +161,7 @@ try {
       expect(response.status, response.stderr).toBe(0);
       const payload = /FINANCE_ACCESS_CROSS_RESULTS=(.+)/.exec(response.stdout);
       expect(payload, response.stdout).toBeTruthy();
-      results = JSON.parse(payload![1]);
+      results = JSON.parse(payload![1]!);
     } finally {
       await database.drop();
       rmSync(directory, { recursive: true, force: true });
