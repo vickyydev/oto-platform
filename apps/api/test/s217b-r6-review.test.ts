@@ -474,17 +474,14 @@ describe('A. fences and seams', () => {
     expect(all.match(/CREATE UNIQUE INDEX/g)).toHaveLength(1);
   });
 
-  it('the census index lives in the SQL only, so a later generate never takes it for granted; the four tenant_id stay nullable in the schema (round 7 contracts)', () => {
+  it('the census index lives in SQL only; the round 6 snapshot preserves the four nullable tenant fields', () => {
     const snapshot = committed(join(APP_MIGRATIONS, 'meta', '0008_snapshot.json'));
     expect(snapshot).not.toContain('employee_offboarding_employee_unique');
     const schema = code(readFileSync(join(APP_DIR, 'shared', 'schema.ts'), 'utf8'));
     expect(schema).not.toContain('employee_offboarding_employee_unique');
+    const expanded = JSON.parse(snapshot) as { tables: Record<string, { columns: Record<string, { notNull: boolean }> }> };
     for (const table of ['templates', 'policy_documents', 'asset_catalog', 'leave_policies']) {
-      const start = schema.indexOf(`pgTable("${table}"`);
-      expect(start, table).toBeGreaterThan(-1);
-      const body = schema.slice(start, schema.indexOf('\n});', start) === -1 ? undefined : schema.indexOf(']);', start));
-      expect(body, table).toMatch(/tenantId: uuid\("tenant_id"\)\.references\(\(\) => tenants\.id\),/);
-      expect(body, table).not.toMatch(/tenantId: uuid\("tenant_id"\)[^,\n]*\.notNull\(\)/);
+      expect(expanded.tables[`public.${table}`].columns.tenant_id.notNull, table).toBe(false);
     }
   });
 

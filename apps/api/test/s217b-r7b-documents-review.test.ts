@@ -66,6 +66,17 @@ describe('S2-17b round 7b document contraction review', () => {
     expect(statements.match(/ALTER COLUMN "tenant_id" SET NOT NULL/g)).toHaveLength(4);
     expect(statements).not.toMatch(/ADD COLUMN|PRIMARY KEY|DROP|RENAME/i);
     expect(statements.indexOf('LOCK TABLE "employee_offboarding"')).toBeLessThan(statements.indexOf('LOCK TABLE "employees"'));
+    const schema = readFileSync(join(MIGRATIONS, '../shared/schema.ts'), 'utf8');
+    const snapshot = JSON.parse(readFileSync(join(MIGRATIONS, 'meta/0010_snapshot.json'), 'utf8')) as {
+      tables: Record<string, { columns: Record<string, { notNull: boolean }> }>;
+    };
+    for (const table of TABLES) {
+      const start = schema.indexOf(`pgTable("${table}"`);
+      expect(start, table).toBeGreaterThan(-1);
+      const body = schema.slice(start, schema.indexOf('export const ', start + 1));
+      expect(body, table).toMatch(/tenantId: uuid\("tenant_id"\)\.references\(\(\) => tenants\.id\)\.notNull\(\)/);
+      expect(snapshot.tables[`public.${table}`].columns.tenant_id.notNull, table).toBe(true);
+    }
   });
 
   it('runs from empty twice without extra journal or park-group rows', async () => {
