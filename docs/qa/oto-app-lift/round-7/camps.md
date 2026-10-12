@@ -1,5 +1,7 @@
 # Camps - staging walkthrough, 12 October 2026
 
+**13 October release recheck: WORKS for the recorded attendance journey.** On R7a application source7402a8da (latest staging checkpointd18d3fd8 has identical application code), the second park checked its registration in and out with200; the default park's checkout attempt returned404. The stored attendance belongs to the second park. The inspected [camp/payroll test-run card](../../jira-comments/attachments/SCRUM-191/r7-camp-payroll-release-rechecks-20261013.png) records the results. Exact attendance/camp cleanup remains owed. The earlier observation below is retained as history.
+
 **BROKEN for the recorded owned check-in; creation and history WORKS.**
 On staging app `633cae41`, the ZZ TEST camp and child registration each saved
 with 201. The owning park's history returned 200; another park's history

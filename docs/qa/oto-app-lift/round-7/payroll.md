@@ -1,5 +1,7 @@
 # Payroll files - staging walkthrough, 12 October 2026
 
+**13 October release recheck: WORKS for the recorded private export boundary.** On the released R7a application, another park's generation and existing-file download returned403; own download returned200 with73 bytes and signed-out download401. The inspected [camp/payroll test-run card](../../jira-comments/attachments/SCRUM-191/r7-camp-payroll-release-rechecks-20261013.png) records the synthetic future2099 bank-file check. No calculation, new export or existing salary advance was changed. Other formats retain their earlier evidence; exact cleanup remains owed. The earlier observation below is retained as history.
+
 **WORKS for the recorded synthetic exports; BROKEN for the other-park export
 boundary.** On staging app `633cae41`, an isolated zero-value future-2099
 operator/period/run/summary fixture was prepared through Data Admin (201 each).

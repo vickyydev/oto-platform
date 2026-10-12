@@ -6,6 +6,8 @@ published lanes is available for review; it is not a staging delivery. The newes
 
 ## Development batches
 
+**Latest integration:** all six new feature implementations are present in combined candidate da21a661, with employee-history and attendance-reviewer consistency. Final0011..0015 migrations are sequenced. Hosted feature runtime verification and staged acceptance remain; two presence display/retry controls are being completed. R7a is live and its camp/payroll/form rechecks pass. R8's hosted restore passed; the candidate gate awaits the historical current-chain assertion correction. The table below preserves individual source-batch references.
+
 | Ticket / batch | Development delivered | Remaining development or release dependency |
 | --- | --- | --- |
 | SCRUM-193, rounds 1-6 | Landed; running on staging. Round-5 and round-6 module evidence is attached to SCRUM-191. | Preserve existing behavior and recorded owner questions. |

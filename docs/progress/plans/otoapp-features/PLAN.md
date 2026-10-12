@@ -2,6 +2,8 @@
 
 ## 13 October development checkpoint
 
+**Combined source:** candidate da21a661 integrates the feature batches, attendance reviewer consistency, transactional employee actions and current-access inbox delivery. Final0011..0015 cumulative snapshots are generated; original SQL and prior migrations remain unchanged. Twenty focused and17 existing source checks passed. Hosted runtime checks, presence display/retry follow-ups and all staged feature acceptance remain. SCRUM-517..522 stay Testing; no SMS has been sent. The latest STATUS block takes precedence over the source baseline below.
+
 **Current release checkpoint:** Twilio runtime is active on app7402a8da;
 configuration proof is committed as a labelled staging card. SCRUM-522 is
 built in PR8/cb27d078 with23 focused controls and zero touched-file lint

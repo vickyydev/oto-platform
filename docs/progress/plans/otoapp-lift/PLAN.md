@@ -18,6 +18,8 @@ section 11, and the app's behaviour is the default until the owner answers.
 
 ## 0. Where it stands: read this first
 
+**Newest checkpoint, 13 October:** main d18d3fd8 is green and observed live. Camp attendance, payroll access and actual form save/reload rechecks pass with two inspected frames. R7b3c8 and R8 973 each have one historical complete-chain nullable assertion corrected at84829a82; five other jobs passed, including R8's final eleven-migration restore. Combined candidate da21a661 has cumulative0011..0015 migrations and employee-history/current-access delivery controls; hosted runtime checks and two presence display/retry follow-ups remain. Read newest STATUS. Keep local databases/heavy checks off. One coordinator publishes; isolated agents work in parallel. Land R7b then R8, finish staged checks/cleanup and feature acceptance, then the fix block. No feature/SMS delivery is claimed.
+
 **13 October live release checkpoint:** R7a7402a8da passed full CI and is
 live. Read-only staging confirms ten journal entries through0009 and zero
 unplaced rows in all four document tables. A new second-park Data Admin
