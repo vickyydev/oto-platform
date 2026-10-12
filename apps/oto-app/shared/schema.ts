@@ -564,7 +564,7 @@ export type HeaderAlignment = typeof headerAlignments[number];
 // Nullable for one release (EXPAND); round 7 sets NOT NULL.
 export const templates = pgTable("templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   htmlBody: text("html_body").notNull(),
   htmlBodyTh: text("html_body_th"),
@@ -1026,7 +1026,7 @@ export type PolicyStatus = typeof policyStatuses[number];
 // (EXPAND); round 7 sets NOT NULL.
 export const policyDocuments = pgTable("policy_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   title: text("title").notNull(),
   contentHtml: text("content_html"),
   pdfFileUrl: text("pdf_file_url"),
@@ -1697,7 +1697,7 @@ export type AssetCategory = typeof assetCategories[number];
 // (EXPAND); round 7 sets NOT NULL.
 export const assetCatalog = pgTable("asset_catalog", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
   category: text("category", { enum: assetCategories }),
   description: text("description"),
@@ -2810,7 +2810,7 @@ export const timeOffTypeColors: Record<TimeOffType, string> = {
 // for one release (EXPAND); round 7 sets NOT NULL.
 export const leavePolicies = pgTable("leave_policies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
   branchId: varchar("branch_id").references(() => branches.id),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
