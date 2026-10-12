@@ -1559,7 +1559,7 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
   await db.insert(xeroTokens).values([
     {
       tenantId: tenant.id,
-      xeroTenantId: faker.string.uuid(),
+      xeroTenantId: tenant.id,
       xeroTenantName: "Oto Company Limited",
       accessToken: faker.string.alphanumeric(200),
       refreshToken: faker.string.alphanumeric(100),

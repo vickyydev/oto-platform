@@ -149,4 +149,24 @@ describe('S2-17b round 7 finance and document keys', () => {
       expect(run.stdout).toContain('finance.check: four upsert keys');
     });
   }, 120_000);
+  it.skipIf(!HAS_APP)('keeps all seven actual finance HTTP doors within their park mapping', async () => {
+    await fixture(9, async (url) => {
+      const run = spawnSync(process.execPath, [join(APP, 'node_modules', 'tsx', 'dist', 'cli.mjs'), join(APP, 'tests', 'finance-access.check.ts')], {
+        cwd: APP, env: { ...process.env, DATABASE_URL: url }, encoding: 'utf8', timeout: 90_000,
+      });
+      expect(run.status, `${run.stdout ?? ''}\n${run.stderr ?? ''}`).toBe(0);
+      expect(run.stdout).toContain('finance-access.check: seven real HTTP doors');
+    });
+  }, 120_000);
+
+  it.skipIf(!HAS_APP)('keeps Xero reports, disconnect and OAuth identity within their park', async () => {
+    await fixture(9, async (url) => {
+      const run = spawnSync(process.execPath, [join(APP, 'node_modules', 'tsx', 'dist', 'cli.mjs'), join(APP, 'tests', 'xero-access.check.ts')], {
+        cwd: APP, env: { ...process.env, DATABASE_URL: url }, encoding: 'utf8', timeout: 90_000,
+      });
+      expect(run.status, `${run.stdout ?? ''}\n${run.stderr ?? ''}`).toBe(0);
+      expect(run.stdout).toContain('xero-access.check: ten HTTP doors');
+    });
+  }, 120_000);
+
 });

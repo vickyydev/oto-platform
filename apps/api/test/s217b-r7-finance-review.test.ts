@@ -146,6 +146,27 @@ describe('S2-17b round 7 finance review', () => {
     expect(source).toContain('await rebuildCashDaily(tenantId, fromDate, toDate, tx)');
   }, 120_000);
 
+  it('FINDING 3 (high), fixed: every finance read and sync resolves its own park mapping', () => {
+    const routes = readFileSync(join(APP, 'server', 'finance-sync-routes.ts'), 'utf8');
+    expect(routes.match(/await resolveFinanceOrganisation\(req\)/g)).toHaveLength(7);
+    expect(routes).not.toContain('from(xeroTokens)');
+    const helper = readFileSync(join(APP, 'server', 'lib', 'financeOrganisationAccess.ts'), 'utf8');
+    expect(helper).toContain('req.userWithAccess?.tenantId');
+    expect(helper).toContain('eq(xeroTokens.tenantId, parkGroup)');
+    expect(helper).toContain('mappings.some((mapping) => mapping.parkGroup !== parkGroup)');
+  });
+
+  it('FINDING 4 (high), fixed: Xero status, reports, disconnect and callback stay in the signed-in park', () => {
+    const source = readFileSync(join(APP, 'server', 'xero-routes.ts'), 'utf8');
+    expect(source.match(/await getActiveTokenSet\(financeParkGroup\(req\)\)/g)).toHaveLength(7);
+    expect(source).toContain('eq(xeroTokens.tenantId, identity.parkGroup)');
+    expect(source).toContain('tenantId: identity.parkGroup');
+    expect(source).toContain('eq(xeroTokens.tenantId, parkGroup)');
+    expect(source).toContain('pending.userId !== req.user?.id');
+    expect(source).toContain('req.session.reload');
+    expect(source).toContain('delete req.session.xeroConnection');
+  });
+
   it.fails('FINDING 2 (low), Q55: prescribed disposition is an agreed cell identity before a P&L unique', () => {
     const statements = SQL.replace(/--.*$/gm, '');
     expect(statements).toMatch(/CREATE UNIQUE INDEX[^;]+"pl_facts"/);
