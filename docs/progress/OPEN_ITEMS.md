@@ -1,5 +1,7 @@
 # Open items register — defects, decisions, concerns and recommendations
 
+12 October round7 follow-through (SCRUM-516 under SCRUM-191, In Progress): the isolated second park saved camp44a30b06-df05-45d7-9693-d86294078829 and registrationbe4d4e3f-d85a-48e8-b7dc-9d1547202030 (201 each), own child history200/foreign404, but own camp check-in404. The five camp attendance mutations still select the default park instead of the caller/kiosk placement. The R7 access lane now carries their parent event/branch guards, preserving the existing attendance/day/undo rules, with adversarial own/foreign/branch/replay pins before landing. No staged correction is claimed yet. The same consistency subtask groups reviewed finance/DataAdmin/people/form ownership delivery, without a separate story.
+
 12 October staging follow-through: Scheduling Q39 remains open; the other park’s restricted manager read the exact ZZ TEST shift group (200). The [round-5 page](../qa/oto-app-lift/round-5/scheduling.md) and labelled card carry this proof. It stays in the recorded scheduling/fix-block lane; no ad hoc change was made. Lift owner questions Q55-Q57 now record repeated P&L cells, historical unplaced people and global rate-limit administration with their stated defaults.
 
 *Written 9 October 2026 from a ground-truth sweep of every open sprint

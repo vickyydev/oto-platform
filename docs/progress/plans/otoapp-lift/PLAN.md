@@ -1310,6 +1310,9 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 
 ## 10. Known effects of following the app
 
+12 October round7 consistency (SCRUM-516 under SCRUM-191): actual second-park camp/registration201 and own child history200/foreign404, but own core camp check-in404. All five attendance mutations use the default park. Their caller/kiosk tenant plus parent event/branch guards are assigned to R7, preserving Bangkok-day, attendance, undo and replay behavior; fresh peer pins and staged recheck are required. Shared role metadata/deactivation remains Q54?s explicit one-set default; the owner-only alternative stays a standing review pin.
+
+
 12 October staging follow-through: [round 5’s ten action/refusal pages](../../../qa/oto-app-lift/round-5/README.md) record device, clock, leave, operations and media cases. Q39’s other-park shift-group read remains200 on the exact ZZ TEST fixture. Read-only job job-db6bq3ad0e5s73a5cndg counted people0 (none/one/several all0); app users7, strictly placed6, unplaced-or-inconsistent1, several-access-groups0. This includes the temporary practice user and changes no data.
 
 - **Copied employees have no platform department.** The app's departments
