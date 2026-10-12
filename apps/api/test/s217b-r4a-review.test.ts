@@ -1015,10 +1015,10 @@ describe.skipIf(!HAS_APP_RUNTIME)('D. over HTTP against the app’s routes: H11,
         { tenant_id: PB.tenant, value: 'B via Data Admin' },
         { tenant_id: PD.tenant, value: 'the running park' },
       ]);
-      // A create naming no park group is the default park group's, as in 4a.
+      // The unnamed create still names the default; round 7 refuses that crossing.
       const unnamed = await call(plain, 'POST', '/api/data-admin/settings', { cookie: PB.cookie, body: { key: K('unnamed'), value: 'x' } });
-      expect(unnamed.status, unnamed.text).toBe(201);
-      expect(await rowsFor(K('unnamed'))).toEqual([{ tenant_id: PD.tenant, value: 'x' }]);
+      expect(unnamed.status, unnamed.text).toBe(404);
+      expect(await rowsFor(K('unnamed'))).toEqual([]);
       // And no row can be moved to no park group: tenant_id is NOT NULL.
       const toNone = await call(plain, 'PUT', `/api/data-admin/settings/${write.body.id}`, { cookie: PB.cookie, body: { tenantId: '' } });
       expect(toNone.status, toNone.text).toBe(403);

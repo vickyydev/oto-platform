@@ -1,9 +1,12 @@
-import { Express, Request, Response, NextFunction } from "express";
+import { Express, Request, Response as _Response, NextFunction as _NextFunction } from "express";
 import { storage } from "./storage";
 import { requireAuth } from "./auth";
 import { requireRole } from "./auth-middleware";
-import type { DropoffFormSchemaJson, DropoffFormSection, DropoffFormField } from "./db/coreSchema";
+import type { DropoffFormSchemaJson, DropoffFormSection as _DropoffFormSection, DropoffFormField as _DropoffFormField } from "./db/coreSchema";
 import { translateTexts } from "./translation-service";
+import { db } from "./db";
+import { dropoffForms } from "./db/coreSchema";
+import { and, eq } from "drizzle-orm";
 
 // Default form schema based on current hard-coded form
 const DEFAULT_FORM_SCHEMA: DropoffFormSchemaJson = {
@@ -309,6 +312,13 @@ function extractTranslationKeys(schema: DropoffFormSchemaJson): string[] {
 }
 
 export function registerDropoffFormRoutes(app: Express) {
+  const formInParkGroup = async (req: Request, formId: string) => {
+    const tenantId = req.userWithAccess?.tenantId;
+    if (!tenantId) return undefined;
+    const [form] = await db.select().from(dropoffForms)
+      .where(and(eq(dropoffForms.id, formId), eq(dropoffForms.tenantId, tenantId))).limit(1);
+    return form;
+  };
   // Get or create the dropoff form for the tenant
   app.get("/api/dropoff-form", requireAuth, requireRole("global_admin", "operator_admin", "admin", "manager"), async (req, res, next) => {
     try {
@@ -368,6 +378,9 @@ export function registerDropoffFormRoutes(app: Express) {
   app.get("/api/dropoff-form/:formId/versions", requireAuth, requireRole("global_admin", "operator_admin", "admin", "manager"), async (req, res, next) => {
     try {
       const { formId } = req.params;
+      if (!(await formInParkGroup(req, formId))) {
+        return res.status(404).json({ message: "Form not found" });
+      }
       const versions = await storage.getDropoffFormVersions(formId);
       res.json(versions);
     } catch (error) {
@@ -382,7 +395,7 @@ export function registerDropoffFormRoutes(app: Express) {
       const { lang } = req.query;
       
       const version = await storage.getDropoffFormVersion(versionId);
-      if (!version) {
+      if (!version || !(await formInParkGroup(req, version.formId))) {
         return res.status(404).json({ message: "Version not found" });
       }
       
@@ -402,6 +415,9 @@ export function registerDropoffFormRoutes(app: Express) {
     try {
       const { formId } = req.params;
       const { schemaJson, translations } = req.body;
+      if (!(await formInParkGroup(req, formId))) {
+        return res.status(404).json({ message: "Form not found" });
+      }
       
       // Get or create draft version
       let draftVersion = await storage.getLatestDraftVersion(formId);
@@ -449,6 +465,10 @@ export function registerDropoffFormRoutes(app: Express) {
   app.put("/api/dropoff-form/translation", requireAuth, requireRole("global_admin", "operator_admin", "admin", "manager"), async (req, res, next) => {
     try {
       const { versionId, lang, key, value, isManualOverride } = req.body;
+      const version = await storage.getDropoffFormVersion(versionId);
+      if (!version || !(await formInParkGroup(req, version.formId))) {
+        return res.status(404).json({ message: "Version not found" });
+      }
       
       const translation = await storage.upsertI18nTranslation({
         namespace: "dropoff",
@@ -470,6 +490,9 @@ export function registerDropoffFormRoutes(app: Express) {
     try {
       const { formId } = req.params;
       const userId = req.user?.id;
+      if (!(await formInParkGroup(req, formId))) {
+        return res.status(404).json({ message: "Form not found" });
+      }
       
       // Get draft version
       const draftVersion = await storage.getLatestDraftVersion(formId);

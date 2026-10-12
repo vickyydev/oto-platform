@@ -1,134 +1,229 @@
-import { Router, Request, Response } from "express";
-import { db } from "../db";
-import { count } from "drizzle-orm";
-import { register, getAdmin, getAllAdmins, getAdminMap } from "./registry";
-import { SettingsWriteRefusedError } from "../lib/parkGroupSettings";
-import tenantAdmin from "./models/tenant";
-import operatorAdmin from "./models/operator";
-import branchAdmin from "./models/branch";
-import departmentAdmin from "./models/department";
-import userAdmin from "./models/user";
-import employeeAdmin from "./models/employee";
-import personAdmin from "./models/person";
-import roleAdmin from "./models/role";
-import fileAdmin from "./models/file";
-import templateAdmin from "./models/template";
-import settingAdmin from "./models/setting";
-import payslipAdmin from "./models/payslip";
-import shiftAdmin from "./models/shift";
-import userBranchAccessAdmin from "./models/userBranchAccess";
-import timeEventAdmin from "./models/timeEvent";
-import employeeRoleAdmin from "./models/employeeRole";
-import publicHolidayAdmin from "./models/publicHoliday";
-import scheduleShiftRowAdmin from "./models/scheduleShiftRow";
-import scheduleAssignmentAdmin from "./models/scheduleAssignment";
-import dutyBlockAdmin from "./models/dutyBlock";
-import casualWorkerAdmin from "./models/casualWorker";
-import employeeTimeOffAdmin from "./models/employeeTimeOff";
-import scheduleWeekPlanAdmin from "./models/scheduleWeekPlan";
-import shiftGroupAdmin from "./models/shiftGroup";
-import payrollLineItemAdmin from "./models/payrollLineItem";
-import payrollEmployeeSummaryAdmin from "./models/payrollEmployeeSummary";
-import accessPolicyAdmin from "./models/accessPolicy";
-import employeePresenceAdmin from "./models/employeePresence";
-import payrollRunAdmin from "./models/payrollRun";
-import kioskDeviceAdmin from "./models/kioskDevice";
-import branchEventAdmin from "./models/branchEvent";
-import departmentBranchAssignmentAdmin from "./models/departmentBranchAssignment";
-import scheduleShiftRowRoleAdmin from "./models/scheduleShiftRowRole";
-import scheduleShiftBreakAdmin from "./models/scheduleShiftBreak";
-import payrollPeriodAdmin from "./models/payrollPeriod";
-import payrollDayReconciliationAdmin from "./models/payrollDayReconciliation";
-import templateAssignmentAdmin from "./models/templateAssignment";
-import staffCostAllocationAdmin from "./models/staffCostAllocation";
-import contractInstanceAdmin from "./models/contractInstance";
-import activityLogAdmin from "./models/activityLog";
-import enrollmentSessionAdmin from "./models/enrollmentSession";
-import timeEntryAdmin from "./models/timeEntry";
-import timekeepingIssueAdmin from "./models/timekeepingIssue";
-import authOtpEventAdmin from "./models/authOtpEvent";
-import shiftRequiredRoleAdmin from "./models/shiftRequiredRole";
-import leavePolicyAdmin from "./models/leavePolicy";
-import scheduleTemplateAdmin from "./models/scheduleTemplate";
-import scheduleTemplateRowAdmin from "./models/scheduleTemplateRow";
-import scheduleTemplateRowRoleAdmin from "./models/scheduleTemplateRowRole";
-import scheduleAuditLogAdmin from "./models/scheduleAuditLog";
-import payrollExceptionAdmin from "./models/payrollException";
-import salaryAdvanceAdmin from "./models/salaryAdvance";
-import salaryAdvanceRepaymentAdmin from "./models/salaryAdvanceRepayment";
-import statutoryRuleSetAdmin from "./models/statutoryRuleSet";
-import statutoryCalculationResultAdmin from "./models/statutoryCalculationResult";
-import dutyTypeAdmin from "./models/dutyType";
-import userModuleOverrideAdmin from "./models/userModuleOverride";
-import kioskCodeAdmin from "./models/kioskCode";
-import employeeChangeAdmin from "./models/employeeChange";
-import policyDocumentAdmin from "./models/policyDocument";
-import employeeDocumentAdmin from "./models/employeeDocument";
-import employeeOffboardingAdmin from "./models/employeeOffboarding";
-import employeeLetterAdmin from "./models/employeeLetter";
-import assetCatalogAdmin from "./models/assetCatalog";
-import employeeAssetAdmin from "./models/employeeAsset";
-import offboardingChecklistAdmin from "./models/offboardingChecklist";
-import kioskSessionAdmin from "./models/kioskSession";
-import kioskAuthAttemptAdmin from "./models/kioskAuthAttempt";
-import authRateLimitAdmin from "./models/authRateLimit";
-import roleDepartmentMapAdmin from "./models/roleDepartmentMap";
-import roleBranchAssignmentAdmin from "./models/roleBranchAssignment";
-import coverageRuleAdmin from "./models/coverageRule";
-import sickLeavePolicyAdmin from "./models/sickLeavePolicy";
-import scheduleTemplateAssignmentAdmin from "./models/scheduleTemplateAssignment";
-import scheduleTemplateTimeOffAdmin from "./models/scheduleTemplateTimeOff";
-import employeePayrollProfileAdmin from "./models/employeePayrollProfile";
-import timeAdjustmentAdmin from "./models/timeAdjustment";
-import payrollExceptionApprovalAdmin from "./models/payrollExceptionApproval";
-import payrollPolicySettingsAdmin from "./models/payrollPolicySettings";
-import accessViewLogAdmin from "./models/accessViewLog";
-import xeroSyncRunAdmin from "./models/xeroSyncRun";
-import xeroTrackingCategoryAdmin from "./models/xeroTrackingCategory";
-import xeroTrackingOptionAdmin from "./models/xeroTrackingOption";
-import xeroReportRawAdmin from "./models/xeroReportRaw";
-import plFactAdmin from "./models/plFact";
-import cashTxnAdmin from "./models/cashTxn";
-import cashDailyAdmin from "./models/cashDaily";
+import { Router, Request, Response } from 'express';
+import { db } from '../db';
+import { count, and, eq } from 'drizzle-orm';
+import {
+  currentTenant,
+  rowScope,
+  userScope,
+  dataAdminContext,
+  DataAdminScopeError,
+} from './park-group';
+import { users } from '../../shared/schema';
+import attentionAdmin from './models/attentionItem';
+import { register, getAdmin, getAllAdmins, getAdminMap } from './registry';
+import { SettingsWriteRefusedError } from '../lib/parkGroupSettings';
+import tenantAdmin from './models/tenant';
+import operatorAdmin from './models/operator';
+import branchAdmin from './models/branch';
+import departmentAdmin from './models/department';
+import userAdmin from './models/user';
+import employeeAdmin from './models/employee';
+import personAdmin from './models/person';
+import roleAdmin from './models/role';
+import fileAdmin from './models/file';
+import templateAdmin from './models/template';
+import settingAdmin from './models/setting';
+import payslipAdmin from './models/payslip';
+import shiftAdmin from './models/shift';
+import userBranchAccessAdmin from './models/userBranchAccess';
+import timeEventAdmin from './models/timeEvent';
+import employeeRoleAdmin from './models/employeeRole';
+import publicHolidayAdmin from './models/publicHoliday';
+import scheduleShiftRowAdmin from './models/scheduleShiftRow';
+import scheduleAssignmentAdmin from './models/scheduleAssignment';
+import dutyBlockAdmin from './models/dutyBlock';
+import casualWorkerAdmin from './models/casualWorker';
+import employeeTimeOffAdmin from './models/employeeTimeOff';
+import scheduleWeekPlanAdmin from './models/scheduleWeekPlan';
+import shiftGroupAdmin from './models/shiftGroup';
+import payrollLineItemAdmin from './models/payrollLineItem';
+import payrollEmployeeSummaryAdmin from './models/payrollEmployeeSummary';
+import accessPolicyAdmin from './models/accessPolicy';
+import employeePresenceAdmin from './models/employeePresence';
+import payrollRunAdmin from './models/payrollRun';
+import kioskDeviceAdmin from './models/kioskDevice';
+import branchEventAdmin from './models/branchEvent';
+import departmentBranchAssignmentAdmin from './models/departmentBranchAssignment';
+import scheduleShiftRowRoleAdmin from './models/scheduleShiftRowRole';
+import scheduleShiftBreakAdmin from './models/scheduleShiftBreak';
+import payrollPeriodAdmin from './models/payrollPeriod';
+import payrollDayReconciliationAdmin from './models/payrollDayReconciliation';
+import templateAssignmentAdmin from './models/templateAssignment';
+import staffCostAllocationAdmin from './models/staffCostAllocation';
+import contractInstanceAdmin from './models/contractInstance';
+import activityLogAdmin from './models/activityLog';
+import enrollmentSessionAdmin from './models/enrollmentSession';
+import timeEntryAdmin from './models/timeEntry';
+import timekeepingIssueAdmin from './models/timekeepingIssue';
+import authOtpEventAdmin from './models/authOtpEvent';
+import shiftRequiredRoleAdmin from './models/shiftRequiredRole';
+import leavePolicyAdmin from './models/leavePolicy';
+import scheduleTemplateAdmin from './models/scheduleTemplate';
+import scheduleTemplateRowAdmin from './models/scheduleTemplateRow';
+import scheduleTemplateRowRoleAdmin from './models/scheduleTemplateRowRole';
+import scheduleAuditLogAdmin from './models/scheduleAuditLog';
+import payrollExceptionAdmin from './models/payrollException';
+import salaryAdvanceAdmin from './models/salaryAdvance';
+import salaryAdvanceRepaymentAdmin from './models/salaryAdvanceRepayment';
+import statutoryRuleSetAdmin from './models/statutoryRuleSet';
+import statutoryCalculationResultAdmin from './models/statutoryCalculationResult';
+import dutyTypeAdmin from './models/dutyType';
+import userModuleOverrideAdmin from './models/userModuleOverride';
+import kioskCodeAdmin from './models/kioskCode';
+import employeeChangeAdmin from './models/employeeChange';
+import policyDocumentAdmin from './models/policyDocument';
+import employeeDocumentAdmin from './models/employeeDocument';
+import employeeOffboardingAdmin from './models/employeeOffboarding';
+import employeeLetterAdmin from './models/employeeLetter';
+import assetCatalogAdmin from './models/assetCatalog';
+import employeeAssetAdmin from './models/employeeAsset';
+import offboardingChecklistAdmin from './models/offboardingChecklist';
+import kioskSessionAdmin from './models/kioskSession';
+import kioskAuthAttemptAdmin from './models/kioskAuthAttempt';
+import authRateLimitAdmin from './models/authRateLimit';
+import roleDepartmentMapAdmin from './models/roleDepartmentMap';
+import roleBranchAssignmentAdmin from './models/roleBranchAssignment';
+import coverageRuleAdmin from './models/coverageRule';
+import sickLeavePolicyAdmin from './models/sickLeavePolicy';
+import scheduleTemplateAssignmentAdmin from './models/scheduleTemplateAssignment';
+import scheduleTemplateTimeOffAdmin from './models/scheduleTemplateTimeOff';
+import employeePayrollProfileAdmin from './models/employeePayrollProfile';
+import timeAdjustmentAdmin from './models/timeAdjustment';
+import payrollExceptionApprovalAdmin from './models/payrollExceptionApproval';
+import payrollPolicySettingsAdmin from './models/payrollPolicySettings';
+import accessViewLogAdmin from './models/accessViewLog';
+import xeroSyncRunAdmin from './models/xeroSyncRun';
+import xeroTrackingCategoryAdmin from './models/xeroTrackingCategory';
+import xeroTrackingOptionAdmin from './models/xeroTrackingOption';
+import xeroReportRawAdmin from './models/xeroReportRaw';
+import plFactAdmin from './models/plFact';
+import cashTxnAdmin from './models/cashTxn';
+import cashDailyAdmin from './models/cashDaily';
 
 [
-  tenantAdmin, operatorAdmin, branchAdmin, departmentAdmin, userAdmin, employeeAdmin, personAdmin,
-  roleAdmin, fileAdmin, templateAdmin, settingAdmin, payslipAdmin, shiftAdmin, userBranchAccessAdmin,
-  timeEventAdmin, employeeRoleAdmin, publicHolidayAdmin, scheduleShiftRowAdmin, scheduleAssignmentAdmin,
-  dutyBlockAdmin, casualWorkerAdmin, employeeTimeOffAdmin, scheduleWeekPlanAdmin, shiftGroupAdmin,
-  payrollLineItemAdmin, payrollEmployeeSummaryAdmin, accessPolicyAdmin, employeePresenceAdmin,
-  payrollRunAdmin, kioskDeviceAdmin, branchEventAdmin, departmentBranchAssignmentAdmin,
-  scheduleShiftRowRoleAdmin, scheduleShiftBreakAdmin, payrollPeriodAdmin, payrollDayReconciliationAdmin,
-  templateAssignmentAdmin, staffCostAllocationAdmin, contractInstanceAdmin,
-  activityLogAdmin, enrollmentSessionAdmin, timeEntryAdmin, timekeepingIssueAdmin,
-  authOtpEventAdmin, shiftRequiredRoleAdmin, leavePolicyAdmin, scheduleTemplateAdmin,
-  scheduleTemplateRowAdmin, scheduleTemplateRowRoleAdmin, scheduleAuditLogAdmin, payrollExceptionAdmin,
-  salaryAdvanceAdmin, salaryAdvanceRepaymentAdmin, statutoryRuleSetAdmin, statutoryCalculationResultAdmin,
-  dutyTypeAdmin, userModuleOverrideAdmin, kioskCodeAdmin, employeeChangeAdmin, policyDocumentAdmin,
-  employeeDocumentAdmin, employeeOffboardingAdmin, employeeLetterAdmin, assetCatalogAdmin,
-  employeeAssetAdmin, offboardingChecklistAdmin, kioskSessionAdmin, kioskAuthAttemptAdmin,
-  authRateLimitAdmin, roleDepartmentMapAdmin, roleBranchAssignmentAdmin,
-  coverageRuleAdmin, sickLeavePolicyAdmin, scheduleTemplateAssignmentAdmin, scheduleTemplateTimeOffAdmin,
-  employeePayrollProfileAdmin, timeAdjustmentAdmin, payrollExceptionApprovalAdmin, payrollPolicySettingsAdmin,
-  accessViewLogAdmin, xeroSyncRunAdmin, xeroTrackingCategoryAdmin, xeroTrackingOptionAdmin,
-  xeroReportRawAdmin, plFactAdmin, cashTxnAdmin, cashDailyAdmin,
+  tenantAdmin,
+  operatorAdmin,
+  branchAdmin,
+  departmentAdmin,
+  userAdmin,
+  employeeAdmin,
+  personAdmin,
+  roleAdmin,
+  fileAdmin,
+  templateAdmin,
+  settingAdmin,
+  payslipAdmin,
+  shiftAdmin,
+  userBranchAccessAdmin,
+  timeEventAdmin,
+  employeeRoleAdmin,
+  publicHolidayAdmin,
+  scheduleShiftRowAdmin,
+  scheduleAssignmentAdmin,
+  dutyBlockAdmin,
+  casualWorkerAdmin,
+  employeeTimeOffAdmin,
+  scheduleWeekPlanAdmin,
+  shiftGroupAdmin,
+  payrollLineItemAdmin,
+  payrollEmployeeSummaryAdmin,
+  accessPolicyAdmin,
+  employeePresenceAdmin,
+  payrollRunAdmin,
+  kioskDeviceAdmin,
+  branchEventAdmin,
+  departmentBranchAssignmentAdmin,
+  scheduleShiftRowRoleAdmin,
+  scheduleShiftBreakAdmin,
+  payrollPeriodAdmin,
+  payrollDayReconciliationAdmin,
+  templateAssignmentAdmin,
+  staffCostAllocationAdmin,
+  contractInstanceAdmin,
+  attentionAdmin,
+  activityLogAdmin,
+  enrollmentSessionAdmin,
+  timeEntryAdmin,
+  timekeepingIssueAdmin,
+  authOtpEventAdmin,
+  shiftRequiredRoleAdmin,
+  leavePolicyAdmin,
+  scheduleTemplateAdmin,
+  scheduleTemplateRowAdmin,
+  scheduleTemplateRowRoleAdmin,
+  scheduleAuditLogAdmin,
+  payrollExceptionAdmin,
+  salaryAdvanceAdmin,
+  salaryAdvanceRepaymentAdmin,
+  statutoryRuleSetAdmin,
+  statutoryCalculationResultAdmin,
+  dutyTypeAdmin,
+  userModuleOverrideAdmin,
+  kioskCodeAdmin,
+  employeeChangeAdmin,
+  policyDocumentAdmin,
+  employeeDocumentAdmin,
+  employeeOffboardingAdmin,
+  employeeLetterAdmin,
+  assetCatalogAdmin,
+  employeeAssetAdmin,
+  offboardingChecklistAdmin,
+  kioskSessionAdmin,
+  kioskAuthAttemptAdmin,
+  authRateLimitAdmin,
+  roleDepartmentMapAdmin,
+  roleBranchAssignmentAdmin,
+  coverageRuleAdmin,
+  sickLeavePolicyAdmin,
+  scheduleTemplateAssignmentAdmin,
+  scheduleTemplateTimeOffAdmin,
+  employeePayrollProfileAdmin,
+  timeAdjustmentAdmin,
+  payrollExceptionApprovalAdmin,
+  payrollPolicySettingsAdmin,
+  accessViewLogAdmin,
+  xeroSyncRunAdmin,
+  xeroTrackingCategoryAdmin,
+  xeroTrackingOptionAdmin,
+  xeroReportRawAdmin,
+  plFactAdmin,
+  cashTxnAdmin,
+  cashDailyAdmin,
 ].forEach(register);
 
 const router = Router();
 
-// The legacy table cannot authorize a Data Admin row by tenant yet.
-router.use("/attention-items", (_req: Request, res: Response) => {
-  res.status(503).json({ error: "Attention data administration is unavailable until tenant ownership is recorded" });
+router.use(async (req: Request, res: Response, next) => {
+  const tenantId = req.userWithAccess?.tenantId;
+  if (!tenantId || !req.user?.id) return res.status(403).json({ error: 'Access denied' });
+  try {
+    const [caller] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, req.user.id), userScope(users.id, tenantId)))
+      .limit(1);
+    if (!caller) return res.status(403).json({ error: 'Access denied' });
+    dataAdminContext.run({ tenantId }, next);
+  } catch (error) {
+    next(error);
+  }
 });
 
 /** A settings write the Setting model refused (round 4a): the same 409 in words as /api/settings. */
 function answerSettingsRefusal(res: Response, err: unknown): boolean {
+  if (err instanceof DataAdminScopeError) {
+    res.status(err.status).json({ error: err.message });
+    return true;
+  }
   if (!(err instanceof SettingsWriteRefusedError)) return false;
   res.status(err.status).json(err.refusal);
   return true;
 }
 
-function withoutUserPassword(admin: unknown, row: Record<string, unknown>): Record<string, unknown> {
+function withoutUserPassword(
+  admin: unknown,
+  row: Record<string, unknown>,
+): Record<string, unknown> {
   if (admin !== userAdmin) return row;
   const { password, ...safeRow } = row;
   void password;
@@ -138,12 +233,19 @@ function withoutUserPassword(admin: unknown, row: Record<string, unknown>): Reco
 // ─── GET /api/data-admin/models ──────────────────────────────────────────────
 // Returns metadata + record count for every registered model.
 
-router.get("/models", async (_req: Request, res: Response) => {
+router.get('/models', async (_req: Request, res: Response) => {
   try {
     const admins = getAllAdmins();
     const results = await Promise.all(
       admins.map(async (admin) => {
-        const [total] = await db.select({ count: count() }).from(admin.table);
+        let scoped;
+        try {
+          scoped = rowScope(admin.table, currentTenant());
+        } catch (error) {
+          if (!(error instanceof DataAdminScopeError)) throw error;
+          return { ...admin.meta, count: 0, unavailableReason: error.message };
+        }
+        const [total] = await db.select({ count: count() }).from(admin.table).where(scoped);
         return {
           ...admin.meta,
           count: Number(total?.count ?? 0),
@@ -152,6 +254,7 @@ router.get("/models", async (_req: Request, res: Response) => {
     );
     res.json(results);
   } catch (err: any) {
+    if (answerSettingsRefusal(res, err)) return;
     res.status(500).json({ error: err.message });
   }
 });
@@ -159,15 +262,16 @@ router.get("/models", async (_req: Request, res: Response) => {
 // ─── GET /api/data-admin/:model/options ──────────────────────────────────────
 // Returns [{ id, label }] for FK dropdowns.  ?labelField=name
 
-router.get("/:model/options", async (req: Request, res: Response) => {
+router.get('/:model/options', async (req: Request, res: Response) => {
   const admin = getAdmin(req.params.model);
-  if (!admin) return res.status(404).json({ error: "Model not found" });
+  if (!admin) return res.status(404).json({ error: 'Model not found' });
 
-  const labelField = (req.query.labelField as string) || "name";
+  const labelField = (req.query.labelField as string) || 'name';
   try {
     const options = await admin.getOptions(labelField);
     res.json(options);
   } catch (err: any) {
+    if (answerSettingsRefusal(res, err)) return;
     res.status(500).json({ error: err.message });
   }
 });
@@ -176,11 +280,11 @@ router.get("/:model/options", async (req: Request, res: Response) => {
 // Paginated list with optional search, filters, and ordering.
 // Query params: page, pageSize, q, orderBy, + any column key for filtering.
 
-router.get("/:model", async (req: Request, res: Response) => {
+router.get('/:model', async (req: Request, res: Response) => {
   const admin = getAdmin(req.params.model);
-  if (!admin) return res.status(404).json({ error: "Model not found" });
+  if (!admin) return res.status(404).json({ error: 'Model not found' });
 
-  const SYSTEM_KEYS = new Set(["page", "pageSize", "q", "orderBy"]);
+  const SYSTEM_KEYS = new Set(['page', 'pageSize', 'q', 'orderBy']);
 
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
   const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 25));
@@ -190,7 +294,7 @@ router.get("/:model", async (req: Request, res: Response) => {
   // Remaining query params are treated as column filters
   const filters: Record<string, string> = {};
   for (const [key, value] of Object.entries(req.query)) {
-    if (!SYSTEM_KEYS.has(key) && typeof value === "string") {
+    if (!SYSTEM_KEYS.has(key) && typeof value === 'string') {
       filters[key] = value;
     }
   }
@@ -199,17 +303,18 @@ router.get("/:model", async (req: Request, res: Response) => {
     const result = await admin.getList({ page, pageSize, search, filters, orderBy });
     const allAdmins = getAdminMap();
     const enriched = await admin.enrichRows(result.rows, allAdmins);
-    res.json({ ...result, rows: enriched.map(row => withoutUserPassword(admin, row)) });
+    res.json({ ...result, rows: enriched.map((row) => withoutUserPassword(admin, row)) });
   } catch (err: any) {
+    if (answerSettingsRefusal(res, err)) return;
     res.status(500).json({ error: err.message });
   }
 });
 
 // ─── POST /api/data-admin/:model ─────────────────────────────────────────────
 
-router.post("/:model", async (req: Request, res: Response) => {
+router.post('/:model', async (req: Request, res: Response) => {
   const admin = getAdmin(req.params.model);
-  if (!admin) return res.status(404).json({ error: "Model not found" });
+  if (!admin) return res.status(404).json({ error: 'Model not found' });
 
   try {
     const row = await admin.create(req.body);
@@ -222,38 +327,37 @@ router.post("/:model", async (req: Request, res: Response) => {
 
 // ─── GET /api/data-admin/:model/:id ──────────────────────────────────────────
 
-router.get("/:model/:id", async (req: Request, res: Response) => {
+router.get('/:model/:id', async (req: Request, res: Response) => {
   const admin = getAdmin(req.params.model);
-  if (!admin) return res.status(404).json({ error: "Model not found" });
+  if (!admin) return res.status(404).json({ error: 'Model not found' });
 
   try {
     const row = await admin.getById(req.params.id);
-    if (!row) return res.status(404).json({ error: "Record not found" });
+    if (!row) return res.status(404).json({ error: 'Record not found' });
 
     // Enrich with FK labels using both listDisplay and formFields
     const allAdmins = getAdminMap();
     const allFields = [
       ...admin.listDisplay,
-      ...admin.formFields.filter(
-        (f) => !admin.listDisplay.some((d) => d.key === f.key),
-      ),
+      ...admin.formFields.filter((f) => !admin.listDisplay.some((d) => d.key === f.key)),
     ];
     const [enriched] = await admin.enrichRows([row], allAdmins, allFields);
     res.json(withoutUserPassword(admin, enriched));
   } catch (err: any) {
+    if (answerSettingsRefusal(res, err)) return;
     res.status(500).json({ error: err.message });
   }
 });
 
 // ─── PUT /api/data-admin/:model/:id ──────────────────────────────────────────
 
-router.put("/:model/:id", async (req: Request, res: Response) => {
+router.put('/:model/:id', async (req: Request, res: Response) => {
   const admin = getAdmin(req.params.model);
-  if (!admin) return res.status(404).json({ error: "Model not found" });
+  if (!admin) return res.status(404).json({ error: 'Model not found' });
 
   try {
     const row = await admin.update(req.params.id, req.body);
-    if (!row) return res.status(404).json({ error: "Record not found" });
+    if (!row) return res.status(404).json({ error: 'Record not found' });
     res.json(withoutUserPassword(admin, row));
   } catch (err: any) {
     if (answerSettingsRefusal(res, err)) return;
@@ -263,14 +367,15 @@ router.put("/:model/:id", async (req: Request, res: Response) => {
 
 // ─── DELETE /api/data-admin/:model/:id ───────────────────────────────────────
 
-router.delete("/:model/:id", async (req: Request, res: Response) => {
+router.delete('/:model/:id', async (req: Request, res: Response) => {
   const admin = getAdmin(req.params.model);
-  if (!admin) return res.status(404).json({ error: "Model not found" });
+  if (!admin) return res.status(404).json({ error: 'Model not found' });
 
   try {
     await admin.delete(req.params.id);
     res.status(204).send();
   } catch (err: any) {
+    if (answerSettingsRefusal(res, err)) return;
     res.status(400).json({ error: err.message });
   }
 });

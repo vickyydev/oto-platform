@@ -1,8 +1,8 @@
-import express, { type Express, type Request, type Response, type NextFunction } from "express";
-import { createServer, type Server } from "http";
+import _express, { type Express, type Request, type Response, type NextFunction } from "express";
+import { createServer as _createServer, type Server } from "http";
 import { storage, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
 import { setupAuth, requireAuth, hashPassword } from "./auth";
-import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches, canUserAccessBranch, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
+import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches as _filterByUserBranches, canUserAccessBranch, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
 import { uploadFinalizedPdf, uploadSignedPdf, uploadSignedLetterPdf, presignedPdfUrl, streamSignedPdf, isObjectStoragePath } from "./pdf-storage";
 import { fixMulterFilenames } from "./middleware/fixMulterFilenames";
@@ -14,8 +14,8 @@ import { generateBreaksForShiftRow, generateBreaksForWeekPlan, generateAllBreaks
 import { getTimezoneInfo, getLocalDateString, createDateTimeInTimezone, getMidnightInTimezone, getLocalTimeString, formatParkSignedDate } from "./timezone-utils";
 import Handlebars from "handlebars";
 import { z } from "zod";
-import { format, addDays } from "date-fns";
-import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema, MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertSopArticleSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
+import { format, addDays as _addDays } from "date-fns";
+import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema as _mergeDataSchema, MergeData as _MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema as _insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema as _insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertSopArticleSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
 import { getEffectivePermissions, resolveAdvisorRole, type PermissionUserContext } from "../shared/permissions";
 import { isHexCalendarColor, isOtherEventColor } from "@shared/event-colors";
 
@@ -131,7 +131,7 @@ import { registerAuthOtpRoutes } from "./auth-otp-routes";
 import { db, pool } from "./db";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
@@ -139,7 +139,7 @@ import { SHIFT_GROUP_DELETE_NEEDS_TARGET, SHIFT_GROUP_REQUIRED, noShiftGroup } f
 import {
   BRANCH_NOT_FOUND,
   CATALOG_ITEM_NOT_FOUND,
-  CONTRACT_NOT_FOUND,
+  CONTRACT_NOT_FOUND as _CONTRACT_NOT_FOUND,
   EMPLOYEE_NOT_FOUND,
   LEAVE_POLICY_NOT_FOUND,
   LETTER_NOT_FOUND,
@@ -575,7 +575,7 @@ function parseExcelDate(value: any): string | null {
     }
     
     // DD/MM/YYYY or DD-MM-YYYY
-    const ddmmyyyy = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    const ddmmyyyy = dateStr.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
     if (ddmmyyyy) {
       const [, day, month, year] = ddmmyyyy;
       return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
@@ -585,7 +585,7 @@ function parseExcelDate(value: any): string | null {
     // We'll prefer DD/MM/YYYY (common in Asia/Europe)
     
     // YYYY/MM/DD
-    const yyyymmdd = dateStr.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    const yyyymmdd = dateStr.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
     if (yyyymmdd) {
       const [, year, month, day] = yyyymmdd;
       return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
@@ -1544,23 +1544,27 @@ export async function registerRoutes(
   };
 
   /**
-   * The park group a person record belongs to (S2-17b round 2, round 1's
-   * standing pin 3). `people` carries no tenant of its own, so it is read from
-   * what hangs off the person: the employee carrying it, its access policies,
-   * and the user that goes with it (by email, the way the deletes find it).
-   * One answer or none: two park groups, or a user the app cannot place
-   * itself, is nobody's to delete from here. A person with nothing hanging off
-   * it is classifiable only in a one-tenant database, as a user with no access
-   * row is (`managedUserTenant`).
+   * A person's recorded park group, with all employee, policy and linked-login
+   * references agreeing. Older identities without an anchor use their agreeing
+   * links, or the app's sole-park-group fallback. Mixed or unplaced identities
+   * in a multi-park database remain unavailable until their placement is settled.
    */
-  const personParkGroup = async (person: { id: string; email: string }): Promise<string | undefined> => {
+  const personParkGroup = async (person: { id: string; email: string; tenantId?: string | null }): Promise<string | undefined> => {
     const found = new Set<string>();
-    const [carrier] = await db.select({ tenantId: employees.tenantId }).from(employees)
-      .where(eq(employees.personId, person.id)).limit(1);
-    if (carrier) found.add(carrier.tenantId);
-    const policies = await db.select({ tenantId: accessPolicies.tenantId }).from(accessPolicies)
+    if (person.tenantId) found.add(person.tenantId);
+    const carriers = await db.select({ tenantId: employees.tenantId }).from(employees)
+      .where(eq(employees.personId, person.id));
+    for (const carrier of carriers) found.add(carrier.tenantId);
+    const policies = await db.select({ tenantId: accessPolicies.tenantId, coreUserId: accessPolicies.coreUserId }).from(accessPolicies)
       .where(eq(accessPolicies.personId, person.id));
-    for (const policy of policies) found.add(policy.tenantId);
+    for (const policy of policies) {
+      found.add(policy.tenantId);
+      if (policy.coreUserId) {
+        const linkedTenant = await managedUserTenant(policy.coreUserId);
+        if (!linkedTenant) return undefined;
+        found.add(linkedTenant);
+      }
+    }
     const user = await storage.getUserByEmail(person.email);
     if (user) {
       const userTenant = await managedUserTenant(user.id);
@@ -1799,7 +1803,7 @@ export async function registerRoutes(
   });
 
   // Legacy: Serve branch logo files from local filesystem
-  app.use("/uploads/branch-logos", (req, res, next) => {
+  app.use("/uploads/branch-logos", (req, res, _next) => {
     const filePath = path.join(process.cwd(), "uploads/branch-logos", req.path);
     if (fs.existsSync(filePath)) {
       res.sendFile(filePath);
@@ -2543,7 +2547,11 @@ export async function registerRoutes(
   // Get all roles
   app.get("/api/roles", requireAuth, async (req, res, next) => {
     try {
-      const rolesData = await storage.getRoles();
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const rolesData = (await storage.getRoles()).filter(asyncRole => asyncRole.tenantId === tenantId);
+      const defaultParkGroup = await storage.getDefaultParkGroupId();
+      if (defaultParkGroup && defaultParkGroup !== tenantId) rolesData.push(...(await storage.getRoles()).filter(role => role.tenantId === defaultParkGroup));
       
       // Add employee count and branch assignments to each role
       const rolesWithDetails = await Promise.all(
@@ -2551,8 +2559,8 @@ export async function registerRoutes(
           const roleWithBranches = await storage.getRoleWithBranches(role.id);
           return {
             ...role,
-            employeeCount: roleWithBranches?.employeeCount || 0,
-            branches: roleWithBranches?.branches || [],
+            employeeCount: (await storage.getEmployeesByRole(role.id, tenantId)).length,
+            branches: (roleWithBranches?.branches || []).filter(branch => branch.tenantId === tenantId),
           };
         })
       );
@@ -2567,12 +2575,13 @@ export async function registerRoutes(
   app.get("/api/roles/:id", requireAuth, async (req, res, next) => {
     try {
       const role = await storage.getRole(req.params.id);
-      if (!role) {
+      if (!role || !req.userWithAccess?.tenantId || await rolesOutsideParkGroup([role.id], req.userWithAccess.tenantId)) {
         return res.status(404).json({ message: "Role not found" });
       }
       
-      const employeeCount = await storage.getEmployeeCountByRole(role.id);
-      const departmentMappings = await storage.getRoleDepartmentMappings(role.id);
+      const employeeCount = (await storage.getEmployeesByRole(role.id, req.userWithAccess!.tenantId)).length;
+      const ownDepartments = (await storage.getDepartments()).filter(department => department.tenantId === req.userWithAccess!.tenantId);
+      const departmentMappings = (await storage.getRoleDepartmentMappings(role.id)).filter(mapping => ownDepartments.some(department => department.id === mapping.departmentId));
       
       res.json({ ...role, employeeCount, departmentMappings });
     } catch (error) {
@@ -2583,7 +2592,10 @@ export async function registerRoutes(
   // Create role (admin or manager)
   app.post("/api/roles", requireManager, async (req, res, next) => {
     try {
-      const { branchIds, ...roleData } = req.body;
+      const { branchIds, tenantId: _stripTenant, ...roleData } = req.body;
+      const callerTenant = req.userWithAccess?.tenantId;
+      if (!callerTenant) return res.status(403).json({ message: "Access denied" });
+      if (branchIds !== undefined && !(await managedBranchIds(branchIds, callerTenant))) return res.status(404).json({ message: "Branch not found" });
       
       // Add tenantId to role data
       const tenantId = await getDefaultTenantId();
@@ -2610,24 +2622,31 @@ export async function registerRoutes(
   app.patch("/api/roles/:id", requireManager, async (req, res, next) => {
     try {
       const role = await storage.getRole(req.params.id);
-      if (!role) {
+      if (!role || !req.userWithAccess?.tenantId || await rolesOutsideParkGroup([role.id], req.userWithAccess.tenantId)) {
         return res.status(404).json({ message: "Role not found" });
       }
       
-      const { branchIds, ...roleData } = req.body;
+      const { branchIds, tenantId: _stripTenant, ...roleData } = req.body;
+      const callerTenant = req.userWithAccess?.tenantId;
+      if (!callerTenant) return res.status(403).json({ message: "Access denied" });
+      if (branchIds !== undefined && !(await managedBranchIds(branchIds, callerTenant))) return res.status(404).json({ message: "Branch not found" });
       
-      // Update role data if provided
+      // Shared metadata retains Q54; branch assignments stay per park group.
       if (Object.keys(roleData).length > 0) {
         await storage.updateRole(req.params.id, roleData);
       }
       
       // Update branch assignments if provided
       if (branchIds !== undefined && Array.isArray(branchIds)) {
-        await storage.setRoleBranchAssignments(req.params.id, branchIds, req.user?.id);
+        const ownBranches = (await storage.getBranches()).filter(branch => branch.tenantId === callerTenant).map(branch => branch.id);
+        await db.transaction(async tx => {
+          if (ownBranches.length) await tx.delete(roleBranchAssignments).where(and(eq(roleBranchAssignments.roleId, req.params.id), inArray(roleBranchAssignments.branchId, ownBranches)));
+          if (branchIds.length) await tx.insert(roleBranchAssignments).values(branchIds.map((branchId: string) => ({ roleId: req.params.id, branchId, assignedBy: req.user?.id })));
+        });
       }
       
       const roleWithBranches = await storage.getRoleWithBranches(req.params.id);
-      res.json(roleWithBranches);
+      res.json(roleWithBranches ? { ...roleWithBranches, employeeCount: (await storage.getEmployeesByRole(roleWithBranches.id, req.userWithAccess!.tenantId)).length, branches: (roleWithBranches.branches || []).filter(branch => branch.tenantId === req.userWithAccess!.tenantId) } : roleWithBranches);
     } catch (error) {
       next(error);
     }
@@ -2637,7 +2656,7 @@ export async function registerRoutes(
   app.post("/api/roles/:id/deactivate", requireManager, async (req, res, next) => {
     try {
       const role = await storage.getRole(req.params.id);
-      if (!role) {
+      if (!role || !req.userWithAccess?.tenantId || await rolesOutsideParkGroup([role.id], req.userWithAccess.tenantId)) {
         return res.status(404).json({ message: "Role not found" });
       }
       
@@ -2663,7 +2682,7 @@ export async function registerRoutes(
   app.get("/api/roles/:id/employees", requireAuth, async (req, res, next) => {
     try {
       const role = await storage.getRole(req.params.id);
-      if (!role) {
+      if (!role || !req.userWithAccess?.tenantId || await rolesOutsideParkGroup([role.id], req.userWithAccess.tenantId)) {
         return res.status(404).json({ message: "Role not found" });
       }
 
@@ -3212,6 +3231,7 @@ export async function registerRoutes(
           const weekEnd = new Date(schedulingWeekStart);
           weekEnd.setDate(weekEnd.getDate() + 6);
           const weekEndStr = weekEnd.toISOString().split('T')[0];
+    void weekEndStr;
           
           // Get employees transferred from this branch where transfer is after week start
           const transferredEmployees = await storage.getEmployeesTransferredFromBranch(branchIdFilter, schedulingWeekStart);
@@ -3684,6 +3704,7 @@ export async function registerRoutes(
     enableHrModule: z.boolean().optional(),
     enableCoreModule: z.boolean().optional(),
   });
+    void createEmployeeWithLoginSchema;
 
   // Staff can only read, managers can create/edit employees
   app.post("/api/employees", requireAuth, requireManager, async (req, res, next) => {
@@ -4538,6 +4559,7 @@ export async function registerRoutes(
           results.push({ id: employeeId, status: "deleted", message: `${employee.fullName} deleted` });
           deletedCount++;
         } catch (err) {
+      void err;
           results.push({ id: employeeId, status: "error", message: "Failed to delete" });
           errorCount++;
         }
@@ -6581,6 +6603,7 @@ export async function registerRoutes(
         const failedContract = await storage.updateContract(contract.id, {
           status: "failed",
         });
+    void failedContract;
         return res.status(500).json({ message: result.error || "Failed to send email" });
       }
 
@@ -6858,6 +6881,7 @@ OTO Company Limited`,
         signingTokenExpiresAt: expiresAt,
         signingStatus: "awaiting_signature",
       });
+    void updatedContract;
 
       // Get the base URL from request
       const protocol = req.get("x-forwarded-proto") || req.protocol;
@@ -9611,6 +9635,7 @@ OTO Company Limited`,
   app.get("/api/kiosk-reception/session", async (req, res, next) => {
     try {
       const { requireKioskSession, hashSessionToken, validateKioskSession } = await import("./kiosk-auth");
+    void requireKioskSession;
       
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -10071,7 +10096,8 @@ OTO Company Limited`,
           if (conflictingEmployee && conflictingEmployee.tenantId === employee.tenantId) {
             conflictingLabel = `${getEmployeeDisplayName(conflictingEmployee)} (ID: ${matchedEmployeeId})`;
           }
-        } catch (_) { /* non-fatal — the anonymous words stand */ }
+        } catch (_) {
+      void _; /* non-fatal — the anonymous words stand */ }
 
         if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
           tenantId: employee.tenantId,
@@ -10394,6 +10420,7 @@ OTO Company Limited`,
       // the person is standing; the employee's home branch does not decide it.
       const branchTimezone = device.branch.timezone || 'Asia/Bangkok';
       const tzInfo = getTimezoneInfo(branchTimezone);
+    void tzInfo;
 
       // Determine event type based on last event TODAY (auto-toggle with daily reset)
       // First scan of each day is always IN
@@ -11041,7 +11068,7 @@ OTO Company Limited`,
       }
 
       const kioskDeviceId: string | undefined = device.id;
-      let branchId: string | undefined = device.branchId;
+      const branchId: string | undefined = device.branchId;
       await storage.updateKioskDeviceLastSeen(device.id);
 
       if (!takeKioskAttempt(`device:${device.id}`, 10, 5 * 60 * 1000)) {
@@ -11531,6 +11558,8 @@ OTO Company Limited`,
   app.get("/api/timekeeping/review", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { deriveSessionsAndAnomalies, computeDailyTotals, computeEmployeeDaySummary } = await import("./timekeeping-deriver");
+    void computeDailyTotals;
+    void deriveSessionsAndAnomalies;
       
       const user = req.user as any;
       const tenantId = await resolveTenantId(user.tenantId);
@@ -12147,7 +12176,7 @@ OTO Company Limited`,
       }
 
       // Staff can only see their own time events (if linked to employee)
-      let employeeFilter = employeeId;
+      const employeeFilter = employeeId;
       if (user.role === 'staff') {
         // For staff, only show their own events if we had employee-user linking
         // For now, staff can view time events for their branches
@@ -12845,6 +12874,8 @@ OTO Company Limited`,
   app.post("/api/timekeeping/live/ping", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { employeeId, shiftRowId, reason } = req.body;
+    void reason;
+    void shiftRowId;
       const userId = req.user?.id;
       const tenantId = await getDefaultTenantId();
 
@@ -13981,6 +14012,7 @@ OTO Company Limited`,
         if (record.type === 'ANNUAL') annualUsed += days;
         else if (record.type === 'BUSINESS') businessUsed += days;
         else if (record.type === 'SICK') sickUsed += days;
+    void sickUsed;
       }
       
       // Get sick leave balance from existing method
@@ -14253,7 +14285,10 @@ OTO Company Limited`,
   app.get("/api/people", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { personType } = req.query;
-      let allPeople = await storage.getPeople();
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const candidates = await storage.getPeople();
+      let allPeople = (await Promise.all(candidates.map(async person => (await personParkGroup(person)) === tenantId ? person : null))).filter((person): person is NonNullable<typeof person> => person !== null);
       
       // Filter by personType if provided
       if (personType && typeof personType === "string") {
@@ -14278,7 +14313,7 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       const person = await storage.getPerson(id);
-      if (!person) {
+      if (!person || (await personParkGroup(person)) !== req.userWithAccess?.tenantId) {
         return res.status(404).json({ message: "Person not found" });
       }
       const accessPolicy = await storage.getAccessPolicy(id);
@@ -14304,7 +14339,7 @@ OTO Company Limited`,
   // Create person with optional HR login (admin only)
   app.post("/api/people", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const { createLogin, password, accessLevel, modules, branchScope, branchIds, isProtected: _stripProtected, ...personData } = createPersonWithUserSchema.parse(req.body);
+      const { createLogin, password, accessLevel, modules, branchScope, branchIds, isProtected: _stripProtected, tenantId: _stripTenant, ...personData } = createPersonWithUserSchema.parse(req.body);
       
       const resolvedTenantId = await userManagementTenant(req);
       if (!resolvedTenantId) return res.status(403).json({ message: "Access denied" });
@@ -14313,6 +14348,8 @@ OTO Company Limited`,
         return res.status(403).json({ message: "Selected branches are not available" });
       }
       
+      const relatedLogin = await storage.getUserByEmail(personData.email);
+      if (relatedLogin && (await managedUserTenant(relatedLogin.id)) !== resolvedTenantId) return res.status(404).json({ message: "User not found" });
       // Only create user if createLogin is true AND password is provided
       if (createLogin && password) {
         const existingUser = await storage.getUserByEmail(personData.email);
@@ -14329,8 +14366,12 @@ OTO Company Limited`,
           : cleaned.startsWith('0') ? '+66' + cleaned.substring(1)
           : '+' + cleaned;
       }
+      if (personData.departmentId) {
+        const department = await storage.getDepartment(personData.departmentId);
+        if (department?.tenantId !== resolvedTenantId) return res.status(404).json({ message: "Department not found" });
+      }
       // Create the person
-      const person = await storage.createPerson({ ...personData, phoneE164: personPhoneE164 });
+      const person = await storage.createPerson({ ...personData, tenantId: resolvedTenantId, phoneE164: personPhoneE164 });
       
       // If createLogin is true and password provided, create user account
       if (createLogin && password) {
@@ -14409,7 +14450,7 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       const existing = await storage.getPerson(id);
-      if (!existing) {
+      if (!existing || (await personParkGroup(existing)) !== req.userWithAccess?.tenantId) {
         return res.status(404).json({ message: "Person not found" });
       }
       if (existing.isProtected) {
@@ -14419,9 +14460,9 @@ OTO Company Limited`,
           return res.status(403).json({ message: "This account is protected and can only be edited by the account owner" });
         }
       }
-      const { isProtected: _stripProtected, ...safeData } = insertPersonSchema.partial().parse(req.body);
+      const { isProtected: _stripProtected, tenantId: _stripTenant, ...safeData } = insertPersonSchema.partial().parse(req.body);
       // Derive phoneE164 from phoneNumber if not explicitly supplied
-      let updateData = { ...safeData };
+      const updateData = { ...safeData };
       if (safeData.phoneNumber !== undefined && !safeData.phoneE164) {
         if (safeData.phoneNumber) {
           const cleaned = safeData.phoneNumber.replace(/\D/g, '');
@@ -14431,6 +14472,14 @@ OTO Company Limited`,
         } else {
           updateData.phoneE164 = null;
         }
+      }
+      if (updateData.departmentId) {
+        const department = await storage.getDepartment(updateData.departmentId);
+        if (department?.tenantId !== req.userWithAccess?.tenantId) return res.status(404).json({ message: "Department not found" });
+      }
+      if (updateData.email) {
+        const login = await storage.getUserByEmail(updateData.email);
+        if (login && (await managedUserTenant(login.id)) !== req.userWithAccess?.tenantId) return res.status(404).json({ message: "User not found" });
       }
       const person = await storage.updatePerson(id, updateData);
       
@@ -14532,8 +14581,9 @@ OTO Company Limited`,
   app.get("/api/people/:id/access", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
+      const person = await storage.getPerson(id);
       const policy = await storage.getAccessPolicy(id);
-      if (!policy) {
+      if (!person || (await personParkGroup(person)) !== req.userWithAccess?.tenantId || !policy || policy.tenantId !== req.userWithAccess?.tenantId) {
         return res.status(404).json({ message: "Access policy not found" });
       }
       res.json(policy);
@@ -14563,7 +14613,7 @@ OTO Company Limited`,
     try {
       const { id } = req.params;
       const person = await storage.getPerson(id);
-      if (!person) {
+      if (!person || (await personParkGroup(person)) !== req.userWithAccess?.tenantId) {
         return res.status(404).json({ message: "Person not found" });
       }
 
@@ -14582,6 +14632,9 @@ OTO Company Limited`,
       if ((existingPolicy && existingPolicy.tenantId !== resolvedTenantId) ||
           personEmployees.some(employee => employee.tenantId !== resolvedTenantId)) {
         return res.status(404).json({ message: "Person not found" });
+      }
+      for (const employee of personEmployees) {
+        if (employee.userId && (await managedUserTenant(employee.userId)) !== resolvedTenantId) return res.status(404).json({ message: "User not found" });
       }
       let policy;
       if (existingPolicy) {
@@ -14887,7 +14940,7 @@ OTO Company Limited`,
   // Get rota (read-only schedule view for employees)
   app.get("/api/rota", requireAuth, async (req, res, next) => {
     try {
-      let scope = (req.query.scope as string) || "me";
+      const scope = (req.query.scope as string) || "me";
       const branchId = req.query.branchId as string;
       const departmentId = req.query.departmentId as string;
       const from = req.query.from as string;
@@ -15329,6 +15382,7 @@ OTO Company Limited`,
           return `${k}:${ta.shiftDate}`;
         })
       );
+    void targetKeys;
       const movedKeys = new Set<string>();
 
       for (const sa of sourceAssignments) {
@@ -16822,7 +16876,7 @@ OTO Company Limited`,
         dayOffsByEmpDate.get(key)!.push({ id: d.id, type: d.type });
       }
 
-      let empNameMap = new Map<string, string>();
+      const empNameMap = new Map<string, string>();
       if (employeeIds.size > 0) {
         const empIdArr = Array.from(employeeIds);
         const batchSize = 500;
@@ -16879,6 +16933,7 @@ OTO Company Limited`,
   app.post("/api/schedule/conflicts/resolve", requireAuth, requireManager, async (req, res, next) => {
     try {
       const { employeeId, date, keepAssignmentId, deleteAssignmentIds, deleteDayOffIds } = req.body;
+    void keepAssignmentId;
       
       if (!employeeId || !date) {
         return res.status(400).json({ message: "employeeId and date are required" });
@@ -19479,21 +19534,29 @@ OTO Company Limited`,
     }
   });
 
+  const campRegistrationForCaller = async (req: Request, id: string) => {
+    const tenantId = req.kioskSession?.tenantId ?? req.userWithAccess?.tenantId;
+    if (!tenantId) return { status: 404, refusal: "Registration not found" } as const;
+    const [registration] = await db.select({ id: campRegistrations.id, eventId: campRegistrations.eventId, branchId: coreEventsTable.branchId })
+      .from(campRegistrations).innerJoin(coreEventsTable, eq(coreEventsTable.id, campRegistrations.eventId))
+      .where(and(eq(campRegistrations.id, id), eq(campRegistrations.tenantId, tenantId), eq(coreEventsTable.tenantId, tenantId))).limit(1);
+    if (!registration || (registration.branchId && !(await branchInParkGroup(registration.branchId, tenantId)))) return { status: 404, refusal: "Registration not found" } as const;
+    if (req.kioskSession && registration.branchId !== req.kioskSession.branchId) return { status: 403, refusal: "Kiosk cannot access another branch" } as const;
+    if (!req.kioskSession && req.userWithAccess && !canUserAccessBranch(req.userWithAccess, registration.branchId)) return { status: 403, refusal: "Access denied to this branch" } as const;
+    return { tenantId, registration } as const;
+  };
+
   // Check in a camp child (writes to daily attendance row for today)
   app.post("/api/core/camp-checkins/:id/check-in", requireAuthOrKiosk, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
+      const target = await campRegistrationForCaller(req, id);
+      if (target.status !== undefined) return res.status(target.status).json({ message: target.refusal });
+      const { tenantId, registration: reg } = target;
       const userId = (req.user as any)?.id;
       const todayStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
       const { paymentMethod, dropOffPerson } = req.body ?? {};
 
-      // Verify registration exists and get eventId
-      const [reg] = await db
-        .select({ id: campRegistrations.id, eventId: campRegistrations.eventId })
-        .from(campRegistrations)
-        .where(and(eq(campRegistrations.id, id), eq(campRegistrations.tenantId, tenantId)));
-      if (!reg) return res.status(404).json({ message: "Registration not found" });
 
       const [updated] = await db
         .insert(campAttendance)
@@ -19510,6 +19573,7 @@ OTO Company Limited`,
         })
         .onConflictDoUpdate({
           target: [campAttendance.campRegistrationId, campAttendance.attendanceDate],
+          setWhere: eq(campAttendance.tenantId, tenantId),
           set: {
             status: "checked_in",
             checkedInAt: new Date(),
@@ -19521,6 +19585,7 @@ OTO Company Limited`,
         })
         .returning();
 
+      if (!updated) return res.status(404).json({ message: "Attendance record not found" });
       res.json(updated);
     } catch (error) {
       next(error);
@@ -19531,16 +19596,14 @@ OTO Company Limited`,
   app.post("/api/core/camp-checkins/:id/check-out", requireAuthOrKiosk, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
+      const target = await campRegistrationForCaller(req, id);
+      if (target.status !== undefined) return res.status(target.status).json({ message: target.refusal });
+      const { tenantId, registration: reg } = target;
+    void reg;
       const userId = (req.user as any)?.id;
       const todayStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
       const { pickUpPerson } = req.body ?? {};
 
-      const [reg] = await db
-        .select({ id: campRegistrations.id })
-        .from(campRegistrations)
-        .where(and(eq(campRegistrations.id, id), eq(campRegistrations.tenantId, tenantId)));
-      if (!reg) return res.status(404).json({ message: "Registration not found" });
 
       const [updated] = await db
         .update(campAttendance)
@@ -19552,6 +19615,7 @@ OTO Company Limited`,
           updatedAt: new Date(),
         })
         .where(and(
+          eq(campAttendance.tenantId, tenantId),
           eq(campAttendance.campRegistrationId, id),
           eq(campAttendance.attendanceDate, todayStr)
         ))
@@ -19568,16 +19632,14 @@ OTO Company Limited`,
   app.patch("/api/core/camp-checkins/:id/attendance", requireAuth, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
+      const target = await campRegistrationForCaller(req, id);
+      if (target.status !== undefined) return res.status(target.status).json({ message: target.refusal });
+      const { tenantId, registration: reg } = target;
+    void reg;
       const todayStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
       const { date, paymentMethod, dropOffPerson, pickUpPerson, staffNotes } = req.body ?? {};
       const targetDate = date || todayStr;
 
-      const [reg] = await db
-        .select({ id: campRegistrations.id })
-        .from(campRegistrations)
-        .where(and(eq(campRegistrations.id, id), eq(campRegistrations.tenantId, tenantId)));
-      if (!reg) return res.status(404).json({ message: "Registration not found" });
 
       const setFields: Record<string, any> = { updatedAt: new Date() };
       if (paymentMethod !== undefined) setFields.paymentMethod = paymentMethod || null;
@@ -19589,6 +19651,7 @@ OTO Company Limited`,
         .update(campAttendance)
         .set(setFields)
         .where(and(
+          eq(campAttendance.tenantId, tenantId),
           eq(campAttendance.campRegistrationId, id),
           eq(campAttendance.attendanceDate, targetDate)
         ))
@@ -19605,14 +19668,12 @@ OTO Company Limited`,
   app.post("/api/core/camp-checkins/:id/undo-check-in", requireAuthOrKiosk, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
+      const target = await campRegistrationForCaller(req, id);
+      if (target.status !== undefined) return res.status(target.status).json({ message: target.refusal });
+      const { tenantId, registration: reg } = target;
+    void reg;
       const todayStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
 
-      const [reg] = await db
-        .select({ id: campRegistrations.id })
-        .from(campRegistrations)
-        .where(and(eq(campRegistrations.id, id), eq(campRegistrations.tenantId, tenantId)));
-      if (!reg) return res.status(404).json({ message: "Registration not found" });
 
       const [updated] = await db
         .update(campAttendance)
@@ -19625,6 +19686,7 @@ OTO Company Limited`,
           updatedAt: new Date(),
         })
         .where(and(
+          eq(campAttendance.tenantId, tenantId),
           eq(campAttendance.campRegistrationId, id),
           eq(campAttendance.attendanceDate, todayStr)
         ))
@@ -19641,14 +19703,12 @@ OTO Company Limited`,
   app.post("/api/core/camp-checkins/:id/undo-check-out", requireAuthOrKiosk, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const tenantId = await getDefaultTenantId();
+      const target = await campRegistrationForCaller(req, id);
+      if (target.status !== undefined) return res.status(target.status).json({ message: target.refusal });
+      const { tenantId, registration: reg } = target;
+    void reg;
       const todayStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
 
-      const [reg] = await db
-        .select({ id: campRegistrations.id })
-        .from(campRegistrations)
-        .where(and(eq(campRegistrations.id, id), eq(campRegistrations.tenantId, tenantId)));
-      if (!reg) return res.status(404).json({ message: "Registration not found" });
 
       const [updated] = await db
         .update(campAttendance)
@@ -19659,6 +19719,7 @@ OTO Company Limited`,
           updatedAt: new Date(),
         })
         .where(and(
+          eq(campAttendance.tenantId, tenantId),
           eq(campAttendance.campRegistrationId, id),
           eq(campAttendance.attendanceDate, todayStr)
         ))
@@ -20369,6 +20430,11 @@ OTO Company Limited`,
       
       // Handle startDate, dueDate, scheduledMode for one-off tasks and branchIds array
       const { startDate, dueDate, scheduledMode, branchIds, assignedTo, assignedAdvisorId, assignedRoleId, assignedDepartmentId, assignmentType } = req.body;
+    void assignmentType;
+    void assignedDepartmentId;
+    void assignedRoleId;
+    void assignedAdvisorId;
+    void assignedTo;
       
       // Handle scheduledMode
       if (scheduledMode !== undefined) {
@@ -20846,6 +20912,7 @@ OTO Company Limited`,
       const tenantId = await resolveTenantId(user.tenantId);
       const requestedBranchId = req.query.branchId as string | undefined;
       const myOnly = req.query.myOnly === 'true';
+    void myOnly;
       
       // Enforce effective branch access, including policy-derived advisor access.
       let effectiveBranchId: string | null = null;
@@ -21075,7 +21142,7 @@ OTO Company Limited`,
         // For weekly templates, check if any day in the range matches
         if (recurrence === 'weekly' && weeklyDays.length > 0) {
           const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-          let currentDate = new Date(queryFromDate);
+          const currentDate = new Date(queryFromDate);
           while (currentDate <= queryToDate) {
             const dayOfWeek = dayNames[currentDate.getDay()];
             if (weeklyDays.includes(dayOfWeek)) {
@@ -21090,7 +21157,7 @@ OTO Company Limited`,
         if (recurrence === 'monthly') {
           const monthlyDay = template.monthlyDay;
           if (monthlyDay) {
-            let currentDate = new Date(queryFromDate);
+            const currentDate = new Date(queryFromDate);
             while (currentDate <= queryToDate) {
               const dayOfMonth = currentDate.getDate();
               const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
@@ -27462,7 +27529,10 @@ ${context}`;
   app.get("/api/module-overrides/:userId", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { userId } = req.params;
-      const overrides = await storage.getModuleOverrides(userId);
+      const parkGroup = await userManagementTenant(req);
+      if (!parkGroup) return res.status(403).json({ message: "Access denied" });
+      if ((await managedUserTenant(userId)) !== parkGroup) return res.status(404).json({ message: "User not found" });
+      const overrides = (await storage.getModuleOverrides(userId)).filter(override => override.tenantId === parkGroup);
       res.json(overrides);
     } catch (error) {
       next(error);
@@ -27473,6 +27543,9 @@ ${context}`;
   app.put("/api/module-overrides/:userId", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { userId } = req.params;
+      const parkGroup = await userManagementTenant(req);
+      if (!parkGroup) return res.status(403).json({ message: "Access denied" });
+      if ((await managedUserTenant(userId)) !== parkGroup) return res.status(404).json({ message: "User not found" });
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -27489,7 +27562,10 @@ ${context}`;
       });
 
       const { overrides } = schema.parse(req.body);
-      const tenantId = await resolveTenantId(req.user?.tenantId);
+      const tenantId = parkGroup;
+      for (const override of overrides) {
+        if (!(await managedBranchIds(override.branchIds, tenantId))) return res.status(404).json({ message: "Branch not found" });
+      }
       const result = await storage.setModuleOverrides(userId, tenantId, overrides, req.user!.id);
 
       // Log activity
@@ -27515,7 +27591,10 @@ ${context}`;
   app.delete("/api/module-overrides/:userId", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { userId } = req.params;
-      await storage.deleteModuleOverrides(userId);
+      const parkGroup = await userManagementTenant(req);
+      if (!parkGroup) return res.status(403).json({ message: "Access denied" });
+      if ((await managedUserTenant(userId)) !== parkGroup) return res.status(404).json({ message: "User not found" });
+      await storage.deleteModuleOverrides(userId, parkGroup);
       res.json({ success: true });
     } catch (error) {
       next(error);
@@ -27525,15 +27604,18 @@ ${context}`;
   // Get all people with their access policies for bulk permissions management (admin only)
   app.get("/api/permissions/bulk", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const tenantId = await resolveTenantId(req.user?.tenantId);
-      const allPeople = await storage.getPeople();
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const candidates = await storage.getPeople();
+      const allPeople = (await Promise.all(candidates.map(async person => (await personParkGroup(person)) === tenantId ? person : null))).filter((person): person is NonNullable<typeof person> => person !== null);
       const activePeople = allPeople.filter(p => p.isActive);
       
       const allEmployees = await storage.getEmployees(tenantId);
       const allOverrides = await storage.getModuleOverridesByTenant(tenantId);
-      const allUsers = await storage.getUsers();
-      const allBranches = await storage.getBranches();
-      const allDepartments = await storage.getDepartments();
+      const candidateUsers = await storage.getUsers();
+      const allUsers = (await Promise.all(candidateUsers.map(async user => (await managedUserTenant(user.id)) === tenantId ? user : null))).filter((user): user is NonNullable<typeof user> => user !== null);
+      const allBranches = (await storage.getBranches()).filter(branch => branch.tenantId === tenantId);
+      const allDepartments = (await storage.getDepartments()).filter(department => department.tenantId === tenantId);
       
       const getRoleDefaults = (role: string): Record<string, boolean> => {
         if (["global_admin", "admin", "operator_admin", "manager"].includes(role)) {
@@ -27572,7 +27654,7 @@ ${context}`;
           };
         } else if (user) {
           const roleModules = getRoleDefaults(user.role);
-          let effectiveModules = { ...roleModules };
+          const effectiveModules = { ...roleModules };
           for (const override of moduleOverrides) {
             if (override.moduleKey in effectiveModules) {
               effectiveModules[override.moduleKey] = override.enabled;
@@ -27635,13 +27717,14 @@ ${context}`;
         enabled: z.boolean(),
       });
       const { personIds, moduleKey, enabled } = schema.parse(req.body);
-      const resolvedTenantId = await resolveTenantId(req.user?.tenantId);
+      const resolvedTenantId = await userManagementTenant(req);
+      if (!resolvedTenantId) return res.status(403).json({ message: "Access denied" });
 
       let updated = 0;
       let skipped = 0;
       for (const personId of personIds) {
         const person = await storage.getPerson(personId);
-        if (!person) { skipped++; continue; }
+        if (!person || (await personParkGroup(person)) !== resolvedTenantId) { skipped++; continue; }
 
         const existingPolicy = await storage.getAccessPolicy(personId);
         if (existingPolicy) {
@@ -27655,7 +27738,7 @@ ${context}`;
           const user = employee?.userId ? allUsers.find(u => u.id === employee.userId) :
             allUsers.find(u => u.email === person.email);
 
-          if (user) {
+          if (user && (await managedUserTenant(user.id)) === resolvedTenantId) {
             const isAdmin = ["global_admin", "admin", "operator_admin", "manager"].includes(user.role);
             const defaultModules = {
               core: true,
@@ -27693,6 +27776,9 @@ ${context}`;
   app.get("/api/permissions/effective/:userId", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { userId } = req.params;
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      if ((await managedUserTenant(userId)) !== tenantId) return res.status(404).json({ message: "User not found" });
       // Use getUserWithBranchAccess so advisor users get their effective role
       // (admin/manager/staff) resolved from their access policy access level.
       const userWithAccess = await storage.getUserWithBranchAccess(userId);
@@ -27700,7 +27786,7 @@ ${context}`;
         return res.status(404).json({ message: "User not found" });
       }
 
-      const overrides = await storage.getModuleOverrides(userId);
+      const overrides = (await storage.getModuleOverrides(userId)).filter(override => override.tenantId === req.userWithAccess?.tenantId);
 
       // Find linked employee to get home branch
       let homeBranchId: string | null = null;
@@ -27791,8 +27877,10 @@ ${context}`;
   // Bulk get all users with their effective permissions (admin debug page)
   app.get("/api/permissions/debug/all", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const tenantId = await resolveTenantId(req.user?.tenantId);
-      const allUsers = await storage.getUsers();
+      const tenantId = await userManagementTenant(req);
+      if (!tenantId) return res.status(403).json({ message: "Access denied" });
+      const candidateUsers = await storage.getUsers();
+      const allUsers = (await Promise.all(candidateUsers.map(async user => (await managedUserTenant(user.id)) === tenantId ? user : null))).filter((user): user is NonNullable<typeof user> => user !== null);
       const allOverrides = await storage.getModuleOverridesByTenant(tenantId);
       const allEmployees = await storage.getEmployees(tenantId);
 
@@ -27802,7 +27890,7 @@ ${context}`;
       const allAccessPolicies = await db.select({
         coreUserId: accessPolicies.coreUserId,
         accessLevel: accessPolicies.accessLevel,
-      }).from(accessPolicies).where(isNotNull(accessPolicies.coreUserId));
+      }).from(accessPolicies).where(and(isNotNull(accessPolicies.coreUserId), eq(accessPolicies.tenantId, tenantId)));
       const accessLevelByUserId = new Map(
         allAccessPolicies
           .filter(p => p.coreUserId)
@@ -27858,7 +27946,7 @@ ${context}`;
   });
 
   // Directory API error handler - returns { error } format per contract
-  app.use("/api/directory", (err: Error, req: Request, res: Response, next: NextFunction) => {
+  app.use("/api/directory", (err: Error, req: Request, res: Response, _next: NextFunction) => {
     console.error("Directory API Error:", err);
     res.status(500).json({ error: err.message || "Internal server error" });
   });
@@ -27962,7 +28050,7 @@ ${context}`;
   });
 
   // General error handler for non-Directory API routes
-  app.use(async (err: Error, req: Request, res: Response, next: NextFunction) => {
+  app.use(async (err: Error, req: Request, res: Response, _next: NextFunction) => {
     console.error("Error:", err);
     Sentry.captureException(err);
     await Sentry.flush(2000);

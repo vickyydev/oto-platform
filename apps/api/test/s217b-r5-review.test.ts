@@ -225,7 +225,7 @@ describe('A. fences and seams', () => {
     expect(readFileSync(join(APP_SERVER, 'face-recognition.ts'), 'utf8')).toMatch(
       /const useAWS = process\.env\.USE_AWS_REKOGNITION === "true";\s*if \(useAWS\) \{\s*return new AWSRekognitionService\(\);\s*\}\s*return new MockFaceRecognitionService\(\);/,
     );
-    expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toMatch(/router\.use\("\/attention-items", \(_req: Request, res: Response\) => \{\s*res\.status\(503\)/);
+    expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toContain('dataAdminContext.run({ tenantId }, next)');
   });
 });
 

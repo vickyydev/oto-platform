@@ -1,9 +1,9 @@
 import { Router, Request, Response } from "express";
 import { db } from "./db";
-import { eq, and, or, isNull, desc, sql } from "drizzle-orm";
+import { eq, and, or as _or, isNull as _isNull, desc, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "./auth";
-import { requireRole, requireManager } from "./auth-middleware";
+import { requireRole as _requireRole, requireManager } from "./auth-middleware";
 import {
   voucherTemplates,
   userVouchers,
@@ -14,6 +14,12 @@ import { tenants, employees, users, DEFAULT_TENANT_SLUG } from "../shared/schema
 import crypto from "crypto";
 
 const router = Router();
+
+// The Console owns issuance and redemption; legacy reads remain available.
+const voucherWriteMoved = (_req: Request, res: Response) => res.status(409).json({
+  reason: "vouchers_moved",
+  message: "Vouchers have moved to the Console",
+});
 
 async function getDefaultTenantId(): Promise<string> {
   const result = await db
@@ -48,7 +54,7 @@ router.get("/studio/voucher-templates", requireAuth, async (req: Request, res: R
   }
 });
 
-router.post("/studio/voucher-templates", requireAuth, requireManager, async (req: Request, res: Response) => {
+router.post("/studio/voucher-templates", requireAuth, requireManager, voucherWriteMoved, async (req: Request, res: Response) => {
   try {
     const tenantId = await getDefaultTenantId();
     const userId = (req.user as any)?.id;
@@ -67,7 +73,7 @@ router.post("/studio/voucher-templates", requireAuth, requireManager, async (req
   }
 });
 
-router.patch("/studio/voucher-templates/:id", requireAuth, requireManager, async (req: Request, res: Response) => {
+router.patch("/studio/voucher-templates/:id", requireAuth, requireManager, voucherWriteMoved, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const tenantId = await getDefaultTenantId();
@@ -91,7 +97,7 @@ router.patch("/studio/voucher-templates/:id", requireAuth, requireManager, async
   }
 });
 
-router.delete("/studio/voucher-templates/:id", requireAuth, requireManager, async (req: Request, res: Response) => {
+router.delete("/studio/voucher-templates/:id", requireAuth, requireManager, voucherWriteMoved, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const tenantId = await getDefaultTenantId();
@@ -147,7 +153,7 @@ const assignVoucherSchema = z.object({
   validToOverride: z.string().optional().nullable(),
 });
 
-router.post("/hr/employees/:employeeId/vouchers", requireAuth, requireManager, async (req: Request, res: Response) => {
+router.post("/hr/employees/:employeeId/vouchers", requireAuth, requireManager, voucherWriteMoved, async (req: Request, res: Response) => {
   try {
     const { employeeId } = req.params;
     const tenantId = await getDefaultTenantId();
@@ -216,7 +222,7 @@ const bulkAssignSchema = z.object({
   skipExisting: z.boolean().default(false),
 });
 
-router.post("/hr/vouchers/bulk-assign", requireAuth, requireManager, async (req: Request, res: Response) => {
+router.post("/hr/vouchers/bulk-assign", requireAuth, requireManager, voucherWriteMoved, async (req: Request, res: Response) => {
   try {
     const tenantId = await getDefaultTenantId();
     const data = bulkAssignSchema.parse(req.body);
@@ -332,7 +338,7 @@ router.post("/hr/vouchers/bulk-assign", requireAuth, requireManager, async (req:
   }
 });
 
-router.delete("/hr/vouchers/:voucherId", requireAuth, requireManager, async (req: Request, res: Response) => {
+router.delete("/hr/vouchers/:voucherId", requireAuth, requireManager, voucherWriteMoved, async (req: Request, res: Response) => {
   try {
     const { voucherId } = req.params;
     const tenantId = await getDefaultTenantId();
@@ -430,7 +436,7 @@ const redeemVoucherSchema = z.object({
   branchId: z.string().optional().nullable(),
 });
 
-router.post("/core/vouchers/redeem", requireAuth, requireManager, async (req: Request, res: Response) => {
+router.post("/core/vouchers/redeem", requireAuth, requireManager, voucherWriteMoved, async (req: Request, res: Response) => {
   try {
     const userId = (req.user as any)?.id;
     const tenantId = await getDefaultTenantId();

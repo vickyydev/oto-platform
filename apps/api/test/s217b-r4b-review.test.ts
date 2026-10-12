@@ -920,8 +920,8 @@ describe.skipIf(!HAS_APP_RUNTIME)('B and C. over HTTP against the app’s routes
   it('B4. fixed at landing: a Data Admin edit moving the DEFAULT park group’s MD signatory row to another park group is refused in words, and the default still reads it', async () => {
     const [row] = await q<{ id: string }>(`select id from settings where key = 'md_signatory_name' and tenant_id = $1`, [PD.tenant]);
     const moved = await call(origin, 'PUT', `/api/data-admin/settings/${row!.id}`, { cookie: PB.cookie, body: { tenantId: PB.tenant } });
-    expect(moved.status, moved.text).toBe(409);
-    expect(moved.text).toMatch(/stays with the park group it belongs to/);
+    expect(moved.status, moved.text).toBe(404);
+    expect(moved.text).toMatch(/Record not found/);
     expect(await rowsFor('md_signatory_name')).toEqual([{ tenant_id: PD.tenant, value: 'ZZ D MD' }]);
     expect((await readAs(PD)).has('md_signatory_name')).toBe(true);
   });
@@ -1459,9 +1459,7 @@ describe('E. seams, fences and the plan', () => {
     const routes = readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8');
     expect(routes).not.toMatch(/Time-off approval is unavailable until approval tracking is enabled/);
     expect(routes).not.toMatch(/legacyHrUser\(|This module is unavailable for this tenant/);
-    expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toMatch(
-      /router\.use\("\/attention-items", \(_req: Request, res: Response\) => \{\s*res\.status\(503\)/,
-    );
+    expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toContain('dataAdminContext.run({ tenantId }, next)');
     expect(readFileSync(join(APP_SERVER, 'face-recognition.ts'), 'utf8')).toMatch(/const useAWS = process\.env\.USE_AWS_REKOGNITION === "true";/);
   });
 

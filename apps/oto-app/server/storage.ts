@@ -5,7 +5,7 @@ import {
         type UserWithBranchAccess,
         userBranchAccess,
         type UserBranchAccess,
-        type InsertUserBranchAccess,
+        type InsertUserBranchAccess as _InsertUserBranchAccess,
         people,
         type Person,
         type InsertPerson,
@@ -42,7 +42,7 @@ import {
         type InsertContractInstance,
         settings,
         type Setting,
-        type InsertSetting,
+        type InsertSetting as _InsertSetting,
         activityLog,
         type ActivityLog,
         type InsertActivityLog,
@@ -101,13 +101,13 @@ import {
         type InsertRoleDepartmentMap,
         employeeRoles,
         type EmployeeRole,
-        type InsertEmployeeRole,
+        type InsertEmployeeRole as _InsertEmployeeRole,
         departmentBranchAssignments,
         type DepartmentBranchAssignment,
-        type InsertDepartmentBranchAssignment,
+        type InsertDepartmentBranchAssignment as _InsertDepartmentBranchAssignment,
         roleBranchAssignments,
-        type RoleBranchAssignment,
-        type InsertRoleBranchAssignment,
+        type RoleBranchAssignment as _RoleBranchAssignment,
+        type InsertRoleBranchAssignment as _InsertRoleBranchAssignment,
         type DepartmentWithBranches,
         type RoleWithBranches,
         shifts,
@@ -116,7 +116,7 @@ import {
         type ShiftWithDetails,
         shiftRequiredRoles,
         type ShiftRequiredRole,
-        type InsertShiftRequiredRole,
+        type InsertShiftRequiredRole as _InsertShiftRequiredRole,
         employeeTimeOff,
         type EmployeeTimeOff,
         type InsertEmployeeTimeOff,
@@ -128,41 +128,41 @@ import {
         type InsertEmployeePresence,
         scheduleWeekPlans,
         type ScheduleWeekPlan,
-        type InsertScheduleWeekPlan,
+        type InsertScheduleWeekPlan as _InsertScheduleWeekPlan,
         type ScheduleWeekPlanWithDetails,
         scheduleShiftRows,
         type ScheduleShiftRow,
         type InsertScheduleShiftRow,
         type ScheduleShiftRowWithDetails,
         scheduleShiftRowRoles,
-        type ScheduleShiftRowRole,
-        type InsertScheduleShiftRowRole,
+        type ScheduleShiftRowRole as _ScheduleShiftRowRole,
+        type InsertScheduleShiftRowRole as _InsertScheduleShiftRowRole,
         scheduleAssignments,
         type ScheduleAssignment,
         type InsertScheduleAssignment,
         scheduleShiftBreaks,
-        type ScheduleShiftBreak,
+        type ScheduleShiftBreak as _ScheduleShiftBreak,
         casualWorkers,
-        type CasualWorker,
-        type InsertCasualWorker,
+        type CasualWorker as _CasualWorker,
+        type InsertCasualWorker as _InsertCasualWorker,
         scheduleTemplates,
         type ScheduleTemplate,
         type InsertScheduleTemplate,
         type ScheduleTemplateWithDetails,
         scheduleTemplateRows,
-        type ScheduleTemplateRow,
-        type InsertScheduleTemplateRow,
+        type ScheduleTemplateRow as _ScheduleTemplateRow,
+        type InsertScheduleTemplateRow as _InsertScheduleTemplateRow,
         scheduleTemplateRowRoles,
-        type ScheduleTemplateRowRole,
-        type InsertScheduleTemplateRowRole,
+        type ScheduleTemplateRowRole as _ScheduleTemplateRowRole,
+        type InsertScheduleTemplateRowRole as _InsertScheduleTemplateRowRole,
         scheduleTemplateAssignments,
-        type ScheduleTemplateAssignment,
+        type ScheduleTemplateAssignment as _ScheduleTemplateAssignment,
         type InsertScheduleTemplateAssignment,
         shiftGroups,
         type ShiftGroup,
         type InsertShiftGroup,
         scheduleTemplateTimeOff,
-        type ScheduleTemplateTimeOff,
+        type ScheduleTemplateTimeOff as _ScheduleTemplateTimeOff,
         type InsertScheduleTemplateTimeOff,
         scheduleTemplateDutyBlocks,
         type InsertScheduleTemplateDutyBlock,
@@ -219,7 +219,7 @@ import {
         type InsertKbArticle,
         kbArticleVersions,
         type KbArticleVersion,
-        type InsertKbArticleVersion,
+        type InsertKbArticleVersion as _InsertKbArticleVersion,
         knowledgeFiles,
         type KnowledgeFile,
         type InsertKnowledgeFile,
@@ -459,7 +459,7 @@ export interface IStorage {
                 overrides: Omit<InsertUserModuleOverride, "tenantId" | "userId">[],
                 updatedBy: string,
         ): Promise<UserModuleOverride[]>;
-        deleteModuleOverrides(userId: string): Promise<void>;
+        deleteModuleOverrides(userId: string, tenantId?: string): Promise<void>;
 
         getBranches(): Promise<Branch[]>;
         getBranch(id: string): Promise<Branch | undefined>;
@@ -2321,7 +2321,7 @@ export class DatabaseStorage implements IStorage {
                         const [accessPolicyByPerson] = await db
                                 .select()
                                 .from(accessPolicies)
-                                .where(eq(accessPolicies.personId, employeeRecord.personId));
+                                .where(and(eq(accessPolicies.personId, employeeRecord.personId), eq(accessPolicies.tenantId, tenantId!)));
                         if (accessPolicyByPerson?.modules) {
                                 modules = accessPolicyByPerson.modules as {
                                         core: boolean;
@@ -2340,7 +2340,7 @@ export class DatabaseStorage implements IStorage {
                         const [accessPolicy] = await db
                                 .select()
                                 .from(accessPolicies)
-                                .where(eq(accessPolicies.coreUserId, id));
+                                .where(and(eq(accessPolicies.coreUserId, id), eq(accessPolicies.tenantId, tenantId!)));
                         if (accessPolicy?.modules) {
                                 modules = accessPolicy.modules as {
                                         core: boolean;
@@ -2364,7 +2364,7 @@ export class DatabaseStorage implements IStorage {
                                 const [accessPolicyByPerson] = await db
                                         .select()
                                         .from(accessPolicies)
-                                        .where(eq(accessPolicies.personId, personByEmail.id));
+                                        .where(and(eq(accessPolicies.personId, personByEmail.id), eq(accessPolicies.tenantId, tenantId!)));
                                 if (accessPolicyByPerson?.modules) {
                                         modules = accessPolicyByPerson.modules as {
                                                 core: boolean;
@@ -2578,7 +2578,7 @@ export class DatabaseStorage implements IStorage {
         async resetUserPassword(
                 id: string,
                 passwordHash: string,
-                adminId: string,
+                _adminId: string,
         ): Promise<void> {
                 await db
                         .update(users)
@@ -2752,7 +2752,7 @@ export class DatabaseStorage implements IStorage {
         ): Promise<UserModuleOverride[]> {
                 await db
                         .delete(userModuleOverrides)
-                        .where(eq(userModuleOverrides.userId, userId));
+                        .where(and(eq(userModuleOverrides.userId, userId), eq(userModuleOverrides.tenantId, tenantId)));
                 if (overrides.length === 0) return [];
                 const rows = overrides.map((o) => ({
                         ...o,
@@ -2763,10 +2763,10 @@ export class DatabaseStorage implements IStorage {
                 return db.insert(userModuleOverrides).values(rows).returning();
         }
 
-        async deleteModuleOverrides(userId: string): Promise<void> {
+        async deleteModuleOverrides(userId: string, tenantId?: string): Promise<void> {
                 await db
                         .delete(userModuleOverrides)
-                        .where(eq(userModuleOverrides.userId, userId));
+                        .where(and(eq(userModuleOverrides.userId, userId), tenantId ? eq(userModuleOverrides.tenantId, tenantId) : undefined));
         }
 
         async getBranches(): Promise<Branch[]> {
@@ -7085,7 +7085,7 @@ export class DatabaseStorage implements IStorage {
                         presence: EmployeePresence | null;
                 }[]
         > {
-                let conditions = [eq(employees.branchId, branchId), eq(employees.tenantId, tenantId)];
+                const conditions = [eq(employees.branchId, branchId), eq(employees.tenantId, tenantId)];
                 if (status) {
                         conditions.push(eq(employees.employmentState, status as any));
                 }
@@ -7868,7 +7868,7 @@ export class DatabaseStorage implements IStorage {
 
         async restoreWeekPlanFromSnapshot(
                 snapshotData: any,
-                userId?: string,
+                _userId?: string,
         ): Promise<{ restored: boolean; shiftRows: number; assignments: number; breaks: number }> {
                 // If this is a scoped dept/week snapshot (from new clear_week), use the scoped restore
                 if (snapshotData?.meta) {
@@ -8459,7 +8459,7 @@ export class DatabaseStorage implements IStorage {
                 // Get employees currently in this branch who are active (signed contract) and whose start date is on/before the shift date
                 // Include both ACTIVE employees and LEAVING employees (those who have resigned but last working day hasn't passed)
                 // Filter by department: only show employees from the shift row's department
-                let eligibleQuery = db
+                const eligibleQuery = db
                         .select()
                         .from(employees)
                         .where(
@@ -9353,7 +9353,7 @@ export class DatabaseStorage implements IStorage {
                 date: string,
                 excludeAssignmentId?: string,
         ): Promise<boolean> {
-                let query = db
+                const query = db
                         .select({ id: scheduleAssignments.id })
                         .from(scheduleAssignments)
                         .where(
@@ -11829,7 +11829,7 @@ export class DatabaseStorage implements IStorage {
                 tenantId: string,
                 branchId: string | null,
         ): Promise<any[]> {
-                let conditions = [eq(checklistTemplates.tenantId, tenantId)];
+                const conditions = [eq(checklistTemplates.tenantId, tenantId)];
                 if (branchId) {
                         conditions.push(
                                 or(
@@ -11852,7 +11852,7 @@ export class DatabaseStorage implements IStorage {
                 id: string,
                 tenantId?: string,
         ): Promise<any | undefined> {
-                let conditions = [eq(checklistTemplates.id, id)];
+                const conditions = [eq(checklistTemplates.id, id)];
                 if (tenantId) {
                         conditions.push(eq(checklistTemplates.tenantId, tenantId));
                 }

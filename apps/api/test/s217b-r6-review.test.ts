@@ -523,7 +523,7 @@ describe('A. fences and seams', () => {
   });
 
   it('nothing of round 7 in the app: Data Admin’s Attention 503 stands and its four document models are untouched by the round', () => {
-    expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toMatch(/router\.use\("\/attention-items", \(_req: Request, res: Response\) => \{\s*res\.status\(503\)/);
+    expect(readFileSync(join(APP_SERVER, 'data-admin', 'router.ts'), 'utf8')).toContain('dataAdminContext.run({ tenantId }, next)');
     for (const model of ['template.ts', 'policyDocument.ts', 'assetCatalog.ts', 'leavePolicy.ts']) {
       expect(readFileSync(join(APP_SERVER, 'data-admin', 'models', model), 'utf8'), model).not.toMatch(/tenantId|tenant_id/);
     }
@@ -2469,7 +2469,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
     expect(editor).toContain('return role.branches.some((b: any) => b.id === selectedBranchId || b.branchId === selectedBranchId);');
   });
 
-  it.fails('H. FINDING 10 (low): a shared role’s branch list is each park group’s own — B’s save neither strips A’s branch from it nor names A’s branch, and B’s role list shows none of A’s branches', async () => {
+  it('H. FINDING 10 (low, delivered in round 7): a shared role’s branch list is each park group’s own — B’s save neither strips A’s branch from it nor names A’s branch, and B’s role list shows none of A’s branches', async () => {
     const shared = (await q<{ id: string }>('insert into roles (tenant_id, name) values ($1, $2) returning id', [DEFAULT, `ZZ R6FR branches ${run}`]))[0]!.id;
     await q('insert into role_branch_assignments (role_id, branch_id, assigned_by) values ($1, $2, $3)', [shared, A.x, A.admin.id]);
     const bManager = await bManagerCookie();
@@ -2501,7 +2501,7 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       const tag = readdirSync(APP_MIGRATIONS).find((f) => f.startsWith(`000${n}_`));
       if (tag) expect(committed(join(APP_MIGRATIONS, tag)), tag).not.toMatch(/employee_roles_role_id/);
     }
-    expect(readFileSync(join(APP_SERVER, 'data-admin', 'admin.ts'), 'utf8')).toMatch(/async delete\(id: string\): Promise<void> \{\s*await db\.delete\(this\.table\)\.where\(eq\(this\.table\.id, id\)\);\s*\}/);
+    expect(readFileSync(join(APP_SERVER, 'data-admin', 'admin.ts'), 'utf8')).toContain('rowScope(this.table, currentTenant())');
   });
 
   it('H. FINDING 11 (low, fixed at landing): the records say what the code does — Data Admin’s role delete is refused while the role has holders (it does not cascade to them); the `/api/permissions/*` reads the census places “elsewhere” are placed in the plan; and the plan’s standing cross-park-group login link names the two doors that still reach it', () => {

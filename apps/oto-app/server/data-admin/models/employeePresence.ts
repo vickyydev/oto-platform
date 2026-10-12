@@ -1,6 +1,7 @@
 import { ModelAdmin, deriveFormFields } from "../admin";
 import { employeePresence } from "../../../shared/schema";
 import type { FormFieldDef } from "../admin";
+import { currentTenant, rowScope } from "../park-group";
 
 class EmployeePresenceAdmin extends ModelAdmin {
   name = "Employee Presence";
@@ -30,8 +31,8 @@ class EmployeePresenceAdmin extends ModelAdmin {
   // employeePresence uses employeeId as PK, not id
   async getById(id: string): Promise<Record<string, unknown> | null> {
     const { db } = await import("../../db");
-    const { eq } = await import("drizzle-orm");
-    const rows = await db.select().from(this.table).where(eq(this.table.employeeId, id)).limit(1);
+    const { eq, and } = await import("drizzle-orm");
+    const rows = await db.select().from(this.table).where(and(eq(this.table.employeeId, id), rowScope(this.table, currentTenant()))).limit(1);
     return (rows[0] as Record<string, unknown>) ?? null;
   }
 }

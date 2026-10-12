@@ -21,7 +21,8 @@ class AccessPolicyAdmin extends ModelAdmin {
 
   get formFields(): FormFieldDef[] {
     return deriveFormFields(this.table).map((f) => {
-      if (f.key === "personId") return { ...f, label: "Person", relatedModel: "people", relatedLabelField: "fullName" };
+      if (f.key === "personId") return { ...f, label: "Person", relatedModel: "persons", relatedLabelField: "fullName" };
+      if (f.key === "coreUserId") return { ...f, label: "Linked User", relatedModel: "users", relatedLabelField: "fullName" };
       return f;
     });
   }
