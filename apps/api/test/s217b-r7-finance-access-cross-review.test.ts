@@ -181,8 +181,8 @@ try {
       expect(results[key]).toBe(true);
     });
   }
-  it.fails(
-    'FINDING 1 (medium): a late failed refresh leaves the renewed connection active; prescribed fix: serialize/reread the token or condition deactivation on its unchanged credential version',
+  it(
+    'FINDING 1 (medium, fixed): a late failed refresh leaves the renewed connection active; prescribed fix: serialize/reread the token or condition deactivation on its unchanged credential version',
     () => {
       expect(results.refreshActive).toBe(true);
     },
