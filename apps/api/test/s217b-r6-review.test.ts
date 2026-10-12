@@ -481,7 +481,7 @@ describe('A. fences and seams', () => {
     expect(schema).not.toContain('employee_offboarding_employee_unique');
     const expanded = JSON.parse(snapshot) as { tables: Record<string, { columns: Record<string, { notNull: boolean }> }> };
     for (const table of ['templates', 'policy_documents', 'asset_catalog', 'leave_policies']) {
-      expect(expanded.tables[`public.${table}`].columns.tenant_id.notNull, table).toBe(false);
+      expect(expanded.tables[`public.${table}`]?.columns.tenant_id?.notNull, table).toBe(false);
     }
   });
 

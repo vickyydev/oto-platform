@@ -75,7 +75,7 @@ describe('S2-17b round 7b document contraction review', () => {
       expect(start, table).toBeGreaterThan(-1);
       const body = schema.slice(start, schema.indexOf('export const ', start + 1));
       expect(body, table).toMatch(/tenantId: uuid\("tenant_id"\)\.references\(\(\) => tenants\.id\)\.notNull\(\)/);
-      expect(snapshot.tables[`public.${table}`].columns.tenant_id.notNull, table).toBe(true);
+      expect(snapshot.tables[`public.${table}`]?.columns.tenant_id?.notNull, table).toBe(true);
     }
   });
 
