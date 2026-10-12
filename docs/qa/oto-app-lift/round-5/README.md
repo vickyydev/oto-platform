@@ -21,9 +21,9 @@ attendance image is a labelled test-run card. Its photo fixture was generated.
 
 ## Records and cleanup at this checkpoint
 
-The module actions and images are complete. Exact cleanup of the attendance,
-operations and media fixtures is next; no all-fixtures-removed claim is made.
-Their IDs and object SHA-256 fingerprints are held in ignored local ledgers.
+The actions and eleven inspected images are committed as a81fcb899e8376dd84bbe0bdf1320d3ce2d52368 (CI38240328400 green), attached to SCRUM-191 as11370-11380 and named in comment11731. SCRUM-193 comment11732 keeps the acceptance gate In Progress.
+
+Cleanup completed after capture. Checklist media, template and announcement deletes returned200; the media link then404. Job job-db6c0g4s728c73fv2860 matched the generated clock photo SHA-256 before deleting it; the checklist object was already absent. Both object read-backs were404. Guarded transaction job-db6c1u3rjlhs73fm2ik0 removed the exact fixture records and returned zero for all thirteen read-back counts: employee, clock events, timekeeping, mirror, task, checklist, media, notification, announcement, group, worker, device and holiday. The final live employee/worker/task reads were404; the notification was absent from its recipient?s list.
 The employee is `2b4c8217-cb3f-4ecc-a284-b6ae604e2eee`, in the default
 park’s Central Floresta branch; its name starts ZZ TEST R5 1012. It has no
 login or person link. Only this employee’s clock/leave and mirror rows are removed.

@@ -32,6 +32,8 @@ app on staging with the practice accounts. Her findings arrive through the
 owner; fold each into `OPEN_ITEMS.md` and the matching ticket rather than
 fixing ad hoc. A deliberate test record exists: Som's sick day on 14 October.
 
+12 October cleanup checkpoint: main a81fcb89 passed CI38240328400; round5 frames11370-11380 and comments11731/11732 are saved. Jobs job-db6c0g4s728c73fv2860 and job-db6c1u3rjlhs73fm2ik0 completed exact object/record cleanup with final404s and thirteen zero counts. The shared practice park/user remain for round7 and final cleanup before closure. Round7 is local at independent review, no runtime landing yet.
+
 **Current continuation (12 October):** Round-6 evidence checkpoint9009be62 passed CI38230330522 and its ten images are attached to SCRUM-191 (11360-11369); comments11729/11730 preserve both tickets In Progress. Round5’s ten action/refusal pages are recorded; exact attendance/operations/object cleanup is next. The shared ZZ TEST park/user now remains for round7’s isolated checks and must be cleaned before closure. The owner approved three isolated preparation lanes with one coordinator responsible for main/staging/Jira/migration numbering: R7 finance/contraction, R7 access/Data Admin and R8 tooling. Preserve complete gates and ordered landings. Q55-Q57 are in the plan; people census job-db6bq3ad0e5s73a5cndg found0 people and7 app users (strict placed6, unplaced/inconsistent1).
 
 **First actions, in order:**
