@@ -864,8 +864,10 @@ describe('D. read off the code', () => {
     expect(apply).not.toMatch(/storage\.getEmployee\(/);
   });
 
-  it('F7, the call-site census: the 32 `storage.getEmployee(` sites the re-review counted, each with its disposition — the eight fenced now look up in the park group, the 24 others still by id, per handler exactly as the census says', () => {
+  it('F7, the historical 32-site census: eight original fences hold; attendance review now uses scoped joins and 23 by-id readers remain', () => {
     const routes = routesText();
+    const attendance = code(readFileSync(join(APP_SERVER, 'timekeeping-review-routes.ts'), 'utf8'));
+    const joinedAttendance = new Set(['GET /api/timekeeping/pending-issues', 'POST /api/timekeeping/issues/:issueId/resolve']);
     expect(hr.EMPLOYEE_LOOKUPS).toHaveLength(32);
     const fenced = hr.EMPLOYEE_LOOKUPS.filter((l) => l.disposition === 'fenced');
     expect(fenced.map((l) => l.route)).toEqual([
@@ -880,19 +882,25 @@ describe('D. read off the code', () => {
     ]);
     // Every remaining by-id lookup is one the census keeps, handler by handler.
     const sites = (h: string) => (h.match(/storage\.getEmployee\(/g) ?? []).length;
-    expect(sites(routes)).toBe(24);
+    expect(sites(routes)).toBe(23);
     const kept = new Map<string, number>();
     for (const l of hr.EMPLOYEE_LOOKUPS) if (l.disposition !== 'fenced') kept.set(l.route, (kept.get(l.route) ?? 0) + 1);
     for (const r of new Set(hr.EMPLOYEE_LOOKUPS.map((l) => l.route))) {
       const [method, path] = r.split(' ') as [string, string];
-      const h = route(routes, method.toLowerCase(), path);
+      const h = route(joinedAttendance.has(r) ? attendance : routes, method.toLowerCase(), path);
+      if (joinedAttendance.has(r)) {
+        expect(sites(h), r).toBe(0);
+        expect(h, r).toContain('eq(employees.tenantId, tenantId)');
+        continue;
+      }
       expect(sites(h), r).toBe(kept.get(r) ?? 0);
       if (fenced.some((l) => l.route === r)) expect(h, r).toMatch(/employeeOfParkGroup\(req, |getEmployeeInTenant\(/);
     }
     // The doors driven: each holds its record to the park group before it writes.
-    const resolve = route(routes, 'post', '/api/timekeeping/issues/:issueId/resolve');
-    expect(resolve).toMatch(/if \(!issue \|\| !req\.userWithAccess\?\.tenantId \|\| issue\.tenantId !== req\.userWithAccess\.tenantId\) \{\s*return res\.status\(404\)\.json\(\{ message: "Issue not found" \}\);/);
-    expect(resolve.indexOf('issue.tenantId !== req.userWithAccess.tenantId')).toBeLessThan(resolve.indexOf('storage.updateTimeEntry('));
+    const resolve = route(attendance, 'post', '/api/timekeeping/issues/:issueId/resolve');
+    expect(resolve).toContain('eq(timekeepingIssues.tenantId, tenantId)');
+    expect(resolve).toContain('if (!issue) throw new ReviewRefusal(404, "Issue not found")');
+    expect(resolve.indexOf('eq(timekeepingIssues.tenantId, tenantId)')).toBeLessThan(resolve.indexOf('tx.update(timeEntries)'));
     const override = route(routes, 'post', '/api/time-events/override');
     const employeeAt = override.indexOf('const employee = await employeeOfParkGroup(req, employeeId);');
     expect(employeeAt).toBeGreaterThan(-1);

@@ -106,9 +106,9 @@ interface PendingIssue {
   branchName?: string | null;
   issueType: string;
   issueDate: string;
-  userClockInAt?: string | null;
+  userProposedClockInAt?: string | null;
   reasonCode?: string | null;
-  userNote?: string | null;
+  note?: string | null;
   status: string;
   createdAt: string;
 }
@@ -697,13 +697,13 @@ export default function TimekeepingReviewPage() {
                     <div className="text-right">
                       <p className="text-sm font-medium">
                         {issue.issueType === 'UNSCHEDULED_WORK' 
-                          ? `Clock-in: ${issue.userClockInAt ? formatTime(issue.userClockInAt) : '-'}`
-                          : `Requested clock-in: ${issue.userClockInAt ? formatTime(issue.userClockInAt) : '-'}`
+                          ? `Clock-in: ${issue.userProposedClockInAt ? formatTime(issue.userProposedClockInAt) : '-'}`
+                          : `Requested clock-in: ${issue.userProposedClockInAt ? formatTime(issue.userProposedClockInAt) : '-'}`
                         }
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {getReasonLabel(issue.reasonCode)}
-                        {issue.userNote && ` - "${issue.userNote}"`}
+                        {issue.note && ` - "${issue.note}"`}
                       </p>
                     </div>
                     
@@ -755,8 +755,8 @@ export default function TimekeepingReviewPage() {
                 <>
                   {resolveAction === 'approve' 
                     ? selectedIssue.issueType === 'UNSCHEDULED_WORK'
-                      ? `Approve ${selectedIssue.employeeName}'s unscheduled work clock-in at ${selectedIssue.userClockInAt ? formatTime(selectedIssue.userClockInAt) : '-'} for ${formatDate(selectedIssue.issueDate)}?`
-                      : `Approve ${selectedIssue.employeeName}'s clock-in time of ${selectedIssue.userClockInAt ? formatTime(selectedIssue.userClockInAt) : '-'} for ${formatDate(selectedIssue.issueDate)}?`
+                      ? `Approve ${selectedIssue.employeeName}'s unscheduled work clock-in at ${selectedIssue.userProposedClockInAt ? formatTime(selectedIssue.userProposedClockInAt) : '-'} for ${formatDate(selectedIssue.issueDate)}?`
+                      : `Approve ${selectedIssue.employeeName}'s clock-in time of ${selectedIssue.userProposedClockInAt ? formatTime(selectedIssue.userProposedClockInAt) : '-'} for ${formatDate(selectedIssue.issueDate)}?`
                     : selectedIssue.issueType === 'UNSCHEDULED_WORK'
                       ? `Reject ${selectedIssue.employeeName}'s unscheduled work entry?`
                       : `Reject ${selectedIssue.employeeName}'s requested time correction?`
@@ -774,15 +774,15 @@ export default function TimekeepingReviewPage() {
                 {selectedIssue.issueType === 'UNSCHEDULED_WORK' && (
                   <p><span className="text-muted-foreground">Type:</span> <span className="text-orange-600 font-medium">Unscheduled Work</span></p>
                 )}
-                <p><span className="text-muted-foreground">{selectedIssue.issueType === 'UNSCHEDULED_WORK' ? 'Clock-in time:' : 'Requested time:'}</span> {selectedIssue.userClockInAt ? formatTime(selectedIssue.userClockInAt) : '-'}</p>
+                <p><span className="text-muted-foreground">{selectedIssue.issueType === 'UNSCHEDULED_WORK' ? 'Clock-in time:' : 'Requested time:'}</span> {selectedIssue.userProposedClockInAt ? formatTime(selectedIssue.userProposedClockInAt) : '-'}</p>
                 <p><span className="text-muted-foreground">Reason:</span> {getReasonLabel(selectedIssue.reasonCode)}</p>
                 {selectedIssue.attachment && (
                   <a href={`/api/timekeeping/issues/${encodeURIComponent(selectedIssue.id)}/attachment`} target="_blank" rel="noreferrer" className="block underline">
                     View attachment: {selectedIssue.attachment.fileName}
                   </a>
                 )}
-                {selectedIssue.userNote && (
-                  <p><span className="text-muted-foreground">Note:</span> {selectedIssue.userNote}</p>
+                {selectedIssue.note && (
+                  <p><span className="text-muted-foreground">Note:</span> {selectedIssue.note}</p>
                 )}
               </div>
             )}

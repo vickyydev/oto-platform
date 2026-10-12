@@ -1,5 +1,6 @@
 import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendance-evidence-upload";
 import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
+import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import _express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer as _createServer, type Server } from "http";
 import { storage, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
@@ -11900,62 +11901,6 @@ OTO Company Limited`,
     }
   });
 
-  // Pending Timekeeping Issues - Get issues requiring manager approval
-  app.get("/api/timekeeping/pending-issues", requireAuth, requireManager, async (req, res, next) => {
-    try {
-      const user = req.user as any;
-      const selectedBranchId = req.query.branchId as string | undefined;
-      const userBranches = await storage.getUserBranchAccess(user.id);
-      const hasAllBranches = userBranches.some(b => b.accessScope === 'all_branches');
-      const accessibleBranchIds = userBranches.filter(b => b.branchId).map(b => b.branchId!);
-
-      // Determine branch filter based on selected branch and access
-      let filterBranchIds: string[] | undefined;
-      
-      if (selectedBranchId) {
-        // Verify user has access to selected branch
-        if (!hasAllBranches && !accessibleBranchIds.includes(selectedBranchId)) {
-          return res.status(403).json({ message: "Access denied to selected branch" });
-        }
-        filterBranchIds = [selectedBranchId];
-      } else if (!hasAllBranches) {
-        filterBranchIds = accessibleBranchIds;
-      }
-      
-      const resolvedTenantIdForIssues = await resolveTenantId(user.tenantId);
-      const pendingIssues = await storage.getTimekeepingIssues({
-        tenantId: resolvedTenantIdForIssues,
-        branchIds: filterBranchIds,
-        status: 'PENDING_APPROVAL',
-      });
-
-      // Enrich with employee info
-      const enrichedIssues = await Promise.all(
-        pendingIssues.map(async (issue: any) => {
-          const employee = await storage.getEmployee(issue.employeeId);
-          const branch = employee?.branchId ? await storage.getBranch(employee.branchId) : null;
-          return {
-            ...issue,
-            attachment: canReadAttendanceEvidence(issue, req.userWithAccess?.tenantId, userBranches) && issue.attachment
-              ? { fileName: issue.attachment.fileName, mimeType: issue.attachment.mimeType, size: issue.attachment.size }
-              : null,
-            employeeName: getEmployeeDisplayName(employee),
-            employeePhotoPath: employee?.profilePhotoPath,
-            branchName: branch?.name || null,
-          };
-        })
-      );
-
-      res.json({
-        issues: enrichedIssues,
-        count: enrichedIssues.length,
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Evidence is addressed through its exact issue, never through a public object URL.
   app.get("/api/timekeeping/issues/:issueId/attachment", requireAuth, requireManager, async (req, res, next) => {
     try {
       const issue = await storage.getTimekeepingIssue(req.params.issueId);
@@ -11981,78 +11926,12 @@ OTO Company Limited`,
     } catch (error) { next(error); }
   });
 
-  // Approve or Reject Timekeeping Issue
-  app.post("/api/timekeeping/issues/:issueId/resolve", requireAuth, requireManager, async (req, res, next) => {
-    try {
-      const user = req.user as any;
-      const { issueId } = req.params;
-      const { action, managerNote } = req.body;
 
-      if (!['approve', 'reject'].includes(action)) {
-        return res.status(400).json({ message: "Invalid action. Must be 'approve' or 'reject'" });
-      }
 
-      // Get the issue — the caller's park group's only (round 6's re-review,
-      // F7): another park group's is the app's answer for a missing one.
-      const issue = await storage.getTimekeepingIssue(issueId);
-      if (!issue || !req.userWithAccess?.tenantId || issue.tenantId !== req.userWithAccess.tenantId) {
-        return res.status(404).json({ message: "Issue not found" });
-      }
-
-      // Check branch access
-      const userBranches = await storage.getUserBranchAccess(user.id);
-      const hasAllBranches = userBranches.some(b => b.accessScope === 'all_branches');
-      const accessibleBranchIds = userBranches.filter(b => b.branchId).map(b => b.branchId!);
-      
-      if (!hasAllBranches && !accessibleBranchIds.includes(issue.branchId)) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Get the associated time entry
-      const timeEntry = await storage.getTimeEntry(issue.timeEntryId);
-      if (!timeEntry) {
-        return res.status(404).json({ message: "Time entry not found" });
-      }
-
-      const now = new Date();
-      const newStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
-
-      // Update time entry status
-      await storage.updateTimeEntry(issue.timeEntryId, {
-        status: newStatus,
-        approvedAt: action === 'approve' ? now : null,
-        approvedBy: action === 'approve' ? user.id : null,
-      });
-
-      // Update issue status
-      await storage.updateTimekeepingIssue(issueId, {
-        status: newStatus,
-        resolvedAt: now,
-        resolvedBy: user.id,
-        managerNote: managerNote || null,
-      });
-
-      // If approved, update the backward-compatible time event with correct timestamp
-      if (action === 'approve' && timeEntry.eventType === 'IN') {
-        // The time_events entry already has the user's stated clock-in time
-        // No changes needed - it was created during the manual entry submission
-      }
-
-      const employee = await employeeOfParkGroup(req, issue.employeeId);
-
-      res.json({
-        success: true,
-        message: action === 'approve' ? 'Time entry approved' : 'Time entry rejected',
-        issue: {
-          id: issueId,
-          status: newStatus,
-          employeeName: getEmployeeDisplayName(employee),
-          resolvedAt: now,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
+  registerTimekeepingReviewRoutes(app, {
+    db, requireAuth, requireManager,
+    getUserBranchAccess: userId => storage.getUserBranchAccess(userId),
+    displayName: getEmployeeDisplayName,
   });
 
   // Timekeeping Employee Detail - Get full timekeeping data for one employee
