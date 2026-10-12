@@ -476,6 +476,9 @@ jobs:
       - name: The app's attendance checks
         if: steps.changes.outputs.app == 'true'
         run: npx tsx tests/attendance.check.ts
+      - name: The app's attendance evidence parser checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/attendance-evidence.check.ts
       # S2-17b round 6: the document modules as the app does them — templates,
       # policies, the asset catalogue and leave policies per park group
       # (migration 0008), contracts and letters fenced, offboarding in one
