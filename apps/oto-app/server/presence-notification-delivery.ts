@@ -42,6 +42,55 @@ export async function readPresenceDeliveries(database: Database, tenantId: strin
 export function registerPresenceNotificationDelivery(app: Express, database: Database,
   requireAuth: RequestHandler, requireManager: RequestHandler,
   managedUserTenant: (userId: string) => Promise<string | undefined>) {
+  // Recovery is read-only. Include outstanding attempts beyond today's live rows,
+  // and verify browser-held targets whose first response was interrupted.
+  app.post("/api/timekeeping/live/deliveries/recovery", requireAuth, requireManager, async (req, res, next) => {
+    try {
+      const scope = req.userWithAccess, tenantId = scope?.tenantId;
+      if (!scope || !tenantId) return res.status(403).json({ message: "Park access required" });
+      const targetSchema = requestSchema.omit({ reason: true }).extend({ branchId: z.string().min(1).max(200) });
+      const parsed = z.object({ branchId: z.string().min(1).max(200).optional(), targets: z.array(targetSchema) }).strict().safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid delivery recovery request" });
+      const selectedBranch = parsed.data.branchId;
+      if (selectedBranch && !scope.hasAllBranchesAccess && !scope.allowedBranchIds.includes(selectedBranch)) {
+        return res.status(403).json({ message: "Access denied to this branch" });
+      }
+      if (!scope.hasAllBranchesAccess && scope.allowedBranchIds.length === 0) return res.json({ deliveries: [] });
+      const permitted = (employeeBranch: string | null, shiftBranch: string) =>
+        (!selectedBranch || selectedBranch === shiftBranch) && (scope.hasAllBranchesAccess ||
+          (!!employeeBranch && scope.allowedBranchIds.includes(employeeBranch) && scope.allowedBranchIds.includes(shiftBranch)));
+      const outstanding = await database.select({ delivery: deliveries, employeeName: employees.fullName }).from(deliveries)
+        .innerJoin(employees, and(eq(employees.id, deliveries.employeeId), eq(employees.tenantId, tenantId)))
+        .innerJoin(scheduleShiftRows, and(eq(scheduleShiftRows.id, deliveries.shiftRowId), eq(scheduleShiftRows.tenantId, tenantId), eq(scheduleShiftRows.branchId, deliveries.branchId)))
+        .innerJoin(branches, and(eq(branches.id, deliveries.branchId), eq(branches.tenantId, tenantId)))
+        .where(and(eq(deliveries.tenantId, tenantId), inArray(deliveries.status, ["Pending", "Failed"]),
+          selectedBranch ? eq(deliveries.branchId, selectedBranch) : undefined,
+          scope.hasAllBranchesAccess ? undefined : inArray(deliveries.branchId, scope.allowedBranchIds),
+          scope.hasAllBranchesAccess ? undefined : inArray(employees.branchId, scope.allowedBranchIds)))
+        .orderBy(desc(deliveries.createdAt), desc(deliveries.id));
+      type Recovery = ReturnType<typeof publicDelivery> & { employeeName: string; unconfirmed?: true };
+      const results = new Map<string, Recovery>(outstanding.map(row => [row.delivery.requestKey, { ...publicDelivery(row.delivery), employeeName: row.employeeName }]));
+      for (const target of parsed.data.targets) {
+        const [employee] = await database.select({ branchId: employees.branchId, fullName: employees.fullName }).from(employees)
+          .where(and(eq(employees.id, target.employeeId), eq(employees.tenantId, tenantId))).limit(1);
+        const [shift] = await database.select({ branchId: scheduleShiftRows.branchId }).from(scheduleShiftRows)
+          .innerJoin(branches, and(eq(branches.id, scheduleShiftRows.branchId), eq(branches.tenantId, tenantId)))
+          .where(and(eq(scheduleShiftRows.id, target.shiftRowId), eq(scheduleShiftRows.tenantId, tenantId))).limit(1);
+        if (!employee || !shift || target.branchId !== shift.branchId || !permitted(employee.branchId, shift.branchId)) continue;
+        const [stored] = await database.select().from(deliveries).where(and(eq(deliveries.tenantId, tenantId), eq(deliveries.requestKey, target.requestKey))).limit(1);
+        if (stored) {
+          const expected = createHash("sha256").update(JSON.stringify([target.employeeId, target.shiftRowId, target.shiftDate, "missing_clock_in", target.branchId])).digest("hex");
+          if (stored.requestHash !== expected) continue;
+          results.set(target.requestKey, { ...publicDelivery(stored), employeeName: employee.fullName });
+        } else {
+          results.set(target.requestKey, { ...target, id: target.requestKey, status: "Pending", updatedAt: new Date(),
+            failureMessage: "Delivery could not be confirmed. Retry the same request.", employeeName: employee.fullName, unconfirmed: true });
+        }
+      }
+      return res.json({ deliveries: [...results.values()] });
+    } catch (error) { next(error); }
+  });
+
   app.post("/api/timekeeping/live/ping", requireAuth, requireManager, async (req, res, next) => {
     try {
       const scope = req.userWithAccess;

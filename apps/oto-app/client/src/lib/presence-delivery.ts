@@ -4,6 +4,7 @@ export interface PresenceDelivery {
   failureMessage: string | null;
   updatedAt?: string;
   employeeId?: string;
+  employeeName?: string;
   branchId?: string | null;
   shiftRowId?: string;
   shiftDate?: string;
@@ -67,4 +68,17 @@ export function restorePresenceRequests(storage: { readonly length: number; key(
     } catch { /* An incomplete browser record cannot replace the server result. */ }
   }
   return restored;
+}
+
+/** Only the recovery response authorizes targets absent from the live rows. */
+export function remainingPresenceDeliveries(recovery: PresenceDelivery[], visibleRequestKeys: Iterable<string>) {
+  const visible = new Set(visibleRequestKeys);
+  return recovery.filter(delivery => !!retryPresenceTarget(delivery) && !visible.has(delivery.requestKey));
+}
+
+export function presenceRecoveryTargets(local: LocalPresenceDelivery[]) {
+  return local.flatMap(delivery => {
+    const target = retryPresenceTarget(delivery);
+    return target ? [{ ...target, branchId: target.branchId!, requestKey: delivery.requestKey }] : [];
+  });
 }

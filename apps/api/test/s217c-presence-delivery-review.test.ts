@@ -134,6 +134,23 @@ try {
  const branchAStatus=await readPresenceDeliveries(db,a.tenant,[a.employee],body.shiftDate,[a.branch]);
  const branchBStatus=await readPresenceDeliveries(db,a.tenant,[a.employee],body.shiftDate,[branch2]);
  proof.statusBranch=secondBranch.body.delivery.status==='Delivered'&&secondBranch.body.delivery.branchId===branch2&&branchAStatus.length===1&&branchAStatus[0].branchId===a.branch&&branchAStatus[0].shiftRowId===a.shift&&branchBStatus.length===1&&branchBStatus[0].branchId===branch2&&branchBStatus[0].shiftRowId===shift2;
+ const recover=(targets=[],actor='a',branchId=undefined)=>request('POST','/api/timekeeping/live/deliveries/recovery',{targets,...(branchId?{branchId}:{})},actor);
+ const historical={...body,requestKey:randomUUID(),shiftDate:'2000-01-02'};
+ const historicalHash=createHash('sha256').update(JSON.stringify([historical.employeeId,historical.shiftRowId,historical.shiftDate,historical.reason,a.branch])).digest('hex');
+ await pool.query('insert into presence_notification_deliveries(tenant_id,request_key,request_hash,employee_id,branch_id,shift_row_id,shift_date,created_by) values($1,$2,$3,$4,$5,$6,$7,$8)',[a.tenant,historical.requestKey,historicalHash,a.employee,a.branch,a.shift,historical.shiftDate,a.manager]);
+ const recoveredPast=await recover();
+ proof.recoveryWindow=recoveredPast.status===200&&recoveredPast.body.deliveries.some(row=>row.requestKey===historical.requestKey&&row.shiftDate===historical.shiftDate&&row.status==='Pending');
+ const browserTarget={requestKey:randomUUID(),employeeId:a.employee,branchId:a.branch,shiftRowId:a.shift,shiftDate:'1999-01-02'};
+ const beforeRead=Number((await pool.query('select count(*) n from presence_notification_deliveries')).rows[0].n),beforeRecoveryInbox=await count();
+ const browserRecovery=await recover([browserTarget]);
+ proof.recoveryReadOnly=browserRecovery.body.deliveries.some(row=>row.requestKey===browserTarget.requestKey&&row.unconfirmed===true&&row.shiftDate===browserTarget.shiftDate)&&beforeRead===Number((await pool.query('select count(*) n from presence_notification_deliveries')).rows[0].n)&&(await count())===beforeRecoveryInbox;
+ const foreignTarget={...browserTarget,requestKey:randomUUID(),employeeId:b.employee,branchId:b.branch,shiftRowId:b.shift};
+ const branchTarget={...browserTarget,requestKey:randomUUID(),branchId:branch2,shiftRowId:shift2};
+ proof.recoveryFences=!(await recover([foreignTarget])).body.deliveries.some(row=>row.requestKey===foreignTarget.requestKey)&&!(await recover([branchTarget],'restricted')).body.deliveries.some(row=>row.requestKey===branchTarget.requestKey)&&(await recover([browserTarget],'b')).body.deliveries.every(row=>row.employeeId!==a.employee)&&(await recover([],'staff')).status===403&&(await recover([],'' )).status===401&&(await recover([],'missing')).status===403&&(await recover([],'restricted',branch2)).status===403;
+ const selectedRecovery=await recover([],'a',a.branch);proof.recoverySelection=selectedRecovery.body.deliveries.every(row=>row.branchId===a.branch);
+ const deliveredTarget={requestKey:body.requestKey,employeeId:a.employee,branchId:a.branch,shiftRowId:a.shift,shiftDate:body.shiftDate};
+ proof.recoveryConfirmation=(await recover([deliveredTarget])).body.deliveries.some(row=>row.requestKey===body.requestKey&&row.status==='Delivered')&&!(await recover([{...deliveredTarget,shiftDate:'1998-01-01'}])).body.deliveries.some(row=>row.requestKey===body.requestKey);
+ const oldRetry=await send(historical);proof.recoveryRetry=oldRetry.body.delivery?.status==='Delivered'&&oldRetry.body.delivery.requestKey===historical.requestKey&&oldRetry.body.delivery.shiftDate===historical.shiftDate&&(await recover()).body.deliveries.every(row=>row.requestKey!==historical.requestKey)&&(await count())===beforeRecoveryInbox+1;
  console.log('PRESENCE_PROOF='+JSON.stringify(proof));
 } catch(error) {console.log('PRESENCE_SETUP='+JSON.stringify({name:error?.name,code:error?.code,column:error?.column,table:error?.table}));process.exitCode=1;}
 finally{if(server)await new Promise(resolve=>server.close(resolve));await pool.end();}
@@ -160,6 +177,8 @@ finally{if(server)await new Promise(resolve=>server.close(resolve));await pool.e
   it('a stored Pending attempt is visible only in scope and resumes after interruption', () => expect(proof.pending && proof.resume).toBe(true));
   it('FINDING 5 (high): current employee and shift access hold through inbox commit; prescribed fix: locked placement checks before receipt or delivery', () => expect(proof.transferRace && proof.replayPlacement && proof.shiftRace && proof.raceRetry).toBe(true));
   it('one employee with two branch shifts retains separate branch delivery status', () => expect(proof.statusBranch).toBe(true));
+  it('FINDING 8 (medium): recovery remains available outside both live tabs and the shift window; prescribed fix: permitted outstanding delivery reader with original-key retry', () => expect(proof.recoveryWindow && proof.recoveryReadOnly && proof.recoveryRetry).toBe(true));
+  it('recovery validates current park, branch, sender role and payload before returning stored or browser targets', () => expect(proof.recoveryFences && proof.recoverySelection && proof.recoveryConfirmation).toBe(true));
   it('live rows show delivery while the staff Bell retains the full message without manager navigation', () => {
     const live = readFileSync(join(APP, 'client/src/pages/timekeeping-live-page.tsx'), 'utf8');
     const bell = readFileSync(join(APP, 'client/src/components/notification-bell.tsx'), 'utf8');

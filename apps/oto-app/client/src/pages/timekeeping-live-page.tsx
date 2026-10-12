@@ -5,7 +5,7 @@ import { useBranchContext } from "@/hooks/use-branch-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { selectPresenceDelivery, retryPresenceTarget, workingPresenceDeliveries, restorePresenceRequests, type PresenceTarget, type PresenceDelivery, type LocalPresenceDelivery } from "@/lib/presence-delivery";
+import { selectPresenceDelivery, remainingPresenceDeliveries, presenceRecoveryTargets, retryPresenceTarget, workingPresenceDeliveries, restorePresenceRequests, type PresenceTarget, type PresenceDelivery, type LocalPresenceDelivery } from "@/lib/presence-delivery";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -150,6 +150,25 @@ export default function TimekeepingLivePage() {
     refetchInterval: 30000,
   });
 
+  const recoveryTargets = presenceRecoveryTargets(Object.values(localDeliveries));
+  const { data: recovery } = useQuery<{ deliveries: PresenceDelivery[] }>({
+    queryKey: ["/api/timekeeping/live/deliveries/recovery", user?.id, selectedBranch, recoveryTargets],
+    enabled: isManager,
+    queryFn: async () => (await apiRequest("POST", "/api/timekeeping/live/deliveries/recovery", {
+      ...(selectedBranch === "all" ? {} : { branchId: selectedBranch }), targets: recoveryTargets,
+    })).json(),
+    refetchInterval: 30000,
+  });
+  const visibleRetries = [
+    ...(liveData?.missingClockIns || []).flatMap(employee => {
+      const delivery = deliveryFor(employee);
+      return delivery && delivery.status !== "Delivered" ? [delivery.requestKey] : [];
+    }),
+    ...(liveData?.workingNow || []).flatMap(employee => workingDeliveriesFor(employee)
+      .filter(delivery => retryPresenceTarget(delivery)).map(delivery => delivery.requestKey)),
+  ];
+  const remainingDeliveries = remainingPresenceDeliveries(recovery?.deliveries || [], visibleRetries);
+
   const pingMutation = useMutation({
     mutationFn: async ({ employee, requestKey }: { employee: PresenceTarget; requestKey: string }) => {
       const response = await apiRequest("POST", "/api/timekeeping/live/ping", {
@@ -165,6 +184,7 @@ export default function TimekeepingLivePage() {
         try { sessionStorage.removeItem(`presence-ping:${key}`); sessionStorage.removeItem(`presence-ping-target:${key}`); } catch { /* The stored server attempt remains authoritative. */ }
       }
       queryClient.invalidateQueries({ queryKey: ["/api/timekeeping/live"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/timekeeping/live/deliveries/recovery"] });
       toast({ title: `Inbox: ${delivery.status}`, description: delivery.status === "Delivered" ? "Available in the staff inbox" : delivery.failureMessage || "Retry to finish this delivery", variant: delivery.status === "Failed" ? "destructive" : "default" });
     },
     onError: (_error, { employee, requestKey }) => {
@@ -247,6 +267,24 @@ export default function TimekeepingLivePage() {
           </div>
         </div>
       </header>
+
+      {remainingDeliveries.length > 0 && <section className="border-b p-4 space-y-3" aria-label="Pending inbox deliveries">
+        <h2 className="font-medium">Pending inbox deliveries</h2>
+        {remainingDeliveries.map(delivery => {
+          const target = retryPresenceTarget(delivery)!;
+          return <div className="flex items-center justify-between gap-3" key={delivery.requestKey}>
+            <div>
+              <p className="text-sm font-medium">{delivery.employeeName || "Staff member"}</p>
+              <p className="text-xs text-muted-foreground">{branches?.find(branch => branch.id === delivery.branchId)?.name || "Shift branch"} ? {delivery.shiftDate}</p>
+              <DeliveryStatus delivery={delivery} />
+            </div>
+            <Button variant="outline" size="sm" disabled={pingMutation.isPending}
+              onClick={() => sendPing(target, delivery)} data-testid={`button-retry-pending-${delivery.requestKey}`}>
+              {pingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Retry inbox delivery"}
+            </Button>
+          </div>;
+        })}
+      </section>}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="border-b bg-muted/30">
