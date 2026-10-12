@@ -2,6 +2,21 @@
 
 ## 13 October development checkpoint
 
+**Current release checkpoint:** Twilio runtime is active on app7402a8da;
+configuration proof is committed as a labelled staging card. SCRUM-522 is
+built in PR8/cb27d078 with23 focused controls and zero touched-file lint
+errors, now Testing. No SMS has been sent and the feature is not deployed.
+The authorized receiving number is local-only. Source integration now uses
+Fixa347b853, SOP5924faac, attendanceaeab3a23 and presencef077aaea. The
+attendance reviewer consistency source01bf0fa5 is ready for integration,
+with six handler/database scenarios and six house pins passed. Final combined
+checks and all feature staging acceptance remain. Reserve migrations0011-0014
+for SOP, attendance evidence, presence inbox and camp SMS respectively, after
+R7b0010; assigned numbers and combined snapshots must be verified at landing.
+
+Local database checks are complete and stopped for workstation availability.
+Use hosted CI; do not restart Docker or native PostgreSQL until available.
+
 **Latest:** import PR3/db51ee5c, Fix preview PR4/3af75edd, SOP history
 PR5/5924faac, attendance evidence PR6/9e79dacc and presence inbox PR7/7c911c02
 are published source batches, with their tickets Testing. Fix's R7 integration

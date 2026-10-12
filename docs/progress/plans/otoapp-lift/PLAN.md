@@ -18,6 +18,19 @@ section 11, and the app's behaviour is the default until the owner answers.
 
 ## 0. Where it stands: read this first
 
+**13 October live release checkpoint:** R7a7402a8da passed full CI and is
+live. Read-only staging confirms ten journal entries through0009 and zero
+unplaced rows in all four document tables. A new second-park Data Admin
+writer returned201 with the expected owner, own200 and foreign404; exact
+cleanup returned204/read404. The inspected staging card is in
+[the R7a release record](../../../qa/oto-app-lift/round-7/r7a-release.md).
+This satisfies the new-writer prerequisite for R7b0010; its separate full
+release gate and the R7 module rechecks remain. R8 still follows the final
+eleven-migration chain. Later feature migrations are reserved0011-0014.
+
+Local Docker/native database checks are stopped for workstation availability;
+continue hosted CI and source integration without claiming unrun checks.
+
 **13 October development checkpoint:** the [delivery board](DELIVERY.md)
 records completed source by ticket and feature. The owner requested focused
 checks during development, with the full battery consolidated at each release
