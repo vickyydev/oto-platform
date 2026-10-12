@@ -22,7 +22,7 @@ export async function readFixDepartmentMembers(database: Database, tenantId: str
     .innerJoin(accessPolicies, eq(accessPolicies.personId, people.id))
     .innerJoin(departments, eq(departments.id, people.departmentId))
     .where(and(inArray(departments.id, departmentIds), eq(departments.tenantId, tenantId),
-      eq(accessPolicies.tenantId, tenantId)));
+      eq(accessPolicies.tenantId, tenantId), eq(people.tenantId, tenantId)));
   for (const row of employeeRows) {
     if (!row.deptId) continue;
     const name = row.fullName || "Staff";

@@ -14,6 +14,9 @@ import { createTestDatabase } from '@oto/db/testing';
  * department and constrain employee/access-policy park on both roster reads.
  * FINDING 2 (medium, fixed): changing a selection must not save before the
  * preview is reviewed. Prescribed fix: draft selection and explicit Save.
+ * FINDING 3 (high, fixed): a department and policy cannot confer ownership
+ * on a foreign or unplaced person. Prescribed fix: canonical person park
+ * must also match, retaining nullable unplaced records outside the roster.
  * No routing/status rule, delivery channel, migration or branch choice changes.
  */
 const APP = fileURLToPath(new URL('../../oto-app/', import.meta.url));
@@ -53,7 +56,7 @@ try{
   await c.query("insert into users(id,email,password,full_name,role) values($1,$2,'ZZ TEST unused credential',$3,'admin')",[user,user+'@zz-test.invalid','ZZ TEST Admin '+label]);
   await c.query("insert into employees(tenant_id,full_name,nickname,email,user_id,primary_department_id) values($1,$2,'ZZ TEST',$3,$4,$5)",[tenant,'ZZ TEST Employee '+label,randomUUID()+'@zz-test.invalid',user,department]);
   const person=randomUUID();
-  await c.query("insert into people(id,full_name,email,person_type) values($1,$2,$3,'ADVISOR')",[person,'ZZ TEST Advisor '+label,randomUUID()+'@zz-test.invalid']);
+  await c.query("insert into people(id,tenant_id,full_name,email,person_type) values($1,$2,$3,$4,'ADVISOR')",[person,tenant,'ZZ TEST Advisor '+label,randomUUID()+'@zz-test.invalid']);
   await c.query("insert into access_policies(tenant_id,person_id,access_level,core_user_id,modules,branch_scope) values($1,$2,'staff',$3,'{}','ALL')",[tenant,person,user]);
   await c.query('update people set department_id=$1 where id=$2',[department,person]);
   groups.push({tenant,department,user});
@@ -68,9 +71,11 @@ try{
  result.foreign=(await get(a.department,'b')).status===404;result.roles=(await get(a.department,'staff')).status===403&&(await get(a.department,'')).status===401&&(await get(a.department,'missing')).status===403;
  const otherBranchDept=randomUUID();await c.query('insert into departments(id,tenant_id,name) values($1,$2,$3)',[otherBranchDept,a.tenant,'ZZ TEST Other Department']);const empty=await get(otherBranchDept);result.empty=empty.status===200&&empty.body.count===0&&(await get('')).body.department===null;
  await c.query("insert into employees(tenant_id,full_name,nickname,email,user_id,primary_department_id) values($1,'ZZ TEST Historical Foreign Employee','ZZ TEST',$2,$3,$4)",[b.tenant,randomUUID()+'@zz-test.invalid',b.user,a.department]);
- const foreignPerson=randomUUID();await c.query("insert into people(id,full_name,email,person_type,department_id) values($1,'ZZ TEST Historical Foreign Advisor',$2,'ADVISOR',$3)",[foreignPerson,randomUUID()+'@zz-test.invalid',a.department]);await c.query("insert into access_policies(tenant_id,person_id,access_level,core_user_id,modules,branch_scope) values($1,$2,'staff',$3,'{}','ALL')",[b.tenant,foreignPerson,b.user]);
+ const foreignPerson=randomUUID();await c.query("insert into people(id,tenant_id,full_name,email,person_type,department_id) values($1,$2,'ZZ TEST Historical Foreign Advisor',$3,'ADVISOR',$4)",[foreignPerson,a.tenant,randomUUID()+'@zz-test.invalid',a.department]);await c.query("insert into access_policies(tenant_id,person_id,access_level,core_user_id,modules,branch_scope) values($1,$2,'staff',$3,'{}','ALL')",[b.tenant,foreignPerson,b.user]);
  const historical=await get(a.department);result.historical=historical.status===200&&historical.body.count===2&&!historical.body.members.some(x=>x.name.includes('Historical'));
- const direct=(await readFixDepartmentMembers(database,a.tenant,[a.department])).get(a.department);result.sameRoster=JSON.stringify(direct)===JSON.stringify(historical.body.members);
+ for(const owner of [b.tenant,null]){const person=randomUUID();await c.query("insert into people(id,tenant_id,full_name,email,person_type,department_id) values($1,$2,$3,$4,'ADVISOR',$5)",[person,owner,owner?'ZZ TEST Canonical Foreign Advisor':'ZZ TEST Unplaced Advisor',randomUUID()+'@zz-test.invalid',a.department]);await c.query("insert into access_policies(tenant_id,person_id,access_level,core_user_id,modules,branch_scope) values($1,$2,'staff',$3,'{}','ALL')",[a.tenant,person,a.user]);}
+ const canonical=await get(a.department);result.canonical=canonical.status===200&&canonical.body.count===2&&!canonical.body.members.some(x=>x.name.includes('Canonical')||x.name.includes('Unplaced'));
+ const direct=(await readFixDepartmentMembers(database,a.tenant,[a.department])).get(a.department);result.sameRoster=JSON.stringify(direct)===JSON.stringify(canonical.body.members);
  const census=async()=>(await c.query('select (select count(*) from settings)::int settings,(select count(*) from fix_reports)::int reports,(select count(*) from notifications)::int notifications')).rows[0];const before=await census();for(let i=0;i<3;i++)await get(a.department);const after=await census();result.replay=JSON.stringify(before)===JSON.stringify(after);
  console.log('FIX_PREVIEW_PROOF='+JSON.stringify(result));
 }finally{if(server)await new Promise(resolve=>server.close(resolve));await c.end();}
@@ -98,6 +103,7 @@ try{
   it('another park, a restricted branch reader, a signed-out reader and missing context are refused', () => expect(proof.foreign && proof.roles).toBe(true));
   it('an empty owned department and no department have explicit empty previews', () => expect(proof.empty).toBe(true));
   it('FINDING 1 (high, fixed): historical foreign department links stay outside the preview; prescribed fix: owned department and employee/policy park filters', () => expect(proof.historical).toBe(true));
+  it('FINDING 3 (high, fixed): own department and policy cannot admit a foreign or unplaced person; prescribed fix: canonical person park filter', () => expect(proof.canonical).toBe(true));
   it('replayed previews create no report, setting or notification', () => expect(proof.replay).toBe(true));
   it('FINDING 2 (medium, fixed): the selection waits for explicit Save; prescribed fix: draft selection and preview before mutation', () => {
     const ui = readFileSync(join(APP, 'client/src/components/fix-department-section.tsx'), 'utf8');
