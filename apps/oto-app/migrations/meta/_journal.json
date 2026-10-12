@@ -85,6 +85,13 @@
                         "when":  1791830359675,
                         "tag":  "0091_sop_revision_history",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx":  92,
+                        "version":  "7",
+                        "when":  1791830515767,
+                        "tag":  "0092_attendance_evidence",
+                        "breakpoints":  true
                     }
                 ]
 }

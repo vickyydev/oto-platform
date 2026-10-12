@@ -1,3 +1,5 @@
+import { AttendanceEvidenceInput } from "@/components/attendance-evidence-input";
+import { submitAttendanceConfirmation } from "@/lib/attendance-evidence";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -99,6 +101,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
   const [unscheduledWorkData, setUnscheduledWorkData] = useState<UnscheduledWorkData | null>(null);
   const [unscheduledReason, setUnscheduledReason] = useState<string>("MANAGER_INSTRUCTED");
   const [unscheduledNote, setUnscheduledNote] = useState("");
+  const [attendanceEvidence, setAttendanceEvidence] = useState<File | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
@@ -142,6 +145,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
     setUnscheduledWorkData(null);
     setUnscheduledReason("MANAGER_INSTRUCTED");
     setUnscheduledNote("");
+    setAttendanceEvidence(null);
   }, [stopQrScanner]);
 
   const showSuccessScreen = (result: ClockResult) => {
@@ -515,7 +519,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
       const shiftDate = missedClockInData.schedule.shiftDate;
       const userClockInAt = new Date(`${shiftDate}T${manualClockInTime}:00+07:00`);
       
-      const res = await apiRequest("POST", "/api/kiosk/missed-clock/manual", {
+      const res = await submitAttendanceConfirmation("/api/kiosk/missed-clock/manual", {
         employeeId: missedClockInData.employee.id,
         branchId: missedClockInData.branchId,
         scheduledStart: missedClockInData.schedule.scheduledStart,
@@ -528,7 +532,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         livenessScore: missedClockInData.livenessScore,
         kioskDeviceId: missedClockInData.kioskDeviceId,
         deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
-      });
+      }, attendanceEvidence);
       const data = await res.json();
       
       if (data.success) {
@@ -558,7 +562,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
     
     setIsProcessing(true);
     try {
-      const res = await apiRequest("POST", "/api/kiosk/unscheduled-clock-in", {
+      const res = await submitAttendanceConfirmation("/api/kiosk/unscheduled-clock-in", {
         employeeId: unscheduledWorkData.employee.id,
         branchId: unscheduledWorkData.branch.id,
         reasonCode: unscheduledReason,
@@ -567,7 +571,7 @@ export default function KioskPage({ branchId }: KioskPageProps) {
         livenessScore: unscheduledWorkData.livenessScore,
         kioskDeviceId: unscheduledWorkData.kioskDeviceId,
         deviceSecret: localStorage.getItem("kiosk_device_secret") || undefined,
-      });
+      }, attendanceEvidence);
       const data = await res.json();
       
       if (data.success) {
@@ -1294,6 +1298,8 @@ export default function KioskPage({ branchId }: KioskPageProps) {
                 </div>
               )}
 
+              <AttendanceEvidenceInput file={attendanceEvidence} onChange={setAttendanceEvidence} disabled={isProcessing} />
+
               <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
                 <p className="text-sm text-blue-700 dark:text-blue-300">
                   This will need manager approval before your timesheet is updated.
@@ -1422,6 +1428,8 @@ export default function KioskPage({ branchId }: KioskPageProps) {
                 />
                 <p className="text-xs text-muted-foreground text-right">{unscheduledNote.length}/500</p>
               </div>
+
+              <AttendanceEvidenceInput file={attendanceEvidence} onChange={setAttendanceEvidence} disabled={isProcessing} />
 
               <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
                 <p className="text-sm text-blue-700 dark:text-blue-300">

@@ -1,0 +1,1 @@
+ALTER TABLE "timekeeping_issues" ADD COLUMN "attachment" jsonb;

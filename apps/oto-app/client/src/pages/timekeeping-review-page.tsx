@@ -1,3 +1,4 @@
+import type { AttendanceEvidence } from "@shared/attendance-evidence";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -97,6 +98,7 @@ interface ReviewResponse {
 }
 
 interface PendingIssue {
+  attachment?: Omit<AttendanceEvidence, "objectName"> | null;
   id: string;
   employeeId: string;
   employeeName: string;
@@ -706,6 +708,12 @@ export default function TimekeepingReviewPage() {
                       </p>
                     </div>
                     
+                    {issue.attachment && (
+                      <a href={`/api/timekeeping/issues/${encodeURIComponent(issue.id)}/attachment`} target="_blank" rel="noreferrer" className="text-sm underline" data-testid={`attachment-${issue.id}`}>
+                        View attachment: {issue.attachment.fileName}
+                      </a>
+                    )}
+
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -769,6 +777,11 @@ export default function TimekeepingReviewPage() {
                 )}
                 <p><span className="text-muted-foreground">{selectedIssue.issueType === 'UNSCHEDULED_WORK' ? 'Clock-in time:' : 'Requested time:'}</span> {selectedIssue.userClockInAt ? formatTime(selectedIssue.userClockInAt) : '-'}</p>
                 <p><span className="text-muted-foreground">Reason:</span> {getReasonLabel(selectedIssue.reasonCode)}</p>
+                {selectedIssue.attachment && (
+                  <a href={`/api/timekeeping/issues/${encodeURIComponent(selectedIssue.id)}/attachment`} target="_blank" rel="noreferrer" className="block underline">
+                    View attachment: {selectedIssue.attachment.fileName}
+                  </a>
+                )}
                 {selectedIssue.userNote && (
                   <p><span className="text-muted-foreground">Note:</span> {selectedIssue.userNote}</p>
                 )}
