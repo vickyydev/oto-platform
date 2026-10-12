@@ -1171,9 +1171,10 @@ describe('C. Attention, read off the code', () => {
     }
     expect(found.sort()).toEqual(
       [
+        // Employment actions retain their employee's park group in the extracted routes.
+        'server/employee-action-routes.ts createAttentionItem employee.tenantId',
+        'server/employee-action-routes.ts createAttentionItem employee.tenantId',
         // The routes: the employee, or the checklist run, the alert is about.
-        'server/routes.ts createAttentionItem employee.tenantId',
-        'server/routes.ts createAttentionItem employee.tenantId',
         'server/routes.ts createAttentionItem employee.tenantId',
         'server/routes.ts createAttentionItem employee.tenantId',
         'server/routes.ts createAttentionItem employee.tenantId',
