@@ -15,7 +15,6 @@ import { EmployeeAvatar } from "@/components/employee-avatar";
 import {
   Clock,
   AlertTriangle,
-  ChevronRight,
   Bell,
   ArrowLeft,
   RefreshCw,
@@ -27,6 +26,7 @@ import {
 } from "lucide-react";
 
 interface WorkingEmployee {
+  delivery?: PresenceDelivery | null;
   employeeId: string;
   fullName: string;
   nickname: string;
@@ -42,6 +42,8 @@ interface WorkingEmployee {
 }
 
 interface MissingEmployee {
+  delivery?: PresenceDelivery | null;
+  shiftDate: string;
   employeeId: string;
   fullName: string;
   nickname: string;
@@ -67,6 +69,22 @@ interface LiveData {
 interface Branch {
   id: string;
   name: string;
+}
+
+interface PresenceDelivery {
+  requestKey: string;
+  status: "Pending" | "Delivered" | "Failed";
+  failureMessage: string | null;
+  updatedAt?: string;
+}
+
+function DeliveryStatus({ delivery }: { delivery?: PresenceDelivery | null }) {
+  if (!delivery) return null;
+  return <div className="mt-1 text-xs" aria-live="polite">
+    <span className={delivery.status === "Failed" ? "text-destructive" : "text-muted-foreground"}>Inbox: {delivery.status}</span>
+    {delivery.status === "Delivered" && <span className="text-muted-foreground"> — Available in staff inbox; read status is separate.</span>}
+    {delivery.failureMessage && <p className="text-muted-foreground">{delivery.failureMessage}</p>}
+  </div>;
 }
 
 function formatTime(dateStr: string): string {
@@ -107,6 +125,14 @@ export default function TimekeepingLivePage() {
   // falls back to initials.
   const [photoModalFailed, setPhotoModalFailed] = useState(false);
   const [detailEmployee, setDetailEmployee] = useState<WorkingEmployee | null>(null);
+  const [localDeliveries, setLocalDeliveries] = useState<Record<string, PresenceDelivery>>({});
+  const deliveryKey = (employee: MissingEmployee) => `${user?.id}:${employee.employeeId}:${employee.shiftRowId}:${employee.shiftDate}`;
+  const deliveryFor = (employee: MissingEmployee) => {
+    const local = localDeliveries[deliveryKey(employee)];
+    if (employee.delivery?.requestKey === local?.requestKey && employee.delivery?.status === "Delivered") return employee.delivery;
+    if (employee.delivery?.updatedAt && local?.updatedAt && employee.delivery.updatedAt >= local.updatedAt) return employee.delivery;
+    return local || employee.delivery;
+  };
 
   const isManager = user?.role === "manager" || user?.role === "admin" || user?.role === "operator_admin" || user?.role === "global_admin";
 
@@ -120,28 +146,46 @@ export default function TimekeepingLivePage() {
 
   const { data: liveData, isLoading, refetch, isRefetching } = useQuery<LiveData>({
     queryKey: ["/api/timekeeping/live", selectedBranch],
-    queryFn: () => fetch(liveUrl, { credentials: "include" }).then((r) => r.json()),
+    queryFn: async () => (await apiRequest("GET", liveUrl)).json(),
     refetchInterval: 30000,
   });
 
   const pingMutation = useMutation({
-    mutationFn: async (data: { employeeId: string; shiftRowId: string }) => {
-      return apiRequest("/api/timekeeping/live/ping", {
-        method: "POST",
-        body: JSON.stringify({
-          employeeId: data.employeeId,
-          shiftRowId: data.shiftRowId,
-          reason: "missing_clock_in",
-        }),
+    mutationFn: async ({ employee, requestKey }: { employee: MissingEmployee; requestKey: string }) => {
+      const response = await apiRequest("POST", "/api/timekeeping/live/ping", {
+        employeeId: employee.employeeId, shiftRowId: employee.shiftRowId,
+        shiftDate: employee.shiftDate, reason: "missing_clock_in", requestKey,
       });
+      return response.json() as Promise<{ delivery: PresenceDelivery }>;
     },
-    onSuccess: () => {
-      toast({ title: "Ping sent", description: "Staff has been notified" });
+    onSuccess: ({ delivery }, { employee }) => {
+      const key = deliveryKey(employee);
+      setLocalDeliveries(current => ({ ...current, [key]: delivery }));
+      if (delivery.status === "Delivered") {
+        try { sessionStorage.removeItem(`presence-ping:${key}`); } catch { /* The stored server attempt remains authoritative. */ }
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/timekeeping/live"] });
+      toast({ title: `Inbox: ${delivery.status}`, description: delivery.status === "Delivered" ? "Available in the staff inbox" : delivery.failureMessage || "Retry to finish this delivery", variant: delivery.status === "Failed" ? "destructive" : "default" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to send ping", variant: "destructive" });
+    onError: (_error, { employee, requestKey }) => {
+      setLocalDeliveries(current => ({ ...current, [deliveryKey(employee)]: { requestKey, status: "Pending", failureMessage: "Delivery could not be confirmed. Retry to check the same request.", updatedAt: new Date().toISOString() } }));
+      toast({ title: "Delivery could not be confirmed", description: "Retry safely using the same request", variant: "destructive" });
     },
   });
+
+  function sendPing(employee: MissingEmployee) {
+    const key = deliveryKey(employee);
+    const previous = deliveryFor(employee);
+    let requestKey = previous && previous.status !== "Delivered" ? previous.requestKey : "";
+    if (previous?.status === "Delivered") {
+      try { sessionStorage.removeItem(`presence-ping:${key}`); } catch { /* A fresh action still receives a fresh in-memory key. */ }
+    }
+    try { requestKey ||= sessionStorage.getItem(`presence-ping:${key}`) || ""; } catch { /* A same-screen retry still holds its request key. */ }
+    requestKey ||= crypto.randomUUID();
+    try { sessionStorage.setItem(`presence-ping:${key}`, requestKey); } catch { /* A same-screen retry still holds its request key. */ }
+    setLocalDeliveries(current => ({ ...current, [key]: { requestKey, status: "Pending", failureMessage: null, updatedAt: new Date().toISOString() } }));
+    pingMutation.mutate({ employee, requestKey });
+  }
 
   if (!isManager) {
     return (
@@ -293,6 +337,7 @@ export default function TimekeepingLivePage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium truncate" data-testid={`text-name-${emp.employeeId}`}>{emp.displayName}</p>
+                      <DeliveryStatus delivery={emp.delivery} />
                       <Badge
                         variant={emp.status === "ON_BREAK" ? "outline" : "secondary"}
                         className="text-[10px] px-1.5 py-0"
@@ -361,6 +406,7 @@ export default function TimekeepingLivePage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate" data-testid={`text-name-missing-${emp.employeeId}`}>{emp.displayName}</p>
+                    <DeliveryStatus delivery={deliveryFor(emp)} />
                     <div className="flex items-center gap-1 text-sm text-muted-foreground flex-wrap">
                       <span>{emp.departmentName || "No department set"}</span>
                       <span>·</span>
@@ -370,7 +416,7 @@ export default function TimekeepingLivePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => pingMutation.mutate({ employeeId: emp.employeeId, shiftRowId: emp.shiftRowId })}
+                    onClick={() => sendPing(emp)}
                     disabled={pingMutation.isPending}
                     data-testid={`button-ping-${emp.employeeId}`}
                   >
@@ -379,7 +425,7 @@ export default function TimekeepingLivePage() {
                     ) : (
                       <>
                         <Bell className="h-4 w-4 mr-1" />
-                        Ping
+                        {deliveryFor(emp) && deliveryFor(emp)?.status !== "Delivered" ? "Retry" : "Ping"}
                       </>
                     )}
                   </Button>

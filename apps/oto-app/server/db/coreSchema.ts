@@ -3513,6 +3513,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "announcement",
   "task_due_date_changed",
   "task_priority_changed",
+  "timekeeping_ping",
 ]);
 
 export const notifications = pgTable(
@@ -3542,6 +3543,29 @@ export const notifications = pgTable(
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+// One manager action may be retried until its staff inbox entry is stored.
+export const presenceNotificationDeliveries = pgTable("presence_notification_deliveries", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  requestKey: uuid("request_key").notNull(),
+  requestHash: text("request_hash").notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id).notNull(),
+  branchId: varchar("branch_id").references(() => branches.id).notNull(),
+  shiftRowId: varchar("shift_row_id").notNull(),
+  shiftDate: date("shift_date").notNull(),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  status: text("status", { enum: ["Pending", "Delivered", "Failed"] }).notNull().default("Pending"),
+  failureMessage: text("failure_message"),
+  notificationId: uuid("notification_id").references(() => notifications.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("uq_presence_delivery_request").on(t.tenantId, t.requestKey),
+  index("idx_presence_delivery_live").on(t.tenantId, t.employeeId, t.shiftDate),
+  check("presence_delivery_status", sql`${t.status} IN ('Pending', 'Delivered', 'Failed')`),
+  check("presence_delivery_result", sql`(${t.status} = 'Delivered') = (${t.notificationId} IS NOT NULL)`),
+]);
 
 // ============================================
 // BEO SET MENU TEMPLATES
