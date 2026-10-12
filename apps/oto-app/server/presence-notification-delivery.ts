@@ -8,6 +8,10 @@ import type { db } from "./db";
 
 type Database = Pick<typeof db, "select" | "insert" | "update" | "transaction">;
 type Delivery = typeof deliveries.$inferSelect;
+class PresenceAccessError extends Error {
+  constructor(public status: number, message: string) { super(message); }
+}
+
 const requestSchema = z.object({
   requestKey: z.string().uuid(), employeeId: z.string().min(1).max(200),
   shiftRowId: z.string().min(1).max(200),
@@ -67,12 +71,24 @@ export function registerPresenceNotificationDelivery(app: Express, database: Dat
       let outcome: Delivery;
       try {
         outcome = await database.transaction(async tx => {
-          const [locked] = await tx.select().from(deliveries).where(eq(deliveries.id, attempt.id)).for("update");
+          // Hold current placement through inbox commit. A transfer waiting on this
+          // employee happens after this action; one already committed is rechecked.
+          const [current] = await tx.select({ userId: employees.userId, branchId: employees.branchId }).from(employees)
+            .where(and(eq(employees.id, employee.id), eq(employees.tenantId, tenantId))).for("share");
+          const [currentShift] = await tx.select({ branchId: scheduleShiftRows.branchId }).from(scheduleShiftRows)
+            .where(and(eq(scheduleShiftRows.id, body.shiftRowId), eq(scheduleShiftRows.tenantId, tenantId))).for("share");
+          const [currentBranch] = currentShift ? await tx.select({ id: branches.id }).from(branches)
+            .where(and(eq(branches.id, currentShift.branchId), eq(branches.tenantId, tenantId))).for("share") : [];
+          if (!current || !currentShift || !currentBranch) throw new PresenceAccessError(404, "Staff member or shift not found");
+          if (!scope.hasAllBranchesAccess && (!current.branchId || !scope.allowedBranchIds.includes(current.branchId) || !scope.allowedBranchIds.includes(currentShift.branchId))) {
+            throw new PresenceAccessError(403, "Access denied to this branch");
+          }
+          if (currentShift.branchId !== shift.branchId) throw new PresenceAccessError(409, "Shift details changed. Refresh before starting a new ping.");
+          const [locked] = await tx.select().from(deliveries).where(and(eq(deliveries.id, attempt.id), eq(deliveries.tenantId, tenantId))).for("update");
+          if (!locked) throw new PresenceAccessError(404, "Delivery request not found");
           if (locked.status === "Delivered") return locked;
           // Re-read the current login for a retry after staff access is connected.
-          const [current] = await tx.select({ userId: employees.userId }).from(employees)
-            .where(and(eq(employees.id, employee.id), eq(employees.tenantId, tenantId))).limit(1);
-          const [recipient] = current?.userId ? await tx.select({ id: users.id, isActive: users.isActive }).from(users).where(eq(users.id, current.userId)).limit(1) : [];
+          const [recipient] = current.userId ? await tx.select({ id: users.id, isActive: users.isActive }).from(users).where(eq(users.id, current.userId)).for("share") : [];
           if (!recipient?.isActive || recipient.id !== employee.userId || recipientTenant !== tenantId) {
             const [failed] = await tx.update(deliveries).set({ status: "Failed", failureMessage: "Staff inbox is unavailable. Connect an active staff login in this park, then retry.", updatedAt: new Date() }).where(eq(deliveries.id, locked.id)).returning();
             return failed;
@@ -86,7 +102,12 @@ export function registerPresenceNotificationDelivery(app: Express, database: Dat
             notificationId: notification.id, updatedAt: new Date() }).where(eq(deliveries.id, locked.id)).returning();
           return delivered;
         });
-      } catch {
+      } catch (error) {
+        if (error instanceof PresenceAccessError) {
+          await database.update(deliveries).set({ status: "Failed", failureMessage: "Staff or shift access changed. Refresh live timekeeping before retrying.", updatedAt: new Date() })
+            .where(and(eq(deliveries.id, attempt.id), eq(deliveries.tenantId, tenantId), inArray(deliveries.status, ["Pending", "Failed"])));
+          return res.status(error.status).json({ message: error.message });
+        }
         // A competing successful retry must never be overwritten by a failure.
         await database.update(deliveries).set({ status: "Failed", failureMessage: "The staff inbox could not be updated. Retry this delivery.", updatedAt: new Date() })
           .where(and(eq(deliveries.id, attempt.id), inArray(deliveries.status, ["Pending", "Failed"])));

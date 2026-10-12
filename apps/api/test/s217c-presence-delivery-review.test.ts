@@ -83,7 +83,9 @@ try {
  app.use((req,_res,next)=>{const who=req.headers['x-test-actor'];const g=who==='b'?b:a;const staff=who==='staff'||who==='foreignStaff';req.user=who?{id:who==='foreignStaff'?b.staff:staff?g.staff:g.manager,role:staff?'staff':'manager'}:undefined;req.userWithAccess=who==='missing'?undefined:{tenantId:who==='foreignStaff'?b.tenant:g.tenant,hasAllBranchesAccess:who!=='restricted',allowedBranchIds:[g.branch]};next();});
  const auth=(req,res,next)=>req.user?next():res.status(401).json({message:'Sign in required'});
  const manager=(req,res,next)=>req.user.role==='manager'?next():res.status(403).json({message:'Manager access required'});
- registerPresenceNotificationDelivery(app,db,auth,manager,placement);
+ let placementChange;
+ const synchronizedPlacement=async id=>{const tenant=await placement(id);if(placementChange){const change=placementChange;placementChange=undefined;await change();}return tenant;};
+ registerPresenceNotificationDelivery(app,db,auth,manager,synchronizedPlacement);
  const inboxStart=routes.indexOf('  app.get("/api/notifications",');const inboxEnd=routes.indexOf('  // General error handler',inboxStart);
  new Function('app','db','notificationsTable','requireAuth','eq','and','drizzleDesc','sql',routes.slice(inboxStart,inboxEnd))(app,db,notifications,auth,eq,and,desc,sql);
  app.use((_err,_req,res,_next)=>res.status(500).json({message:'Delivery request failed'}));
@@ -112,6 +114,22 @@ try {
  await pool.query('insert into presence_notification_deliveries(tenant_id,request_key,request_hash,employee_id,branch_id,shift_row_id,shift_date,created_by) values($1,$2,$3,$4,$5,$6,$7,$8)',[a.tenant,pending.requestKey,hash,a.employee,a.branch,a.shift,pending.shiftDate,a.manager]);
  const pendingRows=await readPresenceDeliveries(db,a.tenant,[a.employee],pending.shiftDate,[a.branch]);proof.pending=pendingRows[0]?.status==='Pending'&&(await readPresenceDeliveries(db,b.tenant,[a.employee],pending.shiftDate)).length===0&&(await readPresenceDeliveries(db,a.tenant,[a.employee],pending.shiftDate,[branch2])).length===0;
  proof.resume=(await send(pending)).body.delivery?.status==='Delivered'&&(await count())===4;
+ // Interleave a real database placement change after the initial authorization
+ // and immediately before the handler enters its delivery transaction.
+ const beforePlacement=await count();
+ const transferRace={...body,requestKey:randomUUID()};
+ placementChange=()=>pool.query('update employees set branch_id=$1 where id=$2',[branch2,a.employee]);
+ const transferRefused=await send(transferRace,'restricted');
+ proof.transferRace=transferRefused.status===403&&(await count())===beforePlacement;
+ await pool.query('update employees set branch_id=$1 where id=$2',[a.branch,a.employee]);
+ placementChange=()=>pool.query('update employees set branch_id=$1 where id=$2',[branch2,a.employee]);
+ proof.replayPlacement=(await send(body,'restricted')).status===403&&(await count())===beforePlacement;
+ await pool.query('update employees set branch_id=$1 where id=$2',[a.branch,a.employee]);
+ const shiftRace={...body,requestKey:randomUUID()};
+ placementChange=()=>pool.query('update schedule_shift_rows set branch_id=$1 where id=$2',[branch2,a.shift]);
+ proof.shiftRace=(await send(shiftRace,'restricted')).status===403&&(await count())===beforePlacement;
+ await pool.query('update schedule_shift_rows set branch_id=$1 where id=$2',[a.branch,a.shift]);
+ proof.raceRetry=(await send(transferRace,'restricted')).body.delivery?.status==='Delivered'&&(await count())===beforePlacement+1;
  console.log('PRESENCE_PROOF='+JSON.stringify(proof));
 } catch(error) {console.log('PRESENCE_SETUP='+JSON.stringify({name:error?.name,code:error?.code,column:error?.column,table:error?.table}));process.exitCode=1;}
 finally{if(server)await new Promise(resolve=>server.close(resolve));await pool.end();}
@@ -123,7 +141,9 @@ finally{if(server)await new Promise(resolve=>server.close(resolve));await pool.e
       if (!match) console.info('Presence fixture metadata', /PRESENCE_SETUP=(.+)/.exec(run.stdout ?? '')?.[1] ?? 'No completed result');
       expect(run.status, 'The bounded delivery fixture finished').toBe(0);
       expect(match, 'The actual handler produced review results').not.toBeNull();
-      proof = JSON.parse(match![1]);
+      const payload = match?.[1];
+      if (!payload) throw new Error("Presence handler result is missing");
+      proof = JSON.parse(payload);
     } finally { await database.drop(); removeFixture(directory); }
   }, 180_000);
 
@@ -134,6 +154,7 @@ finally{if(server)await new Promise(resolve=>server.close(resolve));await pool.e
   it('FINDING 2 (high, fixed): missing and foreign logins fail clearly, then retry after connection; prescribed fix: current active park placement', () => expect(proof.missing && proof.foreignLogin && proof.repaired).toBe(true));
   it('FINDING 3 (medium, fixed): controlled inbox failure stores Failed and retries once; prescribed fix: transaction and durable result', () => expect(proof.failure && proof.retry).toBe(true));
   it('a stored Pending attempt is visible only in scope and resumes after interruption', () => expect(proof.pending && proof.resume).toBe(true));
+  it('FINDING 5 (high): current employee and shift access hold through inbox commit; prescribed fix: locked placement checks before receipt or delivery', () => expect(proof.transferRace && proof.replayPlacement && proof.shiftRace && proof.raceRetry).toBe(true));
   it('live rows show delivery while the staff Bell retains the full message without manager navigation', () => {
     const live = readFileSync(join(APP, 'client/src/pages/timekeeping-live-page.tsx'), 'utf8');
     const bell = readFileSync(join(APP, 'client/src/components/notification-bell.tsx'), 'utf8');
