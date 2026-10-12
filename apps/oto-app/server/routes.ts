@@ -1,6 +1,7 @@
 import _express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer as _createServer, type Server } from "http";
 import { storage, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
+import { registerSopRoutes, canReadSopArticle } from "./sop-routes";
 import { setupAuth, requireAuth, hashPassword } from "./auth";
 import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireGlobalAdmin, isGlobalAdmin, filterByUserBranches as _filterByUserBranches, canUserAccessBranch, directoryApiRateLimit, getAllowedOperatorAndBranchIds, requireModule } from "./auth-middleware";
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
@@ -16,7 +17,7 @@ import { getTimezoneInfo, getLocalDateString, createDateTimeInTimezone, getMidni
 import Handlebars from "handlebars";
 import { z } from "zod";
 import { format, addDays as _addDays } from "date-fns";
-import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema as _mergeDataSchema, MergeData as _MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema as _insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema as _insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertSopArticleSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
+import { insertTemplateSchema, insertEmployeeSchema, insertBranchSchema, mergeDataSchema as _mergeDataSchema, MergeData as _MergeData, activityTypes, type ActivityType, attentionTypes, type AttentionType, insertEmployeeDocumentSchema as _insertEmployeeDocumentSchema, documentTypes, insertTemplateAssignmentSchema, insertUserSchema as _insertUserSchema, insertDepartmentSchema, insertRoleSchema, insertPersonSchema, insertOperatorSchema, insertStatutoryRuleSetSchema, insertKbArticleSchema, type ContractInstance, type EnrollmentSession, type FixReport, type UserWithBranchAccess, DEFAULT_TENANT_SLUG } from "@shared/schema";
 import { getEffectivePermissions, resolveAdvisorRole, type PermissionUserContext } from "../shared/permissions";
 import { isHexCalendarColor, isOtherEventColor } from "@shared/event-colors";
 
@@ -22900,202 +22901,7 @@ OTO Company Limited`,
     }
   });
 
-  // ============================================
-  // SOP ARTICLES (franchise-ready scoping)
-  // ============================================
-
-  const canReadSopArticle = (user: UserWithBranchAccess, article: Awaited<ReturnType<typeof storage.getSopArticle>>, tenantId: string) => {
-    if (!article || article.tenantId !== tenantId) return false;
-    const canSeeBranch = user.hasAllBranchesAccess || article.scope === 'GLOBAL' ||
-      (article.branchIds || []).some(id => user.allowedBranchIds.includes(id));
-    if (!canSeeBranch) return false;
-    return ['admin', 'global_admin', 'operator_admin', 'manager'].includes(user.role) || article.status === 'published';
-  };
-
-  // List SOP articles with branch filtering
-  app.get("/api/sops", requireAuth, async (req, res, next) => {
-    try {
-      const user = req.user as UserWithBranchAccess;
-      const tenantId = await resolveTenantId(user.tenantId);
-      const requestedBranchId = req.query.branchId;
-      if (requestedBranchId != null && typeof requestedBranchId !== 'string') {
-        return res.status(400).json({ message: "Invalid branch" });
-      }
-      if (requestedBranchId === 'all' && !user.hasAllBranchesAccess) {
-        return res.status(403).json({ message: "All-branch access is not available" });
-      }
-      if (requestedBranchId && requestedBranchId !== 'all') {
-        if (!canUserAccessBranch(user, requestedBranchId)) {
-          return res.status(403).json({ message: "Access denied to this branch" });
-        }
-        const branch = await storage.getBranch(requestedBranchId);
-        if (!branch || branch.tenantId !== tenantId) {
-          return res.status(404).json({ message: "Branch not found" });
-        }
-      }
-      const articles = (await storage.getSopArticles(tenantId)).filter(article =>
-        canReadSopArticle(user, article, tenantId) &&
-        (!requestedBranchId || requestedBranchId === 'all' || article.scope === 'GLOBAL' || (article.branchIds || []).includes(requestedBranchId))
-      );
-      res.json(articles);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Get single SOP article
-  app.get("/api/sops/:id", requireAuth, async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const article = await storage.getSopArticle(id);
-      if (!article) {
-        return res.status(404).json({ message: "SOP article not found" });
-      }
-      const user = req.user as UserWithBranchAccess;
-      const tenantId = await resolveTenantId(user.tenantId);
-      if (!canReadSopArticle(user, article, tenantId)) {
-        return res.status(404).json({ message: "SOP article not found" });
-      }
-      res.json(article);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Server-side validation for structuredSteps to prevent DoS via oversized base64 payloads
-  const validateStructuredSteps = (steps: unknown): { valid: boolean; error?: string } => {
-    if (steps == null) return { valid: true };
-    if (!Array.isArray(steps)) return { valid: false, error: 'Steps must be a list' };
-    
-    const maxImageSizeBytes = 3 * 1024 * 1024; // 3MB max per image (base64 is ~33% larger than binary)
-    const maxSteps = 50; // Reasonable limit on number of steps
-    
-    if (steps.length > maxSteps) {
-      return { valid: false, error: `Maximum ${maxSteps} steps allowed` };
-    }
-    
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i] as { imageUrl?: string; title?: string };
-      if (!step || typeof step !== 'object' || (step.title != null && typeof step.title !== 'string') ||
-          (step.imageUrl != null && typeof step.imageUrl !== 'string')) {
-        return { valid: false, error: `Step ${i + 1} is invalid` };
-      }
-      
-      // Validate step title length
-      if (step.title && step.title.length > 500) {
-        return { valid: false, error: `Step ${i + 1} title too long (max 500 chars)` };
-      }
-      
-      // Validate image size if present
-      if (step.imageUrl && step.imageUrl.startsWith('data:')) {
-        const base64Length = step.imageUrl.length;
-        const estimatedBytes = (base64Length * 3) / 4;
-        
-        if (estimatedBytes > maxImageSizeBytes) {
-          return { valid: false, error: `Step ${i + 1} image exceeds 3MB limit` };
-        }
-        
-        // Validate image type
-        const validPrefixes = ['data:image/jpeg', 'data:image/png', 'data:image/gif', 'data:image/webp'];
-        if (!validPrefixes.some(p => step.imageUrl?.startsWith(p))) {
-          return { valid: false, error: `Step ${i + 1} has invalid image type (JPEG, PNG, GIF, WebP only)` };
-        }
-      }
-    }
-    
-    return { valid: true };
-  };
-
-  const validSopBranches = async (user: UserWithBranchAccess, tenantId: string, scope: string, branchIds: string[]) => {
-    if (scope === 'GLOBAL') return branchIds.length === 0;
-    if (scope !== 'BRANCHES' || branchIds.length === 0 || new Set(branchIds).size !== branchIds.length ||
-        branchIds.some(id => !canUserAccessBranch(user, id))) return false;
-    const branches = await Promise.all(branchIds.map(id => storage.getBranch(id)));
-    return branches.every(branch => branch?.tenantId === tenantId);
-  };
-
-  // Create SOP article (admin only)
-  app.post("/api/sops", requireAuth, requireAdmin, async (req, res, next) => {
-    try {
-      const user = req.user as UserWithBranchAccess;
-      const tenantId = await resolveTenantId(user.tenantId);
-
-      // Server-side validation for structuredSteps
-      const stepsValidation = validateStructuredSteps(req.body.structuredSteps);
-      if (!stepsValidation.valid) {
-        return res.status(400).json({ message: stepsValidation.error });
-      }
-      
-      const parsed = insertSopArticleSchema.safeParse({
-        ...req.body,
-        tenantId,
-        scope: req.body.scope || 'GLOBAL',
-        branchIds: req.body.branchIds || [],
-      });
-      if (!parsed.success || !Array.isArray(parsed.data.branchIds) ||
-          !(await validSopBranches(user, tenantId, parsed.data.scope || 'GLOBAL', parsed.data.branchIds))) {
-        return res.status(400).json({ message: 'Invalid SOP article or branch scope' });
-      }
-      const article = await storage.createSopArticle(parsed.data);
-      res.status(201).json(article);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Update SOP article (admin only)
-  app.patch("/api/sops/:id", requireAuth, requireAdmin, async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const existing = await storage.getSopArticle(id);
-      const user = req.user as UserWithBranchAccess;
-      const tenantId = await resolveTenantId(user.tenantId);
-      if (!existing || existing.tenantId !== tenantId) {
-        return res.status(404).json({ message: "SOP article not found" });
-      }
-
-      // Server-side validation for structuredSteps
-      if (req.body.structuredSteps !== undefined) {
-        const stepsValidation = validateStructuredSteps(req.body.structuredSteps);
-        if (!stepsValidation.valid) {
-          return res.status(400).json({ message: stepsValidation.error });
-        }
-      }
-      
-      const parsed = insertSopArticleSchema.partial().safeParse(req.body);
-      if (!parsed.success || (parsed.data.tenantId && parsed.data.tenantId !== tenantId)) {
-        return res.status(400).json({ message: 'Invalid SOP article' });
-      }
-      const changes = { ...parsed.data };
-      delete changes.tenantId;
-      const scope = changes.scope || existing.scope;
-      const branchIds = changes.branchIds || existing.branchIds || [];
-      if (!Array.isArray(branchIds) || !(await validSopBranches(user, tenantId, scope, branchIds))) {
-        return res.status(400).json({ message: 'Invalid SOP branch scope' });
-      }
-      const article = await storage.updateSopArticle(id, changes);
-      res.json(article);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Delete SOP article (admin only)
-  app.delete("/api/sops/:id", requireAuth, requireAdmin, async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const existing = await storage.getSopArticle(id);
-      const user = req.user as UserWithBranchAccess;
-      const tenantId = await resolveTenantId(user.tenantId);
-      if (!existing || existing.tenantId !== tenantId) {
-        return res.status(404).json({ message: "SOP article not found" });
-      }
-      await storage.deleteSopArticle(id);
-      res.status(204).send();
-    } catch (error) {
-      next(error);
-    }
-  });
+  registerSopRoutes(app, resolveTenantId);
 
   // ============================================
   // KNOWLEDGE BASE ARTICLES
