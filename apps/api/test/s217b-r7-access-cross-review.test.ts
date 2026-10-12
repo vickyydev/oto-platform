@@ -36,6 +36,11 @@ type Result = {
   policyOwnUser: number;
   policyMalformedBranches: number;
   overrideMalformedBranches: number;
+  overrideFailureReached: boolean;
+  overrideFailureRetained: boolean;
+  overrideRaceReached: boolean;
+  overrideRaceWholeSet: boolean;
+  overrideClearWorks: boolean;
 };
 let result: Result;
 
@@ -141,6 +146,30 @@ try {
  rows.policyOwnUser=(await call('POST','/api/data-admin/access-policies',b.cookie,{...policyBody,personId:people[1],coreUserId:b.id})).status;
  rows.policyMalformedBranches=(await call('POST','/api/data-admin/access-policies',b.cookie,{...policyBody,personId:people[2],branchIds:a.branch})).status;
  rows.overrideMalformedBranches=(await call('POST','/api/data-admin/user-module-overrides',b.cookie,{userId:b.id,moduleKey:'tasks',enabled:true,branchScopeType:'CUSTOM',branchIds:{foreign:a.branch}})).status;
+ // A replacement refusal must leave the saved selection intact.
+ await c.query('delete from user_module_overrides where tenant_id=$1 and user_id=$2',[a.tenant,a.id]);
+ await c.query("insert into user_module_overrides(tenant_id,user_id,module_key,enabled,branch_scope_type,branch_ids) values($1,$2,'tasks',false,'CUSTOM',$3)",[a.tenant,a.id,JSON.stringify([a.branch])]);
+ const prior=(await call('GET','/api/module-overrides/'+a.id,a.cookie)).data;
+ assert.equal(prior.length,1);assert.equal(prior[0].enabled,false);
+ await c.query("create function zz_test_override_barrier() returns trigger language plpgsql as $$ begin if NEW.notes='ZZ TEST fail override' then raise exception 'ZZ TEST override insert refusal'; end if; if NEW.notes in ('ZZ TEST race one','ZZ TEST race two') then perform pg_advisory_xact_lock(884412); end if; return NEW; end $$");
+ await c.query('create trigger zz_test_override_barrier before insert on user_module_overrides for each row execute function zz_test_override_barrier()');
+ const refused=await call('PUT','/api/module-overrides/'+a.id,a.cookie,{overrides:[{moduleKey:'tasks',enabled:true,branchScopeType:'CUSTOM',branchIds:[a.branch],notes:'ZZ TEST fail override'}]});
+ rows.overrideFailureReached=refused.status===500;
+ const afterRefusal=(await call('GET','/api/module-overrides/'+a.id,a.cookie)).data;
+ rows.overrideFailureRetained=afterRefusal.length===1&&afterRefusal[0].id===prior[0].id&&afterRefusal[0].enabled===false;
+ // Start empty and block both requests before their disjoint inserts finish.
+ const clearResponse=await call('DELETE','/api/module-overrides/'+a.id,a.cookie);
+ rows.overrideClearWorks=clearResponse.status===200&&(await call('GET','/api/module-overrides/'+a.id,a.cookie)).data.length===0;
+ await c.query('select pg_advisory_lock(884412)');
+ const replaceOne=call('PUT','/api/module-overrides/'+a.id,a.cookie,{overrides:[{moduleKey:'tasks',enabled:true,branchScopeType:'CUSTOM',branchIds:[a.branch],notes:'ZZ TEST race one'}]});
+ const replaceTwo=call('PUT','/api/module-overrides/'+a.id,a.cookie,{overrides:[{moduleKey:'events',enabled:true,branchScopeType:'CUSTOM',branchIds:[a.branch],notes:'ZZ TEST race two'}]});
+ let barrier=false;for(let n=0;n<750;n++){const waiting=Number((await c.query("select count(*) as n from pg_locks where locktype='advisory' and not granted and database=(select oid from pg_database where datname=current_database())")).rows[0].n);if(waiting>=2){barrier=true;break;}await new Promise(resolve=>setTimeout(resolve,20));}
+ await c.query('select pg_advisory_unlock(884412)');
+ const replacements=await Promise.all([replaceOne,replaceTwo]);
+ rows.overrideRaceReached=barrier&&replacements.every(response=>response.status===200);
+ const finalChoices=(await call('GET','/api/module-overrides/'+a.id,a.cookie)).data;
+ rows.overrideRaceWholeSet=finalChoices.length===1&&['tasks','events'].includes(finalChoices[0].moduleKey)&&finalChoices[0].enabled===true;
+ await c.query('drop trigger zz_test_override_barrier on user_module_overrides');await c.query('drop function zz_test_override_barrier()');
  const privateAfter=(await c.query('select name,is_active from roles where id=$1',[privateRole])).rows[0];rows.privateUnchanged=privateAfter.name==='ZZ TEST Private Role A'&&privateAfter.is_active;
  console.log('ACCESS_CROSS_RESULTS='+JSON.stringify(rows));
 } finally {if(server&&server.exitCode===null&&server.signalCode===null){await new Promise(resolve=>{server.once('exit',resolve);server.kill();});}await c.end();}
@@ -173,12 +202,9 @@ try {
   it('the owned presence record remains readable through its custom primary key', () => {
     expect(result.presenceOwn).toBe(200);
   });
-  it(
-    'FINDING 1 (medium, fixed): another park’s presence record is refused; prescribed fix: apply rowScope in EmployeePresenceAdmin.getById',
-    () => {
-      expect(result.presenceForeign).toBe(404);
-    },
-  );
+  it('FINDING 1 (medium, fixed): another park’s presence record is refused; prescribed fix: apply rowScope in EmployeePresenceAdmin.getById', () => {
+    expect(result.presenceForeign).toBe(404);
+  });
   it('private third-park role reads and metadata writes are refused, leaving its row unchanged', () => {
     expect([result.privateRead, result.privatePatch, result.privateDeactivate]).toEqual([
       404, 404, 404,
@@ -205,17 +231,28 @@ try {
   it('an access policy can keep its own park’s soft user link and valid branch array', () => {
     expect(result.policyOwnUser).toBe(201);
   });
-  it(
-    'FINDING 2 (high, fixed): a policy cannot link another park’s user; prescribed fix: explicitly validate coreUserId despite its soft-link schema',
+  it('FINDING 2 (high, fixed): a policy cannot link another park’s user; prescribed fix: explicitly validate coreUserId despite its soft-link schema', () => {
+    expect(result.policyForeignUser).toBe(404);
+  });
+  it('FINDING 3 (medium, fixed): malformed branch lists are refused; prescribed fix: validate supplied branchIds shape and each own-park parent before writing', () => {
+    expect([400, 404]).toContain(result.policyMalformedBranches);
+    expect([400, 404]).toContain(result.overrideMalformedBranches);
+  });
+  it('override failure and disjoint replacement controls reach their intended database boundaries', () => {
+    expect(result.overrideFailureReached).toBe(true);
+    expect(result.overrideRaceReached).toBe(true);
+    expect(result.overrideClearWorks).toBe(true);
+  });
+  it.fails(
+    'FINDING 4 (medium): a refused replacement retains the prior choices; prescribed fix: delete and insert overrides on one transaction connection',
     () => {
-      expect(result.policyForeignUser).toBe(404);
+      expect(result.overrideFailureRetained).toBe(true);
     },
   );
-  it(
-    'FINDING 3 (medium, fixed): malformed branch lists are refused; prescribed fix: validate supplied branchIds shape and each own-park parent before writing',
+  it.fails(
+    'FINDING 5 (medium): concurrent empty-set replacements remain one whole selection; prescribed fix: serialize per user and park before deleting and inserting',
     () => {
-      expect([400, 404]).toContain(result.policyMalformedBranches);
-      expect([400, 404]).toContain(result.overrideMalformedBranches);
+      expect(result.overrideRaceWholeSet).toBe(true);
     },
   );
 });
