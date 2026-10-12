@@ -227,10 +227,11 @@ async function contracted(c: pg.Client): Promise<{ nullable: string[]; uniques: 
 
 const NOT_NULL = ['activity_log NO', 'attention_items NO', 'settings NO'];
 /**
- * The migrations later rounds put after 0007, each expand only: round 6's 0008
- * (the document tables' park group). A full deploy records 0007 and these.
+ * Later rounds follow the immutable 0007 prefix. The production migrator
+ * applies the complete journal; the assertions below still weigh 0007's own
+ * three tables, refusals, retry and replay after that complete deploy.
  */
-const LATER_ROUNDS = ['0008_document_tenant_ownership_expand'];
+const LATER_ROUNDS = journal().entries.filter((entry) => entry.idx > 7).map((entry) => entry.tag);
 const LEDGER_THROUGH_LATER = 8 + LATER_ROUNDS.length;
 const NULLABLE = ['activity_log YES', 'attention_items YES', 'settings YES'];
 
@@ -1416,13 +1417,12 @@ describe('D. the platform’s two jobs: the no-show fence at the millisecond, an
 
 function sourcesUnder(dir: string): string[] {
   if (!existsSync(dir)) return [];
-  const out: string[] = [];
-  for (const f of readdirSync(dir, { recursive: true }).map(String)) {
-    if (/node_modules|[\\/]dist[\\/]|^dist[\\/]|\.turbo/.test(f)) continue;
-    const path = join(dir, f);
-    if (/\.(ts|tsx|mjs|js|cjs|json|sql|ya?ml)$/.test(f) && statSync(path).isFile()) out.push(path);
-  }
-  return out;
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (['node_modules', 'dist', '.turbo'].includes(entry.name)) return [];
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return sourcesUnder(path);
+    return /\.(ts|tsx|mjs|js|cjs|json|sql|ya?ml)$/.test(entry.name) && entry.isFile() ? [path] : [];
+  });
 }
 
 describe('E. seams, fences and the plan', () => {

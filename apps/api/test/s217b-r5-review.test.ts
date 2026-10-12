@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createHash, randomBytes, randomUUID, scryptSync } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
@@ -167,13 +167,12 @@ const section = (heading: string) => {
 
 function sourcesUnder(dir: string): string[] {
   if (!existsSync(dir)) return [];
-  const out: string[] = [];
-  for (const f of readdirSync(dir, { recursive: true }).map(String)) {
-    if (/node_modules|[\\/]dist[\\/]|^dist[\\/]|\.turbo/.test(f)) continue;
-    const path = join(dir, f);
-    if (/\.(ts|tsx|mjs|js|cjs|json|sql|ya?ml)$/.test(f) && statSync(path).isFile()) out.push(path);
-  }
-  return out;
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (['node_modules', 'dist', '.turbo'].includes(entry.name)) return [];
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return sourcesUnder(path);
+    return /\.(ts|tsx|mjs|js|cjs|json|sql|ya?ml)$/.test(entry.name) && entry.isFile() ? [path] : [];
+  });
 }
 
 // =============================================================================
@@ -188,12 +187,12 @@ describe('A. fences and seams', () => {
       'meta/0007_snapshot.json': '919c1fe4851d4d3dbcf814cdd4b6b12e100e5d4ae83634b16021c36cc59ce19b',
     };
     for (const [file, hash] of Object.entries(applied)) expect(sha256(committed(join(APP_MIGRATIONS, file))), file).toBe(hash);
-    // The journal as round 5 left it, entry for entry; round 6's 0008 is the
-    // only migration after it (apps/api/test/s217b-r6.test.ts).
+    // Keep the round-5 boundary and its round-6 successor pinned. Later
+    // migrations are weighed by their own round's review.
     const entries = (JSON.parse(committed(join(APP_MIGRATIONS, 'meta', '_journal.json'))) as { entries: { idx: number; when: number; tag: string }[] }).entries;
     expect(entries.find((e) => e.idx === 7)).toMatchObject({ when: 1791482998619, tag: '0007_tenant_ownership_contract' });
-    expect(entries.filter((e) => e.idx > 7).map((e) => e.tag)).toEqual(['0008_document_tenant_ownership_expand']);
-    expect(readdirSync(APP_MIGRATIONS).filter((f) => f.endsWith('.sql')).sort().slice(-2)).toEqual(['0007_tenant_ownership_contract.sql', '0008_document_tenant_ownership_expand.sql']);
+    expect(entries.filter((e) => e.idx > 7 && e.idx <= 8).map((e) => e.tag)).toEqual(['0008_document_tenant_ownership_expand']);
+    expect(readdirSync(APP_MIGRATIONS).filter((f) => /^000[78]_.*\.sql$/.test(f)).sort()).toEqual(['0007_tenant_ownership_contract.sql', '0008_document_tenant_ownership_expand.sql']);
     const platform = JSON.parse(committed(join(REPO, 'packages', 'db', 'migrations', 'meta', '_journal.json'))) as { entries: { tag: string }[] };
     expect(platform.entries.at(-1)?.tag).toBe('0075_event_booking_pass');
   });

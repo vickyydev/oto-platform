@@ -1342,13 +1342,14 @@ describe('E. read off the code: threading, seams, fences and the census', () => 
     expect(schema).toMatch(/key: text\("key"\)\.notNull\(\),/);
   });
 
-  it('nothing of round 7: no finance key migration (the Attention 503s were 4b’s, the time-off approval 503s round 5’s and the legacy-table guard round 6’s, and all are gone)', () => {
+  it('the migration prefix through round 6 has no finance keys; the earlier Attention, time-off and legacy-table guards remain retired', () => {
     const routes = readFileSync(join(APP_SERVER, 'routes.ts'), 'utf8');
     expect(routes).not.toMatch(/Attention rules are unavailable until tenant settings are isolated/);
     expect(routes).not.toMatch(/Attention updates are unavailable until tenant ownership is recorded/);
     expect(routes).not.toMatch(/Time-off approval is unavailable until approval tracking is enabled/);
     expect(routes).not.toMatch(/legacyHrUser\(|This module is unavailable for this tenant/);
-    for (const e of journal().entries.filter((x) => x.idx > 0)) {
+    // Round 7 owns the finance keys from 0009 onward; this pin retains the earlier boundary.
+    for (const e of journal().entries.filter((x) => x.idx > 0 && x.idx <= 8)) {
       const text = readFileSync(join(APP_MIGRATIONS, `${e.tag}.sql`), 'utf8');
       expect(text, e.tag).not.toMatch(/xero_tracking_categories|xero_tracking_options|cash_txns|cash_daily|pl_facts/);
     }

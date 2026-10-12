@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createHash, createHmac, randomBytes, randomUUID, scryptSync } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -406,13 +406,12 @@ const question = (n: number) => {
 
 function sourcesUnder(dir: string): string[] {
   if (!existsSync(dir)) return [];
-  const out: string[] = [];
-  for (const f of readdirSync(dir, { recursive: true }).map(String)) {
-    if (/node_modules|[\\/]dist[\\/]|^dist[\\/]|\.turbo/.test(f)) continue;
-    const path = join(dir, f);
-    if (/\.(ts|tsx|mjs|js|cjs|json|sql|ya?ml)$/.test(f) && statSync(path).isFile()) out.push(path);
-  }
-  return out;
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (['node_modules', 'dist', '.turbo'].includes(entry.name)) return [];
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return sourcesUnder(path);
+    return /\.(ts|tsx|mjs|js|cjs|json|sql|ya?ml)$/.test(entry.name) && entry.isFile() ? [path] : [];
+  });
 }
 
 /** One migration file's statements, comments and blank lines out, whitespace collapsed. */
@@ -428,7 +427,7 @@ function statementsOf(tag: string): string[] {
 // =============================================================================
 
 describe('A. fences and seams', () => {
-  it('0006 and 0007 and their snapshots are byte for byte what staging applied; 0008 is the one new app migration and the platform adds none', () => {
+  it('0006 and 0007 and their snapshots are byte for byte what staging applied; the round-6 prefix ends at 0008 and the platform adds none', () => {
     const applied = {
       '0006_tenant_ownership_expand.sql': 'e2f9c20269d7a508c636e8bc2b84e11ac5f82418df98890fc70b894e5d1e1225',
       '0007_tenant_ownership_contract.sql': '7c0408d7329f4d19ff26914f0eeaa0d8e855dc20f98f7eba6412279ba40b1a18',
@@ -439,9 +438,9 @@ describe('A. fences and seams', () => {
     const entries = (JSON.parse(committed(join(APP_MIGRATIONS, 'meta', '_journal.json'))) as { entries: { idx: number; when: number; tag: string }[] }).entries;
     expect(entries.find((e) => e.idx === 6)).toMatchObject({ tag: '0006_tenant_ownership_expand' });
     expect(entries.find((e) => e.idx === 7)).toMatchObject({ when: 1791482998619, tag: '0007_tenant_ownership_contract' });
-    expect(entries.filter((e) => e.idx > 7).map((e) => e.tag)).toEqual([MIGRATION]);
+    expect(entries.filter((e) => e.idx > 7 && e.idx <= 8).map((e) => e.tag)).toEqual([MIGRATION]);
     expect(entries.find((e) => e.idx === 8)!.when).toBeGreaterThan(1791482998619);
-    expect(readdirSync(APP_MIGRATIONS).filter((f) => f.endsWith('.sql')).sort().slice(-1)).toEqual([`${MIGRATION}.sql`]);
+    expect(readdirSync(APP_MIGRATIONS).filter((f) => /^0008_.*\.sql$/.test(f))).toEqual([`${MIGRATION}.sql`]);
     const platform = JSON.parse(committed(join(REPO, 'packages', 'db', 'migrations', 'meta', '_journal.json'))) as { entries: { tag: string }[] };
     expect(platform.entries.at(-1)?.tag).toBe('0075_event_booking_pass');
   });
@@ -2307,7 +2306,9 @@ describe.skipIf(!HAS_APP_RUNTIME)('C to F. over HTTP against the app’s routes'
       // The timekeeping read.
       answered(`${who} timekeeping read`, await call('GET', `/api/timekeeping/employee/${eA}`, { cookie }), 404, notFound);
       // The role holders: neither role lists A's holder; no save names A's employee or replaces A's own role's holders.
-      for (const role of [shared, roleA]) answered(`${who} GET role holders`, await call('GET', `/api/roles/${role}/employees`, { cookie }), 200);
+      answered(`${who} GET shared role holders`, await call('GET', `/api/roles/${shared}/employees`, { cookie }), 200, []);
+      // Round 7 refuses the foreign private parent as well as withholding its holders.
+      answered(`${who} GET foreign role holders`, await call('GET', `/api/roles/${roleA}/employees`, { cookie }), 404, { message: 'Role not found' });
       for (const [label, role, employeeIds, words] of [
         ['A’s employee', shared, [eA], notFound],
         ['B’s and A’s', shared, [eB, eA], notFound],
