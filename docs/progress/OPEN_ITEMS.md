@@ -1,5 +1,7 @@
 # Open items register — defects, decisions, concerns and recommendations
 
+12 October staging follow-through: Scheduling Q39 remains open; the other park’s restricted manager read the exact ZZ TEST shift group (200). The [round-5 page](../qa/oto-app-lift/round-5/scheduling.md) and labelled card carry this proof. It stays in the recorded scheduling/fix-block lane; no ad hoc change was made. Lift owner questions Q55-Q57 now record repeated P&L cells, historical unplaced people and global rate-limit administration with their stated defaults.
+
 *Written 9 October 2026 from a ground-truth sweep of every open sprint
 ticket (each judged against the code, not the docs), the four plans'
 question lists, and the review notes of every landed round. This is the

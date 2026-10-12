@@ -32,6 +32,8 @@ app on staging with the practice accounts. Her findings arrive through the
 owner; fold each into `OPEN_ITEMS.md` and the matching ticket rather than
 fixing ad hoc. A deliberate test record exists: Som's sick day on 14 October.
 
+**Current continuation (12 October):** Round-6 evidence checkpoint9009be62 passed CI38230330522 and its ten images are attached to SCRUM-191 (11360-11369); comments11729/11730 preserve both tickets In Progress. Round5’s ten action/refusal pages are recorded; exact attendance/operations/object cleanup is next. The shared ZZ TEST park/user now remains for round7’s isolated checks and must be cleaned before closure. The owner approved three isolated preparation lanes with one coordinator responsible for main/staging/Jira/migration numbering: R7 finance/contraction, R7 access/Data Admin and R8 tooling. Preserve complete gates and ordered landings. Q55-Q57 are in the plan; people census job-db6bq3ad0e5s73a5cndg found0 people and7 app users (strict placed6, unplaced/inconsistent1).
+
 **First actions, in order:**
 1. Completed 12 October: SCRUM-191 status checked (In Progress) and the
    round-6 delivery comment posted (11727). Its eight module walkthroughs

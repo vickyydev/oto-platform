@@ -1182,8 +1182,10 @@ is committed.
       seeds (`script/full`, `script/minimal`) and Data Admin's models of the
       four tables (its round 7 walkthrough). Until then their rows read as the
       default park group's.
-- Round 7: the four finance composite primary keys and a unique index on
-  `pl_facts`.
+- Round 7: the four finance composite primary keys. The additional
+  `pl_facts` identity/index is held at Q55 so repeated report cells remain.
+  People gain a nullable ownership anchor; existing policy/employee links
+  backfill only when they unanimously place the person in one park group.
 - A census in round 4 gives a disposition for the other root tables with no
   tenant column: `leave_policies`, `coverage_rules`, `invitation_designs`,
   `i18n_translations`, `package_line_item_templates` and `people`. Each is
@@ -1307,6 +1309,8 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
 - Each job has an `ops_expectation`, so a silence raises an alert.
 
 ## 10. Known effects of following the app
+
+12 October staging follow-through: [round 5’s ten action/refusal pages](../../../qa/oto-app-lift/round-5/README.md) record device, clock, leave, operations and media cases. Q39’s other-park shift-group read remains200 on the exact ZZ TEST fixture. Read-only job job-db6bq3ad0e5s73a5cndg counted people0 (none/one/several all0); app users7, strictly placed6, unplaced-or-inconsistent1, several-access-groups0. This includes the temporary practice user and changes no data.
 
 - **Copied employees have no platform department.** The app's departments
   do not correspond to the platform's.
@@ -2063,6 +2067,25 @@ scope gets a 403 and a key for another tenant gets a 404, as today.
   naming the caller's park group, the list and every role door held to it,
   and a park group's roles made before they can be assigned (not built; a
   new park group would start with none, as Q53 has it for templates).
+
+- **Q55. Repeated lines in a profit report (round 7).** Can a report contain
+  two distinct lines with the same section, line name and location? The app
+  keeps every returned cell and creates a new report snapshot on each sync.
+  Default: retain those cells. A display-label unique index is not built
+  because it could refuse distinct lines; the four declared finance keys
+  and atomic imports proceed independently. A stable source row identity
+  needs an owner choice before the extra pl_facts index can be assigned.
+- **Q56. People without an ownership link (round 7).** Where should an older
+  person with neither a policy nor an employee record belong? Default: leave
+  that historical row unplaced until its park is identified. New people carry
+  the creator’s park-group owner without creating a login or granting any
+  permission. Backfill only follows unanimous policy/employee ownership;
+  mixed links remain unplaced. Staging’s read-only census found zero people.
+- **Q57. Global sign-in rate-limit records (round 7).** Where should
+  administration of the app’s global sign-in limits live? They have no park
+  owner or tenant-bearing parent. Default for park Data Admin: retain the
+  model’s metadata and show an ownership notice; do not expose another
+  park’s activity or pretend an empty list is a successful check.
 
 ## 12. Hazards, each with its test
 

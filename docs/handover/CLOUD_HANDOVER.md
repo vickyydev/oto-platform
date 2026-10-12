@@ -17,6 +17,9 @@ work is landed and proven, and the tools. Kept current at every landing._
 
 ## 2. Where the work stands
 
+12 October continuation: round6 evidence9009be62 passed CI38230330522; ten inspected images11360-11369 are attached to SCRUM-191, delivery comments11729/11730 posted. Both191/193 remain In Progress. Round5’s ten action/refusal pages now exist; exact fixture/object cleanup is next, with the shared ZZ TEST park/user retained for isolated round7 checks and final cleanup before closure. The owner approved three isolated preparation lanes (R7 finance/contraction, R7 access/Data Admin, R8 tooling) with one coordinator owning main/staging/Jira/numbering. No new runtime code is landed. PlanQ55-Q57 and the newest STATUS block carry scope and census counts.
+
+
 Current checkpoint (12 October 2026, platform lane resumed): the
 sprint's two big stories are Deployed with checked evidence (SCRUM-217
 events/parties/camps/kiosk, SCRUM-218 staff benefits). The open story is
