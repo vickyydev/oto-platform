@@ -1,4 +1,4 @@
-import { db, pool } from "./db";
+import { db } from "./db";
 import {
   xeroTokens,
   xeroSyncRuns,
@@ -125,45 +125,47 @@ export async function syncTracking(tenantId: string) {
     let locationCategoryId: string | null = null;
     const locationOptions: { id: string; name: string }[] = [];
 
-    for (const cat of categories) {
-      await db
-        .insert(xeroTrackingCategories)
-        .values({
-          tenantId,
-          trackingCategoryId: cat.TrackingCategoryID,
-          name: cat.Name,
-          status: cat.Status,
-          rawJson: cat,
-        })
-        .onConflictDoUpdate({
-          target: [xeroTrackingCategories.tenantId, xeroTrackingCategories.trackingCategoryId],
-          set: { name: cat.Name, status: cat.Status, rawJson: cat },
-        });
-
-      for (const opt of cat.Options || []) {
-        await db
-          .insert(xeroTrackingOptions)
+    await db.transaction(async (tx) => {
+      for (const cat of categories) {
+        await tx
+          .insert(xeroTrackingCategories)
           .values({
             tenantId,
             trackingCategoryId: cat.TrackingCategoryID,
-            trackingOptionId: opt.TrackingOptionID,
-            name: opt.Name,
-            status: opt.Status,
+            name: cat.Name,
+            status: cat.Status,
+            rawJson: cat,
           })
           .onConflictDoUpdate({
-            target: [xeroTrackingOptions.tenantId, xeroTrackingOptions.trackingOptionId],
-            set: { name: opt.Name, status: opt.Status, trackingCategoryId: cat.TrackingCategoryID },
+            target: [xeroTrackingCategories.tenantId, xeroTrackingCategories.trackingCategoryId],
+            set: { name: cat.Name, status: cat.Status, rawJson: cat },
           });
-      }
 
-      if (cat.Name === "Location") {
-        locationCategoryId = cat.TrackingCategoryID;
         for (const opt of cat.Options || []) {
-          locationOptions.push({ id: opt.TrackingOptionID, name: opt.Name });
+          await tx
+            .insert(xeroTrackingOptions)
+            .values({
+              tenantId,
+              trackingCategoryId: cat.TrackingCategoryID,
+              trackingOptionId: opt.TrackingOptionID,
+              name: opt.Name,
+              status: opt.Status,
+            })
+            .onConflictDoUpdate({
+              target: [xeroTrackingOptions.tenantId, xeroTrackingOptions.trackingOptionId],
+              set: { name: opt.Name, status: opt.Status, trackingCategoryId: cat.TrackingCategoryID },
+            });
+        }
+
+        if (cat.Name === "Location") {
+          locationCategoryId = cat.TrackingCategoryID;
+          for (const opt of cat.Options || []) {
+            locationOptions.push({ id: opt.TrackingOptionID, name: opt.Name });
+          }
         }
       }
-    }
 
+    });
     await logSyncRun(tenantId, "TRACKING", null, null, "OK");
     console.log(`[FinanceSync] Tracking synced: ${categories.length} categories`);
     return { trackingCategoryID: locationCategoryId, options: locationOptions };
@@ -202,11 +204,8 @@ export async function syncPL(tenantId: string, fromDate: string, toDate: string)
     const path = `/Reports/ProfitAndLoss?fromDate=${fromDate}&toDate=${toDate}&trackingCategoryID=${trackingCategoryID}`;
     const data = await xeroGet(accessToken, tenantId, path);
 
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-
-      const rawInsert = await db
+    const factCount = await db.transaction(async (tx) => {
+      const rawInsert = await tx
         .insert(xeroReportsRaw)
         .values({
           tenantId,
@@ -225,20 +224,15 @@ export async function syncPL(tenantId: string, fromDate: string, toDate: string)
       if (facts.length > 0) {
         const BATCH = 500;
         for (let i = 0; i < facts.length; i += BATCH) {
-          await db.insert(plFacts).values(facts.slice(i, i + BATCH));
+          await tx.insert(plFacts).values(facts.slice(i, i + BATCH));
         }
       }
 
-      await client.query("COMMIT");
-      await logSyncRun(tenantId, "PL", fromDate, toDate, "OK");
-      console.log(`[FinanceSync] P&L synced: 1 report, ${facts.length} facts`);
-      return { reportsStored: 1, factsStored: facts.length };
-    } catch (txErr) {
-      await client.query("ROLLBACK");
-      throw txErr;
-    } finally {
-      client.release();
-    }
+      return facts.length;
+    });
+    await logSyncRun(tenantId, "PL", fromDate, toDate, "OK");
+    console.log(`[FinanceSync] P&L synced: 1 report, ${factCount} facts`);
+    return { reportsStored: 1, factsStored: factCount };
   } catch (err: any) {
     await logSyncRun(tenantId, "PL", fromDate, toDate, "ERROR", err.message);
     throw err;
@@ -386,56 +380,58 @@ export async function syncCash(tenantId: string, fromDate: string, toDate: strin
     let inserted = 0;
     let skipped = 0;
 
-    for (const txn of allTxns) {
-      const txnId = txn.BankTransactionID || txn.bankTransactionID;
+    await db.transaction(async (tx) => {
+      for (const txn of allTxns) {
+        const txnId = txn.BankTransactionID || txn.bankTransactionID;
 
-      const normalizedDate = normalizeXeroDate(
-        txn.Date ?? txn.DateString ?? txn.DateUTC ?? txn.UpdatedDateUTC
-      );
+        const normalizedDate = normalizeXeroDate(
+          txn.Date ?? txn.DateString ?? txn.DateUTC ?? txn.UpdatedDateUTC
+        );
 
-      if (!normalizedDate) {
-        const rawDateVal = txn.Date ?? txn.DateString ?? txn.DateUTC ?? txn.UpdatedDateUTC;
-        console.warn(`[FinanceSync] Skipping txn ${txnId}: unparseable date "${rawDateVal}"`);
-        skipped++;
-        continue;
-      }
+        if (!normalizedDate) {
+          const rawDateVal = txn.Date ?? txn.DateString ?? txn.DateUTC ?? txn.UpdatedDateUTC;
+          console.warn(`[FinanceSync] Skipping txn ${txnId}: unparseable date "${rawDateVal}"`);
+          skipped++;
+          continue;
+        }
 
-      const total = safeNumeric(txn.Total ?? txn.total);
-      if (total === null) {
-        console.warn(`[FinanceSync] Skipping txn ${txnId}: invalid Total "${txn.Total ?? txn.total}"`);
-        skipped++;
-        continue;
-      }
+        const total = safeNumeric(txn.Total ?? txn.total);
+        if (total === null) {
+          console.warn(`[FinanceSync] Skipping txn ${txnId}: invalid Total "${txn.Total ?? txn.total}"`);
+          skipped++;
+          continue;
+        }
 
-      const direction = total >= 0 ? "in" : "out";
+        const direction = total >= 0 ? "in" : "out";
 
-      await db
-        .insert(cashTxns)
-        .values({
-          tenantId,
-          xeroBankTransactionId: txnId,
-          date: normalizedDate,
-          bankAccountName: txn.BankAccount?.Name || txn.bankAccount?.name || null,
-          type: txn.Type || txn.type || null,
-          total: String(total),
-          direction,
-          rawJson: txn,
-        })
-        .onConflictDoUpdate({
-          target: [cashTxns.tenantId, cashTxns.xeroBankTransactionId],
-          set: {
+        await tx
+          .insert(cashTxns)
+          .values({
+            tenantId,
+            xeroBankTransactionId: txnId,
             date: normalizedDate,
             bankAccountName: txn.BankAccount?.Name || txn.bankAccount?.name || null,
             type: txn.Type || txn.type || null,
             total: String(total),
             direction,
             rawJson: txn,
-          },
-        });
-      inserted++;
-    }
+          })
+          .onConflictDoUpdate({
+            target: [cashTxns.tenantId, cashTxns.xeroBankTransactionId],
+            set: {
+              date: normalizedDate,
+              bankAccountName: txn.BankAccount?.Name || txn.bankAccount?.name || null,
+              type: txn.Type || txn.type || null,
+              total: String(total),
+              direction,
+              rawJson: txn,
+            },
+          });
+        inserted++;
+      }
 
-    await rebuildCashDaily(tenantId, fromDate, toDate);
+      await rebuildCashDaily(tenantId, fromDate, toDate, tx);
+    });
     await logSyncRun(tenantId, "CASH", fromDate, toDate, "OK");
     console.log(`[FinanceSync] Cash synced: ${inserted} inserted, ${skipped} skipped of ${allTxns.length} total`);
     return { txnCount: inserted, skipped };
@@ -445,12 +441,15 @@ export async function syncCash(tenantId: string, fromDate: string, toDate: strin
   }
 }
 
-async function rebuildCashDaily(tenantId: string, fromDate: string, toDate: string) {
-  await db.delete(cashDaily).where(
+async function rebuildCashDaily(
+  tenantId: string, fromDate: string, toDate: string,
+  database: Pick<typeof db, "delete" | "execute">,
+) {
+  await database.delete(cashDaily).where(
     and(eq(cashDaily.tenantId, tenantId), gte(cashDaily.date, fromDate), lte(cashDaily.date, toDate))
   );
 
-  await db.execute(sql`
+  await database.execute(sql`
     INSERT INTO cash_daily (tenant_id, date, cash_in, cash_out, net)
     SELECT
       tenant_id,

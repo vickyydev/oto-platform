@@ -693,7 +693,7 @@ async function seed() {
     { mime: "image/png",        ext: "png"  },
     { mime: "application/msword", ext: "doc" },
   ];
-  const fileRows = Array.from({ length: 30 }, (_, i) => {
+  const fileRows = Array.from({ length: 30 }, (_, _i) => {
     const source = pick(FILE_SOURCES);
     const { mime, ext } = pick(FILE_MIME_TYPES);
     const key = `${source}/${faker.string.uuid()}.${ext}`;
@@ -723,6 +723,7 @@ async function seed() {
     .insert(templates)
     .values(
       TEMPLATE_DEFS.map(({ name, templateType }) => ({
+        tenantId: tenant.id,
         name,
         htmlBody: `<h1>${name}</h1><p>This is the {{employee.full_name}} ${templateType} document.</p>`,
         status: "active" as const,
@@ -1857,9 +1858,9 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
   // ── 47. Leave Policies ─────────────────────────────────────────────────────
   // One company-wide default policy + one per branch (matching prod shape)
   await db.insert(leavePolicies).values([
-    { name: "Default Day-Off Policy", daysWorkedRequired: 5, daysOffEarned: 2, isActive: true },
-    { branchId: branchRecords[0].id, name: "Bangkok Leave Policy",       daysWorkedRequired: 5, daysOffEarned: 2, isActive: true },
-    { branchId: branchRecords[1].id, name: "San Francisco Leave Policy", daysWorkedRequired: 5, daysOffEarned: 1, isActive: true },
+    { tenantId: tenant.id, name: "Default Day-Off Policy", daysWorkedRequired: 5, daysOffEarned: 2, isActive: true },
+    { tenantId: tenant.id, branchId: branchRecords[0].id, name: "Bangkok Leave Policy",       daysWorkedRequired: 5, daysOffEarned: 2, isActive: true },
+    { tenantId: tenant.id, branchId: branchRecords[1].id, name: "San Francisco Leave Policy", daysWorkedRequired: 5, daysOffEarned: 1, isActive: true },
   ]);
   console.log("[seed-full] Created 3 leave policies");
 
@@ -2039,7 +2040,7 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
   console.log("[seed-full] Created", repaymentRows.length, "salary advance repayments");
 
   // ── 58. Statutory Rule Sets ────────────────────────────────────────────────
-  const [statutoryRuleSet] = await db.insert(statutoryRuleSets).values({
+  const [_statutoryRuleSet] = await db.insert(statutoryRuleSets).values({
     tenantId: tenant.id,
     operatorId: operator.id,
     countryCode: "TH",
@@ -2142,6 +2143,7 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
   // ── 63. Policy Documents ───────────────────────────────────────────────────
   const policyDocRecords = await db.insert(policyDocuments).values([
     {
+      tenantId: tenant.id,
       title: "Rules & Regulations",
       contentHtml: "<h1>Company Rules & Regulations</h1><p>All staff must adhere to the following policies...</p>",
       status: "published" as const,
@@ -2151,6 +2153,7 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
       updatedBy: adminUser.id,
     },
     {
+      tenantId: tenant.id,
       title: "Branch Safety Policy",
       contentHtml: "<h1>Safety Policy</h1><p>Safety is our top priority...</p>",
       status: "published" as const,
@@ -2161,6 +2164,7 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
       updatedBy: adminUser.id,
     },
     {
+      tenantId: tenant.id,
       title: "Leave Policy 2026 (Draft)",
       contentHtml: "<h1>Leave Policy</h1><p>Updated annual leave terms for 2026...</p>",
       status: "draft" as const,
@@ -2270,7 +2274,7 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
     { name: "Company Phone",       category: "technology"as const },
   ];
   const assetCatalogRecords = await db.insert(assetCatalog).values(
-    ASSET_CATALOG_DEFS.map(d => ({ name: d.name, category: d.category, isActive: true }))
+    ASSET_CATALOG_DEFS.map(d => ({ tenantId: tenant.id, name: d.name, category: d.category, isActive: true }))
   ).returning();
   console.log("[seed-full] Created", assetCatalogRecords.length, "asset catalog items");
 
@@ -2481,7 +2485,7 @@ Required fields are: event_date, start_time, child_name (for birthday), num_chil
   console.log("[seed-full] Created 3 xero sync runs");
 
   // ── 83. Xero Tracking Categories + Options ──────────────────────────────
-  const xeroTenantId = faker.string.uuid();
+  const _xeroTenantId = faker.string.uuid();
   const trackingCatId = faker.string.uuid();
   await db.insert(xeroTrackingCategories).values([
     { tenantId: tenant.id, trackingCategoryId: trackingCatId, name: "Location", status: "ACTIVE", rawJson: { Name: "Location", Status: "ACTIVE" } },

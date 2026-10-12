@@ -1,3 +1,4 @@
+/* global process, console */
 /**
  * The tenant ownership read-back (S2-17b round 4a; plan section 7, hazard H10,
  * and the root-table census).
@@ -201,6 +202,20 @@ async function main() {
         `${people.none} in none, ${people.several} in more than one.`,
     );
 
+    const peopleOwnerInstalled = n((await q(
+      "select count(*) as n from information_schema.columns where table_schema=$1 and table_name='people' and column_name='tenant_id'",
+      [SCHEMA],
+    ))[0].n) === 1;
+    if (peopleOwnerInstalled) {
+      const owners = (await q(`select count(*) filter (where p.tenant_id is not null)::int as owned,
+        count(*) filter (where p.tenant_id is null)::int as unplaced,
+        count(*) filter (where p.tenant_id is not null and (
+          exists (select 1 from access_policies a where a.person_id=p.id and a.tenant_id<>p.tenant_id)
+          or exists (select 1 from employees e where e.person_id=p.id and e.tenant_id<>p.tenant_id)))::int as conflicting
+        from people p`))[0];
+      console.log(`  people ownership (0009): ${owners.owned} anchored, ${owners.unplaced} unplaced, ${owners.conflicting} with conflicting linked park groups (Q56).`);
+    }
+
     // 3. Round 6's document tables (0008).
     const DOCUMENT_TABLES = ["templates", "policy_documents", "asset_catalog", "leave_policies"];
     const documentColumns = await q(
@@ -265,6 +280,30 @@ async function main() {
         (offboarding.employees > 0 ? " — npm run offboarding:census names them (Q48)." : "."),
     );
 
+    // 4. Finance keys use Xero organisation IDs, not the park-group UUID.
+    // Counts only: no report values, bank details or connection credentials.
+    let financeDuplicates = 0;
+    console.log("\nFinance key census (round 7, 0009):");
+    for (const [table, keyColumns] of [
+      ["xero_tracking_categories", "tenant_id, tracking_category_id"],
+      ["xero_tracking_options", "tenant_id, tracking_option_id"],
+      ["cash_txns", "tenant_id, xero_bank_transaction_id"],
+      ["cash_daily", "tenant_id, date"],
+    ]) {
+      const duplicates = n((await q(
+        `select count(*) as n from (select 1 from ${table} group by ${keyColumns} having count(*) > 1) d`,
+      ))[0].n);
+      financeDuplicates += duplicates;
+      const primary = (await q(
+        `select pg_get_constraintdef(c.oid) as definition from pg_constraint c
+          join pg_class t on t.oid = c.conrelid join pg_namespace s on s.oid = t.relnamespace
+         where s.nspname = $1 and t.relname = $2 and c.contype = 'p'`,
+        [SCHEMA, table],
+      ))[0]?.definition ?? "NOT made";
+      console.log(`  ${table}: ${duplicates} duplicate key groups; ${primary}.`);
+    }
+    console.log("  pl_facts: report snapshots and repeated labels retained; cell identity waits for Q55.");
+
     await client.query("rollback");
     if (unplaced > 0) {
       console.log(
@@ -276,6 +315,10 @@ async function main() {
       console.log(
         `\n${documentsUnplaced} document row${documentsUnplaced === 1 ? " has" : "s have"} no park group: round 7's contraction runs 0008's backfill again over them before NOT NULL.`,
       );
+      return 1;
+    }
+    if (financeDuplicates > 0) {
+      console.log(`\n${financeDuplicates} finance key groups are held twice: settle them before migration 0009. No rows were changed.`);
       return 1;
     }
     console.log(

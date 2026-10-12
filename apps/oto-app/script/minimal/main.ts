@@ -263,7 +263,7 @@ async function seed() {
 
         // ── Child check-ins ─────────────────────────────────────────────────
         // Child 1: Registered (waiting to be assigned to nanny)
-        const [checkin1] = await db.insert(serviceCheckins).values({
+        const [_checkin1] = await db.insert(serviceCheckins).values({
                 tenantId: tenant.id,
                 branchId: branch.id,
                 status: "registered",
@@ -304,7 +304,7 @@ async function seed() {
         }).returning();
 
         // Child 3: Registered for drop-off
-        const [checkin3] = await db.insert(serviceCheckins).values({
+        const [_checkin3] = await db.insert(serviceCheckins).values({
                 tenantId: tenant.id,
                 branchId: branch.id,
                 status: "registered",
@@ -434,7 +434,7 @@ async function seed() {
                 createdBy: adminUser.id,
         }).returning();
 
-        const [teamAShift] = await db.insert(scheduleShiftRows).values({
+        const [_teamAShift] = await db.insert(scheduleShiftRows).values({
                 tenantId: tenant.id,
                 branchId: branch.id,
                 label: "Team A Shift",
@@ -534,6 +534,7 @@ async function seed() {
         const [contractTemplate] = await db
                 .insert(templates)
                 .values({
+                        tenantId: tenant.id,
                         name: "Standard Employment Contract",
                         templateType: "employment",
                         htmlBody: "<p>This employment contract is entered into between the Company and <b>{{employee.full_name}}</b> for the position of <b>{{contract.position_title}}</b>.</p>",
