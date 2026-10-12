@@ -92,7 +92,8 @@ try{
       }
       expect(run.status, 'The bounded preview fixture finished').toBe(0);
       expect(match, 'The real handler produced its review results').not.toBeNull();
-      proof = JSON.parse(match![1]);
+      if (!match?.[1]) throw new Error('The preview fixture did not return its results');
+      proof = JSON.parse(match[1]);
     } finally {
       await database.drop();
       removeFixtureDirectory(directory);
