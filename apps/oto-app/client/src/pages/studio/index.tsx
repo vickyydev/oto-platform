@@ -1,6 +1,6 @@
 import { StudioLayout } from "@/components/layout/studio-layout";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarDays, ClipboardList, ListTodo, Baby } from "lucide-react";
+import { CalendarDays, ClipboardList, FileText, ListTodo, Baby } from "lucide-react";
 import { Link } from "wouter";
 
 const studioSections = [
@@ -35,6 +35,14 @@ const studioSections = [
     href: "/studio/checklists",
     color: "text-blue-600 dark:text-blue-400",
     bgColor: "bg-blue-100 dark:bg-blue-900/30",
+  },
+  {
+    title: "SOPs",
+    description: "Write and organize standard operating procedures",
+    icon: FileText,
+    href: "/studio/sops",
+    color: "text-green-600 dark:text-green-400",
+    bgColor: "bg-green-100 dark:bg-green-900/30",
   },
 ];
 

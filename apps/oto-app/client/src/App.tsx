@@ -1,6 +1,6 @@
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { Suspense, lazy, useState } from "react";
-import * as Sentry from "@sentry/react";
+import * as _Sentry from "@sentry/react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,7 +18,7 @@ import { CoreLayout } from "@/components/layout/core-layout";
 import { StudioLayout } from "@/components/layout/studio-layout";
 import { GlobalUploadProgress } from "@/components/media/GlobalUploadProgress";
 import { useNotificationCount, NotificationPanel } from "@/components/notification-bell";
-import { Loader2, LogOut, KeyRound, CalendarDays, Moon, Sun, Link as LinkIcon, Smartphone, Camera, Lock, User, Bell, Video, VideoOff } from "lucide-react";
+import { Loader2, LogOut, KeyRound, CalendarDays, Moon, Sun, User, Bell, Video, VideoOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,7 +75,7 @@ const RolesPage = lazy(() => import("@/pages/roles-page"));
 const SchedulingPage = lazy(() => import("@/pages/scheduling-page"));
 const AdvisorsPage = lazy(() => import("@/pages/advisors-page"));
 const OperatorsPage = lazy(() => import("@/pages/operators-page"));
-const PayrollPage = lazy(() => import("@/pages/payroll-page"));
+const _PayrollPage = lazy(() => import("@/pages/payroll-page"));
 const PayrollOverviewPage = lazy(() => import("@/pages/payroll-overview-page"));
 const PayrollPeriodsPage = lazy(() => import("@/pages/payroll-periods-page"));
 const PayrollPeriodDetailPage = lazy(() => import("@/pages/payroll-period-detail-page"));
@@ -99,7 +99,7 @@ const DataAdminListPage = lazy(() => import("@/pages/data/model-list-page"));
 const DataAdminDetailPage = lazy(() => import("@/pages/data/model-detail-page"));
 const DataAdminFormPage = lazy(() => import("@/pages/data/model-form-page"));
 
-const CoreHomePage = lazy(() => import("@/pages/core/home"));
+const _CoreHomePage = lazy(() => import("@/pages/core/home"));
 const CoreDashboardPage = lazy(() => import("@/pages/core/dashboard"));
 const CoreCheckinsPage = lazy(() => import("@/pages/core/checkins"));
 const CoreDropoffCheckinPage = lazy(() => import("@/pages/core/dropoff-checkin"));
@@ -140,6 +140,7 @@ const SetupPage = lazy(() => import("@/pages/setup/index"));
 const StudioIndexPage = lazy(() => import("@/pages/studio/index"));
 const StudioTasksPage = lazy(() => import("@/pages/studio/tasks"));
 const StudioChecklistsPage = lazy(() => import("@/pages/studio/checklists"));
+const StudioSopsPage = lazy(() => import("@/pages/studio/sops"));
 const KnowledgeBasePage = lazy(() => import("@/pages/studio/knowledge-base"));
 const StudioTroubleshootingPage = lazy(() => import("@/pages/studio/troubleshooting"));
 const StudioQuizzesPage = lazy(() => import("@/pages/studio/quizzes"));
@@ -621,6 +622,7 @@ function Router() {
       <ProtectedRoute path="/studio/tasks/recurring" component={() => <StudioProtectedLayout component={StudioTasksPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/tasks" component={() => <Redirect to="/studio/tasks/one-off" />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/checklists" component={() => <StudioProtectedLayout component={StudioChecklistsPage} />} requiredRole={["manager", "admin"]} />
+      <ProtectedRoute path="/studio/sops" component={() => <StudioProtectedLayout component={StudioSopsPage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/kb" component={() => <StudioProtectedLayout component={KnowledgeBasePage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/kb/files" component={() => <StudioProtectedLayout component={KnowledgeBasePage} />} requiredRole={["manager", "admin"]} />
       <ProtectedRoute path="/studio/troubleshooting" component={() => <StudioProtectedLayout component={StudioTroubleshootingPage} />} requiredRole={["manager", "admin"]} />
@@ -727,7 +729,7 @@ function App() {
   );
 }
 
-function ErrorFallback() {
+function _ErrorFallback() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
