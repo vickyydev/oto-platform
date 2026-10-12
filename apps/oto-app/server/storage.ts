@@ -2750,20 +2750,30 @@ export class DatabaseStorage implements IStorage {
                 overrides: Omit<InsertUserModuleOverride, "tenantId" | "userId">[],
                 updatedBy: string,
         ): Promise<UserModuleOverride[]> {
-                await db
-                        .delete(userModuleOverrides)
-                        .where(and(eq(userModuleOverrides.userId, userId), eq(userModuleOverrides.tenantId, tenantId)));
-                if (overrides.length === 0) return [];
-                const rows = overrides.map((o) => ({
-                        ...o,
-                        tenantId,
-                        userId,
-                        updatedBy,
-                }));
-                return db.insert(userModuleOverrides).values(rows).returning();
+                return db.transaction(async (tx) => {
+                        // The selection may be empty, so lock its identity before replacing it.
+                        await tx.execute(
+                                sql`SELECT pg_advisory_xact_lock(hashtextextended(${`module-overrides:${tenantId}:${userId}`}::text, 0))`,
+                        );
+                        await tx
+                                .delete(userModuleOverrides)
+                                .where(and(eq(userModuleOverrides.userId, userId), eq(userModuleOverrides.tenantId, tenantId)));
+                        if (overrides.length === 0) return [];
+                        const rows = overrides.map((o) => ({
+                                ...o,
+                                tenantId,
+                                userId,
+                                updatedBy,
+                        }));
+                        return tx.insert(userModuleOverrides).values(rows).returning();
+                });
         }
 
         async deleteModuleOverrides(userId: string, tenantId?: string): Promise<void> {
+                if (tenantId) {
+                        await this.setModuleOverrides(userId, tenantId, [], userId);
+                        return;
+                }
                 await db
                         .delete(userModuleOverrides)
                         .where(and(eq(userModuleOverrides.userId, userId), tenantId ? eq(userModuleOverrides.tenantId, tenantId) : undefined));
