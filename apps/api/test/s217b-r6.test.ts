@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -8,7 +8,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { applyOtoAppMigrations, createTestDatabase } from '@oto/db/testing';
+import { createTestDatabase } from '@oto/db/testing';
 
 /**
  * S2-17b round 6 (SCRUM-193 under SCRUM-191) — THE DOCUMENT MODULES, AS THE
@@ -109,10 +109,11 @@ function statementsOf(tag: string): string[] {
 }
 
 /** A copy of the app's migrations up to and including `idx`. */
-function migrationsUpTo(idx: number): string {
+function migrationsUpTo(idx: number, target?: string): string {
   const j = journal();
   const live = j.entries.filter((e) => e.idx <= idx);
-  const dir = mkdtempSync(join(tmpdir(), 'otoapp-r6-'));
+  const dir = target ?? mkdtempSync(join(tmpdir(), 'otoapp-r6-'));
+  mkdirSync(dir, { recursive: true });
   mkdirSync(join(dir, 'meta'));
   writeFileSync(join(dir, 'meta', '_journal.json'), JSON.stringify({ ...j, entries: live }));
   for (const e of live) copyFileSync(join(APP_MIGRATIONS, `${e.tag}.sql`), join(dir, `${e.tag}.sql`));
@@ -142,17 +143,32 @@ async function databaseAt(idx: number): Promise<{ url: string; drop: () => Promi
   return { url, drop };
 }
 
-/** The deploy's migrator: the app's own where it can run here (its words), else the same SQL in-process. */
+/** Exercise the deployed round-6 release, including its original nullable shape. */
 async function deploy(url: string): Promise<{ status: number; output: string }> {
-  if (HAS_APP_MODULES) {
-    const out = spawnSync(process.execPath, [join(APP_DIR, 'script', 'migrate.mjs')], {
-      env: { ...process.env, DATABASE_URL: url },
-      encoding: 'utf8',
-    });
-    return { status: out.status ?? 1, output: `${out.stdout ?? ''}\n${out.stderr ?? ''}` };
+  // Later releases contract these columns. Keep this release's fixture at
+  // 0008; round 7 separately proves the complete current migration chain.
+  const release = mkdtempSync(join(tmpdir(), 'otoapp-r6-deploy-'));
+  if (!release.startsWith(join(tmpdir(), 'otoapp-r6-deploy-')))
+    throw new Error('Unexpected release directory');
+  const dir = migrationsUpTo(8, join(release, 'migrations'));
+  try {
+    if (HAS_APP_MODULES) {
+      mkdirSync(join(release, 'script'));
+      copyFileSync(join(APP_DIR, 'script', 'migrate.mjs'), join(release, 'script', 'migrate.mjs'));
+      symlinkSync(join(APP_DIR, 'node_modules'), join(release, 'node_modules'), 'junction');
+      const out = spawnSync(process.execPath, [join(release, 'script', 'migrate.mjs')], {
+        env: { ...process.env, DATABASE_URL: url },
+        encoding: 'utf8',
+      });
+      return { status: out.status ?? 1, output: `${out.stdout ?? ''}\n${out.stderr ?? ''}` };
+    }
+    await withClient(url, (c) =>
+      migrate(drizzle(c), { migrationsFolder: dir, migrationsSchema: 'otoapp' }),
+    );
+    return { status: 0, output: 'round-6 migration prefix' };
+  } finally {
+    rmSync(release, { recursive: true, force: true });
   }
-  await applyOtoAppMigrations(url);
-  return { status: 0, output: 'applyOtoAppMigrations' };
 }
 
 function script(path: string, url: string): { status: number; output: string } {
@@ -187,7 +203,7 @@ describe('A. migration 0008 as committed', () => {
     const e = entries.find((x) => x.tag === MIGRATION);
     expect(e?.idx).toBe(8);
     expect(e!.when).toBeGreaterThan(entries.find((x) => x.idx === 7)!.when);
-    expect(entries.at(-1)!.tag).toBe(MIGRATION);
+    expect(entries.filter((x) => x.idx <= 8).at(-1)!.tag).toBe(MIGRATION);
     expect(existsSync(join(APP_MIGRATIONS, 'meta', '0008_snapshot.json'))).toBe(true);
     expect(committed(join(APP_MIGRATIONS, `${MIGRATION}.sql`)).includes('"public".')).toBe(false);
     expect(sha256(committed(join(APP_MIGRATIONS, '0006_tenant_ownership_expand.sql')))).toBe('e2f9c20269d7a508c636e8bc2b84e11ac5f82418df98890fc70b894e5d1e1225');
@@ -277,7 +293,7 @@ describe('B. from empty, twice', () => {
       expect(second.status, second.output).toBe(0);
       if (HAS_APP_MODULES) expect(second.output).toMatch(/is up to date/);
       await withClient(url, async (c) => {
-        expect(Number((await c.query('select count(*)::int as n from __drizzle_migrations')).rows[0].n)).toBe(journal().entries.length);
+        expect(Number((await c.query('select count(*)::int as n from __drizzle_migrations')).rows[0].n)).toBe(journal().entries.filter((x) => x.idx <= 8).length);
         const cols = await c.query<{ table_name: string; is_nullable: string }>(
           `select table_name, is_nullable from information_schema.columns
             where table_schema = 'otoapp' and column_name = 'tenant_id' and table_name = any($1) order by 1`,
