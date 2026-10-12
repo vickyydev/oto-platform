@@ -251,11 +251,11 @@ export function requireModule(...moduleKeys: ModuleKey[]) {
     }
 
     try {
-      const tenantId = req.userWithAccess?.tenantId || user.tenantId;
+      const tenantId = req.userWithAccess?.tenantId;
       if (!tenantId) return res.status(403).json({ error: "Park group context required" });
       const overrides = await storage.getModuleOverrides(user.id, tenantId);
-      const employees = await storage.getEmployees(tenantId);
-      const linkedEmployee = employees.find(e => e.userId === user.id);
+      const employees = await storage.getEmployees();
+      const linkedEmployee = employees.find(e => e.tenantId === tenantId && e.userId === user.id);
 
       // Prefer the effective role from userWithAccess (which resolves "advisor" →
       // staff/manager/admin based on the access policy) over req.user.role which

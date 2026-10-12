@@ -27877,8 +27877,8 @@ ${context}`;
 
       // Find linked employee to get home branch
       let homeBranchId: string | null = null;
-      const allEmployees = await storage.getEmployees(await resolveTenantId(req.user?.tenantId));
-      const linkedEmployee = allEmployees.find(e => e.userId === userId);
+      const allEmployees = await storage.getEmployees();
+      const linkedEmployee = allEmployees.find(e => e.tenantId === tenantId && e.userId === userId);
       if (linkedEmployee) {
         homeBranchId = linkedEmployee.branchId || null;
       }
@@ -27932,8 +27932,8 @@ ${context}`;
       const overrides = await storage.getModuleOverrides(userId, tenantId);
 
       let homeBranchId: string | null = null;
-      const allEmployees = await storage.getEmployees(tenantId);
-      const linkedEmployee = allEmployees.find(e => e.userId === userId);
+      const allEmployees = await storage.getEmployees();
+      const linkedEmployee = allEmployees.find(e => e.tenantId === tenantId && e.userId === userId);
       if (linkedEmployee) {
         homeBranchId = linkedEmployee.branchId || null;
       }

@@ -13,8 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Plus, Trash2, GripVertical, Eye, Languages, Upload, Save, FileText, ChevronRight, ChevronDown, Settings, AlertCircle, Check, Clock, History } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { Loader2, Plus, Trash2, GripVertical, Eye, Languages, Upload, Save, FileText, Settings, AlertCircle, Check, History } from "lucide-react";
 
 interface FormField {
   id: string;
@@ -142,10 +142,16 @@ export default function FormBuilderPage() {
   const form = formResponse?.form;
   const draftVersion = formResponse?.draftVersion;
   const publishedVersion = formResponse?.publishedVersion;
+  const displayedVersionId = draftVersion?.id ?? publishedVersion?.id;
+  const translationQueryKey = [`/api/dropoff-form/${form?.id}/translations/${selectedLang}?versionId=${displayedVersionId}`];
+  const refreshTranslations = () => queryClient.invalidateQueries({
+    predicate: query => typeof query.queryKey[0] === "string"
+      && query.queryKey[0].startsWith(`/api/dropoff-form/${form?.id}/translations/`),
+  });
 
   const { data: translations, isLoading: translationsLoading } = useQuery<Translation[]>({
-    queryKey: [`/api/dropoff-form/${form?.id}/translations/${selectedLang}`],
-    enabled: !!form?.id,
+    queryKey: translationQueryKey,
+    enabled: !!form?.id && !!displayedVersionId,
   });
 
   const { data: versions, isLoading: versionsLoading } = useQuery<FormVersion[]>({
@@ -154,10 +160,11 @@ export default function FormBuilderPage() {
   });
 
   useEffect(() => {
-    if (draftVersion?.schemaJson) {
-      setEditingSchema(draftVersion.schemaJson as unknown as FormSchema);
+    const displayed = draftVersion ?? publishedVersion;
+    if (displayed?.schemaJson) {
+      setEditingSchema(displayed.schemaJson as unknown as FormSchema);
     }
-  }, [draftVersion]);
+  }, [draftVersion, publishedVersion]);
 
   const saveDraftMutation = useMutation({
     mutationFn: async (schema: FormSchema) => {
@@ -167,6 +174,7 @@ export default function FormBuilderPage() {
     onSuccess: () => {
       toast({ title: "Draft saved", description: "Your changes have been saved as a draft." });
       queryClient.invalidateQueries({ queryKey: ["/api/dropoff-form"] });
+      refreshTranslations();
       setIsDirty(false);
     },
     onError: (error: Error) => {
@@ -176,11 +184,12 @@ export default function FormBuilderPage() {
 
   const saveTranslationMutation = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
-      return apiRequest("PUT", `/api/dropoff-form/translation`, { lang: selectedLang, key, value });
+      if (!displayedVersionId) throw new Error("Form version not loaded");
+      return apiRequest("PUT", `/api/dropoff-form/translation`, { versionId: displayedVersionId, lang: selectedLang, key, value });
     },
     onSuccess: () => {
       toast({ title: "Translation saved" });
-      queryClient.invalidateQueries({ queryKey: [`/api/dropoff-form/${form?.id}/translations/${selectedLang}`] });
+      refreshTranslations();
     },
     onError: (error: Error) => {
       toast({ title: "Error saving translation", description: error.message, variant: "destructive" });
@@ -196,6 +205,7 @@ export default function FormBuilderPage() {
       toast({ title: "Form published", description: "The form is now live for guests." });
       queryClient.invalidateQueries({ queryKey: ["/api/dropoff-form"] });
       queryClient.invalidateQueries({ queryKey: [`/api/dropoff-form/${form?.id}/versions`] });
+      refreshTranslations();
       setShowPublishDialog(false);
     },
     onError: (error: Error) => {
@@ -462,7 +472,7 @@ export default function FormBuilderPage() {
                           </div>
 
                           <div className="space-y-3">
-                            {section.fields.map((field, fieldIndex) => (
+                      {section.fields.map((field, _fieldIndex) => (
                               <Card key={field.id} className="p-3">
                                 <div className="flex items-start gap-3">
                                   <GripVertical className="w-4 h-4 mt-2 text-muted-foreground cursor-move" />

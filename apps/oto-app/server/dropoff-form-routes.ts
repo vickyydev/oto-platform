@@ -388,6 +388,31 @@ export function registerDropoffFormRoutes(app: Express) {
     }
   });
 
+  // The editor reads the translations of the version it is displaying.
+  app.get("/api/dropoff-form/:formId/translations/:lang", requireAuth, requireRole("global_admin", "operator_admin", "admin", "manager"), async (req, res, next) => {
+    try {
+      const form = await formInParkGroup(req, req.params.formId);
+      if (!form) return res.status(404).json({ message: "Form not found" });
+      const requestedVersion = req.query.versionId;
+      if (requestedVersion !== undefined && typeof requestedVersion !== "string") {
+        return res.status(404).json({ message: "Version not found" });
+      }
+      const version = typeof requestedVersion === "string"
+        ? await storage.getDropoffFormVersion(requestedVersion)
+        : await storage.getLatestDraftVersion(form.id)
+          ?? (form.activePublishedVersionId
+            ? await storage.getDropoffFormVersion(form.activePublishedVersionId)
+            : undefined);
+      if (!version || version.formId !== form.id) {
+        return res.status(404).json({ message: "Version not found" });
+      }
+      const translations = await storage.getI18nTranslations(version.id, req.params.lang);
+      res.json(translations);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Get form version with translations
   app.get("/api/dropoff-form/version/:versionId", requireAuth, requireRole("global_admin", "operator_admin", "admin", "manager"), async (req, res, next) => {
     try {
