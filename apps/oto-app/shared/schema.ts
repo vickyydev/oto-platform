@@ -974,6 +974,19 @@ export const employeeChanges = pgTable("employee_changes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Private receipts identify one explicit manager action across transport retries.
+export const employeeActionReceipts = pgTable("employee_action_receipts", {
+  id: uuid("id").primaryKey(),
+  tenantId: uuid("tenant_id").references(() => tenants.id).notNull(),
+  employeeId: varchar("employee_id").references(() => employees.id, { onDelete: "cascade" }).notNull(),
+  actorId: varchar("actor_id").notNull(),
+  action: text("action").notNull(),
+  payloadHash: text("payload_hash").notNull(),
+  responseStatus: integer("response_status").notNull(),
+  responseBody: jsonb("response_body").$type<{ result: unknown; branchIds: string[] }>().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const employeeChangesRelations = relations(employeeChanges, ({ one }) => ({
   employee: one(employees, {
     fields: [employeeChanges.employeeId],

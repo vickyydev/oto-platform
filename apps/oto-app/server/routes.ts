@@ -1,6 +1,7 @@
 import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendance-evidence-upload";
 import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
+import { registerEmployeeActionRoutes } from "./employee-action-routes";
 import _express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer as _createServer, type Server } from "http";
 import { storage, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
@@ -138,7 +139,7 @@ import { registerAuthOtpRoutes } from "./auth-otp-routes";
 import { db, pool } from "./db";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
@@ -156,7 +157,6 @@ import {
   TEMPLATE_NOT_FOUND,
 } from "./lib/documentParkGroups";
 import {
-  CHANGE_NOT_FOUND,
   DEPARTMENT_NOT_FOUND,
   NO_PARK_GROUP_IDS,
   PERSON_NOT_FOUND,
@@ -4782,47 +4782,12 @@ export async function registerRoutes(
     }
   });
 
-  // Mark probation review as completed (requires Manager role)
-  app.post("/api/employees/:id/complete-probation-review", requireAuth, requireManager, async (req, res, next) => {
-    try {
-      const employee = await employeeOfParkGroup(req, req.params.id);
-      if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
-      }
-
-      const updatedEmployee = await storage.updateEmployee(req.params.id, {
-        probationReviewCompletedAt: new Date(),
-      });
-
-      // Clear probation-related attention items for this employee
-      try {
-        if (ATTENTION_WRITES_READY) await storage.deleteAttentionItemsByType("PROBATION_REVIEW_DUE_SOON", employee.id);
-        if (ATTENTION_WRITES_READY) await storage.deleteAttentionItemsByType("PROBATION_REVIEW_OVERDUE", employee.id);
-      } catch (attentionError) {
-        console.error("Failed to clear probation attention items:", attentionError);
-      }
-
-      // Log activity
-      try {
-        await storage.createActivityLog({
-          branchId: employee.branchId || null,
-          employeeId: employee.id,
-          contractInstanceId: null,
-          activityType: "probation_completed",
-          summaryText: `Probation review completed for ${getEmployeeDisplayName(employee)}`,
-          createdBy: req.user?.id || null,
-        });
-      } catch (logError) {
-        console.error("Failed to log activity:", logError);
-      }
-
-      // Trigger attention engine for probation update
-      evaluateForEmployee(employee.id).catch(err => console.error("[AttentionEngine] Probation trigger failed:", err));
-
-      res.json(updatedEmployee);
-    } catch (error) {
-      next(error);
-    }
+  registerEmployeeActionRoutes(app, {
+    attentionWritesReady: ATTENTION_WRITES_READY,
+    displayName: getEmployeeDisplayName,
+    reviewCommitted: employeeId => {
+      evaluateForEmployee(employeeId).catch(err => console.error("[AttentionEngine] Probation trigger failed:", err));
+    },
   });
 
   // Get employees with upcoming probation reviews (within 30 days)
@@ -5270,344 +5235,6 @@ export async function registerRoutes(
       if (!await employeeOfParkGroup(req, req.params.employeeId)) return res.json([]);
       const changes = await storage.getEmployeeChanges(req.params.employeeId);
       res.json(changes);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.post("/api/employees/:employeeId/changes", requireAuth, requireManager, async (req, res, next) => {
-    try {
-      const employee = await employeeOfParkGroup(req, req.params.employeeId);
-      if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
-      }
-
-      const { changeType, effectiveDate, newTitle, newSalary, newIncentiveClause, newBranchId, note } = req.body;
-
-      // Validate required fields based on change type
-      const validChangeTypes = ["salary_adjustment", "title_change", "incentive_change", "branch_transfer"];
-      if (!changeType || !validChangeTypes.includes(changeType)) {
-        return res.status(400).json({ message: "Invalid change type" });
-      }
-
-      if (!effectiveDate) {
-        return res.status(400).json({ message: "Effective date is required" });
-      }
-
-      // Validate change-type specific fields
-      if (changeType === "salary_adjustment" && (newSalary === undefined || newSalary === null || typeof newSalary !== "number")) {
-        return res.status(400).json({ message: "New salary is required for salary adjustments" });
-      }
-      if (changeType === "title_change" && (!newTitle || typeof newTitle !== "string" || newTitle.trim() === "")) {
-        return res.status(400).json({ message: "New title is required for title changes" });
-      }
-      if (changeType === "branch_transfer" && (!newBranchId || typeof newBranchId !== "string")) {
-        return res.status(400).json({ message: "New branch is required for branch transfers" });
-      }
-      // A branch of the employee's own park group only: a transfer here moves
-      // the employee (round 6's review, F1).
-      if (typeof newBranchId === "string" && newBranchId !== "" && !await branchInParkGroup(newBranchId, employee.tenantId)) {
-        return res.status(404).json(BRANCH_NOT_FOUND);
-      }
-
-      // Get old values from current employee data
-      const oldTitle = employee.defaultMergeData?.positionTitle || null;
-      const oldSalary = employee.defaultMergeData?.salaryThb || null;
-      const oldIncentiveClause = employee.incentiveClauseText || null;
-      const oldBranchId = employee.branchId || null;
-
-      // Create the employee change record
-      const change = await storage.createEmployeeChange({
-        employeeId: employee.id,
-        changeType,
-        effectiveDate: new Date(effectiveDate),
-        oldTitle,
-        oldSalary,
-        oldIncentiveClause,
-        oldBranchId,
-        newTitle: newTitle || oldTitle,
-        newSalary: newSalary || oldSalary,
-        newIncentiveClause: newIncentiveClause || oldIncentiveClause,
-        newBranchId: newBranchId || oldBranchId,
-        note,
-        contractGenerated: false,
-        createdBy: req.user!.id,
-      });
-
-      // Update employee's current values based on change type
-      const updates: Partial<typeof employee> = {};
-      
-      if (changeType === "salary_adjustment" && newSalary) {
-        updates.defaultMergeData = {
-          ...employee.defaultMergeData,
-          salaryThb: newSalary,
-        };
-      }
-      
-      if (changeType === "title_change" && newTitle) {
-        updates.defaultMergeData = {
-          ...employee.defaultMergeData,
-          positionTitle: newTitle,
-        };
-      }
-      
-      if (changeType === "incentive_change") {
-        updates.incentiveClauseText = newIncentiveClause;
-        updates.defaultMergeData = {
-          ...employee.defaultMergeData,
-          incentiveClause: newIncentiveClause,
-        };
-      }
-      
-      if (changeType === "branch_transfer" && newBranchId) {
-        updates.branchId = newBranchId;
-      }
-
-      if (Object.keys(updates).length > 0) {
-        await storage.updateEmployee(employee.id, updates);
-      }
-
-      // Create activity log based on change type
-      const activityTypeMap: Record<string, string> = {
-        salary_adjustment: "salary_change",
-        title_change: "promotion",
-        incentive_change: "incentive_change",
-        branch_transfer: "branch_transfer",
-      };
-
-      const activityType = activityTypeMap[changeType];
-      if (activityType) {
-        let summaryText = "";
-        switch (changeType) {
-          case "salary_adjustment":
-            summaryText = `${getEmployeeDisplayName(employee)} salary changed from ฿${oldSalary?.toLocaleString() || 0} to ฿${newSalary?.toLocaleString() || 0}`;
-            break;
-          case "title_change":
-            summaryText = `${getEmployeeDisplayName(employee)} position changed from "${oldTitle || 'N/A'}" to "${newTitle}"`;
-            break;
-          case "incentive_change":
-            summaryText = `${getEmployeeDisplayName(employee)} incentive clause updated`;
-            break;
-          case "branch_transfer":
-            summaryText = `${getEmployeeDisplayName(employee)} transferred to new branch`;
-            break;
-        }
-
-        await storage.createActivityLog({
-          branchId: employee.branchId || null,
-          employeeId: employee.id,
-          contractInstanceId: null,
-          activityType: activityType as any,
-          summaryText,
-          createdBy: req.user?.id || null,
-        });
-      }
-
-      // Create attention item for change without contract
-      try {
-        if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
-          tenantId: employee.tenantId,
-          type: "CHANGE_NO_CONTRACT",
-          severity: "medium",
-          employeeId: employee.id,
-          branchId: employee.branchId || null,
-          title: `Employment terms changed - no updated contract`,
-          description: `${employee.fullName}'s ${changeType.replace("_", " ")} requires a new contract`,
-        });
-      } catch (attentionError) {
-        console.error("Failed to create attention item:", attentionError);
-      }
-
-      res.status(201).json(change);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Mark change as having generated a contract
-  // The employee and the change are the caller's park group's (round 6's
-  // review, F1): another park group's employee is the app's 404, a change that
-  // is not this employee's is "Change not found" (the app answered a missing
-  // one with an empty 200), and the change stays this employee's.
-  app.patch("/api/employees/:employeeId/changes/:changeId", requireAuth, requireManager, async (req, res, next) => {
-    try {
-      const employee = await employeeOfParkGroup(req, req.params.employeeId);
-      if (!employee) return res.status(404).json(EMPLOYEE_NOT_FOUND);
-      const [existing] = await db.select({ employeeId: employeeChanges.employeeId }).from(employeeChanges)
-        .where(eq(employeeChanges.id, req.params.changeId)).limit(1);
-      if (!existing || existing.employeeId !== employee.id) return res.status(404).json(CHANGE_NOT_FOUND);
-      const updates = { ...req.body };
-      delete updates.employeeId;
-      for (const field of ["oldBranchId", "newBranchId"] as const) {
-        const branchId = updates[field];
-        if (typeof branchId === "string" && branchId !== "" && !await branchInParkGroup(branchId, employee.tenantId)) {
-          return res.status(404).json(BRANCH_NOT_FOUND);
-        }
-      }
-      for (const field of ["oldDepartmentId", "newDepartmentId"] as const) {
-        const departmentId = updates[field];
-        if (typeof departmentId === "string" && departmentId !== "") {
-          const department = await storage.getDepartment(departmentId);
-          if (!department || department.tenantId !== employee.tenantId) return res.status(404).json(DEPARTMENT_NOT_FOUND);
-        }
-      }
-      const change = await storage.updateEmployeeChange(req.params.changeId, updates);
-      res.json(change);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Transfer employee to new branch/department (permanent)
-  app.post("/api/employees/:employeeId/transfer", requireAuth, requireManager, async (req, res, next) => {
-    try {
-      const employee = await storage.getEmployee(req.params.employeeId);
-      const actor = req.userWithAccess;
-      if (!employee || !actor?.tenantId || employee.tenantId !== actor.tenantId) {
-        return res.status(404).json({ message: "Employee not found" });
-      }
-
-      const { effectiveDate, newBranchId, newDepartmentId, note } = req.body;
-
-      // Validate required fields
-      if (!effectiveDate) {
-        return res.status(400).json({ message: "Effective date is required" });
-      }
-      if (!newBranchId) {
-        return res.status(400).json({ message: "New branch is required" });
-      }
-
-      // Validate effective date is today or in the future
-      const effectiveDateParsed = new Date(effectiveDate);
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      if (effectiveDateParsed < todayStart) {
-        return res.status(400).json({ message: "Effective date cannot be in the past" });
-      }
-
-      // Prevent transfer to the same branch without department change
-      if (newBranchId === employee.branchId && (!newDepartmentId || newDepartmentId === employee.primaryDepartmentId)) {
-        return res.status(400).json({ message: "No changes detected. Please select a different branch or department." });
-      }
-
-      // Verify new branch exists
-      const newBranch = await storage.getBranch(newBranchId);
-      if (!newBranch || newBranch.tenantId !== actor.tenantId) {
-        return res.status(400).json({ message: "Invalid new branch" });
-      }
-      if (!canUserAccessBranch(actor, employee.branchId) || !canUserAccessBranch(actor, newBranchId)) {
-        return res.status(403).json({ message: "Access denied to this branch" });
-      }
-
-      // Verify new department exists if provided
-      if (newDepartmentId) {
-        const newDepartment = await storage.getDepartment(newDepartmentId);
-        if (!newDepartment || newDepartment.tenantId !== actor.tenantId) {
-          return res.status(400).json({ message: "Invalid new department" });
-        }
-      }
-
-      // Store old values before update
-      const oldBranchId = employee.branchId;
-      const oldDepartmentId = employee.primaryDepartmentId;
-      const oldBranch = oldBranchId ? await storage.getBranch(oldBranchId) : null;
-      const oldDepartment = oldDepartmentId ? await storage.getDepartment(oldDepartmentId) : null;
-      const newDepartment = newDepartmentId ? await storage.getDepartment(newDepartmentId) : null;
-
-      // Parse effective date
-      const effectiveDateObj = new Date(effectiveDate);
-      const effectiveDateStr = effectiveDateObj.toISOString().split('T')[0];
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      // 1. Create employee change record for history tracking
-      await storage.createEmployeeChange({
-        employeeId: employee.id,
-        changeType: "branch_transfer",
-        effectiveDate: effectiveDateObj,
-        oldBranchId: oldBranchId || null,
-        oldDepartmentId: oldDepartmentId || null,
-        newBranchId,
-        newDepartmentId: newDepartmentId || null,
-        note: note || `Transfer from ${oldBranch?.name || 'Unknown'} to ${newBranch.name}`,
-        contractGenerated: false,
-        createdBy: req.user!.id,
-      });
-
-      // 2. Update employee's branch and department
-      await storage.updateEmployee(employee.id, {
-        branchId: newBranchId,
-        primaryDepartmentId: newDepartmentId || null,
-      });
-
-      // 3. Clean up future schedule assignments from effective date onwards
-      // Calculate end date as 1 year from now to clean all future schedules
-      const futureEndDate = new Date();
-      futureEndDate.setFullYear(futureEndDate.getFullYear() + 1);
-      const futureEndDateStr = futureEndDate.toISOString().split('T')[0];
-
-      const deletedAssignments = await storage.deleteAssignmentsByEmployeeAndDateRange(
-        employee.id,
-        effectiveDateStr,
-        futureEndDateStr
-      );
-
-      // 4. Clean up future time off at old branch from effective date onwards
-      let deletedTimeOff: any[] = [];
-      if (oldBranchId) {
-        deletedTimeOff = await storage.deleteTimeOffByEmployeeAndDateRange(
-          employee.id,
-          oldBranchId,
-          effectiveDateStr
-        );
-      }
-
-      // 5. Update user's branch access if they have a linked user account
-      if (employee.userId) {
-        await storage.setUserBranchAccess(employee.userId, 'selected_branches', [newBranchId], employee.tenantId);
-      }
-
-      // 6. Create activity log
-      const summaryText = `${getEmployeeDisplayName(employee)} permanently transferred from ${oldBranch?.name || 'Unknown'} to ${newBranch.name}${newDepartment ? ` (${newDepartment.name})` : ''}`;
-      await storage.createActivityLog({
-        branchId: newBranchId,
-        employeeId: employee.id,
-        contractInstanceId: null,
-        activityType: "branch_transfer" as any,
-        summaryText,
-        createdBy: req.user?.id || null,
-      });
-
-      // 7. Create attention item for contract update
-      try {
-        if (ATTENTION_WRITES_READY) await storage.createAttentionItem({
-          tenantId: employee.tenantId,
-          type: "CHANGE_NO_CONTRACT",
-          severity: "medium",
-          employeeId: employee.id,
-          branchId: newBranchId,
-          title: `Employee transferred - contract update needed`,
-          description: `${employee.fullName} was transferred to ${newBranch.name}. An updated employment contract may be required.`,
-        });
-      } catch (attentionError) {
-        console.error("Failed to create attention item for transfer:", attentionError);
-      }
-
-      res.status(200).json({
-        success: true,
-        message: `Employee transferred successfully`,
-        deletedAssignments: deletedAssignments.length,
-        deletedTimeOff: deletedTimeOff.length,
-        transfer: {
-          employeeId: employee.id,
-          employeeName: employee.fullName,
-          effectiveDate: effectiveDateStr,
-          fromBranch: oldBranch?.name || null,
-          toBranch: newBranch.name,
-          fromDepartment: oldDepartment?.name || null,
-          toDepartment: newDepartment?.name || null,
-        },
-      });
     } catch (error) {
       next(error);
     }

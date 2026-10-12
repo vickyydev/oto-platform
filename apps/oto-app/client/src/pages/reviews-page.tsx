@@ -1,3 +1,4 @@
+import { useManagerActionRequest } from "@/hooks/use-manager-action-request";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Employee, Branch } from "@shared/schema";
@@ -87,6 +88,7 @@ function DueBadge({ dueDate }: { dueDate: Date }) {
 export default function ReviewsPage() {
   const { selectedBranchId, isAllBranches } = useBranchContext();
   const { toast } = useToast();
+  const actionRequest = useManagerActionRequest();
 
   const { data: employees, isLoading: employeesLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -98,10 +100,11 @@ export default function ReviewsPage() {
 
   const completeProbationMutation = useMutation({
     mutationFn: async (employeeId: string) => {
-      const res = await apiRequest("POST", `/api/employees/${employeeId}/complete-probation-review`);
+      const res = await apiRequest("POST", `/api/employees/${employeeId}/complete-probation-review`, { requestId: actionRequest.requestIdFor(employeeId) });
       return res.json();
     },
     onSuccess: (_, employeeId) => {
+      actionRequest.completed(employeeId);
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
       queryClient.invalidateQueries({ queryKey: ["/api/attention-items"] });

@@ -1,3 +1,4 @@
+import { useManagerActionRequest } from "@/hooks/use-manager-action-request";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Employee, Branch, EmployeeChange, Department } from "@shared/schema";
@@ -36,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, DollarSign, Briefcase, Building2, FileText, Users, AlertTriangle } from "lucide-react";
+import { Loader2, DollarSign, Briefcase, Building2, FileText, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const changeTypes = [
@@ -68,6 +69,7 @@ interface UpdateTermsModalProps {
 
 export function UpdateTermsModal({ open, onOpenChange, employee, onSuccess }: UpdateTermsModalProps) {
   const { toast } = useToast();
+  const actionRequest = useManagerActionRequest();
   const [showContractPrompt, setShowContractPrompt] = useState(false);
   const [lastChange, setLastChange] = useState<EmployeeChange | null>(null);
   const [transferResult, setTransferResult] = useState<{ deletedAssignments: number; deletedTimeOff: number } | null>(null);
@@ -110,10 +112,11 @@ export function UpdateTermsModal({ open, onOpenChange, employee, onSuccess }: Up
 
   const createChangeMutation = useMutation({
     mutationFn: async (data: UpdateTermsFormData) => {
-      const res = await apiRequest("POST", `/api/employees/${employee.id}/changes`, data);
+      const res = await apiRequest("POST", `/api/employees/${employee.id}/changes`, { ...data, requestId: actionRequest.requestIdFor(employee.id, data) });
       return await res.json();
     },
     onSuccess: (change: EmployeeChange) => {
+      actionRequest.completed(employee.id);
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id, "changes"] });
@@ -140,6 +143,7 @@ export function UpdateTermsModal({ open, onOpenChange, employee, onSuccess }: Up
   const transferMutation = useMutation({
     mutationFn: async (data: UpdateTermsFormData) => {
       const res = await apiRequest("POST", `/api/employees/${employee.id}/transfer`, {
+        requestId: actionRequest.requestIdFor(employee.id, data),
         effectiveDate: data.effectiveDate,
         newBranchId: data.newBranchId,
         newDepartmentId: data.newDepartmentId || null,
@@ -147,7 +151,8 @@ export function UpdateTermsModal({ open, onOpenChange, employee, onSuccess }: Up
       });
       return await res.json();
     },
-    onSuccess: (result: { success: boolean; deletedAssignments: number }) => {
+    onSuccess: (result: { success: boolean; deletedAssignments: number; deletedTimeOff: number }) => {
+      actionRequest.completed(employee.id);
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id, "changes"] });

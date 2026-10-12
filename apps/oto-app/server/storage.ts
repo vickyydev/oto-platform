@@ -2476,8 +2476,8 @@ export class DatabaseStorage implements IStorage {
                 return result;
         }
 
-        async getUserBranchAccess(userId: string): Promise<UserBranchAccess[]> {
-                return db
+        async getUserBranchAccess(userId: string, executor: DbExecutor = db): Promise<UserBranchAccess[]> {
+                return executor
                         .select()
                         .from(userBranchAccess)
                         .where(eq(userBranchAccess.userId, userId));
@@ -2488,17 +2488,18 @@ export class DatabaseStorage implements IStorage {
                 accessScope: "all_branches" | "selected_branches",
                 branchIds?: string[],
                 tenantId?: string,
+                executor: DbExecutor = db,
         ): Promise<void> {
                 // Preserve a user's explicit tenant before considering new branch assignments.
                 let resolvedTenantId = tenantId;
-                const existingAccess = await this.getUserBranchAccess(userId);
+                const existingAccess = await this.getUserBranchAccess(userId, executor);
                 if (!resolvedTenantId && existingAccess.length > 0) {
                         const tenantIds = new Set(existingAccess.map(row => row.tenantId));
                         if (tenantIds.size !== 1) throw new Error("User tenant access is ambiguous");
                         resolvedTenantId = existingAccess[0].tenantId;
                 }
                 if (!resolvedTenantId && branchIds && branchIds.length > 0) {
-                        const selected = await db
+                        const selected = await executor
                                 .select({ id: branches.id, tenantId: branches.tenantId })
                                 .from(branches)
                                 .where(inArray(branches.id, [...new Set(branchIds)]));
@@ -2510,7 +2511,7 @@ export class DatabaseStorage implements IStorage {
                 }
 
                 if (!resolvedTenantId) {
-                        const knownTenants = await db.select({ id: tenants.id }).from(tenants).limit(2);
+                        const knownTenants = await executor.select({ id: tenants.id }).from(tenants).limit(2);
                         if (knownTenants.length === 1) resolvedTenantId = knownTenants[0].id;
                 }
 
@@ -2520,19 +2521,19 @@ export class DatabaseStorage implements IStorage {
                 }
                 const selectedIds = [...new Set(branchIds ?? [])];
                 if (selectedIds.length > 0) {
-                        const selected = await db.select({ id: branches.id }).from(branches)
+                        const selected = await executor.select({ id: branches.id }).from(branches)
                                 .where(and(eq(branches.tenantId, resolvedTenantId), inArray(branches.id, selectedIds)));
                         if (selected.length !== selectedIds.length) throw new Error("Branch access crosses tenant boundaries");
                 }
 
                 // Delete existing access records
-                await db
+                await executor
                         .delete(userBranchAccess)
                         .where(eq(userBranchAccess.userId, userId));
 
                 if (accessScope === "all_branches") {
                         // Insert single record with null branchId
-                        await db.insert(userBranchAccess).values({
+                        await executor.insert(userBranchAccess).values({
                                 userId,
                                 branchId: null,
                                 accessScope: "all_branches",
@@ -2545,10 +2546,10 @@ export class DatabaseStorage implements IStorage {
                                 accessScope: "selected_branches" as const,
                                 tenantId: resolvedTenantId,
                         }));
-                        await db.insert(userBranchAccess).values(records);
+                        await executor.insert(userBranchAccess).values(records);
                 } else {
                         // A branchless account still needs an unambiguous tenant identity.
-                        await db.insert(userBranchAccess).values({
+                        await executor.insert(userBranchAccess).values({
                                 userId,
                                 branchId: null,
                                 accessScope: "selected_branches",
@@ -4097,9 +4098,10 @@ export class DatabaseStorage implements IStorage {
         async deleteAttentionItemsByType(
                 type: AttentionType,
                 employeeId?: string,
+                executor: DbExecutor = db,
         ): Promise<void> {
                 if (employeeId) {
-                        await db
+                        await executor
                                 .delete(attentionItems)
                                 .where(
                                         and(
@@ -4108,7 +4110,7 @@ export class DatabaseStorage implements IStorage {
                                         ),
                                 );
                 } else {
-                        await db
+                        await executor
                                 .delete(attentionItems)
                                 .where(eq(attentionItems.type, type));
                 }
@@ -6329,8 +6331,9 @@ export class DatabaseStorage implements IStorage {
                 employeeId: string,
                 branchId: string,
                 startDate: string,
+                executor: DbExecutor = db,
         ): Promise<EmployeeTimeOff[]> {
-                const deleted = await db
+                const deleted = await executor
                         .delete(employeeTimeOff)
                         .where(
                                 and(

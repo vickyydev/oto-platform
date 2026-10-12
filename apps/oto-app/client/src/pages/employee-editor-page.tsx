@@ -1,3 +1,4 @@
+import { useManagerActionRequest } from "@/hooks/use-manager-action-request";
 import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
@@ -33,10 +34,9 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
-import { ArrowLeft, Save, Loader2, User, Mail, Phone, MapPin, Building2, Briefcase, MapPinned, Globe, CreditCard, FileText, Trash2, Upload, RefreshCw, Eye, EyeOff, History, DollarSign, Plus, CheckCircle, Clock, AlertTriangle, FileSignature, UserX, ChevronDown, Package, RotateCcw, Fingerprint, QrCode, XCircle, Camera, Shield, Calendar, Download, Percent, X, PieChart, Settings, Lock, Pencil } from "lucide-react";
-import { MODULES, MODULE_KEYS, BRANCH_SCOPE_TYPES, type ModuleKey, type BranchScopeType, type EffectivePermissions, type EffectiveModulePermission } from "@shared/permissions";
+import { ArrowLeft, Save, Loader2, User, Mail, Phone, MapPin, Building2, Briefcase, Globe, CreditCard, FileText, Trash2, Upload, RefreshCw, Eye, History, DollarSign, Plus, CheckCircle, Clock, AlertTriangle, FileSignature, UserX, ChevronDown, Package, RotateCcw, Fingerprint, QrCode, XCircle, Shield, Calendar, Download, Percent, X, PieChart, Settings, Lock, Pencil } from "lucide-react";
+import { MODULES, MODULE_KEYS, BRANCH_SCOPE_TYPES, type ModuleKey, type BranchScopeType, type EffectivePermissions } from "@shared/permissions";
 import { DatePicker } from "@/components/ui/date-picker";
-import { EmployeeAvatar } from "@/components/employee-avatar";
 import { ClickableEmployeeAvatar } from "@/components/clickable-employee-avatar";
 import { useAvatarWorkStatus } from "@/hooks/use-avatar-work-status";
 import { Link } from "wouter";
@@ -61,7 +61,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { differenceInDays } from "date-fns";
-import { formatDate, formatCurrency } from "@/lib/format-utils";
+import { formatDate, formatCurrency as _formatCurrency } from "@/lib/format-utils";
 import { QRCodeSVG } from "qrcode.react";
 
 // Access Status Section for showing employee's system access
@@ -391,7 +391,7 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
   // Check if login can be enabled (hasLogin checks legacy personId/accessPolicy, hasSimpleLogin checks new userId)
   const hasLogin = !!(personId && accessPolicy);
   const hasSimpleLogin = !!employee.userId;
-  const canEnableLogin = !hasLogin;
+  const _canEnableLogin = !hasLogin;
 
   return (
     <>
@@ -1277,14 +1277,16 @@ function AccessStatusSection({ employeeId, personId, employee, forceOpen }: { em
 
 function ProbationStatusSection({ employee }: { employee: Employee }) {
   const { toast } = useToast();
+  const actionRequest = useManagerActionRequest();
   const [isOpen, setIsOpen] = useState(false);
 
   const completeProbationMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/employees/${employee.id}/complete-probation-review`);
+      const res = await apiRequest("POST", `/api/employees/${employee.id}/complete-probation-review`, { requestId: actionRequest.requestIdFor(employee.id) });
       return res.json();
     },
     onSuccess: () => {
+      actionRequest.completed(employee.id);
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/attention-items"] });
@@ -2134,7 +2136,7 @@ function TimekeepingSection({ employeeId, canEdit, forceOpen }: { employeeId: st
                         });
                         return;
                       }
-                    } catch (err) {
+                    } catch {
                       // Fall through to download approach
                     }
                   }
@@ -2767,7 +2769,7 @@ export default function EmployeeEditorPage() {
     if (employee) {
       const mergeData = employee.defaultMergeData as any;
       // Migrate legacy extraClause fields to customClauses if needed
-      let customClauses = mergeData?.customClauses || [];
+      const customClauses = mergeData?.customClauses || [];
       if (customClauses.length === 0) {
         // Convert legacy fields to custom clauses
         if (mergeData?.extraClause1Title || mergeData?.extraClause1Body) {
