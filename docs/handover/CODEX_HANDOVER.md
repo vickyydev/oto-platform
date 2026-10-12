@@ -10,6 +10,8 @@ Round 7 is built locally on lane/s217b-r7 and published for review, not landed o
 
 Final compiler is now457 diagnostics/61 files with no bucket increase. DB and POS timeout cases passed their full-file reruns; booth and box passed. Full API battery and historical review-boundary maintenance continue. The new drop-off submission and refusal frame is recorded in STATUS; nanny completion and exact cleanup remain owed.
 
+Frozen API0 lines, appbuild and all39 touched-file lint checks have now passed. The277-file API battery and focused reruns remain open. Nanny assignment/entry/checkout and voucher/Xero unconnected pages are evidenced; exactcleanup remains owed.
+
 Next, in order:
 1. Complete the full API battery, historical release-boundary rechecks, final API typecheck, actual touched-file lint and build. Payroll24 and form/home-branch4 controls already pass. API output must be zero lines. The inherited app ceiling is467 per file/code; the whole integrated read is457 with no increase, ready for the explicit R8 ratchet.
 2. Land R7a with app 0009, keeping document ownership nullable while new writers ship. Watch CI by full SHA, check/comment Jira in the push turn, and observe the new writer on staging. Then cut R7b from origin/main and apply 0010's document contraction, with its own full gate. Independent four-pin R7b verification already passed against 2c706198; final release/staged verification remains owed.
