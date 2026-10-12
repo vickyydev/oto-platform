@@ -1,5 +1,7 @@
 # Round 7 staging walkthrough checkpoint - 12 October 2026
 
+**13 October further rechecks:** [administration/people/access](administration.md) and all seven [voucher write refusals](staff-vouchers.md) pass their recorded controls. The created person and access policy were removed and read back404. The inspected r7-administration-voucher-rechecks-20261013.png is committed. Remaining private-file rechecks and guarded broader cleanup stay open.
+
 **13 October release update:** the released R7a application now passes the recorded [camp attendance](camps.md), [private payroll](payroll.md) and [form editor save/reload](form-builder.md) rechecks. The two new inspected frames are r7-camp-payroll-release-rechecks-20261013.png and r7-form-reader-reloaded-tablet-20261013.png. Main/staging checkpointd18d3fd8 has the same application code as7402a8da. The table below records the earlier633cae41 observations. Still owed: Data Admin/people/permissions, voucher write refusals, remaining private-file checks and exact fixture/object cleanup.
 
 These inspected 820 x 1180 staging frames and observed requests use live app source 633cae416ff7e4a1c253ec4904cdc22351cf7df1. Launcher sign-in, isolated ZZ TEST records and separate park sessions were used. This is a partial walkthrough checkpoint; new round-7 source is local and its release gate remains open. Final module pages, staged guarded-road rechecks and exact cleanup are owed.
