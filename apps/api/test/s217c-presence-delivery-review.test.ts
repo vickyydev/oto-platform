@@ -5,7 +5,7 @@ import { isAbsolute, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createTestDatabase } from '@oto/db/testing';
-import { selectPresenceDelivery, type LocalPresenceDelivery } from '../../oto-app/client/src/lib/presence-delivery';
+import { selectPresenceDelivery, workingPresenceDeliveries, retryPresenceTarget, restorePresenceRequests, type LocalPresenceDelivery } from '../../oto-app/client/src/lib/presence-delivery';
 
 /**
  * SCRUM-521: actual delivery handler, database transactions and staff inbox.
@@ -130,6 +130,10 @@ try {
  proof.shiftRace=(await send(shiftRace,'restricted')).status===403&&(await count())===beforePlacement;
  await pool.query('update schedule_shift_rows set branch_id=$1 where id=$2',[a.branch,a.shift]);
  proof.raceRetry=(await send(transferRace,'restricted')).body.delivery?.status==='Delivered'&&(await count())===beforePlacement+1;
+ const secondBranch=await send({...body,requestKey:randomUUID(),shiftRowId:shift2});
+ const branchAStatus=await readPresenceDeliveries(db,a.tenant,[a.employee],body.shiftDate,[a.branch]);
+ const branchBStatus=await readPresenceDeliveries(db,a.tenant,[a.employee],body.shiftDate,[branch2]);
+ proof.statusBranch=secondBranch.body.delivery.status==='Delivered'&&secondBranch.body.delivery.branchId===branch2&&branchAStatus.length===1&&branchAStatus[0].branchId===a.branch&&branchAStatus[0].shiftRowId===a.shift&&branchBStatus.length===1&&branchBStatus[0].branchId===branch2&&branchBStatus[0].shiftRowId===shift2;
  console.log('PRESENCE_PROOF='+JSON.stringify(proof));
 } catch(error) {console.log('PRESENCE_SETUP='+JSON.stringify({name:error?.name,code:error?.code,column:error?.column,table:error?.table}));process.exitCode=1;}
 finally{if(server)await new Promise(resolve=>server.close(resolve));await pool.end();}
@@ -155,6 +159,7 @@ finally{if(server)await new Promise(resolve=>server.close(resolve));await pool.e
   it('FINDING 3 (medium, fixed): controlled inbox failure stores Failed and retries once; prescribed fix: transaction and durable result', () => expect(proof.failure && proof.retry).toBe(true));
   it('a stored Pending attempt is visible only in scope and resumes after interruption', () => expect(proof.pending && proof.resume).toBe(true));
   it('FINDING 5 (high): current employee and shift access hold through inbox commit; prescribed fix: locked placement checks before receipt or delivery', () => expect(proof.transferRace && proof.replayPlacement && proof.shiftRace && proof.raceRetry).toBe(true));
+  it('one employee with two branch shifts retains separate branch delivery status', () => expect(proof.statusBranch).toBe(true));
   it('live rows show delivery while the staff Bell retains the full message without manager navigation', () => {
     const live = readFileSync(join(APP, 'client/src/pages/timekeeping-live-page.tsx'), 'utf8');
     const bell = readFileSync(join(APP, 'client/src/components/notification-bell.tsx'), 'utf8');
@@ -170,4 +175,51 @@ finally{if(server)await new Promise(resolve=>server.close(resolve));await pool.e
     expect(selectPresenceDelivery(confirmed, pending), 'The same delivered request can reconcile a lost response').toBe(confirmed);
     expect(selectPresenceDelivery(previous, { ...pending, unconfirmed: undefined, status: 'Failed', updatedAt: '2099-10-13T11:00:00.000Z' })).toBe(previous);
   });
+});
+
+// These pure state pins exercise the same target selection used by Working Now.
+it('FINDING 6 (medium): a Missing-to-Working transition retains the original retry target; prescribed fix: scoped persisted target and Working retry', () => {
+  const target = { employeeId: 'employee', branchId: 'branch-a', shiftRowId: 'shift-a', shiftDate: '2026-10-13' };
+  const pending: LocalPresenceDelivery = { ...target, requestKey: 'pending-key', status: 'Pending', failureMessage: null, unconfirmed: true };
+  const older = { ...target, requestKey: 'older-key', status: 'Delivered' as const, failureMessage: null };
+  const rows = workingPresenceDeliveries('employee', 'branch-a', [older], [pending]);
+  const outstanding = rows.find(row => row.requestKey === pending.requestKey);
+  expect(outstanding).toEqual(pending);
+  expect(retryPresenceTarget(outstanding!)).toEqual(target);
+  expect(retryPresenceTarget(older)).toBeUndefined();
+  const completed = { ...pending, status: 'Delivered' as const, unconfirmed: undefined };
+  expect(workingPresenceDeliveries('employee', 'branch-a', [completed], [pending])).toEqual([completed]);
+  const live = readFileSync(join(APP, 'client/src/pages/timekeeping-live-page.tsx'), 'utf8');
+  expect(live).toContain('sendPing(target, delivery)');
+  expect(live).toContain('button-retry-working-');
+});
+
+it('FINDING 7 (medium): Working status stays with its employee, branch and shift; prescribed fix: branch filtering and complete targets', () => {
+  const base = { employeeId: 'employee', branchId: 'branch-a', shiftRowId: 'shift-a', shiftDate: '2026-10-13', requestKey: 'one', status: 'Pending' as const, failureMessage: null };
+  const otherBranch = { ...base, branchId: 'branch-b', shiftRowId: 'shift-b', requestKey: 'two' };
+  const otherShift = { ...base, shiftRowId: 'shift-c', requestKey: 'three' };
+  const otherEmployee = { ...base, employeeId: 'other', requestKey: 'four' };
+  const rows = workingPresenceDeliveries('employee', 'branch-a', [base, otherBranch, otherShift, otherEmployee], [otherBranch]);
+  expect(rows.map(row => row.requestKey)).toEqual(['one', 'three']);
+  expect(workingPresenceDeliveries('employee', null, [base, otherBranch], [otherBranch], ['branch-a']).map(row => row.requestKey)).toEqual(['one']);
+  expect(workingPresenceDeliveries('employee', null, [base, otherBranch], []).map(row => retryPresenceTarget(row)?.branchId)).toEqual(['branch-a', 'branch-b']);
+  expect(rows.map(row => retryPresenceTarget(row)?.shiftRowId)).toEqual(['shift-a', 'shift-c']);
+  const routes = readFileSync(join(APP, 'server/routes.ts'), 'utf8');
+  expect(routes).toContain('branchId ? [branchId] : user.hasAllBranchesAccess ? undefined : user.allowedBranchIds');
+  expect(routes).toContain('delivery.shiftRowId === row.shiftRowId && delivery.branchId === row.branchId');
+});
+
+it("a reloaded Working row recovers only this sender's pending target and original key", () => {
+  const pending = { employeeId: 'employee', branchId: 'branch-a', shiftRowId: 'shift-a', shiftDate: '2026-10-13', requestKey: 'original', status: 'Pending' as const, failureMessage: null, unconfirmed: true as const };
+  const entries = new Map([
+    ['presence-ping-target:actor-a:employee:shift-a:2026-10-13', JSON.stringify(pending)],
+    ['presence-ping-target:actor-b:employee:shift-a:2026-10-13', JSON.stringify({ ...pending, requestKey: 'other-sender' })],
+    ['presence-ping-target:actor-a:incomplete', '{'],
+  ]);
+  const storage = { length: entries.size, key: (index: number) => [...entries.keys()][index] ?? null, getItem: (key: string) => entries.get(key) ?? null };
+  const recovered = restorePresenceRequests(storage, 'actor-a');
+  expect(Object.values(recovered)).toEqual([pending]);
+  const rows = workingPresenceDeliveries('employee', 'branch-a', [], Object.values(recovered));
+  expect(rows[0]?.requestKey).toBe('original');
+  expect(retryPresenceTarget(rows[0]!)).toEqual({ employeeId: 'employee', branchId: 'branch-a', shiftRowId: 'shift-a', shiftDate: '2026-10-13' });
 });

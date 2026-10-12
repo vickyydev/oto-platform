@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useBranchContext } from "@/hooks/use-branch-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { selectPresenceDelivery, type PresenceDelivery, type LocalPresenceDelivery } from "@/lib/presence-delivery";
+import { selectPresenceDelivery, retryPresenceTarget, workingPresenceDeliveries, restorePresenceRequests, type PresenceTarget, type PresenceDelivery, type LocalPresenceDelivery } from "@/lib/presence-delivery";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 
 interface WorkingEmployee {
+  deliveries?: PresenceDelivery[];
   delivery?: PresenceDelivery | null;
   employeeId: string;
   fullName: string;
@@ -120,8 +121,18 @@ export default function TimekeepingLivePage() {
   const [photoModalFailed, setPhotoModalFailed] = useState(false);
   const [detailEmployee, setDetailEmployee] = useState<WorkingEmployee | null>(null);
   const [localDeliveries, setLocalDeliveries] = useState<Record<string, LocalPresenceDelivery>>({});
-  const deliveryKey = (employee: MissingEmployee) => `${user?.id}:${employee.employeeId}:${employee.shiftRowId}:${employee.shiftDate}`;
+  const deliveryKey = (employee: PresenceTarget) => `${user?.id}:${employee.employeeId}:${employee.shiftRowId}:${employee.shiftDate}`;
   const deliveryFor = (employee: MissingEmployee) => selectPresenceDelivery(employee.delivery, localDeliveries[deliveryKey(employee)]);
+
+  useEffect(() => {
+    try { setLocalDeliveries(user?.id ? restorePresenceRequests(sessionStorage, user.id) : {}); }
+    catch { setLocalDeliveries({}); }
+  }, [user?.id]);
+
+  const workingDeliveriesFor = (employee: WorkingEmployee) => workingPresenceDeliveries(
+    employee.employeeId, selectedBranch === "all" ? null : selectedBranch, employee.deliveries || (employee.delivery ? [employee.delivery] : []), Object.values(localDeliveries),
+    user?.hasAllBranchesAccess ? undefined : user?.allowedBranchIds || [],
+  );
 
   const isManager = user?.role === "manager" || user?.role === "admin" || user?.role === "operator_admin" || user?.role === "global_admin";
 
@@ -140,7 +151,7 @@ export default function TimekeepingLivePage() {
   });
 
   const pingMutation = useMutation({
-    mutationFn: async ({ employee, requestKey }: { employee: MissingEmployee; requestKey: string }) => {
+    mutationFn: async ({ employee, requestKey }: { employee: PresenceTarget; requestKey: string }) => {
       const response = await apiRequest("POST", "/api/timekeeping/live/ping", {
         employeeId: employee.employeeId, shiftRowId: employee.shiftRowId,
         shiftDate: employee.shiftDate, reason: "missing_clock_in", requestKey,
@@ -151,28 +162,33 @@ export default function TimekeepingLivePage() {
       const key = deliveryKey(employee);
       setLocalDeliveries(current => ({ ...current, [key]: delivery }));
       if (delivery.status === "Delivered") {
-        try { sessionStorage.removeItem(`presence-ping:${key}`); } catch { /* The stored server attempt remains authoritative. */ }
+        try { sessionStorage.removeItem(`presence-ping:${key}`); sessionStorage.removeItem(`presence-ping-target:${key}`); } catch { /* The stored server attempt remains authoritative. */ }
       }
       queryClient.invalidateQueries({ queryKey: ["/api/timekeeping/live"] });
       toast({ title: `Inbox: ${delivery.status}`, description: delivery.status === "Delivered" ? "Available in the staff inbox" : delivery.failureMessage || "Retry to finish this delivery", variant: delivery.status === "Failed" ? "destructive" : "default" });
     },
     onError: (_error, { employee, requestKey }) => {
-      setLocalDeliveries(current => ({ ...current, [deliveryKey(employee)]: { requestKey, status: "Pending", failureMessage: "Delivery could not be confirmed. Retry to check the same request.", unconfirmed: true } }));
+      setLocalDeliveries(current => ({ ...current, [deliveryKey(employee)]: { ...employee, requestKey, status: "Pending", failureMessage: "Delivery could not be confirmed. Retry to check the same request.", unconfirmed: true } }));
       toast({ title: "Delivery could not be confirmed", description: "Retry safely using the same request", variant: "destructive" });
     },
   });
 
-  function sendPing(employee: MissingEmployee) {
+  function sendPing(employee: PresenceTarget & { delivery?: PresenceDelivery | null }, retry?: PresenceDelivery) {
     const key = deliveryKey(employee);
-    const previous = deliveryFor(employee);
+    const previous = retry || selectPresenceDelivery(employee.delivery, localDeliveries[key]);
     let requestKey = previous && previous.status !== "Delivered" ? previous.requestKey : "";
     if (previous?.status === "Delivered") {
-      try { sessionStorage.removeItem(`presence-ping:${key}`); } catch { /* A fresh action still receives a fresh in-memory key. */ }
+      try { sessionStorage.removeItem(`presence-ping:${key}`); sessionStorage.removeItem(`presence-ping-target:${key}`); } catch { /* A fresh action still receives a fresh in-memory key. */ }
     }
     try { requestKey ||= sessionStorage.getItem(`presence-ping:${key}`) || ""; } catch { /* A same-screen retry still holds its request key. */ }
     requestKey ||= crypto.randomUUID();
-    try { sessionStorage.setItem(`presence-ping:${key}`, requestKey); } catch { /* A same-screen retry still holds its request key. */ }
-    setLocalDeliveries(current => ({ ...current, [key]: { requestKey, status: "Pending", failureMessage: null, unconfirmed: true } }));
+    const pending: LocalPresenceDelivery = { employeeId: employee.employeeId, branchId: employee.branchId, shiftRowId: employee.shiftRowId,
+      shiftDate: employee.shiftDate, requestKey, status: "Pending", failureMessage: null, unconfirmed: true };
+    try {
+      sessionStorage.setItem(`presence-ping:${key}`, requestKey);
+      sessionStorage.setItem(`presence-ping-target:${key}`, JSON.stringify(pending));
+    } catch { /* A same-screen retry still holds its request key and target. */ }
+    setLocalDeliveries(current => ({ ...current, [key]: pending }));
     pingMutation.mutate({ employee, requestKey });
   }
 
@@ -326,7 +342,18 @@ export default function TimekeepingLivePage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium truncate" data-testid={`text-name-${emp.employeeId}`}>{emp.displayName}</p>
-                      <DeliveryStatus delivery={emp.delivery} />
+                      {workingDeliveriesFor(emp).map(delivery => {
+                        const target = retryPresenceTarget(delivery);
+                        return <div key={delivery.requestKey}>
+                          <span className="text-xs text-muted-foreground">{branches?.find(branch => branch.id === delivery.branchId)?.name || "Shift branch"} ? {delivery.shiftDate}</span>
+                          <DeliveryStatus delivery={delivery} />
+                          {target && <Button variant="outline" size="sm" disabled={pingMutation.isPending}
+                            onClick={event => { event.stopPropagation(); sendPing(target, delivery); }}
+                            data-testid={`button-retry-working-${delivery.requestKey}`}>
+                            {pingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Retry inbox delivery"}
+                          </Button>}
+                        </div>;
+                      })}
                       <Badge
                         variant={emp.status === "ON_BREAK" ? "outline" : "secondary"}
                         className="text-[10px] px-1.5 py-0"

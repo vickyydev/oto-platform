@@ -23,7 +23,7 @@ const requestSchema = z.object({
 
 function publicDelivery(row: Delivery) {
   return { id: row.id, requestKey: row.requestKey, status: row.status,
-    failureMessage: row.failureMessage, employeeId: row.employeeId,
+    failureMessage: row.failureMessage, employeeId: row.employeeId, branchId: row.branchId,
     shiftRowId: row.shiftRowId, shiftDate: row.shiftDate, updatedAt: row.updatedAt };
 }
 

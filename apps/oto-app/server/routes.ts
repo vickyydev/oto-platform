@@ -12416,10 +12416,13 @@ OTO Company Limited`,
       workingNow.sort((a, b) => a.clockInAt.getTime() - b.clockInAt.getTime());
       missingClockIns.sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
 
-      const deliveryRows = await readPresenceDeliveries(db, tenantId, employeeIds, todayStr, user.hasAllBranchesAccess ? undefined : user.allowedBranchIds);
+      const deliveryRows = await readPresenceDeliveries(db, tenantId, employeeIds, todayStr, branchId ? [branchId] : user.hasAllBranchesAccess ? undefined : user.allowedBranchIds);
       res.json({
-        workingNow: workingNow.map(row => ({ ...row, delivery: deliveryRows.find(delivery => delivery.employeeId === row.employeeId) || null })),
-        missingClockIns: missingClockIns.map(row => ({ ...row, shiftDate: todayStr, delivery: deliveryRows.find(delivery => delivery.employeeId === row.employeeId && delivery.shiftRowId === row.shiftRowId) || null })),
+        workingNow: workingNow.map(row => {
+          const rowDeliveries = deliveryRows.filter(delivery => delivery.employeeId === row.employeeId);
+          return { ...row, delivery: rowDeliveries[0] || null, deliveries: rowDeliveries };
+        }),
+        missingClockIns: missingClockIns.map(row => ({ ...row, shiftDate: todayStr, delivery: deliveryRows.find(delivery => delivery.employeeId === row.employeeId && delivery.shiftRowId === row.shiftRowId && delivery.branchId === row.branchId) || null })),
         currentlyWorkingCount: workingNow.length,
         missingClockInsCount: missingClockIns.length,
         timestamp: now.toISOString(),
