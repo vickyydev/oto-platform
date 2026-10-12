@@ -1,5 +1,7 @@
 # Round 7 staging walkthrough checkpoint - 12 October 2026
 
+**13 October private-file rechecks:** [all recorded file boundaries](private-files.md) now pass. The inspected r7-private-files-release-rechecks-20261013.png records payroll, Fix, drop-off signature and event PDF responses. Exact broader fixture/object cleanup remains.
+
 **13 October further rechecks:** [administration/people/access](administration.md) and all seven [voucher write refusals](staff-vouchers.md) pass their recorded controls. The created person and access policy were removed and read back404. The inspected r7-administration-voucher-rechecks-20261013.png is committed. Remaining private-file rechecks and guarded broader cleanup stay open.
 
 **13 October release update:** the released R7a application now passes the recorded [camp attendance](camps.md), [private payroll](payroll.md) and [form editor save/reload](form-builder.md) rechecks. The two new inspected frames are r7-camp-payroll-release-rechecks-20261013.png and r7-form-reader-reloaded-tablet-20261013.png. Main/staging checkpointd18d3fd8 has the same application code as7402a8da. The table below records the earlier633cae41 observations. Still owed: Data Admin/people/permissions, voucher write refusals, remaining private-file checks and exact fixture/object cleanup.
