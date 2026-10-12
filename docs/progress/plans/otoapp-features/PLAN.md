@@ -2,6 +2,10 @@
 
 ## 13 October development checkpoint
 
+**13 October 2026, combined feature runtime gate:** PR10's b4265ee1 app job passed all five feature runtime files (87 tests), build, migrations and restore. Its full compiler measured446 diagnostics in59 files, with no baseline bucket increase; the measured457 ceiling is retained until the final source is checked. The two historical API fixture diagnostics are addressed by e030d971 with touched lint clean. Presence recovery outside both live tabs is now integrated at07a99a9f; its five pure checks passed, while the final hosted runtime recheck remains. The new read-only recovery path retains the original request details and checks current park/branch access. No source finding is silently dropped.
+
+This checkpoint publishes the final recovery and fixture correction plus inspected private-file staging evidence. Feature staging acceptance and exact broader cleanup remain; no new deployment or SMS delivery is claimed. R7b and R8 gates are still watched by their exact SHAs. Main remains green; local databases stay stopped.
+
 **Combined source:** candidate da21a661 integrates the feature batches, attendance reviewer consistency, transactional employee actions and current-access inbox delivery. Final0011..0015 cumulative snapshots are generated; original SQL and prior migrations remain unchanged. Twenty focused and17 existing source checks passed. Hosted runtime checks, presence display/retry follow-ups and all staged feature acceptance remain. SCRUM-517..522 stay Testing; no SMS has been sent. The latest STATUS block takes precedence over the source baseline below.
 
 **Current release checkpoint:** Twilio runtime is active on app7402a8da;
