@@ -1,3 +1,4 @@
+import type { AttendanceEvidence } from "./attendance-evidence";
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer, timestamp, jsonb, boolean, index, uniqueIndex, time, date, real, uuid, numeric, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -2170,6 +2171,7 @@ export const timekeepingIssues = pgTable("timekeeping_issues", {
   userProposedClockOutAt: timestamp("user_proposed_clock_out_at"),
   reasonCode: text("reason_code", { enum: timekeepingReasonCodes }),
   note: text("note"),
+  attachment: jsonb("attachment").$type<AttendanceEvidence>(),
   createdBy: varchar("created_by"), // "KIOSK_SYSTEM" or userId
   resolvedBy: varchar("resolved_by").references(() => users.id),
   resolvedAt: timestamp("resolved_at"),

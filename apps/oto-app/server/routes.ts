@@ -1,3 +1,5 @@
+import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendance-evidence-upload";
+import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
 import _express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer as _createServer, type Server } from "http";
 import { storage, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
@@ -131,7 +133,7 @@ import { registerAuthOtpRoutes } from "./auth-otp-routes";
 import { db, pool } from "./db";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, timekeepingIssues, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, payslips, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
@@ -410,6 +412,10 @@ const documentUpload = multer({
     }
   },
 });
+
+// Attendance evidence travels only with the existing confirmation request.
+// Face-disabled requests are refused before multipart parsing or file buffering.
+const parseAttendanceConfirmation = attendanceConfirmationBody(attendanceEvidenceUpload, faceClockInOn, FACE_CLOCK_OFF_REFUSAL);
 
 // Bulk Excel upload configuration
 const excelUpload = multer({
@@ -10726,7 +10732,7 @@ OTO Company Limited`,
   });
 
   // Kiosk - Missed Clock-In Manual (Option B: Enter correct start time)
-  app.post("/api/kiosk/missed-clock/manual", async (req, res, next) => {
+  app.post("/api/kiosk/missed-clock/manual", parseAttendanceConfirmation, fixMulterFilenames, async (req, res, next) => {
     try {
       // The face road's second step, as auto-fix above: off while face is off (S2-17b round 5, H13).
       if (!faceClockInOn()) return res.status(403).json(FACE_CLOCK_OFF_REFUSAL);
@@ -10786,37 +10792,41 @@ OTO Company Limited`,
       const clockOutAt = now;
 
       // Create time entry with PENDING_APPROVAL status
-      const timeEntry = await storage.createTimeEntry({
-        tenantId: employee.tenantId,
-        employeeId,
-        branchId,
-        shiftDate,
-        scheduledStartAt: scheduledStartTime,
-        scheduledEndAt: scheduledEndTime,
-        clockInAt: userClockInTime,
-        clockOutAt,
-        status: 'PENDING_APPROVAL',
-        sourceIn: 'MANUAL',
-        sourceOut: 'FACE_KIOSK',
-      });
+      const { issue } = await persistAttendanceEvidence(req.file, attachment => db.transaction(async tx => {
+        const [timeEntry] = await tx.insert(timeEntries).values({
+          tenantId: employee.tenantId,
+          employeeId,
+          branchId,
+          shiftDate,
+          scheduledStartAt: scheduledStartTime,
+          scheduledEndAt: scheduledEndTime,
+          clockInAt: userClockInTime,
+          clockOutAt,
+          status: 'PENDING_APPROVAL',
+          sourceIn: 'MANUAL',
+          sourceOut: 'FACE_KIOSK',
+        }).returning();
 
-      // Create timekeeping issue with user proposed time
-      const issue = await storage.createTimekeepingIssue({
-        tenantId: employee.tenantId,
-        employeeId,
-        branchId,
-        issueDate: shiftDate,
-        issueType: 'MISSING_CLOCK_IN',
-        status: 'OPEN',
-        linkedTimeEntryId: timeEntry.id,
-        suggestedClockInAt: scheduledStartTime,
-        suggestedClockOutAt: clockOutAt,
-        userProposedClockInAt: userClockInTime,
-        userProposedClockOutAt: clockOutAt,
-        reasonCode: reasonCode as any,
-        note,
-        createdBy: 'KIOSK_SYSTEM',
-      });
+        // Create timekeeping issue with user proposed time
+        const [issue] = await tx.insert(timekeepingIssues).values({
+          attachment,
+          tenantId: employee.tenantId,
+          employeeId,
+          branchId,
+          issueDate: shiftDate,
+          issueType: 'MISSING_CLOCK_IN',
+          status: 'OPEN',
+          linkedTimeEntryId: timeEntry.id,
+          suggestedClockInAt: scheduledStartTime,
+          suggestedClockOutAt: clockOutAt,
+          userProposedClockInAt: userClockInTime,
+          userProposedClockOutAt: clockOutAt,
+          reasonCode: reasonCode as any,
+          note,
+          createdBy: 'KIOSK_SYSTEM',
+        }).returning();
+        return { timeEntry, issue };
+      }), { upload: uploadToObjectStorage, remove: deleteFromObjectStorage });
 
       // Create time events for compatibility
       await storage.createTimeEvent({
@@ -10861,7 +10871,7 @@ OTO Company Limited`,
   });
 
   // Kiosk - Handle unscheduled work clock-in (employee has no scheduled shift today)
-  app.post("/api/kiosk/unscheduled-clock-in", async (req, res, next) => {
+  app.post("/api/kiosk/unscheduled-clock-in", parseAttendanceConfirmation, fixMulterFilenames, async (req, res, next) => {
     try {
       // The face road's second step, as auto-fix above: off while face is off (S2-17b round 5, H13).
       if (!faceClockInOn()) return res.status(403).json(FACE_CLOCK_OFF_REFUSAL);
@@ -10916,33 +10926,37 @@ OTO Company Limited`,
       const roundedLiveness = livenessScore ? Math.round(livenessScore) : undefined;
 
       // 1) Create TimeEntry with PENDING_APPROVAL status (NOT auto-approved)
-      const timeEntry = await storage.createTimeEntry({
-        tenantId: employee.tenantId,
-        employeeId,
-        branchId,
-        shiftDate: todayStr,
-        clockInAt: now,
-        clockOutAt: null,
-        status: 'PENDING_APPROVAL',
-        sourceIn: 'FACE_KIOSK',
-      });
+      const { issue } = await persistAttendanceEvidence(req.file, attachment => db.transaction(async tx => {
+        const [timeEntry] = await tx.insert(timeEntries).values({
+          tenantId: employee.tenantId,
+          employeeId,
+          branchId,
+          shiftDate: todayStr,
+          clockInAt: now,
+          clockOutAt: null,
+          status: 'PENDING_APPROVAL',
+          sourceIn: 'FACE_KIOSK',
+        }).returning();
 
-      // 2) Create TimekeepingIssue for UNSCHEDULED_WORK
-      const issue = await storage.createTimekeepingIssue({
-        tenantId: employee.tenantId,
-        employeeId,
-        branchId,
-        issueDate: todayStr,
-        issueType: 'UNSCHEDULED_WORK',
-        status: 'OPEN',
-        linkedTimeEntryId: timeEntry.id,
-        suggestedClockInAt: now,
-        suggestedClockOutAt: null,
-        userProposedClockInAt: now,
-        reasonCode,
-        note: note || null,
-        createdBy: 'KIOSK_SYSTEM',
-      });
+        // 2) Create TimekeepingIssue for UNSCHEDULED_WORK
+        const [issue] = await tx.insert(timekeepingIssues).values({
+          attachment,
+          tenantId: employee.tenantId,
+          employeeId,
+          branchId,
+          issueDate: todayStr,
+          issueType: 'UNSCHEDULED_WORK',
+          status: 'OPEN',
+          linkedTimeEntryId: timeEntry.id,
+          suggestedClockInAt: now,
+          suggestedClockOutAt: null,
+          userProposedClockInAt: now,
+          reasonCode,
+          note: note || null,
+          createdBy: 'KIOSK_SYSTEM',
+        }).returning();
+        return { timeEntry, issue };
+      }), { upload: uploadToObjectStorage, remove: deleteFromObjectStorage });
 
       // 3) Create time events for backward compatibility with timekeeping review
       await storage.createTimeEvent({
@@ -11918,6 +11932,9 @@ OTO Company Limited`,
           const branch = employee?.branchId ? await storage.getBranch(employee.branchId) : null;
           return {
             ...issue,
+            attachment: canReadAttendanceEvidence(issue, req.userWithAccess?.tenantId, userBranches) && issue.attachment
+              ? { fileName: issue.attachment.fileName, mimeType: issue.attachment.mimeType, size: issue.attachment.size }
+              : null,
             employeeName: getEmployeeDisplayName(employee),
             employeePhotoPath: employee?.profilePhotoPath,
             branchName: branch?.name || null,
@@ -11932,6 +11949,32 @@ OTO Company Limited`,
     } catch (error) {
       next(error);
     }
+  });
+
+  // Evidence is addressed through its exact issue, never through a public object URL.
+  app.get("/api/timekeeping/issues/:issueId/attachment", requireAuth, requireManager, async (req, res, next) => {
+    try {
+      const issue = await storage.getTimekeepingIssue(req.params.issueId);
+      const tenantId = req.userWithAccess?.tenantId;
+      if (!issue || !tenantId || issue.tenantId !== tenantId || !issue.attachment) {
+        return res.status(404).json({ message: "Attachment not found" });
+      }
+      const branches = await storage.getUserBranchAccess(req.user!.id);
+      if (!canReadAttendanceEvidence(issue, tenantId, branches)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      const evidence = issue.attachment;
+      if (!/^[a-f0-9-]+\.(jpg|png|gif|pdf)$/.test(evidence.objectName)) {
+        return res.status(404).json({ message: "Attachment not found" });
+      }
+      const file = await getFileFromObjectStorage(ATTENDANCE_EVIDENCE_FOLDER, evidence.objectName);
+      if (!file) return res.status(404).json({ message: "Attachment not found" });
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Content-Type", evidence.mimeType);
+      res.setHeader("Content-Disposition", `attachment; filename="attendance-evidence"; filename*=UTF-8''${encodeURIComponent(evidence.fileName)}`);
+      file.stream.pipe(res);
+    } catch (error) { next(error); }
   });
 
   // Approve or Reject Timekeeping Issue
