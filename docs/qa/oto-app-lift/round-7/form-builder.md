@@ -1,0 +1,5 @@
+# Form builder - staging walkthrough checkpoint, 12 October 2026
+
+WORKS for the recorded isolated draft/publication; BROKEN for the serving editor translation reader. The ZZ TEST practice park alone received form4609219c-68b7-42f9-b451-ada420034d07. Draft save200 and actual screen Confirm Publish200 produced version6f8dffae-ca98-4511-ad5c-cdd710681a36. Public branch read200 retained the exact ZZ TEST English title. The serving builder's translation path returned200 text/html and displayed keys. This is recorded under SCRUM-516.
+
+Evidence: inspected [published form screen](../../jira-comments/attachments/SCRUM-191/r7-form-published-tablet-20261012.png). The local correction wires owned version reads, version-bound saves, refreshed labels and published-schema display. Four adversarial reader controls pass locally, with the real editor save/reload and foreign reader rechecks still owed after release. The public guest shape and language fallback remain unchanged. Exact form/version/translation-job cleanup remains owed; no shared default-park form was edited.
