@@ -1,6 +1,6 @@
 # Hand-over to the next agent session — 28 September 2026, evening
 
-## Resume note - 12 October 2026 - round-7 review checkpoint
+## Resume note - 13 October 2026 - round-7 release checks
 
 This note supersedes the history below. Read AGENTS.md, then the newest STATUS block, OPEN_ITEMS and the lift PLAN. The owner approved three isolated preparation/review lanes; one coordinator alone integrates, publishes, handles staging/Jira and assigns final migration numbers.
 
@@ -8,11 +8,13 @@ Rounds 1-6 are landed and live. Round-6 eight-page and round-5 ten-page evidence
 
 Round 7 is built locally on lane/s217b-r7 and published for review, not landed or deployed. Final payroll review passed24 controls; the recorded form/home-branch corrections passed4 controls. The full release battery, final compiler/build, staged new-reader rechecks and cleanup are still owed. Read the newest STATUS block for current test-workflow state. Ten inspected staged frames and the round-7 index record current actions; camp attendance and another park's payroll export still need the staged release recheck. SCRUM-516 groups finance, administration, camp, permission and payroll ownership delivery. Independent permission/private-photo review has 15 green bounded pins on cf6c21a4. The payroll reviewer records seven parent/context findings across all 45 registered routes; the builder applies them as one batch. R8 tooling has 17 green pins and the genuine 11-migration rehearsal is running separately.
 
+Final compiler is now457 diagnostics/61 files with no bucket increase. DB and POS timeout cases passed their full-file reruns; booth and box passed. Full API battery and historical review-boundary maintenance continue. The new drop-off submission and refusal frame is recorded in STATUS; nanny completion and exact cleanup remain owed.
+
 Next, in order:
-1. Finish the recorded payroll guards, flip/recheck the independent pins, integrate, and run the full battery, whole API/app typechecks, actual touched-file lint and build. API output must be zero lines. The inherited app ceiling is 467 per file/code; the access lane now measures 463 after four old permission-context diagnostics disappear. Confirm the whole integrated delta before tightening R8's baseline.
+1. Complete the full API battery, historical release-boundary rechecks, final API typecheck, actual touched-file lint and build. Payroll24 and form/home-branch4 controls already pass. API output must be zero lines. The inherited app ceiling is467 per file/code; the whole integrated read is457 with no increase, ready for the explicit R8 ratchet.
 2. Land R7a with app 0009, keeping document ownership nullable while new writers ship. Watch CI by full SHA, check/comment Jira in the push turn, and observe the new writer on staging. Then cut R7b from origin/main and apply 0010's document contraction, with its own full gate. Independent four-pin R7b verification already passed against 2c706198; final release/staged verification remains owed.
 3. Finish every round-7 module page/action/refusal, attach the inspected proofs, and remove exact ZZ TEST records/objects including the shared practice park/user. No secret capabilities belong in ledgers or screenshots.
-4. Land R8: genuine restore against the final 0..10 chain in CI, measured app typecheck ratchet, acceptance index and Decision 25. Walk SCRUM-193 only when its five checks are actually evidenced. SCRUM-191 remains open for its separate SCRUM-194 scope, which depends on the existing owner decision; do not claim the whole umbrella complete.
+4. Land R8: genuine restore against the final 0..10 chain in CI, measured app typecheck ratchet, acceptance index and Decision 25. Walk SCRUM-193 only when its five checks are actually evidenced. SCRUM-191 remains open for its separate SCRUM-194 scope, whose original seven items are the working scope in its coverage plan; do not claim the whole umbrella complete.
 5. Follow OPEN_ITEMS section 2 in its worked order before any new story, beginning with SCRUM-276. SCRUM-223 stays paused.
 
 Platform next migration is 0076. App staging is applied through 0008; reserved release sequence is 0009 then 0010. Shared-role Q54, historical-person Q56 and global rate-limit Q57 defaults remain recorded expected-failure pins; Q55 preserves repeated finance report labels. Scheduling Q39 remains BROKEN in its existing fix-block lane. The newest STATUS block always wins.
