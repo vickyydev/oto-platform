@@ -2,6 +2,20 @@
 
 ## 13 October development checkpoint
 
+**Latest:** SCRUM-518 is built in PR3 (`db51ee5c`) and Testing; SCRUM-517 is
+built in PR4 (`6551f0e9`) with an explicit R7 person-ownership integration
+dependency. SCRUM-519 SOP history and SCRUM-520 attendance attachments are
+locally built and in focused review. SCRUM-521 implements presence delivery
+after the owner answered Q3 below. These are source checkpoints; none is
+claimed live by this note. Individual commits are retained at main landing,
+with frequent PRs and clean tracked working trees.
+
+**Q3 answered, 13 October:** use the staff's in-app inbox. Delivered means
+the notification is saved and available in that inbox; the existing read/unread
+state remains separate. Show pending or failed delivery honestly and support
+a reliable retry without duplicate delivery of the same attempt. No SMS
+channel is added for presence.
+
 SCRUM-194 is now In Progress. The original scope provides enough detail to
 start independent implementation; Q2-Q8 record alternatives or unresolved
 details, rather than imposing a blanket stop on the seven items.
