@@ -5,6 +5,7 @@ import { isAbsolute, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createTestDatabase } from '@oto/db/testing';
+import { selectPresenceDelivery, type LocalPresenceDelivery } from '../../oto-app/client/src/lib/presence-delivery';
 
 /**
  * SCRUM-521: actual delivery handler, database transactions and staff inbox.
@@ -16,6 +17,9 @@ import { createTestDatabase } from '@oto/db/testing';
  * FINDING 3 (medium, fixed): a notification write may fail after Pending.
  * Prescribed fix: durable Failed state and safe retry; never report Delivered
  * before the inbox row commits. Read/unread is a separate staff action.
+ * FINDING 4 (medium, fixed): browser/server clock differences can hide an
+ * unconfirmed attempt and mint a second request. Prescribed fix: retain the
+ * unconfirmed key until its response or matching Delivered result arrives.
  */
 const APP = fileURLToPath(new URL('../../oto-app/', import.meta.url));
 const available = existsSync(join(APP, 'node_modules/tsx/dist/cli.mjs'));
@@ -138,5 +142,11 @@ finally{if(server)await new Promise(resolve=>server.close(resolve));await pool.e
     expect(live).toContain('read status is separate');
     expect(bell).toContain('if (notification.type === "timekeeping_ping") return;');
     expect(bell).toContain('"whitespace-pre-wrap"');
+    const pending: LocalPresenceDelivery = { requestKey: 'new-request', status: 'Pending', failureMessage: null, unconfirmed: true };
+    const previous = { requestKey: 'old-request', status: 'Delivered' as const, failureMessage: null, updatedAt: '2099-10-13T12:00:00.000Z' };
+    expect(selectPresenceDelivery(previous, pending), 'An older server result cannot hide the unconfirmed key').toBe(pending);
+    const confirmed = { ...previous, requestKey: pending.requestKey };
+    expect(selectPresenceDelivery(confirmed, pending), 'The same delivered request can reconcile a lost response').toBe(confirmed);
+    expect(selectPresenceDelivery(previous, { ...pending, unconfirmed: undefined, status: 'Failed', updatedAt: '2099-10-13T11:00:00.000Z' })).toBe(previous);
   });
 });
