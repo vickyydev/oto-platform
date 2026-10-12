@@ -92,6 +92,13 @@
                         "when":  1791830515767,
                         "tag":  "0092_attendance_evidence",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx":  93,
+                        "version":  "7",
+                        "when":  1791830799623,
+                        "tag":  "0093_presence_notification_delivery",
+                        "breakpoints":  true
                     }
                 ]
 }

@@ -41,6 +41,7 @@ interface NotificationItem {
 }
 
 const notificationMeta: Record<string, { icon: typeof Bell; label: string; color: string }> = {
+  timekeeping_ping: { icon: CalendarClock, label: "Clock-in", color: "text-amber-500 dark:text-amber-400" },
   task_comment: { icon: MessageSquare, label: "Comment", color: "text-blue-500 dark:text-blue-400" },
   task_assigned: { icon: UserPlus, label: "Assigned", color: "text-violet-500 dark:text-violet-400" },
   task_status_changed: { icon: RefreshCw, label: "Status", color: "text-amber-500 dark:text-amber-400" },
@@ -95,8 +96,9 @@ export function NotificationPanel({ open, onOpenChange }: { open: boolean; onOpe
         await apiRequest("PATCH", `/api/notifications/${notification.id}/read`);
         queryClient.invalidateQueries({ queryKey: ["/api/notifications/unread-count"] });
         queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
-      } catch {}
+      } catch { /* Keep the message available when marking read needs a retry. */ }
     }
+    if (notification.type === "timekeeping_ping") return;
     onOpenChange(false);
     if (notification.referenceType === "task" && notification.referenceId) {
       window.location.href = `/ops?taskId=${notification.referenceId}`;
@@ -237,7 +239,7 @@ function NotificationRow({
         <p className={`text-sm leading-snug ${isUnread ? "font-medium" : "text-muted-foreground"}`}>
           {notification.title}
         </p>
-        <p className={`text-xs mt-0.5 leading-relaxed truncate ${isUnread ? "text-muted-foreground" : "text-muted-foreground/70"}`}>
+        <p className={`text-xs mt-0.5 leading-relaxed ${notification.type === "timekeeping_ping" ? "whitespace-pre-wrap" : "truncate"} ${isUnread ? "text-muted-foreground" : "text-muted-foreground/70"}`}>
           {notification.body}
         </p>
         <div className="flex items-center gap-2 mt-1.5">

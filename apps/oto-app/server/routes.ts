@@ -9,6 +9,7 @@ import { loadUserWithAccess, requireRole, requireAdmin, requireManager, requireG
 import { generatePdf, generateSignedPdf, generateSignedLetterPdf, wrapContentInDocument } from "./pdf";
 import { uploadFinalizedPdf, uploadSignedPdf, uploadSignedLetterPdf, presignedPdfUrl, streamSignedPdf, isObjectStoragePath } from "./pdf-storage";
 import { readFixDepartmentMembers, registerFixRecipientPreview } from "./fix-recipient-preview";
+import { readPresenceDeliveries, registerPresenceNotificationDelivery } from "./presence-notification-delivery";
 import { fixMulterFilenames } from "./middleware/fixMulterFilenames";
 import { uploadToObjectStorage, getFileFromObjectStorage, fileExistsInObjectStorage, deleteFromObjectStorage, getFileRangeFromObjectStorage } from "./file-storage";
 import { getOrCreateFixMediaThumbnail } from "./fix-media-thumbnails";
@@ -12697,7 +12698,8 @@ OTO Company Limited`,
   app.get("/api/timekeeping/live", requireAuth, requireManager, async (req, res, next) => {
     try {
       const user = req.userWithAccess;
-      const tenantId = await getDefaultTenantId();
+      const tenantId = user?.tenantId;
+      if (!user || !tenantId) return res.status(403).json({ message: "Park access required" });
       const branchId = req.query.branchId as string | undefined;
       const now = new Date();
       const GRACE_MINUTES = 5;
@@ -12907,9 +12909,10 @@ OTO Company Limited`,
       workingNow.sort((a, b) => a.clockInAt.getTime() - b.clockInAt.getTime());
       missingClockIns.sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
 
+      const deliveryRows = await readPresenceDeliveries(db, tenantId, employeeIds, todayStr, user.hasAllBranchesAccess ? undefined : user.allowedBranchIds);
       res.json({
-        workingNow,
-        missingClockIns,
+        workingNow: workingNow.map(row => ({ ...row, delivery: deliveryRows.find(delivery => delivery.employeeId === row.employeeId) || null })),
+        missingClockIns: missingClockIns.map(row => ({ ...row, shiftDate: todayStr, delivery: deliveryRows.find(delivery => delivery.employeeId === row.employeeId && delivery.shiftRowId === row.shiftRowId) || null })),
         currentlyWorkingCount: workingNow.length,
         missingClockInsCount: missingClockIns.length,
         timestamp: now.toISOString(),
@@ -12919,41 +12922,7 @@ OTO Company Limited`,
     }
   });
 
-  // Ping an employee for missing clock-in
-  app.post("/api/timekeeping/live/ping", requireAuth, requireManager, async (req, res, next) => {
-    try {
-      const { employeeId, shiftRowId, reason } = req.body;
-    void reason;
-    void shiftRowId;
-      const userId = req.user?.id;
-      const tenantId = await getDefaultTenantId();
-
-      if (!employeeId) {
-        return res.status(400).json({ message: "employeeId is required" });
-      }
-
-      // Create an attention item for the missing clock-in — for the caller's
-      // park group's employee only (round 6's re-review, F7).
-      const employee = await employeeOfParkGroup(req, employeeId);
-      if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
-      }
-
-      // Log as activity (or create attention item)
-      await storage.createActivityLogEntry({
-        tenantId,
-        entityType: "employee",
-        entityId: employeeId,
-        activityType: "timekeeping_ping" as any,
-        summaryText: `Missing clock-in ping sent for ${employee.nickname || employee.firstName}`,
-        createdBy: userId,
-      });
-
-      res.json({ success: true, message: "Ping sent" });
-    } catch (error) {
-      next(error);
-    }
-  });
+  registerPresenceNotificationDelivery(app, db, requireAuth, requireManager, managedUserTenant);
 
   // ============================================
   // SCHEDULING MODULE
