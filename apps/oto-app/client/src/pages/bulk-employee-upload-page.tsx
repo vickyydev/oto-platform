@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,13 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Upload,
   Download,
   Check,
-  X,
   AlertTriangle,
   FileSpreadsheet,
   ArrowRight,
@@ -124,7 +121,7 @@ export default function BulkEmployeeUploadPage() {
       
       toast({
         title: "File processed",
-        description: `Found ${data.stats.total} records: ${data.stats.updates} updates, ${data.stats.newRecords} new, ${data.stats.errors} errors`,
+        description: `Found ${data.stats.total} records: ${data.stats.newRecords} new, ${data.stats.updates} changed, ${data.stats.noChange} unchanged, ${data.stats.errors} invalid`,
       });
     } catch (error: any) {
       toast({
@@ -205,16 +202,16 @@ export default function BulkEmployeeUploadPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, preview = false) => {
     switch (status) {
       case "update":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><UserCheck className="h-3 w-3 mr-1" /> Update</Badge>;
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200"><UserCheck className="h-3 w-3 mr-1" /> Changed</Badge>;
       case "new":
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><UserPlus className="h-3 w-3 mr-1" /> New</Badge>;
       case "no_change":
-        return <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-200"><Minus className="h-3 w-3 mr-1" /> No Change</Badge>;
+        return <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-200"><Minus className="h-3 w-3 mr-1" /> Unchanged</Badge>;
       case "error":
-        return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" /> Error</Badge>;
+        return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" /> {preview ? "Invalid" : "Error"}</Badge>;
       case "created":
         return <Badge className="bg-green-600"><Check className="h-3 w-3 mr-1" /> Created</Badge>;
       case "updated":
@@ -336,15 +333,15 @@ export default function BulkEmployeeUploadPage() {
                 <span className="font-medium">{previewData.stats.newRecords}</span>
               </div>
               <div className="text-sm">
-                <span className="text-blue-600">Updates: </span>
+                <span className="text-blue-600">Changed: </span>
                 <span className="font-medium">{previewData.stats.updates}</span>
               </div>
               <div className="text-sm">
-                <span className="text-gray-500">No Change: </span>
+                <span className="text-gray-500">Unchanged: </span>
                 <span className="font-medium">{previewData.stats.noChange}</span>
               </div>
               <div className="text-sm">
-                <span className="text-red-600">Errors: </span>
+                <span className="text-red-600">Invalid: </span>
                 <span className="font-medium">{previewData.stats.errors}</span>
               </div>
             </div>
@@ -390,15 +387,17 @@ export default function BulkEmployeeUploadPage() {
                       <TableCell>
                         <div>
                           <p className="font-medium">{row.data.fullName || "—"}</p>
-                          {row.matchedEmployeeName && row.matchedEmployeeName !== row.data.fullName && (
-                            <p className="text-xs text-muted-foreground">Matched: {row.matchedEmployeeName}</p>
+                          {row.matchedEmployeeId && (
+                            <p className="text-xs text-muted-foreground" data-testid={`text-matched-${row.rowNumber}`}>
+                              Matched: {row.matchedEmployeeName || "Existing employee"}
+                            </p>
                           )}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm">{row.data.email || "—"}</TableCell>
                       <TableCell className="text-sm">{row.data.branchName || "—"}</TableCell>
                       <TableCell className="text-sm">{row.data.position || "—"}</TableCell>
-                      <TableCell>{getStatusBadge(row.status)}</TableCell>
+                      <TableCell>{getStatusBadge(row.status, true)}</TableCell>
                       <TableCell>
                         {row.error ? (
                           <span className="text-sm text-red-600">{row.error}</span>
