@@ -329,7 +329,7 @@ try {
     expect(result.privatePhotoControl).toBe(true);
     expect(result.externalPhotoControl).toBe(true);
   });
-  it.fails('FINDING 6 (high): encoded app-private photo URLs cannot copy another park\u2019s object into an owned record; prescribed fix: decode private path segments before allowing external links and hold profile reads to approved object references', () => {
+  it('FINDING 6 (high, fixed): encoded app-private photo URLs cannot copy another park\u2019s object into an owned record; prescribed fix: decode private path segments before allowing external links and hold profile reads to approved object references', () => {
     expect(result.privatePhotoVariantsRefused).toBe(true);
     expect(result.privatePhotoBytesRefused).toBe(true);
   });
@@ -337,7 +337,7 @@ try {
     expect(result.overrideReaderControl).toBe(true);
     expect(result.overrideOwnChoicePreserved).toBe(true);
   });
-  it.fails('FINDING 7 (high): historical overrides from another park cannot govern either module reader; prescribed fix: require the resolved park group in the getter and all four consumers', () => {
+  it('FINDING 7 (high, fixed): historical overrides from another park cannot govern either module reader; prescribed fix: require the resolved park group in the getter and all four consumers', () => {
     expect(result.overrideForeignChoiceIgnored).toBe(true);
   });
 });
