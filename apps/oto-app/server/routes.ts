@@ -131,7 +131,7 @@ import { registerAuthOtpRoutes } from "./auth-otp-routes";
 import { db, pool } from "./db";
 import { directoryEventRouter } from "./directory/eventRoutes";
 import { directoryJobRouter } from "./directory/jobRoutes";
-import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
+import { tenants, trainingModules, quizQuestions, moduleCompletions, quizAttempts, employees, employeeAssets, employeeChanges, employeeOffboarding, offboardingChecklist, eventStatuses, insertEventStatusSchema, branches, departments, operators, contractInstances, casualWorkers, users, staffCostAllocations, kioskDevices, timeEvents, timeEntries, scheduleAssignments, scheduleShiftRows, scheduleShiftBreaks, scheduleShiftRowRoles, scheduleWeekPlans, employeeTimeOff, scheduleAuditLog, activityLog, roles, roleBranchAssignments, employeeRoles, payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults, employeePayrollProfiles, accessPolicies, accessItems, people, advisorEnrollmentSessions, advisorAttendanceSessions, advisorAttendanceCorrections, kioskAuthAttempts } from "@shared/schema";
 import { hashSessionToken, validateKioskSession } from "./kiosk-auth";
 import { DEACTIVATE_INSTEAD, deleteManagedUser } from "./lib/userDeletion";
 import { FACE_CLOCK_OFF_REFUSAL, FACE_ENROLMENT_OFF_REFUSAL, FACE_OFF_NO_MATCH, faceClockInOn } from "./lib/faceOff";
@@ -25867,24 +25867,52 @@ ${context}`;
   // PAYROLL MODULE API ENDPOINTS
   // ============================================
 
+  app.use('/api/payroll', requireAuth, async (req, res, next) => {
+    try {
+      const tenantId = req.user?.id ? await managedUserTenant(req.user.id) : undefined;
+      if (!tenantId || tenantId !== req.userWithAccess?.tenantId) return res.status(403).json({ message: 'Payroll park-group access required' });
+      next();
+    } catch (error) { next(error); }
+  });
+  const payrollOperatorAccess = async (operatorId: string, user: { id: string }) => {
+    const tenantId = await managedUserTenant(user.id);
+    if (!tenantId) return false;
+    const [operator] = await db.select({ id: operators.id }).from(operators).where(and(eq(operators.id, operatorId), eq(operators.tenantId, tenantId))).limit(1);
+    return !!operator;
+  };
+
   // Helper: Check if user has payroll admin access (global_admin or operator_admin)
   const isPayrollAdmin = (user: any) =>
     user?.role === 'global_admin' || user?.role === 'admin' || user?.role === 'operator_admin';
   const payrollUuidPattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
   // Helper: Verify payroll period belongs to user's operator
-  const verifyPeriodAccess = async (periodId: string, user: any): Promise<boolean> => {
+  const verifyPeriodAccess = async (periodId: string, user: any, ownershipOnly = false): Promise<boolean> => {
     const period = await storage.getPayrollPeriod(periodId);
     if (!period) return false;
+    const tenantId = await managedUserTenant(user.id);
+    if (!tenantId || period.tenantId !== tenantId || !(await payrollOperatorAccess(period.operatorId, user))) return false;
+    if (ownershipOnly) return true;
     if (user.role === 'global_admin' || user.role === 'admin') return true;
     return period.operatorId === user.operatorId;
   };
 
   // Helper: Verify payroll run belongs to user's operator
-  const verifyRunAccess = async (runId: string, user: any): Promise<boolean> => {
+  const verifyRunAccess = async (runId: string, user: any, ownershipOnly = false): Promise<boolean> => {
     const run = await storage.getPayrollRun(runId);
     if (!run) return false;
-    return verifyPeriodAccess(run.payrollPeriodId, user);
+    if (!(await verifyPeriodAccess(run.payrollPeriodId, user, ownershipOnly))) return false;
+    const tenantId = await managedUserTenant(user.id);
+    if (!tenantId) return false;
+    // A run is refused as a whole when a historical child names another park's person or payroll profile.
+    for (const table of [payrollEmployeeSummaries, payrollLineItems, payrollDayReconciliations, payrollExceptions, statutoryCalculationResults]) {
+      const [foreign] = await db.select({ employeeId: table.employeeId }).from(table)
+        .leftJoin(employees, eq(table.employeeId, employees.id))
+        .leftJoin(employeePayrollProfiles, eq(employeePayrollProfiles.employeeId, table.employeeId))
+        .where(and(eq(table.payrollRunId, runId), or(isNull(employees.id), ne(employees.tenantId, tenantId), and(isNotNull(employeePayrollProfiles.id), ne(employeePayrollProfiles.tenantId, tenantId))))).limit(1);
+      if (foreign) return false;
+    }
+    return true;
   };
 
   // GET /api/payroll/periods - List payroll periods for user's operator
@@ -25901,7 +25929,8 @@ ${context}`;
       if (!operatorId) {
         return res.status(400).json({ message: "Operator ID required" });
       }
-      const periods = await storage.getPayrollPeriods(operatorId);
+      if (!(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
+      const periods = (await storage.getPayrollPeriods(operatorId)).filter(period => period.tenantId === req.userWithAccess?.tenantId);
       res.json(periods);
     } catch (error) {
       next(error);
@@ -25946,6 +25975,7 @@ ${context}`;
       if (!operatorId) {
         return res.status(400).json({ message: "Operator ID required" });
       }
+      if (!(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
       const period = await storage.createPayrollPeriod({
         operatorId,
         name,
@@ -26206,7 +26236,10 @@ ${context}`;
       if (!employee.length) {
         return res.json([]);
       }
-      const payslipList = await storage.getPayslips(employee[0].id);
+      const candidates = await storage.getPayslips(employee[0].id);
+      const allowed = await Promise.all(candidates.map(payslip => verifyRunAccess(payslip.payrollRunId, user, true)));
+      if (allowed.some(value => !value)) return res.status(403).json({ message: "Payroll records need consistent park-group ownership" });
+      const payslipList = candidates;
       res.json(payslipList);
     } catch (error) {
       next(error);
@@ -26224,6 +26257,7 @@ ${context}`;
       if (!payslip) {
         return res.status(404).json({ message: "Payslip not found" });
       }
+      if (!(await verifyRunAccess(payslip.payrollRunId, user, true))) return res.status(403).json({ message: "Access denied" });
       if (!isPayrollAdmin(user)) {
         const employee = await db.select()
           .from(employees)
@@ -26249,6 +26283,8 @@ ${context}`;
       if (!isPayrollAdmin(user)) {
         return res.status(403).json({ message: "Payroll admin access required" });
       }
+      if (!(await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess!.tenantId!))) return res.status(404).json({ message: "Employee not found" });
+
       const advances = await storage.getSalaryAdvances(req.params.employeeId);
       res.json(advances);
     } catch (error) {
@@ -26294,6 +26330,7 @@ ${context}`;
       if (!operatorId) {
         return res.status(400).json({ message: "Operator context required" });
       }
+      if (!(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
       const policy = await storage.getPayrollPolicySettings(operatorId);
       res.json(policy || null);
     } catch (error) {
@@ -26312,6 +26349,7 @@ ${context}`;
       if (!operatorId) {
         return res.status(400).json({ message: "Operator context required" });
       }
+      if (!(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
       const existing = await storage.getPayrollPolicySettings(operatorId);
       const { overtimeThresholdMinutes, lateThresholdMinutes, defaultAdvanceMaxPct, countryCode } = req.body;
       if (existing) {
@@ -26345,7 +26383,7 @@ ${context}`;
         return res.status(403).json({ message: "Payroll admin access required" });
       }
       const countryCode = (req.query.country as string) || 'TH';
-      const rules = await storage.getStatutoryRuleSets(countryCode);
+      const rules = await storage.getStatutoryRuleSets(countryCode, req.userWithAccess!.tenantId);
       res.json(rules);
     } catch (error) {
       next(error);
@@ -26359,7 +26397,10 @@ ${context}`;
       if (!isPayrollAdmin(user)) {
         return res.status(403).json({ message: "Payroll admin access required" });
       }
+      if (!(await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess!.tenantId!))) return res.status(404).json({ message: "Employee not found" });
+
       const profile = await storage.getEmployeePayrollProfile(req.params.employeeId);
+      if (profile && profile.tenantId !== req.userWithAccess?.tenantId) return res.status(403).json({ message: "Access denied" });
       res.json(profile || null);
     } catch (error) {
       next(error);
@@ -26373,13 +26414,17 @@ ${context}`;
       if (!isPayrollAdmin(user)) {
         return res.status(403).json({ message: "Payroll admin access required" });
       }
+      if (!(await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess!.tenantId!))) return res.status(404).json({ message: "Employee not found" });
+
       const operatorId = user.operatorId || req.body.operatorId;
       if (!operatorId) {
         return res.status(400).json({ message: "Operator context required" });
       }
+      if (!(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
       const existing = await storage.getEmployeePayrollProfile(req.params.employeeId);
+      if (existing && existing.tenantId !== req.userWithAccess?.tenantId) return res.status(403).json({ message: "Access denied" });
       if (existing) {
-        const updated = await storage.updateEmployeePayrollProfile(existing.id, req.body);
+        const updated = await storage.updateEmployeePayrollProfile(existing.id, { ...req.body, tenantId: existing.tenantId, employeeId: existing.employeeId, operatorId });
         res.json(updated);
       } else {
         const created = await storage.createEmployeePayrollProfile({
@@ -26538,6 +26583,8 @@ ${context}`;
       if (!isPayrollAdmin(user)) {
         return res.status(403).json({ message: "Payroll admin access required" });
       }
+      if (!(await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess!.tenantId!))) return res.status(404).json({ message: "Employee not found" });
+
       if (!(await verifyRunAccess(req.params.id, user))) {
         return res.status(403).json({ message: "Access denied to this run" });
       }
@@ -26617,6 +26664,7 @@ ${context}`;
         return res.status(403).json({ message: "Payroll admin access required" });
       }
       const operatorId = user.role === 'operator_admin' ? user.operatorId : (req.query.operatorId as string);
+      if (operatorId && !(await payrollOperatorAccess(operatorId, user))) return res.status(403).json({ message: "Access denied to this operator" });
       const ruleSets = await storage.getAllStatutoryRuleSets(user.tenantId, operatorId);
       res.json(ruleSets);
     } catch (error) {
@@ -26767,6 +26815,8 @@ ${context}`;
       if (!isPayrollAdmin(user)) {
         return res.status(403).json({ message: "Payroll admin access required" });
       }
+      if (!(await storage.getEmployeeInTenant(req.params.employeeId, req.userWithAccess!.tenantId!))) return res.status(404).json({ message: "Employee not found" });
+
       if (!(await verifyRunAccess(req.params.id, user))) {
         return res.status(403).json({ message: "Access denied to this run" });
       }
@@ -26814,6 +26864,7 @@ ${context}`;
       if (isAdmin ? !(await verifyRunAccess(runId, user)) : self?.id !== employeeId) {
         return res.status(403).json({ message: "Access denied" });
       }
+      if (!(await verifyRunAccess(runId, user, true))) return res.status(403).json({ message: "Access denied" });
       const summaries = await storage.getPayrollSummariesByEmployee(employeeId);
       if (!summaries.some(summary => summary.payrollRunId === runId)) {
         return res.status(404).json({ message: "Payslip not found" });

@@ -5,6 +5,7 @@ import { createHash, randomBytes, randomUUID, scryptSync } from 'node:crypto';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 const appDir = fileURLToPath(new URL('../', import.meta.url));
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
@@ -835,6 +836,215 @@ try {
     assert.equal(saved.checked_out_at, null);
     assert.equal(saved.staff_notes, 'ZZ TEST note');
   });
+  await check('payroll', async () => {
+    const make = async (tenant: string, userId: string, tag: string) => {
+      const operator = (
+        await q('insert into operators(tenant_id,name) values($1,$2) returning id', [
+          tenant,
+          'ZZ TEST payroll ' + tag,
+        ])
+      )[0].id;
+      const period = (
+        await q(
+          "insert into payroll_periods(tenant_id,operator_id,start_date,end_date) values($1,$2,'2099-01-01','2099-01-31') returning id",
+          [tenant, operator],
+        )
+      )[0].id;
+      const payrollRun = (
+        await q(
+          "insert into payroll_runs(payroll_period_id,run_number,status,created_by) values($1,1,'DRAFT',$2) returning id",
+          [period, userId],
+        )
+      )[0].id;
+      const employee = (
+        await q(
+          "insert into employees(tenant_id,user_id,full_name,nickname,email) values($1,$2,'ZZ TEST payroll','ZZ TEST',$3) returning id",
+          [tenant, userId, 'zz-payroll-' + tag + run + '@example.invalid'],
+        )
+      )[0].id;
+      await q('insert into payroll_employee_summaries(payroll_run_id,employee_id) values($1,$2)', [
+        payrollRun,
+        employee,
+      ]);
+      return { operator, period, payrollRun, employee };
+    };
+    const pa = await make(a.tenant, a.id, 'A'),
+      pb = await make(b.tenant, b.id, 'B');
+    const staff = randomUUID(),
+      email = 'zz-payroll-staff-' + run + '@example.invalid';
+    await q(
+      "insert into users(id,email,password,full_name,role) values($1,$2,$3,'ZZ TEST staff','staff')",
+      [staff, email, hash],
+    );
+    await q(
+      "insert into user_branch_access(tenant_id,user_id,access_scope) values($1,$2,'selected_branches')",
+      [a.tenant, staff],
+    );
+    const sign = await fetch(origin + '/api/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ identifier: email, password }),
+    });
+    assert.equal(sign.status, 200);
+    const cookie = sign.headers
+      .getSetCookie()
+      .map((c) => c.split(';')[0])
+      .join('; ');
+    await q('update employees set user_id=$1 where id=$2', [staff, pa.employee]);
+    assert.equal(
+      (await call('GET', '/api/payroll/periods?operatorId=' + pa.operator, a.cookie)).status,
+      200,
+    );
+    assert.equal(
+      (await call('GET', '/api/payroll/periods?operatorId=' + pa.operator, b.cookie)).status,
+      403,
+    );
+    for (const [path, body] of [
+      ['bank-transfer', { bankFormat: 'GENERIC' }],
+      ['journal', { format: 'CSV' }],
+      ['sso-filing', {}],
+      ['pit-filing', {}],
+    ] as const) {
+      const url = '/api/payroll/runs/' + pa.payrollRun + '/export/' + path;
+      assert.equal((await call('POST', url, b.cookie, body)).status, 403);
+      assert.equal((await call('POST', url, cookie, body)).status, 403);
+      const own = await call('POST', url, a.cookie, body);
+      assert.equal(own.status, 200);
+      assert.equal(own.data.success, true);
+      assert.equal((await call('GET', own.data.filePath, a.cookie)).status, 200);
+      assert.equal((await call('GET', own.data.filePath, b.cookie)).status, 403);
+      assert.equal((await call('POST', url, a.cookie, body)).status, 200);
+    }
+    const bExport = await call(
+      'POST',
+      '/api/payroll/runs/' + pb.payrollRun + '/export/bank-transfer',
+      b.cookie,
+      {},
+    );
+    assert.equal(bExport.status, 200);
+    assert.equal((await call('GET', bExport.data.filePath, b.cookie)).status, 200);
+    assert.equal((await call('GET', bExport.data.filePath, a.cookie)).status, 403);
+    const otherOperator = (
+      await q(
+        "insert into operators(tenant_id,name) values($1,'ZZ TEST payroll other operator') returning id",
+        [a.tenant],
+      )
+    )[0].id;
+    await q(
+      'insert into employee_payroll_profiles(tenant_id,operator_id,employee_id) values($1,$2,$3)',
+      [a.tenant, otherOperator, pa.employee],
+    );
+    assert.equal(
+      (
+        await call(
+          'POST',
+          '/api/payroll/runs/' + pa.payrollRun + '/export/bank-transfer',
+          a.cookie,
+          {},
+        )
+      ).status,
+      200,
+    );
+    await q(
+      'update employee_payroll_profiles set tenant_id=$1,operator_id=$2 where employee_id=$3',
+      [b.tenant, pb.operator, pa.employee],
+    );
+    assert.equal(
+      (
+        await call(
+          'POST',
+          '/api/payroll/runs/' + pa.payrollRun + '/export/bank-transfer',
+          a.cookie,
+          {},
+        )
+      ).status,
+      403,
+    );
+    await q(
+      'update employee_payroll_profiles set tenant_id=$1,operator_id=$2 where employee_id=$3',
+      [a.tenant, otherOperator, pa.employee],
+    );
+    assert.equal((await call('GET', '/api/payroll/runs/' + pa.payrollRun, a.cookie)).status, 200);
+    assert.equal((await call('GET', '/api/payroll/runs/' + pb.payrollRun, b.cookie)).status, 200);
+    assert.equal((await call('GET', '/api/payroll/runs/' + pa.payrollRun, b.cookie)).status, 403);
+    assert.equal(
+      (await call('GET', '/api/payroll/policy?operatorId=' + pa.operator, b.cookie)).status,
+      403,
+    );
+    const pdfName = 'payslip_' + pa.payrollRun + '_' + pa.employee + '.pdf';
+    const pdfDir = join(appDir, 'uploads', 'payroll-payslips');
+    mkdirSync(pdfDir, { recursive: true });
+    const pdfPath = join(pdfDir, pdfName);
+    writeFileSync(pdfPath, '%PDF-1.4\nZZ TEST private-file gate\n');
+    assert.equal((await call('GET', '/api/payroll/payslip-files/' + pdfName, cookie)).status, 200);
+    assert.equal(
+      (await call('GET', '/api/payroll/payslip-files/' + pdfName, b.cookie)).status,
+      403,
+    );
+    rmSync(pdfPath);
+    const foreignSelf =
+      '/api/payroll/payslip-files/payslip_' + pb.payrollRun + '_' + pa.employee + '.pdf';
+    assert.equal((await call('GET', foreignSelf, cookie)).status, 403);
+    await q('insert into payroll_employee_summaries(payroll_run_id,employee_id) values($1,$2)', [
+      pa.payrollRun,
+      pb.employee,
+    ]);
+    assert.equal(
+      (
+        await call(
+          'POST',
+          '/api/payroll/runs/' + pa.payrollRun + '/export/bank-transfer',
+          a.cookie,
+          {},
+        )
+      ).status,
+      403,
+    );
+    assert.equal((await call('GET', '/api/payroll/runs/' + pa.payrollRun, a.cookie)).status, 403);
+    await q('delete from payroll_employee_summaries where payroll_run_id=$1 and employee_id=$2', [
+      pa.payrollRun,
+      pb.employee,
+    ]);
+    await q(
+      "insert into payroll_line_items(payroll_run_id,employee_id,line_type,code,description,amount) values($1,$2,'EARNING','ZZ TEST','ZZ TEST line',0)",
+      [pa.payrollRun, pb.employee],
+    );
+    assert.equal(
+      (await call('POST', '/api/payroll/runs/' + pa.payrollRun + '/export/journal', a.cookie, {}))
+        .status,
+      403,
+    );
+    await q('delete from payroll_line_items where payroll_run_id=$1 and employee_id=$2', [
+      pa.payrollRun,
+      pb.employee,
+    ]);
+    assert.equal((await call('GET', '/api/payroll/runs/' + pa.payrollRun, a.cookie)).status, 200);
+    const [summary] = await q(
+      'select gross_pay,net_pay from payroll_employee_summaries where payroll_run_id=$1 and employee_id=$2',
+      [pa.payrollRun, pa.employee],
+    );
+    assert.equal(Number(summary.gross_pay), 0);
+    assert.equal(Number(summary.net_pay), 0);
+  });
+  if (
+    [
+      'people',
+      'permissions',
+      'forms',
+      'vouchers',
+      'userScopeDefaults',
+      'userScopeDefaultsSingle',
+      'standingArrangements',
+      'presence',
+      'camp',
+      'softLinks',
+      'privateReferences',
+      'dataAdmin',
+      'roles',
+      'payroll',
+    ].some((name) => results[name] !== true)
+  )
+    process.exitCode = 1;
   console.log('ADMINISTRATION_RESULTS=' + JSON.stringify({ results, failures }));
 } finally {
   child?.kill();

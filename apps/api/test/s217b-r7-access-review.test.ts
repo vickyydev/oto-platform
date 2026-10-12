@@ -25,6 +25,8 @@ import { createTestDatabase } from '@oto/db/testing';
  * Prescribed fix: preserve existing values and direct changed links to the module screen.
  * FINDING 8 (medium): camp mutations selected default park rather than caller/event.
  * Prescribed fix: resolve caller/kiosk tenant and event branch before all five writes.
+ * FINDING 9 (high): payroll exports need period ownership before role/operator rules.
+ * Prescribed fix: strict placement, all helper consumers and whole-run employee/profile consistency.
  * Standing questions: historical unplaced identities Q56, anonymous auth
  * rate-limit ownership Q57; they receive explicit ownership notices.
  */
@@ -53,7 +55,7 @@ describe.skipIf(!available)('round 7 administration review over real HTTP', () =
           timeout: 300_000,
         },
       );
-      expect(response.status, response.stderr).toBe(0);
+      expect(response.status, response.stdout + response.stderr).toBe(0);
       const payload = /ADMINISTRATION_RESULTS=(.+)/.exec(response.stdout);
       expect(payload, response.stdout).toBeTruthy();
       result = JSON.parse(payload![1]!);
@@ -73,6 +75,7 @@ describe.skipIf(!available)('round 7 administration review over real HTTP', () =
     'camp',
     'softLinks',
     'privateReferences',
+    'payroll',
   ]) {
     it(module + ': own actions remain and foreign IDs are refused', () => {
       expect(result.results[module], result.failures[module]).toBe(true);
