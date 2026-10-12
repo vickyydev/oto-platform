@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
 import { randomBytes, randomUUID, scryptSync, createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
@@ -18,7 +18,7 @@ import { createTestDatabase } from '@oto/db/testing';
  */
 const APP = fileURLToPath(new URL('../../oto-app/', import.meta.url));
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
-const HAS_APP = existsSync(join(APP, 'node_modules/tsx/dist/cli.mjs'));
+const HAS_APP = existsSync(join(APP, 'node_modules/tsx/dist/loader.mjs'));
 const routes = readFileSync(join(APP, 'server/routes.ts'), 'utf8');
 const door = (method: string, path: string) => {
   const start = routes.indexOf(`app.${method}("${path}"`);
@@ -32,6 +32,11 @@ let database: Awaited<ReturnType<typeof createTestDatabase>>;
 let client: pg.Client;
 let child: ChildProcess;
 let origin = '';
+let setupStage = 'not started';
+const setup = (stage: string) => { setupStage = stage; console.info('ZZ TEST payroll setup: ' + stage); };
+const harnessOutputHash = createHash('sha256');
+const harnessErrorClasses = new Set<string>();
+let harnessOutputBytes = 0;
 let a: Group, b: Group;
 let staffCookie = '', ownSlip = '';
 const files = new Set<string>();
@@ -50,10 +55,23 @@ const salt = randomBytes(16).toString('hex');
 const passwordHash = scryptSync(password, salt, 64).toString('hex') + '.' + salt;
 const q = async (sql: string, values: unknown[] = []) => (await client.query(sql, values)).rows;
 
+async function boundedCleanup(action: () => Promise<unknown> | undefined, label: string): Promise<void> {
+  let timer: ReturnType<typeof setTimeout>;
+  try {
+    await Promise.race([
+      Promise.resolve().then(action),
+      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('ZZ TEST payroll cleanup deadline: ' + label)), 5_000); }),
+    ]);
+  } catch {
+    throw new Error('ZZ TEST payroll cleanup did not complete: ' + label);
+  } finally { clearTimeout(timer!); }
+}
+
 async function call(method: string, path: string, cookie = '', body?: unknown): Promise<Answer> {
   const response = await fetch(origin + path, {
     method, headers: { cookie, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(30_000),
   });
   const text = await response.text();
   let data: Answer['data'] = null;
@@ -61,11 +79,16 @@ async function call(method: string, path: string, cookie = '', body?: unknown): 
   return { status: response.status, data };
 }
 
-async function sign(user: string, email: string, role: string, tenant: string): Promise<string> {
+async function seedUser(user: string, email: string, role: string, tenant: string): Promise<void> {
   await q('insert into users(id,email,password,full_name,role) values($1,$2,$3,$4,$5)', [user, email, passwordHash, 'ZZ TEST Payroll ' + role, role]);
   await q("insert into user_branch_access(tenant_id,user_id,access_scope) values($1,$2,'all_branches')", [tenant, user]);
+}
+
+async function sign(user: string, email: string, role: string, tenant: string, seeded = false): Promise<string> {
+  if (!seeded) await seedUser(user, email, role, tenant);
   const response = await fetch(origin + '/api/login', {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ identifier: email, password }),
+    signal: AbortSignal.timeout(30_000),
   });
   expect(response.status).toBe(200);
   return response.headers.getSetCookie().map((entry) => entry.split(';')[0]).join('; ');
@@ -76,31 +99,39 @@ async function group(label: string): Promise<Group> {
   await q('insert into tenants(id,name,slug) values($1,$2,$3)', [tenant, 'ZZ TEST Payroll ' + label, 'zz-test-payroll-' + tenant]);
   const operator = (await q("insert into operators(tenant_id,name) values($1,$2) returning id", [tenant, 'ZZ TEST Payroll Operator ' + label]))[0].id as string;
   const branch = (await q("insert into branches(tenant_id,operator_id,name,address) values($1,$2,$3,'ZZ TEST Address') returning id", [tenant, operator, 'ZZ TEST Payroll Branch ' + label]))[0].id as string;
-  const cookie = await sign(user, `${user}@zz-test.invalid`, 'admin', tenant);
+  await seedUser(user, `${user}@zz-test.invalid`, 'admin', tenant);
   const employee = (await q("insert into employees(tenant_id,branch_id,full_name,nickname,email) values($1,$2,'ZZ TEST Payroll Employee','ZZ TEST',$3) returning id", [tenant, branch, `${randomUUID()}@zz-test.invalid`]))[0].id as string;
   const period = (await q("insert into payroll_periods(tenant_id,operator_id,start_date,end_date) values($1,$2,'2099-01-01','2099-01-31') returning id", [tenant, operator]))[0].id as string;
   const run = (await q("insert into payroll_runs(payroll_period_id,run_number,status,created_by,notes) values($1,1,'DRAFT',$2,'ZZ TEST Payroll Run') returning id", [period, user]))[0].id as string;
   await q('insert into payroll_employee_summaries(payroll_run_id,employee_id) values($1,$2)', [run, employee]);
-  return { tenant, branch, operator, user, cookie, employee, period, run };
+  return { tenant, branch, operator, user, cookie: '', employee, period, run };
 }
 
 describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => {
   beforeAll(async () => {
+    setup('disposable database');
     database = await createTestDatabase();
+    setup('database connection');
     client = new pg.Client({ connectionString: database.url });
     await client.connect();
     await client.query('set search_path to otoapp');
+    setup('app migrations');
     await migrate(drizzle(client), { migrationsFolder: join(APP, 'migrations'), migrationsSchema: 'otoapp' });
+    setup('park A fixture'); a = await group('A');
+    setup('park B fixture'); b = await group('B');
+    setup('app harness');
     child = spawn(process.execPath, [join(APP, 'node_modules/tsx/dist/cli.mjs'), 'tests/harness/serve-routes.ts'], {
       cwd: APP, env: { ...process.env, DATABASE_URL: database.url, NODE_ENV: 'test', APP_ENV: 'dev', DEPLOY_ENV: 'local',
         OBJECT_STORAGE: 'local', STORAGE_ENV_PREFIX: 'zz-payroll-review', OTOAPP_LEGACY_LOGIN: 'true', OTOAPP_JOBS: 'platform',
-        USE_AWS_REKOGNITION: 'false', LOG_LEVEL: 'fatal', SESSION_SECRET: randomBytes(32).toString('hex'), SESSION_PEPPER: randomBytes(32).toString('hex') },
+        USE_AWS_REKOGNITION: 'false', LOG_LEVEL: 'warn', SESSION_SECRET: randomBytes(32).toString('hex'), SESSION_PEPPER: randomBytes(32).toString('hex') },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     origin = await new Promise<string>((resolvePort, reject) => {
       let tail = '';
       const timer = setTimeout(() => reject(new Error('ZZ TEST payroll harness did not start; child output was kept private')), 180_000);
       const read = (part: Buffer) => {
+        harnessOutputHash.update(part); harnessOutputBytes += part.byteLength;
+        for (const match of part.toString().matchAll(/\b(?:ReferenceError|SyntaxError|TypeError|MODULE_NOT_FOUND|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EROFS)\b/g)) harnessErrorClasses.add(match[0]);
         tail = (tail + part.toString()).slice(-400);
         const match = /HARNESS_PORT=(\d+)/.exec(tail);
         if (match) { clearTimeout(timer); resolvePort('http://127.0.0.1:' + match[1]); }
@@ -108,22 +139,33 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
       child.stdout!.on('data', read); child.stderr!.on('data', read);
       child.once('exit', () => { clearTimeout(timer); reject(new Error('ZZ TEST payroll harness exited; child output was kept private')); });
     });
-    a = await group('A'); b = await group('B');
+    setup('admin sign-ins');
+    a.cookie = await sign(a.user, `${a.user}@zz-test.invalid`, 'admin', a.tenant, true);
+    b.cookie = await sign(b.user, `${b.user}@zz-test.invalid`, 'admin', b.tenant, true);
+    setup('staff fixture');
     const staff = randomUUID();
     staffCookie = await sign(staff, `${staff}@zz-test.invalid`, 'staff', a.tenant);
     await q('update employees set user_id=$1 where id=$2', [staff, a.employee]);
     ownSlip = (await q("insert into payslips(payroll_run_id,payroll_period_id,employee_id,slip_number,issued_at,slip_data) values($1,$2,$3,'ZZ TEST Own Slip',now(),'{}') returning id", [a.run, a.period, a.employee]))[0].id as string;
+    setup('complete');
   }, 240_000);
 
   afterAll(async () => {
-    child?.kill();
+    if (setupStage !== 'complete') console.info('ZZ TEST payroll incomplete setup: ' + setupStage);
+    if (setupStage !== 'complete') console.info('ZZ TEST payroll private harness output: ' + JSON.stringify({ bytes: harnessOutputBytes, errorClasses: [...harnessErrorClasses], sha256: harnessOutputHash.copy().digest('hex') }));
+    if (child?.pid && child.exitCode === null && process.platform === 'win32') {
+      // Terminate only this fixture's captured process tree before DB drop.
+      try { execFileSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore', timeout: 10_000 }); }
+      catch { child.kill(); }
+    } else child?.kill();
     for (const file of files) {
       const absolute = resolve(file), within = relative(resolve(APP, 'uploads'), absolute);
       if (!within || within.startsWith('..') || within.includes(':')) throw new Error('ZZ TEST payroll file cleanup refused');
       rmSync(absolute, { force: true });
     }
-    await client?.end();
-    await database?.drop();
+    try { await boundedCleanup(() => client?.end(), 'client'); }
+    finally { await boundedCleanup(() => database?.drop(), 'scratch database'); }
+    console.info('ZZ TEST payroll cleanup: client closed and scratch database dropped');
   });
 
   it('censuses all 45 registrations, their guard families and two inherited shadows', () => {
@@ -222,7 +264,11 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
       files.add(join(APP, 'uploads/payroll-exports', filename));
       expect((await call('GET', url, a.cookie)).status).toBe(200);
       expect((await call('GET', url, b.cookie)).status).toBe(403);
-      expect((await call('POST', path, a.cookie, body)).status).toBe(200);
+      const replayed = await call('POST', path, a.cookie, body);
+      expect(replayed.status).toBe(200);
+      const replayUrl = (replayed.data as Record<string, unknown>).filePath as string;
+      expect(replayUrl.includes(a.run)).toBe(true);
+      files.add(join(APP, 'uploads/payroll-exports', replayUrl.slice(replayUrl.lastIndexOf('/') + 1)));
     }
     const filename = `payslip_${a.run}_${a.employee}.pdf`, path = join(APP, 'uploads/payroll-payslips', filename);
     expect(existsSync(path)).toBe(false);
@@ -239,7 +285,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     proof.files = true;
   }, 90_000);
 
-  it.fails('FINDING 1 (high): mixed payslip employee/period children are refused; prescribed fix: include payslips in whole-run ownership and require its period to match the run parent', async () => {
+  it('FINDING 1 (high): mixed payslip employee/period children are refused; prescribed fix: include payslips in whole-run ownership and require its period to match the run parent', async () => {
     const slips: string[] = [];
     try {
       const results: number[] = [];
@@ -271,7 +317,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     } finally { await q('delete from employee_payroll_profiles where employee_id=$1', [a.employee]); await q('delete from operators where id=$1', [operator]); }
   });
 
-  it.fails('FINDING 2 (medium): a profile with a foreign operator is refused; prescribed fix: require profile operator ownership without requiring the same in-park operator', async () => {
+  it('FINDING 2 (medium): a profile with a foreign operator is refused; prescribed fix: require profile operator ownership without requiring the same in-park operator', async () => {
     await q('insert into employee_payroll_profiles(tenant_id,operator_id,employee_id) values($1,$2,$3)', [a.tenant, b.operator, a.employee]);
     try {
       const result = await call('GET', '/api/payroll/employees/' + a.employee + '/profile', a.cookie);
@@ -286,7 +332,24 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     expect(pin.foreignOperator).toBe(true); expect([200, 403]).toContain(pin.profile); expect([200, 403]).toContain(pin.run);
   });
 
-  it.fails('FINDING 3 (medium): statutory doors refuse foreign operator/branch links; prescribed fix: park-check both parents on writes, lists and existing record access for every payroll admin', async () => {
+  it('new profiles stamp caller ownership and resolved operator without requiring a user operator context', async () => {
+    const user = await call('GET', '/api/user', a.cookie);
+    expect((user.data as Record<string, unknown>).operatorId).toBeNull();
+    try {
+      const path = `/api/payroll/employees/${a.employee}/profile`;
+      expect((await call('POST', path, a.cookie, { operatorId: b.operator })).status).toBe(403);
+      expect((await call('POST', path, a.cookie, { operatorId: a.operator, tenantId: b.tenant })).status).toBe(403);
+      expect((await q('select count(*)::int as count from employee_payroll_profiles where employee_id=$1', [a.employee]))[0].count).toBe(0);
+      const own = await call('POST', path, a.cookie, { operatorId: a.operator });
+      expect(own.status).toBe(201);
+      const row = own.data as Record<string, unknown>;
+      expect(row.tenantId).toBe(a.tenant); expect(row.operatorId).toBe(a.operator); expect(row.employeeId).toBe(a.employee);
+      expect((await call('GET', path, a.cookie)).status).toBe(200);
+      expect((await call('GET', '/api/payroll/runs/' + a.run, a.cookie)).status).toBe(200);
+    } finally { await q('delete from employee_payroll_profiles where employee_id=$1', [a.employee]); }
+  });
+
+  it('FINDING 3 (medium): statutory doors refuse foreign operator/branch links; prescribed fix: park-check both parents on writes, lists and existing record access for every payroll admin', async () => {
     const created: string[] = [];
     try {
       const statuses: number[] = [], historicalStatuses: number[] = [], listStatuses: number[] = [], removedStatuses: number[] = [];
@@ -321,7 +384,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     expect(pin.removedStatuses.every((status) => [200, 204, 403, 404].includes(status))).toBe(true);
   });
 
-  it.fails('FINDING 4 (high): an own employee lookup never returns another park advance; prescribed fix: scope advance tenant/operator ownership or refuse an inconsistent set', async () => {
+  it('FINDING 4 (high): an own employee lookup never returns another park advance; prescribed fix: scope advance tenant/operator ownership or refuse an inconsistent set', async () => {
     const ids: string[] = [];
     try {
       ids.push((await q("insert into salary_advances(tenant_id,operator_id,employee_id,principal_amount,issued_date,repayment_type,remaining_balance,status) values($1,$2,$3,0,'2099-01-01','FIXED_AMOUNT',0,'CLOSED') returning id", [a.tenant, a.operator, a.employee]))[0].id as string);
@@ -344,7 +407,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     expect(proof.parents).toBe(true); expect(proof.files).toBe(true);
   });
 
-  it.fails('FINDING 5 (medium): run reads refuse foreign reconciliation/exception branches; prescribed fix: park-check required/optional branch parents in the whole-run guard', async () => {
+  it('FINDING 5 (medium): run reads refuse foreign reconciliation/exception branches; prescribed fix: park-check required/optional branch parents in the whole-run guard', async () => {
     const reconciliation = (await q("insert into payroll_day_reconciliations(payroll_run_id,employee_id,branch_id,work_date) values($1,$2,$3,'2099-01-01') returning id", [a.run, a.employee, a.branch]))[0].id as string;
     const exception = (await q("insert into payroll_exceptions(payroll_run_id,employee_id,branch_id,exception_type,severity,message) values($1,$2,$3,'MISSING_PUNCH','INFO','ZZ TEST Branch Parent') returning id", [a.run, a.employee, a.branch]))[0].id as string;
     try {
@@ -368,7 +431,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     expect(pin.own).toEqual([200, 200]); expect(pin.statuses.every((status) => status === 200 || status === 403)).toBe(true);
   });
 
-  it.fails('FINDING 6 (high): an owned operator never exposes or updates another park policy; prescribed fix: check the policy tenant before the existing policy read/update', async () => {
+  it('FINDING 6 (high): an owned operator never exposes or updates another park policy; prescribed fix: check the policy tenant before the existing policy read/update', async () => {
     const policy = (await q('insert into payroll_policy_settings(tenant_id,operator_id) values($1,$2) returning id', [a.tenant, a.operator]))[0].id as string;
     try {
       const own = await call('GET', '/api/payroll/policy?operatorId=' + a.operator, a.cookie);
@@ -386,7 +449,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     expect(pin.own).toBe(200); expect(pin.foreignParent).toBe(true); expect([200, 403]).toContain(pin.read); expect([200, 403]).toContain(pin.write);
   });
 
-  it.fails('FINDING 7 (medium): country rules never return another park custom configuration; prescribed fix: pass caller ownership to the country rule lookup while preserving its date selection and rule values', async () => {
+  it('FINDING 7 (medium): country rules never return another park custom configuration; prescribed fix: pass caller ownership to the country rule lookup while preserving its date selection and rule values', async () => {
     const marker = 'ZZ TEST private payroll rule ' + randomUUID();
     const rule = (await q("insert into statutory_rule_sets(tenant_id,country_code,name,effective_from,rules) values($1,'TH','ZZ TEST Country Rule','2099-03-01',$2) returning id", [a.tenant, JSON.stringify({ parkMarker: marker })]))[0].id as string;
     try {
@@ -439,6 +502,12 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     for (const [name, fingerprint] of Object.entries(serviceFingerprints)) {
       let current = readFileSync(join(REPO, 'apps/oto-app/server', name), 'utf8').replace(/\r\n/g, '\n');
       if (name === 'payroll-statutory.ts') {
+        // These exact binding aliases retain the imported module and calculation text.
+        // No other source changes are normalized away.
+        for (const binding of ['statutoryRuleSets', 'statutoryCalculationResults', 'payrollLineItems', 'payrollEmployeeSummaries', 'and', 'eq', 'lte', 'gte', 'isNull', 'or']) {
+          current = current.replace(`${binding} as _${binding}`, binding);
+        }
+        current = current.replace(/\nvoid getDefaultThailandRules;\n\n?/, '\n');
         const withoutLookup = (source: string) => {
           const start = source.indexOf('export async function getStatutoryRules('), end = source.indexOf('export async function seedThailandRulesPublic(');
           expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
