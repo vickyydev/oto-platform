@@ -488,6 +488,20 @@ jobs:
         env:
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: npx tsx tests/documents.check.ts
+      - name: The app's finance import checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/finance.check.ts
+      - name: The app's finance ownership checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/finance-access.check.ts
+      - name: The app's Xero connection ownership checks
+        if: steps.changes.outputs.app == 'true'
+        run: npx tsx tests/xero-access.check.ts
+      - name: The app's administration and payroll checks
+        if: steps.changes.outputs.app == 'true'
+        env:
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+        run: npx tsx tests/administration.check.ts
       # The offboarding duplicate census (read only): on this database, which
       # every check above wrote into, nobody has two, so 0008's index stands.
       - name: The offboarding census
