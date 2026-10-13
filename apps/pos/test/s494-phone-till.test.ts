@@ -1,3 +1,5 @@
+import * as React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +8,7 @@ import { bookingsApi, type BookingRedeemResult } from '@/api/bookings';
 import type { ApiSalePrintJob } from '@/api/history';
 import { dispatchPlatformPrinting } from '@/lib/printRouting';
 import { toast } from '@/hooks/use-toast';
+import { OrderSummary } from '@/components/till/OrderSummary';
 import {
   announceBookingRedemption,
   redeemBookingOnPlatform,
@@ -207,5 +210,66 @@ describe('s494-phone-till: the phone till issues nothing in the browser', () => 
     expect(handler.match(/redeemBookingOnPlatform\(/g)).toHaveLength(1);
     expect(handler).toContain('announceBookingRedemption(booking.reference, redeemed)');
     expect(handler).toContain('return redeemedOutcome(redeemed)');
+  });
+});
+
+describe('SCRUM-371 — the phone till keeps its sale through a staff lock, as the counter does', () => {
+  const src = (rel: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', rel), 'utf8');
+
+  it('the gate keeps the phone shell mounted under the lock screen on the ticket tab, in one shape locked or not', () => {
+    const app = src('App.tsx');
+    expect(app).toContain('const phoneTicketTill = isMobile && location === "/";');
+    expect(app).toContain('(locked && (!(retainedStation || phoneTicketTill) || mustChangePassword');
+    const mobile = app.slice(app.indexOf('if (isMobile) {'), app.indexOf('<Router />'));
+    expect(mobile).toMatch(/hidden=\{locked\} inert=\{locked\}[\s\S]*<MobileShell \/>[\s\S]*\{locked \? <LockScreen \/> : <InactivityWarning \/>\}/);
+  });
+
+  it('the shell draws no bars while locked, and the till draws nothing after its last hook', () => {
+    const shell = src('components/mobile/MobileShell.tsx');
+    expect(shell).toContain('{!locked && <div className="shrink-0');
+    expect(shell).toContain('{!locked && <nav');
+    const till = src('components/mobile/MobileTill.tsx');
+    const lockedReturn = till.indexOf('if (locked) return null;');
+    expect(lockedReturn).toBeGreaterThan(till.indexOf('usePaymentStage({'));
+    // Nothing after it is a hook (MobileTill is the file's last component), so
+    // the hooks run in the same order locked or not and the sale is kept.
+    expect(till.slice(lockedReturn)).not.toMatch(/\buse[A-Z]\w*\(/);
+  });
+
+  it('while locked the quote and the payment pause, and the open sale holds back a shell update', () => {
+    const till = src('components/mobile/MobileTill.tsx');
+    expect(till).toContain('enabled: !locked && saleResult === null,');
+    expect(till).toContain('paused: locked,');
+    expect(till).toContain('isCurrentScope: (scope) => !staffLocked.current &&');
+    expect(till).toContain("setSaleOpen('mobile-till', saleOnScreen);");
+  });
+});
+
+describe('SCRUM-372 — the phone’s Pay carries the refusal, and the payment step draws one that lands late', () => {
+  const src = (rel: string) => readFileSync(path.resolve(import.meta.dirname, '..', 'src', rel), 'utf8');
+  beforeEach(() => vi.stubGlobal('React', React));
+  afterEach(() => vi.unstubAllGlobals());
+
+  const panel = (payBlockedReason?: string | null) => renderToStaticMarkup(React.createElement(OrderSummary, {
+    tier: null, lines: [], discounts: [], manualDiscounts: [],
+    onUpdateLine: () => undefined, onRemoveLine: () => undefined, onRemoveDiscount: () => undefined,
+    onAddManualDiscount: () => undefined, onRemoveManualDiscount: () => undefined,
+    onPay: () => undefined, onCancel: () => undefined, canPay: !payBlockedReason, payBlockedReason,
+  })).replace(/&#x27;/g, "'");
+  const payButton = (markup: string) => /<button[^>]*>Pay [^<]*<\/button>/.exec(markup)?.[0] ?? '';
+
+  it('the panel hangs the reason on Pay as its title; with none, Pay has no title', () => {
+    const refused = payButton(panel('The platform refused this order: the price moved'));
+    expect(refused).toContain('title="The platform refused this order: the price moved"');
+    expect(refused).toContain('disabled=""');
+    expect(payButton(panel(null))).not.toContain('title=');
+  });
+
+  it('the phone passes the platform’s sentence to the Review panel and the cart sheet, and draws it on the payment step', () => {
+    const till = src('components/mobile/MobileTill.tsx');
+    expect(till).toContain("const payBlockedReason = lines.length > 0 ? quoteRefusal?.message ?? null : null;");
+    expect(till.match(/canPay=\{payEnabled\}\s+payBlockedReason=\{payBlockedReason\}/g)).toHaveLength(2);
+    expect(till).toContain('payBlockedReason ? <div className="mt-6"><QuoteRefusalNote error={quoteRefusal} /></div>');
+    expect(src('components/mobile/MobileCartSheet.tsx')).toContain('payBlockedReason={payBlockedReason}');
   });
 });

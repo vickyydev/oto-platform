@@ -43,6 +43,13 @@ interface OrderSummaryProps {
   onPay: () => void;
   onCancel: () => void;
   canPay: boolean;
+  /**
+   * SCRUM-372 — why Pay is off, in the platform's own sentence, hung on the
+   * button as its title the way the counter stations hang `chargeBlockedReason`
+   * on Charge (`components/fnb/FnbCart.tsx`). The caller still decides whether
+   * Pay is off (`canPay`); this only says why.
+   */
+  payBlockedReason?: string | null;
   /** When set, this order is being billed to a party tab — shows a banner and
    *  swaps the Pay button for a "charge to party" action. */
   chargeTarget?: ChargeTarget;
@@ -211,7 +218,7 @@ function AdultQtyRow({ line, onChange }: { line: CartLine; onChange: (next: numb
   );
 }
 
-export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal, voucherLine, voucher }: OrderSummaryProps) {
+export function OrderSummary({ tier, customerName, lines, activeLineId, discounts, manualDiscounts, onUpdateLine, onConfigureLine, onRemoveLine, onRemoveDiscount, onApplyPromoCode, promoError, onAddManualDiscount, onRemoveManualDiscount, onPay, onCancel, canPay, payBlockedReason, chargeTarget, payLabel, totals, priceNote, tierClaimRefusal, voucherLine, voucher }: OrderSummaryProps) {
   const [promoInput, setPromoInput] = useState('');
 
   const applyPromoInput = () => {
@@ -743,6 +750,7 @@ export function OrderSummary({ tier, customerName, lines, activeLineId, discount
             className="col-span-2 text-xl font-bold h-14" 
             onClick={onPay}
             disabled={!canPay || unquotable}
+            title={payBlockedReason ?? undefined}
           >
             {/* A disabled button still reads as a quote. "Pay ฿0" on a cart
                 nobody has priced — or "Pay ฿690" on one whose subtotal says ฿0

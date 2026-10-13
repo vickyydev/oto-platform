@@ -74,6 +74,9 @@ function AuthGate() {
   const guestOrderStation = !isMobile && location === '/order-station';
   const guestMerchStation = !isMobile && location === '/merch-station';
   const retainedStation = ticketTill || guestOrderStation || guestMerchStation;
+  // SCRUM-371 — the phone's ticket till keeps its sale through a lock too: the
+  // shell stays mounted under the lock screen with its till drawing nothing.
+  const phoneTicketTill = isMobile && location === "/";
   // Until the resume (and any launcher hand-off) has answered, the till knows
   // nothing: showing the sign-in form here would prompt an operator who has
   // just signed in next door, and flash it on every reload.
@@ -84,9 +87,10 @@ function AuthGate() {
       </div>
     );
   }
-  // Ticket and desktop F&B stations retain their visitor through a same-session
-  // lock. Its hooks pause while locked and its staff subtree renders nothing.
-  if (!operator || (locked && (!retainedStation || mustChangePassword || !stationResolved
+  // Ticket and desktop F&B stations, and the phone's ticket till, retain their
+  // visitor through a same-session lock. Its hooks pause while locked and its
+  // staff subtree renders nothing.
+  if (!operator || (locked && (!(retainedStation || phoneTicketTill) || mustChangePassword || !stationResolved
     || (fleetAvailable && !station)))) return <LockScreen />;
   // A temporary password opens the door and nothing else: the API refuses the
   // station list and everything behind it until it is replaced (SCRUM-235).
@@ -123,10 +127,15 @@ function AuthGate() {
     </>;
   }
   if (isMobile) {
+    // One shape locked or not, so locking does not remount the shell and the
+    // sale inside it. Only the ticket tab gets here while locked (above).
     return (
       <>
-        <MobileShell />
-        <InactivityWarning />
+        <div className="contents" hidden={locked} inert={locked} aria-hidden={locked}
+          style={locked ? { display: 'none' } : undefined}>
+          <MobileShell />
+        </div>
+        {locked ? <LockScreen /> : <InactivityWarning />}
       </>
     );
   }

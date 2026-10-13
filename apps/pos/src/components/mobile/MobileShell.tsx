@@ -4,6 +4,7 @@ import { ThemeMenu } from '@/components/shared/ThemeMenu';
 import { OperatorBadge } from '@/components/auth/OperatorBadge';
 import { BranchSwitcher } from '@/components/shared/BranchSwitcher';
 import { usePaymentContextLocked } from '@/pwa/openSale';
+import { useOperator } from '@/auth/OperatorContext';
 import MobileTill from './MobileTill';
 import { MobileOrderStation } from './order-station/MobileOrderStation';
 import { MobileTodayPage } from './today/MobileTodayPage';
@@ -52,6 +53,10 @@ function ComingSoon({ surface }: { surface: string }) {
 export function MobileShell() {
   const [location] = useLocation();
   const paymentContextLocked = usePaymentContextLocked();
+  // SCRUM-371 — under a staff lock the shell stays mounted so the ticket till
+  // keeps its sale (`App.tsx`); the bars are not drawn, so nothing they open
+  // (the branch picker, the theme menu) can portal over the lock screen.
+  const { locked } = useOperator();
 
   // Station setup is a full-screen page with its own header + Close button, so we
   // render it without the mobile tab chrome to avoid a double frame / clipping.
@@ -68,7 +73,7 @@ export function MobileShell() {
   return (
     <div className="h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden">
       {/* Top bar — compact: logo | occupancy | spacer | settings | operator badge */}
-      <div className="shrink-0 flex items-center gap-3 px-4 h-14 border-b bg-card/30" inert={paymentContextLocked}>
+      {!locked && <div className="shrink-0 flex items-center gap-3 px-4 h-14 border-b bg-card/30" inert={paymentContextLocked}>
         <Link href="/" aria-label="Oto home">
           <img src={logoUrl} alt="Oto" className="h-7 w-auto cursor-pointer" />
         </Link>
@@ -86,7 +91,7 @@ export function MobileShell() {
           </button>
         </Link>
         <OperatorBadge />
-      </div>
+      </div>}
 
       {/* Content area — routes render here */}
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -110,7 +115,7 @@ export function MobileShell() {
       </div>
 
       {/* Bottom tab bar */}
-      <nav
+      {!locked && <nav
         className="shrink-0 grid border-t bg-card/30"
         inert={paymentContextLocked}
         style={{ gridTemplateColumns: `repeat(${TABS.length}, minmax(0, 1fr))` }}
@@ -136,7 +141,7 @@ export function MobileShell() {
             </Link>
           );
         })}
-      </nav>
+      </nav>}
     </div>
   );
 }

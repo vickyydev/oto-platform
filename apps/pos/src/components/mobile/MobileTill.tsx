@@ -58,7 +58,7 @@ import {
 import { useCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
-import { setPaymentContextLocked } from '@/pwa/openSale';
+import { setPaymentContextLocked, setSaleOpen } from '@/pwa/openSale';
 import { PriceSourceNote, SaleNotSavedNotice, SaleWriteFailure } from '@/components/till/SaleWriteStatus';
 import { QuoteRefusalNote } from '@/components/fnb/QuoteRefusalNote';
 import { QuoteFaultNote } from '@/components/fnb/QuoteFaultNote';
@@ -298,7 +298,15 @@ function getHandoffCfg(
  * "hand to customer" full-screen takeovers on the single device.
  */
 export default function MobileTill() {
-  const { operator } = useOperator();
+  const { operator, locked } = useOperator();
+  /**
+   * SCRUM-371 — the phone keeps its sale through a staff lock, as the counter's
+   * stations do (`pages/Till.tsx`): the shell stays mounted under the lock
+   * screen (`App.tsx`), this screen draws nothing while locked, and the work
+   * that talks to the platform pauses until the password is entered again.
+   */
+  const staffLocked = useRef(locked);
+  staffLocked.current = locked;
   const { station } = useStation();
   const { branch } = useBranch();
   const { t } = useLanguage();
@@ -351,6 +359,19 @@ export default function MobileTill() {
   const [saleNumber, setSaleNumber] = useState<SaleNumber>({ kind: 'unknown' });
   const [pendingPaymentMethod, setPendingPaymentMethod] = useState<string | null>(null);
   const [promoError, setPromoError] = useState<string>('');
+
+  /**
+   * Tell the shell this phone is mid-sale, so a new build is not swapped in
+   * under the cart while it sits behind the lock screen (S2-06; read by
+   * `src/pwa/ServiceWorkerUpdater.tsx`) — the same flag the counter's till
+   * raises. Sign-out or leaving the tab clears it on unmount.
+   */
+  const saleOnScreen = lines.length > 0 || saleResult !== null || customerPhone !== ''
+    || customerNickname !== '' || member !== null || mStep !== 'tier';
+  useEffect(() => {
+    setSaleOpen('mobile-till', saleOnScreen);
+    return () => setSaleOpen('mobile-till', false);
+  }, [saleOnScreen]);
 
   // ── Booking redemption flow ───────────────────────────────────────────────
   const [showRedeemModal, setShowRedeemModal] = useState(false);
@@ -588,7 +609,7 @@ export default function MobileTill() {
     discounts,
     manualDiscounts,
     identity: cartIdentity,
-    enabled: saleResult === null,
+    enabled: !locked && saleResult === null,
   });
 
   const saleOwesNothing = lines.length > 0 && cart.totals.total === 0 &&
@@ -1717,9 +1738,10 @@ export default function MobileTill() {
   paymentScopeRef.current = { epoch: paymentEpoch, scope: paymentScope };
   const paymentStage = usePaymentStage({
     scope: paymentScope,
-    isCurrentScope: (scope) => scope === paymentScopeRef.current.scope &&
+    isCurrentScope: (scope) => !staffLocked.current && scope === paymentScopeRef.current.scope &&
       paymentScopeRef.current.epoch === saleEpochRef.current,
     active: mStep === 'payment' && completionRetry === null,
+    paused: locked,
     totalSatang: toSatang(cart.totals.total),
     prepareSale: () => preparePaymentSale(paymentEpoch, paymentScope),
     finaliseSale: saleWriter.finalise,
@@ -1800,14 +1822,15 @@ export default function MobileTill() {
    * refused.
    *
    * The counter stations hang the platform's own words on the disabled button
-   * as its `title` (`chargeBlockedReason`, `components/fnb/FnbCart.tsx`). The
-   * panel this screen draws with takes one boolean and no reason
-   * (`components/till/OrderSummary.tsx`), so the refusal joins the drop-off
-   * checks inside it instead; the blocking note directly above the button
-   * carries the platform's sentence, which is the part a person at the counter
-   * reads — a `title` never appears on a phone held in a hand.
+   * as its `title` (`chargeBlockedReason`, `components/fnb/FnbCart.tsx`), and
+   * since SCRUM-372 the panel this screen draws with takes the same sentence
+   * (`payBlockedReason`, `components/till/OrderSummary.tsx`), so Pay carries
+   * its own reason here too. The blocking note directly above the button still
+   * carries the platform's sentence on the screen, which is the part a person
+   * at the counter reads — a `title` never appears on a phone held in a hand.
    */
   const payEnabled = canPay && !quoteRefusal;
+  const payBlockedReason = lines.length > 0 ? quoteRefusal?.message ?? null : null;
 
   /**
    * The notes under the total: the same three, in the same order, that the
@@ -2001,6 +2024,7 @@ export default function MobileTill() {
               onPay={() => setMStep('payment')}
               onCancel={resetSale}
               canPay={payEnabled}
+              payBlockedReason={payBlockedReason}
               totals={cart.totals}
               priceNote={priceNotes}
               tierClaimRefusal={tierClaimRefusal}
@@ -2027,7 +2051,11 @@ export default function MobileTill() {
                   state={saleWriter.state}
                   onRetry={handleRetrySaleWrite}
                   onDismiss={handleBack}
-                /> : undefined
+                />
+                  // SCRUM-372 — a refusal that lands after Review is drawn
+                  // here too, before the press rather than after the commit.
+                  : payBlockedReason ? <div className="mt-6"><QuoteRefusalNote error={quoteRefusal} /></div>
+                    : undefined
               }
             />}
             {completionRetry && (
@@ -2123,6 +2151,10 @@ export default function MobileTill() {
     }
   };
 
+  // Keep the sale and payment hooks mounted, without staff controls or the
+  // overlays and sheets that would otherwise portal over the lock screen.
+  if (locked) return null;
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -2200,6 +2232,7 @@ export default function MobileTill() {
             resetSale();
           }}
           canPay={payEnabled}
+          payBlockedReason={payBlockedReason}
           tierClaimRefusal={tierClaimRefusal}
           totals={cart.totals}
           priceNote={priceNotes}

@@ -35,6 +35,8 @@ interface MobileCartSheetProps {
    * charged, and the refusal note this sheet draws beneath the total says why.
    */
   canPay: boolean;
+  /** Why Pay is off, handed on to the panel's Pay button (SCRUM-372). */
+  payBlockedReason?: string | null;
   /**
    * A DISCOUNT THE PLATFORM WOULD NOT HONOUR ON THIS CART (SCRUM-311/329).
    *
@@ -89,6 +91,7 @@ export function MobileCartSheet({
   onPay,
   onCancel,
   canPay,
+  payBlockedReason,
   tierClaimRefusal,
   totals,
   priceNote,
@@ -165,6 +168,7 @@ export function MobileCartSheet({
               onPay={() => { onOpenChange(false); onPay(); }}
               onCancel={() => { onOpenChange(false); onCancel(); }}
               canPay={canPay}
+              payBlockedReason={payBlockedReason}
               tierClaimRefusal={tierClaimRefusal}
               totals={totals}
               priceNote={priceNote}
