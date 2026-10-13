@@ -1,5 +1,7 @@
 # Staging test-record cleanup - 13 October 2026
 
+**13 October 2026, current acceptance status:** SCRUM-191 and all twelve child tickets are **Deployed**. The eleven linked lift items remain Deployed. The owner reserves **Done** for acceptance after the full final test suite. Implementation, the recorded release gate, named staging proofs and exact cleanup are complete; their results and limits remain valid. Final owner acceptance is pending.
+
 **WORKS for the exact registered cleanup and temporary-access withdrawal.** Application source remains the live5b2f049f release. These are maintenance and verification operations, not a later deployment.
 
 | Operation | Observed result |

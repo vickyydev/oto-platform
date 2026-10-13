@@ -46,6 +46,7 @@ not a generator.
   (prepend a dated block — the newest block is the single source of truth) and, at every
   landing, section 2 of `docs/handover/CLOUD_HANDOVER.md` and the resume note of
   `docs/handover/CODEX_HANDOVER.md`; commit, push.
+- **Final acceptance status (13 October owner direction):** Keep SCRUM-191 and its child tickets at Deployed. The owner moves tickets to Done after the full and final test suite; a green source-release gate and module staging evidence do not by themselves authorize Done.
 - **Jira protocol:** a status check and a comment on the ticket in the same turn as every
   push; comments are written for a non-engineer — what a person at the park can now do.
   **"Deployed" requires a screenshot from staging attached to the ticket and named in the

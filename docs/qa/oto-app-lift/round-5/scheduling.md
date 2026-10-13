@@ -1,6 +1,8 @@
 # Scheduling - 12 October 2026
 
-**13 October resolution:** SCRUM-523 is Done. [Current staging proof and cleanup](../round-8/scheduling-scope.md) supersede the cross-park result below. The remaining text is the dated round 5 observation.
+**13 October 2026, current acceptance status:** SCRUM-191 and all twelve child tickets are **Deployed**. The eleven linked lift items remain Deployed. The owner reserves **Done** for acceptance after the full final test suite. Implementation, the recorded release gate, named staging proofs and exact cleanup are complete; their results and limits remain valid. Final owner acceptance is pending.
+
+**13 October resolution:** SCRUM-523 is Deployed. [Current staging proof and cleanup](../round-8/scheduling-scope.md) supersede the cross-park result below. The remaining text is the dated round 5 observation.
 
 **BROKEN** for the checks below, observed on OTO App staging source
 `633cae416ff7e4a1c253ec4904cdc22351cf7df1`.

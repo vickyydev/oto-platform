@@ -1,5 +1,7 @@
 # Open items register — defects, decisions, concerns and recommendations
 
+**13 October 2026, 17:56 Bangkok, final acceptance status:** The owner directs SCRUM-191 and its twelve children to remain Deployed until the full and final test suite, with Done reserved for the later acceptance step. All thirteen Jira statuses have been restored to Deployed and read back, with a comment on each ticket. Completed source gates, the observed all-six-service release2850d891, inspected staging evidence and exact13-row/one-session cleanup remain valid; final acceptance is pending. The earlier17:43 Done checkpoint records a superseded status, not the current completion rule. The [owner discussion document](decisions/OWNER_CONFIRMATIONS_2026-10-13.md) contains116 numbered points with twelve priorities and four inspected staging illustrations. These business choices do not block the final test suite. Local databases stay off and223 remains paused.
+
 **13 October 2026, 17:43 Bangkok, story complete:** SCRUM-191 and all twelve child tickets are Done. Eleven linked lift items remain Deployed with images. All six services were observed live on main `2850d89178232f421fbea18cbc4ea583cf3c1910`; the app deployment completed at 16:37 Bangkok. All six main jobs passed in [run 38374525197](https://github.com/vickyydev/oto-platform/actions/runs/38374525197): 4,033 API tests, 32 scheduling controls, 89 feature runtime controls and 30 Console browser checks, plus build and genuine hosted restore/replay. Whole workspace/API compiler output is clean. The app remains at 442 diagnostics across 59 files and 118 file/code buckets, with the 457 ceiling retained. App migrations remain through `0015`.
 
 [Scheduling acceptance](../qa/oto-app-lift/round-8/scheduling-scope.md) records own saves/edits and all ten foreign/mixed/replay refusals with unchanged readbacks. The inspected labelled API card is attached to SCRUM-523 and SCRUM-191. Exact cleanup `job-db70ka4s728c73d239u0` removed 13 temporary records and one app session, confirmed absence and preserved the existing park and seeded platform identity. The former session returns 401 after cleanup. Supported unlink alone had retained that active app session; SCRUM-288 now records this additional access-lifecycle case. This cleanup is separate from the earlier 297 content rows, ten files, seven parents and two sessions.
@@ -58,7 +60,7 @@ four new tickets SCRUM-512..515 spun off).*
 
 ## 1. The priority order (the owner's ruling, 9 October)
 
-1. **S2-17b (SCRUM-191) is complete.** All twelve child tickets are Done with named staging evidence and recorded limits; scheduling Q39 is resolved under SCRUM-523.
+1. **S2-17b (SCRUM-191) is Deployed, with final acceptance pending.** All twelve child tickets remain Deployed; the owner will move them to Done after the full and final test suite. Named implementation/staging evidence and cleanup are complete.
 2. **Then the fix block**: every verified-open defect and small task below
    is worked BEFORE any new story starts. Section 2 is the worked order.
 3. Only then the next story (S2-18 Radar, S2-19 Inbox, S2-22 data,
@@ -137,6 +139,8 @@ evidence (the sweep's full evidence lives in the tickets' comments).
   **SCRUM-479-era demo data** — none left; closed.
 
 ## 3. Decisions waiting on the owner
+
+The [13 October plain-language discussion document](decisions/OWNER_CONFIRMATIONS_2026-10-13.md) consolidates this queue and the numbered plan questions, with defaults, effects and inspected staging illustrations. It separates upcoming choices from optional changes; these business choices do not block the final SCRUM-191 test suite. Record each answer in its referenced plan or SCRUM-497.
 
 **Ticket rulings** (each small to build once answered):
 

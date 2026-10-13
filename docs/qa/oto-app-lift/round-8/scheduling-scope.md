@@ -1,5 +1,7 @@
 # Scheduling park group acceptance
 
+**13 October 2026, current acceptance status:** SCRUM-191 and all twelve child tickets are **Deployed**. The eleven linked lift items remain Deployed. The owner reserves **Done** for acceptance after the full final test suite. Implementation, the recorded release gate, named staging proofs and exact cleanup are complete; their results and limits remain valid. Final owner acceptance is pending.
+
 13 October 2026. SCRUM-523 under SCRUM-191.
 
 ## Release and hosted checks
@@ -32,4 +34,4 @@ The manifest comprised two weeks, two groups, two rows, one template, one templa
 
 ## Jira and checkpoint
 
-SCRUM-523 and parent SCRUM-191 are Done; all twelve child tickets are Done. Eleven linked lift deliveries remain Deployed with inspected images. The card above was inspected and attached to SCRUM-523 (attachment 11433) and SCRUM-191. Documentation checkpoint `87d4727c` has no CI run because the workflow excludes documentation; its watcher was stopped after exact-SHA readback returned no runs. The application release remains the fully green source recorded above.
+SCRUM-523 and parent SCRUM-191 are Deployed; all twelve child tickets are Deployed. Eleven linked lift deliveries remain Deployed with inspected images. The card above was inspected and attached to SCRUM-523 (attachment 11433) and SCRUM-191. Documentation checkpoint `87d4727c` has no CI run because the workflow excludes documentation; its watcher was stopped after exact-SHA readback returned no runs. The application release remains the fully green source recorded above.
