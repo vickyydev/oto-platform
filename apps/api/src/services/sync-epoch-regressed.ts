@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { paymentAttempt, product, sale } from '@oto/db';
-import { WALLET_SPENT_FACT, formatTHB } from '@oto/shared';
+import { PAYMENT_ATTEMPT_TAKEN_STATUSES, WALLET_SPENT_FACT, formatTHB } from '@oto/shared';
 import type { Exec } from './tx';
 
 /**
@@ -174,10 +174,22 @@ async function heldInLedger(
   }
   const wanted = [...new Set(presses.filter((p): p is string => p !== null))];
   if (wanted.length === 0) return true;
+  /**
+   * SCRUM-487 — a payment counts as recorded only when its money was taken
+   * (approved, or awaiting settlement). A declined, cancelled or unanswered
+   * attempt under the same press is not money in the ledger, and a row that
+   * said "already in the ledger" about it would have the sale discarded.
+   */
   const rows = await db
     .select({ actionId: paymentAttempt.actionId })
     .from(paymentAttempt)
-    .where(and(eq(paymentAttempt.operatorId, operatorId), inArray(paymentAttempt.actionId, wanted)));
+    .where(
+      and(
+        eq(paymentAttempt.operatorId, operatorId),
+        inArray(paymentAttempt.actionId, wanted),
+        inArray(paymentAttempt.status, [...PAYMENT_ATTEMPT_TAKEN_STATUSES]),
+      ),
+    );
   const found = new Set(rows.map((r) => r.actionId));
   return wanted.every((id) => found.has(id));
 }

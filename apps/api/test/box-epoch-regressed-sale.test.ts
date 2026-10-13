@@ -5,6 +5,7 @@ import {
   alert,
   box,
   boxOutbox,
+  paymentAttempt,
   product,
   sale,
   station,
@@ -20,6 +21,7 @@ import { ADMIN, RECEPTION, boxBySlot, createTestContext, signInAs, teardownAll, 
 import { boxStoreFor } from '../src/lib/box-store';
 import { currentBandKey } from '../src/services/bands';
 import { attachInProcessBox, detachInProcessBox, issueClaimCode } from '../src/services/box';
+import { describeRegressedPaidFact } from '../src/services/sync-epoch-regressed';
 import { injectedTransport, type CuttableLink } from './box-link';
 
 /**
@@ -310,5 +312,30 @@ describe('SCRUM-486: a lost reset_store answer', () => {
     await drain();
     expect(await ctx.db.select().from(sale).where(eq(sale.id, next))).toHaveLength(1);
     expect(await capTotal()).toBe(capsBefore - 1);
+
+    /**
+     * SCRUM-487 — "already in the ledger" counts a payment only when its money
+     * was taken. The same finalised sale, read as a set-aside fact: with its
+     * tender approved it is in the ledger; with the payment under that press
+     * declined it is not, and the row says to record it rather than discard it.
+     */
+    const [sent] = (
+      await ctx.db
+        .select()
+        .from(boxOutbox)
+        .where(and(eq(boxOutbox.boxId, box1Id), eq(boxOutbox.type, 'sale.finalised')))
+    ).filter((e) => (e.payload as { saleId?: string }).saleId === next);
+    const asSetAside = { payload: sent!.payload };
+    const held = await describeRegressedPaidFact(ctx.db, operatorId, 'sale.finalised', asSetAside);
+    expect(held?.detail.inLedger).toBe(true);
+    const [taken] = await ctx.db.select().from(paymentAttempt).where(eq(paymentAttempt.saleId, next));
+    await ctx.db.update(paymentAttempt).set({ status: 'declined' }).where(eq(paymentAttempt.id, taken!.id));
+    try {
+      const declined = await describeRegressedPaidFact(ctx.db, operatorId, 'sale.finalised', asSetAside);
+      expect(declined?.detail.inLedger).toBe(false);
+      expect(declined?.message).toContain('NOT in the ledger');
+    } finally {
+      await ctx.db.update(paymentAttempt).set({ status: taken!.status }).where(eq(paymentAttempt.id, taken!.id));
+    }
   });
 });

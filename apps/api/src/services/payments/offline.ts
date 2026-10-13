@@ -8,6 +8,8 @@ import {
   LEGACY_SATANG_ENGINE_VERSION,
   PAYMENT_METHOD_KINDS,
   PAYMENT_PROVIDERS,
+  PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  PAYMENT_ATTEMPT_TERMINAL_STATUSES,
   OfflineBenefitRecordSchema,
   TaxableCategorySchema,
   newId,
@@ -961,6 +963,25 @@ async function recordTenders(
           'ACTION_ID_REUSED',
           'That press already recorded a tender against another sale',
           { actionId: tender.actionId, saleId: already.saleId },
+        );
+      }
+      /**
+       * SCRUM-487 — skipped only as the SAME money. An attempt under this
+       * press that has ended without the money (declined, cancelled, not
+       * found) is not this tender, which the box says was taken: skipping it
+       * would drop that money from the ledger without a word. Refused instead,
+       * inside the event's savepoint, so the event lands on Failures for a
+       * person. One still in flight (no final answer yet) is skipped as before:
+       * its own path settles it.
+       */
+      if (
+        !PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(already.status) &&
+        PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(already.status)
+      ) {
+        throw errors.conflict(
+          'TENDER_NOT_TAKEN_HERE',
+          `That press already has a payment here that was ${already.status}, so this tender was not recorded`,
+          { actionId: tender.actionId, saleId, status: already.status },
         );
       }
       continue;

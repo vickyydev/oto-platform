@@ -640,6 +640,29 @@ describe('the same money arriving twice (SCRUM-206)', () => {
     expect(confused.quarantined).toBe(1);
     expect(confused.results[0]!.errorCode).toBe('ACTION_ID_REUSED');
   });
+
+  it('SCRUM-487: a tender whose press already has a DECLINED payment on the sale is refused, not skipped as recorded', async () => {
+    const b = await freshBox();
+    const total = await quotedTotal(b.stationId);
+    const saleId = newId();
+    const half = Math.round(total / 2);
+    const first = cashTender(half);
+    const opened = await push(b, [
+      mint(b, 'sale.finalised', { saleId, cart: cart(total), tenders: [first] }),
+    ]);
+    expect(opened.applied).toBe(1);
+    // The press's payment on the platform ended without the money.
+    await ctx.db
+      .update(paymentAttempt)
+      .set({ status: 'declined' })
+      .where(eq(paymentAttempt.actionId, first.actionId));
+
+    const again = await push(b, [mint(b, 'payment.recorded', { saleId, tender: first })]);
+    expect(again.applied).toBe(0);
+    expect(again.quarantined).toBe(1);
+    expect(again.results[0]!.errorCode).toBe('TENDER_NOT_TAKEN_HERE');
+    expect((await saleRow(saleId))!.status).toBe('tendering');
+  });
 });
 
 describe('a batch delivered out of order (SCRUM-206)', () => {
