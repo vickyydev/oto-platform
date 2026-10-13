@@ -3134,6 +3134,39 @@ describe("the till's cancel: POST /sales/:id/void", () => {
     expect(await voucherRow(v.id)).toMatchObject({ heldSaleId: saleId });
   });
 
+  it('a manager refunds a part-paid sale whole: the money goes back, the sale closes and its voucher is free', async () => {
+    const v = await issue(defs['spin-voucher-150']!);
+    const saleId = await holdAndCommit(tillA, v.code, kids(1));
+    expect((await finalise(tillA, saleId, { amountSatang: b(100) })).statusCode).toBe(200);
+    const refundOf = (cookie: string, payload: Record<string, unknown>) =>
+      ctx.app.inject({ method: 'POST', url: `/sales/${saleId}/refunds`, headers: { cookie }, payload });
+
+    const byItem = await refundOf(managerAtA, { mode: 'custom', amountSatang: b(50), reason: 'Guest left' });
+    expect(`${byItem.statusCode} ${byItem.json().error?.code}`).toBe('409 PART_PAID_REFUND_WHOLE_ONLY');
+    expect(await voucherRow(v.id)).toMatchObject({ heldSaleId: saleId });
+
+    const refunded = await refundOf(managerAtA, { mode: 'whole', reason: 'Guest left' });
+    expect(refunded.statusCode, refunded.body).toBe(200);
+    expect(refunded.json()).toMatchObject({
+      refund: { amountSatang: b(100) },
+      refundStatus: 'refunded',
+      refundableSatang: 0,
+    });
+    expect(await saleRow(saleId)).toMatchObject({ status: 'voided', refundedSatang: b(100), voidReason: 'Guest left' });
+    expect(await voucherRow(v.id)).toMatchObject({ status: 'issued', heldSaleId: null });
+    const released = await ctx.db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.action, 'voucher.release'), eq(auditLog.entityId, v.id)));
+    expect(released).toHaveLength(1);
+
+    // Closed: nothing more to give back, and the voucher prices the next sale.
+    const again = await refundOf(managerAtA, { mode: 'whole', reason: 'Again' });
+    expect(`${again.statusCode} ${again.json().error?.code}`).toBe('409 SALE_VOIDED');
+    const next = await holdAndCommit(tillB, v.code, kids(1, { stationId: t2.id }));
+    expect((await finalise(tillB, next)).json().redeemedVoucherIds).toEqual([v.id]);
+  });
+
   it('refuses a sale with a tender still in flight, and voids it once the tender has failed', async () => {
     const v = await issue(defs['spin-voucher-150']!);
     const saleId = await holdAndCommit(tillA, v.code, kids(1));

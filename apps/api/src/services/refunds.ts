@@ -3,6 +3,8 @@ import { assertNoPendingExtensions, assertExtensionRefund, cancelSaleExtension }
 import { device, paymentAttempt, refund, sale, saleLine, station } from '@oto/db';
 import {
   PAYMENT_ATTEMPT_TAKEN_STATUSES,
+  PAYMENT_ATTEMPT_TERMINAL_STATUSES,
+  isPaymentReversalPending,
   WALLET_TENDER_CODE,
   WALLET_TENDER_METHOD,
   allocateRefund,
@@ -25,6 +27,9 @@ import type { QrPayment } from '@oto/payments-2c2p';
 import { AppError, errors } from '../lib/errors';
 import { audit } from './audit';
 import { revokeSaleBands } from './bands';
+import { releaseSaleBenefits } from './benefit-checkout';
+import { restoreTierClaimOf } from './sale-tier';
+import { auditVoidReleases, lockVouchersHeldFor } from './vouchers';
 import { queueTerminalCommand } from './payments/terminal';
 import { accountNames, refundViewOf, settleRefundSlice, type RefundView } from './refund-slices';
 import { allocateReceipt, saleViewOf, type SaleView } from './sale';
@@ -154,8 +159,9 @@ async function answerFor(
     replay: extra.replay,
     refund: await viewOfRefund(db, refundRow),
     sale: await saleViewOf(db, saleRow),
-    refundStatus: refundStatusOf(saleRow.grossSatang, saleRow.refundedSatang),
-    refundableSatang: refundableSatang(saleRow.grossSatang, saleRow.refundedSatang),
+    // A part-paid sale closed by its refund gave back everything it took.
+    refundStatus: saleRow.status === 'voided' ? 'refunded' : refundStatusOf(saleRow.grossSatang, saleRow.refundedSatang),
+    refundableSatang: saleRow.status === 'voided' ? 0 : refundableSatang(saleRow.grossSatang, saleRow.refundedSatang),
     requestedSatang: extra.requestedSatang,
     clamped: extra.clamped,
   };
@@ -204,16 +210,59 @@ export async function refundSale(
   if (row.status === 'refunded') {
     throw errors.conflict('SALE_FULLY_REFUNDED', 'This sale is already fully refunded');
   }
-  if (row.status !== 'finalised') {
-    throw errors.conflict(
+  const notClosed = () =>
+    errors.conflict(
       'SALE_NOT_FINALISED',
       'This sale is not closed — a sale that took no money is voided, not refunded',
     );
-  }
+  /**
+   * SCRUM-416 — A PART-PAID SALE. Money was taken on it (cash, or wallet credit
+   * spent before a declined remainder) and the rest never came: it cannot be
+   * voided (`SALE_HAS_PAYMENT`) and it never closed, so without this it held
+   * its voucher, its benefit and its document check for ever. A manager's
+   * refund of EVERYTHING taken is the way out: the money goes back through the
+   * same allocation as any refund, and the sale is closed as void in the same
+   * transaction — which lets its vouchers go (the trigger in 0021), gives the
+   * benefit and the document check back, exactly as `voidSale` does.
+   */
+  const partPaid = row.status === 'tendering';
+  if (row.status !== 'finalised' && !partPaid) throw notClosed();
   const reason = input.reason.trim();
   await assertNoPendingExtensions(tx, row.id);
   if (!reason) throw errors.badRequest('A refund needs a reason');
-  const remaining = refundableSatang(row.grossSatang, row.refundedSatang);
+
+  let remaining = refundableSatang(row.grossSatang, row.refundedSatang);
+  let heldVouchers: { id: string; code: string }[] = [];
+  if (partPaid) {
+    const tried = await tx
+      .select({ id: paymentAttempt.id, status: paymentAttempt.status, amountSatang: paymentAttempt.amountSatang, payload: paymentAttempt.payload })
+      .from(paymentAttempt)
+      .where(eq(paymentAttempt.saleId, saleId));
+    const inFlight = tried.filter(
+      (a) => !PAYMENT_ATTEMPT_TERMINAL_STATUSES.includes(a.status) || isPaymentReversalPending(a.payload),
+    );
+    if (inFlight.length > 0) {
+      throw errors.conflict(
+        'PAYMENT_IN_FLIGHT',
+        'A payment on this sale is still in progress — finish or cancel it before refunding the sale',
+        { attempts: inFlight.map((a) => ({ id: a.id, status: a.status })) },
+      );
+    }
+    const takenSatang = tried
+      .filter((a) => PAYMENT_ATTEMPT_TAKEN_STATUSES.includes(a.status))
+      .reduce((sum, a) => sum + a.amountSatang, 0);
+    if (takenSatang <= 0) throw notClosed();
+    if (input.mode !== 'whole') {
+      throw errors.conflict(
+        'PART_PAID_REFUND_WHOLE_ONLY',
+        'This sale was never fully paid — refund everything taken on it, and the sale is closed',
+        { takenSatang },
+      );
+    }
+    remaining = Math.max(0, takenSatang - row.refundedSatang);
+    // Sale first, its vouchers next: the order the payment path and the void take.
+    heldVouchers = await lockVouchersHeldFor(tx, { saleId, operatorId: row.operatorId });
+  }
   if (remaining <= 0) throw errors.conflict('NOTHING_TO_REFUND', 'Nothing is left to refund on this sale');
 
   const lines = await tx
@@ -252,8 +301,13 @@ export async function refundSale(
   await assertExtensionRefund(tx, row.id, amount.amountSatang, remaining);
 
   // --- The lines it covers, and what goes back to stock ---------------------
-  const covered =
-    input.mode === 'whole' ? lines.filter((l) => l.quantity > 0 && !earlierLines.has(l.id)) : picked;
+  // A part-paid sale's money is not its lines' money: no line is carried, and
+  // any stock it took goes back below as returned-to-stock only.
+  const covered = partPaid
+    ? []
+    : input.mode === 'whole'
+      ? lines.filter((l) => l.quantity > 0 && !earlierLines.has(l.id))
+      : picked;
   // The design's scope: full when this refund takes everything still left, in
   // any mode. Earlier refunds were full-scope only if they emptied the sale,
   // which the status checks above already refuse to refund again.
@@ -479,12 +533,44 @@ export async function refundSale(
     .update(sale)
     .set({
       refundedSatang,
-      ...(full ? { status: 'refunded' as const, refundedAt: now } : {}),
+      ...(partPaid
+        ? {
+            // Closed as void: it never finished, and a voided sale is the one
+            // closed state that needs no receipt number. The status change
+            // fires 0021's trigger, which releases `heldVouchers` with their
+            // ledger rows; the document check is let go in the same statement,
+            // as `voidSale` does.
+            status: 'voided' as const,
+            voidedAt: now,
+            voidedByAccountId: actor.accountId,
+            voidReason: reason,
+            tierClaimId: null,
+          }
+        : full
+          ? { status: 'refunded' as const, refundedAt: now }
+          : {}),
     })
     .where(eq(sale.id, saleId))
     .returning();
   if (!after) throw new Error('the sale was not updated');
-  if (full) await cancelSaleExtension(tx, after, actor, now);
+  if (full || partPaid) await cancelSaleExtension(tx, after, actor, now);
+
+  let partPaidClose: { releasedVoucherIds: string[]; releasedBenefitApplicationIds: string[]; restoredTierClaimId: string | null } | null = null;
+  if (partPaid) {
+    const voucherScope = { saleId, operatorId: row.operatorId, branchId: row.branchId, stationId: row.stationId };
+    await auditVoidReleases(tx, voucherScope, heldVouchers, { accountId: actor.accountId, requestId: actor.requestId }, reason);
+    const benefitActor = { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId ?? null };
+    partPaidClose = {
+      releasedVoucherIds: heldVouchers.map((v) => v.id),
+      releasedBenefitApplicationIds: await releaseSaleBenefits(tx, saleId, benefitActor, 'voided', now),
+      restoredTierClaimId: await restoreTierClaimOf(
+        tx,
+        { accountId: actor.accountId, operatorId: actor.operatorId, requestId: actor.requestId },
+        saleId,
+        row.branchId,
+      ),
+    };
+  }
 
   // A refund that empties the sale kills its bands: the admission it paid for
   // is gone, so the bands go with it in the same transaction. A partial refund
@@ -512,6 +598,7 @@ export async function refundSale(
       status: row.status,
       refundedSatang: row.refundedSatang,
       refundStatus: refundStatusOf(row.grossSatang, row.refundedSatang),
+      ...(partPaid ? { tierClaimId: row.tierClaimId } : {}),
     },
     after: {
       status: after.status,
@@ -526,6 +613,7 @@ export async function refundSale(
       approvedByAccountId: actor.accountId,
       slices: slices.map((s) => ({ attemptId: s.attemptId, route: s.route, amountSatang: s.amountSatang, status: s.status })),
       revokedBandIds,
+      ...(partPaidClose ? { partPaid: true, ...partPaidClose } : {}),
       restocked: restockedMovements.map((m) => ({
         stockItemId: m.stockItemId,
         stockLocationId: m.stockLocationId,

@@ -939,7 +939,7 @@ export async function saleRoutes(app: App): Promise<void> {
       config: { permission: 'pos:refund:create', stationTrading: true },
       schema: {
         description:
-          'Refund a finalised sale: the whole of what is left, chosen lines, or a custom amount, clamped to what is left, with a reason. Needs `pos:refund:approve` at the sale’s branch (403 `REFUND_APPROVAL_REQUIRED` without it). Numbered from the station’s refund series. The money goes back wallet → same tender → cash: a whole card tender is voided on its terminal (the answer arrives from the box; a refusal falls back to cash), a gateway QR is refunded through the gateway after the refund commits, cash is handed back. The sale walks paid → partially_refunded → refunded. Replaying the same `actionId` answers the refund it recorded.',
+          'Refund a finalised sale: the whole of what is left, chosen lines, or a custom amount, clamped to what is left, with a reason. Needs `pos:refund:approve` at the sale’s branch (403 `REFUND_APPROVAL_REQUIRED` without it). Numbered from the station’s refund series. The money goes back wallet → same tender → cash: a whole card tender is voided on its terminal (the answer arrives from the box; a refusal falls back to cash), a gateway QR is refunded through the gateway after the refund commits, cash is handed back. The sale walks paid → partially_refunded → refunded. A part-paid sale (money taken, the rest never came) is refunded whole: everything taken goes back and the sale is closed as void, releasing its vouchers. Replaying the same `actionId` answers the refund it recorded.',
         params: z.object({ id: z.string().uuid() }),
         body: RefundBody,
       },
