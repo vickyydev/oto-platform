@@ -189,9 +189,10 @@ function token(block: ':root' | '.dark', name: string): Rgb {
   const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
   return [f(0), f(8), f(4)];
 }
-function violet(shade: number): Rgb {
-  const m = new RegExp(`--color-violet-${shade}:\\s*oklch\\(([\\d.]+)%\\s+([\\d.]+)\\s+([\\d.]+)\\)`).exec(paletteCss);
-  if (!m) throw new Error(`no violet-${shade}`);
+const violet = (shade: number): Rgb => hueOf('violet', shade);
+function hueOf(hue: string, shade: number): Rgb {
+  const m = new RegExp(`--color-${hue}-${shade}:\\s*oklch\\(([\\d.]+)%\\s+([\\d.]+)\\s+([\\d.]+)\\)`).exec(paletteCss);
+  if (!m) throw new Error(`no ${hue}-${shade}`);
   const [L, C, H] = [Number(m[1]) / 100, Number(m[2]), Number(m[3])];
   const a = C * Math.cos((H * Math.PI) / 180);
   const b = C * Math.sin((H * Math.PI) / 180);
@@ -257,5 +258,36 @@ describe('6 — the prepaid name is legible where it is drawn, and the prototype
       const darkTinted = over(row, token('.dark', surface), 0.1);
       expect(contrast(violet(100), darkTinted)).toBeGreaterThanOrEqual(4.5);
     }
+  });
+});
+
+// --- SCRUM-370 / SCRUM-380 ----------------------------------------------------------------
+
+describe('SCRUM-370 / SCRUM-380 — the refusal’s second line and the clone warning’s triangle read on light', () => {
+  const refusal = quoteErrorOf(new ApiError(409, 'PRICE_MISMATCH', 'the till and the platform priced a line differently'), 'could not price');
+  const fixLineClasses = (markup: string) =>
+    (/<span class="([^"]*)">Fix this to charge/.exec(markup)?.[1] ?? '').split(' ');
+
+  it('370: the line takes the full rose-800 on light, the prototype’s rose-200/80 kept behind dark:', () => {
+    const classes = fixLineClasses(html(React.createElement(QuoteRefusalNote, { error: refusal, blocking: true })));
+    expect(classes).toContain('text-rose-800');
+    expect(classes).toContain('dark:text-rose-200/80');
+    expect(classes).not.toContain('text-rose-700/80');
+  });
+
+  it('370 measured: 4.5:1 or better on the note’s tint over either light surface; the 80% wash was under it', () => {
+    for (const surface of ['card', 'background'] as const) {
+      const tinted = over(hueOf('rose', 500), token(':root', surface), 0.1);
+      expect(contrast(hueOf('rose', 800), tinted)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(over(hueOf('rose', 700), tinted, 0.8), tinted)).toBeLessThan(4.5);
+    }
+  });
+
+  it('380: the triangle is amber-700 on light, the prototype’s amber-400 behind dark:, and clears 3:1 on its tint', () => {
+    const panel = readFileSync(new URL('../src/components/admin/branches/BranchesPanel.tsx', import.meta.url), 'utf8');
+    expect(panel).toContain('<AlertTriangle className="w-5 h-5 shrink-0 text-amber-700 dark:text-amber-400 mt-0.5" />');
+    const tinted = over(hueOf('amber', 400), token(':root', 'background'), 0.05);
+    expect(contrast(hueOf('amber', 700), tinted)).toBeGreaterThanOrEqual(3);
+    expect(contrast(hueOf('amber', 600), tinted)).toBeLessThan(3);
   });
 });

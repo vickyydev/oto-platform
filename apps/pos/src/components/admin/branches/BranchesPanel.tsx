@@ -488,7 +488,7 @@ export function BranchesPanel() {
 
                   {plan.targetHasSales && (
                     <div className="flex items-start gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-5">
-                      <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
+                      <AlertTriangle className="w-5 h-5 shrink-0 text-amber-700 dark:text-amber-400 mt-0.5" />
                       <div>
                         <p className="text-sm font-semibold text-amber-700">
                           {plan.targetBranch.name} has already taken sales

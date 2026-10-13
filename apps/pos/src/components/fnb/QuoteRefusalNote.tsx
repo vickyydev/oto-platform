@@ -25,7 +25,9 @@ import type { QuoteError } from '@/lib/cartQuote';
  * light, so pale rose on a rose tint was pale-on-pale here — measured at 1.13:1
  * against the panel, which is no contrast at all. Rose stays: it is the colour
  * of an order that cannot be sold, and `QuoteFaultNote` beside it is neutral
- * for the opposite reason (SCRUM-359).
+ * for the opposite reason (SCRUM-359). The "Fix this to charge" line under it
+ * takes the full `rose-800` on light rather than an 80% wash of the headline's
+ * ink, which measured under 4.5:1 at 12px (SCRUM-370); dark keeps its shade.
  *
  * SCRUM-351 gave the hook a typed error, and this note prints `.message` — the
  * platform's own words, the string this prop used to be — so its wording is
@@ -57,7 +59,7 @@ export function QuoteRefusalNote({
       <span className="min-w-0">
         <span className="font-semibold">{leadIn}</span> {message}
         {blocking && (
-          <span className="mt-1 block text-rose-700/80 dark:text-rose-200/80">
+          <span className="mt-1 block text-rose-800 dark:text-rose-200/80">
             Fix this to charge — the sale would be refused for the same reason.
           </span>
         )}
