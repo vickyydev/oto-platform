@@ -1,65 +1,58 @@
 # OTO App delivery board - SCRUM-191
 
-**13 October 2026, seven-feature landing gate complete:** Exact candidate5aa3a826990d7456f9c4b08ba89a571f726dcf7d passed all six jobs in run38307721854. This includes app build, full restore/replay,89 feature runtime controls, the corrected eighteen-writer ownership inventory, the full API shards, workspace lint/tests and30 Console browser checks. Whole workspace output has zero diagnostics, including API zero; the whole app output is446 diagnostics across59 files/118 buckets, with no new or increased baseline bucket. The existing457 ratchet stays unchanged. All later changes are documents and four inspected staging evidence cards; application, migrations, tooling and workflow source remain identical to this green candidate.
+**14:20 Bangkok status check:** SCRUM-193 and516 are Deployed with final proof attached. All eleven delivered child tickets under191 are Deployed; only523 remains To Do. The umbrella stays In Progress for that scheduled follow-through. The fix block starts with276.
 
-This landing completes source for all seven original SCRUM-194 items: import preview/results, Fix recipient preview, SOP history/archive/restore with its Studio entry, optional attendance evidence, staff inbox delivery state/retry, returning-family SMS verification, and explicit employee action/history continuity. Final app migrations are0011 SOP,0012 attendance,0013 presence,0014 family verification and0015 employee actions. Staging is currently through0010 on app4dcc6664; the five platform services are live atR8main8aef1822. Watch the new main landing SHA before feature deployment and perform the prepared seven staging journeys. No actual SMS has been sent; one controlled delivery is authorized. Feature tickets remain Testing until their actual inspected staging proof is attached.
+## Current delivery - 13 October 2026
 
-SCRUM-193 is Testing: lift source/main gate and five remaining platform action/read cases are evidenced. Final job success requires exact practice-record cleanup, zero practice employees in the published view, then Retry and last-success read-back. Historical success/forced-failure/Retry evidence is recovered. Keep the seeded cast, protected payment and Som's sick-day unchanged. Local databases remain off. Complete story acceptance and cleanup, then OPEN_ITEMS fix block beginningSCRUM-276; SCRUM-223 stays paused.
+All seven original SCRUM-194 features are live on staging at `5b2f049fba750403fe60284bf2b8b4855eb934b4`, observed from 04:33 Bangkok on 13 October. App migrations through `0015` are applied: `0011` SOP history, `0012` attendance evidence, `0013` inbox delivery, `0014` family verification and `0015` employee actions. Later main checkpoints contain documents and evidence; this delivery-board refresh records that completed release.
 
-**13 October 2026, integrated feature release checkpoint:** All 27 feature commits are rebased onto round-8 main 8aef1822641102548b20afa7684c0e0511c4e17b. Application, migration, tooling and workflow source is byte-identical to the pre-rebase 47085180 tree; only newer main documents differ. The SOP editor is reachable through Studio, with three focused controls passing. The final Attention writer inventory now follows the two extracted employee-action writers while preserving all eighteen ownership expectations; its isolated static pin passed seven assertions and touched lint has zero warnings/errors.
+SCRUM-194 and SCRUM-517 through SCRUM-522 are **Deployed** with their recorded proof and limits. SCRUM-193 and SCRUM-516 are **Deployed**; SCRUM-191 remains **In Progress**. The newest STATUS block is the live release record.
 
-The preceding 142cc3dd candidate passed five of six jobs, including app build, restore/replay, 89 feature runtime checks, workspace compiler/lint/tests, 30 Console browser checks and two API shards. The remaining shard's sole failure was that file-location expectation, now corrected; no flake rerun or full-pass claim is made. The rebased final candidate needs its full hosted gate. R8 main is being watched separately; feature staging acceptance and one authorized SMS delivery remain. Local databases stay off.
-
-**13 October 2026, feature screen entry checkpoint:** SOP history now has an active Studio route, navigation entry and landing card. The existing manager/administrator Studio access remains, with editing limited to administrators. Three focused route/access review controls pass; touched-file lint has zero errors and one inherited warning. This closes the source navigation finding; the screen still needs its staged journey after release.
-
-The preceding combined candidate 142cc3dd passed its app build, restore/replay and all 89 feature runtime controls. Its whole app compiler output is 446 diagnostics across 59 files and 118 buckets, with no increased bucket against the 457 baseline. The workspace compiler, lint, tests and 30 Console browser checks passed; three API shards are still running, so a full candidate pass is not yet claimed. Main 4dcc6664 is separately completing its last API shard. The SOP entry is a later source change and will receive its own hosted gate. R7 exact cleanup preview passed for 60 tables, 261 rows and ten objects without mutation; cleanup remains pending while feature acceptance reuses the isolated practice park. Local databases remain off.
-
-Updated 13 October 2026. Development and release are recorded separately.
-R7a is landed at 7402a8da with all main CI jobs passing. Source on other
-published lanes is available for review; it is not a staging delivery. The newest STATUS block remains the live release record.
-
-## Development batches
-
-**Latest integration:** all six new feature implementations are present in combined candidate da21a661, with employee-history and attendance-reviewer consistency. Final0011..0015 migrations are sequenced. Hosted feature runtime verification and staged acceptance remain; two presence display/retry controls are being completed. R7a is live and its camp/payroll/form rechecks pass. R8's hosted restore passed; the candidate gate awaits the historical current-chain assertion correction. The table below preserves individual source-batch references.
-
-| Ticket / batch | Development delivered | Remaining development or release dependency |
+| Ticket / scope | Verified delivery | Remaining limits or acceptance |
 | --- | --- | --- |
-| SCRUM-193, rounds 1-6 | Landed; running on staging. Round-5 and round-6 module evidence is attached to SCRUM-191. | Preserve existing behavior and recorded owner questions. |
-| SCRUM-516, finance | Transactional imports, finance ownership keys, serialized cash imports and park-bound Xero connections are built on `lane/s217b-r7`. Source: `afcb68b1`, `7e27a40b`, `01371e9d`, `8e56d054`, `59ba84ee`. | Consolidated release checks and staged ownership checks. A positive Xero sync needs a connected sandbox; the unconnected screen is evidenced. |
-| SCRUM-516, administration and camps | Owned administration records, document writers, people placement and camp actions are built. Source: `f5d5e9f8`, `e5d721f0`. | Ship nullable document columns with the new writers in R7a; observe those writers before R7b makes ownership required. |
-| SCRUM-516, payroll and permissions | Payroll parent/run/file ownership, atomic permission replacement and resolved park context are built. Source: `086bb4ae`, `78c91e85`, `e4b1e2f5`, `b1f1f48d`, `fae7ce1d`. | Release and repeat the recorded staged payroll/camp cases. Salary calculations and advance repayment remain in their existing fix-block work. |
-| SCRUM-516, form labels | Owned form/version label reader, displayed-version saves and refreshed label cache are built. Source: `fa4a8e36`. | Staged save, reload and publication evidence after release. |
-| SCRUM-193, round 8 | Restore rehearsal, input protections, CI integration and compiler ratchet tooling are built in [PR2](https://github.com/vickyydev/oto-platform/pull/2). Source: `0f017a3d`, `9deab023`, `0e8d9072`, `5670d497`, `7a01be11`; the ceiling is now 457. | Integrate after R7b; run the final eleven-migration restore in CI; reconcile acceptance and Decision 25. |
-| SCRUM-194, original seven items | Original scope and current implementation are mapped in the [feature plan](../otoapp-features/PLAN.md). Import preview/results and direct manager history already have code; other requested workflows are incomplete. | Complete concrete feature batches using the original requirements and existing defaults. Resolve only behavior/provider choices that the documents do not answer. Keep each item's implementation and staging result separate. |
-| SCRUM-518, employee import | [PR3](https://github.com/vickyydev/oto-platform/pull/3), `db51ee5c`: requested labels and every existing match are visible. Five focused controls and a real-page mocked-HTTP browser check passed. | Testing; consolidated release checks and staging proof. Matching, selection and row application remain unchanged. |
-| SCRUM-517, Fix recipient preview | [PR4](https://github.com/vickyydev/oto-platform/pull/4), `3af75edd`: staff names/count/empty state before Save; seven focused handler/database controls passed, including R7 canonical person ownership. | Testing; final release checks and staging proof. |
-| SCRUM-519, SOP revisions | [PR5](https://github.com/vickyydev/oto-platform/pull/5), `5924faac`: history, versioned edit/restore and status controls; 16 focused controls and all touched-file lint passed after R7 integration. | Testing; final migration number, release gate and staging proof. |
-| SCRUM-520, attendance evidence | [PR6](https://github.com/vickyydev/oto-platform/pull/6), `9e79dacc`: optional preview and issue-bound private storage; nine controls, multipart and browser checks passed. | Testing; integration, final migration number and release gate. Face-clock-disabled paths and existing manager-review limitations remain explicit. |
-| SCRUM-521, presence delivery | [PR7](https://github.com/vickyydev/oto-platform/pull/7), `7c911c02`: inbox delivery state and reliable retry; eight real-route/database controls passed. | Testing; integration, final migration number, release gate and staging proof. |
-| SCRUM-522, returning-family SMS | Development underway; Twilio account/service validated read-only with six-digit codes and settings saved on staging. | Complete record-bound verification, focused controls and release. Runtime activation and one authorized controlled SMS proof remain; recipient comes from local environment. |
-| SCRUM-194, review/movement history | Existing explicit manager actions and actor/time history meet normal original scope by source inspection. | Staged journey; bounded consistency controls under SCRUM-516, recorded in the feature plan. |
+| SCRUM-193, lift rounds 1-8 | Source is landed and live. Module walkthroughs, platform action/read cases, restore/replay, main release gate and current scheduled-job recovery are recorded. | Deployed with final proof attached. Preserve the named module limits and recorded owner decisions. |
+| SCRUM-516, consistency work | Finance, administration, camps, payroll ownership, permissions, form labels, employee actions/history and attendance-reviewer controls are landed and live. The consolidated gate and the recorded staged journeys passed. | Deployed with final inspected consistency and cleanup proof. Positive Xero sync still needs a connected sandbox; attendance's face-enabled staging path remains unavailable under Q9. Salary calculations and advance repayment remain in their existing fix-block work. |
+| SCRUM-194, original seven items | **Deployed.** All seven original items are implemented and their observed staging cases are recorded in the [feature plan](../otoapp-features/PLAN.md) and linked evidence below. | These bounded feature results do not close SCRUM-191 or replace its remaining acceptance and recorded fix-block items. |
+| SCRUM-518, employee import | **Deployed.** [Preview, selected-row Apply and re-preview](../../../qa/oto-app-lift/round-8/feature-import.md) showed the expected New, Changed, Unchanged, Invalid and Matched outcomes. | The re-preview proves resulting classification; repeated Apply idempotency was not established. Existing matching and selection behavior remain. |
+| SCRUM-517, Fix recipient preview | **Deployed.** [Recipient preview evidence](../../../qa/oto-app-lift/round-8/feature-fix-preview.md) records the staff list/count, empty state and access boundaries before Save. | Preview does not send a notification or establish supplier-message delivery. |
+| SCRUM-519, SOP history | **Deployed.** [Versioned edit, history, archive and restore](../../../qa/oto-app-lift/round-8/feature-sop-history.md) record replay handling, original content restored with the current archived status and branch scope preserved, and other-park/staff refusals. | Restoration follows current editing permission and publication choices; deleted-row recovery is outside this feature. |
+| SCRUM-520, attendance evidence | **Deployed.** Optional attachment input, private issue-bound storage and manager reader are live. [Evidence](../../../qa/oto-app-lift/round-8/feature-attendance-evidence.md) records face-off refusals, reviewer reads and inspected hosted-control proof. | Q9 remains unchanged: face mode is off. A successful face-enabled staging upload, its private attachment read and approval were not observed. The reviewer screen had no Pending Approvals; no Approve action was performed. |
+| SCRUM-521, inbox delivery | **Deployed.** [Delivery and recovery evidence](../../../qa/oto-app-lift/round-8/feature-inbox-delivery.md) records the current inbox delivery states and retry controls. | Delivery means the existing staff inbox. It does not establish SMS, email or push delivery. |
+| SCRUM-522, returning-family SMS | **Deployed.** [Actual SMS receipt, screen verification/prefill and saved-registration API controls](../../../qa/oto-app-lift/round-8/feature-family-verification.md) passed, including consumed-grant and other-park boundaries. | The saved-registration write used the API after real screen verification; the normal screen Submit action was not exercised. Existing signature/consent fields were retained, with no new consent or signature claimed. |
+| SCRUM-194 / SCRUM-516, review and movement history | [Explicit manager Complete, terms Save and transfer](../../../qa/oto-app-lift/round-8/feature-employee-history.md) passed on the disposable employee, with replay and ownership controls. Reload retained the saved changes; actor/time were present in the API. | Existing immediate actions and contract prompts remain. No additional approval stage or contract generation was exercised; the history screen itself does not display the actor. |
+| SCRUM-523, scheduling scope (Q39) | **To Do** under SCRUM-191. The existing recorded scheduling boundary item now has its matching ticket. | Keep it in the recorded fix block, which begins with SCRUM-276. It is not treated as completed by the feature deployment. |
+
+## Release and job evidence
+
+The exact feature main SHA `5b2f049fba750403fe60284bf2b8b4855eb934b4` passed all six CI jobs in run `38309414401`, matching the green candidate `5aa3a826990d7456f9c4b08ba89a571f726dcf7d`. The gate included 4,033 passing API tests, app build and restore/replay, 89 feature runtime controls, the eighteen-writer ownership inventory, workspace lint/tests and 30 Console browser checks. Whole workspace compiler output has zero diagnostics, including the API. The app has 446 diagnostics across 59 files and 118 file/code buckets, with no increased bucket against the unchanged 457 ceiling.
+
+[Current job recovery](../../../qa/oto-app-lift/round-8/jobs-recovery.md) is complete for the recorded cases. Four sequential authenticated Console API retries returned HTTP 200 with `outcome: ok` and fresh Health reads. Independent database read-back confirmed all five app jobs' latest outcomes and success times, with zero unkeyed park groups. Attention and presence ran; midnight and reconcile recognized work already completed for today's Bangkok date. The earlier forced presence failure and successful Retry, plus Attention recovery, remain separately evidenced. No current Retry UI button click is claimed.
+
+## Cleanup and remaining acceptance
+
+Exact cleanup removed 297 rows and ten objects, followed by seven parent rows and two app sessions. The supported account unlink returned HTTP 200; the former app session's `/api/user` read returned HTTP 401. The seeded platform account, employee, operator, branch and administrator assignment were preserved.
+
+Protected-row fingerprints matched immediately before and after cleanup. A later Som fingerprint differed, with its cause still unattributed; the cleanup comparison does not establish that his whole row remains unchanged afterward. Preserve this distinction in the final acceptance record.
+
+Complete the remaining SCRUM-191 acceptance and recorded consistency work using these verified results and limits. The OPEN_ITEMS section 2 fix block, beginning with SCRUM-276 and retaining Q39/SCRUM-523 in its worked order, comes before any new story. SCRUM-223 remains paused. Local databases remain off.
+
+## Historical source checkpoints
+
+The following references record the development batches that were integrated into the live release. They are source history, not pending release dependencies.
+
+| Batch | Historical source reference |
+| --- | --- |
+| Round 7 finance | `afcb68b1`, `7e27a40b`, `01371e9d`, `8e56d054`, `59ba84ee` |
+| Administration and camps | `f5d5e9f8`, `e5d721f0` |
+| Payroll and permissions | `086bb4ae`, `78c91e85`, `e4b1e2f5`, `b1f1f48d`, `fae7ce1d` |
+| Form labels | `fa4a8e36` |
+| Round 8 tooling | [PR2](https://github.com/vickyydev/oto-platform/pull/2): `0f017a3d`, `9deab023`, `0e8d9072`, `5670d497`, `7a01be11` |
+| Import preview/results | [PR3](https://github.com/vickyydev/oto-platform/pull/3): `db51ee5c` |
+| Fix recipient preview | [PR4](https://github.com/vickyydev/oto-platform/pull/4): `3af75edd` |
+| SOP revisions | [PR5](https://github.com/vickyydev/oto-platform/pull/5): `5924faac` |
+| Attendance evidence | [PR6](https://github.com/vickyydev/oto-platform/pull/6): `9e79dacc` |
+| Inbox delivery | [PR7](https://github.com/vickyydev/oto-platform/pull/7): `7c911c02` |
 
 ## Development and verification sequence
 
-The owner requested development-first delivery on 13 October: complete
-approved feature batches and record their source before consolidating release
-verification. Independent implementation runs in isolated lanes, with one
-coordinator integrating and publishing.
-
-Use focused checks while developing. Preserve the broad runs already in
-progress and their results; do not restart them for documentation changes or
-repeat passing suites without a relevant source change or unresolved result.
-Run the required full gate once for each final release candidate, then recheck
-only failures or changes that invalidate earlier results. Do not mark incomplete
-or skipped checks as passing. The main/staging landing gate remains in force.
-
-The current R7 candidate has a successful production build, a zero-diagnostic
-API compiler, 457 inherited app diagnostics with no per-file/code increase,
-and touched-file lint without errors. The full Linux gate passed on equivalent
-source 67eadb26; landing 7402a8da also passed every job in CI38294258814.
-Existing round-7 screenshots show the currently deployed source, not the new
-ownership release. Exact test-record/object cleanup remains outstanding.
-
-R7a, observed new document writers, R7b and R8 remain the release order.
-Complete the existing SCRUM-191 scope; OPEN_ITEMS section 2 remains ahead of
-any new story. SCRUM-223 stays paused.
+Independent approved implementation can proceed in isolated lanes, with one coordinator integrating and publishing. Use focused checks during development; preserve completed broad-run results. Documentation-only updates do not require restarting passing suites. Each final source release still passes the full landing gate, with further checks directed at source changes or unresolved results. Record incomplete and skipped checks accurately, and retain staging limits beside each delivery claim.
