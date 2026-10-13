@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, ChevronDown, ChevronUp, Camera, MapPin, User, Users, ClipboardCheck, GripVertical } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, Camera, MapPin, User, Users, ClipboardCheck, GripVertical, Wrench } from "lucide-react";
 import { DndContext, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -55,6 +55,7 @@ interface ChecklistItem {
   cameraEnabled?: boolean;
   galleryEnabled?: boolean;
   isCritical?: boolean;
+  linkedToFix?: boolean;
   referenceMediaUrls?: string[];
   expanded?: boolean;
   departmentId?: string;
@@ -218,7 +219,7 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
   };
 
   const addItem = () => {
-    setItems([...items, { title: "", requiresNote: false, requiresPhoto: false, cameraEnabled: true, galleryEnabled: false, isCritical: false }]);
+    setItems([...items, { title: "", requiresNote: false, requiresPhoto: false, cameraEnabled: true, galleryEnabled: false, isCritical: false, linkedToFix: false }]);
   };
 
   const removeItem = (index: number) => {
@@ -265,6 +266,7 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
         cameraEnabled: item.cameraEnabled ?? true,
         galleryEnabled: item.galleryEnabled ?? false,
         isCritical: item.isCritical === true,
+        linkedToFix: data.checklistType === "operational" && item.linkedToFix === true,
         referenceMediaUrls: item.referenceMediaUrls?.filter(url => url.trim()) || [],
         departmentId: item.departmentId || undefined,
         zoneLabel: item.zoneLabel || undefined,
@@ -929,6 +931,17 @@ export function CreateChecklistDialog({ open, onOpenChange }: CreateChecklistDia
                                     data-testid={`ops-cl-checkbox-item-critical-${index}`}
                                   />
                                   <span className="text-sm">Critical item</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    checked={item.linkedToFix || false}
+                                    onCheckedChange={(checked) => updateItem(index, { linkedToFix: !!checked })}
+                                    data-testid={`ops-cl-checkbox-item-linked-to-fix-${index}`}
+                                  />
+                                  <span className="text-sm flex items-center gap-1">
+                                    <Wrench className="h-3 w-3" />
+                                    Linked to Fix
+                                  </span>
                                 </div>
                               </>
                             )}
