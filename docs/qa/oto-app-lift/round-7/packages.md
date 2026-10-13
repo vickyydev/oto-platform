@@ -1,5 +1,7 @@
 # Event packages - staging walkthrough, 12 October 2026
 
+**13 October evidence index:** The inspected [labelled request-run card](../../jira-comments/attachments/SCRUM-193/r7-recorded-module-requests-20261013.png) records the12October outcomes below, without implying a new screen capture or replay. Exact registered record cleanup is now complete in [the cleanup record](../round-8/cleanup.md). The dated observations below remain historical.
+
 **WORKS for the recorded package application.** On staging app `633cae41`,
 the ZZ TEST package, its line and its application to the test event each
 returned 201. Another park's package request returned 404. The observed

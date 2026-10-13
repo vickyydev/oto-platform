@@ -1,5 +1,7 @@
 # Ask OTO - staging walkthrough, 12 October 2026
 
+**13 October evidence index:** The inspected [labelled request-run card](../../jira-comments/attachments/SCRUM-193/r7-recorded-module-requests-20261013.png) records the12October outcomes below, without implying a new screen capture or replay. Exact registered record cleanup is now complete in [the cleanup record](../round-8/cleanup.md). The dated observations below remain historical.
+
 **WORKS for the recorded conversation and source scope.** On staging app
 `633cae41`, the ZZ TEST thread and message each saved with 201. Another park's
 thread request returned 404. The owning answer returned 200, contained the

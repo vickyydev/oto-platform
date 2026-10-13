@@ -1,5 +1,7 @@
 # Knowledge Base - staging walkthrough, 12 October 2026
 
+**13 October evidence index:** The inspected [labelled request-run card](../../jira-comments/attachments/SCRUM-193/r7-recorded-module-requests-20261013.png) records the12October outcomes below, without implying a new screen capture or replay. Exact registered record cleanup is now complete in [the cleanup record](../round-8/cleanup.md). The dated observations below remain historical.
+
 **WORKS for the recorded publication and scoped reading path.** On staging
 app `633cae41`, the ZZ TEST article saved with 201. Staff's draft read returned
 404; publication returned 200. The owning and staff published reads returned
