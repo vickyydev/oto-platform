@@ -1116,6 +1116,40 @@ async function settleWithin(
       .where(eq(sale.id, settled.saleId))
       .limit(1);
     if (!saleRow) throw new Error('the settled attempt points at a sale that is not there');
+    /**
+     * SCRUM-415 — MONEY THAT LANDS ON A CLOSED SALE. Every path that closes a
+     * sale refuses while a tender is still in flight, and a new tender is
+     * refused on a closed sale, so nothing in the api reaches this. If it is
+     * reached anyway — a correction made outside the api, a path added later —
+     * the money is recorded (it was taken; refusing it here would only lose
+     * the record) and a person is told, because nothing else will: the sale
+     * will not close twice and the guest has paid for something already
+     * settled or cancelled.
+     */
+    if (saleRow.status === 'finalised' || saleRow.status === 'voided' || saleRow.status === 'refunded') {
+      await raiseAlert(
+        db,
+        {
+          key: `payments.settled_on_closed_sale:${settled.id}`,
+          category: 'payments.settled_on_closed_sale',
+          severity: 'critical',
+          subject: 'A payment landed on a sale that was already closed',
+          summary:
+            `Invoice ${settled.invoiceNo} was paid (${settled.amountSatang} satang) after its sale ` +
+            `was ${saleRow.status}. The money is recorded on the attempt; the guest is owed it back.`,
+          detail: { attemptId: settled.id, saleId: saleRow.id, saleStatus: saleRow.status, amountSatang: settled.amountSatang },
+          operatorId: settled.operatorId,
+          branchId: settled.branchId,
+        },
+        { flapWindowSeconds: env.ALERT_FLAP_WINDOW_S },
+      );
+      return {
+        outcome: 'settled' as const,
+        attemptId: settled.id,
+        finalisedSale: false,
+        outstandingSatang: null,
+      };
+    }
     const outstanding = await outstandingAfter(tx, saleRow);
 
     /**
@@ -1127,7 +1161,7 @@ async function settleWithin(
      * catastrophic here. A QR that covered half a split would otherwise close
      * the sale with an invented cash tender for the rest.
      */
-    if (outstanding > 0 || saleRow.status === 'finalised' || (await extensionHoldsClose(tx, saleRow.id))) {
+    if (outstanding > 0 || (await extensionHoldsClose(tx, saleRow.id))) {
       return {
         outcome: 'settled' as const,
         attemptId: settled.id,

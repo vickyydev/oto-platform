@@ -1005,6 +1005,46 @@ describe('a payment is dated by our clock, not by the gateway stamp', () => {
   });
 });
 
+describe('money that lands on a sale already closed (SCRUM-415)', () => {
+  it('is recorded, leaves the sale as it is, and raises an alert for a person', async () => {
+    const { saleId, grossSatang } = await openSale();
+    const shown = await showQr(saleId, grossSatang);
+    const attempt = await attemptOf(shown.attempt.id);
+    // Closed while the QR was still out — only a correction outside the api
+    // reaches this, which is why it is written here by hand.
+    await ctx.db
+      .update(sale)
+      .set({ status: 'voided', voidedAt: new Date(), voidReason: 'closed by hand' })
+      .where(eq(sale.id, saleId));
+
+    const settled = await settlePaidAttempt(ctx.db, ctx.app.env, ctx.app.log, {
+      attempt,
+      facts: {
+        state: 'paid',
+        respCode: '0000',
+        respDesc: 'Successful',
+        invoiceNo: shown.invoiceNo,
+        amountSatang: grossSatang,
+        currencyCode: 'THB',
+        tranRef: 'TR-CLOSED',
+        paymentId: null,
+        approvalCode: null,
+        channelCode: 'PPQR',
+        agentCode: 'SIM',
+        transactionDateTime: '20260923101500',
+        raw: {},
+      },
+      source: 'inquiry',
+    });
+    expect(settled).toMatchObject({ outcome: 'settled', finalisedSale: false });
+    expect((await attemptOf(shown.attempt.id)).status).toBe('approved');
+    expect((await saleOf(saleId)).status).toBe('voided');
+    const raised = await alertsLike(`payments.settled_on_closed_sale:${shown.attempt.id}`);
+    expect(raised).toHaveLength(1);
+    expect(raised[0]).toMatchObject({ severity: 'critical' });
+  });
+});
+
 // --- The simulator panel, and what it proves ---------------------------------
 
 describe('the Console simulator drives the real path', () => {
