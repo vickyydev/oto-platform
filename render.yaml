@@ -1207,10 +1207,19 @@ services:
 #        #
 #        #   CREATE ROLE oto_radar LOGIN PASSWORD '<generated>';
 #        #   ALTER ROLE oto_radar CONNECTION LIMIT 10;
+#        #   GRANT oto_radar TO CURRENT_USER;        -- or AUTHORIZATION fails
 #        #   CREATE SCHEMA IF NOT EXISTS radar AUTHORIZATION oto_radar;
 #        #   ALTER ROLE oto_radar SET search_path = radar;
+#        #   GRANT CREATE ON DATABASE <db> TO oto_radar;  -- the migrator's
+#        #     own CREATE SCHEMA IF NOT EXISTS needs it even when the schema
+#        #     exists (learned on the first staging deploy, 2026-10-14)
 #        #
 #        # A direct connection, not a transaction pooler (advisory locks).
+#        # API quirk from the same deploy: on create/patch the pre-deploy
+#        # command is WRITTEN as serviceDetails.preDeployCommand, though a
+#        # read nests it under envSpecificDetails - a create that nests it
+#        # is silently dropped. The live service was created 2026-10-14
+#        # (srv-db79h5id0e5s73fpal7g) exactly per this block.
 #        sync: false
 #      # Sign-on and figures (apps/radar/README.md): the platform api, and
 #      # Radar's own origin as the api knows it.
