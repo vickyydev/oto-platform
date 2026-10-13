@@ -838,8 +838,10 @@ function appTables(): Set<string> {
  * platform file may name, and nothing else may name any.
  *
  *  - provisioning — `oto-app-users.ts`: the users it creates, links and lists,
- *    the one branch-access row it writes, and the app's tenants and operators
- *    it reads to place a user in a park group;
+ *    the one branch-access row it writes, the app's tenants and operators
+ *    it reads to place a user in a park group, and the app's session rows it
+ *    ends when an account is deactivated or unlinked (SCRUM-288) — ending a
+ *    sign-in is the platform's half of the access lifecycle;
  *  - the branch seam — the engine in `packages/db/src/schema/otoapp.ts`;
  *  - the booth roster — `booth-duty.ts`, which reads the rota directly (Q11).
  *
@@ -852,6 +854,7 @@ const SEAMS: Record<string, string[]> = {
     'branches',
     'tenants',
     'operators',
+    'session',
   ],
   'apps/api/src/services/booth-duty.ts': [
     'schedule_assignments',
