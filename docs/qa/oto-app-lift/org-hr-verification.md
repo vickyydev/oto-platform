@@ -1,5 +1,11 @@
 # SCRUM-193: organization, access and HR checks
 
+## Department action on staging, 13 October
+
+**13 October 2026, 14:54 Bangkok, department staging proof complete:** On live5b2f049f, the launcher-signed administrator used the actual Departments screen to create one ZZ TEST department assigned only to Demo Branch2 (201), edit its description (200), reload and read the saved change (200), then deactivate it (200). It had zero employees. The inspected `department-action-staging-20261013.png` shows the saved card. Guarded cleanup job-db6u6g59fdbs73ecnlgg checked30 incoming reference columns and removed exactly one department and one branch assignment; the final API detail read is404. No branch or employee was edited. SCRUM-523 scheduling ownership remains the active story item; source and independent review are in progress, not released.
+
+[Inspected department card](../jira-comments/attachments/SCRUM-193/department-action-staging-20261013.png). This establishes the administrator create/edit/reload/deactivate journey on staging; it does not imply every lower-role or organization write variant was exercised. The older deferred department-action notes below are superseded for this named journey.
+
 ## Branch tenant follow-up, 1 October
 
 The media acceptance drive exposed `/api/branches` returning other tenants' branches to a signed-in all-branch manager. The app-owned follow-up scopes branch list and detail to the signed-in tenant; admin create ignores a supplied tenant, while edit, delete and logo actions require the owning branch and cannot move its tenant. The existing linked-employee branch fallback remains inside the tenant boundary. A disposable local two-tenant route probe passed own-tenant reads/writes and cross-tenant refusals among 19 branch/camp assertions, then removed its fixtures. The build passed, typecheck retained 541 inherited errors with no new edited-region finding, and scoped lint had no edited-region error. Source `60f7256e` is live on oto-app-staging as `dep-dauonbk1nsns73f427kg` and received the signed-in recheck below.
