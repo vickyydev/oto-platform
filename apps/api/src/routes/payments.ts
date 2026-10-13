@@ -13,7 +13,7 @@ import { TERMINAL_OUTCOME_KINDS, TERMINAL_TENDERS } from '@oto/box-agent';
 import type { App } from '../app';
 import { AppError, errors } from '../lib/errors';
 import { boxAuthOf } from '../plugins/credential';
-import { inProcessBox } from '../services/box';
+import { boxSettings, inProcessBox } from '../services/box';
 import { loadDevice } from '../services/fleet';
 import { opCtx, withTx } from '../services/tx';
 import {
@@ -303,7 +303,8 @@ export async function paymentRoutes(app: App): Promise<void> {
   app.post(
     '/attempts/:id/result',
     {
-      config: { credential: 'box' },
+      // The per-address ceiling every other route a box calls carries (SCRUM-389).
+      config: { credential: 'box', rateLimit: { max: boxSettings().ipRateMax, timeWindow: 60_000 } },
       schema: {
         description:
           'What the terminal did. Its own endpoint rather than a command result: a guest finding ' +

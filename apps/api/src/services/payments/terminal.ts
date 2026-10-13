@@ -459,7 +459,14 @@ export async function queueTerminalCommand(
     entityId: input.boxId,
     actionId: input.actionId,
     requestId: input.requestId,
-    after: { commandId: id, kind: 'terminal_sale', payload: input.payload, actionId: input.actionId },
+    // The command keeps a void's approval code (the terminal needs it); the
+    // audit row does not, masked as the redactor masks it everywhere else.
+    after: {
+      commandId: id,
+      kind: 'terminal_sale',
+      payload: input.payload.approvalCode ? { ...input.payload, approvalCode: '[redacted]' } : input.payload,
+      actionId: input.actionId,
+    },
   });
   return id;
 }
@@ -1267,6 +1274,13 @@ export async function recordTerminalRun(
  * it before anybody pays.
  *
  * It changes no status. A QR on a screen is not money.
+ *
+ * SCRUM-390 — ONLY WHILE THE ATTEMPT IS IN FLIGHT. A progress post is the box
+ * telling us what the terminal drew before the answer; one that arrives late
+ * or twice, after the final result has settled the attempt, would overwrite
+ * the reference a reconciliation searches by. It is read under the attempt's
+ * row lock (the lock the final result takes) and answered with the attempt as
+ * it stands, nothing written, once the attempt has left flight.
  */
 export async function recordTerminalProgress(
   tx: Tx,
@@ -1276,6 +1290,14 @@ export async function recordTerminalProgress(
   if (report.kind !== 'qr_payload' || !report.qrPayload) {
     return attemptView(loaded.attempt);
   }
+  const [locked] = await tx
+    .select()
+    .from(paymentAttempt)
+    .where(eq(paymentAttempt.id, loaded.attempt.id))
+    .for('update')
+    .limit(1);
+  const current = locked ?? loaded.attempt;
+  if (!IN_FLIGHT.includes(current.status)) return attemptView(current);
   const stamped = await stampAttempt(tx, loaded.attempt.id, {
     qrPayload: report.qrPayload,
     ...(report.tranRef ? { tranRef: report.tranRef } : {}),

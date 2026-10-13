@@ -590,6 +590,30 @@ describe('PLANT — the box reports the same approval twice', () => {
     // And a replay is not an exchange with a terminal, so it writes no run.
     expect((await ctx.db.select().from(opsRun)).length).toBe(runsBefore);
   });
+
+  it('a progress post arriving after the final result leaves the settled references alone (SCRUM-390)', async () => {
+    const { saleId } = await commitSale();
+    await setOutcome(cardDeviceId, { outcome: 'approved' });
+    const started = await startTender(saleId);
+    const attemptId = (started.json() as { attempt: { id: string } }).attempt.id;
+    for (let i = 0; i < 10 && (await attemptRow(attemptId)).status === 'sent_to_terminal'; i += 1) {
+      await agent.runPendingCommands();
+    }
+    const settled = await attemptRow(attemptId);
+    expect(settled.status).toBe('approved');
+
+    const late = await postResult(attemptId, {
+      stage: 'progress',
+      kind: 'qr_payload',
+      qrPayload: '000201LATE',
+      tranRef: 'LATE-REF-1',
+    });
+    expect(late.statusCode, late.body).toBe(200);
+    // The route carries the per-address ceiling the other box routes do (SCRUM-389).
+    expect(late.headers['x-ratelimit-limit']).toBeDefined();
+    const after = await attemptRow(attemptId);
+    expect(after).toMatchObject({ status: 'approved', tranRef: settled.tranRef, qrPayload: settled.qrPayload });
+  });
 });
 
 // --- No final answer, and the inquiry that follows ---------------------------
