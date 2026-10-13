@@ -902,6 +902,69 @@ describe('a code’s usage limits, counted from the sales that carried it', () =
     ]);
     expect(again.rows).toEqual([]);
   });
+
+  /** The finalised sales that carried a code — its uses, as the limit counts them. */
+  async function finalisedWith(code: string): Promise<number> {
+    const rows = await ctx.db
+      .select({ saleId: saleDiscount.saleId })
+      .from(saleDiscount)
+      .innerJoin(sale, eq(sale.id, saleDiscount.saleId))
+      .where(and(eq(saleDiscount.code, code), eq(sale.status, 'finalised')));
+    return new Set(rows.map((row) => row.saleId)).size;
+  }
+
+  it('usage_limit 1 (SCRUM-514): two sales holding its last use both pass the quote, and only one of them closes', async () => {
+    await define('LASTONE', { ...fixed(b(100)), usageLimit: 1 });
+    const cart = () => ({ ...kids(), promos: [described('LASTONE')] });
+    const a = await quoteAndCommit(tillA, cart());
+    const c = await quoteAndCommit(tillA, cart());
+    // Neither is closed yet, so neither has used the code: both were honoured.
+    expect(a.quote.rejectedPromoCodes).toEqual([]);
+    expect(c.quote.rejectedPromoCodes).toEqual([]);
+
+    // Closed at the same moment: the definition's lock makes one wait for the other.
+    const closes = await Promise.all([finalise(tillA, a.saleId), finalise(tillA, c.saleId)]);
+    expect(closes.map((res) => res.statusCode).sort()).toEqual([200, 409]);
+    const refused = closes.find((res) => res.statusCode === 409)!;
+    expect(refused.json().error).toMatchObject({
+      code: 'PROMO_CODE_USED_UP',
+      // The quote's own words for a code with no use left.
+      message: 'Code "LASTONE" is used up — its one use has been taken.',
+    });
+    expect(await finalisedWith('LASTONE')).toBe(1);
+    // The refused sale is left as it was, still owing, with nothing taken for it.
+    const left = closes[0]!.statusCode === 409 ? a.saleId : c.saleId;
+    expect((await saleRow(left))!.status).toBe('tendering');
+
+    // Nor is a card asked for on it: the tender guard counts the same way, before any money.
+    const card = await ctx.app.inject({
+      method: 'POST',
+      url: '/payments/attempts',
+      headers: { cookie: tillA },
+      payload: { saleId: left, tender: 'card' },
+    });
+    expect(card.statusCode, card.body).toBe(409);
+    expect(card.json().error.code).toBe('PROMO_CODE_USED_UP');
+  });
+
+  it('per_customer_limit 1 (SCRUM-514): a member’s second open sale with the code is refused at its close', async () => {
+    await define('ONCECLOSE', { ...fixed(b(100)), perCustomerLimit: 1 });
+    const cart = () => ({ ...kids(), memberId: jamesId, promos: [described('ONCECLOSE')] });
+    const first = await quoteAndCommit(tillA, cart());
+    const second = await quoteAndCommit(tillA, cart());
+    expect(second.quote.rejectedPromoCodes).toEqual([]);
+
+    expect((await finalise(tillA, first.saleId)).statusCode).toBe(200);
+    const refused = await finalise(tillA, second.saleId);
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().error).toMatchObject({
+      code: 'PROMO_CODE_USED_UP',
+      message: 'Code "ONCECLOSE" can only be used once per customer.',
+    });
+    expect(await finalisedWith('ONCECLOSE')).toBe(1);
+    // A retried close of the sale that did use it is still answered as closed.
+    expect((await finalise(tillA, first.saleId)).statusCode).toBe(200);
+  });
 });
 
 // --- (g) ---------------------------------------------------------------------

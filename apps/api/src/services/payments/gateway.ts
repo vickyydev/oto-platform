@@ -48,6 +48,7 @@ import {
   type BookingPaidOutcome,
 } from '../booking-payment';
 import { assertSaleVouchersHeld } from '../vouchers';
+import { assertSalePromoUsesLeft } from '../promo-codes';
 import { assertSaleExtensionCollectable, extensionHoldsClose } from '../sale-extension-lifecycle';
 import { assertSaleBenefitsLive } from '../benefit-checkout';
 import {
@@ -583,6 +584,16 @@ export async function openQrAttempt(
         },
         new Date(),
       );
+      /**
+       * SCRUM-514 — nor on a sale holding a promo code whose last use another sale
+       * has taken since this one was rung up (PROMO_CODE_USED_UP), counted under
+       * the code's lock as the close counts it — asked before the guest is asked
+       * for money, and only while none has been taken: a part payment already in
+       * is not left on a sale that cannot close.
+       */
+      if ((await outstandingAfter(tx, saleRow)) === saleRow.grossSatang) {
+        await assertSalePromoUsesLeft(tx, saleRow);
+      }
     }
     const [st] = await tx.select().from(station).where(eq(station.id, input.stationId)).limit(1);
     if (!st || st.operatorId !== input.operatorId || st.branchId !== input.branchId || st.archivedAt) {

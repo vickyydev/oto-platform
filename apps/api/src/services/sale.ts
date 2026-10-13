@@ -96,6 +96,7 @@ import {
 import { resolveDrawerKick, type DrawerKick } from './payments/drawer';
 import { resolveLineVariant, variantLineLabel } from './product-variants';
 import {
+  assertSalePromoUsesLeft,
   resolveCartPromos,
   unknownPromoCode,
   type FreeItemLine,
@@ -3821,6 +3822,15 @@ export async function commitSale(
       appliedAt: now,
     });
   }
+  /**
+   * SCRUM-514 — a ฿0 sale closed here uses its codes here, so their limits
+   * are counted here under the definitions' locks, as `finaliseSale` counts
+   * them for every other close. Not for a booking's redemption or a box's
+   * replay, whose codes were used when the money was taken.
+   */
+  if (finalising && promoPricing !== 'as_recorded' && options.printing !== 'skip' && !input.bookingId) {
+    await assertSalePromoUsesLeft(tx, { id: saleId, operatorId: actor.operatorId, memberId: values.memberId ?? null });
+  }
 
   /**
    * S2-10b — which voucher this sale was priced with, recorded with the sale:
@@ -4323,8 +4333,17 @@ export async function finaliseSale(
     input.prepaidGate === 'refuse' && !handedOverOffline && !moneyTaken ? 'refuse' : 'file';
   let settledAtPickup: SettledPrepaidLine[] = [];
   let usedUp: UsedUpPrepaidLine[] = [];
-  if (prepaidGate === 'refuse') await assertSalePrepaidServable(tx, row);
-  else {
+  if (prepaidGate === 'refuse') {
+    await assertSalePrepaidServable(tx, row);
+    /**
+     * SCRUM-514 — the code's limit, counted where the use is taken, under the
+     * same rule as the prepaid lines: the counter's own close, before any money
+     * is recorded against the sale. A close that cannot be refused — money
+     * already in, a paid QR, a box's replay, a booking's redemption — files the
+     * code as the commit priced it.
+     */
+    await assertSalePromoUsesLeft(tx, row);
+  } else {
     settledAtPickup = await prepaidSettledAtPickup(tx, row);
     // Food a box handed over offline was served already: its redemption files
     // any shortfall. Any other close sets aside, unserved, a prepaid line

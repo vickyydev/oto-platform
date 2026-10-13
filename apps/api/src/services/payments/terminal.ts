@@ -30,6 +30,7 @@ import { audit } from '../audit';
 import { boxSettings } from '../box';
 import { recordRun } from '../ops';
 import { assertSaleVouchersHeld } from '../vouchers';
+import { assertSalePromoUsesLeft } from '../promo-codes';
 import { assertSaleExtensionCollectable } from '../sale-extension-lifecycle';
 import { assertSaleBenefitsLive } from '../benefit-checkout';
 import { settleRefundSlice } from '../refund-slices';
@@ -583,6 +584,16 @@ export async function startTerminalTender(
     },
     new Date(),
   );
+  /**
+   * SCRUM-514 — nor on a sale holding a promo code whose last use another sale
+   * has taken since this one was rung up (PROMO_CODE_USED_UP), counted under
+   * the code's lock as the close counts it — asked before the guest is asked
+   * for money, and only while none has been taken: a part payment already in
+   * is not left on a sale that cannot close.
+   */
+  if ((await outstandingAfter(tx, saleRow)) === saleRow.grossSatang) {
+    await assertSalePromoUsesLeft(tx, saleRow);
+  }
 
   const owed = await outstandingAfter(tx, saleRow);
   const amountSatang = input.amountSatang ?? owed;

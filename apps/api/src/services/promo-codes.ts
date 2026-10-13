@@ -1,7 +1,8 @@
-import { and, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { branch, discountDefinition, product, sale, saleDiscount, type Db } from '@oto/db';
 import type { CartPromo, DiscountTarget } from '@oto/shared';
 import { z } from 'zod';
+import { errors } from '../lib/errors';
 import { raiseAlert } from './ops';
 import type { PromoDiscountInput } from './sale';
 import type { Exec, OpContext } from './tx';
@@ -260,6 +261,8 @@ async function finalisedUses(
   db: Exec,
   definition: DefinitionRow,
   memberId: string | null,
+  /** SCRUM-514 — the sale being closed, never one of its own earlier uses. */
+  exceptSaleId: string | null = null,
 ): Promise<number> {
   const [row] = await db
     .select({ uses: sql<number>`count(distinct ${saleDiscount.saleId})::int` })
@@ -273,9 +276,92 @@ async function finalisedUses(
         gte(saleDiscount.createdAt, definition.createdAt),
         eq(sale.status, 'finalised'),
         ...(memberId ? [eq(sale.memberId, memberId)] : []),
+        ...(exceptSaleId ? [ne(sale.id, exceptSaleId)] : []),
       ),
     );
   return Number(row?.uses ?? 0);
+}
+
+/** The words a code past its usage limit is refused in — at the quote and at the close alike. */
+function usedUp(code: string, usageLimit: number): string {
+  return usageLimit === 1
+    ? `Code "${code}" is used up — its one use has been taken.`
+    : `Code "${code}" is used up — all ${usageLimit} of its uses have been taken.`;
+}
+
+/** The words a code past its per-customer limit is refused in. */
+function usedUpByCustomer(code: string, perCustomerLimit: number): string {
+  return `Code "${code}" can only be used ${
+    perCustomerLimit === 1 ? 'once' : `${perCustomerLimit} times`
+  } per customer.`;
+}
+
+/**
+ * SCRUM-514 — THE LIMIT, ASKED AGAIN WHERE THE USE IS TAKEN.
+ *
+ * The quote and the commit count a code's finalised uses (`judge`), but a sale
+ * uses a code when it CLOSES, and two sales holding the last use of the same
+ * code both pass that count while neither is closed. This is the count that
+ * decides: run in the transaction that closes the sale, after locking the
+ * definition rows of the codes on it (in id order, so two sales holding the
+ * same pair of codes cannot deadlock). A second close of the same code waits
+ * for the first to commit, and its count — a new statement, under read
+ * committed — then sees the first sale finalised and refuses this one in the
+ * words the quote uses. The sale is left as it was, still owing; taking the
+ * code off and ringing it up again is the counter's way on.
+ *
+ * Asked only where a refusal can still be acted on, before any money is
+ * recorded against the sale: the counter's own close (`finaliseSale`), a ฿0
+ * sale closed at its commit, and the card and QR tender guards
+ * (`startTerminalTender`, `openQrAttempt`), which ask before the guest is asked
+ * to pay. A close that cannot be refused — money already in, a paid QR, a box's
+ * replay, a booking's redemption — files the code as the commit priced it.
+ *
+ * A code with no live definition is not this question (a voucher's row, or a
+ * code archived since the commit): there is no limit left to keep.
+ */
+export async function assertSalePromoUsesLeft(
+  db: Exec,
+  closing: { id: string; operatorId: string; memberId: string | null },
+): Promise<void> {
+  const rows = await db
+    .selectDistinct({ code: saleDiscount.code })
+    .from(saleDiscount)
+    .where(and(eq(saleDiscount.saleId, closing.id), eq(saleDiscount.kind, 'promo')));
+  const codes = rows.map((row) => row.code).filter((code): code is string => !!code);
+  if (codes.length === 0) return;
+  const definitions = await db
+    .select()
+    .from(discountDefinition)
+    .where(
+      and(
+        eq(discountDefinition.operatorId, closing.operatorId),
+        inArray(discountDefinition.code, codes),
+        isNull(discountDefinition.archivedAt),
+      ),
+    )
+    .orderBy(asc(discountDefinition.id))
+    .for('update');
+  for (const definition of definitions) {
+    if (definition.usageLimit !== null) {
+      const uses = await finalisedUses(db, definition, null, closing.id);
+      if (uses >= definition.usageLimit) {
+        throw errors.conflict('PROMO_CODE_USED_UP', usedUp(definition.code, definition.usageLimit), {
+          code: definition.code,
+        });
+      }
+    }
+    if (definition.perCustomerLimit !== null && closing.memberId) {
+      const uses = await finalisedUses(db, definition, closing.memberId, closing.id);
+      if (uses >= definition.perCustomerLimit) {
+        throw errors.conflict(
+          'PROMO_CODE_USED_UP',
+          usedUpByCustomer(definition.code, definition.perCustomerLimit),
+          { code: definition.code },
+        );
+      }
+    }
+  }
 }
 
 /**
@@ -405,11 +491,7 @@ async function judge(
     if (definition.usageLimit !== null) {
       const uses = await finalisedUses(db, definition, null);
       if (uses >= definition.usageLimit) {
-        refuse(
-          definition.usageLimit === 1
-            ? `Code "${code}" is used up — its one use has been taken.`
-            : `Code "${code}" is used up — all ${definition.usageLimit} of its uses have been taken.`,
-        );
+        refuse(usedUp(code, definition.usageLimit));
         continue;
       }
     }
@@ -418,11 +500,7 @@ async function judge(
     if (definition.perCustomerLimit !== null && scope.memberId) {
       const uses = await finalisedUses(db, definition, scope.memberId);
       if (uses >= definition.perCustomerLimit) {
-        refuse(
-          `Code "${code}" can only be used ${
-            definition.perCustomerLimit === 1 ? 'once' : `${definition.perCustomerLimit} times`
-          } per customer.`,
-        );
+        refuse(usedUpByCustomer(code, definition.perCustomerLimit));
         continue;
       }
     }
