@@ -6,8 +6,10 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 import pg from "pg";
 import type { Request, Response } from "express";
+import { SHIFT_GROUP_REQUIRED, SHIFT_GROUP_DELETE_NEEDS_TARGET } from "../server/lib/shiftGroupRequired";
 
 const APP = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, options: "-c search_path=otoapp" });
@@ -43,14 +45,14 @@ async function request(cookie: string, method: string, path: string, body?: unkn
   try { parsed = JSON.parse(text); } catch { /* Empty 204 responses are expected. */ }
   return { status: response.status, body: parsed };
 }
-async function denied(key: string, cookie: string, method: string, path: string, body?: unknown) {
+async function denied(key: string, cookie: string, method: string, path: string, body?: unknown, contract?: { status: number; body: unknown }) {
   stage = key;
   const before = await snapshot();
   const response = await request(cookie, method, path, body);
   const unchanged = before === await snapshot();
   (details[key] ??= []).push({ status: response.status, unchanged });
-  const statuses = key === "malformedParents" ? [400, 404] : [404];
-  results[key] = (results[key] ?? true) && statuses.includes(response.status) && unchanged;
+  const statuses = contract ? [contract.status] : key === "malformedParents" ? [400, 404] : [404];
+  results[key] = (results[key] ?? true) && statuses.includes(response.status) && unchanged && (!contract || isDeepStrictEqual(response.body, contract.body));
 }
 async function park(label: string, isDefault = false): Promise<Park> {
   let tenant = randomUUID();
@@ -136,6 +138,25 @@ try {
   await denied("malformedParents", a.cookie, "GET", `/api/schedule/week?branchId[]=${own.branch}&branchId[]=${foreign.branch}&weekStartDate=${day}`);
   const tpl = await template(own);
   results.ownedTemplate = (await request(a.cookie, "GET", `/api/schedule/templates/${tpl}`)).body?.id === tpl;
+
+  for (const assignment of [own.assignment, randomUUID()]) {
+    await denied("reassignResponses", b.cookie, "PATCH", `/api/schedule/assignments/${assignment}/reassign`, { employeeId: foreign.employee }, { status: 404, body: { message: "Assignment not found" } });
+  }
+  for (const employeeId of [foreign.employee, randomUUID()]) {
+    await denied("reassignResponses", a.cookie, "PATCH", `/api/schedule/assignments/${own.assignment}/reassign`, { employeeId }, { status: 400, body: { message: "New employee not found" } });
+  }
+  for (const shiftGroupId of [undefined, null, "", "   "]) {
+    await denied("groupRefusalResponses", a.cookie, "POST", "/api/schedule/shift-rows", { branchId: own.branch, shiftGroupId, startTime: "18:00", endTime: "20:00" }, { status: 400, body: SHIFT_GROUP_REQUIRED });
+    if (shiftGroupId !== undefined) {
+      for (const path of [`/api/schedule/shift-rows/${own.row}`, `/api/schedule/shift-rows/${own.row}/move-group`]) {
+        await denied("groupRefusalResponses", a.cookie, "PATCH", path, { shiftGroupId }, { status: 400, body: SHIFT_GROUP_REQUIRED });
+      }
+    }
+  }
+  for (const target of [undefined, "", "   "]) {
+    const query = target === undefined ? "" : `?targetGroupId=${encodeURIComponent(target)}`;
+    await denied("groupRefusalResponses", a.cookie, "DELETE", `/api/schedule/shift-groups/${own.group}${query}`, undefined, { status: 400, body: SHIFT_GROUP_DELETE_NEEDS_TARGET });
+  }
 
   for (const path of [
     `/api/schedule/week?branchId=${own.branch}&weekStartDate=${day}`,

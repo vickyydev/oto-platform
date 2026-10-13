@@ -170,8 +170,17 @@ export const requireSchedulePark: RequestHandler = (req, res, next) => {
     else if (route.includes("/audit-log/:id")) pathKind = "history";
     else if (route.includes("/duty-blocks/:id")) pathKind = "dutyBlock";
     else if (route.includes("/duty-types/:id")) pathKind = "dutyType";
+    const isReassign = route === "/api/schedule/assignments/:id/reassign";
     if (pathKind) {
-      const row = await read(pathKind, req.params.id);
+      let row: RecordData | undefined;
+      try {
+        row = await read(pathKind, req.params.id);
+      } catch (error) {
+        if (isReassign && error instanceof ScheduleScopeError) {
+          return res.status(404).json({ message: "Assignment not found" });
+        }
+        throw error;
+      }
       if (pathKind === "history" && route.endsWith("/restore") && row?.snapshot_data) {
         await assertScheduleSnapshotScope(row.snapshot_data, tenantId);
       }
@@ -184,7 +193,18 @@ export const requireSchedulePark: RequestHandler = (req, res, next) => {
     };
     for (const values of [req.params, req.query, req.body || {}]) {
       for (const [field, kind] of Object.entries(fields)) {
-        if (values[field] != null && values[field] !== "") await read(kind, values[field]);
+        if (values[field] == null || values[field] === "") continue;
+        // Blank group selection belongs to the handler's existing form validation.
+        if ((field === "shiftGroupId" || field === "targetGroupId") && typeof values[field] === "string" && !values[field].trim()) continue;
+        try {
+          await read(kind, values[field]);
+        } catch (error) {
+          // Reassign keeps its established employee refusal while checking all parents.
+          if (isReassign && field === "employeeId" && error instanceof ScheduleScopeError) {
+            return res.status(400).json({ message: "New employee not found" });
+          }
+          throw error;
+        }
       }
     }
     const body = req.body || {};
