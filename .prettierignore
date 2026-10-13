@@ -5,3 +5,5 @@ pnpm-lock.yaml
 imports
 docs/qa/jira-comments
 **/migrations
+packages/api-types/openapi.json
+packages/api-types/src/openapi.ts

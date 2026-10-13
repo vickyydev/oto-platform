@@ -20,6 +20,9 @@ export default tseslint.config(
       // every `console.*` call goes through.
       'apps/oto-app/**',
       '**/migrations/**',
+      // Generated from the api's OpenAPI document (SCRUM-272); its drift
+      // check is `pnpm api-types:check`, not a style rule.
+      'packages/api-types/src/openapi.ts',
       // Raw Replit exports are reference material, never part of the build.
       'imports/**',
       'docs/**',

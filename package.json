@@ -14,6 +14,8 @@
     "db:migrate": "pnpm --filter @oto/db migrate",
     "db:seed": "pnpm --filter @oto/db seed",
     "db:platform-sync": "pnpm --filter @oto/db platform:sync",
+    "api-types:generate": "pnpm --filter @oto/api api-types",
+    "api-types:check": "pnpm --filter @oto/api api-types --check",
     "format": "prettier --write ."
   },
   "devDependencies": {
