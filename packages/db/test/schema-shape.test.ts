@@ -379,10 +379,9 @@ const PARTIAL_UNIQUE_EXEMPT: Record<string, string> = {
  * Known failures — SCRUM-273, and SCRUM-253 for the branch.
  *
  * Each of these makes a business key unreusable for ever: archive the row and
- * the name, code or phone number it held can never be taken again. The sharp
- * one is `crm.member.member_phone_unique`, which sits on the park's primary
- * customer key — reception archives a mistyped duplicate and the real person
- * can no longer be created.
+ * the name, code or phone number it held can never be taken again. Migration
+ * 0076 made the member phone, the tier code and the ticket package name
+ * partial; these are what is left.
  *
  * The fix is a migration per index, and it is cheap now and dear later,
  * because each one has to run against rows that may already have collided
@@ -391,10 +390,7 @@ const PARTIAL_UNIQUE_EXEMPT: Record<string, string> = {
 const UNIQUE_NOT_PARTIAL = [
   'core.branch.branch_code_unique',
   'core.role_assignment.role_assignment_unique',
-  'crm.member.member_phone_unique',
-  'crm.tier.tier_code_unique',
   'pos.booking.booking_reference_unique',
-  'pos.ticket_package.ticket_package_name_unique',
   'promo.voucher_definition.voucher_definition_code_unique',
 ];
 

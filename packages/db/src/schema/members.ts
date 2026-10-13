@@ -38,7 +38,10 @@ export const tier = crm.table(
     ...archivedAt,
   },
   (t) => [
-    uniqueIndex('tier_code_unique').on(t.operatorId, t.code),
+    /** Partial (SCRUM-273): an archived tier does not hold its code. */
+    uniqueIndex('tier_code_unique')
+      .on(t.operatorId, t.code)
+      .where(sql`archived_at is null`),
     index('tier_operator_idx').on(t.operatorId),
   ],
 );
@@ -84,7 +87,15 @@ export const member = crm.table(
     ...archivedAt,
   },
   (t) => [
-    uniqueIndex('member_phone_unique').on(t.operatorId, t.phone),
+    /**
+     * Partial (SCRUM-273): an archived member no longer holds the phone. The
+     * prototype's admin delete removed the member outright and freed the
+     * number; archiving keeps the history but must free it the same way, or a
+     * mistyped duplicate reception archives blocks the real person for ever.
+     */
+    uniqueIndex('member_phone_unique')
+      .on(t.operatorId, t.phone)
+      .where(sql`archived_at is null`),
     index('member_operator_idx').on(t.operatorId),
     index('member_phone_idx').on(t.phone),
     check(

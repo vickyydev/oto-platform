@@ -1109,13 +1109,35 @@ export async function ensureDemoBranch(db: Db): Promise<DemoBranch> {
         .onConflictDoNothing({ target: s.branchTaxConfig.branchId });
     }
 
-    // The park's ticket packages, under the demo branch's own ids.
-    for (const pkg of await tx.select().from(s.ticketPackage).where(eq(s.ticketPackage.branchId, template.id))) {
+    // The park's ticket packages, under the demo branch's own ids. Once per
+    // name: the name's index ignores archived rows (SCRUM-273), so the
+    // conflict target alone would copy every archived package again on each
+    // run — the names already at the demo branch, archived or not, are skipped.
+    const atDemo = new Set(
+      (
+        await tx
+          .select({ name: s.ticketPackage.name })
+          .from(s.ticketPackage)
+          .where(eq(s.ticketPackage.branchId, branch.id))
+      ).map((r) => r.name),
+    );
+    // Live rows first, so a name the park archived and then reused copies its live package.
+    const templatePackages = await tx
+      .select()
+      .from(s.ticketPackage)
+      .where(eq(s.ticketPackage.branchId, template.id))
+      .orderBy(sql`${s.ticketPackage.archivedAt} is not null`);
+    for (const pkg of templatePackages) {
+      if (atDemo.has(pkg.name)) continue;
+      atDemo.add(pkg.name);
       const { id: _id, branchId: _branchId, createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = pkg;
       await tx
         .insert(s.ticketPackage)
         .values({ ...rest, id: newId(), branchId: branch.id })
-        .onConflictDoNothing({ target: [s.ticketPackage.branchId, s.ticketPackage.name] });
+        .onConflictDoNothing({
+          target: [s.ticketPackage.branchId, s.ticketPackage.name],
+          where: sql`archived_at is null`,
+        });
     }
 
     // A till and nothing on a wall: no box and no device, so the demo branch

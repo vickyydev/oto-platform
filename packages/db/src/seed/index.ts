@@ -31,7 +31,7 @@ import {
   type TaxConfigShape,
   type WWPrice,
 } from '@oto/shared';
-import { and, eq, isNull, notInArray, sql } from 'drizzle-orm';
+import { and, eq, isNull, notInArray, sql, type SQL } from 'drizzle-orm';
 import { closeDb, getDb, type Db } from '../index';
 import { reconcileAppBranches } from '../schema/otoapp';
 import { seedMenu } from './menu';
@@ -42,6 +42,28 @@ import { seedBenefitCredentials, seedBenefits } from './benefits';
 import { DEFAULT_TENDERS, syncDefaultTenders, upsertDefaultTenders } from './tenders';
 import { stableJson } from './stable-id';
 import * as s from '../schema/index';
+
+/**
+ * The row holding a business key, live or archived — a live one first.
+ *
+ * `member_phone_unique`, `tier_code_unique` and `ticket_package_name_unique`
+ * ignore archived rows (SCRUM-273), so an `ON CONFLICT` on them no longer
+ * sees a row an administrator archived. The seed reads first, so that a
+ * record archived on a seeded database is not quietly written back as new.
+ */
+async function keyHolder(
+  db: Db,
+  table: typeof s.member | typeof s.tier | typeof s.ticketPackage,
+  where: SQL,
+): Promise<{ archived: boolean } | null> {
+  const [row] = await db
+    .select({ archivedAt: table.archivedAt })
+    .from(table)
+    .where(where)
+    .orderBy(sql`${table.archivedAt} is not null`)
+    .limit(1);
+  return row ? { archived: row.archivedAt !== null } : null;
+}
 
 /**
  * A trading day of sales across every tender (S2-10a), re-exported so that
@@ -394,11 +416,18 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
       { code: 'thai', name: 'Thai', isDefault: false, requiresVerification: true },
     ] as const
   ).entries()) {
+    // The code's index ignores archived rows (SCRUM-273), so the upsert alone
+    // would mint a live tier beside one an administrator archived. A tier
+    // archived here stays archived.
+    if ((await keyHolder(db, s.tier, and(eq(s.tier.operatorId, operatorId), eq(s.tier.code, t.code))!))?.archived) {
+      continue;
+    }
     await db
       .insert(s.tier)
       .values({ id: newId(), operatorId, ...t, sortOrder: i })
       .onConflictDoUpdate({
         target: [s.tier.operatorId, s.tier.code],
+        targetWhere: sql`archived_at is null`,
         set: {
           name: t.name,
           isDefault: t.isDefault,
@@ -569,17 +598,27 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
       medicalAlert?: boolean;
     }>;
   }) => {
+    const phone = normalizePhone(m.phone)!;
+    // Written once, archived or not: the phone's index ignores an archived
+    // member (SCRUM-273), so the insert alone would bring back a demo family
+    // somebody archived.
+    if (await keyHolder(db, s.member, and(eq(s.member.operatorId, operatorId), eq(s.member.phone, phone))!)) {
+      return;
+    }
     const [created] = await db
       .insert(s.member)
       .values({
         id: newId(),
         operatorId,
-        phone: normalizePhone(m.phone)!,
+        phone,
         nickname: m.nickname,
         tierCode: m.tier ?? 'tourist',
         createdVia: 'import',
       })
-      .onConflictDoNothing({ target: [s.member.operatorId, s.member.phone] })
+      .onConflictDoNothing({
+        target: [s.member.operatorId, s.member.phone],
+        where: sql`archived_at is null`,
+      })
       .returning({ id: s.member.id });
     // A demo family is written once. Its children and tier evidence carry no
     // unique key of their own, so the guardian's own row is what stops a
@@ -753,12 +792,17 @@ export async function seed(db: Db = getDb(), opts: SeedOptions = {}): Promise<vo
   for (const forBranch of [branchId, chalongId]) {
     for (const { name, ...rest } of packages) {
       // The catalogue is reference data: a price corrected here reaches a
-      // database that already has the package.
+      // database that already has the package. One the park archived stays
+      // archived: the name's index ignores it (SCRUM-273), so the upsert
+      // alone would put a fresh copy back on the till.
+      const where = and(eq(s.ticketPackage.branchId, forBranch), eq(s.ticketPackage.name, name))!;
+      if ((await keyHolder(db, s.ticketPackage, where))?.archived) continue;
       await db
         .insert(s.ticketPackage)
         .values({ id: newId(), operatorId, branchId: forBranch, name, ...rest })
         .onConflictDoUpdate({
           target: [s.ticketPackage.branchId, s.ticketPackage.name],
+          targetWhere: sql`archived_at is null`,
           set: rest,
         });
     }
@@ -1902,7 +1946,10 @@ async function seedSecondOperator(
       tierCode: 'tourist',
       createdVia: 'import',
     })
-    .onConflictDoNothing({ target: [s.member.operatorId, s.member.phone] })
+    .onConflictDoNothing({
+      target: [s.member.operatorId, s.member.phone],
+      where: sql`archived_at is null`,
+    })
     .returning({ id: s.member.id });
   if (foreignMember) {
     await db.insert(s.child).values({

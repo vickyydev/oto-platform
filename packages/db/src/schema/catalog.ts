@@ -91,13 +91,13 @@ export const ticketPackage = pos.table(
     index('ticket_package_operator_idx').on(t.operatorId),
     index('ticket_package_branch_idx').on(t.branchId),
     /**
-     * NOT partial, and SCRUM-273 is the ticket to make it so — an archived
-     * package holds its name for ever today. It is left alone here because the
-     * change is two files, not one: the seed upserts a package with `ON
-     * CONFLICT (branch_id, name)`, and Postgres will not infer a partial index
-     * for that unless the same predicate is named in the conflict target.
+     * Partial (SCRUM-273): an archived package no longer holds its name. Any
+     * `ON CONFLICT (branch_id, name)` must name the same predicate, or
+     * Postgres will not infer this index — the seed's upsert does.
      */
-    uniqueIndex('ticket_package_name_unique').on(t.branchId, t.name),
+    uniqueIndex('ticket_package_name_unique')
+      .on(t.branchId, t.name)
+      .where(sql`archived_at is null`),
   ],
 );
 
