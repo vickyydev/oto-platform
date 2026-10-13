@@ -17,6 +17,35 @@ names and birth dates). The Pisell and Papaya sync pipelines and the five
 push/import/wipe routes were deleted: Radar's figures come from the OTO POS
 rollup (`GET /analytics/summary`), not from those systems.
 
+## Sign-on and the route census
+
+Radar has no users of its own: the platform session is the identity. The
+launcher opens `https://<radar>/#handoff=<token>`; the client posts the token
+to `POST /api/auth/handoff`, which exchanges it with the platform
+(`POST /auth/handoff/exchange`, sent from `RADAR_PUBLIC_ORIGIN`) and sets an
+httpOnly `radar_session` cookie carrying the platform session's own token.
+Every private request asks the platform who that is (`GET /me`,
+`GET /me/permissions`, cached ten seconds) and needs `app:radar:access`.
+`POST /api/auth/sign-out` clears Radar's cookie only.
+
+`server/routeCensus.ts` lists every route as public, key-protected or
+guarded; anything under `/api` that is not public or key-protected needs the
+session, listed or not. `npm run test:census` walks the router and fails on
+a route nobody classified.
+
+## Figures
+
+Every park's figures come from the platform's `GET /analytics/summary` (the
+OTO POS rollup) through `server/sources/otoPos.ts`, read with the signed-in
+person's own session — Radar holds no service credential, so the platform
+decides what each person may see. The booth report reads
+`GET /analytics/booths` the same way. Radar's park keys (`floresta`,
+`chalong`) are matched to platform branches by name. The Pisell and Papaya
+pipelines, their tables and every screen that read them are gone.
+
+The external marketing summary keeps its key and rate limit but answers 503:
+it has no person's session to read the platform with.
+
 ## Schema
 
 Tables live in schema `radar` of the platform database. The SQL is
@@ -40,11 +69,13 @@ DATABASE_URL=postgres://... npm run dev          # or: npm run build && npm star
 | Variable | Needed for |
 |---|---|
 | `DATABASE_URL` | Always. A direct (non-transaction-pooled) Postgres URL. |
+| `PLATFORM_API_URL` | Sign-on and every figure: the platform api's base URL. Unset, private routes answer 503. |
+| `RADAR_PUBLIC_ORIGIN` | Sign-on: Radar's own origin, equal to the `radar=` entry of the api's `HANDOFF_APP_ORIGINS` (and listed in its `ALLOWED_ORIGINS`). |
 | `PORT` | Listen port (default 5000; 8080 in the image). |
 | `AI_INTEGRATIONS_OPENAI_API_KEY` | The trends assistant; unset answers 503. |
 | `AI_INTEGRATIONS_OPENAI_BASE_URL` | Optional; unset uses the provider default. |
-| `SPIN_WIN_REDEEM_KEY` | The Spin & Win ingest/issue routes; unset answers 503. |
-| `OTO_RADAR_MARKETING_API_KEY` | The external marketing summary; unset answers 503. |
+| `SPIN_WIN_REDEEM_KEY` | The legacy wheel's ingest/issue routes, kept until its URL retires at cutover; unset answers 503. |
+| `OTO_RADAR_MARKETING_API_KEY` | The external marketing summary (authenticates, then 503 — see Figures). |
 | `LOG_RESPONSE_BODY` | `false` keeps response bodies out of logs (the image sets it). |
 | `APP_VERSION`, `APP_CHANGE_ID` | Reported by `/healthz`. |
 

@@ -1165,13 +1165,13 @@ services:
 # Render, but a blueprint applied from it would create every uncommented
 # service as a paid one. The real service is created by hand in the dashboard;
 # this block records what it is meant to carry, so the file still describes
-# the whole deployment. Take the build and start commands, and the app's own
-# variable names, from apps/radar once it lands — the ones below are what the
-# lift is expected to read and are marked where that is an assumption.
+# the whole deployment. The build, start and variable names below are what
+# apps/radar reads (its README lists them).
 #
 # Radar reads its figures from this platform's api (GET /analytics/summary,
 # the OTO POS rollup only — docs/features/oto-radar.md), so its database login
-# is for its own tables (the wheel, its campaign codes), not for the figures.
+# is for its own tables (campaigns, the wheel's codes, planner settings,
+# calendar notes, pace snapshots), not for the figures.
 #
 # Three things move together when the service exists, exactly as for the OTO
 # App, or the launcher's tile opens onto a refusal:
@@ -1184,20 +1184,23 @@ services:
 #
 #  - type: web
 #    name: oto-radar-staging
-#    runtime: node
+#    runtime: docker
 #    region: singapore
 #    plan: starter
 #    branch: main
 #    rootDir: apps/radar
-#    # ONE INSTANCE until its timers (the wheel's resets, if any survive the
-#    # lift) take a lock — the same reason the OTO App gives above.
+#    dockerfilePath: ./Dockerfile
+#    # The image builds client and server (`npm run build`) and carries the
+#    # migrator; the pre-deploy step applies Radar's own migrations to schema
+#    # `radar` before the new instance takes traffic. The server never
+#    # migrates and refuses to start without the ledger.
+#    preDeployCommand: npm run db:migrate
+#    healthCheckPath: /healthz
 #    numInstances: 1
 #    autoDeployTrigger: checksPass
 #    envVars:
-#      - key: NODE_ENV
-#        value: production
-#      - key: TZ
-#        value: UTC
+#      # NODE_ENV, PORT (8080), TZ=UTC and LOG_RESPONSE_BODY=false are set by
+#      # the image.
 #      - key: DATABASE_URL
 #        # Its OWN login, not `fromDatabase` (that one belongs to the api), on
 #        # the database above, inside the 10 the connection budget gives Radar:
@@ -1209,16 +1212,23 @@ services:
 #        #
 #        # A direct connection, not a transaction pooler (advisory locks).
 #        sync: false
-#      # Signing on from the launcher. Names follow the OTO App's
-#      # (PLATFORM_API_URL / its own public origin) — an assumption until
-#      # apps/radar's own .env.example says otherwise.
+#      # Sign-on and figures (apps/radar/README.md): the platform api, and
+#      # Radar's own origin as the api knows it.
 #      - key: PLATFORM_API_URL
 #        value: https://oto-api-staging.onrender.com
 #      - key: RADAR_PUBLIC_ORIGIN
 #        # Must equal the radar= entry in the api's HANDOFF_APP_ORIGINS.
 #        sync: false
+#      - key: SPIN_WIN_REDEEM_KEY
+#        # The legacy wheel's ingest/issue routes, until its URL retires at
+#        # cutover. Unset, those routes answer 503.
+#        sync: false
+#      - key: OTO_RADAR_MARKETING_API_KEY
+#        # The external marketing summary: authenticates, then answers 503
+#        # until the platform offers a machine read of the rollup.
+#        sync: false
 #      - key: AI_INTEGRATIONS_OPENAI_API_KEY
-#        # Optional: the chart assistant. Unset, the feature reports itself
+#        # Optional: the trends assistant. Unset, it reports itself
 #        # unconfigured. Leave AI_INTEGRATIONS_OPENAI_BASE_URL unset off Replit.
 #        sync: false
 #      # NOT SET, and deliberately: the Pisell and Papaya pipeline credentials
