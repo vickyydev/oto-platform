@@ -1,5 +1,11 @@
 # The OTO App lifted whole: the build plan for S2-17b (SCRUM-193)
 
+**13 October 2026, 17:43 Bangkok, story complete:** SCRUM-191 and all twelve child tickets are Done. Eleven linked lift items remain Deployed with images. All six services were observed live on main `2850d89178232f421fbea18cbc4ea583cf3c1910`; the app deployment completed at 16:37 Bangkok. All six main jobs passed in [run 38374525197](https://github.com/vickyydev/oto-platform/actions/runs/38374525197): 4,033 API tests, 32 scheduling controls, 89 feature runtime controls and 30 Console browser checks, plus build and genuine hosted restore/replay. Whole workspace/API compiler output is clean. The app remains at 442 diagnostics across 59 files and 118 file/code buckets, with the 457 ceiling retained. App migrations remain through `0015`.
+
+[Scheduling acceptance](../../../qa/oto-app-lift/round-8/scheduling-scope.md) records own saves/edits and all ten foreign/mixed/replay refusals with unchanged readbacks. The inspected labelled API card is attached to SCRUM-523 and SCRUM-191. Exact cleanup `job-db70ka4s728c73d239u0` removed 13 temporary records and one app session, confirmed absence and preserved the existing park and seeded platform identity. The former session returns 401 after cleanup. Supported unlink alone had retained that active app session; SCRUM-288 now records this additional access-lifecycle case. This cleanup is separate from the earlier 297 content rows, ten files, seven parents and two sessions.
+
+No owner answer is pending for this story. Recorded feature limits remain: face mode off, no positive Xero sandbox exchange, repeated import Apply unproven, no deleted-SOP recovery, staff-inbox delivery only, saved-family API save after UI verification, and existing employee approval rules. The owner decision document is separate from story acceptance. Next is OPEN_ITEMS section 2, beginning with SCRUM-276. Local databases remain off; SCRUM-223 stays paused.
+
 **13 October 2026, 16:11 Bangkok, scheduling source landing:** Candidate915d13ef0ad22679bc8b81cedb3aae0c16571ec3 passed all six jobs in run38372589946: API4,033 passed/364 skipped/5 todo (284 passing files,7 skipped), scheduling32/32, feature runtime89/89 and Console browser30. Workspace/API compiler output is clean; the app remains442 diagnostics/59files/118buckets with every full diagnostic unchanged. Build, documents, finance imports and genuine restore/replay passed. Touched lint and the independent review are complete. Rebase retained all four source commits and an empty application/workflow diff from that green candidate. This landing now requires its own full-SHA main gate and observed Render rollout before the prepared staging proof and exact fixture cleanup. SCRUM-523 remains Testing;191 remains In Progress. No owner answer is pending; local databases remain off and223 stays paused. No migration is introduced; app0015 remains current.
 
 **13 October 2026, 16:03 Bangkok, scheduling runtime complete:** Exact candidate 915d13ef0ad22679bc8b81cedb3aae0c16571ec3 passed all 32 scheduling controls and all 89 feature runtime controls in hosted run38372589946. The app build, document checks, finance imports and genuine restore/replay passed. Whole app compiler output is unchanged at442 diagnostics/59files/118buckets. The bounded finance test coordination completed in about one second. Remaining workspace/API jobs still determine the complete candidate gate; no main source landing or new deployment is claimed. SCRUM-523 remains Testing and SCRUM-191 In Progress. All six staging services still run5b2f049f. Prepared isolated scheduling proof and exact fixture cleanup follow the green candidate/main gates and observed deployment. No owner answer is pending; local databases remain off and223 stays paused.
@@ -1423,7 +1429,7 @@ Release sequencing: R7a introduces app 0009 and the owning Data Admin writers wh
 12 October round7 consistency (SCRUM-516 under SCRUM-191): actual second-park camp/registration201 and own child history200/foreign404, but own core camp check-in404. All five attendance mutations use the default park. Their caller/kiosk tenant plus parent event/branch guards are assigned to R7, preserving Bangkok-day, attendance, undo and replay behavior; fresh peer pins and staged recheck are required. Shared role metadata/deactivation remains Q54's explicit one-set default; the owner-only alternative stays a standing review pin.
 
 
-12 October staging follow-through: [round 5’s ten action/refusal pages](../../../qa/oto-app-lift/round-5/README.md) record device, clock, leave, operations and media cases. Q39’s other-park shift-group read remains200 on the exact ZZ TEST fixture. Read-only job job-db6bq3ad0e5s73a5cndg counted people0 (none/one/several all0); app users7, strictly placed6, unplaced-or-inconsistent1, several-access-groups0. This includes the temporary practice user and changes no data.
+12 October staging follow-through: [round 5’s ten action/refusal pages](../../../qa/oto-app-lift/round-5/README.md) record device, clock, leave, operations and media cases. Q39’s other-park shift-group read remains 200 on the exact ZZ TEST fixture. Read-only job job-db6bq3ad0e5s73a5cndg counted people0 (none/one/several all0); app users7, strictly placed6, unplaced-or-inconsistent1, several-access-groups0. This includes the temporary practice user and changes no data.
 
 - **Copied employees have no platform department.** The app's departments
   do not correspond to the platform's.
@@ -1997,9 +2003,12 @@ Release sequencing: R7a introduces app 0009 and the owning Data Admin writers wh
   `shifts` in the range are unassigned"), so here the default follows H14,
   not the live app. The alternatives are the live app's no-op on a later
   approve, or a range widened to the leave's Bangkok days.
-- **Q39. The rota answers across branches and park groups (round 5's
-  proof).** Follow-through: **SCRUM-523**, recorded in the existing fix block;
-  the finding remains open until its owned/foreign/replay evidence is recorded. The week plan, shift groups, rows, assignments and templates
+- **Q39. The rota answers across branches and park groups (round 5's proof).**
+  **13 October resolution:** SCRUM-523 is Done; the full main gate and
+  [staging proof](../../../qa/oto-app-lift/round-8/scheduling-scope.md) establish
+  park-group boundaries with exact cleanup complete. Existing within-park
+  branch choices remain the default. The following round 5 observation is
+  historical: the week plan, shift groups, rows, assignments and templates
   (`/api/schedule/*`) carry no branch rule and no park-group rule: a manager
   limited to one branch reads and changes every branch's rota, and any
   manager reads another park group's rota and adds rows to it by its ids

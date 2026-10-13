@@ -24,4 +24,12 @@ This is authenticated API evidence. The isolated branch is not listed in the pla
 
 ## Exact temporary record cleanup
 
-Pending the guarded preview and removal. Supported unlink returned 200 and cleared the platform account stamp. The existing app session still returned 200 while the app user remained active. Exact removal of this newly created app user and its one session, followed by a 401 readback, remains required. The existing access lifecycle follow-through belongs to SCRUM-288; it is not represented as a scheduling delivery or as immediate session revocation.
+Preview job-db70jnl9fdbs73ekmf70 selected exactly 13 rows and one session, checking 328 foreign-key columns and 1,563 additional reference columns. Apply job-db70ka4s728c73d239u0 matched that preview fingerprint and committed all exact removals, verified absence and retained the seeded account, employee, operator, branch, administrator assignment and existing park.
+
+Supported unlink returned 200 and cleared the platform account stamp. The existing active app session still returned 200 until exact temporary-user/session removal; final `/api/user` returned 401. This access-lifecycle observation is recorded under the existing SCRUM-288 item, without changing its priority or approved offboarding behavior.
+
+The manifest comprised two weeks, two groups, two rows, one template, one template row, one branch-access record, one new app user, two branches and one new park. No employee, message or provider credential was created. This is separate from the earlier lift cleanup counts.
+
+## Jira and checkpoint
+
+SCRUM-523 and parent SCRUM-191 are Done; all twelve child tickets are Done. Eleven linked lift deliveries remain Deployed with inspected images. The card above was inspected and attached to SCRUM-523 (attachment 11433) and SCRUM-191. Documentation checkpoint `87d4727c` has no CI run because the workflow excludes documentation; its watcher was stopped after exact-SHA readback returned no runs. The application release remains the fully green source recorded above.

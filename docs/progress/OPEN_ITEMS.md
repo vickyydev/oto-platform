@@ -1,5 +1,11 @@
 # Open items register — defects, decisions, concerns and recommendations
 
+**13 October 2026, 17:43 Bangkok, story complete:** SCRUM-191 and all twelve child tickets are Done. Eleven linked lift items remain Deployed with images. All six services were observed live on main `2850d89178232f421fbea18cbc4ea583cf3c1910`; the app deployment completed at 16:37 Bangkok. All six main jobs passed in [run 38374525197](https://github.com/vickyydev/oto-platform/actions/runs/38374525197): 4,033 API tests, 32 scheduling controls, 89 feature runtime controls and 30 Console browser checks, plus build and genuine hosted restore/replay. Whole workspace/API compiler output is clean. The app remains at 442 diagnostics across 59 files and 118 file/code buckets, with the 457 ceiling retained. App migrations remain through `0015`.
+
+[Scheduling acceptance](../qa/oto-app-lift/round-8/scheduling-scope.md) records own saves/edits and all ten foreign/mixed/replay refusals with unchanged readbacks. The inspected labelled API card is attached to SCRUM-523 and SCRUM-191. Exact cleanup `job-db70ka4s728c73d239u0` removed 13 temporary records and one app session, confirmed absence and preserved the existing park and seeded platform identity. The former session returns 401 after cleanup. Supported unlink alone had retained that active app session; SCRUM-288 now records this additional access-lifecycle case. This cleanup is separate from the earlier 297 content rows, ten files, seven parents and two sessions.
+
+No owner answer is pending for this story. Recorded feature limits remain: face mode off, no positive Xero sandbox exchange, repeated import Apply unproven, no deleted-SOP recovery, staff-inbox delivery only, saved-family API save after UI verification, and existing employee approval rules. The owner decision document is separate from story acceptance. Next is OPEN_ITEMS section 2, beginning with SCRUM-276. Local databases remain off; SCRUM-223 stays paused.
+
 **13 October 2026, 16:03 Bangkok, scheduling runtime complete:** Exact candidate 915d13ef0ad22679bc8b81cedb3aae0c16571ec3 passed all 32 scheduling controls and all 89 feature runtime controls in hosted run38372589946. The app build, document checks, finance imports and genuine restore/replay passed. Whole app compiler output is unchanged at442 diagnostics/59files/118buckets. The bounded finance test coordination completed in about one second. Remaining workspace/API jobs still determine the complete candidate gate; no main source landing or new deployment is claimed. SCRUM-523 remains Testing and SCRUM-191 In Progress. All six staging services still run5b2f049f. Prepared isolated scheduling proof and exact fixture cleanup follow the green candidate/main gates and observed deployment. No owner answer is pending; local databases remain off and223 stays paused.
 
 **13 October 2026, current story priority:** Complete SCRUM-191 first. SCRUM-523 is Testing in the published scheduling candidate; existing same-park rules remain unchanged. Department staging action and exact cleanup are complete. The other recorded fix-block items retain their order after this story. No source release is claimed before the current gate and staging proof pass.
@@ -52,9 +58,7 @@ four new tickets SCRUM-512..515 spun off).*
 
 ## 1. The priority order (the owner's ruling, 9 October)
 
-1. **Finish S2-17b** (SCRUM-191): rounds 1–6 are landed and live. Round 5+6
-   walkthrough evidence remains; rounds 7–8 follow (finance and module
-   walkthroughs, then the restore rehearsal).
+1. **S2-17b (SCRUM-191) is complete.** All twelve child tickets are Done with named staging evidence and recorded limits; scheduling Q39 is resolved under SCRUM-523.
 2. **Then the fix block**: every verified-open defect and small task below
    is worked BEFORE any new story starts. Section 2 is the worked order.
 3. Only then the next story (S2-18 Radar, S2-19 Inbox, S2-22 data,
@@ -75,8 +79,7 @@ evidence (the sweep's full evidence lives in the tickets' comments).
 |---|---|---|---|
 | 1 | SCRUM-276 | High | Wages defect in the OTO App: the repayment recorder is never called, so an active salary advance is deducted again on every payroll run. Confirm on real data whether any active advance has a calculated run; then fix; the three-format tidy follows. |
 | 2 | SCRUM-273 | High | Archived members: medical notes still readable, child edits still possible, and an archived phone number is blocked for ever (unconditional unique index). Two of four gaps already closed; the index migrations get harder with every row. |
-| 3 | SCRUM-288 | High | Platform deactivation leaves the OTO App login active. Small transactional fix; safe today only because the flag is off on Render. |
-| 3a | SCRUM-523 | High | Scheduling Q39: constrain week plans, groups, rows, assignments and templates to the caller's park group. Round5 recorded another park read200; the existing branch behavior stays the default. Own/foreign/replay proof and the full landing gate are required. |
+| 3 | SCRUM-288 | High | Align platform and app access lifecycle. The existing deactivation case remains; 13 October staging also confirmed supported unlink 200 clears the platform stamp while an active app session remains 200. Exact temporary-user/session cleanup then returned 401. Include both cases in this existing item. |
 | 4 | SCRUM-512 | High | New from the sweep: no screen can end a lost device's staff shift token, though the api routes exist. Small Console screen. |
 | 5 | SCRUM-373 + SCRUM-375 | High | **Together.** Station promo codes are invisible to the till's own panel, so code-discounted orders misstate VAT and sales in till reports; 375 is the twin-hook merge in the same plumbing. |
 | 6 | SCRUM-508 | High | The owner's Today screen reads zero parties while the party tab trades (count hard-coded zero in the rollup). Needs the analytics plan Q3 answer first — ask with the fix. |

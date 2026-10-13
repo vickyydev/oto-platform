@@ -1,5 +1,7 @@
 # Scheduling - 12 October 2026
 
+**13 October resolution:** SCRUM-523 is Done. [Current staging proof and cleanup](../round-8/scheduling-scope.md) supersede the cross-park result below. The remaining text is the dated round 5 observation.
+
 **BROKEN** for the checks below, observed on OTO App staging source
 `633cae416ff7e4a1c253ec4904cdc22351cf7df1`.
 
