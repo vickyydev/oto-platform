@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, Camera, CheckCircle2, Gift, Loader2, RotateCcw, ScanLine, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,6 @@ export default function QrRedeemPage() {
 }
 
 function RedeemPageContent() {
-  const queryClient = useQueryClient();
   const [mode, setMode] = useState<Mode>("spin");
   const [code, setCode] = useState("");
   const [legacyRedeemedBy, setLegacyRedeemedBy] = useState("");
@@ -151,11 +150,11 @@ function RedeemPageContent() {
         return { ...body, status } as SpinRedeemResponse;
       }
 
-      const message = response.status === 401
-        ? "Your staff session has expired. Sign in again."
-        : typeof body.message === "string"
-          ? body.message
-          : `Spin Wheel redemption failed (HTTP ${response.status}).`;
+      // The redeem page is public (no staff sign-in): a refusal is the
+      // server's own message, rate limiting included.
+      const message = typeof body.message === "string"
+        ? body.message
+        : `Spin Wheel redemption failed (HTTP ${response.status}).`;
       throw { message, status: response.status } as SpinRequestError;
     },
     onSuccess: (result) => {
@@ -168,11 +167,6 @@ function RedeemPageContent() {
     onError: (error) => {
       setSpinError(error);
       setSpinResult(null);
-      if (error.status === 401) {
-        // Let StaffGate re-check the cookie so its existing login form is
-        // shown instead of leaving staff on a dead redemption form.
-        void queryClient.invalidateQueries({ queryKey: ["/api/staff/me"] });
-      }
     },
   });
 

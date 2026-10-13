@@ -1,7 +1,8 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, type ReactNode } from "react";
 import { Route, Switch } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import OpenFromLauncherPage from "@/pages/open-from-launcher";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -21,6 +22,38 @@ function PageLoader() {
   );
 }
 
+interface MeAnswer {
+  signedIn: true;
+  accountId: string;
+  name: string | null;
+}
+
+/**
+ * Private pages render only for a signed-in platform session holding
+ * app:radar:access (the server refuses their data otherwise). Anyone else
+ * sees how to get in: from the launcher.
+ */
+function SignedIn({ children }: { children: ReactNode }) {
+  const me = useQuery<{ status: number; body: MeAnswer | { reason?: string; message?: string } | null }>({
+    queryKey: ["/api/me", "gate"],
+    queryFn: async () => {
+      const res = await fetch("/api/me", { credentials: "include" });
+      return { status: res.status, body: await res.json().catch(() => null) };
+    },
+    staleTime: 60_000,
+  });
+  if (me.isLoading) return <PageLoader />;
+  if (me.data?.status === 200) return <>{children}</>;
+  const refusal = me.data?.body as { reason?: string; message?: string } | null | undefined;
+  if (refusal?.reason === "no_access") {
+    return <OpenFromLauncherPage title="Radar is not open to your account" detail={refusal.message} />;
+  }
+  if (me.data && me.data.status >= 500) {
+    return <OpenFromLauncherPage title="Radar could not check your sign-in" detail={refusal?.message} />;
+  }
+  return <OpenFromLauncherPage />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -32,8 +65,12 @@ function App() {
               <Route path="/survey" component={VisitorSurveyPage} />
               <Route path="/c/:id" component={QrLandingPage} />
               <Route path="/redeem" component={QrRedeemPage} />
-              <Route path="/tax-invoices" component={TaxInvoicesPage} />
-              <Route component={IntelligenceDashboard} />
+              <Route path="/tax-invoices">
+                <SignedIn><TaxInvoicesPage /></SignedIn>
+              </Route>
+              <Route>
+                <SignedIn><IntelligenceDashboard /></SignedIn>
+              </Route>
             </Switch>
           </Suspense>
         </TooltipProvider>

@@ -14,7 +14,8 @@
     "check": "tsc",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node script/migrate.mjs",
-    "check:ratchet": "node script/typecheck-ratchet.mjs"
+    "check:ratchet": "node script/typecheck-ratchet.mjs",
+    "test:census": "tsx --test server/routeCensus.test.ts server/platformSession.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

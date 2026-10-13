@@ -37,6 +37,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { format, parseISO } from "date-fns";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SignOutButton } from "@/components/sign-out-button";
 import { useTheme } from "@/components/theme-provider";
 import {
   Loader2,
@@ -13259,6 +13260,7 @@ export default function FuntopiaDashboard() {
                   syncing={syncing || papayaSyncing}
                 />
                 <ThemeToggle />
+                <SignOutButton />
               </div>
             </div>
 
