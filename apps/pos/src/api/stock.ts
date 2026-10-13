@@ -33,7 +33,7 @@ import type {
   StockTakeResult,
   StockTransferResult,
 } from '@oto/shared';
-import { getInventoryItem } from '@/store/catalogStore';
+import { getInventoryItem, getMerchItems } from '@/store/catalogStore';
 import {
   INVENTORY_DEFAULT_VARIANT_ID,
   type InventoryItem,
@@ -139,6 +139,16 @@ export function withPlatformStock(item: MerchItem): MerchItem {
   delete next.lowStockThreshold;
   if (one && one.lowStockThreshold !== null) next.lowStockThreshold = one.lowStockThreshold;
   return next;
+}
+
+/**
+ * SCRUM-379 — the back office's Merch list with the figures the shop grid
+ * reads: every item, retired ones included, with the ported inventory's count
+ * for a local link and the platform's for a product it tracks. What the panel's
+ * stock badge and its "Needs restocking" notice are drawn from.
+ */
+export function merchItemsWithStock(): MerchItem[] {
+  return getMerchItems().map(withPlatformStock);
 }
 
 /** One size the station header's strip names: out of stock, or at or below its threshold. */

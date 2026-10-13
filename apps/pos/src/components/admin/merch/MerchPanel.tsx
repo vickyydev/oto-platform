@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pencil, Trash2, Plus, Info, AlertTriangle, Eye, EyeOff, Package } from 'lucide-react';
 import type { MerchItem } from '@/types';
 import { INVENTORY_DEFAULT_VARIANT_ID } from '@/types';
 import { useCatalogStore } from '@/store/CatalogStoreContext';
+import { merchItemsWithStock, refreshSellableStock, useSellableStockVersion } from '@/api/stock';
 import { isLowStock, isOutOfStock } from '@/lib/merch';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,13 +27,36 @@ import { formatWWPrice } from '@/lib/pricingMode';
  * unified Inventory panel — there are no stock fields here.
  */
 export function MerchPanel() {
-  const { merchItems, mutators } = useCatalogStore();
+  const { merchItems, inventory, mutators } = useCatalogStore();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MerchItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<MerchItem | null>(null);
 
-  const lowStock = merchItems.filter((m) => isLowStock(m) || isOutOfStock(m));
+  /**
+   * SCRUM-379 — THE ROWS ON SCREEN CARRY STOCK, read the way the shop grid
+   * reads it (`pages/MerchStation.tsx`): the ported inventory's figures for a
+   * local link, the platform's for a product it tracks
+   * (`merchItemsWithStock`, `api/stock.ts`). The store's raw list carries no
+   * stock, which left the badge and the restocking notice with nothing to show.
+   * Edits still go through the raw rows, so no figure is written back.
+   */
+  const stockVersion = useSellableStockVersion();
+  const shownItems = useMemo(
+    () => merchItemsWithStock(),
+    // Recomputed when any of what it reads moves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [merchItems, inventory, stockVersion],
+  );
+  const rawById = useMemo(() => new Map(merchItems.map((m) => [m.id, m])), [merchItems]);
+  const raw = (item: MerchItem): MerchItem => rawById.get(item.id) ?? item;
+
+  // The counts as they stand now, not as they stood at sign-in.
+  useEffect(() => {
+    void refreshSellableStock();
+  }, []);
+
+  const lowStock = shownItems.filter((m) => isLowStock(m) || isOutOfStock(m));
 
   const openAdd = () => {
     setEditing(null);
@@ -40,7 +64,7 @@ export function MerchPanel() {
   };
 
   const openEdit = (item: MerchItem) => {
-    setEditing(item);
+    setEditing(raw(item));
     setFormOpen(true);
   };
 
@@ -50,7 +74,7 @@ export function MerchPanel() {
   };
 
   const toggleActive = (item: MerchItem) =>
-    mutators.upsertMerchItem({ ...item, active: !item.active });
+    mutators.upsertMerchItem({ ...raw(item), active: !item.active });
 
   const stockBadge = (item: MerchItem) => {
     if (isOutOfStock(item)) {
@@ -131,7 +155,7 @@ export function MerchPanel() {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {merchItems.map((item) => (
+          {shownItems.map((item) => (
             <div
               key={item.id}
               className={`flex items-center justify-between gap-3 rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-4 ${
@@ -187,7 +211,7 @@ export function MerchPanel() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setPendingDelete(item)}
+                  onClick={() => setPendingDelete(raw(item))}
                   aria-label={`Delete ${item.name}`}
                 >
                   <Trash2 className="w-4 h-4 text-destructive" />
