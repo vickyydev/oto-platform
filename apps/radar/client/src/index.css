@@ -1,0 +1,1000 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.rdp-range-start {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border-radius: var(--radius) !important;
+  opacity: 1 !important;
+}
+.rdp-range-end {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border-radius: var(--radius) !important;
+  opacity: 1 !important;
+}
+.rdp-range-middle {
+  background-color: hsl(var(--primary) / 0.35) !important;
+  color: hsl(var(--foreground)) !important;
+  border-radius: 0 !important;
+  opacity: 1 !important;
+}
+td:has(> .rdp-range-middle),
+td:has(> .rdp-range-start),
+td:has(> .rdp-range-end) {
+  background-color: hsl(var(--primary) / 0.15);
+}
+td:has(> .rdp-range-start) {
+  border-top-left-radius: var(--radius);
+  border-bottom-left-radius: var(--radius);
+}
+td:has(> .rdp-range-end) {
+  border-top-right-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.tab-bar-fade {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+}
+@media (min-width: 640px) {
+  .tab-bar-fade { -webkit-mask-image: none; mask-image: none; }
+}
+
+.kanban-card-draggable {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.kanban-drag-overlay {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grabbing;
+  animation: kanban-pickup 0.2s ease-out;
+}
+
+@keyframes kanban-pickup {
+  0% {
+    transform: scale(1) rotate(0deg);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  50% {
+    transform: scale(1.05) rotate(1.5deg);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  }
+  100% {
+    transform: scale(1.03) rotate(1deg);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  }
+}
+
+input[type="number"].no-spin::-webkit-outer-spin-button,
+input[type="number"].no-spin::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].no-spin {
+  -moz-appearance: textfield;
+}
+
+:root {
+  --button-outline: rgba(0,0,0, .10);
+  --badge-outline: rgba(0,0,0, .08);
+  --opaque-button-border-intensity: -6;
+  --elevate-1: rgba(15, 23, 42, .04);
+  --elevate-2: rgba(15, 23, 42, .08);
+  --background: 220 25% 98%;
+  --foreground: 220 20% 14%;
+  --border: 220 16% 90%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 20% 14%;
+  --card-border: 220 16% 92%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 220 20% 14%;
+  --sidebar-border: 220 16% 92%;
+  --sidebar-primary: 20 80% 52%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 25% 96%;
+  --sidebar-accent-foreground: 220 20% 14%;
+  --sidebar-ring: 20 80% 52%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 20% 14%;
+  --popover-border: 220 16% 90%;
+  --primary: 20 80% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 25% 96%;
+  --secondary-foreground: 220 20% 14%;
+  --muted: 220 22% 96%;
+  --muted-foreground: 220 12% 33%;
+  --accent: 220 25% 96%;
+  --accent-foreground: 220 20% 14%;
+  --destructive: 0 72% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 220 16% 88%;
+  --ring: 20 80% 52%;
+  --chart-1: 20 80% 58%;
+  --chart-2: 195 70% 50%;
+  --chart-3: 150 55% 45%;
+  --chart-4: 280 60% 55%;
+  --chart-5: 45 70% 52%;
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Roboto Mono, monospace;
+  --radius: .5rem;
+  --shadow-2xs: 0 1px 2px rgba(15,23,42,0.05);
+  --shadow-xs: 0 1px 3px rgba(15,23,42,0.06);
+  --shadow-sm: 0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.05);
+  --shadow: 0 2px 6px rgba(15,23,42,0.08), 0 1px 3px rgba(15,23,42,0.05);
+  --shadow-md: 0 4px 10px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.05);
+  --shadow-lg: 0 8px 20px rgba(15,23,42,0.08), 0 3px 6px rgba(15,23,42,0.05);
+  --shadow-xl: 0 12px 28px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.05);
+  --shadow-2xl: 0 20px 48px rgba(15,23,42,0.12);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+.dark {
+  --button-outline: rgba(255,255,255, .10);
+  --badge-outline: rgba(255,255,255, .05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .09);
+  --background: 25 10% 10%;
+  --foreground: 35 10% 92%;
+  --border: 25 8% 20%;
+  --card: 25 8% 13%;
+  --card-foreground: 35 10% 92%;
+  --card-border: 25 8% 17%;
+  --sidebar: 25 8% 14%;
+  --sidebar-foreground: 35 10% 92%;
+  --sidebar-border: 25 8% 18%;
+  --sidebar-primary: 20 80% 55%;
+  --sidebar-primary-foreground: 40 50% 98%;
+  --sidebar-accent: 25 8% 18%;
+  --sidebar-accent-foreground: 35 10% 92%;
+  --sidebar-ring: 20 80% 55%;
+  --popover: 25 8% 16%;
+  --popover-foreground: 35 10% 92%;
+  --popover-border: 25 8% 20%;
+  --primary: 20 80% 55%;
+  --primary-foreground: 40 50% 98%;
+  --secondary: 25 8% 20%;
+  --secondary-foreground: 35 10% 92%;
+  --muted: 25 8% 18%;
+  --muted-foreground: 30 6% 68%;
+  --accent: 25 10% 17%;
+  --accent-foreground: 35 10% 92%;
+  --destructive: 0 72% 45%;
+  --destructive-foreground: 0 72% 98%;
+  --input: 25 8% 28%;
+  --ring: 20 80% 55%;
+  --chart-1: 20 80% 62%;
+  --chart-2: 195 70% 60%;
+  --chart-3: 150 55% 58%;
+  --chart-4: 280 60% 62%;
+  --chart-5: 45 70% 60%;
+  --shadow-2xs: 0px 2px 0px 0px hsl(210 5% 95% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(210 5% 95% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(210 5% 95% / 0.00), 0px 1px 2px -1px hsl(210 5% 95% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(210 5% 95% / 0.00), 0px 1px 2px -1px hsl(210 5% 95% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(210 5% 95% / 0.00), 0px 2px 4px -1px hsl(210 5% 95% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(210 5% 95% / 0.00), 0px 4px 6px -1px hsl(210 5% 95% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(210 5% 95% / 0.00), 0px 8px 10px -1px hsl(210 5% 95% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(210 5% 95% / 0.00);
+
+/* Fallback for older browsers */
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Limit date/time input width for better mobile display */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    max-width: 200px;
+  }
+}
+
+/* Light mode calendar icons */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Fix native date/time picker color scheme for dark mode */
+html.dark input[type="date"],
+html.dark input[type="time"],
+html.dark input[type="datetime-local"] {
+  color-scheme: dark;
+}
+
+/* Dark mode: hide native icon and use white SVG */
+html.dark input[type="date"],
+html.dark input[type="time"],
+html.dark input[type="datetime-local"] {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.dark input[type="time"]::-webkit-calendar-picker-indicator,
+html.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  cursor: pointer;
+  width: 20px;
+  height: 100%;
+  position: absolute;
+  right: 0;
+}
+
+/**
+ * Using the elevate system.
+ * Automatic contrast adjustment.
+ *
+ * <element className="hover-elevate" />
+ * <element className="active-elevate-2" />
+ *
+ * // Using the tailwind utility when a data attribute is "on"
+ * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
+ * // Or manually controlling the toggle state
+ * <element className="toggle-elevate toggle-elevated" />
+ *
+ * Elevation systems have to handle many states.
+ * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
+ * - toggled or not
+ * - focused or not (this is not handled with these utilities)
+ *
+ * Even without handling focused or not, this is six possible combinations that
+ * need to be distinguished from eachother visually.
+ */
+@layer utilities {
+
+  /* Hide scrollbars while still allowing scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide ugly search cancel button in Chrome until we can style it properly */
+  input[type="search"]::-webkit-search-cancel-button {
+    @apply hidden;
+  }
+
+  /* Placeholder styling for contentEditable div */
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+
+  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
+   * buttons/badges can remove the automatic brightness adjustment on interactions
+   * and program their own. */
+  .no-default-hover-elevate {}
+
+  .no-default-active-elevate {}
+
+
+  /**
+   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
+   * This way they can stack/compound. Both will overlap the parent's borders!
+   * So borders will be automatically adjusted both on toggle, and hover/active,
+   * and they will be compounded.
+   */
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: -1;
+    /* sits behind content but above backdrop */
+  }
+
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  /* Does not work on elements with overflow:hidden! */
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: 999;
+    /* sits in front of content */
+  }
+
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+    inset: -1px;
+  }
+}
+
+/* Shift Badge Unified Sizing System */
+:root {
+  --shift-badge-h: 36px;
+  --shift-badge-h-month: 32px;
+  --shift-badge-min-w: 32px;
+  --shift-badge-radius: 6px;
+  --shift-badge-pad-x: 8px;
+}
+
+.shiftBadge {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: var(--shift-badge-h);
+  min-height: var(--shift-badge-h);
+  max-height: var(--shift-badge-h);
+  border-radius: var(--shift-badge-radius);
+  padding-left: var(--shift-badge-pad-x);
+  padding-right: var(--shift-badge-pad-x);
+  padding-top: 0;
+  padding-bottom: 0;
+  margin: 0;
+  line-height: 1;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.shiftBadge--month {
+  display: inline-flex;
+  height: var(--shift-badge-h-month);
+  min-height: var(--shift-badge-h-month);
+  max-height: var(--shift-badge-h-month);
+  width: var(--shift-badge-h-month);
+  min-width: var(--shift-badge-h-month);
+  padding-left: 0;
+  padding-right: 0;
+  gap: 0;
+}
+
+.shiftBadge--fullWidth {
+  width: 100%;
+  max-width: 100%;
+}
+
+.shiftBadge__text {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure all badge children have consistent styling */
+.shiftBadge * {
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+}
+
+.shiftBadge p,
+.shiftBadge span,
+.shiftBadge h1,
+.shiftBadge h2,
+.shiftBadge h3 {
+  margin: 0;
+  padding: 0;
+}
+
+/* Schedule grid: Each grid row gets its own stacking context via isolation,
+   so the sticky first-column cell (z-20/z-30) reliably paints above day cells.
+   Day cells are forced to z-index:0 and clipped. */
+[data-schedule-grid] .grid {
+  isolation: isolate;
+}
+[data-schedule-grid] .grid > *:not(.sticky) {
+  position: relative;
+  z-index: 0 !important;
+  overflow: hidden;
+}
+
+/* Cell that holds badges */
+.shiftCell {
+  position: relative;
+  padding: 2px 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.shiftCell__anchor {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  right: 4px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: stretch;
+}
+
+/* Multi-shift container: override absolute positioning */
+.multi-shift-container .shiftCell__anchor {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  transform: none;
+}
+
+/* Month view specific: absolute centering for badges */
+.monthCell {
+  position: relative;
+  padding: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.monthBadgeAnchor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.monthBadgeAnchor .shiftBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin: 0;
+  align-self: center;
+}
+
+/* Phone Input dark mode styling */
+.PhoneInput {
+  background: transparent !important;
+}
+
+.PhoneInputInput {
+  background: transparent !important;
+  color: inherit !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.PhoneInputCountrySelect {
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .PhoneInputInput {
+  background: transparent !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .PhoneInputCountrySelect {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .PhoneInputCountrySelectArrow {
+  border-color: hsl(var(--foreground)) !important;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 1.5s ease-in-out infinite;
+}
+
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-count-up {
+  animation: count-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.08) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+
+.neu-card {
+  border-radius: 20px;
+  border: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow:
+    6px 6px 16px rgba(0, 0, 0, 0.08),
+    -4px -4px 12px rgba(255, 255, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--card) / 0.92));
+}
+.dark .neu-card {
+  box-shadow:
+    6px 6px 16px rgba(0, 0, 0, 0.4),
+    -4px -4px 12px rgba(255, 255, 255, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--card) / 0.88));
+}
+.neu-card-interactive {
+  cursor: pointer;
+}
+.neu-card-interactive:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    8px 8px 22px rgba(0, 0, 0, 0.12),
+    -5px -5px 14px rgba(255, 255, 255, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.neu-card-interactive:active {
+  transform: none;
+}
+.dark .neu-card-interactive:hover {
+  box-shadow:
+    8px 8px 22px rgba(0, 0, 0, 0.5),
+    -5px -5px 14px rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.dark .neu-card-interactive:active {
+  transform: none;
+}
+
+.neu-inset {
+  border: none;
+  border-radius: 10px;
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.06),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.6);
+  background: hsl(var(--muted) / 0.3);
+}
+.dark .neu-inset {
+  box-shadow:
+    inset 3px 3px 6px rgba(0, 0, 0, 0.4),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.03);
+}
+
+.neu-progress-fill {
+  border-radius: 8px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+.neu-progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 60%);
+  pointer-events: none;
+}
+.dark .neu-progress-fill {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.neu-icon-well {
+  border: none;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    inset 2px 2px 6px rgba(0, 0, 0, 0.06),
+    inset -1px -1px 4px rgba(255, 255, 255, 0.6);
+  background: hsl(var(--card));
+}
+.dark .neu-icon-well {
+  box-shadow:
+    inset 2px 2px 6px rgba(0, 0, 0, 0.4),
+    inset -1px -1px 4px rgba(255, 255, 255, 0.03);
+}
+
+.neu-badge {
+  border: none;
+  border-radius: 20px;
+  box-shadow:
+    2px 2px 5px rgba(0, 0, 0, 0.06),
+    -1px -1px 3px rgba(255, 255, 255, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.dark .neu-badge {
+  box-shadow:
+    2px 2px 5px rgba(0, 0, 0, 0.3),
+    -1px -1px 3px rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.heatmap-cell {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, z-index 0s;
+}
+.heatmap-cell:hover {
+  transform: scale(1.6);
+  z-index: 20;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(16, 185, 129, 0.3);
+}
+.dark .heatmap-cell:hover {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(52, 211, 153, 0.3);
+}
+
+.metric-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum";
+}
+
+.dash-section-header {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+.dash-row-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+.dash-row-sublabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+.dash-row-value {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum";
+  color: hsl(var(--foreground));
+}
+.dash-row-value-emph {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum";
+  color: hsl(var(--foreground));
+}
+.dash-meta {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+
+.dash-subgroup-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  outline: none;
+}
+.dash-subgroup-row:hover {
+  background-color: hsl(var(--muted) / 0.5);
+}
+.dash-subgroup-row:focus-visible {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.5);
+}
+.dash-subgroup-chevron {
+  transition: transform 0.2s ease;
+  color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
+}
+.dash-subgroup-chevron[data-open="true"] {
+  transform: rotate(90deg);
+}
+
+.dash-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9999px;
+  background: hsl(var(--muted) / 0.5);
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.05),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.5);
+}
+.dark .dash-segmented {
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.3),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.03);
+}
+.dash-segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+.dash-segmented-btn:hover {
+  color: hsl(var(--foreground));
+}
+.dash-segmented-btn:focus-visible {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.5);
+}
+.dash-segmented-btn[data-active="true"] {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  box-shadow:
+    1px 1px 3px rgba(0, 0, 0, 0.08),
+    -1px -1px 2px rgba(255, 255, 255, 0.6);
+}
+.dark .dash-segmented-btn[data-active="true"] {
+  box-shadow:
+    1px 1px 3px rgba(0, 0, 0, 0.3),
+    -1px -1px 2px rgba(255, 255, 255, 0.03);
+}
+
+.dash-stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: hsl(var(--card));
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.04),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.5);
+}
+.dark .dash-stat-strip {
+  box-shadow:
+    inset 2px 2px 4px rgba(0, 0, 0, 0.3),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.03);
+}
+.dash-stat-cell {
+  flex: 1 1 0;
+  min-width: 96px;
+  padding: 10px 12px;
+  border-right: 1px solid hsl(var(--border) / 0.4);
+}
+.dash-stat-cell:last-child {
+  border-right: none;
+}
+.dash-stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 2px;
+}
+.dash-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum";
+  line-height: 1.1;
+}
+.dash-stat-sub {
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+  margin-top: 1px;
+}
+
+.glass-header {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.btn-press {
+  transition: transform 0.1s ease;
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+
+
+.smooth-expand {
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.progress-bar-fill {
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-scale-in,
+  .animate-count-up,
+  .skeleton-shimmer {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    background: hsl(var(--muted)) !important;
+    background-size: unset !important;
+  }
+  .progress-bar-fill {
+    transition: none !important;
+  }
+  .btn-press:active {
+    transform: none !important;
+  }
+  .smooth-expand {
+    transition: none !important;
+  }
+  .metric-value {
+    transition: none !important;
+  }
+}

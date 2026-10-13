@@ -6,6 +6,8 @@ packages:
   # hoist its dependency tree against ours and neither app would resolve what
   # it was written against.
   - '!apps/oto-app'
+  # Radar is lifted the same way: npm, its own lockfile, its own Dockerfile.
+  - '!apps/radar'
 
 onlyBuiltDependencies:
   - esbuild

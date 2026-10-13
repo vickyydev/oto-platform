@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.*
+*.log
+
+# Runtime output and export dumps never belong in the repository.
+uploads/
+exports/
+attached_assets/
