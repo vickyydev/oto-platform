@@ -279,6 +279,7 @@ export const DICTIONARY: Record<string, Record<SupportedLang, string>> = {
   'book.identify.recognised': { en: 'Members are recognised automatically — no password needed.', zh: '会员将自动被识别——无需密码。', th: 'ระบบจะจดจำสมาชิกโดยอัตโนมัติ — ไม่ต้องใช้รหัสผ่าน', ru: 'Участники распознаются автоматически — пароль не нужен.', fr: 'Les membres sont reconnus automatiquement — aucun mot de passe requis.' },
   'book.identify.continue': { en: 'Continue', zh: '继续', th: 'ดำเนินการต่อ', ru: 'Продолжить', fr: 'Continuer' },
   'book.identify.continueAsGuest': { en: 'Continue as guest', zh: '以访客身份继续', th: 'ดำเนินการต่อในฐานะผู้เยี่ยมชม', ru: 'Продолжить как гость', fr: 'Continuer en tant qu’invité' },
+  'book.identify.park': { en: 'Park', zh: '乐园', th: 'สวนสนุก', ru: 'Парк', fr: 'Parc' },
 
   'book.tickets.chooseTicket': { en: 'Choose a ticket', zh: '选择票种', th: 'เลือกตั๋ว', ru: 'Выберите билет', fr: 'Choisissez un billet' },
   'book.tickets.backToBooking': { en: 'Back to my booking', zh: '返回我的预订', th: 'กลับไปที่การจองของฉัน', ru: 'Назад к моей брони', fr: 'Retour à ma réservation' },

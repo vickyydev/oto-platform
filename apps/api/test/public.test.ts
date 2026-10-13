@@ -234,6 +234,37 @@ describe('public member-tier lookup', () => {
   });
 });
 
+/**
+ * SCRUM-507 — the parks the booking site's chooser lists: each open park of
+ * the operator that runs the site's park, by code and name, and nothing else.
+ */
+describe('public park list', () => {
+  it('lists the operator’s open parks by code and name only', async () => {
+    const [home] = await ctx.db.select().from(branch).where(eq(branch.code, 'hkt-central'));
+    await ctx.db.insert(branch).values({
+      id: newId(),
+      operatorId: home!.operatorId,
+      name: 'Closed Park',
+      code: 'closed-park',
+      archivedAt: new Date(),
+    });
+    const [other] = await ctx.db.insert(operator).values({ id: newId(), name: 'Elsewhere Co' }).returning();
+    await ctx.db
+      .insert(branch)
+      .values({ id: newId(), operatorId: other!.id, name: 'Elsewhere Park', code: 'elsewhere-park' });
+
+    const res = await ctx.app.inject({ method: 'GET', url: '/public/branches/hkt-central/parks' });
+    expect(res.statusCode).toBe(200);
+    const { branches } = res.json() as { branches: Array<Record<string, unknown>> };
+    expect(branches[0]).toEqual({ code: 'hkt-central', name: 'Oto Play Park, Central Floresta' });
+    for (const b of branches) expect(Object.keys(b).sort()).toEqual(['code', 'name']);
+    const codes = branches.map((b) => b.code);
+    expect(codes.length).toBeGreaterThan(1);
+    expect(codes).not.toContain('closed-park');
+    expect(codes, 'another operator’s park is never offered').not.toContain('elsewhere-park');
+  });
+});
+
 describe('public booking creation — server-side pricing', () => {
   const getPackages = async () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/public/branches/hkt-central/catalog' });

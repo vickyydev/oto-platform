@@ -6,13 +6,20 @@ import { PhoneInput } from '@/components/shared/PhoneInput';
 import { useLanguage } from '@/i18n/LanguageContext';
 import type { ContactChannel } from '@/types';
 import { publicApi } from '@/api/platform';
-import { getActiveBranch } from '@/store/catalogStore';
 
 interface BookIdentifyProps {
   onContinue: (phone: string, nickname: string, channel: ContactChannel) => void;
+  /** The park being booked: its code addresses every open route this page calls. */
+  park: string;
+  /**
+   * SCRUM-507 — the parks the guest may choose between (the operator's open
+   * parks). The chooser shows only when there is more than one.
+   */
+  parks: Array<{ code: string; name: string }>;
+  onParkChange: (code: string) => void;
 }
 
-export function BookIdentify({ onContinue }: BookIdentifyProps) {
+export function BookIdentify({ onContinue, park, parks, onParkChange }: BookIdentifyProps) {
   const { t } = useLanguage();
   const [phone, setPhone] = useState('');
   const [nickname, setNickname] = useState('');
@@ -30,7 +37,7 @@ export function BookIdentify({ onContinue }: BookIdentifyProps) {
     if (!typed) return;
     let current = true;
     const timer = setTimeout(() => {
-      publicApi.memberTier(typed, getActiveBranch().id).then(
+      publicApi.memberTier(typed, park).then(
         (res) => {
           if (current && res.found && res.preferredChannel) setChannel(res.preferredChannel);
         },
@@ -41,7 +48,7 @@ export function BookIdentify({ onContinue }: BookIdentifyProps) {
       current = false;
       clearTimeout(timer);
     };
-  }, [phone]);
+  }, [phone, park]);
 
   return (
     <div className="flex-1 flex flex-col px-6 py-10 relative animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -62,6 +69,25 @@ export function BookIdentify({ onContinue }: BookIdentifyProps) {
       </div>
 
       <div className="space-y-5">
+        {parks.length > 1 && (
+          <div>
+            <label htmlFor="book-park" className="text-sm text-slate-500 mb-2 block">
+              {t('book.identify.park')}
+            </label>
+            <select
+              id="book-park"
+              value={park}
+              onChange={(e) => onParkChange(e.target.value)}
+              className="flex h-14 w-full rounded-md border border-slate-200 bg-white px-3 text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {parks.map((p) => (
+                <option key={p.code} value={p.code}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="text-sm text-slate-500 mb-2 block">{t('book.identify.mobileNumber')}</label>
           <PhoneInput

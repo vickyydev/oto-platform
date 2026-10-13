@@ -4,6 +4,9 @@ import {
   getAddOns,
   getDropOffPricing,
   getActiveBranch,
+  getBranches,
+  setActiveBranch,
+  upsertBranch,
   checkNannyAvailability,
 } from '@/mockApi';
 import { resolveAutoTier } from '@/lib/membership';
@@ -362,6 +365,48 @@ function buildEffectiveLines(
   return out;
 }
 
+/**
+ * THE PARK BEING BOOKED (SCRUM-507).
+ *
+ * The site served whichever park the catalogue store started on. The park is
+ * now chosen: `?park=<code>` opens the site on that park (a per-park address),
+ * and the identify step offers the operator's other open parks
+ * (`GET /public/branches/:code/parks`). Every open call the page makes — the
+ * catalogue, the event passes, the member lookup, the booking itself — is
+ * addressed by the chosen park's code.
+ */
+const PARK_PARAM = 'park';
+
+function parkFromAddress(): string | null {
+  try {
+    const value = new URLSearchParams(window.location.search).get(PARK_PARAM)?.trim();
+    return value ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Keep the address on the chosen park, so a reload or a shared link opens it. */
+function writeParkToAddress(code: string): void {
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('payment')) return; // the payment return owns this address
+    url.searchParams.set(PARK_PARAM, code);
+    window.history.replaceState(null, '', `${url.pathname}?${url.searchParams.toString()}`);
+  } catch {
+    // An address the browser will not let us touch: the choice still holds for this page.
+  }
+}
+
+/** Point the catalogue store at a park the platform named, adding it if this browser has not seen it. */
+function activatePark(code: string, name?: string): void {
+  const known = getBranches().find((b) => b.id === code);
+  if (!known || (name && known.name !== name)) {
+    upsertBranch({ ...(known ?? { country: 'TH', active: true }), id: code, name: name ?? known?.name ?? code });
+  }
+  setActiveBranch(code);
+}
+
 export default function Book() {
   // Subscribe to catalog mutations so live Admin edits to the supervision
   // policy (bands / confirmations) flow into this flow instead of freezing at
@@ -371,6 +416,10 @@ export default function Book() {
   const { t, lang } = useLanguage();
 
   const [stage, setStage] = useState<Stage>('identify');
+  // The park the store started on: where an address naming no known park lands.
+  const [defaultPark] = useState(() => getActiveBranch().id);
+  const [park, setPark] = useState<string>(() => parkFromAddress() ?? defaultPark);
+  const [parks, setParks] = useState<Array<{ code: string; name: string }>>([]);
   const [member, setMember] = useState<Member | null>(null);
   const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
@@ -383,9 +432,13 @@ export default function Book() {
   const [liveCatalog, setLiveCatalog] = useState<'loading' | 'ready' | 'offline'>('loading');
   useEffect(() => {
     let cancelled = false;
-    loadPublicCatalog(getActiveBranch().id)
+    setLiveCatalog('loading');
+    loadPublicCatalog(park)
       .then((cat) => {
         if (cancelled) return;
+        // Every catalogue read on the page is the active park's: point the
+        // store at the park the platform just answered for.
+        activatePark(cat.branch.code, cat.branch.name);
         // The platform's trading day is "today"; a date the family has not
         // chosen follows it.
         const platformToday = cat.rateMode.date;
@@ -403,6 +456,33 @@ export default function Book() {
     return () => {
       cancelled = true;
     };
+  }, [park]);
+
+  // The operator's open parks, for the chooser. Asked once, from the park the
+  // page opened on; an address naming no park the platform knows falls back to
+  // the first one listed. A failure leaves the chooser hidden and the park as is.
+  useEffect(() => {
+    let cancelled = false;
+    const opened = park;
+    publicApi
+      .parks(opened)
+      .catch(() => (opened !== defaultPark ? publicApi.parks(defaultPark) : Promise.reject(new Error('no parks'))))
+      .then((answer) => {
+        if (cancelled) return;
+        setParks(answer.branches);
+        const first = answer.branches[0];
+        if (!answer.branches.some((b) => b.code === opened) && first) {
+          writeParkToAddress(first.code);
+          setPark(first.code);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setParks([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, from the park the page opened on: a park chosen later is one of these
   }, []);
 
   // The channel picked here goes to the platform with the booking
@@ -480,7 +560,7 @@ export default function Book() {
   const [activeEvents, setActiveEvents] = useState<OtoEvent[]>([]);
   useEffect(() => {
     let cancelled = false;
-    const branchCode = getActiveBranch().id;
+    const branchCode = park;
     publicApi
       .eventPasses(branchCode, visitDate)
       .then((answer) => {
@@ -493,7 +573,7 @@ export default function Book() {
     return () => {
       cancelled = true;
     };
-  }, [visitDate]);
+  }, [visitDate, park]);
 
   // Lifted per-child supervision draft (mirrors the reception flow's superSlots),
   // plus the booking-level consent the customer gives on the ConsentCapture step.
@@ -608,7 +688,7 @@ export default function Book() {
       let found: Member | null = null;
       if (typed) {
         try {
-          const res = await publicApi.memberTier(typed, getActiveBranch().id);
+          const res = await publicApi.memberTier(typed, park);
           if (res.found) {
             found = {
               id: res.memberId,
@@ -646,6 +726,17 @@ export default function Book() {
       setContactChannel(channel);
       setStage('tickets');
     })();
+  };
+
+  // A different park is a different catalogue: the basket starts again.
+  const handleParkChange = (code: string) => {
+    if (code === park) return;
+    setLines([]);
+    setPasses([]);
+    setSuperSlots([]);
+    setAcceptedIds([]);
+    writeParkToAddress(code);
+    setPark(code);
   };
 
   const handleAddLine = (
@@ -843,7 +934,7 @@ export default function Book() {
       try {
         const displayName = parentName.trim() || nickname.trim() || 'Guest';
         const res = await publicApi.createBooking({
-          branchCode: getActiveBranch().id,
+          branchCode: park,
           phone: phone || undefined,
           parentName: displayName,
           tier,
@@ -950,6 +1041,8 @@ export default function Book() {
     } catch {
       // Nothing to strip.
     }
+    // The park stays chosen, and on the address (SCRUM-507).
+    writeParkToAddress(park);
   };
 
   return (
@@ -966,7 +1059,10 @@ export default function Book() {
         </div>
       )}
       <div className="mx-auto w-full max-w-md min-h-[100dvh] flex flex-col">
-        {stage === 'identify' && <BookIdentify onContinue={handleIdentify} />}
+        {stage === 'identify' && (
+          <BookIdentify onContinue={handleIdentify} park={park} parks={parks} onParkChange={handleParkChange} />
+        )}
+
 
         {stage === 'tickets' && (
           <BookTickets

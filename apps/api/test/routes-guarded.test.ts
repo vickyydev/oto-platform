@@ -155,6 +155,11 @@ describe('route guards (S2-01b)', () => {
        * price. No roster, no party, nobody's name.
        */
       'GET /public/branches/:code/event-passes',
+      /**
+       * SCRUM-507 — the booking site's park chooser: the code and name of each
+       * open park of the operator that runs the site's park. Nothing else.
+       */
+      'GET /public/branches/:code/parks',
       'GET /public/member-tier',
       'GET /ready',
       /**

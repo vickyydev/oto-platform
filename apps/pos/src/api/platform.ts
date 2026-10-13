@@ -539,6 +539,11 @@ export interface PublicAddOn {
 
 export const publicApi = {
   catalog: (branchCode: string) => api.get<PublicCatalog>(`/public/branches/${branchCode}/catalog`),
+  /** SCRUM-507 — the parks the booking site offers: those of the operator running `branchCode`. */
+  parks: (branchCode: string) =>
+    api.get<{ branches: Array<{ code: string; name: string }> }>(
+      `/public/branches/${encodeURIComponent(branchCode)}/parks`,
+    ),
   /** `branchCode` scopes the lookup to one operator — required by the API. */
   memberTier: (phone: string, branchCode: string) =>
     api.get<

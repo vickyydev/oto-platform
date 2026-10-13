@@ -46,6 +46,7 @@ import { opCtx } from '../services/tx';
  * PUBLIC endpoints for the customer self-booking site (/book) — no session.
  * Deliberately minimal surface:
  *   - catalog: active packages (with translations) + tiers + today's rate mode
+ *   - parks: the parks a guest can book, by code and name (SCRUM-507)
  *   - member-tier: phone → nickname + tier ONLY (no children / PII — the
  *     prototype's "members are recognised automatically" UX; OD-A14 keeps it
  *     that way: saved children never appear on the open site)
@@ -168,6 +169,42 @@ export async function publicRoutes(app: App): Promise<void> {
     if (!br) throw errors.notFound('Branch not found');
     return br;
   };
+
+  /**
+   * THE PARKS A GUEST CAN BOOK (SCRUM-507).
+   *
+   * The booking site always served the first park. This is what its park
+   * chooser lists: the parks run by the operator that runs `:code` (the park
+   * the site was opened on), so one operator's booking site never offers
+   * another operator's park. A park is listed when it is not archived — the
+   * rule `loadBranchByCode` applies to every other open route here, so a park
+   * listed is a park its catalogue answers for. The code (the slug every other
+   * open route is addressed by) and the name, and nothing else: no id, no
+   * address, no operator.
+   */
+  app.get(
+    '/public/branches/:code/parks',
+    {
+      config: { ...ipLimited, public: true },
+      schema: {
+        description:
+          "The parks the booking site offers: the code and name of every open branch run by the operator that runs `code`, oldest first.",
+        params: z.object({ code: z.string() }),
+        response: {
+          200: z.object({ branches: z.array(z.object({ code: z.string(), name: z.string() })) }),
+        },
+      },
+    },
+    async (req) => {
+      const home = await loadBranchByCode(req.params.code);
+      const rows = await app.db
+        .select({ code: branch.code, name: branch.name })
+        .from(branch)
+        .where(and(eq(branch.operatorId, home.operatorId), isNull(branch.archivedAt)))
+        .orderBy(asc(branch.createdAt), asc(branch.code));
+      return { branches: rows };
+    },
+  );
 
   app.get(
     '/public/branches/:code/catalog',
