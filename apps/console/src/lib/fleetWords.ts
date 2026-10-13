@@ -376,3 +376,53 @@ export function accessSentence(
   }
   return `Restricted to ${count} named ${count === 1 ? 'person' : 'people'}. Everybody else at ${branchLabel} does not see it in their picker at all — not greyed out, simply not there.`;
 }
+
+/**
+ * What the box drawer offers for retiring a box (SCRUM-378), and why not.
+ *
+ * The API has exactly two doors and this mirrors them, in the order a person
+ * walks through them:
+ *
+ *   - `PATCH /boxes/:id { status: 'disabled' }` — out of service. Revokes the
+ *     box's credential on the spot, so a Pi somebody walked off with is refused
+ *     at its next request. Reversible: `{ status: 'offline' }` puts it back,
+ *     and a box whose secret went with the disable comes back `unclaimed`, to
+ *     be claimed again with a fresh code. Both need `admin:box:update`.
+ *   - `DELETE /boxes/:id` — archived, and gone from the branch's list. Needs
+ *     `admin:box:archive`, and is refused while live stations sit on the box.
+ *
+ * The drawer offers the second only to a box already out of service. The API
+ * would archive a running box too; asking for the reversible step first means
+ * nobody removes a box from the list that is still selling at a counter.
+ */
+export interface BoxRetirementOffer {
+  /** "Take it out of service": a box that is not out of service already. */
+  disable: boolean;
+  /** "Put it back in service": a box that is out of service. */
+  restore: boolean;
+  /** "Remove it from the list": offered to a box that is out of service. */
+  archive: boolean;
+  /** Why the archive would be refused, in the API's words; null when it would not be. */
+  archiveBlockedBy: string | null;
+}
+
+export function boxRetirementOffer(
+  box: { status: string; archived?: boolean },
+  liveStations: { name: string }[],
+  can: { update: boolean; archive: boolean },
+): BoxRetirementOffer {
+  if (box.archived)
+    return { disable: false, restore: false, archive: false, archiveBlockedBy: null };
+  const out = box.status === 'disabled';
+  return {
+    disable: can.update && !out,
+    restore: can.update && out,
+    archive: can.archive && out,
+    archiveBlockedBy:
+      liveStations.length === 0
+        ? null
+        : `Move or archive this box’s stations first — ${liveStations.map((s) => s.name).join(', ')} still ${
+            liveStations.length === 1 ? 'sits' : 'sit'
+          } on it.`,
+  };
+}

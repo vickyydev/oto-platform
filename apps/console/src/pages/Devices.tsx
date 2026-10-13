@@ -116,6 +116,7 @@ export function Devices() {
   const canRegisterBox = has('admin:box:register');
   const canCommandBox = has('admin:box:command');
   const canUpdateBox = has('admin:box:update');
+  const canArchiveBox = has('admin:box:archive');
   const canCreateStation = has('admin:station:create');
   const canUpdateStation = has('admin:station:update');
   const canCreateDevice = has('admin:device:create');
@@ -410,17 +411,25 @@ export function Devices() {
 
       {openBox && (
         <BoxDrawer
-          box={openBox}
+          // The row as the last reload read it, so taking a box out of service
+          // shows in the drawer's own header (SCRUM-378); the row as opened
+          // until the list has it.
+          box={fleet.boxes.find((b) => b.id === openBox.id) ?? openBox}
           deviceList={fleet.deviceList(openBox.id)}
           onRetryDevices={() => fleet.retryDevices(openBox.id)}
           stations={fleet.stations.filter((s) => s.boxId === openBox.id)}
           timezone={timezone}
           canCommand={canCommandBox}
           canUpdateBox={canUpdateBox}
+          canArchiveBox={canArchiveBox}
           canCreateDevice={canCreateDevice}
           canUpdateDevice={canUpdateDevice}
           onClose={() => setOpenBox(null)}
           onChanged={fleet.reload}
+          onArchived={() => {
+            setOpenBox(null);
+            fleet.reload();
+          }}
         />
       )}
 

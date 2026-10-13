@@ -444,6 +444,13 @@ export const fleetApi = {
   ) => api.patch<{ box: BoxRow }>(`/boxes/${encodeURIComponent(id)}`, body),
 
   /**
+   * Archives a box: it leaves the branch's list (which asks without
+   * `includeArchived`) and its secret and any claim code are dropped. Refused
+   * 409 `BOX_HAS_LIVE_STATIONS` while a live station still sits on it.
+   */
+  archiveBox: (id: string) => api.delete<{ ok: true }>(`/boxes/${encodeURIComponent(id)}`),
+
+  /**
    * Re-issues a claim code for a box nobody managed to register in time. The
    * new code supersedes the old one, and it is returned on the same terms as
    * `createBox`: once, and never from a replay.

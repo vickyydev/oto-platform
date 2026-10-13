@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { commandLabel, isDrawerPulse } from '@/lib/fleetWords';
+import { boxRetirementOffer, commandLabel, isDrawerPulse } from '@/lib/fleetWords';
 
 /**
  * THE DEVICES DRAWER'S PRINTING WORDS — `src/lib/fleetWords.ts` (SCRUM-208,
@@ -47,5 +47,66 @@ describe('isDrawerPulse', () => {
         { kind: 'job.printed', detail: { seq: 5, drawerKicks: 1, bands: 4 } },
       ]),
     ).toBe(false);
+  });
+});
+
+/**
+ * SCRUM-378 — what the box drawer offers for retiring a box: out of service
+ * first (reversible), removal from the list only after, and the removal's
+ * refusal named before it is asked for.
+ */
+describe('boxRetirementOffer', () => {
+  const both = { update: true, archive: true };
+
+  it('offers only "out of service" to a box that is still in service, whatever its state', () => {
+    for (const status of ['online', 'offline', 'unclaimed']) {
+      expect(boxRetirementOffer({ status }, [], both)).toEqual({
+        disable: true,
+        restore: false,
+        archive: false,
+        archiveBlockedBy: null,
+      });
+    }
+  });
+
+  it('offers putting back and removing to a box that is out of service', () => {
+    expect(boxRetirementOffer({ status: 'disabled' }, [], both)).toEqual({
+      disable: false,
+      restore: true,
+      archive: true,
+      archiveBlockedBy: null,
+    });
+  });
+
+  it('names the live stations that would make the API refuse the removal', () => {
+    expect(
+      boxRetirementOffer({ status: 'disabled' }, [{ name: 'Till 1' }], both).archiveBlockedBy,
+    ).toBe('Move or archive this box’s stations first — Till 1 still sits on it.');
+    expect(
+      boxRetirementOffer({ status: 'disabled' }, [{ name: 'Till 1' }, { name: 'Gate' }], both)
+        .archiveBlockedBy,
+    ).toBe('Move or archive this box’s stations first — Till 1, Gate still sit on it.');
+  });
+
+  it('follows each door’s own permission, and offers nothing on an archived box', () => {
+    expect(
+      boxRetirementOffer({ status: 'online' }, [], { update: false, archive: true }).disable,
+    ).toBe(false);
+    const outNoArchive = boxRetirementOffer({ status: 'disabled' }, [], {
+      update: true,
+      archive: false,
+    });
+    expect([outNoArchive.restore, outNoArchive.archive]).toEqual([true, false]);
+    const outNoUpdate = boxRetirementOffer({ status: 'disabled' }, [], {
+      update: false,
+      archive: true,
+    });
+    expect([outNoUpdate.restore, outNoUpdate.archive]).toEqual([false, true]);
+    expect(boxRetirementOffer({ status: 'disabled', archived: true }, [], both)).toEqual({
+      disable: false,
+      restore: false,
+      archive: false,
+      archiveBlockedBy: null,
+    });
   });
 });

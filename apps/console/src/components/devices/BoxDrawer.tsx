@@ -32,6 +32,7 @@ import { PrintPanel } from '@/components/devices/PrintPanel';
 import { StationRefusalsPanel } from '@/components/devices/DisplayDiagnosticsPanel';
 import type { BoxDeviceList } from '@/lib/deviceList';
 import {
+  boxRetirementOffer,
   boxRoleWord,
   boxStatusWord,
   commandLabel,
@@ -65,10 +66,12 @@ export function BoxDrawer({
   timezone,
   canCommand,
   canUpdateBox,
+  canArchiveBox,
   canCreateDevice,
   canUpdateDevice,
   onClose,
   onChanged,
+  onArchived,
 }: {
   box: BoxRow;
   /**
@@ -83,10 +86,14 @@ export function BoxDrawer({
   timezone?: string | null;
   canCommand: boolean;
   canUpdateBox: boolean;
+  /** `admin:box:archive`: removing a box from the list (SCRUM-378). */
+  canArchiveBox: boolean;
   canCreateDevice: boolean;
   canUpdateDevice: boolean;
   onClose: () => void;
   onChanged: () => void;
+  /** The box has left the list; the page closes the drawer and reloads. */
+  onArchived: () => void;
 }) {
   const vitals = boxVitals(box);
   const clock = clockLine(vitals);
@@ -207,6 +214,15 @@ export function BoxDrawer({
       {/* What the faults above actually did to paper (S2-06): the queue, and
           the picture the simulator rebuilt from the bytes it was sent. */}
       <PrintPanel box={box} deviceList={deviceList} onRetryDevices={onRetryDevices} />
+
+      <RetireBox
+        box={box}
+        liveStations={stations.filter((s) => !s.archived)}
+        canUpdate={canUpdateBox}
+        canArchive={canArchiveBox}
+        onChanged={onChanged}
+        onArchived={onArchived}
+      />
     </Drawer>
   );
 }
@@ -1120,11 +1136,14 @@ function BoxControls({
 function ResetConfirm({
   boxName,
   busy,
+  action = 'Reset the store',
   onCancel,
   onConfirm,
 }: {
   boxName: string;
   busy: boolean;
+  /** The confirming button's words: the store reset's, or a retire step's (SCRUM-378). */
+  action?: string;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -1145,10 +1164,173 @@ function ResetConfirm({
           onClick={onConfirm}
         >
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-          Reset the store
+          {action}
         </Button>
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Taking a box out of service (SCRUM-378)
+// ---------------------------------------------------------------------------
+
+/**
+ * The end of a box's life, in the two steps the API has.
+ *
+ * Out of service first: the credential is revoked on the spot, the box stays
+ * on the list marked "Out of service", and it can be put back. Only then is it
+ * offered for removal from the list, which is permanent and refused while a
+ * live station still sits on it. Both steps take the box's name typed out, the
+ * confirmation the store reset already uses, for the same reason: every row
+ * on this page looks alike.
+ */
+function RetireBox({
+  box,
+  liveStations,
+  canUpdate,
+  canArchive,
+  onChanged,
+  onArchived,
+}: {
+  box: BoxRow;
+  liveStations: StationRow[];
+  canUpdate: boolean;
+  canArchive: boolean;
+  onChanged: () => void;
+  onArchived: () => void;
+}) {
+  const offer = boxRetirementOffer(box, liveStations, { update: canUpdate, archive: canArchive });
+  const [confirming, setConfirming] = useState<'disable' | 'archive' | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+
+  // Another box, or this box after its status moved: nothing half-asked carries over.
+  useEffect(() => {
+    setConfirming(null);
+    setFailed(null);
+  }, [box.id, box.status]);
+
+  if (!offer.disable && !offer.restore && !offer.archive) return null;
+
+  const run = async (what: () => Promise<unknown>, fallback: string, after: () => void) => {
+    setBusy(true);
+    setFailed(null);
+    try {
+      await what();
+      setConfirming(null);
+      after();
+    } catch (err) {
+      setFailed(err instanceof Error ? err.message : fallback);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disable = () =>
+    run(
+      () => fleetApi.updateBox(box.id, { status: 'disabled' }),
+      'The box could not be taken out of service',
+      onChanged,
+    );
+  const restore = () =>
+    run(
+      () => fleetApi.updateBox(box.id, { status: 'offline' }),
+      'The box could not be put back in service',
+      onChanged,
+    );
+  const archive = () =>
+    run(() => fleetApi.archiveBox(box.id), 'The box could not be removed', onArchived);
+
+  return (
+    <section>
+      <h3 className="text-sm font-bold mb-2">Out of service</h3>
+
+      {offer.disable && (
+        <div className="rounded-xl border border-dashed p-3">
+          <p className="text-sm font-semibold">Take it out of service</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            For a box created by mistake, a Pi that has been replaced, or one that has gone missing.
+            Its credential is revoked on the spot, so the box is refused at its very next request. It
+            stays on this list marked out of service and can be put back, with a new claim code.
+          </p>
+          {confirming === 'disable' ? (
+            <ResetConfirm
+              boxName={box.name}
+              busy={busy}
+              action="Take it out of service"
+              onCancel={() => setConfirming(null)}
+              onConfirm={() => void disable()}
+            />
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => setConfirming('disable')}
+            >
+              Take it out of service…
+            </Button>
+          )}
+        </div>
+      )}
+
+      {(offer.restore || offer.archive) && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">
+            This box is out of service: its credential is revoked and it cannot reach the cloud.
+          </p>
+
+          {offer.restore && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="outline" size="sm" disabled={busy} onClick={() => void restore()}>
+                {busy && confirming === null ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : null}
+                Put it back in service
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                It comes back waiting to be claimed, and a new claim code is issued from this drawer.
+              </span>
+            </div>
+          )}
+
+          {offer.archive && (
+            <div className="rounded-xl border border-dashed p-3">
+              <p className="text-sm font-semibold">Remove it from the list</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Archives the box: it leaves this branch’s list and every box picker, and cannot be
+                put back. What it did stays in the activity log.
+              </p>
+              {offer.archiveBlockedBy ? (
+                <p className="mt-2 text-sm" style={{ color: 'hsl(var(--status-warn))' }}>
+                  {offer.archiveBlockedBy}
+                </p>
+              ) : confirming === 'archive' ? (
+                <ResetConfirm
+                  boxName={box.name}
+                  busy={busy}
+                  action="Remove it from the list"
+                  onCancel={() => setConfirming(null)}
+                  onConfirm={() => void archive()}
+                />
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => setConfirming('archive')}
+                >
+                  Remove it from the list…
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {failed && <p className="mt-2 text-sm text-destructive break-words">{failed}</p>}
+    </section>
   );
 }
 
