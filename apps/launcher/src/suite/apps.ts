@@ -70,7 +70,8 @@ export const SUITE_APPS: SuiteApp[] = [
     permission: 'app:pos:access',
     origin: readOrigin(env.VITE_POS_URL, 'http://localhost:25741'),
     milestone: 'M0 — front door',
-    arriving: 'The till is live. If this shell opened instead, its address is not set on this build.',
+    arriving:
+      'The till is live. If this shell opened instead, its address is not set on this build.',
   },
   {
     key: 'console',
@@ -110,7 +111,7 @@ export const SUITE_APPS: SuiteApp[] = [
     legacyLabel: 'Open the Radar that is running today',
     milestone: 'M11 — Radar live',
     arriving:
-      'Each branch will choose its source — the figures carried over from the old tills, or live analytics from this POS — and a sale made at the till will show up here.',
+      'The dashboard reads this POS’s own live analytics — a sale made at the till shows up here within minutes. The old systems’ history joins the same figures when their data is carried over.',
   },
   {
     key: 'booth',
