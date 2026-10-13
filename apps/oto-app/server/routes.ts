@@ -1,10 +1,11 @@
+import { requireSchedulePark, scheduleParkPredicate } from "./schedule-scope";
 import { attendanceEvidenceUpload, attendanceConfirmationBody } from "./attendance-evidence-upload";
 import { persistAttendanceEvidence, canReadAttendanceEvidence, ATTENDANCE_EVIDENCE_FOLDER } from "./attendance-evidence";
 import { registerTimekeepingReviewRoutes } from "./timekeeping-review-routes";
 import { registerEmployeeActionRoutes } from "./employee-action-routes";
 import _express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer as _createServer, type Server } from "http";
-import { storage, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
+import { storage, assertScheduleDeleteScope, resolveFixReportStatusFilter, type ActivityParkGroup, type AttentionReadScope } from "./storage";
 import { registerSopRoutes, canReadSopArticle } from "./sop-routes";
 import { registerCampRegistrationRoutes } from "./camp-registration-routes";
 import { setupAuth, requireAuth, hashPassword } from "./auth";
@@ -14439,7 +14440,7 @@ OTO Company Limited`,
   // ============================================
 
   // Get week plan with all shift rows and assignments (staff can view)
-  app.get("/api/schedule/week", requireAuth, async (req, res, next) => {
+  app.get("/api/schedule/week", requireAuth, requireSchedulePark, async (req, res, next) => {
     try {
       const branchId = req.query.branchId as string;
       const weekStartDate = req.query.weekStartDate as string;
@@ -14448,7 +14449,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "branchId and weekStartDate are required" });
       }
 
-      const weekPlan = await storage.getWeekPlan(branchId, weekStartDate);
+      const weekPlan = await storage.getWeekPlan(branchId, weekStartDate, req.userWithAccess!.tenantId!);
       // Disable HTTP caching to ensure fresh data after mutations
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
       res.set('Pragma', 'no-cache');
@@ -14466,7 +14467,7 @@ OTO Company Limited`,
   });
 
   // Get rota (read-only schedule view for employees)
-  app.get("/api/rota", requireAuth, async (req, res, next) => {
+  app.get("/api/rota", requireAuth, requireSchedulePark, async (req, res, next) => {
     try {
       const scope = (req.query.scope as string) || "me";
       const branchId = req.query.branchId as string;
@@ -14495,7 +14496,7 @@ OTO Company Limited`,
       }
 
       // Get the employee record for the current user (via personId from people table)
-      const allEmployees = await storage.getEmployees();
+      const allEmployees = (await storage.getEmployees()).filter(employee => employee.tenantId === req.userWithAccess!.tenantId);
       const currentUserEmployee = allEmployees.find(emp => {
         // Link user to employee by email or userId
         return emp.email === user.email || emp.userId === user.id;
@@ -14548,19 +14549,20 @@ OTO Company Limited`,
 
       const shifts: any[] = [];
       const rotaBranchIds = scope === "me" && currentUserEmployee
-        ? (await db.select({ id: branches.id }).from(branches)).map((b) => b.id)
+        ? (await db.select({ id: branches.id }).from(branches).where(and(eq(branches.tenantId, req.userWithAccess!.tenantId!), scheduleParkPredicate("branches", req.userWithAccess!.tenantId!)))).map((b) => b.id)
         : [branchId];
       
       for (const rotaBranchId of rotaBranchIds) {
         const plans = await db.select({ weekStartDate: scheduleWeekPlans.weekStartDate })
           .from(scheduleWeekPlans)
-          .where(and(
+          .where(and(and(
             eq(scheduleWeekPlans.branchId, rotaBranchId),
+            eq(scheduleWeekPlans.tenantId, req.userWithAccess!.tenantId!),
             gte(scheduleWeekPlans.weekStartDate, earliestPlanStart),
             lte(scheduleWeekPlans.weekStartDate, latestPlanStart),
-          ));
+          ), scheduleParkPredicate("schedule_week_plans", req.userWithAccess!.tenantId!)));
         for (const { weekStartDate: weekStart } of plans) {
-          const weekPlan = await storage.getWeekPlan(rotaBranchId, weekStart);
+          const weekPlan = await storage.getWeekPlan(rotaBranchId, weekStart, req.userWithAccess!.tenantId!);
           if (!weekPlan) continue;
 
           const shiftGroupMap = new Map<string, string>();
@@ -14667,7 +14669,7 @@ OTO Company Limited`,
         const borrowedOutShifts = await storage.getBorrowedOutAssignments(
           branchId,
           from,
-          to
+          to, req.userWithAccess!.tenantId!
         );
         
         for (const borrowed of borrowedOutShifts) {
@@ -14693,7 +14695,7 @@ OTO Company Limited`,
       }
 
       // Fetch duty blocks for the date range and attach to shifts
-      const allDutyBlocks = await storage.getDutyBlocksByDateRange({ branchId, startDate: from, endDate: to });
+      const allDutyBlocks = await storage.getDutyBlocksByDateRange({ branchId, startDate: from, endDate: to }, req.userWithAccess!.tenantId!);
       const dutyBlocksByAssignment = new Map<string, any[]>();
       for (const db of allDutyBlocks) {
         if (!dutyBlocksByAssignment.has(db.assignmentId)) {
@@ -14727,7 +14729,7 @@ OTO Company Limited`,
   });
 
   // Get or create week plan
-  app.post("/api/schedule/week", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/week", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { branchId, weekStartDate } = req.body;
 
@@ -14735,7 +14737,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "branchId and weekStartDate are required" });
       }
 
-      const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, req.user!.id);
+      const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, req.user!.id, req.userWithAccess!.tenantId!);
       res.json(weekPlan);
     } catch (error) {
       next(error);
@@ -14743,7 +14745,7 @@ OTO Company Limited`,
   });
 
   // Create shift row
-  app.post("/api/schedule/shift-rows", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/shift-rows", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { branchId, startTime, endTime, label, note, roleIds, rowOrder, staffRequired, staffRequiredByDay, colorIndex, shiftGroupId } = req.body;
 
@@ -14775,7 +14777,7 @@ OTO Company Limited`,
         shiftGroupId: shiftGroupId || null,
         colorIndex: colorIndex ?? null,
         createdBy: req.user!.id,
-      }, roleIds);
+      }, roleIds, req.userWithAccess!.tenantId!);
 
       res.status(201).json(shiftRow);
     } catch (error) {
@@ -14784,7 +14786,7 @@ OTO Company Limited`,
   });
 
   // Reorder shift rows within a department (MUST be before /:id route)
-  app.patch("/api/schedule/shift-rows/reorder", requireAuth, requireManager, async (req, res, next) => {
+  app.patch("/api/schedule/shift-rows/reorder", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { departmentId, shiftGroupId, orderedIds } = req.body as { departmentId?: string; shiftGroupId?: string; orderedIds: string[] };
 
@@ -14794,10 +14796,10 @@ OTO Company Limited`,
 
       if (shiftGroupId) {
         for (let i = 0; i < orderedIds.length; i++) {
-          await storage.updateShiftRow(orderedIds[i], { sortOrderWithinGroup: i });
+          await storage.updateShiftRow(orderedIds[i], { sortOrderWithinGroup: i }, undefined, req.userWithAccess!.tenantId!);
         }
       } else if (departmentId) {
-        const shiftRows = await storage.getShiftRowsByDepartment(departmentId);
+        const shiftRows = await storage.getShiftRowsByDepartment(departmentId, req.userWithAccess!.tenantId!);
         const validIds = new Set(shiftRows.map(r => r.id));
         const allValid = orderedIds.every(id => validIds.has(id));
         
@@ -14806,7 +14808,7 @@ OTO Company Limited`,
         }
 
         for (let i = 0; i < orderedIds.length; i++) {
-          await storage.updateShiftRow(orderedIds[i], { rowOrder: i });
+          await storage.updateShiftRow(orderedIds[i], { rowOrder: i }, undefined, req.userWithAccess!.tenantId!);
         }
       }
 
@@ -14817,7 +14819,7 @@ OTO Company Limited`,
   });
 
   // Update shift row
-  app.patch("/api/schedule/shift-rows/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.patch("/api/schedule/shift-rows/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const { startTime, endTime, label, note, roleIds, rowOrder, staffRequired, staffRequiredByDay, colorIndex, shiftGroupId, sortOrderWithinGroup, breakEnabled, breakDurationMinutes, breakBaseOffsetMinutes, breakStaggerMinutes } = req.body;
@@ -14843,15 +14845,15 @@ OTO Company Limited`,
       if (breakBaseOffsetMinutes !== undefined) updates.breakBaseOffsetMinutes = breakBaseOffsetMinutes;
       if (breakStaggerMinutes !== undefined) updates.breakStaggerMinutes = breakStaggerMinutes;
 
-      const shiftRow = await storage.updateShiftRow(id, updates, roleIds);
+      const shiftRow = await storage.updateShiftRow(id, updates, roleIds, req.userWithAccess!.tenantId!);
 
       const needsBreakRegen = startTime !== undefined || endTime !== undefined || breakEnabled !== undefined || breakDurationMinutes !== undefined || breakBaseOffsetMinutes !== undefined || breakStaggerMinutes !== undefined;
       if (needsBreakRegen && shiftRow) {
-        const sr = await storage.getShiftRow(id);
+        const sr = await storage.getShiftRow(id, req.userWithAccess!.tenantId!);
         if (sr) {
           const dates = [...new Set((sr.assignments || []).map((a: any) => a.shiftDate))];
           for (const d of dates) {
-            await generateBreaksForShiftRow(id, d).catch(err => console.error('[BREAKS] Generation error:', err));
+            await generateBreaksForShiftRow(id, d, req.userWithAccess!.tenantId!).catch(err => console.error('[BREAKS] Generation error:', err));
           }
         }
       }
@@ -14863,10 +14865,10 @@ OTO Company Limited`,
   });
 
   // Delete shift row
-  app.delete("/api/schedule/shift-rows/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.delete("/api/schedule/shift-rows/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
-      await storage.deleteShiftRow(id);
+      await storage.deleteShiftRow(id, req.userWithAccess!.tenantId!);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -14874,7 +14876,7 @@ OTO Company Limited`,
   });
 
   // Merge shift rows - preview conflicts and execute merge
-  app.post("/api/schedule/shift-rows/merge/preview", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/shift-rows/merge/preview", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const schema = z.object({
         targetRowId: z.string(),
@@ -14882,12 +14884,12 @@ OTO Company Limited`,
       });
       const { targetRowId, sourceRowIds } = schema.parse(req.body);
 
-      const targetRow = await storage.getShiftRow(targetRowId);
+      const targetRow = await storage.getShiftRow(targetRowId, req.userWithAccess!.tenantId!);
       if (!targetRow) return res.status(404).json({ message: "Target shift row not found" });
 
       const sourceRows = [];
       for (const id of sourceRowIds) {
-        const row = await storage.getShiftRow(id);
+        const row = await storage.getShiftRow(id, req.userWithAccess!.tenantId!);
         if (!row) return res.status(404).json({ message: `Source shift row ${id} not found` });
         sourceRows.push(row);
       }
@@ -14980,7 +14982,7 @@ OTO Company Limited`,
     }
   });
 
-  app.post("/api/schedule/shift-rows/merge/execute", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/shift-rows/merge/execute", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const schema = z.object({
         targetRowId: z.string(),
@@ -14992,8 +14994,10 @@ OTO Company Limited`,
       });
       const { targetRowId, sourceRowIds, conflictResolutions } = schema.parse(req.body);
 
-      const targetRow = await storage.getShiftRow(targetRowId);
+      const targetRow = await storage.getShiftRow(targetRowId, req.userWithAccess!.tenantId!);
       if (!targetRow) return res.status(404).json({ message: "Target shift row not found" });
+
+      await assertScheduleDeleteScope("schedule_shift_rows", [targetRowId, ...sourceRowIds], req.userWithAccess!.tenantId!);
 
       const resolutionMap = new Map(conflictResolutions.map(r => [r.sourceAssignmentId, r.action]));
       const targetAssignments = targetRow.assignments || [];
@@ -15011,7 +15015,7 @@ OTO Company Limited`,
       );
 
       for (const sourceId of sourceRowIds) {
-        const sourceRow = await storage.getShiftRow(sourceId);
+        const sourceRow = await storage.getShiftRow(sourceId, req.userWithAccess!.tenantId!);
         if (!sourceRow) continue;
 
         for (const sa of (sourceRow.assignments || [])) {
@@ -15032,22 +15036,22 @@ OTO Company Limited`,
                 return taKey === assigneeKey && ta.shiftDate === sa.shiftDate;
               });
               if (existingInTarget) {
-                await db.delete(scheduleAssignments).where(eq(scheduleAssignments.id, existingInTarget.id));
+                await db.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, existingInTarget.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
               }
               await db.update(scheduleAssignments)
                 .set({ shiftRowId: targetRowId })
-                .where(eq(scheduleAssignments.id, sa.id));
+                .where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
               replaced++;
             } else {
               // keep_target (default): delete the source assignment
-              await db.delete(scheduleAssignments).where(eq(scheduleAssignments.id, sa.id));
+              await db.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
               skipped++;
             }
           } else {
             // No conflict - just move the assignment to target row
             await db.update(scheduleAssignments)
               .set({ shiftRowId: targetRowId })
-              .where(eq(scheduleAssignments.id, sa.id));
+              .where(and(eq(scheduleAssignments.id, sa.id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
             moved++;
             occupiedKeys.add(comboKey);
           }
@@ -15055,10 +15059,10 @@ OTO Company Limited`,
 
         // Move any roles from source that target doesn't have
         const targetRoleIds = new Set(
-          (await db.select().from(scheduleShiftRowRoles).where(eq(scheduleShiftRowRoles.shiftRowId, targetRowId)))
+          (await db.select().from(scheduleShiftRowRoles).where(and(eq(scheduleShiftRowRoles.shiftRowId, targetRowId), scheduleParkPredicate("schedule_shift_row_roles", req.userWithAccess!.tenantId!))))
             .map(r => r.roleId)
         );
-        const sourceRoles = await db.select().from(scheduleShiftRowRoles).where(eq(scheduleShiftRowRoles.shiftRowId, sourceId));
+        const sourceRoles = await db.select().from(scheduleShiftRowRoles).where(and(eq(scheduleShiftRowRoles.shiftRowId, sourceId), scheduleParkPredicate("schedule_shift_row_roles", req.userWithAccess!.tenantId!)));
         for (const sr of sourceRoles) {
           if (!targetRoleIds.has(sr.roleId)) {
             await db.insert(scheduleShiftRowRoles).values({
@@ -15073,11 +15077,11 @@ OTO Company Limited`,
         // Move any shift breaks from source to target
         await db.update(scheduleShiftBreaks)
           .set({ shiftRowId: targetRowId })
-          .where(eq(scheduleShiftBreaks.shiftRowId, sourceId));
+          .where(and(eq(scheduleShiftBreaks.shiftRowId, sourceId), scheduleParkPredicate("schedule_shift_breaks", req.userWithAccess!.tenantId!)));
 
         // Hard-delete the now-empty source row and its roles
-        await db.delete(scheduleShiftRowRoles).where(eq(scheduleShiftRowRoles.shiftRowId, sourceId));
-        await db.delete(scheduleShiftRows).where(eq(scheduleShiftRows.id, sourceId));
+        await db.delete(scheduleShiftRowRoles).where(and(eq(scheduleShiftRowRoles.shiftRowId, sourceId), scheduleParkPredicate("schedule_shift_row_roles", req.userWithAccess!.tenantId!)));
+        await db.delete(scheduleShiftRows).where(and(eq(scheduleShiftRows.id, sourceId), scheduleParkPredicate("schedule_shift_rows", req.userWithAccess!.tenantId!)));
       }
 
       res.json({ success: true, moved, skipped, replaced, sourceRowsDeleted: sourceRowIds.length });
@@ -15087,7 +15091,7 @@ OTO Company Limited`,
   });
 
   // Preview how many records will be deleted before actually clearing
-  app.get("/api/schedule/clear-preview", requireAuth, requireManager, async (req, res, next) => {
+  app.get("/api/schedule/clear-preview", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const previewSchema = z.object({
         branchId: z.string().min(1),
@@ -15107,19 +15111,19 @@ OTO Company Limited`,
       const { branchId, startDate, endDate, departmentId } = parsed.data;
 
       // Validate branch and department exist
-      const [branch] = await db.select({ id: branches.id, name: branches.name }).from(branches).where(eq(branches.id, branchId));
+      const [branch] = await db.select({ id: branches.id, name: branches.name }).from(branches).where(and(eq(branches.id, branchId), scheduleParkPredicate("branches", req.userWithAccess!.tenantId!)));
       if (!branch) return res.status(400).json({ message: `Branch not found: ${branchId}` });
-      const [dept] = await db.select({ id: departments.id, name: departments.name }).from(departments).where(eq(departments.id, departmentId));
+      const [dept] = await db.select({ id: departments.id, name: departments.name }).from(departments).where(and(eq(departments.id, departmentId), scheduleParkPredicate("departments", req.userWithAccess!.tenantId!)));
       if (!dept) return res.status(400).json({ message: `Department not found: ${departmentId}` });
 
       // Get shift rows scoped to branch + department active in the date range
       const deptShiftRows = await db.select({ id: scheduleShiftRows.id }).from(scheduleShiftRows)
-        .where(and(
+        .where(and(and(
           eq(scheduleShiftRows.branchId, branchId),
           eq(scheduleShiftRows.departmentId, departmentId),
           or(isNull(scheduleShiftRows.activeFromDate), sql`${scheduleShiftRows.activeFromDate} <= ${endDate}::date`),
           or(isNull(scheduleShiftRows.activeUntilDate), sql`${scheduleShiftRows.activeUntilDate} >= ${startDate}::date`),
-        ));
+        ), scheduleParkPredicate("schedule_shift_rows", req.userWithAccess!.tenantId!)));
       const deptRowIds = deptShiftRows.map(r => r.id);
 
       if (deptRowIds.length === 0) {
@@ -15134,17 +15138,17 @@ OTO Company Limited`,
         })
         .from(scheduleAssignments)
         .leftJoin(employees, eq(scheduleAssignments.employeeId, employees.id))
-        .where(and(
+        .where(and(and(
           inArray(scheduleAssignments.shiftRowId, deptRowIds),
           gte(scheduleAssignments.shiftDate, startDate),
           lte(scheduleAssignments.shiftDate, endDate),
-        ));
+        ), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
 
       const assignmentIds = assignmentsToDelete.map(a => a.id);
       let breakCount = 0;
       if (assignmentIds.length > 0) {
         const brks = await db.select({ id: scheduleShiftBreaks.id }).from(scheduleShiftBreaks)
-          .where(inArray(scheduleShiftBreaks.assignmentId, assignmentIds));
+          .where(and(inArray(scheduleShiftBreaks.assignmentId, assignmentIds), scheduleParkPredicate("schedule_shift_breaks", req.userWithAccess!.tenantId!)));
         breakCount = brks.length;
       }
 
@@ -15172,10 +15176,10 @@ OTO Company Limited`,
   });
 
   // Clear schedule - scoped strictly to one department + one week + one branch
-  app.post("/api/schedule/clear", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/clear", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const user = req.user as UserWithBranchAccess;
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess!.tenantId!;
       const clearSchema = z.object({
         branchId: z.string().min(1, "branchId is required"),
         startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "startDate must be yyyy-MM-dd"),
@@ -15186,26 +15190,26 @@ OTO Company Limited`,
       const { branchId, startDate, endDate, departmentId } = data;
 
       // Safety: validate branch and department exist before any delete
-      const [branchExists] = await db.select({ id: branches.id }).from(branches).where(eq(branches.id, branchId));
+      const [branchExists] = await db.select({ id: branches.id }).from(branches).where(and(eq(branches.id, branchId), scheduleParkPredicate("branches", req.userWithAccess!.tenantId!)));
       if (!branchExists) return res.status(400).json({ message: `Invalid branchId: ${branchId}` });
-      const [deptExists] = await db.select({ id: departments.id }).from(departments).where(eq(departments.id, departmentId));
+      const [deptExists] = await db.select({ id: departments.id }).from(departments).where(and(eq(departments.id, departmentId), scheduleParkPredicate("departments", req.userWithAccess!.tenantId!)));
       if (!deptExists) return res.status(400).json({ message: `Invalid departmentId: ${departmentId}` });
 
       // Take scoped snapshot before deletion for restore history (scoped by shift row departmentId)
-      const snapshot = await storage.snapshotByDepartmentAndWeek(branchId, departmentId, startDate, endDate);
+      const snapshot = await storage.snapshotByDepartmentAndWeek(branchId, departmentId, startDate, endDate, req.userWithAccess!.tenantId!);
 
       // Get shift rows that belong to this branch+department, active during this date range
       const deptShiftRows = await db.select({ id: scheduleShiftRows.id }).from(scheduleShiftRows)
-        .where(and(
+        .where(and(and(
           eq(scheduleShiftRows.branchId, branchId),
           eq(scheduleShiftRows.departmentId, departmentId),
           or(isNull(scheduleShiftRows.activeFromDate), sql`${scheduleShiftRows.activeFromDate} <= ${endDate}::date`),
           or(isNull(scheduleShiftRows.activeUntilDate), sql`${scheduleShiftRows.activeUntilDate} >= ${startDate}::date`),
-        ));
+        ), scheduleParkPredicate("schedule_shift_rows", req.userWithAccess!.tenantId!)));
       const deptRowIds = deptShiftRows.map(r => r.id);
 
       // AUDIT LOG: trace exact scope before any delete
-      const [deptInfo] = await db.select({ name: departments.name }).from(departments).where(eq(departments.id, departmentId));
+      const [deptInfo] = await db.select({ name: departments.name }).from(departments).where(and(eq(departments.id, departmentId), scheduleParkPredicate("departments", req.userWithAccess!.tenantId!)));
       console.log(`[CLEAR WEEK] REQUEST: branchId=${branchId} departmentId=${departmentId}(${deptInfo?.name}) startDate=${startDate} endDate=${endDate}`);
       console.log(`[CLEAR WEEK] SCOPE: ${deptRowIds.length} shift rows matched → IDs: [${deptRowIds.join(', ')}]`);
 
@@ -15216,27 +15220,29 @@ OTO Company Limited`,
         // Collect assignment IDs to delete breaks first (FK constraint)
         const assignmentsToDelete = await db.select({ id: scheduleAssignments.id, employeeId: scheduleAssignments.employeeId })
           .from(scheduleAssignments)
-          .where(and(
+          .where(and(and(
             inArray(scheduleAssignments.shiftRowId, deptRowIds),
             gte(scheduleAssignments.shiftDate, startDate),
             lte(scheduleAssignments.shiftDate, endDate)
-          ));
+          ), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
         console.log(`[CLEAR WEEK] WILL DELETE: ${assignmentsToDelete.length} assignments for shiftRowIds=[${deptRowIds.join(',')}] AND shiftDate BETWEEN ${startDate} AND ${endDate}`);
         const assignmentIdsToDelete = assignmentsToDelete.map(a => a.id);
 
+        await assertScheduleDeleteScope("schedule_assignments", assignmentIdsToDelete, req.userWithAccess!.tenantId!);
+
         if (assignmentIdsToDelete.length > 0) {
           const deletedBreaks = await db.delete(scheduleShiftBreaks)
-            .where(inArray(scheduleShiftBreaks.assignmentId, assignmentIdsToDelete))
+            .where(and(inArray(scheduleShiftBreaks.assignmentId, assignmentIdsToDelete), scheduleParkPredicate("schedule_shift_breaks", req.userWithAccess!.tenantId!)))
             .returning();
           totalBreaksRemoved = deletedBreaks.length;
         }
 
         const deleted = await db.delete(scheduleAssignments)
-          .where(and(
+          .where(and(and(
             inArray(scheduleAssignments.shiftRowId, deptRowIds),
             gte(scheduleAssignments.shiftDate, startDate),
             lte(scheduleAssignments.shiftDate, endDate)
-          )).returning();
+          ), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!))).returning();
         totalAssignmentsRemoved = deleted.length;
 
         // Clear CHANGE_DAY_OFF for the employees who were assigned on these department rows
@@ -15245,19 +15251,19 @@ OTO Company Limited`,
         )];
         if (affectedEmployeeIds.length > 0) {
           await db.delete(employeeTimeOff)
-            .where(and(
+            .where(and(and(
               eq(employeeTimeOff.branchId, branchId),
               inArray(employeeTimeOff.employeeId, affectedEmployeeIds),
               sql`${employeeTimeOff.startDate}::date >= ${startDate}::date`,
               sql`${employeeTimeOff.endDate}::date <= ${endDate}::date`,
               eq(employeeTimeOff.type, "CHANGE_DAY_OFF")
-            ));
+            ), scheduleParkPredicate("employee_time_off", req.userWithAccess!.tenantId!)));
         }
       }
 
       // Get department name for the description
       const [dept] = await db.select({ name: departments.name }).from(departments)
-        .where(eq(departments.id, departmentId));
+        .where(and(eq(departments.id, departmentId), scheduleParkPredicate("departments", req.userWithAccess!.tenantId!)));
       const deptName = dept?.name || departmentId;
 
       // Store the structured summary and scoped snapshot
@@ -15293,13 +15299,13 @@ OTO Company Limited`,
   // ============================================
 
   // Get shift groups for a branch
-  app.get("/api/schedule/shift-groups", requireAuth, async (req, res, next) => {
+  app.get("/api/schedule/shift-groups", requireAuth, requireSchedulePark, async (req, res, next) => {
     try {
       const branchId = req.query.branchId as string;
       if (!branchId) {
         return res.status(400).json({ message: "branchId is required" });
       }
-      const groups = await storage.getShiftGroupsByBranch(branchId);
+      const groups = await storage.getShiftGroupsByBranch(branchId, req.userWithAccess!.tenantId!);
       res.json(groups);
     } catch (error) {
       next(error);
@@ -15307,7 +15313,7 @@ OTO Company Limited`,
   });
 
   // Create shift group
-  app.post("/api/schedule/shift-groups", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/shift-groups", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { branchId, name } = req.body;
       if (!branchId || !name) {
@@ -15317,7 +15323,7 @@ OTO Company Limited`,
       if (!branch) {
         return res.status(404).json({ message: "Branch not found" });
       }
-      const existingGroups = await storage.getShiftGroupsByBranch(branchId);
+      const existingGroups = await storage.getShiftGroupsByBranch(branchId, req.userWithAccess!.tenantId!);
       const maxSortOrder = existingGroups.reduce((max, g) => Math.max(max, g.sortOrder), -1);
       // Ensure a week plan exists for the current week so the shift group
       // is immediately visible on the scheduling page.
@@ -15327,7 +15333,7 @@ OTO Company Limited`,
       const monday = new Date(now);
       monday.setDate(monday.getDate() + mondayOffset);
       const weekStartDate = monday.toISOString().split("T")[0];
-      await storage.getOrCreateWeekPlan(branchId, weekStartDate, req.user!.id);
+      await storage.getOrCreateWeekPlan(branchId, weekStartDate, req.user!.id, req.userWithAccess!.tenantId!);
 
       const group = await storage.createShiftGroup({
         tenantId: branch.tenantId,
@@ -15336,7 +15342,7 @@ OTO Company Limited`,
         sortOrder: maxSortOrder + 1,
         isActive: true,
         createdBy: req.user!.id,
-      });
+      }, req.userWithAccess!.tenantId!);
       res.status(201).json(group);
     } catch (error) {
       next(error);
@@ -15344,14 +15350,14 @@ OTO Company Limited`,
   });
 
   // Reorder shift groups (MUST be before /:id route)
-  app.patch("/api/schedule/shift-groups/reorder", requireAuth, requireManager, async (req, res, next) => {
+  app.patch("/api/schedule/shift-groups/reorder", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { orderedIds } = req.body as { orderedIds: string[] };
       if (!orderedIds || !Array.isArray(orderedIds)) {
         return res.status(400).json({ message: "orderedIds array is required" });
       }
       for (let i = 0; i < orderedIds.length; i++) {
-        await storage.updateShiftGroup(orderedIds[i], { sortOrder: i });
+        await storage.updateShiftGroup(orderedIds[i], { sortOrder: i }, req.userWithAccess!.tenantId!);
       }
       res.json({ success: true });
     } catch (error) {
@@ -15360,7 +15366,7 @@ OTO Company Limited`,
   });
 
   // Update shift group (rename, reorder, archive)
-  app.patch("/api/schedule/shift-groups/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.patch("/api/schedule/shift-groups/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const { name, sortOrder, isActive } = req.body;
@@ -15368,7 +15374,7 @@ OTO Company Limited`,
       if (name !== undefined) updates.name = name;
       if (sortOrder !== undefined) updates.sortOrder = sortOrder;
       if (isActive !== undefined) updates.isActive = isActive;
-      const group = await storage.updateShiftGroup(id, updates);
+      const group = await storage.updateShiftGroup(id, updates, req.userWithAccess!.tenantId!);
       res.json(group);
     } catch (error) {
       next(error);
@@ -15376,12 +15382,12 @@ OTO Company Limited`,
   });
 
   // Delete/archive shift group (moves shifts to target group or ungroups them)
-  app.delete("/api/schedule/shift-groups/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.delete("/api/schedule/shift-groups/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const targetGroupId = req.query.targetGroupId as string;
 
-      const shiftsInGroup = await storage.getShiftRowsByGroup(id);
+      const shiftsInGroup = await storage.getShiftRowsByGroup(id, req.userWithAccess!.tenantId!);
       // Its rows would be left with no shift group, which the database refuses
       // (Q2, H15): say so before anything is moved or deleted.
       if (shiftsInGroup.length > 0 && noShiftGroup(targetGroupId)) {
@@ -15389,10 +15395,10 @@ OTO Company Limited`,
       }
       if (shiftsInGroup.length > 0) {
         for (const shift of shiftsInGroup) {
-          await storage.updateShiftRow(shift.id, { shiftGroupId: targetGroupId || null });
+          await storage.updateShiftRow(shift.id, { shiftGroupId: targetGroupId || null }, undefined, req.userWithAccess!.tenantId!);
         }
       }
-      await storage.deleteShiftGroup(id);
+      await storage.deleteShiftGroup(id, req.userWithAccess!.tenantId!);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -15400,7 +15406,7 @@ OTO Company Limited`,
   });
 
   // Move shift to a different group
-  app.patch("/api/schedule/shift-rows/:id/move-group", requireAuth, requireManager, async (req, res, next) => {
+  app.patch("/api/schedule/shift-rows/:id/move-group", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const { shiftGroupId, sortOrderWithinGroup } = req.body;
@@ -15411,22 +15417,22 @@ OTO Company Limited`,
       const updates: any = {};
       if (shiftGroupId !== undefined) updates.shiftGroupId = shiftGroupId;
       if (sortOrderWithinGroup !== undefined) updates.sortOrderWithinGroup = sortOrderWithinGroup;
-      const row = await storage.updateShiftRow(id, updates);
+      const row = await storage.updateShiftRow(id, updates, undefined, req.userWithAccess!.tenantId!);
       res.json(row);
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/schedule/shift-rows/:id/regenerate-breaks", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/shift-rows/:id/regenerate-breaks", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const shiftRow = await storage.getShiftRow(id);
+      const shiftRow = await storage.getShiftRow(id, req.userWithAccess!.tenantId!);
       if (!shiftRow) return res.status(404).json({ message: "Shift row not found" });
       const assignments = shiftRow.assignments || [];
       const uniqueDates = [...new Set(assignments.map((a: any) => a.shiftDate))];
       for (const date of uniqueDates) {
-        await generateBreaksForShiftRow(id, date);
+        await generateBreaksForShiftRow(id, date, req.userWithAccess!.tenantId!);
       }
       res.json({ message: "Breaks regenerated", dates: uniqueDates.length });
     } catch (error) {
@@ -15434,10 +15440,10 @@ OTO Company Limited`,
     }
   });
 
-  app.post("/api/schedule/week/:id/regenerate-breaks", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/week/:id/regenerate-breaks", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
-      await generateBreaksForWeekPlan(id);
+      await generateBreaksForWeekPlan(id, req.userWithAccess!.tenantId!);
       res.json({ message: "All breaks regenerated for week plan" });
     } catch (error) {
       next(error);
@@ -15445,7 +15451,7 @@ OTO Company Limited`,
   });
 
   // Get eligible employees for a shift row on a date
-  app.get("/api/schedule/shift-rows/:id/eligible-employees", requireAuth, requireManager, async (req, res, next) => {
+  app.get("/api/schedule/shift-rows/:id/eligible-employees", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const date = req.query.date as string;
@@ -15454,7 +15460,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "date query parameter is required" });
       }
 
-      const employees = await storage.getEligibleEmployeesForShiftRow(id, date);
+      const employees = await storage.getEligibleEmployeesForShiftRow(id, date, req.userWithAccess!.tenantId!);
       res.json(employees);
     } catch (error) {
       next(error);
@@ -15462,7 +15468,7 @@ OTO Company Limited`,
   });
 
   // Get borrow candidates from other branches in same operator
-  app.get("/api/schedule/shift-rows/:id/borrow-candidates", requireAuth, requireManager, async (req, res, next) => {
+  app.get("/api/schedule/shift-rows/:id/borrow-candidates", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const date = req.query.date as string;
@@ -15472,7 +15478,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "date and branchId query parameters are required" });
       }
 
-      const result = await storage.getBorrowCandidates(id, date, branchId);
+      const result = await storage.getBorrowCandidates(id, date, branchId, req.userWithAccess!.tenantId!);
       res.json(result);
     } catch (error) {
       next(error);
@@ -15480,7 +15486,7 @@ OTO Company Limited`,
   });
 
   // Create assignment with validation (supports borrowed staff and casual workers)
-  app.post("/api/schedule/assignments", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/assignments", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { weekPlanId, shiftRowId, shiftDate, employeeId, casualWorkerId, assigneeType, dailyRateSnapshot, isBorrowed, borrowedFromBranchId } = req.body;
 
@@ -15505,7 +15511,7 @@ OTO Company Limited`,
       }
 
       // Get tenantId from the shift row
-      const shiftRow = await storage.getShiftRow(shiftRowId);
+      const shiftRow = await storage.getShiftRow(shiftRowId, req.userWithAccess!.tenantId!);
       if (!shiftRow) {
         return res.status(404).json({ message: "Shift row not found" });
       }
@@ -15519,13 +15525,13 @@ OTO Company Limited`,
         const monday = new Date(targetDate);
         monday.setDate(monday.getDate() + mondayOffset);
         const weekStartDate = monday.toISOString().split("T")[0];
-        const weekPlan = await storage.getOrCreateWeekPlan(shiftRow.branchId, weekStartDate, req.user!.id);
+        const weekPlan = await storage.getOrCreateWeekPlan(shiftRow.branchId, weekStartDate, req.user!.id, req.userWithAccess!.tenantId!);
         finalWeekPlanId = weekPlan.id;
       }
 
       // For employee assignments, validate using centralized logic
       if (!isCasualAssignment) {
-        const validation = await storage.canAssignEmployeeToShift(employeeId, shiftRowId, shiftDate, { isBorrowed: isBorrowed || false });
+        const validation = await storage.canAssignEmployeeToShift(employeeId, shiftRowId, shiftDate, { isBorrowed: isBorrowed || false }, req.userWithAccess!.tenantId!);
         if (!validation.ok) {
           console.log('[SCHEDULING] Assignment validation failed:', {
             employeeId,
@@ -15544,10 +15550,10 @@ OTO Company Limited`,
       } else {
         // For casual worker assignments, validate that the casual worker exists and is available
         const casualWorker = await db.select().from(casualWorkers)
-          .where(and(
+          .where(and(and(
             eq(casualWorkers.id, casualWorkerId),
             eq(casualWorkers.tenantId, shiftRow.tenantId)
-          ))
+          ), scheduleParkPredicate("casual_workers", req.userWithAccess!.tenantId!)))
           .limit(1)
           .then(r => r[0]);
 
@@ -15573,7 +15579,7 @@ OTO Company Limited`,
         }
 
         // Check for shift overlap (same as employees - can't work overlapping shifts)
-        const validation = await storage.canAssignCasualWorkerToShift(casualWorkerId, shiftRowId, shiftDate);
+        const validation = await storage.canAssignCasualWorkerToShift(casualWorkerId, shiftRowId, shiftDate, req.userWithAccess!.tenantId!);
         if (!validation.ok) {
           console.log('[SCHEDULING] Casual worker assignment validation failed:', {
             casualWorkerId,
@@ -15596,7 +15602,7 @@ OTO Company Limited`,
       if (isCasualAssignment && !finalDailyRate) {
         const casualWorker = await db.select({ dailyRate: casualWorkers.dailyRate })
           .from(casualWorkers)
-          .where(eq(casualWorkers.id, casualWorkerId))
+          .where(and(eq(casualWorkers.id, casualWorkerId), scheduleParkPredicate("casual_workers", req.userWithAccess!.tenantId!)))
           .limit(1)
           .then(r => r[0]);
         finalDailyRate = casualWorker?.dailyRate || null;
@@ -15614,9 +15620,9 @@ OTO Company Limited`,
         assignedBy: req.user!.id,
         isBorrowed: isBorrowed || false,
         borrowedFromBranchId: borrowedFromBranchId || null,
-      });
+      }, req.userWithAccess!.tenantId!);
 
-      await generateBreaksForShiftRow(shiftRowId, shiftDate).catch(err => console.error('[BREAKS] Generation error:', err));
+      await generateBreaksForShiftRow(shiftRowId, shiftDate, req.userWithAccess!.tenantId!).catch(err => console.error('[BREAKS] Generation error:', err));
 
       res.status(201).json(assignment);
     } catch (error) {
@@ -15625,14 +15631,14 @@ OTO Company Limited`,
   });
 
   // Batch assign multiple employees to a shift
-  app.post("/api/schedule/assignments/batch", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/assignments/batch", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { weekPlanId, shiftRowId, shiftDate, employeeIds } = req.body;
       if (!shiftRowId || !shiftDate || !Array.isArray(employeeIds) || employeeIds.length === 0) {
         return res.status(400).json({ message: "shiftRowId, shiftDate, and employeeIds[] are required" });
       }
 
-      const shiftRow = await storage.getShiftRow(shiftRowId);
+      const shiftRow = await storage.getShiftRow(shiftRowId, req.userWithAccess!.tenantId!);
       if (!shiftRow) {
         return res.status(404).json({ message: "Shift row not found" });
       }
@@ -15645,14 +15651,14 @@ OTO Company Limited`,
         const monday = new Date(targetDate);
         monday.setDate(monday.getDate() + mondayOffset);
         const weekStartDate = monday.toISOString().split("T")[0];
-        const weekPlan = await storage.getOrCreateWeekPlan(shiftRow.branchId, weekStartDate, req.user!.id);
+        const weekPlan = await storage.getOrCreateWeekPlan(shiftRow.branchId, weekStartDate, req.user!.id, req.userWithAccess!.tenantId!);
         finalWeekPlanId = weekPlan.id;
       }
 
       const results: Array<{ employeeId: string; success: boolean; error?: string; assignmentId?: string }> = [];
 
       for (const employeeId of employeeIds) {
-        const validation = await storage.canAssignEmployeeToShift(employeeId, shiftRowId, shiftDate, { isBorrowed: false });
+        const validation = await storage.canAssignEmployeeToShift(employeeId, shiftRowId, shiftDate, { isBorrowed: false }, req.userWithAccess!.tenantId!);
         if (!validation.ok) {
           results.push({ employeeId, success: false, error: validation.message });
           continue;
@@ -15665,9 +15671,9 @@ OTO Company Limited`,
             employeeId,
             assigneeType: "employee",
             tenantId: shiftRow.tenantId,
-          });
+          }, req.userWithAccess!.tenantId!);
           // Generate breaks for the new assignment
-          await generateBreaksForShiftRow(shiftRowId, shiftDate).catch(() => {});
+          await generateBreaksForShiftRow(shiftRowId, shiftDate, req.userWithAccess!.tenantId!).catch(() => {});
           results.push({ employeeId, success: true, assignmentId: assignment.id });
         } catch (err: any) {
           results.push({ employeeId, success: false, error: err.message });
@@ -15681,7 +15687,7 @@ OTO Company Limited`,
   });
 
   // Reassign assignment to a different employee
-  app.patch("/api/schedule/assignments/:id/reassign", requireAuth, requireManager, async (req, res, next) => {
+  app.patch("/api/schedule/assignments/:id/reassign", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const { employeeId: newEmployeeId } = req.body;
@@ -15694,7 +15700,7 @@ OTO Company Limited`,
       // The assignment and the employee it goes to are the caller's park
       // group's (round 6's re-review, F7): another's is the app's answer for
       // a missing one at each step.
-      const assignment = await storage.getAssignment(id);
+      const assignment = await storage.getAssignment(id, req.userWithAccess!.tenantId!);
       if (!assignment || !req.userWithAccess?.tenantId || assignment.tenantId !== req.userWithAccess.tenantId) {
         return res.status(404).json({ message: "Assignment not found" });
       }
@@ -15718,7 +15724,7 @@ OTO Company Limited`,
       }
 
       // Check if new employee can be assigned to this shift (includes time overlap check)
-      const eligibility = await storage.canAssignEmployeeToShift(newEmployeeId, assignment.shiftRowId, assignment.shiftDate);
+      const eligibility = await storage.canAssignEmployeeToShift(newEmployeeId, assignment.shiftRowId, assignment.shiftDate, undefined, req.userWithAccess!.tenantId!);
       if (!eligibility.ok) {
         return res.status(409).json({ message: eligibility.message || "Cannot reassign: employee is not eligible" });
       }
@@ -15727,8 +15733,8 @@ OTO Company Limited`,
         employeeId: newEmployeeId,
         assignedBy: user.id,
         assignedAt: new Date(),
-      });
-      await generateBreaksForShiftRow(assignment.shiftRowId, assignment.shiftDate).catch(err => console.error('[BREAKS] Generation error:', err));
+      }, req.userWithAccess!.tenantId!);
+      await generateBreaksForShiftRow(assignment.shiftRowId, assignment.shiftDate, req.userWithAccess!.tenantId!).catch(err => console.error('[BREAKS] Generation error:', err));
       res.json(updated);
     } catch (error) {
       next(error);
@@ -15736,7 +15742,7 @@ OTO Company Limited`,
   });
 
   // Move assignment to a different shift row and/or date
-  app.patch("/api/schedule/assignments/:id/move", requireAuth, requireManager, async (req, res, next) => {
+  app.patch("/api/schedule/assignments/:id/move", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const { shiftRowId, shiftDate } = req.body;
@@ -15760,7 +15766,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Cannot modify schedules for past dates" });
       }
 
-      const assignment = await storage.getAssignment(id);
+      const assignment = await storage.getAssignment(id, req.userWithAccess!.tenantId!);
       if (!assignment) {
         return res.status(404).json({ message: "Assignment not found" });
       }
@@ -15772,13 +15778,13 @@ OTO Company Limited`,
       }
 
       // Validate target shift row exists
-      const targetShiftRow = await storage.getShiftRow(shiftRowId);
+      const targetShiftRow = await storage.getShiftRow(shiftRowId, req.userWithAccess!.tenantId!);
       if (!targetShiftRow) {
         return res.status(400).json({ message: "Target shift row not found" });
       }
 
       // Validate target shift row belongs to the same branch as the source
-      const sourceShiftRow = await storage.getShiftRow(assignment.shiftRowId);
+      const sourceShiftRow = await storage.getShiftRow(assignment.shiftRowId, req.userWithAccess!.tenantId!);
       if (!sourceShiftRow || targetShiftRow.branchId !== sourceShiftRow.branchId) {
         return res.status(400).json({ message: "Cannot move assignment to a different branch" });
       }
@@ -15795,7 +15801,7 @@ OTO Company Limited`,
 
       // Check if employee can be assigned to the target shift (includes time overlap check)
       // For move operations, exclude the current assignment from the one-shift-per-day check
-      const eligibility = await storage.canAssignEmployeeToShift(assignment.employeeId, shiftRowId, shiftDate, { excludeAssignmentId: id });
+      const eligibility = await storage.canAssignEmployeeToShift(assignment.employeeId, shiftRowId, shiftDate, { excludeAssignmentId: id }, req.userWithAccess!.tenantId!);
       if (!eligibility.ok && eligibility.reasonCode !== 'ALREADY_ASSIGNED') {
         return res.status(409).json({ message: eligibility.message || "Cannot move: employee is not eligible" });
       }
@@ -15810,10 +15816,10 @@ OTO Company Limited`,
         assignedAt: new Date(),
       };
 
-      const updated = await storage.updateAssignment(id, updateData);
-      await generateBreaksForShiftRow(oldShiftRowId, oldShiftDate).catch(err => console.error('[BREAKS] Generation error:', err));
+      const updated = await storage.updateAssignment(id, updateData, req.userWithAccess!.tenantId!);
+      await generateBreaksForShiftRow(oldShiftRowId, oldShiftDate, req.userWithAccess!.tenantId!).catch(err => console.error('[BREAKS] Generation error:', err));
       if (shiftRowId !== oldShiftRowId || shiftDate !== oldShiftDate) {
-        await generateBreaksForShiftRow(shiftRowId, shiftDate).catch(err => console.error('[BREAKS] Generation error:', err));
+        await generateBreaksForShiftRow(shiftRowId, shiftDate, req.userWithAccess!.tenantId!).catch(err => console.error('[BREAKS] Generation error:', err));
       }
       res.json(updated);
     } catch (error) {
@@ -15822,12 +15828,12 @@ OTO Company Limited`,
   });
 
   // Delete assignment
-  app.delete("/api/schedule/assignments/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.delete("/api/schedule/assignments/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       
       // Get assignment to check date
-      const assignment = await storage.getAssignment(id);
+      const assignment = await storage.getAssignment(id, req.userWithAccess!.tenantId!);
       if (!assignment) {
         return res.status(404).json({ message: "Assignment not found" });
       }
@@ -15840,8 +15846,8 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Cannot modify schedules for past dates" });
       }
       
-      await storage.deleteAssignment(id);
-      await generateBreaksForShiftRow(assignment.shiftRowId, assignment.shiftDate).catch(err => console.error('[BREAKS] Generation error:', err));
+      await storage.deleteAssignment(id, req.userWithAccess!.tenantId!);
+      await generateBreaksForShiftRow(assignment.shiftRowId, assignment.shiftDate, req.userWithAccess!.tenantId!).catch(err => console.error('[BREAKS] Generation error:', err));
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -15849,7 +15855,7 @@ OTO Company Limited`,
   });
 
   // Delete assignments by shift row and date
-  app.delete("/api/schedule/shift-rows/:shiftRowId/assignments/:date", requireAuth, requireManager, async (req, res, next) => {
+  app.delete("/api/schedule/shift-rows/:shiftRowId/assignments/:date", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { shiftRowId, date } = req.params;
       const employeeId = req.query.employeeId as string | undefined;
@@ -15862,19 +15868,18 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Cannot modify schedules for past dates" });
       }
       
-      await storage.deleteAssignmentsByShiftRowAndDate(shiftRowId, date, employeeId);
-      await generateBreaksForShiftRow(shiftRowId, date).catch(err => console.error('[BREAKS] Generation error:', err));
+      await storage.deleteAssignmentsByShiftRowAndDate(shiftRowId, date, employeeId, req.userWithAccess!.tenantId!);
+      await generateBreaksForShiftRow(shiftRowId, date, req.userWithAccess!.tenantId!).catch(err => console.error('[BREAKS] Generation error:', err));
       res.status(204).send();
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/schedule/breaks/generate-all", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/breaks/generate-all", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
-      const user = req.user!;
       const branchId = req.query.branchId as string | undefined;
-      const result = await generateAllBreaksForTenant(user.tenantId, branchId);
+      const result = await generateAllBreaksForTenant(req.userWithAccess!.tenantId!, branchId);
       res.json({ success: true, ...result });
     } catch (error) {
       next(error);
@@ -15882,9 +15887,9 @@ OTO Company Limited`,
   });
 
   // DUTY TYPES CRUD
-  app.get("/api/duty-types", requireAuth, async (req, res, next) => {
+  app.get("/api/duty-types", requireAuth, requireSchedulePark, async (req, res, next) => {
     try {
-      const tenantId = req.user!.tenantId;
+      const tenantId = req.userWithAccess!.tenantId!;
       const types = await storage.getDutyTypes(tenantId);
       res.json(types);
     } catch (error) {
@@ -15892,23 +15897,23 @@ OTO Company Limited`,
     }
   });
 
-  app.post("/api/duty-types", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/duty-types", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
-      const tenantId = req.user!.tenantId;
+      const tenantId = req.userWithAccess!.tenantId!;
       const schema = z.object({
         name: z.string().min(1),
         defaultDurationMinutes: z.number().optional(),
         color: z.string().optional(),
       });
       const data = schema.parse(req.body);
-      const created = await storage.createDutyType({ ...data, tenantId });
+      const created = await storage.createDutyType({ ...data, tenantId }, req.userWithAccess!.tenantId!);
       res.status(201).json(created);
     } catch (error) {
       next(error);
     }
   });
 
-  app.patch("/api/duty-types/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.patch("/api/duty-types/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const schema = z.object({
@@ -15918,16 +15923,16 @@ OTO Company Limited`,
         isActive: z.boolean().optional(),
       });
       const data = schema.parse(req.body);
-      const updated = await storage.updateDutyType(id, data);
+      const updated = await storage.updateDutyType(id, data, req.userWithAccess!.tenantId!);
       res.json(updated);
     } catch (error) {
       next(error);
     }
   });
 
-  app.delete("/api/duty-types/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  app.delete("/api/duty-types/:id", requireAuth, requireAdmin, requireSchedulePark, async (req, res, next) => {
     try {
-      await storage.deleteDutyType(req.params.id);
+      await storage.deleteDutyType(req.params.id, req.userWithAccess!.tenantId!);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -15935,29 +15940,29 @@ OTO Company Limited`,
   });
 
   // DUTY BLOCKS CRUD
-  app.get("/api/duty-blocks", requireAuth, async (req, res, next) => {
+  app.get("/api/duty-blocks", requireAuth, requireSchedulePark, async (req, res, next) => {
     try {
       const { branchId, date, startDate, endDate, employeeId } = req.query as Record<string, string>;
       if (!branchId) {
         return res.status(400).json({ message: "branchId is required" });
       }
       if (startDate && endDate) {
-        const blocks = await storage.getDutyBlocksByDateRange({ branchId, startDate, endDate });
+        const blocks = await storage.getDutyBlocksByDateRange({ branchId, startDate, endDate }, req.userWithAccess!.tenantId!);
         return res.json(blocks);
       }
       if (!date) {
         return res.status(400).json({ message: "date or startDate+endDate is required" });
       }
-      const blocks = await storage.getDutyBlocks({ branchId, date, employeeId });
+      const blocks = await storage.getDutyBlocks({ branchId, date, employeeId }, req.userWithAccess!.tenantId!);
       res.json(blocks);
     } catch (error) {
       next(error);
     }
   });
 
-  app.post("/api/duty-blocks", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/duty-blocks", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
-      const tenantId = req.user!.tenantId;
+      const tenantId = req.userWithAccess!.tenantId!;
       const schema = z.object({
         branchId: z.string(),
         date: z.string(),
@@ -15974,14 +15979,14 @@ OTO Company Limited`,
         ...data,
         tenantId,
         createdBy: req.user!.id,
-      });
+      }, req.userWithAccess!.tenantId!);
       res.status(201).json(created);
     } catch (error) {
       next(error);
     }
   });
 
-  app.patch("/api/duty-blocks/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.patch("/api/duty-blocks/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const schema = z.object({
@@ -15992,16 +15997,16 @@ OTO Company Limited`,
         notes: z.string().optional(),
       });
       const data = schema.parse(req.body);
-      const updated = await storage.updateDutyBlock(id, data);
+      const updated = await storage.updateDutyBlock(id, data, req.userWithAccess!.tenantId!);
       res.json(updated);
     } catch (error) {
       next(error);
     }
   });
 
-  app.delete("/api/duty-blocks/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.delete("/api/duty-blocks/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
-      await storage.deleteDutyBlock(req.params.id);
+      await storage.deleteDutyBlock(req.params.id, req.userWithAccess!.tenantId!);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -16009,7 +16014,7 @@ OTO Company Limited`,
   });
 
   // Get employee assignments on a specific date
-  app.get("/api/schedule/employees/:employeeId/assignments", requireAuth, requireManager, async (req, res, next) => {
+  app.get("/api/schedule/employees/:employeeId/assignments", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { employeeId } = req.params;
       const date = req.query.date as string;
@@ -16018,7 +16023,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "date query parameter is required" });
       }
 
-      const assignments = await storage.getEmployeeAssignmentsOnDate(employeeId, date);
+      const assignments = await storage.getEmployeeAssignmentsOnDate(employeeId, date, req.userWithAccess!.tenantId!);
       res.json(assignments);
     } catch (error) {
       next(error);
@@ -16026,7 +16031,7 @@ OTO Company Limited`,
   });
 
   // Get borrowed-out assignments for employees of a branch working at other branches
-  app.get("/api/schedule/branches/:branchId/borrowed-out-assignments", requireAuth, async (req, res, next) => {
+  app.get("/api/schedule/branches/:branchId/borrowed-out-assignments", requireAuth, requireSchedulePark, async (req, res, next) => {
     try {
       const { branchId } = req.params;
       const startDate = req.query.startDate as string;
@@ -16036,7 +16041,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "startDate and endDate query parameters are required" });
       }
 
-      const assignments = await storage.getBorrowedOutAssignments(branchId, startDate, endDate);
+      const assignments = await storage.getBorrowedOutAssignments(branchId, startDate, endDate, req.userWithAccess!.tenantId!);
       res.json(assignments);
     } catch (error) {
       next(error);
@@ -16044,7 +16049,7 @@ OTO Company Limited`,
   });
 
   // Get schedule templates for a branch (staff can view)
-  app.get("/api/schedule/templates", requireAuth, async (req, res, next) => {
+  app.get("/api/schedule/templates", requireAuth, requireSchedulePark, async (req, res, next) => {
     try {
       const branchId = req.query.branchId as string;
       const departmentId = req.query.departmentId as string | undefined;
@@ -16054,7 +16059,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "branchId is required" });
       }
 
-      const templates = await storage.getScheduleTemplates(branchId, departmentId, shiftGroupId);
+      const templates = await storage.getScheduleTemplates(branchId, departmentId, shiftGroupId, req.userWithAccess!.tenantId!);
       res.json(templates);
     } catch (error) {
       next(error);
@@ -16062,10 +16067,10 @@ OTO Company Limited`,
   });
 
   // Get a single template with details (staff can view)
-  app.get("/api/schedule/templates/:id", requireAuth, async (req, res, next) => {
+  app.get("/api/schedule/templates/:id", requireAuth, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const template = await storage.getScheduleTemplate(id);
+      const template = await storage.getScheduleTemplate(id, req.userWithAccess!.tenantId!);
 
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
@@ -16078,7 +16083,7 @@ OTO Company Limited`,
   });
 
   // Save current week as template (department-scoped)
-  app.post("/api/schedule/templates/save-week", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/templates/save-week", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { weekPlanId, name, departmentId, shiftGroupId, branchId, weekStartDate } = req.body;
 
@@ -16094,7 +16099,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "Either departmentId or shiftGroupId is required" });
       }
 
-      const template = await storage.saveWeekAsTemplate(weekPlanId, name, req.user!.id, departmentId, shiftGroupId, branchId, weekStartDate);
+      const template = await storage.saveWeekAsTemplate(weekPlanId, name, req.user!.id, departmentId, shiftGroupId, branchId, weekStartDate, req.userWithAccess!.tenantId!);
       res.status(201).json(template);
     } catch (error: any) {
       if (error.message?.includes("No shift rows")) {
@@ -16105,7 +16110,7 @@ OTO Company Limited`,
   });
 
   // Preview template apply - detect conflicts before applying
-  app.post("/api/schedule/templates/:id/preview", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/templates/:id/preview", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const { branchId, weekStartDate } = req.body;
@@ -16114,7 +16119,7 @@ OTO Company Limited`,
         return res.status(400).json({ message: "branchId and weekStartDate are required" });
       }
 
-      const preview = await storage.previewTemplateApply(id, branchId, weekStartDate);
+      const preview = await storage.previewTemplateApply(id, branchId, weekStartDate, req.userWithAccess!.tenantId!);
       res.json(preview);
     } catch (error: any) {
       if (error.message?.includes("Template not found") || error.message?.includes("no shift group") || error.message?.includes("no department")) {
@@ -16125,21 +16130,21 @@ OTO Company Limited`,
   });
 
   // Apply template to a week (legacy - simple apply)
-  app.post("/api/schedule/templates/:id/apply", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/templates/:id/apply", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const { branchId, weekStartDate } = req.body;
       const user = req.user as UserWithBranchAccess;
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess!.tenantId!;
 
       if (!branchId || !weekStartDate) {
         return res.status(400).json({ message: "branchId and weekStartDate are required" });
       }
 
-      const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, user.id);
+      const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, user.id, req.userWithAccess!.tenantId!);
 
-      const snapshot = await storage.snapshotWeekPlan(weekPlan.id);
-      await storage.applyTemplate(id, weekPlan.id, user.id);
+      const snapshot = await storage.snapshotWeekPlan(weekPlan.id, req.userWithAccess!.tenantId!);
+      await storage.applyTemplate(id, weekPlan.id, user.id, req.userWithAccess!.tenantId!);
       await storage.logScheduleAudit(tenantId, 'apply_template', {
         weekPlanId: weekPlan.id,
         branchId,
@@ -16155,25 +16160,25 @@ OTO Company Limited`,
   });
 
   // Apply template additively (adds missing shift rows only, no employee assignments)
-  app.post("/api/schedule/templates/:id/apply-safe", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/templates/:id/apply-safe", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const { branchId, weekStartDate } = req.body;
       const user = req.user as UserWithBranchAccess;
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess!.tenantId!;
 
       if (!branchId || !weekStartDate) {
         return res.status(400).json({ message: "branchId and weekStartDate are required" });
       }
 
-      const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, user.id);
-      const snapshot = await storage.snapshotWeekPlan(weekPlan.id);
+      const weekPlan = await storage.getOrCreateWeekPlan(branchId, weekStartDate, user.id, req.userWithAccess!.tenantId!);
+      const snapshot = await storage.snapshotWeekPlan(weekPlan.id, req.userWithAccess!.tenantId!);
 
       const result = await storage.applyTemplateAdditive(
         id,
         branchId,
         weekStartDate,
-        user.id,
+        user.id, req.userWithAccess!.tenantId!,
       );
 
       await storage.logScheduleAudit(tenantId, 'apply_template_additive', {
@@ -16194,10 +16199,10 @@ OTO Company Limited`,
   });
 
   // Delete template
-  app.delete("/api/schedule/templates/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.delete("/api/schedule/templates/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
-      await storage.deleteScheduleTemplate(id);
+      await storage.deleteScheduleTemplate(id, req.userWithAccess!.tenantId!);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -16205,15 +16210,17 @@ OTO Company Limited`,
   });
 
   // Clear week plan (delete all shifts, assignments, and day-offs for a week)
-  app.delete("/api/schedule/week/:id", requireAuth, requireManager, async (req, res, next) => {
+  app.delete("/api/schedule/week/:id", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const user = req.user as UserWithBranchAccess;
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess!.tenantId!;
       
-      const weekPlan = await storage.getWeekPlanById(id);
+      await assertScheduleDeleteScope("schedule_week_plans", [id], req.userWithAccess!.tenantId!);
+
+      const weekPlan = await storage.getWeekPlanById(id, req.userWithAccess!.tenantId!);
       if (weekPlan) {
-        const snapshot = await storage.snapshotWeekPlan(id);
+        const snapshot = await storage.snapshotWeekPlan(id, req.userWithAccess!.tenantId!);
         await storage.logScheduleAudit(tenantId, 'clear_week', {
           weekPlanId: id,
           branchId: weekPlan.branchId,
@@ -16233,11 +16240,11 @@ OTO Company Limited`,
           weekPlan.branchId,
           weekStart,
           weekEnd,
-          "CHANGE_DAY_OFF"
+          "CHANGE_DAY_OFF", req.userWithAccess!.tenantId!
         );
       }
       
-      await storage.deleteWeekPlan(id);
+      await storage.deleteWeekPlan(id, req.userWithAccess!.tenantId!);
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -16245,9 +16252,9 @@ OTO Company Limited`,
   });
 
   // Schedule audit log - view history of destructive operations
-  app.get("/api/schedule/audit-log", requireAuth, requireManager, async (req, res, next) => {
+  app.get("/api/schedule/audit-log", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess!.tenantId!;
       const { branchId, limit: limitStr } = req.query;
       const limitNum = Math.min(parseInt(limitStr as string) || 50, 200);
       
@@ -16268,7 +16275,7 @@ OTO Company Limited`,
         summaryData: scheduleAuditLog.summaryData,
       })
         .from(scheduleAuditLog)
-        .where(and(...conditions))
+        .where(and(and(...conditions), scheduleParkPredicate("schedule_audit_log", req.userWithAccess!.tenantId!)))
         .orderBy(sql`${scheduleAuditLog.createdAt} DESC`)
         .limit(limitNum);
       
@@ -16282,14 +16289,14 @@ OTO Company Limited`,
       const branchIds = [...new Set(logs.filter(l => l.branchId).map(l => l.branchId!))];
       const branchesData = branchIds.length > 0
         ? await db.select({ id: branches.id, name: branches.name })
-            .from(branches).where(inArray(branches.id, branchIds))
+            .from(branches).where(and(inArray(branches.id, branchIds), scheduleParkPredicate("branches", req.userWithAccess!.tenantId!)))
         : [];
       const branchMap = Object.fromEntries(branchesData.map(b => [b.id, b]));
 
       const deptIds = [...new Set(logs.filter(l => l.departmentId).map(l => l.departmentId!))];
       const deptData = deptIds.length > 0
         ? await db.select({ id: departments.id, name: departments.name })
-            .from(departments).where(inArray(departments.id, deptIds))
+            .from(departments).where(and(inArray(departments.id, deptIds), scheduleParkPredicate("departments", req.userWithAccess!.tenantId!)))
         : [];
       const deptMap = Object.fromEntries(deptData.map(d => [d.id, d]));
       
@@ -16305,14 +16312,14 @@ OTO Company Limited`,
   });
 
   // Restore schedule from audit log snapshot
-  app.post("/api/schedule/audit-log/:id/restore", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/audit-log/:id/restore", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { id } = req.params;
       const user = req.user as UserWithBranchAccess;
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess!.tenantId!;
       
       const [auditEntry] = await db.select().from(scheduleAuditLog)
-        .where(and(eq(scheduleAuditLog.id, id), eq(scheduleAuditLog.tenantId, tenantId)));
+        .where(and(and(eq(scheduleAuditLog.id, id), eq(scheduleAuditLog.tenantId, tenantId)), scheduleParkPredicate("schedule_audit_log", req.userWithAccess!.tenantId!)));
       
       if (!auditEntry || !auditEntry.snapshotData) {
         return res.status(404).json({ message: "Audit entry or snapshot not found" });
@@ -16320,7 +16327,7 @@ OTO Company Limited`,
 
       const snapshotData = auditEntry.snapshotData as any;
       
-      const result = await storage.restoreWeekPlanFromSnapshot(snapshotData, user.id);
+      const result = await storage.restoreWeekPlanFromSnapshot(snapshotData, user.id, req.userWithAccess!.tenantId!);
 
       // Log the restore action with structured fields matching the original entry
       await storage.logScheduleAudit(tenantId, 'restore_from_snapshot', {
@@ -16339,9 +16346,9 @@ OTO Company Limited`,
     }
   });
 
-  app.get("/api/schedule/conflicts/scan", requireAuth, requireManager, async (req, res, next) => {
+  app.get("/api/schedule/conflicts/scan", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess!.tenantId!;
       const { branchId } = req.query;
 
       const branchFilter = branchId ? eq(scheduleShiftRows.branchId, branchId as string) : undefined;
@@ -16358,11 +16365,11 @@ OTO Company Limited`,
       })
         .from(scheduleAssignments)
         .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
-        .where(and(
+        .where(and(and(
           eq(scheduleShiftRows.tenantId, tenantId),
           branchFilter,
           isNotNull(scheduleAssignments.employeeId)
-        ));
+        ), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
 
       const assignmentsByKey = new Map<string, typeof allAssignmentsRaw>();
       const employeeIds = new Set<string>();
@@ -16389,7 +16396,7 @@ OTO Company Limited`,
             startDate: employeeTimeOff.startDate,
           })
             .from(employeeTimeOff)
-            .where(inArray(employeeTimeOff.employeeId, batch));
+            .where(and(inArray(employeeTimeOff.employeeId, batch), scheduleParkPredicate("employee_time_off", req.userWithAccess!.tenantId!)));
           allDayOffs = allDayOffs.concat(batchResults);
         }
       }
@@ -16414,7 +16421,7 @@ OTO Company Limited`,
             id: employees.id,
             fullName: employees.fullName,
             nickname: employees.nickname,
-          }).from(employees).where(inArray(employees.id, batch));
+          }).from(employees).where(and(inArray(employees.id, batch), scheduleParkPredicate("employees", req.userWithAccess!.tenantId!)));
           for (const e of empRows) {
             empNameMap.set(e.id, e.nickname || e.fullName);
           }
@@ -16458,7 +16465,7 @@ OTO Company Limited`,
     }
   });
 
-  app.post("/api/schedule/conflicts/resolve", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/conflicts/resolve", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
       const { employeeId, date, keepAssignmentId, deleteAssignmentIds, deleteDayOffIds } = req.body;
     void keepAssignmentId;
@@ -16467,18 +16474,20 @@ OTO Company Limited`,
         return res.status(400).json({ message: "employeeId and date are required" });
       }
       
+      await assertScheduleDeleteScope("schedule_assignments", deleteAssignmentIds || [], req.userWithAccess!.tenantId!);
+
       let deleted = 0;
       
       if (deleteAssignmentIds && deleteAssignmentIds.length > 0) {
         for (const id of deleteAssignmentIds) {
-          await db.delete(scheduleAssignments).where(eq(scheduleAssignments.id, id));
+          await db.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, id), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
           deleted++;
         }
       }
       
       if (deleteDayOffIds && deleteDayOffIds.length > 0) {
         for (const id of deleteDayOffIds) {
-          await db.delete(employeeTimeOff).where(eq(employeeTimeOff.id, id));
+          await db.delete(employeeTimeOff).where(and(eq(employeeTimeOff.id, id), scheduleParkPredicate("employee_time_off", req.userWithAccess!.tenantId!)));
           deleted++;
         }
       }
@@ -16491,9 +16500,9 @@ OTO Company Limited`,
     }
   });
 
-  app.post("/api/schedule/conflicts/auto-fix", requireAuth, requireManager, async (req, res, next) => {
+  app.post("/api/schedule/conflicts/auto-fix", requireAuth, requireManager, requireSchedulePark, async (req, res, next) => {
     try {
-      const tenantId = await getDefaultTenantId();
+      const tenantId = req.userWithAccess!.tenantId!;
       const { branchId } = req.body;
       
       const duplicates = await db.select({
@@ -16502,14 +16511,21 @@ OTO Company Limited`,
       })
         .from(scheduleAssignments)
         .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
-        .where(and(
+        .where(and(and(
           eq(scheduleShiftRows.tenantId, tenantId),
           branchId ? eq(scheduleShiftRows.branchId, branchId as string) : undefined,
           isNotNull(scheduleAssignments.employeeId)
-        ))
+        ), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)))
         .groupBy(scheduleAssignments.employeeId, scheduleAssignments.shiftDate)
         .having(sql`count(*) > 1`);
       
+      // Check every affected parent before the first automatic removal.
+      for (const duplicate of duplicates) {
+        const candidates = await db.select({ id: scheduleAssignments.id }).from(scheduleAssignments)
+          .where(and(eq(scheduleAssignments.employeeId, duplicate.employeeId!), eq(scheduleAssignments.shiftDate, duplicate.shiftDate), scheduleParkPredicate("schedule_assignments", tenantId)));
+        await assertScheduleDeleteScope("schedule_assignments", candidates.map(candidate => candidate.id), tenantId);
+      }
+
       let totalFixed = 0;
       let totalDeleted = 0;
       
@@ -16523,10 +16539,10 @@ OTO Company Limited`,
         })
           .from(scheduleAssignments)
           .innerJoin(scheduleShiftRows, eq(scheduleAssignments.shiftRowId, scheduleShiftRows.id))
-          .where(and(
+          .where(and(and(
             eq(scheduleAssignments.employeeId, dup.employeeId),
             eq(scheduleAssignments.shiftDate, dup.shiftDate)
-          ));
+          ), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
         
         if (assignments.length <= 1) continue;
         
@@ -16547,16 +16563,16 @@ OTO Company Limited`,
         
         for (let i = 0; i < assignments.length; i++) {
           if (i !== longestIdx) {
-            await db.delete(scheduleAssignments).where(eq(scheduleAssignments.id, assignments[i].assignmentId));
+            await db.delete(scheduleAssignments).where(and(eq(scheduleAssignments.id, assignments[i].assignmentId), scheduleParkPredicate("schedule_assignments", req.userWithAccess!.tenantId!)));
             totalDeleted++;
           }
         }
         
-        await db.delete(employeeTimeOff).where(and(
+        await db.delete(employeeTimeOff).where(and(and(
           eq(employeeTimeOff.employeeId, dup.employeeId),
           sql`${employeeTimeOff.startDate}::date = ${dup.shiftDate}::date`,
           eq(employeeTimeOff.type, 'CHANGE_DAY_OFF')
-        ));
+        ), scheduleParkPredicate("employee_time_off", req.userWithAccess!.tenantId!)));
         
         totalFixed++;
       }

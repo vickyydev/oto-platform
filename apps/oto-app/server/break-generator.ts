@@ -1,3 +1,4 @@
+import { scheduleParkPredicate } from "./schedule-scope";
 import { db } from "./db";
 import { scheduleShiftRows, scheduleAssignments, scheduleShiftBreaks, scheduleWeekPlans } from "@shared/schema";
 import { eq, and, asc, inArray, isNull, or, sql } from "drizzle-orm";
@@ -32,23 +33,24 @@ export function autoBreakWindow(shiftRow: typeof scheduleShiftRows.$inferSelect,
   };
 }
 
-export async function generateBreaksForShiftRow(shiftRowId: string, shiftDate: string): Promise<void> {
+export async function generateBreaksForShiftRow(shiftRowId: string, shiftDate: string, requestedTenantId?: string): Promise<void> {
   const [shiftRow] = await db
     .select()
     .from(scheduleShiftRows)
-    .where(eq(scheduleShiftRows.id, shiftRowId));
+    .where(and(eq(scheduleShiftRows.id, shiftRowId), scheduleParkPredicate("schedule_shift_rows", requestedTenantId)));
 
   if (!shiftRow) return;
+  const tenantId = requestedTenantId ?? shiftRow.tenantId;
 
   if (!shiftRow.breakEnabled) {
     await db
       .delete(scheduleShiftBreaks)
       .where(
-        and(
+        and(and(
           eq(scheduleShiftBreaks.shiftRowId, shiftRowId),
           eq(scheduleShiftBreaks.shiftDate, shiftDate),
           eq(scheduleShiftBreaks.source, "auto_rule")
-        )
+        ), scheduleParkPredicate("schedule_shift_breaks", tenantId))
       );
     return;
   }
@@ -57,21 +59,21 @@ export async function generateBreaksForShiftRow(shiftRowId: string, shiftDate: s
     .select()
     .from(scheduleAssignments)
     .where(
-      and(
+      and(and(
         eq(scheduleAssignments.shiftRowId, shiftRowId),
         eq(scheduleAssignments.shiftDate, shiftDate)
-      )
+      ), scheduleParkPredicate("schedule_assignments", tenantId))
     )
     .orderBy(asc(scheduleAssignments.assignedAt), asc(scheduleAssignments.id));
 
   await db
     .delete(scheduleShiftBreaks)
     .where(
-      and(
+      and(and(
         eq(scheduleShiftBreaks.shiftRowId, shiftRowId),
         eq(scheduleShiftBreaks.shiftDate, shiftDate),
         eq(scheduleShiftBreaks.source, "auto_rule")
-      )
+      ), scheduleParkPredicate("schedule_shift_breaks", tenantId))
     );
 
   const breakValues = assignments.flatMap((assignment, i) => {
@@ -95,10 +97,11 @@ export async function generateBreaksForShiftRow(shiftRowId: string, shiftDate: s
   }
 }
 
-export async function generateBreaksForWeekPlan(weekPlanId: string): Promise<void> {
+export async function generateBreaksForWeekPlan(weekPlanId: string, requestedTenantId?: string): Promise<void> {
   // Look up the week plan to get branchId and date range
-  const [weekPlan] = await db.select().from(scheduleWeekPlans).where(eq(scheduleWeekPlans.id, weekPlanId));
+  const [weekPlan] = await db.select().from(scheduleWeekPlans).where(and(eq(scheduleWeekPlans.id, weekPlanId), scheduleParkPredicate("schedule_week_plans", requestedTenantId)));
   if (!weekPlan) return;
+  const tenantId = requestedTenantId ?? weekPlan.tenantId;
 
   const wpStart = typeof weekPlan.weekStartDate === 'string' ? weekPlan.weekStartDate : (weekPlan.weekStartDate as Date).toISOString().split('T')[0];
   const wpEnd = new Date(wpStart);
@@ -108,11 +111,11 @@ export async function generateBreaksForWeekPlan(weekPlanId: string): Promise<voi
   const shiftRows = await db
     .select()
     .from(scheduleShiftRows)
-    .where(and(
+    .where(and(and(
       eq(scheduleShiftRows.branchId, weekPlan.branchId),
       or(isNull(scheduleShiftRows.activeFromDate), sql`${scheduleShiftRows.activeFromDate} <= ${wpEndStr}::date`),
       or(isNull(scheduleShiftRows.activeUntilDate), sql`${scheduleShiftRows.activeUntilDate} >= ${wpStart}::date`),
-    ));
+    ), scheduleParkPredicate("schedule_shift_rows", tenantId)));
 
   if (shiftRows.length === 0) return;
 
@@ -121,7 +124,7 @@ export async function generateBreaksForWeekPlan(weekPlanId: string): Promise<voi
   const allAssignments = await db
     .select()
     .from(scheduleAssignments)
-    .where(inArray(scheduleAssignments.shiftRowId, shiftRowIds))
+    .where(and(inArray(scheduleAssignments.shiftRowId, shiftRowIds), scheduleParkPredicate("schedule_assignments", tenantId)))
     .orderBy(asc(scheduleAssignments.assignedAt), asc(scheduleAssignments.id));
 
   const shiftRowMap = new Map(shiftRows.map(r => [r.id, r]));
@@ -129,10 +132,10 @@ export async function generateBreaksForWeekPlan(weekPlanId: string): Promise<voi
   await db
     .delete(scheduleShiftBreaks)
     .where(
-      and(
+      and(and(
         inArray(scheduleShiftBreaks.shiftRowId, shiftRowIds),
         eq(scheduleShiftBreaks.source, "auto_rule")
-      )
+      ), scheduleParkPredicate("schedule_shift_breaks", tenantId))
     );
 
   const groupedAssignments = new Map<string, typeof allAssignments>();
@@ -188,7 +191,7 @@ export async function generateAllBreaksForTenant(tenantId: string, branchId?: st
   const shiftRows = await db
     .select()
     .from(scheduleShiftRows)
-    .where(and(...conditions));
+    .where(and(and(...conditions), scheduleParkPredicate("schedule_shift_rows", tenantId)));
 
   if (shiftRows.length === 0) return { shiftRowsProcessed: 0, datesProcessed: 0, breaksGenerated: 0 };
 
@@ -198,16 +201,16 @@ export async function generateAllBreaksForTenant(tenantId: string, branchId?: st
   const allAssignments = await db
     .select()
     .from(scheduleAssignments)
-    .where(inArray(scheduleAssignments.shiftRowId, shiftRowIds))
+    .where(and(inArray(scheduleAssignments.shiftRowId, shiftRowIds), scheduleParkPredicate("schedule_assignments", tenantId)))
     .orderBy(asc(scheduleAssignments.assignedAt), asc(scheduleAssignments.id));
 
   await db
     .delete(scheduleShiftBreaks)
     .where(
-      and(
+      and(and(
         inArray(scheduleShiftBreaks.shiftRowId, shiftRowIds),
         eq(scheduleShiftBreaks.source, "auto_rule")
-      )
+      ), scheduleParkPredicate("schedule_shift_breaks", tenantId))
     );
 
   const groupedAssignments = new Map<string, typeof allAssignments>();

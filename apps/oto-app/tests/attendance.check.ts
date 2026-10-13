@@ -869,30 +869,26 @@ try {
     assert.equal((await call("GET", `/api/rota?scope=branch&branchId=${A.x}&${window}`, { cookie: cookie.aLimited })).status, 200);
     assert.equal((await call("GET", `/api/shifts-needing-coverage?branchId=${A.y}`, { cookie: cookie.aLimited })).status, 403);
   });
-  await check("FINDING Q39 (scheduling): the week plan, shift groups and rows answer branch Y — and another park group's branch — to a limited manager (no branch or park-group rule in /api/schedule)", async () => {
+  await check("FINDING Q39 (scheduling), park boundary resolved by SCRUM-523: same-park branch defaults remain and foreign reads/writes are refused", async () => {
     const weekY = await call("GET", `/api/schedule/week?branchId=${A.y}&weekStartDate=${day(0)}`, { cookie: cookie.aLimited });
     assert.equal(weekY.status, 200, show(weekY));
     assert.equal(weekY.body?.branchId, A.y);
     assert.ok((weekY.body.shiftRows as { id: string }[]).length > 0, "with its rows");
     const groupsElsewhere = await call("GET", `/api/schedule/shift-groups?branchId=${B.x}`, { cookie: cookie.aLimited });
-    assert.equal(groupsElsewhere.status, 200, show(groupsElsewhere));
-    assert.ok((groupsElsewhere.body as { id: string }[]).some((g) => g.id === bRota.group));
+    assert.equal(groupsElsewhere.status, 404, show(groupsElsewhere));
     const weekElsewhere = await call("GET", `/api/schedule/week?branchId=${B.x}&weekStartDate=${day(0)}`, { cookie: cookie.aLimited });
-    assert.equal(weekElsewhere.status, 200, show(weekElsewhere));
-    assert.equal(weekElsewhere.body?.id, bRota.plan);
-    assert.equal(weekElsewhere.body?.branchId, B.x);
+    assert.equal(weekElsewhere.status, 404, show(weekElsewhere));
     const rowY = await call("POST", "/api/schedule/shift-rows", {
       cookie: cookie.aLimited,
       body: { branchId: A.y, startTime: "08:00", endTime: "12:00", label: "ZZ TEST finding", shiftGroupId: yRota.group },
     });
     assert.equal(rowY.status, 201, show(rowY));
-    // And a write into another park group: the row is made in B's branch, as B's.
+    // The same request cannot create a row in another park group.
     const rowElsewhere = await call("POST", "/api/schedule/shift-rows", {
       cookie: cookie.aLimited,
       body: { branchId: B.x, startTime: "08:00", endTime: "12:00", label: "ZZ TEST finding", shiftGroupId: bRota.group },
     });
-    assert.equal(rowElsewhere.status, 201, show(rowElsewhere));
-    assert.equal(rowElsewhere.body.tenantId, B.tenant);
+    assert.equal(rowElsewhere.status, 404, show(rowElsewhere));
   });
 
   const template = async (branch: string, label: string) => {
