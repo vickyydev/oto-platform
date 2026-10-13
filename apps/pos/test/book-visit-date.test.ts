@@ -11,6 +11,8 @@ import {
 } from '@/lib/pricingMode';
 import { clampVisitDate, formatVisitDate, visitDateBounds, VISIT_DATE_MAX_DAYS_AHEAD } from '@/lib/visitDate';
 import { hydrateFromApi } from '@/store/catalogStore';
+import { composePhone, storedPhoneHint } from '@/lib/phoneUtils';
+import { DEFAULT_COUNTRY } from '@/data/countries';
 
 /**
  * S2-12 (SCRUM-209) FIX ROUND 2 — the booking site's visit date.
@@ -126,5 +128,26 @@ describe('the platform’s answer goes stale only when its day is behind this de
     setBranchRateMode({ date: '2026-10-03', mode: 'weekend', reason: 'Weekend pricing' });
     expect(branchTradingDate()).toBe('2026-10-02');
     expect(todayRateMode().mode).toBe('weekend');
+  });
+});
+
+/**
+ * SCRUM-393 — the booking site's "Stored as" hint under the phone field shows
+ * the number as the platform stores it: with +66 picked, the local trunk 0
+ * typed or not, both spellings read +66811111111.
+ */
+describe('the phone field’s "Stored as" hint', () => {
+  it('drops the trunk 0 typed after +66, as the platform does', () => {
+    expect(composePhone(DEFAULT_COUNTRY, '0811111111')).toBe('+660811111111');
+    expect(storedPhoneHint(composePhone(DEFAULT_COUNTRY, '0811111111'))).toBe('+66811111111');
+  });
+
+  it('leaves the spelling without the 0 as it is', () => {
+    expect(storedPhoneHint(composePhone(DEFAULT_COUNTRY, '811111111'))).toBe('+66811111111');
+  });
+
+  it('shows a number still being typed as typed, and nothing for nothing', () => {
+    expect(storedPhoneHint('+6608')).toBe('+6608');
+    expect(storedPhoneHint('')).toBe('');
   });
 });

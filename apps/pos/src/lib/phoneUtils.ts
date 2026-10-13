@@ -8,6 +8,7 @@
  * is treated as +66 so existing seeds and older stored values still match.
  */
 
+import { normalizePhone as normalizeE164 } from '@oto/shared';
 import { COUNTRIES, type CountryOption, DEFAULT_COUNTRY } from '@/data/countries';
 
 // ---------------------------------------------------------------------------
@@ -102,4 +103,17 @@ export function formatDisplayPhone(value: string): string {
   // Simple group: up to 3-3-4 for Thailand; fallback for others
   const groups = nationalNumber.match(/.{1,4}/g) ?? [nationalNumber];
   return `+${country.dialCode} ${groups.join(' ')}`;
+}
+
+// ---------------------------------------------------------------------------
+// The "Stored as" hint under a phone field (SCRUM-393): the number as the
+// platform will store it, which is the shared E.164 normaliser's answer
+// (`@oto/shared` normalizePhone) — not the raw composition above. With +66
+// picked and the local trunk 0 typed, `composePhone` gives "+660811111111"
+// while the platform stores "+66811111111"; the hint now shows the latter. A
+// number the normaliser cannot read yet (still being typed) is shown as typed.
+// ---------------------------------------------------------------------------
+export function storedPhoneHint(value: string): string {
+  if (!value) return '';
+  return normalizeE164(value) ?? value;
 }

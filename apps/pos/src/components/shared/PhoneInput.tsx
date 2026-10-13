@@ -18,7 +18,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { filterCountries, type CountryOption } from '@/data/countries';
-import { parseInternationalPhone, composePhone } from '@/lib/phoneUtils';
+import { parseInternationalPhone, composePhone, storedPhoneHint } from '@/lib/phoneUtils';
 import { NumberKeypad } from '@/components/till/NumberKeypad';
 import type { ContactChannel } from '@/types';
 import { CONTACT_CHANNELS, CHANNEL_ICON, CHANNEL_COLOR, CHANNEL_LABEL, normalizeChannel } from '@/lib/contactChannel';
@@ -329,7 +329,7 @@ export function PhoneInput({
       )}
       {value && (
         <p className="text-xs text-muted-foreground">
-          {storedAsLabel} <span className="font-mono">{value}</span>
+          {storedAsLabel} <span className="font-mono">{storedPhoneHint(value)}</span>
         </p>
       )}
     </div>
