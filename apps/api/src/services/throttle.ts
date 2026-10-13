@@ -41,6 +41,38 @@ export async function bumpWindow(db: Db, key: string, windowMs: number): Promise
   return { current: row?.failures ?? 1, ttl: Math.max(0, ttl) };
 }
 
+/** How long a failure count that never reached its lock is kept after its last failure. */
+export const THROTTLE_IDLE_RETENTION_HOURS = 24;
+
+/**
+ * THE SWEEP (SCRUM-386): delete every bucket that no longer counts.
+ *
+ *   - `locked_until` in the past — a fixed window that has ended, or a
+ *     cooldown that has run out. Both writers already treat such a row as a
+ *     fresh start on its next hit (`bumpWindow` and `throttleFail` reset the
+ *     count), so deleting it changes no answer;
+ *   - no `locked_until` at all — a failure count below its lock — once it has
+ *     been quiet for `THROTTLE_IDLE_RETENTION_HOURS`. That forgives a few
+ *     mistyped passwords after a day of nothing, and nothing shorter.
+ *
+ * A live window or a lock still running is never touched. Run by the
+ * housekeeping job (`jobs.ts`), so the table is bounded by what has happened
+ * recently rather than by everything that ever happened.
+ */
+export async function purgeExpiredThrottles(
+  db: Db,
+  idleHours: number = THROTTLE_IDLE_RETENTION_HOURS,
+): Promise<number> {
+  const deleted = await db
+    .delete(authThrottle)
+    .where(
+      sql`${authThrottle.lockedUntil} <= now()
+          or (${authThrottle.lockedUntil} is null and ${authThrottle.updatedAt} < now() - ${`${idleHours} hours`}::interval)`,
+    )
+    .returning({ key: authThrottle.key });
+  return deleted.length;
+}
+
 /**
  * The PRIMARY rate-limit bucket, called from a handler once the phone or
  * account is known — which is why it is not a route-level limit: the key

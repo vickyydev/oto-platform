@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   alert,
   alertDelivery,
+  authThrottle,
   box,
   boxHeartbeat,
   handoffToken,
@@ -564,9 +565,17 @@ describe('S2-03 — the sweeps that had never run', () => {
       { id: newId(), boxId: seededBox!.id, receivedAt: new Date(Date.now() - 30 * 86_400_000) },
       { id: newId(), boxId: seededBox!.id, receivedAt: new Date() },
     ]);
+    // And a throttle bucket whose window has ended (SCRUM-386), beside a live one.
+    await ctx.db.insert(authThrottle).values([
+      { key: 'rl:sweep-ended', failures: 4, lockedUntil: new Date(Date.now() - 60_000) },
+      { key: 'rl:sweep-live', failures: 4, lockedUntil: new Date(Date.now() + 60_000) },
+    ]);
 
     const runner = createJobRunner({ db: ctx.db, env: ctx.app.env, log: ctx.app.log, channels });
     expect(await runner.runJob('job:housekeeping.retention', { force: true })).toBe('ok');
+    const throttles = (await ctx.db.select({ key: authThrottle.key }).from(authThrottle)).map((r) => r.key);
+    expect(throttles).toContain('rl:sweep-live');
+    expect(throttles).not.toContain('rl:sweep-ended');
 
     expect(await runsOf('job:test.ancient')).toHaveLength(0);
     expect(await alertsOf(resolvedKey)).toHaveLength(0);

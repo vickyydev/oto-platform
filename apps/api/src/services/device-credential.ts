@@ -99,6 +99,14 @@ const PAIR_ATTEMPTS_MAX = 100;
 const PAIR_ATTEMPT_WINDOW_S = 600;
 
 /**
+ * Refused screen credentials per address (SCRUM-385): the box's address
+ * ceiling on refusals, 300 in five minutes, scaled down because a screen's
+ * refusals are rarer still — one per unpairing. Exported for the test.
+ */
+export const SCREEN_AUTH_FAILURES_MAX = 120;
+export const SCREEN_AUTH_WINDOW_S = 300;
+
+/**
  * One refusal for every way of not being a paired booth.
  *
  * Absent, malformed, unknown, expired, revoked, or paired to a DIFFERENT
@@ -478,6 +486,19 @@ export async function authenticateBoothDevice(
     !hashesMatch(row.secretHash, hash)
   ) {
     who.log?.warn({ ip: who.ip }, 'booth device credential refused');
+    /**
+     * SCRUM-385 — A WELL-FORMED SECRET THAT MATCHED NOTHING HAS ITS OWN COUNT,
+     * as a refused box or a wrong password does, rather than living only under
+     * the route's general cap. The header carries no device id (see above), so
+     * the only thing a refusal names is the address it came from; the bucket
+     * is that address's REFUSALS alone, counted only here. A paired screen is
+     * never counted and never refused by it, however many screens share the
+     * rewrite's address, and an honest screen spends at most one: the page
+     * forgets its secret on the first 401. A missing or malformed header costs
+     * no read and is not counted, because an unpaired screen sends none and
+     * must keep reading 401 to show the pairing prompt.
+     */
+    await limitPrincipal(db, `booth-screen-auth-addr:${who.ip}`, SCREEN_AUTH_FAILURES_MAX, SCREEN_AUTH_WINDOW_S);
     throw boothUnpaired();
   }
 

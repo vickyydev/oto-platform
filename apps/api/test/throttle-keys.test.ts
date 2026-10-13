@@ -1,4 +1,5 @@
-import { eq, like } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
+import { eq, like, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { authThrottle, session as sessionTable, station } from '@oto/db';
 import {
@@ -13,6 +14,7 @@ import {
   type TestContext,
 } from './helpers';
 import { _resetThrottle } from '../src/services/auth';
+import { purgeExpiredThrottles } from '../src/services/throttle';
 import { hashToken, SESSION_COOKIE } from '../src/plugins/session';
 
 /**
@@ -268,6 +270,32 @@ describe('a refused box credential counts on the box it named (SCRUM-376)', () =
 
     const rows = await ctx.db.select().from(authThrottle).where(like(authThrottle.key, 'rl:box-%'));
     expect(rows.map((r) => r.key)).toEqual(['rl:box-auth-addr:127.0.0.1']);
+  });
+
+  it('opens no bucket for an invented box id — it spends the address alone (SCRUM-386)', async () => {
+    for (const invented of [randomUUID(), randomUUID(), randomUUID()]) {
+      expect((await config(invented)).statusCode).toBe(401);
+    }
+    const rows = await ctx.db.select().from(authThrottle).where(like(authThrottle.key, 'rl:box-%'));
+    expect(Object.fromEntries(rows.map((r) => [r.key, r.failures]))).toEqual({ 'rl:box-auth-addr:127.0.0.1': 3 });
+  });
+});
+
+describe('the housekeeping sweep empties the throttle table of what no longer counts (SCRUM-386)', () => {
+  it('deletes ended windows, run-out cooldowns and day-old idle counts, and keeps every live one', async () => {
+    const at = (offset: string) => sql`now() + ${offset}::interval`;
+    await ctx.db.insert(authThrottle).values([
+      { key: 'rl:ended-window', failures: 3, lockedUntil: at('-1 second') },
+      { key: 'phone:cooldown-over', failures: 5, lockedUntil: at('-1 minute') },
+      { key: 'phone:idle-two-days', failures: 2, lockedUntil: null, updatedAt: at('-48 hours') },
+      { key: 'rl:live-window', failures: 3, lockedUntil: at('1 minute') },
+      { key: 'phone:locked', failures: 5, lockedUntil: at('5 minutes') },
+      { key: 'phone:recent-count', failures: 2, lockedUntil: null, updatedAt: at('-1 hour') },
+    ]);
+
+    expect(await purgeExpiredThrottles(ctx.db)).toBe(3);
+    const left = (await ctx.db.select({ key: authThrottle.key }).from(authThrottle)).map((r) => r.key).sort();
+    expect(left).toEqual(['phone:locked', 'phone:recent-count', 'rl:live-window']);
   });
 });
 

@@ -16,6 +16,7 @@ import {
   withinOpeningHours,
 } from './box';
 import { purgeExpiredHandoffTokens } from './handoff';
+import { purgeExpiredThrottles } from './throttle';
 import { OCCUPANCY_JOB, runOccupancyJob } from './occupancy';
 import { JobFailedError } from './job-failure';
 import { buildOtoAppJobsClient } from './otoapp-directory';
@@ -484,7 +485,7 @@ export function buildDefaultJobs(deps: JobDeps): JobDefinition[] {
     {
       name: 'job:housekeeping.retention',
       description:
-        'Ages out operational runs, resolved alerts, box heartbeats, the sync ledger, the change feed, station telemetry and the print record, and expires stale box commands',
+        'Ages out operational runs, resolved alerts, box heartbeats, the sync ledger, the change feed, station telemetry, the print record and spent sign-in throttles, and expires stale box commands',
       intervalSeconds: deps.env.HOUSEKEEPING_INTERVAL_S,
       run: async ({ db }) => {
         const sync = syncSettings();
@@ -881,6 +882,8 @@ async function legacySweeps(db: Db, env: Env): Promise<Record<string, number>> {
      * "a box is archived, never deleted" a database fact.
      */
     commandsExpired: await expireStaleCommands(db),
+    /** Sign-in, code and rate-limit buckets whose window or cooldown is over (SCRUM-386). */
+    throttlesDeleted: await purgeExpiredThrottles(db),
   };
 }
 

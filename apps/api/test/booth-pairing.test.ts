@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq } from 'drizzle-orm';
-import { auditLog, deviceCredential, spin, station } from '@oto/db';
+import { auditLog, authThrottle, deviceCredential, spin, station } from '@oto/db';
 import type { BoxAgent } from '@oto/box-agent';
 import { BOOTH_DEVICE_HEADER, newId } from '@oto/shared';
 import {
@@ -13,6 +13,7 @@ import {
   teardownAll,
   type TestContext,
 } from './helpers';
+import { SCREEN_AUTH_FAILURES_MAX } from '../src/services/device-credential';
 import { SPIN, attachStubBox, detachStubBoxes, newCalls, stubBooth, type BoothCalls } from './stub-booth';
 
 /**
@@ -398,6 +399,35 @@ describe('unpairing a screen (SCRUM-244)', () => {
     expect(after.statusCode).toBe(401);
     expect(after.json().error.code).toBe('BOOTH_UNPAIRED');
     // One draw for the press before the revoke, and none after it.
+    expect(drawsAsked()).toBe(1);
+  });
+});
+
+describe('refused screen credentials are counted on their own (SCRUM-385)', () => {
+  const bucket = 'rl:booth-screen-auth-addr:127.0.0.1';
+
+  it('a wrong secret spends the refusal bucket; past its ceiling it is refused 429 while a paired screen still presses', async () => {
+    attachStubBooth();
+    await ctx.db.delete(authThrottle).where(eq(authThrottle.key, bucket));
+    const device = await pairedScreen();
+    const wrong = { [BOOTH_DEVICE_HEADER]: 'e'.repeat(64) };
+
+    expect((await press(wrong)).statusCode).toBe(401);
+    // Missing or malformed costs no read and is not counted: an unpaired screen
+    // must keep reading 401 to show the pairing prompt.
+    expect((await press()).statusCode).toBe(401);
+    expect((await press({ [BOOTH_DEVICE_HEADER]: 'not-a-secret' })).statusCode).toBe(401);
+    const [counted] = await ctx.db.select().from(authThrottle).where(eq(authThrottle.key, bucket));
+    expect(counted?.failures).toBe(1);
+
+    // The ceiling, reached without a hundred-odd round trips.
+    await ctx.db.update(authThrottle).set({ failures: SCREEN_AUTH_FAILURES_MAX }).where(eq(authThrottle.key, bucket));
+    const over = await press(wrong);
+    expect(over.statusCode).toBe(429);
+    expect(over.json().error.code).toBe('TOO_MANY_REQUESTS');
+
+    // Same address, a real screen: never counted, never refused by it.
+    expect((await press(device)).statusCode).toBe(200);
     expect(drawsAsked()).toBe(1);
   });
 });

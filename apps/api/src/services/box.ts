@@ -316,7 +316,15 @@ export async function authenticateBox(
      * park's shared allowance as well. A stolen Pi cannot take the branch's
      * other boxes down with it.
      */
-    if (presented.boxId) await limitPrincipal(db, `box-auth:${presented.boxId}`, 30, 300);
+    /*
+     * SCRUM-386 — only a box that EXISTS opens a bucket of its own (a wrong
+     * secret, archived, disabled). An id that resolved to nothing names no box
+     * being attacked, and keying on it let a caller open one row per invented
+     * id; it spends the address bucket alone.
+     */
+    if (presented.boxId && reason !== 'unknown_box') {
+      await limitPrincipal(db, `box-auth:${presented.boxId}`, 30, 300);
+    }
     await limitPrincipal(db, `box-auth-addr:${ctx.ip}`, 300, 300);
     throw error;
   };
