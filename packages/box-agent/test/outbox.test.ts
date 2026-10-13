@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 
 import type { SyncPushRequest, SyncPushResponse } from '../src/contract';
 import { createOutbox } from '../src/outbox';
+import type { OutboxRecord } from '../src/store';
+import { SqlBoxStore } from '../src/store-sql';
+import { prepareSqliteBoxStore, sqliteBoxDriver, type SqliteDatabaseLike } from '../src/store-sqlite';
 import { BOX_ID, openTestStore, plus } from './_support';
 
 const AT = '2026-09-20T03:00:00.000Z';
@@ -185,4 +189,113 @@ test('a box with no signing key refuses to queue rather than minting unverifiabl
   await assert.rejects(outbox.queue({ type: 'member.created', payload: {} }), /no signing key/);
   assert.equal((await outbox.flush()).state, 'not_registered');
   harness.close();
+});
+
+test('SCRUM-404: the prune drops only acknowledged facts past their retention, and never one an overlay still names', async () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  // Applied, applied, applied (named by an overlay), quarantined, refused.
+  const { harness, outbox } = await openPump({
+    answer: (request) => ({
+      status: 200,
+      body: {
+        applied: 3,
+        duplicates: 0,
+        quarantined: 1,
+        rejected: 1,
+        results: request.events.map((event, i) => ({
+          eventId: event.eventId,
+          boxSeq: event.boxSeq,
+          ...(i < 3
+            ? { result: 'applied' as const }
+            : i === 3
+              ? { result: 'quarantined' as const, reason: 'poison' as const }
+              : { result: 'rejected' as const, errorCode: 'NOPE' }),
+        })),
+        cursorSeq: 3,
+        epoch: 1,
+        batchId: 'ops-run-1',
+        serverTime: AT,
+      },
+    }),
+  });
+  const sent: OutboxRecord[] = [];
+  for (let i = 0; i < 5; i += 1) sent.push(await outbox.queue({ type: 'member.created', payload: { i } }));
+  assert.equal((await outbox.flush()).state, 'pushed');
+  const unsent = await outbox.queue({ type: 'member.created', payload: { unsent: true } });
+  await harness.store.putOverlay(BOX_ID, {
+    kind: 'member',
+    entityId: 'member-1',
+    memberId: 'member-1',
+    phone: '+66811111111',
+    record: {},
+    eventId: sent[2]!.envelope.eventId,
+  });
+
+  const states = async () =>
+    harness.store.outboxStates(BOX_ID, [...sent, unsent].map((r) => r.envelope.eventId));
+
+  assert.equal(await outbox.prune(), 0, 'nothing is past its retention yet');
+
+  harness.setNow(plus(AT, 15 * DAY));
+  assert.equal(await outbox.prune(), 2);
+  const left = await states();
+  assert.equal(left.has(sent[0]!.envelope.eventId), false);
+  assert.equal(left.has(sent[1]!.envelope.eventId), false);
+  assert.equal(left.get(sent[2]!.envelope.eventId)?.state, 'acked', 'an overlay still asks after it');
+  assert.equal(left.get(sent[3]!.envelope.eventId)?.state, 'quarantined');
+  assert.equal(left.get(sent[4]!.envelope.eventId)?.state, 'failed');
+  assert.equal(left.get(unsent.envelope.eventId)?.state, 'queued');
+  assert.equal((await outbox.depth()).queued, 2, 'the refused fact and the unsent one are still owed');
+  assert.equal(await outbox.prune(), 0, 'a second run finds nothing more');
+
+  // The journal does not reuse an address a pruned row held.
+  const next = await outbox.queue({ type: 'member.created', payload: {} });
+  assert.equal(next.envelope.boxSeq, 7);
+  harness.close();
+});
+
+test('SCRUM-404: the prune leaves a row "Replay last batch" put back on the queue', async () => {
+  const { harness, outbox } = await openPump();
+  await outbox.queue({ type: 'member.created', payload: {} });
+  await outbox.flush();
+  assert.equal(await outbox.replayLastBatch(1), 1);
+  harness.setNow(plus(AT, 30 * 24 * 60 * 60 * 1000));
+  assert.equal(await outbox.prune(), 0);
+  assert.equal((await outbox.depth()).queued, 1);
+  harness.close();
+});
+
+test('SCRUM-404: depth() and takeBatch read the outbox through their own partial indexes', async () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    prepareSqliteBoxStore(db);
+    const seen: string[] = [];
+    const watched: SqliteDatabaseLike = {
+      exec: (sql) => db.exec(sql),
+      prepare: (sql) => {
+        seen.push(sql);
+        return db.prepare(sql) as unknown as ReturnType<SqliteDatabaseLike['prepare']>;
+      },
+      close: () => db.close(),
+    };
+    const store = new SqlBoxStore({ driver: sqliteBoxDriver(watched), now: () => new Date(AT) });
+    await store.init(BOX_ID);
+    const plan = (sql: string) =>
+      (db.prepare(`explain query plan ${sql}`).all() as Array<{ detail: string }>).map((r) => r.detail).join('; ');
+
+    seen.length = 0;
+    await store.depth(BOX_ID);
+    const depthSql = seen.find((sql) => /count\(\*\)/.test(sql));
+    assert.ok(depthSql);
+    assert.match(plan(depthSql), /INDEX box_outbox_depth_idx/, plan(depthSql));
+
+    seen.length = 0;
+    await store.takeBatch(BOX_ID, { now: AT });
+    const takeSql = seen.find((sql) => /^\s*select \*/.test(sql));
+    assert.ok(takeSql);
+    assert.match(plan(takeSql), /INDEX box_outbox_take_idx/, plan(takeSql));
+    assert.doesNotMatch(plan(takeSql), /TEMP B-TREE/, 'the index already holds the send order');
+  } finally {
+    db.close();
+  }
 });

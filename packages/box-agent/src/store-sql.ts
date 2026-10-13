@@ -824,6 +824,44 @@ export class SqlBoxStore implements BoxStore {
     return ids.length;
   }
 
+  async pruneAcked(boxId: string, opts: { ackedBefore: string; limit: number }): Promise<number> {
+    const limit = Math.max(0, Math.floor(opts.limit));
+    if (limit === 0) return 0;
+    /**
+     * Rows an offline overlay still names stay: the overlay is let go only
+     * once its fact reads `acked` (`pruneOverlay` on each desk), and a fact
+     * that is no longer here reads as nothing, which would keep the overlay
+     * speaking over the cache for good.
+     */
+    const named = new Set(
+      (await this.allOverlay(boxId))
+        .map((row) => row.eventId)
+        .filter((id): id is string => !!id),
+    );
+    const rows = await this.driver.query(
+      `select event_id from ${this.table('box_outbox')}
+        where box_id = ? and state = 'acked' and acked_at is not null and acked_at < ?
+        order by acked_at asc
+        limit ?`,
+      [boxId, opts.ackedBefore, limit + named.size],
+    );
+    const ids = rows
+      .map((row) => String(row.event_id))
+      .filter((id) => !named.has(id))
+      .slice(0, limit);
+    if (ids.length === 0) return 0;
+    // The state and the age again in the delete itself: "Replay last batch"
+    // may have put one of these back on the queue since the read.
+    const deleted = await this.driver.query(
+      `delete from ${this.table('box_outbox')}
+        where box_id = ? and state = 'acked' and acked_at is not null and acked_at < ?
+          and event_id in (${placeholders(ids.length)})
+        returning event_id`,
+      [boxId, opts.ackedBefore, ...ids],
+    );
+    return deleted.length;
+  }
+
   async readSession(stationId: string): Promise<StationSessionDocument | null> {
     const rows = await this.driver.query(
       `select * from ${this.table('station_session')} where station_id = ?`,

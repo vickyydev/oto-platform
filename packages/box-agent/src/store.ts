@@ -584,6 +584,16 @@ export interface BoxStore extends PrintJobStore {
   depth(boxId: string): Promise<OutboxDepth>;
   /** For "Replay last batch": the highest acked events, put back as queued. */
   requeueAcked(boxId: string, limit: number): Promise<number>;
+  /**
+   * SCRUM-404 — drop sent facts the platform has acknowledged, so the outbox
+   * stops growing for ever. Only rows in state `acked` with an `acked_at`
+   * before `ackedBefore` are candidates; a row an offline overlay still names
+   * is kept (its prune reads the row's `acked` state), and the delete re-checks
+   * the state so a row put back on the queue in between is never touched.
+   * Queued, sending, failed and quarantined rows are never dropped. At most
+   * `limit` rows go per call. Answers how many went.
+   */
+  pruneAcked(boxId: string, opts: { ackedBefore: string; limit: number }): Promise<number>;
 
   readSession(stationId: string): Promise<StationSessionDocument | null>;
   /** Create the row if it is absent; return whatever is there either way. */

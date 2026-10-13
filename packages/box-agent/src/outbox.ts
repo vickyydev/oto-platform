@@ -56,7 +56,20 @@ export interface OutboxOptions {
    * outbox adopts a NEWER epoch itself, and never an older one.
    */
   adoptEpoch?: (epoch: number) => Promise<unknown>;
+  /**
+   * SCRUM-404 — how long an acknowledged fact is kept after its
+   * acknowledgement, how often the prune runs, and how many rows one run may
+   * drop (`node:sqlite` shares its thread with the kiosk, so a run is short).
+   */
+  ackedRetentionMs?: number;
+  pruneIntervalMs?: number;
+  pruneBatch?: number;
 }
+
+/** SCRUM-404 — an acknowledged fact is kept this long, then pruned. */
+export const OUTBOX_ACKED_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
+export const OUTBOX_PRUNE_INTERVAL_MS = 10 * 60 * 1000;
+export const OUTBOX_PRUNE_BATCH = 1_000;
 
 export type FlushOutcome =
   | { state: 'offline' }
@@ -94,6 +107,12 @@ export interface Outbox {
   depth(): Promise<OutboxDepth>;
   /** The Console's "Replay last batch": put the last N acked events back. */
   replayLastBatch(limit?: number): Promise<number>;
+  /**
+   * SCRUM-404 — drop acknowledged facts older than the retention. Never a
+   * queued, sending, failed or quarantined one (`BoxStore.pruneAcked`).
+   * Runs on its own timer once started; answers how many rows went.
+   */
+  prune(): Promise<number>;
   start(): void;
   stop(): void;
 }
@@ -110,10 +129,14 @@ export function createOutbox(options: OutboxOptions): Outbox {
     intervalMs = 5_000,
     onEpoch,
     adoptEpoch,
+    ackedRetentionMs = OUTBOX_ACKED_RETENTION_MS,
+    pruneIntervalMs = OUTBOX_PRUNE_INTERVAL_MS,
+    pruneBatch = OUTBOX_PRUNE_BATCH,
   } = options;
   const clock = options.now ?? (() => new Date());
   const log = options.log ?? silentLog;
   let timer: ReturnType<typeof setInterval> | null = null;
+  let pruneTimer: ReturnType<typeof setInterval> | null = null;
   // One flush at a time. Two overlapping pushes would each take a batch and
   // the second would send events the first has already marked `sending`,
   // doubling the work for no gain — the cloud would dedupe them, but the box
@@ -241,6 +264,20 @@ export function createOutbox(options: OutboxOptions): Outbox {
     });
   }
 
+  async function prune(): Promise<number> {
+    const ackedBefore = new Date(clock().getTime() - ackedRetentionMs);
+    // A clock that cannot be read as a time prunes nothing.
+    if (!Number.isFinite(ackedBefore.getTime())) return 0;
+    const dropped = await store.pruneAcked(boxId, {
+      ackedBefore: ackedBefore.toISOString(),
+      limit: pruneBatch,
+    });
+    if (dropped > 0) {
+      log.info({ boxId, dropped, module: 'outbox' }, 'acknowledged facts past their retention were pruned');
+    }
+    return dropped;
+  }
+
   function flush(): Promise<FlushOutcome> {
     if (inFlight) return inFlight;
     inFlight = flushOnce().finally(() => {
@@ -255,7 +292,16 @@ export function createOutbox(options: OutboxOptions): Outbox {
     flush,
     depth: () => store.depth(boxId),
     replayLastBatch: (limit = 50) => store.requeueAcked(boxId, limit),
+    prune,
     start() {
+      if (!pruneTimer) {
+        pruneTimer = setInterval(() => {
+          void prune().catch((error: unknown) => {
+            log.error({ err: String(error), boxId, module: 'outbox' }, 'outbox prune failed');
+          });
+        }, pruneIntervalMs);
+        pruneTimer.unref?.();
+      }
       if (timer) return;
       timer = setInterval(() => {
         void flush().catch((error: unknown) => {
@@ -268,6 +314,8 @@ export function createOutbox(options: OutboxOptions): Outbox {
     stop() {
       if (timer) clearInterval(timer);
       timer = null;
+      if (pruneTimer) clearInterval(pruneTimer);
+      pruneTimer = null;
     },
   };
 }

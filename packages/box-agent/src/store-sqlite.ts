@@ -103,6 +103,15 @@ create unique index if not exists box_outbox_journal_unique
   on box_outbox (box_id, journal_epoch, box_seq);
 create index if not exists box_outbox_send_idx
   on box_outbox (box_id, box_seq) where state in ('queued', 'sending');
+-- SCRUM-404: one partial index per hot scan, each condition written exactly
+-- as its query writes it (SQLite uses a partial index only when the query
+-- repeats the index's condition): depth() and takeBatch in store-sql.ts.
+-- Made on every boot by create index if not exists, so a card from before
+-- this change gains them at its next start.
+create index if not exists box_outbox_depth_idx
+  on box_outbox (box_id, created_at) where state in ('queued', 'sending', 'failed');
+create index if not exists box_outbox_take_idx
+  on box_outbox (box_id, journal_epoch, box_seq) where state in ('queued', 'failed');
 
 create table if not exists station_session (
   station_id text primary key,
