@@ -31,6 +31,24 @@
         "$TURBO_ROOT$/packages/**/*.tsx"
       ]
     },
+    // The seam walker (SCRUM-293) reads every .ts and .tsx under the four
+    // front ends' src/ at runtime and resolves each api call against this
+    // package's openapi.json. Hashed on its own package alone, a broken call
+    // added in apps/pos would replay a stored pass — the failure `@oto/print`
+    // measured above. Keep these globs matching FRONT_ENDS in
+    // packages/api-types/test/seams.ts; `packages/shared` is where the
+    // station bridge base it reads comes from.
+    "@oto/api-types#test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/pos/src/**",
+        "$TURBO_ROOT$/apps/console/src/**",
+        "$TURBO_ROOT$/apps/launcher/src/**",
+        "$TURBO_ROOT$/apps/booth/src/**",
+        "$TURBO_ROOT$/packages/shared/src/**"
+      ]
+    },
     "dev": {
       "cache": false,
       "persistent": true
