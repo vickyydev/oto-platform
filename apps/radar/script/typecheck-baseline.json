@@ -1,16 +1,12 @@
 {
   "version": 1,
-  "errors": 50,
-  "description": "Inherited Radar diagnostic ceilings by file and TypeScript code (S2-18 R1 lift; the export had 79, the lift removed 29 with the deleted code). Reduce deliberately when debt is removed.",
+  "errors": 16,
+  "description": "Inherited Radar diagnostic ceilings by file and TypeScript code (S2-18). R1 lifted 50 (the export had 79); R3 deleted server/funtopia.ts with its 34 when the Pisell/Papaya sources were retired. The 16 left are the dashboard page's own. Reduce deliberately when debt is removed.",
   "counts": {
     "client/src/pages/funtopia-dashboard.tsx|TS18048": 8,
     "client/src/pages/funtopia-dashboard.tsx|TS2322": 1,
     "client/src/pages/funtopia-dashboard.tsx|TS2339": 4,
     "client/src/pages/funtopia-dashboard.tsx|TS2345": 2,
-    "client/src/pages/funtopia-dashboard.tsx|TS2741": 1,
-    "server/funtopia.ts|TS2322": 1,
-    "server/funtopia.ts|TS2339": 28,
-    "server/funtopia.ts|TS2353": 4,
-    "server/funtopia.ts|TS2740": 1
+    "client/src/pages/funtopia-dashboard.tsx|TS2741": 1
   }
 }

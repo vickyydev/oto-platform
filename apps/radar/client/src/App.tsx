@@ -12,7 +12,6 @@ const IntelligenceDashboard = lazy(() => import("@/pages/funtopia-dashboard"));
 const VisitorSurveyPage = lazy(() => import("@/pages/visitor-survey"));
 const QrLandingPage = lazy(() => import("@/pages/qr-landing"));
 const QrRedeemPage = lazy(() => import("@/pages/qr-redeem"));
-const TaxInvoicesPage = lazy(() => import("@/pages/tax-invoices"));
 
 function PageLoader() {
   return (
@@ -65,9 +64,6 @@ function App() {
               <Route path="/survey" component={VisitorSurveyPage} />
               <Route path="/c/:id" component={QrLandingPage} />
               <Route path="/redeem" component={QrRedeemPage} />
-              <Route path="/tax-invoices">
-                <SignedIn><TaxInvoicesPage /></SignedIn>
-              </Route>
               <Route>
                 <SignedIn><IntelligenceDashboard /></SignedIn>
               </Route>

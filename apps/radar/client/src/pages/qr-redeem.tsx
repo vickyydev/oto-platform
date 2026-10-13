@@ -378,7 +378,7 @@ function RedeemPageContent() {
                 data-testid="button-toggle-spin-report"
               >
                 <span id="report-toggle-label" className="font-semibold">Reporting</span>
-                <span className="text-xs text-muted-foreground">{reportOpen ? "Hide" : "Show won, redeemed & capacity"}</span>
+                <span className="text-xs text-muted-foreground">{reportOpen ? "Hide" : "Show won & redeemed"}</span>
               </button>
               {reportOpen && (
                 <div id="spin-wheel-report-panel" className="border-t p-3 sm:p-4">

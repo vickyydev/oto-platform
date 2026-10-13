@@ -11,11 +11,10 @@ export type SpinWheelReport = {
     redeemed: number;
     outstanding: number;
   }>;
-  capacity: {
-    total: number;
-    allocated: number;
-    remaining: number;
-  };
+  /** The legacy wheel's four-digit code capacity; the platform booth has none. */
+  capacity: null;
+  /** When the platform's booth rollup last ran to the end. */
+  lastRolledUpAt: string | null;
 };
 
 type SpinWheelReportProps = {
@@ -31,7 +30,7 @@ export function SpinWheelReport({ report, isLoading, error, onRefresh }: SpinWhe
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <BarChart3 className="h-4 w-4 shrink-0 text-sky-600" aria-hidden />
-          <h2 id="spin-wheel-report-heading" className="truncate text-sm font-bold">Spin Wheel reporting</h2>
+          <h2 id="spin-wheel-report-heading" className="truncate text-sm font-bold">Booth report — last 12 months</h2>
         </div>
         <Button
           type="button"
@@ -59,31 +58,6 @@ export function SpinWheelReport({ report, isLoading, error, onRefresh }: SpinWhe
               <Metric label="Won" value={report.rewards.reduce((sum, reward) => sum + reward.won, 0)} />
               <Metric label="Redeemed" value={report.rewards.reduce((sum, reward) => sum + reward.redeemed, 0)} />
               <Metric label="Outstanding" value={report.rewards.reduce((sum, reward) => sum + reward.outstanding, 0)} />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-end justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Code capacity</p>
-                <p className="text-sm font-semibold tabular-nums">
-                  {report.capacity.remaining.toLocaleString()} remaining
-                </p>
-              </div>
-              <div
-                className="h-2 overflow-hidden rounded-full bg-muted"
-                role="progressbar"
-                aria-label="Allocated Spin Wheel code capacity"
-                aria-valuemin={0}
-                aria-valuemax={report.capacity.total}
-                aria-valuenow={report.capacity.allocated}
-              >
-                <div
-                  className="h-full rounded-full bg-sky-500 transition-[width]"
-                  style={{ width: `${Math.min(100, Math.max(0, (report.capacity.allocated / Math.max(1, report.capacity.total)) * 100))}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {report.capacity.allocated.toLocaleString()} of {report.capacity.total.toLocaleString()} codes allocated
-              </p>
             </div>
 
             <div className="overflow-x-auto rounded-lg border">
@@ -115,7 +89,9 @@ export function SpinWheelReport({ report, isLoading, error, onRefresh }: SpinWhe
           </div>
         )}
         {!isLoading && !error && !report && (
-          <p className="text-sm text-muted-foreground">No report data returned.</p>
+          // A 401 answers null: the report is the platform's booth figures,
+          // which need a signed-in session.
+          <p className="text-sm text-muted-foreground">Open Radar from the OTO launcher to see the booth report.</p>
         )}
       </div>
     </section>

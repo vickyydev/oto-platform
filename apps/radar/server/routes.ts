@@ -17,9 +17,6 @@ import {
   updateBirthday,
   deleteBirthday,
 } from "./storage/staffBirthdays";
-import { BoundedAsyncCache, compactDashboardRange } from "./rangePerformance";
-
-const dashboardRangeCache = new BoundedAsyncCache<any>(2 * 60 * 1000, 24);
 import {
   createCampaign,
   deleteCampaign,
@@ -38,6 +35,23 @@ import {
 } from "./storage/campaigns";
 import { registerSpinRewardRoutes } from "./spinRewardsRoutes";
 import {
+  PlatformReadError,
+  RADAR_BRANCH_KEYS,
+  SUMMARY_MAX_DAYS,
+  addDays,
+  bangkokToday,
+  branchToday,
+  calendarDaysOf,
+  dailySummariesOf,
+  dashboardRangeOf,
+  isRadarBranchKey,
+  platformBranches,
+  readBoothReport,
+  readSummary,
+  spinReportOf,
+  type RadarBranchKey,
+} from "./sources/otoPos";
+import {
   boothEventInputSchema,
   spinEventSchema,
   spinEventTypeMap,
@@ -55,8 +69,8 @@ import OpenAI from "openai";
 import {
   MARKETING_API_KEY_ENV,
   MARKETING_RATE_LIMIT,
+  MARKETING_FIGURES_UNAVAILABLE,
   bearerTokenFromRequest,
-  buildMarketingSummary,
   consumeMarketingRateLimit,
   marketingApiKeyIsValid,
   validateMarketingDateRange,
@@ -82,575 +96,146 @@ export async function registerRoutes(
   app.set('etag', false);
 
   // ============================================
-  // PAPAYA POS API (Robinson Chalong)
+  // FIGURES — the OTO POS rollup, through the platform (sources/otoPos.ts)
   // ============================================
+  //
+  // One source for every park (S2-18, owner 2026-10-14): the platform's
+  // GET /analytics/summary, read with the signed-in person's own session, so
+  // the platform decides what they may see. `branch` is Radar's park key
+  // (floresta | chalong), matched to a platform branch by name.
 
-  app.get("/api/papaya/today", async (req, res, next) => {
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+
+  function figuresError(res: Response, err: unknown, next: NextFunction) {
+    if (err instanceof PlatformReadError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    return next(err);
+  }
+
+  function branchParam(req: Request, res: Response): RadarBranchKey | null {
+    const branch = req.query.branch;
+    if (!isRadarBranchKey(branch)) {
+      res.status(400).json({ message: `branch must be one of ${RADAR_BRANCH_KEYS.join(", ")}` });
+      return null;
+    }
+    return branch;
+  }
+
+  function rangeParams(req: Request, res: Response): { from: string; to: string } | null {
+    const from = String(req.query.start ?? req.query.from ?? "");
+    const to = String(req.query.end ?? req.query.to ?? "");
+    if (!isoDate.test(from) || !isoDate.test(to) || from > to) {
+      res.status(400).json({ message: "start and end are required as YYYY-MM-DD, start not after end" });
+      return null;
+    }
+    return { from, to };
+  }
+
+  /** The parks the person may read, as Radar keys. */
+  async function readableKeys(token: string): Promise<RadarBranchKey[]> {
+    return [...(await platformBranches(token)).keys()];
+  }
+
+  /** The last two years of days, per day, for the trends assistant and the chart builder. */
+  async function recentDailySummaries(token: string, keys: RadarBranchKey[]) {
+    if (keys.length === 0) return [];
+    const to = bangkokToday();
+    const from = addDays(to, -(2 * SUMMARY_MAX_DAYS - 1));
+    return dailySummariesOf(await readSummary(token, keys, from, to, "day"));
+  }
+
+  // Which platform branch each park key means for this person.
+  app.get("/api/figures/branches", async (req, res, next) => {
     try {
-      const { getCombinedPapayaDailySummary, isPapayaConfigured } = await import("./papaya");
-      if (!isPapayaConfigured()) {
-        return res.json({ totalRevenue: 0, totalOrders: 0, papayaConnected: false });
-      }
-
-      const todayStr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
-      const summary = await getCombinedPapayaDailySummary(todayStr);
-
-      res.json({
-        ...summary,
-        customerTypeSplit: [],
-        dailyRevenue: [],
-        cashReportsDailyTotals: [],
-        voucherSwingAmount: 0,
-        pureTicketRevenue: summary?.categoryBreakdown?.["Tickets & Packages"]?.revenue || 0,
-        staffOnDuty: 0,
-        eventCount: 0,
-        funtopiaConnected: false,
-        papayaConnected: true,
-      });
+      const map = await platformBranches(req.radar!.token);
+      res.json({ branches: [...map].map(([key, b]) => ({ key, branchId: b.branchId, name: b.name })) });
     } catch (err) {
-      next(err);
+      figuresError(res, err, next);
     }
   });
 
-  app.get("/api/papaya/daily/:date", async (req, res, next) => {
+  // One park's business day in progress.
+  app.get("/api/figures/today", async (req, res, next) => {
     try {
-      const { getCombinedPapayaDailySummary, isPapayaConfigured } = await import("./papaya");
-      if (!isPapayaConfigured()) {
-        return res.json({ totalRevenue: 0, totalOrders: 0 });
-      }
-      const summary = await getCombinedPapayaDailySummary(req.params.date);
-      res.json(summary || { date: req.params.date, totalRevenue: 0, totalOrders: 0 });
+      const branch = branchParam(req, res);
+      if (!branch) return;
+      const token = req.radar!.token;
+      const today = await branchToday(token, branch);
+      res.json(dashboardRangeOf(await readSummary(token, [branch], today, today, "day")));
     } catch (err) {
-      next(err);
+      figuresError(res, err, next);
     }
   });
 
-  app.get("/api/papaya/range", async (req, res, next) => {
+  // One park's range: totals, the per-day series and, for one day, the hours.
+  app.get("/api/figures/range", async (req, res, next) => {
     try {
-      const { getCombinedPapayaDateRangeSummary, isPapayaConfigured } = await import("./papaya");
-      if (!isPapayaConfigured()) {
-        try {
-          const { pool: localPool } = await import("./db");
-          const cacheCheck = await localPool.query("SELECT COUNT(*) as cnt FROM papaya_daily_cache");
-          if (parseInt(cacheCheck.rows[0]?.cnt || "0") === 0) {
-            return res.json({ totalRevenue: 0, totalOrders: 0, summaries: [] });
-          }
-        } catch {
-          return res.json({ totalRevenue: 0, totalOrders: 0, summaries: [] });
-        }
-      }
-      const from = (req.query.from || req.query.start) as string;
-      const to = (req.query.to || req.query.end) as string;
-      if (!from || !to) return res.status(400).json({ error: "from/start and to/end required" });
-      const rangeCacheKey = `chalong:${from}:${to}`;
-      const cachedResponse = dashboardRangeCache.get(rangeCacheKey);
-      if (cachedResponse) return res.json(cachedResponse);
-      const summaries = await getCombinedPapayaDateRangeSummary(from, to);
-      const { mergeSourceBreakdowns } = await import("./sourceRegistry");
-      const { classifyPapayaFnbSubCategory } = await import("./papaya");
+      const branch = branchParam(req, res);
+      const range = branch && rangeParams(req, res);
+      if (!branch || !range) return;
+      res.json(dashboardRangeOf(await readSummary(req.radar!.token, [branch], range.from, range.to, "day")));
+    } catch (err) {
+      figuresError(res, err, next);
+    }
+  });
 
-      let totalRevenue = 0;
-      let totalOrders = 0;
-      let discountTotal = 0;
-      const paymentBreakdown: Record<string, number> = {};
-      const categoryBreakdown: Record<string, any> = {};
-      // task-114 v3: aggregate per-natural-category birthday-channel split
-      // metadata across days so the client can flip allocation views on
-      // ranges instantly.
-      const birthdayChannelSplit: Record<string, { revenue: number; quantity: number; items: Array<{ name: string; category: string; revenue: number; quantity: number }> }> = {};
-      const dailyRevenue: Array<{
-        date: string;
-        revenue: number;
-        orders: number;
-        categories: Record<string, number>;
-      }> = [];
-      const topProductsMap: Record<string, { name: string; category: string; quantity: number; revenue: number }> = {};
-      const hourlyAgg: Record<number, { hour: number; label: string; revenue: number; orders: number; ticketsSold: number; summerCamp: { revenue: number; orders: number; ticketsSold: number }; categories: Record<string, number>; customerTypes: Record<string, { kids: number; adults: number }> }> = {};
+  // The calendar heatmap: revenue and orders per day.
+  app.get("/api/figures/calendar", async (req, res, next) => {
+    try {
+      const branch = branchParam(req, res);
+      const range = branch && rangeParams(req, res);
+      if (!branch || !range) return;
+      const summary = await readSummary(req.radar!.token, [branch], range.from, range.to, "day");
+      res.json({ dailyRevenue: calendarDaysOf(summary), cashReportsDailyTotals: [] });
+    } catch (err) {
+      figuresError(res, err, next);
+    }
+  });
 
-      for (const s of summaries) {
-        totalRevenue += s.totalRevenue;
-        totalOrders += s.totalOrders;
-        discountTotal += s.discountTotal || 0;
-
-        // Reconcile per-day category breakdown so it sums exactly to that day's totalRevenue
-        // (Papaya item-level discount pro-rating produces sub-baht drift that compounds).
-        const dayCats: Record<string, number> = {};
-        let dayCatSum = 0;
-        for (const [cat, data] of Object.entries(s.categoryBreakdown || {})) {
-          const rev = (data as any).revenue || 0;
-          dayCats[cat] = rev;
-          dayCatSum += rev;
-        }
-        if (dayCatSum > 0 && Math.abs(dayCatSum - s.totalRevenue) > 0.01) {
-          const scale = s.totalRevenue / dayCatSum;
-          for (const cat of Object.keys(dayCats)) {
-            dayCats[cat] = Math.round(dayCats[cat] * scale * 100) / 100;
-          }
-          // Push residual into the largest category so the sum equals totalRevenue exactly.
-          const roundedSum = Object.values(dayCats).reduce((a, b) => a + b, 0);
-          const residual = Math.round((s.totalRevenue - roundedSum) * 100) / 100;
-          if (Math.abs(residual) > 0) {
-            let largest = "";
-            let largestRev = -Infinity;
-            for (const [cat, rev] of Object.entries(dayCats)) {
-              if (rev > largestRev) { largestRev = rev; largest = cat; }
-            }
-            if (largest) dayCats[largest] = Math.round((dayCats[largest] + residual) * 100) / 100;
-          }
-        }
-
-        dailyRevenue.push({ date: s.date, revenue: s.totalRevenue, orders: s.totalOrders, categories: dayCats });
-
-        for (const [method, amount] of Object.entries(s.paymentBreakdown || {})) {
-          paymentBreakdown[method] = (paymentBreakdown[method] || 0) + amount;
-        }
-
-        for (const [cat, data] of Object.entries(s.categoryBreakdown || {})) {
-          if (!categoryBreakdown[cat]) {
-            categoryBreakdown[cat] = { revenue: 0, quantity: 0, items: [] };
-          }
-          // Use the reconciled per-day value so the range sum stays exact.
-          categoryBreakdown[cat].revenue += dayCats[cat] ?? ((data as any).revenue || 0);
-          categoryBreakdown[cat].quantity += (data as any).quantity || 0;
-          // Merge per-category items across days (dedupe by name, sum
-          // quantity + revenue) so the dashboard's Revenue by Category
-          // drill-down works on multi-day ranges for Chalong.
-          // task-119: key by (name, isBday) so a product sold both as bday
-          // and non-bday across days stays as two rows in the range view.
-          const itemsMap = new Map<string, { name: string; category: string; revenue: number; quantity: number; bdayRevenue?: number }>();
-          const kOf = (it: any) => `${it.name}::${it.bdayRevenue && it.bdayRevenue > 0 ? "1" : "0"}`;
-          for (const it of categoryBreakdown[cat].items) itemsMap.set(kOf(it), it);
-          for (const it of (data as any).items || []) {
-            const k = kOf(it);
-            const ex = itemsMap.get(k);
-            if (ex) {
-              ex.revenue += it.revenue || 0;
-              ex.quantity += it.quantity || 0;
-              if (it.bdayRevenue) ex.bdayRevenue = (ex.bdayRevenue || 0) + it.bdayRevenue;
-            }
-            else itemsMap.set(k, { ...it });
-          }
-          categoryBreakdown[cat].items = Array.from(itemsMap.values()).sort((a, b) => b.revenue - a.revenue);
-          // task-119 follow-up: rebuild F&B Food/Drinks sub-categories from
-          // the merged item list so the Chalong range view has the same
-          // drill-down sub-grouping as Floresta.
-          if (cat === "F&B") {
-            const subs: Record<string, { revenue: number; quantity: number; items: any[] }> = {
-              Food: { revenue: 0, quantity: 0, items: [] },
-              Drinks: { revenue: 0, quantity: 0, items: [] },
-            };
-            for (const it of categoryBreakdown[cat].items) {
-              const k = classifyPapayaFnbSubCategory(it.name);
-              subs[k].revenue += it.revenue || 0;
-              subs[k].quantity += it.quantity || 0;
-              subs[k].items.push(it);
-            }
-            categoryBreakdown[cat].subCategories = subs;
-          }
-        }
-
-        // task-114 v3: aggregate per-day birthday-channel split. Items are
-        // merged by name across days so the client can re-bucket on toggle.
-        for (const [cat, data] of Object.entries(s.birthdayChannelSplit || {})) {
-          if (!birthdayChannelSplit[cat]) {
-            birthdayChannelSplit[cat] = { revenue: 0, quantity: 0, items: [] };
-          }
-          birthdayChannelSplit[cat].revenue += (data as any).revenue || 0;
-          birthdayChannelSplit[cat].quantity += (data as any).quantity || 0;
-          // task-119: key by (name, isBday) for split consistency. Birthday-
-          // channel split items are by definition bday, but key the same way
-          // for shape parity with the regular category items merge above.
-          const itemsMap = new Map<string, { name: string; category: string; revenue: number; quantity: number; bdayRevenue?: number }>();
-          const kOf = (it: any) => `${it.name}::${it.bdayRevenue && it.bdayRevenue > 0 ? "1" : "0"}`;
-          for (const it of birthdayChannelSplit[cat].items) itemsMap.set(kOf(it), it);
-          for (const it of (data as any).items || []) {
-            const k = kOf(it);
-            const ex = itemsMap.get(k);
-            if (ex) {
-              ex.revenue += it.revenue || 0;
-              ex.quantity += it.quantity || 0;
-              if (it.bdayRevenue) ex.bdayRevenue = (ex.bdayRevenue || 0) + it.bdayRevenue;
-            }
-            else itemsMap.set(k, { ...it });
-          }
-          birthdayChannelSplit[cat].items = Array.from(itemsMap.values()).sort((a, b) => b.revenue - a.revenue);
-          if (cat === "F&B") {
-            const subs: Record<string, { revenue: number; quantity: number; items: any[] }> = {
-              Food: { revenue: 0, quantity: 0, items: [] },
-              Drinks: { revenue: 0, quantity: 0, items: [] },
-            };
-            for (const it of birthdayChannelSplit[cat].items) {
-              const k = classifyPapayaFnbSubCategory(it.name);
-              subs[k].revenue += it.revenue || 0;
-              subs[k].quantity += it.quantity || 0;
-              subs[k].items.push(it);
-            }
-            (birthdayChannelSplit[cat] as any).subCategories = subs;
-          }
-        }
-
-        for (const p of (s.topProducts || [])) {
-          const key = p.name;
-          if (!topProductsMap[key]) {
-            topProductsMap[key] = { name: p.name, category: p.category || "", quantity: 0, revenue: 0 };
-          }
-          topProductsMap[key].quantity += p.quantity || 0;
-          topProductsMap[key].revenue += p.revenue || 0;
-        }
-
-        for (const h of (s.hourlyBreakdown || [])) {
-          if (!hourlyAgg[h.hour]) {
-            hourlyAgg[h.hour] = {
-              hour: h.hour,
-              label: (h as any).label || `${String(h.hour).padStart(2, "0")}:00`,
-              revenue: 0, orders: 0, ticketsSold: 0,
-              summerCamp: { revenue: 0, orders: 0, ticketsSold: 0 },
-              categories: {},
-              customerTypes: {},
-            };
-          }
-          hourlyAgg[h.hour].revenue += h.revenue || 0;
-          hourlyAgg[h.hour].orders += h.orders || 0;
-          hourlyAgg[h.hour].ticketsSold += (h as any).ticketsSold || 0;
-          hourlyAgg[h.hour].summerCamp.revenue += (h as any).summerCamp?.revenue || 0;
-          hourlyAgg[h.hour].summerCamp.orders += (h as any).summerCamp?.orders || 0;
-          hourlyAgg[h.hour].summerCamp.ticketsSold += (h as any).summerCamp?.ticketsSold || 0;
-          const hCats = (h as any).categories || {};
-          for (const [k, v] of Object.entries(hCats)) {
-            hourlyAgg[h.hour].categories[k] = (hourlyAgg[h.hour].categories[k] || 0) + (Number(v) || 0);
-          }
-          const hCt = (h as any).customerTypes || {};
-          for (const [k, ct] of Object.entries(hCt) as [string, any][]) {
-            if (!hourlyAgg[h.hour].customerTypes[k]) {
-              hourlyAgg[h.hour].customerTypes[k] = { kids: 0, adults: 0 };
-            }
-            hourlyAgg[h.hour].customerTypes[k].kids += ct.kids || 0;
-            hourlyAgg[h.hour].customerTypes[k].adults += ct.adults || 0;
-          }
-        }
-      }
-
-      const topProducts = Object.values(topProductsMap)
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 20);
-
-      const hourlyBreakdown = Object.values(hourlyAgg).sort((a, b) => a.hour - b.hour);
-
-      // task-122: aggregate guestBreakdown across days so Chalong shows the
-      // Guest Overview card on Yesterday/Week/Month/past-day views. For a
-      // single day we pass through unchanged; for ranges we sum kids/adults/
-      // revenue, merge stayDistribution counts, recompute a weighted average
-      // stay duration, and merge per-ticket detail rows. Ongoing in-park
-      // figures are omitted for past/range data — they only mean anything
-      // for the current day.
-      let guestBreakdown: any = null;
-      const guestSummaries = summaries.filter((s: any) => s.guestBreakdown);
-      if (summaries.length === 1 && guestSummaries.length === 1) {
-        guestBreakdown = guestSummaries[0].guestBreakdown;
-      } else if (guestSummaries.length >= 1) {
-        let kids = 0, adults = 0, kidRevenue = 0, adultRevenue = 0;
-        const stayMap = new Map<number, { hours: number; count: number; label: string }>();
-        const detailsMap = new Map<string, { name: string; type: string; quantity: number; revenue: number }>();
-        for (const s of guestSummaries) {
-          const gb: any = s.guestBreakdown;
-          kids += gb.kidTickets || gb.kids || 0;
-          adults += gb.estimatedTotalAdults || gb.adultTickets || gb.adults || 0;
-          kidRevenue += gb.kidRevenue || 0;
-          adultRevenue += gb.adultRevenue || 0;
-          for (const sd of (gb.stayDistribution || [])) {
-            const ex = stayMap.get(sd.hours);
-            if (ex) ex.count += sd.count || 0;
-            else stayMap.set(sd.hours, { hours: sd.hours, count: sd.count || 0, label: sd.label });
-          }
-          for (const d of (gb.details || [])) {
-            const k = `${d.name}::${d.type || ""}`;
-            const ex = detailsMap.get(k);
-            if (ex) { ex.quantity += d.quantity || 0; ex.revenue += d.revenue || 0; }
-            else detailsMap.set(k, { name: d.name, type: d.type, quantity: d.quantity || 0, revenue: d.revenue || 0 });
-          }
-        }
-        const stayDistribution = Array.from(stayMap.values()).sort((a, b) => a.hours - b.hours);
-        const stayWeighted = stayDistribution.reduce((s, x) => s + x.hours * x.count, 0);
-        const stayCount = stayDistribution.reduce((s, x) => s + x.count, 0);
-        const avgStayHours = stayCount > 0 ? Math.round((stayWeighted / stayCount) * 10) / 10 : 0;
-        guestBreakdown = {
-          kids, adults, totalGuests: kids + adults,
-          kidTickets: kids,
-          adultTickets: adults,
-          estimatedTotalAdults: adults,
-          totalInPark: kids + adults,
-          kidRevenue, adultRevenue,
-          avgStayHours,
-          stayDistribution,
-          details: Array.from(detailsMap.values()).sort((a, b) => b.revenue - a.revenue),
-          ongoingKids: 0,
-          ongoingAdults: 0,
-          ongoingTotal: 0,
-          completedKids: kids,
-          completedAdults: adults,
-          completedTotal: kids + adults,
-        };
-      }
-
-      // Build per-day hourly array so the dashboard's heatmap and per-day filters work for Chalong too.
-      const dailyHourly = summaries.map((s) => ({
-        date: s.date,
-        hourlyBreakdown: s.hourlyBreakdown || [],
-      })).sort((a, b) => a.date.localeCompare(b.date));
-
-      const sourceBreakdown = mergeSourceBreakdowns(
-        summaries.map((s: any) => s.sourceBreakdown || []),
+  // How fresh the figures are: when the rollup last brought each park up to date.
+  app.get("/api/figures/freshness", async (req, res, next) => {
+    try {
+      const token = req.radar!.token;
+      const asked = String(req.query.branches ?? "").split(",").filter(isRadarBranchKey);
+      const keys = asked.length > 0 ? asked : await readableKeys(token);
+      const parks = await Promise.all(
+        keys.map(async (key) => {
+          const today = bangkokToday();
+          const s = await readSummary(token, [key], today, today, "total");
+          const b = s.branches[0];
+          return { key, name: b?.name ?? key, source: b?.source ?? null, lastRolledUpAt: b?.lastRolledUpAt ?? null };
+        }),
       );
-
-      const response = {
-        totalRevenue,
-        totalOrders,
-        discountTotal,
-        avgOrderValue: totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0,
-        paymentBreakdown,
-        categoryBreakdown,
-        birthdayChannelSplit,
-        topProducts,
-        hourlyBreakdown,
-        dailyHourly,
-        dailyRevenue,
-        sourceBreakdown,
-        guestBreakdown,
-        summaries,
-      };
-      dashboardRangeCache.set(rangeCacheKey, response);
-      res.json(response);
+      const times = parks.map((p) => p.lastRolledUpAt);
+      const oldest = times.some((t) => t === null) ? null : times.sort()[0] ?? null;
+      res.json({ branches: parks, lastRolledUpAt: oldest });
     } catch (err) {
-      next(err);
+      figuresError(res, err, next);
     }
   });
 
-  app.get("/api/papaya/orders-by-discount", async (req, res, next) => {
+  // The Spin Wheel report: the platform booth figures (GET /analytics/booths),
+  // last twelve months, every park the person may read.
+  app.get("/api/spin-wheel/report", async (req, res, next) => {
     try {
-      const { getPapayaOrdersByDiscount } = await import("./papaya");
-      const date = req.query.date as string | undefined;
-      const from = (req.query.from as string | undefined) || date;
-      const to = (req.query.to as string | undefined) || date;
-      const discount = req.query.discount as string;
-      if (!from || !to || !discount) {
-        return res.status(400).json({ error: "discount and either date or from/to required" });
-      }
-      const result = await getPapayaOrdersByDiscount(from, discount, to);
-      res.json(result);
+      const token = req.radar!.token;
+      const keys = await readableKeys(token);
+      if (keys.length === 0) return res.json({ rewards: [], capacity: null, lastRolledUpAt: null });
+      const to = bangkokToday();
+      const report = await readBoothReport(token, keys, addDays(to, -364), to);
+      res.json(spinReportOf(report));
     } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/papaya/invoice-settings", async (_req, res, next) => {
-    try {
-      const { getPapayaInvoiceSettings } = await import("./papaya");
-      const settings = await getPapayaInvoiceSettings();
-      res.json(settings);
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.put("/api/papaya/invoice-settings", async (req, res, next) => {
-    try {
-      const { setPapayaInvoiceSettings, getPapayaInvoiceSettings, DEFAULT_INVOICE_SETTINGS } = await import("./papaya");
-      const body = req.body || {};
-      const merged = {
-        header: { ...DEFAULT_INVOICE_SETTINGS.header, ...(body.header || {}) },
-        posTaxIds: { ...DEFAULT_INVOICE_SETTINGS.posTaxIds, ...(body.posTaxIds || {}) },
-      };
-      if (Array.isArray(body.header?.addressLines)) {
-        merged.header.addressLines = body.header.addressLines.map((l: any) => String(l || ""));
-      }
-      await setPapayaInvoiceSettings(merged);
-      res.json(await getPapayaInvoiceSettings());
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/papaya/invoices", async (req, res, next) => {
-    try {
-      const { getPapayaInvoices } = await import("./papaya");
-      const from = req.query.from as string;
-      const to = req.query.to as string;
-      const terminalRaw = req.query.terminal as string | undefined;
-      if (!from || !to) return res.status(400).json({ error: "from and to required" });
-      let terminal: "reception" | "restaurant" | undefined;
-      if (terminalRaw && terminalRaw !== "all") {
-        if (terminalRaw === "reception" || terminalRaw === "restaurant") {
-          terminal = terminalRaw;
-        } else {
-          return res.status(400).json({ error: "invalid terminal" });
-        }
-      }
-      const invoices = await getPapayaInvoices(from, to, terminal);
-      res.json({ invoices });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/papaya/invoices/:terminal/:id", async (req, res, next) => {
-    try {
-      const { getPapayaInvoice } = await import("./papaya");
-      const { terminal, id } = req.params;
-      if (terminal !== "reception" && terminal !== "restaurant") {
-        return res.status(400).json({ error: "invalid terminal" });
-      }
-      const invoice = await getPapayaInvoice(id, terminal);
-      if (!invoice) return res.status(404).json({ error: "invoice not found" });
-      res.json(invoice);
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/papaya/status", async (_req, res, next) => {
-    try {
-      const { isPapayaConfigured } = await import("./papaya");
-      res.json({ configured: isPapayaConfigured() });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/papaya/sync-status", async (_req, res, next) => {
-    try {
-      const { isPapayaConfigured, getPapayaSyncStatus } = await import("./papaya");
-      const status = await getPapayaSyncStatus();
-      res.json({
-        ...status,
-        cachedDates: status.cachedDays,
-        papayaConnected: isPapayaConfigured() || status.cachedDays > 0,
-      });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // ============================================
-  // FUNTOPIA POS API
-  // ============================================
-
-  app.get("/api/funtopia/reports/detail-transactions", async (req, res, next) => {
-    try {
-      const schema = z.object({
-        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "from must be YYYY-MM-DD"),
-        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "to must be YYYY-MM-DD"),
-      });
-      const parsed = schema.safeParse({ from: req.query.from, to: req.query.to });
-      if (!parsed.success) {
-        return res.status(400).json({ error: parsed.error.issues[0]?.message || "invalid params" });
-      }
-      const { from, to } = parsed.data;
-      if (from > to) {
-        return res.status(400).json({ error: "from must be on or before to" });
-      }
-      const { buildDetailTransactionWorkbookBuffer } = await import("./funtopia");
-      const buf = await buildDetailTransactionWorkbookBuffer(from, to);
-      const filename = `Floresta_Detail_Transactions_${from}_to_${to}.xlsx`;
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      );
-      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-      res.send(buf);
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/reports/cash-collections", async (req, res, next) => {
-    try {
-      const schema = z.object({
-        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "from must be YYYY-MM-DD"),
-        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "to must be YYYY-MM-DD"),
-      });
-      const parsed = schema.safeParse({ from: req.query.from, to: req.query.to });
-      if (!parsed.success) {
-        return res.status(400).json({ error: parsed.error.issues[0]?.message || "invalid params" });
-      }
-      const { from, to } = parsed.data;
-      if (from > to) {
-        return res.status(400).json({ error: "from must be on or before to" });
-      }
-      const { buildCashCollectionWorkbookBuffer } = await import("./cashCollectionReport");
-      const buf = await buildCashCollectionWorkbookBuffer(from, to);
-      const filename = `Floresta_Cash_Collections_${from}_to_${to}.xlsx`;
-      res.setHeader(
-        "Content-Type",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      );
-      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-      res.send(buf);
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/formulas", async (_req, res) => {
-    const { FORMULA_REGISTRY, FORMULA_VERSION, FORMULA_LAST_UPDATED } = await import("./funtopia");
-    res.json({ version: FORMULA_VERSION, lastUpdated: FORMULA_LAST_UPDATED, categories: FORMULA_REGISTRY });
-  });
-
-  // Per-branch preference: should birthday-linked F&B revenue be reported under
-  // F&B (default) or moved to "Events / Birthdays". Read by every dashboard tab,
-  // the AI assistant, and the chart-builder so the numbers agree everywhere.
-  app.get("/api/funtopia/preferences/birthday-allocation", async (req, res, next) => {
-    try {
-      const { getBirthdayAllocation, getChalongBirthdayAllocation } = await import("./funtopia");
-      const branch = (req.query.branch as string) || "floresta";
-      if (branch === "chalong") {
-        const allocation = await getChalongBirthdayAllocation();
-        return res.json({ branch, allocation });
-      }
-      const allocation = await getBirthdayAllocation(branch);
-      res.json({ branch, allocation });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.put("/api/funtopia/preferences/birthday-allocation", async (req, res, next) => {
-    try {
-      const {
-        setBirthdayAllocation,
-        getBirthdayAllocation,
-        setChalongBirthdayAllocation,
-        getChalongBirthdayAllocation,
-      } = await import("./funtopia");
-      const branch = (req.body?.branch as string) || (req.query.branch as string) || "floresta";
-      const raw = req.body?.allocation;
-      // task-114: Chalong uses its own "bday"|"split" vocabulary so the
-      // two branches' allocation values can't collide if a client mixes them.
-      if (branch === "chalong") {
-        if (raw !== "bday" && raw !== "split") {
-          return res.status(400).json({ message: "allocation must be 'bday' or 'split' for chalong" });
-        }
-        await setChalongBirthdayAllocation(raw);
-        const allocation = await getChalongBirthdayAllocation();
-        return res.json({ success: true, branch, allocation });
-      }
-      if (raw !== "fnb" && raw !== "events") {
-        return res.status(400).json({ message: "allocation must be 'fnb' or 'events'" });
-      }
-      await setBirthdayAllocation(branch, raw);
-      const allocation = await getBirthdayAllocation(branch);
-      res.json({ success: true, branch, allocation });
-    } catch (err) {
-      next(err);
+      figuresError(res, err, next);
     }
   });
 
   // task-160: Revenue Planner — per-month, per-branch manually-set revenue
-  // target. Purely additive: stored in the existing funtopia_branch_settings
-  // key/value table (key = "planner_target_YYYY-MM"), no new tables and no
-  // changes to any existing endpoint or formula.
+  // target, stored in Radar's branch_settings key/value table
+  // (key = "planner_target_YYYY-MM").
   app.get("/api/planner/target", async (req, res, next) => {
     try {
-      const { getBranchSetting } = await import("./funtopia");
+      const { getBranchSetting } = await import("./storage/radarSettings");
       const branch = (req.query.branch as string) || "floresta";
       const month = String(req.query.month || "");
       if (!/^\d{4}-\d{2}$/.test(month)) {
@@ -666,7 +251,7 @@ export async function registerRoutes(
 
   app.put("/api/planner/target", async (req, res, next) => {
     try {
-      const { setBranchSetting } = await import("./funtopia");
+      const { setBranchSetting } = await import("./storage/radarSettings");
       const branch = (req.body?.branch as string) || "floresta";
       const month = String(req.body?.month || "");
       if (!/^\d{4}-\d{2}$/.test(month)) {
@@ -689,11 +274,11 @@ export async function registerRoutes(
   });
 
   // task-166: Revenue Planner — saved scenario (lever values) per month +
-  // branch, stored in funtopia_branch_settings (key = "planner_plan_YYYY-MM").
+  // branch, stored in branch_settings (key = "planner_plan_YYYY-MM").
   // Same purely-additive pattern as planner_target above.
   app.get("/api/planner/plan", async (req, res, next) => {
     try {
-      const { getBranchSetting } = await import("./funtopia");
+      const { getBranchSetting } = await import("./storage/radarSettings");
       const branch = (req.query.branch as string) || "floresta";
       const month = String(req.query.month || "");
       if (!/^\d{4}-\d{2}$/.test(month)) {
@@ -716,7 +301,7 @@ export async function registerRoutes(
 
   app.put("/api/planner/plan", async (req, res, next) => {
     try {
-      const { setBranchSetting } = await import("./funtopia");
+      const { setBranchSetting } = await import("./storage/radarSettings");
       const branch = (req.body?.branch as string) || "floresta";
       const month = String(req.body?.month || "");
       if (!/^\d{4}-\d{2}$/.test(month)) {
@@ -757,717 +342,9 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/funtopia/order/:orderId", async (req, res, next) => {
+  app.get("/api/calendar-notes", async (req, res, next) => {
     try {
-      const orderId = String(req.params.orderId || "");
-      if (!orderId) return res.status(400).json({ error: "orderId required" });
-      const orderRes = await pool.query(
-        `SELECT order_id, order_code, customer_name, customer_phone, customer_email,
-                note, created_at, source, channel, total_amount, order_date
-           FROM funtopia_raw_orders WHERE order_id = $1 LIMIT 1`,
-        [orderId],
-      );
-      if (orderRes.rows.length === 0) {
-        return res.status(404).json({ error: "order not found" });
-      }
-      const order = orderRes.rows[0];
-      const itemsRes = await pool.query(
-        `SELECT product_name, product_category, quantity, unit_price, subtotal, discount
-           FROM funtopia_orders WHERE order_id = $1
-           ORDER BY id ASC`,
-        [orderId],
-      );
-      const paymentsRes = await pool.query(
-        `SELECT pay_method, payment_name, pay_amount, payment_at
-           FROM funtopia_raw_payments WHERE order_id = $1
-           ORDER BY id ASC`,
-        [orderId],
-      );
-      res.json({
-        order: {
-          orderId: order.order_id,
-          orderCode: order.order_code,
-          customerName: order.customer_name,
-          customerPhone: order.customer_phone,
-          customerEmail: order.customer_email,
-          note: order.note,
-          createdAt: order.created_at,
-          source: order.source,
-          channel: order.channel,
-          totalAmount: Number(order.total_amount || 0),
-          orderDate: order.order_date,
-        },
-        items: itemsRes.rows.map((r) => ({
-          productName: r.product_name,
-          productCategory: r.product_category,
-          quantity: Number(r.quantity || 0),
-          unitPrice: Number(r.unit_price || 0),
-          subtotal: Number(r.subtotal || 0),
-          discount: Number(r.discount || 0),
-        })),
-        payments: paymentsRes.rows.map((r) => ({
-          payMethod: r.pay_method,
-          paymentName: r.payment_name,
-          payAmount: Number(r.pay_amount || 0),
-          paymentAt: r.payment_at,
-        })),
-      });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/adjustments", async (req, res, next) => {
-    try {
-      const { getAdjustmentsData } = await import("./funtopia");
-      const date = req.query.date as string;
-      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return res.status(400).json({ error: "date query parameter required in YYYY-MM-DD format" });
-      }
-      const data = await getAdjustmentsData(date);
-      res.json(data);
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/today", async (req, res, next) => {
-    try {
-      const { getDailySummary, isFuntopiaConfigured, getBirthdayAllocation } = await import("./funtopia");
-
-      const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date());
-
-      const staffOnDuty = 0;
-      const eventCount = 0;
-
-      let funtopiaData = null;
-      try {
-        funtopiaData = await getDailySummary(today);
-      } catch (e) {
-        console.error("Funtopia data error:", e);
-      }
-
-      const apiConfigured = isFuntopiaConfigured();
-      const hasCachedData = !!funtopiaData;
-
-      // getDailySummary already stamps `categoryBreakdown` to the current
-      // allocation and records `birthdayMovedAmount` on the cached row.
-      const birthdayAllocation = funtopiaData?.birthdayAllocation
-        ?? (await getBirthdayAllocation("floresta"));
-      const birthdayMovedAmount = funtopiaData?.birthdayMovedAmount || 0;
-
-      res.json({
-        date: funtopiaData?.date || new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date()),
-        totalRevenue: funtopiaData?.totalRevenue || 0,
-        totalOrders: funtopiaData?.totalOrders || 0,
-        avgOrderValue: funtopiaData?.avgOrderValue || 0,
-        paymentBreakdown: funtopiaData?.paymentBreakdown || {},
-        topProducts: funtopiaData?.topProducts || [],
-        categoryBreakdown: funtopiaData?.categoryBreakdown || {},
-        guestBreakdown: funtopiaData?.guestBreakdown || null,
-        hourlyBreakdown: funtopiaData?.hourlyBreakdown || [],
-        customerTypeSplit: funtopiaData?.customerTypeSplit || [],
-        discountTotal: funtopiaData?.discountTotal || 0,
-        voucherSwingAmount: funtopiaData?.voucherSwingAmount || 0,
-        pureTicketRevenue: funtopiaData?.pureTicketRevenue || 0,
-        sourceBreakdown: funtopiaData?.sourceBreakdown || [],
-        birthdayLinks: funtopiaData?.birthdayLinks || null,
-        birthdayAllocation,
-        birthdayMovedAmount,
-        staffOnDuty,
-        eventCount,
-        funtopiaConnected: apiConfigured || hasCachedData,
-      });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/sync-health", async (req, res, next) => {
-    try {
-      const { getSyncHealth } = await import("./funtopia");
-      const dates = (req.query.dates as string || "").split(",").filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
-      if (dates.length === 0) {
-        return res.status(400).json({ message: "dates query parameter required (comma-separated YYYY-MM-DD)" });
-      }
-      const health = await getSyncHealth(dates);
-      res.json({ health });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // task-171: per-branch "POS stopped uploading mid-day" staleness check.
-  app.get("/api/pos-staleness", async (_req, res, next) => {
-    try {
-      const { getPosStalenessAlerts } = await import("./posStaleness");
-      res.json(await getPosStalenessAlerts());
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // task-178: source gap watchdog — detects when a normally-active Floresta
-  // revenue source (Sales Booth, Mascot, etc.) records zero orders for
-  // CONSECUTIVE_ZERO_DAYS consecutive days.
-  app.get("/api/funtopia/source-watchdog", async (_req, res, next) => {
-    try {
-      const { getSourceGapAlerts } = await import("./sourceWatchdog");
-      res.json(await getSourceGapAlerts());
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/papaya/sync-health", async (req, res, next) => {
-    try {
-      const { getPapayaSyncHealth } = await import("./papaya");
-      const dates = (req.query.dates as string || "").split(",").filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
-      if (dates.length === 0) {
-        return res.status(400).json({ message: "dates query parameter required (comma-separated YYYY-MM-DD)" });
-      }
-      const health = await getPapayaSyncHealth(dates);
-      res.json({ health });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/voucher-mappings", async (_req, res, next) => {
-    try {
-      const { discoverVoucherFaceValues, getVoucherChannelMap } = await import("./funtopia");
-      const [discovered, mapping] = await Promise.all([
-        discoverVoucherFaceValues(180),
-        getVoucherChannelMap(),
-      ]);
-      const formatKey = (v: number) => v.toFixed(2);
-      const items = discovered.map((d) => {
-        const key = formatKey(d.face_value);
-        const m = mapping.get(key);
-        return {
-          face_value: d.face_value,
-          times_used: d.times_used,
-          total_value: d.total_value,
-          first_seen: d.first_seen,
-          last_seen: d.last_seen,
-          channels: m?.channels || [],
-          ignored: m?.ignored || false,
-          note: m?.note || "",
-          mapped: !!m,
-        };
-      });
-      const knownKeys = new Set(discovered.map((d) => formatKey(d.face_value)));
-      for (const [key, m] of mapping.entries()) {
-        if (!knownKeys.has(key)) {
-          items.push({
-            face_value: parseFloat(key),
-            times_used: 0,
-            total_value: 0,
-            first_seen: null,
-            last_seen: null,
-            channels: m.channels,
-            ignored: m.ignored,
-            note: m.note || "",
-            mapped: true,
-          });
-        }
-      }
-      res.json({ items });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.put("/api/funtopia/voucher-mappings", async (req, res, next) => {
-    try {
-      const { upsertVoucherChannelMapping, clearAllFuntopiaSummaryCache } = await import("./funtopia");
-      const { face_value, channel, channels, ignored, note } = req.body || {};
-      const fv = typeof face_value === "number" ? face_value : parseFloat(face_value);
-      if (!isFinite(fv) || fv <= 0) {
-        return res.status(400).json({ message: "face_value must be a positive number" });
-      }
-      const isIgnored = !!ignored;
-      // Accept either `channels: string[]` (preferred) or legacy `channel: string`
-      let cleanChannels: string[] = [];
-      if (Array.isArray(channels)) {
-        cleanChannels = channels.map((c) => String(c || "").trim()).filter((c) => c.length > 0);
-      } else if (typeof channel === "string" && channel.trim().length > 0) {
-        cleanChannels = [channel.trim()];
-      }
-      if (!isIgnored && cleanChannels.length === 0) {
-        return res.status(400).json({ message: "At least one channel is required unless ignored=true" });
-      }
-      await upsertVoucherChannelMapping(fv, cleanChannels, isIgnored, typeof note === "string" ? note : null);
-      const cleared = await clearAllFuntopiaSummaryCache();
-      res.json({ success: true, cacheCleared: cleared });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.post("/api/funtopia/voucher-mappings/seed", async (_req, res, next) => {
-    try {
-      const { seedInitialVoucherChannelMappings, clearAllFuntopiaSummaryCache } = await import("./funtopia");
-      const result = await seedInitialVoucherChannelMappings();
-      const cleared = result.seeded > 0 ? await clearAllFuntopiaSummaryCache() : 0;
-      res.json({ success: true, ...result, cacheCleared: cleared });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.delete("/api/funtopia/voucher-mappings/:faceValue", async (req, res, next) => {
-    try {
-      const { deleteVoucherChannelMapping, clearAllFuntopiaSummaryCache } = await import("./funtopia");
-      const fv = parseFloat(req.params.faceValue);
-      if (!isFinite(fv) || fv <= 0) {
-        return res.status(400).json({ message: "face_value must be a positive number" });
-      }
-      await deleteVoucherChannelMapping(fv);
-      const cleared = await clearAllFuntopiaSummaryCache();
-      res.json({ success: true, cacheCleared: cleared });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/sync-status", async (req, res, next) => {
-    try {
-      const { getLastSyncInfo, isFuntopiaConfigured } = await import("./funtopia");
-      const syncInfo = await getLastSyncInfo();
-      const apiConfigured = isFuntopiaConfigured();
-      const hasCachedData = syncInfo.cachedDates > 0;
-      res.json({
-        ...syncInfo,
-        funtopiaConnected: apiConfigured || hasCachedData,
-      });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/locked-months", async (_req, res, next) => {
-    try {
-      const { getLockedMonths } = await import("./funtopia");
-      const months = await getLockedMonths();
-      res.json({ months });
-    } catch (err) { next(err); }
-  });
-
-  app.post("/api/funtopia/locked-months", async (req, res, next) => {
-    try {
-      const { setLockedMonths } = await import("./funtopia");
-      const months: string[] = req.body?.months || [];
-      await setLockedMonths(months);
-      res.json({ success: true, months });
-    } catch (err) { next(err); }
-  });
-
-  // task-139 (v26): Floresta product registry — read the SKU classification
-  // table, manually override or clear an override. Floresta-only.
-  app.get("/api/funtopia/product-registry", async (_req, res, next) => {
-    try {
-      const { listProductRegistry } = await import("./funtopia");
-      const items = await listProductRegistry();
-      const counts: Record<string, number> = {};
-      for (const it of items) {
-        counts[it.decisionSource] = (counts[it.decisionSource] || 0) + 1;
-      }
-      res.json({ items, counts, total: items.length });
-    } catch (err) { next(err); }
-  });
-
-  app.post("/api/funtopia/product-registry/:key/override", async (req, res, next) => {
-    try {
-      const { setProductRegistryOverride } = await import("./funtopia");
-      const key = req.params.key;
-      const { revenueCategory, fnbSubCategory } = req.body || {};
-      const VALID: string[] = [
-        "Tickets & Packages", "F&B", "Events / Birthdays",
-        "Nanny & Drop-off", "Merchandise", "Workshop", "Extras",
-      ];
-      if (!VALID.includes(revenueCategory)) {
-        return res.status(400).json({ message: `revenueCategory must be one of: ${VALID.join(", ")}` });
-      }
-      const sub = fnbSubCategory === "Food" || fnbSubCategory === "Drinks" ? fnbSubCategory : null;
-      const row = await setProductRegistryOverride(key, revenueCategory, sub);
-      if (!row) return res.status(404).json({ message: "Unknown product key" });
-      res.json({ success: true, item: row });
-    } catch (err) { next(err); }
-  });
-
-  app.delete("/api/funtopia/product-registry/:key/override", async (req, res, next) => {
-    try {
-      const { clearProductRegistryOverride } = await import("./funtopia");
-      const row = await clearProductRegistryOverride(req.params.key);
-      if (!row) return res.status(404).json({ message: "Unknown product key" });
-      res.json({ success: true, item: row });
-    } catch (err) { next(err); }
-  });
-
-  app.get("/api/funtopia/hourly-compare", async (req, res, next) => {
-    try {
-      const { getDailySummary, isFuntopiaConfigured } = await import("./funtopia");
-      if (!isFuntopiaConfigured()) {
-        return res.status(503).json({ message: "Funtopia POS not configured" });
-      }
-      const date = req.query.date as string;
-      if (!date) {
-        return res.status(400).json({ message: "date query param required (YYYY-MM-DD)" });
-      }
-      const summary = await getDailySummary(date);
-      if (!summary) {
-        return res.status(404).json({ message: `No data for ${date}` });
-      }
-      res.json({
-        date,
-        hourlyBreakdown: summary.hourlyBreakdown,
-        totalOrders: summary.totalOrders,
-        totalRevenue: summary.totalRevenue,
-      });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // task-134: Events tab. Read-only flat list of birthday/event rows
-  // across one or both branches for [from, to]. Never triggers a sync.
-  app.get("/api/events/range", async (req, res, next) => {
-    try {
-      const from = (req.query.from || req.query.start) as string;
-      const to = (req.query.to || req.query.end) as string;
-      const branch = ((req.query.branch as string) || "all").toLowerCase();
-      if (!from || !to) {
-        return res.status(400).json({ error: "from and to required" });
-      }
-      if (branch !== "all" && branch !== "floresta" && branch !== "chalong") {
-        return res.status(400).json({ error: "branch must be 'floresta', 'chalong', or 'all'" });
-      }
-      const wantFloresta = branch === "all" || branch === "floresta";
-      const wantChalong = branch === "all" || branch === "chalong";
-      const promises: Array<Promise<any[]>> = [];
-      if (wantFloresta) {
-        const { getFlorestaEventsRange, isFuntopiaConfigured } = await import("./funtopia");
-        if (isFuntopiaConfigured()) promises.push(getFlorestaEventsRange(from, to));
-        else promises.push(Promise.resolve([]));
-      }
-      if (wantChalong) {
-        const { getChalongEventsRange, isPapayaConfigured } = await import("./papaya");
-        if (isPapayaConfigured()) promises.push(getChalongEventsRange(from, to));
-        else promises.push(Promise.resolve([]));
-      }
-      const results = await Promise.all(promises);
-      const events = results
-        .flat()
-        .sort((a: any, b: any) =>
-          a.date === b.date
-            ? String(a.partyOrderCode).localeCompare(String(b.partyOrderCode))
-            : a.date.localeCompare(b.date),
-        );
-      res.json({ from, to, branch, events });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // task-134 (manual linker): list F&B-candidate orders for a party on a date.
-  app.get("/api/events/candidates", async (req, res, next) => {
-    try {
-      const date = String(req.query.date || "");
-      const partyOrderCode = String(req.query.partyOrderCode || "");
-      const branch = String(req.query.branch || "floresta").toLowerCase();
-      if (!date || !partyOrderCode) {
-        return res.status(400).json({ error: "date and partyOrderCode required" });
-      }
-      if (branch !== "floresta") {
-        return res.status(400).json({ error: "manual linker only supported for Floresta today" });
-      }
-      const { getFlorestaEventCandidates, isFuntopiaConfigured } = await import("./funtopia");
-      if (!isFuntopiaConfigured()) return res.json({ candidates: [] });
-      const candidates = await getFlorestaEventCandidates(date, partyOrderCode);
-      res.json({ date, partyOrderCode, candidates });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // task-134 (manual linker): attach an F&B order to a party order.
-  app.post("/api/events/link", async (req, res, next) => {
-    try {
-      const { date, fnbOrderCode, partyOrderCode, branch } = req.body || {};
-      if (!date || !fnbOrderCode || !partyOrderCode) {
-        return res.status(400).json({ error: "date, fnbOrderCode, partyOrderCode required" });
-      }
-      if (branch && String(branch).toLowerCase() !== "floresta") {
-        return res.status(400).json({ error: "manual linker only supported for Floresta today" });
-      }
-      const { upsertFuntopiaBirthdayOverride, rebuildFlorestaCacheForDate } = await import("./funtopia");
-      await upsertFuntopiaBirthdayOverride({
-        orderCode: String(fnbOrderCode),
-        orderDate: String(date),
-        partyOrderCode: String(partyOrderCode),
-        note: "manual linker (events tab)",
-      });
-      await rebuildFlorestaCacheForDate(String(date));
-      res.json({ ok: true });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // task-134 (manual linker): remove a manual link.
-  app.delete("/api/events/link", async (req, res, next) => {
-    try {
-      const { date, fnbOrderCode, branch } = req.body || {};
-      if (!date || !fnbOrderCode) {
-        return res.status(400).json({ error: "date and fnbOrderCode required" });
-      }
-      if (branch && String(branch).toLowerCase() !== "floresta") {
-        return res.status(400).json({ error: "manual linker only supported for Floresta today" });
-      }
-      const { deleteFuntopiaBirthdayOverride, rebuildFlorestaCacheForDate } = await import("./funtopia");
-      await deleteFuntopiaBirthdayOverride({
-        orderCode: String(fnbOrderCode),
-        orderDate: String(date),
-      });
-      await rebuildFlorestaCacheForDate(String(date));
-      res.json({ ok: true });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/range", async (req, res, next) => {
-    try {
-      const { getDateRangeSummary, isFuntopiaConfigured, getCashReportsDailyTotals } = await import("./funtopia");
-      const { pool: localPool } = await import("./db");
-
-      const startDate = req.query.start as string;
-      const endDate = req.query.end as string;
-      if (!startDate || !endDate) {
-        return res.status(400).json({ message: "start and end query params required" });
-      }
-
-      if (!isFuntopiaConfigured()) {
-        try {
-          const cacheCheck = await localPool.query(
-            "SELECT COUNT(*) as cnt FROM funtopia_daily_cache WHERE date != '__meta__'"
-          );
-          if (parseInt(cacheCheck.rows[0]?.cnt || "0") === 0) {
-            return res.status(503).json({ message: "Funtopia POS not configured and no cached data" });
-          }
-        } catch {
-          return res.status(503).json({ message: "Funtopia POS not configured" });
-        }
-      }
-
-      const response = await dashboardRangeCache.getOrLoad(
-        `floresta:${startDate}:${endDate}`,
-        async () => {
-          const [data, cashTotals] = await Promise.all([
-            getDateRangeSummary(startDate, endDate),
-            getCashReportsDailyTotals(startDate, endDate),
-          ]);
-          // getDateRangeSummary already returns categoryBreakdown stamped to the
-          // current allocation, plus the total moved amount.
-          return compactDashboardRange({
-            ...data,
-            cashReportsDailyTotals: cashTotals,
-          });
-        },
-      );
-      res.json(response);
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // Lightweight endpoint for the Calendar tab heatmap. Reads daily cached
-  // totals straight from funtopia_daily_cache (one SQL query) plus the manual
-  // cash reports, with no per-day fix/reclassify/backfill passes and no
-  // aggregateDailySummaries merge. Returns only the slim shape the heatmap
-  // actually consumes.
-  app.get("/api/funtopia/calendar-range", async (req, res, next) => {
-    try {
-      const { isFuntopiaConfigured, getCashReportsDailyTotals, getDailySummary } = await import("./funtopia");
-      const { pool: localPool } = await import("./db");
-
-      const startDate = req.query.start as string;
-      const endDate = req.query.end as string;
-      if (!startDate || !endDate) {
-        return res.status(400).json({ message: "start and end query params required" });
-      }
-
-      if (!isFuntopiaConfigured()) {
-        try {
-          const cacheCheck = await localPool.query(
-            "SELECT COUNT(*) as cnt FROM funtopia_daily_cache WHERE date != '__meta__'"
-          );
-          if (parseInt(cacheCheck.rows[0]?.cnt || "0") === 0) {
-            return res.json({ dailyRevenue: [], cashReportsDailyTotals: [] });
-          }
-        } catch {
-          return res.json({ dailyRevenue: [], cashReportsDailyTotals: [] });
-        }
-      }
-
-      const [rangeRes, cashTotals] = await Promise.all([
-        localPool.query(
-          // Read raw NULL when a key is missing so we can detect incomplete
-          // cache rows and fall back to the heavy per-day path for parity.
-          `SELECT date,
-                  (summary_json->>'totalRevenue')::float AS revenue,
-                  (summary_json->>'totalOrders')::int AS orders
-           FROM funtopia_daily_cache
-           WHERE date >= $1 AND date <= $2 AND date != '__meta__'
-           ORDER BY date ASC`,
-          [startDate, endDate],
-        ),
-        getCashReportsDailyTotals(startDate, endDate),
-      ]);
-
-      const fallbackDates: string[] = [];
-      const dailyRevenue: Array<{ date: string; revenue: number; orders: number }> = [];
-      for (const r of rangeRes.rows) {
-        const date = r.date as string;
-        if (r.revenue === null || r.orders === null) {
-          fallbackDates.push(date);
-          continue;
-        }
-        dailyRevenue.push({
-          date,
-          revenue: Number(r.revenue) || 0,
-          orders: Number(r.orders) || 0,
-        });
-      }
-
-      if (fallbackDates.length > 0) {
-        console.warn(`[calendar-range/funtopia] ${fallbackDates.length} day(s) missing cached totals; running heavy fallback for parity: ${fallbackDates.join(", ")}`);
-        const recovered = await Promise.all(fallbackDates.map((d) => getDailySummary(d).catch(() => null)));
-        for (let i = 0; i < fallbackDates.length; i++) {
-          const s = recovered[i];
-          if (s) {
-            dailyRevenue.push({
-              date: fallbackDates[i],
-              revenue: Number(s.totalRevenue) || 0,
-              orders: Number(s.totalOrders) || 0,
-            });
-          }
-        }
-        dailyRevenue.sort((a, b) => a.date.localeCompare(b.date));
-      }
-
-      res.json({ dailyRevenue, cashReportsDailyTotals: cashTotals });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // Lightweight endpoint for the Calendar tab heatmap (Papaya). Sums totals
-  // across terminals per date with a single SQL query. Skips the heavy
-  // per-day reconciliation done by getCombinedPapayaDateRangeSummary.
-  app.get("/api/papaya/calendar-range", async (_req, res, next) => {
-    try {
-      const { pool: localPool } = await import("./db");
-      const { getCombinedPapayaDateRangeSummary } = await import("./papaya");
-
-      const startDate = (_req.query.from || _req.query.start) as string;
-      const endDate = (_req.query.to || _req.query.end) as string;
-      if (!startDate || !endDate) {
-        return res.status(400).json({ message: "from/start and to/end query params required" });
-      }
-
-      try {
-        const cacheCheck = await localPool.query(
-          "SELECT COUNT(*) as cnt FROM papaya_daily_cache WHERE date != '__meta__'"
-        );
-        if (parseInt(cacheCheck.rows[0]?.cnt || "0") === 0) {
-          return res.json({ dailyRevenue: [] });
-        }
-      } catch {
-        return res.json({ dailyRevenue: [] });
-      }
-
-      // papaya_daily_cache key is `${terminal}:${date}`. Sum across terminals.
-      // Track NULL fields per row so we can fall back to the heavy combined
-      // path for any incomplete dates.
-      const result = await localPool.query(
-        `SELECT SUBSTRING(date FROM POSITION(':' IN date) + 1) AS day,
-                SUM((summary_json->>'totalRevenue')::float) AS revenue,
-                SUM((summary_json->>'totalOrders')::int) AS orders,
-                BOOL_OR((summary_json->>'totalRevenue') IS NULL OR (summary_json->>'totalOrders') IS NULL) AS has_missing
-         FROM papaya_daily_cache
-         WHERE date != '__meta__'
-           AND POSITION(':' IN date) > 0
-           AND SUBSTRING(date FROM POSITION(':' IN date) + 1) >= $1
-           AND SUBSTRING(date FROM POSITION(':' IN date) + 1) <= $2
-         GROUP BY day
-         ORDER BY day ASC`,
-        [startDate, endDate],
-      );
-
-      const fallbackDates: string[] = [];
-      const dailyRevenue: Array<{ date: string; revenue: number; orders: number }> = [];
-      for (const r of result.rows) {
-        if (r.has_missing) {
-          fallbackDates.push(r.day as string);
-          continue;
-        }
-        dailyRevenue.push({
-          date: r.day as string,
-          revenue: Number(r.revenue) || 0,
-          orders: Number(r.orders) || 0,
-        });
-      }
-
-      if (fallbackDates.length > 0) {
-        console.warn(`[calendar-range/papaya] ${fallbackDates.length} day(s) missing cached totals; running heavy fallback for parity: ${fallbackDates.join(", ")}`);
-        for (const d of fallbackDates) {
-          try {
-            const summaries = await getCombinedPapayaDateRangeSummary(d, d);
-            for (const s of summaries) {
-              dailyRevenue.push({
-                date: s.date,
-                revenue: Number(s.totalRevenue) || 0,
-                orders: Number(s.totalOrders) || 0,
-              });
-            }
-          } catch {}
-        }
-        dailyRevenue.sort((a, b) => a.date.localeCompare(b.date));
-      }
-
-      res.json({ dailyRevenue });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/cash-reports", async (req, res, next) => {
-    try {
-      const { getCashReports } = await import("./funtopia");
-      const startDate = req.query.start as string || "2026-01-01";
-      const endDate = req.query.end as string || "2026-12-31";
-      const data = await getCashReports(startDate, endDate);
-      res.json(data);
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.post("/api/funtopia/seed-cash-reports", async (req, res, next) => {
-    try {
-      const { seedCashReports } = await import("./funtopia");
-      const result = await seedCashReports();
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/funtopia/calendar-notes", async (req, res, next) => {
-    try {
-      const { getCalendarNotes } = await import("./funtopia");
+      const { getCalendarNotes } = await import("./storage/radarSettings");
       const start = req.query.start as string;
       const end = req.query.end as string;
       if (!start || !end) return res.status(400).json({ error: "start and end required" });
@@ -1478,9 +355,9 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/funtopia/calendar-notes", async (req, res, next) => {
+  app.post("/api/calendar-notes", async (req, res, next) => {
     try {
-      const { saveCalendarNote } = await import("./funtopia");
+      const { saveCalendarNote } = await import("./storage/radarSettings");
       const { date, note } = req.body;
       if (!date) return res.status(400).json({ error: "date required" });
       await saveCalendarNote(date, note || "");
@@ -1491,26 +368,7 @@ export async function registerRoutes(
   });
 
   // --- Pace forecast snapshots (forecast accuracy tracking) -----------------
-  let paceSnapshotTableReady = false;
-  async function ensurePaceSnapshotTable() {
-    if (paceSnapshotTableReady) return;
-    const { pool: localPool } = await import("./db");
-    await localPool.query(`
-      CREATE TABLE IF NOT EXISTS pace_forecast_snapshots (
-        date TEXT NOT NULL,
-        branch TEXT NOT NULL,
-        month TEXT NOT NULL,
-        forecast_revenue NUMERIC NOT NULL,
-        revenue_to_date NUMERIC NOT NULL DEFAULT 0,
-        elapsed_days INTEGER NOT NULL DEFAULT 0,
-        target NUMERIC,
-        model TEXT,
-        recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        PRIMARY KEY (date, branch)
-      )
-    `);
-    paceSnapshotTableReady = true;
-  }
+  // The table is pace_forecast_snapshots (migration 0002_radar_settings.sql).
 
   app.post("/api/pace-snapshots", async (req, res, next) => {
     try {
@@ -1525,7 +383,6 @@ export async function registerRoutes(
       if (!Number.isFinite(fv) || fv < 0) {
         return res.status(400).json({ error: "valid forecastRevenue required" });
       }
-      await ensurePaceSnapshotTable();
       const { pool: localPool } = await import("./db");
       await localPool.query(
         `INSERT INTO pace_forecast_snapshots (date, branch, month, forecast_revenue, revenue_to_date, elapsed_days, target, model, recorded_at)
@@ -1560,7 +417,6 @@ export async function registerRoutes(
       if (!/^\d{4}-\d{2}$/.test(month)) {
         return res.status(400).json({ error: "valid month (YYYY-MM) required" });
       }
-      await ensurePaceSnapshotTable();
       const { pool: localPool } = await import("./db");
       const result = await localPool.query(
         `SELECT date, forecast_revenue, revenue_to_date, elapsed_days, target, model, recorded_at
@@ -1585,7 +441,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/funtopia/trends", async (req, res, next) => {
+  app.post("/api/trends", async (req, res, next) => {
     try {
       const openai = createAssistantClient();
       if (!openai) {
@@ -1595,10 +451,8 @@ export async function registerRoutes(
       const { question, history } = req.body;
       if (!question) return res.status(400).json({ error: "question required" });
 
-      const { getAllDailySummaries } = await import("./funtopia");
-      // getAllDailySummaries already stamps each summary's categoryBreakdown
-      // to the current floresta birthday allocation.
-      const allSummaries = await getAllDailySummaries();
+      // Every park the person may read, from the platform rollup.
+      const allSummaries = await recentDailySummaries(req.radar!.token, await readableKeys(req.radar!.token));
 
       const dailyData = allSummaries.map((r: any) => {
         const s = r.summary;
@@ -1748,7 +602,7 @@ export async function registerRoutes(
 
       const COLORS = ["#f97316","#10b981","#6366f1","#ec4899","#14b8a6","#f59e0b","#ef4444","#3b82f6"];
 
-      const systemPrompt = `You are OTO Radar — the business intelligence assistant for OTO Play Park (Funtopia), an indoor kids' adventure playground at Central Phuket Floresta. Currency: Thai Baht (฿). Today is ${new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date())}.
+      const systemPrompt = `You are OTO Radar — the business intelligence assistant for OTO Play Park, an indoor kids' adventure playground in Phuket. The figures are the OTO POS's own daily rollup. Currency: Thai Baht (฿). Today is ${new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Bangkok' }).format(new Date())}.
 Available data: ${dailyData.length} days from ${dateRange}.
 Available metrics: ${Object.keys(METRIC_CATALOG).join(", ")}.
 
@@ -1848,12 +702,12 @@ RULES: Only use metrics from the catalog. For pie charts, add "pieNames". Be bri
         data: chartData,
       });
     } catch (err) {
-      console.error("[Funtopia Trends] Error:", err);
+      console.error("[Trends] Error:", err);
       next(err);
     }
   });
 
-  app.post("/api/funtopia/trends-parse", async (req, res, next) => {
+  app.post("/api/trends-parse", async (req, res, next) => {
     try {
       const openai = createAssistantClient();
       if (!openai) {
@@ -1918,10 +772,8 @@ Available metrics: revenue, netRevenue, vouchers, orders, avgOrderValue, discoun
     }
   });
 
-  app.post("/api/funtopia/chart-builder", async (req, res, next) => {
+  app.post("/api/chart-builder", async (req, res, next) => {
     try {
-      const { getAllDailySummaries } = await import("./funtopia");
-      const { getAllPapayaDailySummaries } = await import("./papaya");
       const { metrics, groupBy, chartType, dateFrom, dateTo, aggregation, branches } = req.body;
 
       if (!metrics || !Array.isArray(metrics) || metrics.length === 0) {
@@ -1931,12 +783,11 @@ Available metrics: revenue, netRevenue, vouchers, orders, avgOrderValue, discoun
       const branchSet = new Set(branches || ["floresta"]);
       let allSummaries: Array<{ date: string; summary: any }> = [];
       if (branchSet.has("floresta")) {
-        // Already stamped to the current allocation.
-        const fSummaries = await getAllDailySummaries();
+        const fSummaries = await recentDailySummaries(req.radar!.token, ["floresta"]);
         allSummaries.push(...(fSummaries || []));
       }
       if (branchSet.has("chalong")) {
-        const pSummaries = await getAllPapayaDailySummaries();
+        const pSummaries = await recentDailySummaries(req.radar!.token, ["chalong"]);
         allSummaries.push(...(pSummaries || []));
       }
       if (branchSet.size === 2) {
@@ -2252,121 +1103,6 @@ Available metrics: revenue, netRevenue, vouchers, orders, avgOrderValue, discoun
   });
 
   // ============================================
-  // SYNC STATUS
-  // ============================================
-
-  app.get("/api/sync-status/overview", async (_req, res, next) => {
-    try {
-      const { isFuntopiaConfigured, getLastSyncInfo } = await import("./funtopia");
-      const { isPapayaConfigured, getPapayaSyncStatus } = await import("./papaya");
-
-      const sources: Array<{
-        id: string;
-        name: string;
-        connected: boolean;
-        lastSyncedAt: string | null;
-        earliestDate: string | null;
-        latestDate: string | null;
-        syncType: string;
-        cachedDays?: number;
-        totalOrders?: number;
-        lastSyncStatus?: string | null;
-        subSources?: Array<{ name: string; connected: boolean }>;
-        error?: string;
-      }> = [];
-
-      try {
-        const funtopiaApiConnected = isFuntopiaConfigured();
-        const info = await getLastSyncInfo();
-        const hasFuntopiaData = info.cachedDates > 0;
-        sources.push({
-          id: "funtopia",
-          name: "Floresta",
-          connected: funtopiaApiConnected || hasFuntopiaData,
-          lastSyncedAt: info.lastSyncedAt,
-          earliestDate: info.earliestDate,
-          latestDate: info.latestDate,
-          syncType: info.lastFullSyncAt ? "Full" : (info.cachedDates > 0 ? "Cached" : "None"),
-          cachedDays: info.cachedDates,
-          totalOrders: info.totalRawOrders,
-        });
-      } catch (err) {
-        sources.push({ id: "funtopia", name: "Floresta", connected: false, lastSyncedAt: null, earliestDate: null, latestDate: null, syncType: "None", cachedDays: 0, totalOrders: 0, error: "Failed to query status" });
-      }
-
-      try {
-        const papayaApiConnected = isPapayaConfigured();
-        const status = await getPapayaSyncStatus();
-        const hasPapayaData = status.cachedDays > 0;
-        sources.push({
-          id: "papaya",
-          name: "Chalong",
-          connected: papayaApiConnected || hasPapayaData,
-          lastSyncedAt: status.lastSyncedAt,
-          earliestDate: status.earliestDate,
-          latestDate: status.latestDate,
-          syncType: status.cachedDays > 0 ? "Cached" : "None",
-          cachedDays: status.cachedDays,
-          totalOrders: status.totalOrders,
-          subSources: [
-            { name: "Reception", connected: status.receptionConnected },
-            { name: "Cafe", connected: status.restaurantConnected },
-          ],
-        });
-      } catch (err) {
-        sources.push({ id: "papaya", name: "Chalong", connected: false, lastSyncedAt: null, earliestDate: null, latestDate: null, syncType: "None", cachedDays: 0, totalOrders: 0, error: "Failed to query status" });
-      }
-
-      res.json({ sources });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  app.get("/api/sync-status/calendar", async (req, res, next) => {
-    try {
-      const { year, month } = req.query;
-      if (!year || !month) return res.status(400).json({ error: "year and month required" });
-
-      const y = parseInt(year as string);
-      const m = parseInt(month as string);
-      const startDate = `${y}-${String(m).padStart(2, "0")}-01`;
-      const daysInMonth = new Date(y, m, 0).getDate();
-      const endDate = `${y}-${String(m).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
-
-      const coverage: Record<string, string[]> = {};
-
-      try {
-        const funtopiaResult = await pool.query(
-          "SELECT DISTINCT order_date FROM funtopia_raw_orders WHERE order_date >= $1 AND order_date <= $2",
-          [startDate, endDate]
-        );
-        for (const row of funtopiaResult.rows) {
-          const d = row.order_date;
-          if (d && !coverage[d]) coverage[d] = [];
-          if (d) coverage[d].push("funtopia");
-        }
-      } catch (err) {}
-
-      try {
-        const papayaResult = await pool.query(
-          `SELECT DISTINCT SUBSTRING(date FROM POSITION(':' IN date) + 1) as clean_date FROM papaya_daily_cache WHERE SUBSTRING(date FROM POSITION(':' IN date) + 1) >= $1 AND SUBSTRING(date FROM POSITION(':' IN date) + 1) <= $2`,
-          [startDate, endDate]
-        );
-        for (const row of papayaResult.rows) {
-          const d = row.clean_date;
-          if (!coverage[d]) coverage[d] = [];
-          if (!coverage[d].includes("papaya")) coverage[d].push("papaya");
-        }
-      } catch (err) {}
-
-      res.json({ year: y, month: m, coverage });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // ============================================
   // VISITOR SURVEY (public)
   // ============================================
 
@@ -2463,19 +1199,7 @@ Available metrics: revenue, netRevenue, vouchers, orders, avgOrderValue, discoun
       });
     }
 
-    try {
-      res.setHeader("Cache-Control", "private, max-age=60");
-      return res.json(await buildMarketingSummary(startDate, endDate));
-    } catch (error) {
-      console.error(
-        "[MarketingSummary] Unable to build response:",
-        error instanceof Error ? error.message : error,
-      );
-      return res.status(503).json({
-        error: "temporarily_unavailable",
-        message: "OTO Radar data is temporarily unavailable; retry later",
-      });
-    }
+    return res.status(503).json(MARKETING_FIGURES_UNAVAILABLE);
   });
 
   // ============================================
@@ -2938,9 +1662,10 @@ Available metrics: revenue, netRevenue, vouchers, orders, avgOrderValue, discoun
     }
   });
 
-  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error("Error:", err);
-    res.status(500).json({ message: err.message || "Internal server error" });
+    // Never the error's own text: it can carry SQL or an upstream body.
+    res.status(500).json({ message: "Internal server error" });
   });
 
   return httpServer;

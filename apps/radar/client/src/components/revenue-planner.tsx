@@ -179,9 +179,7 @@ function RevenuePlannerDialog({
     queries: monthWindows.flatMap((w) =>
       branchSources.map((src) => ({
         queryKey: [
-          src === "chalong"
-            ? `/api/papaya/range?from=${w.start}&to=${w.end}`
-            : `/api/funtopia/range?start=${w.start}&end=${w.end}`,
+          `/api/figures/range?branch=${src}&start=${w.start}&end=${w.end}`,
         ],
         enabled: open,
       })),

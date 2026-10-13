@@ -1,10 +1,5 @@
 import type { Request } from "express";
 import { timingSafeEqual } from "crypto";
-import { getDateRangeSummary } from "./funtopia";
-import {
-  getChalongBirthdayPackageRevenue,
-  getCombinedPapayaDateRangeSummary,
-} from "./papaya";
 
 export const MARKETING_API_KEY_ENV = "OTO_RADAR_MARKETING_API_KEY";
 export const MARKETING_RATE_LIMIT = 60;
@@ -91,54 +86,19 @@ export function marketingApiKeyIsValid(
   );
 }
 
-function roundMoney(value: number): number {
-  return Math.round((Number(value) || 0) * 100) / 100;
-}
-
-export async function buildMarketingSummary(
-  startDate: string,
-  endDate: string,
-): Promise<MarketingSummaryResponse> {
-  const [floresta, chalongDays, chalongBirthdayRevenue] = await Promise.all([
-    getDateRangeSummary(startDate, endDate),
-    getCombinedPapayaDateRangeSummary(startDate, endDate),
-    getChalongBirthdayPackageRevenue(startDate, endDate),
-  ]);
-
-  const chalongRevenue = chalongDays.reduce(
-    (sum, day) => sum + (Number(day.totalRevenue) || 0),
-    0,
-  );
-  const chalongVisitors = chalongDays.reduce((sum, day) => {
-    const guests = day.guestBreakdown;
-    if (!guests) return sum;
-    return sum + (Number(guests.totalGuests) || 0);
-  }, 0);
-
-  // Birthday revenue is package/ticket revenue only. Linked party F&B is
-  // intentionally excluded so this metric remains comparable between parks.
-  // Chalong is calculated from corrected overrides plus non-overridden real
-  // birthday orders so override-only dates cannot be dropped by range filters.
-  const florestaBirthdayRevenue =
-    Number(floresta.birthdayLinks?.bdTickets) || 0;
-
-  return {
-    start_date: startDate,
-    end_date: endDate,
-    total_revenue: roundMoney(
-      (Number(floresta.totalRevenue) || 0) + chalongRevenue,
-    ),
-    total_visitors: Math.round(
-      (Number(floresta.guestBreakdown?.totalInPark) || 0) + chalongVisitors,
-    ),
-    total_birthday_revenue: roundMoney(
-      florestaBirthdayRevenue + chalongBirthdayRevenue,
-    ),
-    currency: "THB",
-    timezone: "Asia/Bangkok",
-    parks: ["floresta", "chalong"],
-  };
-}
+/**
+ * The summary's figures are not served (S2-18). They were computed from the
+ * Pisell and Papaya tables, which the one-source ruling retired; Radar now
+ * reads figures only through the platform with a signed-in person's session,
+ * and this caller is a machine with a shared key. Until the platform offers a
+ * machine read of the rollup, the route authenticates, rate-limits and
+ * validates exactly as before, then answers 503 rather than a made-up zero.
+ */
+export const MARKETING_FIGURES_UNAVAILABLE = {
+  error: "temporarily_unavailable",
+  message:
+    "OTO Radar's figures now come from the OTO POS rollup on the platform, which this key cannot read yet; retry later",
+} as const;
 
 type RateBucket = { startedAt: number; count: number };
 const rateBuckets = new Map<string, RateBucket>();

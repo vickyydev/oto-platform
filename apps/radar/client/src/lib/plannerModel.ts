@@ -14,8 +14,8 @@ import type { SmartPaceForecast } from "./paceForecast";
 // Baselines derived from real historical data (per-month range aggregates)
 // ---------------------------------------------------------------------------
 
-/** One month's worth of aggregates extracted from a /api/funtopia/range or
- *  /api/papaya/range response fetched with month-scoped start/end dates. */
+/** One month's worth of aggregates extracted from a /api/figures/range
+ *  response fetched with month-scoped start/end dates. */
 export interface MonthAggregate {
   monthKey: string; // "YYYY-MM"
   /** Days with revenue > 0 inside the fetched window. */

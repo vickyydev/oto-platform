@@ -47,7 +47,10 @@ function unavailable(res: Response, redeem = false) {
 }
 
 /**
- * Spin Wheel's deliberately isolated API. No response includes a legacy
+ * Spin Wheel's deliberately isolated API, kept for the legacy wheel URL until
+ * it is retired at cutover (S2-18): the platform booth (S2-07) issues and
+ * redeems its own vouchers, and Radar's report reads those
+ * (GET /api/spin-wheel/report in routes.ts, through sources/otoPos.ts). No response includes a legacy
  * campaign QR token, URL, barcode, or other Funtovia data.
  */
 export function registerSpinRewardRoutes(app: Express): void {
@@ -139,14 +142,6 @@ export function registerSpinRewardRoutes(app: Express): void {
       });
     } catch {
       return unavailable(res, true);
-    }
-  });
-
-  app.get("/api/spin-wheel/report", async (_req, res) => {
-    try {
-      res.json(await spinRewards.report());
-    } catch {
-      unavailable(res);
     }
   });
 }

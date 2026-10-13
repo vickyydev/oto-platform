@@ -307,65 +307,6 @@ export class SpinRewardsService {
       retryAfterSeconds: Math.max(1, Number(row.retry_after_seconds)),
     };
   }
-
-  async report(): Promise<{
-    rewards: Array<{
-      prizeId: string;
-      campaignId: string;
-      displayName: string;
-      active: boolean;
-      won: number;
-      redeemed: number;
-      outstanding: number;
-    }>;
-    capacity: { total: number; allocated: number; remaining: number };
-  }> {
-    const [campaignsResult, countsResult, capacityResult] = await Promise.all([
-      this.database.query<CampaignStateRow>(
-        "SELECT campaign_id, prize_id, active FROM spin_reward_campaigns",
-      ),
-      this.database.query<{ prize_id: string; won: number | string; redeemed: number | string }>(
-        `SELECT prize_id, count(*)::int AS won,
-          count(*) FILTER (WHERE redeemed_at IS NOT NULL)::int AS redeemed
-         FROM spin_reward_code_ledger GROUP BY prize_id`,
-      ),
-      // allocated includes legacy all-numeric codes because they are
-      // permanently reserved from the shared 10,000-code namespace.
-      this.database.query<{ allocated: number | string }>(
-        `SELECT (
-           (SELECT count(*) FROM spin_reward_code_ledger) +
-           (SELECT count(*) FROM spin_reward_legacy_code_reservations)
-         )::int AS allocated`,
-      ),
-    ]);
-    const campaignStates = new Map(campaignsResult.rows.map((row) => [row.prize_id, row]));
-    const counts = new Map(countsResult.rows.map((row) => [row.prize_id, row]));
-    const rewards = SPIN_REWARDS.map((definition) => {
-      const state = campaignStates.get(definition.prizeId);
-      if (!state || state.campaign_id !== definition.campaignId) throw new SpinRewardsUnavailableError();
-      const count = counts.get(definition.prizeId);
-      const won = Number(count?.won ?? 0);
-      const redeemed = Number(count?.redeemed ?? 0);
-      return {
-        prizeId: definition.prizeId,
-        campaignId: definition.campaignId,
-        displayName: definition.displayName,
-        active: state.active,
-        won,
-        redeemed,
-        outstanding: won - redeemed,
-      };
-    });
-    const allocated = Number(capacityResult.rows[0]?.allocated ?? 0);
-    return {
-      rewards,
-      capacity: {
-        total: SPIN_REWARD_CAPACITY,
-        allocated: Math.min(allocated, SPIN_REWARD_CAPACITY),
-        remaining: Math.max(SPIN_REWARD_CAPACITY - allocated, 0),
-      },
-    };
-  }
 }
 
 export const spinRewards = new SpinRewardsService();
