@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { cartQuote } from './support/fixtures';
-import type { CartLine, Discount, FnbOrderLine, ManualDiscount } from '@/types';
-import { promoChargeSatang, refusedPromoCodes, type CartQuote } from '@/api/sales';
-import { computeItemPromoDiscount, engineItemLines, validateItemPromoCode } from '@/lib/itemPromo';
+import type { CartLine, Discount, FnbOrder, FnbOrderLine, ManualDiscount, MerchOrder } from '@/types';
+import { localItemQuote, promoChargeSatang, refusedPromoCodes, type CartQuote } from '@/api/sales';
+import { computeItemPromoDiscount, engineItemLines, recordedOrderPromoRows, validateItemPromoCode } from '@/lib/itemPromo';
+import { fnbOrderTaxBreakdown, promoDiscountImpact, salesByCategory, taxReceiptRows, vatSummary } from '@/lib/reporting';
+import { getActiveMerchItems, recordFnbOrder, recordMerchOrder } from '@/mockApi';
 import { computeLineTotal } from '@/lib/pricing';
 import { validatePromoCode } from '@/lib/promoVoucher';
 import { getMenuItems, getTicketTypes } from '@/store/catalogStore';
@@ -257,5 +259,78 @@ describe('promoChargeSatang — the figure a sale with a code reconciles against
     // A refused money-off code is simply not applied: the platform's figure stands.
     const refusedMoneyOff = quote({ rejectedPromoCodes: [{ code: 'STAFF10', reason: 'Withdrawn' }] });
     expect(promoChargeSatang(refusedMoneyOff, [staff10])).toBe(62_100);
+  });
+});
+
+describe('a code used at the F&B or shop counter, in the till’s own figures (SCRUM-373)', () => {
+  // The ticket's own example: a ฿150 F&B order, 10% off with a code, ฿135 paid.
+  const day = '2031-01-15';
+  const filters = { startDate: day, endDate: day, branchId: 'all' };
+  const fnb10 = code({ code: 'FNB10', label: 'F&B 10%', target: { kind: 'fnb' } });
+  const lines = [fnbLine({ lineTotal: 150 })];
+
+  function fnbOrder(overrides: Partial<FnbOrder> = {}): FnbOrder {
+    return {
+      id: 'promo-fnb-1',
+      operatorId: 'op-1',
+      operatorName: 'Reception',
+      lines,
+      manualDiscounts: [],
+      discounts: [fnb10],
+      total: 135,
+      pickupCode: '042',
+      payment: { creditUsed: 0, cash: 135, card: 0, promptpay: 0 },
+      createdAt: `${day}T05:00:00.000Z`,
+      status: 'paid',
+      refunds: [],
+      ...overrides,
+    };
+  }
+
+  it('taxes the order on what the guest paid, the figure the station was quoted', () => {
+    const quoted = localItemQuote('fnb', lines, [], { promos: [fnb10] }).totals;
+    expect(quoted.total).toBe(135);
+    const breakdown = fnbOrderTaxBreakdown(fnbOrder());
+    expect(breakdown.grandTotal).toBe(13_500);
+    expect(breakdown.taxTotal).toBe(883); // ฿8.83, not the ฿9.81 of the undiscounted ฿150
+    expect(breakdown.taxTotal).toBe(Math.round(quoted.taxTotal * 100));
+    // An order with no code is re-totalled as before.
+    expect(fnbOrderTaxBreakdown(fnbOrder({ discounts: undefined, total: 150 })).taxTotal).toBe(981);
+  });
+
+  it('names the code and its amount on the confirmation card', () => {
+    expect(recordedOrderPromoRows(fnbOrder())).toEqual([{ code: 'FNB10', label: 'F&B 10%', type: 'percent', amount: 15 }]);
+    expect(recordedOrderPromoRows(fnbOrder({ discounts: undefined }))).toEqual([]);
+  });
+
+  it('counts the code in the sales, VAT and promotions reports, at the F&B counter and the shop', () => {
+    const merch10 = code({ code: 'SHOP10', label: 'Shop 10%', target: { kind: 'merch' } });
+    const merchItem = getActiveMerchItems()[0]!;
+    const merch: MerchOrder = {
+      id: 'promo-merch-1',
+      operatorId: 'op-1',
+      operatorName: 'Reception',
+      lines: [{ id: 'merch-1', merchItem, qty: 1, lineTotal: 200 }],
+      manualDiscounts: [],
+      discounts: [merch10],
+      total: 180,
+      payment: { creditUsed: 0, cash: 180, card: 0, promptpay: 0 },
+      createdAt: `${day}T06:00:00.000Z`,
+      status: 'paid',
+      refunds: [],
+    };
+    recordFnbOrder(fnbOrder(), { decrementStock: false });
+    recordMerchOrder(merch, { decrementStock: false });
+
+    const gross = salesByCategory(filters).reduce((sum, row) => sum + row.grossRevenueSatang, 0);
+    expect(gross).toBe(13_500 + 18_000);
+    const vat = vatSummary(filters);
+    expect(vat.reduce((sum, row) => sum + row.grossSatang, 0)).toBe(13_500 + 18_000);
+    expect(taxReceiptRows(filters).map((row) => [row.transactionId, row.grandTotalSatang])).toEqual(
+      expect.arrayContaining([['promo-fnb-1', 13_500], ['promo-merch-1', 18_000]]),
+    );
+    expect(promoDiscountImpact(filters).map((row) => [row.transactionId, row.code, row.amountSatang])).toEqual(
+      expect.arrayContaining([['promo-fnb-1', 'FNB10', 1_500], ['promo-merch-1', 'SHOP10', 2_000]]),
+    );
   });
 });

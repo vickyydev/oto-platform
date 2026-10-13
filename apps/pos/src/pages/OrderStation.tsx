@@ -1272,6 +1272,9 @@ export default function OrderStation() {
       // kitchen, onto the receipt and into the stock count like any F&B line.
       lines: voucherLine ? [...displayLines, voucherLine] : displayLines,
       manualDiscounts: committedDiscounts,
+      // SCRUM-373 — the codes the commit carried, so the till's reports and
+      // this confirmation re-total the order with them, as the platform did.
+      ...(promoCodes.length > 0 ? { discounts: promoCodes } : {}),
       total: written.totals.grossSatang / 100,
       pickupCode,
       orderNote: orderNote.trim() || undefined,

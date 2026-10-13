@@ -1247,6 +1247,14 @@ export interface FnbOrder {
   wristband?: Wristband;
   lines: FnbOrderLine[];
   manualDiscounts: ManualDiscount[];
+  /**
+   * SCRUM-373 — the promo codes the platform priced on this order, as the
+   * ticket sale's `discounts`. Every reader that re-totals the order from its
+   * lines (the till's sales, VAT and promotions reports, the confirmation)
+   * passes them to the engine, so the till's figures are the platform's.
+   * Absent on an order with no code.
+   */
+  discounts?: Discount[];
   total: number;
   pickupCode: string;
   // Free-text whole-order note (e.g. "birthday — bring a sparkler"). Shown on the
@@ -1314,6 +1322,14 @@ export interface MerchOrder {
   wristband?: Wristband;
   lines: MerchOrderLine[];
   manualDiscounts: ManualDiscount[];
+  /**
+   * SCRUM-373 — the promo codes the platform priced on this order, as the
+   * ticket sale's `discounts`. Every reader that re-totals the order from its
+   * lines (the till's sales, VAT and promotions reports, the confirmation)
+   * passes them to the engine, so the till's figures are the platform's.
+   * Absent on an order with no code.
+   */
+  discounts?: Discount[];
   total: number;
   orderNote?: string;
   payment: {

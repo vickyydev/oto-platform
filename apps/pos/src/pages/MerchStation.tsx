@@ -557,6 +557,9 @@ export default function MerchStation() {
       wristband: paidWristband ?? undefined,
       lines: displayLines,
       manualDiscounts,
+      // SCRUM-373 — the codes the commit carried, so the till's reports and
+      // this confirmation re-total the sale with them, as the platform did.
+      ...(promoCodes.length > 0 ? { discounts: promoCodes } : {}),
       total: written.totals.grossSatang / 100,
       payment,
       createdAt: new Date().toISOString(),

@@ -133,12 +133,24 @@ export function saleTaxBreakdown(sale: Sale, config = getTaxConfig()): TaxBreakd
     .taxBreakdown;
 }
 
+/**
+ * An F&B or shop order re-totalled by the engine, its promo codes included
+ * (SCRUM-373): an order a code took ฿15 off was charged, and taxed, on the
+ * discounted figure, and every report reading it has to say the same.
+ */
+function itemOrderSatang(order: FnbOrder | MerchOrder, config: ReturnType<typeof getTaxConfig>) {
+  return itemOrderTotals(order.lines, order.manualDiscounts, {
+    config,
+    ...(order.discounts && order.discounts.length > 0 ? { promos: order.discounts } : {}),
+  }).satang;
+}
+
 export function fnbOrderTaxBreakdown(order: FnbOrder, config = getTaxConfig()): TaxBreakdown {
-  return itemOrderTotals(order.lines, order.manualDiscounts, { config }).satang.taxBreakdown;
+  return itemOrderSatang(order, config).taxBreakdown;
 }
 
 export function merchOrderTaxBreakdown(order: MerchOrder, config = getTaxConfig()): TaxBreakdown {
-  return itemOrderTotals(order.lines, order.manualDiscounts, { config }).satang.taxBreakdown;
+  return itemOrderSatang(order, config).taxBreakdown;
 }
 
 /** Net-of-refunds satang for any recorded transaction (refunds always reduce, never negative). */
@@ -836,28 +848,38 @@ export interface PromoDiscountImpactRow {
 
 /**
  * Scanned promo-code impact (separate from manual comps/discounts above).
- * FnbOrder/MerchOrder carry no `discounts` field — only ticket sales apply
- * promo codes today — so this is ticket-only. Re-derives each code's
- * contribution via the engine's applied promos (`ticketTotals`; never
- * re-implements the discount math here).
+ * Ticket sales, F&B orders and shop sales each carry the codes on them
+ * (`discounts`; the counters' since SCRUM-373). Re-derives each code's
+ * contribution via the engine's applied promos (`ticketTotals`,
+ * `itemOrderTotals`; never re-implements the discount math here).
  */
 export function promoDiscountImpact(filters: ReportFilters): PromoDiscountImpactRow[] {
+  const config = getTaxConfig();
   const rows: PromoDiscountImpactRow[] = [];
-  for (const sale of getFilteredSales(filters)) {
-    if (!sale.discounts || sale.discounts.length === 0) continue;
-    const { appliedPromos } = ticketTotals(sale.lines, sale.discounts, sale.manualDiscounts).satang;
+  const push = (
+    txn: { id: string; createdAt: string; operatorName: string },
+    appliedPromos: readonly { code: string; label: string; type: Discount['type']; amount: Satang }[],
+  ) => {
     for (const sd of appliedPromos) {
       if (sd.amount <= 0) continue;
       rows.push({
-        transactionId: sale.id,
-        createdAt: sale.createdAt,
-        operatorName: sale.operatorName,
+        transactionId: txn.id,
+        createdAt: txn.createdAt,
+        operatorName: txn.operatorName,
         code: sd.code,
         label: sd.label,
         type: sd.type,
         amountSatang: sd.amount,
       });
     }
+  };
+  for (const sale of getFilteredSales(filters)) {
+    if (!sale.discounts || sale.discounts.length === 0) continue;
+    push(sale, ticketTotals(sale.lines, sale.discounts, sale.manualDiscounts).satang.appliedPromos);
+  }
+  for (const order of [...getFilteredFnbOrders(filters), ...getFilteredMerchOrders(filters)]) {
+    if (!order.discounts || order.discounts.length === 0) continue;
+    push(order, itemOrderSatang(order, config).appliedPromos);
   }
   return rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }

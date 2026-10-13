@@ -1,5 +1,6 @@
 import { MerchOrder } from '@/types';
 import { getPrintTemplate } from '@/mockApi';
+import { recordedOrderPromoRows } from '@/lib/itemPromo';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,6 +12,7 @@ import {
   CreditCard,
   Plus,
   QrCode as QrCodeIcon,
+  Tag,
 } from 'lucide-react';
 
 interface MerchConfirmationProps {
@@ -93,6 +95,17 @@ export function MerchConfirmation({
           </ScrollArea>
 
           <div className="border-t mt-3 pt-3 space-y-1.5 shrink-0">
+            {/* SCRUM-373 — each promo code on the order and what it took off. */}
+            {recordedOrderPromoRows(order).map((promo) => (
+              <div key={promo.code} className="flex items-center justify-between text-sm text-emerald-500">
+                <span className="flex items-center gap-2 min-w-0">
+                  <Tag className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{promo.label}</span>
+                  <span className="text-xs text-emerald-500/70 font-mono">{promo.code}</span>
+                </span>
+                <span className="tabular-nums shrink-0">-฿{promo.amount}</span>
+              </div>
+            ))}
             <div className="flex items-center justify-between text-lg font-bold">
               <span>Total</span>
               <span className="tabular-nums">฿{order.total}</span>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { FnbOrder, WalletEntry } from '@/types';
 import { buildPrepTickets, describeModifiers } from '@/lib/fnb';
+import { recordedOrderPromoRows } from '@/lib/itemPromo';
 import { prepStationsPrinted } from '@/lib/salePrinting';
 import type { ApiSalePrintJob } from '@/api/history';
 import { getPrintTemplate } from '@/mockApi';
@@ -22,6 +23,7 @@ import {
   StickyNote,
   QrCode as QrCodeIcon,
   Gift,
+  Tag,
 } from 'lucide-react';
 
 interface FnbConfirmationProps {
@@ -250,6 +252,17 @@ export function FnbConfirmation({
                 }}
               />
             )}
+            {/* SCRUM-373 — each promo code on the order and what it took off. */}
+            {recordedOrderPromoRows(order).map((promo) => (
+              <div key={promo.code} className="flex items-center justify-between text-sm text-emerald-500">
+                <span className="flex items-center gap-2 min-w-0">
+                  <Tag className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{promo.label}</span>
+                  <span className="text-xs text-emerald-500/70 font-mono">{promo.code}</span>
+                </span>
+                <span className="tabular-nums shrink-0">-฿{promo.amount}</span>
+              </div>
+            ))}
             <div className="flex items-center justify-between text-lg font-bold">
               <span>Total</span>
               <span className="tabular-nums">฿{order.total}</span>

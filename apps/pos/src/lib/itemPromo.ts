@@ -1,8 +1,10 @@
 import type {
   Discount,
+  FnbOrder,
   FnbOrderLine,
   ManualDiscount,
   MenuCategoryDef,
+  MerchOrder,
   MerchOrderLine,
   TaxConfig,
 } from '@/types';
@@ -111,6 +113,20 @@ export function computeItemPromoDiscount(
       ...(promo.exhaustedReason ? { exhaustedReason: promo.exhaustedReason } : {}),
     })),
   };
+}
+
+/**
+ * THE CODE ROWS OF A RECORDED F&B OR SHOP ORDER — SCRUM-373.
+ *
+ * What each code on a closed order took off, for the confirmation's receipt
+ * card: the same engine pass over the same lines, staff discounts and codes the
+ * order was charged at, so the rows add up to the total above them. A code that
+ * took nothing is left off, as the promotions report leaves it off.
+ */
+export function recordedOrderPromoRows(order: FnbOrder | MerchOrder): ItemAppliedPromo[] {
+  if (!order.discounts || order.discounts.length === 0) return [];
+  return computeItemPromoDiscount(order.lines, order.manualDiscounts, order.discounts)
+    .appliedPromos.filter((promo) => promo.amount > 0);
 }
 
 export interface ValidateItemPromoOptions extends ItemPromoOptions {
