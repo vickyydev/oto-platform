@@ -33,16 +33,17 @@ const KID = 'k1';
 const SECRET = 'handoff-test-secret-0123456789abcdef';
 const POS_ORIGIN = 'https://pos.test';
 const CONSOLE_ORIGIN = 'https://console.test';
+const RADAR_ORIGIN = 'https://radar.test';
 
 let ctx: TestContext;
 beforeAll(async () => {
   ctx = await createTestContext({
     env: {
       HANDOFF_SIGNING_KEY: `${KID}:${SECRET}`,
-      HANDOFF_APP_ORIGINS: `pos=${POS_ORIGIN},console=${CONSOLE_ORIGIN}`,
+      HANDOFF_APP_ORIGINS: `pos=${POS_ORIGIN},console=${CONSOLE_ORIGIN},radar=${RADAR_ORIGIN}`,
       // Each app origin must also be allowed to write at all, or the origin
       // check in app.ts refuses the exchange before it reaches the route.
-      ALLOWED_ORIGINS: `${POS_ORIGIN},${CONSOLE_ORIGIN}`,
+      ALLOWED_ORIGINS: `${POS_ORIGIN},${CONSOLE_ORIGIN},${RADAR_ORIGIN}`,
     },
   });
 });
@@ -124,6 +125,31 @@ describe('the round trip (S2-02)', () => {
     expect(out.statusCode).toBe(200);
     const stale = await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie: launcher } });
     expect(stale.statusCode).toBe(401);
+  });
+});
+
+describe('Radar signs on like any other app (S2-18)', () => {
+  it('mints a radar token for an administrator, refuses one to reception, and exchanges it at Radar', async () => {
+    const launcher = await signInAs(ctx.app, ADMIN.phone, ADMIN.password);
+    const issued = await mint(launcher, 'radar');
+    expect(issued.audience).toBe('radar');
+    expect(issued.launchUrl).toBe(`${RADAR_ORIGIN}/#handoff=${issued.token}`);
+
+    const res = await exchange(issued.token, RADAR_ORIGIN);
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ audience: 'radar' });
+    const me = await ctx.app.inject({ method: 'GET', url: '/me', headers: { cookie: cookieOf(res) } });
+    expect(me.json().account.phone).toBe(ADMIN.phone);
+
+    // Reception's bundle carries no `app:radar:access`.
+    const counter = await signInAs(ctx.app, RECEPTION.phone, RECEPTION.password);
+    const refused = await ctx.app.inject({
+      method: 'POST',
+      url: '/auth/handoff',
+      headers: { cookie: counter },
+      payload: { app: 'radar' },
+    });
+    expect(refused.statusCode).toBe(403);
   });
 });
 
@@ -331,7 +357,7 @@ describe('who may ask for what (S2-02)', () => {
       method: 'POST',
       url: '/auth/handoff',
       headers: { cookie },
-      payload: { app: 'radar' },
+      payload: { app: 'inbox' },
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.code).toBe('HANDOFF_APP_UNKNOWN');
