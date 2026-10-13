@@ -8,7 +8,7 @@ import {
   salaryAdvances,
   salaryAdvanceRepayments,
 } from "@shared/schema";
-import { and, eq, inArray, lte, gte } from "drizzle-orm";
+import { and, eq, inArray, lte, gte, ne } from "drizzle-orm";
 import { storage } from "./storage";
 
 export interface CalculationConfig {
@@ -64,6 +64,9 @@ export async function runPayrollCalculation(
   };
 
   try {
+    // SCRUM-276: a recalculation replaces this period's deductions, so the
+    // balance reductions recorded for them are given back first.
+    await reversePeriodAdvanceRepayments(config.periodId);
     await storage.deletePayrollLineItemsByRun(config.payrollRunId);
     await storage.deletePayrollEmployeeSummariesByRun(config.payrollRunId);
     const reconciliations = await db
@@ -105,6 +108,16 @@ export async function runPayrollCalculation(
             metadata: item.metadata || null,
           });
           result.lineItemsCreated++;
+          // SCRUM-276: the deduction just stored reduces the advance, once
+          // per payroll period. The stored two-decimal amount is the one
+          // recorded, so the ledger, the payslip line and the balance agree.
+          if (item.code === "ADVANCE_REPAYMENT" && item.metadata?.advanceId) {
+            await recordAdvanceRepayment(
+              item.metadata.advanceId as string,
+              config.payrollRunId,
+              parseFloat(item.amount.toFixed(2))
+            );
+          }
         }
         const summary = calculateEmployeeSummary(lineItems);
         await storage.createPayrollEmployeeSummary({
@@ -354,33 +367,114 @@ export async function getEmployeePayrollDetails(
   return { summary, lineItems, reconciliations };
 }
 
+/**
+ * SCRUM-276: an advance is repaid at most once per payroll period.
+ *
+ * The anchor is the app's own run identity: the repayment row carries the
+ * payroll run, and the run carries its period. A period may hold several runs
+ * (`run_number`), each a full recalculation of the same pay, so a second
+ * repayment for the same advance in the same period is skipped rather than
+ * taken again. The advance row is locked for the check and the write, so two
+ * calculations arriving together still record one repayment.
+ */
 export async function recordAdvanceRepayment(
   advanceId: string,
   payrollRunId: string,
   amount: number
 ): Promise<void> {
-  const advance = await db
-    .select()
-    .from(salaryAdvances)
-    .where(eq(salaryAdvances.id, advanceId))
-    .then((rows) => rows[0]);
+  await db.transaction(async (tx) => {
+    const advance = await tx
+      .select()
+      .from(salaryAdvances)
+      .where(eq(salaryAdvances.id, advanceId))
+      .for("update")
+      .then((rows) => rows[0]);
 
-  if (!advance) throw new Error("Advance not found");
+    if (!advance) throw new Error("Advance not found");
 
-  const currentBalance = parseFloat(advance.remainingBalance) || 0;
-  const newBalance = Math.max(0, currentBalance - amount);
+    const run = await tx
+      .select({ payrollPeriodId: payrollRuns.payrollPeriodId })
+      .from(payrollRuns)
+      .where(eq(payrollRuns.id, payrollRunId))
+      .then((rows) => rows[0]);
+    if (!run) throw new Error("Payroll run not found");
 
-  await storage.createSalaryAdvanceRepayment({
-    salaryAdvanceId: advanceId,
-    payrollRunId,
-    employeeId: advance.employeeId,
-    amount: amount.toFixed(2),
-    remainingBalanceAfter: newBalance.toFixed(2),
+    const alreadyRepaid = await tx
+      .select({ id: salaryAdvanceRepayments.id })
+      .from(salaryAdvanceRepayments)
+      .innerJoin(payrollRuns, eq(payrollRuns.id, salaryAdvanceRepayments.payrollRunId))
+      .where(
+        and(
+          eq(salaryAdvanceRepayments.salaryAdvanceId, advanceId),
+          eq(payrollRuns.payrollPeriodId, run.payrollPeriodId)
+        )
+      )
+      .limit(1);
+    if (alreadyRepaid.length > 0) return;
+
+    const currentBalance = parseFloat(advance.remainingBalance) || 0;
+    const newBalance = Math.max(0, currentBalance - amount);
+
+    await tx.insert(salaryAdvanceRepayments).values({
+      salaryAdvanceId: advanceId,
+      payrollRunId,
+      employeeId: advance.employeeId,
+      amount: amount.toFixed(2),
+      remainingBalanceAfter: newBalance.toFixed(2),
+    });
+
+    const updates: any = { remainingBalance: newBalance.toFixed(2) };
+    if (newBalance <= 0) {
+      updates.status = "PAID_OFF";
+    }
+    await tx.update(salaryAdvances).set(updates).where(eq(salaryAdvances.id, advanceId));
   });
+}
 
-  const updates: any = { remainingBalance: newBalance.toFixed(2) };
-  if (newBalance <= 0) {
-    updates.status = "PAID_OFF";
+/**
+ * SCRUM-276: give back the repayments recorded for a period before it is
+ * calculated again, so the recalculation reads the balance as it stood before
+ * this period and records its own deduction once.
+ *
+ * A finalized run's repayment stays: that pay is settled, and the period-level
+ * check in `recordAdvanceRepayment` then keeps a later run from taking it
+ * again. Each reversal locks the advance and deletes the repayment row in one
+ * transaction, so a concurrent reversal of the same row restores nothing twice.
+ */
+async function reversePeriodAdvanceRepayments(periodId: string): Promise<void> {
+  const recorded = await db
+    .select({
+      id: salaryAdvanceRepayments.id,
+      salaryAdvanceId: salaryAdvanceRepayments.salaryAdvanceId,
+    })
+    .from(salaryAdvanceRepayments)
+    .innerJoin(payrollRuns, eq(payrollRuns.id, salaryAdvanceRepayments.payrollRunId))
+    .where(and(eq(payrollRuns.payrollPeriodId, periodId), ne(payrollRuns.status, "FINALIZED")));
+
+  for (const repayment of recorded) {
+    await db.transaction(async (tx) => {
+      const advance = await tx
+        .select()
+        .from(salaryAdvances)
+        .where(eq(salaryAdvances.id, repayment.salaryAdvanceId))
+        .for("update")
+        .then((rows) => rows[0]);
+      if (!advance) return;
+      const removed = await tx
+        .delete(salaryAdvanceRepayments)
+        .where(eq(salaryAdvanceRepayments.id, repayment.id))
+        .returning({ amount: salaryAdvanceRepayments.amount });
+      if (removed.length === 0) return;
+
+      const currentBalance = parseFloat(advance.remainingBalance) || 0;
+      const restored = currentBalance + (parseFloat(removed[0].amount) || 0);
+      const updates: any = { remainingBalance: restored.toFixed(2) };
+      // Only the status this file sets is undone; a pause or close made by
+      // hand in the meantime is left as it is.
+      if ((advance.status as string) === "PAID_OFF" && restored > 0) {
+        updates.status = "ACTIVE";
+      }
+      await tx.update(salaryAdvances).set(updates).where(eq(salaryAdvances.id, advance.id));
+    });
   }
-  await storage.updateSalaryAdvance(advanceId, updates);
 }

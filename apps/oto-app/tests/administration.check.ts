@@ -1026,6 +1026,120 @@ try {
     assert.equal(Number(summary.gross_pay), 0);
     assert.equal(Number(summary.net_pay), 0);
   });
+  // SCRUM-276: an active advance is repaid once per calculated payroll period,
+  // a recalculation of the same period does not reduce it again, and the
+  // deduction stops once the balance reaches zero.
+  await check('advanceRepayment', async () => {
+    const operator = (
+      await q("insert into operators(tenant_id,name) values($1,'ZZ TEST advance') returning id", [
+        a.tenant,
+      ])
+    )[0].id;
+    const employee = (
+      await q(
+        "insert into employees(tenant_id,full_name,nickname,email,default_merge_data) values($1,'ZZ TEST advance','ZZ TEST',$2,'{\"salaryThb\":10000}') returning id",
+        [a.tenant, 'zz-advance-' + run + '@example.invalid'],
+      )
+    )[0].id;
+    const advance = (
+      await q(
+        "insert into salary_advances(tenant_id,operator_id,employee_id,principal_amount,issued_date,repayment_type,percent_of_net,remaining_balance,status) values($1,$2,$3,1500,'2099-01-01','PERCENT_OF_NET',0.1,1500,'ACTIVE') returning id",
+        [a.tenant, operator, employee],
+      )
+    )[0].id;
+    const period = async (start: string, end: string) =>
+      (
+        await q(
+          'insert into payroll_periods(tenant_id,operator_id,start_date,end_date) values($1,$2,$3,$4) returning id',
+          [a.tenant, operator, start, end],
+        )
+      )[0].id as string;
+    const runIn = async (periodId: string, runNumber: number, workDate: string) => {
+      const id = (
+        await q(
+          "insert into payroll_runs(payroll_period_id,run_number,status,created_by) values($1,$2,'DRAFT',$3) returning id",
+          [periodId, runNumber, a.id],
+        )
+      )[0].id as string;
+      await q(
+        `insert into payroll_day_reconciliations(payroll_run_id,employee_id,branch_id,work_date,flags) values($1,$2,$3,$4,'{"status":"MATCHED"}')`,
+        [id, employee, a.branch, workDate],
+      );
+      return id;
+    };
+    const calculate = async (runId: string) => {
+      const res = await call('POST', '/api/payroll/runs/' + runId + '/calculate', a.cookie);
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.data.errors, []);
+    };
+    const state = async () => {
+      const [row] = await q('select remaining_balance,status from salary_advances where id=$1', [
+        advance,
+      ]);
+      const ledger = await q(
+        'select payroll_run_id,amount from salary_advance_repayments where salary_advance_id=$1 order by created_at',
+        [advance],
+      );
+      return { balance: row.remaining_balance as string, status: row.status as string, ledger };
+    };
+    const deduction = async (runId: string) =>
+      (
+        await q(
+          "select amount from payroll_line_items where payroll_run_id=$1 and code='ADVANCE_REPAYMENT'",
+          [runId],
+        )
+      ).map((r) => r.amount as string);
+
+    const january = await period('2099-01-01', '2099-01-31');
+    const first = await runIn(january, 1, '2099-01-02');
+    await calculate(first);
+    assert.deepEqual(await deduction(first), ['1000.00']);
+    let now = await state();
+    assert.equal(now.balance, '500.00');
+    assert.equal(now.status, 'ACTIVE');
+    assert.deepEqual(now.ledger, [{ payroll_run_id: first, amount: '1000.00' }]);
+
+    // The same run again: same deduction, no second reduction.
+    await calculate(first);
+    assert.deepEqual(await deduction(first), ['1000.00']);
+    now = await state();
+    assert.equal(now.balance, '500.00');
+    assert.equal(now.ledger.length, 1);
+
+    // A second run of the same period replaces the first; still one reduction.
+    const second = await runIn(january, 2, '2099-01-02');
+    await calculate(second);
+    assert.deepEqual(await deduction(second), ['1000.00']);
+    now = await state();
+    assert.equal(now.balance, '500.00');
+    assert.deepEqual(now.ledger, [{ payroll_run_id: second, amount: '1000.00' }]);
+
+    // The next period takes the remainder and pays the advance off.
+    const february = await period('2099-02-01', '2099-02-28');
+    const third = await runIn(february, 1, '2099-02-02');
+    await calculate(third);
+    assert.deepEqual(await deduction(third), ['500.00']);
+    now = await state();
+    assert.equal(now.balance, '0.00');
+    assert.equal(now.status, 'PAID_OFF');
+    assert.equal(now.ledger.length, 2);
+
+    // Recalculating the paying-off period gives it back and takes it again once.
+    await calculate(third);
+    now = await state();
+    assert.equal(now.balance, '0.00');
+    assert.equal(now.status, 'PAID_OFF');
+    assert.equal(now.ledger.length, 2);
+
+    // Nothing left: the period after deducts nothing.
+    const march = await period('2099-03-01', '2099-03-31');
+    const fourth = await runIn(march, 1, '2099-03-02');
+    await calculate(fourth);
+    assert.deepEqual(await deduction(fourth), []);
+    now = await state();
+    assert.equal(now.balance, '0.00');
+    assert.equal(now.ledger.length, 2);
+  });
   if (
     [
       'people',
@@ -1042,6 +1156,7 @@ try {
       'dataAdmin',
       'roles',
       'payroll',
+      'advanceRepayment',
     ].some((name) => results[name] !== true)
   )
     process.exitCode = 1;

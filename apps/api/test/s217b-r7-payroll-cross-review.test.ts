@@ -44,7 +44,7 @@ const proof: Record<string, unknown> = {};
 // Ground-truthed from d7a05e79, normalized to LF; independent of CI checkout depth.
 // The statutory fingerprint omits only its separately exercised lookup wrapper.
 const serviceFingerprints = {
-  'payroll-calculation.ts': '4cbbd87dc9d59108f392f09235713ac8c993c2cf495c3fa4578c5b6a3cfc46dc',
+  'payroll-calculation.ts': '24faa7a2ab9204cc312fab6647449363465bba9417952450d2ecb12a714c56aa',
   'payroll-reconciliation.ts': '0d12f8f3d6432775c65e2e8afa6de537d6984d33f5b6475808b95f1f56db7282',
   'payroll-statutory.ts': 'a66a9a43874fa88c8ce8db505584c74fe909112d0fece47b24aaae76f6eed727',
   'payroll-exports.ts': '534d5b363d86f923a81a451e8759da46594599e1b60864d4c17906b2368d471e',
@@ -484,7 +484,7 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     } finally { await q('delete from payroll_exceptions where id=$1', [exception]); await q('delete from statutory_rule_sets where id=$1', [rule]); }
   });
 
-  it('advance create retains its inherited no-write result and repayment helpers have no registered consumer', async () => {
+  it('advance create retains its inherited no-write result and the repayment recorder has one consumer, the calculation', async () => {
     const response = await call('POST', '/api/payroll/advances', a.cookie, { employeeId: a.employee, amount: 1, issuedDate: '2099-01-01', reason: 'ZZ TEST Mapper Control' });
     expect(response.status).toBe(500);
     expect((await q('select count(*)::int as count from salary_advances where employee_id=$1', [a.employee]))[0].count).toBe(0);
@@ -493,7 +493,8 @@ describe.skipIf(!HAS_APP)('round 7 independent payroll ownership review', () => 
     const files = ['routes.ts', 'payroll-calculation.ts', 'payroll-payslip.ts', 'payroll-exports.ts', 'payroll-reconciliation.ts', 'payroll-statutory.ts'];
     const source = files.map((name) => readFileSync(join(APP, 'server', name), 'utf8')).join('\n');
     expect([...source.matchAll(/getSalaryAdvanceRepayments\s*\(/g)]).toHaveLength(0);
-    expect([...source.matchAll(/recordAdvanceRepayment\s*\(/g)]).toHaveLength(1);
+    // SCRUM-276: the definition and its one call inside the payroll calculation.
+    expect([...source.matchAll(/recordAdvanceRepayment\s*\(/g)]).toHaveLength(2);
   });
 
   it('arithmetic service source remains byte-identical to the reviewed base outside the country lookup ownership wrapper', () => {
