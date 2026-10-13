@@ -9,8 +9,7 @@ import {
   type CartQuote,
   type ItemCartIdentity,
 } from '@/api/sales';
-import { useCartQuote } from '@/lib/cartQuote';
-import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
+import { useCartQuote, useItemCartQuote } from '@/lib/cartQuote';
 import { merchDisplayPresentation, type MerchDisplayState } from '@/lib/merchDisplaySession';
 import { readDisplayMerchCart } from '@oto/shared';
 import { computeLineTotal } from '@/lib/pricing';
@@ -19,7 +18,7 @@ import type { CartLine, Discount, FnbOrderLine, ManualDiscount, MerchOrder } fro
 
 /**
  * THE PRICE ON THE SCREEN — `lib/cartQuote.ts` (S2-09a, SCRUM-203) for the
- * ticket tills and `lib/itemPromoQuote.ts` (SCRUM-362) for the F&B and shop
+ * ticket tills and `useItemCartQuote` (S2-09b, SCRUM-362, SCRUM-375) for the F&B and shop
  * stations, which keep one contract:
  *
  *   - this device's figure is on the screen at once, and the platform is asked
@@ -421,10 +420,10 @@ describe('useCartQuote — the ticket till', () => {
   });
 });
 
-describe('useItemCartQuoteWithPromos — the F&B and shop stations', () => {
+describe('useItemCartQuote — the F&B and shop stations', () => {
   const fries = getMenuItems().find((item) => item.id === 'm-fries')!;
   const stationIdentity: ItemCartIdentity = { ...identity, channel: 'fnb' };
-  type StationArgs = Parameters<typeof useItemCartQuoteWithPromos>[0];
+  type StationArgs = Parameters<typeof useItemCartQuote>[0];
   let stationAsked: Asked<Parameters<typeof quoteItemCart>[0]>[];
 
   function friesLine(optionIds: string[], note?: string): FnbOrderLine {
@@ -440,7 +439,7 @@ describe('useItemCartQuoteWithPromos — the F&B and shop stations', () => {
 
   function mountStation(lines: FnbOrderLine[], promos: Discount[] = []) {
     const initial: StationArgs = { kind: 'fnb', lines, manualDiscounts: [], promos, identity: stationIdentity };
-    return renderHook((props: StationArgs) => useItemCartQuoteWithPromos(props), initial);
+    return renderHook((props: StationArgs) => useItemCartQuote(props), initial);
   }
 
   beforeEach(() => {
@@ -519,6 +518,24 @@ describe('useItemCartQuoteWithPromos — the F&B and shop stations', () => {
     await vi.advanceTimersByTimeAsync(QUOTE_DEBOUNCE_MS);
     expect(askStation).toHaveBeenCalledTimes(2);
     expect(stationAsked[1]!.args.manualDiscounts).toEqual([serviceRecovery]);
+  });
+
+  it('asks about an order with no codes exactly as the counter without a promo box always did (SCRUM-375)', async () => {
+    const lines = [friesLine(['fries-sauce-ketchup'])];
+    // The mobile order station passes no `promos`; the desk stations pass an empty list.
+    const bare = renderHook(
+      (props: StationArgs) => useItemCartQuote(props),
+      { kind: 'fnb', lines, manualDiscounts: [], identity: stationIdentity },
+    );
+    const empty = mountStation(lines);
+    expect(bare.result.current.totals).toEqual(empty.result.current.totals);
+    await vi.advanceTimersByTimeAsync(QUOTE_DEBOUNCE_MS);
+    expect(askStation).toHaveBeenCalledTimes(2);
+    for (const asked of stationAsked) {
+      expect(asked.args).not.toHaveProperty('promos');
+      expect(asked.args).not.toHaveProperty('promoCodes');
+      expect(asked.args).not.toHaveProperty('benefit');
+    }
   });
 
   it('drops a refusal about the order before the last change', async () => {

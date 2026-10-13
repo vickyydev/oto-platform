@@ -185,7 +185,7 @@ describe('the order carries the QR, never a "Staff benefit" row of its own', () 
     expect(station).toContain('buildItemCartPayload(displayLines, manualDiscounts, orderIdentity, total, {');
     expect(station).toMatch(/benefit: \{\s*applicationId: benefit\.applicationId,\s*code: benefit\.code,/);
     // The quote hook is asked with the till's own discounts and the benefit beside them.
-    expect(station).toMatch(/useItemCartQuoteWithPromos\(\{[\s\S]*?manualDiscounts,[\s\S]*?benefit: benefitPayload,/);
+    expect(station).toMatch(/useItemCartQuote\(\{[\s\S]*?manualDiscounts,[\s\S]*?benefit: benefitPayload,/);
     const display: ManualDiscount = {
       id: 'staff-benefit',
       scope: 'order',

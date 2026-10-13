@@ -14,6 +14,7 @@ import {
   quoteCart,
   quoteItemCart,
   unquotableReason,
+  type CartBenefitPayload,
   type CartIdentity,
   type CartQuote,
   type ItemCartIdentity,
@@ -312,13 +313,19 @@ export function useCartQuote(args: {
  *
  * The NOTE is in it, and that is not decoration. Two rows of the same item with
  * different notes are two lines all the way to the kitchen, and merging them
- * would be a different order — so a note edit has to re-ask.
+ * would be a different order — so a note edit has to re-ask. So are the codes
+ * the station holds (SCRUM-362), a voucher (S2-10b) and a staff benefit by its
+ * scan (S2-21 round 3, never the QR itself): each one put on or taken off moves
+ * the price.
  */
 function itemCartSignature(
   lines: readonly (FnbOrderLine | MerchOrderLine)[],
   manualDiscounts: readonly ManualDiscount[],
+  promos: readonly Discount[],
   identity: ItemCartIdentity | null,
   mode: string,
+  promoCodes: readonly string[],
+  benefit: CartBenefitPayload | null,
 ): string {
   const linePart = lines
     .map((line) => {
@@ -334,9 +341,13 @@ function itemCartSignature(
     })
     .join('|');
   const manualPart = manualDiscounts.map((m) => `${m.id}:${m.type}:${m.value}:${m.scope}`).join('|');
+  const promoPart = promos.map((p) => `${p.code}:${p.type}:${p.value}`).join('|');
   const who = identity ? `${identity.branchId}/${identity.stationId}/${identity.channel}` : 'none';
-  return `${mode}#${who}#${linePart}#${manualPart}`;
+  return `${mode}#${who}#${linePart}#${manualPart}#${promoPart}#${promoCodes.join('|')}#${benefit?.applicationId ?? ''}`;
 }
+
+/** One empty list, so an order with no code does not hand a new array to every render. */
+const NO_PROMOS: readonly Discount[] = [];
 
 /**
  * THE PRICE ON THE F&B AND SHOP SCREENS.
@@ -347,6 +358,12 @@ function itemCartSignature(
  * quote is what lets the panel draw the platform's figure against each ROW as
  * well as in the total — an order of five items priced right in total and wrong
  * per line is an order staff cannot check against the screen in front of them.
+ *
+ * ONE HOOK FOR EVERY ITEM COUNTER — SCRUM-375. The promo codes (SCRUM-362), the
+ * voucher (S2-10b) and the staff benefit (S2-21 round 3) are optional arguments
+ * here; they used to ride a twin hook (`lib/itemPromoQuote.ts`) because this
+ * file belonged to another slice at the time. An order without them is asked
+ * about exactly as before.
  */
 export function useItemCartQuote(args: {
   kind: 'fnb' | 'shop';
@@ -355,20 +372,42 @@ export function useItemCartQuote(args: {
   identity: ItemCartIdentity | null;
   /** Stop asking once the order is committed — the sale's own figures stand then. */
   enabled?: boolean;
+  /**
+   * SCRUM-362 — the promo codes this station holds. Priced by the local
+   * fallback as well as sent to the platform, so a code moves the figure
+   * whichever side priced it. Absent or empty is the ordinary case.
+   */
+  promos?: readonly Discount[];
+  /**
+   * S2-10b — the voucher held for this order, by its code. The platform prices
+   * it and puts a free item's line on the bill itself, so an order whose only
+   * line is the voucher's Kids Pizza is still asked about.
+   */
+  promoCodes?: readonly string[];
+  /**
+   * S2-21 round 3 — a colleague's staff benefit QR on the order. The platform
+   * prices it on every quote (nothing is claimed); this device never does, so
+   * its own fallback figure leaves the benefit out.
+   */
+  benefit?: CartBenefitPayload | null;
 }): CartQuoteState {
   const { kind, lines, manualDiscounts, identity } = args;
+  const promos = args.promos ?? NO_PROMOS;
+  const promoCodes = args.promoCodes ?? NO_CODES;
+  const benefit = args.benefit ?? null;
   const enabled = args.enabled ?? true;
   const rate = todayRateMode();
-  const signature = itemCartSignature(lines, manualDiscounts, identity, rate.mode);
+  const signature = itemCartSignature(lines, manualDiscounts, promos, identity, rate.mode, promoCodes, benefit);
 
   const local = useMemo(
-    () =>
+    (): CartQuote =>
       localItemQuote(
         kind,
         lines as readonly FnbOrderLine[] & readonly MerchOrderLine[],
         manualDiscounts,
+        promos.length > 0 ? { promos } : {},
       ),
-    // The signature covers every field these two arrays contribute to a price.
+    // The signature covers every field these arrays contribute to a price.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [signature, kind],
   );
@@ -377,9 +416,11 @@ export function useItemCartQuote(args: {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<QuoteError | null>(null);
   const seqRef = useRef(0);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   useEffect(() => {
-    if (!enabled || !identity || lines.length === 0) {
+    if (!enabled || !identity || (lines.length === 0 && promoCodes.length === 0)) {
       setPending(false);
       return;
     }
@@ -391,23 +432,27 @@ export function useItemCartQuote(args: {
         lines: lines as readonly FnbOrderLine[] & readonly MerchOrderLine[],
         manualDiscounts,
         identity,
+        ...(promos.length > 0 ? { promos } : {}),
+        ...(promoCodes.length > 0 ? { promoCodes } : {}),
+        ...(benefit ? { benefit } : {}),
       })
         .then((quote) => {
-          // The order has moved on since this went out, or another request has
-          // overtaken it: this answer is about an order nobody is looking at.
-          if (seqRef.current !== seq) return;
+          // The order has moved on since this went out, another request has
+          // overtaken it, or the order was committed meanwhile: this answer is
+          // about an order nobody is looking at.
+          if (!enabledRef.current || seqRef.current !== seq) return;
           setPlatform({ signature, quote });
           setError(null);
           setPending(false);
         })
         .catch((err: unknown) => {
-          if (seqRef.current !== seq) return;
+          if (!enabledRef.current || seqRef.current !== seq) return;
           setPlatform(null);
           setError(quoteErrorOf(err, 'The platform did not price this order.'));
           setPending(false);
         });
     }, QUOTE_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
+    return () => { window.clearTimeout(timer); seqRef.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature, enabled]);
 

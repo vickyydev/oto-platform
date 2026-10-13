@@ -20,7 +20,7 @@ import { VariantPickerModal, type PickableVariant } from '@/components/shared/Va
 import { hasModifiers, modifierSignature } from '@/lib/fnb';
 import { fnbLineTotal } from '@/lib/cartWire';
 import { validateItemPromoCode } from '@/lib/itemPromo';
-import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
+import { useItemCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteInput, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { useFnbDisplay } from '@/lib/fnbDisplaySession';
@@ -300,7 +300,7 @@ export default function OrderStation() {
    * then on, and re-quoting a finished order could only disagree with the
    * receipt in the guest's hand.
    */
-  const order = useItemCartQuoteWithPromos({
+  const order = useItemCartQuote({
     kind: 'fnb',
     lines,
     manualDiscounts,

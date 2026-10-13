@@ -9,7 +9,7 @@ import { asksForSize, isOutOfStock, merchSizes } from '@/lib/merch';
 import { merchLineTotal } from '@/lib/cartWire';
 import { readProductScan, useStationScans, type StationScanEvent } from '@/lib/scanChannel';
 import { validateItemPromoCode } from '@/lib/itemPromo';
-import { useItemCartQuoteWithPromos } from '@/lib/itemPromoQuote';
+import { useItemCartQuote } from '@/lib/cartQuote';
 import { useSaleWriter, type SaleWriteOutcome } from '@/lib/saleWriter';
 import { usePaymentStage, type PaymentSettlement } from '@/lib/usePaymentStage';
 import { useMerchDisplay } from '@/lib/merchDisplaySession';
@@ -166,7 +166,7 @@ export default function MerchStation() {
    * platform's own engine run on this till (`itemOrderTotals`, SCRUM-271), and
    * when it is what is on screen the note above the charge button says so.
    */
-  const sale = useItemCartQuoteWithPromos({
+  const sale = useItemCartQuote({
     kind: 'shop',
     lines,
     manualDiscounts,
